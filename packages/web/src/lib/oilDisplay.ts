@@ -40,6 +40,16 @@ export function oilPickerTag(oil: Pick<OilRecord, 'displayName' | 'category'>): 
   const tallowMatch = oil.displayName.match(/^Tallow\s+(\w+)/i);
   if (tallowMatch) return tallowMatch[1];
 
-  if (oil.category !== 'triglyceride') return oil.category;
-  return undefined;
+  switch (oil.category) {
+    case 'free_acid':
+      return 'Fatty acid';
+    case 'wax':
+      return 'Wax';
+    case 'tar':
+      return 'Tar';
+    case 'wax_ester':
+      return 'Wax ester';
+    default:
+      return undefined;
+  }
 }

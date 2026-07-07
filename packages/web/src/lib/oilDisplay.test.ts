@@ -24,6 +24,7 @@ describe('oilPickerTag', () => {
   });
 
   it('returns category for non-triglyceride oils', () => {
-    expect(oilPickerTag({ displayName: 'Beeswax', category: 'wax' })).toBe('wax');
+    expect(oilPickerTag({ displayName: 'Beeswax', category: 'wax' })).toBe('Wax');
+    expect(oilPickerTag({ displayName: 'Lauric Acid', category: 'free_acid' })).toBe('Fatty acid');
   });
 });

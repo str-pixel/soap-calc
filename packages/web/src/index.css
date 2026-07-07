@@ -154,6 +154,12 @@ select {
   min-width: 6rem;
 }
 
+.field--checkbox input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
 .properties-coverage {
   margin: 0 0 0.85rem;
   font-size: 0.85rem;
@@ -169,6 +175,18 @@ select {
 
 .recipe-indexes dt {
   font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.panel__subtitle {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.recipe-indexes__range {
+  font-size: 0.75rem;
+  font-weight: 400;
   color: var(--text-muted);
 }
 
@@ -203,6 +221,109 @@ select {
 .property-bars__value {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
+}
+
+.property-bars__value--outside {
+  color: var(--warn);
+}
+
+.property-bars__range {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.property-bars__track {
+  position: relative;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.property-bars__band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.property-bars__band--suggested {
+  background: rgb(13 107 92 / 12%);
+}
+
+.property-bars__band--preference {
+  background: rgb(13 107 92 / 22%);
+  border-left: 1px solid rgb(13 107 92 / 35%);
+  border-right: 1px solid rgb(13 107 92 / 35%);
+}
+
+.property-bars__fill {
+  position: relative;
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+  z-index: 1;
+}
+
+.property-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.property-legend__swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.55rem;
+  border-radius: 2px;
+  margin-right: 0.15rem;
+}
+
+.property-legend__swatch--suggested {
+  background: rgb(13 107 92 / 12%);
+}
+
+.property-legend__swatch--preference {
+  background: rgb(13 107 92 / 22%);
+  border: 1px solid rgb(13 107 92 / 35%);
+}
+
+.fatty-ratio {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.message-list--insights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.message-list--insights li {
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.message-list__item--info {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.message-list__item--warn {
+  background: var(--warn-bg);
+  color: var(--warn);
 }
 
 .property-bars__track {

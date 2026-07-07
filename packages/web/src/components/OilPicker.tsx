@@ -5,9 +5,10 @@ import { formatInciSubtitle, oilPickerTag } from '../lib/oilDisplay';
 type OilPickerProps = {
   value: string;
   onChange: (oilId: string) => void;
+  includeSpecialty?: boolean;
 };
 
-export function OilPicker({ value, onChange }: OilPickerProps) {
+export function OilPicker({ value, onChange, includeSpecialty = false }: OilPickerProps) {
   const listId = useId();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -16,7 +17,7 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
 
   const selected = oilById(value);
   const searchQuery = open && query.length === 0 ? '' : (query || selected?.displayName || '');
-  const results = searchOils(searchQuery, searchQuery ? 50 : undefined);
+  const results = searchOils(searchQuery, searchQuery ? 50 : undefined, { includeSpecialty });
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {

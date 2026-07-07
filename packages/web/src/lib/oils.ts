@@ -57,16 +57,34 @@ export function isTarOil(oil: OilRecord | undefined): boolean {
   return oil.category === 'tar' || oil.sapRole === 'acid_neutralization';
 }
 
-export function searchOils(query: string, limit?: number): OilRecord[] {
+export function isSpecialtyPickerOil(oil: Pick<OilRecord, 'category'>): boolean {
+  return oil.category === 'free_acid' || oil.category === 'tar' || oil.category === 'wax';
+}
+
+export type SearchOilsOptions = {
+  /** Include wax, tar, and free fatty acids when browsing with an empty query. */
+  includeSpecialty?: boolean;
+};
+
+export function searchOils(
+  query: string,
+  limit?: number,
+  options?: SearchOilsOptions,
+): OilRecord[] {
   const q = query.trim().toLowerCase();
+  const includeSpecialty = options?.includeSpecialty ?? false;
   const cap = (items: OilRecord[]) => (limit ? items.slice(0, limit) : items);
 
-  if (!q) return cap(OILS);
+  if (!q) {
+    const browse = includeSpecialty ? OILS : OILS.filter((oil) => !isSpecialtyPickerOil(oil));
+    return cap(browse);
+  }
 
   return cap(
     OILS.filter((oil) => {
       if (oil.displayName.toLowerCase().includes(q)) return true;
       if (oil.id.includes(q.replace(/\s+/g, '-'))) return true;
+      if (oil.inciName?.toLowerCase().includes(q)) return true;
       return oil.aliases.some((alias) => alias.includes(q));
     }),
   );

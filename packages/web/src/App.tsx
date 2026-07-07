@@ -1,10 +1,13 @@
 import { useMemo, useRef } from 'react';
 import { OilPicker } from './components/OilPicker';
+import { FattyAcidPanel } from './components/FattyAcidPanel';
+import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { useDebouncedCommit } from './hooks/useDebouncedCommit';
 import { useDraftInputs } from './hooks/useDraftInputs';
 import { useRecipeAutosave } from './hooks/useRecipeAutosave';
+import { useFormulationInsights } from './hooks/useFormulationInsights';
 import { useRecipeCalculation } from './hooks/useRecipeCalculation';
 import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeProperties } from './hooks/useRecipeProperties';
@@ -84,6 +87,12 @@ export default function App() {
     previewSettings,
   );
   const { properties, indexes } = useRecipeProperties(previewState.lines, previewSettings);
+  const { fattyAcids, insights } = useFormulationInsights(
+    previewState.lines,
+    previewSettings,
+    properties,
+    result,
+  );
   const lyeLabel = settings.lyeType === 'naoh' ? 'NaOH' : 'KOH';
 
   function updateLine(key: string, patch: Partial<RecipeLine>) {
@@ -352,10 +361,17 @@ export default function App() {
                 onChange={(e) => handleBatchChange(e.target.value)}
                 onBlur={(e) => debouncer.flush(batchInputId, () => commitBatchInput(e.target.value))}
               />
+            <label className="field field--inline field--checkbox">
+              <input
+                type="checkbox"
+                checked={settings.showSpecialtyOils}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, showSpecialtyOils: e.target.checked }))
+                }
+              />
+              <span>Show specialty ingredients</span>
             </label>
           </div>
-
-          <div className="recipe-table" aria-label="Recipe oils">
             <div className="recipe-table__head">
               <span>Oil</span>
               <span>Weight ({weightUnitConfig.short})</span>
@@ -374,6 +390,7 @@ export default function App() {
                     <OilPicker
                       value={line.oilId}
                       onChange={(oilId) => updateLine(line.key, { oilId })}
+                      includeSpecialty={settings.showSpecialtyOils}
                     />
                     {showTar && (
                       <label className="tar-treatment">
@@ -593,6 +610,8 @@ export default function App() {
           />
 
           <PropertiesPanel result={properties} indexes={indexes} />
+          <FattyAcidPanel result={fattyAcids} />
+          <FormulationInsightsPanel insights={insights} />
         </aside>
       </main>
 
