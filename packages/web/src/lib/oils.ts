@@ -12,6 +12,8 @@ export type LiteOilRecord = {
   sapNaoh: number;
   confidence?: string;
   propertiesAvailable?: boolean;
+  iodine?: number;
+  ins?: number;
   fattyAcids?: Record<string, number>;
 };
 

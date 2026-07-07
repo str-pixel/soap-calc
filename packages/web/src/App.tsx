@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { OilPicker } from './components/OilPicker';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { ResultsPanel } from './components/ResultsPanel';
@@ -26,13 +27,17 @@ export default function App() {
     handleLoad,
     handleDelete,
     handleNew,
+    handleExport,
+    handleImportFile,
   } = useRecipeStorage();
+
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const { result, inputErrors, linePercents, displayTotals } = useRecipeCalculation(
     lines,
     settings,
   );
-  const properties = useRecipeProperties(lines, settings);
+  const { properties, indexes } = useRecipeProperties(lines, settings);
   const resolved = resolveLineWeights(lines, settings);
   const lyeLabel = settings.lyeType === 'naoh' ? 'NaOH' : 'KOH';
   const isPercentMode = settings.entryMode === 'percent';
@@ -103,6 +108,27 @@ export default function App() {
             <button type="button" className="btn" onClick={handleSave}>
               Save
             </button>
+            <button type="button" className="btn btn--ghost" onClick={handleExport}>
+              Export
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => importInputRef.current?.click()}
+            >
+              Import
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImportFile(file);
+                e.target.value = '';
+              }}
+            />
             <label className="recipe-toolbar__load">
               <span className="sr-only">Saved recipes</span>
               <select
@@ -418,7 +444,7 @@ export default function App() {
             displayTotals={displayTotals}
           />
 
-          <PropertiesPanel result={properties} />
+          <PropertiesPanel result={properties} indexes={indexes} />
         </aside>
       </main>
 

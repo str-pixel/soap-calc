@@ -280,6 +280,8 @@ function main() {
       sapNaoh: oil.sapNaoh,
       confidence: oil.confidence,
       propertiesAvailable: oil.propertiesAvailable,
+      ...(oil.iodine !== undefined ? { iodine: oil.iodine } : {}),
+      ...(oil.ins !== undefined ? { ins: oil.ins } : {}),
       ...(oil.propertiesAvailable && oil.fattyAcids
         ? { fattyAcids: oil.fattyAcids }
         : {}),

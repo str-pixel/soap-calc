@@ -16,6 +16,12 @@ import {
   saveNamedRecipe,
   type SavedRecipe,
 } from '../lib/recipeStorage';
+import {
+  downloadRecipeFile,
+  parseRecipeFile,
+  recipeLinesFromFile,
+  serializeRecipeFile,
+} from '../lib/recipeFile';
 
 const AUTOSAVE_MS = 500;
 
@@ -97,6 +103,32 @@ export function useRecipeStorage() {
     setSettings({ ...DEFAULT_SETTINGS });
   }
 
+  function handleExport() {
+    downloadRecipeFile(serializeRecipeFile(recipeName, lines, settings));
+    flashSaveMessage('Recipe exported');
+  }
+
+  function handleImportFile(file: File) {
+    file
+      .text()
+      .then((raw) => {
+        const parsed = parseRecipeFile(raw);
+        if (!parsed.ok) {
+          flashSaveMessage(parsed.error);
+          return;
+        }
+        const importedLines = recipeLinesFromFile(parsed.data.lines);
+        const importedSettings = normalizeSettings(parsed.data.settings);
+        setRecipeName(parsed.data.name);
+        setLines(importedLines);
+        setSettings(importedSettings);
+        setSelectedSavedId('');
+        saveDraft(parsed.data.name, importedLines, importedSettings);
+        flashSaveMessage(`Imported “${parsed.data.name}”`);
+      })
+      .catch(() => flashSaveMessage('Could not read recipe file'));
+  }
+
   return {
     recipeName,
     setRecipeName,
@@ -112,5 +144,7 @@ export function useRecipeStorage() {
     handleLoad,
     handleDelete,
     handleNew,
+    handleExport,
+    handleImportFile,
   };
 }

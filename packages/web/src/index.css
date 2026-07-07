@@ -160,6 +160,24 @@ select {
   color: var(--text-muted);
 }
 
+.recipe-indexes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 0.85rem;
+}
+
+.recipe-indexes dt {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.recipe-indexes dd {
+  margin: 0.15rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .property-bars {
   list-style: none;
   margin: 0;
