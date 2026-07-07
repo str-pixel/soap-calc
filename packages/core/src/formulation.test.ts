@@ -99,4 +99,20 @@ describe('analyzeFormulation', () => {
     expect(insights.some((i) => i.code === 'high_poly_high_superfat')).toBe(true);
     expect(sumFattyAcids(profile, ['linoleic', 'linolenic'])).toBe(30);
   });
+
+  it('warns when split liquid is enabled', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 330,
+      lyeGrams: 100,
+      splitLiquidEnabled: true,
+      splitLiquidGrams: 200,
+    });
+    expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(true);
+  });
 });

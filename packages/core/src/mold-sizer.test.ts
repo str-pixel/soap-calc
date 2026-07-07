@@ -1,0 +1,32 @@
+import { describe, expect, it } from 'vitest';
+import {
+  DEFAULT_OIL_BATCH_FRACTION,
+  oilBatchFraction,
+  oilGramsFromBarCount,
+  oilGramsFromMoldVolumeCm3,
+  rectangularMoldVolumeCm3,
+} from './mold-sizer.js';
+
+describe('mold-sizer', () => {
+  it('computes rectangular mold volume', () => {
+    expect(rectangularMoldVolumeCm3(20, 10, 5)).toBe(1000);
+    expect(rectangularMoldVolumeCm3(0, 10, 5)).toBeNull();
+  });
+
+  it('suggests oil grams from mold volume', () => {
+    const volume = rectangularMoldVolumeCm3(20, 10, 5)!;
+    expect(oilGramsFromMoldVolumeCm3(volume)).toBeCloseTo(
+      volume * 0.92 * DEFAULT_OIL_BATCH_FRACTION,
+      5,
+    );
+  });
+
+  it('suggests oil grams from bar count', () => {
+    expect(oilGramsFromBarCount(10, 100)).toBeCloseTo(10 * 100 * DEFAULT_OIL_BATCH_FRACTION, 5);
+  });
+
+  it('derives oil batch fraction', () => {
+    expect(oilBatchFraction(650, 1000)).toBe(0.65);
+    expect(oilBatchFraction(1000, 900)).toBeNull();
+  });
+});

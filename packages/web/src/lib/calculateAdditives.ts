@@ -36,6 +36,7 @@ export function computeSplitLiquidGrams(
   percentOfOil: string,
   totalOilGrams: number,
 ): number | null {
+  if (totalOilGrams <= 0) return null;
   const percent = parsePercentOfOil(percentOfOil);
   if (percent === null || percent === 0) return null;
   return gramsFromPercentOfOil(totalOilGrams, percent);

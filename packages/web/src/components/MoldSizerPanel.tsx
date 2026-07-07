@@ -1,0 +1,156 @@
+import { useMemo } from 'react';
+import { DEFAULT_OIL_BATCH_FRACTION } from '@soap-calc/core';
+import {
+  DEFAULT_MOLD_SIZER_INPUT,
+  type MoldSizerInput,
+  suggestOilGramsFromMoldSizer,
+} from '../lib/moldSizer';
+import { formatWeight } from '../lib/weightUnits';
+import type { WeightUnit } from '../lib/recipe';
+
+type MoldSizerPanelProps = {
+  input: MoldSizerInput;
+  weightUnit: WeightUnit;
+  oilBatchFraction: number | null;
+  onChange: (input: MoldSizerInput) => void;
+  onApply: (oilGrams: number) => void;
+};
+
+export function MoldSizerPanel({
+  input,
+  weightUnit,
+  oilBatchFraction,
+  onChange,
+  onApply,
+}: MoldSizerPanelProps) {
+  const suggestedGrams = useMemo(
+    () => suggestOilGramsFromMoldSizer(input, oilBatchFraction, weightUnit),
+    [input, oilBatchFraction, weightUnit],
+  );
+
+  const dimensionUnit = input.useInches ? 'in' : 'cm';
+
+  return (
+    <section className="panel panel--nested">
+      <div className="panel__head">
+        <div>
+          <h2 className="panel__title">Batch sizer</h2>
+          <p className="panel__subtitle">Suggest oil weight from a mold or bar count</p>
+        </div>
+      </div>
+
+      <div className="mold-sizer__modes">
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="mold-sizer-mode"
+            checked={input.mode === 'mold'}
+            onChange={() => onChange({ ...input, mode: 'mold' })}
+          />
+          <span>Mold volume</span>
+        </label>
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="mold-sizer-mode"
+            checked={input.mode === 'bars'}
+            onChange={() => onChange({ ...input, mode: 'bars' })}
+          />
+          <span>Bar count</span>
+        </label>
+      </div>
+
+      {input.mode === 'mold' ? (
+        <div className="settings-grid mold-sizer__grid">
+          <label className="field">
+            <span>Length ({dimensionUnit})</span>
+            <input
+              type="number"
+              className="input"
+              min={0}
+              step={0.1}
+              value={input.length}
+              onChange={(e) => onChange({ ...input, length: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Width ({dimensionUnit})</span>
+            <input
+              type="number"
+              className="input"
+              min={0}
+              step={0.1}
+              value={input.width}
+              onChange={(e) => onChange({ ...input, width: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Height ({dimensionUnit})</span>
+            <input
+              type="number"
+              className="input"
+              min={0}
+              step={0.1}
+              value={input.height}
+              onChange={(e) => onChange({ ...input, height: e.target.value })}
+            />
+          </label>
+          <label className="field field--inline field--checkbox">
+            <input
+              type="checkbox"
+              checked={input.useInches}
+              onChange={(e) => onChange({ ...input, useInches: e.target.checked })}
+            />
+            <span>Use inches</span>
+          </label>
+        </div>
+      ) : (
+        <div className="settings-grid mold-sizer__grid">
+          <label className="field">
+            <span>Number of bars</span>
+            <input
+              type="number"
+              className="input"
+              min={1}
+              step={1}
+              value={input.barCount}
+              onChange={(e) => onChange({ ...input, barCount: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span>Finished bar weight ({weightUnit})</span>
+            <input
+              type="number"
+              className="input"
+              min={0}
+              step={1}
+              value={input.barWeight}
+              onChange={(e) => onChange({ ...input, barWeight: e.target.value })}
+            />
+          </label>
+        </div>
+      )}
+
+      {suggestedGrams !== null && (
+        <div className="mold-sizer__result">
+          <p>
+            Suggested oil weight: <strong>{formatWeight(suggestedGrams, weightUnit)}</strong>
+            <span className="results-excluded">
+              {' '}
+              (using{' '}
+              {oilBatchFraction !== null
+                ? `${Math.round(oilBatchFraction * 100)}%`
+                : `${Math.round(DEFAULT_OIL_BATCH_FRACTION * 100)}%`}{' '}
+              oil share)
+            </span>
+          </p>
+          <button type="button" className="btn btn--ghost" onClick={() => onApply(suggestedGrams)}>
+            Apply to batch
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+export { DEFAULT_MOLD_SIZER_INPUT };

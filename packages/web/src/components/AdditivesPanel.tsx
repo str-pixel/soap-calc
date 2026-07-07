@@ -61,18 +61,31 @@ export function AdditivesPanel({
   }
 
   function addLatherSupportPack() {
-    const pack = LATHER_SUPPORT_PACK.map((item) => {
-      const entry = catalogEntryById(item.catalogId)!;
-      return {
-        key: newAdditiveKey(),
-        catalogId: entry.id,
-        name: entry.name,
-        percentOfOil: String(item.percentOfOil),
-        addAt: item.stage,
-      };
+    const existingIds = new Set(
+      additives.map((line) => line.catalogId).filter((id) => id !== ''),
+    );
+    const pack = LATHER_SUPPORT_PACK.flatMap((item) => {
+      if (existingIds.has(item.catalogId)) return [];
+      const entry = catalogEntryById(item.catalogId);
+      if (!entry) return [];
+      return [
+        {
+          key: newAdditiveKey(),
+          catalogId: entry.id,
+          name: entry.name,
+          percentOfOil: String(item.percentOfOil),
+          addAt: item.stage,
+        },
+      ];
     });
+    if (pack.length === 0) return;
     onChange([...additives, ...pack]);
   }
+
+  const latherPackCatalogIds = LATHER_SUPPORT_PACK.map((item) => item.catalogId);
+  const allLatherPackPresent = latherPackCatalogIds.every((id) =>
+    additives.some((line) => line.catalogId === id),
+  );
 
   function removeLine(key: string) {
     onChange(additives.filter((line) => line.key !== key));
@@ -86,7 +99,12 @@ export function AdditivesPanel({
           <p className="panel__subtitle">% of total oil weight</p>
         </div>
         <div className="panel__actions">
-          <button type="button" className="btn btn--ghost" onClick={addLatherSupportPack}>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={addLatherSupportPack}
+            disabled={allLatherPackPresent}
+          >
             Lather support pack
           </button>
           <button type="button" className="btn btn--ghost" onClick={addLine}>

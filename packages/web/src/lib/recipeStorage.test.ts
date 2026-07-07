@@ -84,6 +84,47 @@ describe('recipeStorage', () => {
     expect(listSavedRecipes()[0].lines[0].weightGrams).toBe('900');
   });
 
+  it('preserves additives when overwriting without passing them', () => {
+    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
+    const additives = [
+      {
+        key: 'x',
+        catalogId: 'honey',
+        name: 'Honey',
+        percentOfOil: '1',
+        addAt: 'trace' as const,
+      },
+    ];
+    saveNamedRecipe('Batch', lines, DEFAULT_SETTINGS, additives);
+    saveNamedRecipe(
+      'Batch',
+      [{ key: 'b', oilId: 'olive-oil', weightGrams: '1100' }],
+      DEFAULT_SETTINGS,
+    );
+
+    const saved = listSavedRecipes()[0];
+    expect(saved.lines[0].weightGrams).toBe('1100');
+    expect(saved.additives).toHaveLength(1);
+    expect(saved.additives[0].name).toBe('Honey');
+  });
+
+  it('round-trips additives in named recipes', () => {
+    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
+    const additives = [
+      {
+        key: 'x',
+        catalogId: 'honey',
+        name: 'Honey',
+        percentOfOil: '1',
+        addAt: 'trace' as const,
+      },
+    ];
+    saveNamedRecipe('With honey', lines, DEFAULT_SETTINGS, additives);
+    const saved = listSavedRecipes()[0];
+    expect(saved.additives).toHaveLength(1);
+    expect(saved.additives[0].percentOfOil).toBe('1');
+  });
+
   it('normalizes settings missing new fields from older saves', () => {
     const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
     saveDraft('Legacy', lines, { superfatPercent: '8', lyeType: 'naoh' } as never);

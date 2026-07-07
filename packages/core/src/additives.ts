@@ -93,3 +93,6 @@ export const ADDITIVE_STAGE_LABELS: Record<AdditiveStage, string> = {
   trace: 'At trace',
   top: 'On top',
 };
+
+export const MAX_RECIPE_ADDITIVES = 50;
+export const MAX_ADDITIVE_NAME_LENGTH = 120;

@@ -3,6 +3,8 @@ import {
   ADDITIVE_CATALOG,
   gramsFromPercentOfOil,
   LATHER_SUPPORT_PACK,
+  MAX_ADDITIVE_NAME_LENGTH,
+  MAX_RECIPE_ADDITIVES,
   parsePercentOfOil,
 } from './additives.js';
 
@@ -23,5 +25,10 @@ describe('additives', () => {
     expect(LATHER_SUPPORT_PACK).toHaveLength(3);
     expect(LATHER_SUPPORT_PACK.every((item) => item.percentOfOil === 1)).toBe(true);
     expect(ADDITIVE_CATALOG.some((e) => e.id === 'chelator')).toBe(true);
+  });
+
+  it('exports import limits', () => {
+    expect(MAX_RECIPE_ADDITIVES).toBeGreaterThan(0);
+    expect(MAX_ADDITIVE_NAME_LENGTH).toBeGreaterThan(0);
   });
 });

@@ -28,4 +28,26 @@ describe('calculateAdditives', () => {
   it('computes split liquid grams', () => {
     expect(computeSplitLiquidGrams('20', 1000)).toBe(200);
   });
+
+  it('returns empty when oil weight is zero', () => {
+    expect(computeRecipeAdditives(additives, 0)).toEqual([]);
+    expect(computeSplitLiquidGrams('20', 0)).toBeNull();
+  });
+
+  it('skips invalid or zero percent lines', () => {
+    const lines: AdditiveLine[] = [
+      { key: 'a', catalogId: '', name: '', percentOfOil: 'abc', addAt: 'trace' },
+      { key: 'b', catalogId: '', name: 'Clay', percentOfOil: '0', addAt: 'oils' },
+      { key: 'c', catalogId: '', name: '', percentOfOil: '2', addAt: 'trace' },
+    ];
+    expect(computeRecipeAdditives(lines, 1000)).toEqual([
+      {
+        key: 'c',
+        name: 'Additive',
+        percentOfOil: 2,
+        grams: 20,
+        addAt: 'trace',
+      },
+    ]);
+  });
 });

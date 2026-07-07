@@ -39,3 +39,28 @@ export function previewPercentDisplay(
 ): string {
   return previewLine?.weightPercent ?? line.weightPercent ?? '';
 }
+
+export function computeRecipeLineTotals(lines: RecipeLine[]): {
+  totalWeightGrams: number;
+  totalPercent: number;
+} {
+  let totalWeightGrams = 0;
+  let totalPercent = 0;
+
+  for (const line of lines) {
+    const grams = Number(line.weightGrams);
+    if (Number.isFinite(grams) && grams > 0) {
+      totalWeightGrams += grams;
+    }
+    const pct = Number(line.weightPercent);
+    if (Number.isFinite(pct) && pct > 0) {
+      totalPercent += pct;
+    }
+  }
+
+  return { totalWeightGrams, totalPercent };
+}
+
+export function formatRecipePercentTotal(totalPercent: number): string {
+  return String(Math.round(totalPercent * 10) / 10);
+}

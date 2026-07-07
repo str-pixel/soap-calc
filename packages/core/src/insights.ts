@@ -3,6 +3,7 @@ import {
   sumFattyAcids,
   type FattyAcidProfile,
 } from './fatty-acids.js';
+import type { WaterMode } from './lye.js';
 import type { SoapProperties } from './properties.js';
 
 export type FormulationInsightLevel = 'info' | 'warning';
@@ -22,6 +23,10 @@ export type FormulationAnalysisInput = {
   waterLyeRatio: number;
   waterGrams: number;
   lyeGrams: number;
+  waterMode?: WaterMode;
+  excludedOilWeightGrams?: number;
+  splitLiquidEnabled?: boolean;
+  splitLiquidGrams?: number | null;
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -119,6 +124,20 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
           'Cleansing score above the usual range with modest superfat — bar may feel stripping; consider more superfat or softer oils.',
       });
     }
+  }
+
+  if (
+    input.splitLiquidEnabled &&
+    input.splitLiquidGrams !== null &&
+    input.splitLiquidGrams !== undefined &&
+    input.splitLiquidGrams > 0
+  ) {
+    insights.push({
+      level: 'warning',
+      code: 'split_liquid_water_not_adjusted',
+      message:
+        'Alternative liquid is listed separately — water is not reduced automatically. Lower your water % to account for milk, puree, or other liquids.',
+    });
   }
 
   return insights;

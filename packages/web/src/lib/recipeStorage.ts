@@ -153,17 +153,23 @@ export function saveNamedRecipe(
   name: string,
   lines: RecipeLine[],
   settings: RecipeSettings,
-  additives: AdditiveLine[] = createEmptyAdditives(),
+  additives?: AdditiveLine[],
 ): SavedRecipe {
   const trimmed = name.trim() || 'Untitled recipe';
   const recipes = listSavedRecipes();
   const existing = recipes.find((r) => r.name === trimmed);
+  const resolvedAdditives =
+    additives !== undefined
+      ? additives
+      : existing
+        ? additivesFromSaved(existing.additives)
+        : createEmptyAdditives();
   const entry: SavedRecipe = {
     id: existing?.id ?? crypto.randomUUID(),
     name: trimmed,
     savedAt: new Date().toISOString(),
     lines: cloneLines(lines),
-    additives: cloneAdditives(additives),
+    additives: cloneAdditives(resolvedAdditives),
     settings,
   };
 
@@ -172,7 +178,7 @@ export function saveNamedRecipe(
     : [entry, ...recipes];
 
   writeRecipes(next);
-  saveDraft(trimmed, lines, settings, additives);
+  saveDraft(trimmed, lines, settings, resolvedAdditives);
   return entry;
 }
 

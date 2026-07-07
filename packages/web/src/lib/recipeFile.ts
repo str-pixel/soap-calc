@@ -1,4 +1,9 @@
 import {
+  MAX_ADDITIVE_NAME_LENGTH,
+  MAX_RECIPE_ADDITIVES,
+  parsePercentOfOil,
+} from '@soap-calc/core';
+import {
   createStarterLines,
   normalizeSettings,
   newAdditiveKey,
@@ -46,10 +51,19 @@ function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
   ) {
     return null;
   }
+  const percentOfOil =
+    typeof value.percentOfOil === 'string' ? value.percentOfOil : '';
+  if (percentOfOil !== '' && parsePercentOfOil(percentOfOil) === null) {
+    return null;
+  }
+  const name =
+    typeof value.name === 'string'
+      ? value.name.slice(0, MAX_ADDITIVE_NAME_LENGTH)
+      : '';
   return {
     catalogId: typeof value.catalogId === 'string' ? value.catalogId : '',
-    name: typeof value.name === 'string' ? value.name : '',
-    percentOfOil: typeof value.percentOfOil === 'string' ? value.percentOfOil : '',
+    name,
+    percentOfOil,
     addAt,
   };
 }
@@ -118,6 +132,9 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
 
   const additives: RecipeFileAdditive[] = [];
   if (Array.isArray(parsed.additives)) {
+    if (parsed.additives.length > MAX_RECIPE_ADDITIVES) {
+      return { ok: false, error: 'Too many additives in recipe file' };
+    }
     for (const item of parsed.additives) {
       const additive = parseAdditiveLine(item);
       if (!additive) {

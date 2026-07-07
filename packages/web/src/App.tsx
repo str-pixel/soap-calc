@@ -1,9 +1,12 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AdditivesPanel } from './components/AdditivesPanel';
+import { BatchSheet } from './components/BatchSheet';
 import { OilPicker } from './components/OilPicker';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
+import { MoldSizerPanel, DEFAULT_MOLD_SIZER_INPUT } from './components/MoldSizerPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
+import { RecipePresetsPanel } from './components/RecipePresetsPanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { SplitLiquidPanel } from './components/SplitLiquidPanel';
 import { useDebouncedCommit } from './hooks/useDebouncedCommit';
@@ -15,7 +18,11 @@ import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeProperties } from './hooks/useRecipeProperties';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { commitDrafts } from './lib/commitDrafts';
+import { applyRecipePreset } from './lib/applyRecipePreset';
+import { buildBatchSheetData } from './lib/batchSheet';
 import { computeRecipeAdditives, computeSplitLiquidGrams } from './lib/calculateAdditives';
+import { recipePresetById } from './data/recipe-presets';
+import { oilBatchFraction } from './lib/moldSizer';
 import {
   addRecipeLine,
   resyncFromWeights,
@@ -27,6 +34,8 @@ import {
 import { isTarOil, oilById } from './lib/oils';
 import { newLineKey, type RecipeLine, type WeightUnit } from './lib/recipe';
 import {
+  computeRecipeLineTotals,
+  formatRecipePercentTotal,
   previewPercentDisplay,
   previewWeightDisplay,
   usePreviewRecipeState,
@@ -63,6 +72,7 @@ export default function App() {
   } = useRecipeStorage();
 
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [moldSizerInput, setMoldSizerInput] = useState(DEFAULT_MOLD_SIZER_INPUT);
   const { getDraft, setDraft, clearDraft, clearAllDrafts, drafts } = useDraftInputs();
   const debouncer = useDebouncedCommit();
   const { applySynced, applySyncedUpdate, linesRef, batchRef } = useRecipeEditor(
@@ -86,8 +96,20 @@ export default function App() {
     [previewState.lines],
   );
   const previewSettings = usePreviewSettings(settings, previewState.batchOilGrams);
+  const lineTotals = useMemo(
+    () => computeRecipeLineTotals(previewState.lines),
+    [previewState.lines],
+  );
+  const batchGramsTarget = Number(previewState.batchOilGrams);
+  const percentTotalOff =
+    lineTotals.totalPercent > 0 && Math.abs(lineTotals.totalPercent - 100) > 0.05;
+  const weightTotalOff =
+    Number.isFinite(batchGramsTarget) &&
+    batchGramsTarget > 0 &&
+    lineTotals.totalWeightGrams > 0 &&
+    Math.abs(lineTotals.totalWeightGrams - batchGramsTarget) > 1;
   useRecipeAutosave(recipeName, previewState.lines, previewSettings, additives);
-  const { result, inputErrors, displayTotals } = useRecipeCalculation(
+  const { result, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
     previewState.lines,
     previewSettings,
   );
@@ -106,8 +128,56 @@ export default function App() {
     previewSettings,
     properties,
     result,
+    {
+      excludedOilWeightGrams: displayTotals?.excludedFromLyeOilWeightGrams ?? 0,
+      splitLiquidGrams,
+    },
   );
   const lyeLabel = settings.lyeType === 'naoh' ? 'NaOH' : 'KOH';
+  const additiveGrams = computedAdditives.reduce((sum, item) => sum + item.grams, 0);
+  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0);
+  const batchWeightWithExtras =
+    (displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0) + extrasGrams;
+  const liveOilBatchFraction = useMemo(() => {
+    if (!displayTotals || batchWeightWithExtras <= 0) return null;
+    return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);
+  }, [batchWeightWithExtras, displayTotals]);
+  const batchSheetData = useMemo(() => {
+    if (!result || !displayTotals || inputErrors.length > 0) return null;
+    return buildBatchSheetData({
+      recipeName,
+      batchNotes: settings.batchNotes,
+      weightUnit,
+      lyeLabel,
+      settings: previewSettings,
+      lines: previewState.lines,
+      linePercents,
+      result,
+      displayTotals,
+      additives: computedAdditives,
+      splitLiquid: previewSettings.splitLiquid,
+      splitLiquidGrams,
+      properties,
+      indexes,
+      batchWeightWithExtras,
+    });
+  }, [
+    batchWeightWithExtras,
+    computedAdditives,
+    displayTotals,
+    indexes,
+    inputErrors.length,
+    linePercents,
+    lyeLabel,
+    previewSettings,
+    previewState.lines,
+    properties,
+    recipeName,
+    result,
+    settings.batchNotes,
+    splitLiquidGrams,
+    weightUnit,
+  ]);
 
   function updateLine(key: string, patch: Partial<RecipeLine>) {
     setLines((prev) =>
@@ -173,6 +243,39 @@ export default function App() {
   function handleNewRecipe() {
     discardDrafts();
     handleNew();
+  }
+
+  function handleLoadPreset(presetId: string) {
+    const preset = recipePresetById(presetId);
+    if (!preset) return;
+    if (
+      !window.confirm(
+        `Load preset “${preset.name}”? This replaces the current recipe oils, settings, and additives.`,
+      )
+    ) {
+      return;
+    }
+    discardDrafts();
+    const applied = applyRecipePreset(preset);
+    setRecipeName(applied.name);
+    setLines(applied.lines);
+    setAdditives(applied.additives);
+    setSettings(applied.settings);
+    setSelectedSavedId('');
+  }
+
+  function handleApplySuggestedOilGrams(oilGrams: number) {
+    const batchOilGrams = String(Math.round(oilGrams));
+    discardDrafts();
+    applySyncedUpdate((prev) => ({
+      lines: syncBatchTotalEdit(prev, batchOilGrams),
+      batchOilGrams,
+    }));
+  }
+
+  function handlePrintBatchSheet() {
+    if (!batchSheetData) return;
+    window.print();
   }
 
   function handleLoadRecipe(id: string) {
@@ -245,7 +348,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="header">
+      <header className="header no-print">
         <div className="header__brand">
           <h1>Soap Calc</h1>
           <p className="header__tagline">
@@ -274,6 +377,14 @@ export default function App() {
             </button>
             <button type="button" className="btn btn--ghost" onClick={handleExportCommitted}>
               Export
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={handlePrintBatchSheet}
+              disabled={!batchSheetData}
+            >
+              Print
             </button>
             <button
               type="button"
@@ -338,8 +449,11 @@ export default function App() {
         </div>
       </header>
 
-      <main className="layout">
-        <section className="panel">
+      <main className="layout no-print">
+        <div className="layout__primary">
+          <RecipePresetsPanel onLoadPreset={handleLoadPreset} />
+
+          <section className="panel">
           <div className="panel__head">
             <h2 className="panel__title">Recipe oils</h2>
             <button type="button" className="btn btn--ghost" onClick={addLine}>
@@ -466,6 +580,21 @@ export default function App() {
                 </div>
               );
             })}
+            <div
+              className={`recipe-table__foot${percentTotalOff || weightTotalOff ? ' recipe-table__foot--warn' : ''}`}
+              aria-live="polite"
+            >
+              <span>Total</span>
+              <span className="recipe-table__total-weight">
+                {lineTotals.totalWeightGrams > 0
+                  ? gramsStringToInputDisplay(String(Math.round(lineTotals.totalWeightGrams)), weightUnit)
+                  : '—'}
+              </span>
+              <span className="recipe-table__total-pct">
+                {lineTotals.totalPercent > 0 ? formatRecipePercentTotal(lineTotals.totalPercent) : '—'}
+              </span>
+              <span className="sr-only">Actions</span>
+            </div>
           </div>
         </section>
 
@@ -475,6 +604,7 @@ export default function App() {
           weightUnit={weightUnit}
           onChange={setAdditives}
         />
+        </div>
 
         <aside className="sidebar">
           <section className="panel">
@@ -621,6 +751,25 @@ export default function App() {
               weightUnit={weightUnit}
               onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
             />
+
+            <MoldSizerPanel
+              input={moldSizerInput}
+              weightUnit={weightUnit}
+              oilBatchFraction={liveOilBatchFraction}
+              onChange={setMoldSizerInput}
+              onApply={handleApplySuggestedOilGrams}
+            />
+
+            <label className="field">
+              <span>Process notes</span>
+              <textarea
+                className="input input--textarea"
+                rows={3}
+                placeholder="Trace notes, fragrance plan, cure reminders…"
+                value={settings.batchNotes}
+                onChange={(e) => setSettings((s) => ({ ...s, batchNotes: e.target.value }))}
+              />
+            </label>
           </section>
 
           <ResultsPanel
@@ -629,6 +778,7 @@ export default function App() {
             lyeLabel={lyeLabel}
             displayTotals={displayTotals}
             weightUnit={weightUnit}
+            waterMode={previewSettings.waterMode}
             splitLiquid={previewSettings.splitLiquid}
             splitLiquidGrams={splitLiquidGrams}
             additives={computedAdditives}
@@ -640,11 +790,13 @@ export default function App() {
         </aside>
       </main>
 
-      <footer className="footer">
+      <footer className="footer no-print">
         <p>
           SAP from public FNWL chart with ISO 3657 conversion. Always verify with batch testing.
         </p>
       </footer>
+
+      <BatchSheet data={batchSheetData} />
     </div>
   );
 }

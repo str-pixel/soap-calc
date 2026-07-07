@@ -38,6 +38,7 @@ export type RecipeSettings = {
   naohPurityPercent: string;
   kohPurityPercent: string;
   splitLiquid: SplitLiquidSettings;
+  batchNotes: string;
 };
 
 export function newLineKey(): string {
@@ -67,6 +68,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   naohPurityPercent: '100',
   kohPurityPercent: '90',
   splitLiquid: { ...DEFAULT_SPLIT_LIQUID },
+  batchNotes: '',
 };
 
 export function normalizeSplitLiquid(
@@ -94,6 +96,7 @@ export function normalizeSettings(
     ...DEFAULT_SETTINGS,
     ...partial,
     weightUnit,
+    batchNotes: typeof partial?.batchNotes === 'string' ? partial.batchNotes : '',
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
   };
 }

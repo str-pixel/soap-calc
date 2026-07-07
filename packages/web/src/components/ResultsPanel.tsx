@@ -1,4 +1,4 @@
-import type { LyeCalculationResult } from '@soap-calc/core';
+import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { ADDITIVE_STAGE_LABELS } from '@soap-calc/core';
 import { formatGrams } from '../lib/format';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
@@ -12,10 +12,22 @@ type ResultsPanelProps = {
   lyeLabel: string;
   displayTotals: RecipeDisplayTotals | null;
   weightUnit: WeightUnit;
+  waterMode?: WaterMode;
   splitLiquid?: SplitLiquidSettings;
   splitLiquidGrams?: number | null;
   additives?: ComputedAdditive[];
 };
+
+function waterFootnote(
+  waterMode: WaterMode | undefined,
+  excludedOilWeightGrams: number,
+): string | null {
+  if (excludedOilWeightGrams <= 0) return null;
+  if (waterMode === 'percent_of_oils') {
+    return ' (from total oil weight, including oils excluded from lye)';
+  }
+  return ' (from saponifiable oils)';
+}
 
 export function ResultsPanel({
   result,
@@ -23,6 +35,7 @@ export function ResultsPanel({
   lyeLabel,
   displayTotals,
   weightUnit,
+  waterMode,
   splitLiquid,
   splitLiquidGrams = null,
   additives = [],
@@ -49,6 +62,13 @@ export function ResultsPanel({
     displayTotals?.batchWeightGrams ?? result.totalBatchWeightGrams;
   const excludedOilWeightGrams = displayTotals?.excludedFromLyeOilWeightGrams ?? 0;
   const isEmpty = recipeOilWeightGrams <= 0;
+  const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
+  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0);
+  const batchWeightWithExtras = batchWeightGrams + extrasGrams;
+  const waterNote = waterFootnote(waterMode, excludedOilWeightGrams);
+  const showTotalLiquid =
+    splitLiquid?.enabled && splitLiquidGrams !== null && splitLiquidGrams > 0;
+  const totalLiquidGrams = result.waterWeightGrams + (splitLiquidGrams ?? 0);
 
   return (
     <section className="panel panel--results" aria-live="polite">
@@ -81,9 +101,7 @@ export function ResultsPanel({
             <dt>Water</dt>
             <dd>
               {formatWeight(result.waterWeightGrams, weightUnit)}
-              {excludedOilWeightGrams > 0 && (
-                <span className="results-excluded"> (from saponifiable oils)</span>
-              )}
+              {waterNote && <span className="results-excluded">{waterNote}</span>}
             </dd>
           </div>
           <div className="results-grid__item">
@@ -100,7 +118,15 @@ export function ResultsPanel({
           </div>
           <div className="results-grid__item">
             <dt>Batch weight</dt>
-            <dd>{formatWeight(batchWeightGrams, weightUnit)}</dd>
+            <dd>
+              {formatWeight(batchWeightWithExtras, weightUnit)}
+              {extrasGrams > 0 && (
+                <span className="results-excluded">
+                  {' '}
+                  (includes additives{splitLiquidGrams ? ' and alternative liquid' : ''})
+                </span>
+              )}
+            </dd>
           </div>
           <div className="results-grid__item">
             <dt>Lye concentration</dt>
@@ -110,6 +136,15 @@ export function ResultsPanel({
             <dt>Water : lye</dt>
             <dd>{formatGrams(result.waterLyeRatio, 2)} : 1</dd>
           </div>
+          {showTotalLiquid && (
+            <div className="results-grid__item">
+              <dt>Total liquid</dt>
+              <dd>
+                {formatWeight(totalLiquidGrams, weightUnit)}
+                <span className="results-excluded"> (water + alternative liquid)</span>
+              </dd>
+            </div>
+          )}
           {splitLiquid?.enabled && splitLiquidGrams !== null && (
             <div className="results-grid__item">
               <dt>{splitLiquid.name.trim() || 'Alternative liquid'}</dt>
