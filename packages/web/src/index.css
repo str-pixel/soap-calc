@@ -154,12 +154,6 @@ select {
   min-width: 6rem;
 }
 
-.field--checkbox input[type='checkbox'] {
-  width: 1rem;
-  height: 1rem;
-  margin: 0;
-}
-
 .properties-coverage {
   margin: 0 0 0.85rem;
   font-size: 0.85rem;
@@ -324,34 +318,6 @@ select {
 .message-list__item--warn {
   background: var(--warn-bg);
   color: var(--warn);
-}
-
-.property-bars__track {
-  position: relative;
-  height: 0.55rem;
-  border-radius: 999px;
-  background: var(--surface-2);
-  overflow: hidden;
-}
-
-.property-bars__fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
-}
-
-.property-bars__guide {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgb(28 25 23 / 18%);
-  transform: translateX(-50%);
-}
-
-.property-bars__guide--high {
-  background: rgb(28 25 23 / 28%);
 }
 
 .layout {

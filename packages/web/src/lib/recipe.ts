@@ -22,7 +22,6 @@ export type RecipeSettings = {
   lyeWaterRatio: string;
   naohPurityPercent: string;
   kohPurityPercent: string;
-  showSpecialtyOils: boolean;
 };
 
 export function newLineKey(): string {
@@ -40,7 +39,6 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   lyeWaterRatio: '2',
   naohPurityPercent: '100',
   kohPurityPercent: '90',
-  showSpecialtyOils: false,
 };
 
 export function normalizeSettings(

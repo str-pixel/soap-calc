@@ -361,17 +361,10 @@ export default function App() {
                 onChange={(e) => handleBatchChange(e.target.value)}
                 onBlur={(e) => debouncer.flush(batchInputId, () => commitBatchInput(e.target.value))}
               />
-            <label className="field field--inline field--checkbox">
-              <input
-                type="checkbox"
-                checked={settings.showSpecialtyOils}
-                onChange={(e) =>
-                  setSettings((s) => ({ ...s, showSpecialtyOils: e.target.checked }))
-                }
-              />
-              <span>Show specialty ingredients</span>
             </label>
           </div>
+
+          <div className="recipe-table">
             <div className="recipe-table__head">
               <span>Oil</span>
               <span>Weight ({weightUnitConfig.short})</span>
@@ -390,7 +383,6 @@ export default function App() {
                     <OilPicker
                       value={line.oilId}
                       onChange={(oilId) => updateLine(line.key, { oilId })}
-                      includeSpecialty={settings.showSpecialtyOils}
                     />
                     {showTar && (
                       <label className="tar-treatment">
