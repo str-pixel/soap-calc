@@ -1,9 +1,11 @@
 import { useMemo, useRef } from 'react';
+import { AdditivesPanel } from './components/AdditivesPanel';
 import { OilPicker } from './components/OilPicker';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { ResultsPanel } from './components/ResultsPanel';
+import { SplitLiquidPanel } from './components/SplitLiquidPanel';
 import { useDebouncedCommit } from './hooks/useDebouncedCommit';
 import { useDraftInputs } from './hooks/useDraftInputs';
 import { useRecipeAutosave } from './hooks/useRecipeAutosave';
@@ -13,6 +15,7 @@ import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeProperties } from './hooks/useRecipeProperties';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { commitDrafts } from './lib/commitDrafts';
+import { computeRecipeAdditives, computeSplitLiquidGrams } from './lib/calculateAdditives';
 import {
   addRecipeLine,
   resyncFromWeights,
@@ -43,6 +46,8 @@ export default function App() {
     setRecipeName,
     lines,
     setLines,
+    additives,
+    setAdditives,
     settings,
     setSettings,
     savedRecipes,
@@ -81,11 +86,20 @@ export default function App() {
     [previewState.lines],
   );
   const previewSettings = usePreviewSettings(settings, previewState.batchOilGrams);
-  useRecipeAutosave(recipeName, previewState.lines, previewSettings);
+  useRecipeAutosave(recipeName, previewState.lines, previewSettings, additives);
   const { result, inputErrors, displayTotals } = useRecipeCalculation(
     previewState.lines,
     previewSettings,
   );
+  const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? result?.totalOilWeightGrams ?? 0;
+  const computedAdditives = useMemo(
+    () => computeRecipeAdditives(additives, totalOilGrams),
+    [additives, totalOilGrams],
+  );
+  const splitLiquidGrams =
+    previewSettings.splitLiquid.enabled
+      ? computeSplitLiquidGrams(previewSettings.splitLiquid.percentOfOil, totalOilGrams)
+      : null;
   const { properties, indexes } = useRecipeProperties(previewState.lines, previewSettings);
   const { fattyAcids, insights } = useFormulationInsights(
     previewState.lines,
@@ -143,6 +157,7 @@ export default function App() {
     handleSave({
       lines: synced.lines,
       settings: { ...settings, batchOilGrams: synced.batchOilGrams },
+      additives,
     });
   }
 
@@ -151,6 +166,7 @@ export default function App() {
     handleExport({
       lines: synced.lines,
       settings: { ...settings, batchOilGrams: synced.batchOilGrams },
+      additives,
     });
   }
 
@@ -453,6 +469,13 @@ export default function App() {
           </div>
         </section>
 
+        <AdditivesPanel
+          additives={additives}
+          totalOilGrams={totalOilGrams}
+          weightUnit={weightUnit}
+          onChange={setAdditives}
+        />
+
         <aside className="sidebar">
           <section className="panel">
             <h2 className="panel__title">Settings</h2>
@@ -591,6 +614,13 @@ export default function App() {
                 </label>
               )}
             </div>
+
+            <SplitLiquidPanel
+              splitLiquid={settings.splitLiquid}
+              totalOilGrams={totalOilGrams}
+              weightUnit={weightUnit}
+              onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
+            />
           </section>
 
           <ResultsPanel
@@ -599,6 +629,9 @@ export default function App() {
             lyeLabel={lyeLabel}
             displayTotals={displayTotals}
             weightUnit={weightUnit}
+            splitLiquid={previewSettings.splitLiquid}
+            splitLiquidGrams={splitLiquidGrams}
+            additives={computedAdditives}
           />
 
           <PropertiesPanel result={properties} indexes={indexes} />

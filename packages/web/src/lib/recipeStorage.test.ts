@@ -46,12 +46,22 @@ describe('recipeStorage', () => {
       { key: 'a', oilId: 'olive-oil', weightGrams: '500' },
       { key: 'b', oilId: 'coconut-oil-76', weightGrams: '500' },
     ];
+    const additives = [
+      {
+        key: 'x',
+        catalogId: 'honey',
+        name: 'Honey',
+        percentOfOil: '1',
+        addAt: 'trace' as const,
+      },
+    ];
 
-    saveDraft('My batch', lines, DEFAULT_SETTINGS);
+    saveDraft('My batch', lines, DEFAULT_SETTINGS, additives);
     const draft = loadDraft();
 
     expect(draft?.name).toBe('My batch');
     expect(draft?.lines).toHaveLength(2);
+    expect(draft?.additives).toHaveLength(1);
     expect(draft?.settings.superfatPercent).toBe('5');
   });
 
@@ -80,6 +90,7 @@ describe('recipeStorage', () => {
     const draft = loadDraft();
     expect(draft?.settings.waterMode).toBe('percent_of_oils');
     expect(draft?.settings.weightUnit).toBe('g');
+    expect(draft?.settings.splitLiquid.enabled).toBe(false);
     expect(normalizeSettings({ superfatPercent: '8' }).lyeConcentrationPercent).toBe('33.33');
   });
 

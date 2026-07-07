@@ -5,3 +5,4 @@ export * from './property-display.js';
 export * from './formulation-guide.js';
 export * from './fatty-acids.js';
 export * from './insights.js';
+export * from './additives.js';

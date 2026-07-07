@@ -1,7 +1,9 @@
 import type { LyeCalculationResult } from '@soap-calc/core';
+import { ADDITIVE_STAGE_LABELS } from '@soap-calc/core';
 import { formatGrams } from '../lib/format';
+import type { ComputedAdditive } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
-import type { WeightUnit } from '../lib/recipe';
+import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
 import { formatWeight } from '../lib/weightUnits';
 
 type ResultsPanelProps = {
@@ -10,6 +12,9 @@ type ResultsPanelProps = {
   lyeLabel: string;
   displayTotals: RecipeDisplayTotals | null;
   weightUnit: WeightUnit;
+  splitLiquid?: SplitLiquidSettings;
+  splitLiquidGrams?: number | null;
+  additives?: ComputedAdditive[];
 };
 
 export function ResultsPanel({
@@ -18,6 +23,9 @@ export function ResultsPanel({
   lyeLabel,
   displayTotals,
   weightUnit,
+  splitLiquid,
+  splitLiquidGrams = null,
+  additives = [],
 }: ResultsPanelProps) {
   if (inputErrors.length) {
     return (
@@ -102,6 +110,34 @@ export function ResultsPanel({
             <dt>Water : lye</dt>
             <dd>{formatGrams(result.waterLyeRatio, 2)} : 1</dd>
           </div>
+          {splitLiquid?.enabled && splitLiquidGrams !== null && (
+            <div className="results-grid__item">
+              <dt>{splitLiquid.name.trim() || 'Alternative liquid'}</dt>
+              <dd>
+                {formatWeight(splitLiquidGrams, weightUnit)}
+                <span className="results-excluded">
+                  {' '}
+                  ({ADDITIVE_STAGE_LABELS[splitLiquid.addAt]})
+                </span>
+              </dd>
+            </div>
+          )}
+        </dl>
+      )}
+
+      {!isEmpty && additives.length > 0 && (
+        <dl className="results-additives" aria-label="Additive amounts">
+          {additives.map((item) => (
+            <div key={item.key}>
+              <dt>
+                {item.name} ({formatGrams(item.percentOfOil, 1)}% of oil)
+              </dt>
+              <dd>
+                {formatWeight(item.grams, weightUnit)}
+                <span className="results-excluded"> · {ADDITIVE_STAGE_LABELS[item.addAt]}</span>
+              </dd>
+            </div>
+          ))}
         </dl>
       )}
 
