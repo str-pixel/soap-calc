@@ -387,6 +387,11 @@ select {
   color: var(--text-muted);
 }
 
+.recipe-table__pct:has(.input) {
+  padding-top: 0;
+  color: inherit;
+}
+
 .recipe-table__oil {
   display: flex;
   flex-direction: column;

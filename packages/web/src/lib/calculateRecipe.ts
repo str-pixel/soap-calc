@@ -106,8 +106,7 @@ export function calculateRecipe(
   for (const row of resolved.lines) {
     if (row.weightError) {
       const label = oilById(row.line.oilId)?.displayName ?? row.line.oilId;
-      const detail = row.weightError === 'Invalid percent' ? 'percent' : 'weight';
-      inputErrors.push(`Invalid ${detail} for ${label}`);
+      inputErrors.push(`Invalid weight for ${label}`);
     }
   }
 

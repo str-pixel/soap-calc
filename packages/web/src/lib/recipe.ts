@@ -1,6 +1,7 @@
 import type { TarLyeTreatment, WaterMode } from '@soap-calc/core';
+import { isWeightUnit, type WeightUnit } from './weightUnits';
 
-export type EntryMode = 'grams' | 'percent';
+export type { WeightUnit };
 
 export type RecipeLine = {
   key: string;
@@ -11,7 +12,7 @@ export type RecipeLine = {
 };
 
 export type RecipeSettings = {
-  entryMode: EntryMode;
+  weightUnit: WeightUnit;
   batchOilGrams: string;
   superfatPercent: string;
   lyeType: 'naoh' | 'koh';
@@ -28,7 +29,7 @@ export function newLineKey(): string {
 }
 
 export const DEFAULT_SETTINGS: RecipeSettings = {
-  entryMode: 'grams',
+  weightUnit: 'g',
   batchOilGrams: '1000',
   superfatPercent: '5',
   lyeType: 'naoh',
@@ -43,7 +44,24 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
 export function normalizeSettings(
   partial: Partial<RecipeSettings> | null | undefined,
 ): RecipeSettings {
-  return { ...DEFAULT_SETTINGS, ...partial };
+  const weightUnit = isWeightUnit(partial?.weightUnit)
+    ? partial.weightUnit
+    : DEFAULT_SETTINGS.weightUnit;
+  return { ...DEFAULT_SETTINGS, ...partial, weightUnit };
+}
+
+export function migrateRecipeLines(
+  lines: RecipeLine[],
+  settings: Pick<RecipeSettings, 'batchOilGrams'>,
+): RecipeLine[] {
+  const batch = Number(settings.batchOilGrams);
+  if (!Number.isFinite(batch) || batch <= 0) return lines;
+  return lines.map((line) => {
+    if (line.weightGrams !== '' || !line.weightPercent) return line;
+    const pct = Number(line.weightPercent);
+    if (!Number.isFinite(pct) || pct <= 0) return line;
+    return { ...line, weightGrams: String(Math.round((batch * pct) / 100)) };
+  });
 }
 
 export function createStarterLines(): RecipeLine[] {

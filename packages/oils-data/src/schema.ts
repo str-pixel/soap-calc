@@ -13,7 +13,7 @@ export const OilCategory = z.enum([
 export const DataSource = z.enum([
   'fnwl',
   'ldg',
-  'legacy_soapee',
+  'legacy_catalog',
   'cosing',
   'supplier_coa',
   'iso_derived',

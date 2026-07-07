@@ -1,15 +1,37 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { OilPicker } from './components/OilPicker';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { ResultsPanel } from './components/ResultsPanel';
+import { useDebouncedCommit } from './hooks/useDebouncedCommit';
+import { useDraftInputs } from './hooks/useDraftInputs';
 import { useRecipeCalculation } from './hooks/useRecipeCalculation';
+import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeProperties } from './hooks/useRecipeProperties';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
-import { convertEntryMode } from './lib/entryMode';
-import { formatGrams } from './lib/format';
+import { commitDrafts } from './lib/commitDrafts';
+import {
+  addRecipeLine,
+  resyncFromWeights,
+  syncBatchTotalEdit,
+  syncPercentEdit,
+  syncWeightEdit,
+  type SyncedRecipe,
+} from './lib/lineWeightSync';
 import { isTarOil, oilById } from './lib/oils';
-import { newLineKey, type EntryMode, type RecipeLine } from './lib/recipe';
-import { resolveLineWeights } from './lib/resolveLineWeights';
+import { newLineKey, type RecipeLine, type WeightUnit } from './lib/recipe';
+import {
+  previewPercentDisplay,
+  previewWeightDisplay,
+  usePreviewRecipeState,
+  usePreviewSettings,
+} from './lib/recipePreview';
+import {
+  gramsStringToInputDisplay,
+  parseInputDisplayToGrams,
+  parsePercentInput,
+  WEIGHT_UNITS,
+  WEIGHT_UNIT_OPTIONS,
+} from './lib/weightUnits';
 
 export default function App() {
   const {
@@ -32,15 +54,35 @@ export default function App() {
   } = useRecipeStorage();
 
   const importInputRef = useRef<HTMLInputElement>(null);
-
-  const { result, inputErrors, linePercents, displayTotals } = useRecipeCalculation(
+  const { getDraft, setDraft, clearDraft, clearAllDrafts, drafts } = useDraftInputs();
+  const debouncer = useDebouncedCommit();
+  const { applySynced, applySyncedUpdate, linesRef, batchRef } = useRecipeEditor(
     lines,
-    settings,
+    settings.batchOilGrams,
+    setLines,
+    setSettings,
   );
-  const { properties, indexes } = useRecipeProperties(lines, settings);
-  const resolved = resolveLineWeights(lines, settings);
+  const weightUnit = settings.weightUnit;
+  const weightUnitConfig = WEIGHT_UNITS[weightUnit];
+  const batchInputId = 'batch-total';
+
+  const previewState = usePreviewRecipeState(
+    lines,
+    settings.batchOilGrams,
+    drafts,
+    weightUnit,
+  );
+  const previewLineByKey = useMemo(
+    () => Object.fromEntries(previewState.lines.map((line) => [line.key, line])),
+    [previewState.lines],
+  );
+  const previewSettings = usePreviewSettings(settings, previewState.batchOilGrams);
+  const { result, inputErrors, displayTotals } = useRecipeCalculation(
+    previewState.lines,
+    previewSettings,
+  );
+  const { properties, indexes } = useRecipeProperties(previewState.lines, previewSettings);
   const lyeLabel = settings.lyeType === 'naoh' ? 'NaOH' : 'KOH';
-  const isPercentMode = settings.entryMode === 'percent';
 
   function updateLine(key: string, patch: Partial<RecipeLine>) {
     setLines((prev) =>
@@ -62,21 +104,111 @@ export default function App() {
     );
   }
 
-  function setEntryMode(entryMode: EntryMode) {
-    const converted = convertEntryMode(lines, settings, entryMode);
-    setLines(converted.lines);
-    setSettings(converted.settings);
+  function weightInputId(key: string): string {
+    return `weight-${key}`;
+  }
+
+  function percentInputId(key: string): string {
+    return `percent-${key}`;
+  }
+
+  function flushCommittedDrafts(): SyncedRecipe {
+    debouncer.cancelAll();
+    const synced = commitDrafts(linesRef.current, batchRef.current, drafts, weightUnit);
+    if (Object.keys(drafts).length > 0) {
+      clearAllDrafts();
+      applySynced(synced);
+    }
+    return synced;
+  }
+
+  function discardDrafts() {
+    debouncer.cancelAll();
+    clearAllDrafts();
+  }
+
+  function handleSaveCommitted() {
+    const synced = flushCommittedDrafts();
+    handleSave({
+      lines: synced.lines,
+      settings: { ...settings, batchOilGrams: synced.batchOilGrams },
+    });
+  }
+
+  function handleExportCommitted() {
+    const synced = flushCommittedDrafts();
+    handleExport({
+      lines: synced.lines,
+      settings: { ...settings, batchOilGrams: synced.batchOilGrams },
+    });
+  }
+
+  function handleNewRecipe() {
+    discardDrafts();
+    handleNew();
+  }
+
+  function handleLoadRecipe(id: string) {
+    discardDrafts();
+    handleLoad(id);
+  }
+
+  function commitWeightInput(key: string, displayValue: string) {
+    const weightGrams = parseInputDisplayToGrams(displayValue, weightUnit);
+    clearDraft(weightInputId(key));
+    if (weightGrams === null) return;
+
+    applySyncedUpdate((prev, batchOilGrams) =>
+      syncWeightEdit(prev, key, weightGrams, batchOilGrams),
+    );
+  }
+
+  function commitPercentInput(key: string, displayValue: string) {
+    const weightPercent = parsePercentInput(displayValue);
+    clearDraft(percentInputId(key));
+    if (weightPercent === null) return;
+
+    applySyncedUpdate((prev, batchOilGrams) =>
+      syncPercentEdit(prev, key, weightPercent, batchOilGrams),
+    );
+  }
+
+  function commitBatchInput(displayValue: string) {
+    const batchOilGrams = parseInputDisplayToGrams(displayValue, weightUnit);
+    clearDraft(batchInputId);
+    if (batchOilGrams === null) return;
+
+    applySyncedUpdate((prev) => ({
+      lines: syncBatchTotalEdit(prev, batchOilGrams),
+      batchOilGrams,
+    }));
+  }
+
+  function handleWeightChange(key: string, displayValue: string) {
+    setDraft(weightInputId(key), displayValue);
+  }
+
+  function handleBatchChange(displayValue: string) {
+    setDraft(batchInputId, displayValue);
+  }
+
+  function setWeightUnit(nextUnit: WeightUnit) {
+    debouncer.cancelAll();
+    clearAllDrafts();
+    setSettings((s) => ({ ...s, weightUnit: nextUnit }));
   }
 
   function addLine() {
-    setLines((prev) => [
-      ...prev,
-      { key: newLineKey(), oilId: 'olive-oil', weightGrams: '', weightPercent: '' },
-    ]);
+    const newLine = { key: newLineKey(), oilId: 'olive-oil', weightGrams: '', weightPercent: '' };
+    applySyncedUpdate((prev, batchOilGrams) => addRecipeLine(prev, batchOilGrams, newLine));
   }
 
   function removeLine(key: string) {
-    setLines((prev) => (prev.length <= 1 ? prev : prev.filter((l) => l.key !== key)));
+    if (lines.length <= 1) return;
+    applySyncedUpdate((prev) => resyncFromWeights(prev.filter((line) => line.key !== key)));
+    clearDraft(weightInputId(key));
+    clearDraft(percentInputId(key));
+    debouncer.cancel(weightInputId(key));
   }
 
   return (
@@ -102,13 +234,13 @@ export default function App() {
           </label>
 
           <div className="recipe-toolbar__actions">
-            <button type="button" className="btn btn--ghost" onClick={handleNew}>
+            <button type="button" className="btn btn--ghost" onClick={handleNewRecipe}>
               New
             </button>
-            <button type="button" className="btn" onClick={handleSave}>
+            <button type="button" className="btn" onClick={handleSaveCommitted}>
               Save
             </button>
-            <button type="button" className="btn btn--ghost" onClick={handleExport}>
+            <button type="button" className="btn btn--ghost" onClick={handleExportCommitted}>
               Export
             </button>
             <button
@@ -125,7 +257,10 @@ export default function App() {
               className="sr-only"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleImportFile(file);
+                if (file) {
+                  discardDrafts();
+                  handleImportFile(file);
+                }
                 e.target.value = '';
               }}
             />
@@ -148,7 +283,7 @@ export default function App() {
             <button
               type="button"
               className="btn btn--ghost"
-              onClick={() => handleLoad(selectedSavedId)}
+              onClick={() => handleLoadRecipe(selectedSavedId)}
               disabled={!selectedSavedId}
             >
               Load
@@ -182,46 +317,49 @@ export default function App() {
 
           <div className="recipe-entry-bar">
             <label className="field field--inline">
-              <span>Entry</span>
+              <span>Weight unit</span>
               <select
                 className="input"
-                value={settings.entryMode}
-                onChange={(e) => setEntryMode(e.target.value as EntryMode)}
+                value={weightUnit}
+                onChange={(e) => setWeightUnit(e.target.value as WeightUnit)}
               >
-                <option value="grams">Grams</option>
-                <option value="percent">Percent</option>
+                {WEIGHT_UNIT_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label} ({option.short})
+                  </option>
+                ))}
               </select>
             </label>
 
-            {isPercentMode && (
-              <label className="field field--inline">
-                <span>Total oil (g)</span>
-                <input
-                  type="number"
-                  className="input input--number"
-                  min={1}
-                  step={1}
-                  value={settings.batchOilGrams}
-                  onChange={(e) =>
-                    setSettings((s) => ({ ...s, batchOilGrams: e.target.value }))
-                  }
-                />
-              </label>
-            )}
+            <label className="field field--inline">
+              <span>Total oil ({weightUnitConfig.short})</span>
+              <input
+                type="number"
+                className="input input--number"
+                min={0}
+                step={weightUnitConfig.inputStep}
+                value={getDraft(
+                  batchInputId,
+                  gramsStringToInputDisplay(previewState.batchOilGrams, weightUnit),
+                )}
+                onChange={(e) => handleBatchChange(e.target.value)}
+                onBlur={(e) => debouncer.flush(batchInputId, () => commitBatchInput(e.target.value))}
+              />
+            </label>
           </div>
 
           <div className="recipe-table" aria-label="Recipe oils">
             <div className="recipe-table__head">
               <span>Oil</span>
-              <span>{isPercentMode ? '%' : 'Weight (g)'}</span>
-              <span>{isPercentMode ? 'Weight (g)' : '%'}</span>
+              <span>Weight ({weightUnitConfig.short})</span>
+              <span>%</span>
               <span className="sr-only">Actions</span>
             </div>
 
             {lines.map((line) => {
               const oil = oilById(line.oilId);
               const showTar = isTarOil(oil);
-              const row = resolved.lines.find((r) => r.line.key === line.key);
+              const previewLine = previewLineByKey[line.key];
 
               return (
                 <div key={line.key} className="recipe-table__row">
@@ -248,37 +386,39 @@ export default function App() {
                     )}
                   </div>
                   <div>
-                    {isPercentMode ? (
-                      <input
-                        type="number"
-                        className="input input--number"
-                        min={0}
-                        max={100}
-                        step={0.1}
-                        value={line.weightPercent ?? ''}
-                        onChange={(e) =>
-                          updateLine(line.key, { weightPercent: e.target.value })
-                        }
-                        aria-label="Oil percent"
-                      />
-                    ) : (
-                      <input
-                        type="number"
-                        className="input input--number"
-                        min={0}
-                        step={1}
-                        value={line.weightGrams}
-                        onChange={(e) =>
-                          updateLine(line.key, { weightGrams: e.target.value })
-                        }
-                        aria-label="Weight in grams"
-                      />
-                    )}
+                    <input
+                      type="number"
+                      className="input input--number"
+                      min={0}
+                      step={weightUnitConfig.inputStep}
+                      value={getDraft(
+                        weightInputId(line.key),
+                        previewWeightDisplay(line, previewLine, weightUnit),
+                      )}
+                      onChange={(e) => handleWeightChange(line.key, e.target.value)}
+                      onBlur={(e) =>
+                        debouncer.flush(weightInputId(line.key), () =>
+                          commitWeightInput(line.key, e.target.value),
+                        )
+                      }
+                      aria-label={`Weight in ${weightUnitConfig.short}`}
+                    />
                   </div>
                   <div className="recipe-table__pct">
-                    {isPercentMode
-                      ? `${formatGrams(row?.weightGrams ?? 0, 0)} g`
-                      : `${formatGrams(linePercents.get(line.key) ?? 0, 1)}%`}
+                    <input
+                      type="number"
+                      className="input input--number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={getDraft(
+                        percentInputId(line.key),
+                        previewPercentDisplay(line, previewLine),
+                      )}
+                      onChange={(e) => setDraft(percentInputId(line.key), e.target.value)}
+                      onBlur={(e) => commitPercentInput(line.key, e.target.value)}
+                      aria-label="Oil percent"
+                    />
                   </div>
                   <div>
                     <button
@@ -442,6 +582,7 @@ export default function App() {
             inputErrors={inputErrors}
             lyeLabel={lyeLabel}
             displayTotals={displayTotals}
+            weightUnit={weightUnit}
           />
 
           <PropertiesPanel result={properties} indexes={indexes} />

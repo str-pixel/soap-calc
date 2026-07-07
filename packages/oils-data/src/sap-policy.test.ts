@@ -14,7 +14,7 @@ describe('resolvePrimarySap', () => {
     const r = resolvePrimarySap(0.186, 0.173);
     expect(r.strategy).toBe('conservative_blend');
     expect(r.sapKoh).toBe(0.186);
-    expect(r.primarySource).toBe('legacy_soapee');
+    expect(r.primarySource).toBe('legacy_catalog');
     expect(r.confidence).toBe('estimated');
   });
 
@@ -29,7 +29,7 @@ describe('resolvePrimarySap', () => {
     const r = resolvePrimarySap(0.247, 0.203);
     expect(r.strategy).toBe('legacy_retained');
     expect(r.sapKoh).toBe(0.247);
-    expect(r.primarySource).toBe('legacy_soapee');
+    expect(r.primarySource).toBe('legacy_catalog');
     expect(r.confidence).toBe('legacy_only');
   });
 

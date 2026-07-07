@@ -79,7 +79,7 @@ describe('recipeStorage', () => {
     saveDraft('Legacy', lines, { superfatPercent: '8', lyeType: 'naoh' } as never);
     const draft = loadDraft();
     expect(draft?.settings.waterMode).toBe('percent_of_oils');
-    expect(draft?.settings.entryMode).toBe('grams');
+    expect(draft?.settings.weightUnit).toBe('g');
     expect(normalizeSettings({ superfatPercent: '8' }).lyeConcentrationPercent).toBe('33.33');
   });
 

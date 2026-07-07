@@ -27,7 +27,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../../..');
 const fnwlPath = join(__dirname, '../sources/fnwl-sapon.txt');
 const fnwlInciPath = join(__dirname, '../sources/fnwl-inci.txt');
-const legacyPath = join(root, 'oils.json');
+const legacyPath = join(root, 'soap_oils.json');
 const supplementalPath = join(__dirname, '../sources/supplemental-oils.json');
 const outPath = join(__dirname, '../data/canonical-oils.json');
 const litePath = join(__dirname, '../data/canonical-oils-lite.json');
@@ -100,13 +100,13 @@ function main() {
 
     const legacySapNaoh = sapKohToSapNaoh(leg.sap);
     const sources: CanonicalOil['sources'] = [{
-      source: 'legacy_soapee',
+      source: 'legacy_catalog',
       sapKoh: leg.sap,
       sapNaoh: legacySapNaoh,
-      notes: 'Imported from oils.json (Soapee/SoapCalc lineage)',
+      notes: 'Imported from soap_oils.json (legacy calculator catalog)',
     }];
 
-    let primarySource: DataSource = 'legacy_soapee';
+    let primarySource: DataSource = 'legacy_catalog';
     let confidence: CanonicalOil['confidence'] = 'legacy_only';
     let sapKoh = leg.sap;
     let sapNaoh = legacySapNaoh;

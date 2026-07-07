@@ -37,7 +37,7 @@ export const SOAP_PROPERTY_LABELS: Record<SoapPropertyName, string> = {
   creamy: 'Creamy lather',
 };
 
-/** Typical useful range for bar-soap property bars (SoapCalc lineage). */
+/** Typical useful range for bar-soap property bars (common CP calculator convention). */
 export const SOAP_PROPERTY_GUIDE: Record<SoapPropertyName, { low: number; high: number }> = {
   bubbly: { low: 14, high: 46 },
   cleansing: { low: 12, high: 22 },

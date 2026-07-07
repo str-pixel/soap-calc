@@ -94,34 +94,14 @@ describe('calculateRecipe', () => {
     expect(result!.waterWeightGrams).toBeCloseTo(result!.lyeWeightGrams * 2.5, 0);
   });
 
-  it('calculates from percent entry mode', () => {
+  it('calculates from synced weight and percent values', () => {
     const lines = [
-      { key: 'a', oilId: 'olive-oil', weightGrams: '', weightPercent: '70' },
-      { key: 'b', oilId: 'coconut-oil-76', weightGrams: '', weightPercent: '30' },
+      { key: 'a', oilId: 'olive-oil', weightGrams: '700', weightPercent: '70' },
+      { key: 'b', oilId: 'coconut-oil-76', weightGrams: '300', weightPercent: '30' },
     ];
-    const { result, displayTotals } = calculateRecipe(lines, {
-      ...DEFAULT_SETTINGS,
-      entryMode: 'percent',
-      batchOilGrams: '1000',
-    });
+    const { result, displayTotals } = calculateRecipe(lines, DEFAULT_SETTINGS);
     expect(result!.totalOilWeightGrams).toBe(1000);
     expect(displayTotals!.recipeOilWeightGrams).toBe(1000);
     expect(result!.lyeWeightGrams).toBeGreaterThan(0);
-  });
-
-  it('rejects percent entry mode when oil percentages do not total 100', () => {
-    const lines = [
-      { key: 'a', oilId: 'olive-oil', weightGrams: '', weightPercent: '50' },
-      { key: 'b', oilId: 'coconut-oil-76', weightGrams: '', weightPercent: '40' },
-    ];
-    const { inputErrors, result, displayTotals } = calculateRecipe(lines, {
-      ...DEFAULT_SETTINGS,
-      entryMode: 'percent',
-      batchOilGrams: '1000',
-    });
-
-    expect(inputErrors).toContain('Oil percentages must total 100%');
-    expect(result).toBeNull();
-    expect(displayTotals).toBeNull();
   });
 });

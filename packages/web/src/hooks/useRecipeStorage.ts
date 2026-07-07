@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   createStarterLines,
   DEFAULT_SETTINGS,
+  migrateRecipeLines,
   normalizeSettings,
   type RecipeLine,
   type RecipeSettings,
@@ -27,11 +28,12 @@ const AUTOSAVE_MS = 500;
 
 export function useRecipeStorage() {
   const draft = loadDraft();
+  const initialSettings = normalizeSettings(draft?.settings);
   const [recipeName, setRecipeName] = useState(draft?.name ?? 'Starter recipe');
-  const [lines, setLines] = useState<RecipeLine[]>(draft?.lines ?? createStarterLines());
-  const [settings, setSettings] = useState<RecipeSettings>(
-    normalizeSettings(draft?.settings),
+  const [lines, setLines] = useState<RecipeLine[]>(
+    migrateRecipeLines(draft?.lines ?? createStarterLines(), initialSettings),
   );
+  const [settings, setSettings] = useState<RecipeSettings>(initialSettings);
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(listSavedRecipes);
   const [selectedSavedId, setSelectedSavedId] = useState('');
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -60,8 +62,10 @@ export function useRecipeStorage() {
     messageTimer.current = setTimeout(() => setSaveMessage(null), 2000);
   }
 
-  function handleSave() {
-    const saved = saveNamedRecipe(recipeName, lines, settings);
+  function handleSave(override?: { lines: RecipeLine[]; settings: RecipeSettings }) {
+    const linesToSave = override?.lines ?? lines;
+    const settingsToSave = override?.settings ?? settings;
+    const saved = saveNamedRecipe(recipeName, linesToSave, settingsToSave);
     setRecipeName(saved.name);
     setSelectedSavedId(saved.id);
     setSavedRecipes(listSavedRecipes());
@@ -72,8 +76,8 @@ export function useRecipeStorage() {
     if (!id) return;
     const recipe = loadSavedRecipe(id);
     if (!recipe) return;
-    const loadedLines = linesFromSaved(recipe.lines);
     const loadedSettings = normalizeSettings(recipe.settings);
+    const loadedLines = migrateRecipeLines(linesFromSaved(recipe.lines), loadedSettings);
     setRecipeName(recipe.name);
     setLines(loadedLines);
     setSettings(loadedSettings);
@@ -103,8 +107,10 @@ export function useRecipeStorage() {
     setSettings({ ...DEFAULT_SETTINGS });
   }
 
-  function handleExport() {
-    downloadRecipeFile(serializeRecipeFile(recipeName, lines, settings));
+  function handleExport(override?: { lines: RecipeLine[]; settings: RecipeSettings }) {
+    const linesToExport = override?.lines ?? lines;
+    const settingsToExport = override?.settings ?? settings;
+    downloadRecipeFile(serializeRecipeFile(recipeName, linesToExport, settingsToExport));
     flashSaveMessage('Recipe exported');
   }
 
@@ -117,8 +123,11 @@ export function useRecipeStorage() {
           flashSaveMessage(parsed.error);
           return;
         }
-        const importedLines = recipeLinesFromFile(parsed.data.lines);
         const importedSettings = normalizeSettings(parsed.data.settings);
+        const importedLines = migrateRecipeLines(
+          recipeLinesFromFile(parsed.data.lines),
+          importedSettings,
+        );
         setRecipeName(parsed.data.name);
         setLines(importedLines);
         setSettings(importedSettings);

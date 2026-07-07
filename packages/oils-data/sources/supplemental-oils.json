@@ -20,12 +20,12 @@
       "sources": [
         {
           "source": "manual",
-          "notes": "No published birch tar SAP in FNWL, SoapCalc, or ISO sources; proxy coefficient from pine tar for acid neutralization estimate"
+          "notes": "No published birch tar SAP in FNWL or ISO sources; proxy coefficient from pine tar for acid neutralization estimate"
         },
         {
           "source": "manual",
           "sapKoh": 0.06,
-          "notes": "Pine tar reference entry: Pine Tar, lye calc only no FA (SoapCalc lineage)"
+          "notes": "Pine tar reference entry: lye calc only, no fatty-acid profile (legacy catalog)"
         }
       ]
     }

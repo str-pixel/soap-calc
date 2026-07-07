@@ -14,7 +14,7 @@ Oil SAP values are built from **public reference tables**, not scraped calculato
 | [EU CosIng](https://ec.europa.eu/growth/tools-databases/cosing/) | INCI validation via FNWL INCI chart → local glossary index |
 | Supplier COA | Batch-specific overrides (planned) |
 
-Legacy fatty-acid profiles come from `oils.json` (calculator reference data).
+Legacy fatty-acid profiles come from `soap_oils.json` (calculator reference data).
 
 ## Packages
 
@@ -60,6 +60,10 @@ Build: `npm run build:oils && npm run build -w @soap-calc/web` · Start: `serve 
 
 The oils build fetches FNWL `sapon.txt` automatically when the cached source file is missing (`ensure:fnwl`). Commit `packages/oils-data/sources/fnwl-sapon.txt` for reproducible offline builds.
 
-## Reference code
+## Local archives
 
-`soapee.open-main/` and `soapee-ui-master/` are archived reference implementations only — not used in production.
+Third-party reference code and research books are kept outside this repository:
+
+`/Users/str/soap-calc-archive/`
+
+They are not used in production builds or tests.

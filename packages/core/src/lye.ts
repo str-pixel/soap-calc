@@ -1,5 +1,3 @@
-import { KOH_TO_NAOH_FACTOR } from './sap.js';
-
 export type LyeType = 'naoh' | 'koh';
 
 /** For tar / acid-neutralization oils: include in lye math or add at trace only. */
@@ -276,5 +274,3 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
   };
 }
 
-/** @internal exposed for tests documenting Soapee parity factor */
-export const SOAPEE_NAOH_FACTOR = KOH_TO_NAOH_FACTOR;

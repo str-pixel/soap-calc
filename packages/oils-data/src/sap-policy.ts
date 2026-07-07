@@ -6,7 +6,7 @@ export const DISPUTED_DELTA_PCT = 10;
 export type SapResolution = {
   sapKoh: number;
   sapNaoh: number;
-  primarySource: 'fnwl' | 'legacy_soapee';
+  primarySource: 'fnwl' | 'legacy_catalog';
   confidence: 'verified' | 'estimated' | 'legacy_only';
   deltaPct: number;
   strategy: 'fnwl_agrees' | 'conservative_blend' | 'legacy_retained' | 'fnwl_preferred';
@@ -42,7 +42,7 @@ export function resolvePrimarySap(legacySapKoh: number, fnwlSapKoh: number): Sap
     return {
       sapKoh,
       sapNaoh: sapKohToSapNaoh(sapKoh),
-      primarySource: fnwlSapKoh >= legacySapKoh ? 'fnwl' : 'legacy_soapee',
+      primarySource: fnwlSapKoh >= legacySapKoh ? 'fnwl' : 'legacy_catalog',
       confidence: 'estimated',
       deltaPct,
       strategy: 'conservative_blend',
@@ -54,7 +54,7 @@ export function resolvePrimarySap(legacySapKoh: number, fnwlSapKoh: number): Sap
   return {
     sapKoh,
     sapNaoh: sapKohToSapNaoh(sapKoh),
-    primarySource: usingFnwl ? 'fnwl' : 'legacy_soapee',
+    primarySource: usingFnwl ? 'fnwl' : 'legacy_catalog',
     confidence: usingFnwl ? 'estimated' : 'legacy_only',
     deltaPct,
     strategy: usingFnwl ? 'fnwl_preferred' : 'legacy_retained',

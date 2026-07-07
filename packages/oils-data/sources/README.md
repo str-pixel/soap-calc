@@ -33,6 +33,6 @@ Run `npm run build:oils` after fetching sources to regenerate `data/canonical-oi
 
 ## Supplemental oils (`supplemental-oils.json`)
 
-Manual entries for ingredients **not** in SoapCalc/`oils.json` (e.g. birch tar). Merged at build time after the legacy catalog. Use `primarySource: manual`, document proxy SAP in `sources`, and set `sapRole: acid_neutralization` for wood tars.
+Manual entries for ingredients **not** in `soap_oils.json` (e.g. birch tar). Merged at build time after the legacy catalog. Use `primarySource: manual`, document proxy SAP in `sources`, and set `sapRole: acid_neutralization` for wood tars.
 
 Build also emits `data/canonical-oils-lite.json` for the web client (SAP fields, INCI when available, plus fatty-acid profiles when available).

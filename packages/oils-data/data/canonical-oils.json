@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-07T15:13:02.166Z",
+  "generatedAt": "2026-07-07T19:03:41.583Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -49,13 +49,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.168,
           "sapNaoh": 0.11978609625668449,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -80,13 +80,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -110,10 +110,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -165,13 +165,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.24,
           "sapNaoh": 0.1711229946524064,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -195,13 +195,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -225,10 +225,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -280,10 +280,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.191,
           "sapNaoh": 0.13618538324420676,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -334,13 +334,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.187,
           "sapNaoh": 0.13333333333333333,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -365,10 +365,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -426,10 +426,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.245,
           "sapNaoh": 0.1746880570409982,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -482,10 +482,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.2,
           "sapNaoh": 0.14260249554367202,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -517,7 +517,7 @@
           "notes": "FNWL differs by 5.0%; using higher SAP for lye safety"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "estimated"
     },
     {
@@ -536,13 +536,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.094,
           "sapNaoh": 0.06702317290552584,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -568,10 +568,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -622,13 +622,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -654,10 +654,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -708,10 +708,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -763,13 +763,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.172,
           "sapNaoh": 0.12263814616755792,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -795,10 +795,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.223,
           "sapNaoh": 0.1590017825311943,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -849,13 +849,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -879,13 +879,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -905,10 +905,10 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.044,
           "sapNaoh": 0.03137254901960784,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -963,10 +963,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -993,7 +993,7 @@
           "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "estimated"
     },
     {
@@ -1018,10 +1018,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1048,7 +1048,7 @@
           "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "estimated"
     },
     {
@@ -1071,13 +1071,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.144,
           "sapNaoh": 0.10267379679144384,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1101,10 +1101,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.18,
           "sapNaoh": 0.1283422459893048,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1155,13 +1155,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1185,13 +1185,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1216,13 +1216,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1246,13 +1246,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1279,10 +1279,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.257,
           "sapNaoh": 0.18324420677361852,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1335,10 +1335,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.257,
           "sapNaoh": 0.18324420677361852,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1389,10 +1389,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.325,
           "sapNaoh": 0.23172905525846701,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1449,13 +1449,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.185,
           "sapNaoh": 0.1319073083778966,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1479,13 +1479,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.18,
           "sapNaoh": 0.1283422459893048,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1511,13 +1511,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.205,
           "sapNaoh": 0.1461675579322638,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1542,10 +1542,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1591,10 +1591,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1640,13 +1640,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1671,13 +1671,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1701,13 +1701,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1732,10 +1732,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1791,13 +1791,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1821,13 +1821,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1850,10 +1850,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1905,10 +1905,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -1961,13 +1961,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.227,
           "sapNaoh": 0.16185383244206772,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -1991,13 +1991,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2022,10 +2022,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.181,
           "sapNaoh": 0.12905525846702315,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -2082,10 +2082,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -2137,10 +2137,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -2192,13 +2192,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.196,
           "sapNaoh": 0.13975044563279856,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2221,13 +2221,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.185,
           "sapNaoh": 0.1319073083778966,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2251,13 +2251,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.215,
           "sapNaoh": 0.1532976827094474,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2281,13 +2281,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2308,13 +2308,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.092,
           "sapNaoh": 0.06559714795008913,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2339,10 +2339,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.183,
           "sapNaoh": 0.13048128342245988,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -2392,13 +2392,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2422,13 +2422,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.191,
           "sapNaoh": 0.13618538324420676,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2454,10 +2454,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.189,
           "sapNaoh": 0.13475935828877006,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -2502,13 +2502,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.106,
           "sapNaoh": 0.07557932263814617,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2529,13 +2529,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.247,
           "sapNaoh": 0.1761140819964349,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2560,13 +2560,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.198,
           "sapNaoh": 0.1411764705882353,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2593,13 +2593,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.198,
           "sapNaoh": 0.1411764705882353,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2621,13 +2621,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.28,
           "sapNaoh": 0.19964349376114082,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2652,13 +2652,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2682,13 +2682,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.187,
           "sapNaoh": 0.13333333333333333,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2714,13 +2714,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2745,10 +2745,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -2800,13 +2800,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.198,
           "sapNaoh": 0.1411764705882353,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2830,13 +2830,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.191,
           "sapNaoh": 0.13618538324420676,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2861,13 +2861,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2892,10 +2892,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -2944,13 +2944,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.169,
           "sapNaoh": 0.12049910873440285,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -2977,13 +2977,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.227,
           "sapNaoh": 0.16185383244206772,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3007,13 +3007,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.196,
           "sapNaoh": 0.13975044563279856,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3032,13 +3032,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.196,
           "sapNaoh": 0.13975044563279856,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3064,10 +3064,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.255,
           "sapNaoh": 0.18181818181818182,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3118,10 +3118,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3171,13 +3171,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3204,10 +3204,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.275,
           "sapNaoh": 0.19607843137254902,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3239,7 +3239,7 @@
           "notes": "FNWL differs by 8.0%; using higher SAP for lye safety"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "estimated"
     },
     {
@@ -3264,10 +3264,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.173,
           "sapNaoh": 0.12335115864527628,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3307,13 +3307,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.18,
           "sapNaoh": 0.1283422459893048,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3338,13 +3338,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3368,13 +3368,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.1624,
           "sapNaoh": 0.11579322638146167,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3398,13 +3398,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3425,13 +3425,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.202,
           "sapNaoh": 0.14402852049910875,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3457,10 +3457,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3511,13 +3511,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3544,13 +3544,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.1946,
           "sapNaoh": 0.13875222816399285,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3577,10 +3577,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.247,
           "sapNaoh": 0.1761140819964349,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3610,7 +3610,7 @@
           "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3636,10 +3636,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.247,
           "sapNaoh": 0.1761140819964349,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3669,7 +3669,7 @@
           "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3695,10 +3695,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.199,
           "sapNaoh": 0.14188948306595364,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3749,13 +3749,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.199,
           "sapNaoh": 0.14188948306595364,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3776,13 +3776,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.215,
           "sapNaoh": 0.1532976827094474,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3807,13 +3807,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.2,
           "sapNaoh": 0.14260249554367202,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3837,13 +3837,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.158,
           "sapNaoh": 0.11265597147950089,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3868,13 +3868,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.183,
           "sapNaoh": 0.13048128342245988,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3899,13 +3899,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.2,
           "sapNaoh": 0.14260249554367202,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -3931,10 +3931,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.191,
           "sapNaoh": 0.13618538324420676,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -3984,10 +3984,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4033,13 +4033,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4065,10 +4065,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4115,13 +4115,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.06,
           "sapNaoh": 0.0427807486631016,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4145,13 +4145,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4174,13 +4174,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4206,10 +4206,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4261,10 +4261,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4294,7 +4294,7 @@
           "notes": "FNWL SAP differs by 16.0% (>10%); legacy SAP retained for lye safety"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4321,13 +4321,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.175,
           "sapNaoh": 0.124777183600713,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4352,10 +4352,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4407,13 +4407,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.201,
           "sapNaoh": 0.14331550802139037,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4438,13 +4438,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.175,
           "sapNaoh": 0.124777183600713,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4469,10 +4469,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.187,
           "sapNaoh": 0.13333333333333333,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4523,13 +4523,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.199,
           "sapNaoh": 0.14188948306595364,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4556,10 +4556,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.187,
           "sapNaoh": 0.13333333333333333,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4611,10 +4611,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.187,
           "sapNaoh": 0.13333333333333333,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4665,13 +4665,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4695,10 +4695,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4749,10 +4749,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -4802,13 +4802,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.185,
           "sapNaoh": 0.1319073083778966,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4837,13 +4837,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.185,
           "sapNaoh": 0.1319073083778966,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4870,13 +4870,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.23,
           "sapNaoh": 0.16399286987522282,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4903,13 +4903,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.22,
           "sapNaoh": 0.1568627450980392,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4934,13 +4934,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4964,13 +4964,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.183,
           "sapNaoh": 0.13048128342245988,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -4995,10 +4995,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5049,10 +5049,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.179,
           "sapNaoh": 0.12762923351158645,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5103,10 +5103,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.185,
           "sapNaoh": 0.1319073083778966,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5160,13 +5160,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.212,
           "sapNaoh": 0.15115864527629233,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5192,13 +5192,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.213,
           "sapNaoh": 0.15187165775401068,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5224,10 +5224,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.191,
           "sapNaoh": 0.13618538324420676,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5278,13 +5278,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.191,
           "sapNaoh": 0.13618538324420676,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5306,13 +5306,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5333,13 +5333,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.198,
           "sapNaoh": 0.1411764705882353,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5365,10 +5365,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.189,
           "sapNaoh": 0.13475935828877006,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5420,10 +5420,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.189,
           "sapNaoh": 0.13475935828877006,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5474,13 +5474,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.1946,
           "sapNaoh": 0.13875222816399285,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5507,10 +5507,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.2,
           "sapNaoh": 0.14260249554367202,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5557,13 +5557,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5589,13 +5589,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5621,13 +5621,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5652,13 +5652,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.208,
           "sapNaoh": 0.14830659536541888,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5682,13 +5682,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.238,
           "sapNaoh": 0.16969696969696968,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5715,13 +5715,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.198,
           "sapNaoh": 0.1411764705882353,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5746,10 +5746,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.189,
           "sapNaoh": 0.13475935828877006,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5801,10 +5801,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5854,13 +5854,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.183,
           "sapNaoh": 0.13048128342245988,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5886,10 +5886,10 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
           "source": "fnwl",
@@ -5939,13 +5939,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5964,13 +5964,13 @@
       "propertiesAvailable": false,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.087,
           "sapNaoh": 0.06203208556149732,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -5993,13 +5993,13 @@
       "propertiesAvailable": true,
       "sources": [
         {
-          "source": "legacy_soapee",
+          "source": "legacy_catalog",
           "sapKoh": 0.205,
           "sapNaoh": 0.1461675579322638,
-          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
-      "primarySource": "legacy_soapee",
+      "primarySource": "legacy_catalog",
       "confidence": "legacy_only"
     },
     {
@@ -6027,14 +6027,14 @@
       "sources": [
         {
           "source": "manual",
-          "notes": "No published birch tar SAP in FNWL, SoapCalc, or ISO sources; proxy coefficient from pine tar for acid neutralization estimate",
+          "notes": "No published birch tar SAP in FNWL or ISO sources; proxy coefficient from pine tar for acid neutralization estimate",
           "sapKoh": 0.06,
           "sapNaoh": 0.0427807486631016
         },
         {
           "source": "manual",
           "sapKoh": 0.06,
-          "notes": "Pine tar reference entry: Pine Tar, lye calc only no FA (SoapCalc lineage)",
+          "notes": "Pine tar reference entry: lye calc only, no fatty-acid profile (legacy catalog)",
           "sapNaoh": 0.0427807486631016
         }
       ],

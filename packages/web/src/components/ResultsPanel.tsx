@@ -1,12 +1,15 @@
 import type { LyeCalculationResult } from '@soap-calc/core';
 import { formatGrams } from '../lib/format';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
+import type { WeightUnit } from '../lib/recipe';
+import { formatWeight } from '../lib/weightUnits';
 
 type ResultsPanelProps = {
   result: LyeCalculationResult | null;
   inputErrors: string[];
   lyeLabel: string;
   displayTotals: RecipeDisplayTotals | null;
+  weightUnit: WeightUnit;
 };
 
 export function ResultsPanel({
@@ -14,6 +17,7 @@ export function ResultsPanel({
   inputErrors,
   lyeLabel,
   displayTotals,
+  weightUnit,
 }: ResultsPanelProps) {
   if (inputErrors.length) {
     return (
@@ -59,7 +63,7 @@ export function ResultsPanel({
           <div className="results-grid__item results-grid__item--primary">
             <dt>{lyeLabel}</dt>
             <dd>
-              {formatGrams(result.lyeWeightGrams)} g
+              {formatWeight(result.lyeWeightGrams, weightUnit)}
               {hasLineErrors && (
                 <span className="results-partial"> (partial)</span>
               )}
@@ -68,7 +72,7 @@ export function ResultsPanel({
           <div className="results-grid__item">
             <dt>Water</dt>
             <dd>
-              {formatGrams(result.waterWeightGrams)} g
+              {formatWeight(result.waterWeightGrams, weightUnit)}
               {excludedOilWeightGrams > 0 && (
                 <span className="results-excluded"> (from saponifiable oils)</span>
               )}
@@ -77,18 +81,18 @@ export function ResultsPanel({
           <div className="results-grid__item">
             <dt>Oil weight</dt>
             <dd>
-              {formatGrams(recipeOilWeightGrams)} g
+              {formatWeight(recipeOilWeightGrams, weightUnit)}
               {excludedOilWeightGrams > 0 && (
                 <span className="results-excluded">
                   {' '}
-                  ({formatGrams(excludedOilWeightGrams)} g excluded from lye)
+                  ({formatWeight(excludedOilWeightGrams, weightUnit)} excluded from lye)
                 </span>
               )}
             </dd>
           </div>
           <div className="results-grid__item">
             <dt>Batch weight</dt>
-            <dd>{formatGrams(batchWeightGrams)} g</dd>
+            <dd>{formatWeight(batchWeightGrams, weightUnit)}</dd>
           </div>
           <div className="results-grid__item">
             <dt>Lye concentration</dt>

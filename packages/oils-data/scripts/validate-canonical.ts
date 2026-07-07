@@ -14,14 +14,14 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataPath = join(__dirname, '../data/canonical-oils.json');
 
-/** Golden SAP values for high-risk oils (SoapCalc lineage). */
+/** Golden SAP values for high-risk oils (legacy catalog). */
 const GOLDEN_SAP_KOH: Record<string, number> = {
   'palm-kernel-oil': 0.247,
   'coconut-oil-76': 0.257,
   'olive-oil': 0.19,
 };
 
-/** Proxy SAP values — estimated, not SoapCalc-verified. */
+/** Proxy SAP values — estimated, not legacy-catalog-verified. */
 const ESTIMATED_SAP_KOH: Record<string, number> = {
   'birch-tar': 0.06,
 };
@@ -47,7 +47,7 @@ function main() {
     const fnwlSource = oil.sources.find((s) => s.source === 'fnwl');
     const ldgSource = oil.sources.find((s) => s.source === 'ldg');
     const cosingSource = oil.sources.find((s) => s.source === 'cosing');
-    const legacySource = oil.sources.find((s) => s.source === 'legacy_soapee');
+    const legacySource = oil.sources.find((s) => s.source === 'legacy_catalog');
 
     if (fnwlSource?.sapKoh && legacySource?.sapKoh) {
       const delta = sapDeltaPercent(legacySource.sapKoh, fnwlSource.sapKoh);
@@ -141,10 +141,10 @@ function main() {
       }
     }
 
-    if (oil.primarySource === 'legacy_soapee' && fnwlSource?.sapKoh) {
+    if (oil.primarySource === 'legacy_catalog' && fnwlSource?.sapKoh) {
       if (Math.abs(oil.sapKoh - fnwlSource.sapKoh) < 0.0001) {
         if (Math.abs(fnwlSource.sapKoh - legacySource!.sapKoh!) > 0.0001) {
-          errors.push(`${oil.id}: primarySource legacy_soapee but sapKoh matches FNWL`);
+          errors.push(`${oil.id}: primarySource legacy_catalog but sapKoh matches FNWL`);
         }
       }
     }

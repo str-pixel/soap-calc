@@ -10,12 +10,10 @@ describe('calculatePropertiesForRecipe', () => {
     expect(result.properties!.hardness).toBeGreaterThan(0);
   });
 
-  it('works in percent entry mode', () => {
+  it('works with gram weights', () => {
     const result = calculatePropertiesForRecipe(
-      [
-        { key: 'a', oilId: 'olive-oil', weightGrams: '', weightPercent: '100' },
-      ],
-      { ...DEFAULT_SETTINGS, entryMode: 'percent', batchOilGrams: '1000' },
+      [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000', weightPercent: '100' }],
+      DEFAULT_SETTINGS,
     );
     expect(result.properties).not.toBeNull();
     expect(result.properties!.condition).toBeGreaterThan(50);

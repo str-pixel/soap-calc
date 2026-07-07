@@ -1,0 +1,39 @@
+import { describe, expect, it } from 'vitest';
+import {
+  formatWeight,
+  gramsStringToInputDisplay,
+  isCompleteNumericInput,
+  parseInputDisplayToGrams,
+  parsePercentInput,
+} from './weightUnits';
+
+describe('weightUnits', () => {
+  it('round-trips grams through ounces', () => {
+    expect(gramsStringToInputDisplay('454', 'oz')).toBe('16');
+    expect(parseInputDisplayToGrams('16', 'oz')).toBe('454');
+  });
+
+  it('formats pounds with a stable locale', () => {
+    expect(formatWeight(453.59237, 'lb')).toBe('1 lb');
+  });
+
+  it('treats incomplete decimal input as not committable', () => {
+    expect(isCompleteNumericInput('16.')).toBe(false);
+    expect(parseInputDisplayToGrams('16.', 'oz')).toBeNull();
+  });
+
+  it('rejects invalid numeric input on commit', () => {
+    expect(parseInputDisplayToGrams('abc', 'oz')).toBeNull();
+  });
+
+  it('returns empty string for zero', () => {
+    expect(parseInputDisplayToGrams('0', 'g')).toBe('');
+  });
+
+  it('validates percent input range', () => {
+    expect(parsePercentInput('50')).toBe('50');
+    expect(parsePercentInput('101')).toBeNull();
+    expect(parsePercentInput('abc')).toBeNull();
+    expect(parsePercentInput('36.')).toBeNull();
+  });
+});
