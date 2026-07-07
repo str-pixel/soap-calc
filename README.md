@@ -1,3 +1,3 @@
-# my-new-project
+# Soap Calc
 
-A new project created with Cursor and GitHub.
+A soap calculator project.
