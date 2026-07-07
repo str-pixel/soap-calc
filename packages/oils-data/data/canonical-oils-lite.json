@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-07T20:21:29.207Z",
+  "generatedAt": "2026-07-07T20:33:19.941Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -566,27 +566,6 @@
       }
     },
     {
-      "id": "chicken-fat",
-      "displayName": "Chicken Fat",
-      "aliases": [
-        "chicken fat"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.195,
-      "sapNaoh": 0.13903743315508021,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 69,
-      "ins": 130,
-      "fattyAcids": {
-        "oleic": 38,
-        "stearic": 7,
-        "linoleic": 21,
-        "myristic": 1,
-        "palmitic": 25
-      }
-    },
-    {
       "id": "cocoa-butter",
       "displayName": "Cocoa Butter",
       "aliases": [
@@ -807,47 +786,6 @@
       }
     },
     {
-      "id": "crisco-new-w-palm",
-      "displayName": "Crisco, new w/palm",
-      "aliases": [
-        "crisco new w palm"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.193,
-      "sapNaoh": 0.1376114081996435,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 111,
-      "ins": 82,
-      "fattyAcids": {
-        "oleic": 28,
-        "stearic": 5,
-        "linoleic": 40,
-        "palmitic": 20,
-        "linolenic": 6
-      }
-    },
-    {
-      "id": "crisco-old",
-      "displayName": "Crisco, old",
-      "aliases": [
-        "crisco old"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.192,
-      "sapNaoh": 0.13689839572192514,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 93,
-      "ins": 115,
-      "fattyAcids": {
-        "oleic": 18,
-        "stearic": 13,
-        "linoleic": 52,
-        "palmitic": 13
-      }
-    },
-    {
       "id": "cupuacu-butter",
       "displayName": "Cupuacu Butter",
       "aliases": [
@@ -866,48 +804,6 @@
         "stearic": 35,
         "linoleic": 2,
         "palmitic": 8
-      }
-    },
-    {
-      "id": "duck-fat-flesh-and-skin",
-      "displayName": "Duck Fat, flesh and skin",
-      "aliases": [
-        "duck fat flesh and skin"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.194,
-      "sapNaoh": 0.13832442067736184,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 72,
-      "ins": 122,
-      "fattyAcids": {
-        "oleic": 44,
-        "stearic": 9,
-        "linoleic": 13,
-        "myristic": 1,
-        "palmitic": 26,
-        "linolenic": 1
-      }
-    },
-    {
-      "id": "emu-oil",
-      "displayName": "Emu Oil",
-      "aliases": [
-        "emu oil"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.19,
-      "sapNaoh": 0.1354723707664884,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 60,
-      "ins": 128,
-      "fattyAcids": {
-        "oleic": 47,
-        "stearic": 9,
-        "linoleic": 8,
-        "palmitic": 23
       }
     },
     {
@@ -975,26 +871,6 @@
       }
     },
     {
-      "id": "goose-fat",
-      "displayName": "Goose Fat",
-      "aliases": [
-        "goose fat"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.192,
-      "sapNaoh": 0.13689839572192514,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 65,
-      "ins": 130,
-      "fattyAcids": {
-        "oleic": 54,
-        "stearic": 6,
-        "linoleic": 10,
-        "palmitic": 21
-      }
-    },
-    {
       "id": "grapeseed-oil",
       "displayName": "Grapeseed Oil",
       "aliases": [
@@ -1056,28 +932,6 @@
         "linoleic": 57,
         "palmitic": 6,
         "linolenic": 21
-      }
-    },
-    {
-      "id": "horse-oil",
-      "displayName": "Horse Oil",
-      "aliases": [
-        "horse oil"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.196,
-      "sapNaoh": 0.13975044563279856,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 79,
-      "ins": 117,
-      "fattyAcids": {
-        "oleic": 10,
-        "stearic": 5,
-        "linoleic": 20,
-        "myristic": 3,
-        "palmitic": 26,
-        "linolenic": 19
       }
     },
     {
@@ -1689,20 +1543,6 @@
       }
     },
     {
-      "id": "neatsfoot-oil",
-      "displayName": "Neatsfoot Oil",
-      "aliases": [
-        "neatsfoot oil"
-      ],
-      "category": "wax_ester",
-      "sapKoh": 0.18,
-      "sapNaoh": 0.1283422459893048,
-      "confidence": "legacy_only",
-      "propertiesAvailable": false,
-      "iodine": 90,
-      "ins": 90
-    },
-    {
       "id": "neem-seed-oil",
       "displayName": "Neem Seed Oil",
       "aliases": [
@@ -1823,29 +1663,6 @@
         "linoleic": 12,
         "palmitic": 14,
         "linolenic": 2
-      }
-    },
-    {
-      "id": "ostrich-oil",
-      "displayName": "Ostrich Oil",
-      "aliases": [
-        "ostrich oil"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.1946,
-      "sapNaoh": 0.13875222816399285,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 97,
-      "ins": 128,
-      "fattyAcids": {
-        "oleic": 37,
-        "lauric": 3,
-        "stearic": 6,
-        "linoleic": 17,
-        "myristic": 1,
-        "palmitic": 26,
-        "linolenic": 3
       }
     },
     {
@@ -2273,28 +2090,6 @@
       }
     },
     {
-      "id": "rabbit-fat",
-      "displayName": "Rabbit Fat",
-      "aliases": [
-        "rabbit fat"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.201,
-      "sapNaoh": 0.14331550802139037,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 85,
-      "ins": 116,
-      "fattyAcids": {
-        "oleic": 30,
-        "stearic": 6,
-        "linoleic": 20,
-        "myristic": 3,
-        "palmitic": 30,
-        "linolenic": 5
-      }
-    },
-    {
       "id": "rapeseed-oil-canola",
       "displayName": "Rapeseed Oil, unrefined canola",
       "aliases": [
@@ -2489,31 +2284,6 @@
       }
     },
     {
-      "id": "salmon-oil",
-      "displayName": "Salmon Oil",
-      "aliases": [
-        "salmon oil"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.185,
-      "sapNaoh": 0.1319073083778966,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 169,
-      "ins": 16,
-      "fattyAcids": {
-        "oleic": 23,
-        "erucic": 7,
-        "stearic": 3,
-        "linoleic": 2,
-        "myristic": 5,
-        "palmitic": 19,
-        "linolenic": 1,
-        "eicosenoic": 20,
-        "docosadienoic": 16
-      }
-    },
-    {
       "id": "saw-palmetto-extract",
       "displayName": "Saw Palmetto Extract",
       "aliases": [
@@ -2665,52 +2435,6 @@
         "stearic": 10,
         "linoleic": 11,
         "palmitic": 6
-      }
-    },
-    {
-      "id": "soapquick-conventional",
-      "displayName": "SoapQuick, conventional",
-      "aliases": [
-        "soapquick conventional"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.212,
-      "sapNaoh": 0.15115864527629233,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 59,
-      "ins": 153,
-      "fattyAcids": {
-        "oleic": 42,
-        "lauric": 13,
-        "stearic": 3,
-        "linoleic": 8,
-        "myristic": 6,
-        "palmitic": 17,
-        "linolenic": 1,
-        "ricinoleic": 5
-      }
-    },
-    {
-      "id": "soapquick",
-      "displayName": "SoapQuick, organic",
-      "aliases": [
-        "soapquick"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.213,
-      "sapNaoh": 0.15187165775401068,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 56,
-      "ins": 156,
-      "fattyAcids": {
-        "oleic": 45,
-        "lauric": 13,
-        "stearic": 3,
-        "linoleic": 10,
-        "myristic": 5,
-        "palmitic": 20
       }
     },
     {
@@ -2987,29 +2711,6 @@
         "lauric": 48,
         "myristic": 23,
         "palmitic": 6
-      }
-    },
-    {
-      "id": "walmart-gv-shortening-tallow-palm",
-      "displayName": "Walmart GV Shortening, tallow, palm",
-      "aliases": [
-        "walmart gv shortening tallow palm"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.198,
-      "sapNaoh": 0.1411764705882353,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 49,
-      "ins": 151,
-      "fattyAcids": {
-        "oleic": 37,
-        "lauric": 1,
-        "stearic": 14,
-        "linoleic": 6,
-        "myristic": 4,
-        "palmitic": 35,
-        "linolenic": 1
       }
     },
     {

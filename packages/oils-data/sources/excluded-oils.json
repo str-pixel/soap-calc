@@ -1,0 +1,19 @@
+{
+  "notes": "Legacy catalog entries removed from the calculator — commercial blends and niche animal fats without reliable public SAP/INCI data.",
+  "oilIds": [
+    "chicken-fat",
+    "crisco-new-w-palm",
+    "crisco-old",
+    "duck-fat-flesh-and-skin",
+    "emu-oil",
+    "goose-fat",
+    "horse-oil",
+    "neatsfoot-oil",
+    "ostrich-oil",
+    "rabbit-fat",
+    "salmon-oil",
+    "soapquick-conventional",
+    "soapquick",
+    "walmart-gv-shortening-tallow-palm"
+  ]
+}

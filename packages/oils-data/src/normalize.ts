@@ -89,7 +89,6 @@ export const WAX_ESTER_OIL_IDS = new Set([
   'abyssinian-oil',
   'jojoba-oil-a-liquid-wax-ester',
   'mink-oil',
-  'neatsfoot-oil',
 ]);
 
 export function inferCategory(

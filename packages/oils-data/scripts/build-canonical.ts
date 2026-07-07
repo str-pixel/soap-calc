@@ -31,6 +31,7 @@ const fnwlInciPath = join(__dirname, '../sources/fnwl-inci.txt');
 const legacyPath = join(root, 'soap_oils.json');
 const supplementalPath = join(__dirname, '../sources/supplemental-oils.json');
 const supplementalInciPath = join(__dirname, '../sources/supplemental-inci.json');
+const excludedOilsPath = join(__dirname, '../sources/excluded-oils.json');
 const outPath = join(__dirname, '../data/canonical-oils.json');
 const litePath = join(__dirname, '../data/canonical-oils-lite.json');
 const reportPath = join(__dirname, '../data/build-report.json');
@@ -86,14 +87,27 @@ function main() {
     inciSupplemental: [] as string[],
     duplicates: [] as string[],
     supplemental: [] as string[],
+    excluded: [] as string[],
   };
+
+  const excludedOilIds = new Set<string>(
+    existsSync(excludedOilsPath)
+      ? ((JSON.parse(readFileSync(excludedOilsPath, 'utf8')) as { oilIds: string[] }).oilIds ?? [])
+      : [],
+  );
 
   const oils: CanonicalOil[] = [];
   const usedSlugs = new Set<string>();
 
   for (const leg of legacy.oils) {
+    const canonicalSlug = slugify(leg.name);
+    if (excludedOilIds.has(canonicalSlug)) {
+      report.excluded.push(leg.name);
+      continue;
+    }
+
     const fnwl = findFnwlMatch(leg.name, fnwlIndex);
-    let baseSlug = slugify(leg.name);
+    let baseSlug = canonicalSlug;
     if (usedSlugs.has(baseSlug)) {
       baseSlug = `${baseSlug}-${leg.id}`;
       report.duplicates.push(leg.name);
@@ -357,6 +371,7 @@ function main() {
   console.log(`  INCI supplemental/fallback: ${report.inciSupplemental.length}`);
   console.log(`  INCI missing product map: ${report.inciMissing.length}`);
   console.log(`  Supplemental oils: ${report.supplemental.length}`);
+  console.log(`  Excluded from catalog: ${report.excluded.length}`);
 }
 
 main();

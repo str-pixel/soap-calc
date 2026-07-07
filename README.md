@@ -45,7 +45,7 @@ npm run build:web    # packages/web/dist
 npm test
 ```
 
-Output: `packages/oils-data/data/canonical-oils.json` — 151 oils with per-field source provenance.  
+Output: `packages/oils-data/data/canonical-oils.json` — oils with per-field source provenance (see `sources/excluded-oils.json` for omitted legacy entries).  
 Client bundle uses `canonical-oils-lite.json` (slim fields only).
 
 ## Deploy (Railway)

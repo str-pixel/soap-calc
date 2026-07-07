@@ -331,18 +331,6 @@
       "updated_at": null
     },
     {
-      "id": 28,
-      "name": "Chicken Fat",
-      "version": 1,
-      "iodine": 69,
-      "ins": 130,
-      "sap": 0.195,
-      "total_saponifiable": 92,
-      "breakdown": "{\"oleic\": 38, \"stearic\": 7, \"linoleic\": 21, \"myristic\": 1, \"palmitic\": 25}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
       "id": 29,
       "name": "Cocoa Butter",
       "version": 1,
@@ -467,30 +455,6 @@
       "updated_at": null
     },
     {
-      "id": 39,
-      "name": "Crisco, new w/palm",
-      "version": 1,
-      "iodine": 111,
-      "ins": 82,
-      "sap": 0.193,
-      "total_saponifiable": 99,
-      "breakdown": "{\"oleic\": 28, \"stearic\": 5, \"linoleic\": 40, \"palmitic\": 20, \"linolenic\": 6}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 40,
-      "name": "Crisco, old",
-      "version": 1,
-      "iodine": 93,
-      "ins": 115,
-      "sap": 0.192,
-      "total_saponifiable": 96,
-      "breakdown": "{\"oleic\": 18, \"stearic\": 13, \"linoleic\": 52, \"palmitic\": 13}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
       "id": 41,
       "name": "Cupuacu Butter",
       "version": 1,
@@ -499,30 +463,6 @@
       "sap": 0.192,
       "total_saponifiable": 87,
       "breakdown": "{\"oleic\": 42, \"stearic\": 35, \"linoleic\": 2, \"palmitic\": 8}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 42,
-      "name": "Duck Fat, flesh and skin",
-      "version": 1,
-      "iodine": 72,
-      "ins": 122,
-      "sap": 0.194,
-      "total_saponifiable": 94,
-      "breakdown": "{\"oleic\": 44, \"stearic\": 9, \"linoleic\": 13, \"myristic\": 1, \"palmitic\": 26, \"linolenic\": 1}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 43,
-      "name": "Emu Oil",
-      "version": 1,
-      "iodine": 60,
-      "ins": 128,
-      "sap": 0.19,
-      "total_saponifiable": 87,
-      "breakdown": "{\"oleic\": 47, \"stearic\": 9, \"linoleic\": 8, \"palmitic\": 23}",
       "created_at": null,
       "updated_at": null
     },
@@ -563,18 +503,6 @@
       "updated_at": null
     },
     {
-      "id": 47,
-      "name": "Goose Fat",
-      "version": 1,
-      "iodine": 65,
-      "ins": 130,
-      "sap": 0.192,
-      "total_saponifiable": 91,
-      "breakdown": "{\"oleic\": 54, \"stearic\": 6, \"linoleic\": 10, \"palmitic\": 21}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
       "id": 48,
       "name": "Grapeseed Oil",
       "version": 1,
@@ -608,18 +536,6 @@
       "sap": 0.193,
       "total_saponifiable": 98,
       "breakdown": "{\"oleic\": 12, \"stearic\": 2, \"linoleic\": 57, \"palmitic\": 6, \"linolenic\": 21}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 51,
-      "name": "Horse Oil",
-      "version": 1,
-      "iodine": 79,
-      "ins": 117,
-      "sap": 0.196,
-      "total_saponifiable": 83,
-      "breakdown": "{\"oleic\": 10, \"stearic\": 5, \"linoleic\": 20, \"myristic\": 3, \"palmitic\": 26, \"linolenic\": 19}",
       "created_at": null,
       "updated_at": null
     },
@@ -985,18 +901,6 @@
       "updated_at": null
     },
     {
-      "id": 82,
-      "name": "Neatsfoot Oil",
-      "version": 1,
-      "iodine": 90,
-      "ins": 90,
-      "sap": 0.18,
-      "total_saponifiable": 0,
-      "breakdown": "{}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
       "id": 83,
       "name": "Neem Seed Oil",
       "version": 1,
@@ -1067,18 +971,6 @@
       "sap": 0.188,
       "total_saponifiable": 100,
       "breakdown": "{\"oleic\": 69, \"stearic\": 3, \"linoleic\": 12, \"palmitic\": 14, \"linolenic\": 2}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 89,
-      "name": "Ostrich Oil",
-      "version": 1,
-      "iodine": 97,
-      "ins": 128,
-      "sap": 0.1946,
-      "total_saponifiable": 93,
-      "breakdown": "{\"oleic\": 37, \"lauric\": 3, \"stearic\": 6, \"linoleic\": 17, \"myristic\": 1, \"palmitic\": 26, \"linolenic\": 3}",
       "created_at": null,
       "updated_at": null
     },
@@ -1324,18 +1216,6 @@
       "updated_at": null
     },
     {
-      "id": 110,
-      "name": "Rabbit Fat",
-      "version": 1,
-      "iodine": 85,
-      "ins": 116,
-      "sap": 0.201,
-      "total_saponifiable": 94,
-      "breakdown": "{\"oleic\": 30, \"stearic\": 6, \"linoleic\": 20, \"myristic\": 3, \"palmitic\": 30, \"linolenic\": 5}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
       "id": 111,
       "name": "Rapeseed Oil, unrefined canola",
       "version": 1,
@@ -1445,18 +1325,6 @@
       "updated_at": null
     },
     {
-      "id": 120,
-      "name": "Salmon Oil",
-      "version": 1,
-      "iodine": 169,
-      "ins": 16,
-      "sap": 0.185,
-      "total_saponifiable": 96,
-      "breakdown": "{\"oleic\": 23, \"erucic\": 7, \"stearic\": 3, \"linoleic\": 2, \"myristic\": 5, \"palmitic\": 19, \"linolenic\": 1, \"eicosenoic\": 20, \"docosadienoic\": 16}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
       "id": 121,
       "name": "Saw Palmetto Extract",
       "version": 1,
@@ -1538,30 +1406,6 @@
       "sap": 0.185,
       "total_saponifiable": 100,
       "breakdown": "{\"oleic\": 73, \"stearic\": 10, \"linoleic\": 11, \"palmitic\": 6}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 128,
-      "name": "SoapQuick, conventional",
-      "version": 1,
-      "iodine": 59,
-      "ins": 153,
-      "sap": 0.212,
-      "total_saponifiable": 95,
-      "breakdown": "{\"oleic\": 42, \"lauric\": 13, \"stearic\": 3, \"linoleic\": 8, \"myristic\": 6, \"palmitic\": 17, \"linolenic\": 1, \"ricinoleic\": 5}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 129,
-      "name": "SoapQuick, organic",
-      "version": 1,
-      "iodine": 56,
-      "ins": 156,
-      "sap": 0.213,
-      "total_saponifiable": 96,
-      "breakdown": "{\"oleic\": 45, \"lauric\": 13, \"stearic\": 3, \"linoleic\": 10, \"myristic\": 5, \"palmitic\": 20}",
       "created_at": null,
       "updated_at": null
     },
@@ -1722,18 +1566,6 @@
       "sap": 0.238,
       "total_saponifiable": 90,
       "breakdown": "{\"oleic\": 13, \"lauric\": 48, \"myristic\": 23, \"palmitic\": 6}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 144,
-      "name": "Walmart GV Shortening, tallow, palm",
-      "version": 1,
-      "iodine": 49,
-      "ins": 151,
-      "sap": 0.198,
-      "total_saponifiable": 98,
-      "breakdown": "{\"oleic\": 37, \"lauric\": 1, \"stearic\": 14, \"linoleic\": 6, \"myristic\": 4, \"palmitic\": 35, \"linolenic\": 1}",
       "created_at": null,
       "updated_at": null
     },
