@@ -1,0 +1,6045 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-07-07T14:01:47.304Z",
+  "methodology": {
+    "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
+    "references": [
+      {
+        "name": "From Nature With Love — Saponification Chart",
+        "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+        "role": "Primary SAP cross-check (mg KOH/g, public table)"
+      },
+      {
+        "name": "LDG International — Saponification Chart",
+        "url": "https://www.ldg.international/saponification-chart/",
+        "role": "Secondary SAP cross-check (same methodology as FNWL)"
+      },
+      {
+        "name": "ISO 3657:2023",
+        "url": "https://www.iso.org/standard/85171.html",
+        "role": "Lab titration methodology for mg KOH/g (supplier COA format)"
+      },
+      {
+        "name": "EU CosIng Database",
+        "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+        "role": "INCI name validation (regulatory, public)"
+      }
+    ]
+  },
+  "oils": [
+    {
+      "id": "abyssinian-oil",
+      "displayName": "Abyssinian Oil",
+      "aliases": [
+        "abyssinian oil"
+      ],
+      "category": "wax_ester",
+      "sapKoh": 0.168,
+      "sapNaoh": 0.11978609625668449,
+      "sapMgKohPerGram": 168,
+      "iodine": 98,
+      "ins": 70,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 2,
+        "linoleic": 11,
+        "palmitic": 3,
+        "linolenic": 4
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.168,
+          "sapNaoh": 0.11978609625668449,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "almond-butter",
+      "displayName": "Almond Butter",
+      "aliases": [
+        "almond butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 70,
+      "ins": 118,
+      "fattyAcids": {
+        "oleic": 58,
+        "stearic": 15,
+        "linoleic": 16,
+        "myristic": 1,
+        "palmitic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "almond-oil-sweet",
+      "displayName": "Almond Oil, sweet",
+      "aliases": [
+        "almond oil sweet"
+      ],
+      "inciName": "Prunus Amygdalus Dulcis (Sweet Almond) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
+      "iodine": 99,
+      "ins": 97,
+      "fattyAcids": {
+        "oleic": 71,
+        "linoleic": 18,
+        "palmitic": 7
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 195,
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "FNWL chart entry: Almond Oil, Sweet"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 195,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Prunus Amygdalus Dulcis (Sweet Almond) Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "aloe-butter",
+      "displayName": "Aloe Butter",
+      "aliases": [
+        "aloe butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.24,
+      "sapNaoh": 0.1711229946524064,
+      "sapMgKohPerGram": 240,
+      "iodine": 9,
+      "ins": 241,
+      "fattyAcids": {
+        "oleic": 7,
+        "lauric": 45,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 18,
+        "palmitic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.24,
+          "sapNaoh": 0.1711229946524064,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "andiroba-oil-karaba-crabwood",
+      "displayName": "Andiroba Oil,karaba,crabwood",
+      "aliases": [
+        "andiroba oil karaba crabwood"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 68,
+      "ins": 120,
+      "fattyAcids": {
+        "oleic": 51,
+        "stearic": 8,
+        "linoleic": 9,
+        "palmitic": 28
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "apricot-kernal-oil",
+      "displayName": "Apricot Kernal Oil",
+      "aliases": [
+        "apricot kernal oil"
+      ],
+      "inciName": "Prunus Armeniaca (Apricot) Kernel Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 100,
+      "ins": 91,
+      "fattyAcids": {
+        "oleic": 66,
+        "linoleic": 27,
+        "palmitic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Apricot Kernel Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Prunus Armeniaca (Apricot) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "argan-oil",
+      "displayName": "Argan Oil",
+      "aliases": [
+        "argan oil"
+      ],
+      "inciName": "Argania Spinosa (Argan) Kernel Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 95,
+      "ins": 95,
+      "fattyAcids": {
+        "oleic": 46,
+        "linoleic": 34,
+        "myristic": 1,
+        "palmitic": 14,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Argan Oil, Virgin Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Argania Spinosa (Argan) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "avocado-butter",
+      "displayName": "Avocado butter",
+      "aliases": [
+        "avocado butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.187,
+      "sapNaoh": 0.13333333333333333,
+      "sapMgKohPerGram": 187,
+      "iodine": 67,
+      "ins": 120,
+      "fattyAcids": {
+        "oleic": 53,
+        "stearic": 10,
+        "linoleic": 6,
+        "palmitic": 21,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.187,
+          "sapNaoh": 0.13333333333333333,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "avocado-oil",
+      "displayName": "Avocado Oil",
+      "aliases": [
+        "avocado oil"
+      ],
+      "inciName": "Persea Gratissima (Avocado) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.202,
+      "sapNaoh": 0.14402852049910875,
+      "sapMgKohPerGram": 202,
+      "iodine": 86,
+      "ins": 99,
+      "fattyAcids": {
+        "oleic": 58,
+        "stearic": 2,
+        "linoleic": 12,
+        "palmitic": 20
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.186,
+          "sapNaoh": 0.13262032085561495,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 177,
+          "mgKohPerGramMax": 226,
+          "mgKohPerGram": 201.5,
+          "sapKoh": 0.202,
+          "sapNaoh": 0.14402852049910875,
+          "notes": "FNWL chart entry: Avocado Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 201.5,
+          "mgKohPerGramMin": 177,
+          "mgKohPerGramMax": 226,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.202,
+          "sapNaoh": 0.14402852049910875,
+          "notes": "FNWL differs by 8.6%; using higher SAP for lye safety"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "estimated"
+    },
+    {
+      "id": "babassu-oil",
+      "displayName": "Babassu Oil",
+      "aliases": [
+        "babassu oil"
+      ],
+      "inciName": "Orbignya Oleifera (Babassu) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.251,
+      "sapNaoh": 0.17896613190730837,
+      "sapMgKohPerGram": 251,
+      "iodine": 15,
+      "ins": 230,
+      "fattyAcids": {
+        "oleic": 10,
+        "lauric": 50,
+        "stearic": 4,
+        "myristic": 20,
+        "palmitic": 11
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.245,
+          "sapNaoh": 0.1746880570409982,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 245,
+          "mgKohPerGramMax": 256,
+          "mgKohPerGram": 250.5,
+          "sapKoh": 0.251,
+          "sapNaoh": 0.17896613190730837,
+          "notes": "FNWL chart entry: Babassu Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 250.5,
+          "mgKohPerGramMin": 245,
+          "mgKohPerGramMax": 256,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Orbignya Oleifera (Babassu) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "baobab-oil",
+      "displayName": "Baobab Oil",
+      "aliases": [
+        "baobab oil"
+      ],
+      "inciName": "Adansonia Digitata (Baobab) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.2,
+      "sapNaoh": 0.14260249554367202,
+      "sapMgKohPerGram": 200,
+      "iodine": 75,
+      "ins": 125,
+      "fattyAcids": {
+        "oleic": 37,
+        "stearic": 4,
+        "linoleic": 28,
+        "myristic": 1,
+        "palmitic": 24,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.2,
+          "sapNaoh": 0.14260249554367202,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Baobab Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.2,
+          "sapNaoh": 0.14260249554367202,
+          "notes": "FNWL differs by 5.0%; using higher SAP for lye safety"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "estimated"
+    },
+    {
+      "id": "beeswax",
+      "displayName": "Beeswax",
+      "aliases": [
+        "beeswax"
+      ],
+      "category": "wax",
+      "sapKoh": 0.094,
+      "sapNaoh": 0.06702317290552584,
+      "sapMgKohPerGram": 94,
+      "iodine": 10,
+      "ins": 84,
+      "fattyAcids": {},
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.094,
+          "sapNaoh": 0.06702317290552584,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "black-cumin-seed-oil-nigella-sativa",
+      "displayName": "Black Cumin Seed Oil, nigella sativa",
+      "aliases": [
+        "black cumin seed oil nigella sativa"
+      ],
+      "inciName": "Nigella Sativa (Black Cumin) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
+      "iodine": 133,
+      "ins": 62,
+      "fattyAcids": {
+        "oleic": 22,
+        "stearic": 3,
+        "linoleic": 60,
+        "palmitic": 13,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 205,
+          "mgKohPerGram": 195,
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "FNWL chart entry: Black Cumin Seed Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 195,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 205,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Nigella Sativa (Black Cumin) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "black-current-seed-oil",
+      "displayName": "Black Current Seed Oil",
+      "aliases": [
+        "black current seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 178,
+      "ins": 12,
+      "fattyAcids": {
+        "oleic": 13,
+        "stearic": 2,
+        "linoleic": 46,
+        "palmitic": 6,
+        "linolenic": 29
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "borage-oil",
+      "displayName": "Borage Oil",
+      "aliases": [
+        "borage oil"
+      ],
+      "inciName": "Borago officinalis (Borage) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.186,
+      "sapNaoh": 0.13262032085561495,
+      "sapMgKohPerGram": 186,
+      "iodine": 135,
+      "ins": 55,
+      "fattyAcids": {
+        "oleic": 20,
+        "stearic": 4,
+        "linoleic": 43,
+        "palmitic": 10,
+        "linolenic": 5
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 175,
+          "mgKohPerGramMax": 196,
+          "mgKohPerGram": 185.5,
+          "sapKoh": 0.186,
+          "sapNaoh": 0.13262032085561495,
+          "notes": "FNWL chart entry: Borage Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 185.5,
+          "mgKohPerGramMin": 175,
+          "mgKohPerGramMax": 196,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Borago Officinalis (Borage) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "brazil-nut-oil",
+      "displayName": "Brazil Nut Oil",
+      "aliases": [
+        "brazil nut oil"
+      ],
+      "inciName": "Bertholletia Excelsa (Brazil) Nut Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 100,
+      "ins": 90,
+      "fattyAcids": {
+        "oleic": 39,
+        "stearic": 11,
+        "linoleic": 36,
+        "palmitic": 13
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 196,
+          "mgKohPerGram": 191,
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "FNWL chart entry: Brazil Nut Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 191,
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 196,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Bertholletia Excelsa (Brazil) Nut Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "broccoli-seed-oil-brassica-oleracea",
+      "displayName": "Broccoli Seed Oil, Brassica Oleracea",
+      "aliases": [
+        "broccoli seed oil brassica oleracea"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.172,
+      "sapNaoh": 0.12263814616755792,
+      "sapMgKohPerGram": 172,
+      "iodine": 105,
+      "ins": 67,
+      "fattyAcids": {
+        "oleic": 14,
+        "erucic": 50,
+        "stearic": 1,
+        "linoleic": 11,
+        "palmitic": 3,
+        "linolenic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.172,
+          "sapNaoh": 0.12263814616755792,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "buriti-oil",
+      "displayName": "Buriti Oil",
+      "aliases": [
+        "buriti oil"
+      ],
+      "inciName": "Mauritia Flexuosa (Buriti) Fruit Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.213,
+      "sapNaoh": 0.15187165775401068,
+      "sapMgKohPerGram": 213,
+      "iodine": 70,
+      "ins": 153,
+      "fattyAcids": {
+        "oleic": 71,
+        "stearic": 2,
+        "linoleic": 7,
+        "palmitic": 17,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.223,
+          "sapNaoh": 0.1590017825311943,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 240,
+          "mgKohPerGram": 212.5,
+          "sapKoh": 0.213,
+          "sapNaoh": 0.15187165775401068,
+          "notes": "FNWL chart entry: Buriti Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 212.5,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 240,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Mauritia Flexuosa (Buriti) Fruit Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "camelina-seed-oil",
+      "displayName": "Camelina Seed Oil",
+      "aliases": [
+        "camelina seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 144,
+      "ins": 44,
+      "fattyAcids": {
+        "oleic": 24,
+        "stearic": 2,
+        "linoleic": 19,
+        "palmitic": 6,
+        "linolenic": 45
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "camellia-oil-tea-seed",
+      "displayName": "Camellia Oil, Tea Seed",
+      "aliases": [
+        "camellia oil tea seed"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 78,
+      "ins": 115,
+      "fattyAcids": {
+        "oleic": 77,
+        "stearic": 2,
+        "linoleic": 8,
+        "palmitic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "candelilla-wax",
+      "displayName": "Candelilla Wax",
+      "aliases": [
+        "candelilla wax"
+      ],
+      "inciName": "Euphorbia Cerifera (Candelilla) Wax",
+      "category": "wax",
+      "sapKoh": 0.054,
+      "sapNaoh": 0.03850267379679144,
+      "sapMgKohPerGram": 54,
+      "iodine": 32,
+      "ins": 12,
+      "fattyAcids": {},
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.044,
+          "sapNaoh": 0.03137254901960784,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 43,
+          "mgKohPerGramMax": 65,
+          "mgKohPerGram": 54,
+          "sapKoh": 0.054,
+          "sapNaoh": 0.03850267379679144,
+          "notes": "FNWL chart entry: Candelilla Wax Pellets"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 54,
+          "mgKohPerGramMin": 43,
+          "mgKohPerGramMax": 65,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Euphorbia Cerifera (Candelilla) Wax\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "notes": "FNWL SAP 22.7% higher than legacy (>10% delta); using FNWL for lye safety"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "estimated"
+    },
+    {
+      "id": "canola-oil",
+      "displayName": "Canola Oil",
+      "aliases": [
+        "canola oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.186,
+      "sapNaoh": 0.13262032085561495,
+      "sapMgKohPerGram": 186,
+      "iodine": 110,
+      "ins": 56,
+      "fattyAcids": {
+        "oleic": 61,
+        "stearic": 2,
+        "linoleic": 21,
+        "palmitic": 4,
+        "linolenic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.186,
+          "sapNaoh": 0.13262032085561495,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 173,
+          "mgKohPerGramMax": 173,
+          "mgKohPerGram": 173,
+          "sapKoh": 0.173,
+          "sapNaoh": 0.12335115864527628,
+          "notes": "FNWL chart entry: Canola Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 173,
+          "mgKohPerGramMin": 173,
+          "mgKohPerGramMax": 173,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.186,
+          "sapNaoh": 0.13262032085561495,
+          "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "estimated"
+    },
+    {
+      "id": "canola-oil-high-oleic",
+      "displayName": "Canola Oil, high oleic",
+      "aliases": [
+        "canola oil high oleic"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.186,
+      "sapNaoh": 0.13262032085561495,
+      "sapMgKohPerGram": 186,
+      "iodine": 96,
+      "ins": 90,
+      "fattyAcids": {
+        "oleic": 74,
+        "stearic": 2,
+        "linoleic": 12,
+        "palmitic": 4,
+        "linolenic": 4
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.186,
+          "sapNaoh": 0.13262032085561495,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 173,
+          "mgKohPerGramMax": 173,
+          "mgKohPerGram": 173,
+          "sapKoh": 0.173,
+          "sapNaoh": 0.12335115864527628,
+          "notes": "FNWL chart entry: Canola Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 173,
+          "mgKohPerGramMin": 173,
+          "mgKohPerGramMax": 173,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.186,
+          "sapNaoh": 0.13262032085561495,
+          "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "estimated"
+    },
+    {
+      "id": "carrot-seed-oil-cold-pressed",
+      "displayName": "Carrot Seed Oil, cold pressed",
+      "aliases": [
+        "carrot seed oil cold pressed"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.144,
+      "sapNaoh": 0.10267379679144384,
+      "sapMgKohPerGram": 144,
+      "iodine": 56,
+      "ins": 0,
+      "fattyAcids": {
+        "oleic": 80,
+        "linoleic": 13,
+        "palmitic": 4
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.144,
+          "sapNaoh": 0.10267379679144384,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "castor-oil",
+      "displayName": "Castor Oil",
+      "aliases": [
+        "castor oil"
+      ],
+      "inciName": "Ricinus Communis (Castor) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.181,
+      "sapNaoh": 0.12905525846702315,
+      "sapMgKohPerGram": 181,
+      "iodine": 86,
+      "ins": 95,
+      "fattyAcids": {
+        "oleic": 4,
+        "linoleic": 4,
+        "ricinoleic": 90
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.18,
+          "sapNaoh": 0.1283422459893048,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 176,
+          "mgKohPerGramMax": 185,
+          "mgKohPerGram": 180.5,
+          "sapKoh": 0.181,
+          "sapNaoh": 0.12905525846702315,
+          "notes": "FNWL chart entry: Castor Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 180.5,
+          "mgKohPerGramMin": 176,
+          "mgKohPerGramMax": 185,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Ricinus Communis (Castor) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "cherry-kern1-oil-p-avium",
+      "displayName": "Cherry Kern1 Oil, p. avium",
+      "aliases": [
+        "cherry kern1 oil p avium"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 128,
+      "ins": 62,
+      "fattyAcids": {
+        "oleic": 31,
+        "stearic": 3,
+        "linoleic": 45,
+        "palmitic": 8,
+        "linolenic": 11
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "cherry-kern2-oil-p-cerasus",
+      "displayName": "Cherry Kern2 Oil, p. cerasus",
+      "aliases": [
+        "cherry kern2 oil p cerasus"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
+      "iodine": 118,
+      "ins": 74,
+      "fattyAcids": {
+        "oleic": 50,
+        "stearic": 3,
+        "linoleic": 40,
+        "palmitic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "chicken-fat",
+      "displayName": "Chicken Fat",
+      "aliases": [
+        "chicken fat"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
+      "iodine": 69,
+      "ins": 130,
+      "fattyAcids": {
+        "oleic": 38,
+        "stearic": 7,
+        "linoleic": 21,
+        "myristic": 1,
+        "palmitic": 25
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "cocoa-butter",
+      "displayName": "Cocoa Butter",
+      "aliases": [
+        "cocoa butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "sapMgKohPerGram": 194,
+      "iodine": 37,
+      "ins": 157,
+      "fattyAcids": {
+        "oleic": 35,
+        "stearic": 33,
+        "linoleic": 3,
+        "palmitic": 28
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "coconut-oil-76",
+      "displayName": "Coconut Oil, 76 deg",
+      "aliases": [
+        "coconut oil 76"
+      ],
+      "inciName": "Cocos Nucifera (Coconut) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.26,
+      "sapNaoh": 0.1853832442067736,
+      "sapMgKohPerGram": 260,
+      "iodine": 10,
+      "ins": 258,
+      "fattyAcids": {
+        "oleic": 8,
+        "lauric": 48,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 19,
+        "palmitic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.257,
+          "sapNaoh": 0.18324420677361852,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 255,
+          "mgKohPerGramMax": 265,
+          "mgKohPerGram": 260,
+          "sapKoh": 0.26,
+          "sapNaoh": 0.1853832442067736,
+          "notes": "FNWL chart entry: Organic Virgin Coconut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 260,
+          "mgKohPerGramMin": 255,
+          "mgKohPerGramMax": 265,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Cocos Nucifera (Coconut) Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "coconut-oil-92",
+      "displayName": "Coconut Oil, 92 deg",
+      "aliases": [
+        "coconut oil 92"
+      ],
+      "inciName": "Cocos Nucifera (Coconut) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.26,
+      "sapNaoh": 0.1853832442067736,
+      "sapMgKohPerGram": 260,
+      "iodine": 3,
+      "ins": 258,
+      "fattyAcids": {
+        "oleic": 8,
+        "lauric": 48,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 19,
+        "palmitic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.257,
+          "sapNaoh": 0.18324420677361852,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 255,
+          "mgKohPerGramMax": 265,
+          "mgKohPerGram": 260,
+          "sapKoh": 0.26,
+          "sapNaoh": 0.1853832442067736,
+          "notes": "FNWL chart entry: Organic Virgin Coconut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 260,
+          "mgKohPerGramMin": 255,
+          "mgKohPerGramMax": 265,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Cocos Nucifera (Coconut) Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "coconut-oil-fractionated",
+      "displayName": "Coconut Oil, fractionated",
+      "aliases": [
+        "coconut oil fractionated"
+      ],
+      "inciName": "Caprylic/Capric Triglyceride",
+      "category": "triglyceride",
+      "sapKoh": 0.348,
+      "sapNaoh": 0.2481283422459893,
+      "sapMgKohPerGram": 348,
+      "iodine": 1,
+      "ins": 324,
+      "fattyAcids": {
+        "capric": 43,
+        "lauric": 2,
+        "caprylic": 54,
+        "myristic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.325,
+          "sapNaoh": 0.23172905525846701,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 335,
+          "mgKohPerGramMax": 360,
+          "mgKohPerGram": 347.5,
+          "sapKoh": 0.348,
+          "sapNaoh": 0.2481283422459893,
+          "notes": "FNWL chart entry: Fractionated Coconut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 347.5,
+          "mgKohPerGramMin": 335,
+          "mgKohPerGramMax": 360,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Caprylic/Capric Triglyceride\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.348,
+          "sapNaoh": 0.2481283422459893,
+          "notes": "FNWL differs by 7.1%; using higher SAP for lye safety"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "estimated"
+    },
+    {
+      "id": "coffee-bean-oil-green",
+      "displayName": "Coffee Bean Oil, green",
+      "aliases": [
+        "coffee bean oil green"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.185,
+      "sapNaoh": 0.1319073083778966,
+      "sapMgKohPerGram": 185,
+      "iodine": 85,
+      "ins": 100,
+      "fattyAcids": {
+        "oleic": 9,
+        "stearic": 8,
+        "linoleic": 39,
+        "palmitic": 38,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.185,
+          "sapNaoh": 0.1319073083778966,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "coffee-bean-oil-roasted",
+      "displayName": "Coffee Bean Oil, roasted",
+      "aliases": [
+        "coffee bean oil roasted"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.18,
+      "sapNaoh": 0.1283422459893048,
+      "sapMgKohPerGram": 180,
+      "iodine": 87,
+      "ins": 93,
+      "fattyAcids": {
+        "oleic": 8,
+        "linoleic": 38,
+        "palmitic": 40,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.18,
+          "sapNaoh": 0.1283422459893048,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "cohune-oil",
+      "displayName": "Cohune Oil",
+      "aliases": [
+        "cohune oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.205,
+      "sapNaoh": 0.1461675579322638,
+      "sapMgKohPerGram": 205,
+      "iodine": 30,
+      "ins": 175,
+      "fattyAcids": {
+        "oleic": 18,
+        "lauric": 51,
+        "stearic": 3,
+        "linoleic": 3,
+        "myristic": 13,
+        "palmitic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.205,
+          "sapNaoh": 0.1461675579322638,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "corn-oil",
+      "displayName": "Corn Oil",
+      "aliases": [
+        "corn oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 117,
+      "ins": 69,
+      "fattyAcids": {
+        "oleic": 32,
+        "stearic": 2,
+        "linoleic": 51,
+        "palmitic": 12,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 190,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Corn Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 190,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "cottonseed-oil",
+      "displayName": "Cottonseed Oil",
+      "aliases": [
+        "cottonseed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
+      "iodine": 108,
+      "ins": 89,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 13,
+        "linoleic": 52,
+        "palmitic": 13,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 192,
+          "mgKohPerGramMax": 192,
+          "mgKohPerGram": 192,
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "FNWL chart entry: Cottonseed Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 192,
+          "mgKohPerGramMin": 192,
+          "mgKohPerGramMax": 192,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "cranberry-seed-oil",
+      "displayName": "Cranberry Seed Oil",
+      "aliases": [
+        "cranberry seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 150,
+      "ins": 40,
+      "fattyAcids": {
+        "oleic": 23,
+        "stearic": 2,
+        "linoleic": 37,
+        "palmitic": 6,
+        "linolenic": 32
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "crisco-new-w-palm",
+      "displayName": "Crisco, new w/palm",
+      "aliases": [
+        "crisco new w palm"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 111,
+      "ins": 82,
+      "fattyAcids": {
+        "oleic": 28,
+        "stearic": 5,
+        "linoleic": 40,
+        "palmitic": 20,
+        "linolenic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "crisco-old",
+      "displayName": "Crisco, old",
+      "aliases": [
+        "crisco old"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
+      "iodine": 93,
+      "ins": 115,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 13,
+        "linoleic": 52,
+        "palmitic": 13
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "cupuacu-butter",
+      "displayName": "Cupuacu Butter",
+      "aliases": [
+        "cupuacu butter"
+      ],
+      "inciName": "Theobroma Grandiflorum (Cupuacu) Seed Butter",
+      "category": "triglyceride",
+      "sapKoh": 0.223,
+      "sapNaoh": 0.1590017825311943,
+      "sapMgKohPerGram": 223,
+      "iodine": 39,
+      "ins": 153,
+      "fattyAcids": {
+        "oleic": 42,
+        "stearic": 35,
+        "linoleic": 2,
+        "palmitic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 210,
+          "mgKohPerGramMax": 235,
+          "mgKohPerGram": 222.5,
+          "sapKoh": 0.223,
+          "sapNaoh": 0.1590017825311943,
+          "notes": "FNWL chart entry: Cupuacu Butter, Refined"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 222.5,
+          "mgKohPerGramMin": 210,
+          "mgKohPerGramMax": 235,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Theobroma Grandiflorum (Cupuacu) Seed Butter\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "notes": "FNWL SAP 16.1% higher than legacy (>10% delta); using FNWL for lye safety"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "estimated"
+    },
+    {
+      "id": "duck-fat-flesh-and-skin",
+      "displayName": "Duck Fat, flesh and skin",
+      "aliases": [
+        "duck fat flesh and skin"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "sapMgKohPerGram": 194,
+      "iodine": 72,
+      "ins": 122,
+      "fattyAcids": {
+        "oleic": 44,
+        "stearic": 9,
+        "linoleic": 13,
+        "myristic": 1,
+        "palmitic": 26,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "emu-oil",
+      "displayName": "Emu Oil",
+      "aliases": [
+        "emu oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 60,
+      "ins": 128,
+      "fattyAcids": {
+        "oleic": 47,
+        "stearic": 9,
+        "linoleic": 8,
+        "palmitic": 23
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "evening-primrose-oil",
+      "displayName": "Evening Primrose Oil",
+      "aliases": [
+        "evening primrose oil"
+      ],
+      "inciName": "Oenothera Biennis (Evening Primrose) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 160,
+      "ins": 30,
+      "fattyAcids": {
+        "linoleic": 80,
+        "linolenic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 187.5,
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "FNWL chart entry: Organic Evening Primrose Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 187.5,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Oenothera biennis (Evening Primrose) Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "flax-oil-linseed",
+      "displayName": "Flax Oil, linseed",
+      "aliases": [
+        "flax oil linseed"
+      ],
+      "inciName": "Linum Usitatissimum (Linseed) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 180,
+      "ins": -6,
+      "fattyAcids": {
+        "oleic": 27,
+        "stearic": 3,
+        "linoleic": 13,
+        "palmitic": 6,
+        "linolenic": 50
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 196,
+          "mgKohPerGram": 191,
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "FNWL chart entry: Flax Seed Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 191,
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 196,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Linum usitatissimum (Linseed) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "ghee-any-bovine",
+      "displayName": "Ghee, any bovine",
+      "aliases": [
+        "ghee any bovine"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.227,
+      "sapNaoh": 0.16185383244206772,
+      "sapMgKohPerGram": 227,
+      "iodine": 30,
+      "ins": 191,
+      "fattyAcids": {
+        "oleic": 19,
+        "lauric": 4,
+        "stearic": 12,
+        "linoleic": 2,
+        "myristic": 11,
+        "palmitic": 28,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.227,
+          "sapNaoh": 0.16185383244206772,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "goose-fat",
+      "displayName": "Goose Fat",
+      "aliases": [
+        "goose fat"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
+      "iodine": 65,
+      "ins": 130,
+      "fattyAcids": {
+        "oleic": 54,
+        "stearic": 6,
+        "linoleic": 10,
+        "palmitic": 21
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "grapeseed-oil",
+      "displayName": "Grapeseed Oil",
+      "aliases": [
+        "grapeseed oil"
+      ],
+      "inciName": "Vitis vinifera (Grape) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 131,
+      "ins": 66,
+      "fattyAcids": {
+        "oleic": 20,
+        "stearic": 4,
+        "linoleic": 68,
+        "palmitic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.181,
+          "sapNaoh": 0.12905525846702315,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 192.5,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Grape Seed Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 192.5,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Vitis vinifera (Grape) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL differs by 6.6%; using higher SAP for lye safety"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "estimated"
+    },
+    {
+      "id": "hazelnut-oil",
+      "displayName": "Hazelnut Oil",
+      "aliases": [
+        "hazelnut oil"
+      ],
+      "inciName": "Corylus Avellana (Hazel) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 97,
+      "ins": 94,
+      "fattyAcids": {
+        "oleic": 75,
+        "stearic": 3,
+        "linoleic": 10,
+        "palmitic": 5
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 187,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 191,
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "FNWL chart entry: Hazelnut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 191,
+          "mgKohPerGramMin": 187,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Corylus Avellana (Hazel) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "hemp-oil",
+      "displayName": "Hemp Oil",
+      "aliases": [
+        "hemp oil"
+      ],
+      "inciName": "Cannabis Sativa (Hemp) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 165,
+      "ins": 39,
+      "fattyAcids": {
+        "oleic": 12,
+        "stearic": 2,
+        "linoleic": 57,
+        "palmitic": 6,
+        "linolenic": 21
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 192.5,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Hemp Seed Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 192.5,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Cannabis Sativa (Hemp) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "horse-oil",
+      "displayName": "Horse Oil",
+      "aliases": [
+        "horse oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.196,
+      "sapNaoh": 0.13975044563279856,
+      "sapMgKohPerGram": 196,
+      "iodine": 79,
+      "ins": 117,
+      "fattyAcids": {
+        "oleic": 10,
+        "stearic": 5,
+        "linoleic": 20,
+        "myristic": 3,
+        "palmitic": 26,
+        "linolenic": 19
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.196,
+          "sapNaoh": 0.13975044563279856,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "illipe-butter",
+      "displayName": "Illipe Butter",
+      "aliases": [
+        "illipe butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.185,
+      "sapNaoh": 0.1319073083778966,
+      "sapMgKohPerGram": 185,
+      "iodine": 33,
+      "ins": 152,
+      "fattyAcids": {
+        "oleic": 35,
+        "stearic": 45,
+        "palmitic": 17
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.185,
+          "sapNaoh": 0.1319073083778966,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "japan-wax",
+      "displayName": "Japan Wax",
+      "aliases": [
+        "japan wax"
+      ],
+      "category": "wax",
+      "sapKoh": 0.215,
+      "sapNaoh": 0.1532976827094474,
+      "sapMgKohPerGram": 215,
+      "iodine": 11,
+      "ins": 204,
+      "fattyAcids": {
+        "oleic": 4,
+        "stearic": 7,
+        "myristic": 1,
+        "palmitic": 80
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.215,
+          "sapNaoh": 0.1532976827094474,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "jatropha-oil-soapnut-seed-oil",
+      "displayName": "Jatropha Oil, soapnut seed oil",
+      "aliases": [
+        "jatropha oil soapnut seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 102,
+      "ins": 91,
+      "fattyAcids": {
+        "oleic": 44,
+        "stearic": 7,
+        "linoleic": 34,
+        "palmitic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "jojoba-oil",
+      "displayName": "Jojoba Oil (a Liquid Wax Ester)",
+      "aliases": [
+        "jojoba oil"
+      ],
+      "category": "wax_ester",
+      "sapKoh": 0.092,
+      "sapNaoh": 0.06559714795008913,
+      "sapMgKohPerGram": 92,
+      "iodine": 83,
+      "ins": 11,
+      "fattyAcids": {
+        "oleic": 12
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.092,
+          "sapNaoh": 0.06559714795008913,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "karanja-oil",
+      "displayName": "Karanja Oil",
+      "aliases": [
+        "karanja oil"
+      ],
+      "inciName": "Pongamia Glabra (Karanja) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 85,
+      "ins": 98,
+      "fattyAcids": {
+        "oleic": 58,
+        "stearic": 6,
+        "linoleic": 15,
+        "palmitic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.183,
+          "sapNaoh": 0.13048128342245988,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 196,
+          "mgKohPerGram": 191,
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "FNWL chart entry: Karanja Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 191,
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 196,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Pongamia Glabra (Karanja) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "kokum-butter",
+      "displayName": "Kokum Butter",
+      "aliases": [
+        "kokum butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 35,
+      "ins": 155,
+      "fattyAcids": {
+        "oleic": 36,
+        "stearic": 56,
+        "linoleic": 1,
+        "palmitic": 4
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "kpangnan-butter",
+      "displayName": "Kpangnan Butter",
+      "aliases": [
+        "kpangnan butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 42,
+      "ins": 149,
+      "fattyAcids": {
+        "oleic": 49,
+        "stearic": 44,
+        "linoleic": 1,
+        "palmitic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "kukui-nut-oil",
+      "displayName": "Kukui nut Oil",
+      "aliases": [
+        "kukui nut oil"
+      ],
+      "inciName": "Aleurites moluccana (Kukui) Nut Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 168,
+      "ins": 24,
+      "fattyAcids": {
+        "oleic": 20,
+        "stearic": 2,
+        "linoleic": 42,
+        "palmitic": 6,
+        "linolenic": 29
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.189,
+          "sapNaoh": 0.13475935828877006,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 192.5,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Kukui Nut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 192.5,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Aleurites Moluccana (Kukui) Nut Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "lanolin-liquid-wax",
+      "displayName": "Lanolin liquid Wax",
+      "aliases": [
+        "lanolin liquid wax"
+      ],
+      "category": "wax",
+      "sapKoh": 0.106,
+      "sapNaoh": 0.07557932263814617,
+      "sapMgKohPerGram": 106,
+      "iodine": 27,
+      "ins": 83,
+      "fattyAcids": {},
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.106,
+          "sapNaoh": 0.07557932263814617,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "myristic-acid",
+      "displayName": "Myristic Acid",
+      "aliases": [
+        "myristic acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.247,
+      "sapNaoh": 0.1761140819964349,
+      "sapMgKohPerGram": 247,
+      "iodine": 1,
+      "ins": 246,
+      "fattyAcids": {
+        "myristic": 99
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.247,
+          "sapNaoh": 0.1761140819964349,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "lard-pig-tallow",
+      "displayName": "Lard, Pig Tallow (Manteca)",
+      "aliases": [
+        "lard pig tallow"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "sapMgKohPerGram": 198,
+      "iodine": 57,
+      "ins": 139,
+      "fattyAcids": {
+        "oleic": 46,
+        "stearic": 13,
+        "linoleic": 6,
+        "myristic": 1,
+        "palmitic": 28
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.198,
+          "sapNaoh": 0.1411764705882353,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "laurel-fruit-oil",
+      "displayName": "Laurel Fruit Oil",
+      "aliases": [
+        "laurel fruit oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "sapMgKohPerGram": 198,
+      "iodine": 74,
+      "ins": 124,
+      "fattyAcids": {
+        "oleic": 31,
+        "lauric": 25,
+        "stearic": 1,
+        "linoleic": 26,
+        "myristic": 1,
+        "palmitic": 15,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.198,
+          "sapNaoh": 0.1411764705882353,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "lauric-acid",
+      "displayName": "Lauric Acid",
+      "aliases": [
+        "lauric acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.28,
+      "sapNaoh": 0.19964349376114082,
+      "sapMgKohPerGram": 280,
+      "iodine": 0,
+      "ins": 280,
+      "fattyAcids": {
+        "lauric": 99,
+        "myristic": 1
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.28,
+          "sapNaoh": 0.19964349376114082,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "linseed-oil-flax",
+      "displayName": "Linseed Oil, flax",
+      "aliases": [
+        "linseed oil flax"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 180,
+      "ins": -6,
+      "fattyAcids": {
+        "oleic": 27,
+        "stearic": 3,
+        "linoleic": 13,
+        "palmitic": 6,
+        "linolenic": 50
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "loofa-seed-oil-luffa-cylinderica",
+      "displayName": "Loofa Seed Oil, Luffa cylinderica",
+      "aliases": [
+        "loofa seed oil luffa cylinderica"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.187,
+      "sapNaoh": 0.13333333333333333,
+      "sapMgKohPerGram": 187,
+      "iodine": 108,
+      "ins": 79,
+      "fattyAcids": {
+        "oleic": 30,
+        "stearic": 18,
+        "linoleic": 47,
+        "palmitic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.187,
+          "sapNaoh": 0.13333333333333333,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "macadamia-nut-butter",
+      "displayName": "Macadamia Nut Butter",
+      "aliases": [
+        "macadamia nut butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 70,
+      "ins": 118,
+      "fattyAcids": {
+        "oleic": 56,
+        "stearic": 12,
+        "linoleic": 3,
+        "myristic": 1,
+        "palmitic": 6,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "macadamia-nut-oil",
+      "displayName": "Macadamia Nut Oil",
+      "aliases": [
+        "macadamia nut oil"
+      ],
+      "inciName": "Macadamia Integrifolia (Macadamia) Nut Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
+      "iodine": 76,
+      "ins": 119,
+      "fattyAcids": {
+        "oleic": 59,
+        "stearic": 5,
+        "linoleic": 2,
+        "palmitic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 195,
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "FNWL chart entry: Macadamia Nut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 195,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Macadamia Integrifolia (Macadamia) Nut Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "mafura-butter-trichilia-emetica",
+      "displayName": "Mafura Butter, Trichilia emetica ",
+      "aliases": [
+        "mafura butter trichilia emetica"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "sapMgKohPerGram": 198,
+      "iodine": 66,
+      "ins": 132,
+      "fattyAcids": {
+        "oleic": 49,
+        "stearic": 3,
+        "linoleic": 11,
+        "myristic": 1,
+        "palmitic": 37,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.198,
+          "sapNaoh": 0.1411764705882353,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "mango-seed-butter",
+      "displayName": "Mango Seed Butter",
+      "aliases": [
+        "mango seed butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 45,
+      "ins": 146,
+      "fattyAcids": {
+        "oleic": 45,
+        "stearic": 42,
+        "linoleic": 3,
+        "palmitic": 7
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "mango-seed-oil",
+      "displayName": "Mango Seed Oil",
+      "aliases": [
+        "mango seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 60,
+      "ins": 130,
+      "fattyAcids": {
+        "oleic": 52,
+        "stearic": 27,
+        "linoleic": 8,
+        "palmitic": 8,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "marula-oil",
+      "displayName": "Marula Oil",
+      "aliases": [
+        "marula oil"
+      ],
+      "inciName": "Sclerocarya Birrea (Marula) Kernel Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.197,
+      "sapNaoh": 0.14046345811051694,
+      "sapMgKohPerGram": 197,
+      "iodine": 73,
+      "ins": 119,
+      "fattyAcids": {
+        "oleic": 75,
+        "stearic": 7,
+        "linoleic": 4,
+        "palmitic": 11
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 193,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 196.5,
+          "sapKoh": 0.197,
+          "sapNaoh": 0.14046345811051694,
+          "notes": "FNWL chart entry: Marula Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 196.5,
+          "mgKohPerGramMin": 193,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Sclerocarya birrea (Marula) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "meadowfoam-oil",
+      "displayName": "Meadowfoam Oil",
+      "aliases": [
+        "meadowfoam oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.169,
+      "sapNaoh": 0.12049910873440285,
+      "sapMgKohPerGram": 169,
+      "iodine": 92,
+      "ins": 77,
+      "fattyAcids": {
+        "docosenoid": 16,
+        "eicosenoic": 61,
+        "docosadienoic": 18
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.169,
+          "sapNaoh": 0.12049910873440285,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "milk-fat-any-bovine",
+      "displayName": "Milk Fat, any bovine",
+      "aliases": [
+        "milk fat any bovine"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.227,
+      "sapNaoh": 0.16185383244206772,
+      "sapMgKohPerGram": 227,
+      "iodine": 30,
+      "ins": 191,
+      "fattyAcids": {
+        "oleic": 19,
+        "lauric": 4,
+        "stearic": 12,
+        "linoleic": 2,
+        "myristic": 11,
+        "palmitic": 28,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.227,
+          "sapNaoh": 0.16185383244206772,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "milk-thistle-oil",
+      "displayName": "Milk Thistle Oil",
+      "aliases": [
+        "milk thistle oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.196,
+      "sapNaoh": 0.13975044563279856,
+      "sapMgKohPerGram": 196,
+      "iodine": 115,
+      "ins": 81,
+      "fattyAcids": {
+        "oleic": 26,
+        "stearic": 2,
+        "linoleic": 64,
+        "palmitic": 7
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.196,
+          "sapNaoh": 0.13975044563279856,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "mink-oil",
+      "displayName": "Mink Oil",
+      "aliases": [
+        "mink oil"
+      ],
+      "category": "wax_ester",
+      "sapKoh": 0.196,
+      "sapNaoh": 0.13975044563279856,
+      "sapMgKohPerGram": 196,
+      "iodine": 55,
+      "ins": 141,
+      "fattyAcids": {},
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.196,
+          "sapNaoh": 0.13975044563279856,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "monoi-de-tahiti-oil",
+      "displayName": "Monoi de Tahiti  Oil",
+      "aliases": [
+        "monoi de tahiti oil"
+      ],
+      "inciName": "Cocos Nucifera (Coconut) Oil (and) Gardenia Tahitensis (Tiare) Flower Extract (and) Tocopherol (and) Helianthus Annus (Sunflower) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.255,
+      "sapNaoh": 0.18181818181818182,
+      "sapMgKohPerGram": 255,
+      "iodine": 9,
+      "ins": 246,
+      "fattyAcids": {
+        "lauric": 44,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 16,
+        "palmitic": 10
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.255,
+          "sapNaoh": 0.18181818181818182,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 240,
+          "mgKohPerGramMax": 270,
+          "mgKohPerGram": 255,
+          "sapKoh": 0.255,
+          "sapNaoh": 0.18181818181818182,
+          "notes": "FNWL chart entry: Monoi de Tahiti Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 255,
+          "mgKohPerGramMin": 240,
+          "mgKohPerGramMax": 270,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Cocos Nucifera (Coconut) Oil (and) Gardenia Tahitensis (Tiare) Flower Extract (and) Tocopherol (and) Helianthus Annus (Sunflower) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "moringa-oil",
+      "displayName": "Moringa Oil",
+      "aliases": [
+        "moringa oil"
+      ],
+      "inciName": "Moringa Oleifera Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
+      "iodine": 68,
+      "ins": 124,
+      "fattyAcids": {
+        "oleic": 71,
+        "stearic": 7,
+        "linoleic": 2,
+        "palmitic": 7
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 205,
+          "mgKohPerGram": 195,
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "FNWL chart entry: Moringa Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 195,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 205,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Moringa Oleifera Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "mowrah-butter",
+      "displayName": "Mowrah Butter",
+      "aliases": [
+        "mowrah butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "sapMgKohPerGram": 194,
+      "iodine": 62,
+      "ins": 132,
+      "fattyAcids": {
+        "oleic": 36,
+        "stearic": 22,
+        "linoleic": 15,
+        "palmitic": 24
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "murumuru-butter",
+      "displayName": "Murumuru Butter",
+      "aliases": [
+        "murumuru butter"
+      ],
+      "inciName": "Astrocaryum Murumuru Seed Butter",
+      "category": "triglyceride",
+      "sapKoh": 0.275,
+      "sapNaoh": 0.19607843137254902,
+      "sapMgKohPerGram": 275,
+      "iodine": 25,
+      "ins": 250,
+      "fattyAcids": {
+        "oleic": 15,
+        "lauric": 47,
+        "stearic": 3,
+        "linoleic": 3,
+        "myristic": 26,
+        "palmitic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.275,
+          "sapNaoh": 0.19607843137254902,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 245,
+          "mgKohPerGramMax": 260,
+          "mgKohPerGram": 252.5,
+          "sapKoh": 0.253,
+          "sapNaoh": 0.1803921568627451,
+          "notes": "FNWL chart entry: Murumuru Butter"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 252.5,
+          "mgKohPerGramMin": 245,
+          "mgKohPerGramMax": 260,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Astrocaryum Murumuru Seed Butter\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.275,
+          "sapNaoh": 0.19607843137254902,
+          "notes": "FNWL differs by 8.0%; using higher SAP for lye safety"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "estimated"
+    },
+    {
+      "id": "mustard-oil-kachi-ghani",
+      "displayName": "Mustard Oil, kachi ghani",
+      "aliases": [
+        "mustard oil kachi ghani"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.172,
+      "sapNaoh": 0.12263814616755792,
+      "sapMgKohPerGram": 172,
+      "iodine": 101,
+      "ins": 72,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 2,
+        "linoleic": 14,
+        "palmitic": 2,
+        "linolenic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.173,
+          "sapNaoh": 0.12335115864527628,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 172,
+          "mgKohPerGramMax": 172,
+          "mgKohPerGram": 172,
+          "sapKoh": 0.172,
+          "sapNaoh": 0.12263814616755792,
+          "notes": "FNWL chart entry: Mustard Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 172,
+          "mgKohPerGramMin": 172,
+          "mgKohPerGramMax": 172,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "neatsfoot-oil",
+      "displayName": "Neatsfoot Oil",
+      "aliases": [
+        "neatsfoot oil"
+      ],
+      "category": "wax_ester",
+      "sapKoh": 0.18,
+      "sapNaoh": 0.1283422459893048,
+      "sapMgKohPerGram": 180,
+      "iodine": 90,
+      "ins": 90,
+      "fattyAcids": {},
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.18,
+          "sapNaoh": 0.1283422459893048,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "neem-seed-oil",
+      "displayName": "Neem Seed Oil",
+      "aliases": [
+        "neem seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 72,
+      "ins": 121,
+      "fattyAcids": {
+        "oleic": 46,
+        "stearic": 16,
+        "linoleic": 12,
+        "myristic": 2,
+        "palmitic": 21
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "nutmeg-butter",
+      "displayName": "Nutmeg Butter",
+      "aliases": [
+        "nutmeg butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.1624,
+      "sapNaoh": 0.11579322638146167,
+      "sapMgKohPerGram": 162.39999999999998,
+      "iodine": 46,
+      "ins": 116,
+      "fattyAcids": {
+        "oleic": 5,
+        "lauric": 3,
+        "myristic": 83,
+        "palmitic": 4
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.1624,
+          "sapNaoh": 0.11579322638146167,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "oat-oil",
+      "displayName": "Oat Oil",
+      "aliases": [
+        "oat oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 104,
+      "ins": 86,
+      "fattyAcids": {
+        "oleic": 40,
+        "stearic": 2,
+        "linoleic": 39,
+        "palmitic": 15
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "oleic-acid",
+      "displayName": "Oleic Acid",
+      "aliases": [
+        "oleic acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.202,
+      "sapNaoh": 0.14402852049910875,
+      "sapMgKohPerGram": 202,
+      "iodine": 92,
+      "ins": 110,
+      "fattyAcids": {
+        "oleic": 99
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.202,
+          "sapNaoh": 0.14402852049910875,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "olive-oil",
+      "displayName": "Olive Oil",
+      "aliases": [
+        "olive oil"
+      ],
+      "inciName": "Olea Europaea (Olive) Fruit Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 85,
+      "ins": 105,
+      "fattyAcids": {
+        "oleic": 69,
+        "stearic": 3,
+        "linoleic": 12,
+        "palmitic": 14,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 184,
+          "mgKohPerGramMax": 196,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Olive Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 184,
+          "mgKohPerGramMax": 196,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Olea Europaea (Olive) Fruit Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "olive-oil-pomace",
+      "displayName": "Olive Oil  pomace",
+      "aliases": [
+        "olive oil pomace"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 84,
+      "ins": 104,
+      "fattyAcids": {
+        "oleic": 69,
+        "stearic": 3,
+        "linoleic": 12,
+        "palmitic": 14,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "ostrich-oil",
+      "displayName": "Ostrich Oil",
+      "aliases": [
+        "ostrich oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.1946,
+      "sapNaoh": 0.13875222816399285,
+      "sapMgKohPerGram": 194.6,
+      "iodine": 97,
+      "ins": 128,
+      "fattyAcids": {
+        "oleic": 37,
+        "lauric": 3,
+        "stearic": 6,
+        "linoleic": 17,
+        "myristic": 1,
+        "palmitic": 26,
+        "linolenic": 3
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.1946,
+          "sapNaoh": 0.13875222816399285,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "palm-kernel-oil",
+      "displayName": "Palm Kernel Oil",
+      "aliases": [
+        "palm kernel oil"
+      ],
+      "inciName": "Elaeis guineensis Palm kernel oil",
+      "category": "triglyceride",
+      "sapKoh": 0.247,
+      "sapNaoh": 0.1761140819964349,
+      "sapMgKohPerGram": 247,
+      "iodine": 20,
+      "ins": 227,
+      "fattyAcids": {
+        "oleic": 15,
+        "lauric": 49,
+        "stearic": 2,
+        "linoleic": 3,
+        "myristic": 16,
+        "palmitic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.247,
+          "sapNaoh": 0.1761140819964349,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 220,
+          "mgKohPerGram": 203,
+          "sapKoh": 0.203,
+          "sapNaoh": 0.1447415329768271,
+          "notes": "FNWL chart entry: Palm Kernel Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 203,
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 220,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Elaeis guineensis Palm kernel oil\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "palm-kernel-oil-flakes-hydrogenated",
+      "displayName": "Palm Kernel Oil Flakes, hydrogenated",
+      "aliases": [
+        "palm kernel oil flakes hydrogenated"
+      ],
+      "inciName": "Elaeis guineensis Palm kernel oil",
+      "category": "triglyceride",
+      "sapKoh": 0.247,
+      "sapNaoh": 0.1761140819964349,
+      "sapMgKohPerGram": 247,
+      "iodine": 20,
+      "ins": 227,
+      "fattyAcids": {
+        "oleic": 4,
+        "lauric": 49,
+        "stearic": 16,
+        "myristic": 17,
+        "palmitic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.247,
+          "sapNaoh": 0.1761140819964349,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 220,
+          "mgKohPerGram": 203,
+          "sapKoh": 0.203,
+          "sapNaoh": 0.1447415329768271,
+          "notes": "FNWL chart entry: Palm Kernel Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 203,
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 220,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Elaeis guineensis Palm kernel oil\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "palm-oil",
+      "displayName": "Palm Oil",
+      "aliases": [
+        "palm oil"
+      ],
+      "inciName": "Elaeis guineensis (Palm) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "sapMgKohPerGram": 198,
+      "iodine": 53,
+      "ins": 145,
+      "fattyAcids": {
+        "oleic": 39,
+        "stearic": 5,
+        "linoleic": 10,
+        "myristic": 1,
+        "palmitic": 44
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.199,
+          "sapNaoh": 0.14188948306595364,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 205,
+          "mgKohPerGram": 197.5,
+          "sapKoh": 0.198,
+          "sapNaoh": 0.1411764705882353,
+          "notes": "FNWL chart entry: Palm Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 197.5,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 205,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "palm-stearin",
+      "displayName": "Palm Stearin",
+      "aliases": [
+        "palm stearin"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.199,
+      "sapNaoh": 0.14188948306595364,
+      "sapMgKohPerGram": 199,
+      "iodine": 48,
+      "ins": 151,
+      "fattyAcids": {
+        "oleic": 26,
+        "stearic": 5,
+        "linoleic": 7,
+        "myristic": 2,
+        "palmitic": 60
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.199,
+          "sapNaoh": 0.14188948306595364,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "palmitic-acid",
+      "displayName": "Palmitic Acid",
+      "aliases": [
+        "palmitic acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.215,
+      "sapNaoh": 0.1532976827094474,
+      "sapMgKohPerGram": 215,
+      "iodine": 2,
+      "ins": 213,
+      "fattyAcids": {
+        "palmitic": 98
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.215,
+          "sapNaoh": 0.1532976827094474,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "palmolein",
+      "displayName": "Palmolein",
+      "aliases": [
+        "palmolein"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.2,
+      "sapNaoh": 0.14260249554367202,
+      "sapMgKohPerGram": 200,
+      "iodine": 58,
+      "ins": 142,
+      "fattyAcids": {
+        "oleic": 43,
+        "stearic": 5,
+        "linoleic": 11,
+        "myristic": 1,
+        "palmitic": 40
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.2,
+          "sapNaoh": 0.14260249554367202,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "papaya-seed-oil-carica-papaya",
+      "displayName": "Papaya seed oil, Carica papaya",
+      "aliases": [
+        "papaya seed oil carica papaya"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.158,
+      "sapNaoh": 0.11265597147950089,
+      "sapMgKohPerGram": 158,
+      "iodine": 67,
+      "ins": 91,
+      "fattyAcids": {
+        "oleic": 76,
+        "stearic": 5,
+        "linoleic": 3,
+        "palmitic": 13
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.158,
+          "sapNaoh": 0.11265597147950089,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "passion-fruit-seed-oil",
+      "displayName": "Passion Fruit Seed Oil",
+      "aliases": [
+        "passion fruit seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.183,
+      "sapNaoh": 0.13048128342245988,
+      "sapMgKohPerGram": 183,
+      "iodine": 136,
+      "ins": 47,
+      "fattyAcids": {
+        "oleic": 15,
+        "stearic": 3,
+        "linoleic": 70,
+        "palmitic": 10,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.183,
+          "sapNaoh": 0.13048128342245988,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "pataua-oil",
+      "displayName": "Pataua (Patawa) Oil",
+      "aliases": [
+        "pataua oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.2,
+      "sapNaoh": 0.14260249554367202,
+      "sapMgKohPerGram": 200,
+      "iodine": 77,
+      "ins": 123,
+      "fattyAcids": {
+        "oleic": 78,
+        "stearic": 4,
+        "linoleic": 3,
+        "palmitic": 13,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.2,
+          "sapNaoh": 0.14260249554367202,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "peach-kernel-oil",
+      "displayName": "Peach Kernel Oil",
+      "aliases": [
+        "peach kernel oil"
+      ],
+      "inciName": "Prunus Persica (Peach) Kernel Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 108,
+      "ins": 87,
+      "fattyAcids": {
+        "oleic": 65,
+        "stearic": 2,
+        "linoleic": 25,
+        "palmitic": 6,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Peach Kernel Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Prunus persica (Peach) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "peanut-oil",
+      "displayName": "Peanut Oil",
+      "aliases": [
+        "peanut oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 92,
+      "ins": 99,
+      "fattyAcids": {
+        "oleic": 56,
+        "stearic": 3,
+        "linoleic": 26,
+        "palmitic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 190,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Peanut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 190,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "pecan-oil",
+      "displayName": "Pecan Oil",
+      "aliases": [
+        "pecan oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 113,
+      "ins": 77,
+      "fattyAcids": {
+        "oleic": 50,
+        "stearic": 2,
+        "linoleic": 39,
+        "palmitic": 7,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "perilla-seed-oil",
+      "displayName": "Perilla Seed Oil",
+      "aliases": [
+        "perilla seed oil"
+      ],
+      "inciName": "Perilla Frutescens (Perilla) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 196,
+      "ins": -6,
+      "fattyAcids": {
+        "oleic": 15,
+        "stearic": 2,
+        "linoleic": 16,
+        "palmitic": 6,
+        "linolenic": 56
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 192.5,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Perilla Seed Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 192.5,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Perilla Frutescens (Perilla) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "pine-tar-lye-calc-only-no-fa",
+      "displayName": "Pine Tar, lye calc only no FA",
+      "aliases": [
+        "pine tar lye calc only no fa"
+      ],
+      "category": "tar",
+      "sapRole": "acid_neutralization",
+      "usageNotes": "Lye consumption estimate only — not an ISO 3657 triglyceride SAP. No fatty acids; soap property predictions N/A.",
+      "sapKoh": 0.06,
+      "sapNaoh": 0.0427807486631016,
+      "sapMgKohPerGram": 60,
+      "iodine": 0,
+      "ins": 0,
+      "fattyAcids": {},
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.06,
+          "sapNaoh": 0.0427807486631016,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "pistachio-oil",
+      "displayName": "Pistachio Oil",
+      "aliases": [
+        "pistachio oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.186,
+      "sapNaoh": 0.13262032085561495,
+      "sapMgKohPerGram": 186,
+      "iodine": 95,
+      "ins": 92,
+      "fattyAcids": {
+        "oleic": 63,
+        "stearic": 1,
+        "linoleic": 25,
+        "palmitic": 11
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.186,
+          "sapNaoh": 0.13262032085561495,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "plum-kernel-oil",
+      "displayName": "Plum Kernel Oil",
+      "aliases": [
+        "plum kernel oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "sapMgKohPerGram": 194,
+      "iodine": 98,
+      "ins": 96,
+      "fattyAcids": {
+        "oleic": 68,
+        "linoleic": 23,
+        "palmitic": 3
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "pomegranate-seed-oil",
+      "displayName": "Pomegranate Seed Oil",
+      "aliases": [
+        "pomegranate seed oil"
+      ],
+      "inciName": "Punica Granatum (Pomegranate) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.187,
+      "sapNaoh": 0.13333333333333333,
+      "sapMgKohPerGram": 187,
+      "iodine": 22,
+      "ins": 168,
+      "fattyAcids": {
+        "oleic": 7,
+        "stearic": 3,
+        "linoleic": 7,
+        "palmitic": 3,
+        "linolenic": 78
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 182,
+          "mgKohPerGramMax": 192,
+          "mgKohPerGram": 187,
+          "sapKoh": 0.187,
+          "sapNaoh": 0.13333333333333333,
+          "notes": "FNWL chart entry: Pomegranate Seed Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 187,
+          "mgKohPerGramMin": 182,
+          "mgKohPerGramMax": 192,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Punica Granatum (Pomegranate) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "poppy-seed-oil",
+      "displayName": "Poppy Seed Oil",
+      "aliases": [
+        "poppy seed oil"
+      ],
+      "inciName": "Papaver Somniferum (Poppy) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "sapMgKohPerGram": 194,
+      "iodine": 140,
+      "ins": 54,
+      "fattyAcids": {
+        "oleic": 17,
+        "stearic": 2,
+        "linoleic": 69,
+        "palmitic": 10,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 163,
+          "mgKohPerGramMax": 163,
+          "mgKohPerGram": 163,
+          "sapKoh": 0.163,
+          "sapNaoh": 0.11622103386809268,
+          "notes": "FNWL chart entry: Poppy Seed Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 163,
+          "mgKohPerGramMin": 163,
+          "mgKohPerGramMax": 163,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Papaver Somniferum (Poppy) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        },
+        {
+          "source": "manual",
+          "notes": "FNWL SAP differs by 16.0% (>10%); legacy SAP retained for lye safety"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "pracaxi-seed-oil-hair-conditioner",
+      "displayName": "Pracaxi (Pracachy) Seed Oil - hair conditioner",
+      "aliases": [
+        "pracaxi seed oil hair conditioner"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.175,
+      "sapNaoh": 0.124777183600713,
+      "sapMgKohPerGram": 175,
+      "iodine": 68,
+      "ins": 107,
+      "fattyAcids": {
+        "oleic": 44,
+        "lauric": 1,
+        "stearic": 2,
+        "linoleic": 2,
+        "myristic": 1,
+        "palmitic": 2,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.175,
+          "sapNaoh": 0.124777183600713,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "pumpkin-seed-oil",
+      "displayName": "Pumpkin Seed Oil virgin",
+      "aliases": [
+        "pumpkin seed oil"
+      ],
+      "inciName": "Cucurbita Pepo (Pumpkin) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 128,
+      "ins": 67,
+      "fattyAcids": {
+        "oleic": 33,
+        "stearic": 8,
+        "linoleic": 50,
+        "palmitic": 11
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 198,
+          "mgKohPerGram": 193,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Pumpkin Seed Oil, Organic, Virgin"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 193,
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 198,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Cucurbita Pepo (Pumpkin) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "rabbit-fat",
+      "displayName": "Rabbit Fat",
+      "aliases": [
+        "rabbit fat"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.201,
+      "sapNaoh": 0.14331550802139037,
+      "sapMgKohPerGram": 201,
+      "iodine": 85,
+      "ins": 116,
+      "fattyAcids": {
+        "oleic": 30,
+        "stearic": 6,
+        "linoleic": 20,
+        "myristic": 3,
+        "palmitic": 30,
+        "linolenic": 5
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.201,
+          "sapNaoh": 0.14331550802139037,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "rapeseed-oil-canola",
+      "displayName": "Rapeseed Oil, unrefined canola",
+      "aliases": [
+        "rapeseed oil canola"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.175,
+      "sapNaoh": 0.124777183600713,
+      "sapMgKohPerGram": 175,
+      "iodine": 106,
+      "ins": 69,
+      "fattyAcids": {
+        "oleic": 17,
+        "stearic": 1,
+        "linoleic": 13,
+        "palmitic": 4,
+        "linolenic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.175,
+          "sapNaoh": 0.124777183600713,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "raspberry-seed-oil",
+      "displayName": "Raspberry Seed Oil",
+      "aliases": [
+        "raspberry seed oil"
+      ],
+      "inciName": "Rubus Idaeus (Red Raspberry) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 163,
+      "ins": 24,
+      "fattyAcids": {
+        "oleic": 13,
+        "linoleic": 55,
+        "palmitic": 3,
+        "linolenic": 26
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.187,
+          "sapNaoh": 0.13333333333333333,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 188,
+          "mgKohPerGram": 188,
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "FNWL chart entry: Red Raspberry Seed Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 188,
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 188,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Rubus Idaeus (Red Raspberry) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "red-palm-butter",
+      "displayName": "Red Palm Butter",
+      "aliases": [
+        "red palm butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.199,
+      "sapNaoh": 0.14188948306595364,
+      "sapMgKohPerGram": 199,
+      "iodine": 53,
+      "ins": 145,
+      "fattyAcids": {
+        "oleic": 39,
+        "stearic": 5,
+        "linoleic": 10,
+        "myristic": 1,
+        "palmitic": 44
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.199,
+          "sapNaoh": 0.14188948306595364,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "rice-bran-oil",
+      "displayName": "Rice Bran Oil, refined",
+      "aliases": [
+        "rice bran oil"
+      ],
+      "inciName": "Oryza sativa (Rice) Bran Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
+      "iodine": 100,
+      "ins": 87,
+      "fattyAcids": {
+        "oleic": 38,
+        "stearic": 3,
+        "linoleic": 34,
+        "myristic": 1,
+        "palmitic": 22,
+        "linolenic": 2
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.187,
+          "sapNaoh": 0.13333333333333333,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Rice Bran Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Oryza sativa (Rice) Bran Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "rosehip-oil",
+      "displayName": "Rosehip Oil",
+      "aliases": [
+        "rosehip oil"
+      ],
+      "inciName": "Rosa Canina / Rosa Rubiginosa (Rose Hip) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.189,
+      "sapNaoh": 0.13475935828877006,
+      "sapMgKohPerGram": 189,
+      "iodine": 188,
+      "ins": 10,
+      "fattyAcids": {
+        "oleic": 12,
+        "stearic": 2,
+        "linoleic": 46,
+        "palmitic": 4,
+        "linolenic": 31
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.187,
+          "sapNaoh": 0.13333333333333333,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 193,
+          "mgKohPerGram": 189,
+          "sapKoh": 0.189,
+          "sapNaoh": 0.13475935828877006,
+          "notes": "FNWL chart entry: Rosehip Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 189,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 193,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Rosa Canina / Rosa Rubiginosa (Rose Hip) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "sacha-inchi-plukenetia-volubilis",
+      "displayName": "Sacha Inchi, Plukenetia volubilis",
+      "aliases": [
+        "sacha inchi plukenetia volubilis"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 141,
+      "ins": 47,
+      "fattyAcids": {
+        "oleic": 10,
+        "stearic": 3,
+        "linoleic": 35,
+        "palmitic": 4,
+        "linolenic": 48
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "safflower-oil",
+      "displayName": "Safflower Oil",
+      "aliases": [
+        "safflower oil"
+      ],
+      "inciName": "Carthamus tinctorus (Safflower) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 145,
+      "ins": 47,
+      "fattyAcids": {
+        "oleic": 15,
+        "linoleic": 75,
+        "palmitic": 7
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 187.5,
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "FNWL chart entry: High Linoleic Safflower Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 187.5,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Carthamus tinctorus (Safflower) Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "safflower-oil-high-oleic",
+      "displayName": "Safflower Oil, high oleic",
+      "aliases": [
+        "safflower oil high oleic"
+      ],
+      "inciName": "Carthamus Tinctorius (Safflower) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
+      "iodine": 93,
+      "ins": 97,
+      "fattyAcids": {
+        "oleic": 77,
+        "stearic": 2,
+        "linoleic": 15,
+        "palmitic": 5
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 198,
+          "mgKohPerGram": 192,
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "FNWL chart entry: Safflower Oil, Organic, High Oleic, Refined"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 192,
+          "mgKohPerGramMin": 186,
+          "mgKohPerGramMax": 198,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Carthamus Tinctorius (Safflower) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "sal-butter",
+      "displayName": "Sal Butter",
+      "aliases": [
+        "sal butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.185,
+      "sapNaoh": 0.1319073083778966,
+      "sapMgKohPerGram": 185,
+      "iodine": 39,
+      "ins": 146,
+      "fattyAcids": {
+        "oleic": 40,
+        "stearic": 44,
+        "linoleic": 2,
+        "palmitic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.185,
+          "sapNaoh": 0.1319073083778966,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "salmon-oil",
+      "displayName": "Salmon Oil",
+      "aliases": [
+        "salmon oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.185,
+      "sapNaoh": 0.1319073083778966,
+      "sapMgKohPerGram": 185,
+      "iodine": 169,
+      "ins": 16,
+      "fattyAcids": {
+        "oleic": 23,
+        "erucic": 7,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 5,
+        "palmitic": 19,
+        "linolenic": 1,
+        "eicosenoic": 20,
+        "docosadienoic": 16
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.185,
+          "sapNaoh": 0.1319073083778966,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "saw-palmetto-extract",
+      "displayName": "Saw Palmetto Extract",
+      "aliases": [
+        "saw palmetto extract"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.23,
+      "sapNaoh": 0.16399286987522282,
+      "sapMgKohPerGram": 230,
+      "iodine": 45,
+      "ins": 185,
+      "fattyAcids": {
+        "oleic": 35,
+        "lauric": 29,
+        "stearic": 2,
+        "linoleic": 4,
+        "myristic": 11,
+        "palmitic": 8,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.23,
+          "sapNaoh": 0.16399286987522282,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "saw-palmetto-oil",
+      "displayName": "Saw Palmetto Oil",
+      "aliases": [
+        "saw palmetto oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.22,
+      "sapNaoh": 0.1568627450980392,
+      "sapMgKohPerGram": 220,
+      "iodine": 44,
+      "ins": 176,
+      "fattyAcids": {
+        "oleic": 31,
+        "lauric": 29,
+        "stearic": 2,
+        "linoleic": 4,
+        "myristic": 13,
+        "palmitic": 9,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.22,
+          "sapNaoh": 0.1568627450980392,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "sea-buckthorn-oil-seed",
+      "displayName": "Sea Buckthorn Oil, seed",
+      "aliases": [
+        "sea buckthorn oil seed"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
+      "iodine": 165,
+      "ins": 30,
+      "fattyAcids": {
+        "oleic": 14,
+        "stearic": 3,
+        "linoleic": 36,
+        "palmitic": 7,
+        "linolenic": 38
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "sea-buckthorn-oil-seed-and-berry",
+      "displayName": "Sea Buckthorn Oil, seed and berry",
+      "aliases": [
+        "sea buckthorn oil seed and berry"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.183,
+      "sapNaoh": 0.13048128342245988,
+      "sapMgKohPerGram": 183,
+      "iodine": 86,
+      "ins": 97,
+      "fattyAcids": {
+        "oleic": 28,
+        "stearic": 1,
+        "linoleic": 10,
+        "palmitic": 30
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.183,
+          "sapNaoh": 0.13048128342245988,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "sesame-oil",
+      "displayName": "Sesame Oil",
+      "aliases": [
+        "sesame oil"
+      ],
+      "inciName": "Sesamum Indicum (Sesame) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 110,
+      "ins": 81,
+      "fattyAcids": {
+        "oleic": 40,
+        "stearic": 5,
+        "linoleic": 43,
+        "palmitic": 10
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 198,
+          "mgKohPerGram": 193,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Sesame Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 193,
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 198,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Sesamum Indicum (Sesame) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "shea-butter",
+      "displayName": "Shea Butter",
+      "aliases": [
+        "shea butter"
+      ],
+      "inciName": "Butyrospermum Parkii (Shea Butter) Fruit",
+      "category": "triglyceride",
+      "sapKoh": 0.18,
+      "sapNaoh": 0.1283422459893048,
+      "sapMgKohPerGram": 180,
+      "iodine": 59,
+      "ins": 116,
+      "fattyAcids": {
+        "oleic": 48,
+        "stearic": 40,
+        "linoleic": 6,
+        "palmitic": 5
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.179,
+          "sapNaoh": 0.12762923351158645,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 170,
+          "mgKohPerGramMax": 190,
+          "mgKohPerGram": 180,
+          "sapKoh": 0.18,
+          "sapNaoh": 0.1283422459893048,
+          "notes": "FNWL chart entry: Shea Butter"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 180,
+          "mgKohPerGramMin": 170,
+          "mgKohPerGramMax": 190,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Butyrospermum Parkii (Shea Butter) Fruit\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "shea-oil-fractionated",
+      "displayName": "Shea Oil, fractionated",
+      "aliases": [
+        "shea oil fractionated"
+      ],
+      "inciName": "Butyrospermum Parkii (Shea Butter) Extract and Citric Acid (0.001% added for stability)",
+      "category": "triglyceride",
+      "sapKoh": 0.183,
+      "sapNaoh": 0.13048128342245988,
+      "sapMgKohPerGram": 183,
+      "iodine": 83,
+      "ins": 102,
+      "fattyAcids": {
+        "oleic": 73,
+        "stearic": 10,
+        "linoleic": 11,
+        "palmitic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.185,
+          "sapNaoh": 0.1319073083778966,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 170,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 182.5,
+          "sapKoh": 0.183,
+          "sapNaoh": 0.13048128342245988,
+          "notes": "FNWL chart entry: Shea Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 182.5,
+          "mgKohPerGramMin": 170,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Butyrospermum Parkii (Shea Butter) Extract and Citric Acid (0.001% added for stability)\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "soapquick-conventional",
+      "displayName": "SoapQuick, conventional",
+      "aliases": [
+        "soapquick conventional"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.212,
+      "sapNaoh": 0.15115864527629233,
+      "sapMgKohPerGram": 212,
+      "iodine": 59,
+      "ins": 153,
+      "fattyAcids": {
+        "oleic": 42,
+        "lauric": 13,
+        "stearic": 3,
+        "linoleic": 8,
+        "myristic": 6,
+        "palmitic": 17,
+        "linolenic": 1,
+        "ricinoleic": 5
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.212,
+          "sapNaoh": 0.15115864527629233,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "soapquick",
+      "displayName": "SoapQuick, organic",
+      "aliases": [
+        "soapquick"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.213,
+      "sapNaoh": 0.15187165775401068,
+      "sapMgKohPerGram": 213,
+      "iodine": 56,
+      "ins": 156,
+      "fattyAcids": {
+        "oleic": 45,
+        "lauric": 13,
+        "stearic": 3,
+        "linoleic": 10,
+        "myristic": 5,
+        "palmitic": 20
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.213,
+          "sapNaoh": 0.15187165775401068,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "soybean-oil",
+      "displayName": "Soybean Oil",
+      "aliases": [
+        "soybean oil"
+      ],
+      "inciName": "Glycine Soja (Soybean) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
+      "iodine": 131,
+      "ins": 61,
+      "fattyAcids": {
+        "oleic": 24,
+        "stearic": 5,
+        "linoleic": 50,
+        "palmitic": 11,
+        "linolenic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 189,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 192,
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "FNWL chart entry: Soybean Oil, Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 192,
+          "mgKohPerGramMin": 189,
+          "mgKohPerGramMax": 195,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Glycine Soja (Soybean) Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "soybean-27-5-hydrogenated",
+      "displayName": "Soybean, 27.5% hydrogenated",
+      "aliases": [
+        "soybean 27 5 hydrogenated"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 78,
+      "ins": 113,
+      "fattyAcids": {
+        "oleic": 41,
+        "stearic": 15,
+        "linoleic": 7,
+        "palmitic": 9,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "soybean-fully-hydrogenated",
+      "displayName": "Soybean, fully hydrogenated (soy wax)",
+      "aliases": [
+        "soybean fully hydrogenated"
+      ],
+      "category": "wax",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
+      "iodine": 1,
+      "ins": 191,
+      "fattyAcids": {
+        "stearic": 87,
+        "palmitic": 11
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "stearic-acid",
+      "displayName": "Stearic Acid",
+      "aliases": [
+        "stearic acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "sapMgKohPerGram": 198,
+      "iodine": 2,
+      "ins": 196,
+      "fattyAcids": {
+        "stearic": 99
+      },
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.198,
+          "sapNaoh": 0.1411764705882353,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "sunflower-oil",
+      "displayName": "Sunflower Oil",
+      "aliases": [
+        "sunflower oil"
+      ],
+      "inciName": "Helianthus Annuus (Sunflower) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 133,
+      "ins": 63,
+      "fattyAcids": {
+        "oleic": 16,
+        "stearic": 4,
+        "linoleic": 70,
+        "palmitic": 7,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.189,
+          "sapNaoh": 0.13475935828877006,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 194,
+          "mgKohPerGram": 191,
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "FNWL chart entry: Sunflower Oil, Refined Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 191,
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 194,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Helianthus Annuus (Sunflower) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "sunflower-oil-high-oleic",
+      "displayName": "Sunflower Oil, high oleic",
+      "aliases": [
+        "sunflower oil high oleic"
+      ],
+      "inciName": "Helianthus Annuus (Sunflower) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 83,
+      "ins": 106,
+      "fattyAcids": {
+        "oleic": 83,
+        "stearic": 4,
+        "linoleic": 4,
+        "palmitic": 3,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.189,
+          "sapNaoh": 0.13475935828877006,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 194,
+          "mgKohPerGram": 191,
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "FNWL chart entry: Sunflower Oil, Refined Organic"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 191,
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 194,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Helianthus Annuus (Sunflower) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "tallow-bear",
+      "displayName": "Tallow Bear",
+      "aliases": [
+        "tallow bear"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.1946,
+      "sapNaoh": 0.13875222816399285,
+      "sapMgKohPerGram": 194.6,
+      "iodine": 92,
+      "ins": 100,
+      "fattyAcids": {
+        "oleic": 70,
+        "stearic": 3,
+        "linoleic": 9,
+        "myristic": 2,
+        "palmitic": 7
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.1946,
+          "sapNaoh": 0.13875222816399285,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "tallow-beef",
+      "displayName": "Tallow Beef",
+      "aliases": [
+        "tallow beef"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.196,
+      "sapNaoh": 0.13975044563279856,
+      "sapMgKohPerGram": 196,
+      "iodine": 45,
+      "ins": 147,
+      "fattyAcids": {
+        "oleic": 36,
+        "lauric": 2,
+        "stearic": 22,
+        "linoleic": 3,
+        "myristic": 6,
+        "palmitic": 28,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.2,
+          "sapNaoh": 0.14260249554367202,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 196,
+          "mgKohPerGramMax": 196,
+          "mgKohPerGram": 196,
+          "sapKoh": 0.196,
+          "sapNaoh": 0.13975044563279856,
+          "notes": "FNWL chart entry: Beef Tallow"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 196,
+          "mgKohPerGramMin": 196,
+          "mgKohPerGramMax": 196,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "tallow-deer",
+      "displayName": "Tallow Deer",
+      "aliases": [
+        "tallow deer"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 31,
+      "ins": 166,
+      "fattyAcids": {
+        "oleic": 30,
+        "stearic": 24,
+        "linoleic": 15,
+        "myristic": 1,
+        "palmitic": 20,
+        "linolenic": 3
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "tallow-goat",
+      "displayName": "Tallow Goat",
+      "aliases": [
+        "tallow goat"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
+      "iodine": 40,
+      "ins": 152,
+      "fattyAcids": {
+        "oleic": 29,
+        "lauric": 5,
+        "stearic": 30,
+        "linoleic": 2,
+        "myristic": 11,
+        "palmitic": 23
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "tallow-sheep",
+      "displayName": "Tallow Sheep",
+      "aliases": [
+        "tallow sheep"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "sapMgKohPerGram": 194,
+      "iodine": 54,
+      "ins": 156,
+      "fattyAcids": {
+        "oleic": 26,
+        "lauric": 4,
+        "stearic": 13,
+        "linoleic": 5,
+        "myristic": 10,
+        "palmitic": 24
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "tamanu-oil-kamani",
+      "displayName": "Tamanu Oil, kamani",
+      "aliases": [
+        "tamanu oil kamani"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.208,
+      "sapNaoh": 0.14830659536541888,
+      "sapMgKohPerGram": 208,
+      "iodine": 111,
+      "ins": 82,
+      "fattyAcids": {
+        "oleic": 34,
+        "stearic": 13,
+        "linoleic": 38,
+        "palmitic": 12,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.208,
+          "sapNaoh": 0.14830659536541888,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "tucuma-seed-butter",
+      "displayName": "Tucuma Seed Butter",
+      "aliases": [
+        "tucuma seed butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.238,
+      "sapNaoh": 0.16969696969696968,
+      "sapMgKohPerGram": 238,
+      "iodine": 13,
+      "ins": 175,
+      "fattyAcids": {
+        "oleic": 13,
+        "lauric": 48,
+        "myristic": 23,
+        "palmitic": 6
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.238,
+          "sapNaoh": 0.16969696969696968,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "walmart-gv-shortening-tallow-palm",
+      "displayName": "Walmart GV Shortening, tallow, palm",
+      "aliases": [
+        "walmart gv shortening tallow palm"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "sapMgKohPerGram": 198,
+      "iodine": 49,
+      "ins": 151,
+      "fattyAcids": {
+        "oleic": 37,
+        "lauric": 1,
+        "stearic": 14,
+        "linoleic": 6,
+        "myristic": 4,
+        "palmitic": 35,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.198,
+          "sapNaoh": 0.1411764705882353,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "walnut-oil",
+      "displayName": "Walnut Oil",
+      "aliases": [
+        "walnut oil"
+      ],
+      "inciName": "Juglans Regia (Walnut) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 145,
+      "ins": 45,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 2,
+        "linoleic": 60,
+        "palmitic": 7
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.189,
+          "sapNaoh": 0.13475935828877006,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 189,
+          "mgKohPerGramMax": 197,
+          "mgKohPerGram": 193,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Walnut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 193,
+          "mgKohPerGramMin": 189,
+          "mgKohPerGramMax": 197,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Juglans Regia (Walnut) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "watermelon-seed-oil",
+      "displayName": "Watermelon Seed Oil",
+      "aliases": [
+        "watermelon seed oil"
+      ],
+      "inciName": "Citrullus Lanatus (Watermelon) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
+      "iodine": 119,
+      "ins": 71,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 10,
+        "linoleic": 60,
+        "palmitic": 11,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 195,
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "FNWL chart entry: Watermelon Seed Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 195,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Citrullus Lanatus (Watermelon) Seed Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "wheat-germ-oil",
+      "displayName": "Wheat Germ Oil",
+      "aliases": [
+        "wheat germ oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.183,
+      "sapNaoh": 0.13048128342245988,
+      "sapMgKohPerGram": 183,
+      "iodine": 128,
+      "ins": 58,
+      "fattyAcids": {
+        "oleic": 17,
+        "stearic": 2,
+        "linoleic": 58,
+        "palmitic": 17
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.183,
+          "sapNaoh": 0.13048128342245988,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "yangu-cape-chestnut",
+      "displayName": "Yangu, cape chestnut",
+      "aliases": [
+        "yangu cape chestnut"
+      ],
+      "inciName": "Calodendrum Capense (Cape chestnut) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
+      "iodine": 95,
+      "ins": 97,
+      "fattyAcids": {
+        "oleic": 45,
+        "stearic": 5,
+        "linoleic": 30,
+        "palmitic": 18,
+        "linolenic": 1
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 192.5,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Yangu Cape Chestnut Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 192.5,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 200,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Calodendrum Capense (Cape chestnut) Oil\" found in FNWL-derived CosIng glossary index"
+        }
+      ],
+      "primarySource": "fnwl",
+      "confidence": "verified"
+    },
+    {
+      "id": "zapote-seed-oil",
+      "displayName": "Zapote seed oil, (Aceite de Sapuyul or Mamey)",
+      "aliases": [
+        "zapote seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
+      "iodine": 72,
+      "ins": 116,
+      "fattyAcids": {
+        "oleic": 52,
+        "stearic": 21,
+        "linoleic": 13,
+        "palmitic": 9
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "carnauba-wax",
+      "displayName": "Carnauba (Copernicia cerifera) wax",
+      "aliases": [
+        "carnauba wax"
+      ],
+      "category": "wax",
+      "sapKoh": 0.087,
+      "sapNaoh": 0.06203208556149732,
+      "sapMgKohPerGram": 87,
+      "iodine": 11,
+      "ins": 84,
+      "fattyAcids": {},
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.087,
+          "sapNaoh": 0.06203208556149732,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "ucuuba-butter",
+      "displayName": "Ucuuba Butter",
+      "aliases": [
+        "ucuuba butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.205,
+      "sapNaoh": 0.1461675579322638,
+      "sapMgKohPerGram": 205,
+      "iodine": 38,
+      "ins": 167,
+      "fattyAcids": {
+        "lauric": 18,
+        "myristic": 74,
+        "palmitic": 8
+      },
+      "propertiesAvailable": true,
+      "sources": [
+        {
+          "source": "legacy_soapee",
+          "sapKoh": 0.205,
+          "sapNaoh": 0.1461675579322638,
+          "notes": "Imported from oils.json (Soapee/SoapCalc lineage)"
+        }
+      ],
+      "primarySource": "legacy_soapee",
+      "confidence": "legacy_only"
+    },
+    {
+      "id": "birch-tar",
+      "displayName": "Birch Tar",
+      "aliases": [
+        "birch tar",
+        "birch tar oil",
+        "betula tar",
+        "betula alba tar",
+        "берёзовый дёготь",
+        "березовый деготь"
+      ],
+      "inciName": "Betula Alba Tar",
+      "category": "tar",
+      "sapRole": "acid_neutralization",
+      "usageNotes": "Lye consumption estimate only — not an ISO 3657 triglyceride SAP. Value proxied from pine tar; composition varies by grade and supplier. Calculator may include in lye math or treat as a trace additive.",
+      "sapKoh": 0.06,
+      "sapNaoh": 0.0427807486631016,
+      "sapMgKohPerGram": 60,
+      "iodine": 0,
+      "ins": 0,
+      "fattyAcids": {},
+      "propertiesAvailable": false,
+      "sources": [
+        {
+          "source": "manual",
+          "notes": "No published birch tar SAP in FNWL, SoapCalc, or ISO sources; proxy coefficient from pine tar for acid neutralization estimate",
+          "sapKoh": 0.06,
+          "sapNaoh": 0.0427807486631016
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.06,
+          "notes": "Pine tar reference entry: Pine Tar, lye calc only no FA (SoapCalc lineage)",
+          "sapNaoh": 0.0427807486631016
+        }
+      ],
+      "primarySource": "manual",
+      "confidence": "estimated"
+    }
+  ]
+}

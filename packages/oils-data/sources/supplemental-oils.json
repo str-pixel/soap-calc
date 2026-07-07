@@ -1,0 +1,33 @@
+{
+  "oils": [
+    {
+      "id": "birch-tar",
+      "displayName": "Birch Tar",
+      "aliases": [
+        "birch tar oil",
+        "betula tar",
+        "betula alba tar",
+        "берёзовый дёготь",
+        "березовый деготь"
+      ],
+      "inciName": "Betula Alba Tar",
+      "category": "tar",
+      "sapRole": "acid_neutralization",
+      "sapKoh": 0.06,
+      "usageNotes": "Lye consumption estimate only — not an ISO 3657 triglyceride SAP. Value proxied from pine tar; composition varies by grade and supplier. Calculator may include in lye math or treat as a trace additive.",
+      "primarySource": "manual",
+      "confidence": "estimated",
+      "sources": [
+        {
+          "source": "manual",
+          "notes": "No published birch tar SAP in FNWL, SoapCalc, or ISO sources; proxy coefficient from pine tar for acid neutralization estimate"
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.06,
+          "notes": "Pine tar reference entry: Pine Tar, lye calc only no FA (SoapCalc lineage)"
+        }
+      ]
+    }
+  ]
+}

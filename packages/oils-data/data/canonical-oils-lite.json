@@ -1,0 +1,2795 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-07-07T14:01:47.304Z",
+  "oils": [
+    {
+      "id": "abyssinian-oil",
+      "displayName": "Abyssinian Oil",
+      "aliases": [
+        "abyssinian oil"
+      ],
+      "category": "wax_ester",
+      "sapKoh": 0.168,
+      "sapNaoh": 0.11978609625668449,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "almond-butter",
+      "displayName": "Almond Butter",
+      "aliases": [
+        "almond butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 58,
+        "stearic": 15,
+        "linoleic": 16,
+        "myristic": 1,
+        "palmitic": 9
+      }
+    },
+    {
+      "id": "almond-oil-sweet",
+      "displayName": "Almond Oil, sweet",
+      "aliases": [
+        "almond oil sweet"
+      ],
+      "inciName": "Prunus Amygdalus Dulcis (Sweet Almond) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 71,
+        "linoleic": 18,
+        "palmitic": 7
+      }
+    },
+    {
+      "id": "aloe-butter",
+      "displayName": "Aloe Butter",
+      "aliases": [
+        "aloe butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.24,
+      "sapNaoh": 0.1711229946524064,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 7,
+        "lauric": 45,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 18,
+        "palmitic": 8
+      }
+    },
+    {
+      "id": "andiroba-oil-karaba-crabwood",
+      "displayName": "Andiroba Oil,karaba,crabwood",
+      "aliases": [
+        "andiroba oil karaba crabwood"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 51,
+        "stearic": 8,
+        "linoleic": 9,
+        "palmitic": 28
+      }
+    },
+    {
+      "id": "apricot-kernal-oil",
+      "displayName": "Apricot Kernal Oil",
+      "aliases": [
+        "apricot kernal oil"
+      ],
+      "inciName": "Prunus Armeniaca (Apricot) Kernel Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 66,
+        "linoleic": 27,
+        "palmitic": 6
+      }
+    },
+    {
+      "id": "argan-oil",
+      "displayName": "Argan Oil",
+      "aliases": [
+        "argan oil"
+      ],
+      "inciName": "Argania Spinosa (Argan) Kernel Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 46,
+        "linoleic": 34,
+        "myristic": 1,
+        "palmitic": 14,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "avocado-butter",
+      "displayName": "Avocado butter",
+      "aliases": [
+        "avocado butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.187,
+      "sapNaoh": 0.13333333333333333,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 53,
+        "stearic": 10,
+        "linoleic": 6,
+        "palmitic": 21,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "avocado-oil",
+      "displayName": "Avocado Oil",
+      "aliases": [
+        "avocado oil"
+      ],
+      "inciName": "Persea Gratissima (Avocado) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.202,
+      "sapNaoh": 0.14402852049910875,
+      "confidence": "estimated",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 58,
+        "stearic": 2,
+        "linoleic": 12,
+        "palmitic": 20
+      }
+    },
+    {
+      "id": "babassu-oil",
+      "displayName": "Babassu Oil",
+      "aliases": [
+        "babassu oil"
+      ],
+      "inciName": "Orbignya Oleifera (Babassu) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.251,
+      "sapNaoh": 0.17896613190730837,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 10,
+        "lauric": 50,
+        "stearic": 4,
+        "myristic": 20,
+        "palmitic": 11
+      }
+    },
+    {
+      "id": "baobab-oil",
+      "displayName": "Baobab Oil",
+      "aliases": [
+        "baobab oil"
+      ],
+      "inciName": "Adansonia Digitata (Baobab) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.2,
+      "sapNaoh": 0.14260249554367202,
+      "confidence": "estimated",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 37,
+        "stearic": 4,
+        "linoleic": 28,
+        "myristic": 1,
+        "palmitic": 24,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "beeswax",
+      "displayName": "Beeswax",
+      "aliases": [
+        "beeswax"
+      ],
+      "category": "wax",
+      "sapKoh": 0.094,
+      "sapNaoh": 0.06702317290552584,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "black-cumin-seed-oil-nigella-sativa",
+      "displayName": "Black Cumin Seed Oil, nigella sativa",
+      "aliases": [
+        "black cumin seed oil nigella sativa"
+      ],
+      "inciName": "Nigella Sativa (Black Cumin) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 22,
+        "stearic": 3,
+        "linoleic": 60,
+        "palmitic": 13,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "black-current-seed-oil",
+      "displayName": "Black Current Seed Oil",
+      "aliases": [
+        "black current seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 13,
+        "stearic": 2,
+        "linoleic": 46,
+        "palmitic": 6,
+        "linolenic": 29
+      }
+    },
+    {
+      "id": "borage-oil",
+      "displayName": "Borage Oil",
+      "aliases": [
+        "borage oil"
+      ],
+      "inciName": "Borago officinalis (Borage) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.186,
+      "sapNaoh": 0.13262032085561495,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 20,
+        "stearic": 4,
+        "linoleic": 43,
+        "palmitic": 10,
+        "linolenic": 5
+      }
+    },
+    {
+      "id": "brazil-nut-oil",
+      "displayName": "Brazil Nut Oil",
+      "aliases": [
+        "brazil nut oil"
+      ],
+      "inciName": "Bertholletia Excelsa (Brazil) Nut Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 39,
+        "stearic": 11,
+        "linoleic": 36,
+        "palmitic": 13
+      }
+    },
+    {
+      "id": "broccoli-seed-oil-brassica-oleracea",
+      "displayName": "Broccoli Seed Oil, Brassica Oleracea",
+      "aliases": [
+        "broccoli seed oil brassica oleracea"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.172,
+      "sapNaoh": 0.12263814616755792,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 14,
+        "erucic": 50,
+        "stearic": 1,
+        "linoleic": 11,
+        "palmitic": 3,
+        "linolenic": 9
+      }
+    },
+    {
+      "id": "buriti-oil",
+      "displayName": "Buriti Oil",
+      "aliases": [
+        "buriti oil"
+      ],
+      "inciName": "Mauritia Flexuosa (Buriti) Fruit Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.213,
+      "sapNaoh": 0.15187165775401068,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 71,
+        "stearic": 2,
+        "linoleic": 7,
+        "palmitic": 17,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "camelina-seed-oil",
+      "displayName": "Camelina Seed Oil",
+      "aliases": [
+        "camelina seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 24,
+        "stearic": 2,
+        "linoleic": 19,
+        "palmitic": 6,
+        "linolenic": 45
+      }
+    },
+    {
+      "id": "camellia-oil-tea-seed",
+      "displayName": "Camellia Oil, Tea Seed",
+      "aliases": [
+        "camellia oil tea seed"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 77,
+        "stearic": 2,
+        "linoleic": 8,
+        "palmitic": 9
+      }
+    },
+    {
+      "id": "candelilla-wax",
+      "displayName": "Candelilla Wax",
+      "aliases": [
+        "candelilla wax"
+      ],
+      "inciName": "Euphorbia Cerifera (Candelilla) Wax",
+      "category": "wax",
+      "sapKoh": 0.054,
+      "sapNaoh": 0.03850267379679144,
+      "confidence": "estimated",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "canola-oil",
+      "displayName": "Canola Oil",
+      "aliases": [
+        "canola oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.186,
+      "sapNaoh": 0.13262032085561495,
+      "confidence": "estimated",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 61,
+        "stearic": 2,
+        "linoleic": 21,
+        "palmitic": 4,
+        "linolenic": 9
+      }
+    },
+    {
+      "id": "canola-oil-high-oleic",
+      "displayName": "Canola Oil, high oleic",
+      "aliases": [
+        "canola oil high oleic"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.186,
+      "sapNaoh": 0.13262032085561495,
+      "confidence": "estimated",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 74,
+        "stearic": 2,
+        "linoleic": 12,
+        "palmitic": 4,
+        "linolenic": 4
+      }
+    },
+    {
+      "id": "carrot-seed-oil-cold-pressed",
+      "displayName": "Carrot Seed Oil, cold pressed",
+      "aliases": [
+        "carrot seed oil cold pressed"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.144,
+      "sapNaoh": 0.10267379679144384,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 80,
+        "linoleic": 13,
+        "palmitic": 4
+      }
+    },
+    {
+      "id": "castor-oil",
+      "displayName": "Castor Oil",
+      "aliases": [
+        "castor oil"
+      ],
+      "inciName": "Ricinus Communis (Castor) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.181,
+      "sapNaoh": 0.12905525846702315,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 4,
+        "linoleic": 4,
+        "ricinoleic": 90
+      }
+    },
+    {
+      "id": "cherry-kern1-oil-p-avium",
+      "displayName": "Cherry Kern1 Oil, p. avium",
+      "aliases": [
+        "cherry kern1 oil p avium"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 31,
+        "stearic": 3,
+        "linoleic": 45,
+        "palmitic": 8,
+        "linolenic": 11
+      }
+    },
+    {
+      "id": "cherry-kern2-oil-p-cerasus",
+      "displayName": "Cherry Kern2 Oil, p. cerasus",
+      "aliases": [
+        "cherry kern2 oil p cerasus"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 50,
+        "stearic": 3,
+        "linoleic": 40,
+        "palmitic": 6
+      }
+    },
+    {
+      "id": "chicken-fat",
+      "displayName": "Chicken Fat",
+      "aliases": [
+        "chicken fat"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 38,
+        "stearic": 7,
+        "linoleic": 21,
+        "myristic": 1,
+        "palmitic": 25
+      }
+    },
+    {
+      "id": "cocoa-butter",
+      "displayName": "Cocoa Butter",
+      "aliases": [
+        "cocoa butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 35,
+        "stearic": 33,
+        "linoleic": 3,
+        "palmitic": 28
+      }
+    },
+    {
+      "id": "coconut-oil-76",
+      "displayName": "Coconut Oil, 76 deg",
+      "aliases": [
+        "coconut oil 76"
+      ],
+      "inciName": "Cocos Nucifera (Coconut) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.26,
+      "sapNaoh": 0.1853832442067736,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 8,
+        "lauric": 48,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 19,
+        "palmitic": 9
+      }
+    },
+    {
+      "id": "coconut-oil-92",
+      "displayName": "Coconut Oil, 92 deg",
+      "aliases": [
+        "coconut oil 92"
+      ],
+      "inciName": "Cocos Nucifera (Coconut) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.26,
+      "sapNaoh": 0.1853832442067736,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 8,
+        "lauric": 48,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 19,
+        "palmitic": 9
+      }
+    },
+    {
+      "id": "coconut-oil-fractionated",
+      "displayName": "Coconut Oil, fractionated",
+      "aliases": [
+        "coconut oil fractionated"
+      ],
+      "inciName": "Caprylic/Capric Triglyceride",
+      "category": "triglyceride",
+      "sapKoh": 0.348,
+      "sapNaoh": 0.2481283422459893,
+      "confidence": "estimated",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "capric": 43,
+        "lauric": 2,
+        "caprylic": 54,
+        "myristic": 1
+      }
+    },
+    {
+      "id": "coffee-bean-oil-green",
+      "displayName": "Coffee Bean Oil, green",
+      "aliases": [
+        "coffee bean oil green"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.185,
+      "sapNaoh": 0.1319073083778966,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 9,
+        "stearic": 8,
+        "linoleic": 39,
+        "palmitic": 38,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "coffee-bean-oil-roasted",
+      "displayName": "Coffee Bean Oil, roasted",
+      "aliases": [
+        "coffee bean oil roasted"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.18,
+      "sapNaoh": 0.1283422459893048,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 8,
+        "linoleic": 38,
+        "palmitic": 40,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "cohune-oil",
+      "displayName": "Cohune Oil",
+      "aliases": [
+        "cohune oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.205,
+      "sapNaoh": 0.1461675579322638,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 18,
+        "lauric": 51,
+        "stearic": 3,
+        "linoleic": 3,
+        "myristic": 13,
+        "palmitic": 8
+      }
+    },
+    {
+      "id": "corn-oil",
+      "displayName": "Corn Oil",
+      "aliases": [
+        "corn oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 32,
+        "stearic": 2,
+        "linoleic": 51,
+        "palmitic": 12,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "cottonseed-oil",
+      "displayName": "Cottonseed Oil",
+      "aliases": [
+        "cottonseed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 13,
+        "linoleic": 52,
+        "palmitic": 13,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "cranberry-seed-oil",
+      "displayName": "Cranberry Seed Oil",
+      "aliases": [
+        "cranberry seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 23,
+        "stearic": 2,
+        "linoleic": 37,
+        "palmitic": 6,
+        "linolenic": 32
+      }
+    },
+    {
+      "id": "crisco-new-w-palm",
+      "displayName": "Crisco, new w/palm",
+      "aliases": [
+        "crisco new w palm"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 28,
+        "stearic": 5,
+        "linoleic": 40,
+        "palmitic": 20,
+        "linolenic": 6
+      }
+    },
+    {
+      "id": "crisco-old",
+      "displayName": "Crisco, old",
+      "aliases": [
+        "crisco old"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 13,
+        "linoleic": 52,
+        "palmitic": 13
+      }
+    },
+    {
+      "id": "cupuacu-butter",
+      "displayName": "Cupuacu Butter",
+      "aliases": [
+        "cupuacu butter"
+      ],
+      "inciName": "Theobroma Grandiflorum (Cupuacu) Seed Butter",
+      "category": "triglyceride",
+      "sapKoh": 0.223,
+      "sapNaoh": 0.1590017825311943,
+      "confidence": "estimated",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 42,
+        "stearic": 35,
+        "linoleic": 2,
+        "palmitic": 8
+      }
+    },
+    {
+      "id": "duck-fat-flesh-and-skin",
+      "displayName": "Duck Fat, flesh and skin",
+      "aliases": [
+        "duck fat flesh and skin"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 44,
+        "stearic": 9,
+        "linoleic": 13,
+        "myristic": 1,
+        "palmitic": 26,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "emu-oil",
+      "displayName": "Emu Oil",
+      "aliases": [
+        "emu oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 47,
+        "stearic": 9,
+        "linoleic": 8,
+        "palmitic": 23
+      }
+    },
+    {
+      "id": "evening-primrose-oil",
+      "displayName": "Evening Primrose Oil",
+      "aliases": [
+        "evening primrose oil"
+      ],
+      "inciName": "Oenothera Biennis (Evening Primrose) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "linoleic": 80,
+        "linolenic": 9
+      }
+    },
+    {
+      "id": "flax-oil-linseed",
+      "displayName": "Flax Oil, linseed",
+      "aliases": [
+        "flax oil linseed"
+      ],
+      "inciName": "Linum Usitatissimum (Linseed) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 27,
+        "stearic": 3,
+        "linoleic": 13,
+        "palmitic": 6,
+        "linolenic": 50
+      }
+    },
+    {
+      "id": "ghee-any-bovine",
+      "displayName": "Ghee, any bovine",
+      "aliases": [
+        "ghee any bovine"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.227,
+      "sapNaoh": 0.16185383244206772,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 19,
+        "lauric": 4,
+        "stearic": 12,
+        "linoleic": 2,
+        "myristic": 11,
+        "palmitic": 28,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "goose-fat",
+      "displayName": "Goose Fat",
+      "aliases": [
+        "goose fat"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 54,
+        "stearic": 6,
+        "linoleic": 10,
+        "palmitic": 21
+      }
+    },
+    {
+      "id": "grapeseed-oil",
+      "displayName": "Grapeseed Oil",
+      "aliases": [
+        "grapeseed oil"
+      ],
+      "inciName": "Vitis vinifera (Grape) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "estimated",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 20,
+        "stearic": 4,
+        "linoleic": 68,
+        "palmitic": 8
+      }
+    },
+    {
+      "id": "hazelnut-oil",
+      "displayName": "Hazelnut Oil",
+      "aliases": [
+        "hazelnut oil"
+      ],
+      "inciName": "Corylus Avellana (Hazel) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 75,
+        "stearic": 3,
+        "linoleic": 10,
+        "palmitic": 5
+      }
+    },
+    {
+      "id": "hemp-oil",
+      "displayName": "Hemp Oil",
+      "aliases": [
+        "hemp oil"
+      ],
+      "inciName": "Cannabis Sativa (Hemp) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 12,
+        "stearic": 2,
+        "linoleic": 57,
+        "palmitic": 6,
+        "linolenic": 21
+      }
+    },
+    {
+      "id": "horse-oil",
+      "displayName": "Horse Oil",
+      "aliases": [
+        "horse oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.196,
+      "sapNaoh": 0.13975044563279856,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 10,
+        "stearic": 5,
+        "linoleic": 20,
+        "myristic": 3,
+        "palmitic": 26,
+        "linolenic": 19
+      }
+    },
+    {
+      "id": "illipe-butter",
+      "displayName": "Illipe Butter",
+      "aliases": [
+        "illipe butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.185,
+      "sapNaoh": 0.1319073083778966,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 35,
+        "stearic": 45,
+        "palmitic": 17
+      }
+    },
+    {
+      "id": "japan-wax",
+      "displayName": "Japan Wax",
+      "aliases": [
+        "japan wax"
+      ],
+      "category": "wax",
+      "sapKoh": 0.215,
+      "sapNaoh": 0.1532976827094474,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "jatropha-oil-soapnut-seed-oil",
+      "displayName": "Jatropha Oil, soapnut seed oil",
+      "aliases": [
+        "jatropha oil soapnut seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 44,
+        "stearic": 7,
+        "linoleic": 34,
+        "palmitic": 9
+      }
+    },
+    {
+      "id": "jojoba-oil",
+      "displayName": "Jojoba Oil (a Liquid Wax Ester)",
+      "aliases": [
+        "jojoba oil"
+      ],
+      "category": "wax_ester",
+      "sapKoh": 0.092,
+      "sapNaoh": 0.06559714795008913,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "karanja-oil",
+      "displayName": "Karanja Oil",
+      "aliases": [
+        "karanja oil"
+      ],
+      "inciName": "Pongamia Glabra (Karanja) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 58,
+        "stearic": 6,
+        "linoleic": 15,
+        "palmitic": 6
+      }
+    },
+    {
+      "id": "kokum-butter",
+      "displayName": "Kokum Butter",
+      "aliases": [
+        "kokum butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 36,
+        "stearic": 56,
+        "linoleic": 1,
+        "palmitic": 4
+      }
+    },
+    {
+      "id": "kpangnan-butter",
+      "displayName": "Kpangnan Butter",
+      "aliases": [
+        "kpangnan butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 49,
+        "stearic": 44,
+        "linoleic": 1,
+        "palmitic": 6
+      }
+    },
+    {
+      "id": "kukui-nut-oil",
+      "displayName": "Kukui nut Oil",
+      "aliases": [
+        "kukui nut oil"
+      ],
+      "inciName": "Aleurites moluccana (Kukui) Nut Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 20,
+        "stearic": 2,
+        "linoleic": 42,
+        "palmitic": 6,
+        "linolenic": 29
+      }
+    },
+    {
+      "id": "lanolin-liquid-wax",
+      "displayName": "Lanolin liquid Wax",
+      "aliases": [
+        "lanolin liquid wax"
+      ],
+      "category": "wax",
+      "sapKoh": 0.106,
+      "sapNaoh": 0.07557932263814617,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "myristic-acid",
+      "displayName": "Myristic Acid",
+      "aliases": [
+        "myristic acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.247,
+      "sapNaoh": 0.1761140819964349,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "lard-pig-tallow",
+      "displayName": "Lard, Pig Tallow (Manteca)",
+      "aliases": [
+        "lard pig tallow"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 46,
+        "stearic": 13,
+        "linoleic": 6,
+        "myristic": 1,
+        "palmitic": 28
+      }
+    },
+    {
+      "id": "laurel-fruit-oil",
+      "displayName": "Laurel Fruit Oil",
+      "aliases": [
+        "laurel fruit oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 31,
+        "lauric": 25,
+        "stearic": 1,
+        "linoleic": 26,
+        "myristic": 1,
+        "palmitic": 15,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "lauric-acid",
+      "displayName": "Lauric Acid",
+      "aliases": [
+        "lauric acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.28,
+      "sapNaoh": 0.19964349376114082,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "linseed-oil-flax",
+      "displayName": "Linseed Oil, flax",
+      "aliases": [
+        "linseed oil flax"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 27,
+        "stearic": 3,
+        "linoleic": 13,
+        "palmitic": 6,
+        "linolenic": 50
+      }
+    },
+    {
+      "id": "loofa-seed-oil-luffa-cylinderica",
+      "displayName": "Loofa Seed Oil, Luffa cylinderica",
+      "aliases": [
+        "loofa seed oil luffa cylinderica"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.187,
+      "sapNaoh": 0.13333333333333333,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 30,
+        "stearic": 18,
+        "linoleic": 47,
+        "palmitic": 9
+      }
+    },
+    {
+      "id": "macadamia-nut-butter",
+      "displayName": "Macadamia Nut Butter",
+      "aliases": [
+        "macadamia nut butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 56,
+        "stearic": 12,
+        "linoleic": 3,
+        "myristic": 1,
+        "palmitic": 6,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "macadamia-nut-oil",
+      "displayName": "Macadamia Nut Oil",
+      "aliases": [
+        "macadamia nut oil"
+      ],
+      "inciName": "Macadamia Integrifolia (Macadamia) Nut Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 59,
+        "stearic": 5,
+        "linoleic": 2,
+        "palmitic": 9
+      }
+    },
+    {
+      "id": "mafura-butter-trichilia-emetica",
+      "displayName": "Mafura Butter, Trichilia emetica ",
+      "aliases": [
+        "mafura butter trichilia emetica"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 49,
+        "stearic": 3,
+        "linoleic": 11,
+        "myristic": 1,
+        "palmitic": 37,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "mango-seed-butter",
+      "displayName": "Mango Seed Butter",
+      "aliases": [
+        "mango seed butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 45,
+        "stearic": 42,
+        "linoleic": 3,
+        "palmitic": 7
+      }
+    },
+    {
+      "id": "mango-seed-oil",
+      "displayName": "Mango Seed Oil",
+      "aliases": [
+        "mango seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 52,
+        "stearic": 27,
+        "linoleic": 8,
+        "palmitic": 8,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "marula-oil",
+      "displayName": "Marula Oil",
+      "aliases": [
+        "marula oil"
+      ],
+      "inciName": "Sclerocarya Birrea (Marula) Kernel Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.197,
+      "sapNaoh": 0.14046345811051694,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 75,
+        "stearic": 7,
+        "linoleic": 4,
+        "palmitic": 11
+      }
+    },
+    {
+      "id": "meadowfoam-oil",
+      "displayName": "Meadowfoam Oil",
+      "aliases": [
+        "meadowfoam oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.169,
+      "sapNaoh": 0.12049910873440285,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "docosenoid": 16,
+        "eicosenoic": 61,
+        "docosadienoic": 18
+      }
+    },
+    {
+      "id": "milk-fat-any-bovine",
+      "displayName": "Milk Fat, any bovine",
+      "aliases": [
+        "milk fat any bovine"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.227,
+      "sapNaoh": 0.16185383244206772,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 19,
+        "lauric": 4,
+        "stearic": 12,
+        "linoleic": 2,
+        "myristic": 11,
+        "palmitic": 28,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "milk-thistle-oil",
+      "displayName": "Milk Thistle Oil",
+      "aliases": [
+        "milk thistle oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.196,
+      "sapNaoh": 0.13975044563279856,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 26,
+        "stearic": 2,
+        "linoleic": 64,
+        "palmitic": 7
+      }
+    },
+    {
+      "id": "mink-oil",
+      "displayName": "Mink Oil",
+      "aliases": [
+        "mink oil"
+      ],
+      "category": "wax_ester",
+      "sapKoh": 0.196,
+      "sapNaoh": 0.13975044563279856,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "monoi-de-tahiti-oil",
+      "displayName": "Monoi de Tahiti  Oil",
+      "aliases": [
+        "monoi de tahiti oil"
+      ],
+      "inciName": "Cocos Nucifera (Coconut) Oil (and) Gardenia Tahitensis (Tiare) Flower Extract (and) Tocopherol (and) Helianthus Annus (Sunflower) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.255,
+      "sapNaoh": 0.18181818181818182,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "lauric": 44,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 16,
+        "palmitic": 10
+      }
+    },
+    {
+      "id": "moringa-oil",
+      "displayName": "Moringa Oil",
+      "aliases": [
+        "moringa oil"
+      ],
+      "inciName": "Moringa Oleifera Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 71,
+        "stearic": 7,
+        "linoleic": 2,
+        "palmitic": 7
+      }
+    },
+    {
+      "id": "mowrah-butter",
+      "displayName": "Mowrah Butter",
+      "aliases": [
+        "mowrah butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 36,
+        "stearic": 22,
+        "linoleic": 15,
+        "palmitic": 24
+      }
+    },
+    {
+      "id": "murumuru-butter",
+      "displayName": "Murumuru Butter",
+      "aliases": [
+        "murumuru butter"
+      ],
+      "inciName": "Astrocaryum Murumuru Seed Butter",
+      "category": "triglyceride",
+      "sapKoh": 0.275,
+      "sapNaoh": 0.19607843137254902,
+      "confidence": "estimated",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 15,
+        "lauric": 47,
+        "stearic": 3,
+        "linoleic": 3,
+        "myristic": 26,
+        "palmitic": 6
+      }
+    },
+    {
+      "id": "mustard-oil-kachi-ghani",
+      "displayName": "Mustard Oil, kachi ghani",
+      "aliases": [
+        "mustard oil kachi ghani"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.172,
+      "sapNaoh": 0.12263814616755792,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 2,
+        "linoleic": 14,
+        "palmitic": 2,
+        "linolenic": 9
+      }
+    },
+    {
+      "id": "neatsfoot-oil",
+      "displayName": "Neatsfoot Oil",
+      "aliases": [
+        "neatsfoot oil"
+      ],
+      "category": "wax_ester",
+      "sapKoh": 0.18,
+      "sapNaoh": 0.1283422459893048,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "neem-seed-oil",
+      "displayName": "Neem Seed Oil",
+      "aliases": [
+        "neem seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 46,
+        "stearic": 16,
+        "linoleic": 12,
+        "myristic": 2,
+        "palmitic": 21
+      }
+    },
+    {
+      "id": "nutmeg-butter",
+      "displayName": "Nutmeg Butter",
+      "aliases": [
+        "nutmeg butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.1624,
+      "sapNaoh": 0.11579322638146167,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 5,
+        "lauric": 3,
+        "myristic": 83,
+        "palmitic": 4
+      }
+    },
+    {
+      "id": "oat-oil",
+      "displayName": "Oat Oil",
+      "aliases": [
+        "oat oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 40,
+        "stearic": 2,
+        "linoleic": 39,
+        "palmitic": 15
+      }
+    },
+    {
+      "id": "oleic-acid",
+      "displayName": "Oleic Acid",
+      "aliases": [
+        "oleic acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.202,
+      "sapNaoh": 0.14402852049910875,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "olive-oil",
+      "displayName": "Olive Oil",
+      "aliases": [
+        "olive oil"
+      ],
+      "inciName": "Olea Europaea (Olive) Fruit Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 69,
+        "stearic": 3,
+        "linoleic": 12,
+        "palmitic": 14,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "olive-oil-pomace",
+      "displayName": "Olive Oil  pomace",
+      "aliases": [
+        "olive oil pomace"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 69,
+        "stearic": 3,
+        "linoleic": 12,
+        "palmitic": 14,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "ostrich-oil",
+      "displayName": "Ostrich Oil",
+      "aliases": [
+        "ostrich oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.1946,
+      "sapNaoh": 0.13875222816399285,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 37,
+        "lauric": 3,
+        "stearic": 6,
+        "linoleic": 17,
+        "myristic": 1,
+        "palmitic": 26,
+        "linolenic": 3
+      }
+    },
+    {
+      "id": "palm-kernel-oil",
+      "displayName": "Palm Kernel Oil",
+      "aliases": [
+        "palm kernel oil"
+      ],
+      "inciName": "Elaeis guineensis Palm kernel oil",
+      "category": "triglyceride",
+      "sapKoh": 0.247,
+      "sapNaoh": 0.1761140819964349,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 15,
+        "lauric": 49,
+        "stearic": 2,
+        "linoleic": 3,
+        "myristic": 16,
+        "palmitic": 8
+      }
+    },
+    {
+      "id": "palm-kernel-oil-flakes-hydrogenated",
+      "displayName": "Palm Kernel Oil Flakes, hydrogenated",
+      "aliases": [
+        "palm kernel oil flakes hydrogenated"
+      ],
+      "inciName": "Elaeis guineensis Palm kernel oil",
+      "category": "triglyceride",
+      "sapKoh": 0.247,
+      "sapNaoh": 0.1761140819964349,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 4,
+        "lauric": 49,
+        "stearic": 16,
+        "myristic": 17,
+        "palmitic": 8
+      }
+    },
+    {
+      "id": "palm-oil",
+      "displayName": "Palm Oil",
+      "aliases": [
+        "palm oil"
+      ],
+      "inciName": "Elaeis guineensis (Palm) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 39,
+        "stearic": 5,
+        "linoleic": 10,
+        "myristic": 1,
+        "palmitic": 44
+      }
+    },
+    {
+      "id": "palm-stearin",
+      "displayName": "Palm Stearin",
+      "aliases": [
+        "palm stearin"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.199,
+      "sapNaoh": 0.14188948306595364,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 26,
+        "stearic": 5,
+        "linoleic": 7,
+        "myristic": 2,
+        "palmitic": 60
+      }
+    },
+    {
+      "id": "palmitic-acid",
+      "displayName": "Palmitic Acid",
+      "aliases": [
+        "palmitic acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.215,
+      "sapNaoh": 0.1532976827094474,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "palmolein",
+      "displayName": "Palmolein",
+      "aliases": [
+        "palmolein"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.2,
+      "sapNaoh": 0.14260249554367202,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 43,
+        "stearic": 5,
+        "linoleic": 11,
+        "myristic": 1,
+        "palmitic": 40
+      }
+    },
+    {
+      "id": "papaya-seed-oil-carica-papaya",
+      "displayName": "Papaya seed oil, Carica papaya",
+      "aliases": [
+        "papaya seed oil carica papaya"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.158,
+      "sapNaoh": 0.11265597147950089,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 76,
+        "stearic": 5,
+        "linoleic": 3,
+        "palmitic": 13
+      }
+    },
+    {
+      "id": "passion-fruit-seed-oil",
+      "displayName": "Passion Fruit Seed Oil",
+      "aliases": [
+        "passion fruit seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.183,
+      "sapNaoh": 0.13048128342245988,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 15,
+        "stearic": 3,
+        "linoleic": 70,
+        "palmitic": 10,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "pataua-oil",
+      "displayName": "Pataua (Patawa) Oil",
+      "aliases": [
+        "pataua oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.2,
+      "sapNaoh": 0.14260249554367202,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 78,
+        "stearic": 4,
+        "linoleic": 3,
+        "palmitic": 13,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "peach-kernel-oil",
+      "displayName": "Peach Kernel Oil",
+      "aliases": [
+        "peach kernel oil"
+      ],
+      "inciName": "Prunus Persica (Peach) Kernel Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 65,
+        "stearic": 2,
+        "linoleic": 25,
+        "palmitic": 6,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "peanut-oil",
+      "displayName": "Peanut Oil",
+      "aliases": [
+        "peanut oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 56,
+        "stearic": 3,
+        "linoleic": 26,
+        "palmitic": 8
+      }
+    },
+    {
+      "id": "pecan-oil",
+      "displayName": "Pecan Oil",
+      "aliases": [
+        "pecan oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 50,
+        "stearic": 2,
+        "linoleic": 39,
+        "palmitic": 7,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "perilla-seed-oil",
+      "displayName": "Perilla Seed Oil",
+      "aliases": [
+        "perilla seed oil"
+      ],
+      "inciName": "Perilla Frutescens (Perilla) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 15,
+        "stearic": 2,
+        "linoleic": 16,
+        "palmitic": 6,
+        "linolenic": 56
+      }
+    },
+    {
+      "id": "pine-tar-lye-calc-only-no-fa",
+      "displayName": "Pine Tar, lye calc only no FA",
+      "aliases": [
+        "pine tar lye calc only no fa"
+      ],
+      "category": "tar",
+      "sapRole": "acid_neutralization",
+      "sapKoh": 0.06,
+      "sapNaoh": 0.0427807486631016,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "pistachio-oil",
+      "displayName": "Pistachio Oil",
+      "aliases": [
+        "pistachio oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.186,
+      "sapNaoh": 0.13262032085561495,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 63,
+        "stearic": 1,
+        "linoleic": 25,
+        "palmitic": 11
+      }
+    },
+    {
+      "id": "plum-kernel-oil",
+      "displayName": "Plum Kernel Oil",
+      "aliases": [
+        "plum kernel oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 68,
+        "linoleic": 23,
+        "palmitic": 3
+      }
+    },
+    {
+      "id": "pomegranate-seed-oil",
+      "displayName": "Pomegranate Seed Oil",
+      "aliases": [
+        "pomegranate seed oil"
+      ],
+      "inciName": "Punica Granatum (Pomegranate) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.187,
+      "sapNaoh": 0.13333333333333333,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 7,
+        "stearic": 3,
+        "linoleic": 7,
+        "palmitic": 3,
+        "linolenic": 78
+      }
+    },
+    {
+      "id": "poppy-seed-oil",
+      "displayName": "Poppy Seed Oil",
+      "aliases": [
+        "poppy seed oil"
+      ],
+      "inciName": "Papaver Somniferum (Poppy) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 17,
+        "stearic": 2,
+        "linoleic": 69,
+        "palmitic": 10,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "pracaxi-seed-oil-hair-conditioner",
+      "displayName": "Pracaxi (Pracachy) Seed Oil - hair conditioner",
+      "aliases": [
+        "pracaxi seed oil hair conditioner"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.175,
+      "sapNaoh": 0.124777183600713,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 44,
+        "lauric": 1,
+        "stearic": 2,
+        "linoleic": 2,
+        "myristic": 1,
+        "palmitic": 2,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "pumpkin-seed-oil",
+      "displayName": "Pumpkin Seed Oil virgin",
+      "aliases": [
+        "pumpkin seed oil"
+      ],
+      "inciName": "Cucurbita Pepo (Pumpkin) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 33,
+        "stearic": 8,
+        "linoleic": 50,
+        "palmitic": 11
+      }
+    },
+    {
+      "id": "rabbit-fat",
+      "displayName": "Rabbit Fat",
+      "aliases": [
+        "rabbit fat"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.201,
+      "sapNaoh": 0.14331550802139037,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 30,
+        "stearic": 6,
+        "linoleic": 20,
+        "myristic": 3,
+        "palmitic": 30,
+        "linolenic": 5
+      }
+    },
+    {
+      "id": "rapeseed-oil-canola",
+      "displayName": "Rapeseed Oil, unrefined canola",
+      "aliases": [
+        "rapeseed oil canola"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.175,
+      "sapNaoh": 0.124777183600713,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 17,
+        "stearic": 1,
+        "linoleic": 13,
+        "palmitic": 4,
+        "linolenic": 9
+      }
+    },
+    {
+      "id": "raspberry-seed-oil",
+      "displayName": "Raspberry Seed Oil",
+      "aliases": [
+        "raspberry seed oil"
+      ],
+      "inciName": "Rubus Idaeus (Red Raspberry) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 13,
+        "linoleic": 55,
+        "palmitic": 3,
+        "linolenic": 26
+      }
+    },
+    {
+      "id": "red-palm-butter",
+      "displayName": "Red Palm Butter",
+      "aliases": [
+        "red palm butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.199,
+      "sapNaoh": 0.14188948306595364,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 39,
+        "stearic": 5,
+        "linoleic": 10,
+        "myristic": 1,
+        "palmitic": 44
+      }
+    },
+    {
+      "id": "rice-bran-oil",
+      "displayName": "Rice Bran Oil, refined",
+      "aliases": [
+        "rice bran oil"
+      ],
+      "inciName": "Oryza sativa (Rice) Bran Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 38,
+        "stearic": 3,
+        "linoleic": 34,
+        "myristic": 1,
+        "palmitic": 22,
+        "linolenic": 2
+      }
+    },
+    {
+      "id": "rosehip-oil",
+      "displayName": "Rosehip Oil",
+      "aliases": [
+        "rosehip oil"
+      ],
+      "inciName": "Rosa Canina / Rosa Rubiginosa (Rose Hip) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.189,
+      "sapNaoh": 0.13475935828877006,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 12,
+        "stearic": 2,
+        "linoleic": 46,
+        "palmitic": 4,
+        "linolenic": 31
+      }
+    },
+    {
+      "id": "sacha-inchi-plukenetia-volubilis",
+      "displayName": "Sacha Inchi, Plukenetia volubilis",
+      "aliases": [
+        "sacha inchi plukenetia volubilis"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 10,
+        "stearic": 3,
+        "linoleic": 35,
+        "palmitic": 4,
+        "linolenic": 48
+      }
+    },
+    {
+      "id": "safflower-oil",
+      "displayName": "Safflower Oil",
+      "aliases": [
+        "safflower oil"
+      ],
+      "inciName": "Carthamus tinctorus (Safflower) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 15,
+        "linoleic": 75,
+        "palmitic": 7
+      }
+    },
+    {
+      "id": "safflower-oil-high-oleic",
+      "displayName": "Safflower Oil, high oleic",
+      "aliases": [
+        "safflower oil high oleic"
+      ],
+      "inciName": "Carthamus Tinctorius (Safflower) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 77,
+        "stearic": 2,
+        "linoleic": 15,
+        "palmitic": 5
+      }
+    },
+    {
+      "id": "sal-butter",
+      "displayName": "Sal Butter",
+      "aliases": [
+        "sal butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.185,
+      "sapNaoh": 0.1319073083778966,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 40,
+        "stearic": 44,
+        "linoleic": 2,
+        "palmitic": 6
+      }
+    },
+    {
+      "id": "salmon-oil",
+      "displayName": "Salmon Oil",
+      "aliases": [
+        "salmon oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.185,
+      "sapNaoh": 0.1319073083778966,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 23,
+        "erucic": 7,
+        "stearic": 3,
+        "linoleic": 2,
+        "myristic": 5,
+        "palmitic": 19,
+        "linolenic": 1,
+        "eicosenoic": 20,
+        "docosadienoic": 16
+      }
+    },
+    {
+      "id": "saw-palmetto-extract",
+      "displayName": "Saw Palmetto Extract",
+      "aliases": [
+        "saw palmetto extract"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.23,
+      "sapNaoh": 0.16399286987522282,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 35,
+        "lauric": 29,
+        "stearic": 2,
+        "linoleic": 4,
+        "myristic": 11,
+        "palmitic": 8,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "saw-palmetto-oil",
+      "displayName": "Saw Palmetto Oil",
+      "aliases": [
+        "saw palmetto oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.22,
+      "sapNaoh": 0.1568627450980392,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 31,
+        "lauric": 29,
+        "stearic": 2,
+        "linoleic": 4,
+        "myristic": 13,
+        "palmitic": 9,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "sea-buckthorn-oil-seed",
+      "displayName": "Sea Buckthorn Oil, seed",
+      "aliases": [
+        "sea buckthorn oil seed"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 14,
+        "stearic": 3,
+        "linoleic": 36,
+        "palmitic": 7,
+        "linolenic": 38
+      }
+    },
+    {
+      "id": "sea-buckthorn-oil-seed-and-berry",
+      "displayName": "Sea Buckthorn Oil, seed and berry",
+      "aliases": [
+        "sea buckthorn oil seed and berry"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.183,
+      "sapNaoh": 0.13048128342245988,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 28,
+        "stearic": 1,
+        "linoleic": 10,
+        "palmitic": 30
+      }
+    },
+    {
+      "id": "sesame-oil",
+      "displayName": "Sesame Oil",
+      "aliases": [
+        "sesame oil"
+      ],
+      "inciName": "Sesamum Indicum (Sesame) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 40,
+        "stearic": 5,
+        "linoleic": 43,
+        "palmitic": 10
+      }
+    },
+    {
+      "id": "shea-butter",
+      "displayName": "Shea Butter",
+      "aliases": [
+        "shea butter"
+      ],
+      "inciName": "Butyrospermum Parkii (Shea Butter) Fruit",
+      "category": "triglyceride",
+      "sapKoh": 0.18,
+      "sapNaoh": 0.1283422459893048,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 48,
+        "stearic": 40,
+        "linoleic": 6,
+        "palmitic": 5
+      }
+    },
+    {
+      "id": "shea-oil-fractionated",
+      "displayName": "Shea Oil, fractionated",
+      "aliases": [
+        "shea oil fractionated"
+      ],
+      "inciName": "Butyrospermum Parkii (Shea Butter) Extract and Citric Acid (0.001% added for stability)",
+      "category": "triglyceride",
+      "sapKoh": 0.183,
+      "sapNaoh": 0.13048128342245988,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 73,
+        "stearic": 10,
+        "linoleic": 11,
+        "palmitic": 6
+      }
+    },
+    {
+      "id": "soapquick-conventional",
+      "displayName": "SoapQuick, conventional",
+      "aliases": [
+        "soapquick conventional"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.212,
+      "sapNaoh": 0.15115864527629233,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 42,
+        "lauric": 13,
+        "stearic": 3,
+        "linoleic": 8,
+        "myristic": 6,
+        "palmitic": 17,
+        "linolenic": 1,
+        "ricinoleic": 5
+      }
+    },
+    {
+      "id": "soapquick",
+      "displayName": "SoapQuick, organic",
+      "aliases": [
+        "soapquick"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.213,
+      "sapNaoh": 0.15187165775401068,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 45,
+        "lauric": 13,
+        "stearic": 3,
+        "linoleic": 10,
+        "myristic": 5,
+        "palmitic": 20
+      }
+    },
+    {
+      "id": "soybean-oil",
+      "displayName": "Soybean Oil",
+      "aliases": [
+        "soybean oil"
+      ],
+      "inciName": "Glycine Soja (Soybean) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 24,
+        "stearic": 5,
+        "linoleic": 50,
+        "palmitic": 11,
+        "linolenic": 8
+      }
+    },
+    {
+      "id": "soybean-27-5-hydrogenated",
+      "displayName": "Soybean, 27.5% hydrogenated",
+      "aliases": [
+        "soybean 27 5 hydrogenated"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 41,
+        "stearic": 15,
+        "linoleic": 7,
+        "palmitic": 9,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "soybean-fully-hydrogenated",
+      "displayName": "Soybean, fully hydrogenated (soy wax)",
+      "aliases": [
+        "soybean fully hydrogenated"
+      ],
+      "category": "wax",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "stearic-acid",
+      "displayName": "Stearic Acid",
+      "aliases": [
+        "stearic acid"
+      ],
+      "category": "free_acid",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "sunflower-oil",
+      "displayName": "Sunflower Oil",
+      "aliases": [
+        "sunflower oil"
+      ],
+      "inciName": "Helianthus Annuus (Sunflower) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 16,
+        "stearic": 4,
+        "linoleic": 70,
+        "palmitic": 7,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "sunflower-oil-high-oleic",
+      "displayName": "Sunflower Oil, high oleic",
+      "aliases": [
+        "sunflower oil high oleic"
+      ],
+      "inciName": "Helianthus Annuus (Sunflower) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 83,
+        "stearic": 4,
+        "linoleic": 4,
+        "palmitic": 3,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "tallow-bear",
+      "displayName": "Tallow Bear",
+      "aliases": [
+        "tallow bear"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.1946,
+      "sapNaoh": 0.13875222816399285,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 70,
+        "stearic": 3,
+        "linoleic": 9,
+        "myristic": 2,
+        "palmitic": 7
+      }
+    },
+    {
+      "id": "tallow-beef",
+      "displayName": "Tallow Beef",
+      "aliases": [
+        "tallow beef"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.196,
+      "sapNaoh": 0.13975044563279856,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 36,
+        "lauric": 2,
+        "stearic": 22,
+        "linoleic": 3,
+        "myristic": 6,
+        "palmitic": 28,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "tallow-deer",
+      "displayName": "Tallow Deer",
+      "aliases": [
+        "tallow deer"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 30,
+        "stearic": 24,
+        "linoleic": 15,
+        "myristic": 1,
+        "palmitic": 20,
+        "linolenic": 3
+      }
+    },
+    {
+      "id": "tallow-goat",
+      "displayName": "Tallow Goat",
+      "aliases": [
+        "tallow goat"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 29,
+        "lauric": 5,
+        "stearic": 30,
+        "linoleic": 2,
+        "myristic": 11,
+        "palmitic": 23
+      }
+    },
+    {
+      "id": "tallow-sheep",
+      "displayName": "Tallow Sheep",
+      "aliases": [
+        "tallow sheep"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.194,
+      "sapNaoh": 0.13832442067736184,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 26,
+        "lauric": 4,
+        "stearic": 13,
+        "linoleic": 5,
+        "myristic": 10,
+        "palmitic": 24
+      }
+    },
+    {
+      "id": "tamanu-oil-kamani",
+      "displayName": "Tamanu Oil, kamani",
+      "aliases": [
+        "tamanu oil kamani"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.208,
+      "sapNaoh": 0.14830659536541888,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 34,
+        "stearic": 13,
+        "linoleic": 38,
+        "palmitic": 12,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "tucuma-seed-butter",
+      "displayName": "Tucuma Seed Butter",
+      "aliases": [
+        "tucuma seed butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.238,
+      "sapNaoh": 0.16969696969696968,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 13,
+        "lauric": 48,
+        "myristic": 23,
+        "palmitic": 6
+      }
+    },
+    {
+      "id": "walmart-gv-shortening-tallow-palm",
+      "displayName": "Walmart GV Shortening, tallow, palm",
+      "aliases": [
+        "walmart gv shortening tallow palm"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.198,
+      "sapNaoh": 0.1411764705882353,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 37,
+        "lauric": 1,
+        "stearic": 14,
+        "linoleic": 6,
+        "myristic": 4,
+        "palmitic": 35,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "walnut-oil",
+      "displayName": "Walnut Oil",
+      "aliases": [
+        "walnut oil"
+      ],
+      "inciName": "Juglans Regia (Walnut) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 2,
+        "linoleic": 60,
+        "palmitic": 7
+      }
+    },
+    {
+      "id": "watermelon-seed-oil",
+      "displayName": "Watermelon Seed Oil",
+      "aliases": [
+        "watermelon seed oil"
+      ],
+      "inciName": "Citrullus Lanatus (Watermelon) Seed Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 18,
+        "stearic": 10,
+        "linoleic": 60,
+        "palmitic": 11,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "wheat-germ-oil",
+      "displayName": "Wheat Germ Oil",
+      "aliases": [
+        "wheat germ oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.183,
+      "sapNaoh": 0.13048128342245988,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 17,
+        "stearic": 2,
+        "linoleic": 58,
+        "palmitic": 17
+      }
+    },
+    {
+      "id": "yangu-cape-chestnut",
+      "displayName": "Yangu, cape chestnut",
+      "aliases": [
+        "yangu cape chestnut"
+      ],
+      "inciName": "Calodendrum Capense (Cape chestnut) Oil",
+      "category": "triglyceride",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "verified",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 45,
+        "stearic": 5,
+        "linoleic": 30,
+        "palmitic": 18,
+        "linolenic": 1
+      }
+    },
+    {
+      "id": "zapote-seed-oil",
+      "displayName": "Zapote seed oil, (Aceite de Sapuyul or Mamey)",
+      "aliases": [
+        "zapote seed oil"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "oleic": 52,
+        "stearic": 21,
+        "linoleic": 13,
+        "palmitic": 9
+      }
+    },
+    {
+      "id": "carnauba-wax",
+      "displayName": "Carnauba (Copernicia cerifera) wax",
+      "aliases": [
+        "carnauba wax"
+      ],
+      "category": "wax",
+      "sapKoh": 0.087,
+      "sapNaoh": 0.06203208556149732,
+      "confidence": "legacy_only",
+      "propertiesAvailable": false
+    },
+    {
+      "id": "ucuuba-butter",
+      "displayName": "Ucuuba Butter",
+      "aliases": [
+        "ucuuba butter"
+      ],
+      "category": "triglyceride",
+      "sapKoh": 0.205,
+      "sapNaoh": 0.1461675579322638,
+      "confidence": "legacy_only",
+      "propertiesAvailable": true,
+      "fattyAcids": {
+        "lauric": 18,
+        "myristic": 74,
+        "palmitic": 8
+      }
+    },
+    {
+      "id": "birch-tar",
+      "displayName": "Birch Tar",
+      "aliases": [
+        "birch tar",
+        "birch tar oil",
+        "betula tar",
+        "betula alba tar",
+        "берёзовый дёготь",
+        "березовый деготь"
+      ],
+      "inciName": "Betula Alba Tar",
+      "category": "tar",
+      "sapRole": "acid_neutralization",
+      "sapKoh": 0.06,
+      "sapNaoh": 0.0427807486631016,
+      "confidence": "estimated",
+      "propertiesAvailable": false
+    }
+  ]
+}

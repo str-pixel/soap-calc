@@ -1,0 +1,30 @@
+{
+  "name": "@soap-calc/oils-data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./canonical": "./data/canonical-oils.json",
+    "./canonical-lite": "./data/canonical-oils-lite.json"
+  },
+  "scripts": {
+    "fetch:fnwl": "tsx scripts/fetch-fnwl.ts",
+    "fetch:fnwl-inci": "tsx scripts/fetch-fnwl-inci.ts",
+    "fetch:sources": "npm run fetch:fnwl && npm run fetch:fnwl-inci",
+    "ensure:fnwl": "tsx scripts/ensure-fnwl.ts",
+    "prebuild": "tsx scripts/ensure-fnwl.ts",
+    "build": "tsx scripts/build-canonical.ts",
+    "validate": "tsx scripts/validate-canonical.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@soap-calc/core": "*",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

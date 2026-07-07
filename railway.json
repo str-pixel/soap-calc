@@ -1,0 +1,10 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "npm install && npm run build:oils && npm run build -w @soap-calc/web"
+  },
+  "deploy": {
+    "startCommand": "npm run start -w @soap-calc/web",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
