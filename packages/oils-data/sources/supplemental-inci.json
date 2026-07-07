@@ -230,6 +230,135 @@
       "inciName": "Pinus Palustris (Pine) Tar",
       "source": "manual",
       "notes": "Tar — lye estimate only in calculator"
+    },
+    "aloe-butter": {
+      "inciName": "Aloe Barbadensis Leaf Juice",
+      "source": "cosing",
+      "notes": "Butter base; aloe lipid fraction"
+    },
+    "cohune-oil": {
+      "inciName": "Attalea Cohune Seed Oil",
+      "source": "manual"
+    },
+    "jatropha-oil-soapnut-seed-oil": {
+      "inciName": "Jatropha Curcas Seed Oil",
+      "source": "manual"
+    },
+    "kpangnan-butter": {
+      "inciName": "Allanblackia Floribunda Seed Butter",
+      "source": "manual"
+    },
+    "laurel-fruit-oil": {
+      "inciName": "Laurus Nobilis (Laurel) Oil",
+      "source": "cosing"
+    },
+    "loofa-seed-oil-luffa-cylinderica": {
+      "inciName": "Luffa Cylindrica Seed Oil",
+      "source": "manual",
+      "notes": "Loofah seed oil; no dedicated CosIng glossary row"
+    },
+    "macadamia-nut-butter": {
+      "inciName": "Macadamia Integrifolia (Macadamia) Seed Oil",
+      "source": "cosing",
+      "notes": "Butter base; macadamia kernel oil INCI"
+    },
+    "mafura-butter-trichilia-emetica": {
+      "inciName": "Trichilia Emetica Seed Butter",
+      "source": "manual"
+    },
+    "milk-thistle-oil": {
+      "inciName": "Silybum Marianum Seed Oil",
+      "source": "manual"
+    },
+    "mowrah-butter": {
+      "inciName": "Madhuca Longifolia Seed Oil",
+      "source": "manual",
+      "notes": "Mowrah / mahua butter"
+    },
+    "nutmeg-butter": {
+      "inciName": "Myristica fragrans (Nutmeg) Oil",
+      "source": "cosing",
+      "notes": "Butter base; nutmeg kernel fat"
+    },
+    "oat-oil": {
+      "inciName": "Avena sativa (Oat) Kernel Oil",
+      "source": "cosing"
+    },
+    "palm-stearin": {
+      "inciName": "Elaeis Guineensis (Palm) Oil",
+      "source": "manual",
+      "notes": "Palm stearin fraction"
+    },
+    "palmolein": {
+      "inciName": "Elaeis Guineensis (Palm) Oil",
+      "source": "manual",
+      "notes": "Palm olein fraction"
+    },
+    "papaya-seed-oil-carica-papaya": {
+      "inciName": "Carica Papaya (Papaya) Seed Oil",
+      "source": "cosing"
+    },
+    "passion-fruit-seed-oil": {
+      "inciName": "Passiflora Edulis (Passionfruit) Seed Oil",
+      "source": "cosing"
+    },
+    "pataua-oil": {
+      "inciName": "Oenocarpus Bataua (Ungurahui) Oil",
+      "source": "cosing"
+    },
+    "pracaxi-seed-oil-hair-conditioner": {
+      "inciName": "Pentaclethra Macroloba (Pracaxi) Seed Oil",
+      "source": "cosing"
+    },
+    "red-palm-butter": {
+      "inciName": "Elaeis Guineensis (Palm) Oil",
+      "source": "manual",
+      "notes": "Red palm butter / palm fruit oil"
+    },
+    "sacha-inchi-plukenetia-volubilis": {
+      "inciName": "Plukenetia Volubilis (Sacha Inchi) Seed Oil",
+      "source": "cosing"
+    },
+    "sal-butter": {
+      "inciName": "Shorea Robusta Seed Butter",
+      "source": "manual"
+    },
+    "saw-palmetto-extract": {
+      "inciName": "Serenoa Serrulata Fruit Extract",
+      "source": "manual"
+    },
+    "saw-palmetto-oil": {
+      "inciName": "Serenoa Serrulata Fruit Oil",
+      "source": "manual"
+    },
+    "sea-buckthorn-oil-seed": {
+      "inciName": "Hippophae Rhamnoides (Seabuckthorn) Seed Oil",
+      "source": "manual"
+    },
+    "sea-buckthorn-oil-seed-and-berry": {
+      "inciName": "Hippophae rhamnoides (Seabuckthorn) Oil",
+      "source": "cosing"
+    },
+    "soybean-27-5-hydrogenated": {
+      "inciName": "Hydrogenated Soybean Oil",
+      "source": "manual"
+    },
+    "soybean-fully-hydrogenated": {
+      "inciName": "Hydrogenated Soybean Oil",
+      "source": "manual",
+      "notes": "Fully hydrogenated soy wax"
+    },
+    "tucuma-seed-butter": {
+      "inciName": "Astrocaryum Vulgare Seed Butter",
+      "source": "manual"
+    },
+    "ucuuba-butter": {
+      "inciName": "Virola Sebifera Seed Butter",
+      "source": "manual"
+    },
+    "zapote-seed-oil": {
+      "inciName": "Pouteria Sapota Seed Oil",
+      "source": "manual"
     }
   },
   "byFnwlProductId": {

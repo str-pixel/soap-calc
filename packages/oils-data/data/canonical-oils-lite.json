@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-07T19:32:37.921Z",
+  "generatedAt": "2026-07-07T20:21:29.207Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -65,6 +65,7 @@
       "aliases": [
         "aloe butter"
       ],
+      "inciName": "Aloe Barbadensis Leaf Juice",
       "category": "triglyceride",
       "sapKoh": 0.24,
       "sapNaoh": 0.1711229946524064,
@@ -722,6 +723,7 @@
       "aliases": [
         "cohune oil"
       ],
+      "inciName": "Attalea Cohune Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.205,
       "sapNaoh": 0.1461675579322638,
@@ -1119,6 +1121,7 @@
       "aliases": [
         "jatropha oil soapnut seed oil"
       ],
+      "inciName": "Jatropha Curcas Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -1196,6 +1199,7 @@
       "aliases": [
         "kpangnan butter"
       ],
+      "inciName": "Allanblackia Floribunda Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
@@ -1290,6 +1294,7 @@
       "aliases": [
         "laurel fruit oil"
       ],
+      "inciName": "Laurus Nobilis (Laurel) Oil",
       "category": "triglyceride",
       "sapKoh": 0.198,
       "sapNaoh": 0.1411764705882353,
@@ -1350,6 +1355,7 @@
       "aliases": [
         "loofa seed oil luffa cylinderica"
       ],
+      "inciName": "Luffa Cylindrica Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.187,
       "sapNaoh": 0.13333333333333333,
@@ -1370,6 +1376,7 @@
       "aliases": [
         "macadamia nut butter"
       ],
+      "inciName": "Macadamia Integrifolia (Macadamia) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -1413,6 +1420,7 @@
       "aliases": [
         "mafura butter trichilia emetica"
       ],
+      "inciName": "Trichilia Emetica Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.198,
       "sapNaoh": 0.1411764705882353,
@@ -1542,6 +1550,7 @@
       "aliases": [
         "milk thistle oil"
       ],
+      "inciName": "Silybum Marianum Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.196,
       "sapNaoh": 0.13975044563279856,
@@ -1619,6 +1628,7 @@
       "aliases": [
         "mowrah butter"
       ],
+      "inciName": "Madhuca Longifolia Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -1720,6 +1730,7 @@
       "aliases": [
         "nutmeg butter"
       ],
+      "inciName": "Myristica fragrans (Nutmeg) Oil",
       "category": "triglyceride",
       "sapKoh": 0.1624,
       "sapNaoh": 0.11579322638146167,
@@ -1740,6 +1751,7 @@
       "aliases": [
         "oat oil"
       ],
+      "inciName": "Avena sativa (Oat) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1909,6 +1921,7 @@
       "aliases": [
         "palm stearin"
       ],
+      "inciName": "Elaeis guineensis (Palm) Oil",
       "category": "triglyceride",
       "sapKoh": 0.199,
       "sapNaoh": 0.14188948306595364,
@@ -1945,6 +1958,7 @@
       "aliases": [
         "palmolein"
       ],
+      "inciName": "Elaeis guineensis (Palm) Oil",
       "category": "triglyceride",
       "sapKoh": 0.2,
       "sapNaoh": 0.14260249554367202,
@@ -1966,6 +1980,7 @@
       "aliases": [
         "papaya seed oil carica papaya"
       ],
+      "inciName": "Carica Papaya (Papaya) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.158,
       "sapNaoh": 0.11265597147950089,
@@ -1986,6 +2001,7 @@
       "aliases": [
         "passion fruit seed oil"
       ],
+      "inciName": "Passiflora Edulis (Passionfruit) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.183,
       "sapNaoh": 0.13048128342245988,
@@ -2007,6 +2023,7 @@
       "aliases": [
         "pataua oil"
       ],
+      "inciName": "Oenocarpus Bataua (Ungurahui) Oil",
       "category": "triglyceride",
       "sapKoh": 0.2,
       "sapNaoh": 0.14260249554367202,
@@ -2216,6 +2233,7 @@
       "aliases": [
         "pracaxi seed oil hair conditioner"
       ],
+      "inciName": "Pentaclethra Macroloba (Pracaxi) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.175,
       "sapNaoh": 0.124777183600713,
@@ -2325,6 +2343,7 @@
       "aliases": [
         "red palm butter"
       ],
+      "inciName": "Elaeis guineensis (Palm) Oil",
       "category": "triglyceride",
       "sapKoh": 0.199,
       "sapNaoh": 0.14188948306595364,
@@ -2391,6 +2410,7 @@
       "aliases": [
         "sacha inchi plukenetia volubilis"
       ],
+      "inciName": "Plukenetia Volubilis (Sacha Inchi) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -2453,6 +2473,7 @@
       "aliases": [
         "sal butter"
       ],
+      "inciName": "Shorea Robusta Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.185,
       "sapNaoh": 0.1319073083778966,
@@ -2498,6 +2519,7 @@
       "aliases": [
         "saw palmetto extract"
       ],
+      "inciName": "Serenoa Serrulata Fruit Extract",
       "category": "triglyceride",
       "sapKoh": 0.23,
       "sapNaoh": 0.16399286987522282,
@@ -2521,6 +2543,7 @@
       "aliases": [
         "saw palmetto oil"
       ],
+      "inciName": "Serenoa Serrulata Fruit Oil",
       "category": "triglyceride",
       "sapKoh": 0.22,
       "sapNaoh": 0.1568627450980392,
@@ -2544,6 +2567,7 @@
       "aliases": [
         "sea buckthorn oil seed"
       ],
+      "inciName": "Hippophae Rhamnoides (Seabuckthorn) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.195,
       "sapNaoh": 0.13903743315508021,
@@ -2565,6 +2589,7 @@
       "aliases": [
         "sea buckthorn oil seed and berry"
       ],
+      "inciName": "Hippophae rhamnoides (Seabuckthorn) Oil",
       "category": "triglyceride",
       "sapKoh": 0.183,
       "sapNaoh": 0.13048128342245988,
@@ -2716,6 +2741,7 @@
       "aliases": [
         "soybean 27 5 hydrogenated"
       ],
+      "inciName": "Hydrogenated Soybean Oil",
       "category": "triglyceride",
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
@@ -2737,6 +2763,7 @@
       "aliases": [
         "soybean fully hydrogenated"
       ],
+      "inciName": "Hydrogenated Soybean Oil",
       "category": "wax",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -2947,6 +2974,7 @@
       "aliases": [
         "tucuma seed butter"
       ],
+      "inciName": "Astrocaryum Vulgare Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.238,
       "sapNaoh": 0.16969696969696968,
@@ -3076,6 +3104,7 @@
       "aliases": [
         "zapote seed oil"
       ],
+      "inciName": "Pouteria Sapota Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -3111,6 +3140,7 @@
       "aliases": [
         "ucuuba butter"
       ],
+      "inciName": "Virola Sebifera Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.205,
       "sapNaoh": 0.1461675579322638,

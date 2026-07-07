@@ -87,7 +87,7 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
           {results.map((oil, index) => {
             const tag = oilPickerTag(oil);
             const inciSubtitle = oil.inciName
-              ? formatInciSubtitle(oil.displayName, oil.inciName)
+              ? formatInciSubtitle(oil.displayName, oil.inciName, { category: oil.category })
               : undefined;
 
             return (

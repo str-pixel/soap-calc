@@ -8,7 +8,11 @@ function normalizeToken(value: string): string {
  * Drop parenthetical INCI fragments that repeat the oil's common display name.
  * e.g. "Sunflower Oil" + "Helianthus Annuus (Sunflower) Seed Oil" → "Helianthus Annuus Seed Oil"
  */
-export function formatInciSubtitle(displayName: string, inciName: string): string {
+export function formatInciSubtitle(
+  displayName: string,
+  inciName: string,
+  options?: { category?: string },
+): string {
   const displayNorm = normalizeToken(displayName);
   let result = inciName;
 
@@ -30,6 +34,10 @@ export function formatInciSubtitle(displayName: string, inciName: string): strin
 
   const resultNorm = normalizeToken(result);
   if (!resultNorm || displayNorm.includes(resultNorm) || resultNorm.includes(displayNorm)) {
+    // Pure fatty acids use the same string for common and INCI names (e.g. "Oleic Acid").
+    if (options?.category === 'free_acid' && inciName.trim()) {
+      return inciName;
+    }
     return '';
   }
 

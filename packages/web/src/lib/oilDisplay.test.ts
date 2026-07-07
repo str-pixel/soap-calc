@@ -14,6 +14,12 @@ describe('formatInciSubtitle', () => {
   it('hides subtitle when INCI only repeats the display name', () => {
     expect(formatInciSubtitle('Tallow Beef', 'Tallow')).toBe('');
   });
+
+  it('keeps INCI visible for free fatty acids when names match', () => {
+    expect(formatInciSubtitle('Oleic Acid', 'Oleic Acid', { category: 'free_acid' })).toBe(
+      'Oleic Acid',
+    );
+  });
 });
 
 describe('oilPickerTag', () => {
