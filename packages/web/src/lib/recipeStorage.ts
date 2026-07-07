@@ -31,6 +31,15 @@ type RecipesPayload = {
   recipes: SavedRecipe[];
 };
 
+function safeSetItem(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function cloneLines(lines: RecipeLine[]): SavedRecipe['lines'] {
   return lines.map(({ oilId, weightGrams, weightPercent, tarLyeTreatment }) => ({
     oilId,
@@ -82,7 +91,7 @@ export function saveDraft(
     settings,
     updatedAt: new Date().toISOString(),
   };
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+  safeSetItem(DRAFT_KEY, JSON.stringify(payload));
 }
 
 export function listSavedRecipes(): SavedRecipe[] {
@@ -101,7 +110,7 @@ export function listSavedRecipes(): SavedRecipe[] {
 
 function writeRecipes(recipes: SavedRecipe[]): void {
   const payload: RecipesPayload = { version: STORAGE_VERSION, recipes };
-  localStorage.setItem(RECIPES_KEY, JSON.stringify(payload));
+  safeSetItem(RECIPES_KEY, JSON.stringify(payload));
 }
 
 export function saveNamedRecipe(

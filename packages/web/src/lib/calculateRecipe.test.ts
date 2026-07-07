@@ -45,7 +45,7 @@ describe('calculateRecipe', () => {
     );
     expect(withTar.result!.lyeWeightGrams).toBeCloseTo(withoutTar.result!.lyeWeightGrams, 1);
     expect(withTar.displayTotals!.recipeOilWeightGrams).toBe(1000);
-    expect(withTar.displayTotals!.excludedFromLyeOilWeightGrams).toBe(0);
+    expect(withTar.displayTotals!.excludedFromLyeOilWeightGrams).toBe(100);
   });
 
   it('rejects zero NaOH purity', () => {

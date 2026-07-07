@@ -178,4 +178,69 @@ describe('calculateLye', () => {
 
     expect(result.warnings.some((w) => w.includes('beeswax') && w.includes('wax'))).toBe(true);
   });
+
+  it('rejects non-finite superfat', () => {
+    const result = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: Number.NaN,
+      lyeType: 'naoh',
+    });
+
+    expect(result.errors.some((e) => e.includes('superfatPercent'))).toBe(true);
+    expect(result.lyeWeightGrams).toBe(0);
+  });
+
+  it('rejects negative water percent of oils', () => {
+    const result = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      lyeType: 'naoh',
+      waterPercentOfOils: -10,
+    });
+
+    expect(result.errors.some((e) => e.includes('waterPercentOfOils'))).toBe(true);
+    expect(result.waterWeightGrams).toBe(0);
+  });
+
+  it('rejects non-finite lye concentration', () => {
+    const result = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      lyeType: 'naoh',
+      waterMode: 'lye_concentration',
+      lyeConcentrationPercent: Number.NaN,
+    });
+
+    expect(result.errors.some((e) => e.includes('lyeConcentrationPercent'))).toBe(true);
+    expect(result.waterWeightGrams).toBe(0);
+  });
+
+  it('rejects invalid lye : water ratio', () => {
+    const result = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      lyeType: 'naoh',
+      waterMode: 'lye_water_ratio',
+      lyeWaterRatio: 0,
+    });
+
+    expect(result.errors.some((e) => e.includes('lyeWaterRatio'))).toBe(true);
+    expect(result.waterWeightGrams).toBe(0);
+  });
+
+  it('rejects non-finite line weights', () => {
+    const result = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: Number.NaN }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      lyeType: 'naoh',
+    });
+
+    expect(result.errors.some((e) => e.includes('Invalid weight'))).toBe(true);
+    expect(result.totalOilWeightGrams).toBe(0);
+  });
 });

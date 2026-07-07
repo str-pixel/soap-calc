@@ -293,13 +293,6 @@ function main() {
     fnwlCatalogSize: fnwlRows.length,
     matchedFnwl: report.matched.length,
     unmatchedFnwl: report.unmatched.length,
-    sapDiscrepancies: report.sapDiscrepancies.length,
-    sapRetainedLegacy: report.sapRetainedLegacy.length,
-    sapConservativeBlend: report.sapConservativeBlend.length,
-    ldgMethodologyNotes: report.ldgMethodologyNotes.length,
-    inciResolved: report.inciResolved.length,
-    inciMissing: report.inciMissing.length,
-    supplemental: report.supplemental.length,
     ...report,
   }, null, 2) + '\n');
 

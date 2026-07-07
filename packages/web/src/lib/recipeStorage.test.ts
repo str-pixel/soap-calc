@@ -91,4 +91,24 @@ describe('recipeStorage', () => {
     deleteSavedRecipe(saved.id);
     expect(listSavedRecipes()).toHaveLength(0);
   });
+
+  it('does not throw when localStorage writes fail', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      },
+      removeItem: () => {},
+      clear: () => {},
+      key: () => null,
+      get length() {
+        return 0;
+      },
+    });
+
+    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
+    expect(() => saveDraft('Draft', lines, DEFAULT_SETTINGS)).not.toThrow();
+    expect(() => saveNamedRecipe('Saved', lines, DEFAULT_SETTINGS)).not.toThrow();
+    expect(listSavedRecipes()).toHaveLength(0);
+  });
 });

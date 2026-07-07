@@ -69,8 +69,8 @@ function validatePurityPercent(
   errors: string[],
 ): number {
   const purity = value ?? defaultValue;
-  if (purity <= 0 || purity > 100) {
-    errors.push(`${label} must be between 1 and 100`);
+  if (!Number.isFinite(purity) || purity <= 0 || purity > 100) {
+    errors.push(`${label} must be a finite number between 1 and 100`);
     return defaultValue;
   }
   return purity;
@@ -139,16 +139,34 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
     kohPurityPercent: input.kohPurityPercent,
   };
 
-  if (input.superfatPercent < 0 || input.superfatPercent > MAX_SUPERFAT_PERCENT) {
-    errors.push(`superfatPercent must be between 0 and ${MAX_SUPERFAT_PERCENT}`);
+  if (
+    !Number.isFinite(input.superfatPercent) ||
+    input.superfatPercent < 0 ||
+    input.superfatPercent > MAX_SUPERFAT_PERCENT
+  ) {
+    errors.push(
+      `superfatPercent must be a finite number between 0 and ${MAX_SUPERFAT_PERCENT}`,
+    );
   }
 
   const waterMode = input.waterMode ?? 'percent_of_oils';
   if (waterMode === 'lye_concentration') {
     const conc = input.lyeConcentrationPercent ?? 33.33;
-    if (conc <= 0 || conc >= 100) {
-      errors.push('lyeConcentrationPercent must be between 0 and 100 (exclusive)');
+    if (!Number.isFinite(conc) || conc <= 0 || conc >= 100) {
+      errors.push(
+        'lyeConcentrationPercent must be a finite number between 0 and 100 (exclusive)',
+      );
     }
+  } else if (waterMode === 'lye_water_ratio') {
+    const ratio = input.lyeWaterRatio ?? 2;
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+      errors.push('lyeWaterRatio must be a finite number greater than 0');
+    }
+  } else if (
+    input.waterPercentOfOils !== undefined &&
+    (!Number.isFinite(input.waterPercentOfOils) || input.waterPercentOfOils < 0)
+  ) {
+    errors.push('waterPercentOfOils must be a non-negative finite number');
   }
 
   if (input.lyeType === 'naoh') {
@@ -169,8 +187,8 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
       continue;
     }
 
-    if (line.weightGrams < 0) {
-      errors.push(`Negative weight for oil ${line.oilId}`);
+    if (!Number.isFinite(line.weightGrams) || line.weightGrams < 0) {
+      errors.push(`Invalid weight for oil ${line.oilId}`);
       continue;
     }
 

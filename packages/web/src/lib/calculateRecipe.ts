@@ -146,9 +146,13 @@ export function calculateRecipe(
     ...waterParams,
   });
 
+  const lyeIncludedOilWeightGrams = result.lines
+    .filter((line) => line.includedInLye)
+    .reduce((sum, line) => sum + line.weightGrams, 0);
+
   const excludedFromLyeOilWeightGrams = Math.max(
     0,
-    recipeOilWeightGrams - result.totalOilWeightGrams,
+    recipeOilWeightGrams - lyeIncludedOilWeightGrams,
   );
 
   return {
