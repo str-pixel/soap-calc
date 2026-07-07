@@ -57,6 +57,9 @@ export const LEGACY_TO_FNWL_ALIASES: Record<string, string[]> = {
   'lard pig tallow manteca': ['lard'],
   'tallow beef': ['beef tallow'],
 
+  // FNWL name differs from legacy catalog
+  'tamanu oil kamani': ['tamanu foraha oil'],
+
   // Waxes / specialty
   'jojoba oil a liquid wax ester': ['jojoba oil natural', 'jojoba oil golden organic'],
   'candelilla wax': ['candelilla wax pellets'],

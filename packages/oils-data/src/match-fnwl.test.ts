@@ -32,4 +32,21 @@ describe('findFnwlMatch', () => {
   it('returns undefined for unknown oils', () => {
     expect(findFnwlMatch('Emu Oil', index)).toBeUndefined();
   });
+
+  it('matches tamanu via explicit FNWL alias', () => {
+    const tamanuRows: FnwlRow[] = [
+      ...rows,
+      {
+        name: 'Tamanu Foraha Oil',
+        sapRange: '185 - 205',
+        sapNaoh: 0.139,
+        sapKoh: 0.195,
+        productId: 'OILTAMANUCPVIRIN728',
+      },
+    ];
+    const tamanuIndex = buildFnwlIndex(tamanuRows);
+    const hit = findFnwlMatch('Tamanu Oil, kamani', tamanuIndex);
+    expect(hit?.name).toBe('Tamanu Foraha Oil');
+    expect(hit?.productId).toBe('OILTAMANUCPVIRIN728');
+  });
 });

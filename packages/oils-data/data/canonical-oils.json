@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-07T19:03:41.583Z",
+  "generatedAt": "2026-07-07T19:32:37.921Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -33,6 +33,7 @@
       "aliases": [
         "abyssinian oil"
       ],
+      "inciName": "Crambe Abyssinica Seed Oil",
       "category": "wax_ester",
       "sapKoh": 0.168,
       "sapNaoh": 0.11978609625668449,
@@ -53,6 +54,10 @@
           "sapKoh": 0.168,
           "sapNaoh": 0.11978609625668449,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Standard INCI for abyssinian/crambe seed oil — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -64,6 +69,7 @@
       "aliases": [
         "almond butter"
       ],
+      "inciName": "Prunus Amygdalus Dulcis (Sweet Almond) Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -84,6 +90,16 @@
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Butter base; triglyceride INCI is sweet almond oil — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Prunus Amygdalus Dulcis (Sweet Almond) Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -180,6 +196,7 @@
       "aliases": [
         "andiroba oil karaba crabwood"
       ],
+      "inciName": "Carapa Guianensis Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -199,6 +216,10 @@
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Andiroba / crabwood seed oil — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -318,6 +339,7 @@
       "aliases": [
         "avocado butter"
       ],
+      "inciName": "Persea Gratissima (Avocado) Oil",
       "category": "triglyceride",
       "sapKoh": 0.187,
       "sapNaoh": 0.13333333333333333,
@@ -338,6 +360,16 @@
           "sapKoh": 0.187,
           "sapNaoh": 0.13333333333333333,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Butter base; triglyceride INCI is avocado oil — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -389,15 +421,15 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" found in FNWL-derived CosIng glossary index"
-        },
-        {
           "source": "manual",
           "sapKoh": 0.202,
           "sapNaoh": 0.14402852049910875,
           "notes": "FNWL differs by 8.6%; using higher SAP for lye safety"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "fnwl",
@@ -506,15 +538,15 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" found in FNWL-derived CosIng glossary index"
-        },
-        {
           "source": "manual",
           "sapKoh": 0.2,
           "sapNaoh": 0.14260249554367202,
           "notes": "FNWL differs by 5.0%; using higher SAP for lye safety"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -526,6 +558,7 @@
       "aliases": [
         "beeswax"
       ],
+      "inciName": "Cera Alba (Beeswax)",
       "category": "wax",
       "sapKoh": 0.094,
       "sapNaoh": 0.06702317290552584,
@@ -540,6 +573,16 @@
           "sapKoh": 0.094,
           "sapNaoh": 0.06702317290552584,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Cera Alba (Beeswax)\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -606,6 +649,7 @@
       "aliases": [
         "black current seed oil"
       ],
+      "inciName": "Ribes Nigrum (Black Currant) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -626,6 +670,16 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Ribes Nigrum (Black Currant) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -637,7 +691,7 @@
       "aliases": [
         "borage oil"
       ],
-      "inciName": "Borago officinalis (Borage) Seed Oil",
+      "inciName": "Borago Officinalis (Borage) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -746,6 +800,7 @@
       "aliases": [
         "broccoli seed oil brassica oleracea"
       ],
+      "inciName": "Brassica Oleracea Italica (Broccoli) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.172,
       "sapNaoh": 0.12263814616755792,
@@ -767,6 +822,16 @@
           "sapKoh": 0.172,
           "sapNaoh": 0.12263814616755792,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Brassica Oleracea Italica (Broccoli) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -833,6 +898,7 @@
       "aliases": [
         "camelina seed oil"
       ],
+      "inciName": "Camelina Sativa (Camelina) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -853,6 +919,16 @@
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Camelina Sativa (Camelina) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -864,6 +940,7 @@
       "aliases": [
         "camellia oil tea seed"
       ],
+      "inciName": "Camellia Oleifera (Camellia) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -883,6 +960,16 @@
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Camellia Oleifera (Camellia) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -929,13 +1016,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "FNWL SAP 22.7% higher than legacy (>10% delta); using FNWL for lye safety"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Euphorbia Cerifera (Candelilla) Wax\" found in FNWL-derived CosIng glossary index"
-        },
-        {
-          "source": "manual",
-          "notes": "FNWL SAP 22.7% higher than legacy (>10% delta); using FNWL for lye safety"
         }
       ],
       "primarySource": "fnwl",
@@ -947,6 +1034,7 @@
       "aliases": [
         "canola oil"
       ],
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -991,6 +1079,10 @@
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
           "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — FNWL CANOLAOIL — standard canola/rapeseed INCI — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1002,6 +1094,7 @@
       "aliases": [
         "canola oil high oleic"
       ],
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -1046,6 +1139,10 @@
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
           "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1057,6 +1154,7 @@
       "aliases": [
         "carrot seed oil cold pressed"
       ],
+      "inciName": "Daucus Carota Sativa (Carrot) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.144,
       "sapNaoh": 0.10267379679144384,
@@ -1075,6 +1173,16 @@
           "sapKoh": 0.144,
           "sapNaoh": 0.10267379679144384,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Daucus Carota Sativa (Carrot) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1139,6 +1247,7 @@
       "aliases": [
         "cherry kern1 oil p avium"
       ],
+      "inciName": "Prunus Avium (Cherry) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1159,6 +1268,16 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Prunus Avium (Cherry) Kernel Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1170,6 +1289,7 @@
       "aliases": [
         "cherry kern2 oil p cerasus"
       ],
+      "inciName": "Prunus Cerasus (Cherry) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -1189,6 +1309,16 @@
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Prunus Cerasus (Cherry) Kernel Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1231,6 +1361,7 @@
       "aliases": [
         "cocoa butter"
       ],
+      "inciName": "Theobroma Cacao (Cocoa) Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -1250,6 +1381,16 @@
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Theobroma Cacao (Cocoa) Seed Butter\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1413,15 +1554,15 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Caprylic/Capric Triglyceride\" found in FNWL-derived CosIng glossary index"
-        },
-        {
           "source": "manual",
           "sapKoh": 0.348,
           "sapNaoh": 0.2481283422459893,
           "notes": "FNWL differs by 7.1%; using higher SAP for lye safety"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Caprylic/Capric Triglyceride\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "fnwl",
@@ -1433,6 +1574,7 @@
       "aliases": [
         "coffee bean oil green"
       ],
+      "inciName": "Coffea arabica (Coffee) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.185,
       "sapNaoh": 0.1319073083778966,
@@ -1453,6 +1595,16 @@
           "sapKoh": 0.185,
           "sapNaoh": 0.1319073083778966,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Coffea arabica (Coffee) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1464,6 +1616,7 @@
       "aliases": [
         "coffee bean oil roasted"
       ],
+      "inciName": "Coffea arabica (Coffee) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.18,
       "sapNaoh": 0.1283422459893048,
@@ -1483,6 +1636,16 @@
           "sapKoh": 0.18,
           "sapNaoh": 0.1283422459893048,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Coffea arabica (Coffee) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1526,6 +1689,7 @@
       "aliases": [
         "corn oil"
       ],
+      "inciName": "Zea Mays (Corn) Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1564,6 +1728,10 @@
           "mgKohPerGramMin": 190,
           "mgKohPerGramMax": 190,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — FNWL CornOil — standard corn oil INCI — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "fnwl",
@@ -1575,6 +1743,7 @@
       "aliases": [
         "cottonseed oil"
       ],
+      "inciName": "Gossypium Herbaceum (Cotton) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -1613,6 +1782,10 @@
           "mgKohPerGramMin": 192,
           "mgKohPerGramMax": 192,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — FNWL CottonseedOil — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "fnwl",
@@ -1624,6 +1797,7 @@
       "aliases": [
         "cranberry seed oil"
       ],
+      "inciName": "Vaccinium Macrocarpon (Cranberry) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1644,6 +1818,16 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Vaccinium Macrocarpon (Cranberry) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1756,13 +1940,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "FNWL SAP 16.1% higher than legacy (>10% delta); using FNWL for lye safety"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Theobroma Grandiflorum (Cupuacu) Seed Butter\" found in FNWL-derived CosIng glossary index"
-        },
-        {
-          "source": "manual",
-          "notes": "FNWL SAP 16.1% higher than legacy (>10% delta); using FNWL for lye safety"
         }
       ],
       "primarySource": "fnwl",
@@ -1836,7 +2020,7 @@
       "aliases": [
         "evening primrose oil"
       ],
-      "inciName": "Oenothera Biennis (Evening Primrose) Oil",
+      "inciName": "Oenothera biennis (Evening Primrose) Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -1888,7 +2072,7 @@
       "aliases": [
         "flax oil linseed"
       ],
-      "inciName": "Linum Usitatissimum (Linseed) Seed Oil",
+      "inciName": "Linum usitatissimum (Linseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
@@ -2046,15 +2230,15 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Vitis vinifera (Grape) Seed Oil\" found in FNWL-derived CosIng glossary index"
-        },
-        {
           "source": "manual",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
           "notes": "FNWL differs by 6.6%; using higher SAP for lye safety"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Vitis vinifera (Grape) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "fnwl",
@@ -2207,6 +2391,7 @@
       "aliases": [
         "illipe butter"
       ],
+      "inciName": "Shorea stenoptera (Illipe) Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.185,
       "sapNaoh": 0.1319073083778966,
@@ -2225,6 +2410,16 @@
           "sapKoh": 0.185,
           "sapNaoh": 0.1319073083778966,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Shorea stenoptera (Illipe) Seed Butter\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2236,6 +2431,7 @@
       "aliases": [
         "japan wax"
       ],
+      "inciName": "Rhus Succedanea Fruit Wax",
       "category": "wax",
       "sapKoh": 0.215,
       "sapNaoh": 0.1532976827094474,
@@ -2255,6 +2451,10 @@
           "sapKoh": 0.215,
           "sapNaoh": 0.1532976827094474,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2296,6 +2496,7 @@
       "aliases": [
         "jojoba oil"
       ],
+      "inciName": "Simmondsia Chinensis (Jojoba) Seed Oil",
       "category": "wax_ester",
       "sapKoh": 0.092,
       "sapNaoh": 0.06559714795008913,
@@ -2312,6 +2513,16 @@
           "sapKoh": 0.092,
           "sapNaoh": 0.06559714795008913,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Duplicate catalog entry; same INCI as wax-ester jojoba line — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Simmondsia Chinensis (Jojoba) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2377,6 +2588,7 @@
       "aliases": [
         "kokum butter"
       ],
+      "inciName": "Garcinia indica (Kokum) Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -2396,6 +2608,16 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Garcinia indica (Kokum) Seed Butter\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2437,7 +2659,7 @@
       "aliases": [
         "kukui nut oil"
       ],
-      "inciName": "Aleurites moluccana (Kukui) Nut Oil",
+      "inciName": "Aleurites Moluccana (Kukui) Nut Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -2492,6 +2714,7 @@
       "aliases": [
         "lanolin liquid wax"
       ],
+      "inciName": "Lanolin Oil",
       "category": "wax",
       "sapKoh": 0.106,
       "sapNaoh": 0.07557932263814617,
@@ -2506,6 +2729,16 @@
           "sapKoh": 0.106,
           "sapNaoh": 0.07557932263814617,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Liquid lanolin fraction — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Lanolin Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2517,6 +2750,7 @@
       "aliases": [
         "myristic acid"
       ],
+      "inciName": "Myristic Acid",
       "category": "free_acid",
       "sapKoh": 0.247,
       "sapNaoh": 0.1761140819964349,
@@ -2533,6 +2767,10 @@
           "sapKoh": 0.247,
           "sapNaoh": 0.1761140819964349,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2544,6 +2782,7 @@
       "aliases": [
         "lard pig tallow"
       ],
+      "inciName": "Adeps Suillus",
       "category": "triglyceride",
       "sapKoh": 0.198,
       "sapNaoh": 0.1411764705882353,
@@ -2564,6 +2803,10 @@
           "sapKoh": 0.198,
           "sapNaoh": 0.1411764705882353,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — CosIng/EU INCI for hog lard (pig tallow) — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2608,6 +2851,7 @@
       "aliases": [
         "lauric acid"
       ],
+      "inciName": "Lauric Acid",
       "category": "free_acid",
       "sapKoh": 0.28,
       "sapNaoh": 0.19964349376114082,
@@ -2625,6 +2869,10 @@
           "sapKoh": 0.28,
           "sapNaoh": 0.19964349376114082,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2636,6 +2884,7 @@
       "aliases": [
         "linseed oil flax"
       ],
+      "inciName": "Linum usitatissimum (Linseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -2656,6 +2905,16 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Alias of flax oil INCI already in FNWL set — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Linum usitatissimum (Linseed) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2815,6 +3074,7 @@
       "aliases": [
         "mango seed butter"
       ],
+      "inciName": "Mangifera Indica (Mango) Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
@@ -2834,6 +3094,16 @@
           "sapKoh": 0.191,
           "sapNaoh": 0.13618538324420676,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Mangifera Indica (Mango) Seed Butter\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2845,6 +3115,7 @@
       "aliases": [
         "mango seed oil"
       ],
+      "inciName": "Mangifera indica (Mango) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -2865,6 +3136,16 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Mangifera indica (Mango) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2876,7 +3157,7 @@
       "aliases": [
         "marula oil"
       ],
-      "inciName": "Sclerocarya Birrea (Marula) Kernel Oil",
+      "inciName": "Sclerocarya birrea (Marula) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.197,
       "sapNaoh": 0.14046345811051694,
@@ -2930,6 +3211,7 @@
       "aliases": [
         "meadowfoam oil"
       ],
+      "inciName": "Limnanthes alba (Meadowfoam) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.169,
       "sapNaoh": 0.12049910873440285,
@@ -2948,6 +3230,16 @@
           "sapKoh": 0.169,
           "sapNaoh": 0.12049910873440285,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Limnanthes alba (Meadowfoam) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3228,15 +3520,15 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Astrocaryum Murumuru Seed Butter\" found in FNWL-derived CosIng glossary index"
-        },
-        {
           "source": "manual",
           "sapKoh": 0.275,
           "sapNaoh": 0.19607843137254902,
           "notes": "FNWL differs by 8.0%; using higher SAP for lye safety"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Astrocaryum Murumuru Seed Butter\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3248,6 +3540,7 @@
       "aliases": [
         "mustard oil kachi ghani"
       ],
+      "inciName": "Brassica Juncea (Mustard) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.172,
       "sapNaoh": 0.12263814616755792,
@@ -3286,6 +3579,10 @@
           "mgKohPerGramMin": 172,
           "mgKohPerGramMax": 172,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — FNWL mustard oil match; no FNWL product INCI map entry — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "fnwl",
@@ -3322,6 +3619,7 @@
       "aliases": [
         "neem seed oil"
       ],
+      "inciName": "Azadirachta Indica (Neem) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -3342,6 +3640,16 @@
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Azadirachta Indica (Neem) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3413,6 +3721,7 @@
       "aliases": [
         "oleic acid"
       ],
+      "inciName": "Oleic Acid",
       "category": "free_acid",
       "sapKoh": 0.202,
       "sapNaoh": 0.14402852049910875,
@@ -3429,6 +3738,10 @@
           "sapKoh": 0.202,
           "sapNaoh": 0.14402852049910875,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3495,6 +3808,7 @@
       "aliases": [
         "olive oil pomace"
       ],
+      "inciName": "Olea Europaea (Olive) Fruit Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -3515,6 +3829,16 @@
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Pomace grade uses same olive fruit oil INCI — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Olea Europaea (Olive) Fruit Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3601,13 +3925,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Elaeis guineensis Palm kernel oil\" found in FNWL-derived CosIng glossary index"
-        },
-        {
-          "source": "manual",
-          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3660,13 +3984,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Elaeis guineensis Palm kernel oil\" found in FNWL-derived CosIng glossary index"
-        },
-        {
-          "source": "manual",
-          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3764,6 +4088,7 @@
       "aliases": [
         "palmitic acid"
       ],
+      "inciName": "Palmitic Acid",
       "category": "free_acid",
       "sapKoh": 0.215,
       "sapNaoh": 0.1532976827094474,
@@ -3780,6 +4105,10 @@
           "sapKoh": 0.215,
           "sapNaoh": 0.1532976827094474,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3914,7 +4243,7 @@
       "aliases": [
         "peach kernel oil"
       ],
-      "inciName": "Prunus Persica (Peach) Kernel Oil",
+      "inciName": "Prunus persica (Peach) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -3969,6 +4298,7 @@
       "aliases": [
         "peanut oil"
       ],
+      "inciName": "Arachis Hypogaea (Peanut) Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -4006,6 +4336,10 @@
           "mgKohPerGramMin": 190,
           "mgKohPerGramMax": 190,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — FNWL PeanutOil — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "fnwl",
@@ -4017,6 +4351,7 @@
       "aliases": [
         "pecan oil"
       ],
+      "inciName": "Carya Illinoinensis (Pecan) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -4037,6 +4372,10 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Standard pecan INCI; FNWL glossary uses trade name variant — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4103,6 +4442,7 @@
       "aliases": [
         "pine tar lye calc only no fa"
       ],
+      "inciName": "Pinus Palustris (Pine) Tar",
       "category": "tar",
       "sapRole": "acid_neutralization",
       "usageNotes": "Lye consumption estimate only — not an ISO 3657 triglyceride SAP. No fatty acids; soap property predictions N/A.",
@@ -4119,6 +4459,10 @@
           "sapKoh": 0.06,
           "sapNaoh": 0.0427807486631016,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Tar — lye estimate only in calculator — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4130,6 +4474,7 @@
       "aliases": [
         "pistachio oil"
       ],
+      "inciName": "Pistacia Vera (Pistachio) Nut Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -4149,6 +4494,16 @@
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Pistacia Vera (Pistachio) Nut Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4160,6 +4515,7 @@
       "aliases": [
         "plum kernel oil"
       ],
+      "inciName": "Prunus Domestica (Plum) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -4178,6 +4534,16 @@
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Prunus Domestica (Plum) Kernel Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4285,13 +4651,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "FNWL SAP differs by 16.0% (>10%); legacy SAP retained for lye safety"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Papaver Somniferum (Poppy) Seed Oil\" found in FNWL-derived CosIng glossary index"
-        },
-        {
-          "source": "manual",
-          "notes": "FNWL SAP differs by 16.0% (>10%); legacy SAP retained for lye safety"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4422,6 +4788,7 @@
       "aliases": [
         "rapeseed oil canola"
       ],
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.175,
       "sapNaoh": 0.124777183600713,
@@ -4442,6 +4809,10 @@
           "sapKoh": 0.175,
           "sapNaoh": 0.124777183600713,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5321,6 +5692,7 @@
       "aliases": [
         "stearic acid"
       ],
+      "inciName": "Stearic Acid",
       "category": "free_acid",
       "sapKoh": 0.198,
       "sapNaoh": 0.1411764705882353,
@@ -5337,6 +5709,16 @@
           "sapKoh": 0.198,
           "sapNaoh": 0.1411764705882353,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Stearic Acid\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5458,6 +5840,7 @@
       "aliases": [
         "tallow bear"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.1946,
       "sapNaoh": 0.13875222816399285,
@@ -5478,6 +5861,10 @@
           "sapKoh": 0.1946,
           "sapNaoh": 0.13875222816399285,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — CosIng #92469 — no species-specific bear tallow INCI; generic tallow — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5489,6 +5876,7 @@
       "aliases": [
         "tallow beef"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.196,
       "sapNaoh": 0.13975044563279856,
@@ -5529,6 +5917,10 @@
           "mgKohPerGramMin": 196,
           "mgKohPerGramMax": 196,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — CosIng #92469 — cattle fat; also labeled Adeps Bovis in EU — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "fnwl",
@@ -5540,6 +5932,7 @@
       "aliases": [
         "tallow deer"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -5561,6 +5954,10 @@
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — CosIng #92469 — no deer-specific INCI; generic tallow — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5572,6 +5969,7 @@
       "aliases": [
         "tallow goat"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -5593,6 +5991,10 @@
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — CosIng #92469 — no goat-specific INCI; generic tallow — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5604,6 +6006,7 @@
       "aliases": [
         "tallow sheep"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -5625,6 +6028,10 @@
           "sapKoh": 0.194,
           "sapNaoh": 0.13832442067736184,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — CosIng #92469 — sheep fat — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5636,6 +6043,7 @@
       "aliases": [
         "tamanu oil kamani"
       ],
+      "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.208,
       "sapNaoh": 0.14830659536541888,
@@ -5656,10 +6064,39 @@
           "sapKoh": 0.208,
           "sapNaoh": 0.14830659536541888,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 205,
+          "mgKohPerGram": 195,
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "FNWL chart entry: Tamanu Foraha Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 195,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 205,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.208,
+          "sapNaoh": 0.14830659536541888,
+          "notes": "FNWL differs by 6.2%; using higher SAP for lye safety"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Calophyllum Tacamahaca (Tamanu) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "confidence": "estimated"
     },
     {
       "id": "tucuma-seed-butter",
@@ -5839,6 +6276,7 @@
       "aliases": [
         "wheat germ oil"
       ],
+      "inciName": "Triticum Vulgare (Wheat) Germ Oil",
       "category": "triglyceride",
       "sapKoh": 0.183,
       "sapNaoh": 0.13048128342245988,
@@ -5858,6 +6296,10 @@
           "sapKoh": 0.183,
           "sapNaoh": 0.13048128342245988,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id — Standard wheat germ oil INCI — Not in local CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5954,6 +6396,7 @@
       "aliases": [
         "carnauba wax"
       ],
+      "inciName": "Copernicia Cerifera (Carnauba) Wax",
       "category": "wax",
       "sapKoh": 0.087,
       "sapNaoh": 0.06203208556149732,
@@ -5968,6 +6411,16 @@
           "sapKoh": 0.087,
           "sapNaoh": 0.06203208556149732,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "manual",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Copernicia Cerifera (Carnauba) Wax\" found in FNWL-derived CosIng glossary index"
         }
       ],
       "primarySource": "legacy_catalog",

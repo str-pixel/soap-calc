@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { searchOils, oilById, type OilRecord } from '../lib/oils';
+import { formatInciSubtitle, oilPickerTag } from '../lib/oilDisplay';
 
 type OilPickerProps = {
   value: string;
@@ -83,7 +84,13 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
       />
       {open && results.length > 0 && (
         <ul className="oil-picker__list" id={listId} role="listbox">
-          {results.map((oil, index) => (
+          {results.map((oil, index) => {
+            const tag = oilPickerTag(oil);
+            const inciSubtitle = oil.inciName
+              ? formatInciSubtitle(oil.displayName, oil.inciName)
+              : undefined;
+
+            return (
             <li key={oil.id} role="presentation">
               <button
                 type="button"
@@ -96,16 +103,17 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
               >
                 <span className="oil-picker__text">
                   <span className="oil-picker__name">{oil.displayName}</span>
-                  {oil.inciName && (
-                    <span className="oil-picker__inci">{oil.inciName}</span>
+                  {inciSubtitle && (
+                    <span className="oil-picker__inci">{inciSubtitle}</span>
                   )}
                 </span>
-                {oil.category !== 'triglyceride' && (
-                  <span className="oil-picker__tag">{oil.category}</span>
+                {tag && (
+                  <span className="oil-picker__tag">{tag}</span>
                 )}
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
       {open && query.length > 0 && results.length === 0 && (

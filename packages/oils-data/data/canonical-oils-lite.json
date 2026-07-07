@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-07T19:03:41.583Z",
+  "generatedAt": "2026-07-07T19:32:37.921Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -8,6 +8,7 @@
       "aliases": [
         "abyssinian oil"
       ],
+      "inciName": "Crambe Abyssinica Seed Oil",
       "category": "wax_ester",
       "sapKoh": 0.168,
       "sapNaoh": 0.11978609625668449,
@@ -22,6 +23,7 @@
       "aliases": [
         "almond butter"
       ],
+      "inciName": "Prunus Amygdalus Dulcis (Sweet Almond) Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -85,6 +87,7 @@
       "aliases": [
         "andiroba oil karaba crabwood"
       ],
+      "inciName": "Carapa Guianensis Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -147,6 +150,7 @@
       "aliases": [
         "avocado butter"
       ],
+      "inciName": "Persea Gratissima (Avocado) Oil",
       "category": "triglyceride",
       "sapKoh": 0.187,
       "sapNaoh": 0.13333333333333333,
@@ -234,6 +238,7 @@
       "aliases": [
         "beeswax"
       ],
+      "inciName": "Cera Alba (Beeswax)",
       "category": "wax",
       "sapKoh": 0.094,
       "sapNaoh": 0.06702317290552584,
@@ -270,6 +275,7 @@
       "aliases": [
         "black current seed oil"
       ],
+      "inciName": "Ribes Nigrum (Black Currant) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -291,7 +297,7 @@
       "aliases": [
         "borage oil"
       ],
-      "inciName": "Borago officinalis (Borage) Seed Oil",
+      "inciName": "Borago Officinalis (Borage) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -334,6 +340,7 @@
       "aliases": [
         "broccoli seed oil brassica oleracea"
       ],
+      "inciName": "Brassica Oleracea Italica (Broccoli) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.172,
       "sapNaoh": 0.12263814616755792,
@@ -378,6 +385,7 @@
       "aliases": [
         "camelina seed oil"
       ],
+      "inciName": "Camelina Sativa (Camelina) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -399,6 +407,7 @@
       "aliases": [
         "camellia oil tea seed"
       ],
+      "inciName": "Camellia Oleifera (Camellia) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -434,6 +443,7 @@
       "aliases": [
         "canola oil"
       ],
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -455,6 +465,7 @@
       "aliases": [
         "canola oil high oleic"
       ],
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -476,6 +487,7 @@
       "aliases": [
         "carrot seed oil cold pressed"
       ],
+      "inciName": "Daucus Carota Sativa (Carrot) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.144,
       "sapNaoh": 0.10267379679144384,
@@ -515,6 +527,7 @@
       "aliases": [
         "cherry kern1 oil p avium"
       ],
+      "inciName": "Prunus Avium (Cherry) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -536,6 +549,7 @@
       "aliases": [
         "cherry kern2 oil p cerasus"
       ],
+      "inciName": "Prunus Cerasus (Cherry) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -577,6 +591,7 @@
       "aliases": [
         "cocoa butter"
       ],
+      "inciName": "Theobroma Cacao (Cocoa) Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -664,6 +679,7 @@
       "aliases": [
         "coffee bean oil green"
       ],
+      "inciName": "Coffea arabica (Coffee) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.185,
       "sapNaoh": 0.1319073083778966,
@@ -685,6 +701,7 @@
       "aliases": [
         "coffee bean oil roasted"
       ],
+      "inciName": "Coffea arabica (Coffee) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.18,
       "sapNaoh": 0.1283422459893048,
@@ -727,6 +744,7 @@
       "aliases": [
         "corn oil"
       ],
+      "inciName": "Zea Mays (Corn) Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -748,6 +766,7 @@
       "aliases": [
         "cottonseed oil"
       ],
+      "inciName": "Gossypium Herbaceum (Cotton) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -769,6 +788,7 @@
       "aliases": [
         "cranberry seed oil"
       ],
+      "inciName": "Vaccinium Macrocarpon (Cranberry) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -894,7 +914,7 @@
       "aliases": [
         "evening primrose oil"
       ],
-      "inciName": "Oenothera Biennis (Evening Primrose) Oil",
+      "inciName": "Oenothera biennis (Evening Primrose) Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -913,7 +933,7 @@
       "aliases": [
         "flax oil linseed"
       ],
-      "inciName": "Linum Usitatissimum (Linseed) Seed Oil",
+      "inciName": "Linum usitatissimum (Linseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
@@ -1064,6 +1084,7 @@
       "aliases": [
         "illipe butter"
       ],
+      "inciName": "Shorea stenoptera (Illipe) Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.185,
       "sapNaoh": 0.1319073083778966,
@@ -1083,6 +1104,7 @@
       "aliases": [
         "japan wax"
       ],
+      "inciName": "Rhus Succedanea Fruit Wax",
       "category": "wax",
       "sapKoh": 0.215,
       "sapNaoh": 0.1532976827094474,
@@ -1117,6 +1139,7 @@
       "aliases": [
         "jojoba oil"
       ],
+      "inciName": "Simmondsia Chinensis (Jojoba) Seed Oil",
       "category": "wax_ester",
       "sapKoh": 0.092,
       "sapNaoh": 0.06559714795008913,
@@ -1152,6 +1175,7 @@
       "aliases": [
         "kokum butter"
       ],
+      "inciName": "Garcinia indica (Kokum) Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1192,7 +1216,7 @@
       "aliases": [
         "kukui nut oil"
       ],
-      "inciName": "Aleurites moluccana (Kukui) Nut Oil",
+      "inciName": "Aleurites Moluccana (Kukui) Nut Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -1214,6 +1238,7 @@
       "aliases": [
         "lanolin liquid wax"
       ],
+      "inciName": "Lanolin Oil",
       "category": "wax",
       "sapKoh": 0.106,
       "sapNaoh": 0.07557932263814617,
@@ -1228,6 +1253,7 @@
       "aliases": [
         "myristic acid"
       ],
+      "inciName": "Myristic Acid",
       "category": "free_acid",
       "sapKoh": 0.247,
       "sapNaoh": 0.1761140819964349,
@@ -1242,6 +1268,7 @@
       "aliases": [
         "lard pig tallow"
       ],
+      "inciName": "Adeps Suillus",
       "category": "triglyceride",
       "sapKoh": 0.198,
       "sapNaoh": 0.1411764705882353,
@@ -1286,6 +1313,7 @@
       "aliases": [
         "lauric acid"
       ],
+      "inciName": "Lauric Acid",
       "category": "free_acid",
       "sapKoh": 0.28,
       "sapNaoh": 0.19964349376114082,
@@ -1300,6 +1328,7 @@
       "aliases": [
         "linseed oil flax"
       ],
+      "inciName": "Linum usitatissimum (Linseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1406,6 +1435,7 @@
       "aliases": [
         "mango seed butter"
       ],
+      "inciName": "Mangifera Indica (Mango) Seed Butter",
       "category": "triglyceride",
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
@@ -1426,6 +1456,7 @@
       "aliases": [
         "mango seed oil"
       ],
+      "inciName": "Mangifera indica (Mango) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1447,7 +1478,7 @@
       "aliases": [
         "marula oil"
       ],
-      "inciName": "Sclerocarya Birrea (Marula) Kernel Oil",
+      "inciName": "Sclerocarya birrea (Marula) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.197,
       "sapNaoh": 0.14046345811051694,
@@ -1468,6 +1499,7 @@
       "aliases": [
         "meadowfoam oil"
       ],
+      "inciName": "Limnanthes alba (Meadowfoam) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.169,
       "sapNaoh": 0.12049910873440285,
@@ -1630,6 +1662,7 @@
       "aliases": [
         "mustard oil kachi ghani"
       ],
+      "inciName": "Brassica Juncea (Mustard) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.172,
       "sapNaoh": 0.12263814616755792,
@@ -1665,6 +1698,7 @@
       "aliases": [
         "neem seed oil"
       ],
+      "inciName": "Azadirachta Indica (Neem) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -1726,6 +1760,7 @@
       "aliases": [
         "oleic acid"
       ],
+      "inciName": "Oleic Acid",
       "category": "free_acid",
       "sapKoh": 0.202,
       "sapNaoh": 0.14402852049910875,
@@ -1762,6 +1797,7 @@
       "aliases": [
         "olive oil pomace"
       ],
+      "inciName": "Olea Europaea (Olive) Fruit Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -1894,6 +1930,7 @@
       "aliases": [
         "palmitic acid"
       ],
+      "inciName": "Palmitic Acid",
       "category": "free_acid",
       "sapKoh": 0.215,
       "sapNaoh": 0.1532976827094474,
@@ -1991,7 +2028,7 @@
       "aliases": [
         "peach kernel oil"
       ],
-      "inciName": "Prunus Persica (Peach) Kernel Oil",
+      "inciName": "Prunus persica (Peach) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -2013,6 +2050,7 @@
       "aliases": [
         "peanut oil"
       ],
+      "inciName": "Arachis Hypogaea (Peanut) Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -2033,6 +2071,7 @@
       "aliases": [
         "pecan oil"
       ],
+      "inciName": "Carya Illinoinensis (Pecan) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -2076,6 +2115,7 @@
       "aliases": [
         "pine tar lye calc only no fa"
       ],
+      "inciName": "Pinus Palustris (Pine) Tar",
       "category": "tar",
       "sapRole": "acid_neutralization",
       "sapKoh": 0.06,
@@ -2091,6 +2131,7 @@
       "aliases": [
         "pistachio oil"
       ],
+      "inciName": "Pistacia Vera (Pistachio) Nut Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -2111,6 +2152,7 @@
       "aliases": [
         "plum kernel oil"
       ],
+      "inciName": "Prunus Domestica (Plum) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -2240,6 +2282,7 @@
       "aliases": [
         "rapeseed oil canola"
       ],
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.175,
       "sapNaoh": 0.124777183600713,
@@ -2708,6 +2751,7 @@
       "aliases": [
         "stearic acid"
       ],
+      "inciName": "Stearic Acid",
       "category": "free_acid",
       "sapKoh": 0.198,
       "sapNaoh": 0.1411764705882353,
@@ -2766,6 +2810,7 @@
       "aliases": [
         "tallow bear"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.1946,
       "sapNaoh": 0.13875222816399285,
@@ -2787,6 +2832,7 @@
       "aliases": [
         "tallow beef"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.196,
       "sapNaoh": 0.13975044563279856,
@@ -2810,6 +2856,7 @@
       "aliases": [
         "tallow deer"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -2832,6 +2879,7 @@
       "aliases": [
         "tallow goat"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -2854,6 +2902,7 @@
       "aliases": [
         "tallow sheep"
       ],
+      "inciName": "Tallow",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -2876,10 +2925,11 @@
       "aliases": [
         "tamanu oil kamani"
       ],
+      "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.208,
       "sapNaoh": 0.14830659536541888,
-      "confidence": "legacy_only",
+      "confidence": "estimated",
       "propertiesAvailable": true,
       "iodine": 111,
       "ins": 82,
@@ -2983,6 +3033,7 @@
       "aliases": [
         "wheat germ oil"
       ],
+      "inciName": "Triticum Vulgare (Wheat) Germ Oil",
       "category": "triglyceride",
       "sapKoh": 0.183,
       "sapNaoh": 0.13048128342245988,
@@ -3045,6 +3096,7 @@
       "aliases": [
         "carnauba wax"
       ],
+      "inciName": "Copernicia Cerifera (Carnauba) Wax",
       "category": "wax",
       "sapKoh": 0.087,
       "sapNaoh": 0.06203208556149732,

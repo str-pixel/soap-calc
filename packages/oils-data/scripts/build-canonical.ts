@@ -22,6 +22,7 @@ import {
   slugify,
 } from '../src/normalize.js';
 import { loadSupplementalOils, supplementalToCanonical, tarMetadataForLegacy } from '../src/supplemental.js';
+import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../../..');
@@ -29,6 +30,7 @@ const fnwlPath = join(__dirname, '../sources/fnwl-sapon.txt');
 const fnwlInciPath = join(__dirname, '../sources/fnwl-inci.txt');
 const legacyPath = join(root, 'soap_oils.json');
 const supplementalPath = join(__dirname, '../sources/supplemental-oils.json');
+const supplementalInciPath = join(__dirname, '../sources/supplemental-inci.json');
 const outPath = join(__dirname, '../data/canonical-oils.json');
 const litePath = join(__dirname, '../data/canonical-oils-lite.json');
 const reportPath = join(__dirname, '../data/build-report.json');
@@ -67,6 +69,9 @@ function main() {
     ? buildFnwlInciIndex(parseFnwlInciCsv(readFileSync(fnwlInciPath, 'utf8')))
     : new Map();
   const cosingGlossary = loadCosingGlossaryIndex(defaultGlossaryPath);
+  const supplementalInci = existsSync(supplementalInciPath)
+    ? loadSupplementalInci(supplementalInciPath)
+    : { byOilId: {}, byFnwlProductId: {}, displayHints: {} };
 
   const legacy = JSON.parse(readFileSync(legacyPath, 'utf8')) as { oils: LegacyOil[] };
   const report = {
@@ -78,6 +83,7 @@ function main() {
     ldgMethodologyNotes: [] as string[],
     inciResolved: [] as string[],
     inciMissing: [] as string[],
+    inciSupplemental: [] as string[],
     duplicates: [] as string[],
     supplemental: [] as string[],
   };
@@ -119,9 +125,6 @@ function main() {
       const resolvedInci = resolveInciForFnwlProduct(fnwl.productId, inciIndex);
       if (resolvedInci) {
         inciName = resolvedInci;
-        report.inciResolved.push(leg.name);
-      } else if (fnwl.productId) {
-        report.inciMissing.push(leg.name);
       }
 
       sources.push({
@@ -145,17 +148,6 @@ function main() {
           'LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment.',
       });
       report.ldgMethodologyNotes.push(leg.name);
-
-      if (inciName && cosingGlossary) {
-        const inciLookup = lookupInciInGlossary(inciName, cosingGlossary);
-        sources.push({
-          source: 'cosing',
-          url: 'https://ec.europa.eu/growth/tools-databases/cosing/',
-          notes: inciLookup.found
-            ? `INCI "${inciLookup.canonicalInci}" found in FNWL-derived CosIng glossary index`
-            : `INCI "${inciName}" from FNWL chart — not in local glossary index`,
-        });
-      }
 
       report.matched.push(leg.name);
 
@@ -196,6 +188,62 @@ function main() {
       confidence = resolution.confidence;
     } else {
       report.unmatched.push(leg.name);
+    }
+
+    const inciResolution = resolveOilInci({
+      oilId: baseSlug,
+      displayName: leg.name,
+      fnwlProductId: fnwl?.productId,
+      fnwlInci: inciName,
+      supplemental: supplementalInci,
+      glossary: cosingGlossary,
+    });
+
+    if (inciResolution) {
+      inciName = inciResolution.inciName;
+      if (inciResolution.source === 'fnwl') {
+        report.inciResolved.push(leg.name);
+        if (cosingGlossary) {
+          const inciLookup = lookupInciInGlossary(inciName, cosingGlossary);
+          sources.push({
+            source: 'cosing',
+            url: 'https://ec.europa.eu/growth/tools-databases/cosing/',
+            notes: inciLookup.found
+              ? `INCI "${inciLookup.canonicalInci}" found in FNWL-derived CosIng glossary index`
+              : `INCI "${inciName}" from FNWL chart — not in local glossary index`,
+          });
+        }
+      } else {
+        report.inciSupplemental.push(leg.name);
+        sources.push({
+          source: 'manual',
+          url: inciResolution.cosingValidated
+            ? 'https://ec.europa.eu/growth/tools-databases/cosing/'
+            : undefined,
+          notes: [
+            `INCI via ${inciResolution.source.replace('_', ' ')}`,
+            inciResolution.notes,
+            inciResolution.cosingValidated
+              ? 'Validated in local CosIng glossary index'
+              : 'Not in local CosIng glossary index',
+          ]
+            .filter(Boolean)
+            .join(' — '),
+        });
+      }
+
+      if (cosingGlossary) {
+        const inciLookup = lookupInciInGlossary(inciName, cosingGlossary);
+        if (inciLookup.found && inciResolution.source !== 'fnwl') {
+          sources.push({
+            source: 'cosing',
+            url: 'https://ec.europa.eu/growth/tools-databases/cosing/',
+            notes: `INCI "${inciLookup.canonicalInci}" found in FNWL-derived CosIng glossary index`,
+          });
+        }
+      }
+    } else if (fnwl?.productId) {
+      report.inciMissing.push(leg.name);
     }
 
     oils.push({
@@ -306,6 +354,7 @@ function main() {
   console.log(`  SAP conservative blend (5–${DISPUTED_DELTA_PCT}% delta): ${report.sapConservativeBlend.length}`);
   console.log(`  LDG methodology cross-checks: ${report.ldgMethodologyNotes.length}`);
   console.log(`  INCI resolved (FNWL): ${report.inciResolved.length}`);
+  console.log(`  INCI supplemental/fallback: ${report.inciSupplemental.length}`);
   console.log(`  INCI missing product map: ${report.inciMissing.length}`);
   console.log(`  Supplemental oils: ${report.supplemental.length}`);
 }

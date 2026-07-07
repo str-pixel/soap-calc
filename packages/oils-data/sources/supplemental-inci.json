@@ -1,0 +1,264 @@
+{
+  "byOilId": {
+    "abyssinian-oil": {
+      "inciName": "Crambe Abyssinica Seed Oil",
+      "source": "manual",
+      "notes": "Standard INCI for abyssinian/crambe seed oil"
+    },
+    "almond-butter": {
+      "inciName": "Prunus Amygdalus Dulcis (Sweet Almond) Oil",
+      "source": "cosing",
+      "notes": "Butter base; triglyceride INCI is sweet almond oil"
+    },
+    "andiroba-oil-karaba-crabwood": {
+      "inciName": "Carapa Guianensis Seed Oil",
+      "source": "manual",
+      "notes": "Andiroba / crabwood seed oil"
+    },
+    "avocado-butter": {
+      "inciName": "Persea Gratissima (Avocado) Oil",
+      "source": "cosing",
+      "notes": "Butter base; triglyceride INCI is avocado oil"
+    },
+    "beeswax": {
+      "inciName": "Cera Alba (Beeswax)",
+      "source": "cosing"
+    },
+    "black-current-seed-oil": {
+      "inciName": "Ribes Nigrum (Black Currant) Seed Oil",
+      "source": "manual"
+    },
+    "broccoli-seed-oil-brassica-oleracea": {
+      "inciName": "Brassica Oleracea Italica (Broccoli) Seed Oil",
+      "source": "cosing"
+    },
+    "camelina-seed-oil": {
+      "inciName": "Camelina Sativa (Camelina) Seed Oil",
+      "source": "cosing"
+    },
+    "camellia-oil-tea-seed": {
+      "inciName": "Camellia Oleifera (Camellia) Seed Oil",
+      "source": "cosing"
+    },
+    "canola-oil": {
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
+      "source": "manual",
+      "notes": "FNWL CANOLAOIL — standard canola/rapeseed INCI"
+    },
+    "canola-oil-high-oleic": {
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
+      "source": "manual"
+    },
+    "carrot-seed-oil-cold-pressed": {
+      "inciName": "Daucus Carota Sativa (Carrot) Seed Oil",
+      "source": "cosing"
+    },
+    "cherry-kern1-oil-p-avium": {
+      "inciName": "Prunus Avium (Cherry) Kernel Oil",
+      "source": "cosing"
+    },
+    "cherry-kern2-oil-p-cerasus": {
+      "inciName": "Prunus Cerasus (Cherry) Kernel Oil",
+      "source": "cosing"
+    },
+    "cocoa-butter": {
+      "inciName": "Theobroma Cacao (Cocoa) Seed Butter",
+      "source": "cosing"
+    },
+    "coffee-bean-oil-green": {
+      "inciName": "Coffea Arabica (Coffee) Seed Oil",
+      "source": "manual"
+    },
+    "coffee-bean-oil-roasted": {
+      "inciName": "Coffea Arabica (Coffee) Seed Oil",
+      "source": "manual"
+    },
+    "corn-oil": {
+      "inciName": "Zea Mays (Corn) Oil",
+      "source": "manual",
+      "notes": "FNWL CornOil — standard corn oil INCI"
+    },
+    "cottonseed-oil": {
+      "inciName": "Gossypium Herbaceum (Cotton) Seed Oil",
+      "source": "manual",
+      "notes": "FNWL CottonseedOil"
+    },
+    "cranberry-seed-oil": {
+      "inciName": "Vaccinium Macrocarpon (Cranberry) Seed Oil",
+      "source": "cosing"
+    },
+    "illipe-butter": {
+      "inciName": "Shorea stenoptera (Illipe) Seed Butter",
+      "source": "cosing"
+    },
+    "jojoba-oil": {
+      "inciName": "Simmondsia Chinensis (Jojoba) Seed Oil",
+      "source": "cosing",
+      "notes": "Duplicate catalog entry; same INCI as wax-ester jojoba line"
+    },
+    "kokum-butter": {
+      "inciName": "Garcinia indica (Kokum) Seed Butter",
+      "source": "cosing"
+    },
+    "lanolin-liquid-wax": {
+      "inciName": "Lanolin Oil",
+      "source": "cosing",
+      "notes": "Liquid lanolin fraction"
+    },
+    "lard-pig-tallow": {
+      "inciName": "Adeps Suillus",
+      "source": "manual",
+      "notes": "CosIng/EU INCI for hog lard (pig tallow)"
+    },
+    "lauric-acid": {
+      "inciName": "Lauric Acid",
+      "source": "manual"
+    },
+    "linseed-oil-flax": {
+      "inciName": "Linum Usitatissimum (Linseed) Seed Oil",
+      "source": "cosing",
+      "notes": "Alias of flax oil INCI already in FNWL set"
+    },
+    "mango-seed-butter": {
+      "inciName": "Mangifera Indica (Mango) Seed Butter",
+      "source": "cosing"
+    },
+    "mango-seed-oil": {
+      "inciName": "Mangifera indica (Mango) Seed Oil",
+      "source": "cosing"
+    },
+    "meadowfoam-oil": {
+      "inciName": "Limnanthes alba (Meadowfoam) Seed Oil",
+      "source": "cosing"
+    },
+    "myristic-acid": {
+      "inciName": "Myristic Acid",
+      "source": "manual"
+    },
+    "mustard-oil-kachi-ghani": {
+      "inciName": "Brassica Juncea (Mustard) Seed Oil",
+      "source": "manual",
+      "notes": "FNWL mustard oil match; no FNWL product INCI map entry"
+    },
+    "neem-seed-oil": {
+      "inciName": "Azadirachta Indica (Neem) Seed Oil",
+      "source": "cosing"
+    },
+    "oleic-acid": {
+      "inciName": "Oleic Acid",
+      "source": "manual"
+    },
+    "olive-oil-pomace": {
+      "inciName": "Olea Europaea (Olive) Fruit Oil",
+      "source": "cosing",
+      "notes": "Pomace grade uses same olive fruit oil INCI"
+    },
+    "palmitic-acid": {
+      "inciName": "Palmitic Acid",
+      "source": "manual"
+    },
+    "peanut-oil": {
+      "inciName": "Arachis Hypogaea (Peanut) Oil",
+      "source": "manual",
+      "notes": "FNWL PeanutOil"
+    },
+    "pecan-oil": {
+      "inciName": "Carya Illinoinensis (Pecan) Seed Oil",
+      "source": "manual",
+      "notes": "Standard pecan INCI; FNWL glossary uses trade name variant"
+    },
+    "pistachio-oil": {
+      "inciName": "Pistacia Vera (Pistachio) Nut Oil",
+      "source": "cosing"
+    },
+    "plum-kernel-oil": {
+      "inciName": "Prunus Domestica (Plum) Kernel Oil",
+      "source": "cosing"
+    },
+    "rapeseed-oil-canola": {
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
+      "source": "manual"
+    },
+    "stearic-acid": {
+      "inciName": "Stearic Acid",
+      "source": "manual"
+    },
+    "tallow-bear": {
+      "inciName": "Tallow",
+      "source": "manual",
+      "notes": "CosIng #92469 — no species-specific bear tallow INCI; generic tallow"
+    },
+    "tallow-beef": {
+      "inciName": "Tallow",
+      "source": "manual",
+      "notes": "CosIng #92469 — cattle fat; also labeled Adeps Bovis in EU"
+    },
+    "tallow-deer": {
+      "inciName": "Tallow",
+      "source": "manual",
+      "notes": "CosIng #92469 — no deer-specific INCI; generic tallow"
+    },
+    "tallow-goat": {
+      "inciName": "Tallow",
+      "source": "manual",
+      "notes": "CosIng #92469 — no goat-specific INCI; generic tallow"
+    },
+    "tallow-sheep": {
+      "inciName": "Tallow",
+      "source": "manual",
+      "notes": "CosIng #92469 — sheep fat"
+    },
+    "tamanu-oil-kamani": {
+      "inciName": "Calophyllum inophyllum (Tamanu) Oil",
+      "source": "cosing",
+      "notes": "Resolved via FNWL alias → Tamanu Foraha Oil product INCI"
+    },
+    "wheat-germ-oil": {
+      "inciName": "Triticum Vulgare (Wheat) Germ Oil",
+      "source": "manual",
+      "notes": "Standard wheat germ oil INCI"
+    },
+    "carnauba-wax": {
+      "inciName": "Copernicia Cerifera (Carnauba) Wax",
+      "source": "manual"
+    },
+    "japan-wax": {
+      "inciName": "Rhus Succedanea Fruit Wax",
+      "source": "manual"
+    },
+    "pine-tar-lye-calc-only-no-fa": {
+      "inciName": "Pinus Palustris (Pine) Tar",
+      "source": "manual",
+      "notes": "Tar — lye estimate only in calculator"
+    }
+  },
+  "byFnwlProductId": {
+    "canolaoil": {
+      "inciName": "Brassica Napus (Rapeseed) Seed Oil",
+      "source": "fnwl_product",
+      "notes": "FNWL SAP chart product lacks fnwl-inci.txt row"
+    },
+    "cornoil": {
+      "inciName": "Zea Mays (Corn) Oil",
+      "source": "fnwl_product"
+    },
+    "cottonseedoil": {
+      "inciName": "Gossypium Herbaceum (Cotton) Seed Oil",
+      "source": "fnwl_product"
+    },
+    "peanutoil": {
+      "inciName": "Arachis Hypogaea (Peanut) Oil",
+      "source": "fnwl_product"
+    },
+    "beeftallow": {
+      "inciName": "Tallow",
+      "source": "fnwl_product",
+      "notes": "CosIng #92469"
+    },
+    "oiltamanucpvirin728": {
+      "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
+      "source": "fnwl_product"
+    }
+  },
+  "displayHints": {}
+}
