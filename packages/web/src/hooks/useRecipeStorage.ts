@@ -24,8 +24,6 @@ import {
   serializeRecipeFile,
 } from '../lib/recipeFile';
 
-const AUTOSAVE_MS = 500;
-
 export function useRecipeStorage() {
   const draft = loadDraft();
   const initialSettings = normalizeSettings(draft?.settings);
@@ -37,18 +35,7 @@ export function useRecipeStorage() {
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(listSavedRecipes);
   const [selectedSavedId, setSelectedSavedId] = useState('');
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      saveDraft(recipeName, lines, settings);
-    }, AUTOSAVE_MS);
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, [recipeName, lines, settings]);
 
   useEffect(() => {
     return () => {

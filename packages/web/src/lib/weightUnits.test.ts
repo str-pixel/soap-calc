@@ -8,9 +8,9 @@ import {
 } from './weightUnits';
 
 describe('weightUnits', () => {
-  it('round-trips grams through ounces', () => {
+  it('round-trips grams through ounces with 0.1 g precision', () => {
     expect(gramsStringToInputDisplay('454', 'oz')).toBe('16');
-    expect(parseInputDisplayToGrams('16', 'oz')).toBe('454');
+    expect(parseInputDisplayToGrams('16', 'oz')).toBe('453.6');
   });
 
   it('formats pounds with a stable locale', () => {

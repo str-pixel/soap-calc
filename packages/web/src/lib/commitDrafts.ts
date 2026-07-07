@@ -1,5 +1,6 @@
 import type { RecipeLine } from './recipe';
 import {
+  resyncFromWeights,
   syncBatchTotalEdit,
   syncPercentEdit,
   syncWeightEdit,
@@ -20,12 +21,18 @@ export function commitDrafts(
   if (batchDraft !== undefined) {
     const parsedBatch = parseInputDisplayToGrams(batchDraft, weightUnit);
     if (parsedBatch !== null) {
-      currentBatch = parsedBatch;
-      currentLines = syncBatchTotalEdit(currentLines, currentBatch);
+      if (parsedBatch === '') {
+        const resynced = resyncFromWeights(currentLines);
+        currentLines = resynced.lines;
+        currentBatch = resynced.batchOilGrams;
+      } else {
+        currentBatch = parsedBatch;
+        currentLines = syncBatchTotalEdit(currentLines, currentBatch);
+      }
     }
   }
 
-  for (const line of lines) {
+  for (const line of currentLines) {
     const weightDraft = drafts[`weight-${line.key}`];
     if (weightDraft === undefined) continue;
     const weightGrams = parseInputDisplayToGrams(weightDraft, weightUnit);
@@ -35,7 +42,7 @@ export function commitDrafts(
     currentBatch = synced.batchOilGrams;
   }
 
-  for (const line of lines) {
+  for (const line of currentLines) {
     const percentDraft = drafts[`percent-${line.key}`];
     if (percentDraft === undefined) continue;
     const weightPercent = parsePercentInput(percentDraft);

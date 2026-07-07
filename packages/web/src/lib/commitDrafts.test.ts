@@ -19,6 +19,24 @@ describe('commitDrafts', () => {
     const result = commitDrafts(lines, '1000', { 'weight-a': '16.' }, 'oz');
     expect(result.lines[0].weightGrams).toBe('600');
   });
+
+  it('applies batch draft before line weight drafts', () => {
+    const result = commitDrafts(
+      lines,
+      '1000',
+      { 'batch-total': '2000', 'weight-a': '1200' },
+      'g',
+    );
+    expect(result.batchOilGrams).toBe('2000');
+    expect(result.lines[0]).toMatchObject({ weightGrams: '1200', weightPercent: '60' });
+    expect(result.lines[1]).toMatchObject({ weightGrams: '800', weightPercent: '40' });
+  });
+
+  it('resyncs from weights when batch draft is cleared', () => {
+    const result = commitDrafts(lines, '1000', { 'batch-total': '' }, 'g');
+    expect(result.batchOilGrams).toBe('1000');
+    expect(result.lines).toEqual(lines);
+  });
 });
 
 describe('previewRecipeState', () => {

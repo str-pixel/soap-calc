@@ -4,6 +4,7 @@ import { PropertiesPanel } from './components/PropertiesPanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { useDebouncedCommit } from './hooks/useDebouncedCommit';
 import { useDraftInputs } from './hooks/useDraftInputs';
+import { useRecipeAutosave } from './hooks/useRecipeAutosave';
 import { useRecipeCalculation } from './hooks/useRecipeCalculation';
 import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeProperties } from './hooks/useRecipeProperties';
@@ -77,6 +78,7 @@ export default function App() {
     [previewState.lines],
   );
   const previewSettings = usePreviewSettings(settings, previewState.batchOilGrams);
+  useRecipeAutosave(recipeName, previewState.lines, previewSettings);
   const { result, inputErrors, displayTotals } = useRecipeCalculation(
     previewState.lines,
     previewSettings,
@@ -177,6 +179,11 @@ export default function App() {
     const batchOilGrams = parseInputDisplayToGrams(displayValue, weightUnit);
     clearDraft(batchInputId);
     if (batchOilGrams === null) return;
+
+    if (batchOilGrams === '') {
+      applySyncedUpdate((prev) => resyncFromWeights(prev));
+      return;
+    }
 
     applySyncedUpdate((prev) => ({
       lines: syncBatchTotalEdit(prev, batchOilGrams),

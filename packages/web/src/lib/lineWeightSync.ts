@@ -96,7 +96,7 @@ function distributeWeightsToBatch(
     0,
   );
 
-  const otherGrams = otherLines.map((line, index) => {
+  const otherGrams = otherLines.map((line) => {
     const oldGrams = parseNum(line.weightGrams) ?? 0;
     if (remaining <= 0) return 0;
     if (otherWeightSum > 0) return Math.round((oldGrams / otherWeightSum) * remaining);
@@ -259,9 +259,13 @@ export function syncPercentEdit(
 }
 
 export function syncBatchTotalEdit(lines: RecipeLine[], batchOilGrams: string): RecipeLine[] {
+  if (batchOilGrams === '') {
+    return lines;
+  }
+
   const batch = parseNum(batchOilGrams);
   if (batch === null || batch <= 0) {
-    return lines.map((line) => ({ ...line, weightGrams: '', weightPercent: '' }));
+    return lines;
   }
 
   const normalized = normalizePercentsTo100(lines);

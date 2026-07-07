@@ -97,9 +97,9 @@ describe('syncBatchTotalEdit', () => {
     expect(totalWeightGrams(next)).toBe(1000);
   });
 
-  it('clears line weights when batch is cleared', () => {
+  it('preserves line weights when batch is cleared', () => {
     const next = syncBatchTotalEdit(twoLines, '');
-    expect(next.every((line) => line.weightGrams === '' && line.weightPercent === '')).toBe(true);
+    expect(next).toEqual(twoLines);
   });
 });
 

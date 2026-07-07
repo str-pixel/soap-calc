@@ -54,7 +54,8 @@ export function parseInputDisplayToGrams(
   const value = Number(displayStr);
   if (!Number.isFinite(value) || value < 0) return null;
   if (value === 0) return '';
-  return String(Math.round(displayValueToGrams(value, unit)));
+  const grams = displayValueToGrams(value, unit);
+  return String(Math.round(grams * 10) / 10);
 }
 
 /** @deprecated Use parseInputDisplayToGrams for commit paths. */

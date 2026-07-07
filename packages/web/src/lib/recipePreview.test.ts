@@ -20,6 +20,6 @@ describe('recipePreview', () => {
 
   it('uses in-progress batch drafts for preview', () => {
     const preview = previewRecipeState(lines, '1000', { 'batch-total': '2' }, 'lb');
-    expect(preview.batchOilGrams).toBe('907');
+    expect(preview.batchOilGrams).toBe('907.2');
   });
 });
