@@ -98,6 +98,10 @@ export function ResultsPanel({
             <dt>Lye concentration</dt>
             <dd>{formatGrams(result.lyeConcentrationPercent, 1)}%</dd>
           </div>
+          <div className="results-grid__item">
+            <dt>Water : lye</dt>
+            <dd>{formatGrams(result.waterLyeRatio, 2)} : 1</dd>
+          </div>
         </dl>
       )}
 

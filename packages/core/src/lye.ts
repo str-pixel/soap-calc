@@ -261,6 +261,17 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
     lyePlusWater > 0 ? (lyeWeightGrams / lyePlusWater) * 100 : 0;
   const waterLyeRatio = lyeWeightGrams > 0 ? waterWeightGrams / lyeWeightGrams : 0;
 
+  if (
+    !hasFatalInputError &&
+    lyeWeightGrams > 0 &&
+    waterWeightGrams > 0 &&
+    waterWeightGrams < lyeWeightGrams
+  ) {
+    warnings.push(
+      'Water is less than lye by weight — use at least a 1:1 water:lye ratio to dissolve alkali safely.',
+    );
+  }
+
   return {
     totalOilWeightGrams,
     lyeWeightGrams,

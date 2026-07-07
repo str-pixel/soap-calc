@@ -1,0 +1,125 @@
+import {
+  FATTY_ACID_GROUP_KEYS,
+  sumFattyAcids,
+  type FattyAcidProfile,
+} from './fatty-acids.js';
+import type { SoapProperties } from './properties.js';
+
+export type FormulationInsightLevel = 'info' | 'warning';
+
+export type FormulationInsight = {
+  level: FormulationInsightLevel;
+  code: string;
+  message: string;
+};
+
+export type FormulationAnalysisInput = {
+  properties: SoapProperties | null;
+  fattyAcids: FattyAcidProfile | null;
+  totalOilGrams: number;
+  superfatPercent: number;
+  lyeConcentrationPercent: number;
+  waterLyeRatio: number;
+  waterGrams: number;
+  lyeGrams: number;
+};
+
+export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
+  const insights: FormulationInsight[] = [];
+
+  if (input.totalOilGrams > 500) {
+    insights.push({
+      level: 'info',
+      code: 'large_test_batch',
+      message:
+        'Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong.',
+    });
+  }
+
+  if (
+    input.lyeGrams > 0 &&
+    input.waterGrams > 0 &&
+    input.waterGrams < input.lyeGrams
+  ) {
+    insights.push({
+      level: 'warning',
+      code: 'water_below_lye',
+      message:
+        'Water is less than lye by weight — use at least a 1:1 water:lye ratio so alkali can dissolve safely.',
+    });
+  }
+
+  if (input.lyeConcentrationPercent > 0) {
+    if (input.lyeConcentrationPercent < 20) {
+      insights.push({
+        level: 'warning',
+        code: 'lye_conc_low',
+        message:
+          'Lye concentration below ~20% — outside typical cold-process range; trace and cure may be very slow.',
+      });
+    } else if (input.lyeConcentrationPercent > 38) {
+      insights.push({
+        level: 'warning',
+        code: 'lye_conc_high',
+        message:
+          'Lye concentration above ~38% — may trace quickly, resist gel, or warp in the mold.',
+      });
+    }
+  }
+
+  if (input.fattyAcids) {
+    const lauricMyristic = sumFattyAcids(
+      input.fattyAcids,
+      FATTY_ACID_GROUP_KEYS.lauricMyristic,
+    );
+    const palmiticStearic = sumFattyAcids(
+      input.fattyAcids,
+      FATTY_ACID_GROUP_KEYS.palmiticStearic,
+    );
+    const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+
+    if (lauricMyristic > 35 && palmiticStearic < 15) {
+      insights.push({
+        level: 'info',
+        code: 'high_short_chain_low_long_chain',
+        message:
+          'High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous.',
+      });
+    }
+
+    if (poly > 28 && input.superfatPercent >= 8) {
+      insights.push({
+        level: 'warning',
+        code: 'high_poly_high_superfat',
+        message:
+          'High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months.',
+      });
+    }
+
+    const oleic = input.fattyAcids.oleic ?? 0;
+    const lauric = input.fattyAcids.lauric ?? 0;
+    if (lauric >= 5 && oleic >= 20) {
+      insights.push({
+        level: 'info',
+        code: 'eutectic_lather_sources',
+        message:
+          'Both lauric and oleic sources present — supports a balanced fluffy and stable lather.',
+      });
+    }
+  }
+
+  if (input.properties) {
+    const cleansing = input.properties.cleansing;
+    const superfat = input.superfatPercent;
+    if (cleansing > 22 && superfat < 6) {
+      insights.push({
+        level: 'info',
+        code: 'high_cleansing_low_superfat',
+        message:
+          'Cleansing score above the usual range with modest superfat — bar may feel stripping; consider more superfat or softer oils.',
+      });
+    }
+  }
+
+  return insights;
+}

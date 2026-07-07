@@ -1,9 +1,13 @@
 import type { RecipePropertiesResult, SoapPropertyName } from '@soap-calc/core';
 import {
+  FORMULATION_PREFERENCE_GUIDE,
+  formatPropertyRangePercent,
+  formatSoapPropertyPercent,
+  IODINE_GUIDE,
+  INS_GUIDE,
   SOAP_PROPERTY_GUIDE,
   SOAP_PROPERTY_LABELS,
 } from '@soap-calc/core';
-import { formatGrams } from '../lib/format';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
 import { oilById } from '../lib/oils';
 
@@ -15,6 +19,8 @@ const PROPERTY_ORDER: SoapPropertyName[] = [
   'bubbly',
   'longevity',
 ];
+
+const SCALE_MAX = 100;
 
 type PropertiesPanelProps = {
   result: RecipePropertiesResult;
@@ -29,23 +35,36 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
   return (
     <section className="panel">
       <h2 className="panel__title">Bar properties</h2>
+      <p className="panel__subtitle">Fatty-acid totals as % of oil weight</p>
 
       {showIndexes && (
         <dl className="recipe-indexes" aria-label="Recipe iodine and INS">
           <div>
             <dt>Iodine</dt>
-            <dd>{formatGrams(indexes.iodine!, 0)}</dd>
+            <dd>
+              {Math.round(indexes.iodine!)}
+              <span className="recipe-indexes__range">
+                {' '}
+                (typical {IODINE_GUIDE.low}–{IODINE_GUIDE.high})
+              </span>
+            </dd>
           </div>
           <div>
             <dt>INS</dt>
-            <dd>{formatGrams(indexes.ins!, 0)}</dd>
+            <dd>
+              {Math.round(indexes.ins!)}
+              <span className="recipe-indexes__range">
+                {' '}
+                (typical {INS_GUIDE.low}–{INS_GUIDE.high})
+              </span>
+            </dd>
           </div>
         </dl>
       )}
 
       {showIndexes && indexPartial && (
         <p className="properties-coverage">
-          Iodine/INS based on {formatGrams(indexes.coveragePercent, 0)}% of recipe oils
+          Iodine/INS based on {Math.round(indexes.coveragePercent)}% of recipe oils
           {indexes.missingOilIds.length > 0 && (
             <>
               {' '}
@@ -68,7 +87,7 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
         <>
           {partial && (
             <p className="properties-coverage">
-              Based on {formatGrams(result.coveragePercent, 0)}% of recipe oils
+              Based on {Math.round(result.coveragePercent)}% of recipe oils
               {result.missingOilIds.length > 0 && (
                 <>
                   {' '}
@@ -86,41 +105,69 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
             {PROPERTY_ORDER.map((key) => {
               const value = result.properties![key];
               const guide = SOAP_PROPERTY_GUIDE[key];
-              const pct = Math.min(100, (value / guide.high) * 100);
+              const preference = FORMULATION_PREFERENCE_GUIDE[key];
+              const fillPct = Math.min(100, (value / SCALE_MAX) * 100);
+              const inSuggested = value >= guide.low && value <= guide.high;
 
               return (
                 <li key={key} className="property-bars__row">
                   <div className="property-bars__label">
                     <span>{SOAP_PROPERTY_LABELS[key]}</span>
-                    <span className="property-bars__value">{formatGrams(value, 0)}</span>
+                    <span
+                      className={`property-bars__value${inSuggested ? '' : ' property-bars__value--outside'}`}
+                    >
+                      {formatSoapPropertyPercent(value)}
+                    </span>
                   </div>
                   <div
                     className="property-bars__track"
                     role="meter"
                     aria-valuemin={0}
-                    aria-valuemax={guide.high}
-                    aria-valuenow={Math.round(value)}
-                    aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${formatGrams(value, 0)}`}
+                    aria-valuemax={SCALE_MAX}
+                    aria-valuenow={Math.round(value * 10) / 10}
+                    aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${formatSoapPropertyPercent(value)}`}
                   >
                     <span
-                      className="property-bars__fill"
-                      style={{ width: `${pct}%` }}
-                    />
-                    <span
-                      className="property-bars__guide property-bars__guide--low"
-                      style={{ left: `${(guide.low / guide.high) * 100}%` }}
+                      className="property-bars__band property-bars__band--suggested"
+                      style={{
+                        left: `${guide.low}%`,
+                        width: `${guide.high - guide.low}%`,
+                      }}
                       aria-hidden
                     />
-                    <span
-                      className="property-bars__guide property-bars__guide--high"
-                      style={{ left: `${(guide.high / guide.high) * 100}%` }}
-                      aria-hidden
-                    />
+                    {preference && (
+                      <span
+                        className="property-bars__band property-bars__band--preference"
+                        style={{
+                          left: `${preference.low}%`,
+                          width: `${preference.high - preference.low}%`,
+                        }}
+                        aria-hidden
+                      />
+                    )}
+                    <span className="property-bars__fill" style={{ width: `${fillPct}%` }} />
                   </div>
+                  <p className="property-bars__range">
+                    Suggested {formatPropertyRangePercent(guide.low, guide.high)}
+                    {preference && (
+                      <>
+                        {' '}
+                        · Balanced target{' '}
+                        {formatPropertyRangePercent(preference.low, preference.high)}
+                      </>
+                    )}
+                  </p>
                 </li>
               );
             })}
           </ul>
+
+          <p className="property-legend">
+            <span className="property-legend__swatch property-legend__swatch--suggested" />
+            Suggested range
+            <span className="property-legend__swatch property-legend__swatch--preference" />
+            Balanced target
+          </p>
         </>
       )}
     </section>
