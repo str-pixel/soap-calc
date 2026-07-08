@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  additivesFromSaved,
   createEmptyAdditives,
   createStarterLines,
   DEFAULT_SETTINGS,

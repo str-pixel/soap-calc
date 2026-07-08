@@ -40,7 +40,7 @@ import {
   usePreviewSettings,
 } from './lib/recipePreview';
 import {
-  formatGramsWithUnit,
+  formatWeight,
   gramsStringToInputDisplay,
   parseInputDisplayToGrams,
   parsePercentInput,
@@ -511,7 +511,7 @@ export default function App() {
               <span>Total</span>
               <span className="recipe-table__total-weight">
                 {showRecipeTotals && lineTotals.totalWeightGrams > 0
-                  ? formatGramsWithUnit(lineTotals.totalWeightGrams, weightUnit)
+                  ? formatWeight(lineTotals.totalWeightGrams, weightUnit)
                   : '—'}
               </span>
               <span className="recipe-table__total-pct">
