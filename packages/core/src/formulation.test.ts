@@ -203,4 +203,126 @@ describe('analyzeFormulation', () => {
     expect(insights.some((i) => i.code === 'split_liquid_high_trace_liquid')).toBe(true);
     expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(false);
   });
+
+  it('notes dual lye as advanced', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      lyeType: 'dual',
+      kohBlendPercent: 5,
+    });
+    expect(insights.some((i) => i.code === 'dual_lye_advanced')).toBe(true);
+  });
+
+  it('does not note dual lye when KOH blend is zero', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      lyeType: 'dual',
+      kohBlendPercent: 0,
+    });
+    expect(insights.some((i) => i.code === 'dual_lye_advanced')).toBe(false);
+  });
+
+  it('does not note dual lye for single-alkali recipes', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      lyeType: 'naoh',
+    });
+    expect(insights.some((i) => i.code === 'dual_lye_advanced')).toBe(false);
+  });
+
+  it('detects jojoba additive by catalog id', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      additiveEntries: [{ catalogId: 'jojoba', name: 'Wax ester' }],
+    });
+    expect(insights.some((i) => i.code === 'jojoba_superfat_note')).toBe(true);
+  });
+
+  it('detects jojoba additive by free-typed name', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      additiveEntries: [{ catalogId: '', name: 'Golden jojoba oil' }],
+    });
+    expect(insights.some((i) => i.code === 'jojoba_superfat_note')).toBe(true);
+  });
+
+  it('detects oatmeal additive by free-typed name', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      additiveEntries: [{ catalogId: '', name: 'Colloidal oatmeal' }],
+    });
+    expect(insights.some((i) => i.code === 'oatmeal_false_trace')).toBe(true);
+  });
+
+  it('detects jojoba in the recipe oil list', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      oilEntries: [{ oilId: 'jojoba-oil', name: 'Jojoba Oil' }],
+    });
+    expect(insights.some((i) => i.code === 'jojoba_superfat_note')).toBe(true);
+  });
+
+  it('does not flag oatmeal from a fragrance additive name', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      additiveEntries: [{ catalogId: '', name: 'Oatmeal stout fragrance' }],
+    });
+    expect(insights.some((i) => i.code === 'oatmeal_false_trace')).toBe(false);
+  });
 });

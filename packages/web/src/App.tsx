@@ -769,6 +769,7 @@ export default function App() {
             <SplitLiquidPanel
               splitLiquid={settings.splitLiquid}
               totalOilGrams={totalOilGrams}
+              lyeGrams={result?.lyeWeightGrams ?? 0}
               weightUnit={weightUnit}
               waterMode={settings.waterMode}
               waterSuggestion={waterSuggestion}

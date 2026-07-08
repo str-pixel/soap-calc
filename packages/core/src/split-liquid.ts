@@ -7,7 +7,15 @@ export type SplitLiquidWaterSuggestion = {
   suggestedWaterPercentOfOils: number | null;
 };
 
-/** Suggest reduced lye water when alternative liquid replaces part of the water phase. */
+export function lyeConcentrationPercent(lyeGrams: number, waterGrams: number): number | null {
+  if (!Number.isFinite(lyeGrams) || !Number.isFinite(waterGrams) || lyeGrams <= 0) {
+    return null;
+  }
+  const total = lyeGrams + waterGrams;
+  if (total <= 0) return null;
+  return (lyeGrams / total) * 100;
+}
+
 export function suggestLyeWaterWithSplitLiquid(input: {
   waterGrams: number;
   lyeGrams: number;

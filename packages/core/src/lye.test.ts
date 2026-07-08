@@ -285,4 +285,38 @@ describe('calculateLye', () => {
 
     expect(result.errors.some((e) => e.includes('kohBlendPercent'))).toBe(true);
   });
+
+  it('calculates dual lye for a multi-oil recipe', () => {
+    const COCONUT: OilForLyeCalc = {
+      id: 'coconut-oil-76',
+      sapKoh: 0.257,
+      sapNaoh: 0.257 / 1.4025,
+      category: 'triglyceride',
+    };
+    const result = calculateLye({
+      oils: [
+        { oilId: 'olive-oil', weightGrams: 700 },
+        { oilId: 'coconut-oil-76', weightGrams: 300 },
+      ],
+      oilLookup: { 'olive-oil': OLIVE, 'coconut-oil-76': COCONUT },
+      superfatPercent: 5,
+      lyeType: 'dual',
+      kohBlendPercent: 10,
+      naohPurityPercent: 100,
+      kohPurityPercent: 90,
+    });
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.totalOilWeightGrams).toBe(1000);
+    expect(result.lines).toHaveLength(2);
+
+    const oliveLine = result.lines.find((line) => line.oilId === 'olive-oil')!;
+    const coconutLine = result.lines.find((line) => line.oilId === 'coconut-oil-76')!;
+    expect(oliveLine.naohGrams + coconutLine.naohGrams).toBeCloseTo(
+      result.naohWeightGrams,
+      4,
+    );
+    expect(oliveLine.kohGrams + coconutLine.kohGrams).toBeCloseTo(result.kohWeightGrams, 4);
+    expect((result.kohWeightGrams / result.lyeWeightGrams) * 100).toBeCloseTo(10, 1);
+  });
 });

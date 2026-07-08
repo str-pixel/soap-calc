@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { suggestLyeWaterWithSplitLiquid } from './split-liquid.js';
+import {
+  lyeConcentrationPercent,
+  suggestLyeWaterWithSplitLiquid,
+} from './split-liquid.js';
+
+describe('lyeConcentrationPercent', () => {
+  it('computes lye share of the lye solution', () => {
+    expect(lyeConcentrationPercent(135, 135)).toBeCloseTo(50, 1);
+    expect(lyeConcentrationPercent(135, 330)).toBeCloseTo(29, 0);
+  });
+});
 
 describe('suggestLyeWaterWithSplitLiquid', () => {
   it('suggests reduced lye water capped at 1:1 water:lye minimum', () => {

@@ -2,12 +2,14 @@ import { ADDITIVE_STAGE_LABELS, type SplitLiquidWaterSuggestion, type WaterMode 
 import type { SplitLiquidSettings } from '../lib/recipe';
 import { computeSplitLiquidGrams } from '../lib/calculateAdditives';
 import { formatInputNumber } from '../lib/format';
+import { splitLiquidManualWaterHint } from '../lib/splitLiquidHint';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
 type SplitLiquidPanelProps = {
   splitLiquid: SplitLiquidSettings;
   totalOilGrams: number;
+  lyeGrams: number;
   weightUnit: WeightUnit;
   waterMode: WaterMode;
   waterSuggestion: SplitLiquidWaterSuggestion | null;
@@ -18,6 +20,7 @@ type SplitLiquidPanelProps = {
 export function SplitLiquidPanel({
   splitLiquid,
   totalOilGrams,
+  lyeGrams,
   weightUnit,
   waterMode,
   waterSuggestion,
@@ -32,6 +35,17 @@ export function SplitLiquidPanel({
     waterMode === 'percent_of_oils' &&
     waterSuggestion?.suggestedWaterPercentOfOils !== null &&
     onApplySuggestedWater;
+
+  const manualHint =
+    waterSuggestion && waterMode !== 'percent_of_oils'
+      ? splitLiquidManualWaterHint({
+          waterMode,
+          waterSuggestion,
+          lyeGrams,
+          totalOilGrams,
+          weightUnit,
+        })
+      : null;
 
   return (
     <section className="panel panel--nested">
@@ -123,10 +137,8 @@ export function SplitLiquidPanel({
                   of oils
                 </button>
               )}
-              {waterMode !== 'percent_of_oils' && (
-                <p className="split-liquid-suggestion__hint">
-                  Switch to % of oils water method to apply a suggested water % automatically.
-                </p>
+              {manualHint && (
+                <p className="split-liquid-suggestion__hint">{manualHint}</p>
               )}
             </div>
           )}

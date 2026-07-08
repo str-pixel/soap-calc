@@ -3,8 +3,14 @@ import {
   sumFattyAcids,
   type FattyAcidProfile,
 } from './fatty-acids.js';
-import type { WaterMode } from './lye.js';
+import type { LyeType, WaterMode } from './lye.js';
 import type { SoapProperties } from './properties.js';
+import {
+  additiveMatches,
+  recipeOilMatches,
+  type NamedCatalogEntry,
+  type NamedOilEntry,
+} from './keyword-match.js';
 
 export type FormulationInsightLevel = 'info' | 'warning';
 
@@ -32,7 +38,10 @@ export type FormulationAnalysisInput = {
   /** Grams of water replaceable by trace split liquid; 0 when water is already at 1:1 minimum. */
   splitLiquidWaterReductionGrams?: number | null;
   totalAdditivePercent?: number;
-  additiveCatalogIds?: string[];
+  additiveEntries?: NamedCatalogEntry[];
+  oilEntries?: NamedOilEntry[];
+  lyeType?: LyeType;
+  kohBlendPercent?: number;
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -179,8 +188,17 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  const catalogIds = input.additiveCatalogIds ?? [];
-  if (catalogIds.includes('oatmeal')) {
+  if (input.lyeType === 'dual' && (input.kohBlendPercent ?? 0) > 0) {
+    insights.push({
+      level: 'info',
+      code: 'dual_lye_advanced',
+      message:
+        'Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up.',
+    });
+  }
+
+  const additiveEntries = input.additiveEntries;
+  if (additiveMatches(additiveEntries, 'oatmeal', 'oatmeal')) {
     insights.push({
       level: 'info',
       code: 'oatmeal_false_trace',
@@ -189,7 +207,13 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  if (catalogIds.includes('jojoba')) {
+  if (
+    additiveMatches(additiveEntries, 'jojoba', 'jojoba') ||
+    recipeOilMatches(input.oilEntries, {
+      oilIds: ['jojoba-oil', 'jojoba-oil-a-liquid-wax-ester'],
+      nameKeyword: 'jojoba',
+    })
+  ) {
     insights.push({
       level: 'info',
       code: 'jojoba_superfat_note',

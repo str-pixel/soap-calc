@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { analyzeFormulation, parsePercentOfOil, type LyeCalculationResult, type RecipePropertiesResult } from '@soap-calc/core';
 import { calculateFattyAcidsForRecipe } from '../lib/calculateFattyAcids';
+import { oilById } from '../lib/oils';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
@@ -44,9 +45,12 @@ export function useFormulationInsights(
       (options.additives ?? []).map((item) => item.percentOfOil),
       settings.splitLiquid,
     );
-    const additiveCatalogIds = (options.additives ?? [])
-      .map((item) => item.catalogId)
-      .filter((id) => id !== '');
+    const oilEntries = lines
+      .filter((line) => Number(line.weightGrams) > 0 || Number(line.weightPercent) > 0)
+      .map((line) => ({
+        oilId: line.oilId,
+        name: oilById(line.oilId)?.displayName ?? line.oilId,
+      }));
     return analyzeFormulation({
       properties: properties.properties,
       fattyAcids: fattyAcids.profile,
@@ -64,10 +68,17 @@ export function useFormulationInsights(
       suggestedLyeWaterGrams: options.suggestedLyeWaterGrams ?? null,
       splitLiquidWaterReductionGrams: options.splitLiquidWaterReductionGrams ?? null,
       totalAdditivePercent,
-      additiveCatalogIds,
+      additiveEntries: (options.additives ?? []).map((item) => ({
+        catalogId: item.catalogId,
+        name: item.name,
+      })),
+      oilEntries,
+      lyeType: settings.lyeType,
+      kohBlendPercent: Number(settings.kohBlendPercent) || 0,
     });
   }, [
     fattyAcids.profile,
+    lines,
     lyeResult,
     options.additives,
     options.excludedOilWeightGrams,
@@ -78,6 +89,8 @@ export function useFormulationInsights(
     settings.splitLiquid.addAt,
     settings.splitLiquid.enabled,
     settings.splitLiquid.percentOfOil,
+    settings.lyeType,
+    settings.kohBlendPercent,
     settings.superfatPercent,
     settings.waterMode,
   ]);
