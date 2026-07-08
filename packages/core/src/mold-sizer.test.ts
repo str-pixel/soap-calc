@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyOilWasteFactor,
   DEFAULT_OIL_BATCH_FRACTION,
   oilBatchFraction,
   oilGramsFromBarCount,
@@ -28,5 +29,11 @@ describe('mold-sizer', () => {
   it('derives oil batch fraction', () => {
     expect(oilBatchFraction(650, 1000)).toBe(0.65);
     expect(oilBatchFraction(1000, 900)).toBeNull();
+  });
+
+  it('applies waste factor to suggested oil grams', () => {
+    expect(applyOilWasteFactor(1000, 5)).toBeCloseTo(1050, 5);
+    expect(applyOilWasteFactor(1000, 0)).toBe(1000);
+    expect(applyOilWasteFactor(1000, 60)).toBeNull();
   });
 });

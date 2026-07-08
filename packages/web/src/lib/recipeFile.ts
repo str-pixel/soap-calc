@@ -40,6 +40,45 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+/** SoapCalc-style ounces of additive per pound of oils → % of oil weight. */
+const OZ_PER_LB_OILS = 16;
+
+function roundPercentString(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  return String(rounded);
+}
+
+function ppoOzToPercentOfOil(ppoOz: number): string {
+  return roundPercentString((ppoOz / OZ_PER_LB_OILS) * 100);
+}
+
+function parseAdditivePercentOfOil(value: Record<string, unknown>): string {
+  const doseUnit = value.doseUnit ?? value.percentUnit;
+  if (typeof value.percentOfOil === 'number' && Number.isFinite(value.percentOfOil)) {
+    if (value.percentOfOil < 0) return '';
+    return roundPercentString(value.percentOfOil);
+  }
+  if (typeof value.percentOfOil === 'string' && value.percentOfOil !== '') {
+    if (doseUnit === 'ppo' || doseUnit === 'ppoOz') {
+      const ppo = Number(value.percentOfOil);
+      if (!Number.isFinite(ppo) || ppo < 0) return '';
+      return ppoOzToPercentOfOil(ppo);
+    }
+    return value.percentOfOil;
+  }
+
+  for (const key of ['ppo', 'ppoOz', 'ppo_oz'] as const) {
+    if (key in value) {
+      const ppo = Number(value[key]);
+      if (Number.isFinite(ppo) && ppo >= 0) {
+        return ppoOzToPercentOfOil(ppo);
+      }
+    }
+  }
+
+  return '';
+}
+
 function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
   if (!isRecord(value)) return null;
   const addAt = value.addAt;
@@ -51,9 +90,8 @@ function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
   ) {
     return null;
   }
-  const percentOfOil =
-    typeof value.percentOfOil === 'string' ? value.percentOfOil : '';
-  if (percentOfOil !== '' && parsePercentOfOil(percentOfOil) === null) {
+  const percentOfOil = parseAdditivePercentOfOil(value);
+  if (percentOfOil === '' || parsePercentOfOil(percentOfOil) === null) {
     return null;
   }
   const name =

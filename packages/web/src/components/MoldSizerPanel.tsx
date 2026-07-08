@@ -27,6 +27,8 @@ export function MoldSizerPanel({
     () => suggestOilGramsFromMoldSizer(input, oilBatchFraction, weightUnit),
     [input, oilBatchFraction, weightUnit],
   );
+  const applicableOilGrams =
+    suggestedGrams !== null ? Math.round(suggestedGrams) : null;
 
   const dimensionUnit = input.useInches ? 'in' : 'cm';
 
@@ -62,6 +64,9 @@ export function MoldSizerPanel({
 
       {input.mode === 'mold' ? (
         <div className="settings-grid mold-sizer__grid">
+          <p className="mold-sizer__hint mold-sizer__hint--full">
+            For irregular molds, fill with water and measure volume, or weigh a test pour.
+          </p>
           <label className="field">
             <span>Length ({dimensionUnit})</span>
             <input
@@ -103,6 +108,22 @@ export function MoldSizerPanel({
             />
             <span>Use inches</span>
           </label>
+          <label className="field">
+            <span>Shrinkage / waste %</span>
+            <input
+              type="number"
+              className="input"
+              min={0}
+              max={50}
+              step={1}
+              value={input.wasteFactorPercent}
+              onChange={(e) => onChange({ ...input, wasteFactorPercent: e.target.value })}
+            />
+          </label>
+          <p className="mold-sizer__hint mold-sizer__hint--full">
+            Typical shrinkage or trimming allowance is 5–10%. Leave at 0 if the mold size already
+            accounts for it.
+          </p>
         </div>
       ) : (
         <div className="settings-grid mold-sizer__grid">
@@ -128,13 +149,29 @@ export function MoldSizerPanel({
               onChange={(e) => onChange({ ...input, barWeight: e.target.value })}
             />
           </label>
+          <label className="field">
+            <span>Shrinkage / waste %</span>
+            <input
+              type="number"
+              className="input"
+              min={0}
+              max={50}
+              step={1}
+              value={input.wasteFactorPercent}
+              onChange={(e) => onChange({ ...input, wasteFactorPercent: e.target.value })}
+            />
+          </label>
+          <p className="mold-sizer__hint mold-sizer__hint--full">
+            Typical shrinkage or trimming allowance is 5–10%. Leave at 0 if the mold size already
+            accounts for it.
+          </p>
         </div>
       )}
 
-      {suggestedGrams !== null && (
+      {applicableOilGrams !== null && (
         <div className="mold-sizer__result">
           <p>
-            Suggested oil weight: <strong>{formatWeight(suggestedGrams, weightUnit)}</strong>
+            Suggested oil weight: <strong>{formatWeight(suggestedGrams!, weightUnit)}</strong>
             <span className="results-excluded">
               {' '}
               (using{' '}
@@ -144,9 +181,17 @@ export function MoldSizerPanel({
               oil share)
             </span>
           </p>
-          <button type="button" className="btn btn--ghost" onClick={() => onApply(suggestedGrams)}>
-            Apply to batch
-          </button>
+          {applicableOilGrams <= 0 ? (
+            <p className="mold-sizer__hint">Suggested oil weight is too small to apply.</p>
+          ) : (
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => onApply(applicableOilGrams)}
+            >
+              Apply to batch
+            </button>
+          )}
         </div>
       )}
     </section>

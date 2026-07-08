@@ -10,6 +10,8 @@ type ResultsPanelProps = {
   result: LyeCalculationResult | null;
   inputErrors: string[];
   lyeLabel: string;
+  lyeType: 'naoh' | 'koh' | 'dual';
+  kohBlendPercent?: string;
   displayTotals: RecipeDisplayTotals | null;
   weightUnit: WeightUnit;
   waterMode?: WaterMode;
@@ -33,6 +35,8 @@ export function ResultsPanel({
   result,
   inputErrors,
   lyeLabel,
+  lyeType,
+  kohBlendPercent,
   displayTotals,
   weightUnit,
   waterMode,
@@ -88,15 +92,36 @@ export function ResultsPanel({
 
       {!isEmpty && (
         <dl className="results-grid">
-          <div className="results-grid__item results-grid__item--primary">
-            <dt>{lyeLabel}</dt>
-            <dd>
-              {formatWeight(result.lyeWeightGrams, weightUnit)}
-              {hasLineErrors && (
-                <span className="results-partial"> (partial)</span>
-              )}
-            </dd>
-          </div>
+          {lyeType === 'dual' ? (
+            <>
+              <div className="results-grid__item results-grid__item--primary">
+                <dt>NaOH</dt>
+                <dd>
+                  {formatWeight(result.naohWeightGrams, weightUnit)}
+                  {hasLineErrors && <span className="results-partial"> (partial)</span>}
+                </dd>
+              </div>
+              <div className="results-grid__item results-grid__item--primary">
+                <dt>KOH ({kohBlendPercent ?? '5'}% by weight)</dt>
+                <dd>
+                  {formatWeight(result.kohWeightGrams, weightUnit)}
+                  {hasLineErrors && <span className="results-partial"> (partial)</span>}
+                </dd>
+              </div>
+              <div className="results-grid__item">
+                <dt>Total alkali</dt>
+                <dd>{formatWeight(result.lyeWeightGrams, weightUnit)}</dd>
+              </div>
+            </>
+          ) : (
+            <div className="results-grid__item results-grid__item--primary">
+              <dt>{lyeLabel}</dt>
+              <dd>
+                {formatWeight(result.lyeWeightGrams, weightUnit)}
+                {hasLineErrors && <span className="results-partial"> (partial)</span>}
+              </dd>
+            </div>
+          )}
           <div className="results-grid__item">
             <dt>Water</dt>
             <dd>

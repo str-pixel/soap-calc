@@ -100,7 +100,7 @@ describe('analyzeFormulation', () => {
     expect(sumFattyAcids(profile, ['linoleic', 'linolenic'])).toBe(30);
   });
 
-  it('warns when split liquid is enabled', () => {
+  it('warns when split liquid at trace and water is not reduced', () => {
     const insights = analyzeFormulation({
       properties: null,
       fattyAcids: null,
@@ -112,7 +112,95 @@ describe('analyzeFormulation', () => {
       lyeGrams: 100,
       splitLiquidEnabled: true,
       splitLiquidGrams: 200,
+      splitLiquidAddAt: 'trace',
+      suggestedLyeWaterGrams: 135,
     });
     expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(true);
+  });
+
+  it('does not warn when split liquid water is already reduced', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 1.35,
+      waterGrams: 135,
+      lyeGrams: 100,
+      splitLiquidEnabled: true,
+      splitLiquidGrams: 200,
+      splitLiquidAddAt: 'trace',
+      suggestedLyeWaterGrams: 135,
+    });
+    expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(false);
+  });
+
+  it('does not warn when split liquid is added in lye water', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 330,
+      lyeGrams: 100,
+      splitLiquidEnabled: true,
+      splitLiquidGrams: 200,
+      splitLiquidAddAt: 'lye',
+      suggestedLyeWaterGrams: 135,
+    });
+    expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(false);
+  });
+
+  it('warns when total additives and split liquid exceed 10%', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+      totalAdditivePercent: 12,
+    });
+    expect(insights.some((i) => i.code === 'high_total_additives')).toBe(true);
+  });
+
+  it('does not count split liquid in lye toward high total additives', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 330,
+      lyeGrams: 100,
+      totalAdditivePercent: 5,
+    });
+    expect(insights.some((i) => i.code === 'high_total_additives')).toBe(false);
+  });
+
+  it('warns when trace split liquid adds significant liquid at minimum water', () => {
+    const insights = analyzeFormulation({
+      properties: null,
+      fattyAcids: null,
+      totalOilGrams: 1000,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 50,
+      waterLyeRatio: 1,
+      waterGrams: 100,
+      lyeGrams: 100,
+      splitLiquidEnabled: true,
+      splitLiquidGrams: 250,
+      splitLiquidAddAt: 'trace',
+      suggestedLyeWaterGrams: 100,
+      splitLiquidWaterReductionGrams: 0,
+    });
+    expect(insights.some((i) => i.code === 'split_liquid_high_trace_liquid')).toBe(true);
+    expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(false);
   });
 });

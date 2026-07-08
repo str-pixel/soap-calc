@@ -3,6 +3,7 @@ import type { AdditiveLine } from './recipe';
 
 export type ComputedAdditive = {
   key: string;
+  catalogId: string;
   name: string;
   percentOfOil: number;
   grams: number;
@@ -23,6 +24,7 @@ export function computeRecipeAdditives(
     if (grams === null) continue;
     result.push({
       key: line.key,
+      catalogId: line.catalogId,
       name: line.name.trim() || 'Additive',
       percentOfOil: percent,
       grams,

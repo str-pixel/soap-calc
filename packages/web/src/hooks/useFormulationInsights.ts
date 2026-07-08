@@ -1,13 +1,29 @@
 import { useMemo } from 'react';
-import { analyzeFormulation } from '@soap-calc/core';
-import type { LyeCalculationResult } from '@soap-calc/core';
-import type { RecipePropertiesResult } from '@soap-calc/core';
+import { analyzeFormulation, parsePercentOfOil, type LyeCalculationResult, type RecipePropertiesResult } from '@soap-calc/core';
 import { calculateFattyAcidsForRecipe } from '../lib/calculateFattyAcids';
-import type { RecipeLine, RecipeSettings } from '../lib/recipe';
+import type { ComputedAdditive } from '../lib/calculateAdditives';
+import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
+
+export function totalAdditivePercentForInsights(
+  additivePercents: number[],
+  splitLiquid: Pick<SplitLiquidSettings, 'enabled' | 'addAt' | 'percentOfOil'>,
+): number {
+  const additivePercent = additivePercents.reduce((sum, item) => sum + item, 0);
+  const splitLiquidCountsAsAdditive =
+    splitLiquid.enabled &&
+    (splitLiquid.addAt === 'trace' || splitLiquid.addAt === 'oils');
+  const splitLiquidPercent = splitLiquidCountsAsAdditive
+    ? parsePercentOfOil(splitLiquid.percentOfOil) ?? 0
+    : 0;
+  return additivePercent + splitLiquidPercent;
+}
 
 type FormulationInsightOptions = {
   excludedOilWeightGrams?: number;
   splitLiquidGrams?: number | null;
+  suggestedLyeWaterGrams?: number | null;
+  splitLiquidWaterReductionGrams?: number | null;
+  additives?: ComputedAdditive[];
 };
 
 export function useFormulationInsights(
@@ -24,6 +40,13 @@ export function useFormulationInsights(
 
   const insights = useMemo(() => {
     if (!lyeResult) return [];
+    const totalAdditivePercent = totalAdditivePercentForInsights(
+      (options.additives ?? []).map((item) => item.percentOfOil),
+      settings.splitLiquid,
+    );
+    const additiveCatalogIds = (options.additives ?? [])
+      .map((item) => item.catalogId)
+      .filter((id) => id !== '');
     return analyzeFormulation({
       properties: properties.properties,
       fattyAcids: fattyAcids.profile,
@@ -37,14 +60,24 @@ export function useFormulationInsights(
       excludedOilWeightGrams: options.excludedOilWeightGrams ?? 0,
       splitLiquidEnabled: settings.splitLiquid.enabled,
       splitLiquidGrams: options.splitLiquidGrams ?? null,
+      splitLiquidAddAt: settings.splitLiquid.enabled ? settings.splitLiquid.addAt : undefined,
+      suggestedLyeWaterGrams: options.suggestedLyeWaterGrams ?? null,
+      splitLiquidWaterReductionGrams: options.splitLiquidWaterReductionGrams ?? null,
+      totalAdditivePercent,
+      additiveCatalogIds,
     });
   }, [
     fattyAcids.profile,
     lyeResult,
+    options.additives,
     options.excludedOilWeightGrams,
     options.splitLiquidGrams,
+    options.suggestedLyeWaterGrams,
+    options.splitLiquidWaterReductionGrams,
     properties.properties,
+    settings.splitLiquid.addAt,
     settings.splitLiquid.enabled,
+    settings.splitLiquid.percentOfOil,
     settings.superfatPercent,
     settings.waterMode,
   ]);

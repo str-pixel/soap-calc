@@ -99,6 +99,13 @@ export function calculateRecipe(
   const kohPurity = parsePurity(settings.kohPurityPercent, 'KOH purity %');
   if (settings.lyeType === 'naoh' && naohPurity.error) inputErrors.push(naohPurity.error);
   if (settings.lyeType === 'koh' && kohPurity.error) inputErrors.push(kohPurity.error);
+  if (settings.lyeType === 'dual') {
+    if (naohPurity.error) inputErrors.push(naohPurity.error);
+    if (kohPurity.error) inputErrors.push(kohPurity.error);
+    const blend = parseNonNegative(settings.kohBlendPercent, 'KOH blend %');
+    if (blend.error) inputErrors.push(blend.error);
+    else if (blend.n! > 50) inputErrors.push('KOH blend % must be between 0 and 50');
+  }
 
   const waterParams = waterInput(settings, inputErrors);
   const resolved = resolveLineWeights(lines, settings);
@@ -140,6 +147,8 @@ export function calculateRecipe(
     oilLookup: OIL_LOOKUP,
     superfatPercent: superfat.n!,
     lyeType: settings.lyeType,
+    kohBlendPercent:
+      settings.lyeType === 'dual' ? Number(settings.kohBlendPercent) || 0 : undefined,
     naohPurityPercent: naohPurity.n!,
     kohPurityPercent: kohPurity.n!,
     ...waterParams,

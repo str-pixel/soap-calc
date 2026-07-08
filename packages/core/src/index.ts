@@ -7,3 +7,4 @@ export * from './fatty-acids.js';
 export * from './insights.js';
 export * from './additives.js';
 export * from './mold-sizer.js';
+export * from './split-liquid.js';

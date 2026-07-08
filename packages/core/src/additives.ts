@@ -58,6 +58,27 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 6,
     defaultStage: 'trace',
   },
+  {
+    id: 'jojoba',
+    name: 'Jojoba oil',
+    typicalLow: 5,
+    typicalHigh: 10,
+    defaultStage: 'trace',
+  },
+  {
+    id: 'clay',
+    name: 'Clay (bentonite, kaolin)',
+    typicalLow: 0.5,
+    typicalHigh: 2,
+    defaultStage: 'oils',
+  },
+  {
+    id: 'salt',
+    name: 'Salt',
+    typicalLow: 0.5,
+    typicalHigh: 3,
+    defaultStage: 'trace',
+  },
 ] as const;
 
 export const LATHER_SUPPORT_PACK = [

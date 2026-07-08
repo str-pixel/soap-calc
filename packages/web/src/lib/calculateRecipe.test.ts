@@ -104,4 +104,17 @@ describe('calculateRecipe', () => {
     expect(displayTotals!.recipeOilWeightGrams).toBe(1000);
     expect(result!.lyeWeightGrams).toBeGreaterThan(0);
   });
+
+  it('calculates dual NaOH + KOH blend', () => {
+    const { result, inputErrors } = calculateRecipe(STARTER_LINES, {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'dual',
+      kohBlendPercent: '5',
+    });
+    expect(inputErrors).toHaveLength(0);
+    expect(result).not.toBeNull();
+    expect(result!.naohWeightGrams).toBeGreaterThan(0);
+    expect(result!.kohWeightGrams).toBeGreaterThan(0);
+    expect((result!.kohWeightGrams / result!.lyeWeightGrams) * 100).toBeCloseTo(5, 1);
+  });
 });

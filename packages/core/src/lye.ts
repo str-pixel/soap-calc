@@ -1,4 +1,4 @@
-export type LyeType = 'naoh' | 'koh';
+export type LyeType = 'naoh' | 'koh' | 'dual';
 
 /** For tar / acid-neutralization oils: include in lye math or add at trace only. */
 export type TarLyeTreatment = 'include' | 'additive';
@@ -24,6 +24,8 @@ export type LyeRecipeInput = {
   oilLookup: Record<string, OilForLyeCalc>;
   superfatPercent: number;
   lyeType: LyeType;
+  /** When lyeType is dual: percent of total alkali weight from KOH (0–100). */
+  kohBlendPercent?: number;
   naohPurityPercent?: number;
   kohPurityPercent?: number;
   waterMode?: WaterMode;
@@ -39,6 +41,8 @@ export type LyeLineResult = {
   oilId: string;
   weightGrams: number;
   lyeGrams: number;
+  naohGrams: number;
+  kohGrams: number;
   includedInLye: boolean;
   tarLyeTreatment?: TarLyeTreatment;
 };
@@ -46,6 +50,8 @@ export type LyeLineResult = {
 export type LyeCalculationResult = {
   totalOilWeightGrams: number;
   lyeWeightGrams: number;
+  naohWeightGrams: number;
+  kohWeightGrams: number;
   waterWeightGrams: number;
   totalBatchWeightGrams: number;
   lyeConcentrationPercent: number;
@@ -116,14 +122,35 @@ export function lyeForOilLine(
   lyeType: LyeType,
   superfatPercent: number,
   purity: { naohPurityPercent?: number; kohPurityPercent?: number },
-): number {
+  kohBlendPercent = 0,
+): { lyeGrams: number; naohGrams: number; kohGrams: number } {
   if (!shouldIncludeOilInLye(oil, line) || line.weightGrams <= 0) {
-    return 0;
+    return { lyeGrams: 0, naohGrams: 0, kohGrams: 0 };
+  }
+
+  const superfatFactor = 1 - superfatPercent / 100;
+
+  if (lyeType === 'dual') {
+    const kohFraction = Math.min(1, Math.max(0, kohBlendPercent / 100));
+    const naohCoeff = sapCoefficientForLye(oil, 'naoh', purity);
+    const kohCoeff = sapCoefficientForLye(oil, 'koh', purity);
+    const fullNaohGrams = naohCoeff * line.weightGrams * superfatFactor;
+    const blendDenom = (1 - kohFraction) * naohCoeff + kohFraction * kohCoeff;
+    if (blendDenom <= 0) {
+      return { lyeGrams: 0, naohGrams: 0, kohGrams: 0 };
+    }
+    const totalAlkali = (fullNaohGrams * naohCoeff) / blendDenom;
+    const naohGrams = totalAlkali * (1 - kohFraction);
+    const kohGrams = totalAlkali * kohFraction;
+    return { lyeGrams: naohGrams + kohGrams, naohGrams, kohGrams };
   }
 
   const coefficient = sapCoefficientForLye(oil, lyeType, purity);
-  const superfatFactor = 1 - superfatPercent / 100;
-  return coefficient * line.weightGrams * superfatFactor;
+  const lyeGrams = coefficient * line.weightGrams * superfatFactor;
+  if (lyeType === 'koh') {
+    return { lyeGrams, naohGrams: 0, kohGrams: lyeGrams };
+  }
+  return { lyeGrams, naohGrams: lyeGrams, kohGrams: 0 };
 }
 
 export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
@@ -169,14 +196,24 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
 
   if (input.lyeType === 'naoh') {
     validatePurityPercent(input.naohPurityPercent, DEFAULT_NAOH_PURITY, 'naohPurityPercent', errors);
-  } else {
+  } else if (input.lyeType === 'koh') {
     validatePurityPercent(input.kohPurityPercent, DEFAULT_KOH_PURITY, 'kohPurityPercent', errors);
+  } else {
+    validatePurityPercent(input.naohPurityPercent, DEFAULT_NAOH_PURITY, 'naohPurityPercent', errors);
+    validatePurityPercent(input.kohPurityPercent, DEFAULT_KOH_PURITY, 'kohPurityPercent', errors);
+    const blend = input.kohBlendPercent ?? 5;
+    if (!Number.isFinite(blend) || blend < 0 || blend > 50) {
+      errors.push('kohBlendPercent must be a finite number between 0 and 50');
+    }
   }
 
   const hasFatalInputError = errors.length > 0;
 
   let totalOilWeightGrams = 0;
   let lyeWeightGrams = 0;
+  let naohWeightGrams = 0;
+  let kohWeightGrams = 0;
+  const kohBlendPercent = input.kohBlendPercent ?? 5;
 
   for (const line of input.oils) {
     const oil = input.oilLookup[line.oilId];
@@ -194,13 +231,14 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
     const includedInLye = shouldIncludeOilInLye(oil, line);
     const tarLyeTreatment = resolveTarLyeTreatment(oil, line);
     const lineLye = hasFatalInputError
-      ? 0
+      ? { lyeGrams: 0, naohGrams: 0, kohGrams: 0 }
       : lyeForOilLine(
           oil,
           line,
           input.lyeType,
           input.superfatPercent,
           purity,
+          kohBlendPercent,
         );
 
     if (
@@ -226,11 +264,15 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
       );
     }
 
-    lyeWeightGrams += lineLye;
+    lyeWeightGrams += lineLye.lyeGrams;
+    naohWeightGrams += lineLye.naohGrams;
+    kohWeightGrams += lineLye.kohGrams;
     lines.push({
       oilId: line.oilId,
       weightGrams: line.weightGrams,
-      lyeGrams: lineLye,
+      lyeGrams: lineLye.lyeGrams,
+      naohGrams: lineLye.naohGrams,
+      kohGrams: lineLye.kohGrams,
       includedInLye,
       tarLyeTreatment,
     });
@@ -275,6 +317,8 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
   return {
     totalOilWeightGrams,
     lyeWeightGrams,
+    naohWeightGrams,
+    kohWeightGrams,
     waterWeightGrams,
     totalBatchWeightGrams: totalOilWeightGrams + lyeWeightGrams + waterWeightGrams,
     lyeConcentrationPercent,

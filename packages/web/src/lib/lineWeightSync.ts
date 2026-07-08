@@ -268,7 +268,19 @@ export function syncBatchTotalEdit(lines: RecipeLine[], batchOilGrams: string): 
     return lines;
   }
 
-  const normalized = normalizePercentsTo100(lines);
+  const percentSum = lines.reduce(
+    (sum, line) => sum + (parseNum(line.weightPercent ?? '') ?? 0),
+    0,
+  );
+  const currentTotal = totalGrams(lines);
+  let baseLines = lines;
+  if (percentSum <= 0 && currentTotal > 0) {
+    baseLines = syncPercentsFromWeights(lines, currentTotal);
+  } else if (percentSum <= 0) {
+    return lines;
+  }
+
+  const normalized = normalizePercentsTo100(baseLines);
   const scaled = normalized.map((line) => {
     const pct = parseNum(line.weightPercent ?? '') ?? 0;
     if (pct <= 0) {

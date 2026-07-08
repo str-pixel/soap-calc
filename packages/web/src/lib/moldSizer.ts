@@ -1,4 +1,5 @@
 import {
+  applyOilWasteFactor,
   DEFAULT_OIL_BATCH_FRACTION,
   oilBatchFraction,
   oilGramsFromBarCount,
@@ -19,6 +20,8 @@ export type MoldSizerInput = {
   barCount: string;
   barWeight: string;
   useInches: boolean;
+  /** Extra oil % for shrinkage, waste, or trimming (default 5). */
+  wasteFactorPercent: string;
 };
 
 export const DEFAULT_MOLD_SIZER_INPUT: MoldSizerInput = {
@@ -29,6 +32,7 @@ export const DEFAULT_MOLD_SIZER_INPUT: MoldSizerInput = {
   barCount: '',
   barWeight: '',
   useInches: false,
+  wasteFactorPercent: '0',
 };
 
 function parsePositive(value: string): number | null {
@@ -42,33 +46,46 @@ function toCm(value: number, useInches: boolean): number {
   return useInches ? value * CM_PER_INCH : value;
 }
 
+function parseNonNegative(value: string): number | null {
+  if (value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+
 export function suggestOilGramsFromMoldSizer(
   input: MoldSizerInput,
   oilBatchFractionOverride?: number | null,
   weightUnit: WeightUnit = 'g',
 ): number | null {
   const fraction = oilBatchFractionOverride ?? DEFAULT_OIL_BATCH_FRACTION;
+  const wastePercent = parseNonNegative(input.wasteFactorPercent) ?? 0;
+
+  let baseGrams: number | null = null;
 
   if (input.mode === 'bars') {
     const barCount = parsePositive(input.barCount);
     const barWeightDisplay = parsePositive(input.barWeight);
     if (barCount === null || barWeightDisplay === null) return null;
     const barWeightGrams = displayValueToGrams(barWeightDisplay, weightUnit);
-    return oilGramsFromBarCount(barCount, barWeightGrams, fraction);
+    baseGrams = oilGramsFromBarCount(barCount, barWeightGrams, fraction);
+  } else {
+    const length = parsePositive(input.length);
+    const width = parsePositive(input.width);
+    const height = parsePositive(input.height);
+    if (length === null || width === null || height === null) return null;
+
+    const volume = rectangularMoldVolumeCm3(
+      toCm(length, input.useInches),
+      toCm(width, input.useInches),
+      toCm(height, input.useInches),
+    );
+    if (volume === null) return null;
+    baseGrams = oilGramsFromMoldVolumeCm3(volume, { oilBatchFraction: fraction });
   }
 
-  const length = parsePositive(input.length);
-  const width = parsePositive(input.width);
-  const height = parsePositive(input.height);
-  if (length === null || width === null || height === null) return null;
-
-  const volume = rectangularMoldVolumeCm3(
-    toCm(length, input.useInches),
-    toCm(width, input.useInches),
-    toCm(height, input.useInches),
-  );
-  if (volume === null) return null;
-  return oilGramsFromMoldVolumeCm3(volume, { oilBatchFraction: fraction });
+  if (baseGrams === null) return null;
+  return applyOilWasteFactor(baseGrams, wastePercent);
 }
 
 export { oilBatchFraction };

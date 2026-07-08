@@ -17,6 +17,7 @@ describe('calculateAdditives', () => {
     expect(computeRecipeAdditives(additives, 1000)).toEqual([
       {
         key: 'a',
+        catalogId: 'honey',
         name: 'Honey',
         percentOfOil: 1,
         grams: 10,
@@ -43,6 +44,7 @@ describe('calculateAdditives', () => {
     expect(computeRecipeAdditives(lines, 1000)).toEqual([
       {
         key: 'c',
+        catalogId: '',
         name: 'Additive',
         percentOfOil: 2,
         grams: 20,

@@ -27,6 +27,12 @@ export type FormulationAnalysisInput = {
   excludedOilWeightGrams?: number;
   splitLiquidEnabled?: boolean;
   splitLiquidGrams?: number | null;
+  splitLiquidAddAt?: 'lye' | 'oils' | 'trace';
+  suggestedLyeWaterGrams?: number | null;
+  /** Grams of water replaceable by trace split liquid; 0 when water is already at 1:1 minimum. */
+  splitLiquidWaterReductionGrams?: number | null;
+  totalAdditivePercent?: number;
+  additiveCatalogIds?: string[];
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -128,15 +134,67 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
 
   if (
     input.splitLiquidEnabled &&
+    input.splitLiquidAddAt === 'trace' &&
     input.splitLiquidGrams !== null &&
     input.splitLiquidGrams !== undefined &&
-    input.splitLiquidGrams > 0
+    input.splitLiquidGrams > 0 &&
+    input.suggestedLyeWaterGrams !== null &&
+    input.suggestedLyeWaterGrams !== undefined &&
+    input.waterGrams > input.suggestedLyeWaterGrams + 0.5
   ) {
     insights.push({
       level: 'warning',
       code: 'split_liquid_water_not_adjusted',
       message:
-        'Alternative liquid is listed separately — water is not reduced automatically. Lower your water % to account for milk, puree, or other liquids.',
+        'Alternative liquid is listed separately — water is not reduced automatically. Use the suggested lye water in Split liquid or lower your water %.',
+    });
+  }
+
+  if (
+    input.splitLiquidEnabled &&
+    input.splitLiquidAddAt === 'trace' &&
+    input.splitLiquidGrams !== null &&
+    input.splitLiquidGrams !== undefined &&
+    input.splitLiquidGrams > 0 &&
+    input.totalOilGrams > 0 &&
+    input.splitLiquidWaterReductionGrams !== null &&
+    input.splitLiquidWaterReductionGrams !== undefined &&
+    input.splitLiquidWaterReductionGrams <= 0 &&
+    (input.splitLiquidGrams / input.totalOilGrams) * 100 > 5
+  ) {
+    insights.push({
+      level: 'warning',
+      code: 'split_liquid_high_trace_liquid',
+      message:
+        'Water is already at the 1:1 lye minimum — alternative liquid at trace adds extra total liquid. Expect faster trace, softer bars, or a wetter batter.',
+    });
+  }
+
+  if (input.totalAdditivePercent !== undefined && input.totalAdditivePercent > 10) {
+    insights.push({
+      level: 'warning',
+      code: 'high_total_additives',
+      message:
+        'Total additives exceed ~10% of oil weight — may affect trace, texture, or shelf life; verify with a small test batch.',
+    });
+  }
+
+  const catalogIds = input.additiveCatalogIds ?? [];
+  if (catalogIds.includes('oatmeal')) {
+    insights.push({
+      level: 'info',
+      code: 'oatmeal_false_trace',
+      message:
+        'Oatmeal can cause false trace — do not rely on viscosity alone; confirm with a pH strip or zap test.',
+    });
+  }
+
+  if (catalogIds.includes('jojoba')) {
+    insights.push({
+      level: 'info',
+      code: 'jojoba_superfat_note',
+      message:
+        'Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils.',
     });
   }
 

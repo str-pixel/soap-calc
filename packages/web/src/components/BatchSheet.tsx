@@ -1,4 +1,4 @@
-import { formatSoapPropertyPercent } from '@soap-calc/core';
+import { formatSoapPropertyPercent, saturatedUnsaturatedRatio } from '@soap-calc/core';
 import type { BatchSheetData } from '../lib/batchSheet';
 import {
   additiveStageLabel,
@@ -33,11 +33,17 @@ export function BatchSheet({ data }: BatchSheetProps) {
     properties,
     indexes,
     batchWeightWithExtras,
+    waterModeLabel,
+    fattyAcids,
+    insights,
   } = data;
 
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
   const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0);
+
+  const isDualLye = settings.lyeType === 'dual';
+  const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -73,13 +79,34 @@ export function BatchSheet({ data }: BatchSheetProps) {
       <section className="batch-sheet__section">
         <h2>Lye solution</h2>
         <dl className="batch-sheet__dl">
-          <div>
-            <dt>{lyeLabel}</dt>
-            <dd>{formatWeight(result.lyeWeightGrams, weightUnit)}</dd>
-          </div>
+          {isDualLye ? (
+            <>
+              <div>
+                <dt>NaOH</dt>
+                <dd>{formatWeight(result.naohWeightGrams, weightUnit)}</dd>
+              </div>
+              <div>
+                <dt>KOH ({settings.kohBlendPercent}% by weight)</dt>
+                <dd>{formatWeight(result.kohWeightGrams, weightUnit)}</dd>
+              </div>
+              <div>
+                <dt>Total alkali</dt>
+                <dd>{formatWeight(result.lyeWeightGrams, weightUnit)}</dd>
+              </div>
+            </>
+          ) : (
+            <div>
+              <dt>{lyeLabel}</dt>
+              <dd>{formatWeight(result.lyeWeightGrams, weightUnit)}</dd>
+            </div>
+          )}
           <div>
             <dt>Water</dt>
             <dd>{formatWeight(result.waterWeightGrams, weightUnit)}</dd>
+          </div>
+          <div>
+            <dt>Water method</dt>
+            <dd>{waterModeLabel}</dd>
           </div>
           <div>
             <dt>Superfat</dt>
@@ -115,15 +142,31 @@ export function BatchSheet({ data }: BatchSheetProps) {
               <tr>
                 <th scope="col">Oil</th>
                 <th scope="col">Oil weight</th>
-                <th scope="col">{lyeLabel}</th>
+                {isDualLye ? (
+                  <>
+                    <th scope="col">NaOH</th>
+                    <th scope="col">KOH</th>
+                    <th scope="col">Total</th>
+                  </>
+                ) : (
+                  <th scope="col">{lyeLabel}</th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {includedLines.map((line) => (
-                <tr key={line.oilId}>
+              {includedLines.map((line, index) => (
+                <tr key={`${line.oilId}-${index}-${line.weightGrams}`}>
                   <td>{batchSheetOilName(line.oilId)}</td>
                   <td>{formatWeight(line.weightGrams, weightUnit)}</td>
-                  <td>{formatWeight(line.lyeGrams, weightUnit)}</td>
+                  {isDualLye ? (
+                    <>
+                      <td>{formatWeight(line.naohGrams, weightUnit)}</td>
+                      <td>{formatWeight(line.kohGrams, weightUnit)}</td>
+                      <td>{formatWeight(line.lyeGrams, weightUnit)}</td>
+                    </>
+                  ) : (
+                    <td>{formatWeight(line.lyeGrams, weightUnit)}</td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -189,6 +232,41 @@ export function BatchSheet({ data }: BatchSheetProps) {
               </div>
             )}
           </dl>
+        </section>
+      )}
+
+      {satUnsat && (
+        <section className="batch-sheet__section">
+          <h2>Fatty acids</h2>
+          <p className="batch-sheet__notes">
+            Saturated {formatSoapPropertyPercent(satUnsat.saturated)} · Unsaturated{' '}
+            {formatSoapPropertyPercent(satUnsat.unsaturated)}
+            {fattyAcids.coveragePercent < 99.9
+              ? ` (${Math.round(fattyAcids.coveragePercent)}% of oils with data)`
+              : ''}
+          </p>
+        </section>
+      )}
+
+      {insights.length > 0 && (
+        <section className="batch-sheet__section">
+          <h2>Formulation notes</h2>
+          <ul className="batch-sheet__list">
+            {insights.map((item) => (
+              <li key={item.code}>{item.message}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {result.errors.length > 0 && (
+        <section className="batch-sheet__section">
+          <h2>Errors</h2>
+          <ul className="batch-sheet__list batch-sheet__list--error">
+            {result.errors.map((msg) => (
+              <li key={msg}>{msg}</li>
+            ))}
+          </ul>
         </section>
       )}
 

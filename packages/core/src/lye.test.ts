@@ -51,6 +51,8 @@ describe('calculateLye', () => {
     });
 
     expect(result.lyeWeightGrams).toBeCloseTo(128.7, 0);
+    expect(result.naohWeightGrams).toBeCloseTo(128.7, 0);
+    expect(result.kohWeightGrams).toBe(0);
     expect(result.waterWeightGrams).toBeCloseTo(380, 0);
     expect(result.totalOilWeightGrams).toBe(1000);
     expect(result.lines[0].includedInLye).toBe(true);
@@ -131,7 +133,7 @@ describe('calculateLye', () => {
 
     const oliveOnly = 900 * (0.19 / 1.4025) * 0.95;
     expect(result.lyeWeightGrams).toBeCloseTo(oliveOnly, 1);
-    expect(lyeForOilLine(BIRCH_TAR, { oilId: 'birch-tar', weightGrams: 100, tarLyeTreatment: 'additive' }, 'naoh', 5, {})).toBe(0);
+    expect(lyeForOilLine(BIRCH_TAR, { oilId: 'birch-tar', weightGrams: 100, tarLyeTreatment: 'additive' }, 'naoh', 5, {}).lyeGrams).toBe(0);
     expect(shouldIncludeOilInLye(BIRCH_TAR, { oilId: 'birch-tar', weightGrams: 100, tarLyeTreatment: 'additive' })).toBe(false);
   });
 
@@ -242,5 +244,45 @@ describe('calculateLye', () => {
 
     expect(result.errors.some((e) => e.includes('Invalid weight'))).toBe(true);
     expect(result.totalOilWeightGrams).toBe(0);
+  });
+
+  it('calculates dual NaOH + KOH blend with 5% KOH by weight', () => {
+    const result = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      lyeType: 'dual',
+      kohBlendPercent: 5,
+      naohPurityPercent: 100,
+      kohPurityPercent: 90,
+    });
+
+    const naohCoeff = 0.19 / 1.4025;
+    const kohCoeff = 0.19 / 0.9;
+    const fullNaoh = 1000 * naohCoeff * 0.95;
+    const kohFraction = 0.05;
+    const blendDenom = (1 - kohFraction) * naohCoeff + kohFraction * kohCoeff;
+    const totalAlkali = (fullNaoh * naohCoeff) / blendDenom;
+    const naohExpected = totalAlkali * (1 - kohFraction);
+    const kohExpected = totalAlkali * kohFraction;
+
+    expect(result.naohWeightGrams).toBeCloseTo(naohExpected, 0);
+    expect(result.kohWeightGrams).toBeCloseTo(kohExpected, 0);
+    expect(result.lyeWeightGrams).toBeCloseTo(naohExpected + kohExpected, 1);
+    expect((result.kohWeightGrams / result.lyeWeightGrams) * 100).toBeCloseTo(5, 1);
+    expect(result.lines[0].naohGrams).toBe(result.naohWeightGrams);
+    expect(result.lines[0].kohGrams).toBe(result.kohWeightGrams);
+  });
+
+  it('rejects invalid koh blend percent for dual lye', () => {
+    const result = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      lyeType: 'dual',
+      kohBlendPercent: 60,
+    });
+
+    expect(result.errors.some((e) => e.includes('kohBlendPercent'))).toBe(true);
   });
 });

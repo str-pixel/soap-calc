@@ -118,4 +118,64 @@ describe('recipeFile', () => {
   it('builds a safe download filename', () => {
     expect(recipeFileDownloadName('Olive & Coconut')).toBe('olive-coconut.soap-recipe.json');
   });
+
+  it('converts PPO ounces per pound to percent of oil on import', () => {
+    const payload = {
+      version: 2,
+      name: 'PPO import',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [
+        {
+          catalogId: 'fragrance',
+          name: 'Fragrance',
+          ppo: 1,
+          addAt: 'trace',
+        },
+      ],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].percentOfOil).toBe('6.25');
+  });
+
+  it('converts doseUnit ppo on percentOfOil field', () => {
+    const payload = {
+      version: 2,
+      name: 'PPO dose unit',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [
+        {
+          catalogId: '',
+          name: 'EO',
+          percentOfOil: '0.5',
+          doseUnit: 'ppo',
+          addAt: 'trace',
+        },
+      ],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].percentOfOil).toBe('3.13');
+  });
+
+  it('rejects additive lines without a dose', () => {
+    const payload = {
+      version: 2,
+      name: 'No dose',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [{ catalogId: 'honey', name: 'Honey', percentOfOil: '', addAt: 'trace' }],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    expect(parseRecipeFile(JSON.stringify(payload))).toEqual({
+      ok: false,
+      error: 'Invalid additive line in recipe file',
+    });
+  });
 });

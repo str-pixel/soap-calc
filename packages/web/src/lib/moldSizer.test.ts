@@ -12,12 +12,34 @@ describe('moldSizer', () => {
     expect(grams).toBeCloseTo(598, 0);
   });
 
-  it('suggests oil grams from bar count', () => {
+  it('suggests oil grams from bar count with zero waste factor', () => {
     const grams = suggestOilGramsFromMoldSizer({
       ...DEFAULT_MOLD_SIZER_INPUT,
       mode: 'bars',
       barCount: '10',
       barWeight: '100',
+    });
+    expect(grams).toBe(650);
+  });
+
+  it('applies waste factor when set', () => {
+    const grams = suggestOilGramsFromMoldSizer({
+      ...DEFAULT_MOLD_SIZER_INPUT,
+      mode: 'bars',
+      barCount: '10',
+      barWeight: '100',
+      wasteFactorPercent: '5',
+    });
+    expect(grams).toBeCloseTo(682.5, 1);
+  });
+
+  it('suggests base oil grams when waste factor is explicitly zero', () => {
+    const grams = suggestOilGramsFromMoldSizer({
+      ...DEFAULT_MOLD_SIZER_INPUT,
+      mode: 'bars',
+      barCount: '10',
+      barWeight: '100',
+      wasteFactorPercent: '0',
     });
     expect(grams).toBe(650);
   });

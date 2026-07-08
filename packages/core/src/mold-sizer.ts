@@ -51,3 +51,12 @@ export function oilBatchFraction(oilGrams: number, totalBatchGrams: number): num
   const fraction = oilGrams / totalBatchGrams;
   return fraction > 0 && fraction <= 1 ? fraction : null;
 }
+
+/** Increase suggested oil weight for mold shrinkage, waste, or trimming. */
+export function applyOilWasteFactor(oilGrams: number, wasteFactorPercent: number): number | null {
+  if (!Number.isFinite(oilGrams) || oilGrams <= 0) return null;
+  if (!Number.isFinite(wasteFactorPercent) || wasteFactorPercent < 0 || wasteFactorPercent > 50) {
+    return null;
+  }
+  return oilGrams * (1 + wasteFactorPercent / 100);
+}

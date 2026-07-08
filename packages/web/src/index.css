@@ -386,6 +386,20 @@ select {
   color: var(--text-muted);
 }
 
+.split-liquid-suggestion {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.split-liquid-suggestion__hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
 .additive-list {
   list-style: none;
   margin: 0;
@@ -835,6 +849,17 @@ select {
   font-size: 0.9rem;
 }
 
+.mold-sizer__hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--warn);
+}
+
+.mold-sizer__hint--full {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+}
+
 .input--textarea {
   resize: vertical;
   min-height: 4.5rem;
@@ -905,6 +930,10 @@ select {
   margin: 0;
   padding-left: 1.1rem;
   font-size: 0.85rem;
+}
+
+.batch-sheet__list--error {
+  color: #8b1a1a;
 }
 
 .batch-sheet__notes {

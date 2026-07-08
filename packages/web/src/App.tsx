@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
+import { suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { OilPicker } from './components/OilPicker';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
-import { MoldSizerPanel, DEFAULT_MOLD_SIZER_INPUT } from './components/MoldSizerPanel';
+import { MoldSizerPanel } from './components/MoldSizerPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { SplitLiquidPanel } from './components/SplitLiquidPanel';
@@ -17,9 +18,10 @@ import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeProperties } from './hooks/useRecipeProperties';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { commitDrafts } from './lib/commitDrafts';
-import { buildBatchSheetData } from './lib/batchSheet';
+import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from './lib/batchSheet';
 import { computeRecipeAdditives, computeSplitLiquidGrams } from './lib/calculateAdditives';
 import { oilBatchFraction } from './lib/moldSizer';
+import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 import {
   addRecipeLine,
   resyncFromWeights,
@@ -65,7 +67,10 @@ export default function App() {
   } = useRecipeStorage();
 
   const importInputRef = useRef<HTMLInputElement>(null);
-  const [moldSizerInput, setMoldSizerInput] = useState(DEFAULT_MOLD_SIZER_INPUT);
+  const [moldSizerInput, setMoldSizerInput] = useState(loadMoldSizerInput);
+  useEffect(() => {
+    saveMoldSizerInput(moldSizerInput);
+  }, [moldSizerInput]);
   const { getDraft, setDraft, clearDraft, clearAllDrafts, drafts } = useDraftInputs();
   const debouncer = useDebouncedCommit();
   const { applySynced, applySyncedUpdate, linesRef, batchRef } = useRecipeEditor(
@@ -116,6 +121,30 @@ export default function App() {
     previewSettings.splitLiquid.enabled
       ? computeSplitLiquidGrams(previewSettings.splitLiquid.percentOfOil, totalOilGrams)
       : null;
+  const waterSuggestion = useMemo(() => {
+    if (
+      !result ||
+      !splitLiquidGrams ||
+      !previewSettings.splitLiquid.enabled ||
+      previewSettings.splitLiquid.addAt !== 'trace'
+    ) {
+      return null;
+    }
+    return suggestLyeWaterWithSplitLiquid({
+      waterGrams: result.waterWeightGrams,
+      lyeGrams: result.lyeWeightGrams,
+      totalOilGrams: totalOilGrams,
+      splitLiquidGrams,
+      waterMode: previewSettings.waterMode,
+    });
+  }, [
+    previewSettings.splitLiquid.addAt,
+    previewSettings.splitLiquid.enabled,
+    previewSettings.waterMode,
+    result,
+    splitLiquidGrams,
+    totalOilGrams,
+  ]);
   const { properties, indexes } = useRecipeProperties(previewState.lines, previewSettings);
   const { fattyAcids, insights } = useFormulationInsights(
     previewState.lines,
@@ -125,9 +154,17 @@ export default function App() {
     {
       excludedOilWeightGrams: displayTotals?.excludedFromLyeOilWeightGrams ?? 0,
       splitLiquidGrams,
+      suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
+      splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
+      additives: computedAdditives,
     },
   );
-  const lyeLabel = settings.lyeType === 'naoh' ? 'NaOH' : 'KOH';
+  const lyeLabel =
+    settings.lyeType === 'dual'
+      ? 'Total alkali'
+      : settings.lyeType === 'naoh'
+        ? 'NaOH'
+        : 'KOH';
   const additiveGrams = computedAdditives.reduce((sum, item) => sum + item.grams, 0);
   const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0);
   const batchWeightWithExtras =
@@ -137,7 +174,9 @@ export default function App() {
     return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);
   }, [batchWeightWithExtras, displayTotals]);
   const batchSheetData = useMemo(() => {
-    if (!result || !displayTotals || inputErrors.length > 0) return null;
+    if (!result || !displayTotals || !canPrintBatchSheet(result, displayTotals, inputErrors)) {
+      return null;
+    }
     return buildBatchSheetData({
       recipeName,
       batchNotes: settings.batchNotes,
@@ -154,6 +193,9 @@ export default function App() {
       properties,
       indexes,
       batchWeightWithExtras,
+      waterModeLabel: waterModeLabel(previewSettings),
+      fattyAcids,
+      insights,
     });
   }, [
     batchWeightWithExtras,
@@ -163,6 +205,8 @@ export default function App() {
     inputErrors.length,
     linePercents,
     lyeLabel,
+    fattyAcids,
+    insights,
     previewSettings,
     previewState.lines,
     properties,
@@ -231,7 +275,9 @@ export default function App() {
   }
 
   function handleApplySuggestedOilGrams(oilGrams: number) {
-    const batchOilGrams = String(Math.round(oilGrams));
+    const rounded = Math.round(oilGrams);
+    if (rounded <= 0) return;
+    const batchOilGrams = String(rounded);
     discardDrafts();
     applySyncedUpdate((prev) => ({
       lines: syncBatchTotalEdit(prev, batchOilGrams),
@@ -559,14 +605,32 @@ export default function App() {
                   onChange={(e) =>
                     setSettings((s) => ({
                       ...s,
-                      lyeType: e.target.value as 'naoh' | 'koh',
+                      lyeType: e.target.value as 'naoh' | 'koh' | 'dual',
                     }))
                   }
                 >
                   <option value="naoh">NaOH (bar soap)</option>
                   <option value="koh">KOH (liquid soap)</option>
+                  <option value="dual">NaOH + KOH blend</option>
                 </select>
               </label>
+
+              {settings.lyeType === 'dual' && (
+                <label className="field">
+                  <span>KOH % of alkali (by weight)</span>
+                  <input
+                    type="number"
+                    className="input"
+                    min={0}
+                    max={50}
+                    step={0.5}
+                    value={settings.kohBlendPercent}
+                    onChange={(e) =>
+                      setSettings((s) => ({ ...s, kohBlendPercent: e.target.value }))
+                    }
+                  />
+                </label>
+              )}
 
               <label className="field">
                 <span>Water method</span>
@@ -653,7 +717,7 @@ export default function App() {
                     }
                   />
                 </label>
-              ) : (
+              ) : settings.lyeType === 'koh' ? (
                 <label className="field">
                   <span>KOH purity %</span>
                   <input
@@ -668,6 +732,37 @@ export default function App() {
                     }
                   />
                 </label>
+              ) : (
+                <>
+                  <label className="field">
+                    <span>NaOH purity %</span>
+                    <input
+                      type="number"
+                      className="input"
+                      min={1}
+                      max={100}
+                      step={0.1}
+                      value={settings.naohPurityPercent}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, naohPurityPercent: e.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className="field">
+                    <span>KOH purity %</span>
+                    <input
+                      type="number"
+                      className="input"
+                      min={1}
+                      max={100}
+                      step={0.1}
+                      value={settings.kohPurityPercent}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, kohPurityPercent: e.target.value }))
+                      }
+                    />
+                  </label>
+                </>
               )}
             </div>
 
@@ -675,7 +770,16 @@ export default function App() {
               splitLiquid={settings.splitLiquid}
               totalOilGrams={totalOilGrams}
               weightUnit={weightUnit}
+              waterMode={settings.waterMode}
+              waterSuggestion={waterSuggestion}
               onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
+              onApplySuggestedWater={(waterPercentOfOils) =>
+                setSettings((s) => ({
+                  ...s,
+                  waterMode: 'percent_of_oils',
+                  waterPercentOfOils,
+                }))
+              }
             />
 
             <MoldSizerPanel
@@ -702,6 +806,8 @@ export default function App() {
             result={result}
             inputErrors={inputErrors}
             lyeLabel={lyeLabel}
+            lyeType={previewSettings.lyeType}
+            kohBlendPercent={previewSettings.kohBlendPercent}
             displayTotals={displayTotals}
             weightUnit={weightUnit}
             waterMode={previewSettings.waterMode}

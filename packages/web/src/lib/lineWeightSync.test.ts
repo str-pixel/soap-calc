@@ -101,6 +101,26 @@ describe('syncBatchTotalEdit', () => {
     const next = syncBatchTotalEdit(twoLines, '');
     expect(next).toEqual(twoLines);
   });
+
+  it('rescales from gram weights when percents are empty', () => {
+    const gramOnly: RecipeLine[] = [
+      { key: 'a', oilId: 'olive-oil', weightGrams: '600', weightPercent: '' },
+      { key: 'b', oilId: 'coconut-oil-76', weightGrams: '400', weightPercent: '' },
+    ];
+    const next = syncBatchTotalEdit(gramOnly, '2000');
+    expect(totalWeightGrams(next)).toBe(2000);
+    expect(next[0].weightGrams).toBe('1200');
+    expect(next[1].weightGrams).toBe('800');
+    expect(next[0].weightPercent).toBe('60');
+    expect(next[1].weightPercent).toBe('40');
+  });
+
+  it('leaves lines unchanged when there are no percents or weights', () => {
+    const empty: RecipeLine[] = [
+      { key: 'a', oilId: 'olive-oil', weightGrams: '', weightPercent: '' },
+    ];
+    expect(syncBatchTotalEdit(empty, '1000')).toEqual(empty);
+  });
 });
 
 describe('resyncFromWeights', () => {

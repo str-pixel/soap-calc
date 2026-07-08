@@ -30,7 +30,8 @@ export type RecipeSettings = {
   weightUnit: WeightUnit;
   batchOilGrams: string;
   superfatPercent: string;
-  lyeType: 'naoh' | 'koh';
+  lyeType: 'naoh' | 'koh' | 'dual';
+  kohBlendPercent: string;
   waterMode: WaterMode;
   waterPercentOfOils: string;
   lyeConcentrationPercent: string;
@@ -61,6 +62,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   batchOilGrams: '1000',
   superfatPercent: '5',
   lyeType: 'naoh',
+  kohBlendPercent: '5',
   waterMode: 'percent_of_oils',
   waterPercentOfOils: '33',
   lyeConcentrationPercent: '33.33',
@@ -96,7 +98,7 @@ export function normalizeSettings(
     ...DEFAULT_SETTINGS,
     ...partial,
     weightUnit,
-    batchNotes: typeof partial?.batchNotes === 'string' ? partial.batchNotes : '',
+    ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
   };
 }
