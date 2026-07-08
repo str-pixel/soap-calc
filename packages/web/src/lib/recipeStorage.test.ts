@@ -1,13 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_SETTINGS, normalizeSettings } from './recipe';
-import {
-  deleteSavedRecipe,
-  linesFromSaved,
-  listSavedRecipes,
-  loadDraft,
-  saveDraft,
-  saveNamedRecipe,
-} from './recipeStorage';
+import { loadDraft, saveDraft } from './recipeStorage';
 
 function createStorage(): Storage {
   const store = new Map<string, string>();
@@ -36,9 +29,6 @@ function createStorage(): Storage {
 describe('recipeStorage', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', createStorage());
-    vi.stubGlobal('crypto', {
-      randomUUID: () => 'test-uuid',
-    });
   });
 
   it('round-trips draft state', () => {
@@ -65,66 +55,6 @@ describe('recipeStorage', () => {
     expect(draft?.settings.superfatPercent).toBe('5');
   });
 
-  it('saves and lists named recipes', () => {
-    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
-    saveNamedRecipe('Olive 100%', lines, DEFAULT_SETTINGS);
-
-    const recipes = listSavedRecipes();
-    expect(recipes).toHaveLength(1);
-    expect(recipes[0].name).toBe('Olive 100%');
-    expect(linesFromSaved(recipes[0].lines)).toHaveLength(1);
-  });
-
-  it('overwrites named recipe with the same name', () => {
-    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '500' }];
-    saveNamedRecipe('Batch', lines, DEFAULT_SETTINGS);
-    saveNamedRecipe('Batch', [{ key: 'b', oilId: 'olive-oil', weightGrams: '900' }], DEFAULT_SETTINGS);
-
-    expect(listSavedRecipes()).toHaveLength(1);
-    expect(listSavedRecipes()[0].lines[0].weightGrams).toBe('900');
-  });
-
-  it('preserves additives when overwriting without passing them', () => {
-    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
-    const additives = [
-      {
-        key: 'x',
-        catalogId: 'honey',
-        name: 'Honey',
-        percentOfOil: '1',
-        addAt: 'trace' as const,
-      },
-    ];
-    saveNamedRecipe('Batch', lines, DEFAULT_SETTINGS, additives);
-    saveNamedRecipe(
-      'Batch',
-      [{ key: 'b', oilId: 'olive-oil', weightGrams: '1100' }],
-      DEFAULT_SETTINGS,
-    );
-
-    const saved = listSavedRecipes()[0];
-    expect(saved.lines[0].weightGrams).toBe('1100');
-    expect(saved.additives).toHaveLength(1);
-    expect(saved.additives[0].name).toBe('Honey');
-  });
-
-  it('round-trips additives in named recipes', () => {
-    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
-    const additives = [
-      {
-        key: 'x',
-        catalogId: 'honey',
-        name: 'Honey',
-        percentOfOil: '1',
-        addAt: 'trace' as const,
-      },
-    ];
-    saveNamedRecipe('With honey', lines, DEFAULT_SETTINGS, additives);
-    const saved = listSavedRecipes()[0];
-    expect(saved.additives).toHaveLength(1);
-    expect(saved.additives[0].percentOfOil).toBe('1');
-  });
-
   it('normalizes settings missing new fields from older saves', () => {
     const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
     saveDraft('Legacy', lines, { superfatPercent: '8', lyeType: 'naoh' } as never);
@@ -133,15 +63,6 @@ describe('recipeStorage', () => {
     expect(draft?.settings.weightUnit).toBe('g');
     expect(draft?.settings.splitLiquid.enabled).toBe(false);
     expect(normalizeSettings({ superfatPercent: '8' }).lyeConcentrationPercent).toBe('33.33');
-  });
-
-  it('deletes a saved recipe by id', () => {
-    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
-    const saved = saveNamedRecipe('To remove', lines, DEFAULT_SETTINGS);
-    expect(listSavedRecipes()).toHaveLength(1);
-
-    deleteSavedRecipe(saved.id);
-    expect(listSavedRecipes()).toHaveLength(0);
   });
 
   it('does not throw when localStorage writes fail', () => {
@@ -160,7 +81,6 @@ describe('recipeStorage', () => {
 
     const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
     expect(() => saveDraft('Draft', lines, DEFAULT_SETTINGS)).not.toThrow();
-    expect(() => saveNamedRecipe('Saved', lines, DEFAULT_SETTINGS)).not.toThrow();
-    expect(listSavedRecipes()).toHaveLength(0);
+    expect(loadDraft()).toBeNull();
   });
 });

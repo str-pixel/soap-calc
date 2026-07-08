@@ -88,7 +88,6 @@ export const WAX_OR_SPECIAL_PATTERNS: Array<{ pattern: RegExp; category: 'wax' |
 export const WAX_ESTER_OIL_IDS = new Set([
   'abyssinian-oil',
   'jojoba-oil-a-liquid-wax-ester',
-  'mink-oil',
 ]);
 
 export function inferCategory(

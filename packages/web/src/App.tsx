@@ -6,7 +6,6 @@ import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { MoldSizerPanel, DEFAULT_MOLD_SIZER_INPUT } from './components/MoldSizerPanel';
 import { PropertiesPanel } from './components/PropertiesPanel';
-import { RecipePresetsPanel } from './components/RecipePresetsPanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { SplitLiquidPanel } from './components/SplitLiquidPanel';
 import { useDebouncedCommit } from './hooks/useDebouncedCommit';
@@ -18,10 +17,8 @@ import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeProperties } from './hooks/useRecipeProperties';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { commitDrafts } from './lib/commitDrafts';
-import { applyRecipePreset } from './lib/applyRecipePreset';
 import { buildBatchSheetData } from './lib/batchSheet';
 import { computeRecipeAdditives, computeSplitLiquidGrams } from './lib/calculateAdditives';
-import { recipePresetById } from './data/recipe-presets';
 import { oilBatchFraction } from './lib/moldSizer';
 import {
   addRecipeLine,
@@ -36,12 +33,14 @@ import { newLineKey, type RecipeLine, type WeightUnit } from './lib/recipe';
 import {
   computeRecipeLineTotals,
   formatRecipePercentTotal,
+  hasRecipeLineData,
   previewPercentDisplay,
   previewWeightDisplay,
   usePreviewRecipeState,
   usePreviewSettings,
 } from './lib/recipePreview';
 import {
+  formatGramsWithUnit,
   gramsStringToInputDisplay,
   parseInputDisplayToGrams,
   parsePercentInput,
@@ -59,13 +58,7 @@ export default function App() {
     setAdditives,
     settings,
     setSettings,
-    savedRecipes,
-    selectedSavedId,
-    setSelectedSavedId,
     saveMessage,
-    handleSave,
-    handleLoad,
-    handleDelete,
     handleNew,
     handleExport,
     handleImportFile,
@@ -100,6 +93,7 @@ export default function App() {
     () => computeRecipeLineTotals(previewState.lines),
     [previewState.lines],
   );
+  const showRecipeTotals = hasRecipeLineData(previewState.lines);
   const batchGramsTarget = Number(previewState.batchOilGrams);
   const percentTotalOff =
     lineTotals.totalPercent > 0 && Math.abs(lineTotals.totalPercent - 100) > 0.05;
@@ -222,15 +216,6 @@ export default function App() {
     clearAllDrafts();
   }
 
-  function handleSaveCommitted() {
-    const synced = flushCommittedDrafts();
-    handleSave({
-      lines: synced.lines,
-      settings: { ...settings, batchOilGrams: synced.batchOilGrams },
-      additives,
-    });
-  }
-
   function handleExportCommitted() {
     const synced = flushCommittedDrafts();
     handleExport({
@@ -245,25 +230,6 @@ export default function App() {
     handleNew();
   }
 
-  function handleLoadPreset(presetId: string) {
-    const preset = recipePresetById(presetId);
-    if (!preset) return;
-    if (
-      !window.confirm(
-        `Load preset “${preset.name}”? This replaces the current recipe oils, settings, and additives.`,
-      )
-    ) {
-      return;
-    }
-    discardDrafts();
-    const applied = applyRecipePreset(preset);
-    setRecipeName(applied.name);
-    setLines(applied.lines);
-    setAdditives(applied.additives);
-    setSettings(applied.settings);
-    setSelectedSavedId('');
-  }
-
   function handleApplySuggestedOilGrams(oilGrams: number) {
     const batchOilGrams = String(Math.round(oilGrams));
     discardDrafts();
@@ -276,11 +242,6 @@ export default function App() {
   function handlePrintBatchSheet() {
     if (!batchSheetData) return;
     window.print();
-  }
-
-  function handleLoadRecipe(id: string) {
-    discardDrafts();
-    handleLoad(id);
   }
 
   function commitWeightInput(key: string, displayValue: string) {
@@ -372,9 +333,6 @@ export default function App() {
             <button type="button" className="btn btn--ghost" onClick={handleNewRecipe}>
               New
             </button>
-            <button type="button" className="btn" onClick={handleSaveCommitted}>
-              Save
-            </button>
             <button type="button" className="btn btn--ghost" onClick={handleExportCommitted}>
               Export
             </button>
@@ -407,38 +365,6 @@ export default function App() {
                 e.target.value = '';
               }}
             />
-            <label className="recipe-toolbar__load">
-              <span className="sr-only">Saved recipes</span>
-              <select
-                className="input"
-                value={selectedSavedId}
-                onChange={(e) => setSelectedSavedId(e.target.value)}
-                aria-label="Saved recipes"
-              >
-                <option value="">Saved recipes…</option>
-                {savedRecipes.map((recipe) => (
-                  <option key={recipe.id} value={recipe.id}>
-                    {recipe.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={() => handleLoadRecipe(selectedSavedId)}
-              disabled={!selectedSavedId}
-            >
-              Load
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost btn--danger"
-              onClick={() => handleDelete(selectedSavedId)}
-              disabled={!selectedSavedId}
-            >
-              Delete
-            </button>
           </div>
 
           {saveMessage && (
@@ -451,8 +377,6 @@ export default function App() {
 
       <main className="layout no-print">
         <div className="layout__primary">
-          <RecipePresetsPanel onLoadPreset={handleLoadPreset} />
-
           <section className="panel">
           <div className="panel__head">
             <h2 className="panel__title">Recipe oils</h2>
@@ -586,12 +510,14 @@ export default function App() {
             >
               <span>Total</span>
               <span className="recipe-table__total-weight">
-                {lineTotals.totalWeightGrams > 0
-                  ? gramsStringToInputDisplay(String(Math.round(lineTotals.totalWeightGrams)), weightUnit)
+                {showRecipeTotals && lineTotals.totalWeightGrams > 0
+                  ? formatGramsWithUnit(lineTotals.totalWeightGrams, weightUnit)
                   : '—'}
               </span>
               <span className="recipe-table__total-pct">
-                {lineTotals.totalPercent > 0 ? formatRecipePercentTotal(lineTotals.totalPercent) : '—'}
+                {showRecipeTotals
+                  ? formatRecipePercentTotal(lineTotals.totalPercent)
+                  : '—'}
               </span>
               <span className="sr-only">Actions</span>
             </div>

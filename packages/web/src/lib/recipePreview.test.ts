@@ -3,6 +3,7 @@ import { previewRecipeState } from './commitDrafts';
 import {
   computeRecipeLineTotals,
   formatRecipePercentTotal,
+  hasRecipeLineData,
 } from './recipePreview';
 import type { RecipeLine } from './recipe';
 
@@ -35,6 +36,16 @@ describe('computeRecipeLineTotals', () => {
       { key: 'b', oilId: 'coconut-oil-76', weightGrams: '550', weightPercent: '55' },
     ]);
     expect(totals.totalWeightGrams).toBe(1000);
-    expect(formatRecipePercentTotal(totals.totalPercent)).toBe('100');
+    expect(formatRecipePercentTotal(totals.totalPercent)).toBe('100%');
+  });
+
+  it('shows zero percent when lines exist but percents are empty', () => {
+    const totals = computeRecipeLineTotals([
+      { key: 'a', oilId: 'olive-oil', weightGrams: '500', weightPercent: '' },
+    ]);
+    expect(hasRecipeLineData([{ key: 'a', oilId: 'olive-oil', weightGrams: '500', weightPercent: '' }])).toBe(
+      true,
+    );
+    expect(formatRecipePercentTotal(totals.totalPercent)).toBe('0%');
   });
 });

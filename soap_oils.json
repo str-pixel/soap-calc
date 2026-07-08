@@ -491,18 +491,6 @@
       "updated_at": null
     },
     {
-      "id": 46,
-      "name": "Ghee, any bovine",
-      "version": 1,
-      "iodine": 30,
-      "ins": 191,
-      "sap": 0.227,
-      "total_saponifiable": 77,
-      "breakdown": "{\"oleic\": 19, \"lauric\": 4, \"stearic\": 12, \"linoleic\": 2, \"myristic\": 11, \"palmitic\": 28, \"linolenic\": 1}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
       "id": 48,
       "name": "Grapeseed Oil",
       "version": 1,
@@ -805,18 +793,6 @@
       "updated_at": null
     },
     {
-      "id": 73,
-      "name": "Milk Fat, any bovine",
-      "version": 1,
-      "iodine": 30,
-      "ins": 191,
-      "sap": 0.227,
-      "total_saponifiable": 77,
-      "breakdown": "{\"oleic\": 19, \"lauric\": 4, \"stearic\": 12, \"linoleic\": 2, \"myristic\": 11, \"palmitic\": 28, \"linolenic\": 1}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
       "id": 74,
       "name": "Milk Thistle Oil",
       "version": 1,
@@ -825,18 +801,6 @@
       "sap": 0.196,
       "total_saponifiable": 99,
       "breakdown": "{\"oleic\": 26, \"stearic\": 2, \"linoleic\": 64, \"palmitic\": 7}",
-      "created_at": null,
-      "updated_at": null
-    },
-    {
-      "id": 75,
-      "name": "Mink Oil",
-      "version": 1,
-      "iodine": 55,
-      "ins": 141,
-      "sap": 0.196,
-      "total_saponifiable": 0,
-      "breakdown": "{}",
       "created_at": null,
       "updated_at": null
     },

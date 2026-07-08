@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-07T20:33:19.941Z",
+  "generatedAt": "2026-07-08T09:29:19.506Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -848,29 +848,6 @@
       }
     },
     {
-      "id": "ghee-any-bovine",
-      "displayName": "Ghee, any bovine",
-      "aliases": [
-        "ghee any bovine"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.227,
-      "sapNaoh": 0.16185383244206772,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 30,
-      "ins": 191,
-      "fattyAcids": {
-        "oleic": 19,
-        "lauric": 4,
-        "stearic": 12,
-        "linoleic": 2,
-        "myristic": 11,
-        "palmitic": 28,
-        "linolenic": 1
-      }
-    },
-    {
       "id": "grapeseed-oil",
       "displayName": "Grapeseed Oil",
       "aliases": [
@@ -1376,29 +1353,6 @@
       }
     },
     {
-      "id": "milk-fat-any-bovine",
-      "displayName": "Milk Fat, any bovine",
-      "aliases": [
-        "milk fat any bovine"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.227,
-      "sapNaoh": 0.16185383244206772,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 30,
-      "ins": 191,
-      "fattyAcids": {
-        "oleic": 19,
-        "lauric": 4,
-        "stearic": 12,
-        "linoleic": 2,
-        "myristic": 11,
-        "palmitic": 28,
-        "linolenic": 1
-      }
-    },
-    {
       "id": "milk-thistle-oil",
       "displayName": "Milk Thistle Oil",
       "aliases": [
@@ -1418,20 +1372,6 @@
         "linoleic": 64,
         "palmitic": 7
       }
-    },
-    {
-      "id": "mink-oil",
-      "displayName": "Mink Oil",
-      "aliases": [
-        "mink oil"
-      ],
-      "category": "wax_ester",
-      "sapKoh": 0.196,
-      "sapNaoh": 0.13975044563279856,
-      "confidence": "legacy_only",
-      "propertiesAvailable": false,
-      "iodine": 55,
-      "ins": 141
     },
     {
       "id": "monoi-de-tahiti-oil",

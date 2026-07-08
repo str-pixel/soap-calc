@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-07T20:33:19.941Z",
+  "generatedAt": "2026-07-08T09:29:19.506Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -1984,39 +1984,6 @@
       "confidence": "verified"
     },
     {
-      "id": "ghee-any-bovine",
-      "displayName": "Ghee, any bovine",
-      "aliases": [
-        "ghee any bovine"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.227,
-      "sapNaoh": 0.16185383244206772,
-      "sapMgKohPerGram": 227,
-      "iodine": 30,
-      "ins": 191,
-      "fattyAcids": {
-        "oleic": 19,
-        "lauric": 4,
-        "stearic": 12,
-        "linoleic": 2,
-        "myristic": 11,
-        "palmitic": 28,
-        "linolenic": 1
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.227,
-          "sapNaoh": 0.16185383244206772,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
       "id": "grapeseed-oil",
       "displayName": "Grapeseed Oil",
       "aliases": [
@@ -3082,39 +3049,6 @@
       "confidence": "legacy_only"
     },
     {
-      "id": "milk-fat-any-bovine",
-      "displayName": "Milk Fat, any bovine",
-      "aliases": [
-        "milk fat any bovine"
-      ],
-      "category": "triglyceride",
-      "sapKoh": 0.227,
-      "sapNaoh": 0.16185383244206772,
-      "sapMgKohPerGram": 227,
-      "iodine": 30,
-      "ins": 191,
-      "fattyAcids": {
-        "oleic": 19,
-        "lauric": 4,
-        "stearic": 12,
-        "linoleic": 2,
-        "myristic": 11,
-        "palmitic": 28,
-        "linolenic": 1
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.227,
-          "sapNaoh": 0.16185383244206772,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
       "id": "milk-thistle-oil",
       "displayName": "Milk Thistle Oil",
       "aliases": [
@@ -3144,31 +3078,6 @@
         {
           "source": "manual",
           "notes": "INCI via supplemental id — Not in local CosIng glossary index"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
-      "id": "mink-oil",
-      "displayName": "Mink Oil",
-      "aliases": [
-        "mink oil"
-      ],
-      "category": "wax_ester",
-      "sapKoh": 0.196,
-      "sapNaoh": 0.13975044563279856,
-      "sapMgKohPerGram": 196,
-      "iodine": 55,
-      "ins": 141,
-      "fattyAcids": {},
-      "propertiesAvailable": false,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.196,
-          "sapNaoh": 0.13975044563279856,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         }
       ],
       "primarySource": "legacy_catalog",

@@ -10,16 +10,7 @@ import {
   type RecipeLine,
   type RecipeSettings,
 } from '../lib/recipe';
-import {
-  deleteSavedRecipe,
-  linesFromSaved,
-  listSavedRecipes,
-  loadDraft,
-  loadSavedRecipe,
-  saveDraft,
-  saveNamedRecipe,
-  type SavedRecipe,
-} from '../lib/recipeStorage';
+import { loadDraft, saveDraft } from '../lib/recipeStorage';
 import {
   downloadRecipeFile,
   parseRecipeFile,
@@ -28,7 +19,7 @@ import {
   serializeRecipeFile,
 } from '../lib/recipeFile';
 
-type SaveOverride = {
+type ExportOverride = {
   lines: RecipeLine[];
   settings: RecipeSettings;
   additives?: AdditiveLine[];
@@ -45,8 +36,6 @@ export function useRecipeStorage() {
     draft?.additives ?? createEmptyAdditives(),
   );
   const [settings, setSettings] = useState<RecipeSettings>(initialSettings);
-  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(listSavedRecipes);
-  const [selectedSavedId, setSelectedSavedId] = useState('');
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -62,48 +51,6 @@ export function useRecipeStorage() {
     messageTimer.current = setTimeout(() => setSaveMessage(null), 2000);
   }
 
-  function handleSave(override?: SaveOverride) {
-    const linesToSave = override?.lines ?? lines;
-    const settingsToSave = override?.settings ?? settings;
-    const additivesToSave = override?.additives ?? additives;
-    const saved = saveNamedRecipe(recipeName, linesToSave, settingsToSave, additivesToSave);
-    setRecipeName(saved.name);
-    setSelectedSavedId(saved.id);
-    setSavedRecipes(listSavedRecipes());
-    flashSaveMessage(`Saved “${saved.name}”`);
-  }
-
-  function handleLoad(id: string) {
-    if (!id) return;
-    const recipe = loadSavedRecipe(id);
-    if (!recipe) return;
-    const loadedSettings = normalizeSettings(recipe.settings);
-    const loadedLines = migrateRecipeLines(linesFromSaved(recipe.lines), loadedSettings);
-    const loadedAdditives = additivesFromSaved(recipe.additives);
-    setRecipeName(recipe.name);
-    setLines(loadedLines);
-    setAdditives(loadedAdditives);
-    setSettings(loadedSettings);
-    setSelectedSavedId(recipe.id);
-    saveDraft(recipe.name, loadedLines, loadedSettings, loadedAdditives);
-    flashSaveMessage(`Loaded “${recipe.name}”`);
-  }
-
-  function handleDelete(id: string) {
-    if (!id) return;
-    const recipe = loadSavedRecipe(id);
-    if (!recipe) return;
-    if (!window.confirm(`Delete saved recipe “${recipe.name}”? This cannot be undone.`)) {
-      return;
-    }
-    deleteSavedRecipe(id);
-    setSavedRecipes(listSavedRecipes());
-    if (selectedSavedId === id) {
-      setSelectedSavedId('');
-    }
-    flashSaveMessage(`Deleted “${recipe.name}”`);
-  }
-
   function handleNew() {
     setRecipeName('New recipe');
     setLines(createStarterLines());
@@ -111,7 +58,7 @@ export function useRecipeStorage() {
     setSettings({ ...DEFAULT_SETTINGS });
   }
 
-  function handleExport(override?: SaveOverride) {
+  function handleExport(override?: ExportOverride) {
     const linesToExport = override?.lines ?? lines;
     const settingsToExport = override?.settings ?? settings;
     const additivesToExport = override?.additives ?? additives;
@@ -140,7 +87,6 @@ export function useRecipeStorage() {
         setLines(importedLines);
         setAdditives(importedAdditives);
         setSettings(importedSettings);
-        setSelectedSavedId('');
         saveDraft(parsed.data.name, importedLines, importedSettings, importedAdditives);
         flashSaveMessage(`Imported “${parsed.data.name}”`);
       })
@@ -156,13 +102,7 @@ export function useRecipeStorage() {
     setAdditives,
     settings,
     setSettings,
-    savedRecipes,
-    selectedSavedId,
-    setSelectedSavedId,
     saveMessage,
-    handleSave,
-    handleLoad,
-    handleDelete,
     handleNew,
     handleExport,
     handleImportFile,

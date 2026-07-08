@@ -62,5 +62,14 @@ export function computeRecipeLineTotals(lines: RecipeLine[]): {
 }
 
 export function formatRecipePercentTotal(totalPercent: number): string {
-  return String(Math.round(totalPercent * 10) / 10);
+  return `${String(Math.round(totalPercent * 10) / 10)}%`;
+}
+
+export function hasRecipeLineData(lines: RecipeLine[]): boolean {
+  return lines.some(
+    (line) =>
+      Boolean(line.oilId) ||
+      (Number.isFinite(Number(line.weightGrams)) && Number(line.weightGrams) > 0) ||
+      (line.weightPercent !== '' && Number.isFinite(Number(line.weightPercent))),
+  );
 }
