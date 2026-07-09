@@ -13,6 +13,11 @@ describe('weightUnits', () => {
     expect(parseInputDisplayToGrams('16', 'oz')).toBe('453.6');
   });
 
+  it('oz display round-trips lossily, so no-op commits must be suppressed upstream', () => {
+    // 450 g -> "15.9" oz -> 450.8 g: committing an unedited display value would drift weights.
+    expect(parseInputDisplayToGrams(gramsStringToInputDisplay('450', 'oz'), 'oz')).toBe('450.8');
+  });
+
   it('formats pounds with a stable locale', () => {
     expect(formatWeight(453.59237, 'lb')).toBe('1 lb');
   });

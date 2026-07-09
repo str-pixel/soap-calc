@@ -291,8 +291,10 @@ export default function App() {
   }
 
   function commitWeightInput(key: string, displayValue: string) {
-    const weightGrams = parseInputDisplayToGrams(displayValue, weightUnit);
+    const hadDraft = weightInputId(key) in drafts;
     clearDraft(weightInputId(key));
+    if (!hadDraft) return;
+    const weightGrams = parseInputDisplayToGrams(displayValue, weightUnit);
     if (weightGrams === null) return;
 
     applySyncedUpdate((prev, batchOilGrams) =>
@@ -301,8 +303,10 @@ export default function App() {
   }
 
   function commitPercentInput(key: string, displayValue: string) {
-    const weightPercent = parsePercentInput(displayValue);
+    const hadDraft = percentInputId(key) in drafts;
     clearDraft(percentInputId(key));
+    if (!hadDraft) return;
+    const weightPercent = parsePercentInput(displayValue);
     if (weightPercent === null) return;
 
     applySyncedUpdate((prev, batchOilGrams) =>
@@ -311,8 +315,10 @@ export default function App() {
   }
 
   function commitBatchInput(displayValue: string) {
-    const batchOilGrams = parseInputDisplayToGrams(displayValue, weightUnit);
+    const hadDraft = batchInputId in drafts;
     clearDraft(batchInputId);
+    if (!hadDraft) return;
+    const batchOilGrams = parseInputDisplayToGrams(displayValue, weightUnit);
     if (batchOilGrams === null) return;
 
     if (batchOilGrams === '') {
