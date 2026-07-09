@@ -23,8 +23,8 @@ lye engine (`@soap-calc/core` already does NaOH/KOH/dual + 90% KOH purity). This
 
 ## Scope
 
-**In scope:** the `process` concept and state; per-process storage (three drafts + process-tagged
-saved recipes); a `PROCESS_DEFINITIONS` config; the header tab switcher; process-aware settings/panel
+**In scope:** the `process` concept and state; per-process storage (three per-process autosave drafts +
+`process` stamped in export/import files); a `PROCESS_DEFINITIONS` config; the header tab switcher; process-aware settings/panel
 rendering; **CP fully wired** (identical to today's behavior, now under the "Cold Process" tab); HP and
 LS tabs **scaffolded** with their default settings + the shared panels.
 
@@ -51,14 +51,21 @@ Plugs into the just-merged decomposition: `App.tsx` (shell) → `useRecipeStorag
    - CP/HP: `defaultLye 'naoh'`, `lyeChoices ['naoh','dual']`, bar panels, `finishing 'cure'`.
      LS: `defaultLye 'koh'`, `lyeChoices ['koh','dual']`, liquid panels, `finishing 'sequester'`.
 
-2. **Workspace storage — `useRecipeStorage` (extended) + `recipeStorage.ts`.**
-   Owns the active process + three drafts + process-tagged named recipes.
-   - Persisted workspace shape gains a top-level `process: ProcessId` (sibling of `settings`), so it
-     serializes in save/export.
-   - localStorage keys: `soapcalc:activeProcess`, `soapcalc:draft:<process>`; saved recipes carry `process`.
-   - New surface: `process`, `setProcess(id)`. `setProcess` persists the active id and loads that
-     process's draft (creating it from defaults if absent).
+2. **Workspace storage — `useRecipeStorage` + `recipeStorage.ts` + `useRecipeAutosave` (all extended).**
+   Today there is a **single** autosave draft (`recipeStorage.ts`, key `soap-calc:draft`, via
+   `loadDraft`/`saveDraft`) plus file export/import — there is **no in-app saved-recipe library**. This
+   spec makes that draft per-process.
+   - `loadDraft`/`saveDraft` gain a `process` arg → one draft per process, keyed `soap-calc:draft:<process>`
+     (process is implicit in the key; no in-payload field). Active process persisted at `soap-calc:active-process`.
+   - `useRecipeStorage` loads the active process's draft on mount and adds `process`, `setProcess(id)`;
+     `setProcess` persists the id and swaps to that process's draft (seeding from defaults if absent).
+   - `useRecipeAutosave` takes the active `process` and writes to that process's draft key.
+   - `handleNew` seeds from `PROCESS_DEFINITIONS[process].defaultSettings` (not global `DEFAULT_SETTINGS`).
+   - The **export/import file** (`serializeRecipeFile`/`parseRecipeFile`) gains a top-level `process`
+     field so an imported file selects its tab.
    - Deps: `PROCESS_DEFINITIONS`, existing storage helpers.
+   - Terminology: "draft" here = the autosaved workspace (one per process); distinct from `useDraftInputs`
+     "drafts" (per-field edit buffers), which are unaffected.
 
 3. **Process-aware settings fields — `settingsFields.ts` (extended).**
    `lyeChoicesFor(process)` and `waterModeChoicesFor(process)` narrow the selector option sets;
@@ -84,10 +91,10 @@ run exactly as today against the active workspace.
 
 ### State & storage detail
 
-- Persisted workspace = `{ process, recipeName, lines, settings, additives }`.
+- Per-process draft payload = `{ recipeName, lines, settings, additives }`, keyed by process (process
+  is not stored in the payload). Only the export/import **file** carries a top-level `process`.
 - A new draft's `settings` = `{ ...DEFAULT_SETTINGS, ...PROCESS_DEFINITIONS[process].defaultSettings }`.
 - "New" seeds a fresh draft for the **active** process from its defaults.
-- Import/export JSON includes `process`; import selects that tab.
 
 ### The "C middle" mechanics
 
@@ -101,9 +108,10 @@ run exactly as today against the active workspace.
 
 - Loaded recipe / import with missing or unknown `process` → default to `cp`.
 - Switching tabs never discards other drafts; each persists independently.
-- **Migration** of the current single-draft user: on first load after this ships, map the existing
-  autosave draft to the `cp` draft; untagged saved recipes are treated as `cp`. No data loss.
-- Loading a saved recipe whose `process` differs from the active tab switches the tab to match.
+- **Migration** of the current single-draft user: on first load after this ships, copy the existing
+  `soap-calc:draft` into the `cp` draft key and default the active process to `cp`. No data loss.
+- Importing a file whose `process` differs from the active tab switches the tab to match; a file with
+  no `process` is treated as `cp`.
 - Corrupt/absent draft for a process → fall back to a defaults-seeded fresh draft for that process.
 
 ## Testing
@@ -111,7 +119,7 @@ run exactly as today against the active workspace.
 - **Core:** `PROCESS_DEFINITIONS` shape and defaults; `lyeChoicesFor` / `waterModeChoicesFor` per
   process; the re-seed-lye-on-invalid rule.
 - **Storage:** three drafts stay isolated; active-process persistence across reload; legacy single-draft
-  → `cp` migration; saved-recipe `process` tagging + load-time tab switch.
+  → `cp` migration; imported-file `process` drives the load-time tab switch.
 - **Web component:** switching tabs reconfigures panels + settings fields; the CP tab renders
   identically to today (regression guard).
 
