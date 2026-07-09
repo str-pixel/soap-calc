@@ -55,11 +55,16 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
           setQuery('');
           setHighlight(-1);
         }}
-        onBlur={() => setOpen(false)}
+        onBlur={(e) => {
+          if (e.relatedTarget && !rootRef.current?.contains(e.relatedTarget as Node)) {
+            setOpen(false);
+          }
+        }}
         onChange={(e) => {
-          setQuery(e.target.value);
+          const value = e.target.value;
+          setQuery(value);
           setOpen(true);
-          setHighlight(0);
+          setHighlight(value.length === 0 ? -1 : 0);
         }}
         onKeyDown={(e) => {
           if (!open && (e.key === 'ArrowDown' || e.key === 'Enter')) {
