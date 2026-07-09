@@ -16,6 +16,7 @@
     "prebuild": "tsx scripts/ensure-fnwl.ts",
     "build": "tsx scripts/build-canonical.ts",
     "validate": "tsx scripts/validate-canonical.ts",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
