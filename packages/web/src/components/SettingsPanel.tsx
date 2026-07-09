@@ -1,8 +1,38 @@
 import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import type { MoldSizerInput } from '../lib/moldSizer';
 import type { RecipeSettings, WeightUnit } from '../lib/recipe';
+import { purityFieldsFor, WATER_FIELDS } from '../lib/settingsFields';
 import { MoldSizerPanel } from './MoldSizerPanel';
 import { SplitLiquidPanel } from './SplitLiquidPanel';
+
+type FieldSpec = ReturnType<typeof purityFieldsFor>[number];
+
+function NumericSettingField({
+  spec,
+  settings,
+  setSettings,
+}: {
+  spec: FieldSpec;
+  settings: RecipeSettings;
+  setSettings: React.Dispatch<React.SetStateAction<RecipeSettings>>;
+}) {
+  return (
+    <label className="field">
+      <span>{spec.label}</span>
+      <input
+        type="number"
+        className="input"
+        min={spec.min}
+        max={spec.max}
+        step={spec.step}
+        value={settings[spec.key] as string}
+        onChange={(e) =>
+          setSettings((s) => ({ ...s, [spec.key]: e.target.value }) as RecipeSettings)
+        }
+      />
+    </label>
+  );
+}
 
 type SettingsPanelProps = {
   settings: RecipeSettings;
@@ -101,120 +131,20 @@ export function SettingsPanel({
           </select>
         </label>
 
-        {settings.waterMode === 'percent_of_oils' && (
-          <label className="field">
-            <span>Water % of oils</span>
-            <input
-              type="number"
-              className="input"
-              min={0}
-              step={1}
-              value={settings.waterPercentOfOils}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, waterPercentOfOils: e.target.value }))
-              }
-            />
-          </label>
-        )}
+        <NumericSettingField
+          spec={WATER_FIELDS[settings.waterMode]}
+          settings={settings}
+          setSettings={setSettings}
+        />
 
-        {settings.waterMode === 'lye_concentration' && (
-          <label className="field">
-            <span>Lye concentration %</span>
-            <input
-              type="number"
-              className="input"
-              min={0.1}
-              max={99.9}
-              step={0.1}
-              value={settings.lyeConcentrationPercent}
-              onChange={(e) =>
-                setSettings((s) => ({
-                  ...s,
-                  lyeConcentrationPercent: e.target.value,
-                }))
-              }
-            />
-          </label>
-        )}
-
-        {settings.waterMode === 'lye_water_ratio' && (
-          <label className="field">
-            <span>Water : lye ratio</span>
-            <input
-              type="number"
-              className="input"
-              min={0.1}
-              step={0.1}
-              value={settings.lyeWaterRatio}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, lyeWaterRatio: e.target.value }))
-              }
-            />
-          </label>
-        )}
-
-        {settings.lyeType === 'naoh' ? (
-          <label className="field">
-            <span>NaOH purity %</span>
-            <input
-              type="number"
-              className="input"
-              min={1}
-              max={100}
-              step={0.1}
-              value={settings.naohPurityPercent}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, naohPurityPercent: e.target.value }))
-              }
-            />
-          </label>
-        ) : settings.lyeType === 'koh' ? (
-          <label className="field">
-            <span>KOH purity %</span>
-            <input
-              type="number"
-              className="input"
-              min={1}
-              max={100}
-              step={0.1}
-              value={settings.kohPurityPercent}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, kohPurityPercent: e.target.value }))
-              }
-            />
-          </label>
-        ) : (
-          <>
-            <label className="field">
-              <span>NaOH purity %</span>
-              <input
-                type="number"
-                className="input"
-                min={1}
-                max={100}
-                step={0.1}
-                value={settings.naohPurityPercent}
-                onChange={(e) =>
-                  setSettings((s) => ({ ...s, naohPurityPercent: e.target.value }))
-                }
-              />
-            </label>
-            <label className="field">
-              <span>KOH purity %</span>
-              <input
-                type="number"
-                className="input"
-                min={1}
-                max={100}
-                step={0.1}
-                value={settings.kohPurityPercent}
-                onChange={(e) =>
-                  setSettings((s) => ({ ...s, kohPurityPercent: e.target.value }))
-                }
-              />
-            </label>
-          </>
-        )}
+        {purityFieldsFor(settings.lyeType).map((spec) => (
+          <NumericSettingField
+            key={spec.key}
+            spec={spec}
+            settings={settings}
+            setSettings={setSettings}
+          />
+        ))}
       </div>
 
       <SplitLiquidPanel
