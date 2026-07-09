@@ -156,7 +156,9 @@ export function syncWeightEdit(
   if (editedGrams === null) {
     return {
       batchOilGrams,
-      lines: lines.map((line) => (line.key === key ? { ...line, weightGrams } : line)),
+      lines: lines.map((line) =>
+        line.key === key ? { ...line, weightGrams, weightPercent: '' } : line,
+      ),
     };
   }
 
@@ -186,7 +188,7 @@ export function syncPercentEdit(
     return {
       batchOilGrams,
       lines: lines.map((line) =>
-        line.key === key ? { ...line, weightPercent } : line,
+        line.key === key ? { ...line, weightPercent, weightGrams: '' } : line,
       ),
     };
   }

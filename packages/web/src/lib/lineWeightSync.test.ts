@@ -45,6 +45,14 @@ describe('syncWeightEdit', () => {
     expect(result.batchOilGrams).toBe('');
     expect(result.lines[0].weightGrams).toBe('');
   });
+
+  it('clearing a weight empties the line and does not resurrect it on a batch edit', () => {
+    const cleared = syncWeightEdit(twoLines, 'a', '', '1000');
+    expect(cleared.lines[0]).toMatchObject({ weightGrams: '', weightPercent: '' });
+    const afterBatch = syncBatchTotalEdit(cleared.lines, '2000');
+    expect(afterBatch[0].weightGrams).toBe('');
+    expect(afterBatch[1].weightGrams).toBe('2000');
+  });
 });
 
 describe('syncPercentEdit', () => {
@@ -72,11 +80,13 @@ describe('syncPercentEdit', () => {
     expect(result.lines[0]).toMatchObject({ weightGrams: '800', weightPercent: '80' });
   });
 
-  it('stores partial percent text without syncing weights', () => {
-    const result = syncPercentEdit(twoLines, 'a', '', '1000');
-    expect(result.lines[0].weightPercent).toBe('');
-    expect(result.lines[0].weightGrams).toBe('600');
-    expect(result.batchOilGrams).toBe('1000');
+  it('clearing a percent empties the line and does not silently delete on a batch edit', () => {
+    const cleared = syncPercentEdit(twoLines, 'a', '', '1000');
+    expect(cleared.lines[0]).toMatchObject({ weightGrams: '', weightPercent: '' });
+    expect(cleared.batchOilGrams).toBe('1000');
+    const afterBatch = syncBatchTotalEdit(cleared.lines, '2000');
+    expect(afterBatch[0].weightGrams).toBe('');
+    expect(afterBatch[1].weightGrams).toBe('2000');
   });
 });
 
