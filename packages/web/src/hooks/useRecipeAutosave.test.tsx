@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useRecipeAutosave } from './useRecipeAutosave';
 import { loadDraft } from '../lib/recipeStorage';
-import { DEFAULT_SETTINGS, createStarterLines, createEmptyAdditives } from '../lib/recipe';
+import { DEFAULT_SETTINGS, createStarterLines } from '../lib/recipe';
+import type { AdditiveLine } from '../lib/recipe';
 
 // Node 22+ defines its own (experimental, file-backed) global `localStorage` getter
 // that shadows jsdom's implementation unless `--localstorage-file` is configured.
@@ -42,13 +43,21 @@ afterEach(() => {
 
 describe('useRecipeAutosave', () => {
   it('writes the draft under the active process key', () => {
+    const additives: AdditiveLine[] = [
+      { key: 'x', catalogId: 'honey', name: 'Honey', percentOfOil: '1', addAt: 'trace' },
+    ];
     vi.useFakeTimers();
     renderHook(() =>
-      useRecipeAutosave('ls', 'Body wash', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives()),
+      useRecipeAutosave('ls', 'Body wash', createStarterLines(), DEFAULT_SETTINGS, additives),
     );
     vi.advanceTimersByTime(600);
     vi.useRealTimers();
     expect(loadDraft('ls')?.name).toBe('Body wash');
     expect(loadDraft('cp')).toBeNull();
+    // `key` is regenerated on load (additivesFromSaved), so compare the
+    // persisted fields via toMatchObject rather than a literal toEqual.
+    expect(loadDraft('ls')?.additives).toMatchObject([
+      { catalogId: 'honey', name: 'Honey', percentOfOil: '1', addAt: 'trace' },
+    ]);
   });
 });
