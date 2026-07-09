@@ -255,7 +255,7 @@ describe('calculateLye', () => {
       superfatPercent: 5,
       naohPurityPercent: 100,
       kohPurityPercent: 90,
-    } as const;
+    };
     const molesNeeded = calculateLye({ ...base, lyeType: 'naoh' }).lyeWeightGrams / NAOH_MM;
     const result = calculateLye({ ...base, lyeType: 'dual', kohBlendPercent: 5 });
     // Pure-alkali moles delivered (crude grams x purity / molar mass) must saponify the oil.
@@ -276,7 +276,7 @@ describe('calculateLye', () => {
       superfatPercent: 5,
       naohPurityPercent: 100,
       kohPurityPercent: 100,
-    } as const;
+    };
     const molesNeeded = calculateLye({ ...base, lyeType: 'naoh' }).lyeWeightGrams / NAOH_MM;
     for (const kohBlendPercent of [0, 5, 25, 50]) {
       const r = calculateLye({ ...base, lyeType: 'dual', kohBlendPercent });
@@ -293,7 +293,7 @@ describe('calculateLye', () => {
       superfatPercent: 5,
       naohPurityPercent: 100,
       kohPurityPercent: 100,
-    } as const;
+    };
     const naohOnly = calculateLye({ ...base, lyeType: 'naoh' });
     const dual0 = calculateLye({ ...base, lyeType: 'dual', kohBlendPercent: 0 });
     expect(dual0.naohWeightGrams).toBeCloseTo(naohOnly.lyeWeightGrams, 6);
