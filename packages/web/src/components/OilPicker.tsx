@@ -53,8 +53,9 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
         onFocus={() => {
           setOpen(true);
           setQuery('');
-          setHighlight(0);
+          setHighlight(-1);
         }}
+        onBlur={() => setOpen(false)}
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);
@@ -72,9 +73,10 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
           } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setHighlight((h) => Math.max(h - 1, 0));
-          } else if (e.key === 'Enter' && results[highlight]) {
+          } else if (e.key === 'Enter') {
             e.preventDefault();
-            pick(results[highlight]);
+            if (results[highlight]) pick(results[highlight]);
+            else setOpen(false);
           } else if (e.key === 'Escape') {
             setOpen(false);
           }
@@ -99,6 +101,7 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
                 aria-selected={index === highlight}
                 className={`oil-picker__option${index === highlight ? ' oil-picker__option--active' : ''}${oil.id === value ? ' oil-picker__option--selected' : ''}`}
                 onMouseEnter={() => setHighlight(index)}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pick(oil)}
               >
                 <span className="oil-picker__text">
