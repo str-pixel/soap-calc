@@ -12,9 +12,9 @@
 
 - Design spec: `docs/superpowers/specs/2026-07-09-process-separation-design.md`. Follow it; deviations noted below.
 - **`PROCESS_DEFINITIONS` lives in web** (`packages/web/src/lib/process.ts`), not `@soap-calc/core` — it references the web-owned `RecipeSettings`, and nothing in core consumes `process`. (Spec §Unit 1, already corrected.)
-- **Scope:** infrastructure only. CP is fully wired (identical to today). HP/LS tabs get their default settings + the shared panels; HP/LS-only feature panels (post-cook, dilution, preserve) are **out of scope** here.
+- **Scope:** infrastructure only. CP is fully wired — behavior unchanged **except** the lye-type selector now offers only `naoh`/`dual` (KOH moves to the LS tab, where liquid soap belongs). Do not claim "CP is byte-for-byte identical" — the lye option set is deliberately narrowed. HP/LS tabs get their default settings + the shared panels; HP/LS-only feature panels (post-cook, dilution, preserve) are **out of scope** here.
 - **Structure hard, chemistry soft:** process fixes the allowed lye-type set (CP/HP: `naoh`,`dual`; LS: `koh`,`dual`); superfat/water/blend/purity stay editable, process-seeded defaults.
-- **No data loss:** the existing single draft migrates to the CP workspace.
+- **No data loss, no silent chemistry change:** the existing single draft migrates *by its lye type* — a `koh` (liquid soap) draft lands on the **LS** tab, everything else on **CP** — so migration never flips a recipe's alkali (NaOH↔KOH change the SAP math). Migration also seeds the active process to match. (See Task 3.)
 - Storage key prefix is `soap-calc:` (hyphen).
 - Run web tests from repo root with `npm run test -w @soap-calc/web -- <filter>` (Vitest positional filter = filename substring). Web tests run under jsdom (each new storage/hook/component test file starts with `/** @vitest-environment jsdom */` to be explicit; `localStorage` is available under jsdom).
 - Commit after each task's tests pass. Do not push.
@@ -36,8 +36,8 @@
 - **Modify** `packages/web/src/hooks/useRecipeStorage.ts` — active process, `setProcess`, process-seeded `handleNew`, process in import/export.
 - **Create** `packages/web/src/hooks/useRecipeStorage.test.tsx`.
 - **Create** `packages/web/src/components/ProcessTabs.tsx` + `.test.tsx`.
-- **Modify** `packages/web/src/components/SettingsPanel.tsx` — gate lye/water selectors by process.
-- **Create** `packages/web/src/components/SettingsPanel.test.tsx`.
+- **Modify** `packages/web/src/components/SettingsPanel.tsx` — gate lye/water selectors by process (new **optional** `process` prop, defaults to `'cp'`).
+- **Modify** `packages/web/src/components/SettingsPanel.test.tsx` — this file **already exists** (superfat/dual/attr-lock guards); append the gating tests, do not overwrite it.
 - **Modify** `packages/web/src/App.tsx` — render `ProcessTabs`; pass `process` to `SettingsPanel` + autosave.
 
 ---
@@ -351,14 +351,24 @@ describe('per-process drafts', () => {
     expect(loadActiveProcess()).toBe('ls');
   });
 
-  it('migrates the legacy single draft into the cp key, once', () => {
-    const payload = JSON.stringify({ version: 2, name: 'Legacy', lines: [], settings: DEFAULT_SETTINGS });
+  it('migrates a legacy NaOH draft into cp + sets active process, once', () => {
+    const payload = JSON.stringify({ version: 2, name: 'Legacy', lines: [], settings: { ...DEFAULT_SETTINGS, lyeType: 'naoh' } });
     localStorage.setItem('soap-calc:draft', payload);
     migrateLegacyDraft();
     expect(loadDraft('cp')?.name).toBe('Legacy');
+    expect(loadActiveProcess()).toBe('cp');
     expect(localStorage.getItem('soap-calc:draft')).toBeNull();
     migrateLegacyDraft(); // idempotent, no throw
     expect(loadDraft('cp')?.name).toBe('Legacy');
+  });
+
+  it('routes a legacy KOH (liquid soap) draft to LS, not CP — no silent alkali flip', () => {
+    const payload = JSON.stringify({ version: 2, name: 'Body wash', lines: [], settings: { ...DEFAULT_SETTINGS, lyeType: 'koh' } });
+    localStorage.setItem('soap-calc:draft', payload);
+    migrateLegacyDraft();
+    expect(loadDraft('ls')?.name).toBe('Body wash');
+    expect(loadDraft('cp')).toBeNull();
+    expect(loadActiveProcess()).toBe('ls');
   });
 });
 ```
@@ -399,8 +409,23 @@ export function migrateLegacyDraft(): void {
   try {
     const legacy = localStorage.getItem(LEGACY_DRAFT_KEY);
     if (legacy === null) return;
-    if (localStorage.getItem(draftKey('cp')) === null) {
-      safeSetItem(draftKey('cp'), legacy);
+    // Route by the legacy recipe's alkali: a KOH (liquid soap) recipe lands on LS,
+    // everything else on CP. Otherwise coerceSettingsForProcess would silently flip a
+    // KOH recipe to NaOH when it loads under CP (different SAP → wrong lye weight).
+    let target: ProcessId = 'cp';
+    try {
+      const parsed = JSON.parse(legacy) as { settings?: { lyeType?: unknown } };
+      if (parsed?.settings?.lyeType === 'koh') target = 'ls';
+    } catch {
+      // unparseable legacy payload → default to cp
+    }
+    if (localStorage.getItem(draftKey(target)) === null) {
+      safeSetItem(draftKey(target), legacy);
+    }
+    // Seed the active process to match, so the user lands on the right tab — but only
+    // if not already set (don't clobber a returning user's choice on a repeat call).
+    if (localStorage.getItem(ACTIVE_PROCESS_KEY) === null) {
+      safeSetItem(ACTIVE_PROCESS_KEY, target);
     }
     localStorage.removeItem(LEGACY_DRAFT_KEY);
   } catch {
@@ -443,6 +468,16 @@ export function saveDraft(
   safeSetItem(draftKey(process), JSON.stringify(payload));
 }
 ```
+
+- [ ] **Step 3b: Update the EXISTING recipeStorage tests to the new arity**
+
+`recipeStorage.test.ts` already has three tests using the old signatures — they will fail until updated. Change every call:
+- `loadDraft()` → `loadDraft('cp')`
+- `saveDraft('My batch', lines, DEFAULT_SETTINGS, additives)` → `saveDraft('cp', 'My batch', lines, DEFAULT_SETTINGS, additives)`
+- `saveDraft('Legacy', {…} as never)` → `saveDraft('cp', 'Legacy', lines, {…} as never)`
+- `saveDraft('Draft', lines, DEFAULT_SETTINGS)` → `saveDraft('cp', 'Draft', lines, DEFAULT_SETTINGS)` (the localStorage-fails test)
+
+Keep their assertions otherwise unchanged — they still verify round-trip, normalize-on-load, and no-throw behavior, now scoped to the `cp` draft key.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -952,7 +987,7 @@ git commit -m "feat(web): ProcessTabs segmented control"
 
 **Interfaces:**
 - Consumes: `lyeChoicesFor`, `waterModeChoicesFor`, `LYE_TYPE_LABELS`, `WATER_MODE_LABELS` (Task 2); `ProcessId` from `../lib/process`.
-- Produces (changed): `SettingsPanel` gains a `process: ProcessId` prop; the lye-type and water-method `<select>`s render only the process's allowed options.
+- Produces (changed): `SettingsPanel` gains an **optional** `process?: ProcessId` prop (defaults to `'cp'`, so the existing tests that don't pass it keep working); the lye-type and water-method `<select>`s render only the process's allowed options.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -994,7 +1029,7 @@ describe('SettingsPanel lye gating', () => {
 });
 ```
 
-Note: the test relies on the `Lye type` label being associated with the select. Ensure the `<label>` wraps the `<select>` (it does today) and add an `aria-label="Lye type"` to the `<select>` so `getByLabelText` resolves it.
+Note: `SettingsPanel.test.tsx` **already exists** — append this `describe('SettingsPanel lye gating')` block to it (add `within` to the existing `@testing-library/react` import; don't re-declare imports it already has, and don't remove the superfat/dual/attr-lock tests). The test relies on the `Lye type` label being associated with the select: keep the `<label>` wrapping the `<select>` (it does today) and add an `aria-label="Lye type"` to the `<select>` so `getByLabelText` resolves it. The existing `dual lye type reveals the KOH blend field` test still passes because `dual` remains in CP's option set.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -1016,7 +1051,7 @@ import {
 import type { ProcessId } from '../lib/process';
 ```
 
-Add `process: ProcessId;` to `SettingsPanelProps` and destructure `process` in the component params.
+Add `process?: ProcessId;` to `SettingsPanelProps` and destructure it with a default in the component params: `process = 'cp'`. Making it optional keeps the existing SettingsPanel tests (superfat / dual-reveals-KOH-blend / NaOH-purity attr-lock) rendering without a `process` prop — they exercise CP's option set by default and must stay green.
 
 Replace the hardcoded lye-type `<select>` options:
 ```tsx
@@ -1180,3 +1215,10 @@ The `.process-tabs` classes need styles in `packages/web/src/index.css` (segment
 **Placeholder scan:** none — every code step contains complete code.
 
 **Type consistency:** `loadDraft(process)`/`saveDraft(process,…)` new arity is consumed consistently in Tasks 5 (autosave) and 6 (storage hook); `serializeRecipeFile(…, process)` and `parsed.data.process` line up between Tasks 4 and 6; `ProcessId` is defined once (Task 1) and imported everywhere; `SettingsPanel` `process` prop is produced in Task 8 and passed in Task 9.
+
+**Review revisions (post-`/code-review`, applied 2026-07-10):**
+1. **Base reconciled** — this plan now sits on `origin/main`, which includes the `waterMode`/`lyeType` sanitization fix (`0f02852`). `normalizeSettings` already coerces invalid enums to global defaults; `coerceSettingsForProcess` then re-maps `lyeType` to the process default. The two compose correctly (global default → process default); no change needed, just be aware both touch `lyeType`.
+2. **Migration no longer flips alkali** (Task 3) — the legacy single draft is routed by its `lyeType` (`koh` → LS, else CP) and the active process is seeded to match, instead of forcing CP + coercing (which silently turned a KOH liquid-soap recipe into NaOH). Two migration tests cover this.
+3. **CP is not "identical to today"** — its lye selector drops KOH (→ `naoh`/`dual`); KOH lives on the LS tab. Wording corrected in Global Constraints.
+4. **Existing tests updated, not overwritten** — Task 3 fixes the 3 old-arity `recipeStorage` tests; Task 8 makes `process` **optional (default `'cp'`)** and appends to the existing `SettingsPanel.test.tsx` (preserving the superfat/dual/attr-lock guards) rather than recreating it.
+5. **Execution caution:** `npm test` runs `tsc --noEmit` across all packages, so the *full* build is red between Tasks 3–6 (arity change lands before its callers). Use the per-task filtered `vitest` runs as written; only run full `npm test` at Task 9.
