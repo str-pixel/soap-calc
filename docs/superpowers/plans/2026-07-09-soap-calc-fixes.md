@@ -1,5 +1,25 @@
 # Soap-Calc Bug Fixes Implementation Plan
 
+> ## ✅ STATUS: COMPLETE (2026-07-09)
+>
+> All tasks in this plan were implemented and committed. The unchecked boxes below are historical — **do not re-run them.**
+>
+> | Task | Commit |
+> |------|--------|
+> | 1 dual-lye split | `edaa5ea` |
+> | 2 line-weight reconcile | `e35da95` |
+> | 3 water% default | `fc950f3` |
+> | 4 skip no-op commits | `b9c5058` |
+> | 5 OilPicker | `2e9c6bc` + `a20cfa3` |
+> | 6 doseUnit import | `dee4244` |
+> | 7 dedup weight errors | `d284ef5` |
+> | 8 unknown-oil missing | `778ea7a` |
+> | 9 dead alias keys | `48d7579` |
+> | 10 SAP delta epsilon | `2847739` |
+> | 11 autosave committed | `03a752b` |
+>
+> **Decision D1 — RESOLVED (`d6dcaa5`):** implemented as a **renormalize-over-covered-weight hybrid** (renormalize + `<80%` coverage "estimate" mode with `~` prefix and suppressed out-of-range flag). This **reverses** this doc's stated default of Option A ("keep diluted"). The body text below is left unchanged for history.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Fix the 12 confirmed correctness/UX defects (plus one decision item) surfaced by the adversarial code review, each with a regression test.
