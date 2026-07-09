@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inferCategory } from './normalize.js';
+import { inferCategory, LEGACY_TO_FNWL_ALIASES, normalizeOilName } from './normalize.js';
 
 describe('inferCategory', () => {
   it('classifies mustard oil as triglyceride despite low saponifiable %', () => {
@@ -16,5 +16,13 @@ describe('inferCategory', () => {
 
   it('classifies beeswax as wax', () => {
     expect(inferCategory('Beeswax', 'beeswax')).toBe('wax');
+  });
+});
+
+describe('LEGACY_TO_FNWL_ALIASES', () => {
+  it('every alias key is already a normalized name (else the lookup is dead)', () => {
+    for (const key of Object.keys(LEGACY_TO_FNWL_ALIASES)) {
+      expect(key).toBe(normalizeOilName(key));
+    }
   });
 });

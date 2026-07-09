@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-08T09:29:19.506Z",
+  "generatedAt": "2026-07-09T07:10:59.317Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -4564,12 +4564,30 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 175,
+          "mgKohPerGramMax": 175,
+          "mgKohPerGram": 175,
+          "sapKoh": 0.175,
+          "sapNaoh": 0.124777183600713,
+          "notes": "FNWL chart entry: Rapeseed Oil"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 175,
+          "mgKohPerGramMin": 175,
+          "mgKohPerGramMax": 175,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
           "source": "manual",
           "notes": "INCI via supplemental id — Not in local CosIng glossary index"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "raspberry-seed-oil",

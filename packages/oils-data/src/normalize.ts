@@ -45,12 +45,12 @@ export const LEGACY_TO_FNWL_ALIASES: Record<string, string[]> = {
   'sunflower oil high oleic': ['sunflower oil refined organic', 'sunflower oil'],
   'safflower oil': ['high linoleic safflower oil', 'safflower oil organic high oleic refined'],
   'safflower oil high oleic': ['safflower oil organic high oleic refined', 'safflower oil'],
-  'rice bran oil refined': ['rice bran oil'],
+  'rice bran oil': ['rice bran oil'],
   'evening primrose oil': ['evening primrose oil refined 9 gla', 'organic evening primrose oil'],
   'black cumin seed oil nigella sativa': ['black cumin seed oil organic'],
   'monoi de tahiti oil': ['monoi de tahiti oil'],
   'mustard oil kachi ghani': ['mustard oil'],
-  'rapeseed oil unrefined canola': ['rapeseed oil'],
+  'rapeseed oil canola': ['rapeseed oil'],
   'raspberry seed oil': ['red raspberry seed oil'],
 
   // Animal fats

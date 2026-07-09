@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-08T09:29:19.506Z",
+  "generatedAt": "2026-07-09T07:10:59.317Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -2039,7 +2039,7 @@
       "category": "triglyceride",
       "sapKoh": 0.175,
       "sapNaoh": 0.124777183600713,
-      "confidence": "legacy_only",
+      "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 106,
       "ins": 69,
