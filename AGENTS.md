@@ -82,6 +82,13 @@ npm run test -w @soap-calc/oils-data
 npm run test -w @soap-calc/web
 ```
 
+Browser e2e (Playwright, recipe-UI regressions; auto-starts vite on :5199):
+
+```bash
+npx playwright install chromium          # once per machine/CI
+npm run test:e2e -w @soap-calc/web
+```
+
 ## Architecture notes
 
 - `@soap-calc/core` — pure math, no I/O. Export from `src/index.ts`.
