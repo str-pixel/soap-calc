@@ -116,7 +116,8 @@ export function calculateRecipe(
   for (const row of resolved.lines) {
     if (row.weightError) {
       const label = oilById(row.line.oilId)?.displayName ?? row.line.oilId;
-      inputErrors.push(`Invalid weight for ${label}`);
+      const message = `Invalid weight for ${label}`;
+      if (!inputErrors.includes(message)) inputErrors.push(message);
     }
   }
 

@@ -130,4 +130,15 @@ describe('calculateRecipe', () => {
     expect(inputErrors).toHaveLength(0);
     expect(result?.waterWeightGrams).toBeCloseTo(330, 0);
   });
+
+  it('does not emit duplicate "Invalid weight" errors for lines sharing an oil', () => {
+    const lines = [
+      { key: 'a', oilId: 'olive-oil', weightGrams: 'x', weightPercent: '' },
+      { key: 'b', oilId: 'olive-oil', weightGrams: 'y', weightPercent: '' },
+    ];
+    const { inputErrors } = calculateRecipe(lines, { ...DEFAULT_SETTINGS, batchOilGrams: '' });
+    const weightErrors = inputErrors.filter((e) => e.startsWith('Invalid weight'));
+    expect(weightErrors.length).toBeGreaterThan(0);
+    expect(new Set(weightErrors).size).toBe(weightErrors.length);
+  });
 });
