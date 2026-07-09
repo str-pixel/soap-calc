@@ -211,3 +211,18 @@ describe('recipeFile', () => {
     expect(parsed.data.additives[0].percentOfOil).toBe('0.5');
   });
 });
+
+describe('recipe file process', () => {
+  it('serializes the process and round-trips it', () => {
+    const payload = serializeRecipeFile('R', createStarterLines(), DEFAULT_SETTINGS, [], 'ls');
+    expect(payload.process).toBe('ls');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok && parsed.data.process).toBe('ls');
+  });
+
+  it('defaults a file with no/invalid process to cp', () => {
+    const raw = JSON.stringify({ version: 2, name: 'R', lines: [], settings: DEFAULT_SETTINGS });
+    const parsed = parseRecipeFile(raw);
+    expect(parsed.ok && parsed.data.process).toBe('cp');
+  });
+});
