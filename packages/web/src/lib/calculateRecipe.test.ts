@@ -117,4 +117,17 @@ describe('calculateRecipe', () => {
     expect(result!.kohWeightGrams).toBeGreaterThan(0);
     expect((result!.kohWeightGrams / result!.lyeWeightGrams) * 100).toBeCloseTo(5, 1);
   });
+
+  it('falls back to the default water % when the Water% field is cleared', () => {
+    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000', weightPercent: '100' }];
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      waterMode: 'percent_of_oils' as const,
+      batchOilGrams: '1000',
+      waterPercentOfOils: '',
+    };
+    const { result, inputErrors } = calculateRecipe(lines, settings);
+    expect(inputErrors).toHaveLength(0);
+    expect(result?.waterWeightGrams).toBeCloseTo(330, 0);
+  });
 });

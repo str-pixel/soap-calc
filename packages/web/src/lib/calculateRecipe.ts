@@ -75,6 +75,9 @@ function waterInput(
     };
   }
 
+  if (settings.waterPercentOfOils === '') {
+    return { waterMode: 'percent_of_oils', waterPercentOfOils: undefined };
+  }
   const water = parseNonNegative(settings.waterPercentOfOils, 'water %');
   if (water.error) errors.push(water.error);
   return {
