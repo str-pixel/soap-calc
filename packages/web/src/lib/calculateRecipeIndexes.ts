@@ -33,19 +33,20 @@ export function calculateRecipeIndexes(
       continue;
     }
 
-    const ratio = row.weightGrams / totalWeight;
     coveredWeight += row.weightGrams;
-    iodineSum += oil.iodine * ratio;
-    insSum += oil.ins * ratio;
+    iodineSum += oil.iodine * row.weightGrams;
+    insSum += oil.ins * row.weightGrams;
   }
 
   if (coveredWeight <= 0) {
     return { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] };
   }
 
+  // Renormalize over covered weight so indexes stay on their usual scale; coveragePercent
+  // reports how much of the recipe is characterized.
   return {
-    iodine: iodineSum,
-    ins: insSum,
+    iodine: iodineSum / coveredWeight,
+    ins: insSum / coveredWeight,
     coveragePercent: (coveredWeight / totalWeight) * 100,
     missingOilIds: [...missingOilIds],
   };

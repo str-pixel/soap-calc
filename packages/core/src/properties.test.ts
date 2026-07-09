@@ -99,4 +99,21 @@ describe('calculateRecipeProperties', () => {
     expect(result.missingOilIds).toContain('ghost-oil');
     expect(result.coveragePercent).toBeCloseTo(50, 5);
   });
+
+  it('renormalizes properties over covered weight under partial coverage (not diluted to zero)', () => {
+    const result = calculateRecipeProperties(
+      [
+        { oilId: 'olive-oil', weightGrams: 500 },
+        { oilId: 'ghost-oil', weightGrams: 500 },
+      ],
+      lookup,
+    );
+
+    // Pure olive hardness = palmitic(13) + stearic(3) = 16, on the same 0-100 scale as
+    // the guide band — NOT halved to 8 by the uncovered 50%.
+    expect(result.properties!.hardness).toBeCloseTo(16, 5);
+    // A single covered oil renormalizes to exactly its own profile.
+    const soloOlive = calculateRecipeProperties([{ oilId: 'olive-oil', weightGrams: 500 }], lookup);
+    expect(result.properties!.hardness).toBeCloseTo(soloOlive.properties!.hardness, 5);
+  });
 });

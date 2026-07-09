@@ -63,6 +63,21 @@ test.describe('recipe UI regressions', () => {
     await expect(page.locator('.oil-picker__list')).toHaveCount(0);
   });
 
+  test('property panel marks low-coverage recipes as estimated, no false out-of-range flag', async ({ page }) => {
+    await page.goto('/');
+    // Swap the 2nd starter oil (coconut) for beeswax, which has no fatty-acid data.
+    // Property coverage drops to olive+shea = 75% (< 80%), triggering the estimate guard.
+    const picker2 = oilPickers(page).nth(1);
+    await picker2.click();
+    await picker2.fill('beeswax');
+    await page.locator('.oil-picker__option').first().click();
+    // Caption switches from "Based on" to "Estimated from"
+    await expect(page.locator('.properties-coverage').first()).toContainText(/Estimated from 75% of recipe oils/i);
+    // Values are marked approximate and the red out-of-range flag is suppressed
+    await expect(page.locator('.property-bars__value').first()).toContainText('~');
+    await expect(page.locator('.property-bars__value--outside')).toHaveCount(0);
+  });
+
   test('autosave persists the committed weight, not a mid-typed value', async ({ page }) => {
     await page.goto('/');
     const committed = await weightInputs(page).first().inputValue();

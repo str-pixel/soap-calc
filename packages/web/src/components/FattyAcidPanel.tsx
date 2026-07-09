@@ -48,12 +48,19 @@ const DISPLAY_GROUPS = [
 
 const SCALE_MAX = 100;
 
+// Below this coverage the profile is renormalized over a small known base — treat as
+// an estimate and don't hard-flag values as out-of-band.
+const LOW_COVERAGE_PERCENT = 80;
+
 function inGuideBand(value: number, low: number, high: number): boolean {
   return value >= low && value <= high;
 }
 
 export function FattyAcidPanel({ result }: FattyAcidPanelProps) {
   const partial = result.profile ? result.coveragePercent < 99.9 : false;
+  const lowCoverage = result.profile
+    ? result.coveragePercent < LOW_COVERAGE_PERCENT
+    : false;
 
   if (!result.profile) {
     return (
@@ -75,7 +82,8 @@ export function FattyAcidPanel({ result }: FattyAcidPanelProps) {
 
       {partial && (
         <p className="properties-coverage">
-          Based on {Math.round(result.coveragePercent)}% of recipe oils
+          {lowCoverage ? 'Estimated from' : 'Based on'}{' '}
+          {Math.round(result.coveragePercent)}% of recipe oils
           {result.missingOilIds.length > 0 && (
             <>
               {' '}
@@ -100,8 +108,9 @@ export function FattyAcidPanel({ result }: FattyAcidPanelProps) {
               <div className="property-bars__label">
                 <span>{guide.label}</span>
                 <span
-                  className={`property-bars__value${inBand ? '' : ' property-bars__value--outside'}`}
+                  className={`property-bars__value${inBand || lowCoverage ? '' : ' property-bars__value--outside'}`}
                 >
+                  {lowCoverage ? '~' : ''}
                   {formatSoapPropertyPercent(value)}
                 </span>
               </div>

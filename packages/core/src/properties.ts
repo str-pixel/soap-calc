@@ -114,17 +114,22 @@ export function calculateRecipeProperties(
       continue;
     }
 
-    const ratio = line.weightGrams / totalWeight;
     coveredWeight += line.weightGrams;
     const oilProps = oilPropertiesFromFattyAcids(oil.fattyAcids);
 
     for (const key of Object.keys(properties) as SoapPropertyName[]) {
-      properties[key] += oilProps[key] * ratio;
+      properties[key] += oilProps[key] * line.weightGrams;
     }
   }
 
   if (coveredWeight <= 0) {
     return { properties: null, coveragePercent: 0, missingOilIds: [] };
+  }
+
+  // Renormalize over the oils we have data for, so the value stays on the same 0-100
+  // scale as SOAP_PROPERTY_GUIDE. coveragePercent (below) reports how much is covered.
+  for (const key of Object.keys(properties) as SoapPropertyName[]) {
+    properties[key] /= coveredWeight;
   }
 
   return {

@@ -22,6 +22,10 @@ const PROPERTY_ORDER: SoapPropertyName[] = [
 
 const SCALE_MAX = 100;
 
+// Below this coverage the metrics are renormalized over a small known base, so treat
+// them as estimates: keep the value on-scale but don't hard-flag it as out-of-range.
+const LOW_COVERAGE_PERCENT = 80;
+
 type PropertiesPanelProps = {
   result: RecipePropertiesResult;
   indexes: RecipeIndexResult;
@@ -29,8 +33,12 @@ type PropertiesPanelProps = {
 
 export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
+  const lowCoverage = result.properties
+    ? result.coveragePercent < LOW_COVERAGE_PERCENT
+    : false;
   const showIndexes = indexes.iodine !== null && indexes.ins !== null;
   const indexPartial = indexes.coveragePercent < 99.9;
+  const indexLowCoverage = showIndexes && indexes.coveragePercent < LOW_COVERAGE_PERCENT;
 
   return (
     <section className="panel">
@@ -42,6 +50,7 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
           <div>
             <dt>Iodine</dt>
             <dd>
+              {indexLowCoverage ? '~' : ''}
               {Math.round(indexes.iodine!)}
               <span className="recipe-indexes__range">
                 {' '}
@@ -52,6 +61,7 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
           <div>
             <dt>INS</dt>
             <dd>
+              {indexLowCoverage ? '~' : ''}
               {Math.round(indexes.ins!)}
               <span className="recipe-indexes__range">
                 {' '}
@@ -64,7 +74,8 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
 
       {showIndexes && indexPartial && (
         <p className="properties-coverage">
-          Iodine/INS based on {Math.round(indexes.coveragePercent)}% of recipe oils
+          Iodine/INS {indexLowCoverage ? 'estimated from' : 'based on'}{' '}
+          {Math.round(indexes.coveragePercent)}% of recipe oils
           {indexes.missingOilIds.length > 0 && (
             <>
               {' '}
@@ -87,7 +98,8 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
         <>
           {partial && (
             <p className="properties-coverage">
-              Based on {Math.round(result.coveragePercent)}% of recipe oils
+              {lowCoverage ? 'Estimated from' : 'Based on'}{' '}
+              {Math.round(result.coveragePercent)}% of recipe oils
               {result.missingOilIds.length > 0 && (
                 <>
                   {' '}
@@ -114,8 +126,9 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
                   <div className="property-bars__label">
                     <span>{SOAP_PROPERTY_LABELS[key]}</span>
                     <span
-                      className={`property-bars__value${inSuggested ? '' : ' property-bars__value--outside'}`}
+                      className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
                     >
+                      {lowCoverage ? '~' : ''}
                       {formatSoapPropertyPercent(value)}
                     </span>
                   </div>

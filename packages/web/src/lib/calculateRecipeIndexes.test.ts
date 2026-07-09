@@ -30,4 +30,22 @@ describe('calculateRecipeIndexes', () => {
     const result = calculateRecipeIndexes(lines, DEFAULT_SETTINGS);
     expect(result.missingOilIds).toContain('ghost-oil');
   });
+
+  it('renormalizes indexes over covered weight under partial coverage (not diluted)', () => {
+    const soloOlive = calculateRecipeIndexes(
+      [{ key: 'a', oilId: 'olive-oil', weightGrams: '500' }],
+      DEFAULT_SETTINGS,
+    );
+    const partial = calculateRecipeIndexes(
+      [
+        { key: 'a', oilId: 'olive-oil', weightGrams: '500' },
+        { key: 'b', oilId: 'ghost-oil', weightGrams: '500' },
+      ],
+      DEFAULT_SETTINGS,
+    );
+    // Covered oil is pure olive either way, so the index is olive's value, not halved.
+    expect(partial.iodine!).toBeCloseTo(soloOlive.iodine!, 5);
+    expect(partial.ins!).toBeCloseTo(soloOlive.ins!, 5);
+    expect(partial.coveragePercent).toBeCloseTo(50, 5);
+  });
 });

@@ -30,16 +30,21 @@ export function calculateRecipeFattyAcids(
       continue;
     }
 
-    const ratio = line.weightGrams / totalWeight;
     coveredWeight += line.weightGrams;
 
     for (const [acid, pct] of Object.entries(oil.fattyAcids)) {
-      profile[acid] = (profile[acid] ?? 0) + pct * ratio;
+      profile[acid] = (profile[acid] ?? 0) + pct * line.weightGrams;
     }
   }
 
   if (coveredWeight <= 0) {
     return { profile: null, coveragePercent: 0, missingOilIds: [] };
+  }
+
+  // Renormalize over covered weight so the profile reads as a fatty-acid % of the
+  // characterized oils (coveragePercent reports how much of the recipe that is).
+  for (const acid of Object.keys(profile)) {
+    profile[acid] /= coveredWeight;
   }
 
   return {
