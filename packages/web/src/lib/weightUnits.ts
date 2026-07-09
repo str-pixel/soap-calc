@@ -58,11 +58,6 @@ export function parseInputDisplayToGrams(
   return String(Math.round(grams * 10) / 10);
 }
 
-/** @deprecated Use parseInputDisplayToGrams for commit paths. */
-export function inputDisplayToGramsString(displayStr: string, unit: WeightUnit): string {
-  const parsed = parseInputDisplayToGrams(displayStr, unit);
-  return parsed ?? '';
-}
 
 export function parsePercentInput(value: string): string | null {
   if (value === '') return '';
