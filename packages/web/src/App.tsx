@@ -107,7 +107,7 @@ export default function App() {
     batchGramsTarget > 0 &&
     lineTotals.totalWeightGrams > 0 &&
     Math.abs(lineTotals.totalWeightGrams - batchGramsTarget) > 1;
-  useRecipeAutosave(recipeName, previewState.lines, previewSettings, additives);
+  useRecipeAutosave(recipeName, lines, settings, additives);
   const { result, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
     previewState.lines,
     previewSettings,
