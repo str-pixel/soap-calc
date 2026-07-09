@@ -89,6 +89,37 @@ select {
   gap: 1rem;
 }
 
+.process-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  align-self: flex-start;
+}
+
+.process-tabs__tab {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 500;
+  font: inherit;
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.process-tabs__tab:hover:not(.process-tabs__tab--active) {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.process-tabs__tab--active {
+  background: var(--accent);
+  color: var(--surface);
+}
+
 .recipe-toolbar {
   display: flex;
   flex-wrap: wrap;
