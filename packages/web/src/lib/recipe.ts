@@ -163,5 +163,3 @@ export function createStarterLines(): RecipeLine[] {
   ];
 }
 
-/** @deprecated Use createStarterLines() — keys must be unique per instance. */
-export const STARTER_LINES: RecipeLine[] = createStarterLines();
