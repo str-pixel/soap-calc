@@ -21,4 +21,13 @@ describe('calculateRecipeIndexes', () => {
     expect(result.iodine).toBeNull();
     expect(result.ins).toBeNull();
   });
+
+  it('reports an unknown oil id as missing for indexes', () => {
+    const lines = [
+      { key: 'a', oilId: 'olive-oil', weightGrams: '500' },
+      { key: 'b', oilId: 'ghost-oil', weightGrams: '500' },
+    ];
+    const result = calculateRecipeIndexes(lines, DEFAULT_SETTINGS);
+    expect(result.missingOilIds).toContain('ghost-oil');
+  });
 });

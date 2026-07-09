@@ -29,7 +29,7 @@ export function calculateRecipeIndexes(
   for (const row of weighted) {
     const oil = oilById(row.line.oilId);
     if (!oil || oil.iodine === undefined || oil.ins === undefined) {
-      if (oil) missingOilIds.add(row.line.oilId);
+      missingOilIds.add(row.line.oilId);
       continue;
     }
 

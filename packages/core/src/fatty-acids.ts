@@ -26,7 +26,7 @@ export function calculateRecipeFattyAcids(
   for (const line of weighted) {
     const oil = oilLookup[line.oilId];
     if (!oil?.propertiesAvailable || !oil.fattyAcids) {
-      if (oil) missingOilIds.add(line.oilId);
+      missingOilIds.add(line.oilId);
       continue;
     }
 

@@ -86,4 +86,17 @@ describe('calculateRecipeProperties', () => {
     expect(result.properties).toBeNull();
     expect(result.coveragePercent).toBe(0);
   });
+
+  it('reports an unknown oil id (absent from lookup) as missing', () => {
+    const result = calculateRecipeProperties(
+      [
+        { oilId: 'olive-oil', weightGrams: 500 },
+        { oilId: 'ghost-oil', weightGrams: 500 },
+      ],
+      lookup,
+    );
+
+    expect(result.missingOilIds).toContain('ghost-oil');
+    expect(result.coveragePercent).toBeCloseTo(50, 5);
+  });
 });
