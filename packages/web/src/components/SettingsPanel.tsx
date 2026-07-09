@@ -9,12 +9,12 @@ type FieldSpec = ReturnType<typeof purityFieldsFor>[number];
 
 function NumericSettingField({
   spec,
-  settings,
-  setSettings,
+  value,
+  onValueChange,
 }: {
   spec: FieldSpec;
-  settings: RecipeSettings;
-  setSettings: React.Dispatch<React.SetStateAction<RecipeSettings>>;
+  value: string;
+  onValueChange: (value: string) => void;
 }) {
   return (
     <label className="field">
@@ -25,8 +25,8 @@ function NumericSettingField({
         min={spec.min}
         max={spec.max}
         step={spec.step}
-        value={settings[spec.key]}
-        onChange={(e) => setSettings((s) => ({ ...s, [spec.key]: e.target.value }))}
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
       />
     </label>
   );
@@ -57,6 +57,9 @@ export function SettingsPanel({
   liveOilBatchFraction,
   onApplySuggestedOilGrams,
 }: SettingsPanelProps) {
+  const updateField = (key: FieldSpec['key'], value: string) =>
+    setSettings((s) => ({ ...s, [key]: value }));
+  const waterField = WATER_FIELDS[settings.waterMode];
   return (
     <section className="panel">
       <h2 className="panel__title">Settings</h2>
@@ -130,17 +133,17 @@ export function SettingsPanel({
         </label>
 
         <NumericSettingField
-          spec={WATER_FIELDS[settings.waterMode]}
-          settings={settings}
-          setSettings={setSettings}
+          spec={waterField}
+          value={settings[waterField.key]}
+          onValueChange={(v) => updateField(waterField.key, v)}
         />
 
         {purityFieldsFor(settings.lyeType).map((spec) => (
           <NumericSettingField
             key={spec.key}
             spec={spec}
-            settings={settings}
-            setSettings={setSettings}
+            value={settings[spec.key]}
+            onValueChange={(v) => updateField(spec.key, v)}
           />
         ))}
       </div>
