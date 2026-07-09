@@ -41,13 +41,16 @@ Plugs into the just-merged decomposition: `App.tsx` (shell) → `useRecipeStorag
 
 ### Units (each: what it does · interface · deps)
 
-1. **`PROCESS_DEFINITIONS` — `@soap-calc/core`** (new, pure config).
+1. **`PROCESS_DEFINITIONS` — `packages/web/src/lib/process.ts`** (new, pure config).
    Describes each process. Single source of truth for defaults and structural composition.
+   *(Lives in web, not core: it references the web-owned `RecipeSettings`, and nothing in
+   `@soap-calc/core` consumes `process` — the calc engine already takes `lyeType`/`superfat` directly.)*
    - Shape per id: `{ id: ProcessId; label: string; defaultSettings: Partial<RecipeSettings>;
      lyeChoices: LyeType[]; waterModeChoices: WaterMode[]; panels: PanelKey[];
      finishing: 'cure' | 'sequester'; terms: { finishingLabel: string } }`.
    - `ProcessId = 'cp' | 'hp' | 'ls'`. `PanelKey` is a stable enum of panel slots.
-   - Interface: `PROCESS_DEFINITIONS[process]`, `PROCESS_IDS`. Deps: `RecipeSettings`/`LyeType`/`WaterMode` types only.
+   - Interface: `PROCESS_DEFINITIONS[process]`, `PROCESS_IDS`, `defaultsForProcess`, `coerceSettingsForProcess`.
+     Deps: web `RecipeSettings` + `LyeType`/`WaterMode` from `@soap-calc/core`.
    - CP/HP: `defaultLye 'naoh'`, `lyeChoices ['naoh','dual']`, bar panels, `finishing 'cure'`.
      LS: `defaultLye 'koh'`, `lyeChoices ['koh','dual']`, liquid panels, `finishing 'sequester'`.
 
