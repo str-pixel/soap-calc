@@ -88,16 +88,33 @@ export function normalizeSplitLiquid(
   };
 }
 
+const WATER_MODES = ['percent_of_oils', 'lye_concentration', 'lye_water_ratio'] as const;
+const LYE_TYPES = ['naoh', 'koh', 'dual'] as const;
+
+function isWaterMode(value: unknown): value is WaterMode {
+  return typeof value === 'string' && (WATER_MODES as readonly string[]).includes(value);
+}
+
+function isLyeType(value: unknown): value is RecipeSettings['lyeType'] {
+  return typeof value === 'string' && (LYE_TYPES as readonly string[]).includes(value);
+}
+
 export function normalizeSettings(
   partial: Partial<RecipeSettings> | null | undefined,
 ): RecipeSettings {
   const weightUnit = isWeightUnit(partial?.weightUnit)
     ? partial.weightUnit
     : DEFAULT_SETTINGS.weightUnit;
+  const waterMode = isWaterMode(partial?.waterMode)
+    ? partial.waterMode
+    : DEFAULT_SETTINGS.waterMode;
+  const lyeType = isLyeType(partial?.lyeType) ? partial.lyeType : DEFAULT_SETTINGS.lyeType;
   return {
     ...DEFAULT_SETTINGS,
     ...partial,
     weightUnit,
+    waterMode,
+    lyeType,
     ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
   };

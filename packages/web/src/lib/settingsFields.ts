@@ -1,8 +1,13 @@
 import type { RecipeSettings } from './recipe';
 
-/** Keys of RecipeSettings whose value is a string — the only fields a numeric text input may bind to. */
+/**
+ * Keys of RecipeSettings whose value type is exactly `string` — the only fields a
+ * free-text numeric input may bind to. `string extends T` (not `T extends string`)
+ * excludes the enum/union fields (weightUnit/lyeType/waterMode) and object fields
+ * (splitLiquid), so only genuine free-text string fields qualify.
+ */
 type SettingsNumericKey = {
-  [K in keyof RecipeSettings]: RecipeSettings[K] extends string ? K : never;
+  [K in keyof RecipeSettings]: string extends RecipeSettings[K] ? K : never;
 }[keyof RecipeSettings];
 
 type NumericFieldSpec = { key: SettingsNumericKey; label: string; min: number; max?: number; step: number };

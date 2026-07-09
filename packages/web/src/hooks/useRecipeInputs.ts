@@ -1,4 +1,6 @@
 import { commitDrafts } from '../lib/commitDrafts';
+import type { createDebouncer } from '../lib/debouncedCommit';
+type Debouncer = ReturnType<typeof createDebouncer>;
 import {
   addRecipeLine,
   resyncFromWeights,
@@ -32,7 +34,7 @@ export type UseRecipeInputsDeps = {
   setDraft: (id: string, value: string) => void;
   clearDraft: (id: string) => void;
   clearAllDrafts: () => void;
-  debouncer: { flush: (id: string, fn: () => void) => void; cancel: (id: string) => void; cancelAll: () => void };
+  debouncer: Pick<Debouncer, 'flush' | 'cancel' | 'cancelAll'>;
   editor: {
     applySynced: (synced: SyncedRecipe) => void;
     applySyncedUpdate: (u: (lines: RecipeLine[], batch: string) => SyncedRecipe) => void;
