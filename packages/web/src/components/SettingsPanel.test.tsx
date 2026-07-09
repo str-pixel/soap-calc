@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { afterEach, describe, expect, it, test } from 'vitest';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { useState } from 'react';
 import { SettingsPanel } from './SettingsPanel';
 import { DEFAULT_SETTINGS, type RecipeSettings } from '../lib/recipe';
@@ -44,4 +44,33 @@ test('NaOH purity field is driven by config with correct min/max/step', () => {
   expect(input.getAttribute('min')).toBe('1');
   expect(input.getAttribute('max')).toBe('100');
   expect(input.getAttribute('step')).toBe('0.1');
+});
+
+const noop = () => {};
+const baseProps = {
+  setSettings: noop,
+  weightUnit: 'g' as const,
+  totalOilGrams: 0,
+  lyeGrams: 0,
+  waterSuggestion: null,
+  moldSizerInput: DEFAULT_MOLD_SIZER_INPUT,
+  onMoldSizerChange: noop,
+  liveOilBatchFraction: null,
+  onApplySuggestedOilGrams: noop,
+};
+
+describe('SettingsPanel lye gating', () => {
+  it('LS process offers only KOH and dual (no plain NaOH bar option)', () => {
+    render(<SettingsPanel {...baseProps} process="ls" settings={{ ...DEFAULT_SETTINGS, lyeType: 'koh' }} />);
+    const select = screen.getByLabelText(/lye type/i);
+    const options = within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
+    expect(options).toEqual(['koh', 'dual']);
+  });
+
+  it('CP process offers NaOH and dual', () => {
+    render(<SettingsPanel {...baseProps} process="cp" settings={DEFAULT_SETTINGS} />);
+    const select = screen.getByLabelText(/lye type/i);
+    const options = within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
+    expect(options).toEqual(['naoh', 'dual']);
+  });
 });
