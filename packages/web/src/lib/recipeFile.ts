@@ -56,6 +56,9 @@ function parseAdditivePercentOfOil(value: Record<string, unknown>): string {
   const doseUnit = value.doseUnit ?? value.percentUnit;
   if (typeof value.percentOfOil === 'number' && Number.isFinite(value.percentOfOil)) {
     if (value.percentOfOil < 0) return '';
+    if (doseUnit === 'ppo' || doseUnit === 'ppoOz') {
+      return ppoOzToPercentOfOil(value.percentOfOil);
+    }
     return roundPercentString(value.percentOfOil);
   }
   if (typeof value.percentOfOil === 'string' && value.percentOfOil !== '') {

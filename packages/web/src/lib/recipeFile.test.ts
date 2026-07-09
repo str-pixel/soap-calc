@@ -178,4 +178,36 @@ describe('recipeFile', () => {
       error: 'Invalid additive line in recipe file',
     });
   });
+
+  it('converts a numeric PPO additive dose using doseUnit on import', () => {
+    const payload = {
+      version: 2,
+      name: 'Numeric PPO',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [
+        { catalogId: '', name: 'Fragrance', percentOfOil: 0.5, doseUnit: 'ppo', addAt: 'trace' },
+      ],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].percentOfOil).toBe('3.13');
+  });
+
+  it('keeps a numeric percent dose as-is when no doseUnit is given', () => {
+    const payload = {
+      version: 2,
+      name: 'Numeric percent',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [{ catalogId: '', name: 'Fragrance', percentOfOil: 0.5, addAt: 'trace' }],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].percentOfOil).toBe('0.5');
+  });
 });
