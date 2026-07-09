@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useRecipeStorage } from './useRecipeStorage';
-import { saveDraft, saveActiveProcess } from '../lib/recipeStorage';
+import { saveDraft, saveActiveProcess, loadDraft } from '../lib/recipeStorage';
 import { DEFAULT_SETTINGS, createStarterLines, createEmptyAdditives } from '../lib/recipe';
 
 // Node 22+ defines its own (experimental, file-backed) global `localStorage` getter
@@ -63,5 +63,12 @@ describe('useRecipeStorage process', () => {
     act(() => result.current.handleNew());
     expect(result.current.settings.lyeType).toBe('koh');
     expect(result.current.settings.superfatPercent).toBe('2');
+  });
+
+  it('setProcess flushes the current workspace so a just-made edit is not lost', () => {
+    const { result } = renderHook(() => useRecipeStorage()); // defaults to cp
+    act(() => result.current.setSettings((s) => ({ ...s, superfatPercent: '6' })));
+    act(() => result.current.setProcess('hp'));
+    expect(loadDraft('cp')?.settings.superfatPercent).toBe('6');
   });
 });

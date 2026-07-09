@@ -84,6 +84,11 @@ export function useRecipeStorage() {
 
   function setProcess(next: ProcessId) {
     if (next === process) return;
+    // Flush the outgoing process's workspace synchronously: the 500ms autosave
+    // debounce (useRecipeAutosave) gets cancelled by effect-cleanup when state
+    // swaps below, so without this an edit made <500ms before a tab switch is
+    // silently lost.
+    saveDraft(process, recipeName, lines, settings, additives);
     saveActiveProcess(next);
     const ws = loadWorkspace(next);
     setProcessState(next);
