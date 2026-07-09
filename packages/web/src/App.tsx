@@ -15,23 +15,15 @@ import { useRecipeAutosave } from './hooks/useRecipeAutosave';
 import { useFormulationInsights } from './hooks/useFormulationInsights';
 import { useRecipeCalculation } from './hooks/useRecipeCalculation';
 import { useRecipeEditor } from './hooks/useRecipeEditor';
+import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeProperties } from './hooks/useRecipeProperties';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
-import { commitDrafts } from './lib/commitDrafts';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from './lib/batchSheet';
 import { computeRecipeAdditives, computeSplitLiquidGrams } from './lib/calculateAdditives';
 import { oilBatchFraction } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
-import {
-  addRecipeLine,
-  resyncFromWeights,
-  syncBatchTotalEdit,
-  syncPercentEdit,
-  syncWeightEdit,
-  type SyncedRecipe,
-} from './lib/lineWeightSync';
 import { isTarOil, oilById } from './lib/oils';
-import { newLineKey, type RecipeLine, type WeightUnit } from './lib/recipe';
+import type { WeightUnit } from './lib/recipe';
 import {
   computeRecipeLineTotals,
   formatRecipePercentTotal,
@@ -44,8 +36,6 @@ import {
 import {
   formatWeight,
   gramsStringToInputDisplay,
-  parseInputDisplayToGrams,
-  parsePercentInput,
   WEIGHT_UNITS,
   WEIGHT_UNIT_OPTIONS,
 } from './lib/weightUnits';
@@ -81,7 +71,12 @@ export default function App() {
   );
   const weightUnit = settings.weightUnit;
   const weightUnitConfig = WEIGHT_UNITS[weightUnit];
-  const batchInputId = 'batch-total';
+  const inputs = useRecipeInputs({
+    lines, settings, additives, weightUnit,
+    drafts, getDraft, setDraft, clearDraft, clearAllDrafts,
+    debouncer, editor: { applySynced, applySyncedUpdate, linesRef, batchRef },
+    setLines, setSettings, handleExport, handleNew, handleImportFile,
+  });
 
   const previewState = usePreviewRecipeState(
     lines,
@@ -217,146 +212,9 @@ export default function App() {
     weightUnit,
   ]);
 
-  function updateLine(key: string, patch: Partial<RecipeLine>) {
-    setLines((prev) =>
-      prev.map((line) => {
-        if (line.key !== key) return line;
-        const next = { ...line, ...patch };
-        if (patch.oilId) {
-          const oil = oilById(patch.oilId);
-          if (!isTarOil(oil)) {
-            const { tarLyeTreatment: _, ...rest } = next;
-            return rest;
-          }
-          if (!next.tarLyeTreatment) {
-            return { ...next, tarLyeTreatment: 'include' };
-          }
-        }
-        return next;
-      }),
-    );
-  }
-
-  function weightInputId(key: string): string {
-    return `weight-${key}`;
-  }
-
-  function percentInputId(key: string): string {
-    return `percent-${key}`;
-  }
-
-  function flushCommittedDrafts(): SyncedRecipe {
-    debouncer.cancelAll();
-    const synced = commitDrafts(linesRef.current, batchRef.current, drafts, weightUnit);
-    if (Object.keys(drafts).length > 0) {
-      clearAllDrafts();
-      applySynced(synced);
-    }
-    return synced;
-  }
-
-  function discardDrafts() {
-    debouncer.cancelAll();
-    clearAllDrafts();
-  }
-
-  function handleExportCommitted() {
-    const synced = flushCommittedDrafts();
-    handleExport({
-      lines: synced.lines,
-      settings: { ...settings, batchOilGrams: synced.batchOilGrams },
-      additives,
-    });
-  }
-
-  function handleNewRecipe() {
-    discardDrafts();
-    handleNew();
-  }
-
-  function handleApplySuggestedOilGrams(oilGrams: number) {
-    const rounded = Math.round(oilGrams);
-    if (rounded <= 0) return;
-    const batchOilGrams = String(rounded);
-    discardDrafts();
-    applySyncedUpdate((prev) => ({
-      lines: syncBatchTotalEdit(prev, batchOilGrams),
-      batchOilGrams,
-    }));
-  }
-
   function handlePrintBatchSheet() {
     if (!batchSheetData) return;
     window.print();
-  }
-
-  function commitWeightInput(key: string, displayValue: string) {
-    const hadDraft = weightInputId(key) in drafts;
-    clearDraft(weightInputId(key));
-    if (!hadDraft) return;
-    const weightGrams = parseInputDisplayToGrams(displayValue, weightUnit);
-    if (weightGrams === null) return;
-
-    applySyncedUpdate((prev, batchOilGrams) =>
-      syncWeightEdit(prev, key, weightGrams, batchOilGrams),
-    );
-  }
-
-  function commitPercentInput(key: string, displayValue: string) {
-    const hadDraft = percentInputId(key) in drafts;
-    clearDraft(percentInputId(key));
-    if (!hadDraft) return;
-    const weightPercent = parsePercentInput(displayValue);
-    if (weightPercent === null) return;
-
-    applySyncedUpdate((prev, batchOilGrams) =>
-      syncPercentEdit(prev, key, weightPercent, batchOilGrams),
-    );
-  }
-
-  function commitBatchInput(displayValue: string) {
-    const hadDraft = batchInputId in drafts;
-    clearDraft(batchInputId);
-    if (!hadDraft) return;
-    const batchOilGrams = parseInputDisplayToGrams(displayValue, weightUnit);
-    if (batchOilGrams === null) return;
-
-    if (batchOilGrams === '') {
-      applySyncedUpdate((prev) => resyncFromWeights(prev));
-      return;
-    }
-
-    applySyncedUpdate((prev) => ({
-      lines: syncBatchTotalEdit(prev, batchOilGrams),
-      batchOilGrams,
-    }));
-  }
-
-  function handleWeightChange(key: string, displayValue: string) {
-    setDraft(weightInputId(key), displayValue);
-  }
-
-  function handleBatchChange(displayValue: string) {
-    setDraft(batchInputId, displayValue);
-  }
-
-  function setWeightUnit(nextUnit: WeightUnit) {
-    debouncer.cancelAll();
-    clearAllDrafts();
-    setSettings((s) => ({ ...s, weightUnit: nextUnit }));
-  }
-
-  function addLine() {
-    const newLine = { key: newLineKey(), oilId: 'olive-oil', weightGrams: '', weightPercent: '' };
-    applySyncedUpdate((prev, batchOilGrams) => addRecipeLine(prev, batchOilGrams, newLine));
-  }
-
-  function removeLine(key: string) {
-    if (lines.length <= 1) return;
-    applySyncedUpdate((prev) => resyncFromWeights(prev.filter((line) => line.key !== key)));
-    clearDraft(weightInputId(key));
-    clearDraft(percentInputId(key));
-    debouncer.cancel(weightInputId(key));
   }
 
   return (
@@ -382,10 +240,10 @@ export default function App() {
           </label>
 
           <div className="recipe-toolbar__actions">
-            <button type="button" className="btn btn--ghost" onClick={handleNewRecipe}>
+            <button type="button" className="btn btn--ghost" onClick={inputs.handleNewRecipe}>
               New
             </button>
-            <button type="button" className="btn btn--ghost" onClick={handleExportCommitted}>
+            <button type="button" className="btn btn--ghost" onClick={inputs.handleExportCommitted}>
               Export
             </button>
             <button
@@ -411,7 +269,7 @@ export default function App() {
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  discardDrafts();
+                  inputs.discardDrafts();
                   handleImportFile(file);
                 }
                 e.target.value = '';
@@ -432,7 +290,7 @@ export default function App() {
           <section className="panel">
           <div className="panel__head">
             <h2 className="panel__title">Recipe oils</h2>
-            <button type="button" className="btn btn--ghost" onClick={addLine}>
+            <button type="button" className="btn btn--ghost" onClick={inputs.addLine}>
               + Add oil
             </button>
           </div>
@@ -443,7 +301,7 @@ export default function App() {
               <select
                 className="input"
                 value={weightUnit}
-                onChange={(e) => setWeightUnit(e.target.value as WeightUnit)}
+                onChange={(e) => inputs.setWeightUnit(e.target.value as WeightUnit)}
               >
                 {WEIGHT_UNIT_OPTIONS.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -461,11 +319,13 @@ export default function App() {
                 min={0}
                 step={weightUnitConfig.inputStep}
                 value={getDraft(
-                  batchInputId,
+                  inputs.batchInputId,
                   gramsStringToInputDisplay(previewState.batchOilGrams, weightUnit),
                 )}
-                onChange={(e) => handleBatchChange(e.target.value)}
-                onBlur={(e) => debouncer.flush(batchInputId, () => commitBatchInput(e.target.value))}
+                onChange={(e) => inputs.handleBatchChange(e.target.value)}
+                onBlur={(e) =>
+                  debouncer.flush(inputs.batchInputId, () => inputs.commitBatchInput(e.target.value))
+                }
               />
             </label>
           </div>
@@ -488,7 +348,7 @@ export default function App() {
                   <div className="recipe-table__oil">
                     <OilPicker
                       value={line.oilId}
-                      onChange={(oilId) => updateLine(line.key, { oilId })}
+                      onChange={(oilId) => inputs.updateLine(line.key, { oilId })}
                     />
                     {showTar && (
                       <label className="tar-treatment">
@@ -496,7 +356,7 @@ export default function App() {
                         <select
                           value={line.tarLyeTreatment ?? 'include'}
                           onChange={(e) =>
-                            updateLine(line.key, {
+                            inputs.updateLine(line.key, {
                               tarLyeTreatment: e.target.value as 'include' | 'additive',
                             })
                           }
@@ -514,13 +374,13 @@ export default function App() {
                       min={0}
                       step={weightUnitConfig.inputStep}
                       value={getDraft(
-                        weightInputId(line.key),
+                        inputs.weightInputId(line.key),
                         previewWeightDisplay(line, previewLine, weightUnit),
                       )}
-                      onChange={(e) => handleWeightChange(line.key, e.target.value)}
+                      onChange={(e) => inputs.handleWeightChange(line.key, e.target.value)}
                       onBlur={(e) =>
-                        debouncer.flush(weightInputId(line.key), () =>
-                          commitWeightInput(line.key, e.target.value),
+                        debouncer.flush(inputs.weightInputId(line.key), () =>
+                          inputs.commitWeightInput(line.key, e.target.value),
                         )
                       }
                       aria-label={`Weight in ${weightUnitConfig.short}`}
@@ -534,11 +394,11 @@ export default function App() {
                       max={100}
                       step={0.1}
                       value={getDraft(
-                        percentInputId(line.key),
+                        inputs.percentInputId(line.key),
                         previewPercentDisplay(line, previewLine),
                       )}
-                      onChange={(e) => setDraft(percentInputId(line.key), e.target.value)}
-                      onBlur={(e) => commitPercentInput(line.key, e.target.value)}
+                      onChange={(e) => setDraft(inputs.percentInputId(line.key), e.target.value)}
+                      onBlur={(e) => inputs.commitPercentInput(line.key, e.target.value)}
                       aria-label="Oil percent"
                     />
                   </div>
@@ -546,7 +406,7 @@ export default function App() {
                     <button
                       type="button"
                       className="btn btn--icon"
-                      onClick={() => removeLine(line.key)}
+                      onClick={() => inputs.removeLine(line.key)}
                       aria-label="Remove oil"
                       disabled={lines.length <= 1}
                     >
@@ -794,7 +654,7 @@ export default function App() {
               weightUnit={weightUnit}
               oilBatchFraction={liveOilBatchFraction}
               onChange={setMoldSizerInput}
-              onApply={handleApplySuggestedOilGrams}
+              onApply={inputs.handleApplySuggestedOilGrams}
             />
 
             <label className="field">
