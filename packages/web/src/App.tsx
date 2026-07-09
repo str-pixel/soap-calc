@@ -1,5 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
-import { suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { useRef, useState, useEffect } from 'react';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { OilPicker } from './components/OilPicker';
@@ -12,26 +11,17 @@ import { SplitLiquidPanel } from './components/SplitLiquidPanel';
 import { useDebouncedCommit } from './hooks/useDebouncedCommit';
 import { useDraftInputs } from './hooks/useDraftInputs';
 import { useRecipeAutosave } from './hooks/useRecipeAutosave';
-import { useFormulationInsights } from './hooks/useFormulationInsights';
-import { useRecipeCalculation } from './hooks/useRecipeCalculation';
 import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeInputs } from './hooks/useRecipeInputs';
-import { useRecipeProperties } from './hooks/useRecipeProperties';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
-import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from './lib/batchSheet';
-import { computeRecipeAdditives, computeSplitLiquidGrams } from './lib/calculateAdditives';
-import { oilBatchFraction } from './lib/moldSizer';
+import { useRecipeViewModel } from './hooks/useRecipeViewModel';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 import { isTarOil, oilById } from './lib/oils';
 import type { WeightUnit } from './lib/recipe';
 import {
-  computeRecipeLineTotals,
   formatRecipePercentTotal,
-  hasRecipeLineData,
   previewPercentDisplay,
   previewWeightDisplay,
-  usePreviewRecipeState,
-  usePreviewSettings,
 } from './lib/recipePreview';
 import {
   formatWeight,
@@ -78,142 +68,11 @@ export default function App() {
     setLines, setSettings, handleExport, handleNew, handleImportFile,
   });
 
-  const previewState = usePreviewRecipeState(
-    lines,
-    settings.batchOilGrams,
-    drafts,
-    weightUnit,
-  );
-  const previewLineByKey = useMemo(
-    () => Object.fromEntries(previewState.lines.map((line) => [line.key, line])),
-    [previewState.lines],
-  );
-  const previewSettings = usePreviewSettings(settings, previewState.batchOilGrams);
-  const lineTotals = useMemo(
-    () => computeRecipeLineTotals(previewState.lines),
-    [previewState.lines],
-  );
-  const showRecipeTotals = hasRecipeLineData(previewState.lines);
-  const batchGramsTarget = Number(previewState.batchOilGrams);
-  const percentTotalOff =
-    lineTotals.totalPercent > 0 && Math.abs(lineTotals.totalPercent - 100) > 0.05;
-  const weightTotalOff =
-    Number.isFinite(batchGramsTarget) &&
-    batchGramsTarget > 0 &&
-    lineTotals.totalWeightGrams > 0 &&
-    Math.abs(lineTotals.totalWeightGrams - batchGramsTarget) > 1;
+  const vm = useRecipeViewModel({ recipeName, lines, settings, additives, drafts, weightUnit });
   useRecipeAutosave(recipeName, lines, settings, additives);
-  const { result, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
-    previewState.lines,
-    previewSettings,
-  );
-  const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? result?.totalOilWeightGrams ?? 0;
-  const computedAdditives = useMemo(
-    () => computeRecipeAdditives(additives, totalOilGrams),
-    [additives, totalOilGrams],
-  );
-  const splitLiquidGrams =
-    previewSettings.splitLiquid.enabled
-      ? computeSplitLiquidGrams(previewSettings.splitLiquid.percentOfOil, totalOilGrams)
-      : null;
-  const waterSuggestion = useMemo(() => {
-    if (
-      !result ||
-      !splitLiquidGrams ||
-      !previewSettings.splitLiquid.enabled ||
-      previewSettings.splitLiquid.addAt !== 'trace'
-    ) {
-      return null;
-    }
-    return suggestLyeWaterWithSplitLiquid({
-      waterGrams: result.waterWeightGrams,
-      lyeGrams: result.lyeWeightGrams,
-      totalOilGrams: totalOilGrams,
-      splitLiquidGrams,
-      waterMode: previewSettings.waterMode,
-    });
-  }, [
-    previewSettings.splitLiquid.addAt,
-    previewSettings.splitLiquid.enabled,
-    previewSettings.waterMode,
-    result,
-    splitLiquidGrams,
-    totalOilGrams,
-  ]);
-  const { properties, indexes } = useRecipeProperties(previewState.lines, previewSettings);
-  const { fattyAcids, insights } = useFormulationInsights(
-    previewState.lines,
-    previewSettings,
-    properties,
-    result,
-    {
-      excludedOilWeightGrams: displayTotals?.excludedFromLyeOilWeightGrams ?? 0,
-      splitLiquidGrams,
-      suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
-      splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
-      additives: computedAdditives,
-    },
-  );
-  const lyeLabel =
-    settings.lyeType === 'dual'
-      ? 'Total alkali'
-      : settings.lyeType === 'naoh'
-        ? 'NaOH'
-        : 'KOH';
-  const additiveGrams = computedAdditives.reduce((sum, item) => sum + item.grams, 0);
-  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0);
-  const batchWeightWithExtras =
-    (displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0) + extrasGrams;
-  const liveOilBatchFraction = useMemo(() => {
-    if (!displayTotals || batchWeightWithExtras <= 0) return null;
-    return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);
-  }, [batchWeightWithExtras, displayTotals]);
-  const batchSheetData = useMemo(() => {
-    if (!result || !displayTotals || !canPrintBatchSheet(result, displayTotals, inputErrors)) {
-      return null;
-    }
-    return buildBatchSheetData({
-      recipeName,
-      batchNotes: settings.batchNotes,
-      weightUnit,
-      lyeLabel,
-      settings: previewSettings,
-      lines: previewState.lines,
-      linePercents,
-      result,
-      displayTotals,
-      additives: computedAdditives,
-      splitLiquid: previewSettings.splitLiquid,
-      splitLiquidGrams,
-      properties,
-      indexes,
-      batchWeightWithExtras,
-      waterModeLabel: waterModeLabel(previewSettings),
-      fattyAcids,
-      insights,
-    });
-  }, [
-    batchWeightWithExtras,
-    computedAdditives,
-    displayTotals,
-    indexes,
-    inputErrors.length,
-    linePercents,
-    lyeLabel,
-    fattyAcids,
-    insights,
-    previewSettings,
-    previewState.lines,
-    properties,
-    recipeName,
-    result,
-    settings.batchNotes,
-    splitLiquidGrams,
-    weightUnit,
-  ]);
 
   function handlePrintBatchSheet() {
-    if (!batchSheetData) return;
+    if (!vm.batchSheetData) return;
     window.print();
   }
 
@@ -250,7 +109,7 @@ export default function App() {
               type="button"
               className="btn btn--ghost"
               onClick={handlePrintBatchSheet}
-              disabled={!batchSheetData}
+              disabled={!vm.batchSheetData}
             >
               Print
             </button>
@@ -320,7 +179,7 @@ export default function App() {
                 step={weightUnitConfig.inputStep}
                 value={getDraft(
                   inputs.batchInputId,
-                  gramsStringToInputDisplay(previewState.batchOilGrams, weightUnit),
+                  gramsStringToInputDisplay(vm.previewState.batchOilGrams, weightUnit),
                 )}
                 onChange={(e) => inputs.handleBatchChange(e.target.value)}
                 onBlur={(e) =>
@@ -341,7 +200,7 @@ export default function App() {
             {lines.map((line) => {
               const oil = oilById(line.oilId);
               const showTar = isTarOil(oil);
-              const previewLine = previewLineByKey[line.key];
+              const previewLine = vm.previewLineByKey[line.key];
 
               return (
                 <div key={line.key} className="recipe-table__row">
@@ -417,18 +276,18 @@ export default function App() {
               );
             })}
             <div
-              className={`recipe-table__foot${percentTotalOff || weightTotalOff ? ' recipe-table__foot--warn' : ''}`}
+              className={`recipe-table__foot${vm.percentTotalOff || vm.weightTotalOff ? ' recipe-table__foot--warn' : ''}`}
               aria-live="polite"
             >
               <span>Total</span>
               <span className="recipe-table__total-weight">
-                {showRecipeTotals && lineTotals.totalWeightGrams > 0
-                  ? formatWeight(lineTotals.totalWeightGrams, weightUnit)
+                {vm.showRecipeTotals && vm.lineTotals.totalWeightGrams > 0
+                  ? formatWeight(vm.lineTotals.totalWeightGrams, weightUnit)
                   : '—'}
               </span>
               <span className="recipe-table__total-pct">
-                {showRecipeTotals
-                  ? formatRecipePercentTotal(lineTotals.totalPercent)
+                {vm.showRecipeTotals
+                  ? formatRecipePercentTotal(vm.lineTotals.totalPercent)
                   : '—'}
               </span>
               <span className="sr-only">Actions</span>
@@ -438,7 +297,7 @@ export default function App() {
 
         <AdditivesPanel
           additives={additives}
-          totalOilGrams={totalOilGrams}
+          totalOilGrams={vm.totalOilGrams}
           weightUnit={weightUnit}
           onChange={setAdditives}
         />
@@ -634,11 +493,11 @@ export default function App() {
 
             <SplitLiquidPanel
               splitLiquid={settings.splitLiquid}
-              totalOilGrams={totalOilGrams}
-              lyeGrams={result?.lyeWeightGrams ?? 0}
+              totalOilGrams={vm.totalOilGrams}
+              lyeGrams={vm.result?.lyeWeightGrams ?? 0}
               weightUnit={weightUnit}
               waterMode={settings.waterMode}
-              waterSuggestion={waterSuggestion}
+              waterSuggestion={vm.waterSuggestion}
               onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
               onApplySuggestedWater={(waterPercentOfOils) =>
                 setSettings((s) => ({
@@ -652,7 +511,7 @@ export default function App() {
             <MoldSizerPanel
               input={moldSizerInput}
               weightUnit={weightUnit}
-              oilBatchFraction={liveOilBatchFraction}
+              oilBatchFraction={vm.liveOilBatchFraction}
               onChange={setMoldSizerInput}
               onApply={inputs.handleApplySuggestedOilGrams}
             />
@@ -670,22 +529,22 @@ export default function App() {
           </section>
 
           <ResultsPanel
-            result={result}
-            inputErrors={inputErrors}
-            lyeLabel={lyeLabel}
-            lyeType={previewSettings.lyeType}
-            kohBlendPercent={previewSettings.kohBlendPercent}
-            displayTotals={displayTotals}
+            result={vm.result}
+            inputErrors={vm.inputErrors}
+            lyeLabel={vm.lyeLabel}
+            lyeType={vm.previewSettings.lyeType}
+            kohBlendPercent={vm.previewSettings.kohBlendPercent}
+            displayTotals={vm.displayTotals}
             weightUnit={weightUnit}
-            waterMode={previewSettings.waterMode}
-            splitLiquid={previewSettings.splitLiquid}
-            splitLiquidGrams={splitLiquidGrams}
-            additives={computedAdditives}
+            waterMode={vm.previewSettings.waterMode}
+            splitLiquid={vm.previewSettings.splitLiquid}
+            splitLiquidGrams={vm.splitLiquidGrams}
+            additives={vm.computedAdditives}
           />
 
-          <PropertiesPanel result={properties} indexes={indexes} />
-          <FattyAcidPanel result={fattyAcids} />
-          <FormulationInsightsPanel insights={insights} />
+          <PropertiesPanel result={vm.properties} indexes={vm.indexes} />
+          <FattyAcidPanel result={vm.fattyAcids} />
+          <FormulationInsightsPanel insights={vm.insights} />
         </aside>
       </main>
 
@@ -695,7 +554,7 @@ export default function App() {
         </p>
       </footer>
 
-      <BatchSheet data={batchSheetData} />
+      <BatchSheet data={vm.batchSheetData} />
     </div>
   );
 }
