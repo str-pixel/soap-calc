@@ -1,6 +1,11 @@
 import type { RecipeSettings } from './recipe';
 
-type NumericFieldSpec = { key: keyof RecipeSettings; label: string; min: number; max?: number; step: number };
+/** Keys of RecipeSettings whose value is a string — the only fields a numeric text input may bind to. */
+type SettingsNumericKey = {
+  [K in keyof RecipeSettings]: RecipeSettings[K] extends string ? K : never;
+}[keyof RecipeSettings];
+
+type NumericFieldSpec = { key: SettingsNumericKey; label: string; min: number; max?: number; step: number };
 
 export const PURITY_FIELDS = {
   naoh: { key: 'naohPurityPercent', label: 'NaOH purity %', min: 1, max: 100, step: 0.1 },

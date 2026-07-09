@@ -25,10 +25,8 @@ function NumericSettingField({
         min={spec.min}
         max={spec.max}
         step={spec.step}
-        value={settings[spec.key] as string}
-        onChange={(e) =>
-          setSettings((s) => ({ ...s, [spec.key]: e.target.value }) as RecipeSettings)
-        }
+        value={settings[spec.key]}
+        onChange={(e) => setSettings((s) => ({ ...s, [spec.key]: e.target.value }))}
       />
     </label>
   );
