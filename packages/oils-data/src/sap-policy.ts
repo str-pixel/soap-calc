@@ -25,7 +25,7 @@ export function sapDeltaPercent(legacy: number, fnwl: number): number {
 export function resolvePrimarySap(legacySapKoh: number, fnwlSapKoh: number): SapResolution {
   const deltaPct = sapDeltaPercent(legacySapKoh, fnwlSapKoh);
 
-  if (deltaPct <= VERIFIED_DELTA_PCT) {
+  if (deltaPct <= VERIFIED_DELTA_PCT + 1e-9) {
     const sapKoh = fnwlSapKoh;
     return {
       sapKoh,
@@ -37,7 +37,7 @@ export function resolvePrimarySap(legacySapKoh: number, fnwlSapKoh: number): Sap
     };
   }
 
-  if (deltaPct <= DISPUTED_DELTA_PCT) {
+  if (deltaPct <= DISPUTED_DELTA_PCT + 1e-9) {
     const sapKoh = Math.max(legacySapKoh, fnwlSapKoh);
     return {
       sapKoh,

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-09T07:10:59.317Z",
+  "generatedAt": "2026-07-09T07:12:35.224Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -218,9 +218,9 @@
       ],
       "inciName": "Adansonia Digitata (Baobab) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.2,
-      "sapNaoh": 0.14260249554367202,
-      "confidence": "estimated",
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 75,
       "ins": 125,

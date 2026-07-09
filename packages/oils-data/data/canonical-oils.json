@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-09T07:10:59.317Z",
+  "generatedAt": "2026-07-09T07:12:35.224Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -509,9 +509,9 @@
       ],
       "inciName": "Adansonia Digitata (Baobab) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.2,
-      "sapNaoh": 0.14260249554367202,
-      "sapMgKohPerGram": 200,
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
       "iodine": 75,
       "ins": 125,
       "fattyAcids": {
@@ -549,19 +549,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
-          "source": "manual",
-          "sapKoh": 0.2,
-          "sapNaoh": 0.14260249554367202,
-          "notes": "FNWL differs by 5.0%; using higher SAP for lye safety"
-        },
-        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" found in FNWL-derived CosIng glossary index"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "estimated"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "beeswax",

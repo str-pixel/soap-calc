@@ -10,6 +10,14 @@ describe('resolvePrimarySap', () => {
     expect(r.confidence).toBe('verified');
   });
 
+  it('treats an exactly-5% delta as within tolerance despite float rounding', () => {
+    const r = resolvePrimarySap(0.2, 0.19);
+    expect(r.strategy).toBe('fnwl_agrees');
+    expect(r.confidence).toBe('verified');
+    expect(r.primarySource).toBe('fnwl');
+    expect(r.sapKoh).toBeCloseTo(0.19, 10);
+  });
+
   it('uses conservative (higher) SAP between 5% and 10%', () => {
     const r = resolvePrimarySap(0.186, 0.173);
     expect(r.strategy).toBe('conservative_blend');
