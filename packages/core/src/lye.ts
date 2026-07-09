@@ -135,11 +135,11 @@ export function lyeForOilLine(
     const naohCoeff = sapCoefficientForLye(oil, 'naoh', purity);
     const kohCoeff = sapCoefficientForLye(oil, 'koh', purity);
     const fullNaohGrams = naohCoeff * line.weightGrams * superfatFactor;
-    const blendDenom = (1 - kohFraction) * naohCoeff + kohFraction * kohCoeff;
+    const blendDenom = (1 - kohFraction) * kohCoeff + kohFraction * naohCoeff;
     if (blendDenom <= 0) {
       return { lyeGrams: 0, naohGrams: 0, kohGrams: 0 };
     }
-    const totalAlkali = (fullNaohGrams * naohCoeff) / blendDenom;
+    const totalAlkali = (fullNaohGrams * kohCoeff) / blendDenom;
     const naohGrams = totalAlkali * (1 - kohFraction);
     const kohGrams = totalAlkali * kohFraction;
     return { lyeGrams: naohGrams + kohGrams, naohGrams, kohGrams };

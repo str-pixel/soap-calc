@@ -246,32 +246,58 @@ describe('calculateLye', () => {
     expect(result.totalOilWeightGrams).toBe(0);
   });
 
-  it('calculates dual NaOH + KOH blend with 5% KOH by weight', () => {
-    const result = calculateLye({
+  it('dual NaOH + KOH blend conserves saponification moles and holds the mass split', () => {
+    const NAOH_MM = 40;
+    const KOH_MM = 56.1;
+    const base = {
       oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
       oilLookup: { 'olive-oil': OLIVE },
       superfatPercent: 5,
-      lyeType: 'dual',
-      kohBlendPercent: 5,
       naohPurityPercent: 100,
       kohPurityPercent: 90,
-    });
-
-    const naohCoeff = 0.19 / 1.4025;
-    const kohCoeff = 0.19 / 0.9;
-    const fullNaoh = 1000 * naohCoeff * 0.95;
-    const kohFraction = 0.05;
-    const blendDenom = (1 - kohFraction) * naohCoeff + kohFraction * kohCoeff;
-    const totalAlkali = (fullNaoh * naohCoeff) / blendDenom;
-    const naohExpected = totalAlkali * (1 - kohFraction);
-    const kohExpected = totalAlkali * kohFraction;
-
-    expect(result.naohWeightGrams).toBeCloseTo(naohExpected, 0);
-    expect(result.kohWeightGrams).toBeCloseTo(kohExpected, 0);
-    expect(result.lyeWeightGrams).toBeCloseTo(naohExpected + kohExpected, 1);
+    } as const;
+    const molesNeeded = calculateLye({ ...base, lyeType: 'naoh' }).lyeWeightGrams / NAOH_MM;
+    const result = calculateLye({ ...base, lyeType: 'dual', kohBlendPercent: 5 });
+    // Pure-alkali moles delivered (crude grams x purity / molar mass) must saponify the oil.
+    const molesProvided =
+      (result.naohWeightGrams * 1.0) / NAOH_MM + (result.kohWeightGrams * 0.9) / KOH_MM;
+    expect(molesProvided).toBeCloseTo(molesNeeded, 4);
     expect((result.kohWeightGrams / result.lyeWeightGrams) * 100).toBeCloseTo(5, 1);
     expect(result.lines[0].naohGrams).toBe(result.naohWeightGrams);
     expect(result.lines[0].kohGrams).toBe(result.kohWeightGrams);
+  });
+
+  it('dual lye conserves saponification moles across the NaOH+KOH split', () => {
+    const NAOH_MM = 40;
+    const KOH_MM = 56.1;
+    const base = {
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      naohPurityPercent: 100,
+      kohPurityPercent: 100,
+    } as const;
+    const molesNeeded = calculateLye({ ...base, lyeType: 'naoh' }).lyeWeightGrams / NAOH_MM;
+    for (const kohBlendPercent of [0, 5, 25, 50]) {
+      const r = calculateLye({ ...base, lyeType: 'dual', kohBlendPercent });
+      const molesProvided = r.naohWeightGrams / NAOH_MM + r.kohWeightGrams / KOH_MM;
+      expect(molesProvided).toBeCloseTo(molesNeeded, 6);
+      expect((r.kohWeightGrams / r.lyeWeightGrams) * 100).toBeCloseTo(kohBlendPercent, 4);
+    }
+  });
+
+  it('dual lye at 0% KOH equals the NaOH-only result', () => {
+    const base = {
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      naohPurityPercent: 100,
+      kohPurityPercent: 100,
+    } as const;
+    const naohOnly = calculateLye({ ...base, lyeType: 'naoh' });
+    const dual0 = calculateLye({ ...base, lyeType: 'dual', kohBlendPercent: 0 });
+    expect(dual0.naohWeightGrams).toBeCloseTo(naohOnly.lyeWeightGrams, 6);
+    expect(dual0.kohWeightGrams).toBeCloseTo(0, 6);
   });
 
   it('rejects invalid koh blend percent for dual lye', () => {
