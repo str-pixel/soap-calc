@@ -54,6 +54,8 @@ export function useFormulationInsights(
     return analyzeFormulation({
       properties: properties.properties,
       fattyAcids: fattyAcids.profile,
+      fattyAcidCoveragePercent: fattyAcids.coveragePercent,
+      propertyCoveragePercent: properties.coveragePercent,
       totalOilGrams: lyeResult.totalOilWeightGrams,
       superfatPercent: Number(settings.superfatPercent) || 0,
       lyeConcentrationPercent: lyeResult.lyeConcentrationPercent,
@@ -78,6 +80,8 @@ export function useFormulationInsights(
     });
   }, [
     fattyAcids.profile,
+    fattyAcids.coveragePercent,
+    properties.coveragePercent,
     lines,
     lyeResult,
     options.additives,

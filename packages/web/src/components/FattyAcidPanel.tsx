@@ -4,6 +4,7 @@ import {
   formatPropertyRangePercent,
   formatSoapPropertyPercent,
   FATTY_ACID_GROUP_KEYS,
+  LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
   sumFattyAcids,
 } from '@soap-calc/core';
@@ -48,18 +49,15 @@ const DISPLAY_GROUPS = [
 
 const SCALE_MAX = 100;
 
-// Below this coverage the profile is renormalized over a small known base — treat as
-// an estimate and don't hard-flag values as out-of-band.
-const LOW_COVERAGE_PERCENT = 80;
-
 function inGuideBand(value: number, low: number, high: number): boolean {
   return value >= low && value <= high;
 }
 
 export function FattyAcidPanel({ result }: FattyAcidPanelProps) {
   const partial = result.profile ? result.coveragePercent < 99.9 : false;
+  // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.profile
-    ? result.coveragePercent < LOW_COVERAGE_PERCENT
+    ? Math.round(result.coveragePercent) < LOW_COVERAGE_PERCENT
     : false;
 
   if (!result.profile) {
@@ -78,7 +76,7 @@ export function FattyAcidPanel({ result }: FattyAcidPanelProps) {
   return (
     <section className="panel">
       <h2 className="panel__title">Fatty acid profile</h2>
-      <p className="panel__subtitle">Percent of total oil weight</p>
+      <p className="panel__subtitle">Percent of oil weight</p>
 
       {partial && (
         <p className="properties-coverage">
@@ -120,7 +118,7 @@ export function FattyAcidPanel({ result }: FattyAcidPanelProps) {
                 aria-valuemin={0}
                 aria-valuemax={SCALE_MAX}
                 aria-valuenow={Math.round(value * 10) / 10}
-                aria-label={`${guide.label}: ${formatSoapPropertyPercent(value)}`}
+                aria-label={`${guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}`}
               >
                 <span
                   className="property-bars__band property-bars__band--preference"

@@ -100,6 +100,25 @@ describe('analyzeFormulation', () => {
     expect(sumFattyAcids(profile, ['linoleic', 'linolenic'])).toBe(30);
   });
 
+  it('suppresses fatty-acid threshold insights below the low-coverage estimate threshold', () => {
+    const profile = { linoleic: 20, linolenic: 10, oleic: 50 }; // poly = 30 > 28
+    const base = {
+      properties: null,
+      fattyAcids: profile,
+      totalOilGrams: 500,
+      superfatPercent: 10,
+      lyeConcentrationPercent: 33,
+      waterLyeRatio: 2,
+      waterGrams: 200,
+      lyeGrams: 100,
+    };
+    const covered = analyzeFormulation({ ...base, fattyAcidCoveragePercent: 100 });
+    const lowCoverage = analyzeFormulation({ ...base, fattyAcidCoveragePercent: 10 });
+    expect(covered.some((i) => i.code === 'high_poly_high_superfat')).toBe(true);
+    // The panels show these as ~estimates below the threshold; the insight must not assert them.
+    expect(lowCoverage.some((i) => i.code === 'high_poly_high_superfat')).toBe(false);
+  });
+
   it('warns when split liquid at trace and water is not reduced', () => {
     const insights = analyzeFormulation({
       properties: null,

@@ -5,6 +5,7 @@ import {
   formatSoapPropertyPercent,
   IODINE_GUIDE,
   INS_GUIDE,
+  LOW_COVERAGE_PERCENT,
   SOAP_PROPERTY_GUIDE,
   SOAP_PROPERTY_LABELS,
 } from '@soap-calc/core';
@@ -22,10 +23,6 @@ const PROPERTY_ORDER: SoapPropertyName[] = [
 
 const SCALE_MAX = 100;
 
-// Below this coverage the metrics are renormalized over a small known base, so treat
-// them as estimates: keep the value on-scale but don't hard-flag it as out-of-range.
-const LOW_COVERAGE_PERCENT = 80;
-
 type PropertiesPanelProps = {
   result: RecipePropertiesResult;
   indexes: RecipeIndexResult;
@@ -33,12 +30,14 @@ type PropertiesPanelProps = {
 
 export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
+  // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.properties
-    ? result.coveragePercent < LOW_COVERAGE_PERCENT
+    ? Math.round(result.coveragePercent) < LOW_COVERAGE_PERCENT
     : false;
   const showIndexes = indexes.iodine !== null && indexes.ins !== null;
   const indexPartial = indexes.coveragePercent < 99.9;
-  const indexLowCoverage = showIndexes && indexes.coveragePercent < LOW_COVERAGE_PERCENT;
+  const indexLowCoverage =
+    showIndexes && Math.round(indexes.coveragePercent) < LOW_COVERAGE_PERCENT;
 
   return (
     <section className="panel">
@@ -138,7 +137,7 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
                     aria-valuemin={0}
                     aria-valuemax={SCALE_MAX}
                     aria-valuenow={Math.round(value * 10) / 10}
-                    aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${formatSoapPropertyPercent(value)}`}
+                    aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}`}
                   >
                     <span
                       className="property-bars__band property-bars__band--suggested"

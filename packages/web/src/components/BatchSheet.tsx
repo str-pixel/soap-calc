@@ -1,4 +1,8 @@
-import { formatSoapPropertyPercent, saturatedUnsaturatedRatio } from '@soap-calc/core';
+import {
+  formatSoapPropertyPercent,
+  LOW_COVERAGE_PERCENT,
+  saturatedUnsaturatedRatio,
+} from '@soap-calc/core';
 import type { BatchSheetData } from '../lib/batchSheet';
 import {
   additiveStageLabel,
@@ -44,6 +48,11 @@ export function BatchSheet({ data }: BatchSheetProps) {
 
   const isDualLye = settings.lyeType === 'dual';
   const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
+  const propsPartial = !!properties?.properties && properties.coveragePercent < 99.9;
+  const propsLow = !!properties?.properties && properties.coveragePercent < LOW_COVERAGE_PERCENT;
+  const indexLow =
+    (indexes.iodine !== null || indexes.ins !== null) &&
+    indexes.coveragePercent < LOW_COVERAGE_PERCENT;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -201,37 +210,46 @@ export function BatchSheet({ data }: BatchSheetProps) {
           <dl className="batch-sheet__dl batch-sheet__dl--compact">
             <div>
               <dt>Hardness</dt>
-              <dd>{formatSoapPropertyPercent(properties.properties.hardness)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.hardness)}</dd>
             </div>
             <div>
               <dt>Cleansing</dt>
-              <dd>{formatSoapPropertyPercent(properties.properties.cleansing)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.cleansing)}</dd>
             </div>
             <div>
               <dt>Conditioning</dt>
-              <dd>{formatSoapPropertyPercent(properties.properties.condition)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.condition)}</dd>
             </div>
             <div>
               <dt>Bubbly</dt>
-              <dd>{formatSoapPropertyPercent(properties.properties.bubbly)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.bubbly)}</dd>
             </div>
             <div>
               <dt>Creamy</dt>
-              <dd>{formatSoapPropertyPercent(properties.properties.creamy)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.creamy)}</dd>
             </div>
             {indexes.iodine !== null && (
               <div>
                 <dt>Iodine</dt>
-                <dd>{formatBatchSheetProperty(indexes.iodine)}</dd>
+                <dd>{indexLow ? '~' : ''}{formatBatchSheetProperty(indexes.iodine)}</dd>
               </div>
             )}
             {indexes.ins !== null && (
               <div>
                 <dt>INS</dt>
-                <dd>{formatBatchSheetProperty(indexes.ins)}</dd>
+                <dd>{indexLow ? '~' : ''}{formatBatchSheetProperty(indexes.ins)}</dd>
               </div>
             )}
           </dl>
+          {propsPartial && (
+            <p className="batch-sheet__notes">
+              {propsLow ? 'Estimated from' : 'Based on'}{' '}
+              {Math.round(properties.coveragePercent)}% of recipe oils
+              {properties.missingOilIds.length > 0
+                ? ` (no data: ${properties.missingOilIds.map(batchSheetOilName).join(', ')})`
+                : ''}
+            </p>
+          )}
         </section>
       )}
 

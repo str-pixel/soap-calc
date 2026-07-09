@@ -4,7 +4,7 @@ import {
   type FattyAcidProfile,
 } from './fatty-acids.js';
 import type { LyeType, WaterMode } from './lye.js';
-import type { SoapProperties } from './properties.js';
+import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
 import {
   additiveMatches,
   recipeOilMatches,
@@ -23,6 +23,10 @@ export type FormulationInsight = {
 export type FormulationAnalysisInput = {
   properties: SoapProperties | null;
   fattyAcids: FattyAcidProfile | null;
+  /** Coverage of the fatty-acid profile (0–100); threshold insights are gated below LOW_COVERAGE_PERCENT. */
+  fattyAcidCoveragePercent?: number;
+  /** Coverage of the bar-property estimate (0–100); the cleansing insight is gated below LOW_COVERAGE_PERCENT. */
+  propertyCoveragePercent?: number;
   totalOilGrams: number;
   superfatPercent: number;
   lyeConcentrationPercent: number;
@@ -87,7 +91,10 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     }
   }
 
-  if (input.fattyAcids) {
+  if (
+    input.fattyAcids &&
+    (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+  ) {
     const lauricMyristic = sumFattyAcids(
       input.fattyAcids,
       FATTY_ACID_GROUP_KEYS.lauricMyristic,
@@ -128,7 +135,10 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     }
   }
 
-  if (input.properties) {
+  if (
+    input.properties &&
+    (input.propertyCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+  ) {
     const cleansing = input.properties.cleansing;
     const superfat = input.superfatPercent;
     if (cleansing > 22 && superfat < 6) {

@@ -47,6 +47,13 @@ export const SOAP_PROPERTY_GUIDE: Record<SoapPropertyName, { low: number; high: 
   creamy: { low: 16, high: 48 },
 };
 
+/**
+ * Below this fatty-acid-data coverage, renormalized properties/indexes rest on a small
+ * known base, so they are treated as estimates: the UI marks them "~"/"estimated" and
+ * suppresses out-of-range flags, and threshold-based insights are not asserted.
+ */
+export const LOW_COVERAGE_PERCENT = 80;
+
 export function oilPropertiesFromFattyAcids(
   fattyAcids: FattyAcidProfile,
 ): SoapProperties {
