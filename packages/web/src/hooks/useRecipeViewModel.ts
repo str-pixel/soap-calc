@@ -45,8 +45,6 @@ export type RecipeViewModel = {
   fattyAcids: ReturnType<typeof useFormulationInsights>['fattyAcids'];
   insights: ReturnType<typeof useFormulationInsights>['insights'];
   lyeLabel: string;
-  additiveGrams: number;
-  extrasGrams: number;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
@@ -214,8 +212,6 @@ export function useRecipeViewModel({
     fattyAcids,
     insights,
     lyeLabel,
-    additiveGrams,
-    extrasGrams,
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,

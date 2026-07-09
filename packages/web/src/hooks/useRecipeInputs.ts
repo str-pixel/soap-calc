@@ -29,7 +29,6 @@ export type UseRecipeInputsDeps = {
   additives: AdditiveLine[];
   weightUnit: WeightUnit;
   drafts: Record<string, string>;
-  getDraft: (id: string, canonicalDisplay: string) => string;
   setDraft: (id: string, value: string) => void;
   clearDraft: (id: string) => void;
   clearAllDrafts: () => void;
@@ -44,7 +43,6 @@ export type UseRecipeInputsDeps = {
   setSettings: React.Dispatch<React.SetStateAction<RecipeSettings>>;
   handleExport: (payload: { lines: RecipeLine[]; settings: RecipeSettings; additives: AdditiveLine[] }) => void;
   handleNew: () => void;
-  handleImportFile: (file: File) => void;
 };
 
 export type RecipeInputs = {
@@ -136,7 +134,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   }
 
   function commitWeightInput(key: string, displayValue: string) {
-    const hadDraft = weightInputId(key) in drafts;
+    const hadDraft = shouldCommitDraft(drafts, weightInputId(key));
     clearDraft(weightInputId(key));
     if (!hadDraft) return;
     const weightGrams = parseInputDisplayToGrams(displayValue, weightUnit);
@@ -148,7 +146,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   }
 
   function commitPercentInput(key: string, displayValue: string) {
-    const hadDraft = percentInputId(key) in drafts;
+    const hadDraft = shouldCommitDraft(drafts, percentInputId(key));
     clearDraft(percentInputId(key));
     if (!hadDraft) return;
     const weightPercent = parsePercentInput(displayValue);
@@ -160,7 +158,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   }
 
   function commitBatchInput(displayValue: string) {
-    const hadDraft = batchInputId in drafts;
+    const hadDraft = shouldCommitDraft(drafts, batchInputId);
     clearDraft(batchInputId);
     if (!hadDraft) return;
     const batchOilGrams = parseInputDisplayToGrams(displayValue, weightUnit);

@@ -48,9 +48,9 @@ export default function App() {
   const weightUnit = settings.weightUnit;
   const inputs = useRecipeInputs({
     lines, settings, additives, weightUnit,
-    drafts, getDraft, setDraft, clearDraft, clearAllDrafts,
+    drafts, setDraft, clearDraft, clearAllDrafts,
     debouncer, editor: { applySynced, applySyncedUpdate, linesRef, batchRef },
-    setLines, setSettings, handleExport, handleNew, handleImportFile,
+    setLines, setSettings, handleExport, handleNew,
   });
 
   const vm = useRecipeViewModel({ recipeName, lines, settings, additives, drafts, weightUnit });
