@@ -1,0 +1,67 @@
+/** @vitest-environment jsdom */
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { useRecipeStorage } from './useRecipeStorage';
+import { saveDraft, saveActiveProcess } from '../lib/recipeStorage';
+import { DEFAULT_SETTINGS, createStarterLines, createEmptyAdditives } from '../lib/recipe';
+
+// Node 22+ defines its own (experimental, file-backed) global `localStorage` getter
+// that shadows jsdom's implementation unless `--localstorage-file` is configured.
+// Stub it with an in-memory fake instead, same as recipeStorage.test.ts.
+function createStorage(): Storage {
+  const store = new Map<string, string>();
+  return {
+    get length() {
+      return store.size;
+    },
+    clear() {
+      store.clear();
+    },
+    getItem(key: string) {
+      return store.get(key) ?? null;
+    },
+    key(index: number) {
+      return [...store.keys()][index] ?? null;
+    },
+    removeItem(key: string) {
+      store.delete(key);
+    },
+    setItem(key: string, value: string) {
+      store.set(key, value);
+    },
+  };
+}
+
+beforeEach(() => {
+  vi.stubGlobal('localStorage', createStorage());
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('useRecipeStorage process', () => {
+  it('starts on the persisted active process and loads that draft', () => {
+    saveActiveProcess('ls');
+    saveDraft('ls', 'LS draft', createStarterLines(), { ...DEFAULT_SETTINGS, lyeType: 'koh' }, createEmptyAdditives());
+    const { result } = renderHook(() => useRecipeStorage());
+    expect(result.current.process).toBe('ls');
+    expect(result.current.recipeName).toBe('LS draft');
+  });
+
+  it('setProcess swaps to that process draft (seeding defaults when empty)', () => {
+    const { result } = renderHook(() => useRecipeStorage());
+    expect(result.current.process).toBe('cp');
+    act(() => result.current.setProcess('ls'));
+    expect(result.current.process).toBe('ls');
+    expect(result.current.settings.lyeType).toBe('koh'); // seeded from LS defaults
+  });
+
+  it('handleNew seeds settings from the active process defaults', () => {
+    const { result } = renderHook(() => useRecipeStorage());
+    act(() => result.current.setProcess('ls'));
+    act(() => result.current.handleNew());
+    expect(result.current.settings.lyeType).toBe('koh');
+    expect(result.current.settings.superfatPercent).toBe('2');
+  });
+});

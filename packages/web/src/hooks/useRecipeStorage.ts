@@ -9,7 +9,18 @@ import {
   type RecipeLine,
   type RecipeSettings,
 } from '../lib/recipe';
-import { loadDraft, saveDraft } from '../lib/recipeStorage';
+import {
+  loadActiveProcess,
+  loadDraft,
+  migrateLegacyDraft,
+  saveActiveProcess,
+  saveDraft,
+} from '../lib/recipeStorage';
+import {
+  coerceSettingsForProcess,
+  defaultsForProcess,
+  type ProcessId,
+} from '../lib/process';
 import {
   downloadRecipeFile,
   parseRecipeFile,
@@ -24,17 +35,38 @@ type ExportOverride = {
   additives?: AdditiveLine[];
 };
 
+function seededSettings(process: ProcessId): RecipeSettings {
+  return normalizeSettings({ ...DEFAULT_SETTINGS, ...defaultsForProcess(process) });
+}
+
+function loadWorkspace(process: ProcessId) {
+  const draft = loadDraft(process);
+  const settings = draft
+    ? coerceSettingsForProcess(normalizeSettings(draft.settings), process)
+    : seededSettings(process);
+  return {
+    name: draft?.name ?? 'Starter recipe',
+    lines: migrateRecipeLines(draft?.lines ?? createStarterLines(), settings),
+    additives: draft?.additives ?? createEmptyAdditives(),
+    settings,
+  };
+}
+
 export function useRecipeStorage() {
-  const draft = loadDraft();
-  const initialSettings = normalizeSettings(draft?.settings);
-  const [recipeName, setRecipeName] = useState(draft?.name ?? 'Starter recipe');
-  const [lines, setLines] = useState<RecipeLine[]>(
-    migrateRecipeLines(draft?.lines ?? createStarterLines(), initialSettings),
+  const initial = useRef<{ process: ProcessId; ws: ReturnType<typeof loadWorkspace> } | null>(
+    null,
   );
-  const [additives, setAdditives] = useState<AdditiveLine[]>(
-    draft?.additives ?? createEmptyAdditives(),
-  );
-  const [settings, setSettings] = useState<RecipeSettings>(initialSettings);
+  if (initial.current === null) {
+    migrateLegacyDraft();
+    const process = loadActiveProcess();
+    initial.current = { process, ws: loadWorkspace(process) };
+  }
+
+  const [process, setProcessState] = useState<ProcessId>(initial.current.process);
+  const [recipeName, setRecipeName] = useState(initial.current.ws.name);
+  const [lines, setLines] = useState<RecipeLine[]>(initial.current.ws.lines);
+  const [additives, setAdditives] = useState<AdditiveLine[]>(initial.current.ws.additives);
+  const [settings, setSettings] = useState<RecipeSettings>(initial.current.ws.settings);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -50,11 +82,22 @@ export function useRecipeStorage() {
     messageTimer.current = setTimeout(() => setSaveMessage(null), 2000);
   }
 
+  function setProcess(next: ProcessId) {
+    if (next === process) return;
+    saveActiveProcess(next);
+    const ws = loadWorkspace(next);
+    setProcessState(next);
+    setRecipeName(ws.name);
+    setLines(ws.lines);
+    setAdditives(ws.additives);
+    setSettings(ws.settings);
+  }
+
   function handleNew() {
     setRecipeName('New recipe');
     setLines(createStarterLines());
     setAdditives(createEmptyAdditives());
-    setSettings({ ...DEFAULT_SETTINGS });
+    setSettings(seededSettings(process));
   }
 
   function handleExport(override?: ExportOverride) {
@@ -62,7 +105,7 @@ export function useRecipeStorage() {
     const settingsToExport = override?.settings ?? settings;
     const additivesToExport = override?.additives ?? additives;
     downloadRecipeFile(
-      serializeRecipeFile(recipeName, linesToExport, settingsToExport, additivesToExport),
+      serializeRecipeFile(recipeName, linesToExport, settingsToExport, additivesToExport, process),
     );
     flashSaveMessage('Recipe exported');
   }
@@ -76,23 +119,31 @@ export function useRecipeStorage() {
           flashSaveMessage(parsed.error);
           return;
         }
-        const importedSettings = normalizeSettings(parsed.data.settings);
+        const nextProcess = parsed.data.process;
+        const importedSettings = coerceSettingsForProcess(
+          normalizeSettings(parsed.data.settings),
+          nextProcess,
+        );
         const importedLines = migrateRecipeLines(
           recipeLinesFromFile(parsed.data.lines),
           importedSettings,
         );
         const importedAdditives = recipeAdditivesFromFile(parsed.data.additives);
+        saveActiveProcess(nextProcess);
+        setProcessState(nextProcess);
         setRecipeName(parsed.data.name);
         setLines(importedLines);
         setAdditives(importedAdditives);
         setSettings(importedSettings);
-        saveDraft(parsed.data.name, importedLines, importedSettings, importedAdditives);
+        saveDraft(nextProcess, parsed.data.name, importedLines, importedSettings, importedAdditives);
         flashSaveMessage(`Imported “${parsed.data.name}”`);
       })
       .catch(() => flashSaveMessage('Could not read recipe file'));
   }
 
   return {
+    process,
+    setProcess,
     recipeName,
     setRecipeName,
     lines,
