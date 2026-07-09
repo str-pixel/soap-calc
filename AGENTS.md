@@ -70,8 +70,11 @@ npm run validate:oils
 npm run dev:web      # http://localhost:5173
 npm run build:web
 
-# All tests
+# All tests (runs typecheck -> validate:oils -> unit tests)
 npm test
+
+# Type-check only (tsc --noEmit across all packages)
+npm run typecheck
 ```
 
 Single-package tests:

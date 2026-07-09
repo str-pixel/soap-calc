@@ -10,7 +10,8 @@
     "build:web": "npm run build -w @soap-calc/web",
     "dev:web": "npm run dev -w @soap-calc/web",
     "validate:oils": "npm run validate -w @soap-calc/oils-data",
-    "test": "npm run validate:oils && npm run test --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run typecheck && npm run validate:oils && npm run test --workspaces --if-present"
   },
   "engines": {
     "node": ">=20"
