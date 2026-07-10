@@ -86,6 +86,15 @@ export function ResultsPanel({
   const postCookSuperfatOilName = postCookSuperfat
     ? (oilById(postCookSuperfat.oilId)?.displayName ?? postCookSuperfat.oilId)
     : null;
+  // List only the extras actually present — a post-cook-superfat-only batch (no additive
+  // lines) must not claim "includes additives".
+  const extrasNote = [
+    additiveGrams > 0 ? 'additives' : null,
+    splitLiquidGrams ? 'alternative liquid' : null,
+    postCookSuperfat ? 'post-cook superfat' : null,
+  ]
+    .filter(Boolean)
+    .join(' and ');
 
   return (
     <section className="panel panel--results" aria-live="polite">
@@ -158,12 +167,8 @@ export function ResultsPanel({
             <dt>Batch weight</dt>
             <dd>
               {formatWeight(batchWeightWithExtras, weightUnit)}
-              {extrasGrams > 0 && (
-                <span className="results-excluded">
-                  {' '}
-                  (includes additives{splitLiquidGrams ? ' and alternative liquid' : ''}
-                  {postCookSuperfat ? ' and post-cook superfat' : ''})
-                </span>
+              {extrasGrams > 0 && extrasNote && (
+                <span className="results-excluded"> (includes {extrasNote})</span>
               )}
             </dd>
           </div>

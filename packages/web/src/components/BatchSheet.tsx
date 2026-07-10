@@ -123,6 +123,18 @@ export function BatchSheet({ data }: BatchSheetProps) {
             <dt>Superfat</dt>
             <dd>{settings.superfatPercent}%</dd>
           </div>
+          {postCookSuperfat && (
+            <div>
+              <dt>Total superfat</dt>
+              <dd>
+                {formatGrams(
+                  (Number(settings.superfatPercent) || 0) + postCookSuperfat.percentOfOil,
+                  1,
+                )}
+                %
+              </dd>
+            </div>
+          )}
           <div>
             <dt>Lye concentration</dt>
             <dd>{formatGrams(result.lyeConcentrationPercent, 1)}%</dd>

@@ -52,6 +52,50 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
   expect(screen.getByText(/5% post-cook superfat/)).toBeTruthy();
 });
 
+test('prints a total superfat (cook + post-cook) row', () => {
+  const lines = createStarterLines();
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    superfatPercent: '5',
+    postCookSuperfatPercent: '3',
+    postCookSuperfatOilId: 'castor-oil',
+  };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  const postCookSuperfat = computePostCookSuperfat(settings, displayTotals.recipeOilWeightGrams);
+  if (!postCookSuperfat) throw new Error('expected a computed post-cook superfat');
+
+  const data = buildBatchSheetData({
+    recipeName: 'PCSF total',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquid: undefined,
+    splitLiquidGrams: null,
+    postCookSuperfat,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    insights: [],
+    process: 'hp',
+  });
+
+  render(<BatchSheet data={data} />);
+
+  // Cook 5% + post-cook 3% = 8% — the printed sheet must show the combined total the
+  // on-screen results emphasize, not just the cook superfat.
+  expect(screen.getByText('Total superfat')).toBeTruthy();
+  expect(screen.getByText('8%')).toBeTruthy();
+});
+
 test('prints no post-cook-superfat line when absent', () => {
   const lines = createStarterLines();
   const { result, displayTotals, linePercents } = calculateRecipe(lines, DEFAULT_SETTINGS);

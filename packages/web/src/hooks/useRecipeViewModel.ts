@@ -103,7 +103,15 @@ export function useRecipeViewModel({
     previewSettings.splitLiquid.enabled
       ? computeSplitLiquidGrams(previewSettings.splitLiquid.percentOfOil, totalOilGrams)
       : null;
-  const postCookSuperfat = computePostCookSuperfat(previewSettings, totalOilGrams);
+  // Post-cook superfat is an HP/LS-only concept. Gate on process so a CP recipe carrying a
+  // stray non-zero postCookSuperfatPercent (hand-edited or imported — CP hides the field, so
+  // the user has no way to clear it) can never silently change batch weight or render a PCSF
+  // line. Memoize (like computedAdditives) so this object reference is stable across unrelated
+  // renders and doesn't defeat the batchSheetData memo below.
+  const postCookSuperfat = useMemo(
+    () => (process === 'cp' ? null : computePostCookSuperfat(previewSettings, totalOilGrams)),
+    [process, previewSettings.postCookSuperfatPercent, previewSettings.postCookSuperfatOilId, totalOilGrams],
+  );
   const waterSuggestion = useMemo(() => {
     if (
       !result ||

@@ -49,6 +49,26 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
   expect(screen.getByText('8%')).toBeTruthy();
 });
 
+test('a post-cook-superfat-only batch does not claim "additives" in the batch-weight note', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="hp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      superfatPercent={DEFAULT_SETTINGS.superfatPercent}
+      postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }}
+    />,
+  );
+  // No additive lines, so the batch-weight note must name only the post-cook superfat.
+  expect(screen.getByText(/includes post-cook superfat/)).toBeTruthy();
+  expect(screen.queryByText(/includes additives/)).toBeNull();
+});
+
 test('with no postCookSuperfat, no PCSF line or total-superfat line renders', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(

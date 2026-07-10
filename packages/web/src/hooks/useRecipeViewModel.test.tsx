@@ -8,10 +8,15 @@ import {
   createEmptyAdditives,
   type RecipeSettings,
 } from '../lib/recipe';
+import type { ProcessId } from '../lib/process';
 
 afterEach(cleanup);
 
-function probe(onVm: (vm: unknown) => void, settingsOverride: Partial<RecipeSettings> = {}) {
+function probe(
+  onVm: (vm: unknown) => void,
+  settingsOverride: Partial<RecipeSettings> = {},
+  process: ProcessId = 'cp',
+) {
   function Probe() {
     const vm = useRecipeViewModel({
       recipeName: 'Test',
@@ -20,7 +25,7 @@ function probe(onVm: (vm: unknown) => void, settingsOverride: Partial<RecipeSett
       additives: createEmptyAdditives(),
       drafts: {},
       weightUnit: 'g',
-      process: 'cp',
+      process,
     });
     onVm(vm);
     return null;
@@ -38,13 +43,14 @@ test('view-model computes a lye result and printable batch sheet for the starter
   expect(captured.lyeLabel).toBe('NaOH');
 });
 
-test('postCookSuperfat is null when off, and its grams fold into batchWeightWithExtras when set', () => {
+test('postCookSuperfat is null when off, and its grams fold into batchWeightWithExtras when set (HP)', () => {
   let withoutPcsf: any;
   let withPcsf: any;
-  probe((vm) => { withoutPcsf = vm; });
+  probe((vm) => { withoutPcsf = vm; }, {}, 'hp');
   probe(
     (vm) => { withPcsf = vm; },
     { postCookSuperfatPercent: '5', postCookSuperfatOilId: 'shea-butter' },
+    'hp',
   );
 
   expect(withoutPcsf.postCookSuperfat).toBeNull();
@@ -58,4 +64,22 @@ test('postCookSuperfat is null when off, and its grams fold into batchWeightWith
     withoutPcsf.batchWeightWithExtras + withPcsf.postCookSuperfat.grams,
   );
   expect(withPcsf.batchSheetData.postCookSuperfat).toEqual(withPcsf.postCookSuperfat);
+});
+
+test('a stray post-cook superfat never applies under CP (no field exists to clear it)', () => {
+  // The same settings that compute a PCSF under HP must be inert under CP: no PCSF object,
+  // and the batch weight identical to a clean CP recipe. Guards the "CP is bit-identical"
+  // invariant against hand-edited / imported drafts (coerceSettingsForProcess only coerces
+  // lyeType, so a stray postCookSuperfatPercent would otherwise leak through).
+  let strayCp: any;
+  let cleanCp: any;
+  probe(
+    (vm) => { strayCp = vm; },
+    { postCookSuperfatPercent: '5', postCookSuperfatOilId: 'shea-butter' },
+    'cp',
+  );
+  probe((vm) => { cleanCp = vm; }, {}, 'cp');
+
+  expect(strayCp.postCookSuperfat).toBeNull();
+  expect(strayCp.batchWeightWithExtras).toBeCloseTo(cleanCp.batchWeightWithExtras);
 });
