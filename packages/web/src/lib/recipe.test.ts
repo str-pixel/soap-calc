@@ -3,7 +3,9 @@ import {
   createStarterLines,
   DEFAULT_SETTINGS,
   migrateRecipeLines,
+  normalizeAdditiveLine,
   normalizeSettings,
+  type AdditiveLine,
   type RecipeSettings,
 } from './recipe';
 
@@ -45,5 +47,25 @@ describe('migrateRecipeLines', () => {
     const lines = createStarterLines();
     const migrated = migrateRecipeLines(lines, DEFAULT_SETTINGS);
     expect(migrated[0].weightGrams).toBe('450');
+  });
+});
+
+describe('normalizeAdditiveLine', () => {
+  it('keeps after_cook (not coerced to trace)', () => {
+    const line = normalizeAdditiveLine({ key: 'a', addAt: 'after_cook' });
+    expect(line.addAt).toBe('after_cook');
+  });
+
+  it('keeps the existing four stages unaffected', () => {
+    for (const stage of ['lye', 'oils', 'trace', 'top'] as const) {
+      expect(normalizeAdditiveLine({ key: 'a', addAt: stage }).addAt).toBe(stage);
+    }
+  });
+
+  it('falls back to trace for a genuinely unknown stage', () => {
+    const line = normalizeAdditiveLine(
+      { key: 'a', addAt: 'bogus' } as unknown as Partial<AdditiveLine> & Pick<AdditiveLine, 'key'>,
+    );
+    expect(line.addAt).toBe('trace');
   });
 });

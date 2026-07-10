@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   ADDITIVE_CATALOG,
+  ADDITIVE_STAGE_LABELS,
   gramsFromPercentOfOil,
   LATHER_SUPPORT_PACK,
   MAX_ADDITIVE_NAME_LENGTH,
   MAX_RECIPE_ADDITIVES,
   parsePercentOfOil,
+  type AdditiveStage,
 } from './additives.js';
 
 describe('additives', () => {
@@ -30,5 +32,10 @@ describe('additives', () => {
   it('exports import limits', () => {
     expect(MAX_RECIPE_ADDITIVES).toBeGreaterThan(0);
     expect(MAX_ADDITIVE_NAME_LENGTH).toBeGreaterThan(0);
+  });
+
+  it('includes an after_cook stage labeled "After cook"', () => {
+    const stage: AdditiveStage = 'after_cook';
+    expect(ADDITIVE_STAGE_LABELS[stage]).toBe('After cook');
   });
 });

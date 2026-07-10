@@ -4,6 +4,7 @@ import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/
 import { computeRecipeAdditives, computeSplitLiquidGrams } from '../lib/calculateAdditives';
 import { oilBatchFraction } from '../lib/moldSizer';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
+import type { ProcessId } from '../lib/process';
 import type { RecipeCalculation } from '../lib/calculateRecipe';
 import {
   computeRecipeLineTotals,
@@ -22,6 +23,7 @@ export type UseRecipeViewModelArgs = {
   additives: AdditiveLine[];
   drafts: Record<string, string>;
   weightUnit: WeightUnit;
+  process: ProcessId;
 };
 
 export type RecipeViewModel = {
@@ -57,6 +59,7 @@ export function useRecipeViewModel({
   additives,
   drafts,
   weightUnit,
+  process,
 }: UseRecipeViewModelArgs): RecipeViewModel {
   const previewState = usePreviewRecipeState(
     lines,
@@ -155,6 +158,7 @@ export function useRecipeViewModel({
       recipeName,
       batchNotes: settings.batchNotes,
       weightUnit,
+      process,
       lyeLabel,
       settings: previewSettings,
       lines: previewState.lines,
@@ -183,6 +187,7 @@ export function useRecipeViewModel({
     insights,
     previewSettings,
     previewState.lines,
+    process,
     properties,
     recipeName,
     result,

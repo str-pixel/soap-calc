@@ -56,7 +56,7 @@ export default function App() {
     setLines, setSettings, handleExport, handleNew,
   });
 
-  const vm = useRecipeViewModel({ recipeName, lines, settings, additives, drafts, weightUnit });
+  const vm = useRecipeViewModel({ recipeName, lines, settings, additives, drafts, weightUnit, process });
   useRecipeAutosave(process, recipeName, lines, settings, additives);
 
   function handlePrintBatchSheet() {
@@ -149,6 +149,7 @@ export default function App() {
             additives={additives}
             totalOilGrams={vm.totalOilGrams}
             weightUnit={weightUnit}
+            process={process}
             onChange={setAdditives}
           />
         </div>
@@ -172,6 +173,7 @@ export default function App() {
             result={vm.result}
             inputErrors={vm.inputErrors}
             lyeLabel={vm.lyeLabel}
+            process={process}
             lyeType={vm.previewSettings.lyeType}
             kohBlendPercent={vm.previewSettings.kohBlendPercent}
             displayTotals={vm.displayTotals}

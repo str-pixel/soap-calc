@@ -1,10 +1,11 @@
 import {
   ADDITIVE_CATALOG,
-  ADDITIVE_STAGE_LABELS,
   catalogEntryById,
   LATHER_SUPPORT_PACK,
   type AdditiveStage,
 } from '@soap-calc/core';
+import { additiveStageLabel } from '../lib/additiveStageLabel';
+import type { ProcessId } from '../lib/process';
 import type { AdditiveLine } from '../lib/recipe';
 import { newAdditiveKey } from '../lib/recipe';
 import { computeRecipeAdditives } from '../lib/calculateAdditives';
@@ -15,18 +16,27 @@ type AdditivesPanelProps = {
   additives: AdditiveLine[];
   totalOilGrams: number;
   weightUnit: WeightUnit;
+  process: ProcessId;
   onChange: (additives: AdditiveLine[]) => void;
 };
 
-const STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
+const BASE_STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
+
+/** Stages offered in the per-line dropdown. CP has no cook/dilution step, so only
+ * HP/LS offer the contextual after-cook stage. */
+function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
+  return process === 'cp' ? BASE_STAGE_OPTIONS : [...BASE_STAGE_OPTIONS, 'after_cook'];
+}
 
 export function AdditivesPanel({
   additives,
   totalOilGrams,
   weightUnit,
+  process,
   onChange,
 }: AdditivesPanelProps) {
   const computed = computeRecipeAdditives(additives, totalOilGrams);
+  const offeredStages = offeredStagesForProcess(process);
 
   function updateLine(key: string, patch: Partial<AdditiveLine>) {
     onChange(
@@ -123,6 +133,13 @@ export function AdditivesPanel({
           {additives.map((line) => {
             const row = computed.find((item) => item.key === line.key);
             const entry = line.catalogId ? catalogEntryById(line.catalogId) : undefined;
+            // Mismatched-select guard: a line's current addAt must always be an option,
+            // even when it falls outside this process's offered set (e.g. a stray
+            // after_cook line viewed under CP) — otherwise the controlled <select> has
+            // no matching <option> and silently falls back to a different value.
+            const stageOptions = offeredStages.includes(line.addAt)
+              ? offeredStages
+              : [...offeredStages, line.addAt];
 
             return (
               <li key={line.key} className="additive-list__row">
@@ -174,9 +191,9 @@ export function AdditivesPanel({
                       updateLine(line.key, { addAt: e.target.value as AdditiveStage })
                     }
                   >
-                    {STAGE_OPTIONS.map((stage) => (
+                    {stageOptions.map((stage) => (
                       <option key={stage} value={stage}>
-                        {ADDITIVE_STAGE_LABELS[stage]}
+                        {additiveStageLabel(stage, process)}
                       </option>
                     ))}
                   </select>

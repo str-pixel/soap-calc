@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { LyeCalculationResult } from '@soap-calc/core';
-import { canPrintBatchSheet } from './batchSheet';
+import { additiveStageLabel, buildBatchSheetData, canPrintBatchSheet } from './batchSheet';
+import type { ComputedAdditive } from './calculateAdditives';
 import type { RecipeDisplayTotals } from './calculateRecipe';
+import { DEFAULT_SETTINGS } from './recipe';
 
 function makeResult(
   overrides: Partial<LyeCalculationResult> = {},
@@ -55,5 +57,68 @@ describe('canPrintBatchSheet', () => {
 
   it('blocks print when lye is zero', () => {
     expect(canPrintBatchSheet(makeResult({ lyeWeightGrams: 0 }), displayTotals, [])).toBe(false);
+  });
+});
+
+function makeAfterCookAdditive(): ComputedAdditive {
+  return {
+    key: 'a1',
+    catalogId: '',
+    name: 'Heat-sensitive fragrance',
+    percentOfOil: 2,
+    grams: 20,
+    addAt: 'after_cook',
+  };
+}
+
+function makeBatchSheetInput(
+  overrides: Partial<Parameters<typeof buildBatchSheetData>[0]> = {},
+): Parameters<typeof buildBatchSheetData>[0] {
+  return {
+    recipeName: 'Test',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings: DEFAULT_SETTINGS,
+    lines: [],
+    linePercents: new Map(),
+    result: makeResult(),
+    displayTotals,
+    additives: [makeAfterCookAdditive()],
+    splitLiquid: undefined,
+    splitLiquidGrams: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: 1465,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    insights: [],
+    process: 'hp',
+    ...overrides,
+  };
+}
+
+describe('additiveStageLabel (re-exported for the batch sheet)', () => {
+  it('labels after_cook as "After cook" with no process / under hp', () => {
+    expect(additiveStageLabel('after_cook')).toBe('After cook');
+    expect(additiveStageLabel('after_cook', 'hp')).toBe('After cook');
+  });
+
+  it('labels after_cook as "After dilution" under ls', () => {
+    expect(additiveStageLabel('after_cook', 'ls')).toBe('After dilution');
+  });
+});
+
+describe('buildBatchSheetData process threading', () => {
+  it('threads process through so an after_cook additive prints "After cook" for hp', () => {
+    const data = buildBatchSheetData(makeBatchSheetInput({ process: 'hp' }));
+    expect(data.process).toBe('hp');
+    expect(additiveStageLabel(data.additives[0].addAt, data.process)).toBe('After cook');
+  });
+
+  it('threads process through so an after_cook additive prints "After dilution" for ls', () => {
+    const data = buildBatchSheetData(makeBatchSheetInput({ process: 'ls' }));
+    expect(data.process).toBe('ls');
+    expect(additiveStageLabel(data.additives[0].addAt, data.process)).toBe('After dilution');
   });
 });

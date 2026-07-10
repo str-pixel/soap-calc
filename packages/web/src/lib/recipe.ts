@@ -131,7 +131,8 @@ export function normalizeAdditiveLine(
     partial.addAt === 'lye' ||
     partial.addAt === 'oils' ||
     partial.addAt === 'trace' ||
-    partial.addAt === 'top'
+    partial.addAt === 'top' ||
+    partial.addAt === 'after_cook'
       ? partial.addAt
       : 'trace';
   return {

@@ -40,6 +40,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
     waterModeLabel,
     fattyAcids,
     insights,
+    process,
   } = data;
 
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
@@ -191,13 +192,13 @@ export function BatchSheet({ data }: BatchSheetProps) {
               <li>
                 {splitLiquid.name.trim() || 'Alternative liquid'} —{' '}
                 {formatWeight(splitLiquidGrams, weightUnit)} (
-                {additiveStageLabel(splitLiquid.addAt)})
+                {additiveStageLabel(splitLiquid.addAt, process)})
               </li>
             )}
             {additives.map((item) => (
               <li key={item.key}>
                 {item.name} — {formatWeight(item.grams, weightUnit)} (
-                {formatGrams(item.percentOfOil, 1)}% of oil, {additiveStageLabel(item.addAt)})
+                {formatGrams(item.percentOfOil, 1)}% of oil, {additiveStageLabel(item.addAt, process)})
               </li>
             ))}
           </ul>
