@@ -3,6 +3,7 @@ import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
+import { ProcessTabs } from './components/ProcessTabs';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { RecipeOilsPanel } from './components/RecipeOilsPanel';
 import { ResultsPanel } from './components/ResultsPanel';
@@ -18,6 +19,8 @@ import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 
 export default function App() {
   const {
+    process,
+    setProcess,
     recipeName,
     setRecipeName,
     lines,
@@ -54,7 +57,7 @@ export default function App() {
   });
 
   const vm = useRecipeViewModel({ recipeName, lines, settings, additives, drafts, weightUnit });
-  useRecipeAutosave(recipeName, lines, settings, additives);
+  useRecipeAutosave(process, recipeName, lines, settings, additives);
 
   function handlePrintBatchSheet() {
     if (!vm.batchSheetData) return;
@@ -70,6 +73,8 @@ export default function App() {
             Lye &amp; water from a public oil database — FNWL cross-check &amp; ISO 3657 units
           </p>
         </div>
+
+        <ProcessTabs process={process} onChange={setProcess} />
 
         <div className="recipe-toolbar">
           <label className="recipe-toolbar__name">
@@ -150,6 +155,7 @@ export default function App() {
 
         <aside className="sidebar">
           <SettingsPanel
+            process={process}
             settings={settings}
             setSettings={setSettings}
             weightUnit={weightUnit}

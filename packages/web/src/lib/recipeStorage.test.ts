@@ -1,6 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_SETTINGS, normalizeSettings } from './recipe';
-import { loadDraft, saveDraft } from './recipeStorage';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_SETTINGS, createEmptyAdditives, createStarterLines, normalizeSettings } from './recipe';
+import {
+  loadActiveProcess,
+  loadDraft,
+  migrateLegacyDraft,
+  saveActiveProcess,
+  saveDraft,
+} from './recipeStorage';
 
 function createStorage(): Storage {
   const store = new Map<string, string>();
@@ -31,6 +37,12 @@ describe('recipeStorage', () => {
     vi.stubGlobal('localStorage', createStorage());
   });
 
+  afterEach(() => {
+    // Undo stubGlobal so this describe block's stubs — including the
+    // always-throws-on-setItem one below — don't leak into other tests.
+    vi.unstubAllGlobals();
+  });
+
   it('round-trips draft state', () => {
     const lines = [
       { key: 'a', oilId: 'olive-oil', weightGrams: '500' },
@@ -46,8 +58,8 @@ describe('recipeStorage', () => {
       },
     ];
 
-    saveDraft('My batch', lines, DEFAULT_SETTINGS, additives);
-    const draft = loadDraft();
+    saveDraft('cp', 'My batch', lines, DEFAULT_SETTINGS, additives);
+    const draft = loadDraft('cp');
 
     expect(draft?.name).toBe('My batch');
     expect(draft?.lines).toHaveLength(2);
@@ -57,8 +69,8 @@ describe('recipeStorage', () => {
 
   it('normalizes settings missing new fields from older saves', () => {
     const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
-    saveDraft('Legacy', lines, { superfatPercent: '8', lyeType: 'naoh' } as never);
-    const draft = loadDraft();
+    saveDraft('cp', 'Legacy', lines, { superfatPercent: '8', lyeType: 'naoh' } as never);
+    const draft = loadDraft('cp');
     expect(draft?.settings.waterMode).toBe('percent_of_oils');
     expect(draft?.settings.weightUnit).toBe('g');
     expect(draft?.settings.splitLiquid.enabled).toBe(false);
@@ -80,7 +92,64 @@ describe('recipeStorage', () => {
     });
 
     const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
-    expect(() => saveDraft('Draft', lines, DEFAULT_SETTINGS)).not.toThrow();
-    expect(loadDraft()).toBeNull();
+    expect(() => saveDraft('cp', 'Draft', lines, DEFAULT_SETTINGS)).not.toThrow();
+    expect(loadDraft('cp')).toBeNull();
+  });
+});
+
+describe('per-process drafts', () => {
+  // Node 22+ defines its own (experimental, file-backed) global `localStorage`
+  // getter that shadows a real Storage implementation unless `--localstorage-file`
+  // is configured. Stub it with the in-memory fake instead of depending on a
+  // real DOM/jsdom localStorage, same as the `recipeStorage` describe above.
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createStorage());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps drafts isolated per process', () => {
+    saveDraft('cp', 'CP one', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    expect(loadDraft('cp')?.name).toBe('CP one');
+    expect(loadDraft('ls')).toBeNull();
+  });
+
+  it('persists the active process', () => {
+    expect(loadActiveProcess()).toBe('cp'); // default
+    saveActiveProcess('ls');
+    expect(loadActiveProcess()).toBe('ls');
+  });
+
+  it('migrates a legacy NaOH draft into cp + sets active process, once', () => {
+    const payload = JSON.stringify({ version: 2, name: 'Legacy', lines: [], settings: { ...DEFAULT_SETTINGS, lyeType: 'naoh' } });
+    localStorage.setItem('soap-calc:draft', payload);
+    migrateLegacyDraft();
+    expect(loadDraft('cp')?.name).toBe('Legacy');
+    expect(loadActiveProcess()).toBe('cp');
+    expect(localStorage.getItem('soap-calc:draft')).toBeNull();
+    migrateLegacyDraft(); // idempotent, no throw
+    expect(loadDraft('cp')?.name).toBe('Legacy');
+  });
+
+  it('routes a legacy KOH (liquid soap) draft to LS, not CP — no silent alkali flip', () => {
+    const payload = JSON.stringify({ version: 2, name: 'Body wash', lines: [], settings: { ...DEFAULT_SETTINGS, lyeType: 'koh' } });
+    localStorage.setItem('soap-calc:draft', payload);
+    migrateLegacyDraft();
+    expect(loadDraft('ls')?.name).toBe('Body wash');
+    expect(loadDraft('cp')).toBeNull();
+    expect(loadActiveProcess()).toBe('ls');
+  });
+
+  it('leaves the legacy draft in place when the target process draft already exists (concurrent old+new tab)', () => {
+    saveDraft('cp', 'Existing CP draft', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    const legacyPayload = JSON.stringify({ version: 2, name: 'Legacy', lines: [], settings: { ...DEFAULT_SETTINGS, lyeType: 'naoh' } });
+    localStorage.setItem('soap-calc:draft', legacyPayload);
+    migrateLegacyDraft();
+    // The cp slot was already occupied, so migration must not overwrite it, and must not
+    // destroy the still-unmigrated legacy payload either.
+    expect(loadDraft('cp')?.name).toBe('Existing CP draft');
+    expect(localStorage.getItem('soap-calc:draft')).toBe(legacyPayload);
   });
 });

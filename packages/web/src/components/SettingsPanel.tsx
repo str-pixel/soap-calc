@@ -1,7 +1,15 @@
 import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import type { MoldSizerInput } from '../lib/moldSizer';
 import type { RecipeSettings, WeightUnit } from '../lib/recipe';
-import { purityFieldsFor, WATER_FIELDS } from '../lib/settingsFields';
+import {
+  purityFieldsFor,
+  WATER_FIELDS,
+  lyeChoicesFor,
+  waterModeChoicesFor,
+  LYE_TYPE_LABELS,
+  WATER_MODE_LABELS,
+} from '../lib/settingsFields';
+import type { ProcessId } from '../lib/process';
 import { MoldSizerPanel } from './MoldSizerPanel';
 import { SplitLiquidPanel } from './SplitLiquidPanel';
 
@@ -43,6 +51,7 @@ type SettingsPanelProps = {
   onMoldSizerChange: (next: MoldSizerInput) => void;
   liveOilBatchFraction: number | null;
   onApplySuggestedOilGrams: (oilGrams: number) => void;
+  process?: ProcessId;
 };
 
 export function SettingsPanel({
@@ -56,6 +65,7 @@ export function SettingsPanel({
   onMoldSizerChange,
   liveOilBatchFraction,
   onApplySuggestedOilGrams,
+  process = 'cp',
 }: SettingsPanelProps) {
   const updateField = (key: FieldSpec['key'], value: string) =>
     setSettings((s) => ({ ...s, [key]: value }));
@@ -83,6 +93,7 @@ export function SettingsPanel({
           <span>Lye type</span>
           <select
             className="input"
+            aria-label="Lye type"
             value={settings.lyeType}
             onChange={(e) =>
               setSettings((s) => ({
@@ -91,9 +102,9 @@ export function SettingsPanel({
               }))
             }
           >
-            <option value="naoh">NaOH (bar soap)</option>
-            <option value="koh">KOH (liquid soap)</option>
-            <option value="dual">NaOH + KOH blend</option>
+            {lyeChoicesFor(process).map((lye) => (
+              <option key={lye} value={lye}>{LYE_TYPE_LABELS[lye]}</option>
+            ))}
           </select>
         </label>
 
@@ -118,6 +129,7 @@ export function SettingsPanel({
           <span>Water method</span>
           <select
             className="input"
+            aria-label="Water method"
             value={settings.waterMode}
             onChange={(e) =>
               setSettings((s) => ({
@@ -126,9 +138,9 @@ export function SettingsPanel({
               }))
             }
           >
-            <option value="percent_of_oils">% of oils</option>
-            <option value="lye_concentration">Lye concentration %</option>
-            <option value="lye_water_ratio">Water : lye ratio</option>
+            {waterModeChoicesFor(process).map((mode) => (
+              <option key={mode} value={mode}>{WATER_MODE_LABELS[mode]}</option>
+            ))}
           </select>
         </label>
 

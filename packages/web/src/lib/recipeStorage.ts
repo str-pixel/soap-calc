@@ -5,9 +5,15 @@ import {
   newLineKey,
   normalizeSettings,
 } from './recipe';
+import { isProcessId, processForLyeType, type ProcessId } from './process';
 
-const DRAFT_KEY = 'soap-calc:draft';
+const LEGACY_DRAFT_KEY = 'soap-calc:draft';
+const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
 const STORAGE_VERSION = 2;
+
+function draftKey(process: ProcessId): string {
+  return `soap-calc:draft:${process}`;
+}
 
 export type SavedAdditiveLine = Omit<AdditiveLine, 'key'>;
 
@@ -64,14 +70,14 @@ export function linesFromSaved(saved: SavedLine[]): RecipeLine[] {
   }));
 }
 
-export function loadDraft(): {
+export function loadDraft(process: ProcessId): {
   name: string;
   lines: RecipeLine[];
   additives: AdditiveLine[];
   settings: RecipeSettings;
 } | null {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY);
+    const raw = localStorage.getItem(draftKey(process));
     if (!raw) return null;
     const data = JSON.parse(raw) as DraftPayload;
     if (
@@ -92,6 +98,7 @@ export function loadDraft(): {
 }
 
 export function saveDraft(
+  process: ProcessId,
   name: string,
   lines: RecipeLine[],
   settings: RecipeSettings,
@@ -105,5 +112,53 @@ export function saveDraft(
     settings,
     updatedAt: new Date().toISOString(),
   };
-  safeSetItem(DRAFT_KEY, JSON.stringify(payload));
+  safeSetItem(draftKey(process), JSON.stringify(payload));
+}
+
+export function loadActiveProcess(): ProcessId {
+  try {
+    const raw = localStorage.getItem(ACTIVE_PROCESS_KEY);
+    return isProcessId(raw) ? raw : 'cp';
+  } catch {
+    return 'cp';
+  }
+}
+
+export function saveActiveProcess(process: ProcessId): void {
+  safeSetItem(ACTIVE_PROCESS_KEY, process);
+}
+
+export function migrateLegacyDraft(): void {
+  try {
+    const legacy = localStorage.getItem(LEGACY_DRAFT_KEY);
+    if (legacy === null) return;
+    // Route by the legacy recipe's alkali: a KOH (liquid soap) recipe lands on LS,
+    // everything else on CP. Otherwise coerceSettingsForProcess would silently flip a
+    // KOH recipe to NaOH when it loads under CP (different SAP → wrong lye weight).
+    let parsed: { settings?: { lyeType?: unknown } } | undefined;
+    try {
+      parsed = JSON.parse(legacy) as { settings?: { lyeType?: unknown } };
+    } catch {
+      // unparseable legacy payload → processForLyeType(undefined) below defaults to cp
+    }
+    const target = processForLyeType(parsed?.settings?.lyeType);
+    // Only migrate — and only clear the legacy key — when the target slot is empty. A
+    // concurrent old+new tab may have already written a per-process draft there; if so,
+    // leave both the existing draft and the still-unmigrated legacy payload alone rather
+    // than clobbering the former or destroying the latter.
+    const targetEmpty = localStorage.getItem(draftKey(target)) === null;
+    if (targetEmpty) {
+      safeSetItem(draftKey(target), legacy);
+    }
+    // Seed the active process to match, so the user lands on the right tab — but only
+    // if not already set (don't clobber a returning user's choice on a repeat call).
+    if (localStorage.getItem(ACTIVE_PROCESS_KEY) === null) {
+      safeSetItem(ACTIVE_PROCESS_KEY, target);
+    }
+    if (targetEmpty) {
+      localStorage.removeItem(LEGACY_DRAFT_KEY);
+    }
+  } catch {
+    // ignore
+  }
 }

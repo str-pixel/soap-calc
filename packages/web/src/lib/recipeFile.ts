@@ -12,6 +12,7 @@ import {
   type RecipeLine,
   type RecipeSettings,
 } from './recipe';
+import { isProcessId, processForLyeType, type ProcessId } from './process';
 
 export const RECIPE_FILE_VERSION = 2 as const;
 export const RECIPE_FILE_VERSION_LEGACY = 1 as const;
@@ -20,6 +21,7 @@ export type RecipeFileAdditive = Omit<AdditiveLine, 'key'>;
 
 export type RecipeFilePayload = {
   version: typeof RECIPE_FILE_VERSION;
+  process: ProcessId;
   name: string;
   lines: Array<{
     oilId: string;
@@ -114,9 +116,11 @@ export function serializeRecipeFile(
   lines: RecipeLine[],
   settings: RecipeSettings,
   additives: AdditiveLine[] = [],
+  process: ProcessId = 'cp',
 ): RecipeFilePayload {
   return {
     version: RECIPE_FILE_VERSION,
+    process,
     name: name.trim() || 'Untitled recipe',
     lines: lines.map(({ oilId, weightGrams, weightPercent, tarLyeTreatment }) => ({
       oilId,
@@ -189,6 +193,12 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
     ok: true,
     data: {
       version: RECIPE_FILE_VERSION,
+      // A file with no/invalid `process` predates this feature and may contain a KOH
+      // (liquid soap) recipe. Route it by alkali so coerceSettingsForProcess doesn't
+      // silently flip lyeType koh→naoh on import — an explicit valid process still wins.
+      process: isProcessId(parsed.process)
+        ? parsed.process
+        : processForLyeType((parsed.settings as { lyeType?: unknown } | undefined)?.lyeType),
       name: parsed.name,
       lines,
       additives,
