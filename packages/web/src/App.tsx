@@ -182,6 +182,8 @@ export default function App() {
             splitLiquid={vm.previewSettings.splitLiquid}
             splitLiquidGrams={vm.splitLiquidGrams}
             additives={vm.computedAdditives}
+            superfatPercent={vm.previewSettings.superfatPercent}
+            postCookSuperfat={vm.postCookSuperfat}
           />
 
           <PropertiesPanel result={vm.properties} indexes={vm.indexes} />

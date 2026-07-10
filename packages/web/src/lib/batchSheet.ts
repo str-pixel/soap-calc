@@ -5,7 +5,7 @@ import type {
   RecipePropertiesResult,
 } from '@soap-calc/core';
 import { additiveStageLabel } from './additiveStageLabel';
-import type { ComputedAdditive } from './calculateAdditives';
+import type { ComputedAdditive, ComputedPostCookSuperfat } from './calculateAdditives';
 import type { RecipeDisplayTotals } from './calculateRecipe';
 import type { RecipeIndexResult } from './calculateRecipeIndexes';
 import type { ProcessId } from './process';
@@ -30,6 +30,7 @@ export type BatchSheetData = {
   additives: ComputedAdditive[];
   splitLiquid: SplitLiquidSettings | undefined;
   splitLiquidGrams: number | null;
+  postCookSuperfat: ComputedPostCookSuperfat | null;
   properties: RecipePropertiesResult | null;
   indexes: RecipeIndexResult;
   batchWeightWithExtras: number;
@@ -64,6 +65,7 @@ export function buildBatchSheetData(input: {
   additives: ComputedAdditive[];
   splitLiquid: SplitLiquidSettings | undefined;
   splitLiquidGrams: number | null;
+  postCookSuperfat: ComputedPostCookSuperfat | null;
   properties: RecipePropertiesResult | null;
   indexes: RecipeIndexResult;
   batchWeightWithExtras: number;

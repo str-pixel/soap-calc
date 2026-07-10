@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { computeRecipeAdditives, computeSplitLiquidGrams } from './calculateAdditives';
+import {
+  computePostCookSuperfat,
+  computeRecipeAdditives,
+  computeSplitLiquidGrams,
+} from './calculateAdditives';
 import type { AdditiveLine } from './recipe';
 
 describe('calculateAdditives', () => {
@@ -51,5 +55,52 @@ describe('calculateAdditives', () => {
         addAt: 'trace',
       },
     ]);
+  });
+});
+
+describe('computePostCookSuperfat', () => {
+  it('computes grams from percent of oil and returns the given oil id', () => {
+    expect(
+      computePostCookSuperfat(
+        { postCookSuperfatPercent: '5', postCookSuperfatOilId: 'shea-butter' },
+        1000,
+      ),
+    ).toEqual({ oilId: 'shea-butter', percentOfOil: 5, grams: 50 });
+  });
+
+  it('returns null for an empty percent', () => {
+    expect(
+      computePostCookSuperfat(
+        { postCookSuperfatPercent: '', postCookSuperfatOilId: 'olive-oil' },
+        1000,
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null for a zero percent', () => {
+    expect(
+      computePostCookSuperfat(
+        { postCookSuperfatPercent: '0', postCookSuperfatOilId: 'olive-oil' },
+        1000,
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null for an invalid percent', () => {
+    expect(
+      computePostCookSuperfat(
+        { postCookSuperfatPercent: 'abc', postCookSuperfatOilId: 'olive-oil' },
+        1000,
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null when total oil weight is not positive', () => {
+    expect(
+      computePostCookSuperfat(
+        { postCookSuperfatPercent: '5', postCookSuperfatOilId: 'olive-oil' },
+        0,
+      ),
+    ).toBeNull();
   });
 });

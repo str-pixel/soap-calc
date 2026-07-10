@@ -50,6 +50,22 @@ describe('migrateRecipeLines', () => {
   });
 });
 
+describe('postCookSuperfat settings', () => {
+  it('defaults post-cook superfat off, with a valid default oil', () => {
+    expect(DEFAULT_SETTINGS.postCookSuperfatPercent).toBe('0');
+    expect(DEFAULT_SETTINGS.postCookSuperfatOilId).toBe('olive-oil');
+  });
+
+  it('normalizeSettings round-trips a set post-cook superfat', () => {
+    const s = normalizeSettings({
+      postCookSuperfatPercent: '5',
+      postCookSuperfatOilId: 'shea-butter',
+    });
+    expect(s.postCookSuperfatPercent).toBe('5');
+    expect(s.postCookSuperfatOilId).toBe('shea-butter');
+  });
+});
+
 describe('normalizeAdditiveLine', () => {
   it('keeps after_cook (not coerced to trace)', () => {
     const line = normalizeAdditiveLine({ key: 'a', addAt: 'after_cook' });

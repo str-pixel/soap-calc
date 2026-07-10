@@ -34,6 +34,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
     additives,
     splitLiquid,
     splitLiquidGrams,
+    postCookSuperfat,
     properties,
     indexes,
     batchWeightWithExtras,
@@ -45,7 +46,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
 
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0);
+  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0) + (postCookSuperfat?.grams ?? 0);
 
   const isDualLye = settings.lyeType === 'dual';
   const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
@@ -184,7 +185,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
         </section>
       )}
 
-      {(additives.length > 0 || (splitLiquid?.enabled && splitLiquidGrams)) && (
+      {(additives.length > 0 || (splitLiquid?.enabled && splitLiquidGrams) || postCookSuperfat) && (
         <section className="batch-sheet__section">
           <h2>Additives &amp; liquids</h2>
           <ul className="batch-sheet__list">
@@ -193,6 +194,13 @@ export function BatchSheet({ data }: BatchSheetProps) {
                 {splitLiquid.name.trim() || 'Alternative liquid'} —{' '}
                 {formatWeight(splitLiquidGrams, weightUnit)} (
                 {additiveStageLabel(splitLiquid.addAt, process)})
+              </li>
+            )}
+            {postCookSuperfat && (
+              <li>
+                {batchSheetOilName(postCookSuperfat.oilId)} —{' '}
+                {formatWeight(postCookSuperfat.grams, weightUnit)} (
+                {formatGrams(postCookSuperfat.percentOfOil, 1)}% post-cook superfat)
               </li>
             )}
             {additives.map((item) => (

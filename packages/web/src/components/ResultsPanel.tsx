@@ -2,7 +2,8 @@ import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import type { ProcessId } from '../lib/process';
 import { formatGrams } from '../lib/format';
-import type { ComputedAdditive } from '../lib/calculateAdditives';
+import { oilById } from '../lib/oils';
+import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
 import { formatWeight } from '../lib/weightUnits';
@@ -20,6 +21,8 @@ type ResultsPanelProps = {
   splitLiquid?: SplitLiquidSettings;
   splitLiquidGrams?: number | null;
   additives?: ComputedAdditive[];
+  superfatPercent?: string;
+  postCookSuperfat?: ComputedPostCookSuperfat | null;
 };
 
 function waterFootnote(
@@ -46,6 +49,8 @@ export function ResultsPanel({
   splitLiquid,
   splitLiquidGrams = null,
   additives = [],
+  superfatPercent,
+  postCookSuperfat = null,
 }: ResultsPanelProps) {
   if (inputErrors.length) {
     return (
@@ -70,12 +75,17 @@ export function ResultsPanel({
   const excludedOilWeightGrams = displayTotals?.excludedFromLyeOilWeightGrams ?? 0;
   const isEmpty = recipeOilWeightGrams <= 0;
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0);
+  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0) + (postCookSuperfat?.grams ?? 0);
   const batchWeightWithExtras = batchWeightGrams + extrasGrams;
   const waterNote = waterFootnote(waterMode, excludedOilWeightGrams);
   const showTotalLiquid =
     splitLiquid?.enabled && splitLiquidGrams !== null && splitLiquidGrams > 0;
   const totalLiquidGrams = result.waterWeightGrams + (splitLiquidGrams ?? 0);
+  const cookSuperfatPercent = Number(superfatPercent) || 0;
+  const totalSuperfatPercent = cookSuperfatPercent + (postCookSuperfat?.percentOfOil ?? 0);
+  const postCookSuperfatOilName = postCookSuperfat
+    ? (oilById(postCookSuperfat.oilId)?.displayName ?? postCookSuperfat.oilId)
+    : null;
 
   return (
     <section className="panel panel--results" aria-live="polite">
@@ -151,7 +161,8 @@ export function ResultsPanel({
               {extrasGrams > 0 && (
                 <span className="results-excluded">
                   {' '}
-                  (includes additives{splitLiquidGrams ? ' and alternative liquid' : ''})
+                  (includes additives{splitLiquidGrams ? ' and alternative liquid' : ''}
+                  {postCookSuperfat ? ' and post-cook superfat' : ''})
                 </span>
               )}
             </dd>
@@ -183,6 +194,24 @@ export function ResultsPanel({
                   ({additiveStageLabel(splitLiquid.addAt, process)})
                 </span>
               </dd>
+            </div>
+          )}
+          {postCookSuperfat && (
+            <div className="results-grid__item">
+              <dt>Post-cook superfat ({postCookSuperfatOilName})</dt>
+              <dd>
+                {formatWeight(postCookSuperfat.grams, weightUnit)}
+                <span className="results-excluded">
+                  {' '}
+                  ({formatGrams(postCookSuperfat.percentOfOil, 1)}% of oil)
+                </span>
+              </dd>
+            </div>
+          )}
+          {postCookSuperfat && (
+            <div className="results-grid__item">
+              <dt>Total superfat</dt>
+              <dd>{formatGrams(totalSuperfatPercent, 1)}%</dd>
             </div>
           )}
         </dl>

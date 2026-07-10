@@ -1,5 +1,5 @@
 import { gramsFromPercentOfOil, parsePercentOfOil } from '@soap-calc/core';
-import type { AdditiveLine } from './recipe';
+import type { AdditiveLine, RecipeSettings } from './recipe';
 
 export type ComputedAdditive = {
   key: string;
@@ -42,4 +42,25 @@ export function computeSplitLiquidGrams(
   const percent = parsePercentOfOil(percentOfOil);
   if (percent === null || percent === 0) return null;
   return gramsFromPercentOfOil(totalOilGrams, percent);
+}
+
+export type ComputedPostCookSuperfat = {
+  oilId: string;
+  percentOfOil: number;
+  grams: number;
+};
+
+/** The post-cook superfat: an oil added after cook/dilution with no lye effect.
+ * Same % of recipe oil weight basis as additives/split-liquid; `null` when the % is
+ * empty/zero/invalid or there's no recipe oil weight yet. */
+export function computePostCookSuperfat(
+  settings: Pick<RecipeSettings, 'postCookSuperfatPercent' | 'postCookSuperfatOilId'>,
+  totalOilGrams: number,
+): ComputedPostCookSuperfat | null {
+  if (totalOilGrams <= 0) return null;
+  const percent = parsePercentOfOil(settings.postCookSuperfatPercent);
+  if (percent === null || percent === 0) return null;
+  const grams = gramsFromPercentOfOil(totalOilGrams, percent);
+  if (grams === null) return null;
+  return { oilId: settings.postCookSuperfatOilId, percentOfOil: percent, grams };
 }

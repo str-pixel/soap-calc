@@ -40,6 +40,8 @@ export type RecipeSettings = {
   kohPurityPercent: string;
   splitLiquid: SplitLiquidSettings;
   batchNotes: string;
+  postCookSuperfatPercent: string;
+  postCookSuperfatOilId: string;
 };
 
 export function newLineKey(): string {
@@ -71,6 +73,8 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   kohPurityPercent: '90',
   splitLiquid: { ...DEFAULT_SPLIT_LIQUID },
   batchNotes: '',
+  postCookSuperfatPercent: '0',
+  postCookSuperfatOilId: 'olive-oil',
 };
 
 export function normalizeSplitLiquid(

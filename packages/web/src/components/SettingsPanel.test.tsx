@@ -5,20 +5,23 @@ import { useState } from 'react';
 import { SettingsPanel } from './SettingsPanel';
 import { DEFAULT_SETTINGS, type RecipeSettings } from '../lib/recipe';
 import { DEFAULT_MOLD_SIZER_INPUT } from '../lib/moldSizer';
+import type { ProcessId } from '../lib/process';
 
 afterEach(cleanup);
 
-function Harness() {
+function Harness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) {
   const [settings, setSettings] = useState<RecipeSettings>(DEFAULT_SETTINGS);
   return (
     <>
       <SettingsPanel
+        process={process}
         settings={settings} setSettings={setSettings} weightUnit="g"
         totalOilGrams={1000} lyeGrams={140} waterSuggestion={null}
         moldSizerInput={DEFAULT_MOLD_SIZER_INPUT} onMoldSizerChange={() => {}}
         liveOilBatchFraction={null} onApplySuggestedOilGrams={() => {}}
       />
       <output aria-label="superfat-echo">{settings.superfatPercent}</output>
+      <output aria-label="pcsf-echo">{settings.postCookSuperfatPercent}</output>
     </>
   );
 }
@@ -72,5 +75,39 @@ describe('SettingsPanel lye gating', () => {
     const select = screen.getByLabelText(/lye type/i);
     const options = within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
     expect(options).toEqual(['naoh', 'dual']);
+  });
+});
+
+describe('post-cook superfat fields', () => {
+  it('render for hp (% field + oil picker)', () => {
+    render(<SettingsPanel {...baseProps} process="hp" settings={DEFAULT_SETTINGS} />);
+    expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
+    expect(screen.getByLabelText('Oil')).toBeTruthy();
+  });
+
+  it('render for ls', () => {
+    render(
+      <SettingsPanel
+        {...baseProps}
+        process="ls"
+        settings={{ ...DEFAULT_SETTINGS, lyeType: 'koh' }}
+      />,
+    );
+    expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
+    expect(screen.getByLabelText('Oil')).toBeTruthy();
+  });
+
+  it('are hidden for cp', () => {
+    render(<SettingsPanel {...baseProps} process="cp" settings={DEFAULT_SETTINGS} />);
+    expect(screen.queryByLabelText('Post-cook superfat %')).toBeNull();
+    expect(screen.queryByLabelText('Oil')).toBeNull();
+  });
+
+  it('editing post-cook superfat % updates settings state', () => {
+    render(<Harness process="hp" />);
+    const input = screen.getByLabelText('Post-cook superfat %') as HTMLInputElement;
+    expect(input.value).toBe('0');
+    fireEvent.change(input, { target: { value: '5' } });
+    expect(screen.getByLabelText('pcsf-echo').textContent).toBe('5');
   });
 });

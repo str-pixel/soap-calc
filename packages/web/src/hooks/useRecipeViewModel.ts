@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
 import { suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
-import { computeRecipeAdditives, computeSplitLiquidGrams } from '../lib/calculateAdditives';
+import {
+  computePostCookSuperfat,
+  computeRecipeAdditives,
+  computeSplitLiquidGrams,
+} from '../lib/calculateAdditives';
 import { oilBatchFraction } from '../lib/moldSizer';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
@@ -41,6 +45,7 @@ export type RecipeViewModel = {
   totalOilGrams: number;
   computedAdditives: ReturnType<typeof computeRecipeAdditives>;
   splitLiquidGrams: number | null;
+  postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
   properties: ReturnType<typeof useRecipeProperties>['properties'];
   indexes: ReturnType<typeof useRecipeProperties>['indexes'];
@@ -98,6 +103,7 @@ export function useRecipeViewModel({
     previewSettings.splitLiquid.enabled
       ? computeSplitLiquidGrams(previewSettings.splitLiquid.percentOfOil, totalOilGrams)
       : null;
+  const postCookSuperfat = computePostCookSuperfat(previewSettings, totalOilGrams);
   const waterSuggestion = useMemo(() => {
     if (
       !result ||
@@ -143,7 +149,8 @@ export function useRecipeViewModel({
         ? 'NaOH'
         : 'KOH';
   const additiveGrams = computedAdditives.reduce((sum, item) => sum + item.grams, 0);
-  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0);
+  const extrasGrams =
+    additiveGrams + (splitLiquidGrams ?? 0) + (postCookSuperfat?.grams ?? 0);
   const batchWeightWithExtras =
     (displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0) + extrasGrams;
   const liveOilBatchFraction = useMemo(() => {
@@ -168,6 +175,7 @@ export function useRecipeViewModel({
       additives: computedAdditives,
       splitLiquid: previewSettings.splitLiquid,
       splitLiquidGrams,
+      postCookSuperfat,
       properties,
       indexes,
       batchWeightWithExtras,
@@ -185,6 +193,7 @@ export function useRecipeViewModel({
     lyeLabel,
     fattyAcids,
     insights,
+    postCookSuperfat,
     previewSettings,
     previewState.lines,
     process,
@@ -211,6 +220,7 @@ export function useRecipeViewModel({
     totalOilGrams,
     computedAdditives,
     splitLiquidGrams,
+    postCookSuperfat,
     waterSuggestion,
     properties,
     indexes,

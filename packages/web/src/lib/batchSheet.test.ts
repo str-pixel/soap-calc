@@ -94,6 +94,7 @@ function makeBatchSheetInput(
     fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
     insights: [],
     process: 'hp',
+    postCookSuperfat: null,
     ...overrides,
   };
 }
@@ -106,6 +107,19 @@ describe('additiveStageLabel (re-exported for the batch sheet)', () => {
 
   it('labels after_cook as "After dilution" under ls', () => {
     expect(additiveStageLabel('after_cook', 'ls')).toBe('After dilution');
+  });
+});
+
+describe('buildBatchSheetData post-cook superfat threading', () => {
+  it('threads a post-cook superfat through to the batch sheet data', () => {
+    const pcsf = { oilId: 'shea-butter', percentOfOil: 5, grams: 50 };
+    const data = buildBatchSheetData(makeBatchSheetInput({ postCookSuperfat: pcsf }));
+    expect(data.postCookSuperfat).toEqual(pcsf);
+  });
+
+  it('defaults to null when no post-cook superfat is set', () => {
+    const data = buildBatchSheetData(makeBatchSheetInput());
+    expect(data.postCookSuperfat).toBeNull();
   });
 });
 

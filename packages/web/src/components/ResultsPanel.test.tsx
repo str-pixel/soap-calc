@@ -27,3 +27,40 @@ test('an after-cook additive uses the process-aware label — LS shows "After di
   expect(screen.getByText(/After dilution/)).toBeTruthy();
   expect(screen.queryByText(/After cook/)).toBeNull();
 });
+
+test('a post-cook superfat renders an oil+grams line and a cook+post-cook total', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="hp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      superfatPercent={DEFAULT_SETTINGS.superfatPercent}
+      postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }}
+    />,
+  );
+  expect(screen.getByText(/Shea Butter/)).toBeTruthy();
+  expect(screen.getByText('30 g')).toBeTruthy();
+  // cook (5% default) + post-cook (3%) = 8%
+  expect(screen.getByText('8%')).toBeTruthy();
+});
+
+test('with no postCookSuperfat, no PCSF line or total-superfat line renders', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+    />,
+  );
+  expect(screen.queryByText('Total superfat')).toBeNull();
+});

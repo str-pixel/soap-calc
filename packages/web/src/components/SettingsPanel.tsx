@@ -11,6 +11,7 @@ import {
 } from '../lib/settingsFields';
 import type { ProcessId } from '../lib/process';
 import { MoldSizerPanel } from './MoldSizerPanel';
+import { OilPicker } from './OilPicker';
 import { SplitLiquidPanel } from './SplitLiquidPanel';
 
 type FieldSpec = ReturnType<typeof purityFieldsFor>[number];
@@ -158,6 +159,34 @@ export function SettingsPanel({
             onValueChange={(v) => updateField(spec.key, v)}
           />
         ))}
+
+        {process !== 'cp' && (
+          <>
+            <label className="field">
+              <span>Post-cook superfat %</span>
+              <input
+                type="number"
+                className="input"
+                min={0}
+                max={50}
+                step={0.5}
+                value={settings.postCookSuperfatPercent}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, postCookSuperfatPercent: e.target.value }))
+                }
+              />
+            </label>
+            <div className="field">
+              <span>Post-cook superfat oil</span>
+              <OilPicker
+                value={settings.postCookSuperfatOilId}
+                onChange={(oilId) =>
+                  setSettings((s) => ({ ...s, postCookSuperfatOilId: oilId }))
+                }
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <SplitLiquidPanel

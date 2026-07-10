@@ -87,6 +87,21 @@ describe('recipeFile', () => {
     expect(parsed.data.settings.splitLiquid).toEqual(settings.splitLiquid);
   });
 
+  it('round-trips post-cook superfat settings', () => {
+    const lines = createStarterLines();
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      postCookSuperfatPercent: '5',
+      postCookSuperfatOilId: 'shea-butter',
+    };
+    const payload = serializeRecipeFile('HP with PCSF', lines, settings, [], 'hp');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.postCookSuperfatPercent).toBe('5');
+    expect(parsed.data.settings.postCookSuperfatOilId).toBe('shea-butter');
+  });
+
   it('rejects invalid additive percent', () => {
     const payload = {
       version: 2,
