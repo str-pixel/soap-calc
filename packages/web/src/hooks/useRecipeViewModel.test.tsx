@@ -15,6 +15,7 @@ function probe(onVm: (vm: unknown) => void) {
       additives: createEmptyAdditives(),
       drafts: {},
       weightUnit: 'g',
+      process: 'cp',
     });
     onVm(vm);
     return null;

@@ -1,4 +1,4 @@
-export type AdditiveStage = 'lye' | 'oils' | 'trace' | 'top';
+export type AdditiveStage = 'lye' | 'oils' | 'trace' | 'top' | 'after_cook';
 
 export type AdditiveCatalogEntry = {
   id: string;
@@ -113,6 +113,7 @@ export const ADDITIVE_STAGE_LABELS: Record<AdditiveStage, string> = {
   oils: 'With oils',
   trace: 'At trace',
   top: 'On top',
+  after_cook: 'After cook',
 };
 
 export const MAX_RECIPE_ADDITIVES = 50;

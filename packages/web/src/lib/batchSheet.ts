@@ -4,14 +4,17 @@ import type {
   RecipeFattyAcidResult,
   RecipePropertiesResult,
 } from '@soap-calc/core';
-import { ADDITIVE_STAGE_LABELS } from '@soap-calc/core';
+import { additiveStageLabel } from './additiveStageLabel';
 import type { ComputedAdditive } from './calculateAdditives';
 import type { RecipeDisplayTotals } from './calculateRecipe';
 import type { RecipeIndexResult } from './calculateRecipeIndexes';
+import type { ProcessId } from './process';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings, WeightUnit } from './recipe';
 import { oilById } from './oils';
 import { formatGrams } from './format';
 import { formatWeight } from './weightUnits';
+
+export { additiveStageLabel };
 
 export type BatchSheetData = {
   recipeName: string;
@@ -33,6 +36,7 @@ export type BatchSheetData = {
   waterModeLabel: string;
   fattyAcids: RecipeFattyAcidResult;
   insights: FormulationInsight[];
+  process: ProcessId;
 };
 
 export function canPrintBatchSheet(
@@ -66,6 +70,7 @@ export function buildBatchSheetData(input: {
   waterModeLabel: string;
   fattyAcids: RecipeFattyAcidResult;
   insights: FormulationInsight[];
+  process: ProcessId;
 }): BatchSheetData {
   return {
     ...input,
@@ -80,10 +85,6 @@ export function formatBatchSheetProperty(value: number | null | undefined): stri
 
 export function batchSheetOilName(oilId: string): string {
   return oilById(oilId)?.displayName ?? oilId;
-}
-
-export function additiveStageLabel(addAt: keyof typeof ADDITIVE_STAGE_LABELS): string {
-  return ADDITIVE_STAGE_LABELS[addAt];
 }
 
 export function formatBatchWeight(grams: number, unit: WeightUnit): string {
