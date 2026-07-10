@@ -116,6 +116,14 @@ describe('parseRecipeSettings', () => {
       expect(values!.naohPurityPercent).toBeUndefined();
     });
 
+    it('koh: a valid-but-unused NaOH purity still parses through (not forced undefined)', () => {
+      const { errors, values } = parseRecipeSettings(
+        settings({ lyeType: 'koh', kohPurityPercent: '90', naohPurityPercent: '88' }),
+      );
+      expect(errors).toHaveLength(0);
+      expect(values!.naohPurityPercent).toBe(88);
+    });
+
     it('dual: valid NaOH and KOH purity produce no error', () => {
       const { errors, values } = parseRecipeSettings(
         settings({
