@@ -139,7 +139,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
             <dt>Batch weight</dt>
             <dd>
               {formatBatchWeight(batchWeightWithExtras, weightUnit)}
-              {extrasGrams > 0 ? ' (with additives)' : ''}
+              {extrasGrams > 0 ? ' (with extras)' : ''}
             </dd>
           </div>
         </dl>
