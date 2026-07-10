@@ -173,6 +173,7 @@ export default function App() {
             result={vm.result}
             inputErrors={vm.inputErrors}
             lyeLabel={vm.lyeLabel}
+            process={process}
             lyeType={vm.previewSettings.lyeType}
             kohBlendPercent={vm.previewSettings.kohBlendPercent}
             displayTotals={vm.displayTotals}

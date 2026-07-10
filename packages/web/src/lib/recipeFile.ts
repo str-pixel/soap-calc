@@ -91,7 +91,8 @@ function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
     addAt !== 'lye' &&
     addAt !== 'oils' &&
     addAt !== 'trace' &&
-    addAt !== 'top'
+    addAt !== 'top' &&
+    addAt !== 'after_cook'
   ) {
     return null;
   }

@@ -41,6 +41,20 @@ describe('recipeFile', () => {
     expect(recipeAdditivesFromFile(parsed.data.additives)[0].name).toBe('Honey');
   });
 
+  it('round-trips an after-cook additive (import accepts the new stage)', () => {
+    const lines = createStarterLines();
+    const additives = recipeAdditivesFromFile([
+      { catalogId: 'fragrance', name: 'Fragrance', percentOfOil: '3', addAt: 'after_cook' },
+    ]);
+    const payload = serializeRecipeFile('HP batch', lines, DEFAULT_SETTINGS, additives, 'hp');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    // Before the fix, parseAdditiveLine rejected 'after_cook' and the whole file failed.
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives).toHaveLength(1);
+    expect(recipeAdditivesFromFile(parsed.data.additives)[0].addAt).toBe('after_cook');
+  });
+
   it('accepts legacy v1 files without additives', () => {
     const legacy = {
       version: 1,

@@ -1,5 +1,6 @@
 import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
-import { ADDITIVE_STAGE_LABELS } from '@soap-calc/core';
+import { additiveStageLabel } from '../lib/additiveStageLabel';
+import type { ProcessId } from '../lib/process';
 import { formatGrams } from '../lib/format';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
@@ -10,6 +11,7 @@ type ResultsPanelProps = {
   result: LyeCalculationResult | null;
   inputErrors: string[];
   lyeLabel: string;
+  process: ProcessId;
   lyeType: 'naoh' | 'koh' | 'dual';
   kohBlendPercent?: string;
   displayTotals: RecipeDisplayTotals | null;
@@ -35,6 +37,7 @@ export function ResultsPanel({
   result,
   inputErrors,
   lyeLabel,
+  process,
   lyeType,
   kohBlendPercent,
   displayTotals,
@@ -177,7 +180,7 @@ export function ResultsPanel({
                 {formatWeight(splitLiquidGrams, weightUnit)}
                 <span className="results-excluded">
                   {' '}
-                  ({ADDITIVE_STAGE_LABELS[splitLiquid.addAt]})
+                  ({additiveStageLabel(splitLiquid.addAt, process)})
                 </span>
               </dd>
             </div>
@@ -194,7 +197,7 @@ export function ResultsPanel({
               </dt>
               <dd>
                 {formatWeight(item.grams, weightUnit)}
-                <span className="results-excluded"> · {ADDITIVE_STAGE_LABELS[item.addAt]}</span>
+                <span className="results-excluded"> · {additiveStageLabel(item.addAt, process)}</span>
               </dd>
             </div>
           ))}
