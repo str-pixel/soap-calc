@@ -1,0 +1,4 @@
+interface:
+  display_name: "Soap Calc Development"
+  short_description: "Work safely in the Soap Calc monorepo."
+  default_prompt: "Use this skill when changing Soap Calc code or tests."

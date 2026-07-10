@@ -1,0 +1,4 @@
+interface:
+  display_name: "Soap Formulation Content"
+  short_description: "Keep CP formulation guidance accurate and copyright-safe."
+  default_prompt: "Use this skill when adding formulation guidance, presets, additives, or UI copy."
