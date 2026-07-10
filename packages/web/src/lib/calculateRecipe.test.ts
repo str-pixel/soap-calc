@@ -66,6 +66,17 @@ describe('calculateRecipe', () => {
     expect(result).toBeNull();
   });
 
+  it('collects settings AND line errors together (no early-return on settings errors)', () => {
+    const { inputErrors, result } = calculateRecipe(
+      [{ key: 'a', oilId: 'olive-oil', weightGrams: '-10' }],
+      { ...DEFAULT_SETTINGS, naohPurityPercent: '0' },
+    );
+    // A bad setting must NOT short-circuit line validation — the user sees both faults.
+    expect(inputErrors.some((e) => e.includes('NaOH purity'))).toBe(true);
+    expect(inputErrors.some((e) => e.includes('Invalid weight'))).toBe(true);
+    expect(result).toBeNull();
+  });
+
   it('returns empty hint state when no weights entered', () => {
     const { result, displayTotals } = calculateRecipe(
       [{ key: 'a', oilId: 'olive-oil', weightGrams: '' }],
