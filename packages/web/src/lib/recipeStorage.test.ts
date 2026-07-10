@@ -141,4 +141,15 @@ describe('per-process drafts', () => {
     expect(loadDraft('cp')).toBeNull();
     expect(loadActiveProcess()).toBe('ls');
   });
+
+  it('leaves the legacy draft in place when the target process draft already exists (concurrent old+new tab)', () => {
+    saveDraft('cp', 'Existing CP draft', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    const legacyPayload = JSON.stringify({ version: 2, name: 'Legacy', lines: [], settings: { ...DEFAULT_SETTINGS, lyeType: 'naoh' } });
+    localStorage.setItem('soap-calc:draft', legacyPayload);
+    migrateLegacyDraft();
+    // The cp slot was already occupied, so migration must not overwrite it, and must not
+    // destroy the still-unmigrated legacy payload either.
+    expect(loadDraft('cp')?.name).toBe('Existing CP draft');
+    expect(localStorage.getItem('soap-calc:draft')).toBe(legacyPayload);
+  });
 });

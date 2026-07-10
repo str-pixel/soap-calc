@@ -225,4 +225,30 @@ describe('recipe file process', () => {
     const parsed = parseRecipeFile(raw);
     expect(parsed.ok && parsed.data.process).toBe('cp');
   });
+
+  it('routes a legacy/process-less KOH (liquid soap) file to ls, not cp — no silent alkali flip', () => {
+    // A file exported before the process field existed (version 2, no `process`) can
+    // still carry a KOH recipe. Defaulting it to cp would let coerceSettingsForProcess
+    // silently flip lyeType koh→naoh on import.
+    const raw = JSON.stringify({
+      version: 2,
+      name: 'Body wash',
+      lines: [],
+      settings: { ...DEFAULT_SETTINGS, lyeType: 'koh' },
+    });
+    const parsed = parseRecipeFile(raw);
+    expect(parsed.ok && parsed.data.process).toBe('ls');
+  });
+
+  it('an explicit valid process in the file wins even with koh settings', () => {
+    const raw = JSON.stringify({
+      version: 2,
+      process: 'cp',
+      name: 'Explicit cp',
+      lines: [],
+      settings: { ...DEFAULT_SETTINGS, lyeType: 'koh' },
+    });
+    const parsed = parseRecipeFile(raw);
+    expect(parsed.ok && parsed.data.process).toBe('cp');
+  });
 });

@@ -5,7 +5,7 @@ import {
   newLineKey,
   normalizeSettings,
 } from './recipe';
-import { isProcessId, type ProcessId } from './process';
+import { isProcessId, processForLyeType, type ProcessId } from './process';
 
 const LEGACY_DRAFT_KEY = 'soap-calc:draft';
 const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
@@ -135,14 +135,19 @@ export function migrateLegacyDraft(): void {
     // Route by the legacy recipe's alkali: a KOH (liquid soap) recipe lands on LS,
     // everything else on CP. Otherwise coerceSettingsForProcess would silently flip a
     // KOH recipe to NaOH when it loads under CP (different SAP → wrong lye weight).
-    let target: ProcessId = 'cp';
+    let parsed: { settings?: { lyeType?: unknown } } | undefined;
     try {
-      const parsed = JSON.parse(legacy) as { settings?: { lyeType?: unknown } };
-      if (parsed?.settings?.lyeType === 'koh') target = 'ls';
+      parsed = JSON.parse(legacy) as { settings?: { lyeType?: unknown } };
     } catch {
-      // unparseable legacy payload → default to cp
+      // unparseable legacy payload → processForLyeType(undefined) below defaults to cp
     }
-    if (localStorage.getItem(draftKey(target)) === null) {
+    const target = processForLyeType(parsed?.settings?.lyeType);
+    // Only migrate — and only clear the legacy key — when the target slot is empty. A
+    // concurrent old+new tab may have already written a per-process draft there; if so,
+    // leave both the existing draft and the still-unmigrated legacy payload alone rather
+    // than clobbering the former or destroying the latter.
+    const targetEmpty = localStorage.getItem(draftKey(target)) === null;
+    if (targetEmpty) {
       safeSetItem(draftKey(target), legacy);
     }
     // Seed the active process to match, so the user lands on the right tab — but only
@@ -150,7 +155,9 @@ export function migrateLegacyDraft(): void {
     if (localStorage.getItem(ACTIVE_PROCESS_KEY) === null) {
       safeSetItem(ACTIVE_PROCESS_KEY, target);
     }
-    localStorage.removeItem(LEGACY_DRAFT_KEY);
+    if (targetEmpty) {
+      localStorage.removeItem(LEGACY_DRAFT_KEY);
+    }
   } catch {
     // ignore
   }

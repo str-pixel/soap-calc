@@ -134,6 +134,10 @@ export function useRecipeStorage() {
           importedSettings,
         );
         const importedAdditives = recipeAdditivesFromFile(parsed.data.additives);
+        // Flush the outgoing process's in-memory workspace first, mirroring setProcess:
+        // without this, edits made just before an import (still pending the autosave
+        // debounce) would be silently discarded when the state below swaps process.
+        saveDraft(process, recipeName, lines, settings, additives);
         saveActiveProcess(nextProcess);
         setProcessState(nextProcess);
         setRecipeName(parsed.data.name);

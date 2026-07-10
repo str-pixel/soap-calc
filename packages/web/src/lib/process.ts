@@ -18,6 +18,9 @@ export type ProcessDefinition = {
   terms: { finishingLabel: string };
 };
 
+// Every process currently allows all three water modes — unlike lyeChoices, this list is
+// not yet gating anything (waterModeChoicesFor/SettingsPanel just echo it back). It's
+// infra-only for now: per-process water-mode restriction is deferred to a later spec.
 const ALL_WATER_MODES: WaterMode[] = [
   'percent_of_oils',
   'lye_concentration',
@@ -76,6 +79,11 @@ export function isProcessId(value: unknown): value is ProcessId {
   return value === 'cp' || value === 'hp' || value === 'ls';
 }
 
+/** The process a legacy / process-less recipe belongs to, inferred from its alkali. */
+export function processForLyeType(lyeType: unknown): ProcessId {
+  return lyeType === 'koh' ? 'ls' : 'cp';
+}
+
 export function defaultsForProcess(process: ProcessId): Partial<RecipeSettings> {
   return PROCESS_DEFINITIONS[process].defaultSettings;
 }
@@ -86,5 +94,8 @@ export function coerceSettingsForProcess(
 ): RecipeSettings {
   const def = PROCESS_DEFINITIONS[process];
   if (def.lyeChoices.includes(settings.lyeType)) return settings;
+  // `?? def.lyeChoices[0]` is unreachable today (every process sets an explicit
+  // defaultSettings.lyeType) but defaultSettings is a Partial, so a future process that
+  // omits it would otherwise fall through to `undefined`. Kept as a defensive default.
   return { ...settings, lyeType: def.defaultSettings.lyeType ?? def.lyeChoices[0] };
 }

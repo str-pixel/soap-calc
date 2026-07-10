@@ -12,7 +12,7 @@ import {
   type RecipeLine,
   type RecipeSettings,
 } from './recipe';
-import { isProcessId, type ProcessId } from './process';
+import { isProcessId, processForLyeType, type ProcessId } from './process';
 
 export const RECIPE_FILE_VERSION = 2 as const;
 export const RECIPE_FILE_VERSION_LEGACY = 1 as const;
@@ -193,7 +193,12 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
     ok: true,
     data: {
       version: RECIPE_FILE_VERSION,
-      process: isProcessId(parsed.process) ? parsed.process : 'cp',
+      // A file with no/invalid `process` predates this feature and may contain a KOH
+      // (liquid soap) recipe. Route it by alkali so coerceSettingsForProcess doesn't
+      // silently flip lyeType koh→naoh on import — an explicit valid process still wins.
+      process: isProcessId(parsed.process)
+        ? parsed.process
+        : processForLyeType((parsed.settings as { lyeType?: unknown } | undefined)?.lyeType),
       name: parsed.name,
       lines,
       additives,

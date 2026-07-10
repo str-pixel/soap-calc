@@ -71,4 +71,29 @@ describe('useRecipeStorage process', () => {
     act(() => result.current.setProcess('hp'));
     expect(loadDraft('cp')?.settings.superfatPercent).toBe('6');
   });
+
+  it('handleImportFile flushes the outgoing workspace before swapping process, mirroring setProcess', async () => {
+    const { result } = renderHook(() => useRecipeStorage()); // defaults to cp
+    act(() => result.current.setSettings((s) => ({ ...s, superfatPercent: '6' })));
+
+    const raw = JSON.stringify({
+      version: 2,
+      process: 'ls',
+      name: 'Imported LS',
+      lines: [],
+      settings: { ...DEFAULT_SETTINGS, lyeType: 'koh' },
+    });
+    // jsdom's File doesn't implement Blob#text() in this test setup, so mock the
+    // minimal shape handleImportFile actually uses instead of `new File(...)`.
+    const file = { text: () => Promise.resolve(raw) } as unknown as File;
+
+    await act(async () => {
+      result.current.handleImportFile(file);
+      // Let the file.text() promise (and its .then chain) drain before asserting.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.process).toBe('ls');
+    expect(loadDraft('cp')?.settings.superfatPercent).toBe('6');
+  });
 });
