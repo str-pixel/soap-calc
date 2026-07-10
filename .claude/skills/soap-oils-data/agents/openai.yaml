@@ -1,0 +1,4 @@
+interface:
+  display_name: "Soap Oils Data"
+  short_description: "Update and validate Soap Calc oil data."
+  default_prompt: "Use this skill when changing canonical oils, SAP values, or INCI data."
