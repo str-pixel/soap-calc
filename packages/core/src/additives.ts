@@ -108,6 +108,32 @@ export function parsePercentOfOil(value: string): number | null {
   return n;
 }
 
+export type DoseUnit = 'percent' | 'ppt';
+export type DoseBasis = 'oil' | 'batch';
+
+/** Validate a dose amount for its unit. Percent caps at 100, ppt at 1000 (both = 100% of basis).
+ * Returns the numeric amount, or null when empty/negative/non-finite/over the ceiling. */
+export function parseDoseAmount(value: string, unit: DoseUnit): number | null {
+  if (value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return null;
+  const ceiling = unit === 'ppt' ? 1000 : 100;
+  if (n > ceiling) return null;
+  return n;
+}
+
+/** Grams from a dose amount against a basis weight. percent = amount/100, ppt = amount/1000. */
+export function gramsFromDose(
+  basisWeightGrams: number,
+  amount: number,
+  unit: DoseUnit,
+): number | null {
+  if (!Number.isFinite(basisWeightGrams) || basisWeightGrams < 0) return null;
+  if (!Number.isFinite(amount) || amount < 0) return null;
+  const divisor = unit === 'ppt' ? 1000 : 100;
+  return (basisWeightGrams * amount) / divisor;
+}
+
 export const ADDITIVE_STAGE_LABELS: Record<AdditiveStage, string> = {
   lye: 'In lye water',
   oils: 'With oils',
