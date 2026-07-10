@@ -15,6 +15,10 @@ export type ParsedSettings = {
   lyeWaterRatio?: number;
 };
 
+export type ParseSettingsResult =
+  | { ok: true; values: ParsedSettings }
+  | { ok: false; errors: string[] };
+
 function parseNonNegative(value: string, label: string): { n: number | null; error?: string } {
   const n = Number(value);
   if (!Number.isFinite(n) || n < 0) {
@@ -82,10 +86,7 @@ function waterInput(
   };
 }
 
-export function parseRecipeSettings(settings: RecipeSettings): {
-  values: ParsedSettings | null;
-  errors: string[];
-} {
+export function parseRecipeSettings(settings: RecipeSettings): ParseSettingsResult {
   const errors: string[] = [];
 
   const superfat = parseNonNegative(settings.superfatPercent, 'superfat %');
@@ -111,21 +112,20 @@ export function parseRecipeSettings(settings: RecipeSettings): {
   const waterParams = waterInput(settings, errors);
 
   if (errors.length) {
-    return { values: null, errors };
+    return { ok: false, errors };
   }
 
-  return {
-    values: {
-      superfatPercent: superfat.n!,
-      lyeType: settings.lyeType,
-      waterMode: waterParams.waterMode,
-      kohBlendPercent: settings.lyeType === 'dual' ? blend!.n ?? undefined : undefined,
-      naohPurityPercent: naohPurity.n ?? undefined,
-      kohPurityPercent: kohPurity.n ?? undefined,
-      waterPercentOfOils: waterParams.waterPercentOfOils,
-      lyeConcentrationPercent: waterParams.lyeConcentrationPercent,
-      lyeWaterRatio: waterParams.lyeWaterRatio,
-    },
-    errors: [],
+  const values: ParsedSettings = {
+    superfatPercent: superfat.n!,
+    lyeType: settings.lyeType,
+    waterMode: waterParams.waterMode,
+    kohBlendPercent: settings.lyeType === 'dual' ? blend!.n ?? undefined : undefined,
+    naohPurityPercent: naohPurity.n ?? undefined,
+    kohPurityPercent: kohPurity.n ?? undefined,
+    waterPercentOfOils: waterParams.waterPercentOfOils,
+    lyeConcentrationPercent: waterParams.lyeConcentrationPercent,
+    lyeWaterRatio: waterParams.lyeWaterRatio,
   };
+
+  return { ok: true, values };
 }

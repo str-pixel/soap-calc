@@ -22,8 +22,8 @@ export function calculateRecipe(
   lines: RecipeLine[],
   settings: RecipeSettings,
 ): RecipeCalculation {
-  const { values, errors: settingsErrors } = parseRecipeSettings(settings);
-  const inputErrors: string[] = [...settingsErrors];
+  const parsed = parseRecipeSettings(settings);
+  const inputErrors: string[] = parsed.ok ? [] : [...parsed.errors];
 
   const resolved = resolveLineWeights(lines, settings);
 
@@ -39,7 +39,7 @@ export function calculateRecipe(
     if (!inputErrors.includes(err)) inputErrors.push(err);
   }
 
-  if (inputErrors.length || !values) {
+  if (inputErrors.length || !parsed.ok) {
     return { result: null, inputErrors, linePercents: new Map(), displayTotals: null };
   }
 
@@ -63,7 +63,7 @@ export function calculateRecipe(
   const result = calculateLye({
     oils,
     oilLookup: OIL_LOOKUP,
-    ...values,
+    ...parsed.values,
   });
 
   const lyeIncludedOilWeightGrams = result.lines
