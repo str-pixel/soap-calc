@@ -152,4 +152,21 @@ describe('calculateRecipe', () => {
     expect(weightErrors.length).toBeGreaterThan(0);
     expect(new Set(weightErrors).size).toBe(weightErrors.length);
   });
+
+  it('computes an LS recipe with a negative superfat (lye excess)', () => {
+    const lines = [{ key: 'a', oilId: 'coconut-oil-76', weightGrams: '1000' }];
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+      superfatPercent: '-2',
+      waterMode: 'lye_water_ratio' as const,
+      lyeWaterRatio: '2',
+    };
+    const ls = calculateRecipe(lines, settings, 'ls');
+    expect(ls.inputErrors).toEqual([]);
+    expect(ls.result).not.toBeNull();
+
+    const cp = calculateRecipe(lines, settings, 'cp');
+    expect(cp.inputErrors).toContain('Invalid superfat %');
+  });
 });

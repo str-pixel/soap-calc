@@ -106,6 +106,7 @@ export function useRecipeViewModel({
   const { result: fullResult, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
     previewState.lines,
     previewSettings,
+    process,
   );
   // Gate on parsePercentOfOil (caps at 100, matching computePostCookSuperfat) so the lye
   // reduction and the "reserved" PCSF line can never diverge at an out-of-range percent.
