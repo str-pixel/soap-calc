@@ -25,7 +25,9 @@ export const SOAP_PROPERTY_FATTY_ACIDS: Record<SoapPropertyName, readonly string
     'docosadienoic',
     'erucic',
   ],
-  hardness: ['lauric', 'myristic', 'palmitic', 'stearic', 'caprylic', 'capric'],
+  // C8/C10 stay out of hardness: their soaps are too soluble to harden a bar,
+  // even though they count toward cleansing/bubbly.
+  hardness: ['lauric', 'myristic', 'palmitic', 'stearic'],
   longevity: ['palmitic', 'stearic'],
   creamy: ['palmitic', 'stearic', 'ricinoleic'],
 };

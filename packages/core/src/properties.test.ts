@@ -24,9 +24,9 @@ const OLIVE_FA = {
 };
 
 describe('oilPropertiesFromFattyAcids', () => {
-  it('computes hardness from saturated chain lengths', () => {
+  it('computes hardness from C12+ saturated acids only (C8/C10 soaps are too soluble to harden)', () => {
     const props = oilPropertiesFromFattyAcids(COCONUT_FA);
-    expect(props.hardness).toBe(48 + 19 + 9 + 2 + 8 + 7);
+    expect(props.hardness).toBe(48 + 19 + 9 + 2);
     expect(props.cleansing).toBe(48 + 19 + 8 + 7);
   });
 });
