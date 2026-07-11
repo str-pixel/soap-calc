@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SPLIT_LIQUID } from '../lib/recipe';
-import { totalAdditivePercentForInsights } from './useFormulationInsights';
+import { postCookSuperfatPufaPercent, totalAdditivePercentForInsights } from './useFormulationInsights';
 
 describe('totalAdditivePercentForInsights', () => {
   it('excludes split liquid added in lye water', () => {
@@ -22,5 +22,14 @@ describe('totalAdditivePercentForInsights', () => {
     expect(
       totalAdditivePercentForInsights([{ grams: 30 }, { grams: 3 }], 1000, { ...DEFAULT_SPLIT_LIQUID }),
     ).toBeCloseTo(3.3); // (30+3)/1000*100
+  });
+});
+
+describe('postCookSuperfatPufaPercent', () => {
+  it('returns the oil linoleic+linolenic total, undefined for unknown oil', () => {
+    const coconut = postCookSuperfatPufaPercent('coconut-oil-76');
+    expect(coconut).toBeDefined();
+    expect(coconut!).toBeLessThan(30); // coconut is low-PUFA
+    expect(postCookSuperfatPufaPercent('not-an-oil')).toBeUndefined();
   });
 });

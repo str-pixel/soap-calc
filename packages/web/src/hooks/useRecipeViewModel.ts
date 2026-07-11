@@ -177,6 +177,7 @@ export function useRecipeViewModel({
       suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
       splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
       additives: computedAdditives,
+      postCookSuperfat,
     },
   );
   const lyeLabel =

@@ -1,8 +1,15 @@
 import { useMemo } from 'react';
-import { analyzeFormulation, parsePercentOfOil, type LyeCalculationResult, type RecipePropertiesResult } from '@soap-calc/core';
+import {
+  analyzeFormulation,
+  parsePercentOfOil,
+  sumFattyAcids,
+  FATTY_ACID_GROUP_KEYS,
+  type LyeCalculationResult,
+  type RecipePropertiesResult,
+} from '@soap-calc/core';
 import { calculateFattyAcidsForRecipe } from '../lib/calculateFattyAcids';
 import { oilById } from '../lib/oils';
-import type { ComputedAdditive } from '../lib/calculateAdditives';
+import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
 export function totalAdditivePercentForInsights(
@@ -21,12 +28,18 @@ export function totalAdditivePercentForInsights(
   return additivePercent + splitLiquidPercent;
 }
 
+export function postCookSuperfatPufaPercent(oilId: string): number | undefined {
+  const fa = oilById(oilId)?.fattyAcids;
+  return fa ? sumFattyAcids(fa, FATTY_ACID_GROUP_KEYS.polyunsaturated) : undefined;
+}
+
 type FormulationInsightOptions = {
   excludedOilWeightGrams?: number;
   splitLiquidGrams?: number | null;
   suggestedLyeWaterGrams?: number | null;
   splitLiquidWaterReductionGrams?: number | null;
   additives?: ComputedAdditive[];
+  postCookSuperfat?: ComputedPostCookSuperfat | null;
 };
 
 export function useFormulationInsights(
@@ -80,6 +93,9 @@ export function useFormulationInsights(
       oilEntries,
       lyeType: settings.lyeType,
       kohBlendPercent: Number(settings.kohBlendPercent) || 0,
+      postCookSuperfatPufaPercent: options.postCookSuperfat
+        ? postCookSuperfatPufaPercent(options.postCookSuperfat.oilId)
+        : undefined,
     });
   }, [
     fattyAcids.profile,
@@ -92,6 +108,7 @@ export function useFormulationInsights(
     options.splitLiquidGrams,
     options.suggestedLyeWaterGrams,
     options.splitLiquidWaterReductionGrams,
+    options.postCookSuperfat,
     properties.properties,
     settings.splitLiquid.addAt,
     settings.splitLiquid.enabled,
