@@ -122,3 +122,10 @@ test('HP shows the PCSF method toggle and updates it; CP hides it', () => {
   render(<Harness process="cp" />);
   expect(screen.queryByLabelText('Post-cook superfat method')).toBeNull();
 });
+
+test('superfat input allows a negative min only for LS', () => {
+  const { rerender } = render(<Harness process="cp" />);
+  expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('0');
+  rerender(<Harness process="ls" />);
+  expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('-5');
+});
