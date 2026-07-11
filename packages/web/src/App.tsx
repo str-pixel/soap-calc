@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
+import { DilutionPanel } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { ProcessTabs } from './components/ProcessTabs';
@@ -171,6 +172,17 @@ export default function App() {
             superfatPercent={vm.previewSettings.superfatPercent}
             postCookSuperfat={vm.postCookSuperfat}
           />
+
+          {process === 'ls' && (
+            <DilutionPanel
+              dilution={vm.dilution}
+              soapConcentrationPercent={settings.soapConcentrationPercent}
+              onSoapConcentrationChange={(value) =>
+                setSettings({ ...settings, soapConcentrationPercent: value })
+              }
+              weightUnit={weightUnit}
+            />
+          )}
 
           <SettingsPanel
             process={process}
