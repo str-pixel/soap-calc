@@ -30,8 +30,9 @@ export function calculateDilution(input: DilutionInput): DilutionResult | null {
   const totalWaterGrams = solutionGrams - anhydrousGrams;
   const targetExceedsPaste = totalWaterGrams < cook;
   const dilutionWaterGrams = Math.max(0, totalWaterGrams - cook);
-  const glycerinGrams =
-    (Number.isFinite(kohGrams) ? kohGrams : 0) * 0.55 + (Number.isFinite(naohGrams) ? naohGrams : 0) * 0.77;
+  const koh = Number.isFinite(kohGrams) && kohGrams > 0 ? kohGrams : 0;
+  const naoh = Number.isFinite(naohGrams) && naohGrams > 0 ? naohGrams : 0;
+  const glycerinGrams = koh * 0.55 + naoh * 0.77;
   return {
     anhydrousGrams,
     solutionGrams,

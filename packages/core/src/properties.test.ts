@@ -85,6 +85,8 @@ describe('calculateRecipeProperties', () => {
 
     expect(result.properties).toBeNull();
     expect(result.coveragePercent).toBe(0);
+    // Zero coverage still names which oils lack data.
+    expect(result.missingOilIds).toContain('birch-tar');
   });
 
   it('reports an unknown oil id (absent from lookup) as missing', () => {

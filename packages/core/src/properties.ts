@@ -1,3 +1,5 @@
+import { calculateRecipeFattyAcids } from './fatty-acids.js';
+
 export type FattyAcidProfile = Record<string, number>;
 
 export type SoapPropertyName =
@@ -91,57 +93,21 @@ export type RecipePropertiesResult = {
   missingOilIds: string[];
 };
 
+// Properties are linear sums of fatty-acid percentages, so the weighted-average
+// property equals the property of the weighted-average profile. The fatty-acid
+// aggregation (with its renormalization over covered weight) is the single source
+// of truth; see calculateRecipeFattyAcids for the coverage semantics.
 export function calculateRecipeProperties(
   lines: RecipeOilForProperties[],
   oilLookup: Record<string, OilForProperties>,
 ): RecipePropertiesResult {
-  const weighted = lines.filter((line) => line.weightGrams > 0);
-  const totalWeight = weighted.reduce((sum, line) => sum + line.weightGrams, 0);
-
-  if (totalWeight <= 0) {
-    return { properties: null, coveragePercent: 0, missingOilIds: [] };
-  }
-
-  const properties = {
-    bubbly: 0,
-    cleansing: 0,
-    condition: 0,
-    hardness: 0,
-    longevity: 0,
-    creamy: 0,
-  } satisfies SoapProperties;
-
-  let coveredWeight = 0;
-  const missingOilIds = new Set<string>();
-
-  for (const line of weighted) {
-    const oil = oilLookup[line.oilId];
-    if (!oil?.propertiesAvailable || !oil.fattyAcids) {
-      missingOilIds.add(line.oilId);
-      continue;
-    }
-
-    coveredWeight += line.weightGrams;
-    const oilProps = oilPropertiesFromFattyAcids(oil.fattyAcids);
-
-    for (const key of Object.keys(properties) as SoapPropertyName[]) {
-      properties[key] += oilProps[key] * line.weightGrams;
-    }
-  }
-
-  if (coveredWeight <= 0) {
-    return { properties: null, coveragePercent: 0, missingOilIds: [] };
-  }
-
-  // Renormalize over the oils we have data for, so the value stays on the same 0-100
-  // scale as SOAP_PROPERTY_GUIDE. coveragePercent (below) reports how much is covered.
-  for (const key of Object.keys(properties) as SoapPropertyName[]) {
-    properties[key] /= coveredWeight;
-  }
-
+  const { profile, coveragePercent, missingOilIds } = calculateRecipeFattyAcids(
+    lines,
+    oilLookup,
+  );
   return {
-    properties,
-    coveragePercent: (coveredWeight / totalWeight) * 100,
-    missingOilIds: [...missingOilIds],
+    properties: profile ? oilPropertiesFromFattyAcids(profile) : null,
+    coveragePercent,
+    missingOilIds,
   };
 }

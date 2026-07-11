@@ -38,7 +38,7 @@ export function calculateRecipeFattyAcids(
   }
 
   if (coveredWeight <= 0) {
-    return { profile: null, coveragePercent: 0, missingOilIds: [] };
+    return { profile: null, coveragePercent: 0, missingOilIds: [...missingOilIds] };
   }
 
   // Renormalize over covered weight so the profile reads as a fatty-acid % of the

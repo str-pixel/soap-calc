@@ -3,7 +3,7 @@ import {
   sumFattyAcids,
   type FattyAcidProfile,
 } from './fatty-acids.js';
-import type { LyeType, WaterMode } from './lye.js';
+import { DEFAULT_KOH_BLEND_PERCENT, type LyeType, type WaterMode } from './lye.js';
 import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
 import {
   additiveMatches,
@@ -200,7 +200,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  if (input.lyeType === 'dual' && (input.kohBlendPercent ?? 0) > 0) {
+  if (input.lyeType === 'dual' && (input.kohBlendPercent ?? DEFAULT_KOH_BLEND_PERCENT) > 0) {
     insights.push({
       level: 'info',
       code: 'dual_lye_advanced',
