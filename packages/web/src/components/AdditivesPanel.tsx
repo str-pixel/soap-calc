@@ -3,6 +3,8 @@ import {
   catalogEntryById,
   LATHER_SUPPORT_PACK,
   type AdditiveStage,
+  type DoseBasis,
+  type DoseUnit,
 } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import type { ProcessId } from '../lib/process';
@@ -19,6 +21,13 @@ type AdditivesPanelProps = {
   process: ProcessId;
   onChange: (additives: AdditiveLine[]) => void;
 };
+
+const DOSE_MODES: { value: string; basis: DoseBasis; unit: DoseUnit; label: string }[] = [
+  { value: 'oil-percent', basis: 'oil', unit: 'percent', label: '% of oil' },
+  { value: 'batch-percent', basis: 'batch', unit: 'percent', label: '% of batch' },
+  { value: 'oil-ppt', basis: 'oil', unit: 'ppt', label: 'ppt of oil' },
+  { value: 'batch-ppt', basis: 'batch', unit: 'ppt', label: 'ppt of batch' },
+];
 
 const BASE_STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
 
@@ -109,7 +118,7 @@ export function AdditivesPanel({
       <div className="panel__head">
         <div>
           <h2 className="panel__title">Additives</h2>
-          <p className="panel__subtitle">% of total oil weight</p>
+          <p className="panel__subtitle">Dose per additive</p>
         </div>
         <div className="panel__actions">
           <button
@@ -128,8 +137,8 @@ export function AdditivesPanel({
 
       {additives.length === 0 ? (
         <p className="results-hint">
-          Optional extras (fragrance, sugar, clay, etc.) dosed as % of oil weight — not included
-          in lye math.
+          Optional extras (fragrance, sugar, clay, etc.) dosed per additive — not included in lye
+          math.
         </p>
       ) : (
         <ul className="additive-list" aria-label="Recipe additives">
@@ -177,13 +186,31 @@ export function AdditivesPanel({
                     type="number"
                     className="input input--number"
                     min={0}
-                    max={100}
+                    max={line.unit === 'ppt' ? 1000 : 100}
                     step={0.1}
                     placeholder="%"
                     value={line.amount}
                     onChange={(e) => updateLine(line.key, { amount: e.target.value })}
                     aria-label="Percent of oil weight"
                   />
+                </label>
+                <label className="field">
+                  <span className="sr-only">Dose mode</span>
+                  <select
+                    className="input"
+                    aria-label="Dose mode"
+                    value={`${line.basis}-${line.unit}`}
+                    onChange={(e) => {
+                      const mode = DOSE_MODES.find((m) => m.value === e.target.value);
+                      if (mode) updateLine(line.key, { basis: mode.basis, unit: mode.unit });
+                    }}
+                  >
+                    {DOSE_MODES.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="field">
                   <span className="sr-only">Add at</span>

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AdditivesPanel } from './AdditivesPanel';
 import type { AdditiveLine } from '../lib/recipe';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
@@ -121,4 +122,20 @@ describe('AdditivesPanel stage options', () => {
     const updated = onChange.mock.calls[0][0] as AdditiveLine[];
     expect(updated[0].addAt).toBe('after_cook');
   });
+});
+
+test('changing the dose mode updates the line basis and unit', async () => {
+  const user = userEvent.setup();
+  const additives = [
+    { key: 'a', catalogId: '', name: 'X', amount: '3', basis: 'oil' as const, unit: 'percent' as const, addAt: 'trace' as const },
+  ];
+  const onChange = vi.fn();
+  render(
+    <AdditivesPanel additives={additives} computed={[]} weightUnit="g" process="hp" onChange={onChange} />,
+  );
+  const modeSelect = screen.getByLabelText('Dose mode');
+  await user.selectOptions(modeSelect, 'oil-ppt');
+  expect(onChange).toHaveBeenCalledWith([
+    expect.objectContaining({ key: 'a', basis: 'oil', unit: 'ppt' }),
+  ]);
 });
