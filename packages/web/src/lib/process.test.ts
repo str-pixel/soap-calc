@@ -46,4 +46,9 @@ describe('process definitions', () => {
     const dualInLs = { ...DEFAULT_SETTINGS, lyeType: 'dual' as const };
     expect(coerceSettingsForProcess(dualInLs, 'ls')).toBe(dualInLs);
   });
+
+  it('seeds HP 5% / LS 2% post-cook superfat defaults', () => {
+    expect(PROCESS_DEFINITIONS.hp.defaultSettings.postCookSuperfatPercent).toBe('5');
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.postCookSuperfatPercent).toBe('2');
+  });
 });

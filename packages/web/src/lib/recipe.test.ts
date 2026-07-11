@@ -70,6 +70,10 @@ describe('postCookSuperfat settings', () => {
     expect(s.postCookSuperfatPercent).toBe('5');
     expect(s.postCookSuperfatOilId).toBe('shea-butter');
   });
+
+  it('defaults postCookSuperfatMethod to append', () => {
+    expect(DEFAULT_SETTINGS.postCookSuperfatMethod).toBe('append');
+  });
 });
 
 describe('normalizeAdditiveLine dose migration', () => {

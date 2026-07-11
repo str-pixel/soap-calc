@@ -44,6 +44,7 @@ export type RecipeSettings = {
   batchNotes: string;
   postCookSuperfatPercent: string;
   postCookSuperfatOilId: string;
+  postCookSuperfatMethod: 'append' | 'subtract';
   soapConcentrationPercent: string;
 };
 
@@ -78,6 +79,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   batchNotes: '',
   postCookSuperfatPercent: '0',
   postCookSuperfatOilId: 'olive-oil',
+  postCookSuperfatMethod: 'append',
   soapConcentrationPercent: '30',
 };
 
