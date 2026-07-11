@@ -1,4 +1,5 @@
 import type {
+  DilutionResult,
   FormulationInsight,
   LyeCalculationResult,
   RecipeFattyAcidResult,
@@ -31,6 +32,7 @@ export type BatchSheetData = {
   splitLiquid: SplitLiquidSettings | undefined;
   splitLiquidGrams: number | null;
   postCookSuperfat: ComputedPostCookSuperfat | null;
+  dilution: DilutionResult | null;
   properties: RecipePropertiesResult | null;
   indexes: RecipeIndexResult;
   batchWeightWithExtras: number;
@@ -66,6 +68,7 @@ export function buildBatchSheetData(input: {
   splitLiquid: SplitLiquidSettings | undefined;
   splitLiquidGrams: number | null;
   postCookSuperfat: ComputedPostCookSuperfat | null;
+  dilution: DilutionResult | null;
   properties: RecipePropertiesResult | null;
   indexes: RecipeIndexResult;
   batchWeightWithExtras: number;

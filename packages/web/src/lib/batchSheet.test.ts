@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { LyeCalculationResult } from '@soap-calc/core';
+import type { DilutionResult, LyeCalculationResult } from '@soap-calc/core';
 import { additiveStageLabel, buildBatchSheetData, canPrintBatchSheet } from './batchSheet';
 import type { ComputedAdditive } from './calculateAdditives';
-import type { RecipeDisplayTotals } from './calculateRecipe';
-import { DEFAULT_SETTINGS } from './recipe';
+import { calculateRecipe, type RecipeDisplayTotals } from './calculateRecipe';
+import { createStarterLines, DEFAULT_SETTINGS } from './recipe';
 
 function makeResult(
   overrides: Partial<LyeCalculationResult> = {},
@@ -97,6 +97,7 @@ function makeBatchSheetInput(
     insights: [],
     process: 'hp',
     postCookSuperfat: null,
+    dilution: null,
     ...overrides,
   };
 }
@@ -136,5 +137,26 @@ describe('buildBatchSheetData process threading', () => {
     const data = buildBatchSheetData(makeBatchSheetInput({ process: 'ls' }));
     expect(data.process).toBe('ls');
     expect(additiveStageLabel(data.additives[0].addAt, data.process)).toBe('After dilution');
+  });
+});
+
+describe('buildBatchSheetData dilution threading', () => {
+  it('prints an LS dilution section when dilution is present', () => {
+    const lines = createStarterLines();
+    const { result, displayTotals, linePercents } = calculateRecipe(lines, DEFAULT_SETTINGS);
+    if (!result || !displayTotals) throw new Error('expected a valid calculation');
+    const dilution: DilutionResult = {
+      anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
+      dilutionWaterGrams: 2400, glycerinGrams: 110, soapConcentrationPercent: 30, targetExceedsPaste: false,
+    };
+    const data = buildBatchSheetData({
+      recipeName: 'LS', batchNotes: '', weightUnit: 'g', lyeLabel: 'KOH', settings: DEFAULT_SETTINGS,
+      lines, linePercents, result, displayTotals, additives: [], splitLiquid: undefined, splitLiquidGrams: null,
+      postCookSuperfat: null, dilution, properties: null,
+      indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+      batchWeightWithExtras: displayTotals.batchWeightGrams, waterModeLabel: '2:1',
+      fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] }, insights: [], process: 'ls',
+    });
+    expect(data.dilution).toEqual(dilution);
   });
 });

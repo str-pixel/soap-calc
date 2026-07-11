@@ -200,6 +200,7 @@ export function useRecipeViewModel({
       splitLiquid: previewSettings.splitLiquid,
       splitLiquidGrams,
       postCookSuperfat,
+      dilution,
       properties,
       indexes,
       batchWeightWithExtras,
@@ -210,6 +211,7 @@ export function useRecipeViewModel({
   }, [
     batchWeightWithExtras,
     computedAdditives,
+    dilution,
     displayTotals,
     indexes,
     inputErrors.length,

@@ -36,6 +36,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
     splitLiquid,
     splitLiquidGrams,
     postCookSuperfat,
+    dilution,
     properties,
     indexes,
     batchWeightWithExtras,
@@ -223,6 +224,19 @@ export function BatchSheet({ data }: BatchSheetProps) {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {dilution && (
+        <section className="batch-sheet__section">
+          <h2>Dilution</h2>
+          <dl className="batch-sheet__dl">
+            <div><dt>Paste (anhydrous)</dt><dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd></div>
+            <div><dt>Target concentration</dt><dd>{formatGrams(dilution.soapConcentrationPercent, 0)}%</dd></div>
+            <div><dt>Dilution water to add</dt><dd>{formatWeight(dilution.dilutionWaterGrams, weightUnit)}</dd></div>
+            <div><dt>Finished solution</dt><dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd></div>
+            <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
+          </dl>
         </section>
       )}
 
