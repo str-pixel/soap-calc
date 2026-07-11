@@ -97,6 +97,23 @@ test('a post-cook-superfat-only batch does not claim "additives" in the batch-we
   expect(screen.queryByText(/includes additives/)).toBeNull();
 });
 
+test('subtract: PCSF labeled reserved + batch weight uses the vm value (not a local recompute)', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
+      displayTotals={displayTotals} weightUnit="g"
+      superfatPercent={DEFAULT_SETTINGS.superfatPercent}
+      postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
+      postCookSuperfatMethod="subtract"
+      batchWeightWithExtras={1234}
+    />,
+  );
+  expect(screen.getByText(/reserved/i)).toBeTruthy();
+  // The panel renders the vm's batch weight, not (full displayTotals batch + PCSF grams).
+  expect(screen.getByText('1,234 g')).toBeTruthy();
+});
+
 test('with no postCookSuperfat, no PCSF line or total-superfat line renders', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(

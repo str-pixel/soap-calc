@@ -25,6 +25,8 @@ type ResultsPanelProps = {
   additives?: ComputedAdditive[];
   superfatPercent?: string;
   postCookSuperfat?: ComputedPostCookSuperfat | null;
+  postCookSuperfatMethod?: 'append' | 'subtract';
+  batchWeightWithExtras?: number;
 };
 
 function waterFootnote(
@@ -53,6 +55,8 @@ export function ResultsPanel({
   additives = [],
   superfatPercent,
   postCookSuperfat = null,
+  postCookSuperfatMethod = 'append',
+  batchWeightWithExtras,
 }: ResultsPanelProps) {
   if (inputErrors.length) {
     return (
@@ -77,8 +81,10 @@ export function ResultsPanel({
   const excludedOilWeightGrams = displayTotals?.excludedFromLyeOilWeightGrams ?? 0;
   const isEmpty = recipeOilWeightGrams <= 0;
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0) + (postCookSuperfat?.grams ?? 0);
-  const batchWeightWithExtras = batchWeightGrams + extrasGrams;
+  const pcsfIsExtra = postCookSuperfatMethod !== 'subtract';
+  const extrasGrams =
+    additiveGrams + (splitLiquidGrams ?? 0) + (pcsfIsExtra ? postCookSuperfat?.grams ?? 0 : 0);
+  const displayedBatchWeight = batchWeightWithExtras ?? batchWeightGrams + extrasGrams;
   const waterNote = waterFootnote(waterMode, excludedOilWeightGrams);
   const showTotalLiquid =
     splitLiquid?.enabled && splitLiquidGrams !== null && splitLiquidGrams > 0;
@@ -93,7 +99,7 @@ export function ResultsPanel({
   const extrasNote = [
     additiveGrams > 0 ? 'additives' : null,
     splitLiquidGrams ? 'alternative liquid' : null,
-    postCookSuperfat ? 'post-cook superfat' : null,
+    postCookSuperfat && pcsfIsExtra ? 'post-cook superfat' : null,
   ]
     .filter(Boolean)
     .join(' and ');
@@ -168,7 +174,7 @@ export function ResultsPanel({
           <div className="results-grid__item">
             <dt>Batch weight</dt>
             <dd>
-              {formatWeight(batchWeightWithExtras, weightUnit)}
+              {formatWeight(displayedBatchWeight, weightUnit)}
               {extrasGrams > 0 && extrasNote && (
                 <span className="results-excluded"> (includes {extrasNote})</span>
               )}
@@ -211,7 +217,10 @@ export function ResultsPanel({
           )}
           {postCookSuperfat && (
             <div className="results-grid__item">
-              <dt>Post-cook superfat ({postCookSuperfatOilName})</dt>
+              <dt>
+                Post-cook superfat ({postCookSuperfatOilName})
+                {postCookSuperfatMethod === 'subtract' ? ' · reserved, lye reduced' : ''}
+              </dt>
               <dd>
                 {formatWeight(postCookSuperfat.grams, weightUnit)}
                 <span className="results-excluded">

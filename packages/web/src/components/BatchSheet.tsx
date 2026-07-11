@@ -36,6 +36,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
     splitLiquid,
     splitLiquidGrams,
     postCookSuperfat,
+    postCookSuperfatMethod,
     dilution,
     properties,
     indexes,
@@ -48,7 +49,10 @@ export function BatchSheet({ data }: BatchSheetProps) {
 
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const extrasGrams = additiveGrams + (splitLiquidGrams ?? 0) + (postCookSuperfat?.grams ?? 0);
+  const extrasGrams =
+    additiveGrams +
+    (splitLiquidGrams ?? 0) +
+    (postCookSuperfatMethod !== 'subtract' ? postCookSuperfat?.grams ?? 0 : 0);
 
   const isDualLye = settings.lyeType === 'dual';
   const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
@@ -215,6 +219,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
                 {batchSheetOilName(postCookSuperfat.oilId)} —{' '}
                 {formatWeight(postCookSuperfat.grams, weightUnit)} (
                 {formatGrams(postCookSuperfat.percentOfOil, 1)}% post-cook superfat)
+                {postCookSuperfatMethod === 'subtract' ? ' — reserved (lye reduced)' : ''}
               </li>
             )}
             {additives.map((item) => (
