@@ -165,3 +165,29 @@ test('changing the dose mode updates the line basis and unit', async () => {
     expect.objectContaining({ key: 'a', basis: 'oil', unit: 'ppt' }),
   ]);
 });
+
+function doseModeValues(select: HTMLElement): string[] {
+  return within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
+}
+
+test('LS offers the solution dose modes; CP does not', () => {
+  const additives = [makeLine()];
+  const computed = [makeComputed(makeLine())];
+  render(<AdditivesPanel additives={additives} computed={computed} weightUnit="g" process="ls" onChange={() => {}} />);
+  expect(doseModeValues(screen.getByLabelText('Dose mode'))).toEqual(
+    ['oil-percent', 'batch-percent', 'oil-ppt', 'batch-ppt', 'solution-percent', 'solution-ppt'],
+  );
+  cleanup();
+  render(<AdditivesPanel additives={additives} computed={computed} weightUnit="g" process="cp" onChange={() => {}} />);
+  expect(doseModeValues(screen.getByLabelText('Dose mode'))).toEqual(
+    ['oil-percent', 'batch-percent', 'oil-ppt', 'batch-ppt'],
+  );
+});
+
+test('a stray solution line under CP still renders its dose-mode option (guard)', () => {
+  const line = makeLine({ basis: 'solution', unit: 'percent' });
+  render(<AdditivesPanel additives={[line]} computed={[]} weightUnit="g" process="cp" onChange={() => {}} />);
+  const select = screen.getByLabelText('Dose mode') as HTMLSelectElement;
+  expect(select.value).toBe('solution-percent');
+  expect(doseModeValues(select)).toContain('solution-percent');
+});

@@ -28,7 +28,14 @@ const DOSE_MODES: { value: string; basis: DoseBasis; unit: DoseUnit; label: stri
   { value: 'batch-percent', basis: 'batch', unit: 'percent', label: '% of batch' },
   { value: 'oil-ppt', basis: 'oil', unit: 'ppt', label: 'ppt of oil' },
   { value: 'batch-ppt', basis: 'batch', unit: 'ppt', label: 'ppt of batch' },
+  { value: 'solution-percent', basis: 'solution', unit: 'percent', label: '% of solution' },
+  { value: 'solution-ppt', basis: 'solution', unit: 'ppt', label: 'ppt of solution' },
 ];
+
+// The finished solution only exists for LS, so its dose modes are LS-only.
+function offeredDoseModesForProcess(process: ProcessId): typeof DOSE_MODES {
+  return process === 'ls' ? DOSE_MODES : DOSE_MODES.filter((m) => m.basis !== 'solution');
+}
 
 const BASE_STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
 
@@ -46,6 +53,7 @@ export function AdditivesPanel({
   onChange,
 }: AdditivesPanelProps) {
   const offeredStages = offeredStagesForProcess(process);
+  const offeredDoseModes = offeredDoseModesForProcess(process);
 
   function updateLine(key: string, patch: Partial<AdditiveLine>) {
     onChange(
@@ -157,6 +165,13 @@ export function AdditivesPanel({
             const stageOptions = offeredStages.includes(line.addAt)
               ? offeredStages
               : [...offeredStages, line.addAt];
+            // Mismatched-select guard (dose mode): a stray `solution` line viewed
+            // under CP/HP must still render its current option, even though
+            // solution modes are otherwise LS-only — see stageOptions above.
+            const doseModeValue = `${line.basis}-${line.unit}`;
+            const doseModeOptions = offeredDoseModes.some((m) => m.value === doseModeValue)
+              ? offeredDoseModes
+              : [...offeredDoseModes, ...DOSE_MODES.filter((m) => m.value === doseModeValue)];
 
             return (
               <li key={line.key} className="additive-list__row">
@@ -210,7 +225,7 @@ export function AdditivesPanel({
                       if (mode) updateLine(line.key, { basis: mode.basis, unit: mode.unit });
                     }}
                   >
-                    {DOSE_MODES.map((m) => (
+                    {doseModeOptions.map((m) => (
                       <option key={m.value} value={m.value}>
                         {m.label}
                       </option>
