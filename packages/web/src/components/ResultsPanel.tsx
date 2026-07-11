@@ -230,7 +230,7 @@ export const ResultsPanel = memo(function ResultsPanel({
             <div className="results-grid__item">
               <dt>
                 Post-cook superfat ({postCookSuperfatOilName})
-                {postCookSuperfatMethod === 'subtract' ? ' · reserved, lye reduced' : ''}
+                {postCookSuperfatMethod === 'subtract' && cookSuperfatPercent >= 0 ? ' · reserved, lye reduced' : ''}
               </dt>
               <dd>
                 {formatWeight(postCookSuperfat.grams, weightUnit)}
@@ -241,7 +241,7 @@ export const ResultsPanel = memo(function ResultsPanel({
               </dd>
             </div>
           )}
-          {postCookSuperfat && (
+          {postCookSuperfat && cookSuperfatPercent >= 0 && (
             <div className="results-grid__item">
               <dt>Total superfat</dt>
               <dd>{formatGrams(totalSuperfatPercent, 1)}%</dd>

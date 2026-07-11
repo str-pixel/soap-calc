@@ -72,6 +72,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     process,
   } = data;
 
+  const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
   const extrasGrams = computeExtrasGrams(
     additives,
@@ -159,7 +160,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <dt>Superfat</dt>
             <dd>{settings.superfatPercent || '0'}%</dd>
           </div>
-          {postCookSuperfat && (
+          {postCookSuperfat && mainSuperfatPercent >= 0 && (
             <div>
               <dt>Total superfat</dt>
               <dd>
@@ -249,7 +250,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 {batchSheetOilName(postCookSuperfat.oilId)} —{' '}
                 {formatWeight(postCookSuperfat.grams, weightUnit)} (
                 {formatGrams(postCookSuperfat.percentOfOil, 1)}% post-cook superfat)
-                {postCookSuperfatMethod === 'subtract' ? ' — reserved (lye reduced)' : ''}
+                {postCookSuperfatMethod === 'subtract' && mainSuperfatPercent >= 0 ? ' — reserved (lye reduced)' : ''}
               </li>
             )}
             {additives.map((item) => (

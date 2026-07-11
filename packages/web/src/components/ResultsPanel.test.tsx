@@ -118,6 +118,38 @@ test('subtract: PCSF labeled reserved + batch weight uses the vm value (not a lo
   expect(screen.getByText('1,234 g')).toBeTruthy();
 });
 
+test('subtract + negative main superfat: no "reserved" label and no Total superfat row (cookFactor guard leaves lye untouched, so both would be false)', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
+      displayTotals={displayTotals} weightUnit="g"
+      superfatPercent="-2"
+      postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
+      postCookSuperfatMethod="subtract"
+      batchWeightWithExtras={1234}
+    />,
+  );
+  expect(screen.queryByText(/reserved/i)).toBeNull();
+  expect(screen.queryByText('Total superfat')).toBeNull();
+});
+
+test('subtract + non-negative main superfat: "reserved" label and Total superfat row both render', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
+      displayTotals={displayTotals} weightUnit="g"
+      superfatPercent="2"
+      postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
+      postCookSuperfatMethod="subtract"
+      batchWeightWithExtras={1234}
+    />,
+  );
+  expect(screen.getByText(/reserved/i)).toBeTruthy();
+  expect(screen.getByText('Total superfat')).toBeTruthy();
+});
+
 test('with no postCookSuperfat, no PCSF line or total-superfat line renders', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
