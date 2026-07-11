@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   calculateLye,
   lyeForOilLine,
+  scaleLyeResult,
   sapCoefficientForLye,
   shouldIncludeOilInLye,
   type OilForLyeCalc,
@@ -344,5 +345,41 @@ describe('calculateLye', () => {
     );
     expect(oliveLine.kohGrams + coconutLine.kohGrams).toBeCloseTo(result.kohWeightGrams, 4);
     expect((result.kohWeightGrams / result.lyeWeightGrams) * 100).toBeCloseTo(10, 1);
+  });
+});
+
+describe('scaleLyeResult', () => {
+  const input = {
+    oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+    oilLookup: { 'olive-oil': OLIVE },
+    superfatPercent: 5,
+    lyeType: 'naoh' as const,
+    waterMode: 'percent_of_oils' as const,
+    waterPercentOfOils: 33,
+  };
+  const full = calculateLye(input);
+
+  it('scales lye/water/per-line by the factor, leaving oil/concentration/ratio unchanged', () => {
+    const s = scaleLyeResult(full, 0.9);
+    expect(s.lyeWeightGrams).toBeCloseTo(full.lyeWeightGrams * 0.9);
+    expect(s.naohWeightGrams).toBeCloseTo(full.naohWeightGrams * 0.9);
+    expect(s.waterWeightGrams).toBeCloseTo(full.waterWeightGrams * 0.9);
+    expect(s.lines[0].lyeGrams).toBeCloseTo(full.lines[0].lyeGrams * 0.9);
+    expect(s.totalOilWeightGrams).toBe(full.totalOilWeightGrams);
+    expect(s.lines[0].weightGrams).toBe(full.lines[0].weightGrams);
+    expect(s.lyeConcentrationPercent).toBe(full.lyeConcentrationPercent);
+    expect(s.waterLyeRatio).toBe(full.waterLyeRatio);
+    expect(s.totalBatchWeightGrams).toBeCloseTo(full.totalOilWeightGrams + full.lyeWeightGrams * 0.9 + full.waterWeightGrams * 0.9);
+  });
+
+  it('matches a real recompute on scaled oils (linearity)', () => {
+    const recomputed = calculateLye({ ...input, oils: [{ oilId: 'olive-oil', weightGrams: 900 }] });
+    expect(scaleLyeResult(full, 0.9).lyeWeightGrams).toBeCloseTo(recomputed.lyeWeightGrams);
+    expect(scaleLyeResult(full, 0.9).waterWeightGrams).toBeCloseTo(recomputed.waterWeightGrams);
+  });
+
+  it('clamps factor to [0,1]', () => {
+    expect(scaleLyeResult(full, 1.5).lyeWeightGrams).toBe(full.lyeWeightGrams);
+    expect(scaleLyeResult(full, -0.5).lyeWeightGrams).toBe(0);
   });
 });

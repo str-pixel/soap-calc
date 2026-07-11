@@ -329,3 +329,28 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
   };
 }
 
+/** Present a lye result as if the oils were scaled by `factor` (0–1): scales the lye-side
+ * quantities (lye/water are linear in oil weight), preserving oil weights, concentration,
+ * and water:lye ratio. Used for the post-cook-superfat "subtract" method (reserve oil). */
+export function scaleLyeResult(result: LyeCalculationResult, factor: number): LyeCalculationResult {
+  const f = Math.min(1, Math.max(0, factor));
+  const lyeWeightGrams = result.lyeWeightGrams * f;
+  const naohWeightGrams = result.naohWeightGrams * f;
+  const kohWeightGrams = result.kohWeightGrams * f;
+  const waterWeightGrams = result.waterWeightGrams * f;
+  return {
+    ...result,
+    lyeWeightGrams,
+    naohWeightGrams,
+    kohWeightGrams,
+    waterWeightGrams,
+    totalBatchWeightGrams: result.totalOilWeightGrams + lyeWeightGrams + waterWeightGrams,
+    lines: result.lines.map((line) => ({
+      ...line,
+      lyeGrams: line.lyeGrams * f,
+      naohGrams: line.naohGrams * f,
+      kohGrams: line.kohGrams * f,
+    })),
+  };
+}
+
