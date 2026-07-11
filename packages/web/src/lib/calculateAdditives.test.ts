@@ -24,7 +24,7 @@ describe('calculateAdditives', () => {
   ];
 
   it('computes grams from percent of oil', () => {
-    expect(computeRecipeAdditives(additives, { oilGrams: 1000, batchGrams: 1500 })).toEqual([
+    expect(computeRecipeAdditives(additives, { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 })).toEqual([
       {
         key: 'a',
         catalogId: 'honey',
@@ -43,7 +43,7 @@ describe('calculateAdditives', () => {
   });
 
   it('returns empty when oil weight is zero', () => {
-    expect(computeRecipeAdditives(additives, { oilGrams: 0, batchGrams: 1500 })).toEqual([]);
+    expect(computeRecipeAdditives(additives, { oilGrams: 0, batchGrams: 1500, solutionGrams: 0 })).toEqual([]);
     expect(computeSplitLiquidGrams('20', 0)).toBeNull();
   });
 
@@ -53,7 +53,7 @@ describe('calculateAdditives', () => {
       { key: 'b', catalogId: '', name: 'Clay', amount: '0', basis: 'oil', unit: 'percent', addAt: 'oils' },
       { key: 'c', catalogId: '', name: '', amount: '2', basis: 'oil', unit: 'percent', addAt: 'trace' },
     ];
-    expect(computeRecipeAdditives(lines, { oilGrams: 1000, batchGrams: 1500 })).toEqual([
+    expect(computeRecipeAdditives(lines, { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 })).toEqual([
       {
         key: 'c',
         catalogId: '',
@@ -70,19 +70,26 @@ describe('calculateAdditives', () => {
 
 describe('computeRecipeAdditives dose basis/unit', () => {
   it('percent of oil uses oil weight', () => {
-    const [row] = computeRecipeAdditives([line({ amount: '5' })], { oilGrams: 1000, batchGrams: 1500 });
+    const [row] = computeRecipeAdditives([line({ amount: '5' })], { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 });
     expect(row.grams).toBe(50);
   });
   it('percent of batch uses the wet-batch weight', () => {
-    const [row] = computeRecipeAdditives([line({ amount: '1', basis: 'batch' })], { oilGrams: 1000, batchGrams: 1500 });
+    const [row] = computeRecipeAdditives([line({ amount: '1', basis: 'batch' })], { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 });
     expect(row.grams).toBe(15);
   });
   it('ppt of oil divides by 1000', () => {
-    const [row] = computeRecipeAdditives([line({ amount: '3', unit: 'ppt' })], { oilGrams: 1000, batchGrams: 1500 });
+    const [row] = computeRecipeAdditives([line({ amount: '3', unit: 'ppt' })], { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 });
     expect(row.grams).toBe(3);
   });
   it('skips a batch-basis line when batch weight is unavailable', () => {
-    expect(computeRecipeAdditives([line({ amount: '1', basis: 'batch' })], { oilGrams: 1000, batchGrams: 0 })).toEqual([]);
+    expect(computeRecipeAdditives([line({ amount: '1', basis: 'batch' })], { oilGrams: 1000, batchGrams: 0, solutionGrams: 0 })).toEqual([]);
+  });
+  it('a solution-basis line uses solutionGrams', () => {
+    const [row] = computeRecipeAdditives([line({ amount: '2', basis: 'solution' })], { oilGrams: 1000, batchGrams: 1500, solutionGrams: 4000 });
+    expect(row.grams).toBe(80); // 2% of 4000
+  });
+  it('skips a solution-basis line when solutionGrams is 0 (non-LS)', () => {
+    expect(computeRecipeAdditives([line({ amount: '2', basis: 'solution' })], { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 })).toEqual([]);
   });
 });
 

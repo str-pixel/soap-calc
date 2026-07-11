@@ -111,9 +111,15 @@ export function useRecipeViewModel({
         : null,
     [process, result, previewSettings.soapConcentrationPercent],
   );
+  const solutionGrams = dilution?.solutionGrams ?? 0;
   const computedAdditives = useMemo(
-    () => computeRecipeAdditives(additives, { oilGrams: totalOilGrams, batchGrams: baseBatchGrams }),
-    [additives, totalOilGrams, baseBatchGrams],
+    () =>
+      computeRecipeAdditives(additives, {
+        oilGrams: totalOilGrams,
+        batchGrams: baseBatchGrams,
+        solutionGrams,
+      }),
+    [additives, totalOilGrams, baseBatchGrams, solutionGrams],
   );
   const splitLiquidGrams =
     previewSettings.splitLiquid.enabled

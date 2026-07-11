@@ -107,7 +107,7 @@ export function parsePercentOfOil(value: string): number | null {
 }
 
 export type DoseUnit = 'percent' | 'ppt';
-export type DoseBasis = 'oil' | 'batch';
+export type DoseBasis = 'oil' | 'batch' | 'solution';
 
 /** Validate a dose amount for its unit. Percent caps at 100, ppt at 1000 (both = 100% of basis).
  * Returns the numeric amount, or null when empty/negative/non-finite/over the ceiling. */

@@ -11,4 +11,8 @@ describe('formatDose', () => {
   it('rounds to one decimal like the rest of the UI', () => {
     expect(formatDose(0.25, 'oil', 'percent')).toBe('0.3% of oil');
   });
+  it('labels the solution basis', () => {
+    expect(formatDose(1, 'solution', 'percent')).toBe('1% of solution');
+    expect(formatDose(3, 'solution', 'ppt')).toBe('3 ppt of solution');
+  });
 });

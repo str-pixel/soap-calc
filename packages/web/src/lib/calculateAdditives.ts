@@ -21,11 +21,12 @@ export type ComputedAdditive = {
 
 export function computeRecipeAdditives(
   additives: AdditiveLine[],
-  { oilGrams, batchGrams }: { oilGrams: number; batchGrams: number },
+  { oilGrams, batchGrams, solutionGrams }: { oilGrams: number; batchGrams: number; solutionGrams: number },
 ): ComputedAdditive[] {
   const result: ComputedAdditive[] = [];
   for (const line of additives) {
-    const basisWeight = line.basis === 'batch' ? batchGrams : oilGrams;
+    const basisWeight =
+      line.basis === 'batch' ? batchGrams : line.basis === 'solution' ? solutionGrams : oilGrams;
     if (basisWeight <= 0) continue;
     const amount = parseDoseAmount(line.amount, line.unit);
     if (amount === null || amount === 0) continue;

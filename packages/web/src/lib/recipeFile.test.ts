@@ -87,6 +87,17 @@ describe('recipeFile', () => {
     expect(roundTripped.unit).toBe('ppt');
   });
 
+  it('round-trips a solution-basis additive through a file', () => {
+    const additives = recipeAdditivesFromFile([
+      { catalogId: '', name: 'Preservative', amount: '1', basis: 'solution', unit: 'percent', addAt: 'trace' },
+    ]);
+    const payload = serializeRecipeFile('LS preserve', createStarterLines(), DEFAULT_SETTINGS, additives, 'ls');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].basis).toBe('solution');
+  });
+
   it('accepts legacy v1 files without additives', () => {
     const legacy = {
       version: 1,

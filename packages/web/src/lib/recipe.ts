@@ -143,7 +143,7 @@ export function normalizeAdditiveLine(
     partial.addAt === 'after_cook'
       ? partial.addAt
       : 'trace';
-  const basis = partial.basis === 'batch' ? 'batch' : 'oil';
+  const basis = partial.basis === 'batch' ? 'batch' : partial.basis === 'solution' ? 'solution' : 'oil';
   const unit = partial.unit === 'ppt' ? 'ppt' : 'percent';
   const amount =
     typeof partial.amount === 'string'

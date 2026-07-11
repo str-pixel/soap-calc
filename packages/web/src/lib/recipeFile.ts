@@ -96,7 +96,7 @@ function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
   ) {
     return null;
   }
-  const basis = value.basis === 'batch' ? 'batch' : 'oil';
+  const basis = value.basis === 'batch' ? 'batch' : value.basis === 'solution' ? 'solution' : 'oil';
   const unit = value.unit === 'ppt' ? 'ppt' : 'percent';
   const amount =
     typeof value.amount === 'string' && value.amount !== ''

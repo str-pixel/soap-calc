@@ -88,6 +88,10 @@ describe('normalizeAdditiveLine dose migration', () => {
     expect(line.basis).toBe('oil');
     expect(line.unit).toBe('percent');
   });
+  it('normalizeAdditiveLine accepts basis solution, defaults unknown to oil', () => {
+    expect(normalizeAdditiveLine({ key: 'k', amount: '1', basis: 'solution' }).basis).toBe('solution');
+    expect(normalizeAdditiveLine({ key: 'k', amount: '1', basis: 'nope' as never }).basis).toBe('oil');
+  });
 });
 
 describe('normalizeAdditiveLine', () => {
