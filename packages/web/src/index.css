@@ -1156,3 +1156,46 @@ select {
     padding: 0;
   }
 }
+
+.property-radar {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto 0.5rem;
+  overflow: visible;
+}
+
+.property-radar__grid {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.property-radar__spoke {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.property-radar__axis-label {
+  font-size: 9px;
+  fill: var(--text-muted);
+}
+
+.property-radar__band {
+  fill: rgb(13 107 92 / 14%);
+  stroke: none;
+}
+
+.property-radar__recipe {
+  fill: rgb(13 107 92 / 20%);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.property-radar__recipe--estimated {
+  stroke-dasharray: 4 3;
+}
+
+.property-radar__vertex {
+  fill: var(--accent);
+}
