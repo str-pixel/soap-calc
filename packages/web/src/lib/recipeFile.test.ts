@@ -64,6 +64,29 @@ describe('recipeFile', () => {
     expect(recipeAdditivesFromFile(parsed.data.additives)[0].addAt).toBe('after_cook');
   });
 
+  it('round-trips a batch/ppt additive (file preserves dose basis and unit)', () => {
+    const lines = createStarterLines();
+    const additives = recipeAdditivesFromFile([
+      {
+        catalogId: 'fragrance',
+        name: 'Fragrance',
+        amount: '3',
+        basis: 'batch',
+        unit: 'ppt',
+        addAt: 'trace',
+      },
+    ]);
+    const payload = serializeRecipeFile('Batch ppt', lines, DEFAULT_SETTINGS, additives);
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives).toHaveLength(1);
+    const roundTripped = recipeAdditivesFromFile(parsed.data.additives)[0];
+    expect(roundTripped.amount).toBe('3');
+    expect(roundTripped.basis).toBe('batch');
+    expect(roundTripped.unit).toBe('ppt');
+  });
+
   it('accepts legacy v1 files without additives', () => {
     const legacy = {
       version: 1,
