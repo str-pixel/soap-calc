@@ -69,6 +69,7 @@ export const DEFAULT_WATER_PERCENT = 33;
 export const DEFAULT_LYE_CONCENTRATION_PERCENT = 33.33;
 export const DEFAULT_LYE_WATER_RATIO = 2;
 const MAX_SUPERFAT_PERCENT = 50;
+const NEG_SUPERFAT_FLOOR = -5;
 /** Default KOH share for dual-lye recipes; shared with analyzeFormulation so the
  * "advanced technique" insight matches what calculateLye actually blends. */
 export const DEFAULT_KOH_BLEND_PERCENT = 5;
@@ -173,11 +174,11 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
 
   if (
     !Number.isFinite(input.superfatPercent) ||
-    input.superfatPercent < 0 ||
+    input.superfatPercent < NEG_SUPERFAT_FLOOR ||
     input.superfatPercent > MAX_SUPERFAT_PERCENT
   ) {
     errors.push(
-      `superfatPercent must be a finite number between 0 and ${MAX_SUPERFAT_PERCENT}`,
+      `superfatPercent must be a finite number between ${NEG_SUPERFAT_FLOOR} and ${MAX_SUPERFAT_PERCENT}`,
     );
   }
 

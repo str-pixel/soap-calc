@@ -106,6 +106,31 @@ describe('calculateLye', () => {
     expect(result.lyeWeightGrams).toBe(0);
   });
 
+  it('accepts a negative superfat (lye excess) and yields more lye than 0%', () => {
+    const base = {
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      lyeType: 'naoh' as const,
+      waterMode: 'percent_of_oils' as const,
+      waterPercentOfOils: 38,
+    };
+    const excess = calculateLye({ ...base, superfatPercent: -5 });
+    const exact = calculateLye({ ...base, superfatPercent: 0 });
+    expect(excess.errors).toEqual([]);
+    expect(excess.lyeWeightGrams).toBeGreaterThan(exact.lyeWeightGrams);
+  });
+
+  it('rejects a superfat below the -5 floor', () => {
+    const result = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: -6,
+      lyeType: 'naoh',
+    });
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.lyeWeightGrams).toBe(0);
+  });
+
   it('deduplicates tar warnings for the same oil', () => {
     const result = calculateLye({
       oils: [
