@@ -503,7 +503,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 Add to `packages/web/src/components/ResultsPanel.test.tsx` (follow its existing PCSF render setup):
 ```ts
-test('subtract labels the PCSF as reserved', () => {
+test('subtract: PCSF labeled reserved + batch weight uses the vm value (not a local recompute)', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
@@ -512,9 +512,12 @@ test('subtract labels the PCSF as reserved', () => {
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
       postCookSuperfatMethod="subtract"
+      batchWeightWithExtras={1234}
     />,
   );
   expect(screen.getByText(/reserved/i)).toBeTruthy();
+  // The panel renders the vm's batch weight, not (full displayTotals batch + PCSF grams).
+  expect(screen.getByText('1,234 g')).toBeTruthy();
 });
 ```
 
@@ -525,13 +528,25 @@ Expected: FAIL — no "reserved" wording / no `postCookSuperfatMethod` prop.
 
 - [ ] **Step 3: Implement**
 
-In `packages/web/src/components/ResultsPanel.tsx`: add `postCookSuperfatMethod?: 'append' | 'subtract';` to the props type and destructure it (default `'append'`). In the PCSF result line, append a method suffix to the label, e.g. change the `<dt>Post-cook superfat (…)</dt>` content to include `{postCookSuperfatMethod === 'subtract' ? ' · reserved, lye reduced' : ''}`.
+**ResultsPanel correctness — it must not show an append-like batch weight under subtract.** ResultsPanel currently *recomputes* its own batch weight from the full `displayTotals.batchWeightGrams` and unconditionally adds `postCookSuperfat.grams` (`ResultsPanel.tsx:79-81, 93-99`), which is wrong under subtract (reduced lye/water + PCSF reserved). Fix it by consuming the view-model's already-correct value and method-gating the PCSF extra:
+- Add props `postCookSuperfatMethod?: 'append' | 'subtract';` and `batchWeightWithExtras?: number;` (destructure `postCookSuperfatMethod = 'append'`).
+- Replace the extras/batch block (`ResultsPanel.tsx:79-81`):
+```tsx
+  const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
+  const pcsfIsExtra = postCookSuperfatMethod !== 'subtract';
+  const extrasGrams =
+    additiveGrams + (splitLiquidGrams ?? 0) + (pcsfIsExtra ? postCookSuperfat?.grams ?? 0 : 0);
+  const displayedBatchWeight = batchWeightWithExtras ?? batchWeightGrams + extrasGrams;
+```
+  and change the "Batch weight" JSX to render `formatWeight(displayedBatchWeight, weightUnit)` (was `batchWeightWithExtras`).
+- Method-gate the note's PCSF entry (`ResultsPanel.tsx:96`): `postCookSuperfat && pcsfIsExtra ? 'post-cook superfat' : null`.
+- In the PCSF result line's `<dt>`, append `{postCookSuperfatMethod === 'subtract' ? ' · reserved, lye reduced' : ''}`.
 
-In `packages/web/src/App.tsx`, pass `postCookSuperfatMethod={vm.previewSettings.postCookSuperfatMethod}` to `<ResultsPanel>`.
+In `packages/web/src/App.tsx`, pass `postCookSuperfatMethod={vm.previewSettings.postCookSuperfatMethod}` and `batchWeightWithExtras={vm.batchWeightWithExtras}` to `<ResultsPanel>`.
 
 In `packages/web/src/lib/batchSheet.ts`: add `postCookSuperfatMethod: RecipeSettings['postCookSuperfatMethod'];` to `BatchSheetData` and the `buildBatchSheetData` input; carry it through. In `useRecipeViewModel.ts`'s `buildBatchSheetData({ … })` call, pass `postCookSuperfatMethod: previewSettings.postCookSuperfatMethod,` and add it to that memo's deps.
 
-In `packages/web/src/components/BatchSheet.tsx`: destructure `postCookSuperfatMethod` from `data` and, in the PCSF `<li>`, append `{postCookSuperfatMethod === 'subtract' ? ' — reserved (lye reduced)' : ''}`.
+In `packages/web/src/components/BatchSheet.tsx`: destructure `postCookSuperfatMethod` from `data`; in the PCSF `<li>`, append `{postCookSuperfatMethod === 'subtract' ? ' — reserved (lye reduced)' : ''}`; and method-gate the local `extrasGrams` (`BatchSheet.tsx:51`) so PCSF is excluded under subtract (`… + (postCookSuperfatMethod !== 'subtract' ? postCookSuperfat?.grams ?? 0 : 0)`). (This only affects the cosmetic "(with extras)" suffix — the printed batch number already uses the correct `data.batchWeightWithExtras`.)
 
 (Update any existing `buildBatchSheetData({…})` test callers with `postCookSuperfatMethod: 'append'` — tsc will flag them.)
 
