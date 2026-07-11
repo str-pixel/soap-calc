@@ -6,7 +6,7 @@ import {
   oilGramsFromMoldVolumeCm3,
   rectangularMoldVolumeCm3,
 } from '@soap-calc/core';
-import { displayValueToGrams, type WeightUnit } from './weightUnits';
+import { displayValueToGrams, gramsToDisplayValue, type WeightUnit } from './weightUnits';
 
 const CM_PER_INCH = 2.54;
 
@@ -44,6 +44,22 @@ function parsePositive(value: string): number | null {
 
 function toCm(value: number, useInches: boolean): number {
   return useInches ? value * CM_PER_INCH : value;
+}
+
+/** Convert a bar-weight display string between units, preserving the physical value.
+ * barWeight has no canonical-grams backing store, so keep 3 decimals rather than the
+ * unit's coarse display rounding — otherwise repeated unit switches drift the value
+ * (120 g → 4.2 oz → 119 g) and sub-precision values collapse to 0 irrecoverably. */
+export function convertBarWeightBetweenUnits(
+  barWeight: string,
+  fromUnit: WeightUnit,
+  toUnit: WeightUnit,
+): string {
+  const n = parsePositive(barWeight);
+  if (n === null) return barWeight;
+  const grams = displayValueToGrams(n, fromUnit);
+  const converted = gramsToDisplayValue(grams, toUnit);
+  return String(Math.round(converted * 1000) / 1000);
 }
 
 function parseNonNegative(value: string): number | null {

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { RecipeFattyAcidResult } from '@soap-calc/core';
 import {
   FORMULATION_FATTY_ACID_GUIDE,
@@ -53,7 +54,9 @@ function inGuideBand(value: number, low: number, high: number): boolean {
   return value >= low && value <= high;
 }
 
-export function FattyAcidPanel({ result }: FattyAcidPanelProps) {
+// memo: `result` is a stable view-model memo output, so unrelated keystrokes
+// skip re-rendering this panel.
+export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcidPanelProps) {
   const partial = result.profile ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.profile
@@ -144,4 +147,4 @@ export function FattyAcidPanel({ result }: FattyAcidPanelProps) {
       </p>
     </section>
   );
-}
+});

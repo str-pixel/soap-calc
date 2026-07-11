@@ -1,10 +1,15 @@
+import { memo } from 'react';
 import type { FormulationInsight } from '@soap-calc/core';
 
 type FormulationInsightsPanelProps = {
   insights: FormulationInsight[];
 };
 
-export function FormulationInsightsPanel({ insights }: FormulationInsightsPanelProps) {
+// memo: `insights` is a stable view-model memo output, so unrelated keystrokes
+// skip re-rendering this panel.
+export const FormulationInsightsPanel = memo(function FormulationInsightsPanel({
+  insights,
+}: FormulationInsightsPanelProps) {
   if (insights.length === 0) return null;
 
   return (
@@ -27,4 +32,4 @@ export function FormulationInsightsPanel({ insights }: FormulationInsightsPanelP
       </ul>
     </section>
   );
-}
+});

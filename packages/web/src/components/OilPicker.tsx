@@ -1,13 +1,15 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { searchOils, oilById, type OilRecord } from '../lib/oils';
 import { formatInciSubtitle, oilPickerTag } from '../lib/oilDisplay';
 
 type OilPickerProps = {
   value: string;
   onChange: (oilId: string) => void;
+  /** Accessible name; distinguish multiple pickers (e.g. "Post-cook superfat oil"). */
+  ariaLabel?: string;
 };
 
-export function OilPicker({ value, onChange }: OilPickerProps) {
+export function OilPicker({ value, onChange, ariaLabel = 'Oil' }: OilPickerProps) {
   const listId = useId();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -16,7 +18,12 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
 
   const selected = oilById(value);
   const searchQuery = open && query.length === 0 ? '' : (query || selected?.displayName || '');
-  const results = searchOils(searchQuery, searchQuery ? 50 : undefined);
+  // The list only renders while open; don't run the full-DB filter on every
+  // app re-render for each closed picker.
+  const results = useMemo(
+    () => (open ? searchOils(searchQuery, searchQuery ? 50 : undefined) : []),
+    [open, searchQuery],
+  );
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -86,7 +93,7 @@ export function OilPicker({ value, onChange }: OilPickerProps) {
             setOpen(false);
           }
         }}
-        aria-label="Oil"
+        aria-label={ariaLabel}
         autoComplete="off"
       />
       {open && results.length > 0 && (

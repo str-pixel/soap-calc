@@ -62,6 +62,21 @@ export type ComputedPostCookSuperfat = {
   grams: number;
 };
 
+/** Total off-recipe grams added to the batch: additives + trace split liquid + the
+ * post-cook superfat when it's appended (subtract mode reserves it from the oils).
+ * Single source of truth for the view model, ResultsPanel, and BatchSheet. */
+export function computeExtrasGrams(
+  additives: Array<{ grams: number }>,
+  splitLiquidGrams: number | null,
+  postCookSuperfat: ComputedPostCookSuperfat | null,
+  postCookSuperfatMethod: RecipeSettings['postCookSuperfatMethod'] | undefined,
+): number {
+  const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
+  const pcsfGrams =
+    postCookSuperfatMethod !== 'subtract' ? postCookSuperfat?.grams ?? 0 : 0;
+  return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams;
+}
+
 /** The post-cook superfat: an oil added after cook/dilution with no lye effect.
  * Same % of recipe oil weight basis as additives/split-liquid; `null` when the % is
  * empty/zero/invalid or there's no recipe oil weight yet. */

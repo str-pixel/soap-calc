@@ -1,3 +1,5 @@
+import { memo, useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   formatSoapPropertyPercent,
   LOW_COVERAGE_PERCENT,
@@ -10,6 +12,7 @@ import {
   formatBatchSheetProperty,
   formatBatchWeight,
 } from '../lib/batchSheet';
+import { computeExtrasGrams } from '../lib/calculateAdditives';
 import { formatGrams } from '../lib/format';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
@@ -18,12 +21,34 @@ type BatchSheetProps = {
   data: BatchSheetData | null;
 };
 
-export function BatchSheet({ data }: BatchSheetProps) {
+// memo: `data` is a stable view-model memo output; this print-only tree is large,
+// so skip re-rendering it on unrelated keystrokes.
+export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
+  const [printedAt, setPrintedAt] = useState(() => new Date().toLocaleString());
+  // The sheet's data is memoized long before the user hits Print, so a baked-in
+  // timestamp would show generation time. beforeprint fires ahead of the print
+  // snapshot; flushSync makes the re-render land inside the handler. Some WebKit
+  // print paths never fire beforeprint, so also listen for the print media query
+  // (guarded — jsdom has no matchMedia).
+  useEffect(() => {
+    const stamp = () => flushSync(() => setPrintedAt(new Date().toLocaleString()));
+    window.addEventListener('beforeprint', stamp);
+    const printMedia =
+      typeof window.matchMedia === 'function' ? window.matchMedia('print') : null;
+    const onMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) stamp();
+    };
+    printMedia?.addEventListener?.('change', onMediaChange);
+    return () => {
+      window.removeEventListener('beforeprint', stamp);
+      printMedia?.removeEventListener?.('change', onMediaChange);
+    };
+  }, []);
+
   if (!data) return null;
 
   const {
     recipeName,
-    printedAt,
     batchNotes,
     weightUnit,
     lyeLabel,
@@ -48,19 +73,24 @@ export function BatchSheet({ data }: BatchSheetProps) {
   } = data;
 
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
-  const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const extrasGrams =
-    additiveGrams +
-    (splitLiquidGrams ?? 0) +
-    (postCookSuperfatMethod !== 'subtract' ? postCookSuperfat?.grams ?? 0 : 0);
+  const extrasGrams = computeExtrasGrams(
+    additives,
+    splitLiquidGrams,
+    postCookSuperfat,
+    postCookSuperfatMethod,
+  );
 
   const isDualLye = settings.lyeType === 'dual';
   const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
   const propsPartial = !!properties?.properties && properties.coveragePercent < 99.9;
-  const propsLow = !!properties?.properties && properties.coveragePercent < LOW_COVERAGE_PERCENT;
+  // Compare rounded coverage, matching PropertiesPanel/FattyAcidPanel, so the printed
+  // "X%" and the estimate treatment never disagree with the screen.
+  const propsLow =
+    !!properties?.properties && Math.round(properties.coveragePercent) < LOW_COVERAGE_PERCENT;
   const indexLow =
     (indexes.iodine !== null || indexes.ins !== null) &&
-    indexes.coveragePercent < LOW_COVERAGE_PERCENT;
+    Math.round(indexes.coveragePercent) < LOW_COVERAGE_PERCENT;
+  const fattyAcidsLow = Math.round(fattyAcids.coveragePercent) < LOW_COVERAGE_PERCENT;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -103,7 +133,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
                 <dd>{formatWeight(result.naohWeightGrams, weightUnit)}</dd>
               </div>
               <div>
-                <dt>KOH ({settings.kohBlendPercent}% by weight)</dt>
+                <dt>KOH ({settings.kohBlendPercent || '0'}% by weight)</dt>
                 <dd>{formatWeight(result.kohWeightGrams, weightUnit)}</dd>
               </div>
               <div>
@@ -127,7 +157,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
           </div>
           <div>
             <dt>Superfat</dt>
-            <dd>{settings.superfatPercent}%</dd>
+            <dd>{settings.superfatPercent || '0'}%</dd>
           </div>
           {postCookSuperfat && (
             <div>
@@ -298,8 +328,8 @@ export function BatchSheet({ data }: BatchSheetProps) {
         <section className="batch-sheet__section">
           <h2>Fatty acids</h2>
           <p className="batch-sheet__notes">
-            Saturated {formatSoapPropertyPercent(satUnsat.saturated)} · Unsaturated{' '}
-            {formatSoapPropertyPercent(satUnsat.unsaturated)}
+            Saturated {fattyAcidsLow ? '~' : ''}{formatSoapPropertyPercent(satUnsat.saturated)} · Unsaturated{' '}
+            {fattyAcidsLow ? '~' : ''}{formatSoapPropertyPercent(satUnsat.unsaturated)}
             {fattyAcids.coveragePercent < 99.9
               ? ` (${Math.round(fattyAcids.coveragePercent)}% of oils with data)`
               : ''}
@@ -352,4 +382,4 @@ export function BatchSheet({ data }: BatchSheetProps) {
       </footer>
     </article>
   );
-}
+});

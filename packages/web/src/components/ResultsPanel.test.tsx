@@ -18,6 +18,7 @@ test('an after-cook additive uses the process-aware label — LS shows "After di
       lyeType="koh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       additives={[
         {
           key: 'a',
@@ -48,6 +49,7 @@ test('an additive renders its actual dose basis/unit label', () => {
       lyeType="naoh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 3}
       additives={[
         { key: 'a', catalogId: '', name: 'Eugenol', amount: 3, unit: 'ppt', basis: 'oil', grams: 3, addAt: 'trace' },
       ]}
@@ -67,6 +69,7 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
       lyeType="naoh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }}
     />,
@@ -88,6 +91,7 @@ test('a post-cook-superfat-only batch does not claim "additives" in the batch-we
       lyeType="naoh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }}
     />,
@@ -125,6 +129,7 @@ test('with no postCookSuperfat, no PCSF line or total-superfat line renders', ()
       lyeType="naoh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
     />,
   );
   expect(screen.queryByText('Total superfat')).toBeNull();

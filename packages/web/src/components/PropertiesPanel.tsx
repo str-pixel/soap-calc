@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { RecipePropertiesResult, SoapPropertyName } from '@soap-calc/core';
 import {
   FORMULATION_PREFERENCE_GUIDE,
@@ -29,7 +30,12 @@ type PropertiesPanelProps = {
   indexes: RecipeIndexResult;
 };
 
-export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
+// memo: props are stable view-model memo outputs, so unrelated keystrokes
+// (recipe name, notes, settings) skip re-rendering this panel.
+export const PropertiesPanel = memo(function PropertiesPanel({
+  result,
+  indexes,
+}: PropertiesPanelProps) {
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.properties
@@ -196,4 +202,4 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
       )}
     </section>
   );
-}
+});

@@ -5,9 +5,9 @@ import {
   sumFattyAcids,
   FATTY_ACID_GROUP_KEYS,
   type LyeCalculationResult,
+  type RecipeFattyAcidResult,
   type RecipePropertiesResult,
 } from '@soap-calc/core';
-import { calculateFattyAcidsForRecipe } from '../lib/calculateFattyAcids';
 import { oilById } from '../lib/oils';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
@@ -46,14 +46,12 @@ export function useFormulationInsights(
   lines: RecipeLine[],
   settings: RecipeSettings,
   properties: RecipePropertiesResult,
+  // Computed once by useRecipeProperties and shared, so the FA aggregation doesn't
+  // run twice per lines change.
+  fattyAcids: RecipeFattyAcidResult,
   lyeResult: LyeCalculationResult | null,
   options: FormulationInsightOptions = {},
 ) {
-  const fattyAcids = useMemo(
-    () => calculateFattyAcidsForRecipe(lines, settings),
-    [lines, settings],
-  );
-
   const insights = useMemo(() => {
     if (!lyeResult) return [];
     const totalAdditivePercent = totalAdditivePercentForInsights(
@@ -119,5 +117,5 @@ export function useFormulationInsights(
     settings.waterMode,
   ]);
 
-  return { fattyAcids, insights };
+  return { insights };
 }

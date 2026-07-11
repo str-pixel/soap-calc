@@ -10,6 +10,10 @@ function formatGrams(n: number): string {
   return String(Math.round(n));
 }
 
+/** Percents are display-rounded to 0.1, so each stored percent can be off by up to
+ * half a step. Shared by resync normalization and the percent-total warning. */
+export const PERCENT_ROUNDING_EPSILON = 0.05;
+
 function formatPercent(n: number): string {
   return String(Math.round(n * 10) / 10);
 }
@@ -39,7 +43,7 @@ function normalizePercentsTo100(lines: RecipeLine[]): RecipeLine[] {
     pct: parseNum(line.weightPercent ?? '') ?? 0,
   }));
   const sum = parsed.reduce((total, row) => total + row.pct, 0);
-  if (sum <= 0 || Math.abs(sum - 100) <= 0.05) {
+  if (sum <= 0 || Math.abs(sum - 100) <= PERCENT_ROUNDING_EPSILON) {
     return lines;
   }
 

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import {
   ADDITIVE_CATALOG,
   catalogEntryById,
@@ -45,7 +46,9 @@ function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
   return process === 'cp' ? BASE_STAGE_OPTIONS : [...BASE_STAGE_OPTIONS, 'after_cook'];
 }
 
-export function AdditivesPanel({
+// memo: `computed` is a stable view-model memo output and `onChange` is a stable
+// setState, so unrelated keystrokes skip re-rendering this panel.
+export const AdditivesPanel = memo(function AdditivesPanel({
   additives,
   computed,
   weightUnit,
@@ -278,4 +281,4 @@ export function AdditivesPanel({
       )}
     </section>
   );
-}
+});

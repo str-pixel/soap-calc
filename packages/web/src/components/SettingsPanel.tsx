@@ -195,6 +195,7 @@ export function SettingsPanel({
                 onChange={(oilId) =>
                   setSettings((s) => ({ ...s, postCookSuperfatOilId: oilId }))
                 }
+                ariaLabel="Post-cook superfat oil"
               />
             </div>
             <label className="field">

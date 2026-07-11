@@ -73,6 +73,8 @@ export function searchOils(query: string, limit?: number): OilRecord[] {
   );
 }
 
+const OIL_BY_ID = new Map(OILS.map((oil) => [oil.id, oil]));
+
 export function oilById(id: string): OilRecord | undefined {
-  return OILS.find((oil) => oil.id === id);
+  return OIL_BY_ID.get(id);
 }

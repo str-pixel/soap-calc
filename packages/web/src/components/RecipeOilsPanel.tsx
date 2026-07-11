@@ -1,4 +1,4 @@
-import type { RecipeInputs, UseRecipeInputsDeps } from '../hooks/useRecipeInputs';
+import type { RecipeInputs } from '../hooks/useRecipeInputs';
 import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import { isTarOil, oilById } from '../lib/oils';
 import type { RecipeLine, WeightUnit } from '../lib/recipe';
@@ -22,7 +22,6 @@ type RecipeOilsPanelProps = {
   weightTotalOff: boolean;
   getDraft: (id: string, canonicalDisplay: string) => string;
   setDraft: (id: string, value: string) => void;
-  debouncer: UseRecipeInputsDeps['debouncer'];
   inputs: RecipeInputs;
 };
 
@@ -37,7 +36,6 @@ export function RecipeOilsPanel({
   weightTotalOff,
   getDraft,
   setDraft,
-  debouncer,
   inputs,
 }: RecipeOilsPanelProps) {
   const weightUnitConfig = WEIGHT_UNITS[weightUnit];
@@ -79,9 +77,7 @@ export function RecipeOilsPanel({
               gramsStringToInputDisplay(previewState.batchOilGrams, weightUnit),
             )}
             onChange={(e) => inputs.handleBatchChange(e.target.value)}
-            onBlur={(e) =>
-              debouncer.flush(inputs.batchInputId, () => inputs.commitBatchInput(e.target.value))
-            }
+            onBlur={(e) => inputs.commitBatchInput(e.target.value)}
           />
         </label>
       </div>
@@ -134,11 +130,7 @@ export function RecipeOilsPanel({
                     previewWeightDisplay(line, previewLine, weightUnit),
                   )}
                   onChange={(e) => inputs.handleWeightChange(line.key, e.target.value)}
-                  onBlur={(e) =>
-                    debouncer.flush(inputs.weightInputId(line.key), () =>
-                      inputs.commitWeightInput(line.key, e.target.value),
-                    )
-                  }
+                  onBlur={(e) => inputs.commitWeightInput(line.key, e.target.value)}
                   aria-label={`Weight in ${weightUnitConfig.short}`}
                 />
               </div>
