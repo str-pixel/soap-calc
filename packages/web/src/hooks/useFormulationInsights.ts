@@ -6,10 +6,12 @@ import type { ComputedAdditive } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
 export function totalAdditivePercentForInsights(
-  additivePercents: number[],
+  additives: Array<{ grams: number }>,
+  oilGrams: number,
   splitLiquid: Pick<SplitLiquidSettings, 'enabled' | 'addAt' | 'percentOfOil'>,
 ): number {
-  const additivePercent = additivePercents.reduce((sum, item) => sum + item, 0);
+  const additivePercent =
+    oilGrams > 0 ? additives.reduce((sum, item) => sum + (item.grams / oilGrams) * 100, 0) : 0;
   const splitLiquidCountsAsAdditive =
     splitLiquid.enabled &&
     (splitLiquid.addAt === 'trace' || splitLiquid.addAt === 'oils');
@@ -42,7 +44,8 @@ export function useFormulationInsights(
   const insights = useMemo(() => {
     if (!lyeResult) return [];
     const totalAdditivePercent = totalAdditivePercentForInsights(
-      (options.additives ?? []).map((item) => item.percentOfOil),
+      options.additives ?? [],
+      lyeResult.totalOilWeightGrams,
       settings.splitLiquid,
     );
     const oilEntries = lines

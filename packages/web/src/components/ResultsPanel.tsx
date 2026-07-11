@@ -2,6 +2,7 @@ import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import type { ProcessId } from '../lib/process';
 import { formatGrams } from '../lib/format';
+import { formatDose } from '../lib/formatDose';
 import { oilById } from '../lib/oils';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
@@ -227,7 +228,7 @@ export function ResultsPanel({
           {additives.map((item) => (
             <div key={item.key}>
               <dt>
-                {item.name} ({formatGrams(item.percentOfOil, 1)}% of oil)
+                {item.name} ({formatDose(item.amount, item.unit, item.basis)})
               </dt>
               <dd>
                 {formatWeight(item.grams, weightUnit)}

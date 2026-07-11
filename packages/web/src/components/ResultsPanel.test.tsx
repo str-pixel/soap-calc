@@ -26,7 +26,6 @@ test('an after-cook additive uses the process-aware label — LS shows "After di
           amount: 3,
           unit: 'percent',
           basis: 'oil',
-          percentOfOil: 3,
           grams: 30,
           addAt: 'after_cook',
         },
@@ -36,6 +35,25 @@ test('an after-cook additive uses the process-aware label — LS shows "After di
   // The always-visible Results sidebar must say "After dilution" on LS, not the raw "After cook".
   expect(screen.getByText(/After dilution/)).toBeTruthy();
   expect(screen.queryByText(/After cook/)).toBeNull();
+});
+
+test('an additive renders its actual dose basis/unit label', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      additives={[
+        { key: 'a', catalogId: '', name: 'Eugenol', amount: 3, unit: 'ppt', basis: 'oil', grams: 3, addAt: 'trace' },
+      ]}
+    />,
+  );
+  expect(screen.getByText(/3 ppt of oil/)).toBeTruthy();
 });
 
 test('a post-cook superfat renders an oil+grams line and a cook+post-cook total', () => {

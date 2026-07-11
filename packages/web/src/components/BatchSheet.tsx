@@ -11,6 +11,7 @@ import {
   formatBatchWeight,
 } from '../lib/batchSheet';
 import { formatGrams } from '../lib/format';
+import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
 
 type BatchSheetProps = {
@@ -218,7 +219,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
             {additives.map((item) => (
               <li key={item.key}>
                 {item.name} — {formatWeight(item.grams, weightUnit)} (
-                {formatGrams(item.percentOfOil, 1)}% of oil, {additiveStageLabel(item.addAt, process)})
+                {formatDose(item.amount, item.unit, item.basis)}, {additiveStageLabel(item.addAt, process)})
               </li>
             ))}
           </ul>

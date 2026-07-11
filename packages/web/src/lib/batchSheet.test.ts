@@ -68,7 +68,6 @@ function makeAfterCookAdditive(): ComputedAdditive {
     amount: 2,
     unit: 'percent',
     basis: 'oil',
-    percentOfOil: 2,
     grams: 20,
     addAt: 'after_cook',
   };

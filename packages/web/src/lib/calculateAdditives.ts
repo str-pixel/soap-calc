@@ -17,8 +17,6 @@ export type ComputedAdditive = {
   basis: DoseBasis;
   grams: number;
   addAt: AdditiveLine['addAt'];
-  /** Oil-equivalent % (grams / oilGrams × 100) — transitional bridge for display/insights; removed in Task 4. */
-  percentOfOil: number;
 };
 
 export function computeRecipeAdditives(
@@ -42,7 +40,6 @@ export function computeRecipeAdditives(
       basis: line.basis,
       grams,
       addAt: line.addAt,
-      percentOfOil: oilGrams > 0 ? (grams / oilGrams) * 100 : 0,
     });
   }
   return result;

@@ -32,7 +32,6 @@ function makeComputed(line: AdditiveLine, oilGrams = 1000): ComputedAdditive {
     basis: line.basis,
     grams,
     addAt: line.addAt,
-    percentOfOil: oilGrams > 0 ? (grams / oilGrams) * 100 : 0,
   };
 }
 
