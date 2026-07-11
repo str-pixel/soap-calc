@@ -197,6 +197,23 @@ export function SettingsPanel({
                 }
               />
             </div>
+            <label className="field">
+              <span>Post-cook superfat method</span>
+              <select
+                className="input"
+                aria-label="Post-cook superfat method"
+                value={settings.postCookSuperfatMethod}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    postCookSuperfatMethod: e.target.value as 'append' | 'subtract',
+                  }))
+                }
+              >
+                <option value="append">Append (add oil)</option>
+                <option value="subtract">Subtract (reserve)</option>
+              </select>
+            </label>
           </>
         )}
       </div>

@@ -111,3 +111,14 @@ describe('post-cook superfat fields', () => {
     expect(screen.getByLabelText('pcsf-echo').textContent).toBe('5');
   });
 });
+
+test('HP shows the PCSF method toggle and updates it; CP hides it', () => {
+  render(<Harness process="hp" />);
+  const select = screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement;
+  expect(select.value).toBe('append');
+  fireEvent.change(select, { target: { value: 'subtract' } });
+  expect(select.value).toBe('subtract'); // controlled by the Harness settings state
+  cleanup();
+  render(<Harness process="cp" />);
+  expect(screen.queryByLabelText('Post-cook superfat method')).toBeNull();
+});
