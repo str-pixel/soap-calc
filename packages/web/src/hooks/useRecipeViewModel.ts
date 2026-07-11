@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { calculateDilution, parsePercentOfOil, scaleLyeResult, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
-import type { DilutionResult } from '@soap-calc/core';
+import { calculateDilution, calculateNeutralization, parsePercentOfOil, scaleLyeResult, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import {
   computeExtrasGrams,
@@ -56,6 +56,7 @@ export type RecipeViewModel = {
   insights: ReturnType<typeof useFormulationInsights>['insights'];
   lyeLabel: string;
   dilution: DilutionResult | null;
+  neutralization: NeutralizationResult | null;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
@@ -114,7 +115,8 @@ export function useRecipeViewModel({
   const cookFactor =
     process !== 'cp' &&
     previewSettings.postCookSuperfatMethod === 'subtract' &&
-    pcsfSubtractPercent > 0
+    pcsfSubtractPercent > 0 &&
+    Number(previewSettings.superfatPercent) >= 0
       ? Math.min(1, Math.max(0, 1 - pcsfSubtractPercent / 100))
       : 1;
   const result = useMemo(
@@ -142,6 +144,25 @@ export function useRecipeViewModel({
           })
         : null,
     [process, result, previewSettings.soapConcentrationPercent],
+  );
+  const neutralization = useMemo(
+    () =>
+      process === 'ls' && result
+        ? calculateNeutralization({
+            kohGrams: result.kohWeightGrams,
+            naohGrams: result.naohWeightGrams,
+            superfatPercent: Number(previewSettings.superfatPercent),
+            kohPurityPercent: Number(previewSettings.kohPurityPercent),
+            naohPurityPercent: Number(previewSettings.naohPurityPercent),
+          })
+        : null,
+    [
+      process,
+      result,
+      previewSettings.superfatPercent,
+      previewSettings.kohPurityPercent,
+      previewSettings.naohPurityPercent,
+    ],
   );
   const solutionGrams = dilution?.solutionGrams ?? 0;
   const computedAdditives = useMemo(
@@ -207,6 +228,7 @@ export function useRecipeViewModel({
       splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
       additives: computedAdditives,
       postCookSuperfat,
+      isLiquidSoap: process === 'ls',
     },
   );
   const lyeLabel =
@@ -300,6 +322,7 @@ export function useRecipeViewModel({
     insights,
     lyeLabel,
     dilution,
+    neutralization,
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,

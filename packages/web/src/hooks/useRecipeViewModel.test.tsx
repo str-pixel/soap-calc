@@ -117,3 +117,34 @@ test('dilution: computed for LS, null for CP, null (no crash) for an empty LS re
   render(<Probe />);
   expect(empty.dilution).toBeNull();
 });
+
+test('LS lye excess computes neutralization and disables PCSF-subtract', () => {
+  let withSubtract: any;
+  let withAppend: any;
+  const ls = {
+    superfatPercent: '-2',
+    lyeType: 'koh' as const,
+    waterMode: 'lye_water_ratio' as const,
+    lyeWaterRatio: '2',
+    postCookSuperfatPercent: '5',
+  };
+  probe((vm) => { withSubtract = vm; }, { ...ls, postCookSuperfatMethod: 'subtract' }, 'ls');
+  probe((vm) => { withAppend = vm; }, { ...ls, postCookSuperfatMethod: 'append' }, 'ls');
+
+  expect(withSubtract.neutralization).not.toBeNull();
+  expect(withSubtract.neutralization.citricAcidGrams).toBeGreaterThan(0);
+  // Mutual exclusivity: subtract is ignored under a lye excess, so lye matches the append case.
+  expect(withSubtract.result.lyeWeightGrams).toBeCloseTo(withAppend.result.lyeWeightGrams);
+});
+
+test('neutralization is null for a normal LS recipe (superfat >= 0)', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, { superfatPercent: '2', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
+  expect(vm.neutralization).toBeNull();
+});
+
+test('LS superfat above 3% raises the ls_superfat_high insight', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, { superfatPercent: '5', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
+  expect(vm.insights.some((i: any) => i.code === 'ls_superfat_high')).toBe(true);
+});

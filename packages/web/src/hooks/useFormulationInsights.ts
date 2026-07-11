@@ -40,6 +40,7 @@ type FormulationInsightOptions = {
   splitLiquidWaterReductionGrams?: number | null;
   additives?: ComputedAdditive[];
   postCookSuperfat?: ComputedPostCookSuperfat | null;
+  isLiquidSoap?: boolean;
 };
 
 export function useFormulationInsights(
@@ -94,6 +95,7 @@ export function useFormulationInsights(
       postCookSuperfatPufaPercent: options.postCookSuperfat
         ? postCookSuperfatPufaPercent(options.postCookSuperfat.oilId)
         : undefined,
+      isLiquidSoap: options.isLiquidSoap ?? false,
     });
   }, [
     fattyAcids.profile,
@@ -115,6 +117,7 @@ export function useFormulationInsights(
     settings.kohBlendPercent,
     settings.superfatPercent,
     settings.waterMode,
+    options.isLiquidSoap,
   ]);
 
   return { insights };
