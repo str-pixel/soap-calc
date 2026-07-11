@@ -30,7 +30,7 @@ export function polygonPoints(values: number[], radius: number, center: number):
     .join(' ');
 }
 
-/** Suggested-range band: highs polygon plus lows polygon reversed, so an
+/** Suggested-range band: highs polygon plus lows polygon (each per-axis), so an
  * evenodd fill leaves a hole in the middle. */
 export function ringPath(
   lows: number[],
@@ -45,5 +45,5 @@ export function ringPath(
       .map((p) => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
       .join(' ')} Z`;
   };
-  return `${toSubpath(highs)} ${toSubpath([...lows].reverse())}`;
+  return `${toSubpath(highs)} ${toSubpath(lows)}`;
 }
