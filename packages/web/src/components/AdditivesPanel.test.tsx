@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { AdditivesPanel } from './AdditivesPanel';
 import type { AdditiveLine } from '../lib/recipe';
+import type { ComputedAdditive } from '../lib/calculateAdditives';
 
 afterEach(cleanup);
 
@@ -11,9 +12,27 @@ function makeLine(overrides: Partial<AdditiveLine> = {}): AdditiveLine {
     key: 'a1',
     catalogId: '',
     name: 'Fragrance',
-    percentOfOil: '2',
+    amount: '2',
+    basis: 'oil',
+    unit: 'percent',
     addAt: 'trace',
     ...overrides,
+  };
+}
+
+function makeComputed(line: AdditiveLine, oilGrams = 1000): ComputedAdditive {
+  const amount = Number(line.amount);
+  const grams = (oilGrams * amount) / 100;
+  return {
+    key: line.key,
+    catalogId: line.catalogId,
+    name: line.name.trim() || 'Additive',
+    amount,
+    unit: line.unit,
+    basis: line.basis,
+    grams,
+    addAt: line.addAt,
+    percentOfOil: oilGrams > 0 ? (grams / oilGrams) * 100 : 0,
   };
 }
 
@@ -28,7 +47,7 @@ describe('AdditivesPanel stage options', () => {
     render(
       <AdditivesPanel
         additives={[makeLine()]}
-        totalOilGrams={1000}
+        computed={[makeComputed(makeLine())]}
         weightUnit="g"
         process="cp"
         onChange={() => {}}
@@ -42,7 +61,7 @@ describe('AdditivesPanel stage options', () => {
     render(
       <AdditivesPanel
         additives={[makeLine()]}
-        totalOilGrams={1000}
+        computed={[makeComputed(makeLine())]}
         weightUnit="g"
         process="hp"
         onChange={() => {}}
@@ -59,7 +78,7 @@ describe('AdditivesPanel stage options', () => {
     render(
       <AdditivesPanel
         additives={[makeLine()]}
-        totalOilGrams={1000}
+        computed={[makeComputed(makeLine())]}
         weightUnit="g"
         process="ls"
         onChange={() => {}}
@@ -76,7 +95,7 @@ describe('AdditivesPanel stage options', () => {
     render(
       <AdditivesPanel
         additives={[makeLine({ addAt: 'after_cook' })]}
-        totalOilGrams={1000}
+        computed={[makeComputed(makeLine({ addAt: 'after_cook' }))]}
         weightUnit="g"
         process="cp"
         onChange={() => {}}
@@ -92,7 +111,7 @@ describe('AdditivesPanel stage options', () => {
     render(
       <AdditivesPanel
         additives={[makeLine()]}
-        totalOilGrams={1000}
+        computed={[makeComputed(makeLine())]}
         weightUnit="g"
         process="hp"
         onChange={onChange}

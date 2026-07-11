@@ -19,7 +19,17 @@ test('an after-cook additive uses the process-aware label — LS shows "After di
       displayTotals={displayTotals}
       weightUnit="g"
       additives={[
-        { key: 'a', catalogId: 'fragrance', name: 'Fragrance', percentOfOil: 3, grams: 30, addAt: 'after_cook' },
+        {
+          key: 'a',
+          catalogId: 'fragrance',
+          name: 'Fragrance',
+          amount: 3,
+          unit: 'percent',
+          basis: 'oil',
+          percentOfOil: 3,
+          grams: 30,
+          addAt: 'after_cook',
+        },
       ]}
     />,
   );

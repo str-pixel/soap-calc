@@ -8,13 +8,13 @@ import { additiveStageLabel } from '../lib/additiveStageLabel';
 import type { ProcessId } from '../lib/process';
 import type { AdditiveLine } from '../lib/recipe';
 import { newAdditiveKey } from '../lib/recipe';
-import { computeRecipeAdditives } from '../lib/calculateAdditives';
+import type { ComputedAdditive } from '../lib/calculateAdditives';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
 type AdditivesPanelProps = {
   additives: AdditiveLine[];
-  totalOilGrams: number;
+  computed: ComputedAdditive[];
   weightUnit: WeightUnit;
   process: ProcessId;
   onChange: (additives: AdditiveLine[]) => void;
@@ -30,12 +30,11 @@ function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
 
 export function AdditivesPanel({
   additives,
-  totalOilGrams,
+  computed,
   weightUnit,
   process,
   onChange,
 }: AdditivesPanelProps) {
-  const computed = computeRecipeAdditives(additives, totalOilGrams);
   const offeredStages = offeredStagesForProcess(process);
 
   function updateLine(key: string, patch: Partial<AdditiveLine>) {
@@ -64,7 +63,9 @@ export function AdditivesPanel({
         key: newAdditiveKey(),
         catalogId: '',
         name: '',
-        percentOfOil: '',
+        amount: '',
+        basis: 'oil',
+        unit: 'percent',
         addAt: 'trace',
       },
     ]);
@@ -74,7 +75,7 @@ export function AdditivesPanel({
     const existingIds = new Set(
       additives.map((line) => line.catalogId).filter((id) => id !== ''),
     );
-    const pack = LATHER_SUPPORT_PACK.flatMap((item) => {
+    const pack = LATHER_SUPPORT_PACK.flatMap((item): AdditiveLine[] => {
       if (existingIds.has(item.catalogId)) return [];
       const entry = catalogEntryById(item.catalogId);
       if (!entry) return [];
@@ -83,7 +84,9 @@ export function AdditivesPanel({
           key: newAdditiveKey(),
           catalogId: entry.id,
           name: entry.name,
-          percentOfOil: String(item.percentOfOil),
+          amount: String(item.percentOfOil),
+          basis: 'oil',
+          unit: 'percent',
           addAt: item.stage,
         },
       ];
@@ -177,8 +180,8 @@ export function AdditivesPanel({
                     max={100}
                     step={0.1}
                     placeholder="%"
-                    value={line.percentOfOil}
-                    onChange={(e) => updateLine(line.key, { percentOfOil: e.target.value })}
+                    value={line.amount}
+                    onChange={(e) => updateLine(line.key, { amount: e.target.value })}
                     aria-label="Percent of oil weight"
                   />
                 </label>

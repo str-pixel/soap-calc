@@ -66,6 +66,24 @@ describe('postCookSuperfat settings', () => {
   });
 });
 
+describe('normalizeAdditiveLine dose migration', () => {
+  it('maps a legacy percentOfOil field to amount with oil/percent defaults', () => {
+    const line = normalizeAdditiveLine({ key: 'k', percentOfOil: '4' } as never);
+    expect(line.amount).toBe('4');
+    expect(line.basis).toBe('oil');
+    expect(line.unit).toBe('percent');
+  });
+  it('keeps an explicit amount + basis + unit', () => {
+    const line = normalizeAdditiveLine({ key: 'k', amount: '3', basis: 'batch', unit: 'ppt' });
+    expect(line).toMatchObject({ amount: '3', basis: 'batch', unit: 'ppt' });
+  });
+  it('defaults unknown basis/unit to oil/percent', () => {
+    const line = normalizeAdditiveLine({ key: 'k', amount: '2', basis: 'x' as never, unit: 'y' as never });
+    expect(line.basis).toBe('oil');
+    expect(line.unit).toBe('percent');
+  });
+});
+
 describe('normalizeAdditiveLine', () => {
   it('keeps after_cook (not coerced to trace)', () => {
     const line = normalizeAdditiveLine({ key: 'a', addAt: 'after_cook' });

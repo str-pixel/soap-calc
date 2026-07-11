@@ -1,4 +1,4 @@
-import type { AdditiveStage, TarLyeTreatment, WaterMode } from '@soap-calc/core';
+import type { AdditiveStage, DoseBasis, DoseUnit, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
 
 export type { WeightUnit };
@@ -15,7 +15,9 @@ export type AdditiveLine = {
   key: string;
   catalogId: string;
   name: string;
-  percentOfOil: string;
+  amount: string;
+  basis: DoseBasis;
+  unit: DoseUnit;
   addAt: AdditiveStage;
 };
 
@@ -129,7 +131,7 @@ export function createEmptyAdditives(): AdditiveLine[] {
 }
 
 export function normalizeAdditiveLine(
-  partial: Partial<AdditiveLine> & Pick<AdditiveLine, 'key'>,
+  partial: Partial<AdditiveLine> & { percentOfOil?: string } & Pick<AdditiveLine, 'key'>,
 ): AdditiveLine {
   const addAt =
     partial.addAt === 'lye' ||
@@ -139,11 +141,21 @@ export function normalizeAdditiveLine(
     partial.addAt === 'after_cook'
       ? partial.addAt
       : 'trace';
+  const basis = partial.basis === 'batch' ? 'batch' : 'oil';
+  const unit = partial.unit === 'ppt' ? 'ppt' : 'percent';
+  const amount =
+    typeof partial.amount === 'string'
+      ? partial.amount
+      : typeof partial.percentOfOil === 'string'
+        ? partial.percentOfOil
+        : '';
   return {
     key: partial.key,
     catalogId: typeof partial.catalogId === 'string' ? partial.catalogId : '',
     name: typeof partial.name === 'string' ? partial.name : '',
-    percentOfOil: typeof partial.percentOfOil === 'string' ? partial.percentOfOil : '',
+    amount,
+    basis,
+    unit,
     addAt,
   };
 }
@@ -152,15 +164,7 @@ export function additivesFromSaved(
   saved: Array<Omit<AdditiveLine, 'key'>> | undefined,
 ): AdditiveLine[] {
   if (!saved?.length) return createEmptyAdditives();
-  return saved.map((line) =>
-    normalizeAdditiveLine({
-      key: newAdditiveKey(),
-      catalogId: line.catalogId,
-      name: line.name,
-      percentOfOil: line.percentOfOil,
-      addAt: line.addAt,
-    }),
-  );
+  return saved.map((line) => normalizeAdditiveLine({ key: newAdditiveKey(), ...line }));
 }
 
 export function migrateRecipeLines(

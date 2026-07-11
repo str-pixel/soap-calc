@@ -29,7 +29,9 @@ describe('recipeFile', () => {
       {
         catalogId: 'honey',
         name: 'Honey',
-        percentOfOil: '1',
+        amount: '1',
+        basis: 'oil',
+        unit: 'percent',
         addAt: 'trace',
       },
     ]);
@@ -44,7 +46,14 @@ describe('recipeFile', () => {
   it('round-trips an after-cook additive (import accepts the new stage)', () => {
     const lines = createStarterLines();
     const additives = recipeAdditivesFromFile([
-      { catalogId: 'fragrance', name: 'Fragrance', percentOfOil: '3', addAt: 'after_cook' },
+      {
+        catalogId: 'fragrance',
+        name: 'Fragrance',
+        amount: '3',
+        basis: 'oil',
+        unit: 'percent',
+        addAt: 'after_cook',
+      },
     ]);
     const payload = serializeRecipeFile('HP batch', lines, DEFAULT_SETTINGS, additives, 'hp');
     const parsed = parseRecipeFile(JSON.stringify(payload));
@@ -167,7 +176,7 @@ describe('recipeFile', () => {
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.data.additives[0].percentOfOil).toBe('6.25');
+    expect(parsed.data.additives[0].amount).toBe('6.25');
   });
 
   it('converts doseUnit ppo on percentOfOil field', () => {
@@ -190,7 +199,7 @@ describe('recipeFile', () => {
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.data.additives[0].percentOfOil).toBe('3.13');
+    expect(parsed.data.additives[0].amount).toBe('3.13');
   });
 
   it('rejects additive lines without a dose', () => {
@@ -222,7 +231,7 @@ describe('recipeFile', () => {
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.data.additives[0].percentOfOil).toBe('3.13');
+    expect(parsed.data.additives[0].amount).toBe('3.13');
   });
 
   it('keeps a numeric percent dose as-is when no doseUnit is given', () => {
@@ -237,7 +246,7 @@ describe('recipeFile', () => {
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.data.additives[0].percentOfOil).toBe('0.5');
+    expect(parsed.data.additives[0].amount).toBe('0.5');
   });
 });
 

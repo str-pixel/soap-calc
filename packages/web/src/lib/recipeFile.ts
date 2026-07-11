@@ -1,7 +1,7 @@
 import {
   MAX_ADDITIVE_NAME_LENGTH,
   MAX_RECIPE_ADDITIVES,
-  parsePercentOfOil,
+  parseDoseAmount,
 } from '@soap-calc/core';
 import {
   createStarterLines,
@@ -96,18 +96,23 @@ function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
   ) {
     return null;
   }
-  const percentOfOil = parseAdditivePercentOfOil(value);
-  if (percentOfOil === '' || parsePercentOfOil(percentOfOil) === null) {
+  const basis = value.basis === 'batch' ? 'batch' : 'oil';
+  const unit = value.unit === 'ppt' ? 'ppt' : 'percent';
+  const amount =
+    typeof value.amount === 'string' && value.amount !== ''
+      ? value.amount
+      : parseAdditivePercentOfOil(value); // legacy percentOfOil / PPO → %-of-oil string
+  if (amount === '' || parseDoseAmount(amount, unit) === null) {
     return null;
   }
   const name =
-    typeof value.name === 'string'
-      ? value.name.slice(0, MAX_ADDITIVE_NAME_LENGTH)
-      : '';
+    typeof value.name === 'string' ? value.name.slice(0, MAX_ADDITIVE_NAME_LENGTH) : '';
   return {
     catalogId: typeof value.catalogId === 'string' ? value.catalogId : '',
     name,
-    percentOfOil,
+    amount,
+    basis,
+    unit,
     addAt,
   };
 }
@@ -129,10 +134,12 @@ export function serializeRecipeFile(
       ...(weightPercent !== undefined ? { weightPercent } : {}),
       ...(tarLyeTreatment ? { tarLyeTreatment } : {}),
     })),
-    additives: additives.map(({ catalogId, name: additiveName, percentOfOil, addAt }) => ({
+    additives: additives.map(({ catalogId, name: additiveName, amount, basis, unit, addAt }) => ({
       catalogId,
       name: additiveName,
-      percentOfOil,
+      amount,
+      basis,
+      unit,
       addAt,
     })),
     settings: normalizeSettings(settings),
@@ -232,7 +239,9 @@ export function recipeAdditivesFromFile(
     key: newAdditiveKey(),
     catalogId: line.catalogId,
     name: line.name,
-    percentOfOil: line.percentOfOil,
+    amount: line.amount,
+    basis: line.basis,
+    unit: line.unit,
     addAt: line.addAt,
   }));
 }

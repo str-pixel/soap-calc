@@ -44,7 +44,15 @@ afterEach(() => {
 describe('useRecipeAutosave', () => {
   it('writes the draft under the active process key', () => {
     const additives: AdditiveLine[] = [
-      { key: 'x', catalogId: 'honey', name: 'Honey', percentOfOil: '1', addAt: 'trace' },
+      {
+        key: 'x',
+        catalogId: 'honey',
+        name: 'Honey',
+        amount: '1',
+        basis: 'oil',
+        unit: 'percent',
+        addAt: 'trace',
+      },
     ];
     vi.useFakeTimers();
     renderHook(() =>
@@ -57,7 +65,7 @@ describe('useRecipeAutosave', () => {
     // `key` is regenerated on load (additivesFromSaved), so compare the
     // persisted fields via toMatchObject rather than a literal toEqual.
     expect(loadDraft('ls')?.additives).toMatchObject([
-      { catalogId: 'honey', name: 'Honey', percentOfOil: '1', addAt: 'trace' },
+      { catalogId: 'honey', name: 'Honey', amount: '1', basis: 'oil', unit: 'percent', addAt: 'trace' },
     ]);
   });
 });

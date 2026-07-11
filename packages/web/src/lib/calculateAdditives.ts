@@ -1,34 +1,48 @@
-import { gramsFromPercentOfOil, parsePercentOfOil } from '@soap-calc/core';
+import {
+  gramsFromDose,
+  gramsFromPercentOfOil,
+  parseDoseAmount,
+  parsePercentOfOil,
+  type DoseBasis,
+  type DoseUnit,
+} from '@soap-calc/core';
 import type { AdditiveLine, RecipeSettings } from './recipe';
 
 export type ComputedAdditive = {
   key: string;
   catalogId: string;
   name: string;
-  percentOfOil: number;
+  amount: number;
+  unit: DoseUnit;
+  basis: DoseBasis;
   grams: number;
   addAt: AdditiveLine['addAt'];
+  /** Oil-equivalent % (grams / oilGrams × 100) — transitional bridge for display/insights; removed in Task 4. */
+  percentOfOil: number;
 };
 
 export function computeRecipeAdditives(
   additives: AdditiveLine[],
-  totalOilGrams: number,
+  { oilGrams, batchGrams }: { oilGrams: number; batchGrams: number },
 ): ComputedAdditive[] {
-  if (totalOilGrams <= 0) return [];
-
   const result: ComputedAdditive[] = [];
   for (const line of additives) {
-    const percent = parsePercentOfOil(line.percentOfOil);
-    if (percent === null || percent === 0) continue;
-    const grams = gramsFromPercentOfOil(totalOilGrams, percent);
+    const basisWeight = line.basis === 'batch' ? batchGrams : oilGrams;
+    if (basisWeight <= 0) continue;
+    const amount = parseDoseAmount(line.amount, line.unit);
+    if (amount === null || amount === 0) continue;
+    const grams = gramsFromDose(basisWeight, amount, line.unit);
     if (grams === null) continue;
     result.push({
       key: line.key,
       catalogId: line.catalogId,
       name: line.name.trim() || 'Additive',
-      percentOfOil: percent,
+      amount,
+      unit: line.unit,
+      basis: line.basis,
       grams,
       addAt: line.addAt,
+      percentOfOil: oilGrams > 0 ? (grams / oilGrams) * 100 : 0,
     });
   }
   return result;

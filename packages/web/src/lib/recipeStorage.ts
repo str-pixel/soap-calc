@@ -52,10 +52,12 @@ function cloneLines(lines: RecipeLine[]): SavedLine[] {
 }
 
 function cloneAdditives(additives: AdditiveLine[]): SavedAdditiveLine[] {
-  return additives.map(({ catalogId, name, percentOfOil, addAt }) => ({
+  return additives.map(({ catalogId, name, amount, basis, unit, addAt }) => ({
     catalogId,
     name,
-    percentOfOil,
+    amount,
+    basis,
+    unit,
     addAt,
   }));
 }

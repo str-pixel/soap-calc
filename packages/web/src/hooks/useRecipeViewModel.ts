@@ -95,9 +95,10 @@ export function useRecipeViewModel({
     previewSettings,
   );
   const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? result?.totalOilWeightGrams ?? 0;
+  const baseBatchGrams = displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0;
   const computedAdditives = useMemo(
-    () => computeRecipeAdditives(additives, totalOilGrams),
-    [additives, totalOilGrams],
+    () => computeRecipeAdditives(additives, { oilGrams: totalOilGrams, batchGrams: baseBatchGrams }),
+    [additives, totalOilGrams, baseBatchGrams],
   );
   const splitLiquidGrams =
     previewSettings.splitLiquid.enabled

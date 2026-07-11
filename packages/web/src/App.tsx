@@ -147,7 +147,7 @@ export default function App() {
 
           <AdditivesPanel
             additives={additives}
-            totalOilGrams={vm.totalOilGrams}
+            computed={vm.computedAdditives}
             weightUnit={weightUnit}
             process={process}
             onChange={setAdditives}

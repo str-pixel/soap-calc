@@ -53,7 +53,9 @@ describe('recipeStorage', () => {
         key: 'x',
         catalogId: 'honey',
         name: 'Honey',
-        percentOfOil: '1',
+        amount: '1',
+        basis: 'oil' as const,
+        unit: 'percent' as const,
         addAt: 'trace' as const,
       },
     ];
