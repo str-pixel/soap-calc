@@ -29,3 +29,20 @@ test('marks the recipe polygon estimated under low coverage', () => {
   const recipe = container.querySelector('[data-testid="radar-recipe"]');
   expect(recipe?.getAttribute('class')).toContain('property-radar__recipe--estimated');
 });
+
+test('does not mark the recipe polygon estimated when coverage is not low', () => {
+  const { container } = render(
+    <PropertyRadar properties={PROPS} order={ORDER} lowCoverage={false} />,
+  );
+  expect(
+    container.querySelector('[data-testid="radar-recipe"]')?.getAttribute('class'),
+  ).not.toContain('property-radar__recipe--estimated');
+});
+
+test('renders the suggested-range band with an evenodd fill rule', () => {
+  const { container } = render(
+    <PropertyRadar properties={PROPS} order={ORDER} lowCoverage={false} />,
+  );
+  const band = container.querySelector('.property-radar__band');
+  expect(band?.getAttribute('fill-rule')).toBe('evenodd');
+});

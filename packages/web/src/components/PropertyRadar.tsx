@@ -15,7 +15,6 @@ const RINGS = [100, 66, 33];
 
 /** Short axis labels for the narrow sidebar. */
 const SHORT_LABEL: Partial<Record<SoapPropertyName, string>> = {
-  condition: 'Conditioning',
   bubbly: 'Bubbly',
   creamy: 'Creamy',
 };
@@ -43,7 +42,7 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
       {/* axis spokes + labels */}
       {order.map((key, i) => {
         const tip = radarPoint(i, order.length, 100, RADIUS, CENTER);
-        const label = radarPoint(i, order.length, 122, RADIUS, CENTER);
+        const label = radarPoint(i, order.length, 100, RADIUS + 20, CENTER);
         return (
           <g key={key}>
             <line
