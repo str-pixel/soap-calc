@@ -30,6 +30,15 @@ describe('normalizeSettings enum sanitization', () => {
     const s = normalizeSettings({ lyeType: 'koh' });
     expect(s.lyeType).toBe('koh');
   });
+
+  it('falls back to append when an imported postCookSuperfatMethod is invalid', () => {
+    const s = normalizeSettings({ postCookSuperfatMethod: 'bogus' } as unknown as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatMethod).toBe('append');
+  });
+
+  it('keeps a valid subtract postCookSuperfatMethod', () => {
+    expect(normalizeSettings({ postCookSuperfatMethod: 'subtract' }).postCookSuperfatMethod).toBe('subtract');
+  });
 });
 
 describe('migrateRecipeLines', () => {

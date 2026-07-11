@@ -119,12 +119,15 @@ export function normalizeSettings(
     ? partial.waterMode
     : DEFAULT_SETTINGS.waterMode;
   const lyeType = isLyeType(partial?.lyeType) ? partial.lyeType : DEFAULT_SETTINGS.lyeType;
+  const postCookSuperfatMethod =
+    partial?.postCookSuperfatMethod === 'subtract' ? 'subtract' : 'append';
   return {
     ...DEFAULT_SETTINGS,
     ...partial,
     weightUnit,
     waterMode,
     lyeType,
+    postCookSuperfatMethod,
     ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
   };

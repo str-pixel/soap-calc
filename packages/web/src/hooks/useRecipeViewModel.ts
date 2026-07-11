@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calculateDilution, scaleLyeResult, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { calculateDilution, parsePercentOfOil, scaleLyeResult, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import {
@@ -96,13 +96,19 @@ export function useRecipeViewModel({
     previewState.lines,
     previewSettings,
   );
+  // Gate on parsePercentOfOil (caps at 100, matching computePostCookSuperfat) so the lye
+  // reduction and the "reserved" PCSF line can never diverge at an out-of-range percent.
+  const pcsfSubtractPercent = parsePercentOfOil(previewSettings.postCookSuperfatPercent) ?? 0;
   const cookFactor =
     process !== 'cp' &&
     previewSettings.postCookSuperfatMethod === 'subtract' &&
-    (Number(previewSettings.postCookSuperfatPercent) || 0) > 0
-      ? Math.min(1, Math.max(0, 1 - (Number(previewSettings.postCookSuperfatPercent) || 0) / 100))
+    pcsfSubtractPercent > 0
+      ? Math.min(1, Math.max(0, 1 - pcsfSubtractPercent / 100))
       : 1;
-  const result = cookFactor < 1 && fullResult ? scaleLyeResult(fullResult, cookFactor) : fullResult;
+  const result = useMemo(
+    () => (cookFactor < 1 && fullResult ? scaleLyeResult(fullResult, cookFactor) : fullResult),
+    [cookFactor, fullResult],
+  );
   const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? fullResult?.totalOilWeightGrams ?? 0;
   const baseBatchGrams = displayTotals?.batchWeightGrams ?? fullResult?.totalBatchWeightGrams ?? 0;
   const dilution = useMemo(
