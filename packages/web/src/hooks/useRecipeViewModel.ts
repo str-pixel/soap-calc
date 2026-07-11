@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calculateDilution, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { calculateDilution, scaleLyeResult, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import {
@@ -92,12 +92,19 @@ export function useRecipeViewModel({
     batchGramsTarget > 0 &&
     lineTotals.totalWeightGrams > 0 &&
     Math.abs(lineTotals.totalWeightGrams - batchGramsTarget) > 1;
-  const { result, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
+  const { result: fullResult, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
     previewState.lines,
     previewSettings,
   );
-  const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? result?.totalOilWeightGrams ?? 0;
-  const baseBatchGrams = displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0;
+  const cookFactor =
+    process !== 'cp' &&
+    previewSettings.postCookSuperfatMethod === 'subtract' &&
+    (Number(previewSettings.postCookSuperfatPercent) || 0) > 0
+      ? Math.min(1, Math.max(0, 1 - (Number(previewSettings.postCookSuperfatPercent) || 0) / 100))
+      : 1;
+  const result = cookFactor < 1 && fullResult ? scaleLyeResult(fullResult, cookFactor) : fullResult;
+  const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? fullResult?.totalOilWeightGrams ?? 0;
+  const baseBatchGrams = displayTotals?.batchWeightGrams ?? fullResult?.totalBatchWeightGrams ?? 0;
   const dilution = useMemo(
     () =>
       process === 'ls' && result
@@ -179,10 +186,14 @@ export function useRecipeViewModel({
         ? 'NaOH'
         : 'KOH';
   const additiveGrams = computedAdditives.reduce((sum, item) => sum + item.grams, 0);
+  const pcsfIsExtra = previewSettings.postCookSuperfatMethod !== 'subtract';
   const extrasGrams =
-    additiveGrams + (splitLiquidGrams ?? 0) + (postCookSuperfat?.grams ?? 0);
+    additiveGrams + (splitLiquidGrams ?? 0) + (pcsfIsExtra ? postCookSuperfat?.grams ?? 0 : 0);
   const batchWeightWithExtras =
-    (displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0) + extrasGrams;
+    (pcsfIsExtra
+      ? (displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0)
+      : (displayTotals?.recipeOilWeightGrams ?? 0) + (result?.lyeWeightGrams ?? 0) + (result?.waterWeightGrams ?? 0)) +
+    extrasGrams;
   const liveOilBatchFraction = useMemo(() => {
     if (!displayTotals || batchWeightWithExtras <= 0) return null;
     return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);

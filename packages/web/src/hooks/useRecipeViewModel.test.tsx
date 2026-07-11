@@ -84,6 +84,19 @@ test('a stray post-cook superfat never applies under CP (no field exists to clea
   expect(strayCp.batchWeightWithExtras).toBeCloseTo(cleanCp.batchWeightWithExtras);
 });
 
+test('subtract reduces the lye by (1 − PCSF%) while oil weight stays on the full recipe', () => {
+  let append: any;
+  let subtract: any;
+  probe((vm) => { append = vm; }, { postCookSuperfatPercent: '10', postCookSuperfatMethod: 'append' }, 'hp');
+  probe((vm) => { subtract = vm; }, { postCookSuperfatPercent: '10', postCookSuperfatMethod: 'subtract' }, 'hp');
+
+  expect(subtract.result.lyeWeightGrams).toBeCloseTo(append.result.lyeWeightGrams * 0.9);
+  expect(subtract.result.waterWeightGrams).toBeCloseTo(append.result.waterWeightGrams * 0.9);
+  expect(subtract.totalOilGrams).toBeCloseTo(append.totalOilGrams); // oil unchanged
+  // append folds PCSF into batch (extra oil); subtract reserves it (not added)
+  expect(subtract.batchWeightWithExtras).toBeLessThan(append.batchWeightWithExtras);
+});
+
 test('dilution: computed for LS, null for CP, null (no crash) for an empty LS recipe', () => {
   let ls: any;
   let cp: any;
