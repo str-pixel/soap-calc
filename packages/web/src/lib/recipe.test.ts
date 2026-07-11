@@ -50,6 +50,12 @@ describe('migrateRecipeLines', () => {
   });
 });
 
+describe('soapConcentrationPercent setting', () => {
+  it('defaults soapConcentrationPercent to 30', () => {
+    expect(DEFAULT_SETTINGS.soapConcentrationPercent).toBe('30');
+  });
+});
+
 describe('postCookSuperfat settings', () => {
   it('defaults post-cook superfat off, with a valid default oil', () => {
     expect(DEFAULT_SETTINGS.postCookSuperfatPercent).toBe('0');

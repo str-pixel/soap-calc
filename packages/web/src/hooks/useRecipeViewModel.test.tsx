@@ -83,3 +83,24 @@ test('a stray post-cook superfat never applies under CP (no field exists to clea
   expect(strayCp.postCookSuperfat).toBeNull();
   expect(strayCp.batchWeightWithExtras).toBeCloseTo(cleanCp.batchWeightWithExtras);
 });
+
+test('dilution: computed for LS, null for CP, null (no crash) for an empty LS recipe', () => {
+  let ls: any;
+  let cp: any;
+  probe((vm) => { ls = vm; }, { soapConcentrationPercent: '30' }, 'ls');
+  probe((vm) => { cp = vm; }, { soapConcentrationPercent: '30' }, 'cp');
+  expect(ls.dilution).not.toBeNull();
+  expect(ls.dilution.solutionGrams).toBeGreaterThan(ls.dilution.anhydrousGrams);
+  expect(cp.dilution).toBeNull();
+
+  let empty: any;
+  function Probe() {
+    empty = useRecipeViewModel({
+      recipeName: 'Empty', lines: [], settings: { ...DEFAULT_SETTINGS, soapConcentrationPercent: '30' },
+      additives: createEmptyAdditives(), drafts: {}, weightUnit: 'g', process: 'ls',
+    });
+    return null;
+  }
+  render(<Probe />);
+  expect(empty.dilution).toBeNull();
+});

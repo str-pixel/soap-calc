@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { calculateDilution, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import type { DilutionResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import {
   computePostCookSuperfat,
@@ -52,6 +53,7 @@ export type RecipeViewModel = {
   fattyAcids: ReturnType<typeof useFormulationInsights>['fattyAcids'];
   insights: ReturnType<typeof useFormulationInsights>['insights'];
   lyeLabel: string;
+  dilution: DilutionResult | null;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
@@ -96,6 +98,19 @@ export function useRecipeViewModel({
   );
   const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? result?.totalOilWeightGrams ?? 0;
   const baseBatchGrams = displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0;
+  const dilution = useMemo(
+    () =>
+      process === 'ls' && result
+        ? calculateDilution({
+            anhydrousGrams: result.totalOilWeightGrams + result.lyeWeightGrams,
+            cookWaterGrams: result.waterWeightGrams,
+            kohGrams: result.kohWeightGrams,
+            naohGrams: result.naohWeightGrams,
+            soapConcentrationPercent: Number(previewSettings.soapConcentrationPercent),
+          })
+        : null,
+    [process, result, previewSettings.soapConcentrationPercent],
+  );
   const computedAdditives = useMemo(
     () => computeRecipeAdditives(additives, { oilGrams: totalOilGrams, batchGrams: baseBatchGrams }),
     [additives, totalOilGrams, baseBatchGrams],
@@ -236,6 +251,7 @@ export function useRecipeViewModel({
     fattyAcids,
     insights,
     lyeLabel,
+    dilution,
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,

@@ -44,6 +44,7 @@ export type RecipeSettings = {
   batchNotes: string;
   postCookSuperfatPercent: string;
   postCookSuperfatOilId: string;
+  soapConcentrationPercent: string;
 };
 
 export function newLineKey(): string {
@@ -77,6 +78,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   batchNotes: '',
   postCookSuperfatPercent: '0',
   postCookSuperfatOilId: 'olive-oil',
+  soapConcentrationPercent: '30',
 };
 
 export function normalizeSplitLiquid(
