@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
+  formatPropertyScore,
   formatSoapPropertyPercent,
   LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
@@ -282,23 +283,23 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           <dl className="batch-sheet__dl batch-sheet__dl--compact">
             <div>
               <dt>Hardness</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.hardness)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.hardness)}</dd>
             </div>
             <div>
               <dt>Cleansing</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.cleansing)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.cleansing)}</dd>
             </div>
             <div>
               <dt>Conditioning</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.condition)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.condition)}</dd>
             </div>
             <div>
               <dt>Bubbly</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.bubbly)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.bubbly)}</dd>
             </div>
             <div>
               <dt>Creamy</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.creamy)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.creamy)}</dd>
             </div>
             {indexes.iodine !== null && (
               <div>

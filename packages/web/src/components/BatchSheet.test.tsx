@@ -224,3 +224,44 @@ test('prints no post-cook-superfat line when absent', () => {
 
   expect(screen.queryByText(/post-cook superfat/)).toBeNull();
 });
+
+test('prints bar-property scores without a percent sign', () => {
+  const lines = createStarterLines();
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, DEFAULT_SETTINGS);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+
+  const data = buildBatchSheetData({
+    recipeName: 'Scores batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings: DEFAULT_SETTINGS,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquid: undefined,
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    postCookSuperfatMethod: 'append',
+    dilution: null,
+    properties: {
+      properties: { hardness: 41, cleansing: 17, condition: 56, creamy: 24, bubbly: 17, longevity: 24 },
+      coveragePercent: 100,
+      missingOilIds: [],
+    },
+    indexes: { iodine: 58, ins: 147, coveragePercent: 100, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    insights: [],
+    process: 'cp',
+  });
+
+  render(<BatchSheet data={data} />);
+  // The hardness score renders as a bare number.
+  const hardnessTerm = screen.getByText('Hardness');
+  const hardnessValue = hardnessTerm.parentElement?.querySelector('dd');
+  expect(hardnessValue?.textContent).toBe('41');
+});
