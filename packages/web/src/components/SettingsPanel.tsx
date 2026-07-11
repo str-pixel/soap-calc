@@ -10,6 +10,7 @@ import {
   WATER_MODE_LABELS,
 } from '../lib/settingsFields';
 import type { ProcessId } from '../lib/process';
+import { InfoTip } from './InfoTip';
 import { MoldSizerPanel } from './MoldSizerPanel';
 import { OilPicker } from './OilPicker';
 import { SplitLiquidPanel } from './SplitLiquidPanel';
@@ -27,10 +28,14 @@ function NumericSettingField({
 }) {
   return (
     <label className="field">
-      <span>{spec.label}</span>
+      <span>
+        {spec.label}
+        {spec.help && <InfoTip term={spec.label.replace(/\s*%$/, '')}>{spec.help}</InfoTip>}
+      </span>
       <input
         type="number"
         className="input"
+        aria-label={spec.label}
         min={spec.min}
         max={spec.max}
         step={spec.step}
@@ -76,10 +81,17 @@ export function SettingsPanel({
       <h2 className="panel__title">Settings</h2>
       <div className="settings-grid">
         <label className="field">
-          <span>Superfat %</span>
+          <span>
+            Superfat %
+            <InfoTip term="Superfat">
+              The share of oils left unsaponified for a gentler, more moisturizing bar. Around 5%
+              is common.
+            </InfoTip>
+          </span>
           <input
             type="number"
             className="input"
+            aria-label="Superfat %"
             min={0}
             max={50}
             step={0.5}
@@ -189,41 +201,45 @@ export function SettingsPanel({
         )}
       </div>
 
-      <SplitLiquidPanel
-        splitLiquid={settings.splitLiquid}
-        totalOilGrams={totalOilGrams}
-        lyeGrams={lyeGrams}
-        weightUnit={weightUnit}
-        waterMode={settings.waterMode}
-        waterSuggestion={waterSuggestion}
-        onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
-        onApplySuggestedWater={(waterPercentOfOils) =>
-          setSettings((s) => ({
-            ...s,
-            waterMode: 'percent_of_oils',
-            waterPercentOfOils,
-          }))
-        }
-      />
+      <details className="settings-advanced">
+        <summary className="settings-advanced__summary">Advanced</summary>
 
-      <MoldSizerPanel
-        input={moldSizerInput}
-        weightUnit={weightUnit}
-        oilBatchFraction={liveOilBatchFraction}
-        onChange={onMoldSizerChange}
-        onApply={onApplySuggestedOilGrams}
-      />
-
-      <label className="field">
-        <span>Process notes</span>
-        <textarea
-          className="input input--textarea"
-          rows={3}
-          placeholder="Trace notes, fragrance plan, cure reminders…"
-          value={settings.batchNotes}
-          onChange={(e) => setSettings((s) => ({ ...s, batchNotes: e.target.value }))}
+        <SplitLiquidPanel
+          splitLiquid={settings.splitLiquid}
+          totalOilGrams={totalOilGrams}
+          lyeGrams={lyeGrams}
+          weightUnit={weightUnit}
+          waterMode={settings.waterMode}
+          waterSuggestion={waterSuggestion}
+          onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
+          onApplySuggestedWater={(waterPercentOfOils) =>
+            setSettings((s) => ({
+              ...s,
+              waterMode: 'percent_of_oils',
+              waterPercentOfOils,
+            }))
+          }
         />
-      </label>
+
+        <MoldSizerPanel
+          input={moldSizerInput}
+          weightUnit={weightUnit}
+          oilBatchFraction={liveOilBatchFraction}
+          onChange={onMoldSizerChange}
+          onApply={onApplySuggestedOilGrams}
+        />
+
+        <label className="field">
+          <span>Process notes</span>
+          <textarea
+            className="input input--textarea"
+            rows={3}
+            placeholder="Trace notes, fragrance plan, cure reminders…"
+            value={settings.batchNotes}
+            onChange={(e) => setSettings((s) => ({ ...s, batchNotes: e.target.value }))}
+          />
+        </label>
+      </details>
     </section>
   );
 }

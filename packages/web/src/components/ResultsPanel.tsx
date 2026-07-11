@@ -8,6 +8,7 @@ import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculat
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
 import { formatWeight } from '../lib/weightUnits';
+import { InfoTip } from './InfoTip';
 
 type ResultsPanelProps = {
   result: LyeCalculationResult | null;
@@ -178,7 +179,13 @@ export function ResultsPanel({
             <dd>{formatGrams(result.lyeConcentrationPercent, 1)}%</dd>
           </div>
           <div className="results-grid__item">
-            <dt>Water : lye</dt>
+            <dt>
+              Water : lye
+              <InfoTip term="Water-to-lye ratio">
+                How much water dissolves the lye. A lower ratio means less water and a batter that
+                traces faster.
+              </InfoTip>
+            </dt>
             <dd>{formatGrams(result.waterLyeRatio, 2)} : 1</dd>
           </div>
           {showTotalLiquid && (

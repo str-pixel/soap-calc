@@ -155,20 +155,6 @@ export default function App() {
         </div>
 
         <aside className="sidebar">
-          <SettingsPanel
-            process={process}
-            settings={settings}
-            setSettings={setSettings}
-            weightUnit={weightUnit}
-            totalOilGrams={vm.totalOilGrams}
-            lyeGrams={vm.result?.lyeWeightGrams ?? 0}
-            waterSuggestion={vm.waterSuggestion}
-            moldSizerInput={moldSizerInput}
-            onMoldSizerChange={setMoldSizerInput}
-            liveOilBatchFraction={vm.liveOilBatchFraction}
-            onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
-          />
-
           <ResultsPanel
             result={vm.result}
             inputErrors={vm.inputErrors}
@@ -184,6 +170,20 @@ export default function App() {
             additives={vm.computedAdditives}
             superfatPercent={vm.previewSettings.superfatPercent}
             postCookSuperfat={vm.postCookSuperfat}
+          />
+
+          <SettingsPanel
+            process={process}
+            settings={settings}
+            setSettings={setSettings}
+            weightUnit={weightUnit}
+            totalOilGrams={vm.totalOilGrams}
+            lyeGrams={vm.result?.lyeWeightGrams ?? 0}
+            waterSuggestion={vm.waterSuggestion}
+            moldSizerInput={moldSizerInput}
+            onMoldSizerChange={setMoldSizerInput}
+            liveOilBatchFraction={vm.liveOilBatchFraction}
+            onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
           />
 
           <PropertiesPanel result={vm.properties} indexes={vm.indexes} />

@@ -11,6 +11,7 @@ import {
 } from '@soap-calc/core';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
 import { oilById } from '../lib/oils';
+import { InfoTip } from './InfoTip';
 
 const PROPERTY_ORDER: SoapPropertyName[] = [
   'hardness',
@@ -47,7 +48,13 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
       {showIndexes && (
         <dl className="recipe-indexes" aria-label="Recipe iodine and INS">
           <div>
-            <dt>Iodine</dt>
+            <dt>
+              Iodine
+              <InfoTip term="Iodine value">
+                An index of soft, unsaturated oils. Higher means a softer bar that is more prone to
+                going rancid.
+              </InfoTip>
+            </dt>
             <dd>
               {indexLowCoverage ? '~' : ''}
               {Math.round(indexes.iodine!)}
@@ -58,7 +65,12 @@ export function PropertiesPanel({ result, indexes }: PropertiesPanelProps) {
             </dd>
           </div>
           <div>
-            <dt>INS</dt>
+            <dt>
+              INS
+              <InfoTip term="INS">
+                A rough hardness index from the oil blend. Typical bar soaps land around 136–165.
+              </InfoTip>
+            </dt>
             <dd>
               {indexLowCoverage ? '~' : ''}
               {Math.round(indexes.ins!)}
