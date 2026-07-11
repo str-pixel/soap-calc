@@ -219,7 +219,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
             {additives.map((item) => (
               <li key={item.key}>
                 {item.name} — {formatWeight(item.grams, weightUnit)} (
-                {formatDose(item.amount, item.unit, item.basis)}, {additiveStageLabel(item.addAt, process)})
+                {formatDose(item.amount, item.basis, item.unit)}, {additiveStageLabel(item.addAt, process)})
               </li>
             ))}
           </ul>

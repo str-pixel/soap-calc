@@ -228,7 +228,7 @@ export function ResultsPanel({
           {additives.map((item) => (
             <div key={item.key}>
               <dt>
-                {item.name} ({formatDose(item.amount, item.unit, item.basis)})
+                {item.name} ({formatDose(item.amount, item.basis, item.unit)})
               </dt>
               <dd>
                 {formatWeight(item.grams, weightUnit)}

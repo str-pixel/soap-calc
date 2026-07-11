@@ -91,21 +91,19 @@ export function catalogEntryById(id: string): AdditiveCatalogEntry | undefined {
   return ADDITIVE_CATALOG.find((entry) => entry.id === id);
 }
 
-/** Grams from % of total oil weight. Returns null when percent is invalid. */
+/** Grams from % of total oil weight. Returns null when percent is invalid.
+ * Thin alias over gramsFromDose (percent unit) — single source of truth for the math.
+ * Kept as a readable name for split-liquid / post-cook-superfat, which are always % of oil. */
 export function gramsFromPercentOfOil(
   totalOilGrams: number,
   percentOfOil: number,
 ): number | null {
-  if (!Number.isFinite(totalOilGrams) || totalOilGrams < 0) return null;
-  if (!Number.isFinite(percentOfOil) || percentOfOil < 0) return null;
-  return (totalOilGrams * percentOfOil) / 100;
+  return gramsFromDose(totalOilGrams, percentOfOil, 'percent');
 }
 
+/** Parse a %-of-oil string (0–100). Thin alias over parseDoseAmount (percent unit). */
 export function parsePercentOfOil(value: string): number | null {
-  if (value === '') return null;
-  const n = Number(value);
-  if (!Number.isFinite(n) || n < 0 || n > 100) return null;
-  return n;
+  return parseDoseAmount(value, 'percent');
 }
 
 export type DoseUnit = 'percent' | 'ppt';

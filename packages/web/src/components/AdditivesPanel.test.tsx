@@ -124,6 +124,32 @@ describe('AdditivesPanel stage options', () => {
   });
 });
 
+test('flags an amount over its unit ceiling (e.g. left at 500 after switching ppt → %)', () => {
+  render(
+    <AdditivesPanel
+      additives={[makeLine({ amount: '500', unit: 'percent' })]}
+      computed={[]}
+      weightUnit="g"
+      process="hp"
+      onChange={() => {}}
+    />,
+  );
+  expect(screen.getByRole('alert').textContent).toContain('Max 100%');
+});
+
+test('no over-ceiling hint for a valid amount', () => {
+  render(
+    <AdditivesPanel
+      additives={[makeLine({ amount: '5', unit: 'percent' })]}
+      computed={[makeComputed(makeLine({ amount: '5' }))]}
+      weightUnit="g"
+      process="hp"
+      onChange={() => {}}
+    />,
+  );
+  expect(screen.queryByRole('alert')).toBeNull();
+});
+
 test('changing the dose mode updates the line basis and unit', async () => {
   const user = userEvent.setup();
   const additives = [

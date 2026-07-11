@@ -134,6 +134,22 @@ describe('recipeFile', () => {
     expect(parsed.data.settings.postCookSuperfatOilId).toBe('shea-butter');
   });
 
+  it('accepts a hand-edited numeric additive amount', () => {
+    const payload = {
+      version: 2,
+      name: 'Numeric amount',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [{ catalogId: '', name: 'Eugenol', amount: 3, unit: 'ppt', basis: 'oil', addAt: 'trace' }],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].amount).toBe('3');
+    expect(parsed.data.additives[0].unit).toBe('ppt');
+  });
+
   it('rejects invalid additive percent', () => {
     const payload = {
       version: 2,

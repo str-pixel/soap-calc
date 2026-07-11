@@ -2,6 +2,7 @@ import {
   ADDITIVE_CATALOG,
   catalogEntryById,
   LATHER_SUPPORT_PACK,
+  parseDoseAmount,
   type AdditiveStage,
   type DoseBasis,
   type DoseUnit,
@@ -145,6 +146,10 @@ export function AdditivesPanel({
           {additives.map((line) => {
             const row = computed.find((item) => item.key === line.key);
             const entry = line.catalogId ? catalogEntryById(line.catalogId) : undefined;
+            // An amount present but over its unit's ceiling (e.g. left at 500 after switching
+            // from ppt to %) yields no grams — flag it so the dose doesn't just vanish silently.
+            const amountInvalid =
+              line.amount !== '' && parseDoseAmount(line.amount, line.unit) === null;
             // Mismatched-select guard: a line's current addAt must always be an option,
             // even when it falls outside this process's offered set (e.g. a stray
             // after_cook line viewed under CP) — otherwise the controlled <select> has
@@ -239,6 +244,11 @@ export function AdditivesPanel({
                 >
                   ×
                 </button>
+                {amountInvalid && (
+                  <p className="additive-list__hint" role="alert">
+                    Max {line.unit === 'ppt' ? '1000 ppt' : '100%'} — reduce the amount
+                  </p>
+                )}
                 {entry && (
                   <p className="additive-list__hint">
                     Typical {entry.typicalLow}

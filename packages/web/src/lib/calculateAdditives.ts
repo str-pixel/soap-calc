@@ -13,8 +13,8 @@ export type ComputedAdditive = {
   catalogId: string;
   name: string;
   amount: number;
-  unit: DoseUnit;
   basis: DoseBasis;
+  unit: DoseUnit;
   grams: number;
   addAt: AdditiveLine['addAt'];
 };
@@ -36,8 +36,8 @@ export function computeRecipeAdditives(
       catalogId: line.catalogId,
       name: line.name.trim() || 'Additive',
       amount,
-      unit: line.unit,
       basis: line.basis,
+      unit: line.unit,
       grams,
       addAt: line.addAt,
     });

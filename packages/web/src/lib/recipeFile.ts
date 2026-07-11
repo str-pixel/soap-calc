@@ -101,7 +101,9 @@ function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
   const amount =
     typeof value.amount === 'string' && value.amount !== ''
       ? value.amount
-      : parseAdditivePercentOfOil(value); // legacy percentOfOil / PPO → %-of-oil string
+      : typeof value.amount === 'number' && Number.isFinite(value.amount)
+        ? String(value.amount) // hand-edited numeric amount
+        : parseAdditivePercentOfOil(value); // legacy percentOfOil / PPO → %-of-oil string
   if (amount === '' || parseDoseAmount(amount, unit) === null) {
     return null;
   }
