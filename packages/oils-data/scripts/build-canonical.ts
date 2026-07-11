@@ -64,6 +64,15 @@ function main() {
 
   const fnwlText = readFileSync(fnwlPath, 'utf8');
   const fnwlRows = parseFnwlCsv(fnwlText);
+  // parseFnwlCsv silently skips unparseable rows, so a quoting/format change in the
+  // snapshot would otherwise degrade most of the catalog to legacy_only without any
+  // error. Mirror fetch-fnwl's < 50 raw-line floor here, after parsing.
+  if (fnwlRows.length < 50) {
+    console.error(
+      `FNWL snapshot parsed to only ${fnwlRows.length} rows — source format likely changed. Aborting build.`,
+    );
+    process.exit(1);
+  }
   const fnwlIndex = buildFnwlIndex(fnwlRows);
 
   const inciIndex = existsSync(fnwlInciPath)
@@ -80,6 +89,7 @@ function main() {
     unmatched: [] as string[],
     sapDiscrepancies: [] as Array<{ name: string; legacy: number; fnwl: number; deltaPct: number }>,
     sapRetainedLegacy: [] as string[],
+    sapFnwlPreferred: [] as string[],
     sapConservativeBlend: [] as string[],
     ldgMethodologyNotes: [] as string[],
     inciResolved: [] as string[],
@@ -178,8 +188,8 @@ function main() {
         resolution.strategy === 'legacy_retained' ||
         resolution.strategy === 'fnwl_preferred'
       ) {
-        report.sapRetainedLegacy.push(leg.name);
         const usingFnwl = resolution.strategy === 'fnwl_preferred';
+        (usingFnwl ? report.sapFnwlPreferred : report.sapRetainedLegacy).push(leg.name);
         sources.push({
           source: 'manual',
           notes: usingFnwl
@@ -365,6 +375,7 @@ function main() {
   console.log(`  FNWL matched: ${report.matched.length}/${oils.length}`);
   console.log(`  Unmatched (legacy only): ${report.unmatched.length}`);
   console.log(`  SAP retained (legacy, >${DISPUTED_DELTA_PCT}% delta): ${report.sapRetainedLegacy.length}`);
+  console.log(`  SAP FNWL preferred (higher, >${DISPUTED_DELTA_PCT}% delta): ${report.sapFnwlPreferred.length}`);
   console.log(`  SAP conservative blend (5–${DISPUTED_DELTA_PCT}% delta): ${report.sapConservativeBlend.length}`);
   console.log(`  LDG methodology cross-checks: ${report.ldgMethodologyNotes.length}`);
   console.log(`  INCI resolved (FNWL): ${report.inciResolved.length}`);
