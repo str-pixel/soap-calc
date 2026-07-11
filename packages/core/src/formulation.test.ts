@@ -344,4 +344,19 @@ describe('analyzeFormulation', () => {
     });
     expect(insights.some((i) => i.code === 'oatmeal_false_trace')).toBe(false);
   });
+
+  describe('high_pufa_post_cook_superfat', () => {
+    const base = {
+      properties: null, fattyAcids: null, totalOilGrams: 1000, superfatPercent: 3,
+      lyeConcentrationPercent: 33, waterLyeRatio: 2, waterGrams: 80, lyeGrams: 100,
+    };
+    it('fires when the PCSF oil PUFA exceeds 30', () => {
+      const insights = analyzeFormulation({ ...base, postCookSuperfatPufaPercent: 65 });
+      expect(insights.some((i) => i.code === 'high_pufa_post_cook_superfat')).toBe(true);
+    });
+    it('does not fire at/below 30 or when undefined', () => {
+      expect(analyzeFormulation({ ...base, postCookSuperfatPufaPercent: 25 }).some((i) => i.code === 'high_pufa_post_cook_superfat')).toBe(false);
+      expect(analyzeFormulation(base).some((i) => i.code === 'high_pufa_post_cook_superfat')).toBe(false);
+    });
+  });
 });

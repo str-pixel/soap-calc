@@ -46,6 +46,8 @@ export type FormulationAnalysisInput = {
   oilEntries?: NamedOilEntry[];
   lyeType?: LyeType;
   kohBlendPercent?: number;
+  /** PUFA (linoleic + linolenic) % of the chosen post-cook superfat oil, when PCSF is active. */
+  postCookSuperfatPufaPercent?: number;
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -229,6 +231,15 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       code: 'jojoba_superfat_note',
       message:
         'Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils.',
+    });
+  }
+
+  if (input.postCookSuperfatPufaPercent !== undefined && input.postCookSuperfatPufaPercent > 30) {
+    insights.push({
+      level: 'warning',
+      code: 'high_pufa_post_cook_superfat',
+      message:
+        'Post-cook superfat oil is high in linoleic + linolenic — added unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool.',
     });
   }
 
