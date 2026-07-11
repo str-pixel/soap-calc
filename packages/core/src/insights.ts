@@ -48,6 +48,9 @@ export type FormulationAnalysisInput = {
   kohBlendPercent?: number;
   /** PUFA (linoleic + linolenic) % of the chosen post-cook superfat oil, when PCSF is active. */
   postCookSuperfatPufaPercent?: number;
+  /** True for liquid-soap (KOH) recipes; gates LS-specific insights and exempts LS from the
+   * bar-soap lye-concentration warnings. */
+  isLiquidSoap?: boolean;
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -75,13 +78,13 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  if (input.lyeConcentrationPercent > 0) {
+  if (input.lyeConcentrationPercent > 0 && !input.isLiquidSoap) {
     if (input.lyeConcentrationPercent < 20) {
       insights.push({
         level: 'warning',
         code: 'lye_conc_low',
         message:
-          'Lye concentration below ~20% — outside typical cold-process range; trace and cure may be very slow.',
+          'Lye concentration below ~20% — outside the typical bar-soap range; trace and cure may be very slow.',
       });
     } else if (input.lyeConcentrationPercent > 38) {
       insights.push({
@@ -240,6 +243,24 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       code: 'high_pufa_post_cook_superfat',
       message:
         'Post-cook superfat oil is high in linoleic + linolenic — added unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool.',
+    });
+  }
+
+  if (input.isLiquidSoap && input.superfatPercent > 3) {
+    insights.push({
+      level: 'warning',
+      code: 'ls_superfat_high',
+      message:
+        'Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%.',
+    });
+  }
+
+  if (input.isLiquidSoap && input.superfatPercent < 0) {
+    insights.push({
+      level: 'info',
+      code: 'ls_lye_excess',
+      message:
+        'Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target.',
     });
   }
 
