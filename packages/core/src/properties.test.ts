@@ -119,3 +119,10 @@ describe('calculateRecipeProperties', () => {
     expect(result.properties!.hardness).toBeCloseTo(soloOlive.properties!.hardness, 5);
   });
 });
+
+describe('conditioning includes docosenoic (corrected spelling)', () => {
+  it('counts docosenoic toward conditioning', () => {
+    const props = oilPropertiesFromFattyAcids({ oleic: 10, docosenoic: 16 });
+    expect(props.condition).toBe(26);
+  });
+});

@@ -73,7 +73,7 @@ const UNSATURATED_ACIDS = [
   'linolenic',
   'ricinoleic',
   'eicosenoic',
-  'docosenoid',
+  'docosenoic',
   'docosadienoic',
   'erucic',
 ] as const;

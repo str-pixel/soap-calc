@@ -21,7 +21,7 @@ export const SOAP_PROPERTY_FATTY_ACIDS: Record<SoapPropertyName, readonly string
     'linoleic',
     'linolenic',
     'eicosenoic',
-    'docosenoid',
+    'docosenoic',
     'docosadienoic',
     'erucic',
   ],

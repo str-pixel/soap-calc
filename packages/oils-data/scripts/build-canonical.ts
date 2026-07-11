@@ -46,11 +46,26 @@ interface LegacyOil {
   breakdown?: string | Record<string, number>;
 }
 
+/** Legacy source used the misspelling "docosenoid"; canonical data uses "docosenoic". */
+const FATTY_ACID_KEY_ALIASES: Record<string, string> = {
+  docosenoid: 'docosenoic',
+};
+
+function normalizeFattyAcidKeys(
+  profile: Record<string, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [key, value] of Object.entries(profile)) {
+    out[FATTY_ACID_KEY_ALIASES[key] ?? key] = value;
+  }
+  return out;
+}
+
 function parseBreakdown(raw: LegacyOil['breakdown']): Record<string, number> | undefined {
   if (!raw) return undefined;
-  if (typeof raw === 'object') return raw;
+  if (typeof raw === 'object') return normalizeFattyAcidKeys(raw);
   try {
-    return JSON.parse(raw) as Record<string, number>;
+    return normalizeFattyAcidKeys(JSON.parse(raw) as Record<string, number>);
   } catch {
     return undefined;
   }

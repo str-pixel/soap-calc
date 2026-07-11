@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-11T17:09:47.165Z",
+  "generatedAt": "2026-07-11T23:09:46.255Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -1347,7 +1347,7 @@
       "iodine": 92,
       "ins": 77,
       "fattyAcids": {
-        "docosenoid": 16,
+        "docosenoic": 16,
         "eicosenoic": 61,
         "docosadienoic": 18
       }
