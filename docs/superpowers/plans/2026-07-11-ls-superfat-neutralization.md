@@ -21,6 +21,7 @@
 - **Commit trailer:** every commit ends with `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`.
 - **Leave alone:** untracked `.claude/settings.json` and any regenerated `oils-data/data/*.json` build artifacts.
 - **Test commands:** per package `npm test -w @soap-calc/core -- <path>` / `npm test -w @soap-calc/web -- <path>` (the path is a vitest filter). Full gate: `npm test` (typecheck + validate:oils + all vitest).
+- **Post-plan refactor — line numbers are hints, anchor on quoted code:** three commits landed on this branch after the plan was written — `c71a0f7` (SAP hardening), `5a48158` (oils-data build report), `486e566` (deep-review fixes + performance cleanups). They shifted line numbers throughout and restructured parts of `useRecipeViewModel.ts` and `useFormulationInsights.ts`. Anchor every edit on the **quoted surrounding code**, not the cited line number. Known content-level changes are called out inline in Tasks 7 and 9. Verified still valid: Task 4/5 files (`parseRecipeSettings.ts`, `calculateRecipe.ts`, `useRecipeCalculation.ts`) are unchanged from base; `insights.ts` and `SettingsPanel.tsx` anchors are intact.
 
 ---
 
@@ -683,15 +684,15 @@ Expected: FAIL — `vm.neutralization` is undefined; `ls_superfat_high` does not
 
 - [ ] **Step 3: Implement the VM + insights wiring**
 
-In `packages/web/src/hooks/useFormulationInsights.ts`:
+In `packages/web/src/hooks/useFormulationInsights.ts` — note the perf refactor gave this a new 5th positional arg, so the signature is now `useFormulationInsights(lines, settings, properties, fattyAcids, lyeResult, options = {})`; the `FormulationInsightOptions` type, the `analyzeFormulation({ … })` call, and the dep array are otherwise unchanged in shape:
 
-Add `isLiquidSoap?: boolean;` to the `FormulationInsightOptions` type (after `postCookSuperfat?` on line 42):
+Add `isLiquidSoap?: boolean;` to the `FormulationInsightOptions` type (after the `postCookSuperfat?` field):
 
 ```ts
   isLiquidSoap?: boolean;
 ```
 
-Add `isLiquidSoap: options.isLiquidSoap ?? false,` to the `analyzeFormulation({ … })` call (e.g. after `kohBlendPercent:` on line 97), and add `options.isLiquidSoap,` to the `useMemo` dependency array (after `settings.waterMode,` on line 121).
+Add `isLiquidSoap: options.isLiquidSoap ?? false,` inside the `analyzeFormulation({ … })` call (e.g. after the `postCookSuperfatPufaPercent:` entry), and add `options.isLiquidSoap,` to the `useMemo` dependency array (after `settings.waterMode,`).
 
 In `packages/web/src/hooks/useRecipeViewModel.ts`:
 
@@ -714,7 +715,7 @@ Change the `cookFactor` condition (lines 102-107) to also require a non-negative
       : 1;
 ```
 
-Add a `neutralization` memo right after the `dilution` memo (after line 126):
+Add a `neutralization` memo right after the `dilution` memo (which now ends ~line 144, just above `const solutionGrams`):
 
 ```ts
   const neutralization = useMemo(
@@ -738,7 +739,7 @@ Add a `neutralization` memo right after the `dilution` memo (after line 126):
   );
 ```
 
-Pass `isLiquidSoap` into the `useFormulationInsights` options object (the object passed as the 5th argument, currently ending around line 187 with `postCookSuperfat,`):
+Pass `isLiquidSoap` into the `useFormulationInsights` options object (its **last** argument — the hook now takes `fattyAcids` 5th and `options` 6th — the object ending with `postCookSuperfat,`):
 
 ```ts
       postCookSuperfat,
@@ -927,9 +928,10 @@ git commit -m "feat(web): NeutralizePanel (citric estimate for a lye-excess LS b
 ### Task 9: Web — batch sheet neutralization step
 
 **Files:**
-- Modify: `packages/web/src/lib/batchSheet.ts` (import `NeutralizationResult`; add `neutralization` to `BatchSheetData` and the `buildBatchSheetData` input)
-- Modify: `packages/web/src/components/BatchSheet.tsx` (destructure + render block after the dilution section at line 263)
+- Modify: `packages/web/src/lib/batchSheet.ts` (import `NeutralizationResult`; add `neutralization` to the `BatchSheetData` type — `buildBatchSheetData` now takes `BatchSheetData` directly, so that is the only declaration)
+- Modify: `packages/web/src/components/BatchSheet.tsx` (destructure + render block after the dilution section)
 - Modify: `packages/web/src/hooks/useRecipeViewModel.ts` (pass `neutralization` into `buildBatchSheetData` + add to its memo deps)
+- Modify: `packages/web/src/lib/batchSheet.test.ts` and `packages/web/src/components/BatchSheet.test.tsx` (add `neutralization: null` to the `BatchSheetData` fixtures — the field is required)
 - Test: `packages/web/src/hooks/useRecipeViewModel.test.tsx`
 
 **Interfaces:**
@@ -970,9 +972,9 @@ import type {
 } from '@soap-calc/core';
 ```
 
-Add `neutralization: NeutralizationResult | null;` to the `BatchSheetData` type (right after its `dilution: DilutionResult | null;` line) AND to the `buildBatchSheetData` input type (right after its `dilution: DilutionResult | null;` line). Both mirror the two existing `dilution` lines.
+Add `neutralization: NeutralizationResult | null;` to the `BatchSheetData` type, right after its `dilution: DilutionResult | null;` line. (The perf refactor changed the signature to `buildBatchSheetData(input: BatchSheetData): BatchSheetData` — it no longer re-declares the fields, so `BatchSheetData` is the *only* place to add it.) Because it is a required field, add `neutralization: null,` to each `BatchSheetData` fixture: `makeBatchSheetInput` in `packages/web/src/lib/batchSheet.test.ts` (next to its `dilution: null,`) and the literal in `packages/web/src/components/BatchSheet.test.tsx` (next to its `dilution: null,`).
 
-In `packages/web/src/components/BatchSheet.tsx`, add `neutralization,` to the props destructuring (next to `dilution,` at line 53). Then add, immediately after the dilution `</section>)}` block (line 263):
+In `packages/web/src/components/BatchSheet.tsx`, add `neutralization,` to the props destructuring (next to `dilution,`). Then add, immediately after the dilution `{dilution && ( … </section> )}` block:
 
 ```tsx
       {neutralization && (
@@ -988,7 +990,7 @@ In `packages/web/src/components/BatchSheet.tsx`, add `neutralization,` to the pr
       )}
 ```
 
-In `packages/web/src/hooks/useRecipeViewModel.ts`, add `neutralization,` to the `buildBatchSheetData({ … })` call (next to `dilution,` on line 228) and add `neutralization,` to that memo's dependency array (next to `dilution,` on line 240).
+In `packages/web/src/hooks/useRecipeViewModel.ts`, add `neutralization,` to the `buildBatchSheetData({ … })` call (next to `dilution,`) and add `neutralization,` to that memo's dependency array (next to `dilution,`).
 
 - [ ] **Step 4: Run the test to verify it passes**
 
