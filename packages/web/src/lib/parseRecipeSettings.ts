@@ -2,6 +2,7 @@ import type { LyeType, WaterMode } from '@soap-calc/core';
 import type { RecipeSettings } from './recipe';
 
 const MAX_SUPERFAT = 50;
+export const NEG_SUPERFAT_FLOOR = -5;
 
 export type ParsedSettings = {
   superfatPercent: number;
@@ -24,6 +25,13 @@ function parseNonNegative(value: string, label: string): { n: number | null; err
   if (!Number.isFinite(n) || n < 0) {
     return { n: null, error: `Invalid ${label}` };
   }
+  return { n };
+}
+
+function parseSuperfat(value: string, min: number): { n: number | null; error?: string } {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < min) return { n: null, error: 'Invalid superfat %' };
+  if (n > MAX_SUPERFAT) return { n: null, error: `Superfat must be between ${min} and ${MAX_SUPERFAT}` };
   return { n };
 }
 
@@ -86,14 +94,15 @@ function waterInput(
   };
 }
 
-export function parseRecipeSettings(settings: RecipeSettings): ParseSettingsResult {
+export function parseRecipeSettings(
+  settings: RecipeSettings,
+  opts: { allowNegativeSuperfat?: boolean } = {},
+): ParseSettingsResult {
   const errors: string[] = [];
+  const minSuperfat = opts.allowNegativeSuperfat ? NEG_SUPERFAT_FLOOR : 0;
 
-  const superfat = parseNonNegative(settings.superfatPercent, 'superfat %');
+  const superfat = parseSuperfat(settings.superfatPercent, minSuperfat);
   if (superfat.error) errors.push(superfat.error);
-  else if (superfat.n! > MAX_SUPERFAT) {
-    errors.push(`Superfat must be between 0 and ${MAX_SUPERFAT}`);
-  }
 
   const naohPurity = parsePurity(settings.naohPurityPercent, 'NaOH purity %');
   const kohPurity = parsePurity(settings.kohPurityPercent, 'KOH purity %');
