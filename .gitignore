@@ -21,3 +21,6 @@ test-results/
 playwright-report/
 .playwright/
 blob-report/
+
+# impeccable skill working state (critique snapshots, live config)
+.impeccable/
