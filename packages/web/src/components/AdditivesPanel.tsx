@@ -181,17 +181,17 @@ export function AdditivesPanel({
                   />
                 </label>
                 <label className="field field--compact">
-                  <span className="sr-only">Percent of oil</span>
+                  <span className="sr-only">Amount</span>
                   <input
                     type="number"
                     className="input input--number"
                     min={0}
                     max={line.unit === 'ppt' ? 1000 : 100}
                     step={0.1}
-                    placeholder="%"
+                    placeholder={line.unit === 'ppt' ? 'ppt' : '%'}
                     value={line.amount}
                     onChange={(e) => updateLine(line.key, { amount: e.target.value })}
-                    aria-label="Percent of oil weight"
+                    aria-label="Amount"
                   />
                 </label>
                 <label className="field">
