@@ -69,11 +69,16 @@ Math (constants live next to the existing `sap.ts` KOH/glyceryl values):
 - `sapKoh = 3·56.1056 / (3·meanMW + 38.049)` (glyceryl = glycerol 92.094 − 3·H₂O 18.015)
 - `iodineValue = Σ pctᵢ · doubleBondsᵢ · 253.809 / mwᵢ`
 - `ins = round(sapKoh·1000 − iodineValue)`
-- `mappedPercent = Σ(mapped pctᵢ) / Σ(all pctᵢ) · 100`
+- `mappedPercent = Σ(mapped pctᵢ)` — the share of the whole oil (out of 100) the table
+  accounts for. **Not** mapped-over-present: a wax that lists acids summing to 38% of the
+  oil must read 38, not 100.
 
-Returns `null` when `mappedPercent < 90`. This **automatically excludes** waxes,
-tars, free acids, and exotic-acid oils (e.g. pomegranate/punicic) instead of
-deriving garbage — they simply aren't covered by the gate (see Limitations).
+Returns `null` when `mappedPercent < 90` — excluding incomplete profiles and exotic-acid
+oils (e.g. pomegranate/punicic) instead of deriving garbage. This completeness check does
+**not** by itself exclude waxes/free acids that carry a full acid list (jojoba, japan-wax,
+the free-acid ingredients). Those are excluded **structurally by the category gate** in the
+check (Component 2): the triglyceride SAP formula is physically wrong for them — wax esters
+have no glycerol backbone, and free acids take one KOH per acid, not one per triglyceride.
 
 This function is the single source of truth for the three formulas and is unit-
 tested directly (olive → ~0.190, coconut → ~0.257).
@@ -101,7 +106,14 @@ export function checkProfileConsistency(
 ): ProfileDiagnostic[];
 ```
 
-Tiering:
+**Category gate (first, mandatory).** The check runs only for oils whose `category` is
+`triglyceride` or `blend` (equivalently `propertiesAvailable === true`). Waxes, wax
+esters, free acids, and tars are skipped outright — the derivation does not model them,
+so a "disagreement" would be a formula artifact, not a data error. (Known miscategorization
+to flag separately: `soybean-fully-hydrogenated` is a saturated triglyceride labelled
+`wax`; the gate skips it until its category is fixed — a data fix, not a gate concern.)
+
+For covered oils, tiering:
 
 - **SAP (primary).** `|Δ| > SAP_THRESHOLD_PCT` (8):
   - `confidence === 'legacy_only'` → **warn** (the review queue).
@@ -210,9 +222,12 @@ after Phase 1 ships and the warn queue shows what actually needs it.
 
 ## Limitations (Phase 1, honest)
 
-- Oils with `<90%` mapped profile, or category wax/tar/free-acid, are **not covered** —
-  they fall back to today's FNWL/legacy checks only. Phase 2's Codex table and table
-  extensions shrink this set.
+- **Waxes, wax esters, free acids, and tars are not covered by derivation** — excluded by
+  the category gate because the triglyceride formula does not model them, not merely
+  "uncovered." They fall back to today's FNWL/legacy checks only. Phase 2 closes this: a
+  free-acid SAP formula (`56.1056 / MW`) covers the acid ingredients, and the Codex/known
+  range check anchors waxes (e.g. jojoba's known SAP ~92–97). Incomplete triglyceride
+  profiles (`<90%` mapped) are likewise uncovered until their profiles are filled.
 - A profile that is itself wrong **but internally consistent with** a wrong SAP cannot
   be caught by Phase 1 (no external truth). Phase 2's Codex anchor catches this for the
   ~34 common named oils; exotic butters with unsaponifiables (buriti, murumuru) remain
