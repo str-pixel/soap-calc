@@ -52,7 +52,7 @@ complete profiles, chart-consensus for incomplete ones.
 
 Fixes defect #1 and the sat/unsat-panel nonsense at the source.
 
-- **`@soap-calc/core/fatty-acids.ts`:** coverage becomes completeness-weighted. An oil contributes `weight × (mappedPercent/100)` to characterized weight (`mappedPercent` = the sum of the oil's profile percentages the model maps — same quantity used everywhere else); scores renormalize over characterized **fatty-acid** weight, not covered **oil** weight (a one-level-finer generalization of the existing renormalization). Effect: 100% mustard → 45% coverage → the existing recipe-level estimate flag fires; a 90%-olive/10%-mustard recipe → ~94% coverage, error bounded by the incomplete oil's weight share.
+- **`@soap-calc/core/fatty-acids.ts`:** only the **coverage %** becomes completeness-weighted; **scores are unchanged** (still renormalized over covered-oil weight). An oil contributes `weight × (min(profileSum,100)/100)` to a new `characterizedWeight`; `coveragePercent = characterizedWeight / totalWeight`. Effect: 100% mustard → 45% coverage → the existing recipe-level estimate flag fires (scores stay at their raw values, now honestly flagged); pure coconut (89% profile) → 89% coverage, **no** score change. **Decision (grounded):** renormalizing scores to full scale was rejected — it would silently inflate scores for 90 of 119 oils in the 80–99% band with no flag (coconut +12%, borage +22%…), reintroducing the silent-wrong-score defect. Coverage-only changes no scores and flags only the 8 sub-80% oils.
 - **Three distinct thresholds (do not conflate):** (a) **recipe-level** estimate flag — the existing `LOW_COVERAGE_PERCENT` (80), unchanged; a recipe below 80% characterized shows "~estimated". (b) **per-oil validator warn** — `validate-canonical.ts` warns (ranked, non-blocking) on any property-ready oil whose `mappedPercent` < 93% (the "incomplete profile" review queue). (c) **`propertiesAvailable = false`** — optional data change for the 8 oils below 80% mapped, so a 45%-complete oil doesn't offer properties at all. The validator **warns**, never **errors** here — erroring would block the build on those 8.
 - **Add `palmitoleic` + `behenic` keys** to the data model, classified correctly: `palmitoleic` (C16:1, a monounsaturate) → `condition` + `UNSATURATED_ACIDS`; `behenic` (C22:0, a long-chain **saturated** acid) → `SATURATED_ACIDS` and, like stearic, `hardness`/`longevity`. No oil carries them yet, so this is a no-op on scores until backfill — but it unblocks avocado/macadamia/sea-buckthorn (palmitoleic) and pracaxi (behenic) completeness later.
 
@@ -79,9 +79,15 @@ The earlier spec's content, now scoped as the guard. **The pure `deriveChemistry
 
 ### Phase 5 — Profile backfill (incremental accuracy)
 
-- **USDA FoodData Central** (CSV/JSON bulk, public domain) for the ~40 common oils USDA covers — snapshot + map to our ids, fill missing acids (incl. palmitoleic). Needs a real API key (1000/hr) or bulk download; DEMO_KEY (30/hr) is insufficient.
-- **Codex CXS 210** SAP/IV/FA-composition *ranges* (~34 named oils) as an authoritative range cross-check (PDF extraction, one-time).
-- Exotic butters (murumuru, buriti, andiroba…) stay **flagged estimates** — no source covers them; irreducible without supplier COAs.
+**Origin traced (grounded):** the incomplete profiles are inherited **SoapCalc 8-acid schema truncation** — the legacy source has no `palmitoleic`/`behenic`/`arachidic` column, and adds caprylic/capric/eicosenoic/erucic only when an acid *dominates* an oil. So the "missing %" is literally the untracked-acid content (26 of 27 incomplete oils use only SoapCalc-tracked acids). Guarded by `profile-completeness.test.ts`.
+
+**Backfill source — USDA FoodData Central** (SR-Legacy bulk JSON, 13.5 MB, public domain, **no key**; API DEMO_KEY is rate-limited/truncated — use the bulk file). FDC carries the missing acids in C:D notation (16:1 palmitoleic, 22:1 erucic, C8/C10). Prototype validated: FDC avocado → profile completes 92→100%, recovers palmitoleic 2.8%, and profile-derived SAP (0.193) moves *toward* the consensus, confirming our 0.202 is high.
+
+**CRITICAL — backfill must be curated, never automated.** Name-matching is unsafe: FDC has blends and prepared foods that fuzzy-match ("Oil, corn **and** olive" → olive; "SMART BALANCE margarine" → flax; "mayonnaise" → soybean; "Oil, palm" → palm-**kernel**; "Oil, coconut" → **fractionated** coconut). Of 25 clean `"Oil, X"` candidates, ~14 are safe, ~9 are wrong-food, ~2 need variant disambiguation. Approach: a **human-reviewed** oil-id→fdcId table, applied one row at a time, with the profile-consistency guard (Phase 4) as the automatic check that a match's SAP still agrees. **(A) Replace** the whole profile per approved row (single provenance), not augment.
+
+**Coverage reality:** of 119 triglyceride/blend oils, ~14 backfill cleanly now, ~72 exotic butters (murumuru, buriti, andiroba, cupuaçu, tucumã…) are **not in FDC** at all → stay legacy, flagged estimates (irreducible without supplier COAs). **Waxes / tars / free acids** (15 oils) are not in FDC and have no triglyceride profile to backfill — their "necessary data" is SAP + INCI, which they already have; correctly excluded by category.
+
+- **Codex CXS 210** SAP/IV/FA-composition *ranges* (~34 named oils) as an authoritative range cross-check for the exotics FDC misses (PDF extraction, one-time).
 
 ## Data-model changes
 
