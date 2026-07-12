@@ -75,6 +75,7 @@ export const RATIO_SATURATED_ACIDS = [
   'caprylic',
   'capric',
   'behenic',
+  'arachidic',
 ] as const;
 
 /** Acids summed into the unsaturated total of {@link saturatedUnsaturatedRatio}. */
