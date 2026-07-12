@@ -1,7 +1,6 @@
 import { sapKohToSapNaoh } from '@soap-calc/core';
 
 export const VERIFIED_DELTA_PCT = 5;
-export const DISPUTED_DELTA_PCT = 10;
 
 export type SapResolution = {
   sapKoh: number;

@@ -190,9 +190,14 @@ function main() {
       const range = parseSapRangeMgKoh(fnwl.sapRange);
       const delta = sapDeltaPercent(leg.sap, fnwl.sapKoh);
       // The profile is the independent tiebreaker for disputed SAP (null when <93% mapped).
-      const profileDerivedSapKoh = fattyAcids
-        ? deriveChemistryFromProfile(fattyAcids)?.sapKoh
-        : undefined;
+      // Gate on category: deriveChemistryFromProfile assumes a triglyceride backbone, so its
+      // SAP is only valid for glycerides. A free acid or wax with a ≥93%-mapped acid list
+      // (lauric-acid, stearic-acid, …) would otherwise get a bogus triglyceride SAP as the
+      // tiebreaker — under-stating the true (higher, glycerol-free) value by ~4–6%.
+      const profileDerivedSapKoh =
+        fattyAcids && (category === 'triglyceride' || category === 'blend')
+          ? deriveChemistryFromProfile(fattyAcids)?.sapKoh
+          : undefined;
       const resolution = resolvePrimarySap(leg.sap, fnwl.sapKoh, profileDerivedSapKoh);
       const resolvedInci = resolveInciForFnwlProduct(fnwl.productId, inciIndex);
       if (resolvedInci) {
