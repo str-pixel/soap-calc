@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseSapRangeMgKoh, sapKohToSapNaoh } from '@soap-calc/core';
+import { deriveChemistryFromProfile, parseSapRangeMgKoh, sapKohToSapNaoh } from '@soap-calc/core';
 import {
   CanonicalOilDatabase,
   type CanonicalOil,
@@ -15,7 +15,7 @@ import {
   resolveInciForFnwlProduct,
 } from '../src/parse-fnwl-inci.js';
 import { loadCosingGlossaryIndex, lookupInciInGlossary, defaultGlossaryPath } from '../src/cosing-glossary.js';
-import { resolvePrimarySap, sapDeltaPercent, DISPUTED_DELTA_PCT } from '../src/sap-policy.js';
+import { resolvePrimarySap, sapDeltaPercent, VERIFIED_DELTA_PCT } from '../src/sap-policy.js';
 import {
   inferCategory,
   normalizeOilName,
@@ -127,9 +127,8 @@ function main() {
     matched: [] as string[],
     unmatched: [] as string[],
     sapDiscrepancies: [] as Array<{ name: string; legacy: number; fnwl: number; deltaPct: number }>,
-    sapRetainedLegacy: [] as string[],
-    sapFnwlPreferred: [] as string[],
-    sapConservativeBlend: [] as string[],
+    sapProfileClosest: [] as string[],
+    sapMidpoint: [] as string[],
     sapCorrected: [] as string[],
     ldgMethodologyNotes: [] as string[],
     inciResolved: [] as string[],
@@ -190,7 +189,11 @@ function main() {
     if (fnwl) {
       const range = parseSapRangeMgKoh(fnwl.sapRange);
       const delta = sapDeltaPercent(leg.sap, fnwl.sapKoh);
-      const resolution = resolvePrimarySap(leg.sap, fnwl.sapKoh);
+      // The profile is the independent tiebreaker for disputed SAP (null when <93% mapped).
+      const profileDerivedSapKoh = fattyAcids
+        ? deriveChemistryFromProfile(fattyAcids)?.sapKoh
+        : undefined;
+      const resolution = resolvePrimarySap(leg.sap, fnwl.sapKoh, profileDerivedSapKoh);
       const resolvedInci = resolveInciForFnwlProduct(fnwl.productId, inciIndex);
       if (resolvedInci) {
         inciName = resolvedInci;
@@ -229,25 +232,21 @@ function main() {
         });
       }
 
-      if (
-        resolution.strategy === 'legacy_retained' ||
-        resolution.strategy === 'fnwl_preferred'
-      ) {
-        const usingFnwl = resolution.strategy === 'fnwl_preferred';
-        (usingFnwl ? report.sapFnwlPreferred : report.sapRetainedLegacy).push(leg.name);
-        sources.push({
-          source: 'manual',
-          notes: usingFnwl
-            ? `FNWL SAP ${resolution.deltaPct.toFixed(1)}% higher than legacy (>${DISPUTED_DELTA_PCT}% delta); using FNWL for lye safety`
-            : `FNWL SAP differs by ${resolution.deltaPct.toFixed(1)}% (>${DISPUTED_DELTA_PCT}%); legacy SAP retained for lye safety`,
-        });
-      } else if (resolution.strategy === 'conservative_blend') {
-        report.sapConservativeBlend.push(leg.name);
+      if (resolution.strategy === 'profile_closest') {
+        report.sapProfileClosest.push(leg.name);
         sources.push({
           source: 'manual',
           sapKoh: resolution.sapKoh,
           sapNaoh: resolution.sapNaoh,
-          notes: `FNWL differs by ${resolution.deltaPct.toFixed(1)}%; using higher SAP for lye safety`,
+          notes: `legacy/FNWL differ by ${resolution.deltaPct.toFixed(1)}% (>${VERIFIED_DELTA_PCT}%); kept the source closest to the profile-derived SAP`,
+        });
+      } else if (resolution.strategy === 'midpoint') {
+        report.sapMidpoint.push(leg.name);
+        sources.push({
+          source: 'manual',
+          sapKoh: resolution.sapKoh,
+          sapNaoh: resolution.sapNaoh,
+          notes: `legacy/FNWL differ by ${resolution.deltaPct.toFixed(1)}% (>${VERIFIED_DELTA_PCT}%); profile can't judge (incomplete), used the midpoint`,
         });
       }
 
@@ -480,9 +479,8 @@ function main() {
   console.log(`  Lite client DB → ${litePath}`);
   console.log(`  FNWL matched: ${report.matched.length}/${oils.length}`);
   console.log(`  Unmatched (legacy only): ${report.unmatched.length}`);
-  console.log(`  SAP retained (legacy, >${DISPUTED_DELTA_PCT}% delta): ${report.sapRetainedLegacy.length}`);
-  console.log(`  SAP FNWL preferred (higher, >${DISPUTED_DELTA_PCT}% delta): ${report.sapFnwlPreferred.length}`);
-  console.log(`  SAP conservative blend (5–${DISPUTED_DELTA_PCT}% delta): ${report.sapConservativeBlend.length}`);
+  console.log(`  SAP profile-closest (disputed >${VERIFIED_DELTA_PCT}%, profile judged): ${report.sapProfileClosest.length}`);
+  console.log(`  SAP midpoint (disputed >${VERIFIED_DELTA_PCT}%, no profile): ${report.sapMidpoint.length}`);
   console.log(`  SAP corrected (legacy value vs profile): ${report.sapCorrected.length}`);
   console.log(`  LDG methodology cross-checks: ${report.ldgMethodologyNotes.length}`);
   console.log(`  INCI resolved (FNWL): ${report.inciResolved.length}`);

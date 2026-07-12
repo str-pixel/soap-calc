@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-12T21:20:42.746Z",
+  "generatedAt": "2026-07-12T21:29:49.205Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -546,7 +546,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP differs by 13.5% (>10%); legacy SAP retained for lye safety"
+          "sapKoh": 0.2,
+          "sapNaoh": 0.14260249554367202,
+          "notes": "legacy/FNWL differ by 13.5% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -555,7 +557,7 @@
         }
       ],
       "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "confidence": "estimated"
     },
     {
       "id": "beeswax",
@@ -987,9 +989,9 @@
       ],
       "inciName": "Euphorbia Cerifera (Candelilla) Wax",
       "category": "wax",
-      "sapKoh": 0.054,
-      "sapNaoh": 0.03850267379679144,
-      "sapMgKohPerGram": 54,
+      "sapKoh": 0.049,
+      "sapNaoh": 0.03493761140819964,
+      "sapMgKohPerGram": 49,
       "iodine": 32,
       "ins": 12,
       "fattyAcids": {},
@@ -1021,7 +1023,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP 22.7% higher than legacy (>10% delta); using FNWL for lye safety"
+          "sapKoh": 0.049,
+          "sapNaoh": 0.03493761140819964,
+          "notes": "legacy/FNWL differ by 22.7% (>5%); profile can't judge (incomplete), used the midpoint"
         },
         {
           "source": "cosing",
@@ -1082,7 +1086,7 @@
           "source": "manual",
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
-          "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
+          "notes": "legacy/FNWL differ by 7.0% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "manual",
@@ -1147,7 +1151,7 @@
           "source": "manual",
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
-          "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
+          "notes": "legacy/FNWL differ by 7.0% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "manual",
@@ -1501,9 +1505,9 @@
       ],
       "inciName": "Caprylic/Capric Triglyceride",
       "category": "triglyceride",
-      "sapKoh": 0.348,
-      "sapNaoh": 0.2481283422459893,
-      "sapMgKohPerGram": 348,
+      "sapKoh": 0.325,
+      "sapNaoh": 0.23172905525846701,
+      "sapMgKohPerGram": 325,
       "iodine": 1,
       "ins": 324,
       "fattyAcids": {
@@ -1540,9 +1544,9 @@
         },
         {
           "source": "manual",
-          "sapKoh": 0.348,
-          "sapNaoh": 0.2481283422459893,
-          "notes": "FNWL differs by 7.1%; using higher SAP for lye safety"
+          "sapKoh": 0.325,
+          "sapNaoh": 0.23172905525846701,
+          "notes": "legacy/FNWL differ by 7.1% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -1550,7 +1554,7 @@
           "notes": "INCI \"Caprylic/Capric Triglyceride\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "fnwl",
+      "primarySource": "legacy_catalog",
       "confidence": "estimated"
     },
     {
@@ -1838,9 +1842,9 @@
       ],
       "inciName": "Theobroma Grandiflorum (Cupuacu) Seed Butter",
       "category": "triglyceride",
-      "sapKoh": 0.223,
-      "sapNaoh": 0.1590017825311943,
-      "sapMgKohPerGram": 223,
+      "sapKoh": 0.20750000000000002,
+      "sapNaoh": 0.14795008912655971,
+      "sapMgKohPerGram": 207.50000000000003,
       "iodine": 39,
       "ins": 153,
       "fattyAcids": {
@@ -1877,7 +1881,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP 16.1% higher than legacy (>10% delta); using FNWL for lye safety"
+          "sapKoh": 0.20750000000000002,
+          "sapNaoh": 0.14795008912655971,
+          "notes": "legacy/FNWL differ by 16.1% (>5%); profile can't judge (incomplete), used the midpoint"
         },
         {
           "source": "cosing",
@@ -2044,7 +2050,7 @@
           "source": "manual",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
-          "notes": "FNWL differs by 6.6%; using higher SAP for lye safety"
+          "notes": "legacy/FNWL differ by 6.6% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -3290,9 +3296,9 @@
       ],
       "inciName": "Astrocaryum Murumuru Seed Butter",
       "category": "triglyceride",
-      "sapKoh": 0.275,
-      "sapNaoh": 0.19607843137254902,
-      "sapMgKohPerGram": 275,
+      "sapKoh": 0.253,
+      "sapNaoh": 0.1803921568627451,
+      "sapMgKohPerGram": 253,
       "iodine": 25,
       "ins": 250,
       "fattyAcids": {
@@ -3331,9 +3337,9 @@
         },
         {
           "source": "manual",
-          "sapKoh": 0.275,
-          "sapNaoh": 0.19607843137254902,
-          "notes": "FNWL differs by 8.0%; using higher SAP for lye safety"
+          "sapKoh": 0.253,
+          "sapNaoh": 0.1803921568627451,
+          "notes": "legacy/FNWL differ by 8.0% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -3341,7 +3347,7 @@
           "notes": "INCI \"Astrocaryum Murumuru Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
+      "primarySource": "fnwl",
       "confidence": "estimated"
     },
     {
@@ -3701,7 +3707,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
+          "sapKoh": 0.247,
+          "sapNaoh": 0.1761140819964349,
+          "notes": "legacy/FNWL differ by 17.8% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "manual",
@@ -3714,7 +3722,7 @@
         }
       ],
       "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "confidence": "estimated"
     },
     {
       "id": "palm-kernel-oil-flakes-hydrogenated",
@@ -3764,7 +3772,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
+          "sapKoh": 0.247,
+          "sapNaoh": 0.1761140819964349,
+          "notes": "legacy/FNWL differ by 17.8% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "manual",
@@ -3777,7 +3787,7 @@
         }
       ],
       "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "confidence": "estimated"
     },
     {
       "id": "palm-oil",
@@ -4499,7 +4509,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP differs by 16.0% (>10%); legacy SAP retained for lye safety"
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "legacy/FNWL differ by 16.0% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -4508,7 +4520,7 @@
         }
       ],
       "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "confidence": "estimated"
     },
     {
       "id": "pracaxi-seed-oil-hair-conditioner",
@@ -5889,9 +5901,9 @@
       ],
       "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.208,
-      "sapNaoh": 0.14830659536541888,
-      "sapMgKohPerGram": 208,
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
       "iodine": 111,
       "ins": 82,
       "fattyAcids": {
@@ -5929,9 +5941,9 @@
         },
         {
           "source": "manual",
-          "sapKoh": 0.208,
-          "sapNaoh": 0.14830659536541888,
-          "notes": "FNWL differs by 6.2%; using higher SAP for lye safety"
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "legacy/FNWL differ by 6.2% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -5939,7 +5951,7 @@
           "notes": "INCI \"Calophyllum Tacamahaca (Tamanu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
+      "primarySource": "fnwl",
       "confidence": "estimated"
     },
     {
