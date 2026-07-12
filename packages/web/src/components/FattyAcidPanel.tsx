@@ -1,10 +1,10 @@
 import { memo } from 'react';
 import type { RecipeFattyAcidResult } from '@soap-calc/core';
 import {
+  FATTY_ACID_DISPLAY_GROUPS,
   FORMULATION_FATTY_ACID_GUIDE,
   formatPropertyRangePercent,
   formatSoapPropertyPercent,
-  FATTY_ACID_GROUP_KEYS,
   LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
   sumFattyAcids,
@@ -14,39 +14,6 @@ import { oilById } from '../lib/oils';
 type FattyAcidPanelProps = {
   result: RecipeFattyAcidResult;
 };
-
-const DISPLAY_GROUPS = [
-  {
-    key: 'lauricMyristic' as const,
-    guide: FORMULATION_FATTY_ACID_GUIDE.lauricMyristic,
-    acids: FATTY_ACID_GROUP_KEYS.lauricMyristic,
-  },
-  {
-    key: 'palmiticStearic' as const,
-    guide: FORMULATION_FATTY_ACID_GUIDE.palmiticStearic,
-    acids: FATTY_ACID_GROUP_KEYS.palmiticStearic,
-  },
-  {
-    key: 'oleic' as const,
-    guide: FORMULATION_FATTY_ACID_GUIDE.oleic,
-    acids: ['oleic'] as const,
-  },
-  {
-    key: 'linoleic' as const,
-    guide: FORMULATION_FATTY_ACID_GUIDE.linoleic,
-    acids: ['linoleic'] as const,
-  },
-  {
-    key: 'linolenic' as const,
-    guide: FORMULATION_FATTY_ACID_GUIDE.linolenic,
-    acids: ['linolenic'] as const,
-  },
-  {
-    key: 'ricinoleic' as const,
-    guide: FORMULATION_FATTY_ACID_GUIDE.ricinoleic,
-    acids: ['ricinoleic'] as const,
-  },
-];
 
 const SCALE_MAX = 100;
 
@@ -99,7 +66,8 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
       )}
 
       <ul className="property-bars" aria-label="Recipe fatty acid groups">
-        {DISPLAY_GROUPS.map(({ key, guide, acids }) => {
+        {FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
+          const guide = FORMULATION_FATTY_ACID_GUIDE[key];
           const value = sumFattyAcids(result.profile!, acids);
           const fillPct = Math.min(100, (value / SCALE_MAX) * 100);
           const inBand = inGuideBand(value, guide.low, guide.high);
