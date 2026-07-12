@@ -152,6 +152,50 @@ describe('syncPercentEdit (derived batch — unlocked)', () => {
     expect(result.lines[0]).toMatchObject({ weightGrams: '240', weightPercent: '100' });
     expect(result.batchOilGrams).toBe('240');
   });
+
+  it('at 100% keeps the edited line’s OWN weight and clears the others (not the others’ total)', () => {
+    // Finding 1: typing 100% on olive must keep olive at 300 g and drop coconut,
+    // giving a 300 g single-oil batch — not reassign olive to coconut's 200 g.
+    const result = syncPercentEdit(
+      [
+        { key: 'a', oilId: 'olive-oil', weightGrams: '300', weightPercent: '60' },
+        { key: 'b', oilId: 'coconut-oil-76', weightGrams: '200', weightPercent: '40' },
+      ],
+      'a',
+      '100',
+      '500',
+      false,
+    );
+    expect(result.batchOilGrams).toBe('300');
+    expect(result.batchSetByUser).toBe(false);
+    expect(result.lines[0]).toMatchObject({ weightGrams: '300', weightPercent: '100' });
+    expect(result.lines[1].weightGrams).toBe('');
+  });
+
+  it('at 100% keeps the edited line’s weight even when it is the smaller line', () => {
+    const result = syncPercentEdit(
+      [
+        { key: 'a', oilId: 'olive-oil', weightGrams: '200', weightPercent: '40' },
+        { key: 'b', oilId: 'coconut-oil-76', weightGrams: '300', weightPercent: '60' },
+      ],
+      'a',
+      '100',
+      '500',
+      false,
+    );
+    expect(result.batchOilGrams).toBe('200');
+    expect(result.lines[0]).toMatchObject({ weightGrams: '200', weightPercent: '100' });
+    expect(result.lines[1].weightGrams).toBe('');
+  });
+
+  it('scales the sole line against its own weight when the batch is unsynced/empty', () => {
+    // Finding 2: batch string empty but the line has a real weight — a percent edit must
+    // scale against the line's own 300 g, not fall back to 0 and wipe it.
+    const single = [{ key: 'a', oilId: 'olive-oil', weightGrams: '300', weightPercent: '100' }];
+    const result = syncPercentEdit(single, 'a', '80', '', false);
+    expect(result.lines[0].weightGrams).toBe('240');
+    expect(result.batchOilGrams).toBe('240');
+  });
 });
 
 describe('syncBatchTotalEdit', () => {

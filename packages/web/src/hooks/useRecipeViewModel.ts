@@ -84,7 +84,11 @@ export function useRecipeViewModel({
     () => Object.fromEntries(previewState.lines.map((line) => [line.key, line])),
     [previewState.lines],
   );
-  const previewSettings = usePreviewSettings(settings, previewState.batchOilGrams);
+  const previewSettings = usePreviewSettings(
+    settings,
+    previewState.batchOilGrams,
+    previewState.batchSetByUser,
+  );
   const lineTotals = useMemo(
     () => computeRecipeLineTotals(previewState.lines),
     [previewState.lines],

@@ -221,13 +221,21 @@ export function syncPercentEdit(
         lines.map((line) => (line.key === key ? { ...line, weightGrams: '' } : line)),
       );
     }
+    const ownGrams = parseNum(lines.find((line) => line.key === key)?.weightGrams ?? '') ?? 0;
     const others = lines.filter((line) => line.key !== key);
     const otherGrams = totalGrams(others);
-    // With no other weighted lines there is no reference to grow against, so scale the
-    // sole line against the current derived total instead (percent of its own amount).
-    const base = otherGrams > 0 ? otherGrams : (batch ?? 0);
-    const targetGrams =
-      p >= 100 ? base : otherGrams > 0 ? (otherGrams * p) / (100 - p) : (base * p) / 100;
+    let targetGrams: number;
+    if (p >= 100) {
+      // The edited line is the whole batch: keep ITS own weight and drop the others.
+      targetGrams = ownGrams;
+    } else if (otherGrams > 0) {
+      targetGrams = (otherGrams * p) / (100 - p);
+    } else {
+      // No other weighted lines: scale the sole line against the derived total, falling
+      // back to its own weight when the batch string is empty/unsynced (never to 0).
+      const base = batch !== null && batch > 0 ? batch : ownGrams;
+      targetGrams = (base * p) / 100;
+    }
     const updated = lines.map((line) => {
       if (line.key === key) {
         return { ...line, weightGrams: targetGrams > 0 ? formatGrams(targetGrams) : '' };
