@@ -58,7 +58,7 @@ describe('calculateRecipeProperties', () => {
       lookup,
     );
 
-    expect(result.coveragePercent).toBe(100);
+    expect(result.coveragePercent).toBeCloseTo(98.5, 1);
     expect(result.properties!.hardness).toBeGreaterThan(20);
     expect(result.properties!.condition).toBeGreaterThan(30);
   });
@@ -72,7 +72,7 @@ describe('calculateRecipeProperties', () => {
       lookup,
     );
 
-    expect(result.coveragePercent).toBeCloseTo(90, 1);
+    expect(result.coveragePercent).toBeCloseTo(88.2, 1);
     expect(result.missingOilIds).toContain('birch-tar');
     expect(result.properties).not.toBeNull();
   });
@@ -99,7 +99,7 @@ describe('calculateRecipeProperties', () => {
     );
 
     expect(result.missingOilIds).toContain('ghost-oil');
-    expect(result.coveragePercent).toBeCloseTo(50, 5);
+    expect(result.coveragePercent).toBeCloseTo(49, 1);
   });
 
   it('renormalizes properties over covered weight under partial coverage (not diluted to zero)', () => {

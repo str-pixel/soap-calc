@@ -21,6 +21,7 @@ export function calculateRecipeFattyAcids(
 
   const profile: FattyAcidProfile = {};
   let coveredWeight = 0;
+  let characterizedWeight = 0;
   const missingOilIds = new Set<string>();
 
   for (const line of weighted) {
@@ -31,6 +32,9 @@ export function calculateRecipeFattyAcids(
     }
 
     coveredWeight += line.weightGrams;
+    const profileSum = Object.values(oil.fattyAcids).reduce((sum, pct) => sum + pct, 0);
+    // Cap at 100 so a profile that sums slightly over 100 (rounding) can't push coverage past 100%.
+    characterizedWeight += line.weightGrams * (Math.min(profileSum, 100) / 100);
 
     for (const [acid, pct] of Object.entries(oil.fattyAcids)) {
       profile[acid] = (profile[acid] ?? 0) + pct * line.weightGrams;
@@ -41,15 +45,17 @@ export function calculateRecipeFattyAcids(
     return { profile: null, coveragePercent: 0, missingOilIds: [...missingOilIds] };
   }
 
-  // Renormalize over covered weight so the profile reads as a fatty-acid % of the
-  // characterized oils (coveragePercent reports how much of the recipe that is).
+  // Scores: renormalize the profile over covered-OIL weight (unchanged) so an oil's scores are
+  // identical to before. coveragePercent, however, reflects fatty-acid *completeness*: an oil
+  // with a 45%-complete profile is only 45% characterized, so incomplete profiles get flagged
+  // as estimates instead of shipping as full-confidence facts.
   for (const acid of Object.keys(profile)) {
     profile[acid] /= coveredWeight;
   }
 
   return {
     profile,
-    coveragePercent: (coveredWeight / totalWeight) * 100,
+    coveragePercent: (characterizedWeight / totalWeight) * 100,
     missingOilIds: [...missingOilIds],
   };
 }
