@@ -18,6 +18,7 @@ export const SOAP_PROPERTY_FATTY_ACIDS: Record<SoapPropertyName, readonly string
   condition: [
     'ricinoleic',
     'oleic',
+    'palmitoleic',
     'linoleic',
     'linolenic',
     'eicosenoic',
@@ -26,9 +27,10 @@ export const SOAP_PROPERTY_FATTY_ACIDS: Record<SoapPropertyName, readonly string
     'erucic',
   ],
   // C8/C10 stay out of hardness: their soaps are too soluble to harden a bar,
-  // even though they count toward cleansing/bubbly.
-  hardness: ['lauric', 'myristic', 'palmitic', 'stearic'],
-  longevity: ['palmitic', 'stearic'],
+  // even though they count toward cleansing/bubbly. behenic (C22:0) is a long-chain
+  // saturated acid, so it hardens like stearic.
+  hardness: ['lauric', 'myristic', 'palmitic', 'stearic', 'behenic'],
+  longevity: ['palmitic', 'stearic', 'behenic'],
   creamy: ['palmitic', 'stearic', 'ricinoleic'],
 };
 

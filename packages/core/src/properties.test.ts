@@ -126,3 +126,12 @@ describe('conditioning includes docosenoic (corrected spelling)', () => {
     expect(props.condition).toBe(26);
   });
 });
+
+describe('palmitoleic and behenic are classified', () => {
+  it('counts palmitoleic toward conditioning and behenic toward hardness/longevity', () => {
+    const props = oilPropertiesFromFattyAcids({ palmitoleic: 12, behenic: 20, oleic: 5 });
+    expect(props.condition).toBe(12 + 5); // palmitoleic + oleic
+    expect(props.hardness).toBe(20); // behenic
+    expect(props.longevity).toBe(20); // behenic
+  });
+});

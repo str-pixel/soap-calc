@@ -71,10 +71,12 @@ const SATURATED_ACIDS = [
   'stearic',
   'caprylic',
   'capric',
+  'behenic',
 ] as const;
 
 const UNSATURATED_ACIDS = [
   'oleic',
+  'palmitoleic',
   'linoleic',
   'linolenic',
   'ricinoleic',
