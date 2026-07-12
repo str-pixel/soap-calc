@@ -36,13 +36,14 @@ The canonical oil database currently combines legacy calculator catalog records 
 | EU CosIng | INCI validation through the local FNWL-derived glossary index |
 | `soap_oils.json` | Legacy fatty-acid profiles and SAP fallback when no FNWL match exists |
 | `supplemental-oils.json` | Manual entries such as birch tar |
+| `supplemental-inci.json` `inciCorrections` | Highest-priority INCI overrides for malformed FNWL chart values, verified against the EU CosIng Ingredients Inventory; authoritative — the local proxy glossary must never rewrite them |
 
 SAP resolution policy:
 
 - FNWL match within 5% of legacy SAP: use FNWL.
 - FNWL/legacy delta from 5% to 10%: use the higher SAP as a conservative estimate.
 - Delta above 10%: retain legacy unless FNWL is higher.
-- Legacy-only SAP entries are expected data gaps and should stay marked `legacy_only`.
+- Legacy-only SAP entries are expected data gaps and should stay marked `legacy_only` — except oils whose legacy SAP contradicts their own fatty-acid profile; those get a profile-derived estimate via `LEGACY_SAP_CORRECTIONS` (build-canonical.ts), marked `estimated` with `primarySource: manual` and a recomputed INS.
 
 Birch tar is supplemental (`birch-tar`), estimated from pine-tar proxy SAP, and uses `sapRole: acid_neutralization`. The UI supports `include` vs `additive` tar lye treatment.
 

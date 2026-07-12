@@ -23,6 +23,7 @@ import {
 } from '../src/normalize.js';
 import { loadSupplementalOils, supplementalToCanonical, tarMetadataForLegacy } from '../src/supplemental.js';
 import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
+import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../../..');
@@ -96,7 +97,7 @@ function main() {
   const cosingGlossary = loadCosingGlossaryIndex(defaultGlossaryPath);
   const supplementalInci = existsSync(supplementalInciPath)
     ? loadSupplementalInci(supplementalInciPath)
-    : { byOilId: {}, byFnwlProductId: {}, displayHints: {} };
+    : { inciCorrections: {}, byOilId: {}, byFnwlProductId: {}, displayHints: {} };
 
   const legacy = JSON.parse(readFileSync(legacyPath, 'utf8')) as { oils: LegacyOil[] };
   const report = {
@@ -106,10 +107,12 @@ function main() {
     sapRetainedLegacy: [] as string[],
     sapFnwlPreferred: [] as string[],
     sapConservativeBlend: [] as string[],
+    sapCorrected: [] as string[],
     ldgMethodologyNotes: [] as string[],
     inciResolved: [] as string[],
     inciMissing: [] as string[],
     inciSupplemental: [] as string[],
+    inciCorrected: [] as string[],
     duplicates: [] as string[],
     supplemental: [] as string[],
     excluded: [] as string[],
@@ -123,6 +126,7 @@ function main() {
 
   const oils: CanonicalOil[] = [];
   const usedSlugs = new Set<string>();
+  const appliedSapCorrections = new Set<string>();
 
   for (const leg of legacy.oils) {
     const canonicalSlug = slugify(leg.name);
@@ -155,6 +159,7 @@ function main() {
     let confidence: CanonicalOil['confidence'] = 'legacy_only';
     let sapKoh = leg.sap;
     let sapNaoh = legacySapNaoh;
+    let ins = leg.ins;
     let inciName: string | undefined;
 
     if (fnwl) {
@@ -227,6 +232,26 @@ function main() {
       confidence = resolution.confidence;
     } else {
       report.unmatched.push(leg.name);
+      const correction = LEGACY_SAP_CORRECTIONS[baseSlug];
+      if (correction) {
+        sapKoh = correction.sapKoh;
+        sapNaoh = sapKohToSapNaoh(correction.sapKoh);
+        confidence = 'estimated';
+        primarySource = 'manual';
+        // The legacy INS was derived from the discredited legacy SAP (INS = SAP mg KOH/g
+        // − iodine); recompute it from the corrected SAP so the two do not contradict.
+        // Without an iodine value the formula can't run, so drop the stale INS rather than
+        // ship a value derived from the SAP we just discredited.
+        ins = leg.iodine !== undefined ? Math.round(sapKoh * 1000 - leg.iodine) : undefined;
+        sources.push({
+          source: 'manual',
+          sapKoh,
+          sapNaoh,
+          notes: correction.note,
+        });
+        report.sapCorrected.push(leg.name);
+        appliedSapCorrections.add(baseSlug);
+      }
     }
 
     const inciResolution = resolveOilInci({
@@ -253,31 +278,28 @@ function main() {
           });
         }
       } else {
-        report.inciSupplemental.push(leg.name);
+        (inciResolution.source === 'correction'
+          ? report.inciCorrected
+          : report.inciSupplemental
+        ).push(leg.name);
         sources.push({
           source: 'manual',
-          url: inciResolution.cosingValidated
-            ? 'https://ec.europa.eu/growth/tools-databases/cosing/'
-            : undefined,
-          notes: [
-            `INCI via ${inciResolution.source.replace('_', ' ')}`,
-            inciResolution.notes,
-            inciResolution.cosingValidated
-              ? 'Validated in local CosIng glossary index'
-              : 'Not in local CosIng glossary index',
-          ]
+          notes: [`INCI via ${inciResolution.source.replace('_', ' ')}`, inciResolution.notes]
             .filter(Boolean)
             .join(' — '),
         });
-      }
-
-      if (cosingGlossary) {
-        const inciLookup = lookupInciInGlossary(inciName, cosingGlossary);
-        if (inciLookup.found && inciResolution.source !== 'fnwl') {
+        // Corrections declaring source "cosing" were verified against the EU CosIng
+        // inventory itself; the local glossary index is only an FNWL-derived proxy and
+        // may not contain a corrected name even when it is valid INCI.
+        const verifiedCorrection =
+          inciResolution.source === 'correction' && inciResolution.declaredSource === 'cosing';
+        if (verifiedCorrection || inciResolution.cosingValidated) {
           sources.push({
             source: 'cosing',
             url: 'https://ec.europa.eu/growth/tools-databases/cosing/',
-            notes: `INCI "${inciLookup.canonicalInci}" found in FNWL-derived CosIng glossary index`,
+            notes: inciResolution.cosingValidated
+              ? `INCI "${inciName}" present in local FNWL-derived CosIng glossary index`
+              : `INCI "${inciName}" verified against the EU CosIng Ingredients Inventory (absent from the local FNWL-derived proxy index)`,
           });
         }
       }
@@ -296,7 +318,7 @@ function main() {
       sapNaoh,
       sapMgKohPerGram: sapKoh * 1000,
       iodine: leg.iodine,
-      ins: leg.ins,
+      ins,
       fattyAcids,
       propertiesAvailable,
       sources,
@@ -315,6 +337,34 @@ function main() {
       oils.push(supplementalToCanonical(entry));
       report.supplemental.push(entry.displayName);
     }
+  }
+
+  // A correction keyed to a non-existent oil id would otherwise be silently ignored,
+  // shipping the very value it was written to fix. An excluded oil id is a legitimate
+  // target (the correction is simply inert), so it is not a typo.
+  const oilIds = new Set(oils.map((o) => o.id));
+  const staleCorrectionKeys = [
+    ...Object.keys(supplementalInci.inciCorrections),
+    ...Object.keys(LEGACY_SAP_CORRECTIONS),
+  ].filter((id) => !oilIds.has(id) && !excludedOilIds.has(id));
+  if (staleCorrectionKeys.length) {
+    console.error(
+      `Correction keys match no built or excluded oil id (typo or renamed oil?): ${staleCorrectionKeys.join(', ')}`,
+    );
+    process.exit(1);
+  }
+
+  // A SAP correction only applies when the oil has no FNWL match. If a built oil carries a
+  // correction that never fired, an FNWL match now shadows it — surface that instead of
+  // silently shipping the FNWL value the correction was meant to override.
+  const shadowedSapCorrections = Object.keys(LEGACY_SAP_CORRECTIONS).filter(
+    (id) => oilIds.has(id) && !appliedSapCorrections.has(id),
+  );
+  if (shadowedSapCorrections.length) {
+    console.error(
+      `SAP correction not applied — oil now has an FNWL match that shadows it; remove the correction or confirm FNWL: ${shadowedSapCorrections.join(', ')}`,
+    );
+    process.exit(1);
   }
 
   const db: CanonicalOilDatabase = {
@@ -392,9 +442,11 @@ function main() {
   console.log(`  SAP retained (legacy, >${DISPUTED_DELTA_PCT}% delta): ${report.sapRetainedLegacy.length}`);
   console.log(`  SAP FNWL preferred (higher, >${DISPUTED_DELTA_PCT}% delta): ${report.sapFnwlPreferred.length}`);
   console.log(`  SAP conservative blend (5–${DISPUTED_DELTA_PCT}% delta): ${report.sapConservativeBlend.length}`);
+  console.log(`  SAP corrected (legacy value vs profile): ${report.sapCorrected.length}`);
   console.log(`  LDG methodology cross-checks: ${report.ldgMethodologyNotes.length}`);
   console.log(`  INCI resolved (FNWL): ${report.inciResolved.length}`);
   console.log(`  INCI supplemental/fallback: ${report.inciSupplemental.length}`);
+  console.log(`  INCI corrected (malformed FNWL value): ${report.inciCorrected.length}`);
   console.log(`  INCI missing product map: ${report.inciMissing.length}`);
   console.log(`  Supplemental oils: ${report.supplemental.length}`);
   console.log(`  Excluded from catalog: ${report.excluded.length}`);

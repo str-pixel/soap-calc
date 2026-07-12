@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sapKohToSapNaoh } from '@soap-calc/core';
@@ -10,9 +10,12 @@ import {
   lookupInciInGlossary,
   validateInciName,
 } from '../src/cosing-glossary.js';
+import { loadSupplementalInci } from '../src/resolve-inci.js';
+import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataPath = join(__dirname, '../data/canonical-oils.json');
+const supplementalInciPath = join(__dirname, '../sources/supplemental-inci.json');
 
 /** Golden SAP values for high-risk oils (legacy catalog). */
 const GOLDEN_SAP_KOH: Record<string, number> = {
@@ -21,15 +24,25 @@ const GOLDEN_SAP_KOH: Record<string, number> = {
   'olive-oil': 0.19,
 };
 
-/** Proxy SAP values — estimated, not legacy-catalog-verified. */
+/** Proxy / corrected SAP values — estimated, not legacy-catalog-verified. birch-tar is a
+ * pine-tar proxy; the corrected legacy oils are pulled from the shared LEGACY_SAP_CORRECTIONS
+ * so the expected value lives in exactly one place (build applies it, validate asserts it). */
 const ESTIMATED_SAP_KOH: Record<string, number> = {
   'birch-tar': 0.06,
+  ...Object.fromEntries(
+    Object.entries(LEGACY_SAP_CORRECTIONS).map(([id, c]) => [id, c.sapKoh]),
+  ),
 };
 
 function main() {
   const raw = JSON.parse(readFileSync(dataPath, 'utf8'));
   const db = CanonicalOilDatabase.parse(raw);
   const cosingGlossary = loadCosingGlossaryIndex(defaultGlossaryPath);
+  // Guard the load like build-canonical does, so a missing source file degrades to
+  // "no corrections" instead of crashing the validator.
+  const inciCorrections = existsSync(supplementalInciPath)
+    ? loadSupplementalInci(supplementalInciPath).inciCorrections
+    : {};
 
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -106,11 +119,23 @@ function main() {
       warnings.push(`${oil.id}: FNWL match without LDG methodology cross-check source`);
     }
 
+    const correction = inciCorrections[oil.id];
+    if (correction && oil.inciName !== correction.inciName) {
+      // The correction layer is authoritative; any drift means something (e.g. the
+      // FNWL-derived glossary) rewrote the corrected name during the build.
+      errors.push(
+        `${oil.id}: inciName "${oil.inciName}" does not match inciCorrections value "${correction.inciName}"`,
+      );
+    }
+
     if (oil.inciName) {
       for (const issue of validateInciName(oil.inciName)) {
         warnings.push(`${oil.id}: ${issue}`);
       }
-      if (cosingGlossary) {
+      // Only cosing-verified corrections earn a pass on the glossary check: their names are
+      // verified against the EU CosIng inventory itself and may legitimately be absent from
+      // the FNWL-derived proxy index. A manual correction still gets the sanity check.
+      if (cosingGlossary && correction?.source !== 'cosing') {
         const lookup = lookupInciInGlossary(oil.inciName, cosingGlossary);
         if (!lookup.found) {
           warnings.push(`${oil.id}: INCI not in local CosIng glossary index`);

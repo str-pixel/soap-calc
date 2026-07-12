@@ -14,6 +14,12 @@ export const SupplementalInciEntry = z.object({
 export type SupplementalInciEntry = z.infer<typeof SupplementalInciEntry>;
 
 export const SupplementalInciDatabase = z.object({
+  /**
+   * Highest-priority overrides, keyed by oil id. Used to correct known-malformed INCI names
+   * in the FNWL snapshot (e.g. misspellings or non-INCI syntax) without editing the reproducible
+   * `fnwl-inci.txt` source. Takes precedence over the FNWL chart value.
+   */
+  inciCorrections: z.record(SupplementalInciEntry).default({}),
   byOilId: z.record(SupplementalInciEntry).default({}),
   byFnwlProductId: z.record(SupplementalInciEntry).default({}),
   /** Normalized display-name keys → INCI (validated against CosIng glossary when available). */
@@ -24,7 +30,9 @@ export type SupplementalInciDatabase = z.infer<typeof SupplementalInciDatabase>;
 
 export type ResolvedInci = {
   inciName: string;
-  source: 'fnwl' | 'supplemental_id' | 'supplemental_product' | 'display_hint' | 'glossary';
+  source: 'correction' | 'fnwl' | 'supplemental_id' | 'supplemental_product' | 'display_hint' | 'glossary';
+  /** The supplemental entry's own source claim (e.g. 'cosing' for externally verified names). */
+  declaredSource?: SupplementalInciEntry['source'];
   notes?: string;
   cosingValidated: boolean;
 };
@@ -59,6 +67,23 @@ export function resolveOilInci(input: {
 }): ResolvedInci | undefined {
   const { oilId, displayName, fnwlProductId, fnwlInci, supplemental, glossary } = input;
 
+  const correction = supplemental.inciCorrections[oilId];
+  if (correction) {
+    // Corrections are authoritative: the glossary is derived from the same FNWL chart the
+    // correction overrides (and still contains the malformed variants), so it must never
+    // rewrite the corrected name — it is consulted only to report validation status.
+    const cosingValidated = glossary
+      ? lookupInciInGlossary(correction.inciName, glossary).found
+      : false;
+    return {
+      inciName: correction.inciName,
+      source: 'correction',
+      declaredSource: correction.source,
+      notes: correction.notes,
+      cosingValidated,
+    };
+  }
+
   if (fnwlInci) {
     const { inciName, cosingValidated } = canonicalizeInci(fnwlInci, glossary);
     return { inciName, source: 'fnwl', cosingValidated };
@@ -70,6 +95,7 @@ export function resolveOilInci(input: {
     return {
       inciName,
       source: 'supplemental_id',
+      declaredSource: byId.source,
       notes: byId.notes,
       cosingValidated,
     };
@@ -82,6 +108,7 @@ export function resolveOilInci(input: {
       return {
         inciName,
         source: 'supplemental_product',
+        declaredSource: byProduct.source,
         notes: byProduct.notes,
         cosingValidated,
       };

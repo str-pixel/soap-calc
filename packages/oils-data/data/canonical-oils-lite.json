@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-11T23:09:46.255Z",
+  "generatedAt": "2026-07-12T05:39:14.898Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -320,7 +320,7 @@
       "aliases": [
         "brazil nut oil"
       ],
-      "inciName": "Bertholletia Excelsa (Brazil) Nut Oil",
+      "inciName": "Bertholletia Excelsa (Brazil) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
@@ -490,12 +490,12 @@
       ],
       "inciName": "Daucus Carota Sativa (Carrot) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.144,
-      "sapNaoh": 0.10267379679144384,
-      "confidence": "legacy_only",
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "confidence": "estimated",
       "propertiesAvailable": true,
       "iodine": 56,
-      "ins": 0,
+      "ins": 135,
       "fattyAcids": {
         "oleic": 80,
         "linoleic": 13,
@@ -1051,7 +1051,7 @@
       "aliases": [
         "kukui nut oil"
       ],
-      "inciName": "Aleurites Moluccana (Kukui) Nut Oil",
+      "inciName": "Aleurites Moluccana (Kukui) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -1230,7 +1230,7 @@
       "aliases": [
         "macadamia nut oil"
       ],
-      "inciName": "Macadamia Integrifolia (Macadamia) Nut Oil",
+      "inciName": "Macadamia Integrifolia (Macadamia) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.195,
       "sapNaoh": 0.13903743315508021,
@@ -1317,7 +1317,7 @@
       "aliases": [
         "marula oil"
       ],
-      "inciName": "Sclerocarya birrea (Marula) Kernel Oil",
+      "inciName": "Sclerocarya Birrea (Marula) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.197,
       "sapNaoh": 0.14046345811051694,
@@ -1611,7 +1611,7 @@
       "aliases": [
         "palm kernel oil"
       ],
-      "inciName": "Elaeis guineensis Palm kernel oil",
+      "inciName": "Elaeis Guineensis (Palm) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.247,
       "sapNaoh": 0.1761140819964349,
@@ -1634,7 +1634,7 @@
       "aliases": [
         "palm kernel oil flakes hydrogenated"
       ],
-      "inciName": "Elaeis guineensis Palm kernel oil",
+      "inciName": "Hydrogenated Palm Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.247,
       "sapNaoh": 0.1761140819964349,
@@ -1739,12 +1739,12 @@
       ],
       "inciName": "Carica Papaya (Papaya) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.158,
-      "sapNaoh": 0.11265597147950089,
-      "confidence": "legacy_only",
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "confidence": "estimated",
       "propertiesAvailable": true,
       "iodine": 67,
-      "ins": 91,
+      "ins": 125,
       "fattyAcids": {
         "oleic": 76,
         "stearic": 5,
@@ -1905,7 +1905,7 @@
       "aliases": [
         "pistachio oil"
       ],
-      "inciName": "Pistacia Vera (Pistachio) Nut Oil",
+      "inciName": "Pistacia Vera (Pistachio) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -2167,7 +2167,7 @@
       "aliases": [
         "safflower oil"
       ],
-      "inciName": "Carthamus tinctorus (Safflower) Oil",
+      "inciName": "Carthamus Tinctorius (Safflower) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -2341,7 +2341,7 @@
       "aliases": [
         "shea butter"
       ],
-      "inciName": "Butyrospermum Parkii (Shea Butter) Fruit",
+      "inciName": "Butyrospermum Parkii (Shea) Butter",
       "category": "triglyceride",
       "sapKoh": 0.18,
       "sapNaoh": 0.1283422459893048,

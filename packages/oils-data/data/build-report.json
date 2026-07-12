@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T23:09:46.255Z",
+  "generatedAt": "2026-07-12T05:39:14.898Z",
   "totalOils": 134,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -317,6 +317,10 @@
     "Murumuru Butter",
     "Tamanu Oil, kamani"
   ],
+  "sapCorrected": [
+    "Carrot Seed Oil, cold pressed",
+    "Papaya seed oil, Carica papaya"
+  ],
   "ldgMethodologyNotes": [
     "Almond Oil, sweet",
     "Apricot Kernal Oil",
@@ -388,7 +392,6 @@
     "Baobab Oil",
     "Black Cumin Seed Oil, nigella sativa",
     "Borage Oil",
-    "Brazil Nut Oil",
     "Buriti Oil",
     "Candelilla Wax",
     "Castor Oil",
@@ -402,15 +405,10 @@
     "Hazelnut Oil",
     "Hemp Oil",
     "Karanja Oil",
-    "Kukui nut Oil",
-    "Macadamia Nut Oil",
-    "Marula Oil",
     "Monoi de Tahiti  Oil",
     "Moringa Oil",
     "Murumuru Butter",
     "Olive Oil",
-    "Palm Kernel Oil",
-    "Palm Kernel Oil Flakes, hydrogenated",
     "Palm Oil",
     "Peach Kernel Oil",
     "Perilla Seed Oil",
@@ -420,10 +418,8 @@
     "Raspberry Seed Oil",
     "Rice Bran Oil, refined",
     "Rosehip Oil",
-    "Safflower Oil",
     "Safflower Oil, high oleic",
     "Sesame Oil",
-    "Shea Butter",
     "Shea Oil, fractionated",
     "Soybean Oil",
     "Sunflower Oil",
@@ -492,7 +488,6 @@
     "Peanut Oil",
     "Pecan Oil",
     "Pine Tar, lye calc only no FA",
-    "Pistachio Oil",
     "Plum Kernel Oil",
     "Pracaxi (Pracachy) Seed Oil - hair conditioner",
     "Rapeseed Oil, unrefined canola",
@@ -516,6 +511,17 @@
     "Zapote seed oil, (Aceite de Sapuyul or Mamey)",
     "Carnauba (Copernicia cerifera) wax",
     "Ucuuba Butter"
+  ],
+  "inciCorrected": [
+    "Brazil Nut Oil",
+    "Kukui nut Oil",
+    "Macadamia Nut Oil",
+    "Marula Oil",
+    "Palm Kernel Oil",
+    "Palm Kernel Oil Flakes, hydrogenated",
+    "Pistachio Oil",
+    "Safflower Oil",
+    "Shea Butter"
   ],
   "duplicates": [],
   "supplemental": [
