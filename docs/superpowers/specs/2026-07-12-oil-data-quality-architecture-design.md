@@ -85,9 +85,26 @@ The earlier spec's content, now scoped as the guard. **The pure `deriveChemistry
 
 **CRITICAL — backfill must be curated, never automated.** Name-matching is unsafe: FDC has blends and prepared foods that fuzzy-match ("Oil, corn **and** olive" → olive; "SMART BALANCE margarine" → flax; "mayonnaise" → soybean; "Oil, palm" → palm-**kernel**; "Oil, coconut" → **fractionated** coconut). Of 25 clean `"Oil, X"` candidates, ~14 are safe, ~9 are wrong-food, ~2 need variant disambiguation. Approach: a **human-reviewed** oil-id→fdcId table, applied one row at a time, with the profile-consistency guard (Phase 4) as the automatic check that a match's SAP still agrees. **(A) Replace** the whole profile per approved row (single provenance), not augment.
 
-**Coverage reality:** of 119 triglyceride/blend oils, ~14 backfill cleanly now, ~72 exotic butters (murumuru, buriti, andiroba, cupuaçu, tucumã…) are **not in FDC** at all → stay legacy, flagged estimates (irreducible without supplier COAs). **Waxes / tars / free acids** (15 oils) are not in FDC and have no triglyceride profile to backfill — their "necessary data" is SAP + INCI, which they already have; correctly excluded by category.
+**Coverage reality:** of 119 triglyceride/blend oils, ~14 backfill cleanly from FDC; ~72 exotic oils are **not in FDC** — but most of those are *already ≥93% complete*, so they need nothing (see addendum for the real backfill set). **Waxes / tars / free acids** (15 oils) are not in FDC and have no triglyceride profile to backfill — their "necessary data" is SAP + INCI, which they already have; correctly excluded by category.
 
 - **Codex CXS 210** SAP/IV/FA-composition *ranges* (~34 named oils) as an authoritative range cross-check for the exotics FDC misses (PDF extraction, one-time).
+
+#### Phase 5 addendum — exotic-oil sourcing (grounded)
+
+**The exotic backfill set is ~15 oils, not 72.** The "72 not in FDC" figure is the FDC-coverage gap; most of those are already complete. The oils that are *both* incomplete (<93%) *and* not FDC-coverable are **15**: aloe-butter, borage, broccoli-seed, coffee-bean-roasted, cupuaçu, evening-primrose, karanja, monoi, moringa, pracaxi, sal-butter, saw-palmetto (×2), sea-buckthorn, tucumã. Several (borage, evening-primrose, broccoli-seed) are common seed oils, so the genuinely-hard residual is **smaller than 15**.
+
+**Mostly gap-fill, not repair (~14 : 1).** Spot-checked 11 of the 15 against their real compositions: all are *truncated-but-plausible* — present acids match reality, only the untracked acids are missing (C8/C10, palmitoleic, behenic, arachidic, GLA). **`pracaxi` is the lone genuinely-wrong entry** (our linoleic 2% vs literature ~16%, oleic 44% vs ~61%) → it needs a full literature *replace*, the others need *gap-fill*.
+
+**Source check — which database has the fine detail:**
+- **USDA Foundation Foods — NO.** Curated US "basic foods"; fewer oils than SR-Legacy, no exotics.
+- **CIQUAL (France/ANSES) — NO (verified on real data).** Free, open-licensed, downloadable — but its individual FAs stop at C18 unsaturates: **no 16:1 (palmitoleic), no 20:1, no 22:1 (erucic)**. Confirmed: CIQUAL avocado has no palmitoleic; its rapeseed has no erucic. Insufficient for our gaps. (Same name-match hazard, too: "olive oil" matched *Tapenade*.)
+- **SOFA / PlantFAdb + primary literature — YES.** The lipid literature (aggregated by SOFA, Max Rubner-Institut, ~7,000 species, >300 FAs) carries the long-chain acids no food DB reports. **Confirmed on pracaxi**: literature gives behenic 8.4%, lignoceric 4.1%, summing to ~100%. Caveat: SOFA is *seed-oil-focused* (aloe-butter and monoi are coconut-derived, not seeds → not in SOFA) and *registration-gated*, so **primary literature is the confirmed path**; SOFA is a convenience aggregator for the seed-oil subset.
+
+**Method — curated, multi-source-reconciled, per oil** (like `LEGACY_SAP_CORRECTIONS`): each of the ~15 gets a literature-sourced profile with a citation, **reconciling inter-study variation** (e.g., pracaxi behenic reported 8.4% *and* 16.1% across studies — pick a representative study or average, don't transcribe the first hit). Apply as a **replace** (single provenance); the profile-consistency guard (Phase 4) then SAP-checks each once it clears 93%.
+
+**One new acid key required:** `lignoceric` (C24:0, MW 368.64) — pracaxi and similar carry it; our derivation table has arachidic and behenic but not lignoceric. Classify as `SATURATED_ACIDS` + `hardness`/`longevity` (like behenic). One row.
+
+**Net:** two pipelines — USDA FDC bulk for the ~14 common oils, curated literature for the ~15 (really fewer) exotics — plus the `lignoceric` key. Bounded and mostly gap-fill.
 
 ## Data-model changes
 
