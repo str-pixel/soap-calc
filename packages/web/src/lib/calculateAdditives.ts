@@ -63,17 +63,19 @@ export type ComputedPostCookSuperfat = {
 };
 
 /** Total off-recipe grams added to the batch: additives + trace split liquid + the
- * post-cook superfat when it's appended (subtract mode reserves it from the oils).
- * Single source of truth for the view model, ResultsPanel, and BatchSheet. */
+ * post-cook superfat when `pcsfIsExtra` is true (i.e. it isn't actually reserved from
+ * the recipe oils). Single source of truth for the view model, ResultsPanel, and
+ * BatchSheet — callers must pass the view model's `pcsfIsExtra`, not re-derive it from
+ * the raw method string, since a subtract reserve under a lye excess is method:'subtract'
+ * but never actually applied (see useRecipeViewModel's cookFactor guard). */
 export function computeExtrasGrams(
   additives: Array<{ grams: number }>,
   splitLiquidGrams: number | null,
   postCookSuperfat: ComputedPostCookSuperfat | null,
-  postCookSuperfatMethod: RecipeSettings['postCookSuperfatMethod'] | undefined,
+  pcsfIsExtra: boolean,
 ): number {
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const pcsfGrams =
-    postCookSuperfatMethod !== 'subtract' ? postCookSuperfat?.grams ?? 0 : 0;
+  const pcsfGrams = pcsfIsExtra ? (postCookSuperfat?.grams ?? 0) : 0;
   return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams;
 }
 

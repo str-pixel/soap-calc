@@ -35,7 +35,8 @@ export type BatchSheetData = {
   splitLiquid: SplitLiquidSettings | undefined;
   splitLiquidGrams: number | null;
   postCookSuperfat: ComputedPostCookSuperfat | null;
-  postCookSuperfatMethod: RecipeSettings['postCookSuperfatMethod'];
+  pcsfIsExtra: boolean;
+  extrasGrams: number;
   dilution: DilutionResult | null;
   neutralization: NeutralizationResult | null;
   properties: RecipePropertiesResult | null;

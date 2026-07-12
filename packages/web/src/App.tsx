@@ -184,7 +184,8 @@ export default function App() {
             additives={vm.computedAdditives}
             superfatPercent={vm.previewSettings.superfatPercent}
             postCookSuperfat={vm.postCookSuperfat}
-            postCookSuperfatMethod={vm.previewSettings.postCookSuperfatMethod}
+            pcsfIsExtra={vm.pcsfIsExtra}
+            extrasGrams={vm.extrasGrams}
             batchWeightWithExtras={vm.batchWeightWithExtras}
           />
 

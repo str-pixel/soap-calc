@@ -1,4 +1,5 @@
 import type { NeutralizationResult } from '@soap-calc/core';
+import { formatGrams } from '../lib/format';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
@@ -38,7 +39,7 @@ export function NeutralizePanel({ neutralization, weightUnit }: NeutralizePanelP
         </div>
         <div className="results-grid__item">
           <dt>Lye excess</dt>
-          <dd>{lyeExcessPercent}%</dd>
+          <dd>{formatGrams(lyeExcessPercent, 1)}%</dd>
         </div>
         <div className="results-grid__item">
           <dt>Excess KOH</dt>

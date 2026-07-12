@@ -5,11 +5,7 @@ import type { ProcessId } from '../lib/process';
 import { formatGrams } from '../lib/format';
 import { formatDose } from '../lib/formatDose';
 import { oilById } from '../lib/oils';
-import {
-  computeExtrasGrams,
-  type ComputedAdditive,
-  type ComputedPostCookSuperfat,
-} from '../lib/calculateAdditives';
+import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
 import { formatWeight } from '../lib/weightUnits';
@@ -30,7 +26,13 @@ type ResultsPanelProps = {
   additives?: ComputedAdditive[];
   superfatPercent?: string;
   postCookSuperfat?: ComputedPostCookSuperfat | null;
-  postCookSuperfatMethod?: 'append' | 'subtract';
+  /** Whether the post-cook superfat is an added extra (append mode, or subtract under a
+   * lye excess where the reserve was never actually applied) rather than reserved from
+   * the recipe oils. Single source of truth from the view model — see useRecipeViewModel. */
+  pcsfIsExtra?: boolean;
+  /** The vm's total off-recipe grams (additives + split liquid + PCSF-if-extra) — passed
+   * down so this panel never recomputes it and drifts from the printed sheet. */
+  extrasGrams?: number;
   /** The vm's batch weight (method-aware base + extras) — required so the panel never
    * recomputes its own base and drifts from the printed sheet. */
   batchWeightWithExtras: number;
@@ -64,7 +66,8 @@ export const ResultsPanel = memo(function ResultsPanel({
   additives = [],
   superfatPercent,
   postCookSuperfat = null,
-  postCookSuperfatMethod = 'append',
+  pcsfIsExtra = true,
+  extrasGrams = 0,
   batchWeightWithExtras,
 }: ResultsPanelProps) {
   if (inputErrors.length) {
@@ -88,13 +91,6 @@ export const ResultsPanel = memo(function ResultsPanel({
   const excludedOilWeightGrams = displayTotals?.excludedFromLyeOilWeightGrams ?? 0;
   const isEmpty = recipeOilWeightGrams <= 0;
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const pcsfIsExtra = postCookSuperfatMethod !== 'subtract';
-  const extrasGrams = computeExtrasGrams(
-    additives,
-    splitLiquidGrams,
-    postCookSuperfat,
-    postCookSuperfatMethod,
-  );
   const displayedBatchWeight = batchWeightWithExtras;
   const waterNote = waterFootnote(waterMode, excludedOilWeightGrams);
   const showTotalLiquid =
@@ -230,7 +226,7 @@ export const ResultsPanel = memo(function ResultsPanel({
             <div className="results-grid__item">
               <dt>
                 Post-cook superfat ({postCookSuperfatOilName})
-                {postCookSuperfatMethod === 'subtract' && cookSuperfatPercent >= 0 ? ' · reserved, lye reduced' : ''}
+                {!pcsfIsExtra ? ' · reserved, lye reduced' : ''}
               </dt>
               <dd>
                 {formatWeight(postCookSuperfat.grams, weightUnit)}

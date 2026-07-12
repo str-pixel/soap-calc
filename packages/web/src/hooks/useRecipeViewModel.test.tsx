@@ -135,6 +135,22 @@ test('LS lye excess computes neutralization and disables PCSF-subtract', () => {
   expect(withSubtract.neutralization.citricAcidGrams).toBeGreaterThan(0);
   // Mutual exclusivity: subtract is ignored under a lye excess, so lye matches the append case.
   expect(withSubtract.result.lyeWeightGrams).toBeCloseTo(withAppend.result.lyeWeightGrams);
+
+  // Regression (#1): the cookFactor guard makes "subtract" lye-inert under a lye excess, so
+  // the PCSF oil is never actually reserved from the recipe — it's an extra either way, and
+  // batchWeightWithExtras must agree between subtract and append instead of undercounting by
+  // the PCSF grams (empirically: 1695.3 g vs 1745.3 g, off by exactly the 50 g PCSF reserve).
+  let withoutPcsf: any;
+  probe((vm) => { withoutPcsf = vm; }, { ...ls, postCookSuperfatPercent: '', postCookSuperfatMethod: 'subtract' }, 'ls');
+
+  expect(withSubtract.postCookSuperfat.grams).toBeGreaterThan(0);
+  expect(withSubtract.batchWeightWithExtras).toBeCloseTo(withAppend.batchWeightWithExtras);
+  expect(withSubtract.batchWeightWithExtras).toBeGreaterThan(
+    withoutPcsf.batchWeightWithExtras,
+  );
+  expect(withAppend.batchWeightWithExtras).toBeGreaterThan(
+    withoutPcsf.batchWeightWithExtras,
+  );
 });
 
 test('neutralization is null for a normal LS recipe (superfat >= 0)', () => {

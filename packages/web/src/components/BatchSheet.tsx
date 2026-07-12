@@ -13,7 +13,6 @@ import {
   formatBatchSheetProperty,
   formatBatchWeight,
 } from '../lib/batchSheet';
-import { computeExtrasGrams } from '../lib/calculateAdditives';
 import { formatGrams } from '../lib/format';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
@@ -62,7 +61,8 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     splitLiquid,
     splitLiquidGrams,
     postCookSuperfat,
-    postCookSuperfatMethod,
+    pcsfIsExtra,
+    extrasGrams,
     dilution,
     neutralization,
     properties,
@@ -76,12 +76,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
 
   const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
-  const extrasGrams = computeExtrasGrams(
-    additives,
-    splitLiquidGrams,
-    postCookSuperfat,
-    postCookSuperfatMethod,
-  );
 
   const isDualLye = settings.lyeType === 'dual';
   const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
@@ -252,7 +246,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 {batchSheetOilName(postCookSuperfat.oilId)} —{' '}
                 {formatWeight(postCookSuperfat.grams, weightUnit)} (
                 {formatGrams(postCookSuperfat.percentOfOil, 1)}% post-cook superfat)
-                {postCookSuperfatMethod === 'subtract' && mainSuperfatPercent >= 0 ? ' — reserved (lye reduced)' : ''}
+                {!pcsfIsExtra ? ' — reserved (lye reduced)' : ''}
               </li>
             )}
             {additives.map((item) => (
@@ -282,7 +276,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         <section className="batch-sheet__section">
           <h2>Neutralize</h2>
           <dl className="batch-sheet__dl">
-            <div><dt>Lye excess</dt><dd>{formatGrams(neutralization.lyeExcessPercent, 0)}%</dd></div>
+            <div><dt>Lye excess</dt><dd>{formatGrams(neutralization.lyeExcessPercent, 1)}%</dd></div>
             <div><dt>Citric acid (estimate)</dt><dd>{formatWeight(neutralization.citricAcidGrams, weightUnit)}</dd></div>
             <div><dt>Dissolve in hot water (1:4)</dt><dd>{formatWeight(neutralization.dilutionWaterGrams, weightUnit)}</dd></div>
           </dl>

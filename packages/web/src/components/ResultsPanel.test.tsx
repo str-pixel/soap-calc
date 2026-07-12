@@ -94,6 +94,7 @@ test('a post-cook-superfat-only batch does not claim "additives" in the batch-we
       batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }}
+      extrasGrams={30}
     />,
   );
   // No additive lines, so the batch-weight note must name only the post-cook superfat.
@@ -109,7 +110,7 @@ test('subtract: PCSF labeled reserved + batch weight uses the vm value (not a lo
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
-      postCookSuperfatMethod="subtract"
+      pcsfIsExtra={false}
       batchWeightWithExtras={1234}
     />,
   );
@@ -126,7 +127,7 @@ test('subtract + negative main superfat: no "reserved" label and no Total superf
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent="-2"
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
-      postCookSuperfatMethod="subtract"
+      pcsfIsExtra={true}
       batchWeightWithExtras={1234}
     />,
   );
@@ -142,7 +143,7 @@ test('subtract + non-negative main superfat: "reserved" label and Total superfat
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent="2"
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
-      postCookSuperfatMethod="subtract"
+      pcsfIsExtra={false}
       batchWeightWithExtras={1234}
     />,
   );

@@ -57,6 +57,8 @@ export type RecipeViewModel = {
   lyeLabel: string;
   dilution: DilutionResult | null;
   neutralization: NeutralizationResult | null;
+  pcsfIsExtra: boolean;
+  extrasGrams: number;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
@@ -117,14 +119,21 @@ export function useRecipeViewModel({
     previewSettings.postCookSuperfatMethod === 'subtract' &&
     pcsfSubtractPercent > 0 &&
     Number(previewSettings.superfatPercent) >= 0
-      ? Math.min(1, Math.max(0, 1 - pcsfSubtractPercent / 100))
+      ? // parsePercentOfOil caps the percent to [0,100] and this branch requires > 0, so the
+        // value is already in (0,1) — no further clamping needed.
+        1 - pcsfSubtractPercent / 100
       : 1;
   const result = useMemo(
     () => (cookFactor < 1 && fullResult ? scaleLyeResult(fullResult, cookFactor) : fullResult),
     [cookFactor, fullResult],
   );
   const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? fullResult?.totalOilWeightGrams ?? 0;
-  const pcsfIsExtra = previewSettings.postCookSuperfatMethod !== 'subtract';
+  // The PCSF oil is an added extra whenever the subtract reserve is not actually applied:
+  // append mode, or subtract mode under a lye excess where the cookFactor guard above forces
+  // cookFactor back to 1. cookFactor === 1 is the single source of truth for "was the reserve
+  // actually applied" — deriving this from the raw method string instead would let subtract's
+  // PCSF line item disagree with the batch weight it's excluded from (#1).
+  const pcsfIsExtra = cookFactor === 1;
   // In subtract mode the real batch carries cook-factor-scaled lye/water, so batch-basis
   // additive doses and the displayed/printed batch weight must share the same base.
   const baseBatchGrams = pcsfIsExtra
@@ -241,7 +250,7 @@ export function useRecipeViewModel({
     computedAdditives,
     splitLiquidGrams,
     postCookSuperfat,
-    previewSettings.postCookSuperfatMethod,
+    pcsfIsExtra,
   );
   const batchWeightWithExtras = baseBatchGrams + extrasGrams;
   const liveOilBatchFraction = useMemo(() => {
@@ -267,7 +276,8 @@ export function useRecipeViewModel({
       splitLiquid: previewSettings.splitLiquid,
       splitLiquidGrams,
       postCookSuperfat,
-      postCookSuperfatMethod: previewSettings.postCookSuperfatMethod,
+      pcsfIsExtra,
+      extrasGrams,
       dilution,
       neutralization,
       properties,
@@ -282,6 +292,7 @@ export function useRecipeViewModel({
     computedAdditives,
     dilution,
     displayTotals,
+    extrasGrams,
     indexes,
     inputErrors,
     linePercents,
@@ -289,6 +300,7 @@ export function useRecipeViewModel({
     fattyAcids,
     insights,
     neutralization,
+    pcsfIsExtra,
     postCookSuperfat,
     previewSettings,
     previewState.lines,
@@ -325,6 +337,8 @@ export function useRecipeViewModel({
     lyeLabel,
     dilution,
     neutralization,
+    pcsfIsExtra,
+    extrasGrams,
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,
