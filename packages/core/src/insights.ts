@@ -146,7 +146,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   ) {
     const cleansing = input.properties.cleansing;
     const superfat = input.superfatPercent;
-    if (cleansing > 22 && superfat < 6) {
+    if (cleansing > 22 && superfat < 6 && !input.isLiquidSoap) {
       insights.push({
         level: 'info',
         code: 'high_cleansing_low_superfat',

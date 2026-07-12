@@ -395,4 +395,30 @@ describe('analyzeFormulation', () => {
     const lsLow = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent: 15, isLiquidSoap: true });
     expect(lsLow.some((i) => i.code === 'lye_conc_low')).toBe(false);
   });
+
+  it('suppresses high_cleansing_low_superfat for LS but still fires for CP/HP', () => {
+    const highCleansingProperties = {
+      bubbly: 40,
+      cleansing: 30,
+      condition: 20,
+      hardness: 40,
+      longevity: 30,
+      creamy: 20,
+    };
+    const ls = analyzeFormulation({
+      ...lsBase,
+      properties: highCleansingProperties,
+      superfatPercent: -2,
+      isLiquidSoap: true,
+    });
+    expect(ls.some((i) => i.code === 'high_cleansing_low_superfat')).toBe(false);
+
+    const cp = analyzeFormulation({
+      ...lsBase,
+      properties: highCleansingProperties,
+      superfatPercent: -2,
+      isLiquidSoap: false,
+    });
+    expect(cp.some((i) => i.code === 'high_cleansing_low_superfat')).toBe(true);
+  });
 });
