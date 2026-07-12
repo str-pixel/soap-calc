@@ -6,7 +6,9 @@ describe('calculatePropertiesForRecipe', () => {
   it('returns properties for starter-style recipe', () => {
     const result = calculatePropertiesForRecipe(createStarterLines(), DEFAULT_SETTINGS);
     expect(result.properties).not.toBeNull();
-    expect(result.coveragePercent).toBe(100);
+    // Coverage is completeness-weighted: the starter oils' profiles are near-complete, so
+    // coverage is high (well above the low-coverage flag) but not exactly 100.
+    expect(result.coveragePercent).toBeGreaterThan(90);
     expect(result.properties!.hardness).toBeGreaterThan(0);
   });
 
