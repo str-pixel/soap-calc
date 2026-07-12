@@ -92,9 +92,18 @@ function main() {
   }
   const fnwlIndex = buildFnwlIndex(fnwlRows);
 
-  const inciIndex = existsSync(fnwlInciPath)
-    ? buildFnwlInciIndex(parseFnwlInciCsv(readFileSync(fnwlInciPath, 'utf8')))
-    : new Map();
+  const inciRows = existsSync(fnwlInciPath)
+    ? parseFnwlInciCsv(readFileSync(fnwlInciPath, 'utf8'))
+    : [];
+  // Same failure mode as the SAP snapshot: a truncated or format-changed INCI chart
+  // parses to few rows and silently strips INCI names from most of the catalog.
+  if (existsSync(fnwlInciPath) && inciRows.length < 50) {
+    console.error(
+      `FNWL INCI snapshot parsed to only ${inciRows.length} rows — source format likely changed or file truncated. Aborting build.`,
+    );
+    process.exit(1);
+  }
+  const inciIndex = buildFnwlInciIndex(inciRows);
   const cosingGlossary = loadCosingGlossaryIndex(defaultGlossaryPath);
   // Required: a silent fallback here would drop every INCI correction and supplemental
   // name and ship the malformed FNWL values they exist to fix.
