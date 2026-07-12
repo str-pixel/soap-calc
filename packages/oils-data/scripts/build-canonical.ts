@@ -23,6 +23,7 @@ import {
 } from '../src/normalize.js';
 import { loadSupplementalOils, supplementalToCanonical, tarMetadataForLegacy } from '../src/supplemental.js';
 import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
+import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
@@ -291,7 +292,10 @@ function main() {
 
     if (inciResolution) {
       inciName = inciResolution.inciName;
-      if (inciResolution.source === 'correction' && fnwlChartInci === inciResolution.inciName) {
+      if (
+        inciResolution.source === 'correction' &&
+        isInciCorrectionRedundant(fnwlChartInci, inciResolution.inciName)
+      ) {
         // The FNWL chart caught up with the correction — it no longer overrides anything.
         console.warn(`Redundant INCI correction for ${baseSlug}: FNWL chart now matches "${inciName}"`);
         report.inciCorrectionRedundant.push(baseSlug);
