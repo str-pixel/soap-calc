@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-12T06:07:43.154Z",
+  "generatedAt": "2026-07-12T12:02:15.262Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -1268,7 +1268,7 @@
       "aliases": [
         "cherry kern1 oil p avium"
       ],
-      "inciName": "Prunus Avium (Cherry) Kernel Oil",
+      "inciName": "Prunus Avium (Cherry) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1292,12 +1292,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id"
+          "notes": "INCI via supplemental id — INCI is Seed Oil, not Kernel Oil (matches PRUNUS AVIUM SEED OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Avium (Cherry) Kernel Oil\" present in local FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Avium (Cherry) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1309,7 +1309,7 @@
       "aliases": [
         "cherry kern2 oil p cerasus"
       ],
-      "inciName": "Prunus Cerasus (Cherry) Kernel Oil",
+      "inciName": "Prunus Cerasus (Cherry) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -1332,12 +1332,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id"
+          "notes": "INCI via supplemental id — INCI is Seed Oil, not Kernel Oil (matches PRUNUS CERASUS SEED OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Cerasus (Cherry) Kernel Oil\" present in local FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Cerasus (Cherry) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3447,7 +3447,7 @@
       "aliases": [
         "nutmeg butter"
       ],
-      "inciName": "Myristica fragrans (Nutmeg) Oil",
+      "inciName": "Myristica Fragrans (Nutmeg) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.1624,
       "sapNaoh": 0.11579322638146167,
@@ -3470,12 +3470,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Butter base; nutmeg kernel fat"
+          "notes": "INCI via supplemental id — Nutmeg butter is the kernel fat; INCI Kernel Oil (matches MYRISTICA FRAGRANS KERNEL OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Myristica fragrans (Nutmeg) Oil\" present in local FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Myristica Fragrans (Nutmeg) Kernel Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4048,7 +4048,7 @@
       "aliases": [
         "pataua oil"
       ],
-      "inciName": "Oenocarpus Bataua (Ungurahui) Oil",
+      "inciName": "Oenocarpus Bataua (Ungurahui) Fruit Oil",
       "category": "triglyceride",
       "sapKoh": 0.2,
       "sapNaoh": 0.14260249554367202,
@@ -4072,12 +4072,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id"
+          "notes": "INCI via supplemental id — Pataua oil is expressed from the fruit; INCI Fruit Oil (matches OENOCARPUS BATAUA FRUIT OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Oenocarpus Bataua (Ungurahui) Oil\" present in local FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Oenocarpus Bataua (Ungurahui) Fruit Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4365,7 +4365,7 @@
       "aliases": [
         "plum kernel oil"
       ],
-      "inciName": "Prunus Domestica (Plum) Kernel Oil",
+      "inciName": "Prunus Domestica (Plum) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -4387,12 +4387,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id"
+          "notes": "INCI via supplemental id — INCI is Seed Oil, not Kernel Oil (matches PRUNUS DOMESTICA SEED OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Domestica (Plum) Kernel Oil\" present in local FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Domestica (Plum) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",

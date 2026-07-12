@@ -93,12 +93,16 @@ function main() {
   }
   const fnwlIndex = buildFnwlIndex(fnwlRows);
 
-  const inciRows = existsSync(fnwlInciPath)
-    ? parseFnwlInciCsv(readFileSync(fnwlInciPath, 'utf8'))
-    : [];
+  // Missing entirely is the same silent-degradation the row-floor below guards against
+  // (most of the catalog loses its FNWL INCI name), so treat it as fatal like the SAP snapshot.
+  if (!existsSync(fnwlInciPath)) {
+    console.error('Missing FNWL INCI source. Run: npm run fetch:fnwl-inci -w @soap-calc/oils-data');
+    process.exit(1);
+  }
+  const inciRows = parseFnwlInciCsv(readFileSync(fnwlInciPath, 'utf8'));
   // Same failure mode as the SAP snapshot: a truncated or format-changed INCI chart
   // parses to few rows and silently strips INCI names from most of the catalog.
-  if (existsSync(fnwlInciPath) && inciRows.length < 50) {
+  if (inciRows.length < 50) {
     console.error(
       `FNWL INCI snapshot parsed to only ${inciRows.length} rows — source format likely changed or file truncated. Aborting build.`,
     );

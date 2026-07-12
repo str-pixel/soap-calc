@@ -61,15 +61,19 @@ export type LyeCalculationResult = {
   errors: string[];
 };
 
-const DEFAULT_NAOH_PURITY = 100;
-const DEFAULT_KOH_PURITY = 90;
+/** Default alkali purities. Exported so neutralization (and any consumer) resolves a
+ * missing/invalid purity the same way the lye calc does, instead of assuming 100%. */
+export const DEFAULT_NAOH_PURITY = 100;
+export const DEFAULT_KOH_PURITY = 90;
 /** Water-mode defaults applied when the input omits a value. Exported so display
  * layers can show the effective number instead of an empty label. */
 export const DEFAULT_WATER_PERCENT = 33;
 export const DEFAULT_LYE_CONCENTRATION_PERCENT = 33.33;
 export const DEFAULT_LYE_WATER_RATIO = 2;
 const MAX_SUPERFAT_PERCENT = 50;
-const NEG_SUPERFAT_FLOOR = -5;
+/** Most negative superfat allowed: a deliberate lye excess (neutralized after cook).
+ * Exported so the UI slider bound can't drift from the core validation floor. */
+export const NEG_SUPERFAT_FLOOR = -5;
 /** Default KOH share for dual-lye recipes; shared with analyzeFormulation so the
  * "advanced technique" insight matches what calculateLye actually blends. */
 export const DEFAULT_KOH_BLEND_PERCENT = 5;

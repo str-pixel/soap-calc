@@ -36,6 +36,16 @@ describe('calculateNeutralization', () => {
     expect(dual.citricAcidGrams).toBeGreaterThan(kohOnly.citricAcidGrams);
   });
 
+  it('falls back to the default KOH purity (90%), not 100%, on invalid purity data', () => {
+    // A cleared/garbled purity field must not inflate the acid estimate to the 100% maximum;
+    // it should match what the lye calc used (default 90% KOH).
+    const impure90 = calculateNeutralization({ ...BASE, kohPurityPercent: 90 })!;
+    for (const bad of [Number.NaN, 0, -5, 150]) {
+      const r = calculateNeutralization({ ...BASE, kohPurityPercent: bad })!;
+      expect(r.citricAcidGrams).toBeCloseTo(impure90.citricAcidGrams, 6);
+    }
+  });
+
   it('returns null when superfat is >= 0 or there is no alkali', () => {
     expect(calculateNeutralization({ ...BASE, superfatPercent: 0 })).toBeNull();
     expect(calculateNeutralization({ ...BASE, superfatPercent: 3 })).toBeNull();

@@ -41,10 +41,12 @@ export function NeutralizePanel({ neutralization, weightUnit }: NeutralizePanelP
           <dt>Lye excess</dt>
           <dd>{formatGrams(lyeExcessPercent, 1)}%</dd>
         </div>
-        <div className="results-grid__item">
-          <dt>Excess KOH</dt>
-          <dd>{formatWeight(excessKohGrams, weightUnit)}</dd>
-        </div>
+        {excessKohGrams > 0 && (
+          <div className="results-grid__item">
+            <dt>Excess KOH</dt>
+            <dd>{formatWeight(excessKohGrams, weightUnit)}</dd>
+          </div>
+        )}
         {excessNaohGrams > 0 && (
           <div className="results-grid__item">
             <dt>Excess NaOH</dt>

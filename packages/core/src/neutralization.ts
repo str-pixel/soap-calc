@@ -1,3 +1,5 @@
+import { DEFAULT_KOH_PURITY, DEFAULT_NAOH_PURITY } from './lye.js';
+
 // Anhydrous citric acid (triprotic) neutralizes 3 OH⁻. Molar masses in g/mol.
 const CITRIC_ACID_MW = 192.124;
 const KOH_MW = 56.1056;
@@ -24,8 +26,15 @@ export type NeutralizationResult = {
   targetPhHigh: number;
 };
 
-function activeFraction(purityPercent: number): number {
-  return Number.isFinite(purityPercent) && purityPercent > 0 ? purityPercent / 100 : 1;
+/** Fraction of as-weighed alkali that is active. A missing/invalid/out-of-range purity falls
+ * back to the same default the lye calc used to produce these grams — NOT to 100%, which would
+ * inflate the acid estimate in exactly the case (bad purity data) it should stay conservative. */
+function activeFraction(purityPercent: number, defaultPercent: number): number {
+  const p =
+    Number.isFinite(purityPercent) && purityPercent > 0 && purityPercent <= 100
+      ? purityPercent
+      : defaultPercent;
+  return p / 100;
 }
 
 /** Estimate the citric acid needed to neutralize a lye-excess (negative-superfat) LS batch
@@ -46,8 +55,8 @@ export function calculateNeutralization(input: NeutralizationInput): Neutralizat
   // Active alkali = as-weighed × purity; the pH-driving amount is the active fraction, and
   // using it keeps the estimate on the safe (lower) side.
   const molOH =
-    (excessKohGrams * activeFraction(kohPurityPercent)) / KOH_MW +
-    (excessNaohGrams * activeFraction(naohPurityPercent)) / NAOH_MW;
+    (excessKohGrams * activeFraction(kohPurityPercent, DEFAULT_KOH_PURITY)) / KOH_MW +
+    (excessNaohGrams * activeFraction(naohPurityPercent, DEFAULT_NAOH_PURITY)) / NAOH_MW;
   const citricAcidGrams = (molOH / 3) * CITRIC_ACID_MW;
 
   return {

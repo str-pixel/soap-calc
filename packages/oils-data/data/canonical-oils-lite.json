@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-12T06:07:43.154Z",
+  "generatedAt": "2026-07-12T12:02:15.262Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -528,7 +528,7 @@
       "aliases": [
         "cherry kern1 oil p avium"
       ],
-      "inciName": "Prunus Avium (Cherry) Kernel Oil",
+      "inciName": "Prunus Avium (Cherry) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -550,7 +550,7 @@
       "aliases": [
         "cherry kern2 oil p cerasus"
       ],
-      "inciName": "Prunus Cerasus (Cherry) Kernel Oil",
+      "inciName": "Prunus Cerasus (Cherry) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -1510,7 +1510,7 @@
       "aliases": [
         "nutmeg butter"
       ],
-      "inciName": "Myristica fragrans (Nutmeg) Oil",
+      "inciName": "Myristica Fragrans (Nutmeg) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.1624,
       "sapNaoh": 0.11579322638146167,
@@ -1780,7 +1780,7 @@
       "aliases": [
         "pataua oil"
       ],
-      "inciName": "Oenocarpus Bataua (Ungurahui) Oil",
+      "inciName": "Oenocarpus Bataua (Ungurahui) Fruit Oil",
       "category": "triglyceride",
       "sapKoh": 0.2,
       "sapNaoh": 0.14260249554367202,
@@ -1926,7 +1926,7 @@
       "aliases": [
         "plum kernel oil"
       ],
-      "inciName": "Prunus Domestica (Plum) Kernel Oil",
+      "inciName": "Prunus Domestica (Plum) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,

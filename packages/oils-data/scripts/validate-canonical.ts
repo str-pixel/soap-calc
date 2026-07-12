@@ -41,9 +41,10 @@ function main() {
   const cosingGlossary = loadCosingGlossaryIndex(defaultGlossaryPath);
   // Guard the load, so a missing source file degrades to "no corrections" instead of
   // crashing the validator — but say so, since the drift check is disabled in that state.
-  const inciCorrections = existsSync(supplementalInciPath)
-    ? loadSupplementalInci(supplementalInciPath).inciCorrections
-    : {};
+  const supplementalInci = existsSync(supplementalInciPath)
+    ? loadSupplementalInci(supplementalInciPath)
+    : null;
+  const inciCorrections = supplementalInci?.inciCorrections ?? {};
   const cosingInventory = loadCosingInventory(defaultInventoryPath);
 
   const errors: string[] = [];
@@ -53,6 +54,23 @@ function main() {
   }
   if (!cosingInventory) {
     warnings.push('CosIng inventory snapshot missing — source:"cosing" claims cannot be machine-verified');
+  }
+
+  // Every source:"cosing" claim in the supplemental file — across ALL maps, not just the new
+  // inciCorrections layer — must be falsifiable against the committed CosIng inventory snapshot.
+  // Refresh the snapshot (or downgrade the claim to "manual") rather than shipping an unverifiable
+  // "cosing" name.
+  if (supplementalInci && cosingInventory) {
+    const maps = { inciCorrections, byOilId: supplementalInci.byOilId, byFnwlProductId: supplementalInci.byFnwlProductId };
+    for (const [mapName, map] of Object.entries(maps)) {
+      for (const [key, entry] of Object.entries(map)) {
+        if (entry.source === 'cosing' && !inciInInventory(entry.inciName, cosingInventory)) {
+          errors.push(
+            `${mapName}.${key}: source:"cosing" INCI "${entry.inciName}" is not in the CosIng inventory snapshot`,
+          );
+        }
+      }
+    }
   }
 
   for (const oil of db.oils) {
@@ -135,14 +153,7 @@ function main() {
         `${oil.id}: inciName "${oil.inciName}" does not match inciCorrections value "${correction.inciName}"`,
       );
     }
-    // A source:"cosing" claim must be falsifiable: the name has to exist in the committed
-    // EU CosIng inventory snapshot. If the name is genuinely newer than the snapshot,
-    // refresh the snapshot rather than weakening the claim to "manual".
-    if (correction?.source === 'cosing' && cosingInventory && !inciInInventory(correction.inciName, cosingInventory)) {
-      errors.push(
-        `${oil.id}: correction claims source "cosing" but "${correction.inciName}" is not in the CosIng inventory snapshot`,
-      );
-    }
+    // (source:"cosing" claims are verified once, globally, above — across every map.)
 
     if (oil.inciName) {
       for (const issue of validateInciName(oil.inciName)) {

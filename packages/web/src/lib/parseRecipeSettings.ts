@@ -1,8 +1,9 @@
-import type { LyeType, WaterMode } from '@soap-calc/core';
+import { NEG_SUPERFAT_FLOOR, type LyeType, type WaterMode } from '@soap-calc/core';
 import type { RecipeSettings } from './recipe';
 
+// Re-exported so SettingsPanel bounds the slider from the same constant the core validates.
+export { NEG_SUPERFAT_FLOOR };
 const MAX_SUPERFAT = 50;
-export const NEG_SUPERFAT_FLOOR = -5;
 
 export type ParsedSettings = {
   superfatPercent: number;

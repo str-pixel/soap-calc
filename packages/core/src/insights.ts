@@ -255,7 +255,10 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  if (input.isLiquidSoap && input.superfatPercent < 0) {
+  // Any negative superfat leaves free alkali in the finished soap, whatever the process or
+  // lye type — warn on the actual excess, not just the LS flag, so a caustic recipe from any
+  // caller (not only the LS UI path) still gets the neutralization guidance.
+  if (input.superfatPercent < 0) {
     insights.push({
       level: 'info',
       code: 'ls_lye_excess',
