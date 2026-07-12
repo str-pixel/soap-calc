@@ -22,17 +22,24 @@ The canonical oil data has three classes of defect, all of which currently ship 
 - **SAP consensus (4 external sources):** SoapCalc (149 oils, our legacy origin), InMySoapPot (40), Alfa Chemistry (46), FNWL ranges. Catalog agreement is **~85–92% within 3%** per source. Disputed oils resolved by consensus (table below).
 - **No source is authoritative:** SoapCalc carries carrot/papaya's exact bug; Alfa has palm-kernel wrong (0.156 vs 0.176 consensus). Only the fatty-acid profile caught carrot. This is the core justification for the architecture.
 
-### Multi-source consensus — disputed oils (NaOH SAP)
+### Multi-source consensus — *sampled* disputed oils (NaOH SAP)
+
+This is a hand-sampled cross-check, **not** the authoritative disputed set. The authoritative
+profile-vs-SAP list is machine-generated and test-enforced (see
+`packages/oils-data/src/profile-sap-consistency.test.ts` — 6 complete-profile oils). This table
+covers the *incomplete-profile* oils the profile-gate can't judge (avocado, cupuaçu, grapeseed
+all <93% mapped) plus spot-checks. The two mechanisms are complementary: profile-gate for
+complete profiles, chart-consensus for incomplete ones.
 
 | Oil | Ours | SoapCalc | InMySoapPot | Alfa | Consensus | Action |
 |---|---|---|---|---|---|---|
-| avocado | 0.144 | 0.133 | 0.133 | 0.133 | **0.133** | ↓ (reverts to legacy 0.186 KOH) |
-| fractionated coconut | 0.248 | 0.232 | 0.232 | — | **0.232** | ↓ |
-| cupuaçu | 0.159 | 0.137 | — | — | **0.137** | ↓ |
-| grapeseed | 0.138 | 0.129 | 0.134 | — | **~0.131** | ↓ |
+| avocado (92% profile) | 0.144 | 0.133 | 0.133 | 0.133 | **0.133** | ↓ chart-consensus (profile can't judge) |
+| cupuaçu (87%) | 0.159 | 0.137 | — | — | **0.137** | ↓ chart-consensus |
+| grapeseed | 0.138 | 0.129 | 0.134 | — | **~0.131** | ↓ chart-consensus |
 | sesame | 0.138 | 0.134 | 0.133 | 0.133 | **~0.133** | ↓ (mild) |
 | rice bran | 0.136 | 0.133 | 0.128 | 0.128 | **~0.130** | ↓ (mild) |
-| baobab | 0.136 | 0.143 | 0.143 | — | **0.143** | ↑ (investigate: verified but low) |
+| fractionated coconut | 0.248 | 0.232 | 0.232 | — | **~0.232** | ↓ mild — profile derives 0.328 KOH ≈ charts 0.325; **ours 0.348 is ~6% high** (under the 8% gate, so not auto-flagged, but profile *and* charts agree) |
+| baobab | 0.136 | 0.143 | 0.143 | — | 0.143 | **investigate only** — `verified`/FNWL; do **not** override FNWL (tier 2) on hobbyist consensus (tier 3); resolve via profile or Codex |
 | palm-kernel | 0.176 | ~0.176 | 0.178 | 0.156 | **0.176** | keep (Alfa is the outlier) |
 
 ## Architecture principle
@@ -45,8 +52,8 @@ The canonical oil data has three classes of defect, all of which currently ship 
 
 Fixes defect #1 and the sat/unsat-panel nonsense at the source.
 
-- **`@soap-calc/core/fatty-acids.ts`:** coverage becomes completeness-weighted. An oil contributes `weight × (profileSum/100)` to characterized weight; scores renormalize over characterized **fatty-acid** weight, not covered **oil** weight (a one-level-finer generalization of the existing renormalization). Effect: 100% mustard → 45% coverage → the existing `LOW_COVERAGE_PERCENT` (80) estimate flag fires; a 90%-olive/10%-mustard recipe → ~94% coverage, error bounded by the incomplete oil's weight share.
-- **`validate-canonical.ts`:** **warn** (ranked, not build-blocking) on property-ready oils below a completeness floor. Do **not** error — 8 oils sum <80% and would block the build. Optionally set `propertiesAvailable = false` on the sub-80% eight as a small data change so properties aren't offered for a 45%-complete oil.
+- **`@soap-calc/core/fatty-acids.ts`:** coverage becomes completeness-weighted. An oil contributes `weight × (mappedPercent/100)` to characterized weight (`mappedPercent` = the sum of the oil's profile percentages the model maps — same quantity used everywhere else); scores renormalize over characterized **fatty-acid** weight, not covered **oil** weight (a one-level-finer generalization of the existing renormalization). Effect: 100% mustard → 45% coverage → the existing recipe-level estimate flag fires; a 90%-olive/10%-mustard recipe → ~94% coverage, error bounded by the incomplete oil's weight share.
+- **Three distinct thresholds (do not conflate):** (a) **recipe-level** estimate flag — the existing `LOW_COVERAGE_PERCENT` (80), unchanged; a recipe below 80% characterized shows "~estimated". (b) **per-oil validator warn** — `validate-canonical.ts` warns (ranked, non-blocking) on any property-ready oil whose `mappedPercent` < 93% (the "incomplete profile" review queue). (c) **`propertiesAvailable = false`** — optional data change for the 8 oils below 80% mapped, so a 45%-complete oil doesn't offer properties at all. The validator **warns**, never **errors** here — erroring would block the build on those 8.
 - **Add `palmitoleic` + `behenic` keys** to the data model, classified correctly: `palmitoleic` (C16:1, a monounsaturate) → `condition` + `UNSATURATED_ACIDS`; `behenic` (C22:0, a long-chain **saturated** acid) → `SATURATED_ACIDS` and, like stearic, `hardness`/`longevity`. No oil carries them yet, so this is a no-op on scores until backfill — but it unblocks avocado/macadamia/sea-buckthorn (palmitoleic) and pracaxi (behenic) completeness later.
 
 **Residual (honest):** renormalizing a *heavily* incomplete solo profile can be wrong in either direction (assumes missing acids distribute like known ones). The coverage **flag**, not the renormalized score, is the safety net. Error is bounded in aggregate by the missing weight fraction.
@@ -59,14 +66,16 @@ Fixes defect #3. In the web FA panel's `DISPLAY_GROUPS`, add coverage for the lo
 
 Fixes defect #2.
 
-- **`parse-fnwl.ts`:** among duplicate rows, select the **median** `sapKoh`, not the max. Grounded: this changes only avocado materially (0.202 → 0.188); the other 26 duplicate groups shift ≤1.6% (within noise).
-- **`resolvePrimarySap`:** replace `max(legacy, fnwl)` with **"source closest to the profile-derived SAP"** when the profile is complete enough (≥93% mapped); fall back to **midpoint** (not max) otherwise, with the rationale relabelled honestly (*consistency*, not "lye safety"). Grounded: fixes the 3 overshoot oils where MAX disagrees with chemistry (FCO, murumuru, tamanu); agrees with the other 7.
-- **Per-oil:** the two changes above should reproduce the consensus column. Validate against the consensus table. `baobab` (low, `verified`) has no overshoot to unwind — flag for individual review, likely a `LEGACY_SAP_CORRECTIONS`-style bump to 0.200 KOH.
+- **`parse-fnwl.ts`:** among duplicate rows, select the **median** `sapKoh`, not the max. Grounded: this changes only avocado materially — FNWL 0.202 → 0.188, which then brings the legacy/FNWL delta to ~1% (≤5%), so `resolvePrimarySap` takes FNWL 0.188 via the *agreement* path (avocado lands 0.134 NaOH ≈ consensus 0.133; it does **not** "revert to legacy"). The other 26 duplicate groups shift ≤1.6% (within noise).
+- **`resolvePrimarySap`:** replace `max(legacy, fnwl)` with **"source closest to the profile-derived SAP"** when the profile is complete enough (≥93% mapped); fall back to **midpoint** (not max) otherwise, with the rationale relabelled honestly (*consistency*, not "lye safety"). Grounded against the core module: MAX overshoots vs the profile on FCO (+6%), murumuru (+18%), tamanu (+8%); agrees on the other 7.
+- **Per-oil:** validate rebuilt values against the consensus table. `baobab` (low, `verified` = FNWL-matched) has no overshoot to unwind — **investigate only**; do **not** bump it on hobbyist consensus (that would put tier-3 charts above tier-2 FNWL, violating the source hierarchy). Resolve baobab via its own profile (if ≥93%) or Codex, not the charts.
 - **Safety note:** these move SAP values *down* toward consensus (less lye), which is the safe direction; re-verify each shifted oil's `sapNaoh`/`mgKOH` consistency and rebuild.
 
 ### Phase 4 — Profile-consistency gate (the guard against regressions)
 
-The earlier spec's content, now scoped as the guard. Pure `deriveChemistryFromProfile(profile)` in core (SAP from mean-FA MW, IV from double-bond count, INS dropped — tabulated values legitimately deviate). Tiered check in `validate-canonical.ts`: SAP contradiction → **error** for `verified`/`estimated`, **warn** for `legacy_only`; IV advisory (abs+rel guard, skip conjugated); category gate excludes waxes/tars/free acids (triglyceride formula doesn't model them). `ACKNOWLEDGED_DEVIATIONS` map (day-one: `buriti-oil`, carotenoids). Test-enforced so the acknowledgement set can't drift. This is what would have caught carrot before it shipped.
+The earlier spec's content, now scoped as the guard. **The pure `deriveChemistryFromProfile(profile)` (core) and the test-enforced deviation guard already exist** (`packages/core/src/fatty-acid-chemistry.ts`, `packages/oils-data/src/profile-sap-consistency.test.ts`) — Phase 4 promotes them into the `validate-canonical.ts` build gate. SAP from mean-FA MW, IV from double-bond count, INS dropped (tabulated values legitimately deviate). Tiered check: SAP contradiction → **error** for `verified`/`estimated`, **warn** for `legacy_only`; IV advisory (abs+rel guard, skip conjugated); category gate excludes waxes/tars/free acids (triglyceride formula doesn't model them).
+
+**Acknowledgement list is computed *after* Phase 3, not before.** Phase 3 changes stored SAPs, so the error-tier set shifts; the day-one list is whatever the guard test then holds — currently **6 complete-profile oils** (nutmeg, buriti, cohune, ucuuba, murumuru, tamanu), not "buriti only." **murumuru is the worked example**: all charts say ~0.275 but the profile derives ~0.233 (higher-than-coconut SAP is implausible for a 15%-oleic butter), so it may be a *carrot-class error the charts share* — a genuine human-decision oil, not a rubber-stamp. The `{deviating oils} === {documented list}` assertion is the drift guard. This is what would have caught carrot before it shipped.
 
 ### Phase 5 — Profile backfill (incremental accuracy)
 
