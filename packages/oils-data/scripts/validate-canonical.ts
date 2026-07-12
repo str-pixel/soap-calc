@@ -12,6 +12,7 @@ import {
 import { loadSupplementalInci } from '../src/resolve-inci.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
+import { classifyProfileSapDeviations } from '../src/profile-sap-deviations.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -211,6 +212,22 @@ function main() {
 
   for (const { id, sum } of incompleteProfileOils(db.oils)) {
     warnings.push(`${id}: fatty-acid profile only ${sum.toFixed(0)}% complete — properties are estimates`);
+  }
+
+  // Profile-consistency gate: the fatty-acid profile is the independent oracle for stored SAP.
+  // A trusted (verified/estimated) SAP that contradicts its own chemistry is the carrot class —
+  // block the build until it's reviewed and either corrected or added to the acknowledged list.
+  for (const dev of classifyProfileSapDeviations(db.oils)) {
+    const base = `${dev.id}: stored SAP deviates ${dev.deltaPct}% from its fatty-acid profile`;
+    if (dev.tier === 'error') {
+      errors.push(
+        `${base} — a trusted (verified/estimated) value contradicting its own chemistry (the carrot class); correct it or add an acknowledged-deviation entry after human review`,
+      );
+    } else if (dev.tier === 'warn') {
+      warnings.push(`${base} (legacy_only — low-confidence SAP, no external source to reconcile)`);
+    } else {
+      warnings.push(`${base} — acknowledged: ${dev.reason}`);
+    }
   }
 
   console.log(`Validated ${db.oils.length} oils`);
