@@ -78,6 +78,7 @@ export function useRecipeViewModel({
     settings.batchOilGrams,
     drafts,
     weightUnit,
+    settings.batchSetByUser,
   );
   const previewLineByKey = useMemo(
     () => Object.fromEntries(previewState.lines.map((line) => [line.key, line])),

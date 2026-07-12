@@ -8,10 +8,11 @@ export function usePreviewRecipeState(
   batchOilGrams: string,
   drafts: Record<string, string>,
   weightUnit: WeightUnit,
+  batchSetByUser: boolean,
 ): { lines: RecipeLine[]; batchOilGrams: string } {
   return useMemo(
-    () => previewRecipeState(lines, batchOilGrams, drafts, weightUnit),
-    [lines, batchOilGrams, drafts, weightUnit],
+    () => previewRecipeState(lines, batchOilGrams, drafts, weightUnit, batchSetByUser),
+    [lines, batchOilGrams, drafts, weightUnit, batchSetByUser],
   );
 }
 

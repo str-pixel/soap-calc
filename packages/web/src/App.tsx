@@ -43,9 +43,10 @@ export default function App() {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
   const { getDraft, setDraft, clearDraft, clearAllDrafts, drafts } = useDraftInputs();
-  const { applySynced, applySyncedUpdate, linesRef, batchRef } = useRecipeEditor(
+  const { applySynced, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef } = useRecipeEditor(
     lines,
     settings.batchOilGrams,
+    settings.batchSetByUser,
     setLines,
     setSettings,
   );
@@ -66,7 +67,7 @@ export default function App() {
   const inputs = useRecipeInputs({
     lines, settings, additives, weightUnit,
     drafts, setDraft, clearDraft, clearAllDrafts,
-    editor: { applySynced, applySyncedUpdate, linesRef, batchRef },
+    editor: { applySynced, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef },
     setLines, setSettings, handleExport, handleNew,
   });
 

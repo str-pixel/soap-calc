@@ -137,6 +137,10 @@ function distributeWeightsToBatch(
 export type SyncedRecipe = {
   lines: RecipeLine[];
   batchOilGrams: string;
+  /** Provenance of batchOilGrams: true when the user typed the total (locks it), false
+   * when it was derived from line weights (follows them). Travels with lines/batch so
+   * every sync path keeps the flag consistent with the value it describes. */
+  batchSetByUser: boolean;
 };
 
 export function resyncFromWeights(lines: RecipeLine[]): SyncedRecipe {
@@ -145,6 +149,8 @@ export function resyncFromWeights(lines: RecipeLine[]): SyncedRecipe {
   return {
     batchOilGrams,
     lines: syncPercentsFromWeights(lines, total),
+    // Derived from the weights themselves — never a user-locked total.
+    batchSetByUser: false,
   };
 }
 
@@ -153,23 +159,28 @@ export function syncWeightEdit(
   key: string,
   weightGrams: string,
   batchOilGrams: string,
+  batchSetByUser: boolean,
 ): SyncedRecipe {
   const editedGrams = parseNum(weightGrams);
   const batch = parseNum(batchOilGrams);
 
   if (editedGrams === null) {
-    return {
-      batchOilGrams,
-      lines: lines.map((line) =>
-        line.key === key ? { ...line, weightGrams, weightPercent: '' } : line,
-      ),
-    };
+    const cleared = lines.map((line) =>
+      line.key === key ? { ...line, weightGrams, weightPercent: '' } : line,
+    );
+    if (batchSetByUser) {
+      return { batchOilGrams, lines: cleared, batchSetByUser: true };
+    }
+    return resyncFromWeights(cleared);
   }
 
-  if (batch !== null && batch > 0) {
+  // Only a total the user typed locks the batch; a total derived from line weights
+  // grows and shrinks with them, so entering weights never steals from other lines.
+  if (batchSetByUser && batch !== null && batch > 0) {
     return {
       batchOilGrams,
       lines: distributeWeightsToBatch(lines, key, editedGrams, batch),
+      batchSetByUser: true,
     };
   }
 
@@ -184,17 +195,47 @@ export function syncPercentEdit(
   key: string,
   weightPercent: string,
   batchOilGrams: string,
+  batchSetByUser: boolean,
 ): SyncedRecipe {
   const batch = parseNum(batchOilGrams);
   const editedPct = parseNum(weightPercent);
 
   if (editedPct === null) {
-    return {
-      batchOilGrams,
-      lines: lines.map((line) =>
-        line.key === key ? { ...line, weightPercent, weightGrams: '' } : line,
-      ),
-    };
+    const cleared = lines.map((line) =>
+      line.key === key ? { ...line, weightPercent, weightGrams: '' } : line,
+    );
+    // A user-set total stays locked; a derived total re-derives from remaining weights.
+    return batchSetByUser
+      ? { batchOilGrams, lines: cleared, batchSetByUser: true }
+      : resyncFromWeights(cleared);
+  }
+
+  // Derived batch: a percent is relative to the whole recipe, so hold the OTHER lines'
+  // typed weights fixed and set this line so it is editedPct% of the grown total, then
+  // re-derive batch/percents. This never steals from weights the user already entered
+  // and matches the weight-entry result (e.g. olive 300 + coconut 40% -> 300/200, 500).
+  if (!batchSetByUser) {
+    const p = clampPercent(editedPct);
+    if (p <= 0) {
+      return resyncFromWeights(
+        lines.map((line) => (line.key === key ? { ...line, weightGrams: '' } : line)),
+      );
+    }
+    const others = lines.filter((line) => line.key !== key);
+    const otherGrams = totalGrams(others);
+    // With no other weighted lines there is no reference to grow against, so scale the
+    // sole line against the current derived total instead (percent of its own amount).
+    const base = otherGrams > 0 ? otherGrams : (batch ?? 0);
+    const targetGrams =
+      p >= 100 ? base : otherGrams > 0 ? (otherGrams * p) / (100 - p) : (base * p) / 100;
+    const updated = lines.map((line) => {
+      if (line.key === key) {
+        return { ...line, weightGrams: targetGrams > 0 ? formatGrams(targetGrams) : '' };
+      }
+      // At >=100% the edited line is the entire batch, so clear the others.
+      return p >= 100 ? { ...line, weightGrams: '' } : line;
+    });
+    return resyncFromWeights(updated);
   }
 
   if (batch === null || batch <= 0) {
@@ -203,6 +244,7 @@ export function syncPercentEdit(
       lines: lines.map((line) =>
         line.key === key ? { ...line, weightPercent } : line,
       ),
+      batchSetByUser: true,
     };
   }
 
@@ -220,6 +262,7 @@ export function syncPercentEdit(
           weightGrams: pct > 0 ? formatGrams(grams) : '',
         },
       ],
+      batchSetByUser: true,
     };
   }
 
@@ -261,6 +304,7 @@ export function syncPercentEdit(
   return {
     batchOilGrams,
     lines: fixGramRounding(syncedLines, batch, key),
+    batchSetByUser: true,
   };
 }
 
@@ -302,12 +346,16 @@ export function addRecipeLine(
   lines: RecipeLine[],
   batchOilGrams: string,
   newLine: RecipeLine,
+  batchSetByUser: boolean,
 ): SyncedRecipe {
   const batch = parseNum(batchOilGrams);
+  // A new line is empty, so it changes nothing yet; preserve the batch and its provenance
+  // when a total exists, otherwise re-derive (which reports the batch as unlocked).
   if (batch !== null && batch > 0) {
     return {
       batchOilGrams,
       lines: [...lines, newLine],
+      batchSetByUser,
     };
   }
 
