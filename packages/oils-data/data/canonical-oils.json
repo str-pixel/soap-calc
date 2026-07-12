@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-12T12:02:15.262Z",
+  "generatedAt": "2026-07-12T21:29:49.205Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -268,8 +268,8 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 185,
-          "mgKohPerGramMax": 195,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
           "mgKohPerGram": 190,
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
@@ -279,8 +279,8 @@
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
           "mgKohPerGram": 190,
-          "mgKohPerGramMin": 185,
-          "mgKohPerGramMax": 195,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -396,9 +396,9 @@
       ],
       "inciName": "Persea Gratissima (Avocado) Oil",
       "category": "triglyceride",
-      "sapKoh": 0.202,
-      "sapNaoh": 0.14402852049910875,
-      "sapMgKohPerGram": 202,
+      "sapKoh": 0.188,
+      "sapNaoh": 0.13404634581105168,
+      "sapMgKohPerGram": 188,
       "iodine": 86,
       "ins": 99,
       "fattyAcids": {
@@ -419,25 +419,19 @@
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
           "mgKohPerGramMin": 177,
-          "mgKohPerGramMax": 226,
-          "mgKohPerGram": 201.5,
-          "sapKoh": 0.202,
-          "sapNaoh": 0.14402852049910875,
-          "notes": "FNWL chart entry: Avocado Oil, Organic"
+          "mgKohPerGramMax": 198,
+          "mgKohPerGram": 187.5,
+          "sapKoh": 0.188,
+          "sapNaoh": 0.13404634581105168,
+          "notes": "FNWL chart entry: Avocado Oil, Virgin"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 201.5,
+          "mgKohPerGram": 187.5,
           "mgKohPerGramMin": 177,
-          "mgKohPerGramMax": 226,
+          "mgKohPerGramMax": 198,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
-        },
-        {
-          "source": "manual",
-          "sapKoh": 0.202,
-          "sapNaoh": 0.14402852049910875,
-          "notes": "FNWL differs by 8.6%; using higher SAP for lye safety"
         },
         {
           "source": "cosing",
@@ -446,7 +440,7 @@
         }
       ],
       "primarySource": "fnwl",
-      "confidence": "estimated"
+      "confidence": "verified"
     },
     {
       "id": "babassu-oil",
@@ -511,9 +505,9 @@
       ],
       "inciName": "Adansonia Digitata (Baobab) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.19,
-      "sapNaoh": 0.1354723707664884,
-      "sapMgKohPerGram": 190,
+      "sapKoh": 0.2,
+      "sapNaoh": 0.14260249554367202,
+      "sapMgKohPerGram": 200,
       "iodine": 75,
       "ins": 125,
       "fattyAcids": {
@@ -535,20 +529,26 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 180,
-          "mgKohPerGramMax": 200,
-          "mgKohPerGram": 190,
-          "sapKoh": 0.19,
-          "sapNaoh": 0.1354723707664884,
-          "notes": "FNWL chart entry: Baobab Oil"
+          "mgKohPerGramMin": 140,
+          "mgKohPerGramMax": 205,
+          "mgKohPerGram": 172.5,
+          "sapKoh": 0.173,
+          "sapNaoh": 0.12335115864527628,
+          "notes": "FNWL chart entry: Baobab Oil, Unrefined"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 190,
-          "mgKohPerGramMin": 180,
-          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 172.5,
+          "mgKohPerGramMin": 140,
+          "mgKohPerGramMax": 205,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.2,
+          "sapNaoh": 0.14260249554367202,
+          "notes": "legacy/FNWL differ by 13.5% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -556,8 +556,8 @@
           "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "fnwl",
-      "confidence": "verified"
+      "primarySource": "legacy_catalog",
+      "confidence": "estimated"
     },
     {
       "id": "beeswax",
@@ -989,9 +989,9 @@
       ],
       "inciName": "Euphorbia Cerifera (Candelilla) Wax",
       "category": "wax",
-      "sapKoh": 0.054,
-      "sapNaoh": 0.03850267379679144,
-      "sapMgKohPerGram": 54,
+      "sapKoh": 0.049,
+      "sapNaoh": 0.03493761140819964,
+      "sapMgKohPerGram": 49,
       "iodine": 32,
       "ins": 12,
       "fattyAcids": {},
@@ -1023,7 +1023,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP 22.7% higher than legacy (>10% delta); using FNWL for lye safety"
+          "sapKoh": 0.049,
+          "sapNaoh": 0.03493761140819964,
+          "notes": "legacy/FNWL differ by 22.7% (>5%); profile can't judge (incomplete), used the midpoint"
         },
         {
           "source": "cosing",
@@ -1084,7 +1086,7 @@
           "source": "manual",
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
-          "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
+          "notes": "legacy/FNWL differ by 7.0% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "manual",
@@ -1149,7 +1151,7 @@
           "source": "manual",
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
-          "notes": "FNWL differs by 7.0%; using higher SAP for lye safety"
+          "notes": "legacy/FNWL differ by 7.0% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "manual",
@@ -1391,9 +1393,9 @@
       ],
       "inciName": "Cocos Nucifera (Coconut) Oil",
       "category": "triglyceride",
-      "sapKoh": 0.26,
-      "sapNaoh": 0.1853832442067736,
-      "sapMgKohPerGram": 260,
+      "sapKoh": 0.258,
+      "sapNaoh": 0.1839572192513369,
+      "sapMgKohPerGram": 258,
       "iodine": 10,
       "ins": 258,
       "fattyAcids": {
@@ -1415,18 +1417,18 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 255,
+          "mgKohPerGramMin": 250,
           "mgKohPerGramMax": 265,
-          "mgKohPerGram": 260,
-          "sapKoh": 0.26,
-          "sapNaoh": 0.1853832442067736,
-          "notes": "FNWL chart entry: Organic Virgin Coconut Oil"
+          "mgKohPerGram": 257.5,
+          "sapKoh": 0.258,
+          "sapNaoh": 0.1839572192513369,
+          "notes": "FNWL chart entry: Coconut Oil, Organic"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 260,
-          "mgKohPerGramMin": 255,
+          "mgKohPerGram": 257.5,
+          "mgKohPerGramMin": 250,
           "mgKohPerGramMax": 265,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
@@ -1447,9 +1449,9 @@
       ],
       "inciName": "Cocos Nucifera (Coconut) Oil",
       "category": "triglyceride",
-      "sapKoh": 0.26,
-      "sapNaoh": 0.1853832442067736,
-      "sapMgKohPerGram": 260,
+      "sapKoh": 0.258,
+      "sapNaoh": 0.1839572192513369,
+      "sapMgKohPerGram": 258,
       "iodine": 3,
       "ins": 258,
       "fattyAcids": {
@@ -1471,18 +1473,18 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 255,
+          "mgKohPerGramMin": 250,
           "mgKohPerGramMax": 265,
-          "mgKohPerGram": 260,
-          "sapKoh": 0.26,
-          "sapNaoh": 0.1853832442067736,
-          "notes": "FNWL chart entry: Organic Virgin Coconut Oil"
+          "mgKohPerGram": 257.5,
+          "sapKoh": 0.258,
+          "sapNaoh": 0.1839572192513369,
+          "notes": "FNWL chart entry: Coconut Oil, Organic"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 260,
-          "mgKohPerGramMin": 255,
+          "mgKohPerGram": 257.5,
+          "mgKohPerGramMin": 250,
           "mgKohPerGramMax": 265,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
@@ -1503,9 +1505,9 @@
       ],
       "inciName": "Caprylic/Capric Triglyceride",
       "category": "triglyceride",
-      "sapKoh": 0.348,
-      "sapNaoh": 0.2481283422459893,
-      "sapMgKohPerGram": 348,
+      "sapKoh": 0.325,
+      "sapNaoh": 0.23172905525846701,
+      "sapMgKohPerGram": 325,
       "iodine": 1,
       "ins": 324,
       "fattyAcids": {
@@ -1542,9 +1544,9 @@
         },
         {
           "source": "manual",
-          "sapKoh": 0.348,
-          "sapNaoh": 0.2481283422459893,
-          "notes": "FNWL differs by 7.1%; using higher SAP for lye safety"
+          "sapKoh": 0.325,
+          "sapNaoh": 0.23172905525846701,
+          "notes": "legacy/FNWL differ by 7.1% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -1552,7 +1554,7 @@
           "notes": "INCI \"Caprylic/Capric Triglyceride\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "fnwl",
+      "primarySource": "legacy_catalog",
       "confidence": "estimated"
     },
     {
@@ -1840,9 +1842,9 @@
       ],
       "inciName": "Theobroma Grandiflorum (Cupuacu) Seed Butter",
       "category": "triglyceride",
-      "sapKoh": 0.223,
-      "sapNaoh": 0.1590017825311943,
-      "sapMgKohPerGram": 223,
+      "sapKoh": 0.20750000000000002,
+      "sapNaoh": 0.14795008912655971,
+      "sapMgKohPerGram": 207.50000000000003,
       "iodine": 39,
       "ins": 153,
       "fattyAcids": {
@@ -1879,7 +1881,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP 16.1% higher than legacy (>10% delta); using FNWL for lye safety"
+          "sapKoh": 0.20750000000000002,
+          "sapNaoh": 0.14795008912655971,
+          "notes": "legacy/FNWL differ by 16.1% (>5%); profile can't judge (incomplete), used the midpoint"
         },
         {
           "source": "cosing",
@@ -2046,7 +2050,7 @@
           "source": "manual",
           "sapKoh": 0.193,
           "sapNaoh": 0.1376114081996435,
-          "notes": "FNWL differs by 6.6%; using higher SAP for lye safety"
+          "notes": "legacy/FNWL differ by 6.6% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -2119,9 +2123,9 @@
       ],
       "inciName": "Cannabis Sativa (Hemp) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.193,
-      "sapNaoh": 0.1376114081996435,
-      "sapMgKohPerGram": 193,
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
       "iodine": 165,
       "ins": 39,
       "fattyAcids": {
@@ -2142,19 +2146,19 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 190,
-          "mgKohPerGramMax": 195,
-          "mgKohPerGram": 192.5,
-          "sapKoh": 0.193,
-          "sapNaoh": 0.1376114081996435,
-          "notes": "FNWL chart entry: Hemp Seed Oil"
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 194,
+          "mgKohPerGram": 191,
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "FNWL chart entry: Organic Virgin Hemp Seed Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 192.5,
-          "mgKohPerGramMin": 190,
-          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 191,
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 194,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -2325,9 +2329,9 @@
       ],
       "inciName": "Pongamia Glabra (Karanja) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.191,
-      "sapNaoh": 0.13618538324420676,
-      "sapMgKohPerGram": 191,
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
       "iodine": 85,
       "ins": 98,
       "fattyAcids": {
@@ -2347,19 +2351,19 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 186,
-          "mgKohPerGramMax": 196,
-          "mgKohPerGram": 191,
-          "sapKoh": 0.191,
-          "sapNaoh": 0.13618538324420676,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
           "notes": "FNWL chart entry: Karanja Oil, Organic"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 191,
-          "mgKohPerGramMin": 186,
-          "mgKohPerGramMax": 196,
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -2454,9 +2458,9 @@
       ],
       "inciName": "Aleurites Moluccana (Kukui) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.193,
-      "sapNaoh": 0.1376114081996435,
-      "sapMgKohPerGram": 193,
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
       "iodine": 168,
       "ins": 24,
       "fattyAcids": {
@@ -2477,18 +2481,18 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 190,
+          "mgKohPerGramMin": 185,
           "mgKohPerGramMax": 195,
-          "mgKohPerGram": 192.5,
-          "sapKoh": 0.193,
-          "sapNaoh": 0.1376114081996435,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
           "notes": "FNWL chart entry: Kukui Nut Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 192.5,
-          "mgKohPerGramMin": 190,
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 185,
           "mgKohPerGramMax": 195,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
@@ -2852,8 +2856,8 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 190,
-          "mgKohPerGramMax": 200,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 205,
           "mgKohPerGram": 195,
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
@@ -2863,8 +2867,8 @@
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
           "mgKohPerGram": 195,
-          "mgKohPerGramMin": 190,
-          "mgKohPerGramMax": 200,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 205,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -3292,9 +3296,9 @@
       ],
       "inciName": "Astrocaryum Murumuru Seed Butter",
       "category": "triglyceride",
-      "sapKoh": 0.275,
-      "sapNaoh": 0.19607843137254902,
-      "sapMgKohPerGram": 275,
+      "sapKoh": 0.253,
+      "sapNaoh": 0.1803921568627451,
+      "sapMgKohPerGram": 253,
       "iodine": 25,
       "ins": 250,
       "fattyAcids": {
@@ -3333,9 +3337,9 @@
         },
         {
           "source": "manual",
-          "sapKoh": 0.275,
-          "sapNaoh": 0.19607843137254902,
-          "notes": "FNWL differs by 8.0%; using higher SAP for lye safety"
+          "sapKoh": 0.253,
+          "sapNaoh": 0.1803921568627451,
+          "notes": "legacy/FNWL differ by 8.0% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -3343,7 +3347,7 @@
           "notes": "INCI \"Astrocaryum Murumuru Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
+      "primarySource": "fnwl",
       "confidence": "estimated"
     },
     {
@@ -3703,7 +3707,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
+          "sapKoh": 0.247,
+          "sapNaoh": 0.1761140819964349,
+          "notes": "legacy/FNWL differ by 17.8% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "manual",
@@ -3716,7 +3722,7 @@
         }
       ],
       "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "confidence": "estimated"
     },
     {
       "id": "palm-kernel-oil-flakes-hydrogenated",
@@ -3766,7 +3772,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
+          "sapKoh": 0.247,
+          "sapNaoh": 0.1761140819964349,
+          "notes": "legacy/FNWL differ by 17.8% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "manual",
@@ -3779,7 +3787,7 @@
         }
       ],
       "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "confidence": "estimated"
     },
     {
       "id": "palm-oil",
@@ -4501,7 +4509,9 @@
         },
         {
           "source": "manual",
-          "notes": "FNWL SAP differs by 16.0% (>10%); legacy SAP retained for lye safety"
+          "sapKoh": 0.194,
+          "sapNaoh": 0.13832442067736184,
+          "notes": "legacy/FNWL differ by 16.0% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -4510,7 +4520,7 @@
         }
       ],
       "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "confidence": "estimated"
     },
     {
       "id": "pracaxi-seed-oil-hair-conditioner",
@@ -5407,9 +5417,9 @@
       ],
       "inciName": "Glycine Soja (Soybean) Oil",
       "category": "triglyceride",
-      "sapKoh": 0.192,
-      "sapNaoh": 0.13689839572192514,
-      "sapMgKohPerGram": 192,
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
       "iodine": 131,
       "ins": 61,
       "fattyAcids": {
@@ -5430,19 +5440,19 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 189,
-          "mgKohPerGramMax": 195,
-          "mgKohPerGram": 192,
-          "sapKoh": 0.192,
-          "sapNaoh": 0.13689839572192514,
-          "notes": "FNWL chart entry: Soybean Oil, Organic"
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Soybean Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 192,
-          "mgKohPerGramMin": 189,
-          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -5891,9 +5901,9 @@
       ],
       "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.208,
-      "sapNaoh": 0.14830659536541888,
-      "sapMgKohPerGram": 208,
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
       "iodine": 111,
       "ins": 82,
       "fattyAcids": {
@@ -5931,9 +5941,9 @@
         },
         {
           "source": "manual",
-          "sapKoh": 0.208,
-          "sapNaoh": 0.14830659536541888,
-          "notes": "FNWL differs by 6.2%; using higher SAP for lye safety"
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "legacy/FNWL differ by 6.2% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -5941,7 +5951,7 @@
           "notes": "INCI \"Calophyllum Tacamahaca (Tamanu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
+      "primarySource": "fnwl",
       "confidence": "estimated"
     },
     {
@@ -6041,9 +6051,9 @@
       ],
       "inciName": "Citrullus Lanatus (Watermelon) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.195,
-      "sapNaoh": 0.13903743315508021,
-      "sapMgKohPerGram": 195,
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
       "iodine": 119,
       "ins": 71,
       "fattyAcids": {
@@ -6064,19 +6074,19 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 190,
-          "mgKohPerGramMax": 200,
-          "mgKohPerGram": 195,
-          "sapKoh": 0.195,
-          "sapNaoh": 0.13903743315508021,
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 191.5,
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
           "notes": "FNWL chart entry: Watermelon Seed Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 195,
-          "mgKohPerGramMin": 190,
-          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 191.5,
+          "mgKohPerGramMin": 188,
+          "mgKohPerGramMax": 195,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {

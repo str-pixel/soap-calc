@@ -3,7 +3,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sapKohToSapNaoh } from '@soap-calc/core';
 import { CanonicalOilDatabase } from '../src/schema.js';
-import { DISPUTED_DELTA_PCT, sapDeltaPercent } from '../src/sap-policy.js';
 import {
   defaultGlossaryPath,
   loadCosingGlossaryIndex,
@@ -90,26 +89,14 @@ function main() {
     const legacySource = oil.sources.find((s) => s.source === 'legacy_catalog');
 
     if (fnwlSource?.sapKoh && legacySource?.sapKoh) {
-      const delta = sapDeltaPercent(legacySource.sapKoh, fnwlSource.sapKoh);
-
-      if (
-        delta > DISPUTED_DELTA_PCT &&
-        oil.primarySource === 'fnwl' &&
-        fnwlSource.sapKoh < legacySource.sapKoh
-      ) {
+      // Disputed SAP resolves to whichever source is closest to the profile (or their
+      // midpoint) — never the max, since higher SAP is not "safer". The only invariant
+      // is that the result stays within the two sources' range.
+      const lo = Math.min(legacySource.sapKoh, fnwlSource.sapKoh);
+      const hi = Math.max(legacySource.sapKoh, fnwlSource.sapKoh);
+      if (oil.sapKoh < lo - 1e-9 || oil.sapKoh > hi + 1e-9) {
         errors.push(
-          `${oil.id}: FNWL primary but SAP delta ${delta.toFixed(1)}% exceeds ${DISPUTED_DELTA_PCT}%`,
-        );
-      }
-
-      // Using FNWL when it is lower than legacy risks under-lye; higher FNWL is allowed for safety.
-      if (
-        delta > DISPUTED_DELTA_PCT &&
-        oil.sapKoh === fnwlSource.sapKoh &&
-        fnwlSource.sapKoh < legacySource.sapKoh
-      ) {
-        errors.push(
-          `${oil.id}: using lower FNWL SAP despite ${delta.toFixed(1)}% delta from legacy`,
+          `${oil.id}: resolved sapKoh ${oil.sapKoh} is outside the legacy/FNWL range [${lo}, ${hi}]`,
         );
       }
     }

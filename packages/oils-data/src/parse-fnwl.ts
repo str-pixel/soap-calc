@@ -30,12 +30,13 @@ export function parseCsvLine(line: string): string[] {
 }
 
 /**
- * Parse FNWL tab export. When multiple products normalize to the same name,
- * keep the row with the highest sapKoh (conservative for lye safety).
+ * Parse FNWL tab export. When multiple products normalize to the same name, keep the
+ * row with the **median** sapKoh — a representative value. Taking the max latched onto
+ * high outliers (e.g. avocado's 177–226 row) and inflated the lye estimate.
  */
 export function parseFnwlCsv(text: string): FnwlRow[] {
   const lines = text.split(/\r?\n/).filter((l) => l && !l.startsWith('Last Updated') && !l.startsWith('OIL,'));
-  const byName = new Map<string, FnwlRow>();
+  const byName = new Map<string, FnwlRow[]>();
 
   for (const line of lines) {
     const cols = parseCsvLine(line);
@@ -55,11 +56,15 @@ export function parseFnwlCsv(text: string): FnwlRow[] {
       ...(productId ? { productId } : {}),
     };
     const key = normalizeOilName(name);
-    const existing = byName.get(key);
-    if (!existing || sapKoh > existing.sapKoh) {
-      byName.set(key, row);
-    }
+    const group = byName.get(key);
+    if (group) group.push(row);
+    else byName.set(key, [row]);
   }
 
-  return [...byName.values()];
+  // Keep an actual row per name (preserving its range/productId), chosen at the median
+  // sapKoh. For an even count the lower-middle row is used.
+  return [...byName.values()].map((group) => {
+    const sorted = [...group].sort((a, b) => a.sapKoh - b.sapKoh);
+    return sorted[Math.floor((sorted.length - 1) / 2)];
+  });
 }
