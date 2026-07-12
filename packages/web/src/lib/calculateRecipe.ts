@@ -4,6 +4,7 @@ import type { RecipeLine, RecipeSettings } from './recipe';
 import { OIL_LOOKUP, oilById } from './oils';
 import { resolveLineWeights } from './resolveLineWeights';
 import { parseRecipeSettings } from './parseRecipeSettings';
+import type { ProcessId } from './process';
 
 export type RecipeDisplayTotals = {
   recipeOilWeightGrams: number;
@@ -21,8 +22,9 @@ export type RecipeCalculation = {
 export function calculateRecipe(
   lines: RecipeLine[],
   settings: RecipeSettings,
+  process?: ProcessId,
 ): RecipeCalculation {
-  const parsed = parseRecipeSettings(settings);
+  const parsed = parseRecipeSettings(settings, { allowNegativeSuperfat: process === 'ls' });
   const inputErrors: string[] = parsed.ok ? [] : [...parsed.errors];
 
   const resolved = resolveLineWeights(lines, settings);

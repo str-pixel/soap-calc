@@ -1,7 +1,6 @@
 import {
   MAX_ADDITIVE_NAME_LENGTH,
   MAX_RECIPE_ADDITIVES,
-  parseDoseAmount,
 } from '@soap-calc/core';
 import {
   createStarterLines,
@@ -98,15 +97,22 @@ function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
   }
   const basis = value.basis === 'batch' ? 'batch' : value.basis === 'solution' ? 'solution' : 'oil';
   const unit = value.unit === 'ppt' ? 'ppt' : 'percent';
-  const amount =
+  const rawAmount =
     typeof value.amount === 'string' && value.amount !== ''
       ? value.amount
       : typeof value.amount === 'number' && Number.isFinite(value.amount)
         ? String(value.amount) // hand-edited numeric amount
         : parseAdditivePercentOfOil(value); // legacy percentOfOil / PPO → %-of-oil string
-  if (amount === '' || parseDoseAmount(amount, unit) === null) {
-    return null;
-  }
+  // Blank and over-ceiling amounts are normal in-progress UI states ("+ Add additive"
+  // starts blank; a unit switch can leave the old number over the new ceiling) and
+  // self-exports carry them verbatim — accept them so a backup always re-imports.
+  // The dose calc already skips uncommittable amounts. Only reject real garbage, and
+  // store accepted amounts in canonical decimal form ('0x1F'/'5e2' would parse but be
+  // unrenderable in the panel's number input).
+  const trimmed = rawAmount.trim();
+  const numeric = Number(trimmed);
+  if (trimmed !== '' && (!Number.isFinite(numeric) || numeric < 0)) return null;
+  const amount = trimmed === '' ? '' : String(numeric);
   const name =
     typeof value.name === 'string' ? value.name.slice(0, MAX_ADDITIVE_NAME_LENGTH) : '';
   return {

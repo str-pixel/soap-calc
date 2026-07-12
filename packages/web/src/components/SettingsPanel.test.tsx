@@ -82,7 +82,7 @@ describe('post-cook superfat fields', () => {
   it('render for hp (% field + oil picker)', () => {
     render(<SettingsPanel {...baseProps} process="hp" settings={DEFAULT_SETTINGS} />);
     expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
-    expect(screen.getByLabelText('Oil')).toBeTruthy();
+    expect(screen.getByLabelText('Post-cook superfat oil')).toBeTruthy();
   });
 
   it('render for ls', () => {
@@ -94,13 +94,13 @@ describe('post-cook superfat fields', () => {
       />,
     );
     expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
-    expect(screen.getByLabelText('Oil')).toBeTruthy();
+    expect(screen.getByLabelText('Post-cook superfat oil')).toBeTruthy();
   });
 
   it('are hidden for cp', () => {
     render(<SettingsPanel {...baseProps} process="cp" settings={DEFAULT_SETTINGS} />);
     expect(screen.queryByLabelText('Post-cook superfat %')).toBeNull();
-    expect(screen.queryByLabelText('Oil')).toBeNull();
+    expect(screen.queryByLabelText('Post-cook superfat oil')).toBeNull();
   });
 
   it('editing post-cook superfat % updates settings state', () => {
@@ -121,4 +121,11 @@ test('HP shows the PCSF method toggle and updates it; CP hides it', () => {
   cleanup();
   render(<Harness process="cp" />);
   expect(screen.queryByLabelText('Post-cook superfat method')).toBeNull();
+});
+
+test('superfat input allows a negative min only for LS', () => {
+  const { rerender } = render(<Harness process="cp" />);
+  expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('0');
+  rerender(<Harness process="ls" />);
+  expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('-5');
 });

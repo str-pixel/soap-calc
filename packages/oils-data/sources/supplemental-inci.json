@@ -1,4 +1,51 @@
 {
+  "inciCorrections": {
+    "safflower-oil": {
+      "inciName": "Carthamus Tinctorius (Safflower) Seed Oil",
+      "source": "cosing",
+      "notes": "Corrects FNWL chart misspelling \"Carthamus tinctorus (Safflower) Oil\"; species is Carthamus tinctorius (matches CARTHAMUS TINCTORIUS SEED OIL)"
+    },
+    "palm-kernel-oil": {
+      "inciName": "Elaeis Guineensis (Palm) Kernel Oil",
+      "source": "cosing",
+      "notes": "Corrects non-INCI FNWL value \"Elaeis guineensis Palm kernel oil\" (matches ELAEIS GUINEENSIS KERNEL OIL)"
+    },
+    "palm-kernel-oil-flakes-hydrogenated": {
+      "inciName": "Hydrogenated Palm Kernel Oil",
+      "source": "cosing",
+      "notes": "Hydrogenated palm kernel oil flakes; corrects non-INCI FNWL value \"Elaeis guineensis Palm kernel oil\" (matches HYDROGENATED PALM KERNEL OIL)"
+    },
+    "shea-butter": {
+      "inciName": "Butyrospermum Parkii (Shea) Butter",
+      "source": "cosing",
+      "notes": "Corrects malformed FNWL value \"Butyrospermum Parkii (Shea Butter) Fruit\" (matches BUTYROSPERMUM PARKII BUTTER)"
+    },
+    "macadamia-nut-oil": {
+      "inciName": "Macadamia Integrifolia (Macadamia) Seed Oil",
+      "source": "cosing",
+      "notes": "INCI uses Seed Oil, not \"Nut Oil\" (matches MACADAMIA INTEGRIFOLIA SEED OIL and the macadamia-nut-butter entry)"
+    },
+    "brazil-nut-oil": {
+      "inciName": "Bertholletia Excelsa (Brazil) Seed Oil",
+      "source": "cosing",
+      "notes": "INCI uses Seed Oil, not \"Nut Oil\" (matches BERTHOLLETIA EXCELSA SEED OIL)"
+    },
+    "kukui-nut-oil": {
+      "inciName": "Aleurites Moluccana (Kukui) Seed Oil",
+      "source": "cosing",
+      "notes": "Species binomial uses Seed Oil, not \"Nut Oil\" (matches ALEURITES MOLUCCANA SEED OIL)"
+    },
+    "marula-oil": {
+      "inciName": "Sclerocarya Birrea (Marula) Seed Oil",
+      "source": "cosing",
+      "notes": "INCI uses Seed Oil, not \"Kernel Oil\" (matches SCLEROCARYA BIRREA SEED OIL)"
+    },
+    "pistachio-oil": {
+      "inciName": "Pistacia Vera (Pistachio) Seed Oil",
+      "source": "cosing",
+      "notes": "INCI uses Seed Oil, not \"Nut Oil\" (matches PISTACIA VERA SEED OIL); kept here rather than byOilId so a future FNWL product mapping cannot reintroduce the Nut Oil variant"
+    }
+  },
   "byOilId": {
     "abyssinian-oil": {
       "inciName": "Crambe Abyssinica Seed Oil",
@@ -54,12 +101,14 @@
       "source": "cosing"
     },
     "cherry-kern1-oil-p-avium": {
-      "inciName": "Prunus Avium (Cherry) Kernel Oil",
-      "source": "cosing"
+      "inciName": "Prunus Avium (Cherry) Seed Oil",
+      "source": "cosing",
+      "notes": "INCI is Seed Oil, not Kernel Oil (matches PRUNUS AVIUM SEED OIL)"
     },
     "cherry-kern2-oil-p-cerasus": {
-      "inciName": "Prunus Cerasus (Cherry) Kernel Oil",
-      "source": "cosing"
+      "inciName": "Prunus Cerasus (Cherry) Seed Oil",
+      "source": "cosing",
+      "notes": "INCI is Seed Oil, not Kernel Oil (matches PRUNUS CERASUS SEED OIL)"
     },
     "cocoa-butter": {
       "inciName": "Theobroma Cacao (Cocoa) Seed Butter",
@@ -167,13 +216,10 @@
       "source": "manual",
       "notes": "Standard pecan INCI; FNWL glossary uses trade name variant"
     },
-    "pistachio-oil": {
-      "inciName": "Pistacia Vera (Pistachio) Nut Oil",
-      "source": "cosing"
-    },
     "plum-kernel-oil": {
-      "inciName": "Prunus Domestica (Plum) Kernel Oil",
-      "source": "cosing"
+      "inciName": "Prunus Domestica (Plum) Seed Oil",
+      "source": "cosing",
+      "notes": "INCI is Seed Oil, not Kernel Oil (matches PRUNUS DOMESTICA SEED OIL)"
     },
     "rapeseed-oil-canola": {
       "inciName": "Brassica Napus (Rapeseed) Seed Oil",
@@ -209,9 +255,9 @@
       "notes": "CosIng #92469 — sheep fat"
     },
     "tamanu-oil-kamani": {
-      "inciName": "Calophyllum inophyllum (Tamanu) Oil",
+      "inciName": "Calophyllum Inophyllum (Tamanu) Seed Oil",
       "source": "cosing",
-      "notes": "Resolved via FNWL alias → Tamanu Foraha Oil product INCI"
+      "notes": "INCI is Seed Oil (matches CALOPHYLLUM INOPHYLLUM SEED OIL); FNWL alias → Tamanu Foraha Oil"
     },
     "wheat-germ-oil": {
       "inciName": "Triticum Vulgare (Wheat) Germ Oil",
@@ -276,9 +322,9 @@
       "notes": "Mowrah / mahua butter"
     },
     "nutmeg-butter": {
-      "inciName": "Myristica fragrans (Nutmeg) Oil",
+      "inciName": "Myristica Fragrans (Nutmeg) Kernel Oil",
       "source": "cosing",
-      "notes": "Butter base; nutmeg kernel fat"
+      "notes": "Nutmeg butter is the kernel fat; INCI Kernel Oil (matches MYRISTICA FRAGRANS KERNEL OIL)"
     },
     "oat-oil": {
       "inciName": "Avena sativa (Oat) Kernel Oil",
@@ -303,8 +349,9 @@
       "source": "cosing"
     },
     "pataua-oil": {
-      "inciName": "Oenocarpus Bataua (Ungurahui) Oil",
-      "source": "cosing"
+      "inciName": "Oenocarpus Bataua (Ungurahui) Fruit Oil",
+      "source": "cosing",
+      "notes": "Pataua oil is expressed from the fruit; INCI Fruit Oil (matches OENOCARPUS BATAUA FRUIT OIL)"
     },
     "pracaxi-seed-oil-hair-conditioner": {
       "inciName": "Pentaclethra Macroloba (Pracaxi) Seed Oil",

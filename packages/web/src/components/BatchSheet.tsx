@@ -1,4 +1,7 @@
+import { memo, useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
+  formatPropertyScore,
   formatSoapPropertyPercent,
   LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
@@ -18,12 +21,34 @@ type BatchSheetProps = {
   data: BatchSheetData | null;
 };
 
-export function BatchSheet({ data }: BatchSheetProps) {
+// memo: `data` is a stable view-model memo output; this print-only tree is large,
+// so skip re-rendering it on unrelated keystrokes.
+export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
+  const [printedAt, setPrintedAt] = useState(() => new Date().toLocaleString());
+  // The sheet's data is memoized long before the user hits Print, so a baked-in
+  // timestamp would show generation time. beforeprint fires ahead of the print
+  // snapshot; flushSync makes the re-render land inside the handler. Some WebKit
+  // print paths never fire beforeprint, so also listen for the print media query
+  // (guarded — jsdom has no matchMedia).
+  useEffect(() => {
+    const stamp = () => flushSync(() => setPrintedAt(new Date().toLocaleString()));
+    window.addEventListener('beforeprint', stamp);
+    const printMedia =
+      typeof window.matchMedia === 'function' ? window.matchMedia('print') : null;
+    const onMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) stamp();
+    };
+    printMedia?.addEventListener?.('change', onMediaChange);
+    return () => {
+      window.removeEventListener('beforeprint', stamp);
+      printMedia?.removeEventListener?.('change', onMediaChange);
+    };
+  }, []);
+
   if (!data) return null;
 
   const {
     recipeName,
-    printedAt,
     batchNotes,
     weightUnit,
     lyeLabel,
@@ -36,8 +61,10 @@ export function BatchSheet({ data }: BatchSheetProps) {
     splitLiquid,
     splitLiquidGrams,
     postCookSuperfat,
-    postCookSuperfatMethod,
+    pcsfIsExtra,
+    extrasGrams,
     dilution,
+    neutralization,
     properties,
     indexes,
     batchWeightWithExtras,
@@ -47,20 +74,20 @@ export function BatchSheet({ data }: BatchSheetProps) {
     process,
   } = data;
 
+  const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
-  const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const extrasGrams =
-    additiveGrams +
-    (splitLiquidGrams ?? 0) +
-    (postCookSuperfatMethod !== 'subtract' ? postCookSuperfat?.grams ?? 0 : 0);
 
   const isDualLye = settings.lyeType === 'dual';
   const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
   const propsPartial = !!properties?.properties && properties.coveragePercent < 99.9;
-  const propsLow = !!properties?.properties && properties.coveragePercent < LOW_COVERAGE_PERCENT;
+  // Compare rounded coverage, matching PropertiesPanel/FattyAcidPanel, so the printed
+  // "X%" and the estimate treatment never disagree with the screen.
+  const propsLow =
+    !!properties?.properties && Math.round(properties.coveragePercent) < LOW_COVERAGE_PERCENT;
   const indexLow =
     (indexes.iodine !== null || indexes.ins !== null) &&
-    indexes.coveragePercent < LOW_COVERAGE_PERCENT;
+    Math.round(indexes.coveragePercent) < LOW_COVERAGE_PERCENT;
+  const fattyAcidsLow = Math.round(fattyAcids.coveragePercent) < LOW_COVERAGE_PERCENT;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -103,7 +130,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
                 <dd>{formatWeight(result.naohWeightGrams, weightUnit)}</dd>
               </div>
               <div>
-                <dt>KOH ({settings.kohBlendPercent}% by weight)</dt>
+                <dt>KOH ({settings.kohBlendPercent || '0'}% by weight)</dt>
                 <dd>{formatWeight(result.kohWeightGrams, weightUnit)}</dd>
               </div>
               <div>
@@ -127,9 +154,9 @@ export function BatchSheet({ data }: BatchSheetProps) {
           </div>
           <div>
             <dt>Superfat</dt>
-            <dd>{settings.superfatPercent}%</dd>
+            <dd>{settings.superfatPercent || '0'}%</dd>
           </div>
-          {postCookSuperfat && (
+          {postCookSuperfat && mainSuperfatPercent >= 0 && (
             <div>
               <dt>Total superfat</dt>
               <dd>
@@ -219,7 +246,7 @@ export function BatchSheet({ data }: BatchSheetProps) {
                 {batchSheetOilName(postCookSuperfat.oilId)} —{' '}
                 {formatWeight(postCookSuperfat.grams, weightUnit)} (
                 {formatGrams(postCookSuperfat.percentOfOil, 1)}% post-cook superfat)
-                {postCookSuperfatMethod === 'subtract' ? ' — reserved (lye reduced)' : ''}
+                {!pcsfIsExtra ? ' — reserved (lye reduced)' : ''}
               </li>
             )}
             {additives.map((item) => (
@@ -245,29 +272,41 @@ export function BatchSheet({ data }: BatchSheetProps) {
         </section>
       )}
 
+      {neutralization && (
+        <section className="batch-sheet__section">
+          <h2>Neutralize</h2>
+          <dl className="batch-sheet__dl">
+            <div><dt>Lye excess</dt><dd>{formatGrams(neutralization.lyeExcessPercent, 1)}%</dd></div>
+            <div><dt>Citric acid (estimate)</dt><dd>{formatWeight(neutralization.citricAcidGrams, weightUnit)}</dd></div>
+            <div><dt>Dissolve in hot water (1:4)</dt><dd>{formatWeight(neutralization.dilutionWaterGrams, weightUnit)}</dd></div>
+          </dl>
+          <p>Add gradually to pH {neutralization.targetPhLow}–{neutralization.targetPhHigh}; verify with a test.</p>
+        </section>
+      )}
+
       {properties?.properties && (
         <section className="batch-sheet__section">
           <h2>Estimated bar properties</h2>
           <dl className="batch-sheet__dl batch-sheet__dl--compact">
             <div>
               <dt>Hardness</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.hardness)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.hardness)}</dd>
             </div>
             <div>
               <dt>Cleansing</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.cleansing)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.cleansing)}</dd>
             </div>
             <div>
               <dt>Conditioning</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.condition)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.condition)}</dd>
             </div>
             <div>
               <dt>Bubbly</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.bubbly)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.bubbly)}</dd>
             </div>
             <div>
               <dt>Creamy</dt>
-              <dd>{propsLow ? '~' : ''}{formatSoapPropertyPercent(properties.properties.creamy)}</dd>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.creamy)}</dd>
             </div>
             {indexes.iodine !== null && (
               <div>
@@ -298,8 +337,8 @@ export function BatchSheet({ data }: BatchSheetProps) {
         <section className="batch-sheet__section">
           <h2>Fatty acids</h2>
           <p className="batch-sheet__notes">
-            Saturated {formatSoapPropertyPercent(satUnsat.saturated)} · Unsaturated{' '}
-            {formatSoapPropertyPercent(satUnsat.unsaturated)}
+            Saturated {fattyAcidsLow ? '~' : ''}{formatSoapPropertyPercent(satUnsat.saturated)} · Unsaturated{' '}
+            {fattyAcidsLow ? '~' : ''}{formatSoapPropertyPercent(satUnsat.unsaturated)}
             {fattyAcids.coveragePercent < 99.9
               ? ` (${Math.round(fattyAcids.coveragePercent)}% of oils with data)`
               : ''}
@@ -352,4 +391,4 @@ export function BatchSheet({ data }: BatchSheetProps) {
       </footer>
     </article>
   );
-}
+});

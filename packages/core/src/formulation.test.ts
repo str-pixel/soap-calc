@@ -359,4 +359,66 @@ describe('analyzeFormulation', () => {
       expect(analyzeFormulation(base).some((i) => i.code === 'high_pufa_post_cook_superfat')).toBe(false);
     });
   });
+
+  const lsBase = {
+    properties: null,
+    fattyAcids: null,
+    totalOilGrams: 1000,
+    lyeConcentrationPercent: 30,
+    waterLyeRatio: 2,
+    waterGrams: 200,
+    lyeGrams: 100,
+  };
+
+  it('warns when LS superfat exceeds ~3%', () => {
+    const hot = analyzeFormulation({ ...lsBase, superfatPercent: 4, isLiquidSoap: true });
+    expect(hot.some((i) => i.code === 'ls_superfat_high')).toBe(true);
+    const ok = analyzeFormulation({ ...lsBase, superfatPercent: 2, isLiquidSoap: true });
+    expect(ok.some((i) => i.code === 'ls_superfat_high')).toBe(false);
+    const cp = analyzeFormulation({ ...lsBase, superfatPercent: 4, isLiquidSoap: false });
+    expect(cp.some((i) => i.code === 'ls_superfat_high')).toBe(false);
+  });
+
+  it('flags an LS lye excess (negative superfat) for neutralization', () => {
+    const insights = analyzeFormulation({ ...lsBase, superfatPercent: -2, isLiquidSoap: true });
+    const excess = insights.find((i) => i.code === 'ls_lye_excess');
+    expect(excess).toBeTruthy();
+    expect(excess!.level).toBe('info');
+    expect(excess!.message).toContain('9–10.5');
+  });
+
+  it('suppresses the bar-soap lye-concentration warnings for LS', () => {
+    const cpHigh = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent: 40, isLiquidSoap: false });
+    expect(cpHigh.some((i) => i.code === 'lye_conc_high')).toBe(true);
+    const lsHigh = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent: 40, isLiquidSoap: true });
+    expect(lsHigh.some((i) => i.code === 'lye_conc_high')).toBe(false);
+    const lsLow = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent: 15, isLiquidSoap: true });
+    expect(lsLow.some((i) => i.code === 'lye_conc_low')).toBe(false);
+  });
+
+  it('suppresses high_cleansing_low_superfat for LS but still fires for CP/HP', () => {
+    const highCleansingProperties = {
+      bubbly: 40,
+      cleansing: 30,
+      condition: 20,
+      hardness: 40,
+      longevity: 30,
+      creamy: 20,
+    };
+    const ls = analyzeFormulation({
+      ...lsBase,
+      properties: highCleansingProperties,
+      superfatPercent: -2,
+      isLiquidSoap: true,
+    });
+    expect(ls.some((i) => i.code === 'high_cleansing_low_superfat')).toBe(false);
+
+    const cp = analyzeFormulation({
+      ...lsBase,
+      properties: highCleansingProperties,
+      superfatPercent: -2,
+      isLiquidSoap: false,
+    });
+    expect(cp.some((i) => i.code === 'high_cleansing_low_superfat')).toBe(true);
+  });
 });

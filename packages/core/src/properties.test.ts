@@ -24,9 +24,9 @@ const OLIVE_FA = {
 };
 
 describe('oilPropertiesFromFattyAcids', () => {
-  it('computes hardness from saturated chain lengths', () => {
+  it('computes hardness from C12+ saturated acids only (C8/C10 soaps are too soluble to harden)', () => {
     const props = oilPropertiesFromFattyAcids(COCONUT_FA);
-    expect(props.hardness).toBe(48 + 19 + 9 + 2 + 8 + 7);
+    expect(props.hardness).toBe(48 + 19 + 9 + 2);
     expect(props.cleansing).toBe(48 + 19 + 8 + 7);
   });
 });
@@ -85,6 +85,8 @@ describe('calculateRecipeProperties', () => {
 
     expect(result.properties).toBeNull();
     expect(result.coveragePercent).toBe(0);
+    // Zero coverage still names which oils lack data.
+    expect(result.missingOilIds).toContain('birch-tar');
   });
 
   it('reports an unknown oil id (absent from lookup) as missing', () => {
@@ -115,5 +117,12 @@ describe('calculateRecipeProperties', () => {
     // A single covered oil renormalizes to exactly its own profile.
     const soloOlive = calculateRecipeProperties([{ oilId: 'olive-oil', weightGrams: 500 }], lookup);
     expect(result.properties!.hardness).toBeCloseTo(soloOlive.properties!.hardness, 5);
+  });
+});
+
+describe('conditioning includes docosenoic (corrected spelling)', () => {
+  it('counts docosenoic toward conditioning', () => {
+    const props = oilPropertiesFromFattyAcids({ oleic: 10, docosenoic: 16 });
+    expect(props.condition).toBe(26);
   });
 });

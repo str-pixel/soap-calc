@@ -61,10 +61,22 @@ export type LyeCalculationResult = {
   errors: string[];
 };
 
-const DEFAULT_NAOH_PURITY = 100;
-const DEFAULT_KOH_PURITY = 90;
-const DEFAULT_WATER_PERCENT = 33;
+/** Default alkali purities. Exported so neutralization (and any consumer) resolves a
+ * missing/invalid purity the same way the lye calc does, instead of assuming 100%. */
+export const DEFAULT_NAOH_PURITY = 100;
+export const DEFAULT_KOH_PURITY = 90;
+/** Water-mode defaults applied when the input omits a value. Exported so display
+ * layers can show the effective number instead of an empty label. */
+export const DEFAULT_WATER_PERCENT = 33;
+export const DEFAULT_LYE_CONCENTRATION_PERCENT = 33.33;
+export const DEFAULT_LYE_WATER_RATIO = 2;
 const MAX_SUPERFAT_PERCENT = 50;
+/** Most negative superfat allowed: a deliberate lye excess (neutralized after cook).
+ * Exported so the UI slider bound can't drift from the core validation floor. */
+export const NEG_SUPERFAT_FLOOR = -5;
+/** Default KOH share for dual-lye recipes; shared with analyzeFormulation so the
+ * "advanced technique" insight matches what calculateLye actually blends. */
+export const DEFAULT_KOH_BLEND_PERCENT = 5;
 
 function validatePurityPercent(
   value: number | undefined,
@@ -74,7 +86,7 @@ function validatePurityPercent(
 ): number {
   const purity = value ?? defaultValue;
   if (!Number.isFinite(purity) || purity <= 0 || purity > 100) {
-    errors.push(`${label} must be a finite number between 1 and 100`);
+    errors.push(`${label} must be a finite number greater than 0 and at most 100`);
     return defaultValue;
   }
   return purity;
@@ -166,24 +178,24 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
 
   if (
     !Number.isFinite(input.superfatPercent) ||
-    input.superfatPercent < 0 ||
+    input.superfatPercent < NEG_SUPERFAT_FLOOR ||
     input.superfatPercent > MAX_SUPERFAT_PERCENT
   ) {
     errors.push(
-      `superfatPercent must be a finite number between 0 and ${MAX_SUPERFAT_PERCENT}`,
+      `superfatPercent must be a finite number between ${NEG_SUPERFAT_FLOOR} and ${MAX_SUPERFAT_PERCENT}`,
     );
   }
 
   const waterMode = input.waterMode ?? 'percent_of_oils';
   if (waterMode === 'lye_concentration') {
-    const conc = input.lyeConcentrationPercent ?? 33.33;
+    const conc = input.lyeConcentrationPercent ?? DEFAULT_LYE_CONCENTRATION_PERCENT;
     if (!Number.isFinite(conc) || conc <= 0 || conc >= 100) {
       errors.push(
         'lyeConcentrationPercent must be a finite number between 0 and 100 (exclusive)',
       );
     }
   } else if (waterMode === 'lye_water_ratio') {
-    const ratio = input.lyeWaterRatio ?? 2;
+    const ratio = input.lyeWaterRatio ?? DEFAULT_LYE_WATER_RATIO;
     if (!Number.isFinite(ratio) || ratio <= 0) {
       errors.push('lyeWaterRatio must be a finite number greater than 0');
     }
@@ -201,7 +213,7 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
   } else {
     validatePurityPercent(input.naohPurityPercent, DEFAULT_NAOH_PURITY, 'naohPurityPercent', errors);
     validatePurityPercent(input.kohPurityPercent, DEFAULT_KOH_PURITY, 'kohPurityPercent', errors);
-    const blend = input.kohBlendPercent ?? 5;
+    const blend = input.kohBlendPercent ?? DEFAULT_KOH_BLEND_PERCENT;
     if (!Number.isFinite(blend) || blend < 0 || blend > 50) {
       errors.push('kohBlendPercent must be a finite number between 0 and 50');
     }
@@ -213,7 +225,7 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
   let lyeWeightGrams = 0;
   let naohWeightGrams = 0;
   let kohWeightGrams = 0;
-  const kohBlendPercent = input.kohBlendPercent ?? 5;
+  const kohBlendPercent = input.kohBlendPercent ?? DEFAULT_KOH_BLEND_PERCENT;
 
   for (const line of input.oils) {
     const oil = input.oilLookup[line.oilId];
@@ -242,6 +254,7 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
         );
 
     if (
+      line.weightGrams > 0 &&
       isTarLikeOil(oil) &&
       tarLyeTreatment === 'include' &&
       !tarWarningsIssued.has(oil.id)
@@ -283,12 +296,13 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
   if (!hasFatalInputError) {
     switch (waterMode) {
       case 'lye_concentration': {
-        const concentration = (input.lyeConcentrationPercent ?? 33.33) / 100;
+        const concentration =
+          (input.lyeConcentrationPercent ?? DEFAULT_LYE_CONCENTRATION_PERCENT) / 100;
         waterWeightGrams = lyeWeightGrams / concentration - lyeWeightGrams;
         break;
       }
       case 'lye_water_ratio': {
-        const ratio = input.lyeWaterRatio ?? 2;
+        const ratio = input.lyeWaterRatio ?? DEFAULT_LYE_WATER_RATIO;
         waterWeightGrams = lyeWeightGrams * ratio;
         break;
       }

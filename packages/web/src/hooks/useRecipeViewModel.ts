@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
-import { calculateDilution, parsePercentOfOil, scaleLyeResult, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
-import type { DilutionResult } from '@soap-calc/core';
+import { calculateDilution, calculateNeutralization, parsePercentOfOil, scaleLyeResult, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import {
+  computeExtrasGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
   computeSplitLiquidGrams,
 } from '../lib/calculateAdditives';
+import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
@@ -50,10 +52,13 @@ export type RecipeViewModel = {
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
   properties: ReturnType<typeof useRecipeProperties>['properties'];
   indexes: ReturnType<typeof useRecipeProperties>['indexes'];
-  fattyAcids: ReturnType<typeof useFormulationInsights>['fattyAcids'];
+  fattyAcids: ReturnType<typeof useRecipeProperties>['fattyAcids'];
   insights: ReturnType<typeof useFormulationInsights>['insights'];
   lyeLabel: string;
   dilution: DilutionResult | null;
+  neutralization: NeutralizationResult | null;
+  pcsfIsExtra: boolean;
+  extrasGrams: number;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
@@ -85,8 +90,17 @@ export function useRecipeViewModel({
   );
   const showRecipeTotals = hasRecipeLineData(previewState.lines);
   const batchGramsTarget = Number(previewState.batchOilGrams);
+  // Percents are stored display-rounded to 0.1, so a perfectly balanced recipe can sum
+  // to 100 ± 0.05 per contributing line (e.g. three equal lines resync to 33.3×3 = 99.9).
+  // Only warn beyond what rounding alone can explain — and only count lines that
+  // actually contribute a percent, so blank "+ Add oil" rows don't widen the tolerance.
+  const percentLineCount = previewState.lines.filter(
+    (line) => Number(line.weightPercent) > 0,
+  ).length;
+  const percentRoundingTolerance = PERCENT_ROUNDING_EPSILON * Math.max(1, percentLineCount);
   const percentTotalOff =
-    lineTotals.totalPercent > 0 && Math.abs(lineTotals.totalPercent - 100) > 0.05;
+    lineTotals.totalPercent > 0 &&
+    Math.abs(lineTotals.totalPercent - 100) > percentRoundingTolerance;
   const weightTotalOff =
     Number.isFinite(batchGramsTarget) &&
     batchGramsTarget > 0 &&
@@ -95,6 +109,7 @@ export function useRecipeViewModel({
   const { result: fullResult, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
     previewState.lines,
     previewSettings,
+    process,
   );
   // Gate on parsePercentOfOil (caps at 100, matching computePostCookSuperfat) so the lye
   // reduction and the "reserved" PCSF line can never diverge at an out-of-range percent.
@@ -102,15 +117,30 @@ export function useRecipeViewModel({
   const cookFactor =
     process !== 'cp' &&
     previewSettings.postCookSuperfatMethod === 'subtract' &&
-    pcsfSubtractPercent > 0
-      ? Math.min(1, Math.max(0, 1 - pcsfSubtractPercent / 100))
+    pcsfSubtractPercent > 0 &&
+    Number(previewSettings.superfatPercent) >= 0
+      ? // parsePercentOfOil caps the percent to [0,100] and this branch requires > 0, so the
+        // value is already in (0,1) — no further clamping needed.
+        1 - pcsfSubtractPercent / 100
       : 1;
   const result = useMemo(
     () => (cookFactor < 1 && fullResult ? scaleLyeResult(fullResult, cookFactor) : fullResult),
     [cookFactor, fullResult],
   );
   const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? fullResult?.totalOilWeightGrams ?? 0;
-  const baseBatchGrams = displayTotals?.batchWeightGrams ?? fullResult?.totalBatchWeightGrams ?? 0;
+  // The PCSF oil is an added extra whenever the subtract reserve is not actually applied:
+  // append mode, or subtract mode under a lye excess where the cookFactor guard above forces
+  // cookFactor back to 1. cookFactor === 1 is the single source of truth for "was the reserve
+  // actually applied" — deriving this from the raw method string instead would let subtract's
+  // PCSF line item disagree with the batch weight it's excluded from (#1).
+  const pcsfIsExtra = cookFactor === 1;
+  // In subtract mode the real batch carries cook-factor-scaled lye/water, so batch-basis
+  // additive doses and the displayed/printed batch weight must share the same base.
+  const baseBatchGrams = pcsfIsExtra
+    ? displayTotals?.batchWeightGrams ?? fullResult?.totalBatchWeightGrams ?? 0
+    : (displayTotals?.recipeOilWeightGrams ?? 0) +
+      (result?.lyeWeightGrams ?? 0) +
+      (result?.waterWeightGrams ?? 0);
   const dilution = useMemo(
     () =>
       process === 'ls' && result
@@ -123,6 +153,25 @@ export function useRecipeViewModel({
           })
         : null,
     [process, result, previewSettings.soapConcentrationPercent],
+  );
+  const neutralization = useMemo(
+    () =>
+      process === 'ls' && result
+        ? calculateNeutralization({
+            kohGrams: result.kohWeightGrams,
+            naohGrams: result.naohWeightGrams,
+            superfatPercent: Number(previewSettings.superfatPercent),
+            kohPurityPercent: Number(previewSettings.kohPurityPercent),
+            naohPurityPercent: Number(previewSettings.naohPurityPercent),
+          })
+        : null,
+    [
+      process,
+      result,
+      previewSettings.superfatPercent,
+      previewSettings.kohPurityPercent,
+      previewSettings.naohPurityPercent,
+    ],
   );
   const solutionGrams = dilution?.solutionGrams ?? 0;
   const computedAdditives = useMemo(
@@ -171,11 +220,15 @@ export function useRecipeViewModel({
     splitLiquidGrams,
     totalOilGrams,
   ]);
-  const { properties, indexes } = useRecipeProperties(previewState.lines, previewSettings);
-  const { fattyAcids, insights } = useFormulationInsights(
+  const { properties, indexes, fattyAcids } = useRecipeProperties(
+    previewState.lines,
+    previewSettings,
+  );
+  const { insights } = useFormulationInsights(
     previewState.lines,
     previewSettings,
     properties,
+    fattyAcids,
     result,
     {
       excludedOilWeightGrams: displayTotals?.excludedFromLyeOilWeightGrams ?? 0,
@@ -184,6 +237,7 @@ export function useRecipeViewModel({
       splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
       additives: computedAdditives,
       postCookSuperfat,
+      isLiquidSoap: process === 'ls',
     },
   );
   const lyeLabel =
@@ -192,15 +246,13 @@ export function useRecipeViewModel({
       : settings.lyeType === 'naoh'
         ? 'NaOH'
         : 'KOH';
-  const additiveGrams = computedAdditives.reduce((sum, item) => sum + item.grams, 0);
-  const pcsfIsExtra = previewSettings.postCookSuperfatMethod !== 'subtract';
-  const extrasGrams =
-    additiveGrams + (splitLiquidGrams ?? 0) + (pcsfIsExtra ? postCookSuperfat?.grams ?? 0 : 0);
-  const batchWeightWithExtras =
-    (pcsfIsExtra
-      ? (displayTotals?.batchWeightGrams ?? result?.totalBatchWeightGrams ?? 0)
-      : (displayTotals?.recipeOilWeightGrams ?? 0) + (result?.lyeWeightGrams ?? 0) + (result?.waterWeightGrams ?? 0)) +
-    extrasGrams;
+  const extrasGrams = computeExtrasGrams(
+    computedAdditives,
+    splitLiquidGrams,
+    postCookSuperfat,
+    pcsfIsExtra,
+  );
+  const batchWeightWithExtras = baseBatchGrams + extrasGrams;
   const liveOilBatchFraction = useMemo(() => {
     if (!displayTotals || batchWeightWithExtras <= 0) return null;
     return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);
@@ -224,8 +276,10 @@ export function useRecipeViewModel({
       splitLiquid: previewSettings.splitLiquid,
       splitLiquidGrams,
       postCookSuperfat,
-      postCookSuperfatMethod: previewSettings.postCookSuperfatMethod,
+      pcsfIsExtra,
+      extrasGrams,
       dilution,
+      neutralization,
       properties,
       indexes,
       batchWeightWithExtras,
@@ -238,15 +292,17 @@ export function useRecipeViewModel({
     computedAdditives,
     dilution,
     displayTotals,
+    extrasGrams,
     indexes,
-    inputErrors.length,
+    inputErrors,
     linePercents,
     lyeLabel,
     fattyAcids,
     insights,
+    neutralization,
+    pcsfIsExtra,
     postCookSuperfat,
     previewSettings,
-    previewSettings.postCookSuperfatMethod,
     previewState.lines,
     process,
     properties,
@@ -280,6 +336,9 @@ export function useRecipeViewModel({
     insights,
     lyeLabel,
     dilution,
+    neutralization,
+    pcsfIsExtra,
+    extrasGrams,
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,

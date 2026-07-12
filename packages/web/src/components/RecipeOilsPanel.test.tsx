@@ -31,7 +31,6 @@ test('Add oil button calls inputs.addLine', () => {
       lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
-      debouncer={{ flush: (_, fn) => fn(), cancel: vi.fn(), cancelAll: vi.fn() }}
       inputs={inputs as any}
     />
   );

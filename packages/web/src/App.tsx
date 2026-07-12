@@ -4,18 +4,19 @@ import { BatchSheet } from './components/BatchSheet';
 import { DilutionPanel } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
+import { NeutralizePanel } from './components/NeutralizePanel';
 import { ProcessTabs } from './components/ProcessTabs';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { RecipeOilsPanel } from './components/RecipeOilsPanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { SettingsPanel } from './components/SettingsPanel';
-import { useDebouncedCommit } from './hooks/useDebouncedCommit';
 import { useDraftInputs } from './hooks/useDraftInputs';
 import { useRecipeAutosave } from './hooks/useRecipeAutosave';
 import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { useRecipeViewModel } from './hooks/useRecipeViewModel';
+import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 
 export default function App() {
@@ -42,7 +43,6 @@ export default function App() {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
   const { getDraft, setDraft, clearDraft, clearAllDrafts, drafts } = useDraftInputs();
-  const debouncer = useDebouncedCommit();
   const { applySynced, applySyncedUpdate, linesRef, batchRef } = useRecipeEditor(
     lines,
     settings.batchOilGrams,
@@ -50,10 +50,23 @@ export default function App() {
     setSettings,
   );
   const weightUnit = settings.weightUnit;
+  // The mold sizer stores its bar weight as a raw display string interpreted in the
+  // current unit; convert it on unit change (like recipe weights) so "120 g" doesn't
+  // silently become "120 oz".
+  const prevWeightUnitRef = useRef(weightUnit);
+  useEffect(() => {
+    const prevUnit = prevWeightUnitRef.current;
+    if (prevUnit === weightUnit) return;
+    prevWeightUnitRef.current = weightUnit;
+    setMoldSizerInput((current) => {
+      const converted = convertBarWeightBetweenUnits(current.barWeight, prevUnit, weightUnit);
+      return converted === current.barWeight ? current : { ...current, barWeight: converted };
+    });
+  }, [weightUnit]);
   const inputs = useRecipeInputs({
     lines, settings, additives, weightUnit,
     drafts, setDraft, clearDraft, clearAllDrafts,
-    debouncer, editor: { applySynced, applySyncedUpdate, linesRef, batchRef },
+    editor: { applySynced, applySyncedUpdate, linesRef, batchRef },
     setLines, setSettings, handleExport, handleNew,
   });
 
@@ -142,7 +155,7 @@ export default function App() {
             previewState={vm.previewState} previewLineByKey={vm.previewLineByKey}
             lineTotals={vm.lineTotals} showRecipeTotals={vm.showRecipeTotals}
             percentTotalOff={vm.percentTotalOff} weightTotalOff={vm.weightTotalOff}
-            getDraft={getDraft} setDraft={setDraft} debouncer={debouncer}
+            getDraft={getDraft} setDraft={setDraft}
             inputs={inputs}
           />
 
@@ -171,7 +184,8 @@ export default function App() {
             additives={vm.computedAdditives}
             superfatPercent={vm.previewSettings.superfatPercent}
             postCookSuperfat={vm.postCookSuperfat}
-            postCookSuperfatMethod={vm.previewSettings.postCookSuperfatMethod}
+            pcsfIsExtra={vm.pcsfIsExtra}
+            extrasGrams={vm.extrasGrams}
             batchWeightWithExtras={vm.batchWeightWithExtras}
           />
 
@@ -184,6 +198,10 @@ export default function App() {
               }
               weightUnit={weightUnit}
             />
+          )}
+
+          {process === 'ls' && vm.neutralization && (
+            <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
           )}
 
           <SettingsPanel

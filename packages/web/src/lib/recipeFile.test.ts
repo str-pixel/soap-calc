@@ -252,7 +252,9 @@ describe('recipeFile', () => {
     expect(parsed.data.additives[0].amount).toBe('3.13');
   });
 
-  it('rejects additive lines without a dose', () => {
+  it('keeps additive lines without a dose so self-exports round-trip', () => {
+    // "+ Add additive" creates amount '' and export carries it verbatim; a backup
+    // with an in-progress additive must still import.
     const payload = {
       version: 2,
       name: 'No dose',
@@ -261,10 +263,28 @@ describe('recipeFile', () => {
       settings: DEFAULT_SETTINGS,
       exportedAt: new Date().toISOString(),
     };
-    expect(parseRecipeFile(JSON.stringify(payload))).toEqual({
-      ok: false,
-      error: 'Invalid additive line in recipe file',
-    });
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].name).toBe('Honey');
+    expect(parsed.data.additives[0].amount).toBe('');
+  });
+
+  it('keeps over-ceiling additive amounts (in-progress UI state) on import', () => {
+    const payload = {
+      version: 2,
+      name: 'Over ceiling',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [
+        { catalogId: '', name: 'Salt', amount: '500', unit: 'percent', basis: 'oil', addAt: 'lye' },
+      ],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].amount).toBe('500');
   });
 
   it('converts a numeric PPO additive dose using doseUnit on import', () => {

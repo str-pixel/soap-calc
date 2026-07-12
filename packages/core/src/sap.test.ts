@@ -22,4 +22,15 @@ describe('SAP conversion (ISO 3657 / FNWL methodology)', () => {
     expect(parseSapRangeMgKoh('196')).toEqual({ min: 196, max: 196, mid: 196 });
     expect(parseSapRangeMgKoh('250 - 264').mid).toBeCloseTo(257, 5);
   });
+
+  it('normalizes a reversed range so min <= max', () => {
+    expect(parseSapRangeMgKoh('264 - 250')).toEqual({ min: 250, max: 264, mid: 257 });
+  });
+
+  it('rejects malformed ranges instead of coercing empty segments to 0', () => {
+    expect(() => parseSapRangeMgKoh('196-')).toThrow('Invalid SAP range');
+    expect(() => parseSapRangeMgKoh('-185')).toThrow('Invalid SAP range');
+    expect(() => parseSapRangeMgKoh('170-180-190')).toThrow('Invalid SAP range');
+    expect(() => parseSapRangeMgKoh('')).toThrow('Invalid SAP range');
+  });
 });

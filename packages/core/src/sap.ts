@@ -27,13 +27,17 @@ export function sapNaohToSapKoh(sapNaoh: number): number {
 }
 
 export function parseSapRangeMgKoh(range: string): { min: number; max: number; mid: number } {
-  const parts = range.split(/\s*-\s*/).map((p) => Number(p.trim()));
+  const segments = range.split(/\s*-\s*/).map((p) => p.trim());
+  // Number('') is 0, so an empty segment ("196-") would silently halve the SAP.
+  const parts = segments.map((p) => (p === '' ? Number.NaN : Number(p)));
   if (parts.length === 1 && !Number.isNaN(parts[0])) {
     return { min: parts[0], max: parts[0], mid: parts[0] };
   }
-  const [min, max] = parts;
-  if (Number.isNaN(min) || Number.isNaN(max)) {
+  const [a, b] = parts;
+  if (parts.length !== 2 || Number.isNaN(a) || Number.isNaN(b)) {
     throw new Error(`Invalid SAP range: ${range}`);
   }
-  return { min, max, mid: (min + max) / 2 };
+  // Normalize reversed ranges ("264-250"): mid is order-independent, but the
+  // min/max fields feed source metadata and should stay ordered.
+  return { min: Math.min(a, b), max: Math.max(a, b), mid: (a + b) / 2 };
 }

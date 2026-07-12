@@ -58,6 +58,28 @@ describe('parseRecipeSettings', () => {
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.errors).toEqual(['Superfat must be between 0 and 50']);
     });
+
+    it('accepts a negative superfat when allowNegativeSuperfat is set (LS lye excess)', () => {
+      const result = parseRecipeSettings(settings({ superfatPercent: '-3' }), {
+        allowNegativeSuperfat: true,
+      });
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.values.superfatPercent).toBe(-3);
+    });
+
+    it('rejects a negative superfat below the -5 floor even when allowed', () => {
+      const result = parseRecipeSettings(settings({ superfatPercent: '-6' }), {
+        allowNegativeSuperfat: true,
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.errors).toEqual(['Invalid superfat %']);
+    });
+
+    it('still rejects a negative superfat by default (CP/HP)', () => {
+      const result = parseRecipeSettings(settings({ superfatPercent: '-1' }));
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.errors).toEqual(['Invalid superfat %']);
+    });
   });
 
   describe('purity — conditional by lyeType', () => {

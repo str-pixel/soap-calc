@@ -10,6 +10,7 @@ import {
   WATER_MODE_LABELS,
 } from '../lib/settingsFields';
 import type { ProcessId } from '../lib/process';
+import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
 import { InfoTip } from './InfoTip';
 import { MoldSizerPanel } from './MoldSizerPanel';
 import { OilPicker } from './OilPicker';
@@ -92,7 +93,7 @@ export function SettingsPanel({
             type="number"
             className="input"
             aria-label="Superfat %"
-            min={0}
+            min={process === 'ls' ? NEG_SUPERFAT_FLOOR : 0}
             max={50}
             step={0.5}
             value={settings.superfatPercent}
@@ -195,6 +196,7 @@ export function SettingsPanel({
                 onChange={(oilId) =>
                   setSettings((s) => ({ ...s, postCookSuperfatOilId: oilId }))
                 }
+                ariaLabel="Post-cook superfat oil"
               />
             </div>
             <label className="field">

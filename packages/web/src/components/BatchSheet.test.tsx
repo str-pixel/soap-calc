@@ -37,8 +37,10 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
     splitLiquid: undefined,
     splitLiquidGrams: null,
     postCookSuperfat,
-    postCookSuperfatMethod: 'append',
+    pcsfIsExtra: true,
+    extrasGrams: postCookSuperfat.grams,
     dilution: null,
+    neutralization: null,
     properties: null,
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
@@ -81,8 +83,10 @@ test('prints a total superfat (cook + post-cook) row', () => {
     splitLiquid: undefined,
     splitLiquidGrams: null,
     postCookSuperfat,
-    postCookSuperfatMethod: 'append',
+    pcsfIsExtra: true,
+    extrasGrams: postCookSuperfat.grams,
     dilution: null,
+    neutralization: null,
     properties: null,
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
@@ -98,6 +102,104 @@ test('prints a total superfat (cook + post-cook) row', () => {
   // on-screen results emphasize, not just the cook superfat.
   expect(screen.getByText('Total superfat')).toBeTruthy();
   expect(screen.getByText('8%')).toBeTruthy();
+});
+
+test('subtract + negative main superfat: prints no "reserved" note and no Total superfat row (cookFactor guard leaves lye untouched, so both would be false)', () => {
+  const lines = createStarterLines();
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    superfatPercent: '-2',
+    postCookSuperfatPercent: '5',
+    postCookSuperfatOilId: 'castor-oil',
+  };
+  // process 'ls' is required here: calculateRecipe only allows a negative superfat
+  // (a lye excess) when allowNegativeSuperfat is set, which it derives from process === 'ls'.
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings, 'ls');
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  const postCookSuperfat = computePostCookSuperfat(settings, displayTotals.recipeOilWeightGrams);
+  if (!postCookSuperfat) throw new Error('expected a computed post-cook superfat');
+
+  const data = buildBatchSheetData({
+    recipeName: 'PCSF lye-excess batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquid: undefined,
+    splitLiquidGrams: null,
+    postCookSuperfat,
+    // cookFactor guard: a lye excess (superfat -2%) forces cookFactor back to 1, so the
+    // subtract reserve is never actually applied — the PCSF oil is an extra either way.
+    pcsfIsExtra: true,
+    extrasGrams: postCookSuperfat.grams,
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    insights: [],
+    process: 'ls',
+  });
+
+  render(<BatchSheet data={data} />);
+
+  expect(screen.queryByText(/reserved/i)).toBeNull();
+  expect(screen.queryByText('Total superfat')).toBeNull();
+});
+
+test('subtract + non-negative main superfat: prints "reserved" note and Total superfat row', () => {
+  const lines = createStarterLines();
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    superfatPercent: '2',
+    postCookSuperfatPercent: '5',
+    postCookSuperfatOilId: 'castor-oil',
+  };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings, 'ls');
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  const postCookSuperfat = computePostCookSuperfat(settings, displayTotals.recipeOilWeightGrams);
+  if (!postCookSuperfat) throw new Error('expected a computed post-cook superfat');
+
+  const data = buildBatchSheetData({
+    recipeName: 'PCSF subtract batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquid: undefined,
+    splitLiquidGrams: null,
+    postCookSuperfat,
+    // Non-negative superfat: the subtract reserve is actually applied, so the PCSF oil is
+    // reserved from the recipe oils, not an extra.
+    pcsfIsExtra: false,
+    extrasGrams: 0,
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    insights: [],
+    process: 'ls',
+  });
+
+  render(<BatchSheet data={data} />);
+
+  expect(screen.getByText(/reserved/i)).toBeTruthy();
+  expect(screen.getByText('Total superfat')).toBeTruthy();
 });
 
 test('prints no post-cook-superfat line when absent', () => {
@@ -119,8 +221,10 @@ test('prints no post-cook-superfat line when absent', () => {
     splitLiquid: undefined,
     splitLiquidGrams: null,
     postCookSuperfat: null,
-    postCookSuperfatMethod: 'append',
+    pcsfIsExtra: true,
+    extrasGrams: 0,
     dilution: null,
+    neutralization: null,
     properties: null,
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
@@ -133,4 +237,47 @@ test('prints no post-cook-superfat line when absent', () => {
   render(<BatchSheet data={data} />);
 
   expect(screen.queryByText(/post-cook superfat/)).toBeNull();
+});
+
+test('prints bar-property scores without a percent sign', () => {
+  const lines = createStarterLines();
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, DEFAULT_SETTINGS);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+
+  const data = buildBatchSheetData({
+    recipeName: 'Scores batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings: DEFAULT_SETTINGS,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquid: undefined,
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    pcsfIsExtra: true,
+    extrasGrams: 0,
+    dilution: null,
+    neutralization: null,
+    properties: {
+      properties: { hardness: 41, cleansing: 17, condition: 56, creamy: 24, bubbly: 17, longevity: 24 },
+      coveragePercent: 100,
+      missingOilIds: [],
+    },
+    indexes: { iodine: 58, ins: 147, coveragePercent: 100, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    insights: [],
+    process: 'cp',
+  });
+
+  render(<BatchSheet data={data} />);
+  // The hardness score renders as a bare number.
+  const hardnessTerm = screen.getByText('Hardness');
+  const hardnessValue = hardnessTerm.parentElement?.querySelector('dd');
+  expect(hardnessValue?.textContent).toBe('41');
 });

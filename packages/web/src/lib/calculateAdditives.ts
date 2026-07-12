@@ -62,6 +62,23 @@ export type ComputedPostCookSuperfat = {
   grams: number;
 };
 
+/** Total off-recipe grams added to the batch: additives + trace split liquid + the
+ * post-cook superfat when `pcsfIsExtra` is true (i.e. it isn't actually reserved from
+ * the recipe oils). Single source of truth for the view model, ResultsPanel, and
+ * BatchSheet — callers must pass the view model's `pcsfIsExtra`, not re-derive it from
+ * the raw method string, since a subtract reserve under a lye excess is method:'subtract'
+ * but never actually applied (see useRecipeViewModel's cookFactor guard). */
+export function computeExtrasGrams(
+  additives: Array<{ grams: number }>,
+  splitLiquidGrams: number | null,
+  postCookSuperfat: ComputedPostCookSuperfat | null,
+  pcsfIsExtra: boolean,
+): number {
+  const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
+  const pcsfGrams = pcsfIsExtra ? (postCookSuperfat?.grams ?? 0) : 0;
+  return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams;
+}
+
 /** The post-cook superfat: an oil added after cook/dilution with no lye effect.
  * Same % of recipe oil weight basis as additives/split-liquid; `null` when the % is
  * empty/zero/invalid or there's no recipe oil weight yet. */

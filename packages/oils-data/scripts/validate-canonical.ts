@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sapKohToSapNaoh } from '@soap-calc/core';
@@ -10,9 +10,13 @@ import {
   lookupInciInGlossary,
   validateInciName,
 } from '../src/cosing-glossary.js';
+import { loadSupplementalInci } from '../src/resolve-inci.js';
+import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
+import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataPath = join(__dirname, '../data/canonical-oils.json');
+const supplementalInciPath = join(__dirname, '../sources/supplemental-inci.json');
 
 /** Golden SAP values for high-risk oils (legacy catalog). */
 const GOLDEN_SAP_KOH: Record<string, number> = {
@@ -21,18 +25,53 @@ const GOLDEN_SAP_KOH: Record<string, number> = {
   'olive-oil': 0.19,
 };
 
-/** Proxy SAP values — estimated, not legacy-catalog-verified. */
+/** Proxy / corrected SAP values — estimated, not legacy-catalog-verified. birch-tar is a
+ * pine-tar proxy; the corrected legacy oils are pulled from the shared LEGACY_SAP_CORRECTIONS
+ * so the expected value lives in exactly one place (build applies it, validate asserts it). */
 const ESTIMATED_SAP_KOH: Record<string, number> = {
   'birch-tar': 0.06,
+  ...Object.fromEntries(
+    Object.entries(LEGACY_SAP_CORRECTIONS).map(([id, c]) => [id, c.sapKoh]),
+  ),
 };
 
 function main() {
   const raw = JSON.parse(readFileSync(dataPath, 'utf8'));
   const db = CanonicalOilDatabase.parse(raw);
   const cosingGlossary = loadCosingGlossaryIndex(defaultGlossaryPath);
+  // Guard the load, so a missing source file degrades to "no corrections" instead of
+  // crashing the validator — but say so, since the drift check is disabled in that state.
+  const supplementalInci = existsSync(supplementalInciPath)
+    ? loadSupplementalInci(supplementalInciPath)
+    : null;
+  const inciCorrections = supplementalInci?.inciCorrections ?? {};
+  const cosingInventory = loadCosingInventory(defaultInventoryPath);
 
   const errors: string[] = [];
   const warnings: string[] = [];
+  if (!existsSync(supplementalInciPath)) {
+    warnings.push('sources/supplemental-inci.json missing — INCI correction drift checks skipped');
+  }
+  if (!cosingInventory) {
+    warnings.push('CosIng inventory snapshot missing — source:"cosing" claims cannot be machine-verified');
+  }
+
+  // Every source:"cosing" claim in the supplemental file — across ALL maps, not just the new
+  // inciCorrections layer — must be falsifiable against the committed CosIng inventory snapshot.
+  // Refresh the snapshot (or downgrade the claim to "manual") rather than shipping an unverifiable
+  // "cosing" name.
+  if (supplementalInci && cosingInventory) {
+    const maps = { inciCorrections, byOilId: supplementalInci.byOilId, byFnwlProductId: supplementalInci.byFnwlProductId };
+    for (const [mapName, map] of Object.entries(maps)) {
+      for (const [key, entry] of Object.entries(map)) {
+        if (entry.source === 'cosing' && !inciInInventory(entry.inciName, cosingInventory)) {
+          errors.push(
+            `${mapName}.${key}: source:"cosing" INCI "${entry.inciName}" is not in the CosIng inventory snapshot`,
+          );
+        }
+      }
+    }
+  }
 
   for (const oil of db.oils) {
     const expectedNaoh = sapKohToSapNaoh(oil.sapKoh);
@@ -106,14 +145,27 @@ function main() {
       warnings.push(`${oil.id}: FNWL match without LDG methodology cross-check source`);
     }
 
+    const correction = inciCorrections[oil.id];
+    if (correction && oil.inciName !== correction.inciName) {
+      // The correction layer is authoritative; any drift means something (e.g. the
+      // FNWL-derived glossary) rewrote the corrected name during the build.
+      errors.push(
+        `${oil.id}: inciName "${oil.inciName}" does not match inciCorrections value "${correction.inciName}"`,
+      );
+    }
+    // (source:"cosing" claims are verified once, globally, above — across every map.)
+
     if (oil.inciName) {
       for (const issue of validateInciName(oil.inciName)) {
         warnings.push(`${oil.id}: ${issue}`);
       }
-      if (cosingGlossary) {
+      // The proxy glossary is FNWL-derived and incomplete; a name confirmed by the real
+      // CosIng inventory snapshot needs no proxy-glossary warning.
+      const inventoryConfirmed = cosingInventory ? inciInInventory(oil.inciName, cosingInventory) : false;
+      if (cosingGlossary && !inventoryConfirmed) {
         const lookup = lookupInciInGlossary(oil.inciName, cosingGlossary);
         if (!lookup.found) {
-          warnings.push(`${oil.id}: INCI not in local CosIng glossary index`);
+          warnings.push(`${oil.id}: INCI not in local CosIng glossary index or inventory snapshot`);
         }
       }
       if (!cosingSource) {
@@ -178,6 +230,17 @@ function main() {
     process.exit(1);
   }
 
+  // The standing expected-warning pool is large, so a flat list capped at 15 lines would
+  // hide any new warning type below the fold. Group by type (message with the oil id and
+  // numbers stripped) so a new or growing category is always visible.
+  const byType = new Map<string, number>();
+  for (const w of warnings) {
+    const type = w.replace(/^[^:]+: /, '').replace(/"[^"]*"/g, '"…"').replace(/[\d.]+/g, '#');
+    byType.set(type, (byType.get(type) ?? 0) + 1);
+  }
+  [...byType.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([type, count]) => console.warn(`  WARN ×${count}: ${type}`));
   warnings.slice(0, 15).forEach((w) => console.warn(`  WARN: ${w}`));
   if (warnings.length > 15) console.warn(`  ... and ${warnings.length - 15} more warnings`);
 }

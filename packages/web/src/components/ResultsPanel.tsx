@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import type { ProcessId } from '../lib/process';
@@ -25,8 +26,16 @@ type ResultsPanelProps = {
   additives?: ComputedAdditive[];
   superfatPercent?: string;
   postCookSuperfat?: ComputedPostCookSuperfat | null;
-  postCookSuperfatMethod?: 'append' | 'subtract';
-  batchWeightWithExtras?: number;
+  /** Whether the post-cook superfat is an added extra (append mode, or subtract under a
+   * lye excess where the reserve was never actually applied) rather than reserved from
+   * the recipe oils. Single source of truth from the view model — see useRecipeViewModel. */
+  pcsfIsExtra?: boolean;
+  /** The vm's total off-recipe grams (additives + split liquid + PCSF-if-extra) — passed
+   * down so this panel never recomputes it and drifts from the printed sheet. */
+  extrasGrams?: number;
+  /** The vm's batch weight (method-aware base + extras) — required so the panel never
+   * recomputes its own base and drifts from the printed sheet. */
+  batchWeightWithExtras: number;
 };
 
 function waterFootnote(
@@ -40,7 +49,9 @@ function waterFootnote(
   return ' (from saponifiable oils)';
 }
 
-export function ResultsPanel({
+// memo: props are stable view-model memo outputs, so unrelated keystrokes
+// skip re-rendering this panel.
+export const ResultsPanel = memo(function ResultsPanel({
   result,
   inputErrors,
   lyeLabel,
@@ -55,7 +66,8 @@ export function ResultsPanel({
   additives = [],
   superfatPercent,
   postCookSuperfat = null,
-  postCookSuperfatMethod = 'append',
+  pcsfIsExtra = true,
+  extrasGrams = 0,
   batchWeightWithExtras,
 }: ResultsPanelProps) {
   if (inputErrors.length) {
@@ -76,15 +88,10 @@ export function ResultsPanel({
   const hasLineErrors = result.errors.length > 0;
   const recipeOilWeightGrams =
     displayTotals?.recipeOilWeightGrams ?? result.totalOilWeightGrams;
-  const batchWeightGrams =
-    displayTotals?.batchWeightGrams ?? result.totalBatchWeightGrams;
   const excludedOilWeightGrams = displayTotals?.excludedFromLyeOilWeightGrams ?? 0;
   const isEmpty = recipeOilWeightGrams <= 0;
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const pcsfIsExtra = postCookSuperfatMethod !== 'subtract';
-  const extrasGrams =
-    additiveGrams + (splitLiquidGrams ?? 0) + (pcsfIsExtra ? postCookSuperfat?.grams ?? 0 : 0);
-  const displayedBatchWeight = batchWeightWithExtras ?? batchWeightGrams + extrasGrams;
+  const displayedBatchWeight = batchWeightWithExtras;
   const waterNote = waterFootnote(waterMode, excludedOilWeightGrams);
   const showTotalLiquid =
     splitLiquid?.enabled && splitLiquidGrams !== null && splitLiquidGrams > 0;
@@ -132,7 +139,7 @@ export function ResultsPanel({
                 </dd>
               </div>
               <div className="results-grid__item results-grid__item--primary">
-                <dt>KOH ({kohBlendPercent ?? '5'}% by weight)</dt>
+                <dt>KOH ({kohBlendPercent || '0'}% by weight)</dt>
                 <dd>
                   {formatWeight(result.kohWeightGrams, weightUnit)}
                   {hasLineErrors && <span className="results-partial"> (partial)</span>}
@@ -219,7 +226,7 @@ export function ResultsPanel({
             <div className="results-grid__item">
               <dt>
                 Post-cook superfat ({postCookSuperfatOilName})
-                {postCookSuperfatMethod === 'subtract' ? ' · reserved, lye reduced' : ''}
+                {!pcsfIsExtra ? ' · reserved, lye reduced' : ''}
               </dt>
               <dd>
                 {formatWeight(postCookSuperfat.grams, weightUnit)}
@@ -230,7 +237,7 @@ export function ResultsPanel({
               </dd>
             </div>
           )}
-          {postCookSuperfat && (
+          {postCookSuperfat && cookSuperfatPercent >= 0 && (
             <div className="results-grid__item">
               <dt>Total superfat</dt>
               <dd>{formatGrams(totalSuperfatPercent, 1)}%</dd>
@@ -264,4 +271,4 @@ export function ResultsPanel({
       )}
     </section>
   );
-}
+});

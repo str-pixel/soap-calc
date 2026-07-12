@@ -117,3 +117,58 @@ test('dilution: computed for LS, null for CP, null (no crash) for an empty LS re
   render(<Probe />);
   expect(empty.dilution).toBeNull();
 });
+
+test('LS lye excess computes neutralization and disables PCSF-subtract', () => {
+  let withSubtract: any;
+  let withAppend: any;
+  const ls = {
+    superfatPercent: '-2',
+    lyeType: 'koh' as const,
+    waterMode: 'lye_water_ratio' as const,
+    lyeWaterRatio: '2',
+    postCookSuperfatPercent: '5',
+  };
+  probe((vm) => { withSubtract = vm; }, { ...ls, postCookSuperfatMethod: 'subtract' }, 'ls');
+  probe((vm) => { withAppend = vm; }, { ...ls, postCookSuperfatMethod: 'append' }, 'ls');
+
+  expect(withSubtract.neutralization).not.toBeNull();
+  expect(withSubtract.neutralization.citricAcidGrams).toBeGreaterThan(0);
+  // Mutual exclusivity: subtract is ignored under a lye excess, so lye matches the append case.
+  expect(withSubtract.result.lyeWeightGrams).toBeCloseTo(withAppend.result.lyeWeightGrams);
+
+  // Regression (#1): the cookFactor guard makes "subtract" lye-inert under a lye excess, so
+  // the PCSF oil is never actually reserved from the recipe — it's an extra either way, and
+  // batchWeightWithExtras must agree between subtract and append instead of undercounting by
+  // the PCSF grams (empirically: 1695.3 g vs 1745.3 g, off by exactly the 50 g PCSF reserve).
+  let withoutPcsf: any;
+  probe((vm) => { withoutPcsf = vm; }, { ...ls, postCookSuperfatPercent: '', postCookSuperfatMethod: 'subtract' }, 'ls');
+
+  expect(withSubtract.postCookSuperfat.grams).toBeGreaterThan(0);
+  expect(withSubtract.batchWeightWithExtras).toBeCloseTo(withAppend.batchWeightWithExtras);
+  expect(withSubtract.batchWeightWithExtras).toBeGreaterThan(
+    withoutPcsf.batchWeightWithExtras,
+  );
+  expect(withAppend.batchWeightWithExtras).toBeGreaterThan(
+    withoutPcsf.batchWeightWithExtras,
+  );
+});
+
+test('neutralization is null for a normal LS recipe (superfat >= 0)', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, { superfatPercent: '2', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
+  expect(vm.neutralization).toBeNull();
+});
+
+test('batch sheet carries the neutralization step for a lye-excess LS recipe', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, { superfatPercent: '-2', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
+  expect(vm.batchSheetData).not.toBeNull();
+  expect(vm.batchSheetData.neutralization).toEqual(vm.neutralization);
+  expect(vm.batchSheetData.neutralization).not.toBeNull();
+});
+
+test('LS superfat above 3% raises the ls_superfat_high insight', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, { superfatPercent: '5', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
+  expect(vm.insights.some((i: any) => i.code === 'ls_superfat_high')).toBe(true);
+});

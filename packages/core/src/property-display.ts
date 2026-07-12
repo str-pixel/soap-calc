@@ -15,3 +15,12 @@ export function formatPropertyRangePercent(
   const hi = Math.round(high * factor) / factor;
   return `${lo}–${hi}%`;
 }
+
+/** Bar-property scores are unitless fatty-acid sums on a 0–100 scale. */
+export function formatPropertyScore(value: number): string {
+  return String(Math.round(value));
+}
+
+export function formatPropertyScoreRange(low: number, high: number): string {
+  return `${Math.round(low)}–${Math.round(high)}`;
+}

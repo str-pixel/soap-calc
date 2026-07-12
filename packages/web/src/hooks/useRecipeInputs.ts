@@ -1,6 +1,4 @@
 import { commitDrafts } from '../lib/commitDrafts';
-import type { createDebouncer } from '../lib/debouncedCommit';
-type Debouncer = ReturnType<typeof createDebouncer>;
 import {
   addRecipeLine,
   resyncFromWeights,
@@ -34,7 +32,6 @@ export type UseRecipeInputsDeps = {
   setDraft: (id: string, value: string) => void;
   clearDraft: (id: string) => void;
   clearAllDrafts: () => void;
-  debouncer: Pick<Debouncer, 'flush' | 'cancel' | 'cancelAll'>;
   editor: {
     applySynced: (synced: SyncedRecipe) => void;
     applySyncedUpdate: (u: (lines: RecipeLine[], batch: string) => SyncedRecipe) => void;
@@ -71,7 +68,6 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   const { weightInputId, percentInputId, batchInputId } = makeInputIds();
   const { lines, settings, additives, weightUnit, drafts } = deps;
   const { setDraft, clearDraft, clearAllDrafts } = deps;
-  const { debouncer } = deps;
   const { applySynced, applySyncedUpdate, linesRef, batchRef } = deps.editor;
   const { setLines, setSettings, handleExport, handleNew } = deps;
 
@@ -96,7 +92,6 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   }
 
   function flushCommittedDrafts(): SyncedRecipe {
-    debouncer.cancelAll();
     const synced = commitDrafts(linesRef.current, batchRef.current, drafts, weightUnit);
     if (Object.keys(drafts).length > 0) {
       clearAllDrafts();
@@ -106,7 +101,6 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   }
 
   function discardDrafts() {
-    debouncer.cancelAll();
     clearAllDrafts();
   }
 
@@ -186,7 +180,6 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   }
 
   function setWeightUnit(nextUnit: WeightUnit) {
-    debouncer.cancelAll();
     clearAllDrafts();
     setSettings((s) => ({ ...s, weightUnit: nextUnit }));
   }
@@ -201,7 +194,6 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     applySyncedUpdate((prev) => resyncFromWeights(prev.filter((line) => line.key !== key)));
     clearDraft(weightInputId(key));
     clearDraft(percentInputId(key));
-    debouncer.cancel(weightInputId(key));
   }
 
   return { weightInputId, percentInputId, batchInputId, updateLine, flushCommittedDrafts,

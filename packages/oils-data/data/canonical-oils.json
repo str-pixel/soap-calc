@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-09T07:12:35.224Z",
+  "generatedAt": "2026-07-12T12:02:15.262Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -57,7 +57,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Standard INCI for abyssinian/crambe seed oil — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Standard INCI for abyssinian/crambe seed oil"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Crambe Abyssinica Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -93,13 +98,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Butter base; triglyceride INCI is sweet almond oil — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Butter base; triglyceride INCI is sweet almond oil"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Amygdalus Dulcis (Sweet Almond) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Amygdalus Dulcis (Sweet Almond) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -152,7 +156,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Amygdalus Dulcis (Sweet Almond) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Amygdalus Dulcis (Sweet Almond) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -189,13 +193,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Butter base; aloe lipid fraction — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Butter base; aloe lipid fraction"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Aloe Barbadensis Leaf Juice\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Aloe Barbadensis Leaf Juice\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -230,7 +233,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Andiroba / crabwood seed oil — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Andiroba / crabwood seed oil"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -283,7 +286,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Armeniaca (Apricot) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Armeniaca (Apricot) Kernel Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -338,7 +341,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Argania Spinosa (Argan) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Argania Spinosa (Argan) Kernel Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -374,13 +377,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Butter base; triglyceride INCI is avocado oil — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Butter base; triglyceride INCI is avocado oil"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -440,7 +442,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -495,7 +497,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Orbignya Oleifera (Babassu) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Orbignya Oleifera (Babassu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -551,7 +553,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -581,13 +583,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Cera Alba (Beeswax)\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Cera Alba (Beeswax)\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -642,7 +643,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Nigella Sativa (Black Cumin) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Nigella Sativa (Black Cumin) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -678,13 +679,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Ribes Nigrum (Black Currant) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Ribes Nigrum (Black Currant) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -739,7 +739,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Borago Officinalis (Borage) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Borago Officinalis (Borage) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -751,7 +751,7 @@
       "aliases": [
         "brazil nut oil"
       ],
-      "inciName": "Bertholletia Excelsa (Brazil) Nut Oil",
+      "inciName": "Bertholletia Excelsa (Brazil) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
@@ -791,9 +791,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — INCI uses Seed Oil, not \"Nut Oil\" (matches BERTHOLLETIA EXCELSA SEED OIL)"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Bertholletia Excelsa (Brazil) Nut Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Bertholletia Excelsa (Brazil) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -830,13 +834,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Brassica Oleracea Italica (Broccoli) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Brassica Oleracea Italica (Broccoli) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -891,7 +894,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Mauritia Flexuosa (Buriti) Fruit Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Mauritia Flexuosa (Buriti) Fruit Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -927,13 +930,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Camelina Sativa (Camelina) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Camelina Sativa (Camelina) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -968,13 +970,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Camellia Oleifera (Camellia) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Camellia Oleifera (Camellia) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1087,7 +1088,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — FNWL CANOLAOIL — standard canola/rapeseed INCI — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — FNWL CANOLAOIL — standard canola/rapeseed INCI"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Brassica Napus (Rapeseed) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1147,7 +1153,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Brassica Napus (Rapeseed) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1161,11 +1172,11 @@
       ],
       "inciName": "Daucus Carota Sativa (Carrot) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.144,
-      "sapNaoh": 0.10267379679144384,
-      "sapMgKohPerGram": 144,
-      "iodine": 56,
-      "ins": 0,
+      "sapKoh": 0.191,
+      "sapNaoh": 0.13618538324420676,
+      "sapMgKohPerGram": 191,
+      "iodine": 95,
+      "ins": 96,
       "fattyAcids": {
         "oleic": 80,
         "linoleic": 13,
@@ -1181,17 +1192,22 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "sapKoh": 0.191,
+          "sapNaoh": 0.13618538324420676,
+          "notes": "Corrected: legacy SAP (0.144) is below the minimum saponification value of any common-fatty-acid triglyceride, and legacy iodine (56) is far below the ~95 implied by the recorded ~80% oleic profile; both replaced with fatty-acid-profile-derived estimates."
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Daucus Carota Sativa (Carrot) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Daucus Carota Sativa (Carrot) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "manual",
+      "confidence": "estimated"
     },
     {
       "id": "castor-oil",
@@ -1240,7 +1256,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Ricinus Communis (Castor) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Ricinus Communis (Castor) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -1252,7 +1268,7 @@
       "aliases": [
         "cherry kern1 oil p avium"
       ],
-      "inciName": "Prunus Avium (Cherry) Kernel Oil",
+      "inciName": "Prunus Avium (Cherry) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.19,
       "sapNaoh": 0.1354723707664884,
@@ -1276,13 +1292,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — INCI is Seed Oil, not Kernel Oil (matches PRUNUS AVIUM SEED OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Avium (Cherry) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Avium (Cherry) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1294,7 +1309,7 @@
       "aliases": [
         "cherry kern2 oil p cerasus"
       ],
-      "inciName": "Prunus Cerasus (Cherry) Kernel Oil",
+      "inciName": "Prunus Cerasus (Cherry) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
@@ -1317,13 +1332,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — INCI is Seed Oil, not Kernel Oil (matches PRUNUS CERASUS SEED OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Cerasus (Cherry) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Cerasus (Cherry) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1358,13 +1372,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Theobroma Cacao (Cocoa) Seed Butter\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Theobroma Cacao (Cocoa) Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1420,7 +1433,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Cocos Nucifera (Coconut) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Cocos Nucifera (Coconut) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -1476,7 +1489,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Cocos Nucifera (Coconut) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Cocos Nucifera (Coconut) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -1536,7 +1549,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Caprylic/Capric Triglyceride\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Caprylic/Capric Triglyceride\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -1572,13 +1585,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Coffea arabica (Coffee) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Coffea arabica (Coffee) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1613,13 +1625,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Coffea arabica (Coffee) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Coffea arabica (Coffee) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1656,7 +1667,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1710,7 +1721,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — FNWL CornOil — standard corn oil INCI — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — FNWL CornOil — standard corn oil INCI"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Zea Mays (Corn) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -1764,7 +1780,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — FNWL CottonseedOil — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — FNWL CottonseedOil"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Gossypium Herbaceum (Cotton) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -1800,13 +1821,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Vaccinium Macrocarpon (Cranberry) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Vaccinium Macrocarpon (Cranberry) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -1864,7 +1884,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Theobroma Grandiflorum (Cupuacu) Seed Butter\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Theobroma Grandiflorum (Cupuacu) Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -1916,7 +1936,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Oenothera biennis (Evening Primrose) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Oenothera biennis (Evening Primrose) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -1971,7 +1991,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Linum usitatissimum (Linseed) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Linum usitatissimum (Linseed) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -2031,7 +2051,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Vitis vinifera (Grape) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Vitis vinifera (Grape) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -2085,7 +2105,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Corylus Avellana (Hazel) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Corylus Avellana (Hazel) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -2140,7 +2160,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Cannabis Sativa (Hemp) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Cannabis Sativa (Hemp) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -2174,13 +2194,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Shorea stenoptera (Illipe) Seed Butter\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Shorea stenoptera (Illipe) Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2215,7 +2234,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Rhus Succedanea Fruit Wax\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2250,7 +2274,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2282,13 +2306,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Duplicate catalog entry; same INCI as wax-ester jojoba line — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Duplicate catalog entry; same INCI as wax-ester jojoba line"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Simmondsia Chinensis (Jojoba) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Simmondsia Chinensis (Jojoba) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2342,7 +2365,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Pongamia Glabra (Karanja) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Pongamia Glabra (Karanja) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -2377,13 +2400,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Garcinia indica (Kokum) Seed Butter\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Garcinia indica (Kokum) Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2418,7 +2440,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2430,7 +2452,7 @@
       "aliases": [
         "kukui nut oil"
       ],
-      "inciName": "Aleurites Moluccana (Kukui) Nut Oil",
+      "inciName": "Aleurites Moluccana (Kukui) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.193,
       "sapNaoh": 0.1376114081996435,
@@ -2471,9 +2493,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — Species binomial uses Seed Oil, not \"Nut Oil\" (matches ALEURITES MOLUCCANA SEED OIL)"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Aleurites Moluccana (Kukui) Nut Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Aleurites Moluccana (Kukui) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -2503,13 +2529,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Liquid lanolin fraction — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Liquid lanolin fraction"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Lanolin Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Lanolin Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2541,7 +2566,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Myristic Acid\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2577,7 +2607,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — CosIng/EU INCI for hog lard (pig tallow) — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — CosIng/EU INCI for hog lard (pig tallow)"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Adeps Suillus\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2615,13 +2650,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Laurus Nobilis (Laurel) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Laurus Nobilis (Laurel) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2654,7 +2688,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Lauric Acid\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2690,13 +2729,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Alias of flax oil INCI already in FNWL set — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Alias of flax oil INCI already in FNWL set"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Linum usitatissimum (Linseed) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Linum usitatissimum (Linseed) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2731,7 +2769,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Loofah seed oil; no dedicated CosIng glossary row — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Loofah seed oil; no dedicated CosIng glossary row"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Luffa Cylindrica Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2768,7 +2811,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Butter base; macadamia kernel oil INCI — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Butter base; macadamia kernel oil INCI"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Macadamia Integrifolia (Macadamia) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2780,7 +2828,7 @@
       "aliases": [
         "macadamia nut oil"
       ],
-      "inciName": "Macadamia Integrifolia (Macadamia) Nut Oil",
+      "inciName": "Macadamia Integrifolia (Macadamia) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.195,
       "sapNaoh": 0.13903743315508021,
@@ -2820,9 +2868,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — INCI uses Seed Oil, not \"Nut Oil\" (matches MACADAMIA INTEGRIFOLIA SEED OIL and the macadamia-nut-butter entry)"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Macadamia Integrifolia (Macadamia) Nut Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Macadamia Integrifolia (Macadamia) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -2859,7 +2911,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Trichilia Emetica Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2894,13 +2951,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Mangifera Indica (Mango) Seed Butter\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Mangifera Indica (Mango) Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2936,13 +2992,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Mangifera indica (Mango) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Mangifera indica (Mango) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -2954,7 +3009,7 @@
       "aliases": [
         "marula oil"
       ],
-      "inciName": "Sclerocarya birrea (Marula) Kernel Oil",
+      "inciName": "Sclerocarya Birrea (Marula) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.197,
       "sapNaoh": 0.14046345811051694,
@@ -2994,9 +3049,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — INCI uses Seed Oil, not \"Kernel Oil\" (matches SCLEROCARYA BIRREA SEED OIL)"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Sclerocarya birrea (Marula) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Sclerocarya Birrea (Marula) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -3016,7 +3075,7 @@
       "iodine": 92,
       "ins": 77,
       "fattyAcids": {
-        "docosenoid": 16,
+        "docosenoic": 16,
         "eicosenoic": 61,
         "docosadienoic": 18
       },
@@ -3030,13 +3089,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Limnanthes alba (Meadowfoam) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Limnanthes alba (Meadowfoam) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3071,7 +3129,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Silybum Marianum Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3180,7 +3243,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Moringa Oleifera Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Moringa Oleifera Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -3215,7 +3278,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Mowrah / mahua butter — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Mowrah / mahua butter"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3277,7 +3340,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Astrocaryum Murumuru Seed Butter\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Astrocaryum Murumuru Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3331,7 +3394,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — FNWL mustard oil match; no FNWL product INCI map entry — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — FNWL mustard oil match; no FNWL product INCI map entry"
         }
       ],
       "primarySource": "fnwl",
@@ -3367,13 +3430,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Azadirachta Indica (Neem) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Azadirachta Indica (Neem) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3385,7 +3447,7 @@
       "aliases": [
         "nutmeg butter"
       ],
-      "inciName": "Myristica fragrans (Nutmeg) Oil",
+      "inciName": "Myristica Fragrans (Nutmeg) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.1624,
       "sapNaoh": 0.11579322638146167,
@@ -3408,13 +3470,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Butter base; nutmeg kernel fat — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Nutmeg butter is the kernel fat; INCI Kernel Oil (matches MYRISTICA FRAGRANS KERNEL OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Myristica fragrans (Nutmeg) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Myristica Fragrans (Nutmeg) Kernel Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3449,13 +3510,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Avena sativa (Oat) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Avena sativa (Oat) Kernel Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3487,7 +3547,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Oleic Acid\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3542,7 +3607,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Olea Europaea (Olive) Fruit Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Olea Europaea (Olive) Fruit Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -3578,13 +3643,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Pomace grade uses same olive fruit oil INCI — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Pomace grade uses same olive fruit oil INCI"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Olea Europaea (Olive) Fruit Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Olea Europaea (Olive) Fruit Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3596,7 +3660,7 @@
       "aliases": [
         "palm kernel oil"
       ],
-      "inciName": "Elaeis guineensis Palm kernel oil",
+      "inciName": "Elaeis Guineensis (Palm) Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.247,
       "sapNaoh": 0.1761140819964349,
@@ -3642,9 +3706,13 @@
           "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — Corrects non-INCI FNWL value \"Elaeis guineensis Palm kernel oil\" (matches ELAEIS GUINEENSIS KERNEL OIL)"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Elaeis guineensis Palm kernel oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Elaeis Guineensis (Palm) Kernel Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3656,7 +3724,7 @@
       "aliases": [
         "palm kernel oil flakes hydrogenated"
       ],
-      "inciName": "Elaeis guineensis Palm kernel oil",
+      "inciName": "Hydrogenated Palm Kernel Oil",
       "category": "triglyceride",
       "sapKoh": 0.247,
       "sapNaoh": 0.1761140819964349,
@@ -3701,9 +3769,13 @@
           "notes": "FNWL SAP differs by 17.8% (>10%); legacy SAP retained for lye safety"
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — Hydrogenated palm kernel oil flakes; corrects non-INCI FNWL value \"Elaeis guineensis Palm kernel oil\" (matches HYDROGENATED PALM KERNEL OIL)"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Elaeis guineensis Palm kernel oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Hydrogenated Palm Kernel Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3758,7 +3830,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -3794,13 +3866,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Palm stearin fraction — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Palm stearin fraction"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3832,7 +3903,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Palmitic Acid\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3868,13 +3944,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Palm olein fraction — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Palm olein fraction"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3888,11 +3963,11 @@
       ],
       "inciName": "Carica Papaya (Papaya) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.158,
-      "sapNaoh": 0.11265597147950089,
-      "sapMgKohPerGram": 158,
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
       "iodine": 67,
-      "ins": 91,
+      "ins": 125,
       "fattyAcids": {
         "oleic": 76,
         "stearic": 5,
@@ -3909,17 +3984,22 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "Corrected: legacy SAP (0.158) is inconsistent with the recorded ~76% oleic profile (implies an average fatty acid heavier than any common one); replaced with a fatty-acid-profile-derived estimate."
+        },
+        {
+          "source": "manual",
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Carica Papaya (Papaya) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Carica Papaya (Papaya) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "manual",
+      "confidence": "estimated"
     },
     {
       "id": "passion-fruit-seed-oil",
@@ -3951,13 +4031,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Passiflora Edulis (Passionfruit) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Passiflora Edulis (Passionfruit) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3969,7 +4048,7 @@
       "aliases": [
         "pataua oil"
       ],
-      "inciName": "Oenocarpus Bataua (Ungurahui) Oil",
+      "inciName": "Oenocarpus Bataua (Ungurahui) Fruit Oil",
       "category": "triglyceride",
       "sapKoh": 0.2,
       "sapNaoh": 0.14260249554367202,
@@ -3993,13 +4072,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Pataua oil is expressed from the fruit; INCI Fruit Oil (matches OENOCARPUS BATAUA FRUIT OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Oenocarpus Bataua (Ungurahui) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Oenocarpus Bataua (Ungurahui) Fruit Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4054,7 +4132,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus persica (Peach) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus persica (Peach) Kernel Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4107,7 +4185,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — FNWL PeanutOil — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — FNWL PeanutOil"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Arachis Hypogaea (Peanut) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4143,7 +4226,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Standard pecan INCI; FNWL glossary uses trade name variant — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Standard pecan INCI; FNWL glossary uses trade name variant"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4230,7 +4313,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Tar — lye estimate only in calculator — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Tar — lye estimate only in calculator"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4242,7 +4325,7 @@
       "aliases": [
         "pistachio oil"
       ],
-      "inciName": "Pistacia Vera (Pistachio) Nut Oil",
+      "inciName": "Pistacia Vera (Pistachio) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.186,
       "sapNaoh": 0.13262032085561495,
@@ -4265,13 +4348,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via correction — INCI uses Seed Oil, not \"Nut Oil\" (matches PISTACIA VERA SEED OIL); kept here rather than byOilId so a future FNWL product mapping cannot reintroduce the Nut Oil variant"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Pistacia Vera (Pistachio) Nut Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Pistacia Vera (Pistachio) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4283,7 +4365,7 @@
       "aliases": [
         "plum kernel oil"
       ],
-      "inciName": "Prunus Domestica (Plum) Kernel Oil",
+      "inciName": "Prunus Domestica (Plum) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.194,
       "sapNaoh": 0.13832442067736184,
@@ -4305,13 +4387,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — INCI is Seed Oil, not Kernel Oil (matches PRUNUS DOMESTICA SEED OIL)"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Prunus Domestica (Plum) Kernel Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Prunus Domestica (Plum) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4366,7 +4447,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Punica Granatum (Pomegranate) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Punica Granatum (Pomegranate) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4425,7 +4506,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Papaver Somniferum (Poppy) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Papaver Somniferum (Poppy) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4463,13 +4544,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Pentaclethra Macroloba (Pracaxi) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Pentaclethra Macroloba (Pracaxi) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4523,7 +4603,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Cucurbita Pepo (Pumpkin) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Cucurbita Pepo (Pumpkin) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4577,7 +4657,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Brassica Napus (Rapeseed) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4631,7 +4716,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Rubus Idaeus (Red Raspberry) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Rubus Idaeus (Red Raspberry) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4667,13 +4752,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Red palm butter / palm fruit oil — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Red palm butter / palm fruit oil"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Elaeis guineensis (Palm) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4729,7 +4813,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Oryza sativa (Rice) Bran Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Oryza sativa (Rice) Bran Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4820,13 +4904,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Plukenetia Volubilis (Sacha Inchi) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Plukenetia Volubilis (Sacha Inchi) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -4838,7 +4921,7 @@
       "aliases": [
         "safflower oil"
       ],
-      "inciName": "Carthamus tinctorus (Safflower) Oil",
+      "inciName": "Carthamus Tinctorius (Safflower) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
@@ -4877,9 +4960,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — Corrects FNWL chart misspelling \"Carthamus tinctorus (Safflower) Oil\"; species is Carthamus tinctorius (matches CARTHAMUS TINCTORIUS SEED OIL)"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Carthamus tinctorus (Safflower) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Carthamus Tinctorius (Safflower) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4933,7 +5020,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Carthamus Tinctorius (Safflower) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Carthamus Tinctorius (Safflower) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -4968,7 +5055,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Shorea Robusta Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5006,7 +5098,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Serenoa Serrulata Fruit Extract\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5044,7 +5141,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Serenoa Serrulata Fruit Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5080,7 +5182,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Hippophae Rhamnoides (Seabuckthorn) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5115,13 +5222,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Hippophae rhamnoides (Seabuckthorn) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Hippophae rhamnoides (Seabuckthorn) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5175,7 +5281,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Sesamum Indicum (Sesame) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Sesamum Indicum (Sesame) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -5187,7 +5293,7 @@
       "aliases": [
         "shea butter"
       ],
-      "inciName": "Butyrospermum Parkii (Shea Butter) Fruit",
+      "inciName": "Butyrospermum Parkii (Shea) Butter",
       "category": "triglyceride",
       "sapKoh": 0.18,
       "sapNaoh": 0.1283422459893048,
@@ -5227,9 +5333,13 @@
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — Corrects malformed FNWL value \"Butyrospermum Parkii (Shea Butter) Fruit\" (matches BUTYROSPERMUM PARKII BUTTER)"
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Butyrospermum Parkii (Shea Butter) Fruit\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Butyrospermum Parkii (Shea) Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -5338,7 +5448,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Glycine Soja (Soybean) Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Glycine Soja (Soybean) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -5374,7 +5484,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Hydrogenated Soybean Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5407,7 +5522,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Fully hydrogenated soy wax — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Fully hydrogenated soy wax"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Hydrogenated Soybean Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5439,13 +5559,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Stearic Acid\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Stearic Acid\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5500,7 +5619,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Helianthus Annuus (Sunflower) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Helianthus Annuus (Sunflower) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -5555,7 +5674,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Helianthus Annuus (Sunflower) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Helianthus Annuus (Sunflower) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -5591,7 +5710,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — CosIng #92469 — no species-specific bear tallow INCI; generic tallow — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — CosIng #92469 — no species-specific bear tallow INCI; generic tallow"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5647,7 +5766,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — CosIng #92469 — cattle fat; also labeled Adeps Bovis in EU — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — CosIng #92469 — cattle fat; also labeled Adeps Bovis in EU"
         }
       ],
       "primarySource": "fnwl",
@@ -5684,7 +5803,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — CosIng #92469 — no deer-specific INCI; generic tallow — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — CosIng #92469 — no deer-specific INCI; generic tallow"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5721,7 +5840,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — CosIng #92469 — no goat-specific INCI; generic tallow — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — CosIng #92469 — no goat-specific INCI; generic tallow"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5758,7 +5877,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — CosIng #92469 — sheep fat — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — CosIng #92469 — sheep fat"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5819,7 +5938,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Calophyllum Tacamahaca (Tamanu) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Calophyllum Tacamahaca (Tamanu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5854,7 +5973,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5908,7 +6027,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Juglans Regia (Walnut) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Juglans Regia (Walnut) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -5963,7 +6082,7 @@
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Citrullus Lanatus (Watermelon) Seed Oil\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Citrullus Lanatus (Watermelon) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -5998,7 +6117,12 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Standard wheat germ oil INCI — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id — Standard wheat germ oil INCI"
+        },
+        {
+          "source": "cosing",
+          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
+          "notes": "INCI \"Triticum Vulgare (Wheat) Germ Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -6088,7 +6212,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -6118,13 +6242,12 @@
         },
         {
           "source": "manual",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI via supplemental id — Validated in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         },
         {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Copernicia Cerifera (Carnauba) Wax\" found in FNWL-derived CosIng glossary index"
+          "notes": "INCI \"Copernicia Cerifera (Carnauba) Wax\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -6158,7 +6281,7 @@
         },
         {
           "source": "manual",
-          "notes": "INCI via supplemental id — Not in local CosIng glossary index"
+          "notes": "INCI via supplemental id"
         }
       ],
       "primarySource": "legacy_catalog",

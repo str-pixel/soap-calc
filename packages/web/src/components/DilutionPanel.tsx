@@ -28,8 +28,8 @@ export function DilutionPanel({
         <input
           type="number"
           className="input input--number"
-          min={0}
-          max={100}
+          min={1}
+          max={99}
           step={1}
           value={soapConcentrationPercent}
           onChange={(e) => onSoapConcentrationChange(e.target.value)}
@@ -69,7 +69,7 @@ export function DilutionPanel({
           <p className="results-hint">Typical: coconut ≤40% · castile ~25% · blends 25–35%.</p>
         </>
       ) : (
-        <p className="results-hint">Enter oils and a target concentration (0–100%) to compute dilution.</p>
+        <p className="results-hint">Enter oils and a target concentration (1–99%) to compute dilution.</p>
       )}
     </section>
   );

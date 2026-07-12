@@ -18,6 +18,7 @@ test('an after-cook additive uses the process-aware label — LS shows "After di
       lyeType="koh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       additives={[
         {
           key: 'a',
@@ -48,6 +49,7 @@ test('an additive renders its actual dose basis/unit label', () => {
       lyeType="naoh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 3}
       additives={[
         { key: 'a', catalogId: '', name: 'Eugenol', amount: 3, unit: 'ppt', basis: 'oil', grams: 3, addAt: 'trace' },
       ]}
@@ -67,6 +69,7 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
       lyeType="naoh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }}
     />,
@@ -88,8 +91,10 @@ test('a post-cook-superfat-only batch does not claim "additives" in the batch-we
       lyeType="naoh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }}
+      extrasGrams={30}
     />,
   );
   // No additive lines, so the batch-weight note must name only the post-cook superfat.
@@ -105,13 +110,45 @@ test('subtract: PCSF labeled reserved + batch weight uses the vm value (not a lo
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
-      postCookSuperfatMethod="subtract"
+      pcsfIsExtra={false}
       batchWeightWithExtras={1234}
     />,
   );
   expect(screen.getByText(/reserved/i)).toBeTruthy();
   // The panel renders the vm's batch weight, not (full displayTotals batch + PCSF grams).
   expect(screen.getByText('1,234 g')).toBeTruthy();
+});
+
+test('subtract + negative main superfat: no "reserved" label and no Total superfat row (cookFactor guard leaves lye untouched, so both would be false)', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
+      displayTotals={displayTotals} weightUnit="g"
+      superfatPercent="-2"
+      postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
+      pcsfIsExtra={true}
+      batchWeightWithExtras={1234}
+    />,
+  );
+  expect(screen.queryByText(/reserved/i)).toBeNull();
+  expect(screen.queryByText('Total superfat')).toBeNull();
+});
+
+test('subtract + non-negative main superfat: "reserved" label and Total superfat row both render', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
+      displayTotals={displayTotals} weightUnit="g"
+      superfatPercent="2"
+      postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }}
+      pcsfIsExtra={false}
+      batchWeightWithExtras={1234}
+    />,
+  );
+  expect(screen.getByText(/reserved/i)).toBeTruthy();
+  expect(screen.getByText('Total superfat')).toBeTruthy();
 });
 
 test('with no postCookSuperfat, no PCSF line or total-superfat line renders', () => {
@@ -125,6 +162,7 @@ test('with no postCookSuperfat, no PCSF line or total-superfat line renders', ()
       lyeType="naoh"
       displayTotals={displayTotals}
       weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
     />,
   );
   expect(screen.queryByText('Total superfat')).toBeNull();
