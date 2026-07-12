@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { MIN_MAPPED_PERCENT } from '@soap-calc/core';
+import { incompleteProfileOils } from './profile-completeness.js';
 import type { CanonicalOilDatabase } from './schema.js';
 
 const dataPath = join(dirname(fileURLToPath(import.meta.url)), '../data/canonical-oils.json');
@@ -56,25 +57,31 @@ const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   'sal-butter',
 ]);
 
-function incompleteProfileIds(): string[] {
-  const out: string[] = [];
-  for (const oil of db.oils) {
-    if (!oil.propertiesAvailable || !oil.fattyAcids) continue;
-    const sum = Object.values(oil.fattyAcids).reduce((acc, pct) => acc + pct, 0);
-    if (sum < COMPLETENESS_THRESHOLD_PCT) out.push(oil.id);
-  }
-  return out;
-}
-
-describe('fatty-acid profile completeness', () => {
+describe('fatty-acid profile completeness (catalog guard)', () => {
   it('only the known SoapCalc-truncated oils have incomplete profiles', () => {
-    expect(incompleteProfileIds().sort()).toEqual([...KNOWN_INCOMPLETE_PROFILES].sort());
+    const ids = incompleteProfileOils(db.oils, COMPLETENESS_THRESHOLD_PCT).map((o) => o.id);
+    expect(ids.sort()).toEqual([...KNOWN_INCOMPLETE_PROFILES].sort());
+  });
+});
+
+describe('incompleteProfileOils', () => {
+  const oils: Parameters<typeof incompleteProfileOils>[0] = [
+    { id: 'complete', propertiesAvailable: true, fattyAcids: { oleic: 70, palmitic: 30 } }, // 100
+    { id: 'incomplete', propertiesAvailable: true, fattyAcids: { oleic: 45 } }, // 45
+    { id: 'borderline', propertiesAvailable: true, fattyAcids: { oleic: 90, palmitic: 4 } }, // 94
+    { id: 'no-profile', propertiesAvailable: false },
+  ];
+
+  it('lists property-ready oils below the threshold, sorted ascending by sum', () => {
+    const result = incompleteProfileOils(oils, 93);
+    expect(result.map((o) => o.id)).toEqual(['incomplete']);
+    expect(result[0].sum).toBe(45);
   });
 
-  it('every documented incomplete oil is still actually incomplete (no stale entries)', () => {
-    const incomplete = new Set(incompleteProfileIds());
-    for (const id of KNOWN_INCOMPLETE_PROFILES) {
-      expect(incomplete.has(id)).toBe(true);
-    }
+  it('ignores oils without a profile and those at/above the threshold', () => {
+    const ids = incompleteProfileOils(oils, 93).map((o) => o.id);
+    expect(ids).not.toContain('complete');
+    expect(ids).not.toContain('borderline');
+    expect(ids).not.toContain('no-profile');
   });
 });
