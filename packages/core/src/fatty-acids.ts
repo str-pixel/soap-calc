@@ -64,7 +64,10 @@ export function sumFattyAcids(profile: FattyAcidProfile, keys: readonly string[]
   return keys.reduce((sum, key) => sum + (profile[key] ?? 0), 0);
 }
 
-const SATURATED_ACIDS = [
+/** Acids summed into the saturated total of {@link saturatedUnsaturatedRatio}. The fatty-acid
+ * display bars must collectively cover this set (plus {@link RATIO_UNSATURATED_ACIDS}) so the bars
+ * reconcile with the shown Saturated/Unsaturated totals — enforced by the display-groups test. */
+export const RATIO_SATURATED_ACIDS = [
   'lauric',
   'myristic',
   'palmitic',
@@ -74,7 +77,8 @@ const SATURATED_ACIDS = [
   'behenic',
 ] as const;
 
-const UNSATURATED_ACIDS = [
+/** Acids summed into the unsaturated total of {@link saturatedUnsaturatedRatio}. */
+export const RATIO_UNSATURATED_ACIDS = [
   'oleic',
   'palmitoleic',
   'linoleic',
@@ -91,8 +95,8 @@ export function saturatedUnsaturatedRatio(profile: FattyAcidProfile): {
   unsaturated: number;
 } {
   return {
-    saturated: sumFattyAcids(profile, SATURATED_ACIDS),
-    unsaturated: sumFattyAcids(profile, UNSATURATED_ACIDS),
+    saturated: sumFattyAcids(profile, RATIO_SATURATED_ACIDS),
+    unsaturated: sumFattyAcids(profile, RATIO_UNSATURATED_ACIDS),
   };
 }
 
