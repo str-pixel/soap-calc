@@ -50,7 +50,6 @@ describe('resolveOilInci', () => {
       glossary: null,
     });
     expect(resolved?.source).toBe('correction');
-    expect(resolved?.declaredSource).toBe('cosing');
     expect(resolved?.inciName).toBe('Elaeis Guineensis (Palm) Kernel Oil');
   });
 

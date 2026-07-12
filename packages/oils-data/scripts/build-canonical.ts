@@ -24,6 +24,7 @@ import {
 import { loadSupplementalOils, supplementalToCanonical, tarMetadataForLegacy } from '../src/supplemental.js';
 import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
+import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../../..');
@@ -95,9 +96,17 @@ function main() {
     ? buildFnwlInciIndex(parseFnwlInciCsv(readFileSync(fnwlInciPath, 'utf8')))
     : new Map();
   const cosingGlossary = loadCosingGlossaryIndex(defaultGlossaryPath);
-  const supplementalInci = existsSync(supplementalInciPath)
-    ? loadSupplementalInci(supplementalInciPath)
-    : { inciCorrections: {}, byOilId: {}, byFnwlProductId: {}, displayHints: {} };
+  // Required: a silent fallback here would drop every INCI correction and supplemental
+  // name and ship the malformed FNWL values they exist to fix.
+  if (!existsSync(supplementalInciPath)) {
+    console.error('Missing sources/supplemental-inci.json — INCI corrections would be silently dropped. Aborting build.');
+    process.exit(1);
+  }
+  const supplementalInci = loadSupplementalInci(supplementalInciPath);
+  const cosingInventory = loadCosingInventory(defaultInventoryPath);
+  if (!cosingInventory) {
+    console.warn('CosIng inventory snapshot missing — source:"cosing" claims cannot be machine-verified this build.');
+  }
 
   const legacy = JSON.parse(readFileSync(legacyPath, 'utf8')) as { oils: LegacyOil[] };
   const report = {
@@ -113,6 +122,7 @@ function main() {
     inciMissing: [] as string[],
     inciSupplemental: [] as string[],
     inciCorrected: [] as string[],
+    inciCorrectionRedundant: [] as string[],
     duplicates: [] as string[],
     supplemental: [] as string[],
     excluded: [] as string[],
@@ -254,6 +264,7 @@ function main() {
       }
     }
 
+    const fnwlChartInci = inciName;
     const inciResolution = resolveOilInci({
       oilId: baseSlug,
       displayName: leg.name,
@@ -265,16 +276,24 @@ function main() {
 
     if (inciResolution) {
       inciName = inciResolution.inciName;
+      if (inciResolution.source === 'correction' && fnwlChartInci === inciResolution.inciName) {
+        // The FNWL chart caught up with the correction — it no longer overrides anything.
+        console.warn(`Redundant INCI correction for ${baseSlug}: FNWL chart now matches "${inciName}"`);
+        report.inciCorrectionRedundant.push(baseSlug);
+      }
       if (inciResolution.source === 'fnwl') {
         report.inciResolved.push(leg.name);
         if (cosingGlossary) {
           const inciLookup = lookupInciInGlossary(inciName, cosingGlossary);
+          const inInventory = cosingInventory ? inciInInventory(inciName, cosingInventory) : false;
           sources.push({
             source: 'cosing',
             url: 'https://ec.europa.eu/growth/tools-databases/cosing/',
-            notes: inciLookup.found
-              ? `INCI "${inciLookup.canonicalInci}" found in FNWL-derived CosIng glossary index`
-              : `INCI "${inciName}" from FNWL chart — not in local glossary index`,
+            notes: inInventory
+              ? `INCI "${inciName}" verified against the EU CosIng Ingredients Inventory snapshot`
+              : inciLookup.found
+                ? `INCI "${inciLookup.canonicalInci}" found in FNWL-derived CosIng glossary index`
+                : `INCI "${inciName}" from FNWL chart — not in local glossary index`,
           });
         }
       } else {
@@ -288,18 +307,17 @@ function main() {
             .filter(Boolean)
             .join(' — '),
         });
-        // Corrections declaring source "cosing" were verified against the EU CosIng
-        // inventory itself; the local glossary index is only an FNWL-derived proxy and
-        // may not contain a corrected name even when it is valid INCI.
-        const verifiedCorrection =
-          inciResolution.source === 'correction' && inciResolution.declaredSource === 'cosing';
-        if (verifiedCorrection || inciResolution.cosingValidated) {
+        // A cosing record is earned by machine verification, never by a self-declared
+        // source claim: either the name is in the committed EU CosIng inventory extract
+        // (independent of FNWL), or it is at least in the FNWL-derived proxy glossary.
+        const inInventory = cosingInventory ? inciInInventory(inciName, cosingInventory) : false;
+        if (inInventory || inciResolution.cosingValidated) {
           sources.push({
             source: 'cosing',
             url: 'https://ec.europa.eu/growth/tools-databases/cosing/',
-            notes: inciResolution.cosingValidated
-              ? `INCI "${inciName}" present in local FNWL-derived CosIng glossary index`
-              : `INCI "${inciName}" verified against the EU CosIng Ingredients Inventory (absent from the local FNWL-derived proxy index)`,
+            notes: inInventory
+              ? `INCI "${inciName}" verified against the EU CosIng Ingredients Inventory snapshot`
+              : `INCI "${inciName}" present in local FNWL-derived CosIng glossary index`,
           });
         }
       }
@@ -447,6 +465,9 @@ function main() {
   console.log(`  INCI resolved (FNWL): ${report.inciResolved.length}`);
   console.log(`  INCI supplemental/fallback: ${report.inciSupplemental.length}`);
   console.log(`  INCI corrected (malformed FNWL value): ${report.inciCorrected.length}`);
+  if (report.inciCorrectionRedundant.length) {
+    console.log(`  INCI corrections now redundant (FNWL caught up): ${report.inciCorrectionRedundant.length}`);
+  }
   console.log(`  INCI missing product map: ${report.inciMissing.length}`);
   console.log(`  Supplemental oils: ${report.supplemental.length}`);
   console.log(`  Excluded from catalog: ${report.excluded.length}`);

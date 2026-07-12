@@ -12,10 +12,10 @@ Oil data is built by `@soap-calc/oils-data` from legacy catalog records plus pub
 ## Source Policy
 
 - FNWL is primary for SAP values and INCI names, except where `supplemental-inci.json` `inciCorrections` overrides a malformed FNWL chart value.
-- `inciCorrections` entries are verified against the EU CosIng Ingredients Inventory and are authoritative: the local proxy glossary is consulted only for validation status and must never rewrite them (validate-canonical errors on drift).
+- `inciCorrections` entries are verified against the EU CosIng Ingredients Inventory and are authoritative: the local proxy glossary is consulted only for validation status and must never rewrite them (validate-canonical errors on drift, and errors when a `source: "cosing"` correction is absent from the committed inventory snapshot).
 - LDG is a secondary methodology cross-check only.
 - ISO 3657:2023 defines lab unit conversion.
-- EU CosIng validation uses the local FNWL-derived glossary index (a proxy built from the FNWL chart — it cannot catch FNWL's own errors; check the real CosIng inventory when correcting names).
+- EU CosIng validation uses two layers: the committed names-only inventory snapshot (`cosing-inventory-inci-names.json`, extracted from the full EU export — independent of FNWL, so it can falsify claims) and the FNWL-derived proxy glossary (cannot catch FNWL's own errors). Matching ignores parenthetical common names.
 - `soap_oils.json` provides legacy fatty-acid profiles and fallback SAP values.
 - `supplemental-oils.json` holds manual entries such as birch tar.
 
@@ -43,3 +43,4 @@ Commit reproducible source snapshots when refreshed:
 - `packages/oils-data/sources/fnwl-sapon.txt`
 - `packages/oils-data/sources/fnwl-inci.txt`
 - `packages/oils-data/sources/cosing-glossary-index.json`
+- `packages/oils-data/sources/cosing-inventory-inci-names.json`

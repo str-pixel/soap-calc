@@ -6,7 +6,9 @@ import { isPlausibleInciName } from './normalize-inci.js';
 import { z } from 'zod';
 
 export const SupplementalInciEntry = z.object({
-  inciName: z.string().min(1),
+  // Corrections bypass canonicalizeInci (they are authoritative), so the plausibility
+  // check must happen at load time or a garbage name would ship unchecked.
+  inciName: z.string().min(1).refine(isPlausibleInciName, { message: 'implausible INCI name' }),
   source: z.enum(['manual', 'cosing', 'fnwl_product']),
   notes: z.string().optional(),
 });
@@ -31,8 +33,6 @@ export type SupplementalInciDatabase = z.infer<typeof SupplementalInciDatabase>;
 export type ResolvedInci = {
   inciName: string;
   source: 'correction' | 'fnwl' | 'supplemental_id' | 'supplemental_product' | 'display_hint' | 'glossary';
-  /** The supplemental entry's own source claim (e.g. 'cosing' for externally verified names). */
-  declaredSource?: SupplementalInciEntry['source'];
   notes?: string;
   cosingValidated: boolean;
 };
@@ -78,7 +78,6 @@ export function resolveOilInci(input: {
     return {
       inciName: correction.inciName,
       source: 'correction',
-      declaredSource: correction.source,
       notes: correction.notes,
       cosingValidated,
     };
@@ -95,7 +94,6 @@ export function resolveOilInci(input: {
     return {
       inciName,
       source: 'supplemental_id',
-      declaredSource: byId.source,
       notes: byId.notes,
       cosingValidated,
     };
@@ -108,7 +106,6 @@ export function resolveOilInci(input: {
       return {
         inciName,
         source: 'supplemental_product',
-        declaredSource: byProduct.source,
         notes: byProduct.notes,
         cosingValidated,
       };

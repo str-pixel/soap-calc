@@ -33,7 +33,7 @@ The canonical oil database currently combines legacy calculator catalog records 
 | From Nature With Love (FNWL) | Primary SAP (mg KOH/g) + INCI names |
 | LDG International | Secondary methodology cross-check; no machine-readable export |
 | ISO 3657:2023 | Lab unit conversion |
-| EU CosIng | INCI validation through the local FNWL-derived glossary index |
+| EU CosIng | INCI validation: committed names-only inventory snapshot (`cosing-inventory-inci-names.json`, FNWL-independent) plus the FNWL-derived proxy glossary |
 | `soap_oils.json` | Legacy fatty-acid profiles and SAP fallback when no FNWL match exists |
 | `supplemental-oils.json` | Manual entries such as birch tar |
 | `supplemental-inci.json` `inciCorrections` | Highest-priority INCI overrides for malformed FNWL chart values, verified against the EU CosIng Ingredients Inventory; authoritative — the local proxy glossary must never rewrite them |
@@ -55,7 +55,7 @@ npm run build:oils
 npm run validate:oils
 ```
 
-Commit `packages/oils-data/sources/fnwl-sapon.txt`, `fnwl-inci.txt`, and `cosing-glossary-index.json` for reproducible offline builds.
+Commit `packages/oils-data/sources/fnwl-sapon.txt`, `fnwl-inci.txt`, `cosing-glossary-index.json`, and `cosing-inventory-inci-names.json` for reproducible offline builds.
 
 ## Commands
 

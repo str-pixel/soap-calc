@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-12T05:39:14.898Z",
+  "generatedAt": "2026-07-12T05:53:38.465Z",
   "totalOils": 134,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -523,6 +523,7 @@
     "Safflower Oil",
     "Shea Butter"
   ],
+  "inciCorrectionRedundant": [],
   "duplicates": [],
   "supplemental": [
     "Birch Tar"

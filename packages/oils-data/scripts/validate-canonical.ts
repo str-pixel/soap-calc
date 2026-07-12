@@ -12,6 +12,7 @@ import {
 } from '../src/cosing-glossary.js';
 import { loadSupplementalInci } from '../src/resolve-inci.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
+import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataPath = join(__dirname, '../data/canonical-oils.json');
@@ -38,14 +39,21 @@ function main() {
   const raw = JSON.parse(readFileSync(dataPath, 'utf8'));
   const db = CanonicalOilDatabase.parse(raw);
   const cosingGlossary = loadCosingGlossaryIndex(defaultGlossaryPath);
-  // Guard the load like build-canonical does, so a missing source file degrades to
-  // "no corrections" instead of crashing the validator.
+  // Guard the load, so a missing source file degrades to "no corrections" instead of
+  // crashing the validator — but say so, since the drift check is disabled in that state.
   const inciCorrections = existsSync(supplementalInciPath)
     ? loadSupplementalInci(supplementalInciPath).inciCorrections
     : {};
+  const cosingInventory = loadCosingInventory(defaultInventoryPath);
 
   const errors: string[] = [];
   const warnings: string[] = [];
+  if (!existsSync(supplementalInciPath)) {
+    warnings.push('sources/supplemental-inci.json missing — INCI correction drift checks skipped');
+  }
+  if (!cosingInventory) {
+    warnings.push('CosIng inventory snapshot missing — source:"cosing" claims cannot be machine-verified');
+  }
 
   for (const oil of db.oils) {
     const expectedNaoh = sapKohToSapNaoh(oil.sapKoh);
@@ -127,18 +135,26 @@ function main() {
         `${oil.id}: inciName "${oil.inciName}" does not match inciCorrections value "${correction.inciName}"`,
       );
     }
+    // A source:"cosing" claim must be falsifiable: the name has to exist in the committed
+    // EU CosIng inventory snapshot. If the name is genuinely newer than the snapshot,
+    // refresh the snapshot rather than weakening the claim to "manual".
+    if (correction?.source === 'cosing' && cosingInventory && !inciInInventory(correction.inciName, cosingInventory)) {
+      errors.push(
+        `${oil.id}: correction claims source "cosing" but "${correction.inciName}" is not in the CosIng inventory snapshot`,
+      );
+    }
 
     if (oil.inciName) {
       for (const issue of validateInciName(oil.inciName)) {
         warnings.push(`${oil.id}: ${issue}`);
       }
-      // Only cosing-verified corrections earn a pass on the glossary check: their names are
-      // verified against the EU CosIng inventory itself and may legitimately be absent from
-      // the FNWL-derived proxy index. A manual correction still gets the sanity check.
-      if (cosingGlossary && correction?.source !== 'cosing') {
+      // The proxy glossary is FNWL-derived and incomplete; a name confirmed by the real
+      // CosIng inventory snapshot needs no proxy-glossary warning.
+      const inventoryConfirmed = cosingInventory ? inciInInventory(oil.inciName, cosingInventory) : false;
+      if (cosingGlossary && !inventoryConfirmed) {
         const lookup = lookupInciInGlossary(oil.inciName, cosingGlossary);
         if (!lookup.found) {
-          warnings.push(`${oil.id}: INCI not in local CosIng glossary index`);
+          warnings.push(`${oil.id}: INCI not in local CosIng glossary index or inventory snapshot`);
         }
       }
       if (!cosingSource) {
@@ -203,6 +219,17 @@ function main() {
     process.exit(1);
   }
 
+  // The standing expected-warning pool is large, so a flat list capped at 15 lines would
+  // hide any new warning type below the fold. Group by type (message with the oil id and
+  // numbers stripped) so a new or growing category is always visible.
+  const byType = new Map<string, number>();
+  for (const w of warnings) {
+    const type = w.replace(/^[^:]+: /, '').replace(/"[^"]*"/g, '"…"').replace(/[\d.]+/g, '#');
+    byType.set(type, (byType.get(type) ?? 0) + 1);
+  }
+  [...byType.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([type, count]) => console.warn(`  WARN ×${count}: ${type}`));
   warnings.slice(0, 15).forEach((w) => console.warn(`  WARN: ${w}`));
   if (warnings.length > 15) console.warn(`  ... and ${warnings.length - 15} more warnings`);
 }
