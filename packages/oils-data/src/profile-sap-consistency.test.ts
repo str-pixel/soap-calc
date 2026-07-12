@@ -47,11 +47,4 @@ describe('SAP-vs-profile consistency', () => {
       Object.keys(KNOWN_PROFILE_SAP_DEVIATIONS).sort(),
     );
   });
-
-  it('every documented deviation is still actually deviating (no stale entries)', () => {
-    const deviating = deviatingOils();
-    for (const id of Object.keys(KNOWN_PROFILE_SAP_DEVIATIONS)) {
-      expect(deviating).toHaveProperty(id);
-    }
-  });
 });

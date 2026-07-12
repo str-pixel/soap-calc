@@ -12,6 +12,7 @@ import {
 } from '../src/cosing-glossary.js';
 import { loadSupplementalInci } from '../src/resolve-inci.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
+import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -220,6 +221,10 @@ function main() {
   const ids = db.oils.map((o) => o.id);
   const dupeIds = ids.filter((id, i) => ids.indexOf(id) !== i);
   if (dupeIds.length) errors.push(`Duplicate ids: ${[...new Set(dupeIds)].join(', ')}`);
+
+  for (const { id, sum } of incompleteProfileOils(db.oils)) {
+    warnings.push(`${id}: fatty-acid profile only ${sum.toFixed(0)}% complete — properties are estimates`);
+  }
 
   console.log(`Validated ${db.oils.length} oils`);
   console.log(`  Errors: ${errors.length}`);

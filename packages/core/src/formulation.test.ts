@@ -49,9 +49,28 @@ describe('calculateRecipeFattyAcids', () => {
       ],
       lookup,
     );
-    expect(result.coveragePercent).toBe(100);
+    expect(result.coveragePercent).toBeCloseTo(95, 1);
     expect(result.profile).not.toBeNull();
     expect(result.profile!.oleic).toBeCloseTo(54.75, 1);
+  });
+
+  it('coverage reflects profile completeness, not just whether a profile exists', () => {
+    // A single oil whose profile sums to only 50% is 50% characterized, even though
+    // it "has a profile". Scores are unaffected; only coverage drops so the UI flags it.
+    const halfLookup = {
+      'half-oil': {
+        id: 'half-oil',
+        propertiesAvailable: true,
+        fattyAcids: { oleic: 30, palmitic: 20 }, // sums to 50
+      },
+    };
+    const result = calculateRecipeFattyAcids(
+      [{ oilId: 'half-oil', weightGrams: 1000 }],
+      halfLookup,
+    );
+    expect(result.coveragePercent).toBeCloseTo(50, 5);
+    // Scores unchanged: profile renormalized over covered-oil weight (sums to 50).
+    expect(result.profile!.oleic).toBeCloseTo(30, 5);
   });
 });
 

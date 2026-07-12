@@ -14,16 +14,19 @@ const GLYCERYL_ADJUSTMENT = 38.049;
 /** mass of 2 iodine atoms (g/mol) — one I₂ adds across each C=C double bond (Wijs). */
 const DIIODINE_MASS = 253.809;
 
-/** Below this mapped-profile percentage the triglyceride derivation is not meaningful. */
-export const MIN_MAPPED_PERCENT = 90;
+/**
+ * The single "profile completeness" threshold: below this mapped-profile percentage the
+ * triglyceride derivation is not meaningful and property scores are treated as estimates.
+ * Shared by the derivation gate, the SAP-vs-profile guard, and the completeness guard so
+ * "complete enough" means one thing everywhere.
+ */
+export const MIN_MAPPED_PERCENT = 93;
 
 export type FattyAcidConstants = {
   /** Free fatty-acid molecular weight, g/mol. */
   molecularWeight: number;
   /** Number of C=C double bonds. */
   doubleBonds: number;
-  /** Conjugated double bonds under-titrate in the Wijs iodine method (informational). */
-  conjugated?: boolean;
 };
 
 export const FATTY_ACID_PROPERTIES: Record<string, FattyAcidConstants> = {
