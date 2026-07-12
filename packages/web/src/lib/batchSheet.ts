@@ -5,6 +5,7 @@ import {
   type DilutionResult,
   type FormulationInsight,
   type LyeCalculationResult,
+  type NeutralizationResult,
   type RecipeFattyAcidResult,
   type RecipePropertiesResult,
 } from '@soap-calc/core';
@@ -36,6 +37,7 @@ export type BatchSheetData = {
   postCookSuperfat: ComputedPostCookSuperfat | null;
   postCookSuperfatMethod: RecipeSettings['postCookSuperfatMethod'];
   dilution: DilutionResult | null;
+  neutralization: NeutralizationResult | null;
   properties: RecipePropertiesResult | null;
   indexes: RecipeIndexResult;
   batchWeightWithExtras: number;

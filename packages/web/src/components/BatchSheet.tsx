@@ -64,6 +64,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     postCookSuperfat,
     postCookSuperfatMethod,
     dilution,
+    neutralization,
     properties,
     indexes,
     batchWeightWithExtras,
@@ -274,6 +275,18 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <div><dt>Finished solution</dt><dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd></div>
             <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
           </dl>
+        </section>
+      )}
+
+      {neutralization && (
+        <section className="batch-sheet__section">
+          <h2>Neutralize</h2>
+          <dl className="batch-sheet__dl">
+            <div><dt>Lye excess</dt><dd>{formatGrams(neutralization.lyeExcessPercent, 0)}%</dd></div>
+            <div><dt>Citric acid (estimate)</dt><dd>{formatWeight(neutralization.citricAcidGrams, weightUnit)}</dd></div>
+            <div><dt>Dissolve in hot water (1:4)</dt><dd>{formatWeight(neutralization.dilutionWaterGrams, weightUnit)}</dd></div>
+          </dl>
+          <p>Add gradually to pH {neutralization.targetPhLow}–{neutralization.targetPhHigh}; verify with a test.</p>
         </section>
       )}
 

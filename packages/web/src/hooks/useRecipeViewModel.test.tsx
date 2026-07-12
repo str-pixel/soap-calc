@@ -143,6 +143,14 @@ test('neutralization is null for a normal LS recipe (superfat >= 0)', () => {
   expect(vm.neutralization).toBeNull();
 });
 
+test('batch sheet carries the neutralization step for a lye-excess LS recipe', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, { superfatPercent: '-2', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
+  expect(vm.batchSheetData).not.toBeNull();
+  expect(vm.batchSheetData.neutralization).toEqual(vm.neutralization);
+  expect(vm.batchSheetData.neutralization).not.toBeNull();
+});
+
 test('LS superfat above 3% raises the ls_superfat_high insight', () => {
   let vm: any;
   probe((v) => { vm = v; }, { superfatPercent: '5', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
