@@ -35,8 +35,12 @@ describe('deriveChemistryFromProfile', () => {
     expect(r.ins).toBe(Math.round(r.sapKoh * 1000 - r.iodineValue));
   });
 
-  it('returns null when the mapped profile is below 90% (cannot derive)', () => {
-    // 45% mapped — the rest is an acid the model has no key for.
-    expect(deriveChemistryFromProfile({ oleic: 45 })).toBeNull();
+  it('returns null when the mapped profile is below the 93% completeness threshold', () => {
+    expect(deriveChemistryFromProfile({ oleic: 45 })).toBeNull(); // 45% mapped
+    expect(deriveChemistryFromProfile({ oleic: 92 })).toBeNull(); // just under the threshold
+  });
+
+  it('derives at/above the 93% completeness threshold', () => {
+    expect(deriveChemistryFromProfile({ oleic: 94 })).not.toBeNull();
   });
 });

@@ -2,14 +2,15 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { MIN_MAPPED_PERCENT } from '@soap-calc/core';
 import type { CanonicalOilDatabase } from './schema.js';
 
 const dataPath = join(dirname(fileURLToPath(import.meta.url)), '../data/canonical-oils.json');
 const db = JSON.parse(readFileSync(dataPath, 'utf8')) as CanonicalOilDatabase;
 
-/** Below this a property-ready profile is "incomplete" — its bar-property scores rest on a
- * partial composition (matches the validator warn threshold). */
-const COMPLETENESS_THRESHOLD_PCT = 93;
+// Same "complete enough" threshold the derivation gate uses. For current data every stored
+// fatty-acid key is a mapped acid, so raw profile sum == mapped percent.
+const COMPLETENESS_THRESHOLD_PCT = MIN_MAPPED_PERCENT;
 
 /**
  * Property-ready oils whose fatty-acid profile sums below the threshold.
