@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-12T05:53:38.465Z",
+  "generatedAt": "2026-07-12T06:07:43.154Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -494,8 +494,8 @@
       "sapNaoh": 0.13618538324420676,
       "confidence": "estimated",
       "propertiesAvailable": true,
-      "iodine": 56,
-      "ins": 135,
+      "iodine": 95,
+      "ins": 96,
       "fattyAcids": {
         "oleic": 80,
         "linoleic": 13,

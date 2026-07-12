@@ -170,6 +170,7 @@ function main() {
     let sapKoh = leg.sap;
     let sapNaoh = legacySapNaoh;
     let ins = leg.ins;
+    let iodine = leg.iodine;
     let inciName: string | undefined;
 
     if (fnwl) {
@@ -248,11 +249,16 @@ function main() {
         sapNaoh = sapKohToSapNaoh(correction.sapKoh);
         confidence = 'estimated';
         primarySource = 'manual';
+        // Some legacy iodine values are themselves inconsistent with the profile; use the
+        // corrected one when supplied so the INS below isn't rebuilt on a bad input.
+        if (correction.iodine !== undefined) {
+          iodine = correction.iodine;
+        }
         // The legacy INS was derived from the discredited legacy SAP (INS = SAP mg KOH/g
-        // − iodine); recompute it from the corrected SAP so the two do not contradict.
-        // Without an iodine value the formula can't run, so drop the stale INS rather than
-        // ship a value derived from the SAP we just discredited.
-        ins = leg.iodine !== undefined ? Math.round(sapKoh * 1000 - leg.iodine) : undefined;
+        // − iodine); recompute it from the corrected SAP (and iodine) so the two do not
+        // contradict. Without an iodine value the formula can't run, so drop the stale INS
+        // rather than ship a value derived from the SAP we just discredited.
+        ins = iodine !== undefined ? Math.round(sapKoh * 1000 - iodine) : undefined;
         sources.push({
           source: 'manual',
           sapKoh,
@@ -335,7 +341,7 @@ function main() {
       sapKoh,
       sapNaoh,
       sapMgKohPerGram: sapKoh * 1000,
-      iodine: leg.iodine,
+      iodine,
       ins,
       fattyAcids,
       propertiesAvailable,
