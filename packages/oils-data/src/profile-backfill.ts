@@ -34,10 +34,11 @@ export type ProfileBackfill = {
 
 /**
  * Representative coconut composition — Codex CXS 210 (coconut oil) range midpoints, normalized to
- * 100% FA (C6 caproic, ~0.3%, has no acid key and is dropped). Single source of truth reused by the
- * coconut-derived entries (monoi = coconut + tiare fragrance; aloe butter = coconut + aloe extract),
- * so they can't silently diverge. FA-derived SAP ≈ 0.247 (runs ~4% below the measured ~0.257 — the
- * known lauric-oil range-midpoint effect), so consuming entries keep their measured SAP.
+ * 100% FA (C6 caproic, ~0.3%, has no acid key and is dropped). Single source of truth reused by
+ * coconut-oil-76 and the coconut-derived entries (monoi = coconut + tiare fragrance; aloe butter =
+ * coconut + aloe extract), so they can't silently diverge. NOT for coconut-oil-92, which is
+ * hydrogenated (IV ~3 vs this profile's ~10). FA-derived SAP ≈ 0.247 (runs ~4% below the measured
+ * ~0.257 — the known lauric-oil range-midpoint effect), so consuming entries keep their measured SAP.
  */
 const CODEX_COCONUT: Record<string, number> = {
   lauric: 47.6, myristic: 18.3, palmitic: 8.6, caprylic: 7.1, capric: 6.3,
@@ -355,5 +356,23 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'coconut composition. SAP 0.24 kept (profile-derived 0.247, −2.8%, within gate). Property ' +
       'shift is cleansing/bubbly +16 (restoring the C8/C10) — flagged, acknowledged. Derived/blend ' +
       'product; the coconut FA is representative, not a measured aloe-butter lot.',
+  },
+
+  'coconut-oil-76': {
+    profile: CODEX_COCONUT,
+    sourceType: 'literature',
+    source:
+      'Codex CXS 210 coconut oil (range midpoints, normalized) — shared CODEX_COCONUT constant. ' +
+      'Restores the caprylic (C8, ~7%) + capric (C10, ~6%) that coconut carries but the legacy ' +
+      'profile truncated.',
+    url: 'https://www.fao.org/4/y2774e/y2774e04.htm',
+    note:
+      'GOLDEN-SAP oil — stored 0.258 KEPT (verified; the golden-SAP validator still passes). ' +
+      'Profile-derived 0.247 is within the gate (+4.5%, the known lauric-oil FA-vs-measured gap); ' +
+      'derived IV 10 matches stored 10. Legacy profile summed 89%, omitting C8/C10; adding them ' +
+      'raises cleansing/bubbly +12.3 (coconut’s well-known high cleansing partly comes from C8/C10, ' +
+      'which our property model counts) — under the guard threshold. NOTE this is a high-visibility ' +
+      'change: coconut is in most recipes, so its cleansing/bubbly bars move up. coconut-oil-92 ' +
+      '(hydrogenated, IV 3) is NOT given this profile — it needs a hydrogenated-coconut source.',
   },
 };

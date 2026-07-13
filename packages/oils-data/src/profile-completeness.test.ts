@@ -35,7 +35,6 @@ const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   'soybean-27-5-hydrogenated',
   'macadamia-nut-butter',
   'tallow-sheep',
-  'coconut-oil-76',
   'coconut-oil-92',
   'tallow-bear',
   // avocado-oil was here — Phase 5 backfilled it to 100% from USDA FDC (see PROFILE_BACKFILL).
