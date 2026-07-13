@@ -1,6 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T09:34:44.491Z",
+  "generatedAt": "2026-07-13T09:50:49.875Z",
+  "idMigrations": {
+    "rapeseed-oil-canola": "rapeseed-oil-high-erucic"
+  },
   "oils": [
     {
       "id": "abyssinian-oil",

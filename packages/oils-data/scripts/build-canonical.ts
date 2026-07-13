@@ -142,7 +142,7 @@ function main() {
     duplicates: [] as string[],
     supplemental: [] as string[],
     excluded: [] as string[],
-    profileBackfill: [] as Array<{ name: string; shifts: PropertyShift[]; flagged: boolean }>,
+    profileBackfill: [] as Array<{ name: string; shifts: PropertyShift[]; flagged: boolean; acknowledged: boolean }>,
   };
 
   const excludedOilIds = new Set<string>(
@@ -191,9 +191,16 @@ function main() {
       sources.push({ source: backfill.sourceType, url: backfill.url, notes: `Fatty-acid profile: ${backfill.source}. ${backfill.note}` });
       // Property-shift guard: a backfill can be SAP-consistent yet move the property bars a lot
       // (SAP is ~invariant to a palmitic↔oleic swap; the bars are not). Surface the deltas so a
-      // large, single-source-outlier shift is loud, not silent.
+      // large, single-source-outlier shift is loud, not silent — and ERROR below on a large,
+      // unacknowledged one so it can't ship without a deliberate, explained decision.
       const shifts = propertyShift(legacyProfile, backfill.profile);
-      report.profileBackfill.push({ name: leg.name, shifts, flagged: maxAbsShift(shifts) >= PROPERTY_SHIFT_THRESHOLD });
+      const flagged = maxAbsShift(shifts) >= PROPERTY_SHIFT_THRESHOLD;
+      report.profileBackfill.push({
+        name: backfill.displayName ?? leg.name,
+        shifts,
+        flagged,
+        acknowledged: backfill.acknowledgedShift === true,
+      });
     }
 
     let primarySource: DataSource = 'legacy_catalog';
@@ -412,6 +419,29 @@ function main() {
   // A correction keyed to a non-existent oil id would otherwise be silently ignored,
   // shipping the very value it was written to fix. An excluded oil id is a legitimate
   // target (the correction is simply inert), so it is not a typo.
+  // A backfill id-override must not collide with another oil's (emitted) id. usedSlugs only
+  // dedups the internal build slugs, so an override → existing-id collision would otherwise slip
+  // past here and produce two oils with the same public id.
+  const emittedIdCounts = new Map<string, number>();
+  for (const o of oils) emittedIdCounts.set(o.id, (emittedIdCounts.get(o.id) ?? 0) + 1);
+  const collidingIds = [...emittedIdCounts].filter(([, n]) => n > 1).map(([id]) => id);
+  if (collidingIds.length) {
+    console.error(`Duplicate emitted oil id(s) (an OIL_ID_OVERRIDES collision?): ${collidingIds.join(', ')}`);
+    process.exit(1);
+  }
+
+  // A backfill whose property-score shift is large (≥ threshold) must be explicitly acknowledged
+  // (acknowledgedShift), so a big — possibly wrong — move can't ship silently. The SAP gate errors
+  // on chemistry contradictions; this is its property-score counterpart.
+  const unacknowledgedShifts = report.profileBackfill.filter((b) => b.flagged && !b.acknowledged);
+  if (unacknowledgedShifts.length) {
+    for (const b of unacknowledgedShifts) {
+      const top = b.shifts.slice(0, 3).map((s) => `${s.property} ${s.delta > 0 ? '+' : ''}${s.delta}`).join(', ');
+      console.error(`Unacknowledged property shift ≥${PROPERTY_SHIFT_THRESHOLD}pt for ${b.name} [${top}] — set acknowledgedShift:true (with a note) if intended.`);
+    }
+    process.exit(1);
+  }
+
   const oilIds = new Set(oils.map((o) => o.id));
   const staleCorrectionKeys = [
     ...Object.keys(supplementalInci.inciCorrections),
@@ -476,6 +506,9 @@ function main() {
   const liteDb = {
     version: db.version,
     generatedAt: db.generatedAt,
+    // Old→new oil-id renames, emitted so the web resolves saved recipes referencing an old id.
+    // Single source of truth (OIL_ID_OVERRIDES); the web reads this rather than duplicating it.
+    idMigrations: OIL_ID_OVERRIDES,
     oils: oils.map((oil) => ({
       id: oil.id,
       displayName: oil.displayName,

@@ -21,6 +21,12 @@ export type ProfileBackfill = {
   sourceType: 'fdc' | 'literature';
   /** Optional user-facing name override — for entries whose legacy name is wrong/misleading. */
   displayName?: string;
+  /**
+   * Set true to acknowledge an expected large property-score shift (≥ PROPERTY_SHIFT_THRESHOLD).
+   * The build ERRORS on an unacknowledged large shift, so a big move is a deliberate, reviewed
+   * decision (explained in `note`) rather than something that slips through silently.
+   */
+  acknowledgedShift?: boolean;
   source: string;
   url?: string;
   note: string;
@@ -48,6 +54,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
     profile: { oleic: 17, linoleic: 13, linolenic: 9, palmitic: 4, stearic: 1, erucic: 48, eicosenoic: 8 },
     sourceType: 'literature',
     displayName: 'Rapeseed Oil (high-erucic)',
+    acknowledgedShift: true, // conditioning +56 is expected — restoring the truncated ~50% erucic
     source:
       'High-erucic rapeseed (HEAR). Legacy minors (oleic/linoleic/linolenic/palmitic/stearic — all ' +
       'within Codex CXS 210 high-erucic rapeseed ranges) kept; erucic (48%) and eicosenoic (8%) ' +

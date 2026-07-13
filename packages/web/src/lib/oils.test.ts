@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { oilById, searchOils } from './oils';
+import { OIL_LOOKUP, PROPERTIES_LOOKUP, oilById, searchOils } from './oils';
 
 describe('searchOils', () => {
   it('includes all ingredients when browsing with an empty query', () => {
@@ -30,5 +30,14 @@ describe('oilById', () => {
 
   it('returns undefined for a genuinely unknown id', () => {
     expect(oilById('not-a-real-oil')).toBeUndefined();
+  });
+});
+
+describe('oil-id migration coverage', () => {
+  it('resolves a renamed oil old id in the lye/property lookups the calc reads directly', () => {
+    // The core lye/fatty-acid calc indexes these maps with the recipe line's oilId, bypassing
+    // oilById — so a recipe saved with the old id must resolve here too, not just in oilById.
+    expect(OIL_LOOKUP['rapeseed-oil-canola']?.id).toBe('rapeseed-oil-high-erucic');
+    expect(PROPERTIES_LOOKUP['rapeseed-oil-canola']?.id).toBe('rapeseed-oil-high-erucic');
   });
 });
