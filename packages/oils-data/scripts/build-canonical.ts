@@ -189,7 +189,8 @@ function main() {
     }];
 
     if (backfill) {
-      sources.push({ source: backfill.sourceType, url: backfill.url, notes: `Fatty-acid profile: ${backfill.source}. ${backfill.note}` });
+      // Strip a trailing period from `source` so the ". " joiner doesn't yield ".." in the emitted notes.
+      sources.push({ source: backfill.sourceType, url: backfill.url, notes: `Fatty-acid profile: ${backfill.source.replace(/\.$/, '')}. ${backfill.note}` });
       // Property-shift guard: a backfill can be SAP-consistent yet move the property bars a lot
       // (SAP is ~invariant to a palmitic↔oleic swap; the bars are not). Surface the deltas so a
       // large, single-source-outlier shift is loud, not silent — and ERROR below on a large,
