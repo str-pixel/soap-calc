@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T12:49:42.309Z",
+  "generatedAt": "2026-07-13T13:38:38.565Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -2394,7 +2394,7 @@
         {
           "source": "literature",
           "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4938823/",
-          "notes": "Fatty-acid profile: Pongamia pinnata (karanja) — Kesari et al. germplasm study (Physiol Mol Biol Plants, PMC4938823, 38 accessions) + Gupta & Mitra 1953 component-acid profile (via PlantFAdb). Signature C20–C24 saturates (behenic ~5, arachidic ~3, lignoceric ~1.5). Karanjin (a furanoflavonoid, not a FA) excluded.. Legacy profile summed 85% (missing the behenic/arachidic/eicosenoic/lignoceric long-chain signature). Gap-filled to 100%. SAP 0.19 kept (verified/FNWL; profile-derived 0.188, +1.1%). Property shift +11.8 hardness (long-chain saturates — under the guard threshold). Highly provenance-variable (oleic 34–75); a genus-level representative."
+          "notes": "Fatty-acid profile: Pongamia pinnata (karanja) — Kesari et al. germplasm study (Physiol Mol Biol Plants, PMC4938823, 38 accessions) + Gupta & Mitra 1953 component-acid profile (via PlantFAdb). Signature C20–C24 saturates (behenic ~5, arachidic ~3, lignoceric ~1.5). Karanjin (a furanoflavonoid, not a FA) excluded.. Legacy profile summed 85% (missing the behenic/arachidic/eicosenoic/lignoceric long-chain signature). Gap-filled to 100%. SAP 0.19 kept (verified/FNWL; profile-derived 0.188, +1.1%). Property shift +11.8 hardness (long-chain saturates — under the guard threshold). Highly provenance-variable (oleic 34–75); a genus-level representative. Caveat: eicosenoic (C20:1) is the least-pinned acid (sources span ~1–12%); set to a conservative 3% — SAP-invariant, as a C20:1↔C18:1 shuffle barely moves the mean molar mass."
         },
         {
           "source": "fnwl",
