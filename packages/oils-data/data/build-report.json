@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T13:51:26.361Z",
+  "generatedAt": "2026-07-13T15:12:20.229Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -514,6 +514,49 @@
   ],
   "profileBackfill": [
     {
+      "name": "Aloe Butter",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 63,
+          "after": 79.3,
+          "delta": 16.3
+        },
+        {
+          "property": "cleansing",
+          "before": 63,
+          "after": 79.3,
+          "delta": 16.3
+        },
+        {
+          "property": "hardness",
+          "before": 74,
+          "after": 77.5,
+          "delta": 3.5
+        },
+        {
+          "property": "longevity",
+          "before": 11,
+          "after": 11.6,
+          "delta": 0.6
+        },
+        {
+          "property": "creamy",
+          "before": 11,
+          "after": 11.5,
+          "delta": 0.5
+        },
+        {
+          "property": "condition",
+          "before": 9,
+          "after": 9.2,
+          "delta": 0.2
+        }
+      ],
+      "flagged": true,
+      "acknowledged": true
+    },
+    {
       "name": "Avocado Oil",
       "shifts": [
         {
@@ -810,6 +853,49 @@
       "acknowledged": true
     },
     {
+      "name": "Monoi de Tahiti  Oil",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 60,
+          "after": 79.3,
+          "delta": 19.3
+        },
+        {
+          "property": "cleansing",
+          "before": 60,
+          "after": 79.3,
+          "delta": 19.3
+        },
+        {
+          "property": "condition",
+          "before": 2,
+          "after": 9.2,
+          "delta": 7.2
+        },
+        {
+          "property": "hardness",
+          "before": 73,
+          "after": 77.5,
+          "delta": 4.5
+        },
+        {
+          "property": "creamy",
+          "before": 13,
+          "after": 11.5,
+          "delta": -1.5
+        },
+        {
+          "property": "longevity",
+          "before": 13,
+          "after": 11.6,
+          "delta": -1.4
+        }
+      ],
+      "flagged": true,
+      "acknowledged": true
+    },
+    {
       "name": "Moringa Oil",
       "shifts": [
         {
@@ -928,6 +1014,43 @@
           "before": 50,
           "after": 49.5,
           "delta": -0.5
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Saw Palmetto Extract",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 40,
+          "after": 44.49999999999999,
+          "delta": 4.5
+        },
+        {
+          "property": "cleansing",
+          "before": 40,
+          "after": 44.49999999999999,
+          "delta": 4.5
+        },
+        {
+          "property": "condition",
+          "before": 40,
+          "after": 44.49999999999999,
+          "delta": 4.5
+        },
+        {
+          "property": "longevity",
+          "before": 10,
+          "after": 11.1,
+          "delta": 1.1
+        },
+        {
+          "property": "creamy",
+          "before": 10,
+          "after": 10.9,
+          "delta": 0.9
         }
       ],
       "flagged": false,

@@ -32,6 +32,25 @@ export type ProfileBackfill = {
   note: string;
 };
 
+/**
+ * Representative coconut composition — Codex CXS 210 (coconut oil) range midpoints, normalized to
+ * 100% FA (C6 caproic, ~0.3%, has no acid key and is dropped). Single source of truth reused by the
+ * coconut-derived entries (monoi = coconut + tiare fragrance; aloe butter = coconut + aloe extract),
+ * so they can't silently diverge. FA-derived SAP ≈ 0.247 (runs ~4% below the measured ~0.257 — the
+ * known lauric-oil range-midpoint effect), so consuming entries keep their measured SAP.
+ */
+const CODEX_COCONUT: Record<string, number> = {
+  lauric: 47.6, myristic: 18.3, palmitic: 8.6, caprylic: 7.1, capric: 6.3,
+  stearic: 2.9, oleic: 7.3, linoleic: 1.7, linolenic: 0.1, arachidic: 0.1, eicosenoic: 0.1,
+};
+
+/** Serenoa repens FA composition — NIST SRM 3251 (certified reference material). Shared by the
+ *  fixed oil and the CO2 extract, which SRM 3251 actually measures (same material). */
+const SAW_PALMETTO_FA: Record<string, number> = {
+  oleic: 36.4, lauric: 27.7, myristic: 11.2, palmitic: 9, linoleic: 6.3, caprylic: 2.8,
+  capric: 2.8, stearic: 1.9, linolenic: 1.3, palmitoleic: 0.3, eicosenoic: 0.2, arachidic: 0.1, behenic: 0.1,
+};
+
 export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   'avocado-oil': {
     profile: { oleic: 57, linoleic: 18, palmitic: 15, palmitoleic: 8, stearic: 1, linolenic: 1 },
@@ -220,7 +239,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   },
 
   'saw-palmetto-oil': {
-    profile: { oleic: 36.4, lauric: 27.7, myristic: 11.2, palmitic: 9, linoleic: 6.3, caprylic: 2.8, capric: 2.8, stearic: 1.9, linolenic: 1.3, palmitoleic: 0.3, eicosenoic: 0.2, arachidic: 0.1, behenic: 0.1 },
+    profile: SAW_PALMETTO_FA,
     sourceType: 'literature',
     source:
       'Serenoa repens — NIST SRM 3251 (certified reference material, CO2 berry extract; Schantz et al. ' +
@@ -286,5 +305,55 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       're-resolves via profile_closest to legacy 0.192 (nearest the profile-derived 0.188). Gate ' +
       'then −2%. Property shift +11 hardness (arachidic — under the guard threshold). Arachidic ' +
       'varies ~7–15 by genotype/ripeness.',
+  },
+
+  // ── Slice C derivatives — coconut-based products (FA = coconut; the tiare/aloe additive is not a
+  //    fatty acid) and the saw-palmetto extract (= the NIST reference material). (avocado-butter and
+  //    macadamia-butter are held — they're hardened/hydrogenated blends, not their base oils.)
+  'saw-palmetto-extract': {
+    profile: SAW_PALMETTO_FA,
+    sourceType: 'literature',
+    source:
+      'Serenoa repens CO2 berry extract — NIST SRM 3251 (certified reference material; Schantz et al. ' +
+      '2008). This entry IS the extract that SRM 3251 measures, so it uses the same profile as ' +
+      'saw-palmetto-oil.',
+    url: 'https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=902884',
+    note:
+      'Legacy profile summed 90% (missing caprylic/capric). Gap-filled to 100% from the NIST ' +
+      'certified reference. SAP 0.23 kept (profile-derived 0.218, +5.4%, within gate). Property ' +
+      'shift +4.5 (under the guard threshold).',
+  },
+
+  'monoi-de-tahiti-oil': {
+    profile: CODEX_COCONUT,
+    sourceType: 'literature',
+    acknowledgedShift: true, // cleansing/bubbly +19 — restoring coconut's C8/C10 (monoi is coconut-based)
+    source:
+      'Monoï de Tahiti is coconut oil infused with tiare (Gardenia) flowers — the tiare is a ' +
+      'fragrance, not a fatty-acid source, so the FA composition is coconut’s. Representative coconut ' +
+      'profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 caproic, ~0.3%, has ' +
+      'no key and is dropped).',
+    url: 'https://www.fao.org/4/y2774e/y2774e04.htm',
+    note:
+      'Legacy profile summed 75% and omitted caprylic/capric/oleic (the C8/C10 coconut carries). ' +
+      'Filled to the coconut composition. SAP 0.255 kept (verified; profile-derived 0.247, +3.3%, ' +
+      'within gate — coconut FA-derived SAP runs ~4% below the measured, a known lauric-oil effect). ' +
+      'Property shift is cleansing/bubbly +19 (restoring the C8/C10) — flagged, acknowledged.',
+  },
+
+  'aloe-butter': {
+    profile: CODEX_COCONUT,
+    sourceType: 'literature',
+    acknowledgedShift: true, // cleansing/bubbly +16 — restoring coconut's C8/C10 (aloe butter is coconut-based)
+    source:
+      'Aloe butter is coconut oil with aloe vera extract, solidified — the aloe extract is a minor ' +
+      'non-fatty-acid additive, so the FA composition is coconut’s. Representative coconut profile ' +
+      'from Codex CXS 210 (coconut oil), range midpoints normalized (C6 dropped, no key).',
+    url: 'https://www.fao.org/4/y2774e/y2774e04.htm',
+    note:
+      'Legacy profile summed 83% and omitted caprylic/capric (coconut’s C8/C10). Filled to the ' +
+      'coconut composition. SAP 0.24 kept (profile-derived 0.247, −2.8%, within gate). Property ' +
+      'shift is cleansing/bubbly +16 (restoring the C8/C10) — flagged, acknowledged. Derived/blend ' +
+      'product; the coconut FA is representative, not a measured aloe-butter lot.',
   },
 };
