@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T16:39:42.528Z",
+  "generatedAt": "2026-07-13T17:28:37.330Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -1054,6 +1054,49 @@
       ],
       "flagged": false,
       "acknowledged": false
+    },
+    {
+      "name": "Pracaxi (Pracachy) Seed Oil - hair conditioner",
+      "shifts": [
+        {
+          "property": "longevity",
+          "before": 4,
+          "after": 36.1,
+          "delta": 32.1
+        },
+        {
+          "property": "hardness",
+          "before": 6,
+          "after": 36.7,
+          "delta": 30.7
+        },
+        {
+          "property": "condition",
+          "before": 48,
+          "after": 63.3,
+          "delta": 15.3
+        },
+        {
+          "property": "bubbly",
+          "before": 2,
+          "after": 0.6,
+          "delta": -1.4
+        },
+        {
+          "property": "cleansing",
+          "before": 2,
+          "after": 0.6,
+          "delta": -1.4
+        },
+        {
+          "property": "creamy",
+          "before": 4,
+          "after": 4.8,
+          "delta": 0.8
+        }
+      ],
+      "flagged": true,
+      "acknowledged": true
     },
     {
       "name": "Rapeseed Oil (high-erucic)",
