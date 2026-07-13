@@ -70,4 +70,23 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'acids) — the property-shift guard flags it, correctly (restoring truncated data). Renamed to ' +
       'drop the canola misnomer.',
   },
+
+  'mustard-oil-kachi-ghani': {
+    profile: { oleic: 18, linoleic: 14, linolenic: 9, palmitic: 2, stearic: 2, erucic: 42, eicosenoic: 9, behenic: 2, arachidic: 1, myristic: 1 },
+    sourceType: 'literature',
+    acknowledgedShift: true, // conditioning +51 — restoring the truncated ~42% erucic
+    source:
+      'High-erucic mustard (Brassica juncea, kachi ghani). Present acids kept — all within Codex ' +
+      'CXS 210 mustardseed ranges (verified against the FAO standard); erucic 42% + eicosenoic 9% ' +
+      'gap-filled to a kachi-ghani-representative value (literature erucic 40–48%, above the Codex ' +
+      'all-mustard midpoint of 36%, which understates the traditional high-erucic variety). Codex ' +
+      'CXS 210 Table 1 (mustardseed oil).',
+    url: 'https://www.fao.org/4/y2774e/y2774e04.htm',
+    note:
+      'Legacy profile summed 45% — the classic SoapCalc high-erucic truncation (erucic + eicosenoic ' +
+      'dropped). Gap-filled to 100%; SAP 0.172 kept (verified/FNWL, within Codex [0.168–0.184]; ' +
+      'profile-derived 0.175 agrees, −1.6%; derived IV 105 ≈ stored 101). Property shift is ' +
+      'conditioning +51 (erucic/eicosenoic are conditioning acids) — flagged, acknowledged as a ' +
+      'truncation restore. Two Codex minors (C20:2, C24:1, ~2%) are unmapped in our acid model.',
+  },
 };

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T11:27:18.867Z",
+  "generatedAt": "2026-07-13T11:39:02.067Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -542,6 +542,43 @@
       ],
       "flagged": false,
       "acknowledged": false
+    },
+    {
+      "name": "Mustard Oil, kachi ghani",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 41,
+          "after": 92,
+          "delta": 51
+        },
+        {
+          "property": "hardness",
+          "before": 4,
+          "after": 8,
+          "delta": 4
+        },
+        {
+          "property": "longevity",
+          "before": 4,
+          "after": 7,
+          "delta": 3
+        },
+        {
+          "property": "bubbly",
+          "before": 0,
+          "after": 1,
+          "delta": 1
+        },
+        {
+          "property": "cleansing",
+          "before": 0,
+          "after": 1,
+          "delta": 1
+        }
+      ],
+      "flagged": true,
+      "acknowledged": true
     },
     {
       "name": "Rapeseed Oil (high-erucic)",
