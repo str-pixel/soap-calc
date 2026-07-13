@@ -169,4 +169,83 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'gate, +0.4%). Property shift +12.7 conditioning (under the guard threshold). Oleic/linoleic ' +
       'trade off strongly by cultivar; values are central to the common high-linoleic form.',
   },
+
+  // ── Slice C batch 2 — literature-sourced, each verified grounded (SAP within gate vs stored,
+  //    signature matches, committed URL curl-checked). SAPs kept. (coffee/cupuaçu/sea-buckthorn
+  //    held from this batch — SAP-correction cases / modeled blend.)
+  'karanja-oil': {
+    profile: { oleic: 56.6, linoleic: 14.1, palmitic: 7.1, stearic: 6.1, behenic: 5.1, arachidic: 3, eicosenoic: 3, linolenic: 2.5, lignoceric: 1.5, myristic: 1 },
+    sourceType: 'literature',
+    source:
+      'Pongamia pinnata (karanja) — Kesari et al. germplasm study (Physiol Mol Biol Plants, PMC4938823, ' +
+      '38 accessions) + Gupta & Mitra 1953 component-acid profile (via PlantFAdb). Signature C20–C24 ' +
+      'saturates (behenic ~5, arachidic ~3, lignoceric ~1.5). Karanjin (a furanoflavonoid, not a FA) excluded.',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4938823/',
+    note:
+      'Legacy profile summed 85% (missing the behenic/arachidic/eicosenoic/lignoceric long-chain ' +
+      'signature). Gap-filled to 100%. SAP 0.19 kept (verified/FNWL; profile-derived 0.188, +1.1%). ' +
+      'Property shift +11.8 hardness (long-chain saturates — under the guard threshold). Highly ' +
+      'provenance-variable (oleic 34–75); a genus-level representative.',
+  },
+
+  'sal-butter': {
+    profile: { stearic: 43, oleic: 39.5, arachidic: 8.5, palmitic: 6.5, linoleic: 2, behenic: 0.5 },
+    sourceType: 'literature',
+    source:
+      'Shorea robusta seed fat — Sharma et al. (PMC12757558) + US Patent 4,534,981 cosmetic ranges, ' +
+      'cross-checked. Cocoa-butter-equivalent signature: high stearic ~43 + arachidic ~8.5. (A PMC ' +
+      '"γ-linolenic 6.86%" reading was judged a mis-assigned arachidic peak and not used.)',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12757558/',
+    note:
+      'Legacy profile summed 92% (missing the ~8.5% arachidic signature). Gap-filled to 100%. SAP ' +
+      '0.185 kept (profile-derived 0.189, −2.0%); IV 39 ≈ derived. Property shift +8.5 hardness ' +
+      '(under the guard threshold). Stearic/arachidic vary by origin (~34–48 / ~5.5–12).',
+  },
+
+  'broccoli-seed-oil-brassica-oleracea': {
+    profile: { erucic: 50.3, oleic: 14.4, linoleic: 11.3, linolenic: 9.2, eicosenoic: 7.7, palmitic: 3.6, behenic: 1, stearic: 1, arachidic: 0.8, docosadienoic: 0.5, lignoceric: 0.2 },
+    sourceType: 'literature',
+    source:
+      'Brassica oleracea (broccoli) seed oil — high-erucic Brassica. Cold-pressed GC (PMC7907780, ' +
+      'erucic 51%) + supplier specs (NHR/Nature-in-Bottle). Chose the high-erucic commercial ' +
+      'consensus over a low-erucic/high-linolenic outlier study. Nervonic (C24:1, <2%) unmapped.',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7907780/',
+    note:
+      'Legacy profile summed 88% and already had erucic 50 — only the eicosenoic (~7.7%) + minor ' +
+      'C20–C24 acids were missing. Gap-filled to 100%. SAP 0.172 kept (profile-derived 0.172, −0.3%, ' +
+      'near-perfect; high erucic lowers SAP). Property shift +9.4 conditioning (under threshold). ' +
+      'Erucic ranges 33–51 by cultivar/extraction.',
+  },
+
+  'saw-palmetto-oil': {
+    profile: { oleic: 36.4, lauric: 27.7, myristic: 11.2, palmitic: 9, linoleic: 6.3, caprylic: 2.8, capric: 2.8, stearic: 1.9, linolenic: 1.3, palmitoleic: 0.3, eicosenoic: 0.2, arachidic: 0.1, behenic: 0.1 },
+    sourceType: 'literature',
+    source:
+      'Serenoa repens — NIST SRM 3251 (certified reference material, CO2 berry extract; Schantz et al. ' +
+      '2008, Anal Bioanal Chem) + commercial supplement survey (Nutrients 2013, PMC3798925). Unusual ' +
+      'medium-chain (lauric/myristic) + oleic mix. FA composition is what SAP consumes (free-vs-ester ' +
+      'split irrelevant). Caproic C6 (~2%) unmapped.',
+    url: 'https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=902884',
+    note:
+      'Legacy profile summed 89% (missing caprylic/capric). Gap-filled to 100% from the NIST certified ' +
+      'reference. SAP 0.22 kept (verified — the medium-chain composition genuinely gives a high SAP; ' +
+      'profile-derived 0.218, +0.8%). Property shift +7 (under threshold). Oleic:lauric ratio is ' +
+      'ripeness/ecotype-variable; NIST CO2 extract is the best single anchor. (saw-palmetto-extract ' +
+      'shares this NIST source — a separate row.)',
+  },
+
+  'tucuma-seed-butter': {
+    profile: { lauric: 47.5, myristic: 26, oleic: 11, palmitic: 6, stearic: 3, capric: 2.5, caprylic: 2, linoleic: 2 },
+    sourceType: 'literature',
+    source:
+      'Astrocaryum vulgare / aculeatum KERNEL fat (a lauric fat like babassu/palm-kernel — NOT the ' +
+      'high-oleic pulp oil). MDPI Thermo 2024 (kernel identity) + congeneric A. chambira kernel ' +
+      '(Redalyc, lauric 48.6/myristic 29.8) + Bereau 2003 (A. vulgare lauric 51–52). Seed butter, ' +
+      'per the catalog entry.',
+    url: 'https://www.redalyc.org/journal/1799/179955075009/html/',
+    note:
+      'Legacy profile summed 90% (missing caprylic/capric/stearic). Gap-filled to 100%. SAP 0.238 ' +
+      'kept (profile-derived 0.239, −0.3%, near-perfect for a lauric fat); IV 14 ≈ stored 13. Property ' +
+      'shift +7 bubbly/cleansing (under threshold). Lauric 42–52 / myristic 26–30 by species.',
+  },
 };
