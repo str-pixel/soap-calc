@@ -248,4 +248,41 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'kept (profile-derived 0.239, −0.3%, near-perfect for a lauric fat); IV 14 ≈ stored 13. Property ' +
       'shift +7 bubbly/cleansing (under threshold). Lauric 42–52 / myristic 26–30 by species.',
   },
+
+  // ── Slice C SAP-correction rows — the completed profile disagreed with the stored SAP, which
+  //    the profile-consistency gate flagged. cupuaçu self-corrects (profile_closest re-resolution);
+  //    coffee gets a LEGACY_SAP_CORRECTIONS entry (no FNWL match).
+  'coffee-bean-oil-roasted': {
+    profile: { linoleic: 42.9, palmitic: 34.3, oleic: 9.4, stearic: 7.6, arachidic: 2.8, linolenic: 1.6, behenic: 0.7, lignoceric: 0.3, myristic: 0.1, palmitoleic: 0.1, eicosenoic: 0.1 },
+    sourceType: 'literature',
+    source:
+      'Coffea arabica (roasted) — Böger et al. 2021 (Grasas y Aceites 72(1) e394, roasted arabica, ' +
+      'pressed) + Raba et al. 2018 (PLoS ONE, PMC6040754, green). Roasting barely shifts the FA ' +
+      'profile. Chose the linoleic-dominant consensus over a palmitic-dominant SFE variety.',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6040754/',
+    note:
+      'Legacy profile summed 88% (missing stearic/arachidic + minors). Gap-filled to 100%. The ' +
+      'stored SAP 0.18 was too low: the profile derives 0.196 (Böger measured 0.195), so SAP is ' +
+      'corrected to 0.195 via LEGACY_SAP_CORRECTIONS (no FNWL match). Property shift +6 (under the ' +
+      'guard threshold). Palmitic/linoleic split is variety/extraction-dependent (a palmitic-heavy ' +
+      'camp exists).',
+  },
+
+  'cupuacu-butter': {
+    profile: { oleic: 42, stearic: 33.3, arachidic: 10, palmitic: 8, linoleic: 3.5, behenic: 1.9, lignoceric: 0.6, linolenic: 0.3, eicosenoic: 0.3, myristic: 0.1, palmitoleic: 0.1 },
+    sourceType: 'literature',
+    source:
+      'Theobroma grandiflorum seed fat — CIR 2017 safety assessment (Table 4) + Frontiers in ' +
+      'Sustainability 2022. Cocoa-butter-alternative signature: high stearic ~33 + the unusually ' +
+      'high arachidic ~10 that distinguishes it from cocoa butter (arachidic <1%). An outlier study ' +
+      '(arachidic 0.29%, linolenic 11.6%) was rejected.',
+    url: 'https://www.frontiersin.org/journals/sustainability/articles/10.3389/frsus.2022.682178/full',
+    note:
+      'Legacy profile summed 87% (missing the ~10% arachidic signature). Gap-filled to 100%. This ' +
+      'AUTO-CORRECTS the SAP: the stored 0.2075 was the Phase-3 midpoint of legacy 0.192 / FNWL ' +
+      '0.223 (chosen because the incomplete profile "could not judge"); now complete, the build ' +
+      're-resolves via profile_closest to legacy 0.192 (nearest the profile-derived 0.188). Gate ' +
+      'then −2%. Property shift +11 hardness (arachidic — under the guard threshold). Arachidic ' +
+      'varies ~7–15 by genotype/ripeness.',
+  },
 };

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T12:49:42.309Z",
+  "generatedAt": "2026-07-13T13:44:28.041Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -285,6 +285,7 @@
     "Canola Oil",
     "Canola Oil, high oleic",
     "Coconut Oil, fractionated",
+    "Cupuacu Butter",
     "Grapeseed Oil",
     "Murumuru Butter",
     "Palm Kernel Oil",
@@ -293,11 +294,11 @@
     "Tamanu Oil, kamani"
   ],
   "sapMidpoint": [
-    "Candelilla Wax",
-    "Cupuacu Butter"
+    "Candelilla Wax"
   ],
   "sapCorrected": [
     "Carrot Seed Oil, cold pressed",
+    "Coffee Bean Oil, roasted",
     "Papaya seed oil, Carica papaya"
   ],
   "ldgMethodologyNotes": [
@@ -600,6 +601,92 @@
           "before": 4,
           "after": 4.6,
           "delta": 0.6
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Coffee Bean Oil, roasted",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 48,
+          "after": 54.1,
+          "delta": 6.1
+        },
+        {
+          "property": "hardness",
+          "before": 40,
+          "after": 45.8,
+          "delta": 5.8
+        },
+        {
+          "property": "longevity",
+          "before": 40,
+          "after": 45.699999999999996,
+          "delta": 5.7
+        },
+        {
+          "property": "creamy",
+          "before": 40,
+          "after": 41.9,
+          "delta": 1.9
+        },
+        {
+          "property": "bubbly",
+          "before": 0,
+          "after": 0.1,
+          "delta": 0.1
+        },
+        {
+          "property": "cleansing",
+          "before": 0,
+          "after": 0.1,
+          "delta": 0.1
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Cupuacu Butter",
+      "shifts": [
+        {
+          "property": "hardness",
+          "before": 43,
+          "after": 53.9,
+          "delta": 10.9
+        },
+        {
+          "property": "longevity",
+          "before": 43,
+          "after": 53.8,
+          "delta": 10.8
+        },
+        {
+          "property": "condition",
+          "before": 44,
+          "after": 46.199999999999996,
+          "delta": 2.2
+        },
+        {
+          "property": "creamy",
+          "before": 43,
+          "after": 41.3,
+          "delta": -1.7
+        },
+        {
+          "property": "bubbly",
+          "before": 0,
+          "after": 0.1,
+          "delta": 0.1
+        },
+        {
+          "property": "cleansing",
+          "before": 0,
+          "after": 0.1,
+          "delta": 0.1
         }
       ],
       "flagged": false,

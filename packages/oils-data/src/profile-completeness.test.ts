@@ -37,8 +37,6 @@ const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   'macadamia-nut-butter',
   'tallow-sheep',
   'aloe-butter',
-  'cupuacu-butter',
-  'coffee-bean-oil-roasted',
   'coconut-oil-76',
   'coconut-oil-92',
   'saw-palmetto-extract',
