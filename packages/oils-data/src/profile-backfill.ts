@@ -185,7 +185,9 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'Legacy profile summed 85% (missing the behenic/arachidic/eicosenoic/lignoceric long-chain ' +
       'signature). Gap-filled to 100%. SAP 0.19 kept (verified/FNWL; profile-derived 0.188, +1.1%). ' +
       'Property shift +11.8 hardness (long-chain saturates — under the guard threshold). Highly ' +
-      'provenance-variable (oleic 34–75); a genus-level representative.',
+      'provenance-variable (oleic 34–75); a genus-level representative. Caveat: eicosenoic (C20:1) ' +
+      'is the least-pinned acid (sources span ~1–12%); set to a conservative 3% — SAP-invariant, ' +
+      'as a C20:1↔C18:1 shuffle barely moves the mean molar mass.',
   },
 
   'sal-butter': {
