@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T15:45:31.730Z",
+  "generatedAt": "2026-07-13T16:39:42.528Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -3774,12 +3774,15 @@
       "iodine": 20,
       "ins": 227,
       "fattyAcids": {
-        "oleic": 15,
-        "lauric": 49,
-        "stearic": 2,
-        "linoleic": 3,
-        "myristic": 16,
-        "palmitic": 8
+        "lauric": 48.2,
+        "myristic": 16.2,
+        "oleic": 15.3,
+        "palmitic": 8.4,
+        "caprylic": 3.3,
+        "capric": 3.4,
+        "stearic": 2.5,
+        "linoleic": 2.3,
+        "linolenic": 0.4
       },
       "propertiesAvailable": true,
       "sources": [
@@ -3788,6 +3791,11 @@
           "sapKoh": 0.247,
           "sapNaoh": 0.1761140819964349,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://www.fao.org/input/download/standards/336/CXS_210e_2015.pdf",
+          "notes": "Fatty-acid profile: Ang, Liu & Huang (eds.), Asian Foods (1999) representative palm-kernel-oil profile — every acid falls inside the Codex CXS 210 range for palm kernel oil (cross-checked). Restores the caprylic (C8, ~3.3%) + capric (C10, ~3.4%) that PKO carries but the legacy profile dropped.. CONSISTENCY backfill (not a truncation flag): legacy summed exactly 93.0% — it passes the 93% completeness gate yet OMITS PKO’s real C8/C10, so the completeness test never surfaced it. Clean gap-fill: stored lauric 49 / myristic 16 already match Codex/Ang (~48/~16, NOT inflated), so this only ADDS the dropped C8/C10. SAP resolution unchanged — profile-derived rises 0.2335→0.2375 but still resolves closest to legacy 0.247 (vs FNWL 0.203), which is kept; derived IV 19 ≈ stored 20. Cleansing/bubbly +6.1 (C8/C10 entering the cleansing set), under the guard threshold. Contrast babassu-oil, whose stored lauric/myristic ARE inflated (needs a full reprofile, not a gap-fill) — held for its own row."
         },
         {
           "source": "fnwl",
