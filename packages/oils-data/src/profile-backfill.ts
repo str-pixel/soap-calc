@@ -89,4 +89,84 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'conditioning +51 (erucic/eicosenoic are conditioning acids) — flagged, acknowledged as a ' +
       'truncation restore. Two Codex minors (C20:2, C24:1, ~2%) are unmapped in our acid model.',
   },
+
+  // ── Slice C batch 1 — literature-sourced, each cross-checked (≥2 sources), SAP kept (all within
+  //    the profile-consistency gate vs the profile-derived value), citation URLs verified to resolve.
+  'moringa-oil': {
+    profile: { oleic: 74.4, behenic: 6.1, palmitic: 6.3, stearic: 5, arachidic: 3.3, eicosenoic: 1.8, palmitoleic: 1.4, linoleic: 0.8, linolenic: 0.5, lignoceric: 0.4, myristic: 0.1 },
+    sourceType: 'literature',
+    source:
+      'Moringa oleifera ("ben oil") — representative composite (Leone et al. 2016, Int J Mol Sci ' +
+      '17(12):2141, Table 3), cross-checked vs Anwar 2014 (J Food Sci Technol, Indian origin) and ' +
+      'MDPI Foods 2024. Signature long-chain saturates (behenic ~6, arachidic ~3).',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5187941/',
+    note:
+      'Legacy profile summed 87% (missing behenic/arachidic/eicosenoic/palmitoleic — the moringa ' +
+      'long-chain-saturate fingerprint). Gap-filled to 100%. SAP 0.195 kept (verified/FNWL; ' +
+      'profile-derived 0.188 within gate, +3.7%). Property shift +7 hardness/conditioning (under ' +
+      'the guard threshold). Cultivar-variable (oleic 72–79); values are a sound composite.',
+  },
+
+  'borage-oil': {
+    profile: { linoleic: 36.6, oleic: 21.7, linolenic: 17.7, palmitic: 10.9, stearic: 6.1, eicosenoic: 4.1, erucic: 2.3, arachidic: 0.4, behenic: 0.2 },
+    sourceType: 'literature',
+    source:
+      'Borago officinalis (starflower) — full GC table, PMC 12189715 (2025, Table 1), cross-checked ' +
+      'vs a GLA monograph (Townsend Letter) and Alfa Chemistry SAP. GLA (C18:3 n-6, ~17%) mapped to ' +
+      'the linolenic key (both C18:3, same MW — SAP/IV-equivalent).',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12189715/',
+    note:
+      'Legacy profile summed 82% and had linoleic 43/linolenic 5 — the ~17% GLA was mislabeled/' +
+      'dropped and eicosenoic/erucic missing. Corrected to the true borage split. SAP 0.186 kept ' +
+      '(verified/FNWL; profile-derived 0.191 within gate, −2.6%). Property shift +14 conditioning ' +
+      '(under the guard threshold). GLA varies 17–25% by variety (does not move SAP). Unmapped ' +
+      '~1.7% (nervonic C24:1, eicosadienoic C20:2 — no keys).',
+  },
+
+  'macadamia-nut-oil': {
+    profile: { oleic: 59.4, palmitoleic: 19.1, palmitic: 8.6, stearic: 3.5, arachidic: 2.5, eicosenoic: 2.5, linoleic: 2, behenic: 0.9, myristic: 0.8, linolenic: 0.3, erucic: 0.3 },
+    sourceType: 'literature',
+    acknowledgedShift: true, // conditioning +22.6 — restoring macadamia's signature ~19% palmitoleic
+    source:
+      'Macadamia integrifolia — representative center of Yang et al. (15 China cultivars, PMC 8151099) ' +
+      'and the widely-cited ~60% oleic / ~19% palmitoleic signature. The USDA FDC entry (~3.4% ' +
+      'palmitoleic) is a confirmed outlier and was rejected — palmitoleic is macadamia’s signature.',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC8151099/',
+    note:
+      'Legacy profile summed 75% and omitted palmitoleic entirely — macadamia’s defining ~16–23% ' +
+      'C16:1. Restored to 19% (cross-checked, USDA outlier rejected — the avocado lesson). SAP ' +
+      '0.195 kept (verified/FNWL; profile-derived 0.194 within gate, +0.5%). Property shift is ' +
+      'conditioning +22.6 (palmitoleic is a conditioning acid) — flagged, acknowledged as a ' +
+      'signature restore. (macadamia-nut-butter is a distinct processed form — not backfilled here.)',
+  },
+
+  'evening-primrose-oil': {
+    profile: { linoleic: 73.9, linolenic: 9.2, oleic: 7.7, palmitic: 6.3, stearic: 1.9, eicosenoic: 0.5, arachidic: 0.3, behenic: 0.1 },
+    sourceType: 'literature',
+    source:
+      'Oenothera biennis — GC table, Timoszuk et al. 2018 (Antioxidants 7(8):108, PMC 6116039), SAP/IV ' +
+      'from CIR 2017. GLA (~9%) mapped to linolenic. (A pooled CIR minor-acid table with implausible ' +
+      'behenic ~8% was identified as a transcription artifact and NOT used.)',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6116039/',
+    note:
+      'Legacy profile summed 89% with only linoleic 80 + linolenic 9 — palmitic/stearic/oleic ' +
+      'entirely missing. Gap-filled to 100%. SAP 0.188 kept (verified; profile-derived 0.192 within ' +
+      'gate, −2.2%). Property shift +8.6 hardness (adds the missing C16/C18 saturates — under the ' +
+      'guard threshold). GLA 7–12% by variety.',
+  },
+
+  'walnut-oil': {
+    profile: { linoleic: 60, oleic: 18.5, linolenic: 11.9, palmitic: 6.5, stearic: 2.7, eicosenoic: 0.2, palmitoleic: 0.1, arachidic: 0.1 },
+    sourceType: 'literature',
+    source:
+      'Juglans regia — USDA FoodData Central "Oil, walnut" (fdcId 171030), cross-checked vs Bulgarian ' +
+      'J. Agric. Sci. (4-sample means) and Poggetti et al. 2018. NOT in Codex CXS 210 (verified — the ' +
+      '2024 additions were avocado/camellia/sacha-inchi/high-oleic-soybean, not walnut).',
+    url: 'http://agrojournal.org/21/03-04.pdf', // FDC web food-detail URLs 404; cite the verified cross-check PDF + fdcId 171030 in source
+    note:
+      'Legacy profile summed 87% and omitted linolenic — walnut carries ~12% (its drying-oil ' +
+      'signature). Gap-filled to 100%. SAP 0.193 kept (verified/FNWL; profile-derived 0.192 within ' +
+      'gate, +0.4%). Property shift +12.7 conditioning (under the guard threshold). Oleic/linoleic ' +
+      'trade off strongly by cultivar; values are central to the common high-linoleic form.',
+  },
 };

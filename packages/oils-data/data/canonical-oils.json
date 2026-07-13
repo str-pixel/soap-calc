@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T11:39:02.067Z",
+  "generatedAt": "2026-07-13T12:24:18.472Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -711,11 +711,15 @@
       "iodine": 135,
       "ins": 55,
       "fattyAcids": {
-        "oleic": 20,
-        "stearic": 4,
-        "linoleic": 43,
-        "palmitic": 10,
-        "linolenic": 5
+        "linoleic": 36.6,
+        "oleic": 21.7,
+        "linolenic": 17.7,
+        "palmitic": 10.9,
+        "stearic": 6.1,
+        "eicosenoic": 4.1,
+        "erucic": 2.3,
+        "arachidic": 0.4,
+        "behenic": 0.2
       },
       "propertiesAvailable": true,
       "sources": [
@@ -724,6 +728,11 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12189715/",
+          "notes": "Fatty-acid profile: Borago officinalis (starflower) — full GC table, PMC 12189715 (2025, Table 1), cross-checked vs a GLA monograph (Townsend Letter) and Alfa Chemistry SAP. GLA (C18:3 n-6, ~17%) mapped to the linolenic key (both C18:3, same MW — SAP/IV-equivalent).. Legacy profile summed 82% and had linoleic 43/linolenic 5 — the ~17% GLA was mislabeled/dropped and eicosenoic/erucic missing. Corrected to the true borage split. SAP 0.186 kept (verified/FNWL; profile-derived 0.191 within gate, −2.6%). Property shift +14 conditioning (under the guard threshold). GLA varies 17–25% by variety (does not move SAP). Unmapped ~1.7% (nervonic C24:1, eicosadienoic C20:2 — no keys)."
         },
         {
           "source": "fnwl",
@@ -1915,8 +1924,14 @@
       "iodine": 160,
       "ins": 30,
       "fattyAcids": {
-        "linoleic": 80,
-        "linolenic": 9
+        "linoleic": 73.9,
+        "linolenic": 9.2,
+        "oleic": 7.7,
+        "palmitic": 6.3,
+        "stearic": 1.9,
+        "eicosenoic": 0.5,
+        "arachidic": 0.3,
+        "behenic": 0.1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -1925,6 +1940,11 @@
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6116039/",
+          "notes": "Fatty-acid profile: Oenothera biennis — GC table, Timoszuk et al. 2018 (Antioxidants 7(8):108, PMC 6116039), SAP/IV from CIR 2017. GLA (~9%) mapped to linolenic. (A pooled CIR minor-acid table with implausible behenic ~8% was identified as a transcription artifact and NOT used.). Legacy profile summed 89% with only linoleic 80 + linolenic 9 — palmitic/stearic/oleic entirely missing. Gap-filled to 100%. SAP 0.188 kept (verified; profile-derived 0.192 within gate, −2.2%). Property shift +8.6 hardness (adds the missing C16/C18 saturates — under the guard threshold). GLA 7–12% by variety."
         },
         {
           "source": "fnwl",
@@ -2806,10 +2826,17 @@
       "iodine": 76,
       "ins": 119,
       "fattyAcids": {
-        "oleic": 59,
-        "stearic": 5,
+        "oleic": 59.4,
+        "palmitoleic": 19.1,
+        "palmitic": 8.6,
+        "stearic": 3.5,
+        "arachidic": 2.5,
+        "eicosenoic": 2.5,
         "linoleic": 2,
-        "palmitic": 9
+        "behenic": 0.9,
+        "myristic": 0.8,
+        "linolenic": 0.3,
+        "erucic": 0.3
       },
       "propertiesAvailable": true,
       "sources": [
@@ -2818,6 +2845,11 @@
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8151099/",
+          "notes": "Fatty-acid profile: Macadamia integrifolia — representative center of Yang et al. (15 China cultivars, PMC 8151099) and the widely-cited ~60% oleic / ~19% palmitoleic signature. The USDA FDC entry (~3.4% palmitoleic) is a confirmed outlier and was rejected — palmitoleic is macadamia’s signature.. Legacy profile summed 75% and omitted palmitoleic entirely — macadamia’s defining ~16–23% C16:1. Restored to 19% (cross-checked, USDA outlier rejected — the avocado lesson). SAP 0.195 kept (verified/FNWL; profile-derived 0.194 within gate, +0.5%). Property shift is conditioning +22.6 (palmitoleic is a conditioning acid) — flagged, acknowledged as a signature restore. (macadamia-nut-butter is a distinct processed form — not backfilled here.)"
         },
         {
           "source": "fnwl",
@@ -3179,10 +3211,17 @@
       "iodine": 68,
       "ins": 124,
       "fattyAcids": {
-        "oleic": 71,
-        "stearic": 7,
-        "linoleic": 2,
-        "palmitic": 7
+        "oleic": 74.4,
+        "behenic": 6.1,
+        "palmitic": 6.3,
+        "stearic": 5,
+        "arachidic": 3.3,
+        "eicosenoic": 1.8,
+        "palmitoleic": 1.4,
+        "linoleic": 0.8,
+        "linolenic": 0.5,
+        "lignoceric": 0.4,
+        "myristic": 0.1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -3191,6 +3230,11 @@
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5187941/",
+          "notes": "Fatty-acid profile: Moringa oleifera (\"ben oil\") — representative composite (Leone et al. 2016, Int J Mol Sci 17(12):2141, Table 3), cross-checked vs Anwar 2014 (J Food Sci Technol, Indian origin) and MDPI Foods 2024. Signature long-chain saturates (behenic ~6, arachidic ~3).. Legacy profile summed 87% (missing behenic/arachidic/eicosenoic/palmitoleic — the moringa long-chain-saturate fingerprint). Gap-filled to 100%. SAP 0.195 kept (verified/FNWL; profile-derived 0.188 within gate, +3.7%). Property shift +7 hardness/conditioning (under the guard threshold). Cultivar-variable (oleic 72–79); values are a sound composite."
         },
         {
           "source": "fnwl",
@@ -5986,10 +6030,14 @@
       "iodine": 145,
       "ins": 45,
       "fattyAcids": {
-        "oleic": 18,
-        "stearic": 2,
         "linoleic": 60,
-        "palmitic": 7
+        "oleic": 18.5,
+        "linolenic": 11.9,
+        "palmitic": 6.5,
+        "stearic": 2.7,
+        "eicosenoic": 0.2,
+        "palmitoleic": 0.1,
+        "arachidic": 0.1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -5998,6 +6046,11 @@
           "sapKoh": 0.189,
           "sapNaoh": 0.13475935828877006,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "http://agrojournal.org/21/03-04.pdf",
+          "notes": "Fatty-acid profile: Juglans regia — USDA FoodData Central \"Oil, walnut\" (fdcId 171030), cross-checked vs Bulgarian J. Agric. Sci. (4-sample means) and Poggetti et al. 2018. NOT in Codex CXS 210 (verified — the 2024 additions were avocado/camellia/sacha-inchi/high-oleic-soybean, not walnut).. Legacy profile summed 87% and omitted linolenic — walnut carries ~12% (its drying-oil signature). Gap-filled to 100%. SAP 0.193 kept (verified/FNWL; profile-derived 0.192 within gate, +0.4%). Property shift +12.7 conditioning (under the guard threshold). Oleic/linoleic trade off strongly by cultivar; values are central to the common high-linoleic form."
         },
         {
           "source": "fnwl",
