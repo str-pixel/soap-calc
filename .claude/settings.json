@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node /Users/str/.claude/skills/impeccable/scripts/critique-storage.mjs slug \"packages/web/src/App.tsx\")",
+      "Bash(node /Users/str/.claude/skills/impeccable/scripts/detect.mjs --json /private/tmp/claude-501/-Users-str-soap-calc/25c4d6dc-c050-4b71-b3a8-68fe34688c04/scratchpad/rendered.html)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(git checkout *)",
+      "Bash(git push *)",
+      "Bash(gh pr create --base main --head feat/additive-dose-basis-units --title 'Phase 0.4 — additive dose basis + units' --body ' *)",
+      "Skill(code-review)",
+      "Skill(code-review:*)",
+      "Bash(curl -sL -m 60 -o cosing.csv \"https://ec.europa.eu/growth/tools-databases/cosing/download/COSING_Ingredients-Fragrance%20Inventory_v2.csv\")",
+      "Bash(curl -sL -m 30 \"https://api.tech.ec.europa.eu/cosing20/1.0/api-service/ingredients?language=en&searchType=quick&text=lauric%20acid&pageSize=5&pageNumber=1\")",
+      "Bash(curl -sL -m 30 \"https://ec.europa.eu/growth/tools-databases/cosing/api/ingredients?text=lauric+acid\")",
+      "Bash(curl -sL -m 60 -o main.js \"https://ec.europa.eu/growth/tools-databases/cosing/main-ZJAJWIM4.js\")",
+      "Bash(grep -oE 'https?://[^\"'\\\\''`]*api[^\"'\\\\''`]*' main.js)",
+      "Bash(/Users/str/.claude/plugins/cache/claude-plugins-official/superpowers/d884ae04edeb/skills/subagent-driven-development/scripts/task-brief docs/superpowers/plans/2026-07-12-bar-properties-radar.md 3)",
+      "Bash(grep -ohE '`[^`]*\\\\$\\\\{[^}]*\\\\}[^`]*`' chunk-GN6JBA67.js)",
+      "Bash(grep -oE '\"[^\"]{0,60}\\(ingredient|search|substance\\)[^\"]{0,60}\"' chunk-NRCW63S7.js)",
+      "Bash(/Users/str/.claude/plugins/cache/claude-plugins-official/superpowers/d884ae04edeb/skills/subagent-driven-development/scripts/review-package cf10db0 *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('packages/oils-data/sources/supplemental-inci.json','utf8'\\)\\); console.log\\('supplemental-inci.json: valid JSON'\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(grep -n \"dilution,\\\\|{dilution &&\\\\|neutralization\\\\|formatPropertyScore\" packages/web/src/components/BatchSheet.tsx)",
+      "Bash(git rev-list *)",
+      "Bash(python3 -c ' *)",
+      "Bash(npx tsx -e ' *)",
+      "Bash(echo \"typecheck exit: $?\")",
+      "Bash(command -v brew)",
+      "Bash(python3 -m pip --version)",
+      "Bash(npx tsx --eval ' *)"
+    ]
+  }
+}
