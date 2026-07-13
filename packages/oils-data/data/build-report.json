@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T11:39:02.067Z",
+  "generatedAt": "2026-07-13T12:24:18.472Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -544,6 +544,154 @@
       "acknowledged": false
     },
     {
+      "name": "Borage Oil",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 68,
+          "after": 82.39999999999999,
+          "delta": 14.4
+        },
+        {
+          "property": "hardness",
+          "before": 14,
+          "after": 17.599999999999998,
+          "delta": 3.6
+        },
+        {
+          "property": "longevity",
+          "before": 14,
+          "after": 17.599999999999998,
+          "delta": 3.6
+        },
+        {
+          "property": "creamy",
+          "before": 14,
+          "after": 17,
+          "delta": 3
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Evening Primrose Oil",
+      "shifts": [
+        {
+          "property": "hardness",
+          "before": 0,
+          "after": 8.6,
+          "delta": 8.6
+        },
+        {
+          "property": "longevity",
+          "before": 0,
+          "after": 8.6,
+          "delta": 8.6
+        },
+        {
+          "property": "creamy",
+          "before": 0,
+          "after": 8.2,
+          "delta": 8.2
+        },
+        {
+          "property": "condition",
+          "before": 89,
+          "after": 91.30000000000001,
+          "delta": 2.3
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Macadamia Nut Oil",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 61,
+          "after": 83.6,
+          "delta": 22.6
+        },
+        {
+          "property": "hardness",
+          "before": 14,
+          "after": 16.3,
+          "delta": 2.3
+        },
+        {
+          "property": "creamy",
+          "before": 14,
+          "after": 12.1,
+          "delta": -1.9
+        },
+        {
+          "property": "longevity",
+          "before": 14,
+          "after": 15.5,
+          "delta": 1.5
+        },
+        {
+          "property": "bubbly",
+          "before": 0,
+          "after": 0.8,
+          "delta": 0.8
+        },
+        {
+          "property": "cleansing",
+          "before": 0,
+          "after": 0.8,
+          "delta": 0.8
+        }
+      ],
+      "flagged": true,
+      "acknowledged": true
+    },
+    {
+      "name": "Moringa Oil",
+      "shifts": [
+        {
+          "property": "hardness",
+          "before": 14,
+          "after": 21.199999999999996,
+          "delta": 7.2
+        },
+        {
+          "property": "longevity",
+          "before": 14,
+          "after": 21.1,
+          "delta": 7.1
+        },
+        {
+          "property": "condition",
+          "before": 73,
+          "after": 78.9,
+          "delta": 5.9
+        },
+        {
+          "property": "creamy",
+          "before": 14,
+          "after": 11.3,
+          "delta": -2.7
+        },
+        {
+          "property": "bubbly",
+          "before": 0,
+          "after": 0.1,
+          "delta": 0.1
+        },
+        {
+          "property": "cleansing",
+          "before": 0,
+          "after": 0.1,
+          "delta": 0.1
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
       "name": "Mustard Oil, kachi ghani",
       "shifts": [
         {
@@ -592,6 +740,37 @@
       ],
       "flagged": true,
       "acknowledged": true
+    },
+    {
+      "name": "Walnut Oil",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 78,
+          "after": 90.7,
+          "delta": 12.7
+        },
+        {
+          "property": "hardness",
+          "before": 9,
+          "after": 9.299999999999999,
+          "delta": 0.3
+        },
+        {
+          "property": "longevity",
+          "before": 9,
+          "after": 9.299999999999999,
+          "delta": 0.3
+        },
+        {
+          "property": "creamy",
+          "before": 9,
+          "after": 9.2,
+          "delta": 0.2
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
     }
   ]
 }
