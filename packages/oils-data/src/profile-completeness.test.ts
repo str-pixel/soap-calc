@@ -48,6 +48,49 @@ describe('fatty-acid profile completeness (catalog guard)', () => {
   });
 });
 
+/**
+ * Lauric-oil MCT guard — catches a truncation class the completeness gate above CANNOT see.
+ *
+ * Natural C12-dominant palm / palm-kernel oils (coconut, palm kernel, babassu, murumuru, cohune,
+ * tucumã…) all biosynthesize caprylic (C8:0) + capric (C10:0) alongside lauric/myristic via the
+ * same medium-chain acyl-ACP thioesterase pathway. A lauric-dominant oil with LITERALLY ZERO
+ * C8/C10 is therefore a truncation artifact, not a real composition. But because lauric+myristic
+ * dominate, such a profile still sums ≥93% — so `incompleteProfileOils` never flags it (palm-kernel
+ * summed *exactly* 93.0%). Our cleansing score counts C8/C10, so the omission silently understates
+ * these oils' cleansing/bubbly bars relative to their backfilled cousins. This guard makes the
+ * class explicit and un-missable.
+ *
+ * Bounds: `lauric ≥ 30` marks a "lauric oil"; `lauric < 90` excludes pure single-acid additives
+ * (lauric-acid is ~99% lauric and legitimately carries no C8/C10).
+ *
+ * Allowlist = lauric oils whose stored profile is still C8/C10-truncated, pending a sourced
+ * backfill. REMOVE an id when PROFILE_BACKFILL gives it real C8/C10; a NEW id here means a
+ * freshly-added lauric oil shipped a truncated profile and needs review. Per-oil C8/C10 percentages
+ * are NOT asserted here (they need a cited source before any backfill) — only the presence gap is.
+ */
+const LAURIC_DOMINANT_MIN = 30; // % lauric that marks an oil as "a lauric oil"
+const PURE_ACID_MAX = 90; // at/above this it is a single-acid additive, not an oil
+const LAURIC_OILS_MISSING_MCT = new Set<string>([
+  'babassu-oil', // stored lauric/myristic also inflated (~50/20 vs cited ~47/~16) — full reprofile, source-first
+  'cohune-oil', // Attalea cohune (babassu relative) co-produces C8/C10 — truncated; needs a cited profile
+  'murumuru-butter', // Astrocaryum murumuru co-produces C8/C10 — truncated; needs a cited profile
+  'coconut-oil-92', // hydrogenated coconut — C8/C10 survive hydrogenation (it saturates, not shortens); needs a sourced profile
+  'palm-kernel-oil-flakes-hydrogenated', // hydrogenated PKO — same: C8/C10 survive; needs a sourced profile
+]);
+
+describe('lauric-oil MCT completeness (catalog guard)', () => {
+  it('every lauric-dominant oil carries C8/C10 except the known-truncated allowlist', () => {
+    const missing = db.oils
+      .filter((o) => {
+        const lauric = o.fattyAcids?.lauric ?? 0;
+        if (lauric < LAURIC_DOMINANT_MIN || lauric >= PURE_ACID_MAX) return false;
+        return ((o.fattyAcids?.caprylic ?? 0) + (o.fattyAcids?.capric ?? 0)) === 0;
+      })
+      .map((o) => o.id);
+    expect(missing.sort()).toEqual([...LAURIC_OILS_MISSING_MCT].sort());
+  });
+});
+
 describe('incompleteProfileOils', () => {
   const oils: Parameters<typeof incompleteProfileOils>[0] = [
     { id: 'complete', propertiesAvailable: true, fattyAcids: { oleic: 70, palmitic: 30 } }, // 100
