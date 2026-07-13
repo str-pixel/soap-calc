@@ -37,19 +37,14 @@ const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   'macadamia-nut-butter',
   'tallow-sheep',
   'aloe-butter',
-  'karanja-oil',
   'cupuacu-butter',
-  'broccoli-seed-oil-brassica-oleracea',
   'coffee-bean-oil-roasted',
   'coconut-oil-76',
   'coconut-oil-92',
-  'saw-palmetto-oil',
   'saw-palmetto-extract',
-  'tucuma-seed-butter',
   'tallow-bear',
   // avocado-oil was here — Phase 5 backfilled it to 100% from USDA FDC (see PROFILE_BACKFILL).
   'avocado-butter',
-  'sal-butter',
 ]);
 
 describe('fatty-acid profile completeness (catalog guard)', () => {

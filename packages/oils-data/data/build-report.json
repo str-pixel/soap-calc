@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T12:24:18.472Z",
+  "generatedAt": "2026-07-13T12:49:42.309Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -575,6 +575,37 @@
       "acknowledged": false
     },
     {
+      "name": "Broccoli Seed Oil, Brassica Oleracea",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 84,
+          "after": 93.4,
+          "delta": 9.4
+        },
+        {
+          "property": "hardness",
+          "before": 4,
+          "after": 6.6,
+          "delta": 2.6
+        },
+        {
+          "property": "longevity",
+          "before": 4,
+          "after": 6.6,
+          "delta": 2.6
+        },
+        {
+          "property": "creamy",
+          "before": 4,
+          "after": 4.6,
+          "delta": 0.6
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
       "name": "Evening Primrose Oil",
       "shifts": [
         {
@@ -600,6 +631,49 @@
           "before": 89,
           "after": 91.30000000000001,
           "delta": 2.3
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Karanja Oil",
+      "shifts": [
+        {
+          "property": "hardness",
+          "before": 12,
+          "after": 23.799999999999997,
+          "delta": 11.8
+        },
+        {
+          "property": "longevity",
+          "before": 12,
+          "after": 22.799999999999997,
+          "delta": 10.8
+        },
+        {
+          "property": "condition",
+          "before": 73,
+          "after": 76.2,
+          "delta": 3.2
+        },
+        {
+          "property": "creamy",
+          "before": 12,
+          "after": 13.2,
+          "delta": 1.2
+        },
+        {
+          "property": "bubbly",
+          "before": 0,
+          "after": 1,
+          "delta": 1
+        },
+        {
+          "property": "cleansing",
+          "before": 0,
+          "after": 1,
+          "delta": 1
         }
       ],
       "flagged": false,
@@ -740,6 +814,117 @@
       ],
       "flagged": true,
       "acknowledged": true
+    },
+    {
+      "name": "Sal Butter",
+      "shifts": [
+        {
+          "property": "hardness",
+          "before": 50,
+          "after": 58.5,
+          "delta": 8.5
+        },
+        {
+          "property": "longevity",
+          "before": 50,
+          "after": 58.5,
+          "delta": 8.5
+        },
+        {
+          "property": "condition",
+          "before": 42,
+          "after": 41.5,
+          "delta": -0.5
+        },
+        {
+          "property": "creamy",
+          "before": 50,
+          "after": 49.5,
+          "delta": -0.5
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Saw Palmetto Oil",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 36,
+          "after": 44.49999999999999,
+          "delta": 8.5
+        },
+        {
+          "property": "hardness",
+          "before": 53,
+          "after": 50,
+          "delta": -3
+        },
+        {
+          "property": "bubbly",
+          "before": 42,
+          "after": 44.49999999999999,
+          "delta": 2.5
+        },
+        {
+          "property": "cleansing",
+          "before": 42,
+          "after": 44.49999999999999,
+          "delta": 2.5
+        },
+        {
+          "property": "longevity",
+          "before": 11,
+          "after": 11.1,
+          "delta": 0.1
+        },
+        {
+          "property": "creamy",
+          "before": 11,
+          "after": 10.9,
+          "delta": -0.1
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Tucuma Seed Butter",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 71,
+          "after": 78,
+          "delta": 7
+        },
+        {
+          "property": "cleansing",
+          "before": 71,
+          "after": 78,
+          "delta": 7
+        },
+        {
+          "property": "hardness",
+          "before": 77,
+          "after": 82.5,
+          "delta": 5.5
+        },
+        {
+          "property": "longevity",
+          "before": 6,
+          "after": 9,
+          "delta": 3
+        },
+        {
+          "property": "creamy",
+          "before": 6,
+          "after": 9,
+          "delta": 3
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
     },
     {
       "name": "Walnut Oil",

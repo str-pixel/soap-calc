@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T12:24:18.472Z",
+  "generatedAt": "2026-07-13T12:49:42.309Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -365,12 +365,17 @@
       "iodine": 105,
       "ins": 67,
       "fattyAcids": {
-        "oleic": 14,
-        "erucic": 50,
+        "erucic": 50.3,
+        "oleic": 14.4,
+        "linoleic": 11.3,
+        "linolenic": 9.2,
+        "eicosenoic": 7.7,
+        "palmitic": 3.6,
+        "behenic": 1,
         "stearic": 1,
-        "linoleic": 11,
-        "palmitic": 3,
-        "linolenic": 9
+        "arachidic": 0.8,
+        "docosadienoic": 0.5,
+        "lignoceric": 0.2
       }
     },
     {
@@ -1018,10 +1023,16 @@
       "iodine": 85,
       "ins": 98,
       "fattyAcids": {
-        "oleic": 58,
-        "stearic": 6,
-        "linoleic": 15,
-        "palmitic": 6
+        "oleic": 56.6,
+        "linoleic": 14.1,
+        "palmitic": 7.1,
+        "stearic": 6.1,
+        "behenic": 5.1,
+        "arachidic": 3,
+        "eicosenoic": 3,
+        "linolenic": 2.5,
+        "lignoceric": 1.5,
+        "myristic": 1
       }
     },
     {
@@ -2237,10 +2248,12 @@
       "iodine": 39,
       "ins": 146,
       "fattyAcids": {
-        "oleic": 40,
-        "stearic": 44,
+        "stearic": 43,
+        "oleic": 39.5,
+        "arachidic": 8.5,
+        "palmitic": 6.5,
         "linoleic": 2,
-        "palmitic": 6
+        "behenic": 0.5
       }
     },
     {
@@ -2282,13 +2295,19 @@
       "iodine": 44,
       "ins": 176,
       "fattyAcids": {
-        "oleic": 31,
-        "lauric": 29,
-        "stearic": 2,
-        "linoleic": 4,
-        "myristic": 13,
+        "oleic": 36.4,
+        "lauric": 27.7,
+        "myristic": 11.2,
         "palmitic": 9,
-        "linolenic": 1
+        "linoleic": 6.3,
+        "caprylic": 2.8,
+        "capric": 2.8,
+        "stearic": 1.9,
+        "linolenic": 1.3,
+        "palmitoleic": 0.3,
+        "eicosenoic": 0.2,
+        "arachidic": 0.1,
+        "behenic": 0.1
       }
     },
     {
@@ -2667,10 +2686,14 @@
       "iodine": 13,
       "ins": 175,
       "fattyAcids": {
-        "oleic": 13,
-        "lauric": 48,
-        "myristic": 23,
-        "palmitic": 6
+        "lauric": 47.5,
+        "myristic": 26,
+        "oleic": 11,
+        "palmitic": 6,
+        "stearic": 3,
+        "capric": 2.5,
+        "caprylic": 2,
+        "linoleic": 2
       }
     },
     {
