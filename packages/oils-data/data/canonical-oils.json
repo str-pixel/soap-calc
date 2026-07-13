@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T17:28:37.330Z",
+  "generatedAt": "2026-07-13T17:34:24.597Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -199,7 +199,7 @@
         {
           "source": "literature",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
-          "notes": "Fatty-acid profile: Aloe butter is coconut oil with aloe vera extract, solidified — the aloe extract is a minor non-fatty-acid additive, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 dropped, no key).. Legacy profile summed 83% and omitted caprylic/capric (coconut’s C8/C10). Filled to the coconut composition. SAP 0.24 kept (profile-derived 0.247, −2.8%, within gate). Property shift is cleansing/bubbly +16 (restoring the C8/C10) — flagged, acknowledged. Derived/blend product; the coconut FA is representative, not a measured aloe-butter lot."
+          "notes": "Fatty-acid profile: Aloe butter is coconut oil with aloe vera extract, solidified — the aloe extract is a minor non-fatty-acid additive, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 dropped, no key). Legacy profile summed 83% and omitted caprylic/capric (coconut’s C8/C10). Filled to the coconut composition. SAP 0.24 kept (profile-derived 0.247, −2.8%, within gate). Property shift is cleansing/bubbly +16 (restoring the C8/C10) — flagged, acknowledged. Derived/blend product; the coconut FA is representative, not a measured aloe-butter lot."
         },
         {
           "source": "manual",
@@ -430,7 +430,7 @@
         {
           "source": "literature",
           "url": "https://www.ocl-journal.org/articles/ocl/full_html/2021/01/ocl200126/ocl200126.html",
-          "notes": "Fatty-acid profile: Representative avocado composition — mean of four varieties (Ettinger, Fuerte, Hass, Reed) from \"Chemical characterization of oil from four Avocado varieties cultivated in Morocco\", OCL — Oilseeds & fats, Crops and Lipids (2021). Cross-checked against USDA FDC SR-Legacy (fdcId 173573), which is a high-oleic / low-palmitoleic outlier (palmitoleic 3% vs lit. 6–12%).. Legacy profile summed 92% (no palmitoleic/linolenic; palmitic 20% high). Avocado FA is highly cultivar-variable (palmitic 10–29%, oleic 36–74%, palmitoleic 6–12%), so a single source is unsafe; replaced with the peer-reviewed 4-variety mean, restoring the signature palmitoleic (~8%). Profile-derived SAP 0.194 agrees with stored 0.188 (−3.3%, within the gate). Property scores (hardness 16, conditioning 84) land between legacy (22/70) and the FDC point (12/88)."
+          "notes": "Fatty-acid profile: Representative avocado composition — mean of four varieties (Ettinger, Fuerte, Hass, Reed) from \"Chemical characterization of oil from four Avocado varieties cultivated in Morocco\", OCL — Oilseeds & fats, Crops and Lipids (2021). Cross-checked against USDA FDC SR-Legacy (fdcId 173573), which is a high-oleic / low-palmitoleic outlier (palmitoleic 3% vs lit. 6–12%). Legacy profile summed 92% (no palmitoleic/linolenic; palmitic 20% high). Avocado FA is highly cultivar-variable (palmitic 10–29%, oleic 36–74%, palmitoleic 6–12%), so a single source is unsafe; replaced with the peer-reviewed 4-variety mean, restoring the signature palmitoleic (~8%). Profile-derived SAP 0.194 agrees with stored 0.188 (−3.3%, within the gate). Property scores (hardness 16, conditioning 84) land between legacy (22/70) and the FDC point (12/88)."
         },
         {
           "source": "fnwl",
@@ -742,7 +742,7 @@
         {
           "source": "literature",
           "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12189715/",
-          "notes": "Fatty-acid profile: Borago officinalis (starflower) — full GC table, PMC 12189715 (2025, Table 1), cross-checked vs a GLA monograph (Townsend Letter) and Alfa Chemistry SAP. GLA (C18:3 n-6, ~17%) mapped to the linolenic key (both C18:3, same MW — SAP/IV-equivalent).. Legacy profile summed 82% and had linoleic 43/linolenic 5 — the ~17% GLA was mislabeled/dropped and eicosenoic/erucic missing. Corrected to the true borage split. SAP 0.186 kept (verified/FNWL; profile-derived 0.191 within gate, −2.6%). Property shift +14 conditioning (under the guard threshold). GLA varies 17–25% by variety (does not move SAP). Unmapped ~1.7% (nervonic C24:1, eicosadienoic C20:2 — no keys)."
+          "notes": "Fatty-acid profile: Borago officinalis (starflower) — full GC table, PMC 12189715 (2025, Table 1), cross-checked vs a GLA monograph (Townsend Letter) and Alfa Chemistry SAP. GLA (C18:3 n-6, ~17%) mapped to the linolenic key (both C18:3, same MW — SAP/IV-equivalent). Legacy profile summed 82% and had linoleic 43/linolenic 5 — the ~17% GLA was mislabeled/dropped and eicosenoic/erucic missing. Corrected to the true borage split. SAP 0.186 kept (verified/FNWL; profile-derived 0.191 within gate, −2.6%). Property shift +14 conditioning (under the guard threshold). GLA varies 17–25% by variety (does not move SAP). Unmapped ~1.7% (nervonic C24:1, eicosadienoic C20:2 — no keys)."
         },
         {
           "source": "fnwl",
@@ -866,7 +866,7 @@
         {
           "source": "literature",
           "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7907780/",
-          "notes": "Fatty-acid profile: Brassica oleracea (broccoli) seed oil — high-erucic Brassica. Cold-pressed GC (PMC7907780, erucic 51%) + supplier specs (NHR/Nature-in-Bottle). Chose the high-erucic commercial consensus over a low-erucic/high-linolenic outlier study. Nervonic (C24:1, <2%) unmapped.. Legacy profile summed 88% and already had erucic 50 — only the eicosenoic (~7.7%) + minor C20–C24 acids were missing. Gap-filled to 100%. SAP 0.172 kept (profile-derived 0.172, −0.3%, near-perfect; high erucic lowers SAP). Property shift +9.4 conditioning (under threshold). Erucic ranges 33–51 by cultivar/extraction."
+          "notes": "Fatty-acid profile: Brassica oleracea (broccoli) seed oil — high-erucic Brassica. Cold-pressed GC (PMC7907780, erucic 51%) + supplier specs (NHR/Nature-in-Bottle). Chose the high-erucic commercial consensus over a low-erucic/high-linolenic outlier study. Nervonic (C24:1, <2%) unmapped. Legacy profile summed 88% and already had erucic 50 — only the eicosenoic (~7.7%) + minor C20–C24 acids were missing. Gap-filled to 100%. SAP 0.172 kept (profile-derived 0.172, −0.3%, near-perfect; high erucic lowers SAP). Property shift +9.4 conditioning (under threshold). Erucic ranges 33–51 by cultivar/extraction."
         },
         {
           "source": "manual",
@@ -1458,7 +1458,7 @@
         {
           "source": "literature",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
-          "notes": "Fatty-acid profile: Codex CXS 210 coconut oil (range midpoints, normalized) — shared CODEX_COCONUT constant. Restores the caprylic (C8, ~7%) + capric (C10, ~6%) that coconut carries but the legacy profile truncated.. GOLDEN-SAP oil — stored 0.258 KEPT (verified; the golden-SAP validator still passes). Profile-derived 0.247 is within the gate (+4.5%, the known lauric-oil FA-vs-measured gap); derived IV 10 matches stored 10. Legacy profile summed 89%, omitting C8/C10; adding them raises cleansing/bubbly +12.3 (coconut’s well-known high cleansing partly comes from C8/C10, which our property model counts) — under the guard threshold. NOTE this is a high-visibility change: coconut is in most recipes, so its cleansing/bubbly bars move up. coconut-oil-92 (hydrogenated, IV 3) is NOT given this profile — it needs a hydrogenated-coconut source."
+          "notes": "Fatty-acid profile: Codex CXS 210 coconut oil (range midpoints, normalized) — shared CODEX_COCONUT constant. Restores the caprylic (C8, ~7%) + capric (C10, ~6%) that coconut carries but the legacy profile truncated. GOLDEN-SAP oil — stored 0.258 KEPT (verified; the golden-SAP validator still passes). Profile-derived 0.247 is within the gate (+4.5%, the known lauric-oil FA-vs-measured gap); derived IV 10 matches stored 10. Legacy profile summed 89%, omitting C8/C10; adding them raises cleansing/bubbly +12.3 (coconut’s well-known high cleansing partly comes from C8/C10, which our property model counts) — under the guard threshold. NOTE this is a high-visibility change: coconut is in most recipes, so its cleansing/bubbly bars move up. coconut-oil-92 (hydrogenated, IV 3) is NOT given this profile — it needs a hydrogenated-coconut source."
         },
         {
           "source": "fnwl",
@@ -1681,7 +1681,7 @@
         {
           "source": "literature",
           "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6040754/",
-          "notes": "Fatty-acid profile: Coffea arabica (roasted) — Böger et al. 2021 (Grasas y Aceites 72(1) e394, roasted arabica, pressed) + Raba et al. 2018 (PLoS ONE, PMC6040754, green). Roasting barely shifts the FA profile. Chose the linoleic-dominant consensus over a palmitic-dominant SFE variety.. Legacy profile summed 88% (missing stearic/arachidic + minors). Gap-filled to 100%. The stored SAP 0.18 was too low: the profile derives 0.196 (Böger measured 0.195), so SAP is corrected to 0.195 via LEGACY_SAP_CORRECTIONS (no FNWL match). Property shift +6 (under the guard threshold). Palmitic/linoleic split is variety/extraction-dependent (a palmitic-heavy camp exists)."
+          "notes": "Fatty-acid profile: Coffea arabica (roasted) — Böger et al. 2021 (Grasas y Aceites 72(1) e394, roasted arabica, pressed) + Raba et al. 2018 (PLoS ONE, PMC6040754, green). Roasting barely shifts the FA profile. Chose the linoleic-dominant consensus over a palmitic-dominant SFE variety. Legacy profile summed 88% (missing stearic/arachidic + minors). Gap-filled to 100%. The stored SAP 0.18 was too low: the profile derives 0.196 (Böger measured 0.195), so SAP is corrected to 0.195 via LEGACY_SAP_CORRECTIONS (no FNWL match). Property shift +6 (under the guard threshold). Palmitic/linoleic split is variety/extraction-dependent (a palmitic-heavy camp exists)."
         },
         {
           "source": "manual",
@@ -1935,7 +1935,7 @@
         {
           "source": "literature",
           "url": "https://www.frontiersin.org/journals/sustainability/articles/10.3389/frsus.2022.682178/full",
-          "notes": "Fatty-acid profile: Theobroma grandiflorum seed fat — CIR 2017 safety assessment (Table 4) + Frontiers in Sustainability 2022. Cocoa-butter-alternative signature: high stearic ~33 + the unusually high arachidic ~10 that distinguishes it from cocoa butter (arachidic <1%). An outlier study (arachidic 0.29%, linolenic 11.6%) was rejected.. Legacy profile summed 87% (missing the ~10% arachidic signature). Gap-filled to 100%. This AUTO-CORRECTS the SAP: the stored 0.2075 was the Phase-3 midpoint of legacy 0.192 / FNWL 0.223 (chosen because the incomplete profile \"could not judge\"); now complete, the build re-resolves via profile_closest to legacy 0.192 (nearest the profile-derived 0.188). Gate then −2%. Property shift +11 hardness (arachidic — under the guard threshold). Arachidic varies ~7–15 by genotype/ripeness."
+          "notes": "Fatty-acid profile: Theobroma grandiflorum seed fat — CIR 2017 safety assessment (Table 4) + Frontiers in Sustainability 2022. Cocoa-butter-alternative signature: high stearic ~33 + the unusually high arachidic ~10 that distinguishes it from cocoa butter (arachidic <1%). An outlier study (arachidic 0.29%, linolenic 11.6%) was rejected. Legacy profile summed 87% (missing the ~10% arachidic signature). Gap-filled to 100%. This AUTO-CORRECTS the SAP: the stored 0.2075 was the Phase-3 midpoint of legacy 0.192 / FNWL 0.223 (chosen because the incomplete profile \"could not judge\"); now complete, the build re-resolves via profile_closest to legacy 0.192 (nearest the profile-derived 0.188). Gate then −2%. Property shift +11 hardness (arachidic — under the guard threshold). Arachidic varies ~7–15 by genotype/ripeness."
         },
         {
           "source": "fnwl",
@@ -2444,7 +2444,7 @@
         {
           "source": "literature",
           "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4938823/",
-          "notes": "Fatty-acid profile: Pongamia pinnata (karanja) — Kesari et al. germplasm study (Physiol Mol Biol Plants, PMC4938823, 38 accessions) + Gupta & Mitra 1953 component-acid profile (via PlantFAdb). Signature C20–C24 saturates (behenic ~5, arachidic ~3, lignoceric ~1.5). Karanjin (a furanoflavonoid, not a FA) excluded.. Legacy profile summed 85% (missing the behenic/arachidic/eicosenoic/lignoceric long-chain signature). Gap-filled to 100%. SAP 0.19 kept (verified/FNWL; profile-derived 0.188, +1.1%). Property shift +11.8 hardness (long-chain saturates — under the guard threshold). Highly provenance-variable (oleic 34–75); a genus-level representative. Caveat: eicosenoic (C20:1) is the least-pinned acid (sources span ~1–12%); set to a conservative 3% — SAP-invariant, as a C20:1↔C18:1 shuffle barely moves the mean molar mass."
+          "notes": "Fatty-acid profile: Pongamia pinnata (karanja) — Kesari et al. germplasm study (Physiol Mol Biol Plants, PMC4938823, 38 accessions) + Gupta & Mitra 1953 component-acid profile (via PlantFAdb). Signature C20–C24 saturates (behenic ~5, arachidic ~3, lignoceric ~1.5). Karanjin (a furanoflavonoid, not a FA) excluded. Legacy profile summed 85% (missing the behenic/arachidic/eicosenoic/lignoceric long-chain signature). Gap-filled to 100%. SAP 0.19 kept (verified/FNWL; profile-derived 0.188, +1.1%). Property shift +11.8 hardness (long-chain saturates — under the guard threshold). Highly provenance-variable (oleic 34–75); a genus-level representative. Caveat: eicosenoic (C20:1) is the least-pinned acid (sources span ~1–12%); set to a conservative 3% — SAP-invariant, as a C20:1↔C18:1 shuffle barely moves the mean molar mass."
         },
         {
           "source": "fnwl",
@@ -2920,7 +2920,7 @@
         {
           "source": "literature",
           "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8151099/",
-          "notes": "Fatty-acid profile: Macadamia integrifolia — representative center of Yang et al. (15 China cultivars, PMC 8151099) and the widely-cited ~60% oleic / ~19% palmitoleic signature. The USDA FDC entry (~3.4% palmitoleic) is a confirmed outlier and was rejected — palmitoleic is macadamia’s signature.. Legacy profile summed 75% and omitted palmitoleic entirely — macadamia’s defining ~16–23% C16:1. Restored to 19% (cross-checked, USDA outlier rejected — the avocado lesson). SAP 0.195 kept (verified/FNWL; profile-derived 0.194 within gate, +0.5%). Property shift is conditioning +22.6 (palmitoleic is a conditioning acid) — flagged, acknowledged as a signature restore. (macadamia-nut-butter is a distinct processed form — not backfilled here.)"
+          "notes": "Fatty-acid profile: Macadamia integrifolia — representative center of Yang et al. (15 China cultivars, PMC 8151099) and the widely-cited ~60% oleic / ~19% palmitoleic signature. The USDA FDC entry (~3.4% palmitoleic) is a confirmed outlier and was rejected — palmitoleic is macadamia’s signature. Legacy profile summed 75% and omitted palmitoleic entirely — macadamia’s defining ~16–23% C16:1. Restored to 19% (cross-checked, USDA outlier rejected — the avocado lesson). SAP 0.195 kept (verified/FNWL; profile-derived 0.194 within gate, +0.5%). Property shift is conditioning +22.6 (palmitoleic is a conditioning acid) — flagged, acknowledged as a signature restore. (macadamia-nut-butter is a distinct processed form — not backfilled here.)"
         },
         {
           "source": "fnwl",
@@ -3250,7 +3250,7 @@
         {
           "source": "literature",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
-          "notes": "Fatty-acid profile: Monoï de Tahiti is coconut oil infused with tiare (Gardenia) flowers — the tiare is a fragrance, not a fatty-acid source, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 caproic, ~0.3%, has no key and is dropped).. Legacy profile summed 75% and omitted caprylic/capric/oleic (the C8/C10 coconut carries). Filled to the coconut composition. SAP 0.255 kept (verified; profile-derived 0.247, +3.3%, within gate — coconut FA-derived SAP runs ~4% below the measured, a known lauric-oil effect). Property shift is cleansing/bubbly +19 (restoring the C8/C10) — flagged, acknowledged."
+          "notes": "Fatty-acid profile: Monoï de Tahiti is coconut oil infused with tiare (Gardenia) flowers — the tiare is a fragrance, not a fatty-acid source, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 caproic, ~0.3%, has no key and is dropped). Legacy profile summed 75% and omitted caprylic/capric/oleic (the C8/C10 coconut carries). Filled to the coconut composition. SAP 0.255 kept (verified; profile-derived 0.247, +3.3%, within gate — coconut FA-derived SAP runs ~4% below the measured, a known lauric-oil effect). Property shift is cleansing/bubbly +19 (restoring the C8/C10) — flagged, acknowledged."
         },
         {
           "source": "fnwl",
@@ -3316,7 +3316,7 @@
         {
           "source": "literature",
           "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5187941/",
-          "notes": "Fatty-acid profile: Moringa oleifera (\"ben oil\") — representative composite (Leone et al. 2016, Int J Mol Sci 17(12):2141, Table 3), cross-checked vs Anwar 2014 (J Food Sci Technol, Indian origin) and MDPI Foods 2024. Signature long-chain saturates (behenic ~6, arachidic ~3).. Legacy profile summed 87% (missing behenic/arachidic/eicosenoic/palmitoleic — the moringa long-chain-saturate fingerprint). Gap-filled to 100%. SAP 0.195 kept (verified/FNWL; profile-derived 0.188 within gate, +3.7%). Property shift +7 hardness/conditioning (under the guard threshold). Cultivar-variable (oleic 72–79); values are a sound composite."
+          "notes": "Fatty-acid profile: Moringa oleifera (\"ben oil\") — representative composite (Leone et al. 2016, Int J Mol Sci 17(12):2141, Table 3), cross-checked vs Anwar 2014 (J Food Sci Technol, Indian origin) and MDPI Foods 2024. Signature long-chain saturates (behenic ~6, arachidic ~3). Legacy profile summed 87% (missing behenic/arachidic/eicosenoic/palmitoleic — the moringa long-chain-saturate fingerprint). Gap-filled to 100%. SAP 0.195 kept (verified/FNWL; profile-derived 0.188 within gate, +3.7%). Property shift +7 hardness/conditioning (under the guard threshold). Cultivar-variable (oleic 72–79); values are a sound composite."
         },
         {
           "source": "fnwl",
@@ -3478,7 +3478,7 @@
         {
           "source": "literature",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
-          "notes": "Fatty-acid profile: High-erucic mustard (Brassica juncea, kachi ghani). Present acids kept — all within Codex CXS 210 mustardseed ranges (verified against the FAO standard); erucic 42% + eicosenoic 9% gap-filled to a kachi-ghani-representative value (literature erucic 40–48%, above the Codex all-mustard midpoint of 36%, which understates the traditional high-erucic variety). Codex CXS 210 Table 1 (mustardseed oil).. Legacy profile summed 45% — the classic SoapCalc high-erucic truncation (erucic + eicosenoic dropped). Gap-filled to 100%; SAP 0.172 kept (verified/FNWL, within Codex [0.168–0.184]; profile-derived 0.175 agrees, −1.6%; derived IV 105 ≈ stored 101). Property shift is conditioning +51 (erucic/eicosenoic are conditioning acids) — flagged, acknowledged as a truncation restore. Two Codex minors (C20:2, C24:1, ~2%) are unmapped in our acid model."
+          "notes": "Fatty-acid profile: High-erucic mustard (Brassica juncea, kachi ghani). Present acids kept — all within Codex CXS 210 mustardseed ranges (verified against the FAO standard); erucic 42% + eicosenoic 9% gap-filled to a kachi-ghani-representative value (literature erucic 40–48%, above the Codex all-mustard midpoint of 36%, which understates the traditional high-erucic variety). Codex CXS 210 Table 1 (mustardseed oil). Legacy profile summed 45% — the classic SoapCalc high-erucic truncation (erucic + eicosenoic dropped). Gap-filled to 100%; SAP 0.172 kept (verified/FNWL, within Codex [0.168–0.184]; profile-derived 0.175 agrees, −1.6%; derived IV 105 ≈ stored 101). Property shift is conditioning +51 (erucic/eicosenoic are conditioning acids) — flagged, acknowledged as a truncation restore. Two Codex minors (C20:2, C24:1, ~2%) are unmapped in our acid model."
         },
         {
           "source": "fnwl",
@@ -3795,7 +3795,7 @@
         {
           "source": "literature",
           "url": "https://www.fao.org/input/download/standards/336/CXS_210e_2015.pdf",
-          "notes": "Fatty-acid profile: Ang, Liu & Huang (eds.), Asian Foods (1999) representative palm-kernel-oil profile — every acid falls inside the Codex CXS 210 range for palm kernel oil (cross-checked). Restores the caprylic (C8, ~3.3%) + capric (C10, ~3.4%) that PKO carries but the legacy profile dropped.. CONSISTENCY backfill (not a truncation flag): legacy summed exactly 93.0% — it passes the 93% completeness gate yet OMITS PKO’s real C8/C10, so the completeness test never surfaced it. Clean gap-fill: stored lauric 49 / myristic 16 already match Codex/Ang (~48/~16, NOT inflated), so this only ADDS the dropped C8/C10. SAP resolution unchanged — profile-derived rises 0.2335→0.2375 but still resolves closest to legacy 0.247 (vs FNWL 0.203), which is kept; derived IV 19 ≈ stored 20. Cleansing/bubbly +6.1 (C8/C10 entering the cleansing set), under the guard threshold. Contrast babassu-oil, whose stored lauric/myristic ARE inflated (needs a full reprofile, not a gap-fill) — held for its own row."
+          "notes": "Fatty-acid profile: Ang, Liu & Huang (eds.), Asian Foods (1999) representative palm-kernel-oil profile — every acid falls inside the Codex CXS 210 range for palm kernel oil (cross-checked). Restores the caprylic (C8, ~3.3%) + capric (C10, ~3.4%) that PKO carries but the legacy profile dropped. CONSISTENCY backfill (not a truncation flag): legacy summed exactly 93.0% — it passes the 93% completeness gate yet OMITS PKO’s real C8/C10, so the completeness test never surfaced it. Clean gap-fill: stored lauric 49 / myristic 16 already match Codex/Ang (~48/~16, NOT inflated), so this only ADDS the dropped C8/C10. SAP resolution unchanged — profile-derived rises 0.2335→0.2375 but still resolves closest to legacy 0.247 (vs FNWL 0.203), which is kept; derived IV 19 ≈ stored 20. Cleansing/bubbly +6.1 (C8/C10 entering the cleansing set), under the guard threshold. Contrast babassu-oil, whose stored lauric/myristic ARE inflated (needs a full reprofile, not a gap-fill) — held for its own row."
         },
         {
           "source": "fnwl",
@@ -4772,7 +4772,7 @@
         {
           "source": "literature",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
-          "notes": "Fatty-acid profile: High-erucic rapeseed (HEAR). Legacy minors (oleic/linoleic/linolenic/palmitic/stearic — all within Codex CXS 210 high-erucic rapeseed ranges) kept; erucic (48%) and eicosenoic (8%) gap-filled to representative HEAR values (erucic ~46–50% per literature). Codex CXS 210, Standard for Named Vegetable Oils, Table 1 (rapeseed oil).. Identity correction: this entry (legacy displayName \"Rapeseed Oil, unrefined canola\") is high-erucic rapeseed, NOT canola — a separate canola-oil entry already exists. Its SAP 0.175 is the HEAR value (erucic’s high MW lowers SAP) and STAYS; the legacy profile had the ~50% erucic + eicosenoic truncated (sum 44%). Gap-filled to 100%; derived SAP 0.174 agrees with stored 0.175 (+0.6%). Property shift is conditioning +56 (erucic/eicosenoic are conditioning acids) — the property-shift guard flags it, correctly (restoring truncated data). Renamed to drop the canola misnomer."
+          "notes": "Fatty-acid profile: High-erucic rapeseed (HEAR). Legacy minors (oleic/linoleic/linolenic/palmitic/stearic — all within Codex CXS 210 high-erucic rapeseed ranges) kept; erucic (48%) and eicosenoic (8%) gap-filled to representative HEAR values (erucic ~46–50% per literature). Codex CXS 210, Standard for Named Vegetable Oils, Table 1 (rapeseed oil). Identity correction: this entry (legacy displayName \"Rapeseed Oil, unrefined canola\") is high-erucic rapeseed, NOT canola — a separate canola-oil entry already exists. Its SAP 0.175 is the HEAR value (erucic’s high MW lowers SAP) and STAYS; the legacy profile had the ~50% erucic + eicosenoic truncated (sum 44%). Gap-filled to 100%; derived SAP 0.174 agrees with stored 0.175 (+0.6%). Property shift is conditioning +56 (erucic/eicosenoic are conditioning acids) — the property-shift guard flags it, correctly (restoring truncated data). Renamed to drop the canola misnomer."
         },
         {
           "source": "fnwl",
@@ -5249,7 +5249,7 @@
         {
           "source": "literature",
           "url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=902884",
-          "notes": "Fatty-acid profile: Serenoa repens CO2 berry extract — NIST SRM 3251 (certified reference material; Schantz et al. 2008). This entry IS the extract that SRM 3251 measures, so it uses the same profile as saw-palmetto-oil.. Legacy profile summed 90% (missing caprylic/capric). Gap-filled to 100% from the NIST certified reference. SAP 0.23 kept (profile-derived 0.218, +5.4%, within gate). Property shift +4.5 (under the guard threshold)."
+          "notes": "Fatty-acid profile: Serenoa repens CO2 berry extract — NIST SRM 3251 (certified reference material; Schantz et al. 2008). This entry IS the extract that SRM 3251 measures, so it uses the same profile as saw-palmetto-oil. Legacy profile summed 90% (missing caprylic/capric). Gap-filled to 100% from the NIST certified reference. SAP 0.23 kept (profile-derived 0.218, +5.4%, within gate). Property shift +4.5 (under the guard threshold)."
         },
         {
           "source": "manual",
@@ -5303,7 +5303,7 @@
         {
           "source": "literature",
           "url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=902884",
-          "notes": "Fatty-acid profile: Serenoa repens — NIST SRM 3251 (certified reference material, CO2 berry extract; Schantz et al. 2008, Anal Bioanal Chem) + commercial supplement survey (Nutrients 2013, PMC3798925). Unusual medium-chain (lauric/myristic) + oleic mix. FA composition is what SAP consumes (free-vs-ester split irrelevant). Caproic C6 (~2%) unmapped.. Legacy profile summed 89% (missing caprylic/capric). Gap-filled to 100% from the NIST certified reference. SAP 0.22 kept (verified — the medium-chain composition genuinely gives a high SAP; profile-derived 0.218, +0.8%). Property shift +7 (under threshold). Oleic:lauric ratio is ripeness/ecotype-variable; NIST CO2 extract is the best single anchor. (saw-palmetto-extract shares this NIST source — a separate row.)"
+          "notes": "Fatty-acid profile: Serenoa repens — NIST SRM 3251 (certified reference material, CO2 berry extract; Schantz et al. 2008, Anal Bioanal Chem) + commercial supplement survey (Nutrients 2013, PMC3798925). Unusual medium-chain (lauric/myristic) + oleic mix. FA composition is what SAP consumes (free-vs-ester split irrelevant). Caproic C6 (~2%) unmapped. Legacy profile summed 89% (missing caprylic/capric). Gap-filled to 100% from the NIST certified reference. SAP 0.22 kept (verified — the medium-chain composition genuinely gives a high SAP; profile-derived 0.218, +0.8%). Property shift +7 (under threshold). Oleic:lauric ratio is ripeness/ecotype-variable; NIST CO2 extract is the best single anchor. (saw-palmetto-extract shares this NIST source — a separate row.)"
         },
         {
           "source": "manual",
@@ -6144,7 +6144,7 @@
         {
           "source": "literature",
           "url": "https://www.redalyc.org/journal/1799/179955075009/html/",
-          "notes": "Fatty-acid profile: Astrocaryum vulgare / aculeatum KERNEL fat (a lauric fat like babassu/palm-kernel — NOT the high-oleic pulp oil). MDPI Thermo 2024 (kernel identity) + congeneric A. chambira kernel (Redalyc, lauric 48.6/myristic 29.8) + Bereau 2003 (A. vulgare lauric 51–52). Seed butter, per the catalog entry.. Legacy profile summed 90% (missing caprylic/capric/stearic). Gap-filled to 100%. SAP 0.238 kept (profile-derived 0.239, −0.3%, near-perfect for a lauric fat); IV 14 ≈ stored 13. Property shift +7 bubbly/cleansing (under threshold). Lauric 42–52 / myristic 26–30 by species."
+          "notes": "Fatty-acid profile: Astrocaryum vulgare / aculeatum KERNEL fat (a lauric fat like babassu/palm-kernel — NOT the high-oleic pulp oil). MDPI Thermo 2024 (kernel identity) + congeneric A. chambira kernel (Redalyc, lauric 48.6/myristic 29.8) + Bereau 2003 (A. vulgare lauric 51–52). Seed butter, per the catalog entry. Legacy profile summed 90% (missing caprylic/capric/stearic). Gap-filled to 100%. SAP 0.238 kept (profile-derived 0.239, −0.3%, near-perfect for a lauric fat); IV 14 ≈ stored 13. Property shift +7 bubbly/cleansing (under threshold). Lauric 42–52 / myristic 26–30 by species."
         },
         {
           "source": "manual",
@@ -6188,7 +6188,7 @@
         {
           "source": "literature",
           "url": "http://agrojournal.org/21/03-04.pdf",
-          "notes": "Fatty-acid profile: Juglans regia — USDA FoodData Central \"Oil, walnut\" (fdcId 171030), cross-checked vs Bulgarian J. Agric. Sci. (4-sample means) and Poggetti et al. 2018. NOT in Codex CXS 210 (verified — the 2024 additions were avocado/camellia/sacha-inchi/high-oleic-soybean, not walnut).. Legacy profile summed 87% and omitted linolenic — walnut carries ~12% (its drying-oil signature). Gap-filled to 100%. SAP 0.193 kept (verified/FNWL; profile-derived 0.192 within gate, +0.4%). Property shift +12.7 conditioning (under the guard threshold). Oleic/linoleic trade off strongly by cultivar; values are central to the common high-linoleic form."
+          "notes": "Fatty-acid profile: Juglans regia — USDA FoodData Central \"Oil, walnut\" (fdcId 171030), cross-checked vs Bulgarian J. Agric. Sci. (4-sample means) and Poggetti et al. 2018. NOT in Codex CXS 210 (verified — the 2024 additions were avocado/camellia/sacha-inchi/high-oleic-soybean, not walnut). Legacy profile summed 87% and omitted linolenic — walnut carries ~12% (its drying-oil signature). Gap-filled to 100%. SAP 0.193 kept (verified/FNWL; profile-derived 0.192 within gate, +0.4%). Property shift +12.7 conditioning (under the guard threshold). Oleic/linoleic trade off strongly by cultivar; values are central to the common high-linoleic form."
         },
         {
           "source": "fnwl",
