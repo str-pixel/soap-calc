@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T10:25:10.076Z",
+  "generatedAt": "2026-07-13T11:27:18.867Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -206,9 +206,9 @@
     },
     {
       "id": "andiroba-oil-karaba-crabwood",
-      "displayName": "Andiroba Oil,karaba,crabwood",
+      "displayName": "Andiroba Oil (karaba, crabwood)",
       "aliases": [
-        "andiroba oil karaba crabwood"
+        "andiroba oil"
       ],
       "inciName": "Carapa Guianensis Seed Oil",
       "category": "triglyceride",
@@ -240,10 +240,10 @@
       "confidence": "legacy_only"
     },
     {
-      "id": "apricot-kernal-oil",
-      "displayName": "Apricot Kernal Oil",
+      "id": "apricot-kernel-oil",
+      "displayName": "Apricot Kernel Oil",
       "aliases": [
-        "apricot kernal oil"
+        "apricot kernel oil"
       ],
       "inciName": "Prunus Armeniaca (Apricot) Kernel Oil",
       "category": "triglyceride",
@@ -349,7 +349,7 @@
     },
     {
       "id": "avocado-butter",
-      "displayName": "Avocado butter",
+      "displayName": "Avocado Butter",
       "aliases": [
         "avocado butter"
       ],
@@ -1272,10 +1272,10 @@
       "confidence": "verified"
     },
     {
-      "id": "cherry-kern1-oil-p-avium",
-      "displayName": "Cherry Kern1 Oil, p. avium",
+      "id": "cherry-kernel-oil-avium",
+      "displayName": "Cherry Kernel Oil (Prunus avium)",
       "aliases": [
-        "cherry kern1 oil p avium"
+        "cherry kernel oil"
       ],
       "inciName": "Prunus Avium (Cherry) Seed Oil",
       "category": "triglyceride",
@@ -1313,10 +1313,10 @@
       "confidence": "legacy_only"
     },
     {
-      "id": "cherry-kern2-oil-p-cerasus",
-      "displayName": "Cherry Kern2 Oil, p. cerasus",
+      "id": "cherry-kernel-oil-cerasus",
+      "displayName": "Cherry Kernel Oil (Prunus cerasus)",
       "aliases": [
-        "cherry kern2 oil p cerasus"
+        "cherry kernel oil"
       ],
       "inciName": "Prunus Cerasus (Cherry) Seed Oil",
       "category": "triglyceride",
@@ -1394,9 +1394,9 @@
     },
     {
       "id": "coconut-oil-76",
-      "displayName": "Coconut Oil, 76 deg",
+      "displayName": "Coconut Oil, 76°F",
       "aliases": [
-        "coconut oil 76"
+        "coconut oil 76 f"
       ],
       "inciName": "Cocos Nucifera (Coconut) Oil",
       "category": "triglyceride",
@@ -1450,9 +1450,9 @@
     },
     {
       "id": "coconut-oil-92",
-      "displayName": "Coconut Oil, 92 deg",
+      "displayName": "Coconut Oil, 92°F",
       "aliases": [
-        "coconut oil 92"
+        "coconut oil 92 f"
       ],
       "inciName": "Cocos Nucifera (Coconut) Oil",
       "category": "triglyceride",
@@ -2258,9 +2258,9 @@
     },
     {
       "id": "jatropha-oil-soapnut-seed-oil",
-      "displayName": "Jatropha Oil, soapnut seed oil",
+      "displayName": "Jatropha Oil (soapnut seed)",
       "aliases": [
-        "jatropha oil soapnut seed oil"
+        "jatropha oil"
       ],
       "inciName": "Jatropha Curcas Seed Oil",
       "category": "triglyceride",
@@ -2852,9 +2852,9 @@
     },
     {
       "id": "mafura-butter-trichilia-emetica",
-      "displayName": "Mafura Butter, Trichilia emetica ",
+      "displayName": "Mafura Butter (Trichilia emetica)",
       "aliases": [
-        "mafura butter trichilia emetica"
+        "mafura butter"
       ],
       "inciName": "Trichilia Emetica Seed Butter",
       "category": "triglyceride",
@@ -3112,7 +3112,7 @@
     },
     {
       "id": "monoi-de-tahiti-oil",
-      "displayName": "Monoi de Tahiti  Oil",
+      "displayName": "Monoi de Tahiti Oil",
       "aliases": [
         "monoi de tahiti oil"
       ],
@@ -3585,7 +3585,7 @@
     },
     {
       "id": "olive-oil-pomace",
-      "displayName": "Olive Oil  pomace",
+      "displayName": "Olive Oil, pomace",
       "aliases": [
         "olive oil pomace"
       ],
@@ -3931,9 +3931,9 @@
     },
     {
       "id": "papaya-seed-oil-carica-papaya",
-      "displayName": "Papaya seed oil, Carica papaya",
+      "displayName": "Papaya Seed Oil (Carica papaya)",
       "aliases": [
-        "papaya seed oil carica papaya"
+        "papaya seed oil"
       ],
       "inciName": "Carica Papaya (Papaya) Seed Oil",
       "category": "triglyceride",
@@ -4262,10 +4262,10 @@
       "confidence": "verified"
     },
     {
-      "id": "pine-tar-lye-calc-only-no-fa",
-      "displayName": "Pine Tar, lye calc only no FA",
+      "id": "pine-tar",
+      "displayName": "Pine Tar",
       "aliases": [
-        "pine tar lye calc only no fa"
+        "pine tar"
       ],
       "inciName": "Pinus Palustris (Pine) Tar",
       "category": "tar",
@@ -4489,10 +4489,10 @@
       "confidence": "estimated"
     },
     {
-      "id": "pracaxi-seed-oil-hair-conditioner",
-      "displayName": "Pracaxi (Pracachy) Seed Oil - hair conditioner",
+      "id": "pracaxi-seed-oil",
+      "displayName": "Pracaxi (Pracachy) Seed Oil",
       "aliases": [
-        "pracaxi seed oil hair conditioner"
+        "pracaxi seed oil"
       ],
       "inciName": "Pentaclethra Macroloba (Pracaxi) Seed Oil",
       "category": "triglyceride",
@@ -6168,7 +6168,7 @@
     },
     {
       "id": "zapote-seed-oil",
-      "displayName": "Zapote seed oil, (Aceite de Sapuyul or Mamey)",
+      "displayName": "Zapote Seed Oil",
       "aliases": [
         "zapote seed oil"
       ],
