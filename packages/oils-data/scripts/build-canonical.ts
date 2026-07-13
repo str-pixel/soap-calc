@@ -25,6 +25,8 @@ import { loadSupplementalOils, supplementalToCanonical, tarMetadataForLegacy } f
 import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
+import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
+import { maxAbsShift, propertyShift, PROPERTY_SHIFT_THRESHOLD, type PropertyShift } from '../src/property-shift.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -139,6 +141,7 @@ function main() {
     duplicates: [] as string[],
     supplemental: [] as string[],
     excluded: [] as string[],
+    profileBackfill: [] as Array<{ name: string; shifts: PropertyShift[]; flagged: boolean }>,
   };
 
   const excludedOilIds = new Set<string>(
@@ -166,7 +169,12 @@ function main() {
     }
     usedSlugs.add(baseSlug);
 
-    const fattyAcids = parseBreakdown(leg.breakdown);
+    // Phase 5: a curated backfill REPLACES the (truncated/wrong) legacy profile with a single-
+    // provenance, cited one. The legacy raw breakdown stays in the legacy source file; the
+    // citation is recorded as an `fdc`/provenance source record below.
+    const backfill = PROFILE_BACKFILL[baseSlug];
+    const legacyProfile = parseBreakdown(leg.breakdown);
+    const fattyAcids = backfill ? { ...backfill.profile } : legacyProfile;
     const category = inferCategory(leg.name, baseSlug);
     const propertiesAvailable = category === 'triglyceride' || category === 'blend';
 
@@ -177,6 +185,15 @@ function main() {
       sapNaoh: legacySapNaoh,
       notes: 'Imported from soap_oils.json (legacy calculator catalog)',
     }];
+
+    if (backfill) {
+      sources.push({ source: backfill.sourceType, url: backfill.url, notes: `Fatty-acid profile: ${backfill.source}. ${backfill.note}` });
+      // Property-shift guard: a backfill can be SAP-consistent yet move the property bars a lot
+      // (SAP is ~invariant to a palmitic↔oleic swap; the bars are not). Surface the deltas so a
+      // large, single-source-outlier shift is loud, not silent.
+      const shifts = propertyShift(legacyProfile, backfill.profile);
+      report.profileBackfill.push({ name: leg.name, shifts, flagged: maxAbsShift(shifts) >= PROPERTY_SHIFT_THRESHOLD });
+    }
 
     let primarySource: DataSource = 'legacy_catalog';
     let confidence: CanonicalOil['confidence'] = 'legacy_only';
@@ -496,6 +513,11 @@ function main() {
   }
   console.log(`  INCI missing product map: ${report.inciMissing.length}`);
   console.log(`  Supplemental oils: ${report.supplemental.length}`);
+  console.log(`  Profile backfilled (Phase 5): ${report.profileBackfill.length}`);
+  for (const b of report.profileBackfill) {
+    const top = b.shifts.slice(0, 3).map((s) => `${s.property} ${s.delta > 0 ? '+' : ''}${s.delta}`).join(', ');
+    console.log(`    ${b.flagged ? '⚠ ' : ''}${b.name}: property shift [${top}]${b.flagged ? ` — ≥${PROPERTY_SHIFT_THRESHOLD}pt, review` : ''}`);
+  }
   console.log(`  Excluded from catalog: ${report.excluded.length}`);
 }
 

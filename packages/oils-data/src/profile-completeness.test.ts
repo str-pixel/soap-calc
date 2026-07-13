@@ -52,7 +52,7 @@ const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   'saw-palmetto-extract',
   'tucuma-seed-butter',
   'tallow-bear',
-  'avocado-oil',
+  // avocado-oil was here — Phase 5 backfilled it to 100% from USDA FDC (see PROFILE_BACKFILL).
   'avocado-butter',
   'sal-butter',
 ]);

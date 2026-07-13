@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-12T21:29:49.205Z",
+  "generatedAt": "2026-07-13T07:07:00.259Z",
   "totalOils": 134,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -510,5 +510,37 @@
   "supplemental": [
     "Birch Tar"
   ],
-  "excluded": []
+  "excluded": [],
+  "profileBackfill": [
+    {
+      "name": "Avocado Oil",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 70,
+          "after": 84,
+          "delta": 14
+        },
+        {
+          "property": "hardness",
+          "before": 22,
+          "after": 16,
+          "delta": -6
+        },
+        {
+          "property": "longevity",
+          "before": 22,
+          "after": 16,
+          "delta": -6
+        },
+        {
+          "property": "creamy",
+          "before": 22,
+          "after": 16,
+          "delta": -6
+        }
+      ],
+      "flagged": false
+    }
+  ]
 }

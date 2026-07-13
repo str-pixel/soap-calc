@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-12T21:29:49.205Z",
+  "generatedAt": "2026-07-13T07:07:00.259Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -182,10 +182,12 @@
       "iodine": 86,
       "ins": 99,
       "fattyAcids": {
-        "oleic": 58,
-        "stearic": 2,
-        "linoleic": 12,
-        "palmitic": 20
+        "oleic": 57,
+        "linoleic": 18,
+        "palmitic": 15,
+        "palmitoleic": 8,
+        "stearic": 1,
+        "linolenic": 1
       }
     },
     {

@@ -13,6 +13,7 @@ import { loadSupplementalInci } from '../src/resolve-inci.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { classifyProfileSapDeviations } from '../src/profile-sap-deviations.js';
+import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -212,6 +213,26 @@ function main() {
 
   for (const { id, sum } of incompleteProfileOils(db.oils)) {
     warnings.push(`${id}: fatty-acid profile only ${sum.toFixed(0)}% complete — properties are estimates`);
+  }
+
+  // Phase 5 backfill drift guard: the built profile must equal the curated table (which build
+  // applies), so the sourced value lives in exactly one place. An id in the table with no oil,
+  // or a mismatch, means the build and the table have diverged.
+  for (const [id, backfill] of Object.entries(PROFILE_BACKFILL)) {
+    const oil = db.oils.find((o) => o.id === id);
+    if (!oil) {
+      errors.push(`PROFILE_BACKFILL["${id}"] has no matching oil in the built catalog`);
+      continue;
+    }
+    const built = oil.fattyAcids ?? {};
+    const expected = backfill.profile;
+    const keys = new Set([...Object.keys(built), ...Object.keys(expected)]);
+    const mismatch = [...keys].some((k) => built[k] !== expected[k]);
+    if (mismatch) {
+      errors.push(
+        `${id}: built fatty-acid profile ${JSON.stringify(built)} does not match PROFILE_BACKFILL ${JSON.stringify(expected)}`,
+      );
+    }
   }
 
   // Profile-consistency gate: the fatty-acid profile is the independent oracle for stored SAP.
