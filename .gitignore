@@ -24,3 +24,7 @@ blob-report/
 
 # impeccable skill working state (critique snapshots, live config)
 .impeccable/
+
+# Local Claude Code settings (machine-specific permission allowlist)
+.claude/settings.json
+.claude/settings.local.json
