@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T17:34:24.597Z",
+  "generatedAt": "2026-07-13T17:47:25.231Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -582,6 +582,49 @@
           "before": 22,
           "after": 16,
           "delta": -6
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Babassu Oil",
+      "shifts": [
+        {
+          "property": "hardness",
+          "before": 85,
+          "after": 74.3,
+          "delta": -10.7
+        },
+        {
+          "property": "bubbly",
+          "before": 70,
+          "after": 75,
+          "delta": 5
+        },
+        {
+          "property": "cleansing",
+          "before": 70,
+          "after": 75,
+          "delta": 5
+        },
+        {
+          "property": "creamy",
+          "before": 15,
+          "after": 11.2,
+          "delta": -3.8
+        },
+        {
+          "property": "condition",
+          "before": 10,
+          "after": 13.700000000000001,
+          "delta": 3.7
+        },
+        {
+          "property": "longevity",
+          "before": 15,
+          "after": 11.299999999999999,
+          "delta": -3.7
         }
       ],
       "flagged": false,

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T17:34:24.597Z",
+  "generatedAt": "2026-07-13T17:47:25.231Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -473,11 +473,17 @@
       "iodine": 15,
       "ins": 230,
       "fattyAcids": {
-        "oleic": 10,
-        "lauric": 50,
-        "stearic": 4,
-        "myristic": 20,
-        "palmitic": 11
+        "lauric": 47.4,
+        "myristic": 15.6,
+        "oleic": 11.4,
+        "palmitic": 8,
+        "caprylic": 6.2,
+        "capric": 5.8,
+        "stearic": 3.2,
+        "linoleic": 1.9,
+        "linolenic": 0.3,
+        "arachidic": 0.1,
+        "palmitoleic": 0.1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -486,6 +492,11 @@
           "sapKoh": 0.245,
           "sapNaoh": 0.1746880570409982,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6930611/",
+          "notes": "Fatty-acid profile: Attalea speciosa (babassu) — Melo et al. 2019 (PMC6930611, cold-pressed Brazilian babassu, 21 FAs) as primary, cross-checked vs Jackson & Wardin 1944 (JAOCS) and the Codex CXS 210 ranges. Restores caprylic (C8, ~6%) + capric (C10, ~6%) and corrects the legacy lauric/myristic (50/20), which were inflated above the cited ~47/~16. Ferreira 2012 (PMC3347479) rejected as a short-chain outlier (caprylic 9.2 / capric 9.6 / lauric 54.7). Full reprofile — legacy summed 95%, carried no C8/C10, and inflated lauric/myristic (50/20 vs cited ~47/~16). SAP 0.251 KEPT (FNWL measured, retained as primary): the now-complete profile derives 0.2432, within the gate at −3.1% of FNWL, so the measured value stands and is NOT re-resolved (verified against the build — babassu’s FNWL match is inside the gate, so unlike cupuaçu the profile does not re-pick a different stored SAP). Derived IV 15 ≈ stored 15. Property shift is hardness −10.7 (correcting the inflated lauric/myristic — babassu stays a hard oil at ~74), bubbly/cleansing +5 from the restored C8/C10; max 10.7 is under the guard, no acknowledgment. Removed from the LAURIC_OILS_MISSING_MCT guard allowlist."
         },
         {
           "source": "fnwl",
