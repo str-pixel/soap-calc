@@ -43,6 +43,11 @@ describe('FATTY_ACID_DISPLAY_GROUPS', () => {
     expect(barAcids.has('arachidic')).toBe(true);
   });
 
+  it('keeps lignoceric (C24:0) covered — long-chain saturate, ratio + bar', () => {
+    expect(ratioAcids.has('lignoceric')).toBe(true);
+    expect(barAcids.has('lignoceric')).toBe(true);
+  });
+
   it('does not fold palmitoleic into the Oleic bar (would misreport macadamia/sea-buckthorn)', () => {
     const oleic = FATTY_ACID_DISPLAY_GROUPS.find((g) => g.key === 'oleic')!;
     expect(oleic.acids).not.toContain('palmitoleic');

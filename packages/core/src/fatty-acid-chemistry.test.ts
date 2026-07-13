@@ -7,7 +7,18 @@ const COCONUT = {
   lauric: 48, myristic: 19, palmitic: 9, caprylic: 8, capric: 7, oleic: 6, stearic: 3, linoleic: 2,
 }; // 102%
 
+// pracaxi-class profile: carries lignoceric (C24:0), which the model must map to reach 100%.
+const PRACAXI = {
+  oleic: 61, linoleic: 16, behenic: 8, arachidic: 4, lignoceric: 4, palmitic: 4, stearic: 3,
+}; // 100%
+
 describe('deriveChemistryFromProfile', () => {
+  it('maps lignoceric (C24:0) so a pracaxi-class profile derives at full completeness', () => {
+    const r = deriveChemistryFromProfile(PRACAXI);
+    expect(r).not.toBeNull();
+    expect(r!.mappedPercent).toBeCloseTo(100, 0); // fails at 96 if lignoceric is unmapped
+  });
+
   it('derives olive SAP near its published ~0.190 KOH coefficient', () => {
     const r = deriveChemistryFromProfile(OLIVE);
     expect(r).not.toBeNull();

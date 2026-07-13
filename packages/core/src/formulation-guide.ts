@@ -47,7 +47,7 @@ export const FATTY_ACID_DISPLAY_GROUPS = [
   { key: 'linoleic', acids: ['linoleic'] },
   { key: 'linolenic', acids: ['linolenic'] },
   { key: 'ricinoleic', acids: ['ricinoleic'] },
-  { key: 'otherSaturated', acids: ['behenic', 'arachidic'] },
+  { key: 'otherSaturated', acids: ['behenic', 'arachidic', 'lignoceric'] },
   {
     key: 'otherUnsaturated',
     acids: ['palmitoleic', 'eicosenoic', 'docosenoic', 'docosadienoic', 'erucic'],

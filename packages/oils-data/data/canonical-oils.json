@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-12T21:29:49.205Z",
+  "generatedAt": "2026-07-13T07:07:00.259Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -402,10 +402,12 @@
       "iodine": 86,
       "ins": 99,
       "fattyAcids": {
-        "oleic": 58,
-        "stearic": 2,
-        "linoleic": 12,
-        "palmitic": 20
+        "oleic": 57,
+        "linoleic": 18,
+        "palmitic": 15,
+        "palmitoleic": 8,
+        "stearic": 1,
+        "linolenic": 1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -414,6 +416,11 @@
           "sapKoh": 0.186,
           "sapNaoh": 0.13262032085561495,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://www.ocl-journal.org/articles/ocl/full_html/2021/01/ocl200126/ocl200126.html",
+          "notes": "Fatty-acid profile: Representative avocado composition — mean of four varieties (Ettinger, Fuerte, Hass, Reed) from \"Chemical characterization of oil from four Avocado varieties cultivated in Morocco\", OCL — Oilseeds & fats, Crops and Lipids (2021). Cross-checked against USDA FDC SR-Legacy (fdcId 173573), which is a high-oleic / low-palmitoleic outlier (palmitoleic 3% vs lit. 6–12%).. Legacy profile summed 92% (no palmitoleic/linolenic; palmitic 20% high). Avocado FA is highly cultivar-variable (palmitic 10–29%, oleic 36–74%, palmitoleic 6–12%), so a single source is unsafe; replaced with the peer-reviewed 4-variety mean, restoring the signature palmitoleic (~8%). Profile-derived SAP 0.194 agrees with stored 0.188 (−3.3%, within the gate). Property scores (hardness 16, conditioning 84) land between legacy (22/70) and the FDC point (12/88)."
         },
         {
           "source": "fnwl",
