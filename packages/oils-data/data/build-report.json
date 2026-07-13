@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T07:07:00.259Z",
+  "generatedAt": "2026-07-13T08:26:32.736Z",
   "totalOils": 134,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -541,6 +541,18 @@
         }
       ],
       "flagged": false
+    },
+    {
+      "name": "Rapeseed Oil, unrefined canola",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 39,
+          "after": 95,
+          "delta": 56
+        }
+      ],
+      "flagged": true
     }
   ]
 }

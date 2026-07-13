@@ -369,10 +369,14 @@ function main() {
       report.inciMissing.push(leg.name);
     }
 
+    // A backfill may override the user-facing name when the legacy name is wrong/misleading
+    // (e.g. a high-erucic rapeseed mislabeled "unrefined canola"). Aliases follow the shown name
+    // so search no longer matches the wrong identity; the stable id (baseSlug) is unchanged.
+    const displayName = backfill?.displayName ?? leg.name;
     oils.push({
       id: baseSlug,
-      displayName: leg.name,
-      aliases: [normalizeOilName(leg.name)],
+      displayName,
+      aliases: [normalizeOilName(displayName)],
       inciName,
       category,
       ...tarMetadataForLegacy(category),

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T07:07:00.259Z",
+  "generatedAt": "2026-07-13T08:26:32.736Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -2033,9 +2033,9 @@
     },
     {
       "id": "rapeseed-oil-canola",
-      "displayName": "Rapeseed Oil, unrefined canola",
+      "displayName": "Rapeseed Oil (high-erucic)",
       "aliases": [
-        "rapeseed oil canola"
+        "rapeseed oil"
       ],
       "inciName": "Brassica Napus (Rapeseed) Seed Oil",
       "category": "triglyceride",
@@ -2047,10 +2047,12 @@
       "ins": 69,
       "fattyAcids": {
         "oleic": 17,
-        "stearic": 1,
         "linoleic": 13,
+        "linolenic": 9,
         "palmitic": 4,
-        "linolenic": 9
+        "stearic": 1,
+        "erucic": 48,
+        "eicosenoic": 8
       }
     },
     {
