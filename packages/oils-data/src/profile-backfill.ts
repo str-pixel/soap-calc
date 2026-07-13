@@ -32,6 +32,25 @@ export type ProfileBackfill = {
   note: string;
 };
 
+/**
+ * Representative coconut composition — Codex CXS 210 (coconut oil) range midpoints, normalized to
+ * 100% FA (C6 caproic, ~0.3%, has no acid key and is dropped). Single source of truth reused by the
+ * coconut-derived entries (monoi = coconut + tiare fragrance; aloe butter = coconut + aloe extract),
+ * so they can't silently diverge. FA-derived SAP ≈ 0.247 (runs ~4% below the measured ~0.257 — the
+ * known lauric-oil range-midpoint effect), so consuming entries keep their measured SAP.
+ */
+const CODEX_COCONUT: Record<string, number> = {
+  lauric: 47.6, myristic: 18.3, palmitic: 8.6, caprylic: 7.1, capric: 6.3,
+  stearic: 2.9, oleic: 7.3, linoleic: 1.7, linolenic: 0.1, arachidic: 0.1, eicosenoic: 0.1,
+};
+
+/** Serenoa repens FA composition — NIST SRM 3251 (certified reference material). Shared by the
+ *  fixed oil and the CO2 extract, which SRM 3251 actually measures (same material). */
+const SAW_PALMETTO_FA: Record<string, number> = {
+  oleic: 36.4, lauric: 27.7, myristic: 11.2, palmitic: 9, linoleic: 6.3, caprylic: 2.8,
+  capric: 2.8, stearic: 1.9, linolenic: 1.3, palmitoleic: 0.3, eicosenoic: 0.2, arachidic: 0.1, behenic: 0.1,
+};
+
 export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   'avocado-oil': {
     profile: { oleic: 57, linoleic: 18, palmitic: 15, palmitoleic: 8, stearic: 1, linolenic: 1 },
@@ -220,7 +239,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   },
 
   'saw-palmetto-oil': {
-    profile: { oleic: 36.4, lauric: 27.7, myristic: 11.2, palmitic: 9, linoleic: 6.3, caprylic: 2.8, capric: 2.8, stearic: 1.9, linolenic: 1.3, palmitoleic: 0.3, eicosenoic: 0.2, arachidic: 0.1, behenic: 0.1 },
+    profile: SAW_PALMETTO_FA,
     sourceType: 'literature',
     source:
       'Serenoa repens — NIST SRM 3251 (certified reference material, CO2 berry extract; Schantz et al. ' +
@@ -292,7 +311,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   //    fatty acid) and the saw-palmetto extract (= the NIST reference material). (avocado-butter and
   //    macadamia-butter are held — they're hardened/hydrogenated blends, not their base oils.)
   'saw-palmetto-extract': {
-    profile: { oleic: 36.4, lauric: 27.7, myristic: 11.2, palmitic: 9, linoleic: 6.3, caprylic: 2.8, capric: 2.8, stearic: 1.9, linolenic: 1.3, palmitoleic: 0.3, eicosenoic: 0.2, arachidic: 0.1, behenic: 0.1 },
+    profile: SAW_PALMETTO_FA,
     sourceType: 'literature',
     source:
       'Serenoa repens CO2 berry extract — NIST SRM 3251 (certified reference material; Schantz et al. ' +
@@ -306,7 +325,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   },
 
   'monoi-de-tahiti-oil': {
-    profile: { lauric: 47.6, myristic: 18.3, palmitic: 8.6, caprylic: 7.1, capric: 6.3, stearic: 2.9, oleic: 7.3, linoleic: 1.7, linolenic: 0.1, arachidic: 0.1, eicosenoic: 0.1 },
+    profile: CODEX_COCONUT,
     sourceType: 'literature',
     acknowledgedShift: true, // cleansing/bubbly +19 — restoring coconut's C8/C10 (monoi is coconut-based)
     source:
@@ -323,7 +342,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   },
 
   'aloe-butter': {
-    profile: { lauric: 47.6, myristic: 18.3, palmitic: 8.6, caprylic: 7.1, capric: 6.3, stearic: 2.9, oleic: 7.3, linoleic: 1.7, linolenic: 0.1, arachidic: 0.1, eicosenoic: 0.1 },
+    profile: CODEX_COCONUT,
     sourceType: 'literature',
     acknowledgedShift: true, // cleansing/bubbly +16 — restoring coconut's C8/C10 (aloe butter is coconut-based)
     source:
