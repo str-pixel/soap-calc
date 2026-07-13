@@ -45,4 +45,12 @@ describe('oil-id migration coverage', () => {
     expect(oilById('linseed-oil-flax')?.id).toBe('flax-oil-linseed');
     expect(OIL_LOOKUP['linseed-oil-flax']?.id).toBe('flax-oil-linseed');
   });
+
+  it('resolves name-cleanup id renames (misspelling / embedded-note slugs)', () => {
+    expect(oilById('apricot-kernal-oil')?.id).toBe('apricot-kernel-oil');
+    expect(oilById('pine-tar-lye-calc-only-no-fa')?.id).toBe('pine-tar');
+    expect(oilById('pracaxi-seed-oil-hair-conditioner')?.id).toBe('pracaxi-seed-oil');
+    // and in the lye lookup the calc reads directly
+    expect(OIL_LOOKUP['pine-tar-lye-calc-only-no-fa']?.id).toBe('pine-tar');
+  });
 });

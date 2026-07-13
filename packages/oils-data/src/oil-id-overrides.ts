@@ -16,4 +16,11 @@ export const OIL_ID_OVERRIDES: Record<string, string> = {
   // Dedup-merge: "Linseed Oil, flax" is the same oil as "Flax Oil, linseed" (identical INCI +
   // profile, SoapCalc cruft). linseed-oil-flax is excluded; recipes redirect to flax-oil-linseed.
   'linseed-oil-flax': 'flax-oil-linseed',
+  // Name cleanup — ids with a misspelling, truncation, or an embedded note/instruction baked in.
+  // Display names are corrected in OIL_DISPLAY_NAMES; these also fix the slug.
+  'apricot-kernal-oil': 'apricot-kernel-oil', // "Kernal" misspelling
+  'cherry-kern1-oil-p-avium': 'cherry-kernel-oil-avium', // "Kern1" truncation
+  'cherry-kern2-oil-p-cerasus': 'cherry-kernel-oil-cerasus', // "Kern2" truncation
+  'pine-tar-lye-calc-only-no-fa': 'pine-tar', // "lye calc only no FA" instruction in the slug
+  'pracaxi-seed-oil-hair-conditioner': 'pracaxi-seed-oil', // "hair conditioner" note in the slug
 };
