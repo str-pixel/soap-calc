@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T13:38:38.565Z",
+  "generatedAt": "2026-07-13T13:51:26.361Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -703,17 +703,24 @@
       ],
       "inciName": "Coffea arabica (Coffee) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.18,
-      "sapNaoh": 0.1283422459893048,
-      "confidence": "legacy_only",
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "confidence": "estimated",
       "propertiesAvailable": true,
       "iodine": 87,
-      "ins": 93,
+      "ins": 108,
       "fattyAcids": {
-        "oleic": 8,
-        "linoleic": 38,
-        "palmitic": 40,
-        "linolenic": 2
+        "linoleic": 42.9,
+        "palmitic": 34.3,
+        "oleic": 9.4,
+        "stearic": 7.6,
+        "arachidic": 2.8,
+        "linolenic": 1.6,
+        "behenic": 0.7,
+        "lignoceric": 0.3,
+        "myristic": 0.1,
+        "palmitoleic": 0.1,
+        "eicosenoic": 0.1
       }
     },
     {
@@ -813,17 +820,24 @@
       ],
       "inciName": "Theobroma Grandiflorum (Cupuacu) Seed Butter",
       "category": "triglyceride",
-      "sapKoh": 0.20750000000000002,
-      "sapNaoh": 0.14795008912655971,
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
       "confidence": "estimated",
       "propertiesAvailable": true,
       "iodine": 39,
       "ins": 153,
       "fattyAcids": {
         "oleic": 42,
-        "stearic": 35,
-        "linoleic": 2,
-        "palmitic": 8
+        "stearic": 33.3,
+        "arachidic": 10,
+        "palmitic": 8,
+        "linoleic": 3.5,
+        "behenic": 1.9,
+        "lignoceric": 0.6,
+        "linolenic": 0.3,
+        "eicosenoic": 0.3,
+        "myristic": 0.1,
+        "palmitoleic": 0.1
       }
     },
     {

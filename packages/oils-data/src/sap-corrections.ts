@@ -24,4 +24,8 @@ export const LEGACY_SAP_CORRECTIONS: Record<
     sapKoh: 0.192,
     note: 'Corrected: legacy SAP (0.158) is inconsistent with the recorded ~76% oleic profile (implies an average fatty acid heavier than any common one); replaced with a fatty-acid-profile-derived estimate.',
   },
+  'coffee-bean-oil-roasted': {
+    sapKoh: 0.195,
+    note: 'Corrected: legacy SAP (0.18) is low for a palmitic/linoleic-dominant oil. The Phase-5 backfilled profile derives 0.196, matching Böger et al. 2021 measured roasted-arabica 195.26 mg KOH/g; replaced with 0.195. No FNWL match, so the correction applies here.',
+  },
 };

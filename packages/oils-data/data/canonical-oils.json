@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T13:38:38.565Z",
+  "generatedAt": "2026-07-13T13:51:26.361Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -1632,16 +1632,23 @@
       ],
       "inciName": "Coffea arabica (Coffee) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.18,
-      "sapNaoh": 0.1283422459893048,
-      "sapMgKohPerGram": 180,
+      "sapKoh": 0.195,
+      "sapNaoh": 0.13903743315508021,
+      "sapMgKohPerGram": 195,
       "iodine": 87,
-      "ins": 93,
+      "ins": 108,
       "fattyAcids": {
-        "oleic": 8,
-        "linoleic": 38,
-        "palmitic": 40,
-        "linolenic": 2
+        "linoleic": 42.9,
+        "palmitic": 34.3,
+        "oleic": 9.4,
+        "stearic": 7.6,
+        "arachidic": 2.8,
+        "linolenic": 1.6,
+        "behenic": 0.7,
+        "lignoceric": 0.3,
+        "myristic": 0.1,
+        "palmitoleic": 0.1,
+        "eicosenoic": 0.1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -1650,6 +1657,17 @@
           "sapKoh": 0.18,
           "sapNaoh": 0.1283422459893048,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6040754/",
+          "notes": "Fatty-acid profile: Coffea arabica (roasted) — Böger et al. 2021 (Grasas y Aceites 72(1) e394, roasted arabica, pressed) + Raba et al. 2018 (PLoS ONE, PMC6040754, green). Roasting barely shifts the FA profile. Chose the linoleic-dominant consensus over a palmitic-dominant SFE variety.. Legacy profile summed 88% (missing stearic/arachidic + minors). Gap-filled to 100%. The stored SAP 0.18 was too low: the profile derives 0.196 (Böger measured 0.195), so SAP is corrected to 0.195 via LEGACY_SAP_CORRECTIONS (no FNWL match). Property shift +6 (under the guard threshold). Palmitic/linoleic split is variety/extraction-dependent (a palmitic-heavy camp exists)."
+        },
+        {
+          "source": "manual",
+          "sapKoh": 0.195,
+          "sapNaoh": 0.13903743315508021,
+          "notes": "Corrected: legacy SAP (0.18) is low for a palmitic/linoleic-dominant oil. The Phase-5 backfilled profile derives 0.196, matching Böger et al. 2021 measured roasted-arabica 195.26 mg KOH/g; replaced with 0.195. No FNWL match, so the correction applies here."
         },
         {
           "source": "manual",
@@ -1661,8 +1679,8 @@
           "notes": "INCI \"Coffea arabica (Coffee) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "manual",
+      "confidence": "estimated"
     },
     {
       "id": "cohune-oil",
@@ -1868,16 +1886,23 @@
       ],
       "inciName": "Theobroma Grandiflorum (Cupuacu) Seed Butter",
       "category": "triglyceride",
-      "sapKoh": 0.20750000000000002,
-      "sapNaoh": 0.14795008912655971,
-      "sapMgKohPerGram": 207.50000000000003,
+      "sapKoh": 0.192,
+      "sapNaoh": 0.13689839572192514,
+      "sapMgKohPerGram": 192,
       "iodine": 39,
       "ins": 153,
       "fattyAcids": {
         "oleic": 42,
-        "stearic": 35,
-        "linoleic": 2,
-        "palmitic": 8
+        "stearic": 33.3,
+        "arachidic": 10,
+        "palmitic": 8,
+        "linoleic": 3.5,
+        "behenic": 1.9,
+        "lignoceric": 0.6,
+        "linolenic": 0.3,
+        "eicosenoic": 0.3,
+        "myristic": 0.1,
+        "palmitoleic": 0.1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -1886,6 +1911,11 @@
           "sapKoh": 0.192,
           "sapNaoh": 0.13689839572192514,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://www.frontiersin.org/journals/sustainability/articles/10.3389/frsus.2022.682178/full",
+          "notes": "Fatty-acid profile: Theobroma grandiflorum seed fat — CIR 2017 safety assessment (Table 4) + Frontiers in Sustainability 2022. Cocoa-butter-alternative signature: high stearic ~33 + the unusually high arachidic ~10 that distinguishes it from cocoa butter (arachidic <1%). An outlier study (arachidic 0.29%, linolenic 11.6%) was rejected.. Legacy profile summed 87% (missing the ~10% arachidic signature). Gap-filled to 100%. This AUTO-CORRECTS the SAP: the stored 0.2075 was the Phase-3 midpoint of legacy 0.192 / FNWL 0.223 (chosen because the incomplete profile \"could not judge\"); now complete, the build re-resolves via profile_closest to legacy 0.192 (nearest the profile-derived 0.188). Gate then −2%. Property shift +11 hardness (arachidic — under the guard threshold). Arachidic varies ~7–15 by genotype/ripeness."
         },
         {
           "source": "fnwl",
@@ -1907,9 +1937,9 @@
         },
         {
           "source": "manual",
-          "sapKoh": 0.20750000000000002,
-          "sapNaoh": 0.14795008912655971,
-          "notes": "legacy/FNWL differ by 16.1% (>5%); profile can't judge (incomplete), used the midpoint"
+          "sapKoh": 0.192,
+          "sapNaoh": 0.13689839572192514,
+          "notes": "legacy/FNWL differ by 16.1% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -1917,7 +1947,7 @@
           "notes": "INCI \"Theobroma Grandiflorum (Cupuacu) Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "fnwl",
+      "primarySource": "legacy_catalog",
       "confidence": "estimated"
     },
     {
