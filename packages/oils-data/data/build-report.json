@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T17:47:25.231Z",
+  "generatedAt": "2026-07-16T02:24:31.412Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -1019,6 +1019,49 @@
           "before": 0,
           "after": 0.1,
           "delta": 0.1
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Murumuru Butter",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 18,
+          "after": 12.5,
+          "delta": -5.5
+        },
+        {
+          "property": "bubbly",
+          "before": 73,
+          "after": 77.8,
+          "delta": 4.8
+        },
+        {
+          "property": "cleansing",
+          "before": 73,
+          "after": 77.8,
+          "delta": 4.8
+        },
+        {
+          "property": "hardness",
+          "before": 82,
+          "after": 84.69999999999999,
+          "delta": 2.7
+        },
+        {
+          "property": "longevity",
+          "before": 9,
+          "after": 9.7,
+          "delta": 0.7
+        },
+        {
+          "property": "creamy",
+          "before": 9,
+          "after": 9.6,
+          "delta": 0.6
         }
       ],
       "flagged": false,

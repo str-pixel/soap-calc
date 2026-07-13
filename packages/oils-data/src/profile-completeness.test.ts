@@ -73,7 +73,7 @@ const PURE_ACID_MAX = 90; // at/above this it is a single-acid additive, not an 
 const LAURIC_OILS_MISSING_MCT = new Set<string>([
   // babassu-oil — Phase 5 full reprofile (Melo 2019 + Jackson 1944); restored C8/C10, corrected inflated lauric/myristic. See PROFILE_BACKFILL.
   'cohune-oil', // Attalea cohune (babassu relative) co-produces C8/C10 — truncated; needs a cited profile
-  'murumuru-butter', // Astrocaryum murumuru co-produces C8/C10 — truncated; needs a cited profile
+  // murumuru-butter — Phase 5 full reprofile (CIR 2017 + reference profile); restored C8/C10. See PROFILE_BACKFILL.
   'coconut-oil-92', // hydrogenated coconut — C8/C10 survive hydrogenation (it saturates, not shortens); needs a sourced profile
   'palm-kernel-oil-flakes-hydrogenated', // hydrogenated PKO — same: C8/C10 survive; needs a sourced profile
 ]);

@@ -16,9 +16,8 @@ export const KNOWN_PROFILE_SAP_DEVIATIONS: Record<string, string> = {
   'buriti-oil': 'carotenoid unsaponifiables; profile over-estimates SAP',
   'cohune-oil': 'legacy_only lauric oil, low vs family; physically possible, no external source',
   'ucuuba-butter': 'legacy_only high-myristic butter; unresolved vs profile',
-  // Phase 3b resolved the disputed SAP to the profile-closest source (fnwl 0.253); still
-  // ~8.6% above the profile-derived 0.233, so it stays flagged for human review.
-  'murumuru-butter': 'stored 0.253 (fnwl, profile-closest) vs profile ~0.233 — human review',
+  // murumuru-butter was here (fnwl 0.253 vs truncated-profile 0.233, ~8.6%). Phase 5 backfilled its
+  // full profile (restored C8/C10); it now derives 0.238, within threshold, so it's no longer a deviation.
 };
 
 export type ProfileSapDeviationTier = 'error' | 'warn' | 'acknowledged';

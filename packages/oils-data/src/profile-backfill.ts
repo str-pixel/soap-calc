@@ -448,4 +448,28 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'oil at ~74), bubbly/cleansing +5 from the restored C8/C10; max 10.7 is under the guard, no ' +
       'acknowledgment. Removed from the LAURIC_OILS_MISSING_MCT guard allowlist.',
   },
+
+  'murumuru-butter': {
+    profile: {
+      lauric: 47, myristic: 28, oleic: 9.5, palmitic: 7, linoleic: 3, stearic: 2.6,
+      caprylic: 1.5, capric: 1.3, arachidic: 0.1,
+    },
+    sourceType: 'literature',
+    source:
+      'Astrocaryum murumuru seed butter — CIR 2017 safety assessment (Int J Toxicol 36(3S), Table 4) ' +
+      'plus the widely-republished reference profile, cross-checked: both give lauric ~47–49 with the ' +
+      'signature co-dominant myristic ~26–30 and caprylic/capric ~1–2% each. The Colombian-Amazon GC ' +
+      '(PMC10295824, lauric 64% with C8/C10 undetected) is excluded as an outlier for the majors',
+    url: 'https://www.cir-safety.org/sites/default/files/118_final_oils_web.pdf',
+    note:
+      'Full reprofile — legacy summed 100% but omitted C8/C10 (mass redistributed into lauric/' +
+      'myristic). Restores caprylic 1.5 + capric 1.3 and the co-dominant myristic (28 — murumuru’s ' +
+      'fingerprint vs coconut/PKO ~16). SAP 0.253 (built primary, FNWL) KEPT: the completed profile ' +
+      'derives 0.2376 — a +6.5% gate deviation ((stored−derived)/derived), within the 8% threshold; the ' +
+      'added light C8/C10 improved it from the truncated +8.6%, which had put murumuru on the acknowledged-' +
+      'deviation list (now removed). Derived IV 14; stored iodine left as-is (profile-only backfill, not ' +
+      'gate-checked). Property ' +
+      'shift max 5.5 (condition −5.5 from trimming the high legacy oleic), under the guard, no ' +
+      'acknowledgment. Removed from the LAURIC_OILS_MISSING_MCT guard allowlist.',
+  },
 };
