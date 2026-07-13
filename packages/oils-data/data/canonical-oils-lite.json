@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T08:26:32.736Z",
+  "generatedAt": "2026-07-13T09:34:44.491Z",
   "oils": [
     {
       "id": "abyssinian-oil",
@@ -2032,7 +2032,7 @@
       }
     },
     {
-      "id": "rapeseed-oil-canola",
+      "id": "rapeseed-oil-high-erucic",
       "displayName": "Rapeseed Oil (high-erucic)",
       "aliases": [
         "rapeseed oil"

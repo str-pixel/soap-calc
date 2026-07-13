@@ -75,6 +75,18 @@ export function searchOils(query: string, limit?: number): OilRecord[] {
 
 const OIL_BY_ID = new Map(OILS.map((oil) => [oil.id, oil]));
 
+/**
+ * Oil ids that were renamed in the catalog. A saved recipe referencing the old id resolves to the
+ * renamed oil, so renames never break existing recipes. Keep in lockstep with the build-time
+ * `OIL_ID_OVERRIDES` (packages/oils-data/src/oil-id-overrides.ts).
+ */
+const OIL_ID_MIGRATIONS: Record<string, string> = {
+  'rapeseed-oil-canola': 'rapeseed-oil-high-erucic',
+};
+
 export function oilById(id: string): OilRecord | undefined {
-  return OIL_BY_ID.get(id);
+  const direct = OIL_BY_ID.get(id);
+  if (direct) return direct;
+  const migrated = OIL_ID_MIGRATIONS[id];
+  return migrated ? OIL_BY_ID.get(migrated) : undefined;
 }

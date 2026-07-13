@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T08:26:32.736Z",
+  "generatedAt": "2026-07-13T09:34:44.491Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -4627,7 +4627,7 @@
       "confidence": "verified"
     },
     {
-      "id": "rapeseed-oil-canola",
+      "id": "rapeseed-oil-high-erucic",
       "displayName": "Rapeseed Oil (high-erucic)",
       "aliases": [
         "rapeseed oil"

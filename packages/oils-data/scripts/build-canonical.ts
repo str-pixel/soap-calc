@@ -26,6 +26,7 @@ import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
+import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
 import { maxAbsShift, propertyShift, PROPERTY_SHIFT_THRESHOLD, type PropertyShift } from '../src/property-shift.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
@@ -373,8 +374,11 @@ function main() {
     // (e.g. a high-erucic rapeseed mislabeled "unrefined canola"). Aliases follow the shown name
     // so search no longer matches the wrong identity; the stable id (baseSlug) is unchanged.
     const displayName = backfill?.displayName ?? leg.name;
+    // The emitted public id may be overridden (e.g. a mislabeled slug); internal lookups above
+    // still use baseSlug, and the web oilById migration resolves the old id for saved recipes.
+    const id = OIL_ID_OVERRIDES[baseSlug] ?? baseSlug;
     oils.push({
-      id: baseSlug,
+      id,
       displayName,
       aliases: [normalizeOilName(displayName)],
       inciName,
