@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T15:12:20.229Z",
+  "generatedAt": "2026-07-13T15:45:31.730Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -644,6 +644,49 @@
           "before": 4,
           "after": 4.6,
           "delta": 0.6
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Coconut Oil, 76 deg",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 67,
+          "after": 79.3,
+          "delta": 12.3
+        },
+        {
+          "property": "cleansing",
+          "before": 67,
+          "after": 79.3,
+          "delta": 12.3
+        },
+        {
+          "property": "hardness",
+          "before": 79,
+          "after": 77.5,
+          "delta": -1.5
+        },
+        {
+          "property": "condition",
+          "before": 10,
+          "after": 9.2,
+          "delta": -0.8
+        },
+        {
+          "property": "creamy",
+          "before": 12,
+          "after": 11.5,
+          "delta": -0.5
+        },
+        {
+          "property": "longevity",
+          "before": 12,
+          "after": 11.6,
+          "delta": -0.4
         }
       ],
       "flagged": false,

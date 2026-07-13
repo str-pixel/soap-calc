@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T15:12:20.229Z",
+  "generatedAt": "2026-07-13T15:45:31.730Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -1435,12 +1435,17 @@
       "iodine": 10,
       "ins": 258,
       "fattyAcids": {
-        "oleic": 8,
-        "lauric": 48,
-        "stearic": 3,
-        "linoleic": 2,
-        "myristic": 19,
-        "palmitic": 9
+        "lauric": 47.6,
+        "myristic": 18.3,
+        "palmitic": 8.6,
+        "caprylic": 7.1,
+        "capric": 6.3,
+        "stearic": 2.9,
+        "oleic": 7.3,
+        "linoleic": 1.7,
+        "linolenic": 0.1,
+        "arachidic": 0.1,
+        "eicosenoic": 0.1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -1449,6 +1454,11 @@
           "sapKoh": 0.257,
           "sapNaoh": 0.18324420677361852,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
+          "notes": "Fatty-acid profile: Codex CXS 210 coconut oil (range midpoints, normalized) — shared CODEX_COCONUT constant. Restores the caprylic (C8, ~7%) + capric (C10, ~6%) that coconut carries but the legacy profile truncated.. GOLDEN-SAP oil — stored 0.258 KEPT (verified; the golden-SAP validator still passes). Profile-derived 0.247 is within the gate (+4.5%, the known lauric-oil FA-vs-measured gap); derived IV 10 matches stored 10. Legacy profile summed 89%, omitting C8/C10; adding them raises cleansing/bubbly +12.3 (coconut’s well-known high cleansing partly comes from C8/C10, which our property model counts) — under the guard threshold. NOTE this is a high-visibility change: coconut is in most recipes, so its cleansing/bubbly bars move up. coconut-oil-92 (hydrogenated, IV 3) is NOT given this profile — it needs a hydrogenated-coconut source."
         },
         {
           "source": "fnwl",
