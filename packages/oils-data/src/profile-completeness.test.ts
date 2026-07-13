@@ -28,7 +28,7 @@ const COMPLETENESS_THRESHOLD_PCT = MIN_MAPPED_PERCENT;
  * profile and needs backfill/review; a REMOVED id means a backfill succeeded — update this list.
  */
 const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
-  'rapeseed-oil-canola',
+  // rapeseed-oil-canola was here — Phase 5 gap-filled it as high-erucic rapeseed (see PROFILE_BACKFILL).
   'mustard-oil-kachi-ghani',
   'pracaxi-seed-oil-hair-conditioner',
   'sea-buckthorn-oil-seed-and-berry',

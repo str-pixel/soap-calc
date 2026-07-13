@@ -19,6 +19,14 @@ export type ProfileBackfill = {
   profile: Record<string, number>;
   /** Coarse provenance category for the recorded source (full citation lives in `source`/`note`). */
   sourceType: 'fdc' | 'literature';
+  /** Optional user-facing name override — for entries whose legacy name is wrong/misleading. */
+  displayName?: string;
+  /**
+   * Set true to acknowledge an expected large property-score shift (≥ PROPERTY_SHIFT_THRESHOLD).
+   * The build ERRORS on an unacknowledged large shift, so a big move is a deliberate, reviewed
+   * decision (explained in `note`) rather than something that slips through silently.
+   */
+  acknowledgedShift?: boolean;
   source: string;
   url?: string;
   note: string;
@@ -40,5 +48,26 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'unsafe; replaced with the peer-reviewed 4-variety mean, restoring the signature palmitoleic ' +
       '(~8%). Profile-derived SAP 0.194 agrees with stored 0.188 (−3.3%, within the gate). Property ' +
       'scores (hardness 16, conditioning 84) land between legacy (22/70) and the FDC point (12/88).',
+  },
+
+  'rapeseed-oil-canola': {
+    profile: { oleic: 17, linoleic: 13, linolenic: 9, palmitic: 4, stearic: 1, erucic: 48, eicosenoic: 8 },
+    sourceType: 'literature',
+    displayName: 'Rapeseed Oil (high-erucic)',
+    acknowledgedShift: true, // conditioning +56 is expected — restoring the truncated ~50% erucic
+    source:
+      'High-erucic rapeseed (HEAR). Legacy minors (oleic/linoleic/linolenic/palmitic/stearic — all ' +
+      'within Codex CXS 210 high-erucic rapeseed ranges) kept; erucic (48%) and eicosenoic (8%) ' +
+      'gap-filled to representative HEAR values (erucic ~46–50% per literature). Codex CXS 210, ' +
+      'Standard for Named Vegetable Oils, Table 1 (rapeseed oil).',
+    url: 'https://www.fao.org/4/y2774e/y2774e04.htm',
+    note:
+      'Identity correction: this entry (legacy displayName "Rapeseed Oil, unrefined canola") is ' +
+      'high-erucic rapeseed, NOT canola — a separate canola-oil entry already exists. Its SAP 0.175 ' +
+      'is the HEAR value (erucic’s high MW lowers SAP) and STAYS; the legacy profile had the ~50% ' +
+      'erucic + eicosenoic truncated (sum 44%). Gap-filled to 100%; derived SAP 0.174 agrees with ' +
+      'stored 0.175 (+0.6%). Property shift is conditioning +56 (erucic/eicosenoic are conditioning ' +
+      'acids) — the property-shift guard flags it, correctly (restoring truncated data). Renamed to ' +
+      'drop the canola misnomer.',
   },
 };

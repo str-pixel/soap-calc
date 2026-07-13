@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T07:07:00.259Z",
+  "generatedAt": "2026-07-13T09:50:49.875Z",
   "totalOils": 134,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -540,7 +540,21 @@
           "delta": -6
         }
       ],
-      "flagged": false
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Rapeseed Oil (high-erucic)",
+      "shifts": [
+        {
+          "property": "condition",
+          "before": 39,
+          "after": 95,
+          "delta": 56
+        }
+      ],
+      "flagged": true,
+      "acknowledged": true
     }
   ]
 }

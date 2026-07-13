@@ -49,8 +49,24 @@ export function buildPropertiesLookup(
   return Object.fromEntries(oils.map((oil) => [oil.id, toPropertiesOil(oil)]));
 }
 
-export const OIL_LOOKUP = buildOilLookup(OILS);
-export const PROPERTIES_LOOKUP = buildPropertiesLookup(OILS);
+/**
+ * Old→new oil-id renames, single-sourced from the build (`OIL_ID_OVERRIDES`, emitted into the
+ * lite DB). A recipe saved with an old id must resolve everywhere — not just in oilById but in the
+ * lye/property lookups the core calc reads directly — so we alias the old id onto the renamed oil
+ * in every lookup below. Fixing this in one place (the lookups) rather than at each call site.
+ */
+const OIL_ID_MIGRATIONS: Record<string, string> =
+  (liteDb as { idMigrations?: Record<string, string> }).idMigrations ?? {};
+
+function aliasMigratedIds<T>(lookup: Record<string, T>): Record<string, T> {
+  for (const [oldId, newId] of Object.entries(OIL_ID_MIGRATIONS)) {
+    if (lookup[newId] !== undefined) lookup[oldId] = lookup[newId];
+  }
+  return lookup;
+}
+
+export const OIL_LOOKUP = aliasMigratedIds(buildOilLookup(OILS));
+export const PROPERTIES_LOOKUP = aliasMigratedIds(buildPropertiesLookup(OILS));
 
 export function isTarOil(oil: OilRecord | undefined): boolean {
   if (!oil) return false;
@@ -74,6 +90,11 @@ export function searchOils(query: string, limit?: number): OilRecord[] {
 }
 
 const OIL_BY_ID = new Map(OILS.map((oil) => [oil.id, oil]));
+// Same migration aliasing for id lookups, so oilById resolves a renamed oil's old id too.
+for (const [oldId, newId] of Object.entries(OIL_ID_MIGRATIONS)) {
+  const oil = OIL_BY_ID.get(newId);
+  if (oil) OIL_BY_ID.set(oldId, oil);
+}
 
 export function oilById(id: string): OilRecord | undefined {
   return OIL_BY_ID.get(id);

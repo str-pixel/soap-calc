@@ -14,6 +14,7 @@ import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { classifyProfileSapDeviations } from '../src/profile-sap-deviations.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
+import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -219,7 +220,9 @@ function main() {
   // applies), so the sourced value lives in exactly one place. An id in the table with no oil,
   // or a mismatch, means the build and the table have diverged.
   for (const [id, backfill] of Object.entries(PROFILE_BACKFILL)) {
-    const oil = db.oils.find((o) => o.id === id);
+    // PROFILE_BACKFILL is keyed by the internal build slug; the emitted id may be overridden.
+    const emittedId = OIL_ID_OVERRIDES[id] ?? id;
+    const oil = db.oils.find((o) => o.id === emittedId);
     if (!oil) {
       errors.push(`PROFILE_BACKFILL["${id}"] has no matching oil in the built catalog`);
       continue;

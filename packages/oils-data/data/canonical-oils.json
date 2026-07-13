@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T07:07:00.259Z",
+  "generatedAt": "2026-07-13T09:34:44.491Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -4627,10 +4627,10 @@
       "confidence": "verified"
     },
     {
-      "id": "rapeseed-oil-canola",
-      "displayName": "Rapeseed Oil, unrefined canola",
+      "id": "rapeseed-oil-high-erucic",
+      "displayName": "Rapeseed Oil (high-erucic)",
       "aliases": [
-        "rapeseed oil canola"
+        "rapeseed oil"
       ],
       "inciName": "Brassica Napus (Rapeseed) Seed Oil",
       "category": "triglyceride",
@@ -4641,10 +4641,12 @@
       "ins": 69,
       "fattyAcids": {
         "oleic": 17,
-        "stearic": 1,
         "linoleic": 13,
+        "linolenic": 9,
         "palmitic": 4,
-        "linolenic": 9
+        "stearic": 1,
+        "erucic": 48,
+        "eicosenoic": 8
       },
       "propertiesAvailable": true,
       "sources": [
@@ -4653,6 +4655,11 @@
           "sapKoh": 0.175,
           "sapNaoh": 0.124777183600713,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
+          "notes": "Fatty-acid profile: High-erucic rapeseed (HEAR). Legacy minors (oleic/linoleic/linolenic/palmitic/stearic — all within Codex CXS 210 high-erucic rapeseed ranges) kept; erucic (48%) and eicosenoic (8%) gap-filled to representative HEAR values (erucic ~46–50% per literature). Codex CXS 210, Standard for Named Vegetable Oils, Table 1 (rapeseed oil).. Identity correction: this entry (legacy displayName \"Rapeseed Oil, unrefined canola\") is high-erucic rapeseed, NOT canola — a separate canola-oil entry already exists. Its SAP 0.175 is the HEAR value (erucic’s high MW lowers SAP) and STAYS; the legacy profile had the ~50% erucic + eicosenoic truncated (sum 44%). Gap-filled to 100%; derived SAP 0.174 agrees with stored 0.175 (+0.6%). Property shift is conditioning +56 (erucic/eicosenoic are conditioning acids) — the property-shift guard flags it, correctly (restoring truncated data). Renamed to drop the canola misnomer."
         },
         {
           "source": "fnwl",
