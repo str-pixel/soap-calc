@@ -38,6 +38,7 @@ export const FATTY_ACID_PROPERTIES: Record<string, FattyAcidConstants> = {
   stearic: { molecularWeight: 284.48, doubleBonds: 0 },
   arachidic: { molecularWeight: 312.53, doubleBonds: 0 },
   behenic: { molecularWeight: 340.58, doubleBonds: 0 },
+  lignoceric: { molecularWeight: 368.64, doubleBonds: 0 },
   palmitoleic: { molecularWeight: 254.41, doubleBonds: 1 },
   oleic: { molecularWeight: 282.46, doubleBonds: 1 },
   ricinoleic: { molecularWeight: 298.46, doubleBonds: 1 },
