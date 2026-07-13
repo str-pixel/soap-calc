@@ -1,6 +1,7 @@
 {
   "notes": "Legacy catalog entries removed from the calculator — commercial blends and niche animal fats without reliable public SAP/INCI data.",
   "oilIds": [
+    "linseed-oil-flax",
     "chicken-fat",
     "crisco-new-w-palm",
     "crisco-old",

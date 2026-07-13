@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-13T09:50:49.875Z",
-  "totalOils": 134,
+  "generatedAt": "2026-07-13T10:25:10.076Z",
+  "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
-  "unmatchedFnwl": 73,
+  "unmatchedFnwl": 72,
   "matched": [
     "Almond Oil, sweet",
     "Apricot Kernal Oil",
@@ -96,7 +96,6 @@
     "Lard, Pig Tallow (Manteca)",
     "Laurel Fruit Oil",
     "Lauric Acid",
-    "Linseed Oil, flax",
     "Loofa Seed Oil, Luffa cylinderica",
     "Macadamia Nut Butter",
     "Mafura Butter, Trichilia emetica ",
@@ -444,7 +443,6 @@
     "Lard, Pig Tallow (Manteca)",
     "Laurel Fruit Oil",
     "Lauric Acid",
-    "Linseed Oil, flax",
     "Loofa Seed Oil, Luffa cylinderica",
     "Macadamia Nut Butter",
     "Mafura Butter, Trichilia emetica ",
@@ -510,7 +508,9 @@
   "supplemental": [
     "Birch Tar"
   ],
-  "excluded": [],
+  "excluded": [
+    "Linseed Oil, flax"
+  ],
   "profileBackfill": [
     {
       "name": "Avocado Oil",

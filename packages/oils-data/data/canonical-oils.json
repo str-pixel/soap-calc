@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T09:34:44.491Z",
+  "generatedAt": "2026-07-13T10:25:10.076Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -2559,11 +2559,11 @@
       ],
       "inciName": "Myristic Acid",
       "category": "free_acid",
-      "sapKoh": 0.247,
-      "sapNaoh": 0.1761140819964349,
-      "sapMgKohPerGram": 247,
+      "sapKoh": 0.2457,
+      "sapNaoh": 0.17518716577540105,
+      "sapMgKohPerGram": 245.7,
       "iodine": 1,
-      "ins": 246,
+      "ins": 245,
       "fattyAcids": {
         "myristic": 99
       },
@@ -2571,8 +2571,8 @@
       "sources": [
         {
           "source": "legacy_catalog",
-          "sapKoh": 0.247,
-          "sapNaoh": 0.1761140819964349,
+          "sapKoh": 0.2457,
+          "sapNaoh": 0.17518716577540105,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
@@ -2705,47 +2705,6 @@
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Lauric Acid\" verified against the EU CosIng Ingredients Inventory snapshot"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
-      "id": "linseed-oil-flax",
-      "displayName": "Linseed Oil, flax",
-      "aliases": [
-        "linseed oil flax"
-      ],
-      "inciName": "Linum usitatissimum (Linseed) Seed Oil",
-      "category": "triglyceride",
-      "sapKoh": 0.19,
-      "sapNaoh": 0.1354723707664884,
-      "sapMgKohPerGram": 190,
-      "iodine": 180,
-      "ins": -6,
-      "fattyAcids": {
-        "oleic": 27,
-        "stearic": 3,
-        "linoleic": 13,
-        "palmitic": 6,
-        "linolenic": 50
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.19,
-          "sapNaoh": 0.1354723707664884,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        },
-        {
-          "source": "manual",
-          "notes": "INCI via supplemental id — Alias of flax oil INCI already in FNWL set"
-        },
-        {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Linum usitatissimum (Linseed) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -3540,11 +3499,11 @@
       ],
       "inciName": "Oleic Acid",
       "category": "free_acid",
-      "sapKoh": 0.202,
-      "sapNaoh": 0.14402852049910875,
-      "sapMgKohPerGram": 202,
+      "sapKoh": 0.1986,
+      "sapNaoh": 0.1416042780748663,
+      "sapMgKohPerGram": 198.6,
       "iodine": 92,
-      "ins": 110,
+      "ins": 107,
       "fattyAcids": {
         "oleic": 99
       },
@@ -3552,8 +3511,8 @@
       "sources": [
         {
           "source": "legacy_catalog",
-          "sapKoh": 0.202,
-          "sapNaoh": 0.14402852049910875,
+          "sapKoh": 0.1986,
+          "sapNaoh": 0.1416042780748663,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
@@ -3742,8 +3701,8 @@
       "sapKoh": 0.247,
       "sapNaoh": 0.1761140819964349,
       "sapMgKohPerGram": 247,
-      "iodine": 20,
-      "ins": 227,
+      "iodine": 4,
+      "ins": 243,
       "fattyAcids": {
         "oleic": 4,
         "lauric": 49,
@@ -3900,11 +3859,11 @@
       ],
       "inciName": "Palmitic Acid",
       "category": "free_acid",
-      "sapKoh": 0.215,
-      "sapNaoh": 0.1532976827094474,
-      "sapMgKohPerGram": 215,
+      "sapKoh": 0.2188,
+      "sapNaoh": 0.15600713012477718,
+      "sapMgKohPerGram": 218.79999999999998,
       "iodine": 2,
-      "ins": 213,
+      "ins": 217,
       "fattyAcids": {
         "palmitic": 98
       },
@@ -3912,8 +3871,8 @@
       "sources": [
         {
           "source": "legacy_catalog",
-          "sapKoh": 0.215,
-          "sapNaoh": 0.1532976827094474,
+          "sapKoh": 0.2188,
+          "sapNaoh": 0.15600713012477718,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
@@ -5565,11 +5524,11 @@
       ],
       "inciName": "Stearic Acid",
       "category": "free_acid",
-      "sapKoh": 0.198,
-      "sapNaoh": 0.1411764705882353,
-      "sapMgKohPerGram": 198,
+      "sapKoh": 0.1972,
+      "sapNaoh": 0.1406060606060606,
+      "sapMgKohPerGram": 197.2,
       "iodine": 2,
-      "ins": 196,
+      "ins": 195,
       "fattyAcids": {
         "stearic": 99
       },
@@ -5577,8 +5536,8 @@
       "sources": [
         {
           "source": "legacy_catalog",
-          "sapKoh": 0.198,
-          "sapNaoh": 0.1411764705882353,
+          "sapKoh": 0.1972,
+          "sapNaoh": 0.1406060606060606,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {

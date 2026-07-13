@@ -40,4 +40,9 @@ describe('oil-id migration coverage', () => {
     expect(OIL_LOOKUP['rapeseed-oil-canola']?.id).toBe('rapeseed-oil-high-erucic');
     expect(PROPERTIES_LOOKUP['rapeseed-oil-canola']?.id).toBe('rapeseed-oil-high-erucic');
   });
+
+  it('resolves a deduped oil old id to the surviving duplicate (flax/linseed merge)', () => {
+    expect(oilById('linseed-oil-flax')?.id).toBe('flax-oil-linseed');
+    expect(OIL_LOOKUP['linseed-oil-flax']?.id).toBe('flax-oil-linseed');
+  });
 });
