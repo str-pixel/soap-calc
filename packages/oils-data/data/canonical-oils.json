@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T11:27:18.867Z",
+  "generatedAt": "2026-07-13T11:39:02.067Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -3331,10 +3331,15 @@
       "ins": 72,
       "fattyAcids": {
         "oleic": 18,
-        "stearic": 2,
         "linoleic": 14,
+        "linolenic": 9,
         "palmitic": 2,
-        "linolenic": 9
+        "stearic": 2,
+        "erucic": 42,
+        "eicosenoic": 9,
+        "behenic": 2,
+        "arachidic": 1,
+        "myristic": 1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -3343,6 +3348,11 @@
           "sapKoh": 0.173,
           "sapNaoh": 0.12335115864527628,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
+          "notes": "Fatty-acid profile: High-erucic mustard (Brassica juncea, kachi ghani). Present acids kept — all within Codex CXS 210 mustardseed ranges (verified against the FAO standard); erucic 42% + eicosenoic 9% gap-filled to a kachi-ghani-representative value (literature erucic 40–48%, above the Codex all-mustard midpoint of 36%, which understates the traditional high-erucic variety). Codex CXS 210 Table 1 (mustardseed oil).. Legacy profile summed 45% — the classic SoapCalc high-erucic truncation (erucic + eicosenoic dropped). Gap-filled to 100%; SAP 0.172 kept (verified/FNWL, within Codex [0.168–0.184]; profile-derived 0.175 agrees, −1.6%; derived IV 105 ≈ stored 101). Property shift is conditioning +51 (erucic/eicosenoic are conditioning acids) — flagged, acknowledged as a truncation restore. Two Codex minors (C20:2, C24:1, ~2%) are unmapped in our acid model."
         },
         {
           "source": "fnwl",

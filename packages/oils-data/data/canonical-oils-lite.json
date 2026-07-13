@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T11:27:18.867Z",
+  "generatedAt": "2026-07-13T11:39:02.067Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -1465,10 +1465,15 @@
       "ins": 72,
       "fattyAcids": {
         "oleic": 18,
-        "stearic": 2,
         "linoleic": 14,
+        "linolenic": 9,
         "palmitic": 2,
-        "linolenic": 9
+        "stearic": 2,
+        "erucic": 42,
+        "eicosenoic": 9,
+        "behenic": 2,
+        "arachidic": 1,
+        "myristic": 1
       }
     },
     {
