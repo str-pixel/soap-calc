@@ -375,4 +375,26 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'change: coconut is in most recipes, so its cleansing/bubbly bars move up. coconut-oil-92 ' +
       '(hydrogenated, IV 3) is NOT given this profile — it needs a hydrogenated-coconut source.',
   },
+
+  'palm-kernel-oil': {
+    profile: {
+      lauric: 48.2, myristic: 16.2, oleic: 15.3, palmitic: 8.4, caprylic: 3.3, capric: 3.4,
+      stearic: 2.5, linoleic: 2.3, linolenic: 0.4,
+    },
+    sourceType: 'literature',
+    source:
+      'Ang, Liu & Huang (eds.), Asian Foods (1999) representative palm-kernel-oil profile — every ' +
+      'acid falls inside the Codex CXS 210 range for palm kernel oil (cross-checked). Restores the ' +
+      'caprylic (C8, ~3.3%) + capric (C10, ~3.4%) that PKO carries but the legacy profile dropped.',
+    url: 'https://www.fao.org/input/download/standards/336/CXS_210e_2015.pdf',
+    note:
+      'CONSISTENCY backfill (not a truncation flag): legacy summed exactly 93.0% — it passes the ' +
+      '93% completeness gate yet OMITS PKO’s real C8/C10, so the completeness test never surfaced ' +
+      'it. Clean gap-fill: stored lauric 49 / myristic 16 already match Codex/Ang (~48/~16, NOT ' +
+      'inflated), so this only ADDS the dropped C8/C10. SAP resolution unchanged — profile-derived ' +
+      'rises 0.2335→0.2375 but still resolves closest to legacy 0.247 (vs FNWL 0.203), which is ' +
+      'kept; derived IV 19 ≈ stored 20. Cleansing/bubbly +6.1 (C8/C10 entering the cleansing set), ' +
+      'under the guard threshold. Contrast babassu-oil, whose stored lauric/myristic ARE inflated ' +
+      '(needs a full reprofile, not a gap-fill) — held for its own row.',
+  },
 };

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T15:45:31.730Z",
+  "generatedAt": "2026-07-13T16:39:42.528Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -1017,6 +1017,43 @@
       ],
       "flagged": true,
       "acknowledged": true
+    },
+    {
+      "name": "Palm Kernel Oil",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 65,
+          "after": 71.10000000000001,
+          "delta": 6.1
+        },
+        {
+          "property": "cleansing",
+          "before": 65,
+          "after": 71.10000000000001,
+          "delta": 6.1
+        },
+        {
+          "property": "longevity",
+          "before": 10,
+          "after": 10.9,
+          "delta": 0.9
+        },
+        {
+          "property": "creamy",
+          "before": 10,
+          "after": 10.9,
+          "delta": 0.9
+        },
+        {
+          "property": "hardness",
+          "before": 75,
+          "after": 75.30000000000001,
+          "delta": 0.3
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
     },
     {
       "name": "Rapeseed Oil (high-erucic)",
