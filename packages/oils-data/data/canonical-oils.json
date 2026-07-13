@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T16:39:42.528Z",
+  "generatedAt": "2026-07-13T17:28:37.330Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -4646,13 +4646,18 @@
       "iodine": 68,
       "ins": 107,
       "fattyAcids": {
-        "oleic": 44,
-        "lauric": 1,
-        "stearic": 2,
-        "linoleic": 2,
-        "myristic": 1,
-        "palmitic": 2,
-        "linolenic": 2
+        "oleic": 50.5,
+        "behenic": 18,
+        "lignoceric": 11.5,
+        "linoleic": 11.5,
+        "stearic": 2.9,
+        "palmitic": 1.9,
+        "arachidic": 1.8,
+        "erucic": 0.8,
+        "linolenic": 0.4,
+        "lauric": 0.3,
+        "myristic": 0.3,
+        "palmitoleic": 0.1
       },
       "propertiesAvailable": true,
       "sources": [
@@ -4661,6 +4666,11 @@
           "sapKoh": 0.175,
           "sapNaoh": 0.124777183600713,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10058800/",
+          "notes": "Fatty-acid profile: Pentaclethra macroloba — representative of two peer-reviewed 2023 sources: Silva et al., Plants (MDPI) PMC10058800 (literature ranges) and PMC10701076 Table 3 (three Pará wild populations). Behenic (C22:0) ~18% and lignoceric (C24:0) ~11.5% are pracaxi’s signature — both MAJOR acids (the two sources agree tightly on C24:0 ~10–12%). Arachidic 12.3% (one review’s upper bound) rejected as an outlier (true ~1.8%). FULL REPLACE — legacy profile summed only 54%, missing pracaxi’s entire long-chain saturated fraction (behenic 18 + lignoceric 11.5 + arachidic 1.8 ≈ 31%); it kept only oleic 44 + traces, so derived chemistry couldn’t even resolve (<93% mapped). Stored SAP 0.175 KEPT — profile-derived 0.178 agrees (+1.7%, within gate; the heavy C22/C24 load lowers SAP, matching supplier 175–195 mg KOH/g); derived IV 68 EXACTLY matches stored 68 (a supplier \"90–105\" figure is rejected as inconsistent with ~50% oleic). Property shift hardness +31 / longevity +32 / conditioning +15 is acknowledged: restoring ~31% hardness/longevity acids (arachidic/behenic/lignoceric — the acids this arc added to properties.ts) is the whole point. This is the oil the Slice A lignoceric (C24:0) key was built for."
         },
         {
           "source": "manual",

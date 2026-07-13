@@ -397,4 +397,31 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'under the guard threshold. Contrast babassu-oil, whose stored lauric/myristic ARE inflated ' +
       '(needs a full reprofile, not a gap-fill) — held for its own row.',
   },
+
+  // Keyed by baseSlug (pre-rename legacy slug), which build-canonical indexes — emitted id is pracaxi-seed-oil.
+  'pracaxi-seed-oil-hair-conditioner': {
+    profile: {
+      oleic: 50.5, behenic: 18, lignoceric: 11.5, linoleic: 11.5, stearic: 2.9, palmitic: 1.9,
+      arachidic: 1.8, erucic: 0.8, linolenic: 0.4, lauric: 0.3, myristic: 0.3, palmitoleic: 0.1,
+    },
+    sourceType: 'literature',
+    acknowledgedShift: true, // hardness +31 / longevity +32 — restoring the truncated ~31% long-chain saturateds (C22:0/C24:0)
+    source:
+      'Pentaclethra macroloba — representative of two peer-reviewed 2023 sources: Silva et al., ' +
+      'Plants (MDPI) PMC10058800 (literature ranges) and PMC10701076 Table 3 (three Pará wild ' +
+      'populations). Behenic (C22:0) ~18% and lignoceric (C24:0) ~11.5% are pracaxi’s signature — ' +
+      'both MAJOR acids (the two sources agree tightly on C24:0 ~10–12%). Arachidic 12.3% (one ' +
+      'review’s upper bound) rejected as an outlier (true ~1.8%)',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10058800/',
+    note:
+      'FULL REPLACE — legacy profile summed only 54%, missing pracaxi’s entire long-chain saturated ' +
+      'fraction (behenic 18 + lignoceric 11.5 + arachidic 1.8 ≈ 31%); it kept only oleic 44 + traces, ' +
+      'so derived chemistry couldn’t even resolve (<93% mapped). Stored SAP 0.175 KEPT — profile-' +
+      'derived 0.178 agrees (+1.7%, within gate; the heavy C22/C24 load lowers SAP, matching supplier ' +
+      '175–195 mg KOH/g); derived IV 68 EXACTLY matches stored 68 (a supplier "90–105" figure is ' +
+      'rejected as inconsistent with ~50% oleic). Property shift hardness +31 / longevity +32 / ' +
+      'conditioning +15 is acknowledged: restoring ~31% hardness/longevity acids (arachidic/behenic/' +
+      'lignoceric — the acids this arc added to properties.ts) is the whole point. This is the oil ' +
+      'the Slice A lignoceric (C24:0) key was built for.',
+  },
 };

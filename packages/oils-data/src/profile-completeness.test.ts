@@ -30,7 +30,7 @@ const COMPLETENESS_THRESHOLD_PCT = MIN_MAPPED_PERCENT;
 const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   // rapeseed-oil-canola was here — Phase 5 gap-filled it as high-erucic rapeseed (see PROFILE_BACKFILL).
   // mustard-oil-kachi-ghani — Phase 5 gap-filled to 100% (high-erucic, Codex + literature).
-  'pracaxi-seed-oil',
+  // pracaxi-seed-oil — Phase 5 FULL REPLACE (was 54%, legacy dropped ~31% C22:0/C24:0); see PROFILE_BACKFILL.
   'sea-buckthorn-oil-seed-and-berry',
   'soybean-27-5-hydrogenated',
   'macadamia-nut-butter',
