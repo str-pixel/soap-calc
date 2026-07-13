@@ -71,7 +71,7 @@ describe('fatty-acid profile completeness (catalog guard)', () => {
 const LAURIC_DOMINANT_MIN = 30; // % lauric that marks an oil as "a lauric oil"
 const PURE_ACID_MAX = 90; // at/above this it is a single-acid additive, not an oil
 const LAURIC_OILS_MISSING_MCT = new Set<string>([
-  'babassu-oil', // stored lauric/myristic also inflated (~50/20 vs cited ~47/~16) — full reprofile, source-first
+  // babassu-oil — Phase 5 full reprofile (Melo 2019 + Jackson 1944); restored C8/C10, corrected inflated lauric/myristic. See PROFILE_BACKFILL.
   'cohune-oil', // Attalea cohune (babassu relative) co-produces C8/C10 — truncated; needs a cited profile
   'murumuru-butter', // Astrocaryum murumuru co-produces C8/C10 — truncated; needs a cited profile
   'coconut-oil-92', // hydrogenated coconut — C8/C10 survive hydrogenation (it saturates, not shortens); needs a sourced profile

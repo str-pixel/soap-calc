@@ -424,4 +424,28 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'lignoceric — the acids this arc added to properties.ts) is the whole point. This is the oil ' +
       'the Slice A lignoceric (C24:0) key was built for.',
   },
+
+  'babassu-oil': {
+    profile: {
+      lauric: 47.4, myristic: 15.6, oleic: 11.4, palmitic: 8, caprylic: 6.2, capric: 5.8,
+      stearic: 3.2, linoleic: 1.9, linolenic: 0.3, arachidic: 0.1, palmitoleic: 0.1,
+    },
+    sourceType: 'literature',
+    source:
+      'Attalea speciosa (babassu) — Melo et al. 2019 (PMC6930611, cold-pressed Brazilian babassu, ' +
+      '21 FAs) as primary, cross-checked vs Jackson & Wardin 1944 (JAOCS) and the Codex CXS 210 ' +
+      'ranges. Restores caprylic (C8, ~6%) + capric (C10, ~6%) and corrects the legacy lauric/' +
+      'myristic (50/20), which were inflated above the cited ~47/~16. Ferreira 2012 (PMC3347479) ' +
+      'rejected as a short-chain outlier (caprylic 9.2 / capric 9.6 / lauric 54.7)',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6930611/',
+    note:
+      'Full reprofile — legacy summed 95%, carried no C8/C10, and inflated lauric/myristic (50/20 vs ' +
+      'cited ~47/~16). SAP 0.251 KEPT (FNWL measured, retained as primary): the now-complete profile ' +
+      'derives 0.2432, within the gate at −3.1% of FNWL, so the measured value stands and is NOT ' +
+      're-resolved (verified against the build — babassu’s FNWL match is inside the gate, so unlike ' +
+      'cupuaçu the profile does not re-pick a different stored SAP). Derived IV 15 ≈ stored 15. ' +
+      'Property shift is hardness −10.7 (correcting the inflated lauric/myristic — babassu stays a hard ' +
+      'oil at ~74), bubbly/cleansing +5 from the restored C8/C10; max 10.7 is under the guard, no ' +
+      'acknowledgment. Removed from the LAURIC_OILS_MISSING_MCT guard allowlist.',
+  },
 };
