@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-13T13:51:26.361Z",
+  "generatedAt": "2026-07-13T15:12:20.229Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -83,12 +83,17 @@
       "iodine": 9,
       "ins": 241,
       "fattyAcids": {
-        "oleic": 7,
-        "lauric": 45,
-        "stearic": 3,
-        "linoleic": 2,
-        "myristic": 18,
-        "palmitic": 8
+        "lauric": 47.6,
+        "myristic": 18.3,
+        "palmitic": 8.6,
+        "caprylic": 7.1,
+        "capric": 6.3,
+        "stearic": 2.9,
+        "oleic": 7.3,
+        "linoleic": 1.7,
+        "linolenic": 0.1,
+        "arachidic": 0.1,
+        "eicosenoic": 0.1
       }
     },
     {
@@ -1419,11 +1424,17 @@
       "iodine": 9,
       "ins": 246,
       "fattyAcids": {
-        "lauric": 44,
-        "stearic": 3,
-        "linoleic": 2,
-        "myristic": 16,
-        "palmitic": 10
+        "lauric": 47.6,
+        "myristic": 18.3,
+        "palmitic": 8.6,
+        "caprylic": 7.1,
+        "capric": 6.3,
+        "stearic": 2.9,
+        "oleic": 7.3,
+        "linoleic": 1.7,
+        "linolenic": 0.1,
+        "arachidic": 0.1,
+        "eicosenoic": 0.1
       }
     },
     {
@@ -2285,13 +2296,19 @@
       "iodine": 45,
       "ins": 185,
       "fattyAcids": {
-        "oleic": 35,
-        "lauric": 29,
-        "stearic": 2,
-        "linoleic": 4,
-        "myristic": 11,
-        "palmitic": 8,
-        "linolenic": 1
+        "oleic": 36.4,
+        "lauric": 27.7,
+        "myristic": 11.2,
+        "palmitic": 9,
+        "linoleic": 6.3,
+        "caprylic": 2.8,
+        "capric": 2.8,
+        "stearic": 1.9,
+        "linolenic": 1.3,
+        "palmitoleic": 0.3,
+        "eicosenoic": 0.2,
+        "arachidic": 0.1,
+        "behenic": 0.1
       }
     },
     {
