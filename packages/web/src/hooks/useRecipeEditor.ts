@@ -8,52 +8,31 @@ type SetSettings = React.Dispatch<React.SetStateAction<RecipeSettings>>;
 export function useRecipeEditor(
   lines: RecipeLine[],
   batchOilGrams: string,
-  batchSetByUser: boolean,
   setLines: SetLines,
   setSettings: SetSettings,
 ) {
   const linesRef = useRef(lines);
   const batchRef = useRef(batchOilGrams);
-  const batchSetByUserRef = useRef(batchSetByUser);
   linesRef.current = lines;
   batchRef.current = batchOilGrams;
-  batchSetByUserRef.current = batchSetByUser;
 
   const applySynced = useCallback(
     (synced: SyncedRecipe) => {
       linesRef.current = synced.lines;
       batchRef.current = synced.batchOilGrams;
-      batchSetByUserRef.current = synced.batchSetByUser;
       setLines(synced.lines);
-      // Persist batch grams and its provenance together so the flag can never drift from
-      // the total it describes (a stale flag reintroduces the steal-from-lines bug).
-      setSettings((settings) =>
-        settings.batchOilGrams === synced.batchOilGrams &&
-        settings.batchSetByUser === synced.batchSetByUser
-          ? settings
-          : {
-              ...settings,
-              batchOilGrams: synced.batchOilGrams,
-              batchSetByUser: synced.batchSetByUser,
-            },
-      );
+      setSettings((settings) => ({ ...settings, batchOilGrams: synced.batchOilGrams }));
     },
     [setLines, setSettings],
   );
 
   const applySyncedUpdate = useCallback(
-    (
-      updater: (
-        currentLines: RecipeLine[],
-        currentBatch: string,
-        currentBatchSetByUser: boolean,
-      ) => SyncedRecipe,
-    ) => {
-      const synced = updater(linesRef.current, batchRef.current, batchSetByUserRef.current);
+    (updater: (currentLines: RecipeLine[], currentBatch: string) => SyncedRecipe) => {
+      const synced = updater(linesRef.current, batchRef.current);
       applySynced(synced);
     },
     [applySynced],
   );
 
-  return { applySynced, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef };
+  return { applySynced, applySyncedUpdate, linesRef, batchRef };
 }

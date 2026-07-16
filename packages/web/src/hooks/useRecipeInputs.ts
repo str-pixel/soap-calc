@@ -34,12 +34,9 @@ export type UseRecipeInputsDeps = {
   clearAllDrafts: () => void;
   editor: {
     applySynced: (synced: SyncedRecipe) => void;
-    applySyncedUpdate: (
-      u: (lines: RecipeLine[], batch: string, batchSetByUser: boolean) => SyncedRecipe,
-    ) => void;
+    applySyncedUpdate: (u: (lines: RecipeLine[], batch: string) => SyncedRecipe) => void;
     linesRef: React.MutableRefObject<RecipeLine[]>;
     batchRef: React.MutableRefObject<string>;
-    batchSetByUserRef: React.MutableRefObject<boolean>;
   };
   setLines: React.Dispatch<React.SetStateAction<RecipeLine[]>>;
   setSettings: React.Dispatch<React.SetStateAction<RecipeSettings>>;
@@ -71,7 +68,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   const { weightInputId, percentInputId, batchInputId } = makeInputIds();
   const { lines, settings, additives, weightUnit, drafts } = deps;
   const { setDraft, clearDraft, clearAllDrafts } = deps;
-  const { applySynced, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef } = deps.editor;
+  const { applySynced, applySyncedUpdate, linesRef, batchRef } = deps.editor;
   const { setLines, setSettings, handleExport, handleNew } = deps;
 
   function updateLine(key: string, patch: Partial<RecipeLine>) {
@@ -95,13 +92,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   }
 
   function flushCommittedDrafts(): SyncedRecipe {
-    const synced = commitDrafts(
-      linesRef.current,
-      batchRef.current,
-      drafts,
-      weightUnit,
-      batchSetByUserRef.current,
-    );
+    const synced = commitDrafts(linesRef.current, batchRef.current, drafts, weightUnit);
     if (Object.keys(drafts).length > 0) {
       clearAllDrafts();
       applySynced(synced);
@@ -117,13 +108,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     const synced = flushCommittedDrafts();
     handleExport({
       lines: synced.lines,
-      // Take batch grams AND provenance from the just-committed result, not render-scope
-      // settings, so a total typed-but-not-blurred at export time keeps its lock.
-      settings: {
-        ...settings,
-        batchOilGrams: synced.batchOilGrams,
-        batchSetByUser: synced.batchSetByUser,
-      },
+      settings: { ...settings, batchOilGrams: synced.batchOilGrams },
       additives,
     });
   }
@@ -141,7 +126,6 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     applySyncedUpdate((prev) => ({
       lines: syncBatchTotalEdit(prev, batchOilGrams),
       batchOilGrams,
-      batchSetByUser: true,
     }));
   }
 
@@ -152,8 +136,8 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     const weightGrams = parseInputDisplayToGrams(displayValue, weightUnit);
     if (weightGrams === null) return;
 
-    applySyncedUpdate((prev, batchOilGrams, batchSetByUser) =>
-      syncWeightEdit(prev, key, weightGrams, batchOilGrams, batchSetByUser),
+    applySyncedUpdate((prev, batchOilGrams) =>
+      syncWeightEdit(prev, key, weightGrams, batchOilGrams),
     );
   }
 
@@ -164,8 +148,8 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     const weightPercent = parsePercentInput(displayValue);
     if (weightPercent === null) return;
 
-    applySyncedUpdate((prev, batchOilGrams, batchSetByUser) =>
-      syncPercentEdit(prev, key, weightPercent, batchOilGrams, batchSetByUser),
+    applySyncedUpdate((prev, batchOilGrams) =>
+      syncPercentEdit(prev, key, weightPercent, batchOilGrams),
     );
   }
 
@@ -184,7 +168,6 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     applySyncedUpdate((prev) => ({
       lines: syncBatchTotalEdit(prev, batchOilGrams),
       batchOilGrams,
-      batchSetByUser: true,
     }));
   }
 
@@ -203,9 +186,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
 
   function addLine() {
     const newLine = { key: newLineKey(), oilId: 'olive-oil', weightGrams: '', weightPercent: '' };
-    applySyncedUpdate((prev, batchOilGrams, batchSetByUser) =>
-      addRecipeLine(prev, batchOilGrams, newLine, batchSetByUser),
-    );
+    applySyncedUpdate((prev, batchOilGrams) => addRecipeLine(prev, batchOilGrams, newLine));
   }
 
   function removeLine(key: string) {
