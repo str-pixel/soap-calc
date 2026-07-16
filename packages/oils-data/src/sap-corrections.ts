@@ -28,4 +28,9 @@ export const LEGACY_SAP_CORRECTIONS: Record<
     sapKoh: 0.195,
     note: 'Corrected: legacy SAP (0.18) is low for a palmitic/linoleic-dominant oil. The Phase-5 backfilled profile derives 0.196, matching Böger et al. 2021 measured roasted-arabica 195.26 mg KOH/g; replaced with 0.195. No FNWL match, so the correction applies here.',
   },
+  'cohune-oil': {
+    sapKoh: 0.246,
+    iodine: 11,
+    note: 'Corrected: legacy SAP (0.205) is impossibly low for a lauric palm-kernel oil — below the saponification value of any lauric composition, and inconsistent with cohune’s own fatty-acid profile (which derives ~0.246). Replaced with the Phase-5-backfilled-profile-derived 0.246, which matches measured relatives (babassu 0.237, indaiá 0.241). No FNWL match, so the correction applies here. Legacy iodine (30) is likewise high vs the profile-derived ~11 (cohune is ~96% saturated); corrected to 11 so the recomputed INS is not re-poisoned.',
+  },
 };

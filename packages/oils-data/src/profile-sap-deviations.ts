@@ -14,7 +14,8 @@ export const SAP_DEVIATION_THRESHOLD_PCT = 8;
 export const KNOWN_PROFILE_SAP_DEVIATIONS: Record<string, string> = {
   'nutmeg-butter': 'trimyristin + volatile unsaponifiables; profile over-estimates SAP',
   'buriti-oil': 'carotenoid unsaponifiables; profile over-estimates SAP',
-  'cohune-oil': 'legacy_only lauric oil, low vs family; physically possible, no external source',
+  // cohune-oil was here (legacy SAP 0.205 vs profile). Phase 5 corrected the SAP to 0.246 (profile-derived,
+  // via LEGACY_SAP_CORRECTIONS) and backfilled the profile, so the deviation is resolved — no longer a deviation.
   'ucuuba-butter': 'legacy_only high-myristic butter; unresolved vs profile',
   // murumuru-butter was here (fnwl 0.253 vs truncated-profile 0.233, ~8.6%). Phase 5 backfilled its
   // full profile (restored C8/C10); it now derives 0.238, within threshold, so it's no longer a deviation.
