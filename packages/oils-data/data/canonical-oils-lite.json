@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-16T02:28:21.600Z",
+  "generatedAt": "2026-07-16T04:03:50.182Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -660,12 +660,14 @@
       "iodine": 3,
       "ins": 258,
       "fattyAcids": {
-        "oleic": 8,
-        "lauric": 48,
-        "stearic": 3,
-        "linoleic": 2,
-        "myristic": 19,
-        "palmitic": 9
+        "lauric": 47.6,
+        "myristic": 18.3,
+        "palmitic": 8.6,
+        "caprylic": 7.1,
+        "capric": 6.3,
+        "stearic": 8.4,
+        "oleic": 3.5,
+        "arachidic": 0.2
       }
     },
     {
@@ -1690,12 +1692,12 @@
       "iodine": 20,
       "ins": 227,
       "fattyAcids": {
-        "lauric": 48.2,
-        "myristic": 16.2,
-        "oleic": 15.3,
-        "palmitic": 8.4,
         "caprylic": 3.3,
         "capric": 3.4,
+        "lauric": 48.2,
+        "myristic": 16.2,
+        "palmitic": 8.4,
+        "oleic": 15.3,
         "stearic": 2.5,
         "linoleic": 2.3,
         "linolenic": 0.4
@@ -1716,11 +1718,13 @@
       "iodine": 4,
       "ins": 243,
       "fattyAcids": {
-        "oleic": 4,
-        "lauric": 49,
-        "stearic": 16,
-        "myristic": 17,
-        "palmitic": 8
+        "caprylic": 3.3,
+        "capric": 3.4,
+        "lauric": 48.2,
+        "myristic": 16.2,
+        "palmitic": 8.4,
+        "stearic": 16.5,
+        "oleic": 4
       }
     },
     {

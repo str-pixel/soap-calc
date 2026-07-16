@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T02:28:21.600Z",
+  "generatedAt": "2026-07-16T04:03:50.182Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -737,6 +737,49 @@
       "acknowledged": false
     },
     {
+      "name": "Coconut Oil, 92 deg",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 67,
+          "after": 79.3,
+          "delta": 12.3
+        },
+        {
+          "property": "cleansing",
+          "before": 67,
+          "after": 79.3,
+          "delta": 12.3
+        },
+        {
+          "property": "condition",
+          "before": 10,
+          "after": 3.5,
+          "delta": -6.5
+        },
+        {
+          "property": "longevity",
+          "before": 12,
+          "after": 17.2,
+          "delta": 5.2
+        },
+        {
+          "property": "creamy",
+          "before": 12,
+          "after": 17,
+          "delta": 5
+        },
+        {
+          "property": "hardness",
+          "before": 79,
+          "after": 83.10000000000001,
+          "delta": 4.1
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
       "name": "Coffee Bean Oil, roasted",
       "shifts": [
         {
@@ -1174,6 +1217,43 @@
           "before": 75,
           "after": 75.30000000000001,
           "delta": 0.3
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Palm Kernel Oil Flakes, hydrogenated",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 66,
+          "after": 71.10000000000001,
+          "delta": 5.1
+        },
+        {
+          "property": "cleansing",
+          "before": 66,
+          "after": 71.10000000000001,
+          "delta": 5.1
+        },
+        {
+          "property": "longevity",
+          "before": 24,
+          "after": 24.9,
+          "delta": 0.9
+        },
+        {
+          "property": "creamy",
+          "before": 24,
+          "after": 24.9,
+          "delta": 0.9
+        },
+        {
+          "property": "hardness",
+          "before": 90,
+          "after": 89.30000000000001,
+          "delta": -0.7
         }
       ],
       "flagged": false,

@@ -35,7 +35,8 @@ const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   'soybean-27-5-hydrogenated',
   'macadamia-nut-butter',
   'tallow-sheep',
-  'coconut-oil-92',
+  // coconut-oil-92 — Phase 5 backfill (hydrogenation transform of CODEX_COCONUT); restored C8/C10 + fixed the
+  // profile to reflect hydrogenation. See PROFILE_BACKFILL.
   'tallow-bear',
   // avocado-oil was here — Phase 5 backfilled it to 100% from USDA FDC (see PROFILE_BACKFILL).
   'avocado-butter',
@@ -71,11 +72,11 @@ describe('fatty-acid profile completeness (catalog guard)', () => {
 const LAURIC_DOMINANT_MIN = 30; // % lauric that marks an oil as "a lauric oil"
 const PURE_ACID_MAX = 90; // at/above this it is a single-acid additive, not an oil
 const LAURIC_OILS_MISSING_MCT = new Set<string>([
-  // babassu-oil — Phase 5 full reprofile (Melo 2019 + Jackson 1944); restored C8/C10, corrected inflated lauric/myristic. See PROFILE_BACKFILL.
-  // cohune-oil — Phase 5 backfill (FAO 1992 profile) + SAP correction 0.205→0.246. See PROFILE_BACKFILL / LEGACY_SAP_CORRECTIONS.
-  // murumuru-butter — Phase 5 full reprofile (CIR 2017 + reference profile); restored C8/C10. See PROFILE_BACKFILL.
-  'coconut-oil-92', // hydrogenated coconut — C8/C10 survive hydrogenation (it saturates, not shortens); needs a sourced profile
-  'palm-kernel-oil-flakes-hydrogenated', // hydrogenated PKO — same: C8/C10 survive; needs a sourced profile
+  // EMPTY — every lauric-dominant oil in the catalog now carries its real C8/C10 (Phase 5 complete):
+  // babassu (Melo 2019 + Jackson 1944), cohune (FAO 1992 + SAP correction), murumuru (CIR 2017),
+  // and the two hydrogenated forms coconut-oil-92 + palm-kernel-oil-flakes-hydrogenated (hydrogenation
+  // transforms of their Codex-sourced base oils). A NEW id appearing here means a freshly-added lauric
+  // oil shipped a C8/C10-truncated profile and needs a sourced backfill.
 ]);
 
 describe('lauric-oil MCT completeness (catalog guard)', () => {

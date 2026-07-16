@@ -17,8 +17,12 @@
  */
 export type ProfileBackfill = {
   profile: Record<string, number>;
-  /** Coarse provenance category for the recorded source (full citation lives in `source`/`note`). */
-  sourceType: 'fdc' | 'literature';
+  /**
+   * Coarse provenance category for the recorded source (full citation lives in `source`/`note`).
+   * `'derived'` = the profile is computed (e.g. a hydrogenation transform of a sourced base), not
+   * taken directly from a measurement — the transform + its base are named in `source`.
+   */
+  sourceType: 'fdc' | 'literature' | 'derived';
   /** Optional user-facing name override — for entries whose legacy name is wrong/misleading. */
   displayName?: string;
   /**
@@ -40,9 +44,26 @@ export type ProfileBackfill = {
  * hydrogenated (IV ~3 vs this profile's ~10). FA-derived SAP ≈ 0.247 (runs ~4% below the measured
  * ~0.257 — the known lauric-oil range-midpoint effect), so consuming entries keep their measured SAP.
  */
-const CODEX_COCONUT: Record<string, number> = {
+/**
+ * Coconut C8–C16 medium-chain block. Hydrogenation conserves chain length, so this is IDENTICAL
+ * in raw coconut (CODEX_COCONUT) and fully-hydrogenated coconut (coconut-oil-92) — sharing the
+ * constant makes that invariant structural, so the two can never silently drift apart.
+ */
+const COCONUT_MEDIUM: Record<string, number> = {
   lauric: 47.6, myristic: 18.3, palmitic: 8.6, caprylic: 7.1, capric: 6.3,
+};
+
+const CODEX_COCONUT: Record<string, number> = {
+  ...COCONUT_MEDIUM,
   stearic: 2.9, oleic: 7.3, linoleic: 1.7, linolenic: 0.1, arachidic: 0.1, eicosenoic: 0.1,
+};
+
+/**
+ * Palm-kernel C8–C16 medium-chain block — same rationale as COCONUT_MEDIUM: shared by the raw
+ * palm-kernel-oil backfill and the hydrogenated palm-kernel-oil-flakes so they can't drift.
+ */
+const PKO_MEDIUM: Record<string, number> = {
+  caprylic: 3.3, capric: 3.4, lauric: 48.2, myristic: 16.2, palmitic: 8.4,
 };
 
 /** Serenoa repens FA composition — NIST SRM 3251 (certified reference material). Shared by the
@@ -377,10 +398,8 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   },
 
   'palm-kernel-oil': {
-    profile: {
-      lauric: 48.2, myristic: 16.2, oleic: 15.3, palmitic: 8.4, caprylic: 3.3, capric: 3.4,
-      stearic: 2.5, linoleic: 2.3, linolenic: 0.4,
-    },
+    // Medium chains via the shared PKO_MEDIUM (so hydrogenated PKO can't drift from raw); C18 as raw PKO.
+    profile: { ...PKO_MEDIUM, oleic: 15.3, stearic: 2.5, linoleic: 2.3, linolenic: 0.4 },
     sourceType: 'literature',
     source:
       'Ang, Liu & Huang (eds.), Asian Foods (1999) representative palm-kernel-oil profile — every ' +
@@ -498,5 +517,52 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'Property shift bubbly/cleansing +12.5 (restored C8/C10) / condition −10, under the guard. Removed ' +
       'from the MCT guard allowlist and the acknowledged-SAP-deviation list. CAVEAT: single-source FA ' +
       'data — revise the profile if an independent GC analysis of A. cohune appears.',
+  },
+
+  // ── Hydrogenated forms — DERIVED profiles (hydrogenation transform of a Codex-sourced base). No
+  //    measured whole-product GC table itemizes the retained C8/C10, so the honest path is: sourced raw
+  //    profile + the hydrogenation transform (chain lengths conserved; C18 unsaturates → stearic), tuned
+  //    to the stored iodine value. Both documented as transforms, not fabricated spec sheets.
+  'coconut-oil-92': {
+    // C8–C16 via the shared COCONUT_MEDIUM (structurally identical to coconut-76); C18 = hydrogenated.
+    profile: { ...COCONUT_MEDIUM, stearic: 8.4, oleic: 3.5, arachidic: 0.2 },
+    sourceType: 'derived',
+    source:
+      'Hydrogenation transform of the shared CODEX_COCONUT profile (Codex CXS 210 coconut). ' +
+      'Hydrogenation conserves chain length, so C8–C16 are IDENTICAL to regular coconut (coconut-oil-76, ' +
+      'via the shared COCONUT_MEDIUM constant); ' +
+      'the C18 unsaturates (oleic/linoleic) are saturated to stearic, leaving a small oleic residual to ' +
+      'match the stored IV 3. Direction/magnitude validated by the one measured FHCO (Dhaygude et al. ' +
+      '2018, Periodica Polytechnica Chem Eng 62(1):123 — stearic 3→10, oleic 7→0.3). The CIR "hydrogenated ' +
+      'coconut" entry is the raw profile relabeled (unusable); no measured whole-FHCO table itemizes C8/C10',
+    url: 'https://pp.bme.hu/ch/article/download/9638/7356/',
+    note:
+      'Legacy profile was regular-coconut’s (oleic 8 / linoleic 2 / stearic 3, sum 89) — which CONTRADICTS ' +
+      'the stored IV 3 (that profile implies IV ~10). This both restores the truncated C8/C10 and fixes the ' +
+      'profile to reflect hydrogenation. SAP 0.258 KEPT (verified against build); derived 0.247 within gate ' +
+      '(−4.4%; SAP is ~unchanged by hydrogenation — chain lengths conserved); derived IV 3 matches stored 3. ' +
+      'vs coconut-76: same cleansing/lather (C8–C14 identical) but harder / less-conditioning (oleic→stearic). ' +
+      'Property shift bubbly/cleansing +12.3 (restored C8/C10), under the guard. DERIVED profile — a specific ' +
+      'commercial “coconut 92” feedstock may vary; revise on a supplier CoA.',
+  },
+
+  'palm-kernel-oil-flakes-hydrogenated': {
+    // C8–C16 via the shared PKO_MEDIUM (structurally = raw palm-kernel-oil); C18 = hydrogenated.
+    profile: { ...PKO_MEDIUM, stearic: 16.5, oleic: 4 },
+    sourceType: 'derived',
+    source:
+      'Hydrogenation transform of the raw palm-kernel-oil profile (Codex CXS 210, = our palm-kernel-oil ' +
+      'backfill, via the shared PKO_MEDIUM constant). C8–C16 conserved (hydrogenation cannot change chain ' +
+      'length); the C18 unsaturates saturated ' +
+      'to stearic (~16.5), leaving ~4% residual oleic to match the stored IV 4. No measured whole-HPKO table ' +
+      'itemizes C8/C10 (all sources truncate; “palm kernel stearin” is a different, fractionated product with ' +
+      'depressed C8/C10 — not cross-usable)',
+    url: 'https://www.fao.org/input/download/standards/336/CXS_210e_2015.pdf',
+    note:
+      'Effectively a gap-fill: the legacy profile already reflected hydrogenation (stearic 16 / oleic 4 / IV 4) ' +
+      'but truncated C8/C10 (sum 94). Restores caprylic 3.3 + capric 3.4 (= raw PKO) and aligns lauric/myristic ' +
+      'to raw PKO (48.2 / 16.2; the legacy 49 / 17 sat slightly above raw, which hydrogenation cannot cause). ' +
+      'SAP 0.247 KEPT (unchanged by hydrogenation); derived 0.237 within gate (−4.0%); derived IV 3 ≈ stored 4. ' +
+      'Property shift bubbly/cleansing +5.1 (restored C8/C10), under the guard. Removed from the MCT allowlist.',
   },
 };
