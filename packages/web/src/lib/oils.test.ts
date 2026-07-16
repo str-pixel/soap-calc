@@ -19,6 +19,27 @@ describe('searchOils', () => {
     expect(ids).not.toContain('rapeseed-oil-high-erucic');
     expect(ids).not.toContain('rapeseed-oil-canola');
   });
+
+  it('hides insufficient-data oils (truncated FA profile) from the picker', () => {
+    // macadamia-nut-butter's profile sums ~79% — a proprietary hardened blend we can't complete.
+    expect(searchOils('').some((oil) => oil.id === 'macadamia-nut-butter')).toBe(false);
+    expect(searchOils('macadamia').map((o) => o.id)).not.toContain('macadamia-nut-butter');
+    // ...but the fully-profiled macadamia oil is still offered.
+    expect(searchOils('macadamia').map((o) => o.id)).toContain('macadamia-nut-oil');
+  });
+});
+
+describe('insufficient-data oils still resolve for saved recipes', () => {
+  // Hidden from the picker, but a recipe saved before we hid them must still calculate — so the
+  // id must resolve in oilById and the lye/property lookups the core calc reads directly.
+  it.each(['macadamia-nut-butter', 'avocado-butter', 'sea-buckthorn-oil-seed-and-berry'])(
+    'resolves %s by id despite being hidden from search',
+    (id) => {
+      expect(oilById(id)?.id).toBe(id);
+      expect(OIL_LOOKUP[id]?.id).toBe(id);
+      expect(PROPERTIES_LOOKUP[id]?.id).toBe(id);
+    },
+  );
 });
 
 describe('oilById', () => {

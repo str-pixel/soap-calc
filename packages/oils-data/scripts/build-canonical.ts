@@ -26,6 +26,7 @@ import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
+import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
 import { OIL_DISPLAY_NAMES } from '../src/oil-display-names.js';
 import { maxAbsShift, propertyShift, PROPERTY_SHIFT_THRESHOLD, type PropertyShift } from '../src/property-shift.js';
@@ -505,6 +506,11 @@ function main() {
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(db, null, 2) + '\n');
 
+  // Oils whose fatty-acid profile is truncated (sums < MIN_MAPPED_PERCENT) carry unreliable
+  // bar-property scores, so the web hides them from the oil picker. They still resolve by id
+  // (OIL_LOOKUP / oilById), so a saved recipe referencing one keeps calculating.
+  const insufficientDataIds = new Set(incompleteProfileOils(oils).map((o) => o.id));
+
   const liteDb = {
     version: db.version,
     generatedAt: db.generatedAt,
@@ -524,6 +530,7 @@ function main() {
       propertiesAvailable: oil.propertiesAvailable,
       ...(oil.iodine !== undefined ? { iodine: oil.iodine } : {}),
       ...(oil.ins !== undefined ? { ins: oil.ins } : {}),
+      ...(insufficientDataIds.has(oil.id) ? { insufficientData: true } : {}),
       ...(oil.propertiesAvailable && oil.fattyAcids
         ? { fattyAcids: oil.fattyAcids }
         : {}),
