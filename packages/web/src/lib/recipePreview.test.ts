@@ -13,18 +13,18 @@ const lines: RecipeLine[] = [
 
 describe('recipePreview', () => {
   it('uses in-progress weight drafts for preview without mutating committed lines', () => {
-    const preview = previewRecipeState(lines, '1000', { 'weight-a': '16' }, 'oz');
+    const preview = previewRecipeState(lines, '1000', { 'weight-a': '16' }, 'oz', true);
     expect(preview.lines[0].weightGrams).toBe('454');
     expect(lines[0].weightGrams).toBe('600');
   });
 
   it('ignores incomplete weight drafts', () => {
-    const preview = previewRecipeState(lines, '1000', { 'weight-a': '16.' }, 'oz');
+    const preview = previewRecipeState(lines, '1000', { 'weight-a': '16.' }, 'oz', true);
     expect(preview.lines[0].weightGrams).toBe('600');
   });
 
   it('uses in-progress batch drafts for preview', () => {
-    const preview = previewRecipeState(lines, '1000', { 'batch-total': '2' }, 'lb');
+    const preview = previewRecipeState(lines, '1000', { 'batch-total': '2' }, 'lb', false);
     expect(preview.batchOilGrams).toBe('907.2');
   });
 });

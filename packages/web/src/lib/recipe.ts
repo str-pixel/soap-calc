@@ -31,6 +31,9 @@ export type SplitLiquidSettings = {
 export type RecipeSettings = {
   weightUnit: WeightUnit;
   batchOilGrams: string;
+  /** True only when the user typed the batch total (or applied a suggested one);
+   * a total derived from line weights follows them instead of locking them. */
+  batchSetByUser: boolean;
   superfatPercent: string;
   lyeType: 'naoh' | 'koh' | 'dual';
   kohBlendPercent: string;
@@ -66,6 +69,7 @@ export const DEFAULT_SPLIT_LIQUID: SplitLiquidSettings = {
 export const DEFAULT_SETTINGS: RecipeSettings = {
   weightUnit: 'g',
   batchOilGrams: '1000',
+  batchSetByUser: false,
   superfatPercent: '5',
   lyeType: 'naoh',
   kohBlendPercent: '5',
@@ -128,6 +132,7 @@ export function normalizeSettings(
     waterMode,
     lyeType,
     postCookSuperfatMethod,
+    batchSetByUser: partial?.batchSetByUser === true,
     ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
   };
