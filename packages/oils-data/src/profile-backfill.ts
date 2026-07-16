@@ -472,4 +472,31 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'shift max 5.5 (condition −5.5 from trimming the high legacy oleic), under the guard, no ' +
       'acknowledgment. Removed from the LAURIC_OILS_MISSING_MCT guard allowlist.',
   },
+
+  'cohune-oil': {
+    profile: {
+      lauric: 46.5, myristic: 16, palmitic: 9.5, oleic: 10, caprylic: 7.5, capric: 6.5,
+      stearic: 3, linoleic: 1,
+    },
+    sourceType: 'literature',
+    source:
+      'Attalea cohune — FAO Minor Oil Crops bulletin (Axtell 1992, from R.M. Fairman), the only ' +
+      'cohune-native complete profile (reproduced by Wikipedia + Monaco Nature Encyclopedia; NOT ' +
+      'independently GC-measured — SINGLE-SOURCE). High confidence on the caprylic 7.5 / capric 6.5 ' +
+      'presence and lauric ~46%, but myristic 16 / palmitic 9.5 run higher than measured relatives ' +
+      '(babassu/indaiá ~12 / ~4) — a documented asterisk. Codex CXS 210 does NOT cover cohune. ' +
+      'Cross-check: this profile derives SAP 0.246 / IV 11, matching the measured relatives (babassu ' +
+      '0.237, indaiá 0.241) — a single source that predicts independent measurements',
+    url: 'https://en.wikipedia.org/wiki/Cohune_oil',
+    note:
+      'Restores caprylic + capric (~14% combined) the legacy profile dropped. PAIRED WITH a ' +
+      'LEGACY_SAP_CORRECTION: stored SAP 0.205 is impossibly low for a lauric palm-kernel oil (below ' +
+      'the saponification value of any lauric composition; even the truncated profile derived 0.232). ' +
+      'Corrected to the profile-derived 0.246 (no FNWL match → applied via LEGACY_SAP_CORRECTIONS, ' +
+      'confidence→estimated); legacy iodine 30 (also inconsistent — cohune is ~96% saturated) corrected ' +
+      'to the derived 11. Profile-derived 0.2457 then agrees with the corrected 0.246 (+0.1%, gate-safe). ' +
+      'Property shift bubbly/cleansing +12.5 (restored C8/C10) / condition −10, under the guard. Removed ' +
+      'from the MCT guard allowlist and the acknowledged-SAP-deviation list. CAVEAT: single-source FA ' +
+      'data — revise the profile if an independent GC analysis of A. cohune appears.',
+  },
 };
