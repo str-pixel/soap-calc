@@ -565,4 +565,27 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'SAP 0.247 KEPT (unchanged by hydrogenation); derived 0.237 within gate (−4.0%); derived IV 3 ≈ stored 4. ' +
       'Property shift bubbly/cleansing +5.1 (restored C8/C10), under the guard. Removed from the MCT allowlist.',
   },
+
+  'soybean-27-5-hydrogenated': {
+    profile: { oleic: 41, elaidic: 22, stearic: 15, linoleic: 11, palmitic: 10, linolenic: 1 },
+    sourceType: 'derived',
+    acknowledgedShift: true, // hardness/longevity +22 — restoring the truncated ~22% trans-C18:1 as a hardness acid
+    source:
+      'Partially-hydrogenated soybean oil (PHSO) reconstruction at the stored IV ~78, anchored to ' +
+      'published PHSO composition (IntechOpen "Effects of Hydrogenation on Soybean Oil"; Pd/bentonite ' +
+      'IV↔composition table, RSC Adv PMC12046513; AOCS "Hydrogenation in Practice"). The missing 27% of ' +
+      'the legacy profile is the TRANS fraction that partial hydrogenation creates: trans-C18:1 (~22%, ' +
+      'mapped to the new elaidic key) + trans-C18:2 (~4%, folded into linoleic as its geometric isomer). ' +
+      'DERIVED — the exact trans/stearic split of this specific SoapCalc entry is unknowable without a CoA',
+    url: 'https://www.intechopen.com/chapters/40484',
+    note:
+      'Legacy profile summed only 73% (cis acids only; the ~27% trans was dropped — SoapCalc has no trans ' +
+      'column). Requires the new elaidic (trans-C18:1) fatty-acid key. SAP 0.191 KEPT — derived 0.192 agrees ' +
+      '(+0.4%; elaidic saponifies like oleic); derived IV 79 ≈ stored 78 (elaidic’s double bond counts). ' +
+      'Property shift is hardness/longevity +22 (acknowledged): elaidic scores as a hardness acid, so this ' +
+      'now reads as the HARD, low-conditioning fat that partial hydrogenation produces — vs the naive ' +
+      'fold-trans-into-oleic, which would misreport it as soft (condition 75 / hardness 25). Note "27.5% ' +
+      'hydrogenated" is a non-standard SoapCalc label, numerically inconsistent with IV 78 (~40% IV drop); ' +
+      'the IV 78 / SAP 0.191 are the authoritative anchors. DERIVED reconstruction, not a sourced canonical value.',
+  },
 };

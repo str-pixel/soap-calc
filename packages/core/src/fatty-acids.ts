@@ -77,6 +77,12 @@ export const RATIO_SATURATED_ACIDS = [
   'behenic',
   'arachidic',
   'lignoceric',
+  // elaidic (trans-C18:1) is chemically unsaturated (its double bond counts toward iodine value),
+  // but this ratio is a HARDNESS proxy — its purpose is predicting bar behavior — and trans-C18:1
+  // soap packs and hardens like a saturated acid. So it belongs on the saturated side here, while
+  // the iodine value (pure chemistry) still counts the double bond. The two metrics diverge exactly
+  // where trans fat is the exception, which is correct.
+  'elaidic',
 ] as const;
 
 /** Acids summed into the unsaturated total of {@link saturatedUnsaturatedRatio}. */

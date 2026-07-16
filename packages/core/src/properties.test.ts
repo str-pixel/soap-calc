@@ -142,3 +142,14 @@ describe('palmitoleic and behenic are classified', () => {
     expect(props.longevity).toBe(20); // behenic
   });
 });
+
+describe('elaidic (trans-C18:1) scores like a saturated hardness acid, not like oleic', () => {
+  it('counts elaidic toward hardness/longevity and NOT conditioning', () => {
+    // Its cis isomer oleic scores 100% conditioning / 0% hardness; the trans form is the opposite —
+    // sodium elaidate is a hard, high-melting soap. This is the whole point of the trans key.
+    const props = oilPropertiesFromFattyAcids({ elaidic: 30, oleic: 10 });
+    expect(props.hardness).toBe(30); // elaidic only
+    expect(props.longevity).toBe(30); // elaidic only
+    expect(props.condition).toBe(10); // oleic only — elaidic is excluded
+  });
+});

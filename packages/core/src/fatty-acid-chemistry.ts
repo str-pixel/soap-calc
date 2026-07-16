@@ -41,6 +41,12 @@ export const FATTY_ACID_PROPERTIES: Record<string, FattyAcidConstants> = {
   lignoceric: { molecularWeight: 368.64, doubleBonds: 0 },
   palmitoleic: { molecularWeight: 254.41, doubleBonds: 1 },
   oleic: { molecularWeight: 282.46, doubleBonds: 1 },
+  // Elaidic = trans-C18:1 (the dominant trans acid in partially-hydrogenated oils). Chemically it
+  // is oleic's isomer — identical molecular weight, one C=C double bond — so it saponifies like
+  // oleic and its double bond consumes iodine (cis/trans geometry doesn't change the Wijs count).
+  // It differs only in PHYSICAL behavior (its soap is harder / higher-melting), handled in the
+  // property + ratio sets, not here.
+  elaidic: { molecularWeight: 282.46, doubleBonds: 1 },
   ricinoleic: { molecularWeight: 298.46, doubleBonds: 1 },
   eicosenoic: { molecularWeight: 310.51, doubleBonds: 1 },
   erucic: { molecularWeight: 338.57, doubleBonds: 1 },

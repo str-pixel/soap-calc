@@ -32,7 +32,7 @@ const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   // mustard-oil-kachi-ghani — Phase 5 gap-filled to 100% (high-erucic, Codex + literature).
   // pracaxi-seed-oil — Phase 5 FULL REPLACE (was 54%, legacy dropped ~31% C22:0/C24:0); see PROFILE_BACKFILL.
   'sea-buckthorn-oil-seed-and-berry',
-  'soybean-27-5-hydrogenated',
+  // soybean-27-5-hydrogenated — Phase 5 backfill via the new elaidic (trans-C18:1) key; see PROFILE_BACKFILL.
   'macadamia-nut-butter',
   'tallow-sheep',
   // coconut-oil-92 — Phase 5 backfill (hydrogenation transform of CODEX_COCONUT); restored C8/C10 + fixed the

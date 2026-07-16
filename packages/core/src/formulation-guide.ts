@@ -29,6 +29,10 @@ export const FORMULATION_FATTY_ACID_GUIDE = {
   // read as out-of-band (correctly flagged unusual) instead of silently inflating a primary bar.
   otherSaturated: { low: 0, high: 2, label: 'Other saturated' },
   otherUnsaturated: { low: 0, high: 2, label: 'Other unsaturated' },
+  // Trans-C18:1 (elaidic) — ~0% in natural oils, so a partially-hydrogenated oil reads as
+  // out-of-band (correctly flagged unusual). Shown as its own bar so its weight isn't hidden
+  // inside the saturated total it sums into.
+  trans: { low: 0, high: 2, label: 'Trans (elaidic)' },
 } as const;
 
 /**
@@ -52,6 +56,7 @@ export const FATTY_ACID_DISPLAY_GROUPS = [
     key: 'otherUnsaturated',
     acids: ['palmitoleic', 'eicosenoic', 'docosenoic', 'docosadienoic', 'erucic'],
   },
+  { key: 'trans', acids: ['elaidic'] },
 ] as const satisfies ReadonlyArray<{
   key: keyof typeof FORMULATION_FATTY_ACID_GUIDE;
   acids: readonly string[];
