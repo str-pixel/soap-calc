@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T02:24:31.412Z",
+  "generatedAt": "2026-07-16T02:28:21.600Z",
   "totalOils": 133,
   "fnwlCatalogSize": 115,
   "matchedFnwl": 60,
@@ -299,6 +299,7 @@
   "sapCorrected": [
     "Carrot Seed Oil, cold pressed",
     "Coffee Bean Oil, roasted",
+    "Cohune Oil",
     "Papaya seed oil, Carica papaya"
   ],
   "ldgMethodologyNotes": [
@@ -773,6 +774,43 @@
           "before": 0,
           "after": 0.1,
           "delta": 0.1
+        }
+      ],
+      "flagged": false,
+      "acknowledged": false
+    },
+    {
+      "name": "Cohune Oil",
+      "shifts": [
+        {
+          "property": "bubbly",
+          "before": 64,
+          "after": 76.5,
+          "delta": 12.5
+        },
+        {
+          "property": "cleansing",
+          "before": 64,
+          "after": 76.5,
+          "delta": 12.5
+        },
+        {
+          "property": "condition",
+          "before": 21,
+          "after": 11,
+          "delta": -10
+        },
+        {
+          "property": "longevity",
+          "before": 11,
+          "after": 12.5,
+          "delta": 1.5
+        },
+        {
+          "property": "creamy",
+          "before": 11,
+          "after": 12.5,
+          "delta": 1.5
         }
       ],
       "flagged": false,
