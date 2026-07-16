@@ -19,6 +19,7 @@ export const DataSource = z.enum([
   'iso_derived',
   'fdc',
   'literature',
+  'derived',
   'manual',
 ]);
 
