@@ -43,7 +43,10 @@ function loadWorkspace(process: ProcessId) {
   const draft = loadDraft(process);
   const settings = draft
     ? coerceSettingsForProcess(normalizeSettings(draft.settings), process)
-    : seededSettings(process);
+    : // The starter recipe ships an intentional 1000 g batch (its oil weights sum to the
+      // total), so lock it: editing a starter oil rebalances within 1000 rather than
+      // growing the total. Saved drafts keep their own provenance (legacy → derived).
+      { ...seededSettings(process), batchSetByUser: true };
   return {
     name: draft?.name ?? 'Starter recipe',
     lines: migrateRecipeLines(draft?.lines ?? createStarterLines(), settings),
