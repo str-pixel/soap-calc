@@ -15,6 +15,12 @@ export type LiteOilRecord = {
   iodine?: number;
   ins?: number;
   fattyAcids?: Record<string, number>;
+  /**
+   * Set when the oil's fatty-acid profile is truncated (< MIN_MAPPED_PERCENT), so its bar-property
+   * scores rest on incomplete data. Such oils are hidden from the picker (`searchOils`) but still
+   * resolve by id in OIL_LOOKUP / PROPERTIES_LOOKUP / oilById, so a saved recipe using one keeps working.
+   */
+  insufficientData?: boolean;
 };
 
 export type OilRecord = LiteOilRecord;
@@ -73,14 +79,21 @@ export function isTarOil(oil: OilRecord | undefined): boolean {
   return oil.category === 'tar' || oil.sapRole === 'acid_neutralization';
 }
 
+/**
+ * Oils offered in the picker. Excludes entries flagged `insufficientData` (truncated fatty-acid
+ * profile → unreliable property bars) — we'd rather not offer an oil than show misleading data.
+ * They remain in OILS / the lookups, so a saved recipe referencing one still resolves and calculates.
+ */
+export const SELECTABLE_OILS: OilRecord[] = OILS.filter((oil) => !oil.insufficientData);
+
 export function searchOils(query: string, limit?: number): OilRecord[] {
   const q = query.trim().toLowerCase();
   const cap = (items: OilRecord[]) => (limit ? items.slice(0, limit) : items);
 
-  if (!q) return cap(OILS);
+  if (!q) return cap(SELECTABLE_OILS);
 
   return cap(
-    OILS.filter((oil) => {
+    SELECTABLE_OILS.filter((oil) => {
       if (oil.displayName.toLowerCase().includes(q)) return true;
       if (oil.id.includes(q.replace(/\s+/g, '-'))) return true;
       if (oil.inciName?.toLowerCase().includes(q)) return true;
