@@ -29,8 +29,10 @@ export const SOAP_PROPERTY_FATTY_ACIDS: Record<SoapPropertyName, readonly string
   // C8/C10 stay out of hardness: their soaps are too soluble to harden a bar,
   // even though they count toward cleansing/bubbly. The long-chain saturates
   // arachidic (C20:0), behenic (C22:0) and lignoceric (C24:0) harden like stearic.
-  hardness: ['lauric', 'myristic', 'palmitic', 'stearic', 'arachidic', 'behenic', 'lignoceric'],
-  longevity: ['palmitic', 'stearic', 'arachidic', 'behenic', 'lignoceric'],
+  // elaidic (trans-C18:1) hardens like a saturated acid — sodium elaidate is a hard, high-melting
+  // soap, unlike soft sodium oleate — so it counts toward hardness/longevity, NOT conditioning.
+  hardness: ['lauric', 'myristic', 'palmitic', 'stearic', 'arachidic', 'behenic', 'lignoceric', 'elaidic'],
+  longevity: ['palmitic', 'stearic', 'arachidic', 'behenic', 'lignoceric', 'elaidic'],
   creamy: ['palmitic', 'stearic', 'ricinoleic'],
 };
 
