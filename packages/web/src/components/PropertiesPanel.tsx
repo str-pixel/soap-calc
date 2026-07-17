@@ -11,8 +11,9 @@ import {
   SOAP_PROPERTY_LABELS,
 } from '@soap-calc/core';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
-import { oilById } from '../lib/oils';
+import { oilDisplayName } from '../lib/oilDisplay';
 import { InfoTip } from './InfoTip';
+import { ModeledOilsNote } from './ModeledOilsNote';
 import { PropertyRadar } from './PropertyRadar';
 
 const PROPERTY_ORDER: SoapPropertyName[] = [
@@ -29,8 +30,9 @@ const SCALE_MAX = 100;
 type PropertiesPanelProps = {
   result: RecipePropertiesResult;
   indexes: RecipeIndexResult;
-  /** Recipe oils whose fatty-acid profile is a modeled reconstruction, not a measured composition. */
-  modeledOilIds?: string[];
+  /** Recipe oils whose fatty-acid profile is a modeled reconstruction, not a measured composition.
+   *  Required: a data-honesty signal must not be omittable into silence. Pass [] when there are none. */
+  modeledOilIds: string[];
 };
 
 // memo: props are stable view-model memo outputs, so unrelated keystrokes
@@ -40,7 +42,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   indexes,
   modeledOilIds,
 }: PropertiesPanelProps) {
-  const modeled = modeledOilIds ?? [];
+  const modeled = modeledOilIds;
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.properties
@@ -101,11 +103,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           {indexes.missingOilIds.length > 0 && (
             <>
               {' '}
-              (no data:{' '}
-              {indexes.missingOilIds
-                .map((id) => oilById(id)?.displayName ?? id)
-                .join(', ')}
-              )
+              (no data: {indexes.missingOilIds.map(oilDisplayName).join(', ')})
             </>
           )}
         </p>
@@ -125,27 +123,13 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               {result.missingOilIds.length > 0 && (
                 <>
                   {' '}
-                  (no data:{' '}
-                  {result.missingOilIds
-                    .map((id) => oilById(id)?.displayName ?? id)
-                    .join(', ')}
-                  )
+                  (no data: {result.missingOilIds.map(oilDisplayName).join(', ')})
                 </>
               )}
             </p>
           )}
 
-          {modeled.length > 0 && (
-            <p className="properties-modeled">
-              <span className="properties-modeled__tag">Modeled</span>
-              {modeled.map((id) => oilById(id)?.displayName ?? id).join(', ')}
-              <InfoTip term="Modeled oil">
-                This oil&rsquo;s fatty-acid profile is a reconstruction (e.g. a hydrogenation
-                transform of a measured base oil), not a directly measured composition, so its
-                property scores are estimates and may differ from other calculators.
-              </InfoTip>
-            </p>
-          )}
+          <ModeledOilsNote oilIds={modeled} />
 
           <PropertyRadar
             properties={result.properties}

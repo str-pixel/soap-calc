@@ -45,7 +45,7 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
     waterModeLabel: '33% of oils',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
     insights: [],
     process: 'hp',
   });
@@ -88,8 +88,12 @@ test('prints a "Modeled profile" note naming derived-profile oils', () => {
     indexes: { iodine: 60, ins: 150, coveragePercent: 100, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oils',
-    fattyAcids: { profile: null, coveragePercent: 100, missingOilIds: [] },
-    modeledOilIds: ['soybean-27-5-hydrogenated'],
+    fattyAcids: {
+      profile: null,
+      coveragePercent: 100,
+      missingOilIds: [],
+      modeledOilIds: ['soybean-27-5-hydrogenated'],
+    },
     insights: [],
     process: 'cp',
   });
@@ -135,7 +139,7 @@ test('prints a total superfat (cook + post-cook) row', () => {
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
     waterModeLabel: '33% of oils',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
     insights: [],
     process: 'hp',
   });
@@ -187,7 +191,7 @@ test('subtract + negative main superfat: prints no "reserved" note and no Total 
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
     waterModeLabel: '33% of oils',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
     insights: [],
     process: 'ls',
   });
@@ -235,7 +239,7 @@ test('subtract + non-negative main superfat: prints "reserved" note and Total su
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
     waterModeLabel: '33% of oils',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
     insights: [],
     process: 'ls',
   });
@@ -273,7 +277,7 @@ test('prints no post-cook-superfat line when absent', () => {
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oils',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
     insights: [],
     process: 'cp',
   });
@@ -314,7 +318,7 @@ test('prints bar-property scores without a percent sign', () => {
     indexes: { iodine: 58, ins: 147, coveragePercent: 100, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oils',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
     insights: [],
     process: 'cp',
   });

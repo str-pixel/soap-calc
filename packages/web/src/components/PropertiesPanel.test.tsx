@@ -33,7 +33,7 @@ test('flags modeled (derived-profile) oils, and stays silent without them', () =
 });
 
 test('renders scores as unitless numbers (no % on property rows)', () => {
-  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} />);
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
   const hardness = screen.getByRole('meter', { name: /Hardness/i });
   expect(within(hardness).queryByText(/%/)).toBeNull();
   expect(screen.getByText('41')).toBeTruthy();
@@ -50,7 +50,7 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
     indexes: FULL.indexes,
   };
   const { rerender, container } = render(
-    <PropertiesPanel result={outOfRange.properties} indexes={outOfRange.indexes} />,
+    <PropertiesPanel result={outOfRange.properties} indexes={outOfRange.indexes} modeledOilIds={[]} />,
   );
   expect(container.querySelectorAll('.property-bars__value--outside').length).toBeGreaterThan(0);
 
@@ -58,6 +58,7 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
     <PropertiesPanel
       result={{ ...outOfRange.properties, coveragePercent: 60 }}
       indexes={{ ...outOfRange.indexes, coveragePercent: 60 }}
+      modeledOilIds={[]}
     />,
   );
   expect(container.querySelectorAll('.property-bars__value--outside').length).toBe(0);
@@ -68,7 +69,9 @@ test('renders no radar and a hint when there is no property data', () => {
     properties: { properties: null, coveragePercent: 0, missingOilIds: [] },
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] } as RecipeIndexResult,
   };
-  const { container } = render(<PropertiesPanel result={empty.properties} indexes={empty.indexes} />);
+  const { container } = render(
+    <PropertiesPanel result={empty.properties} indexes={empty.indexes} modeledOilIds={[]} />,
+  );
   expect(container.querySelector('.property-radar')).toBeNull();
   expect(screen.getByText(/Add triglyceride oils/i)).toBeTruthy();
 });

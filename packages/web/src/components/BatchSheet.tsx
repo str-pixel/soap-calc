@@ -70,12 +70,11 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     batchWeightWithExtras,
     waterModeLabel,
     fattyAcids,
-    modeledOilIds,
     insights,
     process,
   } = data;
 
-  const modeled = modeledOilIds ?? [];
+  const modeled = fattyAcids.modeledOilIds;
 
   const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);

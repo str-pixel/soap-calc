@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import type { RecipeFattyAcidResult } from '@soap-calc/core';
 import {
   FATTY_ACID_DISPLAY_GROUPS,
   FORMULATION_FATTY_ACID_GUIDE,
@@ -9,10 +8,12 @@ import {
   saturatedUnsaturatedRatio,
   sumFattyAcids,
 } from '@soap-calc/core';
-import { oilById } from '../lib/oils';
+import type { RecipeFattyAcids } from '../lib/calculateFattyAcids';
+import { oilDisplayName } from '../lib/oilDisplay';
+import { ModeledOilsNote } from './ModeledOilsNote';
 
 type FattyAcidPanelProps = {
-  result: RecipeFattyAcidResult;
+  result: RecipeFattyAcids;
 };
 
 const SCALE_MAX = 100;
@@ -55,15 +56,15 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           {result.missingOilIds.length > 0 && (
             <>
               {' '}
-              (no data:{' '}
-              {result.missingOilIds
-                .map((id) => oilById(id)?.displayName ?? id)
-                .join(', ')}
-              )
+              (no data: {result.missingOilIds.map(oilDisplayName).join(', ')})
             </>
           )}
         </p>
       )}
+
+      {/* These bars ARE the reconstruction, so the modeled marker belongs here most of all —
+          not only on the properties derived from them. */}
+      <ModeledOilsNote oilIds={result.modeledOilIds} />
 
       <ul className="property-bars" aria-label="Recipe fatty acid groups">
         {FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {

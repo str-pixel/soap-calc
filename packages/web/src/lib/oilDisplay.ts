@@ -1,7 +1,17 @@
-import type { OilRecord } from './oils';
+import { oilById, type OilRecord } from './oils';
 
 function normalizeToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+/**
+ * User-facing name for an oil id, falling back to the raw id when the catalog can't resolve it
+ * (a saved recipe may reference an oil that has since been renamed or dropped). Single source of
+ * truth: every surface that names an oil from an id goes through here, so display-name resolution
+ * can't drift between the picker, the panels, and the batch sheet.
+ */
+export function oilDisplayName(oilId: string): string {
+  return oilById(oilId)?.displayName ?? oilId;
 }
 
 /**
