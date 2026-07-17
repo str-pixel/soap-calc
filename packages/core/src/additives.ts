@@ -73,11 +73,23 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'oils',
   },
   {
+    // Table salt (NaCl) as a hardener, dissolved in the lye water. Kept low: past ~1%
+    // of oil weight it starts to thicken/seize the batch rather than just harden it.
+    // (id stays 'salt' so recipes saved before the rename/split still resolve.)
     id: 'salt',
-    name: 'Salt',
-    typicalLow: 0.5,
-    typicalHigh: 3,
-    defaultStage: 'trace',
+    name: 'Table salt (NaCl)',
+    typicalLow: 0.1,
+    typicalHigh: 1,
+    defaultStage: 'lye',
+  },
+  {
+    // Sodium lactate — humectant + hardener, water-soluble, added to the lye water.
+    // Higher dose range than table salt; it hardens the bar without the seize risk.
+    id: 'sodium-lactate',
+    name: 'Sodium lactate',
+    typicalLow: 2,
+    typicalHigh: 4,
+    defaultStage: 'lye',
   },
 ] as const;
 
