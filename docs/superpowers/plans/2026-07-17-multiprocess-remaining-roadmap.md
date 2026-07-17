@@ -118,7 +118,7 @@
 - HP HTHP: temp 215 °F (102 °C), ceiling 240 °F; cure 3–4 wk (≤30% water); water loss ~6%.
 - HP fluid: 38% water ~6 wk cure.
 - LS: cook water 25–60% (default 38%); soap concentration coconut ≤40% · castile ~25% · blends 25–35% (marked **Partial** — encode as point targets, not enforced ranges); superfat 1–3%; sequester 1–4 wk.
-- Shared: quality ranges already live in `SOAP_PROPERTY_GUIDE` (`properties.ts:49-56`) — **do not duplicate, and do NOT "reconcile" the shipped guide to the roadmap's quoted numbers.** The roadmap table (H 30–60 · Cl 8–20 · …) is a *different* range convention from what ships (hardness 29–54, cleansing 12–22, longevity 14–43); the shipped values are what the radar and existing insights depend on. Treat any apparent discrepancy as intentional, not a bug to fix.
+- Shared: quality ranges already live in `SOAP_PROPERTY_GUIDE` (`properties.ts:49-56`) — **do not duplicate, and do NOT "reconcile" the shipped guide to the roadmap's quoted numbers.** The roadmap table (H 30–60 · Cl 8–20 · …) is a *different* range convention from what ships (hardness 29–54, cleansing 12–22, longevity 25–50); the shipped values are what the radar and existing insights depend on. Treat any apparent discrepancy as intentional, not a bug to fix. (Longevity was deliberately corrected 14–43 → 25–50 in #44; the "don't reconcile" rule now protects that corrected value.)
 
 - [ ] **Step 1: Write the failing test for the variant registry**
 
