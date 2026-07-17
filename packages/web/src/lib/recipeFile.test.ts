@@ -203,6 +203,21 @@ describe('recipeFile', () => {
     });
   });
 
+  it('rejects a file with too many oil lines (unbounded-import guard)', () => {
+    const payload = {
+      version: 2,
+      name: 'Huge',
+      lines: Array.from({ length: 101 }, () => ({ oilId: 'olive-oil', weightGrams: '10' })),
+      additives: [],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    expect(parseRecipeFile(JSON.stringify(payload))).toEqual({
+      ok: false,
+      error: 'Too many oils in recipe file',
+    });
+  });
+
   it('builds a safe download filename', () => {
     expect(recipeFileDownloadName('Olive & Coconut')).toBe('olive-coconut.soap-recipe.json');
   });

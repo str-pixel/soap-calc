@@ -109,6 +109,28 @@ describe('recipeStorage', () => {
     expect(() => saveDraft('cp', 'Draft', lines, DEFAULT_SETTINGS)).not.toThrow();
     expect(loadDraft('cp')).toBeNull();
   });
+
+  it('reports a failed write so callers can warn instead of silently losing work', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      },
+      removeItem: () => {},
+      clear: () => {},
+      key: () => null,
+      get length() {
+        return 0;
+      },
+    });
+    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
+    expect(saveDraft('cp', 'Draft', lines, DEFAULT_SETTINGS)).toBe(false);
+  });
+
+  it('reports a successful write', () => {
+    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
+    expect(saveDraft('cp', 'Draft', lines, DEFAULT_SETTINGS)).toBe(true);
+  });
 });
 
 describe('per-process drafts', () => {

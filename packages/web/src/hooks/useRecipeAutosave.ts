@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { AdditiveLine, RecipeLine, RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import { saveDraft } from '../lib/recipeStorage';
@@ -11,10 +11,17 @@ export function useRecipeAutosave(
   lines: RecipeLine[],
   settings: RecipeSettings,
   additives: AdditiveLine[],
+  onSaveError?: () => void,
 ) {
+  // Keep the latest callback in a ref so autosave binds to the timer without the
+  // effect re-running (and re-scheduling the debounce) on every render.
+  const onSaveErrorRef = useRef(onSaveError);
+  onSaveErrorRef.current = onSaveError;
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      saveDraft(process, recipeName, lines, settings, additives);
+      const saved = saveDraft(process, recipeName, lines, settings, additives);
+      if (!saved) onSaveErrorRef.current?.();
     }, AUTOSAVE_MS);
     return () => clearTimeout(timer);
   }, [process, recipeName, lines, settings, additives]);

@@ -42,6 +42,19 @@ describe('normalizeSettings enum sanitization', () => {
   });
 });
 
+describe('normalizeSettings drops prototype-pollution keys', () => {
+  it('does not carry __proto__/constructor own-keys from a parsed recipe', () => {
+    // JSON.parse('{"__proto__": {...}}') yields an own "__proto__" key; the spread must
+    // not smuggle it into persisted/re-exported settings, and must not pollute the prototype.
+    const hostile = JSON.parse('{"__proto__":{"polluted":true},"constructor":{"x":1},"superfatPercent":"5"}');
+    const s = normalizeSettings(hostile);
+    expect((s as Record<string, unknown>).polluted).toBeUndefined();
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined(); // Object.prototype clean
+    expect(Object.prototype.hasOwnProperty.call(s, '__proto__')).toBe(false);
+    expect(s.superfatPercent).toBe('5'); // legit field preserved
+  });
+});
+
 describe('processVariant setting', () => {
   it('defaults processVariant to cp', () => {
     expect(DEFAULT_SETTINGS.processVariant).toBe('cp');
