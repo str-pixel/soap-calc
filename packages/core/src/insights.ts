@@ -51,6 +51,8 @@ export type FormulationAnalysisInput = {
   /** True for liquid-soap (KOH) recipes; gates LS-specific insights and exempts LS from the
    * bar-soap lye-concentration warnings. */
   isLiquidSoap?: boolean;
+  /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
+  waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -92,6 +94,38 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         code: 'lye_conc_high',
         message:
           'Lye concentration above ~38% — may trace quickly, resist gel, or warp in the mold.',
+      });
+    }
+  }
+
+  if (
+    input.waterBand &&
+    !input.isLiquidSoap &&
+    input.totalOilGrams > 0 &&
+    input.waterGrams > 0
+  ) {
+    const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
+    const { lowTier, highTier, riversAbove } = input.waterBand;
+    if (waterPercentOfOils > riversAbove) {
+      insights.push({
+        level: 'warning',
+        code: 'water_band_rivers',
+        message:
+          'Water is above the typical range for this process — the batter may glycerin-river or take a long time to firm up. Consider a lower water amount.',
+      });
+    } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
+      insights.push({
+        level: 'info',
+        code: 'water_band_between_tiers',
+        message:
+          'Water sits between the low-water and full-water working ranges — fine, but nudging into either range gives more predictable trace and cure.',
+      });
+    } else if (waterPercentOfOils < lowTier[0]) {
+      insights.push({
+        level: 'info',
+        code: 'water_band_below_low',
+        message:
+          'Very low water for this process — trace comes fast and the batter can be stiff; work quickly and keep temperatures modest.',
       });
     }
   }

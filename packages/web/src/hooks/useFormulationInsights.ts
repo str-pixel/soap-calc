@@ -9,6 +9,7 @@ import {
   type RecipePropertiesResult,
 } from '@soap-calc/core';
 import { oilById } from '../lib/oils';
+import { processProfileById, isProcessVariantId } from '../lib/processProfile';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
@@ -66,6 +67,11 @@ export function useFormulationInsights(
         oilId: line.oilId,
         name: oilById(line.oilId)?.displayName ?? line.oilId,
       }));
+    const profile = isProcessVariantId(settings.processVariant)
+      ? processProfileById(settings.processVariant)
+      : null;
+    const waterBand =
+      profile && !options.isLiquidSoap && profile.process !== 'ls' ? profile.waterBand : undefined;
     return analyzeFormulation({
       properties: properties.properties,
       fattyAcids: fattyAcids.profile,
@@ -96,6 +102,7 @@ export function useFormulationInsights(
         ? postCookSuperfatPufaPercent(options.postCookSuperfat.oilId)
         : undefined,
       isLiquidSoap: options.isLiquidSoap ?? false,
+      waterBand,
     });
   }, [
     fattyAcids.profile,
@@ -117,6 +124,7 @@ export function useFormulationInsights(
     settings.kohBlendPercent,
     settings.superfatPercent,
     settings.waterMode,
+    settings.processVariant,
     options.isLiquidSoap,
   ]);
 
