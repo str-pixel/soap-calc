@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseSapRangeMgKoh, sapKohToSapNaoh } from '@soap-calc/core';
+import { deriveChemistryFromProfile, parseSapRangeMgKoh, sapKohToSapNaoh } from '@soap-calc/core';
 import {
   CanonicalOilDatabase,
   type CanonicalOil,
@@ -15,7 +15,7 @@ import {
   resolveInciForFnwlProduct,
 } from '../src/parse-fnwl-inci.js';
 import { loadCosingGlossaryIndex, lookupInciInGlossary, defaultGlossaryPath } from '../src/cosing-glossary.js';
-import { resolvePrimarySap, sapDeltaPercent, DISPUTED_DELTA_PCT } from '../src/sap-policy.js';
+import { resolvePrimarySap, sapDeltaPercent, VERIFIED_DELTA_PCT } from '../src/sap-policy.js';
 import {
   inferCategory,
   normalizeOilName,
@@ -25,6 +25,11 @@ import { loadSupplementalOils, supplementalToCanonical, tarMetadataForLegacy } f
 import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
+import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
+import { incompleteProfileOils } from '../src/profile-completeness.js';
+import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
+import { OIL_DISPLAY_NAMES } from '../src/oil-display-names.js';
+import { maxAbsShift, propertyShift, PROPERTY_SHIFT_THRESHOLD, type PropertyShift } from '../src/property-shift.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -127,9 +132,8 @@ function main() {
     matched: [] as string[],
     unmatched: [] as string[],
     sapDiscrepancies: [] as Array<{ name: string; legacy: number; fnwl: number; deltaPct: number }>,
-    sapRetainedLegacy: [] as string[],
-    sapFnwlPreferred: [] as string[],
-    sapConservativeBlend: [] as string[],
+    sapProfileClosest: [] as string[],
+    sapMidpoint: [] as string[],
     sapCorrected: [] as string[],
     ldgMethodologyNotes: [] as string[],
     inciResolved: [] as string[],
@@ -140,6 +144,7 @@ function main() {
     duplicates: [] as string[],
     supplemental: [] as string[],
     excluded: [] as string[],
+    profileBackfill: [] as Array<{ name: string; shifts: PropertyShift[]; flagged: boolean; acknowledged: boolean }>,
   };
 
   const excludedOilIds = new Set<string>(
@@ -167,7 +172,12 @@ function main() {
     }
     usedSlugs.add(baseSlug);
 
-    const fattyAcids = parseBreakdown(leg.breakdown);
+    // Phase 5: a curated backfill REPLACES the (truncated/wrong) legacy profile with a single-
+    // provenance, cited one. The legacy raw breakdown stays in the legacy source file; the
+    // citation is recorded as an `fdc`/provenance source record below.
+    const backfill = PROFILE_BACKFILL[baseSlug];
+    const legacyProfile = parseBreakdown(leg.breakdown);
+    const fattyAcids = backfill ? { ...backfill.profile } : legacyProfile;
     const category = inferCategory(leg.name, baseSlug);
     const propertiesAvailable = category === 'triglyceride' || category === 'blend';
 
@@ -178,6 +188,23 @@ function main() {
       sapNaoh: legacySapNaoh,
       notes: 'Imported from soap_oils.json (legacy calculator catalog)',
     }];
+
+    if (backfill) {
+      // Strip a trailing period from `source` so the ". " joiner doesn't yield ".." in the emitted notes.
+      sources.push({ source: backfill.sourceType, url: backfill.url, notes: `Fatty-acid profile: ${backfill.source.replace(/\.$/, '')}. ${backfill.note}` });
+      // Property-shift guard: a backfill can be SAP-consistent yet move the property bars a lot
+      // (SAP is ~invariant to a palmitic↔oleic swap; the bars are not). Surface the deltas so a
+      // large, single-source-outlier shift is loud, not silent — and ERROR below on a large,
+      // unacknowledged one so it can't ship without a deliberate, explained decision.
+      const shifts = propertyShift(legacyProfile, backfill.profile);
+      const flagged = maxAbsShift(shifts) >= PROPERTY_SHIFT_THRESHOLD;
+      report.profileBackfill.push({
+        name: backfill.displayName ?? leg.name,
+        shifts,
+        flagged,
+        acknowledged: backfill.acknowledgedShift === true,
+      });
+    }
 
     let primarySource: DataSource = 'legacy_catalog';
     let confidence: CanonicalOil['confidence'] = 'legacy_only';
@@ -190,7 +217,16 @@ function main() {
     if (fnwl) {
       const range = parseSapRangeMgKoh(fnwl.sapRange);
       const delta = sapDeltaPercent(leg.sap, fnwl.sapKoh);
-      const resolution = resolvePrimarySap(leg.sap, fnwl.sapKoh);
+      // The profile is the independent tiebreaker for disputed SAP (null when <93% mapped).
+      // Gate on category: deriveChemistryFromProfile assumes a triglyceride backbone, so its
+      // SAP is only valid for glycerides. A free acid or wax with a ≥93%-mapped acid list
+      // (lauric-acid, stearic-acid, …) would otherwise get a bogus triglyceride SAP as the
+      // tiebreaker — under-stating the true (higher, glycerol-free) value by ~4–6%.
+      const profileDerivedSapKoh =
+        fattyAcids && (category === 'triglyceride' || category === 'blend')
+          ? deriveChemistryFromProfile(fattyAcids)?.sapKoh
+          : undefined;
+      const resolution = resolvePrimarySap(leg.sap, fnwl.sapKoh, profileDerivedSapKoh);
       const resolvedInci = resolveInciForFnwlProduct(fnwl.productId, inciIndex);
       if (resolvedInci) {
         inciName = resolvedInci;
@@ -229,25 +265,21 @@ function main() {
         });
       }
 
-      if (
-        resolution.strategy === 'legacy_retained' ||
-        resolution.strategy === 'fnwl_preferred'
-      ) {
-        const usingFnwl = resolution.strategy === 'fnwl_preferred';
-        (usingFnwl ? report.sapFnwlPreferred : report.sapRetainedLegacy).push(leg.name);
-        sources.push({
-          source: 'manual',
-          notes: usingFnwl
-            ? `FNWL SAP ${resolution.deltaPct.toFixed(1)}% higher than legacy (>${DISPUTED_DELTA_PCT}% delta); using FNWL for lye safety`
-            : `FNWL SAP differs by ${resolution.deltaPct.toFixed(1)}% (>${DISPUTED_DELTA_PCT}%); legacy SAP retained for lye safety`,
-        });
-      } else if (resolution.strategy === 'conservative_blend') {
-        report.sapConservativeBlend.push(leg.name);
+      if (resolution.strategy === 'profile_closest') {
+        report.sapProfileClosest.push(leg.name);
         sources.push({
           source: 'manual',
           sapKoh: resolution.sapKoh,
           sapNaoh: resolution.sapNaoh,
-          notes: `FNWL differs by ${resolution.deltaPct.toFixed(1)}%; using higher SAP for lye safety`,
+          notes: `legacy/FNWL differ by ${resolution.deltaPct.toFixed(1)}% (>${VERIFIED_DELTA_PCT}%); kept the source closest to the profile-derived SAP`,
+        });
+      } else if (resolution.strategy === 'midpoint') {
+        report.sapMidpoint.push(leg.name);
+        sources.push({
+          source: 'manual',
+          sapKoh: resolution.sapKoh,
+          sapNaoh: resolution.sapNaoh,
+          notes: `legacy/FNWL differ by ${resolution.deltaPct.toFixed(1)}% (>${VERIFIED_DELTA_PCT}%); profile can't judge (incomplete), used the midpoint`,
         });
       }
 
@@ -348,10 +380,17 @@ function main() {
       report.inciMissing.push(leg.name);
     }
 
+    // A backfill may override the user-facing name when the legacy name is wrong/misleading
+    // (e.g. a high-erucic rapeseed mislabeled "unrefined canola"). Aliases follow the shown name
+    // so search no longer matches the wrong identity; the stable id (baseSlug) is unchanged.
+    const displayName = OIL_DISPLAY_NAMES[baseSlug] ?? backfill?.displayName ?? leg.name;
+    // The emitted public id may be overridden (e.g. a mislabeled slug); internal lookups above
+    // still use baseSlug, and the web oilById migration resolves the old id for saved recipes.
+    const id = OIL_ID_OVERRIDES[baseSlug] ?? baseSlug;
     oils.push({
-      id: baseSlug,
-      displayName: leg.name,
-      aliases: [normalizeOilName(leg.name)],
+      id,
+      displayName,
+      aliases: [normalizeOilName(displayName)],
       inciName,
       category,
       ...tarMetadataForLegacy(category),
@@ -383,6 +422,29 @@ function main() {
   // A correction keyed to a non-existent oil id would otherwise be silently ignored,
   // shipping the very value it was written to fix. An excluded oil id is a legitimate
   // target (the correction is simply inert), so it is not a typo.
+  // A backfill id-override must not collide with another oil's (emitted) id. usedSlugs only
+  // dedups the internal build slugs, so an override → existing-id collision would otherwise slip
+  // past here and produce two oils with the same public id.
+  const emittedIdCounts = new Map<string, number>();
+  for (const o of oils) emittedIdCounts.set(o.id, (emittedIdCounts.get(o.id) ?? 0) + 1);
+  const collidingIds = [...emittedIdCounts].filter(([, n]) => n > 1).map(([id]) => id);
+  if (collidingIds.length) {
+    console.error(`Duplicate emitted oil id(s) (an OIL_ID_OVERRIDES collision?): ${collidingIds.join(', ')}`);
+    process.exit(1);
+  }
+
+  // A backfill whose property-score shift is large (≥ threshold) must be explicitly acknowledged
+  // (acknowledgedShift), so a big — possibly wrong — move can't ship silently. The SAP gate errors
+  // on chemistry contradictions; this is its property-score counterpart.
+  const unacknowledgedShifts = report.profileBackfill.filter((b) => b.flagged && !b.acknowledged);
+  if (unacknowledgedShifts.length) {
+    for (const b of unacknowledgedShifts) {
+      const top = b.shifts.slice(0, 3).map((s) => `${s.property} ${s.delta > 0 ? '+' : ''}${s.delta}`).join(', ');
+      console.error(`Unacknowledged property shift ≥${PROPERTY_SHIFT_THRESHOLD}pt for ${b.name} [${top}] — set acknowledgedShift:true (with a note) if intended.`);
+    }
+    process.exit(1);
+  }
+
   const oilIds = new Set(oils.map((o) => o.id));
   const staleCorrectionKeys = [
     ...Object.keys(supplementalInci.inciCorrections),
@@ -444,9 +506,17 @@ function main() {
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(db, null, 2) + '\n');
 
+  // Oils whose fatty-acid profile is truncated (sums < MIN_MAPPED_PERCENT) carry unreliable
+  // bar-property scores, so the web hides them from the oil picker. They still resolve by id
+  // (OIL_LOOKUP / oilById), so a saved recipe referencing one keeps calculating.
+  const insufficientDataIds = new Set(incompleteProfileOils(oils).map((o) => o.id));
+
   const liteDb = {
     version: db.version,
     generatedAt: db.generatedAt,
+    // Old→new oil-id renames, emitted so the web resolves saved recipes referencing an old id.
+    // Single source of truth (OIL_ID_OVERRIDES); the web reads this rather than duplicating it.
+    idMigrations: OIL_ID_OVERRIDES,
     oils: oils.map((oil) => ({
       id: oil.id,
       displayName: oil.displayName,
@@ -460,6 +530,7 @@ function main() {
       propertiesAvailable: oil.propertiesAvailable,
       ...(oil.iodine !== undefined ? { iodine: oil.iodine } : {}),
       ...(oil.ins !== undefined ? { ins: oil.ins } : {}),
+      ...(insufficientDataIds.has(oil.id) ? { insufficientData: true } : {}),
       ...(oil.propertiesAvailable && oil.fattyAcids
         ? { fattyAcids: oil.fattyAcids }
         : {}),
@@ -480,9 +551,8 @@ function main() {
   console.log(`  Lite client DB → ${litePath}`);
   console.log(`  FNWL matched: ${report.matched.length}/${oils.length}`);
   console.log(`  Unmatched (legacy only): ${report.unmatched.length}`);
-  console.log(`  SAP retained (legacy, >${DISPUTED_DELTA_PCT}% delta): ${report.sapRetainedLegacy.length}`);
-  console.log(`  SAP FNWL preferred (higher, >${DISPUTED_DELTA_PCT}% delta): ${report.sapFnwlPreferred.length}`);
-  console.log(`  SAP conservative blend (5–${DISPUTED_DELTA_PCT}% delta): ${report.sapConservativeBlend.length}`);
+  console.log(`  SAP profile-closest (disputed >${VERIFIED_DELTA_PCT}%, profile judged): ${report.sapProfileClosest.length}`);
+  console.log(`  SAP midpoint (disputed >${VERIFIED_DELTA_PCT}%, no profile): ${report.sapMidpoint.length}`);
   console.log(`  SAP corrected (legacy value vs profile): ${report.sapCorrected.length}`);
   console.log(`  LDG methodology cross-checks: ${report.ldgMethodologyNotes.length}`);
   console.log(`  INCI resolved (FNWL): ${report.inciResolved.length}`);
@@ -493,6 +563,11 @@ function main() {
   }
   console.log(`  INCI missing product map: ${report.inciMissing.length}`);
   console.log(`  Supplemental oils: ${report.supplemental.length}`);
+  console.log(`  Profile backfilled (Phase 5): ${report.profileBackfill.length}`);
+  for (const b of report.profileBackfill) {
+    const top = b.shifts.slice(0, 3).map((s) => `${s.property} ${s.delta > 0 ? '+' : ''}${s.delta}`).join(', ');
+    console.log(`    ${b.flagged ? '⚠ ' : ''}${b.name}: property shift [${top}]${b.flagged ? ` — ≥${PROPERTY_SHIFT_THRESHOLD}pt, review` : ''}`);
+  }
   console.log(`  Excluded from catalog: ${report.excluded.length}`);
 }
 

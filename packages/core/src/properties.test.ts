@@ -24,6 +24,13 @@ const OLIVE_FA = {
 };
 
 describe('oilPropertiesFromFattyAcids', () => {
+  it('counts long-chain saturates arachidic (C20:0) and lignoceric (C24:0) toward hardness/longevity', () => {
+    // Both harden like behenic; before this they fell into no property bucket at all.
+    const props = oilPropertiesFromFattyAcids({ arachidic: 5, lignoceric: 4, oleic: 91 });
+    expect(props.hardness).toBe(9);
+    expect(props.longevity).toBe(9);
+  });
+
   it('computes hardness from C12+ saturated acids only (C8/C10 soaps are too soluble to harden)', () => {
     const props = oilPropertiesFromFattyAcids(COCONUT_FA);
     expect(props.hardness).toBe(48 + 19 + 9 + 2);
@@ -58,7 +65,7 @@ describe('calculateRecipeProperties', () => {
       lookup,
     );
 
-    expect(result.coveragePercent).toBe(100);
+    expect(result.coveragePercent).toBeCloseTo(98.5, 1);
     expect(result.properties!.hardness).toBeGreaterThan(20);
     expect(result.properties!.condition).toBeGreaterThan(30);
   });
@@ -72,7 +79,7 @@ describe('calculateRecipeProperties', () => {
       lookup,
     );
 
-    expect(result.coveragePercent).toBeCloseTo(90, 1);
+    expect(result.coveragePercent).toBeCloseTo(88.2, 1);
     expect(result.missingOilIds).toContain('birch-tar');
     expect(result.properties).not.toBeNull();
   });
@@ -99,7 +106,7 @@ describe('calculateRecipeProperties', () => {
     );
 
     expect(result.missingOilIds).toContain('ghost-oil');
-    expect(result.coveragePercent).toBeCloseTo(50, 5);
+    expect(result.coveragePercent).toBeCloseTo(49, 1);
   });
 
   it('renormalizes properties over covered weight under partial coverage (not diluted to zero)', () => {
@@ -124,5 +131,25 @@ describe('conditioning includes docosenoic (corrected spelling)', () => {
   it('counts docosenoic toward conditioning', () => {
     const props = oilPropertiesFromFattyAcids({ oleic: 10, docosenoic: 16 });
     expect(props.condition).toBe(26);
+  });
+});
+
+describe('palmitoleic and behenic are classified', () => {
+  it('counts palmitoleic toward conditioning and behenic toward hardness/longevity', () => {
+    const props = oilPropertiesFromFattyAcids({ palmitoleic: 12, behenic: 20, oleic: 5 });
+    expect(props.condition).toBe(12 + 5); // palmitoleic + oleic
+    expect(props.hardness).toBe(20); // behenic
+    expect(props.longevity).toBe(20); // behenic
+  });
+});
+
+describe('elaidic (trans-C18:1) scores like a saturated hardness acid, not like oleic', () => {
+  it('counts elaidic toward hardness/longevity and NOT conditioning', () => {
+    // Its cis isomer oleic scores 100% conditioning / 0% hardness; the trans form is the opposite —
+    // sodium elaidate is a hard, high-melting soap. This is the whole point of the trans key.
+    const props = oilPropertiesFromFattyAcids({ elaidic: 30, oleic: 10 });
+    expect(props.hardness).toBe(30); // elaidic only
+    expect(props.longevity).toBe(30); // elaidic only
+    expect(props.condition).toBe(10); // oleic only — elaidic is excluded
   });
 });

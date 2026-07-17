@@ -18,34 +18,27 @@ describe('resolvePrimarySap', () => {
     expect(r.sapKoh).toBeCloseTo(0.19, 10);
   });
 
-  it('uses conservative (higher) SAP between 5% and 10%', () => {
-    const r = resolvePrimarySap(0.186, 0.173);
-    expect(r.strategy).toBe('conservative_blend');
-    expect(r.sapKoh).toBe(0.186);
+  it('picks the disputed source closest to the profile-derived SAP (not the max)', () => {
+    // legacy 0.325, fnwl 0.348, profile 0.328 -> legacy is closest. Higher SAP is NOT safer.
+    const r = resolvePrimarySap(0.325, 0.348, 0.328);
+    expect(r.strategy).toBe('profile_closest');
+    expect(r.sapKoh).toBe(0.325);
     expect(r.primarySource).toBe('legacy_catalog');
     expect(r.confidence).toBe('estimated');
   });
 
-  it('uses FNWL as primary when conservative blend picks FNWL', () => {
-    const r = resolvePrimarySap(0.173, 0.186);
-    expect(r.strategy).toBe('conservative_blend');
-    expect(r.sapKoh).toBe(0.186);
+  it('picks FNWL when it is the one closest to the profile', () => {
+    // legacy 0.275, fnwl 0.253, profile 0.233 -> fnwl is closest.
+    const r = resolvePrimarySap(0.275, 0.253, 0.233);
+    expect(r.strategy).toBe('profile_closest');
+    expect(r.sapKoh).toBe(0.253);
     expect(r.primarySource).toBe('fnwl');
   });
 
-  it('keeps legacy when FNWL differs by more than 10%', () => {
-    const r = resolvePrimarySap(0.247, 0.203);
-    expect(r.strategy).toBe('legacy_retained');
-    expect(r.sapKoh).toBe(0.247);
-    expect(r.primarySource).toBe('legacy_catalog');
-    expect(r.confidence).toBe('legacy_only');
-  });
-
-  it('uses higher FNWL SAP when legacy retained but FNWL is greater (lye safety)', () => {
-    const r = resolvePrimarySap(0.192, 0.223);
-    expect(r.strategy).toBe('fnwl_preferred');
-    expect(r.sapKoh).toBe(0.223);
-    expect(r.primarySource).toBe('fnwl');
+  it('falls back to the midpoint when the profile cannot judge (incomplete)', () => {
+    const r = resolvePrimarySap(0.18, 0.2);
+    expect(r.strategy).toBe('midpoint');
+    expect(r.sapKoh).toBeCloseTo(0.19, 10);
     expect(r.confidence).toBe('estimated');
   });
 });

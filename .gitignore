@@ -24,3 +24,13 @@ blob-report/
 
 # impeccable skill working state (critique snapshots, live config)
 .impeccable/
+
+# Local Claude Code settings (machine-specific permission allowlist)
+.claude/settings.json
+.claude/settings.local.json
+
+# Generated build diagnostic — a report the oils-data build writes each run (FNWL match counts,
+# backfill list, property-shift deltas). It churns on every build and is not consumed by the app
+# or any test, so it's a local artifact, not a tracked source of truth. (canonical-oils.json and
+# canonical-oils-lite.json ARE tracked — those are the real build outputs.)
+packages/oils-data/data/build-report.json

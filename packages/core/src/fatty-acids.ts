@@ -21,6 +21,7 @@ export function calculateRecipeFattyAcids(
 
   const profile: FattyAcidProfile = {};
   let coveredWeight = 0;
+  let characterizedWeight = 0;
   const missingOilIds = new Set<string>();
 
   for (const line of weighted) {
@@ -31,6 +32,9 @@ export function calculateRecipeFattyAcids(
     }
 
     coveredWeight += line.weightGrams;
+    const profileSum = Object.values(oil.fattyAcids).reduce((sum, pct) => sum + pct, 0);
+    // Cap at 100 so a profile that sums slightly over 100 (rounding) can't push coverage past 100%.
+    characterizedWeight += line.weightGrams * (Math.min(profileSum, 100) / 100);
 
     for (const [acid, pct] of Object.entries(oil.fattyAcids)) {
       profile[acid] = (profile[acid] ?? 0) + pct * line.weightGrams;
@@ -41,15 +45,17 @@ export function calculateRecipeFattyAcids(
     return { profile: null, coveragePercent: 0, missingOilIds: [...missingOilIds] };
   }
 
-  // Renormalize over covered weight so the profile reads as a fatty-acid % of the
-  // characterized oils (coveragePercent reports how much of the recipe that is).
+  // Scores: renormalize the profile over covered-OIL weight (unchanged) so an oil's scores are
+  // identical to before. coveragePercent, however, reflects fatty-acid *completeness*: an oil
+  // with a 45%-complete profile is only 45% characterized, so incomplete profiles get flagged
+  // as estimates instead of shipping as full-confidence facts.
   for (const acid of Object.keys(profile)) {
     profile[acid] /= coveredWeight;
   }
 
   return {
     profile,
-    coveragePercent: (coveredWeight / totalWeight) * 100,
+    coveragePercent: (characterizedWeight / totalWeight) * 100,
     missingOilIds: [...missingOilIds],
   };
 }
@@ -58,17 +64,31 @@ export function sumFattyAcids(profile: FattyAcidProfile, keys: readonly string[]
   return keys.reduce((sum, key) => sum + (profile[key] ?? 0), 0);
 }
 
-const SATURATED_ACIDS = [
+/** Acids summed into the saturated total of {@link saturatedUnsaturatedRatio}. The fatty-acid
+ * display bars must collectively cover this set (plus {@link RATIO_UNSATURATED_ACIDS}) so the bars
+ * reconcile with the shown Saturated/Unsaturated totals — enforced by the display-groups test. */
+export const RATIO_SATURATED_ACIDS = [
   'lauric',
   'myristic',
   'palmitic',
   'stearic',
   'caprylic',
   'capric',
+  'behenic',
+  'arachidic',
+  'lignoceric',
+  // elaidic (trans-C18:1) is chemically unsaturated (its double bond counts toward iodine value),
+  // but this ratio is a HARDNESS proxy — its purpose is predicting bar behavior — and trans-C18:1
+  // soap packs and hardens like a saturated acid. So it belongs on the saturated side here, while
+  // the iodine value (pure chemistry) still counts the double bond. The two metrics diverge exactly
+  // where trans fat is the exception, which is correct.
+  'elaidic',
 ] as const;
 
-const UNSATURATED_ACIDS = [
+/** Acids summed into the unsaturated total of {@link saturatedUnsaturatedRatio}. */
+export const RATIO_UNSATURATED_ACIDS = [
   'oleic',
+  'palmitoleic',
   'linoleic',
   'linolenic',
   'ricinoleic',
@@ -83,8 +103,8 @@ export function saturatedUnsaturatedRatio(profile: FattyAcidProfile): {
   unsaturated: number;
 } {
   return {
-    saturated: sumFattyAcids(profile, SATURATED_ACIDS),
-    unsaturated: sumFattyAcids(profile, UNSATURATED_ACIDS),
+    saturated: sumFattyAcids(profile, RATIO_SATURATED_ACIDS),
+    unsaturated: sumFattyAcids(profile, RATIO_UNSATURATED_ACIDS),
   };
 }
 

@@ -8,15 +8,18 @@ describe('parseFnwlCsv', () => {
     expect(cols[1]).toBe('190 - 200');
   });
 
-  it('keeps highest sapKoh when duplicate normalized names exist', () => {
+  it('keeps the median sapKoh among duplicate rows (not the high outlier)', () => {
+    // Real FNWL has multiple rows per oil; taking the max latched onto outliers
+    // (e.g. avocado's 177–226 row). The median is the representative value.
     const text = [
       'OIL,SAP,NAOH,KOH,PRODUCT_ID',
-      "'Coconut Oil, RBD',250 - 264,0.183,0.257,SKU_LOW",
-      "'Coconut Oil, Organic',248 - 268,0.184,0.258,SKU_HIGH",
+      "'Avocado Oil',177 - 226,0.144,0.202,SKU_HIGH",
+      "'Avocado Oil',185 - 200,0.138,0.188,SKU_MID",
+      "'Avocado Oil',170 - 200,0.132,0.185,SKU_LOW",
     ].join('\n');
 
     const rows = parseFnwlCsv(text);
-    const coconut = rows.find((r) => r.name.includes('Organic'));
-    expect(coconut?.sapKoh).toBe(0.258);
+    expect(rows).toHaveLength(1); // deduped to one representative row
+    expect(rows[0].sapKoh).toBe(0.188); // median, not the 0.202 high outlier
   });
 });

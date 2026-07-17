@@ -14,16 +14,19 @@ const GLYCERYL_ADJUSTMENT = 38.049;
 /** mass of 2 iodine atoms (g/mol) — one I₂ adds across each C=C double bond (Wijs). */
 const DIIODINE_MASS = 253.809;
 
-/** Below this mapped-profile percentage the triglyceride derivation is not meaningful. */
-export const MIN_MAPPED_PERCENT = 90;
+/**
+ * The single "profile completeness" threshold: below this mapped-profile percentage the
+ * triglyceride derivation is not meaningful and property scores are treated as estimates.
+ * Shared by the derivation gate, the SAP-vs-profile guard, and the completeness guard so
+ * "complete enough" means one thing everywhere.
+ */
+export const MIN_MAPPED_PERCENT = 93;
 
 export type FattyAcidConstants = {
   /** Free fatty-acid molecular weight, g/mol. */
   molecularWeight: number;
   /** Number of C=C double bonds. */
   doubleBonds: number;
-  /** Conjugated double bonds under-titrate in the Wijs iodine method (informational). */
-  conjugated?: boolean;
 };
 
 export const FATTY_ACID_PROPERTIES: Record<string, FattyAcidConstants> = {
@@ -35,8 +38,15 @@ export const FATTY_ACID_PROPERTIES: Record<string, FattyAcidConstants> = {
   stearic: { molecularWeight: 284.48, doubleBonds: 0 },
   arachidic: { molecularWeight: 312.53, doubleBonds: 0 },
   behenic: { molecularWeight: 340.58, doubleBonds: 0 },
+  lignoceric: { molecularWeight: 368.64, doubleBonds: 0 },
   palmitoleic: { molecularWeight: 254.41, doubleBonds: 1 },
   oleic: { molecularWeight: 282.46, doubleBonds: 1 },
+  // Elaidic = trans-C18:1 (the dominant trans acid in partially-hydrogenated oils). Chemically it
+  // is oleic's isomer — identical molecular weight, one C=C double bond — so it saponifies like
+  // oleic and its double bond consumes iodine (cis/trans geometry doesn't change the Wijs count).
+  // It differs only in PHYSICAL behavior (its soap is harder / higher-melting), handled in the
+  // property + ratio sets, not here.
+  elaidic: { molecularWeight: 282.46, doubleBonds: 1 },
   ricinoleic: { molecularWeight: 298.46, doubleBonds: 1 },
   eicosenoic: { molecularWeight: 310.51, doubleBonds: 1 },
   erucic: { molecularWeight: 338.57, doubleBonds: 1 },

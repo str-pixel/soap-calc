@@ -1,7 +1,6 @@
 import { sapKohToSapNaoh } from '@soap-calc/core';
 
 export const VERIFIED_DELTA_PCT = 5;
-export const DISPUTED_DELTA_PCT = 10;
 
 export type SapResolution = {
   sapKoh: number;
@@ -9,7 +8,7 @@ export type SapResolution = {
   primarySource: 'fnwl' | 'legacy_catalog';
   confidence: 'verified' | 'estimated' | 'legacy_only';
   deltaPct: number;
-  strategy: 'fnwl_agrees' | 'conservative_blend' | 'legacy_retained' | 'fnwl_preferred';
+  strategy: 'fnwl_agrees' | 'profile_closest' | 'midpoint';
 };
 
 export function sapDeltaPercent(legacy: number, fnwl: number): number {
@@ -17,12 +16,17 @@ export function sapDeltaPercent(legacy: number, fnwl: number): number {
 }
 
 /**
- * Choose primary SAP for lye calculations.
- * - ≤5% delta: trust FNWL
- * - 5–10% delta: use higher SAP (more lye = safer)
- * - >10% delta: keep legacy unless FNWL is higher (more lye = safer)
+ * Choose primary SAP for lye calculations when the legacy catalog and FNWL disagree.
+ * - ≤5% delta: they agree, trust FNWL.
+ * - >5% delta: pick the source closest to the **profile-derived** SAP (the independent
+ *   chemistry oracle). A higher SAP is NOT "safer" — it means more lye and less superfat.
+ *   When the profile can't judge (incomplete/absent), fall back to the midpoint, never the max.
  */
-export function resolvePrimarySap(legacySapKoh: number, fnwlSapKoh: number): SapResolution {
+export function resolvePrimarySap(
+  legacySapKoh: number,
+  fnwlSapKoh: number,
+  profileDerivedSapKoh?: number,
+): SapResolution {
   const deltaPct = sapDeltaPercent(legacySapKoh, fnwlSapKoh);
 
   if (deltaPct <= VERIFIED_DELTA_PCT + 1e-9) {
@@ -37,26 +41,29 @@ export function resolvePrimarySap(legacySapKoh: number, fnwlSapKoh: number): Sap
     };
   }
 
-  if (deltaPct <= DISPUTED_DELTA_PCT + 1e-9) {
-    const sapKoh = Math.max(legacySapKoh, fnwlSapKoh);
+  if (profileDerivedSapKoh !== undefined) {
+    const useFnwl =
+      Math.abs(fnwlSapKoh - profileDerivedSapKoh) <=
+      Math.abs(legacySapKoh - profileDerivedSapKoh);
+    const sapKoh = useFnwl ? fnwlSapKoh : legacySapKoh;
     return {
       sapKoh,
       sapNaoh: sapKohToSapNaoh(sapKoh),
-      primarySource: fnwlSapKoh >= legacySapKoh ? 'fnwl' : 'legacy_catalog',
+      primarySource: useFnwl ? 'fnwl' : 'legacy_catalog',
       confidence: 'estimated',
       deltaPct,
-      strategy: 'conservative_blend',
+      strategy: 'profile_closest',
     };
   }
 
-  const usingFnwl = fnwlSapKoh > legacySapKoh;
-  const sapKoh = usingFnwl ? fnwlSapKoh : legacySapKoh;
+  const sapKoh = (legacySapKoh + fnwlSapKoh) / 2;
   return {
     sapKoh,
     sapNaoh: sapKohToSapNaoh(sapKoh),
-    primarySource: usingFnwl ? 'fnwl' : 'legacy_catalog',
-    confidence: usingFnwl ? 'estimated' : 'legacy_only',
+    // The value is a blend of neither source; report the nearer label, `estimated` conveys it.
+    primarySource: fnwlSapKoh >= legacySapKoh ? 'fnwl' : 'legacy_catalog',
+    confidence: 'estimated',
     deltaPct,
-    strategy: usingFnwl ? 'fnwl_preferred' : 'legacy_retained',
+    strategy: 'midpoint',
   };
 }

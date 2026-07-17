@@ -3,7 +3,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sapKohToSapNaoh } from '@soap-calc/core';
 import { CanonicalOilDatabase } from '../src/schema.js';
-import { DISPUTED_DELTA_PCT, sapDeltaPercent } from '../src/sap-policy.js';
 import {
   defaultGlossaryPath,
   loadCosingGlossaryIndex,
@@ -12,6 +11,10 @@ import {
 } from '../src/cosing-glossary.js';
 import { loadSupplementalInci } from '../src/resolve-inci.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
+import { incompleteProfileOils } from '../src/profile-completeness.js';
+import { classifyProfileSapDeviations } from '../src/profile-sap-deviations.js';
+import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
+import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -89,26 +92,14 @@ function main() {
     const legacySource = oil.sources.find((s) => s.source === 'legacy_catalog');
 
     if (fnwlSource?.sapKoh && legacySource?.sapKoh) {
-      const delta = sapDeltaPercent(legacySource.sapKoh, fnwlSource.sapKoh);
-
-      if (
-        delta > DISPUTED_DELTA_PCT &&
-        oil.primarySource === 'fnwl' &&
-        fnwlSource.sapKoh < legacySource.sapKoh
-      ) {
+      // Disputed SAP resolves to whichever source is closest to the profile (or their
+      // midpoint) — never the max, since higher SAP is not "safer". The only invariant
+      // is that the result stays within the two sources' range.
+      const lo = Math.min(legacySource.sapKoh, fnwlSource.sapKoh);
+      const hi = Math.max(legacySource.sapKoh, fnwlSource.sapKoh);
+      if (oil.sapKoh < lo - 1e-9 || oil.sapKoh > hi + 1e-9) {
         errors.push(
-          `${oil.id}: FNWL primary but SAP delta ${delta.toFixed(1)}% exceeds ${DISPUTED_DELTA_PCT}%`,
-        );
-      }
-
-      // Using FNWL when it is lower than legacy risks under-lye; higher FNWL is allowed for safety.
-      if (
-        delta > DISPUTED_DELTA_PCT &&
-        oil.sapKoh === fnwlSource.sapKoh &&
-        fnwlSource.sapKoh < legacySource.sapKoh
-      ) {
-        errors.push(
-          `${oil.id}: using lower FNWL SAP despite ${delta.toFixed(1)}% delta from legacy`,
+          `${oil.id}: resolved sapKoh ${oil.sapKoh} is outside the legacy/FNWL range [${lo}, ${hi}]`,
         );
       }
     }
@@ -220,6 +211,48 @@ function main() {
   const ids = db.oils.map((o) => o.id);
   const dupeIds = ids.filter((id, i) => ids.indexOf(id) !== i);
   if (dupeIds.length) errors.push(`Duplicate ids: ${[...new Set(dupeIds)].join(', ')}`);
+
+  for (const { id, sum } of incompleteProfileOils(db.oils)) {
+    warnings.push(`${id}: fatty-acid profile only ${sum.toFixed(0)}% complete — properties are estimates`);
+  }
+
+  // Phase 5 backfill drift guard: the built profile must equal the curated table (which build
+  // applies), so the sourced value lives in exactly one place. An id in the table with no oil,
+  // or a mismatch, means the build and the table have diverged.
+  for (const [id, backfill] of Object.entries(PROFILE_BACKFILL)) {
+    // PROFILE_BACKFILL is keyed by the internal build slug; the emitted id may be overridden.
+    const emittedId = OIL_ID_OVERRIDES[id] ?? id;
+    const oil = db.oils.find((o) => o.id === emittedId);
+    if (!oil) {
+      errors.push(`PROFILE_BACKFILL["${id}"] has no matching oil in the built catalog`);
+      continue;
+    }
+    const built = oil.fattyAcids ?? {};
+    const expected = backfill.profile;
+    const keys = new Set([...Object.keys(built), ...Object.keys(expected)]);
+    const mismatch = [...keys].some((k) => built[k] !== expected[k]);
+    if (mismatch) {
+      errors.push(
+        `${id}: built fatty-acid profile ${JSON.stringify(built)} does not match PROFILE_BACKFILL ${JSON.stringify(expected)}`,
+      );
+    }
+  }
+
+  // Profile-consistency gate: the fatty-acid profile is the independent oracle for stored SAP.
+  // A trusted (verified/estimated) SAP that contradicts its own chemistry is the carrot class —
+  // block the build until it's reviewed and either corrected or added to the acknowledged list.
+  for (const dev of classifyProfileSapDeviations(db.oils)) {
+    const base = `${dev.id}: stored SAP deviates ${dev.deltaPct}% from its fatty-acid profile`;
+    if (dev.tier === 'error') {
+      errors.push(
+        `${base} — a trusted (verified/estimated) value contradicting its own chemistry (the carrot class); correct it or add an acknowledged-deviation entry after human review`,
+      );
+    } else if (dev.tier === 'warn') {
+      warnings.push(`${base} (legacy_only — low-confidence SAP, no external source to reconcile)`);
+    } else {
+      warnings.push(`${base} — acknowledged: ${dev.reason}`);
+    }
+  }
 
   console.log(`Validated ${db.oils.length} oils`);
   console.log(`  Errors: ${errors.length}`);
