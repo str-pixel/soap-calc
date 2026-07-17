@@ -50,10 +50,15 @@ Client bundle uses `canonical-oils-lite.json` (slim fields only).
 
 ## Deploy (Railway)
 
-Static build via `railway.json`:
+`main` deploys itself: Railway watches `str-pixel/soap-calc@main` and builds each
+commit **after GitHub Actions goes green** (`checkSuites`). A red or missing check
+blocks the deploy — if a release looks stuck, check the Actions tab first.
+
+Manual deploy (escape hatch — bypasses the CI gate, so pass `--service` explicitly
+and never rely on the linked service):
 
 ```bash
-railway up
+railway up --service soap-calc --environment production
 ```
 
 Build: `npm run build:oils && npm run build -w @soap-calc/web` · Start: `serve dist` on `$PORT`.
