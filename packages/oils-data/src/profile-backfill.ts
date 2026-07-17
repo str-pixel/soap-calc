@@ -347,8 +347,11 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   },
 
   'monoi-de-tahiti-oil': {
+    // Derived, not literature: Codex measured COCONUT, and this profile applies that
+    // composition to a different product by inference. The number is sound but it is a
+    // reconstruction of monoi, not a measurement of it — so the UI flags it "Modeled".
     profile: CODEX_COCONUT,
-    sourceType: 'literature',
+    sourceType: 'derived',
     acknowledgedShift: true, // cleansing/bubbly +19 — restoring coconut's C8/C10 (monoi is coconut-based)
     source:
       'Monoï de Tahiti is coconut oil infused with tiare (Gardenia) flowers — the tiare is a ' +
@@ -364,8 +367,11 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
   },
 
   'aloe-butter': {
+    // Derived, not literature — the note below says it outright ("not a measured
+    // aloe-butter lot"). Codex measured COCONUT; this applies that composition to a
+    // different product by inference, so the UI flags it "Modeled".
     profile: CODEX_COCONUT,
-    sourceType: 'literature',
+    sourceType: 'derived',
     acknowledgedShift: true, // cleansing/bubbly +16 — restoring coconut's C8/C10 (aloe butter is coconut-based)
     source:
       'Aloe butter is coconut oil with aloe vera extract, solidified — the aloe extract is a minor ' +

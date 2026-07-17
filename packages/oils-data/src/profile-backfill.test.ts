@@ -27,9 +27,15 @@ describe('PROFILE_BACKFILL', () => {
       .filter(([, b]) => b.sourceType === 'derived')
       .map(([slug]) => OIL_ID_OVERRIDES[slug] ?? slug)
       .sort();
-    // The two hydrogenated lauric forms plus PHSO.
+    // Two kinds of reconstruction. Transforms of a measured base: the two hydrogenated
+    // lauric forms plus PHSO. Compositions borrowed from a DIFFERENT material: monoi and
+    // aloe butter are coconut-based products carrying coconut's profile by inference, not
+    // a measurement of themselves. Literature that measured the material it describes
+    // (coconut-oil-76, the gap-fills, saw palmetto) is measured data and stays unflagged.
     expect(derived).toEqual([
+      'aloe-butter',
       'coconut-oil-92',
+      'monoi-de-tahiti-oil',
       'palm-kernel-oil-flakes-hydrogenated',
       'soybean-27-5-hydrogenated',
     ]);
