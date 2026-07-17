@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-17T07:38:27.831Z",
+  "generatedAt": "2026-07-17T13:07:58.903Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -197,7 +197,7 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
-          "source": "literature",
+          "source": "derived",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
           "notes": "Fatty-acid profile: Aloe butter is coconut oil with aloe vera extract, solidified — the aloe extract is a minor non-fatty-acid additive, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 dropped, no key). Legacy profile summed 83% and omitted caprylic/capric (coconut’s C8/C10). Filled to the coconut composition. SAP 0.24 kept (profile-derived 0.247, −2.8%, within gate). Property shift is cleansing/bubbly +16 (restoring the C8/C10) — flagged, acknowledged. Derived/blend product; the coconut FA is representative, not a measured aloe-butter lot."
         },
@@ -3279,7 +3279,7 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
-          "source": "literature",
+          "source": "derived",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
           "notes": "Fatty-acid profile: Monoï de Tahiti is coconut oil infused with tiare (Gardenia) flowers — the tiare is a fragrance, not a fatty-acid source, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 caproic, ~0.3%, has no key and is dropped). Legacy profile summed 75% and omitted caprylic/capric/oleic (the C8/C10 coconut carries). Filled to the coconut composition. SAP 0.255 kept (verified; profile-derived 0.247, +3.3%, within gate — coconut FA-derived SAP runs ~4% below the measured, a known lauric-oil effect). Property shift is cleansing/bubbly +19 (restoring the C8/C10) — flagged, acknowledged."
         },

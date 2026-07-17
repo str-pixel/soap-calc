@@ -22,9 +22,11 @@ export type LiteOilRecord = {
    */
   insufficientData?: boolean;
   /**
-   * Present only on oils whose fatty-acid profile is a modeled reconstruction (e.g. a hydrogenation
-   * transform of a measured base oil). The UI surfaces these as "modeled" so their bar scores read
-   * as estimates. `fdc`/`literature` backfills carry measured data and are deliberately not flagged.
+   * Present only on oils whose fatty-acid profile is a modeled reconstruction — a transform of a
+   * measured base oil (the hydrogenated forms), or a composition borrowed from a different material
+   * (monoi and aloe butter carry coconut's profile by inference). The UI surfaces these as "modeled"
+   * so their bar scores read as estimates. `fdc`/`literature` backfills measured the material they
+   * describe, so they are measured data and are deliberately not flagged.
    *
    * Typed as the single literal build-canonical emits (see its `modeledProfileIds`). Widening this
    * to ProfileBackfill's full sourceType union would advertise arms the data never carries, so a
