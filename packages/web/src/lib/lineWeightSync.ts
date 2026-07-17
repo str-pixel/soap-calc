@@ -239,11 +239,12 @@ export function syncPercentEdit(
 
     let targetGrams: number;
     if (p >= 100) {
-      // The edited line is the whole batch: keep ITS own weight and drop the others. A
-      // line with no weight yet has nothing to keep, so it takes over the current total
-      // instead — targeting 0 would blank this line AND clear the others (below), wiping
-      // every weight and the batch total.
-      targetGrams = ownGrams > 0 ? ownGrams : otherGrams;
+      // The edited line is the whole batch: keep ITS own weight and drop the others. With
+      // no weight of its own it takes over the others' total, and failing that the derived
+      // total itself — the same "never to 0" fallback the p<100 branch uses below.
+      // Targeting 0 would blank this line AND clear the others, wiping every weight and
+      // the batch total.
+      targetGrams = ownGrams > 0 ? ownGrams : otherGrams > 0 ? otherGrams : (batch ?? 0);
     } else if (otherGrams > 0) {
       targetGrams = (otherGrams * p) / (100 - p);
     } else {

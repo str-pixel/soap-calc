@@ -116,14 +116,20 @@ function isLyeType(value: unknown): value is RecipeSettings['lyeType'] {
 /**
  * Batch provenance for a loaded or imported recipe. An explicit flag wins in both
  * directions. A recipe saved or exported before provenance existed carries no flag, but
- * its total was one the user typed — so infer the lock from a non-empty total. Defaulting
- * those to derived would silently grow the batch on the next percent edit, overflowing
- * the mold the recipe was sized for.
+ * its total was one the user typed — so infer the lock from the total it actually saved.
+ * Defaulting those to derived would silently grow the batch on the next percent edit,
+ * overflowing the mold the recipe was sized for.
+ *
+ * Reads the SAVED total (`partial`), deliberately, not the resolved one: a partial with
+ * no total at all resolves to the 1000 g default, which no user typed and must not be
+ * locked. Such a recipe stays derived even though the total it returns with is non-empty,
+ * so a derived total is not always the sum of the line weights — `syncPercentEdit` treats
+ * the total as a fallback rather than assuming that invariant.
  */
 function resolveBatchProvenance(partial: Partial<RecipeSettings> | null | undefined): boolean {
   if (partial?.batchSetByUser !== undefined) return partial.batchSetByUser === true;
-  const legacyBatch = Number(partial?.batchOilGrams ?? '');
-  return Number.isFinite(legacyBatch) && legacyBatch > 0;
+  const savedBatch = Number(partial?.batchOilGrams ?? '');
+  return Number.isFinite(savedBatch) && savedBatch > 0;
 }
 
 export function normalizeSettings(

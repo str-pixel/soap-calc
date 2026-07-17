@@ -218,6 +218,22 @@ describe('syncPercentEdit (derived batch — unlocked)', () => {
     expect(result.lines[1].weightGrams).toBe('');
   });
 
+  it('at 100% falls back to the derived total when no line carries a weight', () => {
+    // Derived total with no weights anywhere (e.g. an imported file that has lines but
+    // no settings, so the batch is the 1000 g default). Neither the edited line nor the
+    // others have grams to fall back to, so the total itself must be the target — the
+    // sibling p<100 branch already scales against `batch` here ("never to 0"), and
+    // targeting 0 would wipe the total instead of assigning it.
+    const blank: RecipeLine[] = [
+      { key: 'a', oilId: 'olive-oil', weightGrams: '', weightPercent: '' },
+      { key: 'b', oilId: 'coconut-oil-76', weightGrams: '', weightPercent: '' },
+    ];
+    const result = syncPercentEdit(blank, 'a', '100', '1000', false);
+    expect(result.batchOilGrams).toBe('1000');
+    expect(result.lines[0]).toMatchObject({ weightGrams: '1000', weightPercent: '100' });
+    expect(result.lines[1].weightGrams).toBe('');
+  });
+
   it('records a typed percent when the recipe has no weights yet (percent-first entry)', () => {
     // With a derived batch and no weights anywhere there is nothing to scale against, so
     // the typed percent must be stored for a later batch-total edit to scale — otherwise

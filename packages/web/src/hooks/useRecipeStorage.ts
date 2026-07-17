@@ -40,10 +40,12 @@ function seededSettings(process: ProcessId): RecipeSettings {
 }
 
 /**
- * Settings for a fresh starter recipe. The starter ships an intentional 1000 g batch (its
- * oil weights sum to the total), so lock it: editing a starter oil rebalances within 1000
- * rather than growing the total. Every path that seeds `createStarterLines()` must use
- * this — the same visible recipe has to behave the same way however the user reached it.
+ * Settings for a fresh starter workspace. The starter ships an intentional 1000 g batch
+ * (its oil weights sum to the total), so lock it: editing a starter oil rebalances within
+ * 1000 rather than growing the total. Every path that seeds a fresh starter workspace must
+ * use this — the same visible recipe has to behave the same way however the user reached
+ * it. (An imported file is not one of these: it carries its own settings and provenance,
+ * even when `recipeLinesFromFile` falls back to starter lines for an empty line list.)
  */
 function starterSettings(process: ProcessId): RecipeSettings {
   return { ...seededSettings(process), batchSetByUser: true };
