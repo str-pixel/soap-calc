@@ -29,10 +29,22 @@ export function useRecipeEditor(
   batchSetByUserRef.current = batchSetByUser;
 
   const [history, setHistory] = useState<HistoryState>(() => emptyHistory(workspaceGeneration));
+  // historyRef mirrors `history` (setHist is its only writer), so handlers read the
+  // freshest value even when several fire before a re-render — no stale-closure double-step.
+  const historyRef = useRef(history);
+  const setHist = useCallback((next: HistoryState) => {
+    historyRef.current = next;
+    setHistory(next);
+  }, []);
   // Gate reads on the current workspace: if the generation moved (New / Import /
-  // process switch), stale history is empty THIS render — undo/redo can't reach
-  // a different recipe's snapshots, with no separate reset call to forget.
-  const live = history.gen === workspaceGeneration ? history : emptyHistory(workspaceGeneration);
+  // process switch), stale history is empty — undo/redo can't reach a different
+  // recipe's snapshots, with no separate reset call to forget.
+  const gate = useCallback(
+    (h: HistoryState): HistoryState =>
+      h.gen === workspaceGeneration ? h : emptyHistory(workspaceGeneration),
+    [workspaceGeneration],
+  );
+  const live = gate(history);
 
   const currentSnapshot = useCallback(
     (): SyncedRecipe => ({
@@ -70,13 +82,11 @@ export function useRecipeEditor(
     (next: SyncedRecipe) => {
       const current = currentSnapshot();
       if (!sameSyncedRecipe(current, next)) {
-        setHistory((h) =>
-          pushHistory(h.gen === workspaceGeneration ? h : emptyHistory(workspaceGeneration), current),
-        );
+        setHist(pushHistory(gate(historyRef.current), current));
       }
       applySynced(next);
     },
-    [applySynced, currentSnapshot, workspaceGeneration],
+    [applySynced, currentSnapshot, gate, setHist],
   );
 
   const applySyncedUpdate = useCallback(
@@ -93,18 +103,18 @@ export function useRecipeEditor(
   );
 
   const undo = useCallback(() => {
-    const res = undoHistory(live, currentSnapshot());
+    const res = undoHistory(gate(historyRef.current), currentSnapshot());
     if (!res) return;
     applySynced(res.restored);
-    setHistory(res.next);
-  }, [live, applySynced, currentSnapshot]);
+    setHist(res.next);
+  }, [gate, applySynced, currentSnapshot, setHist]);
 
   const redo = useCallback(() => {
-    const res = redoHistory(live, currentSnapshot());
+    const res = redoHistory(gate(historyRef.current), currentSnapshot());
     if (!res) return;
     applySynced(res.restored);
-    setHistory(res.next);
-  }, [live, applySynced, currentSnapshot]);
+    setHist(res.next);
+  }, [gate, applySynced, currentSnapshot, setHist]);
 
   return {
     applySynced,

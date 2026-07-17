@@ -44,3 +44,13 @@ test('ignores plain z without a modifier', () => {
   fireEvent.keyDown(document.body, { key: 'z' });
   expect(undo).not.toHaveBeenCalled();
 });
+
+test('calls the latest handler after a re-render (listener binds once, forwards via ref)', () => {
+  const first = vi.fn();
+  const second = vi.fn();
+  const { rerender } = render(<Harness undo={first} redo={() => {}} />);
+  rerender(<Harness undo={second} redo={() => {}} />);
+  fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true });
+  expect(first).not.toHaveBeenCalled();
+  expect(second).toHaveBeenCalledTimes(1);
+});

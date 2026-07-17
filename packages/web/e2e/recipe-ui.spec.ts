@@ -114,6 +114,66 @@ test.describe('recipe oils undo/redo', () => {
     await processTab(page, /Hot process/i).click();
     await expect(undoBtn(page)).toBeDisabled();
   });
+
+  test('oil-swap undo round-trips (the routed updateLine path)', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+
+    const before = await oilPickers(page).nth(1).inputValue(); // coconut
+    await oilPickers(page).nth(1).click();
+    await oilPickers(page).nth(1).fill('beeswax');
+    await page.locator('.oil-picker__option').first().click();
+    await expect(oilPickers(page).nth(1)).toHaveValue(/beeswax/i);
+
+    await undoBtn(page).click();
+    await expect(oilPickers(page).nth(1)).toHaveValue(before);
+  });
+
+  test('add-line then undo removes the added line', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+
+    const w = weightInputs(page);
+    const n0 = await w.count();
+    await page.getByRole('button', { name: '+ Add oil' }).click();
+    expect(await w.count()).toBe(n0 + 1);
+
+    await undoBtn(page).click();
+    expect(await w.count()).toBe(n0);
+  });
+
+  test('remove-line then undo restores the line', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+
+    const w = weightInputs(page);
+    const n0 = await w.count();
+    await page.getByRole('button', { name: 'Remove oil' }).first().click();
+    expect(await w.count()).toBe(n0 - 1);
+
+    await undoBtn(page).click();
+    expect(await w.count()).toBe(n0);
+  });
+
+  test('a new edit after undo clears the redo stack', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+
+    const w = weightInputs(page);
+    await w.nth(0).fill('310');
+    await w.nth(0).blur();
+    await undoBtn(page).click();
+    await expect(redoBtn(page)).toBeEnabled();
+
+    // A fresh committed edit must invalidate the redo future.
+    await w.nth(1).fill('260');
+    await w.nth(1).blur();
+    await expect(redoBtn(page)).toBeDisabled();
+  });
 });
 
 test.describe('recipe UI regressions', () => {
