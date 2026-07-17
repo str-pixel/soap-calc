@@ -16,6 +16,7 @@ import { useRecipeEditor } from './hooks/useRecipeEditor';
 import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { useRecipeViewModel } from './hooks/useRecipeViewModel';
+import { useUndoShortcut } from './hooks/useUndoShortcut';
 import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 
@@ -35,6 +36,7 @@ export default function App() {
     handleNew,
     handleExport,
     handleImportFile,
+    workspaceGeneration,
   } = useRecipeStorage();
 
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -43,12 +45,24 @@ export default function App() {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
   const { getDraft, setDraft, clearDraft, clearAllDrafts, drafts } = useDraftInputs();
-  const { applySynced, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef } = useRecipeEditor(
+  const {
+    applySynced,
+    applyEdit,
+    applySyncedUpdate,
+    linesRef,
+    batchRef,
+    batchSetByUserRef,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useRecipeEditor(
     lines,
     settings.batchOilGrams,
     settings.batchSetByUser,
     setLines,
     setSettings,
+    workspaceGeneration,
   );
   const weightUnit = settings.weightUnit;
   // The mold sizer stores its bar weight as a raw display string interpreted in the
@@ -67,9 +81,13 @@ export default function App() {
   const inputs = useRecipeInputs({
     lines, settings, additives, weightUnit,
     drafts, setDraft, clearDraft, clearAllDrafts,
-    editor: { applySynced, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef },
+    editor: {
+      applySynced, applyEdit, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef,
+      undo, redo, canUndo, canRedo,
+    },
     setLines, setSettings, handleExport, handleNew,
   });
+  useUndoShortcut(inputs.undo, inputs.redo);
 
   const vm = useRecipeViewModel({ recipeName, lines, settings, additives, drafts, weightUnit, process });
   useRecipeAutosave(process, recipeName, lines, settings, additives);

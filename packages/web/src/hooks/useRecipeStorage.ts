@@ -83,6 +83,10 @@ export function useRecipeStorage() {
   const [settings, setSettings] = useState<RecipeSettings>(initial.current.ws.settings);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Identity of the loaded workspace. Bumped by every full-workspace swap below;
+  // undo history is stamped with this and gated on it, so a swap makes stale
+  // history unreachable without a separate reset call. See useRecipeEditor.
+  const [workspaceGeneration, setWorkspaceGeneration] = useState(0);
 
   useEffect(() => {
     return () => {
@@ -110,6 +114,7 @@ export function useRecipeStorage() {
     setLines(ws.lines);
     setAdditives(ws.additives);
     setSettings(ws.settings);
+    setWorkspaceGeneration((g) => g + 1);
   }
 
   function handleNew() {
@@ -117,6 +122,7 @@ export function useRecipeStorage() {
     setLines(createStarterLines());
     setAdditives(createEmptyAdditives());
     setSettings(starterSettings(process));
+    setWorkspaceGeneration((g) => g + 1);
   }
 
   function handleExport(override?: ExportOverride) {
@@ -158,6 +164,7 @@ export function useRecipeStorage() {
         setLines(importedLines);
         setAdditives(importedAdditives);
         setSettings(importedSettings);
+        setWorkspaceGeneration((g) => g + 1);
         saveDraft(nextProcess, parsed.data.name, importedLines, importedSettings, importedAdditives);
         flashSaveMessage(`Imported “${parsed.data.name}”`);
       })
@@ -179,5 +186,6 @@ export function useRecipeStorage() {
     handleNew,
     handleExport,
     handleImportFile,
+    workspaceGeneration,
   };
 }

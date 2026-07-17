@@ -34,12 +34,17 @@ export type UseRecipeInputsDeps = {
   clearAllDrafts: () => void;
   editor: {
     applySynced: (synced: SyncedRecipe) => void;
+    applyEdit: (synced: SyncedRecipe) => void;
     applySyncedUpdate: (
       u: (lines: RecipeLine[], batch: string, batchSetByUser: boolean) => SyncedRecipe,
     ) => void;
     linesRef: React.MutableRefObject<RecipeLine[]>;
     batchRef: React.MutableRefObject<string>;
     batchSetByUserRef: React.MutableRefObject<boolean>;
+    undo: () => void;
+    redo: () => void;
+    canUndo: boolean;
+    canRedo: boolean;
   };
   setLines: React.Dispatch<React.SetStateAction<RecipeLine[]>>;
   setSettings: React.Dispatch<React.SetStateAction<RecipeSettings>>;
@@ -65,18 +70,25 @@ export type RecipeInputs = {
   setWeightUnit: (nextUnit: WeightUnit) => void;
   addLine: () => void;
   removeLine: (key: string) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 };
 
 export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   const { weightInputId, percentInputId, batchInputId } = makeInputIds();
   const { lines, settings, additives, weightUnit, drafts } = deps;
   const { setDraft, clearDraft, clearAllDrafts } = deps;
-  const { applySynced, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef } = deps.editor;
-  const { setLines, setSettings, handleExport, handleNew } = deps;
+  const { applyEdit, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef } = deps.editor;
+  const { undo: editorUndo, redo: editorRedo, canUndo, canRedo } = deps.editor;
+  const { setSettings, handleExport, handleNew } = deps;
 
+  // Route through the funnel (carrying batch + provenance unchanged) so oil-swap and
+  // tar-treatment edits are captured in history like every other oils edit.
   function updateLine(key: string, patch: Partial<RecipeLine>) {
-    setLines((prev) =>
-      prev.map((line) => {
+    applySyncedUpdate((prevLines, currentBatch, currentBatchSetByUser) => ({
+      lines: prevLines.map((line) => {
         if (line.key !== key) return line;
         const next = { ...line, ...patch };
         if (patch.oilId) {
@@ -91,7 +103,21 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
         }
         return next;
       }),
-    );
+      batchOilGrams: currentBatch,
+      batchSetByUser: currentBatchSetByUser,
+    }));
+  }
+
+  // Undo/redo throw away any in-flight draft (a draft was never committed, so it isn't
+  // history) and then step the committed oils state. discardDrafts also lets a still-
+  // focused field fall back to the restored canonical value.
+  function undo() {
+    discardDrafts();
+    editorUndo();
+  }
+  function redo() {
+    discardDrafts();
+    editorRedo();
   }
 
   function flushCommittedDrafts(): SyncedRecipe {
@@ -104,7 +130,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     );
     if (Object.keys(drafts).length > 0) {
       clearAllDrafts();
-      applySynced(synced);
+      applyEdit(synced);
     }
     return synced;
   }
@@ -218,5 +244,5 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   return { weightInputId, percentInputId, batchInputId, updateLine, flushCommittedDrafts,
     discardDrafts, handleExportCommitted, handleNewRecipe, handleApplySuggestedOilGrams,
     commitWeightInput, commitPercentInput, commitBatchInput, handleWeightChange,
-    handleBatchChange, setWeightUnit, addLine, removeLine };
+    handleBatchChange, setWeightUnit, addLine, removeLine, undo, redo, canUndo, canRedo };
 }
