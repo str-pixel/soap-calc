@@ -152,3 +152,41 @@ describe('superfat + PUFA cap bands (CP)', () => {
     expect(codes).toContain('high_poly_high_superfat');
   });
 });
+
+describe('property-score exceptions', () => {
+  const base = {
+    fattyAcids: null, totalOilGrams: 1000, lyeConcentrationPercent: 0,
+    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, isLiquidSoap: false,
+    propertyCoveragePercent: 100, fattyAcidCoveragePercent: 100,
+  };
+  const props = (over: Partial<Record<string, number>>) => ({
+    bubbly: 10, cleansing: 0, condition: 65, hardness: 30, longevity: 30, creamy: 30, ...over,
+  });
+
+  it('notes that near-zero cleansing is expected for an olive-dominant bar', () => {
+    const codes = analyzeFormulation({
+      ...base, superfatPercent: 5,
+      properties: props({ cleansing: 2 }),
+      fattyAcids: { oleic: 72 },
+    }).map((i) => i.code);
+    expect(codes).toContain('low_cleansing_expected');
+  });
+
+  it('does not flag a high-coconut bar as stripping when superfat is generous', () => {
+    const codes = analyzeFormulation({
+      ...base, superfatPercent: 8,
+      properties: props({ cleansing: 30 }),
+      fattyAcids: { lauric: 40, myristic: 15 },
+    }).map((i) => i.code);
+    expect(codes).not.toContain('high_cleansing_low_superfat');
+  });
+
+  it('suppresses the low-cleansing note for liquid soap (cleansing means solubility there)', () => {
+    const codes = analyzeFormulation({
+      ...base, isLiquidSoap: true, superfatPercent: 2,
+      properties: props({ cleansing: 1 }),
+      fattyAcids: { oleic: 72 },
+    }).map((i) => i.code);
+    expect(codes).not.toContain('low_cleansing_expected');
+  });
+});

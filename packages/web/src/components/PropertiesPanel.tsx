@@ -190,6 +190,11 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       </>
                     )}
                   </p>
+                  {key === 'cleansing' && (
+                    <p className="property-bars__note">
+                      All soap cleans — a low cleansing score means gentler, not ineffective.
+                    </p>
+                  )}
                 </li>
               );
             })}

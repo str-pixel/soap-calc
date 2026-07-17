@@ -73,6 +73,13 @@ test('gives every property bar a guidance tooltip', () => {
   }
 });
 
+test('notes that all soap cleans on the cleansing row', () => {
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  expect(
+    screen.getByText('All soap cleans — a low cleansing score means gentler, not ineffective.'),
+  ).toBeTruthy();
+});
+
 test('renders no radar and a hint when there is no property data', () => {
   const empty = {
     properties: { properties: null, coveragePercent: 0, missingOilIds: [] },

@@ -188,6 +188,18 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
           'Cleansing score above the usual range with modest superfat — bar may feel stripping; consider more superfat or softer oils.',
       });
     }
+
+    // Castile / olive-dominant bars read near-zero cleansing but cure into fine, mild bars.
+    // Surface it as reassurance, not a defect: all soap cleans.
+    const oleic = input.fattyAcids?.oleic ?? 0;
+    if (!input.isLiquidSoap && cleansing < 12 && oleic >= 50) {
+      insights.push({
+        level: 'info',
+        code: 'low_cleansing_expected',
+        message:
+          'A near-zero cleansing score is normal for olive/high-oleic bars — all soap cleans; this cures into a gentle, low-stripping bar.',
+      });
+    }
   }
 
   if (
