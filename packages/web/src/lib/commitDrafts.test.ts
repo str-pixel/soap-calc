@@ -43,7 +43,7 @@ describe('commitDrafts', () => {
     expect(result.lines).toEqual(lines);
   });
 
-  it('preserves an unset batch flag through a weight-only commit', () => {
+  it('preserves batch provenance in both directions through a weight-only commit', () => {
     const result = commitDrafts(lines, '1000', { 'weight-a': '750' }, 'g', true);
     expect(result.batchSetByUser).toBe(true);
     const derived = commitDrafts(
@@ -83,6 +83,10 @@ describe('commitDrafts', () => {
     expect(result.batchOilGrams).toBe('500');
     expect(result.lines[1]).toMatchObject({ weightGrams: '200' });
     expect(result.lines[0]).toMatchObject({ weightGrams: '300' });
+    // The lock is the whole point of the test name: a batch draft in the same pass must
+    // flip provenance to user-set, so the later weight draft distributes within 500 g
+    // rather than growing the total. Without this the test passes with the feature gone.
+    expect(result.batchSetByUser).toBe(true);
   });
 });
 

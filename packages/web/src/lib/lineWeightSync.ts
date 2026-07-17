@@ -224,10 +224,26 @@ export function syncPercentEdit(
     const ownGrams = parseNum(lines.find((line) => line.key === key)?.weightGrams ?? '') ?? 0;
     const others = lines.filter((line) => line.key !== key);
     const otherGrams = totalGrams(others);
+
+    // Nothing anywhere to scale against: no weights on any line and no derived total yet.
+    // Record the typed percent so a later batch-total edit scales it into weights, the
+    // same way a locked batch does below. Falling through would target 0 g, blank the
+    // line, and discard the input — making percent-first entry impossible.
+    if (ownGrams <= 0 && otherGrams <= 0 && (batch === null || batch <= 0)) {
+      return {
+        batchOilGrams,
+        lines: lines.map((line) => (line.key === key ? { ...line, weightPercent } : line)),
+        batchSetByUser: false,
+      };
+    }
+
     let targetGrams: number;
     if (p >= 100) {
-      // The edited line is the whole batch: keep ITS own weight and drop the others.
-      targetGrams = ownGrams;
+      // The edited line is the whole batch: keep ITS own weight and drop the others. A
+      // line with no weight yet has nothing to keep, so it takes over the current total
+      // instead — targeting 0 would blank this line AND clear the others (below), wiping
+      // every weight and the batch total.
+      targetGrams = ownGrams > 0 ? ownGrams : otherGrams;
     } else if (otherGrams > 0) {
       targetGrams = (otherGrams * p) / (100 - p);
     } else {

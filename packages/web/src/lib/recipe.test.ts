@@ -41,6 +41,29 @@ describe('normalizeSettings enum sanitization', () => {
   });
 });
 
+describe('normalizeSettings batch provenance', () => {
+  it('honours an explicit batchSetByUser in both directions', () => {
+    expect(normalizeSettings({ batchOilGrams: '1000', batchSetByUser: true }).batchSetByUser).toBe(true);
+    expect(normalizeSettings({ batchOilGrams: '1000', batchSetByUser: false }).batchSetByUser).toBe(false);
+  });
+
+  it('infers a user-set total for a legacy recipe that has no provenance field', () => {
+    // Recipes saved or exported before batch provenance existed carry a total the user
+    // typed. Defaulting them to derived silently grows the batch on the next percent
+    // edit, overflowing the mold they sized for — so infer the lock from the data.
+    const legacy = { batchOilGrams: '1000' } as Partial<RecipeSettings>;
+    expect(normalizeSettings(legacy).batchSetByUser).toBe(true);
+  });
+
+  it('leaves a legacy recipe with no batch total derived', () => {
+    expect(normalizeSettings({ batchOilGrams: '' } as Partial<RecipeSettings>).batchSetByUser).toBe(false);
+  });
+
+  it('defaults to derived when given no settings at all', () => {
+    expect(normalizeSettings(undefined).batchSetByUser).toBe(DEFAULT_SETTINGS.batchSetByUser);
+  });
+});
+
 describe('migrateRecipeLines', () => {
   it('derives gram weights from percents and batch total for legacy saves', () => {
     const lines = [

@@ -196,6 +196,44 @@ describe('syncPercentEdit (derived batch — unlocked)', () => {
     expect(result.lines[0].weightGrams).toBe('240');
     expect(result.batchOilGrams).toBe('240');
   });
+
+  it('at 100% on a WEIGHTLESS line takes over the existing total instead of wiping the recipe', () => {
+    // The edited line has no weight yet, so its "own weight" is 0. Taking that as the
+    // target blanks the edited line AND clears the others, destroying every weight and
+    // the batch total. At 100% a weightless line must inherit the current total instead.
+    const result = syncPercentEdit(
+      [
+        { key: 'a', oilId: 'olive-oil', weightGrams: '450', weightPercent: '64.3' },
+        { key: 'b', oilId: 'coconut-oil-76', weightGrams: '250', weightPercent: '35.7' },
+        { key: 'd', oilId: 'castor-oil', weightGrams: '', weightPercent: '' },
+      ],
+      'd',
+      '100',
+      '700',
+      false,
+    );
+    expect(result.batchOilGrams).toBe('700');
+    expect(result.lines[2]).toMatchObject({ weightGrams: '700', weightPercent: '100' });
+    expect(result.lines[0].weightGrams).toBe('');
+    expect(result.lines[1].weightGrams).toBe('');
+  });
+
+  it('records a typed percent when the recipe has no weights yet (percent-first entry)', () => {
+    // With a derived batch and no weights anywhere there is nothing to scale against, so
+    // the typed percent must be stored for a later batch-total edit to scale — otherwise
+    // percent-first entry is silently discarded and the recipe cannot be built by percent.
+    const blank: RecipeLine[] = [
+      { key: 'a', oilId: 'olive-oil', weightGrams: '', weightPercent: '' },
+      { key: 'b', oilId: 'coconut-oil-76', weightGrams: '', weightPercent: '' },
+    ];
+    const result = syncPercentEdit(blank, 'a', '60', '', false);
+    expect(result.lines[0].weightPercent).toBe('60');
+    expect(result.batchSetByUser).toBe(false);
+
+    // ...and typing a total afterwards scales it into real weights.
+    const scaled = syncBatchTotalEdit(result.lines, '1000');
+    expect(scaled[0].weightGrams).toBe('1000');
+  });
 });
 
 describe('syncBatchTotalEdit', () => {

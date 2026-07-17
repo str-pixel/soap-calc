@@ -113,6 +113,19 @@ function isLyeType(value: unknown): value is RecipeSettings['lyeType'] {
   return typeof value === 'string' && (LYE_TYPES as readonly string[]).includes(value);
 }
 
+/**
+ * Batch provenance for a loaded or imported recipe. An explicit flag wins in both
+ * directions. A recipe saved or exported before provenance existed carries no flag, but
+ * its total was one the user typed — so infer the lock from a non-empty total. Defaulting
+ * those to derived would silently grow the batch on the next percent edit, overflowing
+ * the mold the recipe was sized for.
+ */
+function resolveBatchProvenance(partial: Partial<RecipeSettings> | null | undefined): boolean {
+  if (partial?.batchSetByUser !== undefined) return partial.batchSetByUser === true;
+  const legacyBatch = Number(partial?.batchOilGrams ?? '');
+  return Number.isFinite(legacyBatch) && legacyBatch > 0;
+}
+
 export function normalizeSettings(
   partial: Partial<RecipeSettings> | null | undefined,
 ): RecipeSettings {
@@ -132,7 +145,7 @@ export function normalizeSettings(
     waterMode,
     lyeType,
     postCookSuperfatMethod,
-    batchSetByUser: partial?.batchSetByUser === true,
+    batchSetByUser: resolveBatchProvenance(partial),
     ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
   };
