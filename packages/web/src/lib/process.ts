@@ -1,5 +1,6 @@
 import type { LyeType, WaterMode } from '@soap-calc/core';
 import type { RecipeSettings } from './recipe';
+import { defaultVariantFor, isProcessVariantId, processProfileById } from './processProfile';
 
 export type ProcessId = 'cp' | 'hp' | 'ls';
 
@@ -36,6 +37,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       superfatPercent: '5',
       waterMode: 'percent_of_oils',
       waterPercentOfOils: '33',
+      processVariant: defaultVariantFor('cp'),
     },
     lyeChoices: ['naoh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
@@ -52,6 +54,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       waterMode: 'percent_of_oils',
       waterPercentOfOils: '38',
       postCookSuperfatPercent: '5',
+      processVariant: defaultVariantFor('hp'),
     },
     lyeChoices: ['naoh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
@@ -68,6 +71,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       waterMode: 'lye_water_ratio',
       lyeWaterRatio: '2',
       postCookSuperfatPercent: '2',
+      processVariant: defaultVariantFor('ls'),
     },
     lyeChoices: ['koh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
@@ -95,9 +99,20 @@ export function coerceSettingsForProcess(
   process: ProcessId,
 ): RecipeSettings {
   const def = PROCESS_DEFINITIONS[process];
-  if (def.lyeChoices.includes(settings.lyeType)) return settings;
-  // `?? def.lyeChoices[0]` is unreachable today (every process sets an explicit
-  // defaultSettings.lyeType) but defaultSettings is a Partial, so a future process that
-  // omits it would otherwise fall through to `undefined`. Kept as a defensive default.
-  return { ...settings, lyeType: def.defaultSettings.lyeType ?? def.lyeChoices[0] };
+  const lyeOk = def.lyeChoices.includes(settings.lyeType);
+  // A variant belongs to exactly one process (e.g. 'hp-hthp' → 'hp'); once that no longer
+  // matches the target process — switching HP→CP while processVariant is still 'hp-hthp',
+  // or the string is garbage/missing — reset to that process's own default variant.
+  const variantOk =
+    isProcessVariantId(settings.processVariant) &&
+    processProfileById(settings.processVariant).process === process;
+  if (lyeOk && variantOk) return settings;
+  return {
+    ...settings,
+    // `?? def.lyeChoices[0]` is unreachable today (every process sets an explicit
+    // defaultSettings.lyeType) but defaultSettings is a Partial, so a future process that
+    // omits it would otherwise fall through to `undefined`. Kept as a defensive default.
+    lyeType: lyeOk ? settings.lyeType : (def.defaultSettings.lyeType ?? def.lyeChoices[0]),
+    processVariant: variantOk ? settings.processVariant : defaultVariantFor(process),
+  };
 }

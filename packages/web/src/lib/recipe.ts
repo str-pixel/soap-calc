@@ -1,5 +1,7 @@
 import type { AdditiveStage, DoseBasis, DoseUnit, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
+import { processForLyeType } from './process';
+import { defaultVariantFor, isProcessVariantId, type ProcessVariantId } from './processProfile';
 
 export type { WeightUnit };
 
@@ -49,6 +51,7 @@ export type RecipeSettings = {
   postCookSuperfatOilId: string;
   postCookSuperfatMethod: 'append' | 'subtract';
   soapConcentrationPercent: string;
+  processVariant: ProcessVariantId;
 };
 
 export function newLineKey(): string {
@@ -85,6 +88,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   postCookSuperfatOilId: 'olive-oil',
   postCookSuperfatMethod: 'append',
   soapConcentrationPercent: '30',
+  processVariant: 'cp',
 };
 
 export function normalizeSplitLiquid(
@@ -144,6 +148,24 @@ export function normalizeSettings(
   const lyeType = isLyeType(partial?.lyeType) ? partial.lyeType : DEFAULT_SETTINGS.lyeType;
   const postCookSuperfatMethod =
     partial?.postCookSuperfatMethod === 'subtract' ? 'subtract' : 'append';
+  // A recipe saved or exported before sub-variants existed has no processVariant at all,
+  // and a hand-edited or corrupted one may carry a stale/invalid string. Either way, fall
+  // back to the variant the recipe's own alkali implies (KOH → an LS variant, else CP) —
+  // not a fixed constant — so a legacy liquid-soap recipe doesn't silently normalize to CP.
+  //
+  // This fallback is a best-effort PRE-COERCE default, not an authoritative process/variant
+  // pairing: `processForLyeType` collapses dual-lye (`lyeType: 'dual'`) to 'cp', so a
+  // dual-lye liquid-soap recipe with no saved variant lands here as a CP variant even
+  // though its true process may be LS. A stale-but-structurally-valid variant string is
+  // also trusted as-is and not cross-checked against the recipe's process. Any caller that
+  // needs an authoritative variant MUST run the result through `coerceSettingsForProcess`
+  // with the recipe's actual (known) process — that is what reconciles variant vs. process
+  // everywhere in the app (loadWorkspace uses the draft's own process key; import uses the
+  // file's process). Do not read `processVariant` off a freshly normalized recipe as
+  // ground truth before that coercion has run.
+  const processVariant = isProcessVariantId(partial?.processVariant)
+    ? partial.processVariant
+    : defaultVariantFor(processForLyeType(lyeType));
   return {
     ...DEFAULT_SETTINGS,
     ...partial,
@@ -151,6 +173,7 @@ export function normalizeSettings(
     waterMode,
     lyeType,
     postCookSuperfatMethod,
+    processVariant,
     batchSetByUser: resolveBatchProvenance(partial),
     ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),

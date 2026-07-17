@@ -8,6 +8,7 @@ import {
   type AdditiveLine,
   type RecipeSettings,
 } from './recipe';
+import type { ProcessVariantId } from './processProfile';
 
 describe('normalizeSettings enum sanitization', () => {
   it('falls back to the default waterMode when an imported value is invalid', () => {
@@ -38,6 +39,37 @@ describe('normalizeSettings enum sanitization', () => {
 
   it('keeps a valid subtract postCookSuperfatMethod', () => {
     expect(normalizeSettings({ postCookSuperfatMethod: 'subtract' }).postCookSuperfatMethod).toBe('subtract');
+  });
+});
+
+describe('processVariant setting', () => {
+  it('defaults processVariant to cp', () => {
+    expect(DEFAULT_SETTINGS.processVariant).toBe('cp');
+  });
+
+  it('keeps a valid processVariant untouched', () => {
+    expect(normalizeSettings({ processVariant: 'hp-hthp' }).processVariant).toBe('hp-hthp');
+  });
+
+  it('falls back to the lye-inferred default when processVariant is absent (legacy recipe)', () => {
+    // A recipe saved before sub-variants existed has no processVariant at all.
+    const legacyNaoh = { lyeType: 'naoh' } as Partial<RecipeSettings>;
+    expect(normalizeSettings(legacyNaoh).processVariant).toBe('cp');
+
+    const legacyKoh = { lyeType: 'koh' } as Partial<RecipeSettings>;
+    expect(normalizeSettings(legacyKoh).processVariant).toBe('ls-cpls');
+  });
+
+  it('rejects an invalid processVariant string to the lye-inferred default', () => {
+    const bogus = {
+      lyeType: 'koh',
+      processVariant: 'not-a-real-variant' as ProcessVariantId,
+    } as Partial<RecipeSettings>;
+    expect(normalizeSettings(bogus).processVariant).toBe('ls-cpls');
+  });
+
+  it('defaults to cp when given no settings at all', () => {
+    expect(normalizeSettings(undefined).processVariant).toBe('cp');
   });
 });
 

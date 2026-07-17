@@ -99,6 +99,13 @@ select {
   gap: 1rem;
 }
 
+.process-tabs-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-self: flex-start;
+}
+
 .process-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -130,6 +137,38 @@ select {
 .process-tabs__tab--active {
   background: var(--accent);
   color: var(--surface);
+}
+
+.process-tabs__variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.2rem;
+}
+
+.process-tabs__variant {
+  border: 1px solid var(--surface-2);
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.85em;
+  font-family: inherit;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.process-tabs__variant:hover:not(.process-tabs__variant--active) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.process-tabs__variant--active {
+  background: var(--surface-2);
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .recipe-toolbar {
