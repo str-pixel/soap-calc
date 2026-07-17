@@ -41,12 +41,12 @@ describe('additives', () => {
     }
   });
 
-  it('offers sodium lactate as a lye-water hardener at 2–4%', () => {
+  it('offers sodium lactate as a lye-water hardener at 1–3%', () => {
     const sl = ADDITIVE_CATALOG.find((e) => e.id === 'sodium-lactate');
     expect(sl).toBeDefined();
     expect(sl?.defaultStage).toBe('lye');
-    expect(sl?.typicalLow).toBe(2);
-    expect(sl?.typicalHigh).toBe(4);
+    expect(sl?.typicalLow).toBe(1);
+    expect(sl?.typicalHigh).toBe(3);
   });
 
   it('keeps table salt (id "salt") tightened to a hardener dose', () => {

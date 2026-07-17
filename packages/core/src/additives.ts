@@ -78,7 +78,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // (id stays 'salt' so recipes saved before the rename/split still resolve.)
     id: 'salt',
     name: 'Table salt (NaCl)',
-    typicalLow: 0.1,
+    typicalLow: 0.05,
     typicalHigh: 1,
     defaultStage: 'lye',
   },
@@ -87,8 +87,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Higher dose range than table salt; it hardens the bar without the seize risk.
     id: 'sodium-lactate',
     name: 'Sodium lactate',
-    typicalLow: 2,
-    typicalHigh: 4,
+    typicalLow: 1,
+    typicalHigh: 3,
     defaultStage: 'lye',
   },
 ] as const;
