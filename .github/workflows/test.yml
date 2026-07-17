@@ -1,0 +1,43 @@
+name: test
+
+# Gates main on the checks that previously only ran locally. `npm test` chains
+# typecheck (all workspaces) -> validate:oils -> every workspace test suite.
+# The build steps mirror railway.json's buildCommand, so a green run means the
+# deploy will build too.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only: this workflow only builds and tests. No untrusted input reaches a
+# run: step, so there is nothing here that needs write access.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # typecheck --workspaces && validate:oils && test --workspaces
+      - run: npm test
+
+      # Mirrors railway.json: npm run build:oils && npm run build -w @soap-calc/web
+      - run: npm run build:oils
+      - run: npm run build:web
