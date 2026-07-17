@@ -1,5 +1,7 @@
 import type { AdditiveStage, DoseBasis, DoseUnit, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
+import { processForLyeType } from './process';
+import { defaultVariantFor, isProcessVariantId, type ProcessVariantId } from './processProfile';
 
 export type { WeightUnit };
 
@@ -49,6 +51,7 @@ export type RecipeSettings = {
   postCookSuperfatOilId: string;
   postCookSuperfatMethod: 'append' | 'subtract';
   soapConcentrationPercent: string;
+  processVariant: ProcessVariantId;
 };
 
 export function newLineKey(): string {
@@ -85,6 +88,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   postCookSuperfatOilId: 'olive-oil',
   postCookSuperfatMethod: 'append',
   soapConcentrationPercent: '30',
+  processVariant: 'cp',
 };
 
 export function normalizeSplitLiquid(
@@ -144,6 +148,13 @@ export function normalizeSettings(
   const lyeType = isLyeType(partial?.lyeType) ? partial.lyeType : DEFAULT_SETTINGS.lyeType;
   const postCookSuperfatMethod =
     partial?.postCookSuperfatMethod === 'subtract' ? 'subtract' : 'append';
+  // A recipe saved or exported before sub-variants existed has no processVariant at all,
+  // and a hand-edited or corrupted one may carry a stale/invalid string. Either way, fall
+  // back to the variant the recipe's own alkali implies (KOH → an LS variant, else CP) —
+  // not a fixed constant — so a legacy liquid-soap recipe doesn't silently normalize to CP.
+  const processVariant = isProcessVariantId(partial?.processVariant)
+    ? partial.processVariant
+    : defaultVariantFor(processForLyeType(lyeType));
   return {
     ...DEFAULT_SETTINGS,
     ...partial,
@@ -151,6 +162,7 @@ export function normalizeSettings(
     waterMode,
     lyeType,
     postCookSuperfatMethod,
+    processVariant,
     batchSetByUser: resolveBatchProvenance(partial),
     ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),

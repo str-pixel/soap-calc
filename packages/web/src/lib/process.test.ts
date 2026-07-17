@@ -7,6 +7,7 @@ import {
   coerceSettingsForProcess,
 } from './process';
 import { DEFAULT_SETTINGS } from './recipe';
+import type { ProcessVariantId } from './processProfile';
 
 describe('process definitions', () => {
   it('defines exactly cp, hp, ls', () => {
@@ -42,13 +43,45 @@ describe('process definitions', () => {
     expect(coerceSettingsForProcess(kohInCp, 'cp').lyeType).toBe('naoh');
   });
 
-  it('coerceSettingsForProcess leaves a valid lye type untouched (same ref)', () => {
-    const dualInLs = { ...DEFAULT_SETTINGS, lyeType: 'dual' as const };
+  it('coerceSettingsForProcess leaves a valid lye type and variant untouched (same ref)', () => {
+    const dualInLs = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'dual' as const,
+      processVariant: 'ls-cpls' as const,
+    };
     expect(coerceSettingsForProcess(dualInLs, 'ls')).toBe(dualInLs);
   });
 
   it('seeds HP 5% / LS 2% post-cook superfat defaults', () => {
     expect(PROCESS_DEFINITIONS.hp.defaultSettings.postCookSuperfatPercent).toBe('5');
     expect(PROCESS_DEFINITIONS.ls.defaultSettings.postCookSuperfatPercent).toBe('2');
+  });
+});
+
+describe('process sub-variant defaults', () => {
+  it('seeds each process defaultSettings.processVariant to that process default variant', () => {
+    expect(PROCESS_DEFINITIONS.cp.defaultSettings.processVariant).toBe('cp');
+    expect(PROCESS_DEFINITIONS.hp.defaultSettings.processVariant).toBe('hp-lthp');
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.processVariant).toBe('ls-cpls');
+  });
+
+  it('coerceSettingsForProcess resets processVariant when its process no longer matches (HP→CP)', () => {
+    const hthpSettings = { ...DEFAULT_SETTINGS, processVariant: 'hp-hthp' as const };
+    expect(coerceSettingsForProcess(hthpSettings, 'cp').processVariant).toBe('cp');
+  });
+
+  it('coerceSettingsForProcess resets processVariant when switching CP→LS', () => {
+    const cpSettings = { ...DEFAULT_SETTINGS, processVariant: 'cp' as const };
+    expect(coerceSettingsForProcess(cpSettings, 'ls').processVariant).toBe('ls-cpls');
+  });
+
+  it('coerceSettingsForProcess leaves a same-process variant untouched (LTHP stays LTHP within HP)', () => {
+    const lthpSettings = { ...DEFAULT_SETTINGS, lyeType: 'naoh' as const, processVariant: 'hp-lthp' as const };
+    expect(coerceSettingsForProcess(lthpSettings, 'hp').processVariant).toBe('hp-lthp');
+  });
+
+  it('coerceSettingsForProcess falls back safely on a garbage processVariant string', () => {
+    const garbage = { ...DEFAULT_SETTINGS, processVariant: 'nonsense' as ProcessVariantId };
+    expect(coerceSettingsForProcess(garbage, 'cp').processVariant).toBe('cp');
   });
 });

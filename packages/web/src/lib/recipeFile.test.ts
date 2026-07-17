@@ -360,3 +360,44 @@ describe('recipe file process', () => {
     expect(parsed.ok && parsed.data.process).toBe('cp');
   });
 });
+
+describe('recipe file processVariant', () => {
+  it('round-trips a valid processVariant', () => {
+    const settings = { ...DEFAULT_SETTINGS, processVariant: 'hp-hthp' as const };
+    const payload = serializeRecipeFile('HP HTHP', createStarterLines(), settings, [], 'hp');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.processVariant).toBe('hp-hthp');
+  });
+
+  it('a legacy file with no processVariant imports to the lye-inferred default (KOH → an LS variant)', () => {
+    // DEFAULT_SETTINGS itself carries a processVariant, so spreading it wouldn't exercise
+    // the "field absent" path — strip it to simulate a recipe saved before sub-variants
+    // existed.
+    const { processVariant: _omit, ...legacySettings } = DEFAULT_SETTINGS;
+    const raw = JSON.stringify({
+      version: 2,
+      name: 'Legacy body wash',
+      lines: [],
+      settings: { ...legacySettings, lyeType: 'koh' },
+    });
+    const parsed = parseRecipeFile(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.processVariant).toBe('ls-cpls');
+  });
+
+  it('rejects an invalid processVariant string on import to the lye-inferred default', () => {
+    const raw = JSON.stringify({
+      version: 2,
+      name: 'Bad variant',
+      lines: [],
+      settings: { ...DEFAULT_SETTINGS, lyeType: 'naoh', processVariant: 'made-up-variant' },
+    });
+    const parsed = parseRecipeFile(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.processVariant).toBe('cp');
+  });
+});
