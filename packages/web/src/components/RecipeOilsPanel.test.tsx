@@ -16,9 +16,47 @@ function makeInputs(over: Partial<any> = {}) {
     handleWeightChange: vi.fn(), handleBatchChange: vi.fn(),
     flushCommittedDrafts: vi.fn(), discardDrafts: vi.fn(), handleExportCommitted: vi.fn(),
     handleNewRecipe: vi.fn(), handleApplySuggestedOilGrams: vi.fn(), setWeightUnit: vi.fn(),
+    undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false,
     ...over,
   };
 }
+
+function renderPanel(inputs: ReturnType<typeof makeInputs>) {
+  const lines = createStarterLines();
+  return render(
+    <RecipeOilsPanel
+      lines={lines} weightUnit="g"
+      previewState={{ lines, batchOilGrams: '1000' }}
+      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
+      lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
+      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
+      getDraft={(_, c) => c} setDraft={vi.fn()}
+      inputs={inputs as any}
+    />,
+  );
+}
+
+test('Undo/Redo buttons are disabled when there is no history', () => {
+  renderPanel(makeInputs({ canUndo: false, canRedo: false }));
+  expect((screen.getByRole('button', { name: /Undo/ }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: /Redo/ }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+test('Undo button calls inputs.undo when enabled', () => {
+  const inputs = makeInputs({ canUndo: true });
+  renderPanel(inputs);
+  const undo = screen.getByRole('button', { name: /Undo/ }) as HTMLButtonElement;
+  expect(undo.disabled).toBe(false);
+  fireEvent.click(undo);
+  expect(inputs.undo).toHaveBeenCalledTimes(1);
+});
+
+test('Redo button calls inputs.redo when enabled', () => {
+  const inputs = makeInputs({ canRedo: true });
+  renderPanel(inputs);
+  fireEvent.click(screen.getByRole('button', { name: /Redo/ }));
+  expect(inputs.redo).toHaveBeenCalledTimes(1);
+});
 
 test('Add oil button calls inputs.addLine', () => {
   const inputs = makeInputs();

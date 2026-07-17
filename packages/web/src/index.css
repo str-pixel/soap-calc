@@ -429,6 +429,12 @@ select {
   margin-bottom: 1rem;
 }
 
+.panel__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .panel__actions {
   display: flex;
   flex-wrap: wrap;

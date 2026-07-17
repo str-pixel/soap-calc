@@ -44,9 +44,35 @@ export function RecipeOilsPanel({
     <section className="panel">
       <div className="panel__head">
         <h2 className="panel__title">Recipe oils</h2>
-        <button type="button" className="btn btn--ghost" onClick={inputs.addLine}>
-          + Add oil
-        </button>
+        <div className="panel__head-actions">
+          {/* onMouseDown preventDefault keeps focus in any active weight field, so clicking
+              Undo can't blur-commit the pending draft and then undo that fresh commit. */}
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={inputs.undo}
+            disabled={!inputs.canUndo}
+            aria-label="Undo"
+            title="Undo last recipe-oils edit"
+          >
+            ↶
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={inputs.redo}
+            disabled={!inputs.canRedo}
+            aria-label="Redo"
+            title="Redo recipe-oils edit"
+          >
+            ↷
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={inputs.addLine}>
+            + Add oil
+          </button>
+        </div>
       </div>
 
       <div className="recipe-entry-bar">
