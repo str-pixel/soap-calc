@@ -25,6 +25,23 @@ const PROPERTY_ORDER: SoapPropertyName[] = [
   'longevity',
 ];
 
+// Plain-language guidance for each bar: what it measures and the trade-off at the extremes.
+// Original copy — general soapmaking behavior, phrased for beginners.
+const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
+  hardness:
+    'Bar firmness and how well it holds up, mostly from palmitic, stearic, lauric and myristic acids. Low bars are soft and dissolve fast; a very high number can feel brittle.',
+  cleansing:
+    'How strongly the lather lifts away oils, from lauric and myristic acids. Higher cleans harder but can feel drying — raising the superfat softens that.',
+  condition:
+    'Share of skin-loving unsaturated oils like oleic, linoleic and ricinoleic. Higher feels more moisturizing; very high can leave a soft, shorter-lived bar.',
+  creamy:
+    'Dense, stable, low-bubble lather from palmitic, stearic and ricinoleic acids. Higher gives a rich, lotion-like foam, as in shave soap.',
+  bubbly:
+    'Big, airy, fast-forming bubbles from lauric, myristic and ricinoleic acids. Higher is fluffier; very high can feel drying or slippery.',
+  longevity:
+    'How well the bar keeps its shape in use, from long-chain saturates like palmitic and stearic. Higher resists mushing and lasts longer between uses.',
+};
+
 const SCALE_MAX = 100;
 
 type PropertiesPanelProps = {
@@ -146,7 +163,12 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               return (
                 <li key={key} className="property-bars__row">
                   <div className="property-bars__label">
-                    <span>{SOAP_PROPERTY_LABELS[key]}</span>
+                    <span>
+                      {SOAP_PROPERTY_LABELS[key]}
+                      <InfoTip term={SOAP_PROPERTY_LABELS[key]}>
+                        {PROPERTY_GUIDANCE[key]}
+                      </InfoTip>
+                    </span>
                     <span
                       className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
                       role="meter"

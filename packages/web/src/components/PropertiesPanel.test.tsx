@@ -64,6 +64,13 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
   expect(container.querySelectorAll('.property-bars__value--outside').length).toBe(0);
 });
 
+test('gives every property bar a guidance tooltip', () => {
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  for (const term of ['Hardness', 'Cleansing', 'Conditioning', 'Creamy lather', 'Bubbly lather', 'Longevity']) {
+    expect(screen.getByRole('button', { name: `About ${term}` })).toBeTruthy();
+  }
+});
+
 test('renders no radar and a hint when there is no property data', () => {
   const empty = {
     properties: { properties: null, coveragePercent: 0, missingOilIds: [] },
