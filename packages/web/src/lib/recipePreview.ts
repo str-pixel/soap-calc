@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import type { RecipeLine, RecipeSettings } from './recipe';
 import { previewRecipeState } from './commitDrafts';
-import type { SyncedRecipe } from './lineWeightSync';
 import { gramsStringToInputDisplay, type WeightUnit } from './weightUnits';
 
 export function usePreviewRecipeState(
@@ -9,28 +8,20 @@ export function usePreviewRecipeState(
   batchOilGrams: string,
   drafts: Record<string, string>,
   weightUnit: WeightUnit,
-  batchSetByUser: boolean,
-): SyncedRecipe {
+): { lines: RecipeLine[]; batchOilGrams: string } {
   return useMemo(
-    () => previewRecipeState(lines, batchOilGrams, drafts, weightUnit, batchSetByUser),
-    [lines, batchOilGrams, drafts, weightUnit, batchSetByUser],
+    () => previewRecipeState(lines, batchOilGrams, drafts, weightUnit),
+    [lines, batchOilGrams, drafts, weightUnit],
   );
 }
 
 export function usePreviewSettings(
   settings: RecipeSettings,
   previewBatchOilGrams: string,
-  previewBatchSetByUser: boolean,
 ): RecipeSettings {
   return useMemo(
-    // Carry the preview's provenance too, so the settings used for display/calc never
-    // disagree with previewState about whether the batch is locked.
-    () => ({
-      ...settings,
-      batchOilGrams: previewBatchOilGrams,
-      batchSetByUser: previewBatchSetByUser,
-    }),
-    [settings, previewBatchOilGrams, previewBatchSetByUser],
+    () => ({ ...settings, batchOilGrams: previewBatchOilGrams }),
+    [settings, previewBatchOilGrams],
   );
 }
 
