@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  deriveChemistryFromProfile,
   FATTY_ACID_DISPLAY_GROUPS,
+  FATTY_ACID_PROPERTIES,
   FORMULATION_FATTY_ACID_GUIDE,
   RATIO_SATURATED_ACIDS,
   RATIO_UNSATURATED_ACIDS,
+  saturatedUnsaturatedRatio,
   sumFattyAcids,
 } from './index.js';
 
@@ -46,6 +49,25 @@ describe('FATTY_ACID_DISPLAY_GROUPS', () => {
   it('keeps lignoceric (C24:0) covered — long-chain saturate, ratio + bar', () => {
     expect(ratioAcids.has('lignoceric')).toBe(true);
     expect(barAcids.has('lignoceric')).toBe(true);
+  });
+
+  it('counts elaidic (trans-C18:1) as SATURATED in the ratio while iodine counts it unsaturated', () => {
+    // DELIBERATE DIVERGENCE — do not "reconcile" this by deriving the ratio sets from doubleBonds.
+    // The sat/unsat ratio is a HARDNESS proxy: trans-C18:1 soap packs and hardens like a saturate,
+    // so it sums into the saturated side. The iodine value is pure chemistry: elaidic's one C=C
+    // still consumes iodine, identically to its cis isomer oleic. Trans fat is precisely where the
+    // two metrics must disagree — binding doubleBonds > 0 to RATIO_UNSATURATED_ACIDS would report
+    // partially-hydrogenated oils (soybean-27-5-hydrogenated) as soft when they are hard.
+    const ratio = saturatedUnsaturatedRatio({ elaidic: 30, oleic: 10 });
+    expect(ratio.saturated).toBe(30); // elaidic, on the hardness side
+    expect(ratio.unsaturated).toBe(10); // oleic only
+
+    expect(FATTY_ACID_PROPERTIES.elaidic.doubleBonds).toBe(1); // ...yet chemically unsaturated,
+    // and its iodine contribution is identical to oleic's — they are geometric isomers.
+    expect(deriveChemistryFromProfile({ elaidic: 95 })!.iodineValue).toBeCloseTo(
+      deriveChemistryFromProfile({ oleic: 95 })!.iodineValue,
+      6,
+    );
   });
 
   it('does not fold palmitoleic into the Oleic bar (would misreport macadamia/sea-buckthorn)', () => {

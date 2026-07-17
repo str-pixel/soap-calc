@@ -576,6 +576,11 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'IV↔composition table, RSC Adv PMC12046513; AOCS "Hydrogenation in Practice"). The missing 27% of ' +
       'the legacy profile is the TRANS fraction that partial hydrogenation creates: trans-C18:1 (~22%, ' +
       'mapped to the new elaidic key) + trans-C18:2 (~4%, folded into linoleic as its geometric isomer). ' +
+      'The remaining +1 lands on palmitic (legacy 9 → 10): C16:0 is untouched by hydrogenation (which ' +
+      'only saturates C18 double bonds), and both bracketing entries — raw soybean-oil and ' +
+      'soybean-fully-hydrogenated — carry palmitic 11, so 10 both balances the profile to exactly 100% ' +
+      'and moves C16 toward its conserved value. It stays ~1pt under the siblings, within this derived ' +
+      "profile's stated uncertainty. " +
       'DERIVED — the exact trans/stearic split of this specific SoapCalc entry is unknowable without a CoA',
     url: 'https://www.intechopen.com/chapters/40484',
     note:
