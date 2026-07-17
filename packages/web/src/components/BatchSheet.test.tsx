@@ -56,6 +56,50 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
   expect(screen.getByText(/5% post-cook superfat/)).toBeTruthy();
 });
 
+test('prints a "Modeled profile" note naming derived-profile oils', () => {
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+
+  const data = buildBatchSheetData({
+    recipeName: 'Modeled batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquid: undefined,
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    pcsfIsExtra: false,
+    extrasGrams: 0,
+    dilution: null,
+    neutralization: null,
+    properties: {
+      properties: { hardness: 50, cleansing: 15, condition: 40, creamy: 20, bubbly: 15, longevity: 40 },
+      coveragePercent: 100,
+      missingOilIds: [],
+    },
+    indexes: { iodine: 60, ins: 150, coveragePercent: 100, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 100, missingOilIds: [] },
+    modeledOilIds: ['soybean-27-5-hydrogenated'],
+    insights: [],
+    process: 'cp',
+  });
+
+  render(<BatchSheet data={data} />);
+  expect(screen.getByText(/Modeled profile/)).toBeTruthy();
+  // Names the oil (resolved via oilById), not the raw id.
+  expect(screen.getByText(/Soybean, 27\.5% hydrogenated/)).toBeTruthy();
+});
+
 test('prints a total superfat (cook + post-cook) row', () => {
   const lines = createStarterLines();
   const settings = {

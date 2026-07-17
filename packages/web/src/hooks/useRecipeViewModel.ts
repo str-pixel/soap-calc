@@ -290,6 +290,7 @@ export function useRecipeViewModel({
       batchWeightWithExtras,
       waterModeLabel: waterModeLabel(previewSettings),
       fattyAcids,
+      modeledOilIds: fattyAcids.modeledOilIds,
       insights,
     });
   }, [

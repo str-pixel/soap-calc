@@ -15,6 +15,23 @@ const FULL = {
   indexes: { iodine: 58, ins: 147, coveragePercent: 100, missingOilIds: [] } as RecipeIndexResult,
 };
 
+test('flags modeled (derived-profile) oils, and stays silent without them', () => {
+  const { rerender } = render(
+    <PropertiesPanel
+      result={FULL.properties}
+      indexes={FULL.indexes}
+      modeledOilIds={['soybean-27-5-hydrogenated']}
+    />,
+  );
+  expect(screen.getByText('Modeled')).toBeTruthy();
+  // Names the oil via oilById, not the raw id.
+  expect(screen.getByText(/Soybean, 27\.5% hydrogenated/)).toBeTruthy();
+
+  // A measured-only recipe must not show the note at all.
+  rerender(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  expect(screen.queryByText('Modeled')).toBeNull();
+});
+
 test('renders scores as unitless numbers (no % on property rows)', () => {
   render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} />);
   const hardness = screen.getByRole('meter', { name: /Hardness/i });

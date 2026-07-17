@@ -511,6 +511,16 @@ function main() {
   // (OIL_LOOKUP / oilById), so a saved recipe referencing one keeps calculating.
   const insufficientDataIds = new Set(incompleteProfileOils(oils).map((o) => o.id));
 
+  // Oils whose backfilled profile is DERIVED — a modeled reconstruction (a hydrogenation transform
+  // of a sourced base oil), not a measured composition. The web surfaces these as "modeled" so their
+  // bar-property scores read as estimates rather than measured facts. Keyed by the emitted id
+  // (post OIL_ID_OVERRIDES), mirroring the validate-canonical backfill drift guard.
+  const modeledProfileIds = new Set(
+    Object.entries(PROFILE_BACKFILL)
+      .filter(([, backfill]) => backfill.sourceType === 'derived')
+      .map(([slug]) => OIL_ID_OVERRIDES[slug] ?? slug),
+  );
+
   const liteDb = {
     version: db.version,
     generatedAt: db.generatedAt,
@@ -531,6 +541,7 @@ function main() {
       ...(oil.iodine !== undefined ? { iodine: oil.iodine } : {}),
       ...(oil.ins !== undefined ? { ins: oil.ins } : {}),
       ...(insufficientDataIds.has(oil.id) ? { insufficientData: true } : {}),
+      ...(modeledProfileIds.has(oil.id) ? { sourceType: 'derived' as const } : {}),
       ...(oil.propertiesAvailable && oil.fattyAcids
         ? { fattyAcids: oil.fattyAcids }
         : {}),

@@ -219,7 +219,11 @@ export default function App() {
             onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
           />
 
-          <PropertiesPanel result={vm.properties} indexes={vm.indexes} />
+          <PropertiesPanel
+            result={vm.properties}
+            indexes={vm.indexes}
+            modeledOilIds={vm.fattyAcids.modeledOilIds}
+          />
           <FattyAcidPanel result={vm.fattyAcids} />
           <FormulationInsightsPanel insights={vm.insights} />
         </aside>

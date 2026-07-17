@@ -29,6 +29,8 @@ const SCALE_MAX = 100;
 type PropertiesPanelProps = {
   result: RecipePropertiesResult;
   indexes: RecipeIndexResult;
+  /** Recipe oils whose fatty-acid profile is a modeled reconstruction, not a measured composition. */
+  modeledOilIds?: string[];
 };
 
 // memo: props are stable view-model memo outputs, so unrelated keystrokes
@@ -36,7 +38,9 @@ type PropertiesPanelProps = {
 export const PropertiesPanel = memo(function PropertiesPanel({
   result,
   indexes,
+  modeledOilIds,
 }: PropertiesPanelProps) {
+  const modeled = modeledOilIds ?? [];
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.properties
@@ -128,6 +132,18 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   )
                 </>
               )}
+            </p>
+          )}
+
+          {modeled.length > 0 && (
+            <p className="properties-modeled">
+              <span className="properties-modeled__tag">Modeled</span>
+              {modeled.map((id) => oilById(id)?.displayName ?? id).join(', ')}
+              <InfoTip term="Modeled oil">
+                This oil&rsquo;s fatty-acid profile is a reconstruction (e.g. a hydrogenation
+                transform of a measured base oil), not a directly measured composition, so its
+                property scores are estimates and may differ from other calculators.
+              </InfoTip>
             </p>
           )}
 

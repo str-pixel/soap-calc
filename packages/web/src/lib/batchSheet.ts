@@ -44,6 +44,9 @@ export type BatchSheetData = {
   batchWeightWithExtras: number;
   waterModeLabel: string;
   fattyAcids: RecipeFattyAcidResult;
+  /** Recipe oils whose fatty-acid profile is a modeled reconstruction (sourceType 'derived').
+   *  Optional so existing fixtures stay valid; the view model always supplies it. */
+  modeledOilIds?: string[];
   insights: FormulationInsight[];
   process: ProcessId;
 };
