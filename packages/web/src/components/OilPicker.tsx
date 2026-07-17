@@ -122,6 +122,14 @@ export function OilPicker({ value, onChange, ariaLabel = 'Oil' }: OilPickerProps
                     <span className="oil-picker__inci">{inciSubtitle}</span>
                   )}
                 </span>
+                {oil.sourceType === 'derived' && (
+                  <span
+                    className="oil-picker__tag oil-picker__tag--modeled"
+                    title="Fatty-acid profile is a reconstruction, not a measured composition"
+                  >
+                    Modeled
+                  </span>
+                )}
                 {tag && (
                   <span className="oil-picker__tag">{tag}</span>
                 )}

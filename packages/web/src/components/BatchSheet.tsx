@@ -70,9 +70,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     batchWeightWithExtras,
     waterModeLabel,
     fattyAcids,
+    modeledOilIds,
     insights,
     process,
   } = data;
+
+  const modeled = modeledOilIds ?? [];
 
   const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
@@ -328,6 +331,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               {properties.missingOilIds.length > 0
                 ? ` (no data: ${properties.missingOilIds.map(batchSheetOilName).join(', ')})`
                 : ''}
+            </p>
+          )}
+          {modeled.length > 0 && (
+            <p className="batch-sheet__notes">
+              Modeled profile (reconstructed, not measured):{' '}
+              {modeled.map(batchSheetOilName).join(', ')}
             </p>
           )}
         </section>

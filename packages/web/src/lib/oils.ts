@@ -21,6 +21,13 @@ export type LiteOilRecord = {
    * resolve by id in OIL_LOOKUP / PROPERTIES_LOOKUP / oilById, so a saved recipe using one keeps working.
    */
   insufficientData?: boolean;
+  /**
+   * Provenance of a backfilled fatty-acid profile. Only `'derived'` is emitted today: a modeled
+   * reconstruction (e.g. a hydrogenation transform of a measured base oil), not a directly measured
+   * composition. The UI surfaces these as "modeled" so their bar scores read as estimates.
+   * (`'fdc'`/`'literature'` backfills are measured data and are not flagged.)
+   */
+  sourceType?: 'fdc' | 'literature' | 'derived';
 };
 
 export type OilRecord = LiteOilRecord;
