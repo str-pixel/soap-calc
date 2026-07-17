@@ -91,3 +91,64 @@ describe('two-tier water coaching', () => {
     expect(codes).not.toContain('water_band_rivers');
   });
 });
+
+describe('superfat + PUFA cap bands (CP)', () => {
+  const base = {
+    properties: null, totalOilGrams: 1000, lyeConcentrationPercent: 0,
+    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, isLiquidSoap: false,
+    fattyAcidCoveragePercent: 100,
+  };
+  it('warns when PUFA is above the cap and superfat exceeds 5%', () => {
+    const codes = analyzeFormulation({
+      ...base, superfatPercent: 8,
+      fattyAcids: { linoleic: 20, linolenic: 2, oleic: 40 },
+    }).map((i) => i.code);
+    expect(codes).toContain('pufa_cap_superfat');
+  });
+  it('does not fire the PUFA cap at a modest superfat even with high PUFA', () => {
+    const codes = analyzeFormulation({
+      ...base, superfatPercent: 4,
+      fattyAcids: { linoleic: 20, linolenic: 2, oleic: 40 },
+    }).map((i) => i.code);
+    expect(codes).not.toContain('pufa_cap_superfat');
+  });
+  it('flags superfat outside the 3–30% usable band', () => {
+    const low = analyzeFormulation({ ...base, superfatPercent: 1, fattyAcids: { oleic: 60 } }).map((i) => i.code);
+    const high = analyzeFormulation({ ...base, superfatPercent: 35, fattyAcids: { oleic: 60 } }).map((i) => i.code);
+    expect(low).toContain('superfat_out_of_band');
+    expect(high).toContain('superfat_out_of_band');
+  });
+  it('is quiet on a normal 5% superfat within band', () => {
+    const codes = analyzeFormulation({ ...base, superfatPercent: 5, fattyAcids: { oleic: 60 } }).map((i) => i.code);
+    expect(codes).not.toContain('superfat_out_of_band');
+  });
+  it('does not fire either CP superfat band for liquid soap', () => {
+    const codes = analyzeFormulation({
+      ...base, isLiquidSoap: true, superfatPercent: 35, fattyAcids: { linoleic: 25, oleic: 40 },
+    }).map((i) => i.code);
+    expect(codes).not.toContain('superfat_out_of_band');
+    expect(codes).not.toContain('pufa_cap_superfat');
+  });
+
+  it('fires only pufa_cap_superfat (not high_poly_high_superfat) on a moderate PUFA/superfat case', () => {
+    // PUFA 20 < 28 and superfat 6 < 8, so the existing shelf-life insight stays quiet
+    // while the new superfat-ceiling coaching fires (PUFA 20 > 18, superfat 6 > 5).
+    const codes = analyzeFormulation({
+      ...base, superfatPercent: 6,
+      fattyAcids: { linoleic: 18, linolenic: 2, oleic: 40 },
+    }).map((i) => i.code);
+    expect(codes).toContain('pufa_cap_superfat');
+    expect(codes).not.toContain('high_poly_high_superfat');
+  });
+
+  it('allows both pufa_cap_superfat and high_poly_high_superfat to co-fire on an extreme recipe', () => {
+    // PUFA 35 > 28 and superfat 10 >= 8 trips the shelf-life note; PUFA 35 > 18 and
+    // superfat 10 > 5 also trips the superfat-ceiling coaching. Both are legitimate here.
+    const codes = analyzeFormulation({
+      ...base, superfatPercent: 10,
+      fattyAcids: { linoleic: 30, linolenic: 5, oleic: 20 },
+    }).map((i) => i.code);
+    expect(codes).toContain('pufa_cap_superfat');
+    expect(codes).toContain('high_poly_high_superfat');
+  });
+});

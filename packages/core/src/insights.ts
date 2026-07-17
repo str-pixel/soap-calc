@@ -280,6 +280,31 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
+  if (!input.isLiquidSoap) {
+    if (input.superfatPercent < 3 || input.superfatPercent > 30) {
+      insights.push({
+        level: 'info',
+        code: 'superfat_out_of_band',
+        message:
+          'Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate.',
+      });
+    }
+    if (
+      input.fattyAcids &&
+      (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+    ) {
+      const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+      if (poly > 18 && input.superfatPercent > 5) {
+        insights.push({
+          level: 'warning',
+          code: 'pufa_cap_superfat',
+          message:
+            'High linoleic + linolenic oils with an elevated superfat — the unsaponified oil is prone to going rancid. For high-PUFA recipes keep superfat nearer 3–5%.',
+        });
+      }
+    }
+  }
+
   if (input.isLiquidSoap && input.superfatPercent > 3) {
     insights.push({
       level: 'warning',
