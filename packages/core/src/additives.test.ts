@@ -31,6 +31,32 @@ describe('additives', () => {
     expect(ADDITIVE_CATALOG.some((e) => e.id === 'chelator')).toBe(true);
   });
 
+  it('has unique catalog ids and coherent dose ranges', () => {
+    const ids = ADDITIVE_CATALOG.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const entry of ADDITIVE_CATALOG) {
+      expect(entry.typicalLow).toBeGreaterThanOrEqual(0);
+      expect(entry.typicalHigh).toBeLessThanOrEqual(100);
+      expect(entry.typicalLow).toBeLessThanOrEqual(entry.typicalHigh);
+    }
+  });
+
+  it('offers sodium lactate as a lye-water hardener at 1–3%', () => {
+    const sl = ADDITIVE_CATALOG.find((e) => e.id === 'sodium-lactate');
+    expect(sl).toBeDefined();
+    expect(sl?.defaultStage).toBe('lye');
+    expect(sl?.typicalLow).toBe(1);
+    expect(sl?.typicalHigh).toBe(3);
+  });
+
+  it('keeps table salt (id "salt") tightened to a hardener dose', () => {
+    const salt = ADDITIVE_CATALOG.find((e) => e.id === 'salt');
+    expect(salt).toBeDefined();
+    // Above ~1% of oil weight table salt thickens the batch rather than hardening it.
+    expect(salt?.typicalHigh).toBeLessThanOrEqual(1);
+    expect(salt?.defaultStage).toBe('lye');
+  });
+
   it('exports import limits', () => {
     expect(MAX_RECIPE_ADDITIVES).toBeGreaterThan(0);
     expect(MAX_ADDITIVE_NAME_LENGTH).toBeGreaterThan(0);
