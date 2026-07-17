@@ -51,7 +51,7 @@ export const SOAP_PROPERTY_GUIDE: Record<SoapPropertyName, { low: number; high: 
   cleansing: { low: 12, high: 22 },
   condition: { low: 44, high: 69 },
   hardness: { low: 29, high: 54 },
-  longevity: { low: 14, high: 43 },
+  longevity: { low: 25, high: 50 },
   creamy: { low: 16, high: 48 },
 };
 
