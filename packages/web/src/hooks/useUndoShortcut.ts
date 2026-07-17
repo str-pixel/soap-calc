@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -20,16 +20,22 @@ function isEditableTarget(target: EventTarget | null): boolean {
  * the editing fields — where there is also no pending draft to worry about.
  */
 export function useUndoShortcut(undo: () => void, redo: () => void) {
+  // Latest handlers held in a ref so the listener binds ONCE, not on every render.
+  // (undo/redo get fresh identities each render; without this the effect would
+  // remove and re-add the window listener on every keystroke elsewhere in the app.)
+  const handlers = useRef({ undo, redo });
+  handlers.current = { undo, redo };
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const meta = e.metaKey || e.ctrlKey;
       if (!meta || e.key.toLowerCase() !== 'z') return;
       if (isEditableTarget(e.target)) return; // let the browser handle native text undo
       e.preventDefault();
-      if (e.shiftKey) redo();
-      else undo();
+      if (e.shiftKey) handlers.current.redo();
+      else handlers.current.undo();
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [undo, redo]);
+  }, []);
 }
