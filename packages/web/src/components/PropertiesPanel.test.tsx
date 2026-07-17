@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test } from 'vitest';
 import { render, screen, cleanup, within } from '@testing-library/react';
+import { SOAP_PROPERTY_LABELS } from '@soap-calc/core';
 import { PropertiesPanel } from './PropertiesPanel';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
 
@@ -66,7 +67,8 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
 
 test('gives every property bar a guidance tooltip', () => {
   render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
-  for (const term of ['Hardness', 'Cleansing', 'Conditioning', 'Creamy lather', 'Bubbly lather', 'Longevity']) {
+  // Derive the terms from the labels so a rename in core keeps this test honest.
+  for (const term of Object.values(SOAP_PROPERTY_LABELS)) {
     expect(screen.getByRole('button', { name: `About ${term}` })).toBeTruthy();
   }
 });
