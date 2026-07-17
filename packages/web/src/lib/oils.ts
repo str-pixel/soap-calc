@@ -22,12 +22,15 @@ export type LiteOilRecord = {
    */
   insufficientData?: boolean;
   /**
-   * Provenance of a backfilled fatty-acid profile. Only `'derived'` is emitted today: a modeled
-   * reconstruction (e.g. a hydrogenation transform of a measured base oil), not a directly measured
-   * composition. The UI surfaces these as "modeled" so their bar scores read as estimates.
-   * (`'fdc'`/`'literature'` backfills are measured data and are not flagged.)
+   * Present only on oils whose fatty-acid profile is a modeled reconstruction (e.g. a hydrogenation
+   * transform of a measured base oil). The UI surfaces these as "modeled" so their bar scores read
+   * as estimates. `fdc`/`literature` backfills carry measured data and are deliberately not flagged.
+   *
+   * Typed as the single literal build-canonical emits (see its `modeledProfileIds`). Widening this
+   * to ProfileBackfill's full sourceType union would advertise arms the data never carries, so a
+   * `sourceType === 'literature'` check would typecheck and then silently never fire.
    */
-  sourceType?: 'fdc' | 'literature' | 'derived';
+  sourceType?: 'derived';
 };
 
 export type OilRecord = LiteOilRecord;

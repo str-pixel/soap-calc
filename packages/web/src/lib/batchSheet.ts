@@ -6,16 +6,16 @@ import {
   type FormulationInsight,
   type LyeCalculationResult,
   type NeutralizationResult,
-  type RecipeFattyAcidResult,
   type RecipePropertiesResult,
 } from '@soap-calc/core';
 import { additiveStageLabel } from './additiveStageLabel';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from './calculateAdditives';
+import type { RecipeFattyAcids } from './calculateFattyAcids';
 import type { RecipeDisplayTotals } from './calculateRecipe';
 import type { RecipeIndexResult } from './calculateRecipeIndexes';
 import type { ProcessId } from './process';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings, WeightUnit } from './recipe';
-import { oilById } from './oils';
+import { oilDisplayName } from './oilDisplay';
 import { formatGrams } from './format';
 import { formatWeight } from './weightUnits';
 
@@ -43,10 +43,10 @@ export type BatchSheetData = {
   indexes: RecipeIndexResult;
   batchWeightWithExtras: number;
   waterModeLabel: string;
-  fattyAcids: RecipeFattyAcidResult;
-  /** Recipe oils whose fatty-acid profile is a modeled reconstruction (sourceType 'derived').
-   *  Optional so existing fixtures stay valid; the view model always supplies it. */
-  modeledOilIds?: string[];
+  /** Carries `modeledOilIds` (which oils' profiles are reconstructions) alongside the aggregate.
+   *  Required, and not duplicated as a sibling field: the modeled note is a data-honesty signal,
+   *  so a caller must not be able to omit it and silently print a reconstruction as measured. */
+  fattyAcids: RecipeFattyAcids;
   insights: FormulationInsight[];
   process: ProcessId;
 };
@@ -73,7 +73,7 @@ export function formatBatchSheetProperty(value: number | null | undefined): stri
 }
 
 export function batchSheetOilName(oilId: string): string {
-  return oilById(oilId)?.displayName ?? oilId;
+  return oilDisplayName(oilId);
 }
 
 export function formatBatchWeight(grams: number, unit: WeightUnit): string {

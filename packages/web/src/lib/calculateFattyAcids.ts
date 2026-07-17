@@ -3,6 +3,14 @@ import type { RecipeLine, RecipeSettings } from './recipe';
 import { oilById, PROPERTIES_LOOKUP } from './oils';
 import { resolveLineWeights } from './resolveLineWeights';
 
+/**
+ * Core's fatty-acid aggregate plus the web-only provenance of the oils that fed it. Callers that
+ * pass this around (the batch sheet, the panels) should use THIS type, not core's
+ * RecipeFattyAcidResult — typing it as the narrower core shape hides `modeledOilIds` and forces
+ * consumers to thread a second, duplicate copy of it alongside.
+ */
+export type RecipeFattyAcids = ReturnType<typeof calculateFattyAcidsForRecipe>;
+
 export function calculateFattyAcidsForRecipe(
   lines: RecipeLine[],
   settings: RecipeSettings,

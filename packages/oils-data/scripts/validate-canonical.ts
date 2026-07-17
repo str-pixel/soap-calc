@@ -19,6 +19,7 @@ import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../s
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataPath = join(__dirname, '../data/canonical-oils.json');
+const litePath = join(__dirname, '../data/canonical-oils-lite.json');
 const supplementalInciPath = join(__dirname, '../sources/supplemental-inci.json');
 
 /** Golden SAP values for high-risk oils (legacy catalog). */
@@ -234,6 +235,30 @@ function main() {
     if (mismatch) {
       errors.push(
         `${id}: built fatty-acid profile ${JSON.stringify(built)} does not match PROFILE_BACKFILL ${JSON.stringify(expected)}`,
+      );
+    }
+  }
+
+  // "Modeled" UI-signal drift guard: the lite DB must flag sourceType 'derived' on exactly the
+  // backfills whose profile is a reconstruction, never on an fdc/literature one (those are measured).
+  // A false positive defames measured data; a false negative ships a reconstruction as if measured.
+  // This lives here, with the other build-output guards, rather than in a src unit test — it asserts
+  // a property of generated data, so a stale build must read as "rebuild", not as a source bug.
+  {
+    const liteDb = JSON.parse(readFileSync(litePath, 'utf8')) as {
+      oils: { id: string; sourceType?: string }[];
+    };
+    const expectedModeled = Object.entries(PROFILE_BACKFILL)
+      .filter(([, backfill]) => backfill.sourceType === 'derived')
+      .map(([slug]) => OIL_ID_OVERRIDES[slug] ?? slug)
+      .sort();
+    const flaggedModeled = liteDb.oils
+      .filter((o) => o.sourceType === 'derived')
+      .map((o) => o.id)
+      .sort();
+    if (flaggedModeled.join('|') !== expectedModeled.join('|')) {
+      errors.push(
+        `lite DB sourceType 'derived' drift: flagged [${flaggedModeled.join(', ')}] but PROFILE_BACKFILL expects [${expectedModeled.join(', ')}]`,
       );
     }
   }
