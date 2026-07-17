@@ -107,7 +107,12 @@ export default function App() {
           </p>
         </div>
 
-        <ProcessTabs process={process} onChange={setProcess} />
+        <ProcessTabs
+          process={process}
+          onChange={setProcess}
+          processVariant={settings.processVariant}
+          onVariantChange={(processVariant) => setSettings({ ...settings, processVariant })}
+        />
 
         <div className="recipe-toolbar">
           <label className="recipe-toolbar__name">
