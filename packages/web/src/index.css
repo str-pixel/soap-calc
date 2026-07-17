@@ -327,13 +327,6 @@ select {
   color: var(--text-muted);
 }
 
-.property-bars__note {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  font-style: italic;
-}
-
 .property-bars__track {
   position: relative;
   height: 0.55rem;

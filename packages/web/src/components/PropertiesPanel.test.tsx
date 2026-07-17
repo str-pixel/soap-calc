@@ -73,10 +73,10 @@ test('gives every property bar a guidance tooltip', () => {
   }
 });
 
-test('notes that all soap cleans on the cleansing row', () => {
+test('notes that all soap cleans, via the cleansing row InfoTip guidance', () => {
   render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
   expect(
-    screen.getByText('All soap cleans — a low cleansing score means gentler, not ineffective.'),
+    screen.getByText(/All soap cleans — a low cleansing score means gentler, not ineffective\./),
   ).toBeTruthy();
 });
 
