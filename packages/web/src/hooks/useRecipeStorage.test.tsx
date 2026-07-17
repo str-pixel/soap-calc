@@ -65,6 +65,18 @@ describe('useRecipeStorage process', () => {
     expect(result.current.settings.superfatPercent).toBe('2');
   });
 
+  it('handleNew locks the starter batch, matching a fresh load of the same recipe', () => {
+    // handleNew ships the identical starter recipe as the initial load (weights summing
+    // to an intentional 1000 g total), so it must carry the same provenance. Otherwise
+    // the same visible recipe rebalances within 1000 g on first load but grows the total
+    // after "New recipe" — two different batch sizes and lye figures from one keystroke.
+    const { result } = renderHook(() => useRecipeStorage());
+    const onLoad = result.current.settings.batchSetByUser;
+    act(() => result.current.handleNew());
+    expect(result.current.settings.batchSetByUser).toBe(onLoad);
+    expect(result.current.settings.batchSetByUser).toBe(true);
+  });
+
   it('setProcess flushes the current workspace so a just-made edit is not lost', () => {
     const { result } = renderHook(() => useRecipeStorage()); // defaults to cp
     act(() => result.current.setSettings((s) => ({ ...s, superfatPercent: '6' })));

@@ -39,11 +39,25 @@ function seededSettings(process: ProcessId): RecipeSettings {
   return normalizeSettings({ ...DEFAULT_SETTINGS, ...defaultsForProcess(process) });
 }
 
+/**
+ * Settings for a fresh starter workspace. The starter ships an intentional 1000 g batch
+ * (its oil weights sum to the total), so lock it: editing a starter oil rebalances within
+ * 1000 rather than growing the total. Every path that seeds a fresh starter workspace must
+ * use this — the same visible recipe has to behave the same way however the user reached
+ * it. (An imported file is not one of these: it carries its own settings and provenance,
+ * even when `recipeLinesFromFile` falls back to starter lines for an empty line list.)
+ */
+function starterSettings(process: ProcessId): RecipeSettings {
+  return { ...seededSettings(process), batchSetByUser: true };
+}
+
 function loadWorkspace(process: ProcessId) {
   const draft = loadDraft(process);
   const settings = draft
-    ? coerceSettingsForProcess(normalizeSettings(draft.settings), process)
-    : seededSettings(process);
+    ? // Saved drafts carry their own provenance (see normalizeSettings for how a legacy
+      // draft with no provenance field is resolved).
+      coerceSettingsForProcess(normalizeSettings(draft.settings), process)
+    : starterSettings(process);
   return {
     name: draft?.name ?? 'Starter recipe',
     lines: migrateRecipeLines(draft?.lines ?? createStarterLines(), settings),
@@ -102,7 +116,7 @@ export function useRecipeStorage() {
     setRecipeName('New recipe');
     setLines(createStarterLines());
     setAdditives(createEmptyAdditives());
-    setSettings(seededSettings(process));
+    setSettings(starterSettings(process));
   }
 
   function handleExport(override?: ExportOverride) {

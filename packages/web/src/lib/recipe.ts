@@ -31,6 +31,9 @@ export type SplitLiquidSettings = {
 export type RecipeSettings = {
   weightUnit: WeightUnit;
   batchOilGrams: string;
+  /** True only when the user typed the batch total (or applied a suggested one);
+   * a total derived from line weights follows them instead of locking them. */
+  batchSetByUser: boolean;
   superfatPercent: string;
   lyeType: 'naoh' | 'koh' | 'dual';
   kohBlendPercent: string;
@@ -66,6 +69,7 @@ export const DEFAULT_SPLIT_LIQUID: SplitLiquidSettings = {
 export const DEFAULT_SETTINGS: RecipeSettings = {
   weightUnit: 'g',
   batchOilGrams: '1000',
+  batchSetByUser: false,
   superfatPercent: '5',
   lyeType: 'naoh',
   kohBlendPercent: '5',
@@ -109,6 +113,25 @@ function isLyeType(value: unknown): value is RecipeSettings['lyeType'] {
   return typeof value === 'string' && (LYE_TYPES as readonly string[]).includes(value);
 }
 
+/**
+ * Batch provenance for a loaded or imported recipe. An explicit flag wins in both
+ * directions. A recipe saved or exported before provenance existed carries no flag, but
+ * its total was one the user typed — so infer the lock from the total it actually saved.
+ * Defaulting those to derived would silently grow the batch on the next percent edit,
+ * overflowing the mold the recipe was sized for.
+ *
+ * Reads the SAVED total (`partial`), deliberately, not the resolved one: a partial with
+ * no total at all resolves to the 1000 g default, which no user typed and must not be
+ * locked. Such a recipe stays derived even though the total it returns with is non-empty,
+ * so a derived total is not always the sum of the line weights — `syncPercentEdit` treats
+ * the total as a fallback rather than assuming that invariant.
+ */
+function resolveBatchProvenance(partial: Partial<RecipeSettings> | null | undefined): boolean {
+  if (partial?.batchSetByUser !== undefined) return partial.batchSetByUser === true;
+  const savedBatch = Number(partial?.batchOilGrams ?? '');
+  return Number.isFinite(savedBatch) && savedBatch > 0;
+}
+
 export function normalizeSettings(
   partial: Partial<RecipeSettings> | null | undefined,
 ): RecipeSettings {
@@ -128,6 +151,7 @@ export function normalizeSettings(
     waterMode,
     lyeType,
     postCookSuperfatMethod,
+    batchSetByUser: resolveBatchProvenance(partial),
     ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
   };
