@@ -39,10 +39,12 @@ export type ProcessProfile = {
 const HP_WATER_BAND: WaterBand = { lowTier: [28, 32], highTier: [34, 40], riversAbove: 40 };
 
 // A shared two-tier water band for LS's four variants. The overall 25–60% range comes
-// from the verified LS cook-water constant; the specific low/high split point (38) and
-// the rivers threshold (60) are an interpolation, not independently verified.
+// from the verified LS cook-water constant; the low/high split points (35/40) and the
+// rivers threshold (60) are an interpolation, not independently verified. The gap between
+// the tiers (35–40) is chosen so the LS default cook water (38%) falls in the neutral gap
+// rather than on a tier boundary, mirroring CP's design (see WaterBand's "gap between").
 // unverified
-const LS_WATER_BAND: WaterBand = { lowTier: [25, 38], highTier: [38, 60], riversAbove: 60 };
+const LS_WATER_BAND: WaterBand = { lowTier: [25, 35], highTier: [40, 60], riversAbove: 60 };
 
 // LS sequester duration: the roadmap gives a single "1–4 wk" range for liquid soap as a
 // whole, not broken out per sub-variant. Applying that same window to each of the four LS
@@ -153,4 +155,15 @@ export function defaultVariantFor(process: ProcessId): ProcessVariantId {
 
 export function isProcessVariantId(value: unknown): value is ProcessVariantId {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(PROFILES, value);
+}
+
+/**
+ * Runtime source of truth for every known variant id, derived from `PROFILES` (complete at
+ * compile time via the `Record<ProcessVariantId, ...>` type). Used to guard against `ORDER`
+ * silently drifting from `PROFILES` — a variant added to the union and to `PROFILES` but
+ * omitted from `ORDER` would compile fine yet become unreachable (never listed by
+ * `processProfilesFor`, never a `defaultVariantFor` result, invisible in the UI).
+ */
+export function allProcessVariantIds(): ProcessVariantId[] {
+  return Object.keys(PROFILES) as ProcessVariantId[];
 }

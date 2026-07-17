@@ -91,4 +91,75 @@ describe('ProcessTabs', () => {
     expect(variantTabs.getAllByRole('tab')).toHaveLength(4);
     expect(variantTabs.getByRole('tab', { name: /cold-process ls/i }).getAttribute('aria-selected')).toBe('true');
   });
+
+  it('gives the active tab tabIndex=0 and the rest tabIndex=-1, on both tablists', () => {
+    render(
+      <ProcessTabs
+        process="hp"
+        onChange={() => {}}
+        processVariant="hp-lthp"
+        onVariantChange={() => {}}
+      />,
+    );
+    const processTabs = within(screen.getByRole('tablist', { name: /soap process/i }));
+    expect(processTabs.getByRole('tab', { name: /hot process/i }).getAttribute('tabindex')).toBe('0');
+    expect(processTabs.getByRole('tab', { name: /cold process/i }).getAttribute('tabindex')).toBe('-1');
+    expect(processTabs.getByRole('tab', { name: /liquid soap/i }).getAttribute('tabindex')).toBe('-1');
+
+    const variantTabs = within(screen.getByRole('tablist', { name: /process variant/i }));
+    expect(variantTabs.getByRole('tab', { name: /low-temp hp/i }).getAttribute('tabindex')).toBe('0');
+    expect(variantTabs.getByRole('tab', { name: /high-temp hp/i }).getAttribute('tabindex')).toBe('-1');
+    expect(variantTabs.getByRole('tab', { name: /fluid hp/i }).getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('ArrowRight on the HP variant tablist moves from LTHP to HTHP and invokes onVariantChange', async () => {
+    const onVariantChange = vi.fn();
+    render(
+      <ProcessTabs
+        process="hp"
+        onChange={() => {}}
+        processVariant="hp-lthp"
+        onVariantChange={onVariantChange}
+      />,
+    );
+    const variantTabs = within(screen.getByRole('tablist', { name: /process variant/i }));
+    const active = variantTabs.getByRole('tab', { name: /low-temp hp/i });
+    active.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(onVariantChange).toHaveBeenCalledWith('hp-hthp');
+  });
+
+  it('ArrowLeft wraps from the first HP variant to the last', async () => {
+    const onVariantChange = vi.fn();
+    render(
+      <ProcessTabs
+        process="hp"
+        onChange={() => {}}
+        processVariant="hp-lthp"
+        onVariantChange={onVariantChange}
+      />,
+    );
+    const variantTabs = within(screen.getByRole('tablist', { name: /process variant/i }));
+    const active = variantTabs.getByRole('tab', { name: /low-temp hp/i });
+    active.focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(onVariantChange).toHaveBeenCalledWith('hp-fluid');
+  });
+
+  it('ArrowRight on the process tablist moves from CP to HP and invokes onChange', async () => {
+    const onChange = vi.fn();
+    render(
+      <ProcessTabs
+        process="cp"
+        onChange={onChange}
+        processVariant="cp"
+        onVariantChange={() => {}}
+      />,
+    );
+    const processTabs = within(screen.getByRole('tablist', { name: /soap process/i }));
+    const active = processTabs.getByRole('tab', { name: /cold process/i });
+    active.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(onChange).toHaveBeenCalledWith('hp');
+  });
 });

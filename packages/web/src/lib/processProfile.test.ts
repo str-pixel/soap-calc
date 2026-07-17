@@ -4,7 +4,9 @@ import {
   processProfileById,
   defaultVariantFor,
   isProcessVariantId,
+  allProcessVariantIds,
 } from './processProfile';
+import { PROCESS_DEFINITIONS } from './process';
 
 describe('processProfilesFor', () => {
   it('returns three HP variants with the verified temperature targets', () => {
@@ -73,6 +75,35 @@ describe('processProfilesFor', () => {
 
   it('encodes the verified fluid HP cure window (~6 wk)', () => {
     expect(processProfileById('hp-fluid').finish).toEqual({ minWeeks: 6 });
+  });
+
+  it('every water band has a genuine gap between its tiers, and well-formed tiers', () => {
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      for (const profile of processProfilesFor(process)) {
+        const { lowTier, highTier } = profile.waterBand;
+        expect(lowTier[0]).toBeLessThanOrEqual(lowTier[1]);
+        expect(highTier[0]).toBeLessThanOrEqual(highTier[1]);
+        expect(lowTier[1]).toBeLessThan(highTier[0]);
+      }
+    }
+  });
+});
+
+describe('registry drift guards', () => {
+  it('ORDER (via processProfilesFor) reaches exactly the variants in PROFILES, no omissions or duplicates', () => {
+    const reachable = (['cp', 'hp', 'ls'] as const).flatMap((process) =>
+      processProfilesFor(process).map((p) => p.variant),
+    );
+    const all = allProcessVariantIds();
+    expect(reachable.length).toBe(all.length);
+    expect(new Set(reachable)).toEqual(new Set(all));
+  });
+
+  it('every profile finishKind matches its process definition finishing', () => {
+    for (const id of allProcessVariantIds()) {
+      const profile = processProfileById(id);
+      expect(profile.finishKind).toBe(PROCESS_DEFINITIONS[profile.process].finishing);
+    }
   });
 });
 

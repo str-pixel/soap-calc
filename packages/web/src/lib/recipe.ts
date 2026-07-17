@@ -152,6 +152,17 @@ export function normalizeSettings(
   // and a hand-edited or corrupted one may carry a stale/invalid string. Either way, fall
   // back to the variant the recipe's own alkali implies (KOH → an LS variant, else CP) —
   // not a fixed constant — so a legacy liquid-soap recipe doesn't silently normalize to CP.
+  //
+  // This fallback is a best-effort PRE-COERCE default, not an authoritative process/variant
+  // pairing: `processForLyeType` collapses dual-lye (`lyeType: 'dual'`) to 'cp', so a
+  // dual-lye liquid-soap recipe with no saved variant lands here as a CP variant even
+  // though its true process may be LS. A stale-but-structurally-valid variant string is
+  // also trusted as-is and not cross-checked against the recipe's process. Any caller that
+  // needs an authoritative variant MUST run the result through `coerceSettingsForProcess`
+  // with the recipe's actual (known) process — that is what reconciles variant vs. process
+  // everywhere in the app (loadWorkspace uses the draft's own process key; import uses the
+  // file's process). Do not read `processVariant` off a freshly normalized recipe as
+  // ground truth before that coercion has run.
   const processVariant = isProcessVariantId(partial?.processVariant)
     ? partial.processVariant
     : defaultVariantFor(processForLyeType(lyeType));
