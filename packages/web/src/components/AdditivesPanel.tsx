@@ -176,6 +176,15 @@ export const AdditivesPanel = memo(function AdditivesPanel({
             const doseModeOptions = offeredDoseModes.some((m) => m.value === doseModeValue)
               ? offeredDoseModes
               : [...offeredDoseModes, ...DOSE_MODES.filter((m) => m.value === doseModeValue)];
+            // Mismatched-select guard (catalog): a stray process-scoped catalogId (e.g.
+            // `guar` viewed under CP) must still render its current option, even though
+            // it's not offered for this process — see stageOptions/doseModeOptions above.
+            const catalogOptions =
+              line.catalogId === '' || catalogEntries.some((item) => item.id === line.catalogId)
+                ? catalogEntries
+                : entry
+                  ? [...catalogEntries, entry]
+                  : catalogEntries;
 
             return (
               <li key={line.key} className="additive-list__row">
@@ -187,7 +196,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     onChange={(e) => selectCatalog(line.key, e.target.value)}
                   >
                     <option value="">Custom…</option>
-                    {catalogEntries.map((item) => (
+                    {catalogOptions.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
                       </option>

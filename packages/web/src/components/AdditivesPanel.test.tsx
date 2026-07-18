@@ -292,3 +292,19 @@ test('a stray solution line under CP still renders its dose-mode option (guard)'
   expect(select.value).toBe('solution-percent');
   expect(doseModeValues(select)).toContain('solution-percent');
 });
+
+test('a line already set to an LS-scoped catalogId (guar) under CP still offers it as a selected option (mismatched-select guard)', () => {
+  const line = makeLine({ catalogId: 'guar', name: 'Guar gum' });
+  render(
+    <AdditivesPanel
+      additives={[line]}
+      computed={[makeComputed(line)]}
+      weightUnit="g"
+      process="cp"
+      onChange={() => {}}
+    />,
+  );
+  const select = screen.getByLabelText('Additive type') as HTMLSelectElement;
+  expect(select.value).toBe('guar');
+  expect(optionValues(select)).toContain('guar');
+});
