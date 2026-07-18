@@ -500,6 +500,21 @@ describe('LS quality remap + dual-lye recommender', () => {
     fattyAcidCoveragePercent: 100,
   };
 
+  it('gates high_short_chain_low_long_chain out for liquid soap', () => {
+    // Coconut-heavy: lauric+myristic > 35, palmitic+stearic < 15 — fires for CP but must
+    // be suppressed for LS, mirroring eutectic_lather_sources' LS gate (C5), since the
+    // "wears quickly" bar-soap framing contradicts LS's own lather coaching.
+    const coconutHeavy = { lauric: 40, myristic: 10, palmitic: 5, stearic: 5 };
+    expect(
+      analyzeFormulation({ ...ls, fattyAcids: coconutHeavy }).map((i) => i.code),
+    ).not.toContain('high_short_chain_low_long_chain');
+    expect(
+      analyzeFormulation({ ...ls, isLiquidSoap: false, fattyAcids: coconutHeavy }).map(
+        (i) => i.code,
+      ),
+    ).toContain('high_short_chain_low_long_chain');
+  });
+
   it('gates eutectic_lather_sources out for liquid soap', () => {
     const codes = analyzeFormulation({ ...ls, fattyAcids: { lauric: 10, oleic: 40 } }).map(
       (i) => i.code,

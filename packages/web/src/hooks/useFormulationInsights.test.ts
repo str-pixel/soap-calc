@@ -123,6 +123,38 @@ describe('sugarTotalPercentForInsights', () => {
       ),
     ).toBe(0);
   });
+
+  it('excludes yogurt lines from the total when excludeYogurt is true (HP: covered by hp_yogurt_water instead)', () => {
+    expect(
+      sugarTotalPercentForInsights(
+        [{ catalogId: 'yogurt', name: 'Yogurt', grams: 60 }],
+        1000,
+        true,
+      ),
+    ).toBe(0);
+  });
+
+  it('still counts yogurt toward the total when excludeYogurt is false/omitted (non-HP)', () => {
+    expect(
+      sugarTotalPercentForInsights(
+        [{ catalogId: 'yogurt', name: 'Yogurt', grams: 60 }],
+        1000,
+      ),
+    ).toBe(6);
+  });
+
+  it('excludes only yogurt, still counting other sugar-family lines, when excludeYogurt is true', () => {
+    expect(
+      sugarTotalPercentForInsights(
+        [
+          { catalogId: 'yogurt', name: 'Yogurt', grams: 60 },
+          { catalogId: 'honey', name: 'Honey', grams: 20 },
+        ],
+        1000,
+        true,
+      ),
+    ).toBe(2);
+  });
 });
 
 describe('postCookSuperfatPufaPercent', () => {
@@ -333,5 +365,22 @@ describe('useFormulationInsights sugar aggregator (Step 3b)', () => {
     );
     const codes = result.current.insights.map((i) => i.code);
     expect(codes).not.toContain('sugar_total_high');
+  });
+
+  it('fires hp_yogurt_water but NOT sugar_total_high for an HP recipe with ~6% yogurt and no other sugar-family additive (Finding 1 dedup)', () => {
+    const { result } = renderHook(() =>
+      useProcessWiringHarness(lines, 'hp', [yogurtLine('6')]),
+    );
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).toContain('hp_yogurt_water');
+    expect(codes).not.toContain('sugar_total_high');
+  });
+
+  it('still fires sugar_total_high for a CP recipe with ~6% yogurt (non-HP keeps yogurt in the sugar total)', () => {
+    const { result } = renderHook(() =>
+      useProcessWiringHarness(lines, 'cp', [yogurtLine('6')]),
+    );
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).toContain('sugar_total_high');
   });
 });

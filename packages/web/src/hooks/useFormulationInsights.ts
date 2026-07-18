@@ -56,13 +56,28 @@ export function hpYogurtPercentForInsights(
  * total rather than tracked per-additive. Mirrors hpYogurtPercentForInsights' percent-of-oil
  * math; matches by catalog id or a custom-named line's keyword via additiveMatches. A line
  * is counted once even if its name matches more than one keyword (e.g. "Sugar / sorbitol"
- * matches both "sugar" and "sorbitol"). */
+ * matches both "sugar" and "sorbitol").
+ *
+ * `excludeYogurt` drops 'yogurt' from the keyword list — pass true for HP recipes, where
+ * hp_yogurt_water already covers yogurt's water-deduction concern on its own; counting the
+ * same yogurt line into this total too would double-warn on one additive line. Non-HP
+ * callers (no hp_yogurt_water insight) omit the flag so yogurt still counts here.
+ *
+ * The result feeds the core `sugar_total_high` insight's 4% ceiling, which is oil-relative
+ * (a CP-derived constant) and intentionally applied across every process — see that
+ * insight's doc in @soap-calc/core/insights.ts for why. `additives[].grams` already reflects
+ * each line's resolved dose regardless of dosing basis (oil/batch/solution — resolved
+ * upstream by computeRecipeAdditives), so a solution-dosed LS sugar additive contributes its
+ * true %-of-oil here, not an inflated solution-relative figure. */
 export function sugarTotalPercentForInsights(
   additives: Array<{ catalogId: string; name: string; grams: number }>,
   totalOilGrams: number,
+  excludeYogurt = false,
 ): number {
   if (totalOilGrams <= 0) return 0;
-  const keywords = ['sugar', 'sorbitol', 'honey', 'yogurt'];
+  const keywords = excludeYogurt
+    ? ['sugar', 'sorbitol', 'honey']
+    : ['sugar', 'sorbitol', 'honey', 'yogurt'];
   return additives
     .filter((item) => keywords.some((keyword) => additiveMatches([item], keyword, keyword)))
     .reduce((sum, item) => sum + (item.grams / totalOilGrams) * 100, 0);
@@ -169,6 +184,7 @@ export function useFormulationInsights(
       sugarTotalPercent: sugarTotalPercentForInsights(
         options.additives ?? [],
         lyeResult.totalOilWeightGrams,
+        options.process === 'hp',
       ),
       waterBand,
       // At partial fatty-acid coverage the renormalized profile (and thus the predicted
