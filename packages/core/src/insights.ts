@@ -205,7 +205,9 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
 
     const oleic = input.fattyAcids.oleic ?? 0;
     const lauric = input.fattyAcids.lauric ?? 0;
-    if (lauric >= 5 && oleic >= 20) {
+    // Bar-lather claim — liquid soap's lather framing is different (see ls_castor_no_lather
+    // and the LS salt/dual-lye advisories below), so this stays a CP/HP-only insight.
+    if (lauric >= 5 && oleic >= 20 && !input.isLiquidSoap) {
       insights.push({
         level: 'info',
         code: 'eutectic_lather_sources',
@@ -402,6 +404,68 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       message:
         'Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%.',
     });
+  }
+
+  // The bar-soap eutectic-lather framing (lauric + oleic → fluffy/stable lather) doesn't
+  // carry over to liquid soap; castor's role there is solubility/clarity, not lather. Detect
+  // castor via the ricinoleic fatty-acid reading (a documented proxy — castor is essentially
+  // the only common soaping oil with meaningful ricinoleic) gated by fatty-acid coverage, OR
+  // via oil identity, which needs no coverage gate (same pattern as the jojoba oil-identity
+  // check above).
+  const ricinoleicForCastor = input.fattyAcids?.ricinoleic ?? 0;
+  const hasCastorByFattyAcid =
+    ricinoleicForCastor >= 4 &&
+    (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+  const hasCastorByIdentity = recipeOilMatches(input.oilEntries, {
+    oilIds: ['castor-oil'],
+    nameKeyword: 'castor',
+  });
+  if (input.isLiquidSoap && (hasCastorByFattyAcid || hasCastorByIdentity)) {
+    insights.push({
+      level: 'info',
+      code: 'ls_castor_no_lather',
+      message:
+        'Castor adds little lather in liquid soap — its main contribution here is solubility and clarity, not lather.',
+    });
+  }
+
+  // Dual-lye NaOH-share recommender (verified constants, roadmap LS 86): coconut-heavy LS
+  // benefits from a ~30% NaOH share regardless of current lye type (worth switching to dual
+  // lye for), while a low-palmitic+stearic blend that is already dual-lye benefits from a
+  // smaller ~0–20% NaOH share. Deliberately silent for a pure-KOH, low-P+S recipe with no
+  // coconut — nothing actionable to recommend without nagging the user into dual lye.
+  if (
+    input.isLiquidSoap &&
+    input.fattyAcids &&
+    (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+  ) {
+    const lauricMyristicForDualLye = sumFattyAcids(
+      input.fattyAcids,
+      FATTY_ACID_GROUP_KEYS.lauricMyristic,
+    );
+    const palmiticStearicForDualLye = sumFattyAcids(
+      input.fattyAcids,
+      FATTY_ACID_GROUP_KEYS.palmiticStearic,
+    );
+
+    // Coconut-heavy proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" (same
+    // documented estimate used by the salt-thickening advisory above).
+    let dualLyeMessage: string | null = null;
+    if (lauricMyristicForDualLye >= 55) {
+      dualLyeMessage =
+        'High-coconut liquid soap benefits from a dual-lye blend — a ~30% NaOH share firms and thickens the finished soap.';
+    } else if (palmiticStearicForDualLye <= 15 && input.lyeType === 'dual') {
+      dualLyeMessage =
+        'Low in palmitic + stearic — a small NaOH share (~0–20%) in your blend gives a firmer, thicker soap.';
+    }
+
+    if (dualLyeMessage) {
+      insights.push({
+        level: 'info',
+        code: 'ls_dual_lye_recommendation',
+        message: dualLyeMessage,
+      });
+    }
   }
 
   // Salt-thickening is a qualitative advisory, not a numeric viscosity model — no calibrated

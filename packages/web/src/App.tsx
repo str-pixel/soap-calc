@@ -251,6 +251,7 @@ export default function App() {
             result={vm.properties}
             indexes={vm.indexes}
             modeledOilIds={vm.fattyAcids.modeledOilIds}
+            isLiquidSoap={process === 'ls'}
           />
           <FattyAcidPanel result={vm.fattyAcids} />
           <FormulationInsightsPanel insights={vm.insights} />

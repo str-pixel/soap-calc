@@ -491,3 +491,134 @@ describe('ls_salt_thickening advisory (qualitative, LS-only)', () => {
     expect(insight?.message).not.toMatch(/\d/);
   });
 });
+
+describe('LS quality remap + dual-lye recommender', () => {
+  const ls: FormulationAnalysisInput = {
+    ...base,
+    isLiquidSoap: true,
+    process: 'ls',
+    fattyAcidCoveragePercent: 100,
+  };
+
+  it('gates eutectic_lather_sources out for liquid soap', () => {
+    const codes = analyzeFormulation({ ...ls, fattyAcids: { lauric: 10, oleic: 40 } }).map(
+      (i) => i.code,
+    );
+    expect(codes).not.toContain('eutectic_lather_sources');
+    // still fires for CP:
+    expect(
+      analyzeFormulation({ ...ls, isLiquidSoap: false, fattyAcids: { lauric: 10, oleic: 40 } }).map(
+        (i) => i.code,
+      ),
+    ).toContain('eutectic_lather_sources');
+  });
+
+  describe('ls_castor_no_lather', () => {
+    it('notes castor gives little lather in LS (ricinoleic proxy)', () => {
+      expect(
+        analyzeFormulation({ ...ls, fattyAcids: { ricinoleic: 6, oleic: 50 } }).map((i) => i.code),
+      ).toContain('ls_castor_no_lather');
+    });
+
+    it('does not fire below the ricinoleic threshold', () => {
+      expect(
+        analyzeFormulation({ ...ls, fattyAcids: { ricinoleic: 3, oleic: 50 } }).map((i) => i.code),
+      ).not.toContain('ls_castor_no_lather');
+    });
+
+    it('does not fire the ricinoleic branch below the fatty-acid coverage gate', () => {
+      expect(
+        analyzeFormulation({
+          ...ls,
+          fattyAcidCoveragePercent: 50,
+          fattyAcids: { ricinoleic: 6, oleic: 50 },
+        }).map((i) => i.code),
+      ).not.toContain('ls_castor_no_lather');
+    });
+
+    it('fires on castor-oil identity alone, with no fatty-acid data at all', () => {
+      expect(
+        analyzeFormulation({
+          ...ls,
+          fattyAcids: null,
+          oilEntries: [{ oilId: 'castor-oil', name: 'Castor oil' }],
+        }).map((i) => i.code),
+      ).toContain('ls_castor_no_lather');
+    });
+
+    it('does not fire for CP even with castor present', () => {
+      expect(
+        analyzeFormulation({
+          ...ls,
+          isLiquidSoap: false,
+          fattyAcids: { ricinoleic: 6, oleic: 50 },
+        }).map((i) => i.code),
+      ).not.toContain('ls_castor_no_lather');
+    });
+  });
+
+  describe('ls_dual_lye_recommendation', () => {
+    it('recommends ~30% NaOH for coconut-heavy LS (always, even pure KOH)', () => {
+      const i = analyzeFormulation({
+        ...ls,
+        lyeType: 'koh',
+        fattyAcids: { lauric: 45, myristic: 12 },
+      }).find((x) => x.code === 'ls_dual_lye_recommendation');
+      expect(i?.message).toMatch(/30%/);
+    });
+
+    it('recommends ~30% NaOH for coconut-heavy LS with dual lye too', () => {
+      const i = analyzeFormulation({
+        ...ls,
+        lyeType: 'dual',
+        fattyAcids: { lauric: 45, myristic: 12 },
+      }).find((x) => x.code === 'ls_dual_lye_recommendation');
+      expect(i?.message).toMatch(/30%/);
+    });
+
+    it('stays silent for pure-KOH low-P+S recipes (no nagging)', () => {
+      const codes = analyzeFormulation({
+        ...ls,
+        lyeType: 'koh',
+        fattyAcids: { oleic: 70, palmitic: 5, stearic: 3 },
+      }).map((i) => i.code);
+      expect(codes).not.toContain('ls_dual_lye_recommendation');
+    });
+
+    it('recommends 0–20% NaOH only once already dual-lye and low P+S', () => {
+      const dual = analyzeFormulation({
+        ...ls,
+        lyeType: 'dual',
+        fattyAcids: { oleic: 70, palmitic: 5, stearic: 3 },
+      }).find((x) => x.code === 'ls_dual_lye_recommendation');
+      expect(dual?.message).toMatch(/0.?20%|20%/);
+    });
+
+    it('stays silent when P+S is above 15% and lye is not coconut-heavy, regardless of lye type', () => {
+      const codes = analyzeFormulation({
+        ...ls,
+        lyeType: 'dual',
+        fattyAcids: { oleic: 40, palmitic: 20, stearic: 10 },
+      }).map((i) => i.code);
+      expect(codes).not.toContain('ls_dual_lye_recommendation');
+    });
+
+    it('does not fire for CP even with a coconut-heavy profile', () => {
+      const codes = analyzeFormulation({
+        ...ls,
+        isLiquidSoap: false,
+        fattyAcids: { lauric: 45, myristic: 12 },
+      }).map((i) => i.code);
+      expect(codes).not.toContain('ls_dual_lye_recommendation');
+    });
+
+    it('does not fire below the fatty-acid coverage gate', () => {
+      const codes = analyzeFormulation({
+        ...ls,
+        fattyAcidCoveragePercent: 50,
+        fattyAcids: { lauric: 45, myristic: 12 },
+      }).map((i) => i.code);
+      expect(codes).not.toContain('ls_dual_lye_recommendation');
+    });
+  });
+});
