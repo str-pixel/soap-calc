@@ -78,6 +78,23 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
+  // Caustic-bar guard (NaOH bar soap only). At 0% superfat the lye is set to exactly
+  // match the oils, leaving no unsaponified-oil buffer, so real variation in an oil's
+  // SAP value or a small scale error goes straight into free lye — a harsh/caustic bar.
+  // Liquid soap (KOH) is exempt: it legitimately runs at/below 0% and is neutralized
+  // after cook. Behavior-only copy; no fixed "minimum safe %" is asserted (only the
+  // no-buffer case is a clear, grounded hazard).
+  if (input.lyeGrams > 0 && !input.isLiquidSoap && input.superfatPercent <= 0) {
+    insights.push({
+      level: 'warning',
+      code: 'no_superfat_margin',
+      message:
+        '0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — ' +
+        'normal variation in oil SAP values or a small scale error then leaves free lye, which can ' +
+        'make the bar harsh or caustic. Most bar recipes keep a few percent superfat.',
+    });
+  }
+
   if (input.lyeConcentrationPercent > 0 && !input.isLiquidSoap) {
     if (input.lyeConcentrationPercent < 20) {
       insights.push({
