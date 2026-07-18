@@ -8,8 +8,11 @@ import {
   computeRecipeAdditives,
   computeSplitLiquidGrams,
 } from '../lib/calculateAdditives';
+import { estimateCure, labelWeightGrams } from '../lib/cureEstimate';
+import type { CureEstimate } from '../lib/cureEstimate';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
+import { isProcessVariantId, processProfileById } from '../lib/processProfile';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import type { RecipeCalculation } from '../lib/calculateRecipe';
@@ -62,6 +65,8 @@ export type RecipeViewModel = {
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
+  cureEstimate: CureEstimate | null;
+  labelWeight: number | null;
 };
 
 export function useRecipeViewModel({
@@ -258,6 +263,13 @@ export function useRecipeViewModel({
     pcsfIsExtra,
   );
   const batchWeightWithExtras = baseBatchGrams + extrasGrams;
+  // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
+  // see coerceSettingsForProcess) before resolving the profile.
+  const profile = isProcessVariantId(settings.processVariant)
+    ? processProfileById(settings.processVariant)
+    : null;
+  const cureEstimate = profile ? estimateCure(profile) : null;
+  const labelWeight = profile ? labelWeightGrams(batchWeightWithExtras, profile.waterLossPercent) : null;
   const liveOilBatchFraction = useMemo(() => {
     if (!displayTotals || batchWeightWithExtras <= 0) return null;
     return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);
@@ -347,5 +359,7 @@ export function useRecipeViewModel({
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,
+    cureEstimate,
+    labelWeight,
   };
 }

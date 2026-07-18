@@ -4,6 +4,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { ResultsPanel } from './ResultsPanel';
 import { calculateRecipe } from '../lib/calculateRecipe';
 import { createStarterLines, DEFAULT_SETTINGS } from '../lib/recipe';
+import { formatWeight } from '../lib/weightUnits';
 
 afterEach(cleanup);
 
@@ -166,4 +167,68 @@ test('with no postCookSuperfat, no PCSF line or total-superfat line renders', ()
     />,
   );
   expect(screen.queryByText('Total superfat')).toBeNull();
+});
+
+test('HP shows a usable-at-unmold cure window', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="hp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={batchWeightWithExtras}
+      cureEstimate={{ minWeeks: 3, maxWeeks: 4, usableAtUnmold: true }}
+      labelWeight={batchWeightWithExtras}
+    />,
+  );
+  expect(screen.getByText(/3–4 weeks/)).toBeTruthy();
+  expect(screen.getByText(/usable at unmold/i)).toBeTruthy();
+});
+
+test('CP shows a 4+ week cure and a reduced label weight', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={batchWeightWithExtras}
+      cureEstimate={{ minWeeks: 4, usableAtUnmold: false }}
+      labelWeight={batchWeightWithExtras * 0.85}
+    />,
+  );
+  expect(screen.getByText(/4\+ weeks/)).toBeTruthy();
+  expect(screen.queryByText(/usable at unmold/i)).toBeNull();
+  expect(screen.getByText(formatWeight(batchWeightWithExtras * 0.85, 'g'))).toBeTruthy();
+});
+
+test('LS with zero water loss shows the sequester window but no separate label-weight line', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="KOH"
+      process="ls"
+      lyeType="koh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={batchWeightWithExtras}
+      cureEstimate={{ minWeeks: 1, maxWeeks: 4, usableAtUnmold: false }}
+      labelWeight={batchWeightWithExtras}
+    />,
+  );
+  expect(screen.getByText(/1–4 weeks/)).toBeTruthy();
+  expect(screen.queryByText(/Label weight/i)).toBeNull();
 });

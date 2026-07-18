@@ -211,6 +211,8 @@ export default function App() {
             pcsfIsExtra={vm.pcsfIsExtra}
             extrasGrams={vm.extrasGrams}
             batchWeightWithExtras={vm.batchWeightWithExtras}
+            cureEstimate={vm.cureEstimate}
+            labelWeight={vm.labelWeight}
           />
 
           {process === 'ls' && (
