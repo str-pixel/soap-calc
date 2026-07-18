@@ -1,10 +1,19 @@
 /** @vitest-environment jsdom */
 import { describe, expect, it } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { DEFAULT_SETTINGS, DEFAULT_SPLIT_LIQUID, newLineKey, type RecipeLine } from '../lib/recipe';
+import {
+  DEFAULT_SETTINGS,
+  DEFAULT_SPLIT_LIQUID,
+  newAdditiveKey,
+  newLineKey,
+  type AdditiveLine,
+  type RecipeLine,
+} from '../lib/recipe';
+import { computeRecipeAdditives } from '../lib/calculateAdditives';
 import { useRecipeProperties } from './useRecipeProperties';
 import { useRecipeCalculation } from './useRecipeCalculation';
 import {
+  hpYogurtPercentForInsights,
   postCookSuperfatPufaPercent,
   totalAdditivePercentForInsights,
   useFormulationInsights,
@@ -30,6 +39,35 @@ describe('totalAdditivePercentForInsights', () => {
     expect(
       totalAdditivePercentForInsights([{ grams: 30 }, { grams: 3 }], 1000, { ...DEFAULT_SPLIT_LIQUID }),
     ).toBeCloseTo(3.3); // (30+3)/1000*100
+  });
+});
+
+describe('hpYogurtPercentForInsights', () => {
+  it('sums grams from yogurt-matching lines as a percent of oil weight', () => {
+    expect(
+      hpYogurtPercentForInsights(
+        [{ catalogId: 'yogurt', name: 'Yogurt', grams: 60 }],
+        1000,
+      ),
+    ).toBe(6);
+  });
+
+  it('matches a custom-named yogurt line by keyword, not just catalog id', () => {
+    expect(
+      hpYogurtPercentForInsights(
+        [{ catalogId: 'custom', name: 'Greek yogurt', grams: 40 }],
+        1000,
+      ),
+    ).toBe(4);
+  });
+
+  it('ignores non-yogurt lines and returns 0 with no oil weight', () => {
+    expect(
+      hpYogurtPercentForInsights([{ catalogId: 'honey', name: 'Honey', grams: 20 }], 1000),
+    ).toBe(0);
+    expect(
+      hpYogurtPercentForInsights([{ catalogId: 'yogurt', name: 'Yogurt', grams: 20 }], 0),
+    ).toBe(0);
   });
 });
 
@@ -112,5 +150,90 @@ describe('useFormulationInsights trace-speed wiring', () => {
     const { result } = renderHook(() => useTraceSpeedTestHarness(lowCoverageLines));
     const codes = result.current.insights.map((i) => i.code);
     expect(codes).not.toContain('trace_speed');
+  });
+});
+
+function saltLine(): AdditiveLine {
+  return {
+    key: newAdditiveKey(),
+    catalogId: 'salt',
+    name: 'Table salt (NaCl)',
+    amount: '0.5',
+    basis: 'oil',
+    unit: 'percent',
+    addAt: 'lye',
+  };
+}
+
+function yogurtLine(percent: string): AdditiveLine {
+  return {
+    key: newAdditiveKey(),
+    catalogId: 'yogurt',
+    name: 'Yogurt',
+    amount: percent,
+    basis: 'oil',
+    unit: 'percent',
+    addAt: 'after_cook',
+  };
+}
+
+// Composes the same hooks useRecipeViewModel wires together, with `process` and the
+// resulting additive grams threaded into useFormulationInsights exactly as the view model
+// does — exercises Step 0/5's real wiring (process discriminator + hpYogurtPercent) rather
+// than hand-building a FormulationAnalysisInput.
+function useProcessWiringHarness(
+  lines: RecipeLine[],
+  process: 'cp' | 'hp' | 'ls',
+  additiveLines: AdditiveLine[] = [],
+) {
+  const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
+  const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, process);
+  const additives = result
+    ? computeRecipeAdditives(additiveLines, {
+        oilGrams: result.totalOilWeightGrams,
+        batchGrams: result.totalOilWeightGrams,
+        solutionGrams: result.totalOilWeightGrams,
+      })
+    : [];
+  return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
+    additives,
+    process,
+    isLiquidSoap: process === 'ls',
+  });
+}
+
+describe('useFormulationInsights HP process wiring (Step 0 + Step 5)', () => {
+  const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+
+  it('fires hp_thick_phase_suppressant for an HP recipe carrying salt', () => {
+    const { result } = renderHook(() => useProcessWiringHarness(lines, 'hp', [saltLine()]));
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).toContain('hp_thick_phase_suppressant');
+  });
+
+  it('does NOT fire hp_thick_phase_suppressant for the same salt line on a CP recipe (gating regression)', () => {
+    // This is the exact bug the process discriminator prevents: CP is also
+    // !isLiquidSoap, so a gate written as !isLiquidSoap would wrongly fire here too.
+    const { result } = renderHook(() => useProcessWiringHarness(lines, 'cp', [saltLine()]));
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).not.toContain('hp_thick_phase_suppressant');
+  });
+
+  it('fires hp_yogurt_water end-to-end for an HP recipe with a >5% yogurt line', () => {
+    const { result } = renderHook(() => useProcessWiringHarness(lines, 'hp', [yogurtLine('6')]));
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).toContain('hp_yogurt_water');
+  });
+
+  it('does not fire hp_yogurt_water for an HP recipe with a 4% yogurt line (boundary)', () => {
+    const { result } = renderHook(() => useProcessWiringHarness(lines, 'hp', [yogurtLine('4')]));
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).not.toContain('hp_yogurt_water');
+  });
+
+  it('does not compute or fire hp_yogurt_water for a CP recipe with the same yogurt line', () => {
+    const { result } = renderHook(() => useProcessWiringHarness(lines, 'cp', [yogurtLine('6')]));
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).not.toContain('hp_yogurt_water');
   });
 });

@@ -56,7 +56,10 @@ describe('AdditivesPanel catalog picker', () => {
     );
     const select = screen.getByLabelText('Additive type');
     const renderedIds = optionValues(select).filter((v) => v !== '');
-    for (const entry of ADDITIVE_CATALOG) {
+    // Unscoped entries only — process-scoped entries (e.g. HP's stearic/lauric/yogurt)
+    // are correctly absent from the CP picker; that's the scoping feature working, not
+    // a regression this test should catch.
+    for (const entry of ADDITIVE_CATALOG.filter((e) => !e.processes)) {
       expect(renderedIds).toContain(entry.id);
     }
   });

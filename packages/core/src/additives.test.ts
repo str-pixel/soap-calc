@@ -80,6 +80,42 @@ describe('additive catalog process scoping', () => {
     const cp = catalogEntriesForProcess('cp');
     expect(cp.some((e) => e.id === 'sugar-sorbitol')).toBe(true);
   });
+
+  it('offers stearic, lauric, and yogurt only for HP', () => {
+    const hp = catalogEntriesForProcess('hp').map((e) => e.id);
+    expect(hp).toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
+
+    const cp = catalogEntriesForProcess('cp').map((e) => e.id);
+    expect(cp).not.toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
+    const ls = catalogEntriesForProcess('ls').map((e) => e.id);
+    expect(ls).not.toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
+  });
+
+  it('doses stearic and lauric as oils at 5–8%', () => {
+    const stearic = catalogEntryById('stearic');
+    const lauric = catalogEntryById('lauric');
+    for (const entry of [stearic, lauric]) {
+      expect(entry).toBeDefined();
+      expect(entry?.defaultStage).toBe('oils');
+      expect(entry?.typicalLow).toBe(5);
+      expect(entry?.typicalHigh).toBe(8);
+    }
+  });
+
+  it('doses yogurt after cook at 2–5%', () => {
+    const yogurt = catalogEntryById('yogurt');
+    expect(yogurt).toBeDefined();
+    expect(yogurt?.defaultStage).toBe('after_cook');
+    expect(yogurt?.typicalLow).toBe(2);
+    expect(yogurt?.typicalHigh).toBe(5);
+  });
+
+  it('keeps salt, sodium-lactate, sugar, and eugenol unscoped (reused across processes)', () => {
+    for (const id of ['salt', 'sodium-lactate', 'sugar-sorbitol', 'eugenol']) {
+      const entry = catalogEntryById(id);
+      expect(entry?.processes).toBeUndefined();
+    }
+  });
 });
 
 describe('parseDoseAmount', () => {

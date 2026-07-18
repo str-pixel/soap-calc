@@ -139,6 +139,35 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 5,
     defaultStage: 'oils',
   },
+  {
+    // Stearic acid — added "as oils" to a fluid-HP cook to help build the thick, translucent
+    // trace phase. HP-only: a CP or LS bar/liquid has no equivalent use for this in the catalog.
+    id: 'stearic',
+    name: 'Stearic acid',
+    typicalLow: 5,
+    typicalHigh: 8,
+    defaultStage: 'oils',
+    processes: ['hp'],
+  },
+  {
+    // Lauric acid — added "as oils" alongside stearic in a fluid-HP cook, same rationale.
+    id: 'lauric',
+    name: 'Lauric acid',
+    typicalLow: 5,
+    typicalHigh: 8,
+    defaultStage: 'oils',
+    processes: ['hp'],
+  },
+  {
+    // Yogurt — stirred in after cook/dilution in fluid HP; its water content deducts from
+    // the recipe's lye water, so it is dosed after the cook rather than into the oils/lye.
+    id: 'yogurt',
+    name: 'Yogurt',
+    typicalLow: 2,
+    typicalHigh: 5,
+    defaultStage: 'after_cook',
+    processes: ['hp'],
+  },
 ] as const;
 
 /** Entries offered for a given process: unscoped entries (no `processes`) apply to all

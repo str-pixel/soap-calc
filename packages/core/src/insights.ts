@@ -51,6 +51,13 @@ export type FormulationAnalysisInput = {
   /** True for liquid-soap (KOH) recipes; gates LS-specific insights and exempts LS from the
    * bar-soap lye-concentration warnings. */
   isLiquidSoap?: boolean;
+  /** The recipe's process. Unlike {@link isLiquidSoap} (which only distinguishes LS from
+   * everything else), this discriminates CP from HP too — HP-only insights must gate on
+   * `process === 'hp'`, since `!isLiquidSoap` is also true for CP and would wrongly include it. */
+  process?: 'cp' | 'hp' | 'ls';
+  /** Yogurt additive line's percent of oil weight (grams / totalOilGrams × 100); HP only —
+   * its water content deducts from the recipe's lye water when stirred in after cook. */
+  hpYogurtPercent?: number;
   /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
   waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
   /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
@@ -378,6 +385,52 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       message:
         'Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%.',
     });
+  }
+
+  // HP-only insights. Gated on the explicit process discriminator, never on !isLiquidSoap —
+  // isLiquidSoap only distinguishes LS from "everything else" and is also false for CP, so
+  // a !isLiquidSoap gate would wrongly include CP bars here.
+  if (input.process === 'hp') {
+    if (
+      additiveMatches(additiveEntries, 'salt', 'salt') ||
+      additiveMatches(additiveEntries, 'sodium-lactate', 'sodium lactate')
+    ) {
+      insights.push({
+        level: 'info',
+        code: 'hp_thick_phase_suppressant',
+        message:
+          'Salt or sodium lactate suppresses the thick, translucent "mashed potato" middle phase of a hot-process cook — expect a smoother, faster transition through cook.',
+      });
+    }
+
+    if (input.hpYogurtPercent !== undefined && input.hpYogurtPercent > 5) {
+      insights.push({
+        level: 'warning',
+        code: 'hp_yogurt_water',
+        message:
+          'Yogurt above ~5% of oil weight deducts meaningfully from the lye water — check the cooked soap stays fluid enough to fold in additives and pour.',
+      });
+    }
+
+    // Ricinoleic is a fatty-acid reading, so it needs the same low-coverage gate the other
+    // FA-derived insights use above. Shea is an oil-identity check (recipeOilMatches), not
+    // an FA reading, so it fires independent of fatty-acid coverage — same pattern as the
+    // jojoba oil-identity insight elsewhere in this file.
+    const ricinoleic = input.fattyAcids?.ricinoleic ?? 0;
+    const hasElevatedCastor =
+      ricinoleic >= 10 && (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+    const hasShea = recipeOilMatches(input.oilEntries, {
+      oilIds: ['shea-butter', 'shea-oil-fractionated'],
+      nameKeyword: 'shea',
+    });
+    if (hasElevatedCastor || hasShea) {
+      insights.push({
+        level: 'info',
+        code: 'hp_relaxed_caps',
+        message:
+          'Fluid HP tolerates higher castor (about 10–15%) and shea (about 30–40%) than a typical CP bar — the hot cook and post-cook additions give more working room before trace or texture become unworkable.',
+      });
+    }
   }
 
   // Any negative superfat leaves free alkali in the finished soap, whatever the process or

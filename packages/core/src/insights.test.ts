@@ -280,3 +280,119 @@ describe('trace-speed insight', () => {
     expect(withUndefined?.message).not.toContain('Driven by');
   });
 });
+
+describe('HP-gated insights (process discriminator)', () => {
+  it('hp_thick_phase_suppressant fires for HP + salt additive', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_thick_phase_suppressant');
+  });
+
+  it('hp_thick_phase_suppressant fires for HP + sodium-lactate additive', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      additiveEntries: [{ catalogId: 'sodium-lactate', name: 'Sodium lactate' }],
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_thick_phase_suppressant');
+  });
+
+  it('does NOT fire hp_thick_phase_suppressant for a CP recipe carrying salt (gating regression)', () => {
+    // This is the exact gap the process discriminator exists to close: !isLiquidSoap
+    // would wrongly include CP here. CP recipes never pass isLiquidSoap, so a check
+    // gated only on !isLiquidSoap would fire for CP too — process:'cp' must suppress it.
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'cp',
+      isLiquidSoap: false,
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_thick_phase_suppressant');
+  });
+
+  it('does not fire hp_thick_phase_suppressant for HP without salt/sodium-lactate', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      additiveEntries: [{ catalogId: 'honey', name: 'Honey' }],
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_thick_phase_suppressant');
+  });
+
+  it('hp_yogurt_water warns above 5% (boundary: 6 fires, 4 does not)', () => {
+    const above = analyzeFormulation({ ...base, process: 'hp', hpYogurtPercent: 6 }).map(
+      (i) => i.code,
+    );
+    const below = analyzeFormulation({ ...base, process: 'hp', hpYogurtPercent: 4 }).map(
+      (i) => i.code,
+    );
+    expect(above).toContain('hp_yogurt_water');
+    expect(below).not.toContain('hp_yogurt_water');
+  });
+
+  it('does not fire hp_yogurt_water for CP even above 5%', () => {
+    const codes = analyzeFormulation({ ...base, process: 'cp', hpYogurtPercent: 6 }).map(
+      (i) => i.code,
+    );
+    expect(codes).not.toContain('hp_yogurt_water');
+  });
+
+  it('hp_relaxed_caps fires for HP + elevated castor (ricinoleic proxy >= 10%)', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      fattyAcids: { ricinoleic: 12 },
+      fattyAcidCoveragePercent: 90,
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_relaxed_caps');
+  });
+
+  it('hp_relaxed_caps fires for HP + shea present, even with low castor', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      fattyAcids: { ricinoleic: 0 },
+      fattyAcidCoveragePercent: 90,
+      oilEntries: [{ oilId: 'shea-butter', name: 'Shea butter' }],
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_relaxed_caps');
+  });
+
+  it('does not fire hp_relaxed_caps below the low fatty-acid coverage gate', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      fattyAcids: { ricinoleic: 12 },
+      fattyAcidCoveragePercent: 50,
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_relaxed_caps');
+  });
+
+  it('does not fire any HP insight for CP or LS even with the same triggers present', () => {
+    const cpCodes = analyzeFormulation({
+      ...base,
+      process: 'cp',
+      hpYogurtPercent: 8,
+      fattyAcids: { ricinoleic: 15 },
+      fattyAcidCoveragePercent: 90,
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+    }).map((i) => i.code);
+    const lsCodes = analyzeFormulation({
+      ...base,
+      process: 'ls',
+      isLiquidSoap: true,
+      hpYogurtPercent: 8,
+      fattyAcids: { ricinoleic: 15 },
+      fattyAcidCoveragePercent: 90,
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+    }).map((i) => i.code);
+    for (const codes of [cpCodes, lsCodes]) {
+      expect(codes).not.toContain('hp_thick_phase_suppressant');
+      expect(codes).not.toContain('hp_yogurt_water');
+      expect(codes).not.toContain('hp_relaxed_caps');
+    }
+  });
+});
