@@ -182,7 +182,7 @@ test('HP shows a usable-at-unmold cure window', () => {
       displayTotals={displayTotals}
       weightUnit="g"
       batchWeightWithExtras={batchWeightWithExtras}
-      cureEstimate={{ minWeeks: 3, maxWeeks: 4, usableAtUnmold: true }}
+      cureEstimate={{ minWeeks: 3, maxWeeks: 4, usableAtUnmold: true, finishingLabel: 'Cure' }}
       labelWeight={batchWeightWithExtras}
     />,
   );
@@ -203,7 +203,7 @@ test('CP shows a 4+ week cure and a reduced label weight', () => {
       displayTotals={displayTotals}
       weightUnit="g"
       batchWeightWithExtras={batchWeightWithExtras}
-      cureEstimate={{ minWeeks: 4, usableAtUnmold: false }}
+      cureEstimate={{ minWeeks: 4, usableAtUnmold: false, finishingLabel: 'Cure' }}
       labelWeight={batchWeightWithExtras * 0.85}
     />,
   );
@@ -211,6 +211,32 @@ test('CP shows a 4+ week cure and a reduced label weight', () => {
   expect(screen.queryByText(/usable at unmold/i)).toBeNull();
   expect(screen.getByText(/est\. label weight/i)).toBeTruthy();
   expect(screen.getByText(formatWeight(batchWeightWithExtras * 0.85, 'g'))).toBeTruthy();
+});
+
+test('cure line and label-weight text are single-sourced from cureEstimate, not the process prop', () => {
+  // A transient variant/process mismatch: process prop says "cp" (Cure) but the resolved
+  // profile (and thus cureEstimate) is an LS variant (Sequester). The cure window /
+  // usableAtUnmold already come from the profile, so the finish label must agree with
+  // them rather than the stale/mismatched process prop (#2).
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={batchWeightWithExtras}
+      cureEstimate={{ minWeeks: 1, maxWeeks: 4, usableAtUnmold: false, finishingLabel: 'Sequester' }}
+      labelWeight={batchWeightWithExtras * 0.85}
+    />,
+  );
+  expect(screen.getByText(/Sequester \(est\.\)/)).toBeTruthy();
+  expect(screen.queryByText(/^Cure \(est\.\)/)).toBeNull();
+  expect(screen.getByText(/after sequester/i)).toBeTruthy();
 });
 
 test('LS with zero water loss shows the sequester window but no separate label-weight line', () => {
@@ -226,7 +252,7 @@ test('LS with zero water loss shows the sequester window but no separate label-w
       displayTotals={displayTotals}
       weightUnit="g"
       batchWeightWithExtras={batchWeightWithExtras}
-      cureEstimate={{ minWeeks: 1, maxWeeks: 4, usableAtUnmold: false }}
+      cureEstimate={{ minWeeks: 1, maxWeeks: 4, usableAtUnmold: false, finishingLabel: 'Sequester' }}
       labelWeight={batchWeightWithExtras}
     />,
   );

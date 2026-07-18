@@ -79,18 +79,27 @@ export function useFormulationInsights(
       catalogId: item.catalogId,
       name: item.name,
     }));
+    // Trace speed is a CP/HP soaping concern gated behind the same low-coverage check the
+    // label itself is withheld on below — computing it (and the additive-keyword scan that
+    // feeds it) for liquid soap or under low fatty-acid coverage is pure waste, since the
+    // result is always discarded in that case (#5).
+    const traceSpeedApplicable =
+      !options.isLiquidSoap && fattyAcids.coveragePercent >= LOW_COVERAGE_PERCENT;
     // Sugar-family accelerators speed up trace; keyword-match (not just today's catalog
     // ids) so a later wave adding sorbitol/yogurt as their own catalog entries is caught
     // without touching this hook again.
     const hasAcceleratingAdditive =
-      additiveMatches(additiveEntries, 'sugar', 'sugar') ||
-      additiveMatches(additiveEntries, 'sorbitol', 'sorbitol') ||
-      additiveMatches(additiveEntries, 'honey', 'honey') ||
-      additiveMatches(additiveEntries, 'yogurt', 'yogurt');
-    const traceSpeed = estimateTraceSpeed({
-      fattyAcids: fattyAcids.profile,
-      hasAcceleratingAdditive,
-    });
+      traceSpeedApplicable &&
+      (additiveMatches(additiveEntries, 'sugar', 'sugar') ||
+        additiveMatches(additiveEntries, 'sorbitol', 'sorbitol') ||
+        additiveMatches(additiveEntries, 'honey', 'honey') ||
+        additiveMatches(additiveEntries, 'yogurt', 'yogurt'));
+    const traceSpeed = traceSpeedApplicable
+      ? estimateTraceSpeed({
+          fattyAcids: fattyAcids.profile,
+          hasAcceleratingAdditive,
+        })
+      : null;
     return analyzeFormulation({
       properties: properties.properties,
       fattyAcids: fattyAcids.profile,
@@ -121,11 +130,11 @@ export function useFormulationInsights(
       waterBand,
       // At partial fatty-acid coverage the renormalized profile (and thus the predicted
       // trace speed derived from it) is unrepresentative — withhold the label rather than
-      // let analyzeFormulation surface it as a confident reading.
-      traceSpeedLabel:
-        !options.isLiquidSoap && fattyAcids.coveragePercent >= LOW_COVERAGE_PERCENT
-          ? traceSpeed?.label
-          : undefined,
+      // let analyzeFormulation surface it as a confident reading. traceSpeed is already
+      // null when not applicable (see traceSpeedApplicable above), so both fields are
+      // naturally undefined together in that case.
+      traceSpeedLabel: traceSpeed?.label,
+      traceSpeedDrivers: traceSpeed?.drivers,
     });
   }, [
     fattyAcids.profile,

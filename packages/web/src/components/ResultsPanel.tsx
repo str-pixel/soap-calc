@@ -117,7 +117,11 @@ export const ResultsPanel = memo(function ResultsPanel({
   const totalLiquidGrams = result.waterWeightGrams + (splitLiquidGrams ?? 0);
   const cookSuperfatPercent = Number(superfatPercent) || 0;
   const totalSuperfatPercent = cookSuperfatPercent + (postCookSuperfat?.percentOfOil ?? 0);
-  const finishingLabel = PROCESS_DEFINITIONS[process].terms.finishingLabel;
+  // Single-sourced from cureEstimate (itself derived from the view model's resolved
+  // process-variant profile), not the `process` prop — the cure window / usableAtUnmold
+  // already come from that profile, so under a transient variant/process mismatch the
+  // finish label must agree with them rather than the prop (#2).
+  const finishingLabel = cureEstimate?.finishingLabel ?? PROCESS_DEFINITIONS[process].terms.finishingLabel;
   // LS's waterLossPercent is 0 (dilution, not evaporation), so its labelWeight equals
   // batchWeightWithExtras — only show a separate label-weight line when cure/sequester
   // actually sheds water.

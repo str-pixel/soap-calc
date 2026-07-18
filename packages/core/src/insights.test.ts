@@ -236,4 +236,28 @@ describe('trace-speed insight', () => {
     }).map((i) => i.code);
     expect(codes).not.toContain('trace_speed');
   });
+
+  it('appends the drivers when supplied alongside the label', () => {
+    const results = analyzeFormulation({
+      ...base,
+      traceSpeedLabel: 'fast',
+      traceSpeedDrivers: ['high saturated fats', 'sugar additive'],
+    });
+    const insight = results.find((i) => i.code === 'trace_speed');
+    expect(insight?.message).toContain('Driven by: high saturated fats, sugar additive.');
+  });
+
+  it('omits the drivers clause when the drivers list is empty or absent', () => {
+    const withEmpty = analyzeFormulation({
+      ...base,
+      traceSpeedLabel: 'moderate',
+      traceSpeedDrivers: [],
+    }).find((i) => i.code === 'trace_speed');
+    const withUndefined = analyzeFormulation({
+      ...base,
+      traceSpeedLabel: 'moderate',
+    }).find((i) => i.code === 'trace_speed');
+    expect(withEmpty?.message).not.toContain('Driven by');
+    expect(withUndefined?.message).not.toContain('Driven by');
+  });
 });

@@ -268,8 +268,21 @@ export function useRecipeViewModel({
   const profile = isProcessVariantId(settings.processVariant)
     ? processProfileById(settings.processVariant)
     : null;
-  const cureEstimate = profile ? estimateCure(profile) : null;
-  const labelWeight = profile ? labelWeightGrams(batchWeightWithExtras, profile.waterLossPercent) : null;
+  // processProfileById returns a stable module-level object per variant, so `profile` is
+  // referentially stable across renders — memoizing on it (rather than recomputing inline
+  // every render) keeps these two objects/values stable too, which matters because
+  // ResultsPanel is React.memo'd and a fresh object each render would defeat that memo (#1).
+  const cureEstimate = useMemo(() => (profile ? estimateCure(profile) : null), [profile]);
+  // Only the water-bearing base batter evaporates over cure — after-cook extras (fragrance,
+  // PCSF oil, additives) don't lose water, so the loss is computed off baseBatchGrams and
+  // subtracted from the full batch weight (#6).
+  const labelWeight = useMemo(
+    () =>
+      profile
+        ? labelWeightGrams(batchWeightWithExtras, baseBatchGrams, profile.waterLossPercent)
+        : null,
+    [profile, batchWeightWithExtras, baseBatchGrams],
+  );
   const liveOilBatchFraction = useMemo(() => {
     if (!displayTotals || batchWeightWithExtras <= 0) return null;
     return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);

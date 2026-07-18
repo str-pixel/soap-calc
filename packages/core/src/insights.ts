@@ -56,6 +56,10 @@ export type FormulationAnalysisInput = {
   /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
    * callers pass undefined for liquid soap. */
   traceSpeedLabel?: 'slow' | 'moderate' | 'fast';
+  /** The specific factors {@link estimateTraceSpeed} weighed to reach traceSpeedLabel
+   * (e.g. "high saturated fats", "castor / ricinoleic"). Gated the same as the label —
+   * callers should only pass this when traceSpeedLabel is also emitted. */
+  traceSpeedDrivers?: string[];
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -109,6 +113,11 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   ) {
     const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
     const { lowTier, highTier, riversAbove } = input.waterBand;
+    // CP's band has highTier[1]=40 extending past riversAbove=38 by design — both are
+    // verified source constants (see processProfile.ts). This rivers check runs first, so
+    // 38–40% (nominally the top of the high tier) always resolves to water_band_rivers,
+    // never water_band_between_tiers/below_low — the rivers warning correctly wins the
+    // overlap.
     if (waterPercentOfOils > riversAbove) {
       insights.push({
         level: 'warning',
@@ -334,10 +343,14 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         : input.traceSpeedLabel === 'slow'
           ? 'Expect a slow trace — this batter stays fluid, giving time for swirls and intricate pours.'
           : 'A moderate trace — comfortable working time for most techniques.';
+    const driversClause =
+      input.traceSpeedDrivers && input.traceSpeedDrivers.length > 0
+        ? ` Driven by: ${input.traceSpeedDrivers.join(', ')}.`
+        : '';
     insights.push({
       level: 'info',
       code: 'trace_speed',
-      message: `Predicted trace speed: ${input.traceSpeedLabel}. ${tip}`,
+      message: `Predicted trace speed: ${input.traceSpeedLabel}. ${tip}${driversClause}`,
     });
   }
 

@@ -74,6 +74,15 @@ describe('useFormulationInsights trace-speed wiring', () => {
     expect(insight!.message).toContain('fast');
   });
 
+  it('end-to-end wires the trace-speed drivers into the insight message', () => {
+    // hardLines' saturated fat share is well above 30, so estimateTraceSpeed's
+    // 'high saturated fats' driver fires and must reach the rendered message (#4).
+    const { result } = renderHook(() => useTraceSpeedTestHarness(hardLines));
+    const insight = result.current.insights.find((i) => i.code === 'trace_speed');
+    expect(insight!.message).toContain('Driven by:');
+    expect(insight!.message).toContain('high saturated fats');
+  });
+
   it('predicts a slow trace for an olive-dominant CP recipe', () => {
     const { result } = renderHook(() => useTraceSpeedTestHarness(oliveLines));
     const insight = result.current.insights.find((i) => i.code === 'trace_speed');

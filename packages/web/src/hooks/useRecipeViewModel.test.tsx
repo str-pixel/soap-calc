@@ -9,6 +9,7 @@ import {
   type RecipeSettings,
 } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
+import { processProfileById } from '../lib/processProfile';
 
 afterEach(cleanup);
 
@@ -165,6 +166,34 @@ test('batch sheet carries the neutralization step for a lye-excess LS recipe', (
   expect(vm.batchSheetData).not.toBeNull();
   expect(vm.batchSheetData.neutralization).toEqual(vm.neutralization);
   expect(vm.batchSheetData.neutralization).not.toBeNull();
+});
+
+test('label weight loses water only from the water-bearing base batch, not after-cook extras (#6)', () => {
+  // HP append-mode PCSF adds real after-cook extra grams (shea butter added post-cook,
+  // never evaporates) on top of the water-bearing base batter.
+  let withPcsf: any;
+  probe(
+    (vm) => { withPcsf = vm; },
+    {
+      processVariant: 'hp-lthp',
+      postCookSuperfatPercent: '5',
+      postCookSuperfatOilId: 'shea-butter',
+      postCookSuperfatMethod: 'append',
+    },
+    'hp',
+  );
+  expect(withPcsf.extrasGrams).toBeGreaterThan(0);
+
+  const profile = processProfileById('hp-lthp'); // hp's default variant
+  const baseBatchGrams = withPcsf.batchWeightWithExtras - withPcsf.extrasGrams;
+  const correctFormula = withPcsf.batchWeightWithExtras - baseBatchGrams * profile.waterLossPercent;
+  // The old (wrong) formula applied the loss fraction to the whole batch, including the
+  // non-evaporating PCSF extra — it always estimates a lower (over-lossy) label weight
+  // whenever extras > 0.
+  const oldWrongFormula = withPcsf.batchWeightWithExtras * (1 - profile.waterLossPercent);
+
+  expect(withPcsf.labelWeight).toBeCloseTo(correctFormula);
+  expect(withPcsf.labelWeight).toBeGreaterThan(oldWrongFormula);
 });
 
 test('LS superfat above 3% raises the ls_superfat_high insight', () => {
