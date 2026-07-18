@@ -63,6 +63,40 @@ describe('AdditivesPanel catalog picker', () => {
       expect(renderedIds).toContain(entry.id);
     }
   });
+
+  it('excludes HP-scoped entries (stearic, lauric, yogurt) from the CP picker', () => {
+    render(
+      <AdditivesPanel
+        additives={[makeLine()]}
+        computed={[makeComputed(makeLine())]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    const select = screen.getByLabelText('Additive type');
+    const renderedIds = optionValues(select).filter((v) => v !== '');
+    expect(renderedIds).not.toContain('stearic');
+    expect(renderedIds).not.toContain('lauric');
+    expect(renderedIds).not.toContain('yogurt');
+  });
+
+  it('includes HP-scoped entries (stearic, lauric, yogurt) in the HP picker', () => {
+    render(
+      <AdditivesPanel
+        additives={[makeLine()]}
+        computed={[makeComputed(makeLine())]}
+        weightUnit="g"
+        process="hp"
+        onChange={() => {}}
+      />,
+    );
+    const select = screen.getByLabelText('Additive type');
+    const renderedIds = optionValues(select).filter((v) => v !== '');
+    expect(renderedIds).toContain('stearic');
+    expect(renderedIds).toContain('lauric');
+    expect(renderedIds).toContain('yogurt');
+  });
 });
 
 describe('AdditivesPanel stage options', () => {
