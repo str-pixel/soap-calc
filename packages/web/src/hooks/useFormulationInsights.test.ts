@@ -1,6 +1,14 @@
+/** @vitest-environment jsdom */
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SPLIT_LIQUID } from '../lib/recipe';
-import { postCookSuperfatPufaPercent, totalAdditivePercentForInsights } from './useFormulationInsights';
+import { renderHook } from '@testing-library/react';
+import { DEFAULT_SETTINGS, DEFAULT_SPLIT_LIQUID, newLineKey, type RecipeLine } from '../lib/recipe';
+import { useRecipeProperties } from './useRecipeProperties';
+import { useRecipeCalculation } from './useRecipeCalculation';
+import {
+  postCookSuperfatPufaPercent,
+  totalAdditivePercentForInsights,
+  useFormulationInsights,
+} from './useFormulationInsights';
 
 describe('totalAdditivePercentForInsights', () => {
   it('excludes split liquid added in lye water', () => {
@@ -31,5 +39,51 @@ describe('postCookSuperfatPufaPercent', () => {
     expect(coconut).toBeDefined();
     expect(coconut!).toBeLessThan(30); // coconut is low-PUFA
     expect(postCookSuperfatPufaPercent('not-an-oil')).toBeUndefined();
+  });
+});
+
+function makeLine(oilId: string, weightGrams: string): RecipeLine {
+  return { key: newLineKey(), oilId, weightGrams };
+}
+
+// Composes the same hooks useRecipeViewModel wires together (properties + fatty acids +
+// lye calc feed useFormulationInsights), so this exercises the real trace-speed wiring
+// end to end rather than hand-building a FormulationAnalysisInput.
+function useTraceSpeedTestHarness(lines: RecipeLine[], isLiquidSoap = false) {
+  const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
+  const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
+  return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
+    isLiquidSoap,
+  });
+}
+
+describe('useFormulationInsights trace-speed wiring', () => {
+  // Hard/saturated CP: tallow + coconut + palm — high lauric/myristic/palmitic/stearic.
+  const hardLines = [
+    makeLine('lard-pig-tallow', '400'),
+    makeLine('coconut-oil-76', '300'),
+    makeLine('palm-oil', '300'),
+  ];
+  // Olive-dominant CP (castile-leaning) — high oleic, low saturated.
+  const oliveLines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+
+  it('predicts a fast trace for a hard/saturated CP recipe', () => {
+    const { result } = renderHook(() => useTraceSpeedTestHarness(hardLines));
+    const insight = result.current.insights.find((i) => i.code === 'trace_speed');
+    expect(insight).toBeDefined();
+    expect(insight!.message).toContain('fast');
+  });
+
+  it('predicts a slow trace for an olive-dominant CP recipe', () => {
+    const { result } = renderHook(() => useTraceSpeedTestHarness(oliveLines));
+    const insight = result.current.insights.find((i) => i.code === 'trace_speed');
+    expect(insight).toBeDefined();
+    expect(insight!.message).toContain('slow');
+  });
+
+  it('omits the trace-speed insight for liquid soap, even with the same fast-trace oils', () => {
+    const { result } = renderHook(() => useTraceSpeedTestHarness(hardLines, true));
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).not.toContain('trace_speed');
   });
 });

@@ -190,3 +190,39 @@ describe('property-score exceptions', () => {
     expect(codes).not.toContain('low_cleansing_expected');
   });
 });
+
+describe('trace-speed insight', () => {
+  it('carries the label and a matching tip in the message', () => {
+    const results = analyzeFormulation({ ...base, traceSpeedLabel: 'fast' });
+    const insight = results.find((i) => i.code === 'trace_speed');
+    expect(insight?.level).toBe('info');
+    expect(insight?.message).toContain('fast');
+    expect(insight?.message).toContain('quick trace');
+  });
+
+  it('emits a slow-trace tip for the slow label', () => {
+    const results = analyzeFormulation({ ...base, traceSpeedLabel: 'slow' });
+    const insight = results.find((i) => i.code === 'trace_speed');
+    expect(insight?.message).toContain('slow trace');
+  });
+
+  it('emits a moderate-trace tip for the moderate label', () => {
+    const results = analyzeFormulation({ ...base, traceSpeedLabel: 'moderate' });
+    const insight = results.find((i) => i.code === 'trace_speed');
+    expect(insight?.message).toContain('moderate trace');
+  });
+
+  it('is absent when no label is provided', () => {
+    const codes = analyzeFormulation({ ...base }).map((i) => i.code);
+    expect(codes).not.toContain('trace_speed');
+  });
+
+  it('is suppressed for liquid soap even when a label is supplied', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      isLiquidSoap: true,
+      traceSpeedLabel: 'fast',
+    }).map((i) => i.code);
+    expect(codes).not.toContain('trace_speed');
+  });
+});

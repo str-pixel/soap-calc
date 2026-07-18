@@ -53,6 +53,9 @@ export type FormulationAnalysisInput = {
   isLiquidSoap?: boolean;
   /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
   waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
+  /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
+   * callers pass undefined for liquid soap. */
+  traceSpeedLabel?: 'slow' | 'moderate' | 'fast';
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -315,6 +318,20 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         });
       }
     }
+  }
+
+  if (input.traceSpeedLabel && !input.isLiquidSoap) {
+    const tip =
+      input.traceSpeedLabel === 'fast'
+        ? 'Expect a quick trace — soap cool, blend in short bursts, and add fragrance last.'
+        : input.traceSpeedLabel === 'slow'
+          ? 'Expect a slow trace — this batter stays fluid, giving time for swirls and intricate pours.'
+          : 'A moderate trace — comfortable working time for most techniques.';
+    insights.push({
+      level: 'info',
+      code: 'trace_speed',
+      message: `Predicted trace speed: ${input.traceSpeedLabel}. ${tip}`,
+    });
   }
 
   if (input.isLiquidSoap && input.superfatPercent > 3) {
