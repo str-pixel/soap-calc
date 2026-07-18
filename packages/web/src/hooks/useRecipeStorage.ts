@@ -105,8 +105,10 @@ export function useRecipeStorage() {
     // Flush the outgoing process's workspace synchronously: the 500ms autosave
     // debounce (useRecipeAutosave) gets cancelled by effect-cleanup when state
     // swaps below, so without this an edit made <500ms before a tab switch is
-    // silently lost.
-    saveDraft(process, recipeName, lines, settings, additives);
+    // silently lost. Warn if the flush fails (quota/blocked) so the loss isn't silent.
+    if (!saveDraft(process, recipeName, lines, settings, additives)) {
+      flashSaveMessage('Could not save the current recipe before switching — export it to avoid losing changes.');
+    }
     saveActiveProcess(next);
     const ws = loadWorkspace(next);
     setProcessState(next);
@@ -157,7 +159,7 @@ export function useRecipeStorage() {
         // Flush the outgoing process's in-memory workspace first, mirroring setProcess:
         // without this, edits made just before an import (still pending the autosave
         // debounce) would be silently discarded when the state below swaps process.
-        saveDraft(process, recipeName, lines, settings, additives);
+        const flushedOutgoing = saveDraft(process, recipeName, lines, settings, additives);
         saveActiveProcess(nextProcess);
         setProcessState(nextProcess);
         setRecipeName(parsed.data.name);
@@ -165,8 +167,20 @@ export function useRecipeStorage() {
         setAdditives(importedAdditives);
         setSettings(importedSettings);
         setWorkspaceGeneration((g) => g + 1);
-        saveDraft(nextProcess, parsed.data.name, importedLines, importedSettings, importedAdditives);
-        flashSaveMessage(`Imported “${parsed.data.name}”`);
+        const savedImported = saveDraft(
+          nextProcess,
+          parsed.data.name,
+          importedLines,
+          importedSettings,
+          importedAdditives,
+        );
+        // Fold any write failure into the final message so it isn't overwritten by the
+        // success flash — storage full means neither the previous nor imported recipe persisted.
+        flashSaveMessage(
+          flushedOutgoing && savedImported
+            ? `Imported “${parsed.data.name}”`
+            : `Imported “${parsed.data.name}” — but storage is full, so changes may not persist. Export to keep a copy.`,
+        );
       })
       .catch(() => flashSaveMessage('Could not read recipe file'));
   }
