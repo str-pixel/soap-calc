@@ -37,6 +37,7 @@ export default function App() {
     handleExport,
     handleImportFile,
     workspaceGeneration,
+    flashSaveMessage,
   } = useRecipeStorage();
 
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -90,7 +91,9 @@ export default function App() {
   useUndoShortcut(inputs.undo, inputs.redo);
 
   const vm = useRecipeViewModel({ recipeName, lines, settings, additives, drafts, weightUnit, process });
-  useRecipeAutosave(process, recipeName, lines, settings, additives);
+  useRecipeAutosave(process, recipeName, lines, settings, additives, () =>
+    flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
+  );
 
   function handlePrintBatchSheet() {
     if (!vm.batchSheetData) return;

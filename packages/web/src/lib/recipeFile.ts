@@ -16,6 +16,11 @@ import { isProcessId, processForLyeType, type ProcessId } from './process';
 export const RECIPE_FILE_VERSION = 2 as const;
 export const RECIPE_FILE_VERSION_LEGACY = 1 as const;
 
+/** Import cap on oil lines, mirroring MAX_RECIPE_ADDITIVES. Real recipes have a
+ * handful of oils; without a cap a malformed/hostile file with a huge `lines`
+ * array builds an unbounded array + one React row each and hangs the tab. */
+export const MAX_RECIPE_LINES = 100;
+
 export type RecipeFileAdditive = Omit<AdditiveLine, 'key'>;
 
 export type RecipeFilePayload = {
@@ -174,6 +179,10 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
 
   if (typeof parsed.name !== 'string' || !Array.isArray(parsed.lines)) {
     return { ok: false, error: 'Recipe file is missing name or oils' };
+  }
+
+  if (parsed.lines.length > MAX_RECIPE_LINES) {
+    return { ok: false, error: 'Too many oils in recipe file' };
   }
 
   const lines: RecipeFilePayload['lines'] = [];

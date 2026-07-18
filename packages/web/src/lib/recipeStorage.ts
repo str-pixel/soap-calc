@@ -99,13 +99,15 @@ export function loadDraft(process: ProcessId): {
   }
 }
 
+/** Returns false when the write failed (e.g. quota exceeded or storage blocked in
+ * private mode) so callers can warn the user instead of silently losing work. */
 export function saveDraft(
   process: ProcessId,
   name: string,
   lines: RecipeLine[],
   settings: RecipeSettings,
   additives: AdditiveLine[] = createEmptyAdditives(),
-): void {
+): boolean {
   const payload: DraftPayload = {
     version: STORAGE_VERSION,
     name,
@@ -114,7 +116,7 @@ export function saveDraft(
     settings,
     updatedAt: new Date().toISOString(),
   };
-  safeSetItem(draftKey(process), JSON.stringify(payload));
+  return safeSetItem(draftKey(process), JSON.stringify(payload));
 }
 
 export function loadActiveProcess(): ProcessId {

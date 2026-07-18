@@ -136,6 +136,23 @@ function resolveBatchProvenance(partial: Partial<RecipeSettings> | null | undefi
   return Number.isFinite(savedBatch) && savedBatch > 0;
 }
 
+/** Drop keys an imported/parsed object should never carry into a settings spread.
+ * Object spread already defines own props (so it can't pollute Object.prototype the
+ * way Object.assign can), but stripping these makes the intent explicit and keeps a
+ * hostile recipe file from smuggling a literal "__proto__"/"constructor" own-key into
+ * persisted + re-exported settings. Legit settings fields are unaffected. */
+const UNSAFE_SETTING_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+function stripUnsafeKeys(
+  partial: Partial<RecipeSettings> | null | undefined,
+): Partial<RecipeSettings> {
+  if (!partial) return {};
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(partial)) {
+    if (!UNSAFE_SETTING_KEYS.has(key)) clean[key] = value;
+  }
+  return clean as Partial<RecipeSettings>;
+}
+
 export function normalizeSettings(
   partial: Partial<RecipeSettings> | null | undefined,
 ): RecipeSettings {
@@ -168,7 +185,7 @@ export function normalizeSettings(
     : defaultVariantFor(processForLyeType(lyeType));
   return {
     ...DEFAULT_SETTINGS,
-    ...partial,
+    ...stripUnsafeKeys(partial),
     weightUnit,
     waterMode,
     lyeType,

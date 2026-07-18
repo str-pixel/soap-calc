@@ -187,5 +187,6 @@ export function useRecipeStorage() {
     handleExport,
     handleImportFile,
     workspaceGeneration,
+    flashSaveMessage,
   };
 }
