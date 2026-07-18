@@ -175,6 +175,26 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     processes: ['hp'],
   },
+  {
+    // Guar gum — LS-only thickener, dispersed into diluted liquid soap after cook/dilution
+    // (never into the concentrated paste). Salt thickens LS only up to a point and thins
+    // past it (see the ls_salt_thickening insight); guar/HEC are the standalone thickeners.
+    id: 'guar',
+    name: 'Guar gum',
+    typicalLow: 0.5,
+    typicalHigh: 1,
+    defaultStage: 'after_cook',
+    processes: ['ls'],
+  },
+  {
+    // Hydroxyethylcellulose (HEC) — LS-only thickener, same after-dilution dosing as guar.
+    id: 'hec',
+    name: 'Hydroxyethylcellulose (HEC)',
+    typicalLow: 0.5,
+    typicalHigh: 1,
+    defaultStage: 'after_cook',
+    processes: ['ls'],
+  },
 ] as const;
 
 /** Entries offered for a given process: unscoped entries (no `processes`) apply to all

@@ -421,3 +421,73 @@ describe('sugar_total_high warning (total sugar-family additives, verified ceili
     expect(matches).toHaveLength(1);
   });
 });
+
+describe('ls_salt_thickening advisory (qualitative, LS-only)', () => {
+  const lsBase: FormulationAnalysisInput = {
+    ...base,
+    process: 'ls',
+    isLiquidSoap: true,
+    fattyAcidCoveragePercent: 100,
+    additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+  };
+
+  it('fires for LS + salt additive', () => {
+    const normal = analyzeFormulation({ ...lsBase, fattyAcids: { oleic: 60 } }).find(
+      (i) => i.code === 'ls_salt_thickening',
+    );
+    expect(normal).toBeTruthy();
+    expect(normal?.level).toBe('info');
+  });
+
+  it('does not carry a coconut caveat for a non-coconut-heavy profile', () => {
+    const normal = analyzeFormulation({ ...lsBase, fattyAcids: { oleic: 60 } }).find(
+      (i) => i.code === 'ls_salt_thickening',
+    );
+    expect(normal?.message).not.toMatch(/coconut/i);
+  });
+
+  it('appends a coconut caveat when coconut-heavy (lauric+myristic proxy >= 55%)', () => {
+    const coconut = analyzeFormulation({
+      ...lsBase,
+      fattyAcids: { lauric: 45, myristic: 12 },
+    }).find((i) => i.code === 'ls_salt_thickening');
+    expect(coconut?.message).toMatch(/coconut|barely|little/i);
+  });
+
+  it('does not append the coconut caveat below the fatty-acid coverage gate', () => {
+    const belowCoverage = analyzeFormulation({
+      ...lsBase,
+      fattyAcidCoveragePercent: 50,
+      fattyAcids: { lauric: 45, myristic: 12 },
+    }).find((i) => i.code === 'ls_salt_thickening');
+    expect(belowCoverage?.message).not.toMatch(/coconut/i);
+  });
+
+  it('does not fire for a non-salt LS additive', () => {
+    const codes = analyzeFormulation({
+      ...lsBase,
+      additiveEntries: [{ catalogId: 'honey', name: 'Honey' }],
+      fattyAcids: { oleic: 60 },
+    }).map((i) => i.code);
+    expect(codes).not.toContain('ls_salt_thickening');
+  });
+
+  it('does not fire for CP even with salt (LS-only gate)', () => {
+    expect(
+      analyzeFormulation({
+        ...lsBase,
+        process: 'cp',
+        isLiquidSoap: false,
+        fattyAcids: { oleic: 60 },
+      }).some((i) => i.code === 'ls_salt_thickening'),
+    ).toBe(false);
+  });
+
+  it('ships the salt advisory with no numeric viscosity/peak claims', () => {
+    const insight = analyzeFormulation({
+      ...lsBase,
+      fattyAcids: { lauric: 45, myristic: 12 },
+    }).find((i) => i.code === 'ls_salt_thickening');
+    expect(insight?.message).not.toMatch(/\d/);
+  });
+});

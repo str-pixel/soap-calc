@@ -404,6 +404,36 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
+  // Salt-thickening is a qualitative advisory, not a numeric viscosity model — no calibrated
+  // curve exists for how much salt thickens diluted LS by process/oil mix, so this ships
+  // behavior-only guidance (thickens then thins past a point) and never a number.
+  if (input.isLiquidSoap && additiveMatches(additiveEntries, 'salt', 'salt')) {
+    let message =
+      'Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go.';
+
+    // Coconut-heavy proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" reports —
+    // this threshold is a documented estimate, not a cited source constant.
+    if (
+      input.fattyAcids &&
+      (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+    ) {
+      const lauricMyristic = sumFattyAcids(
+        input.fattyAcids,
+        FATTY_ACID_GROUP_KEYS.lauricMyristic,
+      );
+      if (lauricMyristic >= 55) {
+        message +=
+          ' High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body.';
+      }
+    }
+
+    insights.push({
+      level: 'info',
+      code: 'ls_salt_thickening',
+      message,
+    });
+  }
+
   // HP-only insights. Gated on the explicit process discriminator, never on !isLiquidSoap —
   // isLiquidSoap only distinguishes LS from "everything else" and is also false for CP, so
   // a !isLiquidSoap gate would wrongly include CP bars here.

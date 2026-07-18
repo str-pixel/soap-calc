@@ -110,6 +110,21 @@ describe('additive catalog process scoping', () => {
     expect(yogurt?.typicalHigh).toBe(5);
   });
 
+  it('guar and hec are LS-only thickeners at 0.5–1% added after dilution', () => {
+    for (const id of ['guar', 'hec']) {
+      const e = catalogEntryById(id)!;
+      expect(e).toBeDefined();
+      expect(e.typicalLow).toBe(0.5);
+      expect(e.typicalHigh).toBe(1);
+      expect(e.defaultStage).toBe('after_cook');
+      expect(e.processes).toEqual(['ls']);
+    }
+    expect(catalogEntriesForProcess('cp').some((e) => e.id === 'guar')).toBe(false);
+    expect(catalogEntriesForProcess('cp').some((e) => e.id === 'hec')).toBe(false);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'guar')).toBe(true);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'hec')).toBe(true);
+  });
+
   it('keeps salt, sodium-lactate, sugar, and eugenol unscoped (reused across processes)', () => {
     for (const id of ['salt', 'sodium-lactate', 'sugar-sorbitol', 'eugenol']) {
       const entry = catalogEntryById(id);
