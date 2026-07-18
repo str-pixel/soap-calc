@@ -395,7 +395,10 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
       )}
 
       <footer className="batch-sheet__footer">
-        <p>Verify all weights before making. Wear eye protection and gloves when handling lye.</p>
+        <p>
+          Verify all weights before making. Wear eye protection and gloves when handling lye —
+          freshly mixed lye solution is caustic and heats to about 93&nbsp;°C (200&nbsp;°F).
+        </p>
       </footer>
     </article>
   );
