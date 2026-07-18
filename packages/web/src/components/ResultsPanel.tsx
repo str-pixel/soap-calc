@@ -45,10 +45,14 @@ type ResultsPanelProps = {
   labelWeight?: number | null;
 };
 
+// The cure/sequester window is behavior-only guidance built from several unverified
+// per-variant durations (see processProfile.ts) — hedge it as an estimate rather than
+// let it read as a guaranteed figure.
 function cureWindowLabel(estimate: CureEstimate): string {
-  return estimate.maxWeeks
+  const window = estimate.maxWeeks
     ? `${estimate.minWeeks}–${estimate.maxWeeks} weeks`
     : `${estimate.minWeeks}+ weeks`;
+  return `≈ ${window}`;
 }
 
 function waterFootnote(
@@ -265,7 +269,7 @@ export const ResultsPanel = memo(function ResultsPanel({
           )}
           {cureEstimate && (
             <div className="results-grid__item">
-              <dt>{finishingLabel}</dt>
+              <dt>{finishingLabel} (est.)</dt>
               <dd>
                 {cureWindowLabel(cureEstimate)}
                 {cureEstimate.usableAtUnmold && (
@@ -276,7 +280,7 @@ export const ResultsPanel = memo(function ResultsPanel({
           )}
           {showLabelWeight && labelWeight !== null && (
             <div className="results-grid__item">
-              <dt>Label weight (after {finishingLabel.toLowerCase()})</dt>
+              <dt>Est. label weight (after {finishingLabel.toLowerCase()})</dt>
               <dd>{formatWeight(labelWeight, weightUnit)}</dd>
             </div>
           )}

@@ -186,7 +186,7 @@ test('HP shows a usable-at-unmold cure window', () => {
       labelWeight={batchWeightWithExtras}
     />,
   );
-  expect(screen.getByText(/3–4 weeks/)).toBeTruthy();
+  expect(screen.getByText(/≈ 3–4 weeks/)).toBeTruthy();
   expect(screen.getByText(/usable at unmold/i)).toBeTruthy();
 });
 
@@ -207,8 +207,9 @@ test('CP shows a 4+ week cure and a reduced label weight', () => {
       labelWeight={batchWeightWithExtras * 0.85}
     />,
   );
-  expect(screen.getByText(/4\+ weeks/)).toBeTruthy();
+  expect(screen.getByText(/≈ 4\+ weeks/)).toBeTruthy();
   expect(screen.queryByText(/usable at unmold/i)).toBeNull();
+  expect(screen.getByText(/est\. label weight/i)).toBeTruthy();
   expect(screen.getByText(formatWeight(batchWeightWithExtras * 0.85, 'g'))).toBeTruthy();
 });
 
@@ -229,6 +230,6 @@ test('LS with zero water loss shows the sequester window but no separate label-w
       labelWeight={batchWeightWithExtras}
     />,
   );
-  expect(screen.getByText(/1–4 weeks/)).toBeTruthy();
+  expect(screen.getByText(/≈ 1–4 weeks/)).toBeTruthy();
   expect(screen.queryByText(/Label weight/i)).toBeNull();
 });

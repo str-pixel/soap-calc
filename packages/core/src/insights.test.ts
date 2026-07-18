@@ -189,6 +189,17 @@ describe('property-score exceptions', () => {
     }).map((i) => i.code);
     expect(codes).not.toContain('low_cleansing_expected');
   });
+
+  it('suppresses the low-cleansing note when fatty-acid coverage is low, even with adequate property coverage', () => {
+    // propertyCoveragePercent is fine (100), but fattyAcidCoveragePercent is below the
+    // LOW_COVERAGE_PERCENT gate — the renormalized oleic reading is unrepresentative.
+    const codes = analyzeFormulation({
+      ...base, superfatPercent: 5, fattyAcidCoveragePercent: 50,
+      properties: props({ cleansing: 2 }),
+      fattyAcids: { oleic: 72 },
+    }).map((i) => i.code);
+    expect(codes).not.toContain('low_cleansing_expected');
+  });
 });
 
 describe('trace-speed insight', () => {

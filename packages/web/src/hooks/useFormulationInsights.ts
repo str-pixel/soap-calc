@@ -6,6 +6,7 @@ import {
   parsePercentOfOil,
   sumFattyAcids,
   FATTY_ACID_GROUP_KEYS,
+  LOW_COVERAGE_PERCENT,
   type LyeCalculationResult,
   type RecipeFattyAcidResult,
   type RecipePropertiesResult,
@@ -118,7 +119,13 @@ export function useFormulationInsights(
         : undefined,
       isLiquidSoap: options.isLiquidSoap ?? false,
       waterBand,
-      traceSpeedLabel: options.isLiquidSoap ? undefined : traceSpeed?.label,
+      // At partial fatty-acid coverage the renormalized profile (and thus the predicted
+      // trace speed derived from it) is unrepresentative — withhold the label rather than
+      // let analyzeFormulation surface it as a confident reading.
+      traceSpeedLabel:
+        !options.isLiquidSoap && fattyAcids.coveragePercent >= LOW_COVERAGE_PERCENT
+          ? traceSpeed?.label
+          : undefined,
     });
   }, [
     fattyAcids.profile,

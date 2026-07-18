@@ -193,9 +193,16 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     }
 
     // Castile / olive-dominant bars read near-zero cleansing but cure into fine, mild bars.
-    // Surface it as reassurance, not a defect: all soap cleans.
+    // Surface it as reassurance, not a defect: all soap cleans. oleic is a fatty-acid
+    // reading, so it needs the fatty-acid coverage gate too, not just the property gate
+    // this block is already inside.
     const oleic = input.fattyAcids?.oleic ?? 0;
-    if (!input.isLiquidSoap && cleansing < 12 && oleic >= 50) {
+    if (
+      !input.isLiquidSoap &&
+      cleansing < 12 &&
+      oleic >= 50 &&
+      (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+    ) {
       insights.push({
         level: 'info',
         code: 'low_cleansing_expected',

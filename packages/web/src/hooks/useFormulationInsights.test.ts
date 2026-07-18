@@ -86,4 +86,22 @@ describe('useFormulationInsights trace-speed wiring', () => {
     const codes = result.current.insights.map((i) => i.code);
     expect(codes).not.toContain('trace_speed');
   });
+
+  it('omits the trace-speed insight when fatty-acid coverage is below the low-coverage gate', () => {
+    // beeswax carries no fatty-acid profile, so mixing it 30/70 with coconut renormalizes
+    // the profile over only the covered (coconut) weight — coverage lands well under 80%,
+    // making the predicted trace speed unrepresentative.
+    const lowCoverageLines = [
+      makeLine('coconut-oil-76', '700'),
+      makeLine('beeswax', '300'),
+    ];
+    const { result: propsResult } = renderHook(() =>
+      useRecipeProperties(lowCoverageLines, DEFAULT_SETTINGS),
+    );
+    expect(propsResult.current.fattyAcids.coveragePercent).toBeLessThan(80);
+
+    const { result } = renderHook(() => useTraceSpeedTestHarness(lowCoverageLines));
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).not.toContain('trace_speed');
+  });
 });
