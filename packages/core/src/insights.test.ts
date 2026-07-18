@@ -32,6 +32,25 @@ describe('lye-excess warning (negative superfat)', () => {
   });
 });
 
+describe('no-superfat-margin caustic guard (NaOH bar soap)', () => {
+  it('warns a 0% superfat bar (no unsaponified-oil buffer)', () => {
+    expect(has({ ...base, superfatPercent: 0, isLiquidSoap: false }, 'no_superfat_margin')).toBe(true);
+  });
+
+  it('does not fire once the bar carries any positive superfat', () => {
+    expect(has({ ...base, superfatPercent: 5, isLiquidSoap: false }, 'no_superfat_margin')).toBe(false);
+    expect(has({ ...base, superfatPercent: 1, isLiquidSoap: false }, 'no_superfat_margin')).toBe(false);
+  });
+
+  it('exempts liquid soap (KOH runs at/below 0% and is neutralized after cook)', () => {
+    expect(has({ ...base, superfatPercent: 0, isLiquidSoap: true }, 'no_superfat_margin')).toBe(false);
+  });
+
+  it('does not fire without an active recipe (no lye)', () => {
+    expect(has({ ...base, superfatPercent: 0, lyeGrams: 0, isLiquidSoap: false }, 'no_superfat_margin')).toBe(false);
+  });
+});
+
 describe('bar-soap lye-concentration warnings are exempt for liquid soap', () => {
   it('warns on a high concentration for a bar recipe', () => {
     expect(has({ ...base, lyeConcentrationPercent: 45 }, 'lye_conc_high')).toBe(true);
