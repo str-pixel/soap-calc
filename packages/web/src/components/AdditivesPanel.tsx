@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import {
-  ADDITIVE_CATALOG,
+  catalogEntriesForProcess,
   catalogEntryById,
   LATHER_SUPPORT_PACK,
   parseDoseAmount,
@@ -57,6 +57,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
 }: AdditivesPanelProps) {
   const offeredStages = offeredStagesForProcess(process);
   const offeredDoseModes = offeredDoseModesForProcess(process);
+  const catalogEntries = catalogEntriesForProcess(process);
 
   function updateLine(key: string, patch: Partial<AdditiveLine>) {
     onChange(
@@ -186,7 +187,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     onChange={(e) => selectCatalog(line.key, e.target.value)}
                   >
                     <option value="">Custom…</option>
-                    {ADDITIVE_CATALOG.map((item) => (
+                    {catalogEntries.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
                       </option>

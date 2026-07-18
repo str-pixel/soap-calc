@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ADDITIVE_CATALOG } from '@soap-calc/core';
 import { AdditivesPanel } from './AdditivesPanel';
 import type { AdditiveLine } from '../lib/recipe';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
@@ -41,6 +42,25 @@ function optionValues(select: HTMLElement): string[] {
     .getAllByRole('option')
     .map((o) => (o as HTMLOptionElement).value);
 }
+
+describe('AdditivesPanel catalog picker', () => {
+  it('renders all current unscoped catalog entries in the CP picker (no regression)', () => {
+    render(
+      <AdditivesPanel
+        additives={[makeLine()]}
+        computed={[makeComputed(makeLine())]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    const select = screen.getByLabelText('Additive type');
+    const renderedIds = optionValues(select).filter((v) => v !== '');
+    for (const entry of ADDITIVE_CATALOG) {
+      expect(renderedIds).toContain(entry.id);
+    }
+  });
+});
 
 describe('AdditivesPanel stage options', () => {
   it('CP renders 4 stage options (no after-cook)', () => {

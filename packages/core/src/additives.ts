@@ -1,19 +1,25 @@
 export type AdditiveStage = 'lye' | 'oils' | 'trace' | 'top' | 'after_cook';
 
+/** Structurally identical to web's ProcessId ('cp' | 'hp' | 'ls'), defined locally so core
+ * owns no import from packages/web. Web's ProcessId is assignable to this type. */
+export type AdditiveProcess = 'cp' | 'hp' | 'ls';
+
 export type AdditiveCatalogEntry = {
   id: string;
   name: string;
   typicalLow: number;
   typicalHigh: number;
   defaultStage: AdditiveStage;
+  /** Processes this additive is offered for; absent = all processes. */
+  processes?: AdditiveProcess[];
 };
 
 export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     id: 'sugar-sorbitol',
     name: 'Sugar / sorbitol',
-    typicalLow: 1,
-    typicalHigh: 5,
+    typicalLow: 0.5,
+    typicalHigh: 2,
     defaultStage: 'trace',
   },
   {
@@ -91,7 +97,57 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 3,
     defaultStage: 'lye',
   },
+  {
+    // Hydrolyzed silk — dissolved into the lye water, reported to add slip/sheen to lather.
+    id: 'silk',
+    name: 'Silk (hydrolyzed)',
+    typicalLow: 0.1,
+    typicalHigh: 1,
+    defaultStage: 'lye',
+  },
+  {
+    // EDTA — synthetic chelator, added to the lye water alongside/instead of citrate.
+    id: 'edta',
+    name: 'EDTA',
+    typicalLow: 0.1,
+    typicalHigh: 0.5,
+    defaultStage: 'lye',
+  },
+  {
+    // Titanium dioxide — mineral whitener, dispersed into the oils before mixing.
+    id: 'titanium-dioxide',
+    name: 'Titanium dioxide',
+    typicalLow: 0.1,
+    typicalHigh: 1,
+    defaultStage: 'oils',
+  },
+  {
+    // Eugenol — clove-derived aromatic; dosed in parts-per-thousand, at trace, well below
+    // fragrance-oil percentages.
+    id: 'eugenol',
+    name: 'Eugenol',
+    typicalLow: 1,
+    typicalHigh: 3,
+    defaultStage: 'trace',
+  },
+  {
+    // Loofah — fibrous exfoliant blended into the oils. No cited dose constant for this one;
+    // range is a conservative estimate, not a verified figure like the others above.
+    id: 'loofah',
+    name: 'Loofah',
+    typicalLow: 1,
+    typicalHigh: 5,
+    defaultStage: 'oils',
+  },
 ] as const;
+
+/** Entries offered for a given process: unscoped entries (no `processes`) apply to all
+ * processes; scoped entries apply only when `process` is in their `processes` list. */
+export function catalogEntriesForProcess(
+  process: AdditiveProcess,
+): readonly AdditiveCatalogEntry[] {
+  return ADDITIVE_CATALOG.filter((entry) => !entry.processes || entry.processes.includes(process));
+}
 
 export const LATHER_SUPPORT_PACK = [
   { catalogId: 'sugar-sorbitol', percentOfOil: 1, stage: 'trace' as const },

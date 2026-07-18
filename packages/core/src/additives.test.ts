@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ADDITIVE_CATALOG,
   ADDITIVE_STAGE_LABELS,
+  catalogEntryById,
+  catalogEntriesForProcess,
   gramsFromDose,
   gramsFromPercentOfOil,
   LATHER_SUPPORT_PACK,
@@ -65,6 +67,18 @@ describe('additives', () => {
   it('includes an after_cook stage labeled "After cook"', () => {
     const stage: AdditiveStage = 'after_cook';
     expect(ADDITIVE_STAGE_LABELS[stage]).toBe('After cook');
+  });
+});
+
+describe('additive catalog process scoping', () => {
+  it('sugar range is corrected to 0.5–2%', () => {
+    const sugar = catalogEntryById('sugar-sorbitol');
+    expect(sugar?.typicalLow).toBe(0.5);
+    expect(sugar?.typicalHigh).toBe(2);
+  });
+  it('unscoped entries appear for every process', () => {
+    const cp = catalogEntriesForProcess('cp');
+    expect(cp.some((e) => e.id === 'sugar-sorbitol')).toBe(true);
   });
 });
 
