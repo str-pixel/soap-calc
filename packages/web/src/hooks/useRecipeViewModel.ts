@@ -8,8 +8,11 @@ import {
   computeRecipeAdditives,
   computeSplitLiquidGrams,
 } from '../lib/calculateAdditives';
+import { estimateCure, labelWeightGrams } from '../lib/cureEstimate';
+import type { CureEstimate } from '../lib/cureEstimate';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
+import { isProcessVariantId, processProfileById } from '../lib/processProfile';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import type { RecipeCalculation } from '../lib/calculateRecipe';
@@ -62,6 +65,8 @@ export type RecipeViewModel = {
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
+  cureEstimate: CureEstimate | null;
+  labelWeight: number | null;
 };
 
 export function useRecipeViewModel({
@@ -258,6 +263,26 @@ export function useRecipeViewModel({
     pcsfIsExtra,
   );
   const batchWeightWithExtras = baseBatchGrams + extrasGrams;
+  // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
+  // see coerceSettingsForProcess) before resolving the profile.
+  const profile = isProcessVariantId(settings.processVariant)
+    ? processProfileById(settings.processVariant)
+    : null;
+  // processProfileById returns a stable module-level object per variant, so `profile` is
+  // referentially stable across renders — memoizing on it (rather than recomputing inline
+  // every render) keeps these two objects/values stable too, which matters because
+  // ResultsPanel is React.memo'd and a fresh object each render would defeat that memo (#1).
+  const cureEstimate = useMemo(() => (profile ? estimateCure(profile) : null), [profile]);
+  // Only the water-bearing base batter evaporates over cure — after-cook extras (fragrance,
+  // PCSF oil, additives) don't lose water, so the loss is computed off baseBatchGrams and
+  // subtracted from the full batch weight (#6).
+  const labelWeight = useMemo(
+    () =>
+      profile
+        ? labelWeightGrams(batchWeightWithExtras, baseBatchGrams, profile.waterLossPercent)
+        : null,
+    [profile, batchWeightWithExtras, baseBatchGrams],
+  );
   const liveOilBatchFraction = useMemo(() => {
     if (!displayTotals || batchWeightWithExtras <= 0) return null;
     return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);
@@ -347,5 +372,7 @@ export function useRecipeViewModel({
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,
+    cureEstimate,
+    labelWeight,
   };
 }

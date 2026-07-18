@@ -51,6 +51,15 @@ export type FormulationAnalysisInput = {
   /** True for liquid-soap (KOH) recipes; gates LS-specific insights and exempts LS from the
    * bar-soap lye-concentration warnings. */
   isLiquidSoap?: boolean;
+  /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
+  waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
+  /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
+   * callers pass undefined for liquid soap. */
+  traceSpeedLabel?: 'slow' | 'moderate' | 'fast';
+  /** The specific factors {@link estimateTraceSpeed} weighed to reach traceSpeedLabel
+   * (e.g. "high saturated fats", "castor / ricinoleic"). Gated the same as the label —
+   * callers should only pass this when traceSpeedLabel is also emitted. */
+  traceSpeedDrivers?: string[];
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -114,6 +123,43 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   }
 
   if (
+    input.waterBand &&
+    !input.isLiquidSoap &&
+    input.totalOilGrams > 0 &&
+    input.waterGrams > 0
+  ) {
+    const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
+    const { lowTier, highTier, riversAbove } = input.waterBand;
+    // CP's band has highTier[1]=40 extending past riversAbove=38 by design — both are
+    // verified source constants (see processProfile.ts). This rivers check runs first, so
+    // 38–40% (nominally the top of the high tier) always resolves to water_band_rivers,
+    // never water_band_between_tiers/below_low — the rivers warning correctly wins the
+    // overlap.
+    if (waterPercentOfOils > riversAbove) {
+      insights.push({
+        level: 'warning',
+        code: 'water_band_rivers',
+        message:
+          'Water is above the typical range for this process — the batter may glycerin-river or take a long time to firm up. Consider a lower water amount.',
+      });
+    } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
+      insights.push({
+        level: 'info',
+        code: 'water_band_between_tiers',
+        message:
+          'Water sits between the low-water and full-water working ranges — fine, but nudging into either range gives more predictable trace and cure.',
+      });
+    } else if (waterPercentOfOils < lowTier[0]) {
+      insights.push({
+        level: 'info',
+        code: 'water_band_below_low',
+        message:
+          'Very low water for this process — trace comes fast and the batter can be stiff; work quickly and keep temperatures modest.',
+      });
+    }
+  }
+
+  if (
     input.fattyAcids &&
     (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
   ) {
@@ -169,6 +215,25 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         code: 'high_cleansing_low_superfat',
         message:
           'Cleansing score above the usual range with modest superfat — bar may feel stripping; consider more superfat or softer oils.',
+      });
+    }
+
+    // Castile / olive-dominant bars read near-zero cleansing but cure into fine, mild bars.
+    // Surface it as reassurance, not a defect: all soap cleans. oleic is a fatty-acid
+    // reading, so it needs the fatty-acid coverage gate too, not just the property gate
+    // this block is already inside.
+    const oleic = input.fattyAcids?.oleic ?? 0;
+    if (
+      !input.isLiquidSoap &&
+      cleansing < 12 &&
+      oleic >= 50 &&
+      (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+    ) {
+      insights.push({
+        level: 'info',
+        code: 'low_cleansing_expected',
+        message:
+          'A near-zero cleansing score is normal for olive/high-oleic bars — all soap cleans; this cures into a gentle, low-stripping bar.',
       });
     }
   }
@@ -260,6 +325,49 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       code: 'high_pufa_post_cook_superfat',
       message:
         'Post-cook superfat oil is high in linoleic + linolenic — added unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool.',
+    });
+  }
+
+  if (!input.isLiquidSoap) {
+    if (input.superfatPercent < 3 || input.superfatPercent > 30) {
+      insights.push({
+        level: 'info',
+        code: 'superfat_out_of_band',
+        message:
+          'Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate.',
+      });
+    }
+    if (
+      input.fattyAcids &&
+      (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+    ) {
+      const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+      if (poly > 18 && input.superfatPercent > 5) {
+        insights.push({
+          level: 'warning',
+          code: 'pufa_cap_superfat',
+          message:
+            'High linoleic + linolenic oils with an elevated superfat — the unsaponified oil is prone to going rancid. For high-PUFA recipes keep superfat nearer 3–5%.',
+        });
+      }
+    }
+  }
+
+  if (input.traceSpeedLabel && !input.isLiquidSoap) {
+    const tip =
+      input.traceSpeedLabel === 'fast'
+        ? 'Expect a quick trace — soap cool, blend in short bursts, and add fragrance last.'
+        : input.traceSpeedLabel === 'slow'
+          ? 'Expect a slow trace — this batter stays fluid, giving time for swirls and intricate pours.'
+          : 'A moderate trace — comfortable working time for most techniques.';
+    const driversClause =
+      input.traceSpeedDrivers && input.traceSpeedDrivers.length > 0
+        ? ` Driven by: ${input.traceSpeedDrivers.join(', ')}.`
+        : '';
+    insights.push({
+      level: 'info',
+      code: 'trace_speed',
+      message: `Predicted trace speed: ${input.traceSpeedLabel}. ${tip}${driversClause}`,
     });
   }
 

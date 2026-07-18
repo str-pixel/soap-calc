@@ -31,7 +31,7 @@ const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
   hardness:
     'Bar firmness and how well it holds up, mostly from palmitic, stearic, lauric and myristic acids. Low bars are soft and dissolve fast; a very high number can feel brittle.',
   cleansing:
-    'How strongly the lather lifts away oils, from lauric, myristic and the shorter C8–C10 acids in coconut and palm-kernel oil. Higher cleans harder but can feel drying — raising the superfat softens that.',
+    'How strongly the lather lifts away oils, from lauric, myristic and the shorter C8–C10 acids in coconut and palm-kernel oil. Higher cleans harder but can feel drying — raising the superfat softens that. All soap cleans — a low cleansing score means gentler, not ineffective.',
   condition:
     'Share of skin-loving unsaturated oils like oleic, linoleic and ricinoleic. Higher feels more moisturizing; very high can leave a soft, shorter-lived bar.',
   creamy:

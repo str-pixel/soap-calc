@@ -57,6 +57,10 @@ const PROFILES: Record<ProcessVariantId, ProcessProfile> = {
     variant: 'cp',
     process: 'cp',
     label: 'Cold process',
+    // highTier[1]=40 intentionally extends past riversAbove=38 — both are verified source
+    // constants, not a bug. 38–40% (nominally the top of the high tier) always trips the
+    // rivers warning first: insights.ts checks water_band_rivers before the tier bands, so
+    // the rivers coaching correctly takes precedence over "high tier" in that 38–40 overlap.
     waterBand: { lowTier: [20, 28], highTier: [32, 40], riversAbove: 38 }, // verified
     temp: null,
     finish: { minWeeks: 4 }, // verified

@@ -1,14 +1,18 @@
 import { useMemo } from 'react';
 import {
+  additiveMatches,
   analyzeFormulation,
+  estimateTraceSpeed,
   parsePercentOfOil,
   sumFattyAcids,
   FATTY_ACID_GROUP_KEYS,
+  LOW_COVERAGE_PERCENT,
   type LyeCalculationResult,
   type RecipeFattyAcidResult,
   type RecipePropertiesResult,
 } from '@soap-calc/core';
 import { oilById } from '../lib/oils';
+import { processProfileById, isProcessVariantId } from '../lib/processProfile';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
@@ -66,6 +70,36 @@ export function useFormulationInsights(
         oilId: line.oilId,
         name: oilById(line.oilId)?.displayName ?? line.oilId,
       }));
+    const profile = isProcessVariantId(settings.processVariant)
+      ? processProfileById(settings.processVariant)
+      : null;
+    const waterBand =
+      profile && !options.isLiquidSoap && profile.process !== 'ls' ? profile.waterBand : undefined;
+    const additiveEntries = (options.additives ?? []).map((item) => ({
+      catalogId: item.catalogId,
+      name: item.name,
+    }));
+    // Trace speed is a CP/HP soaping concern gated behind the same low-coverage check the
+    // label itself is withheld on below — computing it (and the additive-keyword scan that
+    // feeds it) for liquid soap or under low fatty-acid coverage is pure waste, since the
+    // result is always discarded in that case (#5).
+    const traceSpeedApplicable =
+      !options.isLiquidSoap && fattyAcids.coveragePercent >= LOW_COVERAGE_PERCENT;
+    // Sugar-family accelerators speed up trace; keyword-match (not just today's catalog
+    // ids) so a later wave adding sorbitol/yogurt as their own catalog entries is caught
+    // without touching this hook again.
+    const hasAcceleratingAdditive =
+      traceSpeedApplicable &&
+      (additiveMatches(additiveEntries, 'sugar', 'sugar') ||
+        additiveMatches(additiveEntries, 'sorbitol', 'sorbitol') ||
+        additiveMatches(additiveEntries, 'honey', 'honey') ||
+        additiveMatches(additiveEntries, 'yogurt', 'yogurt'));
+    const traceSpeed = traceSpeedApplicable
+      ? estimateTraceSpeed({
+          fattyAcids: fattyAcids.profile,
+          hasAcceleratingAdditive,
+        })
+      : null;
     return analyzeFormulation({
       properties: properties.properties,
       fattyAcids: fattyAcids.profile,
@@ -85,10 +119,7 @@ export function useFormulationInsights(
       suggestedLyeWaterGrams: options.suggestedLyeWaterGrams ?? null,
       splitLiquidWaterReductionGrams: options.splitLiquidWaterReductionGrams ?? null,
       totalAdditivePercent,
-      additiveEntries: (options.additives ?? []).map((item) => ({
-        catalogId: item.catalogId,
-        name: item.name,
-      })),
+      additiveEntries,
       oilEntries,
       lyeType: settings.lyeType,
       kohBlendPercent: Number(settings.kohBlendPercent) || 0,
@@ -96,6 +127,14 @@ export function useFormulationInsights(
         ? postCookSuperfatPufaPercent(options.postCookSuperfat.oilId)
         : undefined,
       isLiquidSoap: options.isLiquidSoap ?? false,
+      waterBand,
+      // At partial fatty-acid coverage the renormalized profile (and thus the predicted
+      // trace speed derived from it) is unrepresentative — withhold the label rather than
+      // let analyzeFormulation surface it as a confident reading. traceSpeed is already
+      // null when not applicable (see traceSpeedApplicable above), so both fields are
+      // naturally undefined together in that case.
+      traceSpeedLabel: traceSpeed?.label,
+      traceSpeedDrivers: traceSpeed?.drivers,
     });
   }, [
     fattyAcids.profile,
@@ -117,6 +156,7 @@ export function useFormulationInsights(
     settings.kohBlendPercent,
     settings.superfatPercent,
     settings.waterMode,
+    settings.processVariant,
     options.isLiquidSoap,
   ]);
 

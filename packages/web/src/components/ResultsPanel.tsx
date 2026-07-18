@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
-import type { ProcessId } from '../lib/process';
+import type { CureEstimate } from '../lib/cureEstimate';
+import { PROCESS_DEFINITIONS, type ProcessId } from '../lib/process';
 import { formatGrams } from '../lib/format';
 import { formatDose } from '../lib/formatDose';
 import { oilById } from '../lib/oils';
@@ -36,7 +37,23 @@ type ResultsPanelProps = {
   /** The vm's batch weight (method-aware base + extras) — required so the panel never
    * recomputes its own base and drifts from the printed sheet. */
   batchWeightWithExtras: number;
+  /** The process's cure/sequester window and whether it's usable straight from the mold
+   * (hot process). Null when the recipe carries no resolvable process variant. */
+  cureEstimate?: CureEstimate | null;
+  /** The vm's cured/label weight (batch weight after the process's water loss). Null when
+   * there's no resolvable process variant; equals batchWeightWithExtras when loss is 0 (LS). */
+  labelWeight?: number | null;
 };
+
+// The cure/sequester window is behavior-only guidance built from several unverified
+// per-variant durations (see processProfile.ts) — hedge it as an estimate rather than
+// let it read as a guaranteed figure.
+function cureWindowLabel(estimate: CureEstimate): string {
+  const window = estimate.maxWeeks
+    ? `${estimate.minWeeks}–${estimate.maxWeeks} weeks`
+    : `${estimate.minWeeks}+ weeks`;
+  return `≈ ${window}`;
+}
 
 function waterFootnote(
   waterMode: WaterMode | undefined,
@@ -69,6 +86,8 @@ export const ResultsPanel = memo(function ResultsPanel({
   pcsfIsExtra = true,
   extrasGrams = 0,
   batchWeightWithExtras,
+  cureEstimate = null,
+  labelWeight = null,
 }: ResultsPanelProps) {
   if (inputErrors.length) {
     return (
@@ -98,6 +117,15 @@ export const ResultsPanel = memo(function ResultsPanel({
   const totalLiquidGrams = result.waterWeightGrams + (splitLiquidGrams ?? 0);
   const cookSuperfatPercent = Number(superfatPercent) || 0;
   const totalSuperfatPercent = cookSuperfatPercent + (postCookSuperfat?.percentOfOil ?? 0);
+  // Single-sourced from cureEstimate (itself derived from the view model's resolved
+  // process-variant profile), not the `process` prop — the cure window / usableAtUnmold
+  // already come from that profile, so under a transient variant/process mismatch the
+  // finish label must agree with them rather than the prop (#2).
+  const finishingLabel = cureEstimate?.finishingLabel ?? PROCESS_DEFINITIONS[process].terms.finishingLabel;
+  // LS's waterLossPercent is 0 (dilution, not evaporation), so its labelWeight equals
+  // batchWeightWithExtras — only show a separate label-weight line when cure/sequester
+  // actually sheds water.
+  const showLabelWeight = labelWeight !== null && labelWeight < batchWeightWithExtras;
   const postCookSuperfatOilName = postCookSuperfat
     ? (oilById(postCookSuperfat.oilId)?.displayName ?? postCookSuperfat.oilId)
     : null;
@@ -241,6 +269,23 @@ export const ResultsPanel = memo(function ResultsPanel({
             <div className="results-grid__item">
               <dt>Total superfat</dt>
               <dd>{formatGrams(totalSuperfatPercent, 1)}%</dd>
+            </div>
+          )}
+          {cureEstimate && (
+            <div className="results-grid__item">
+              <dt>{finishingLabel} (est.)</dt>
+              <dd>
+                {cureWindowLabel(cureEstimate)}
+                {cureEstimate.usableAtUnmold && (
+                  <span className="results-excluded"> · usable at unmold</span>
+                )}
+              </dd>
+            </div>
+          )}
+          {showLabelWeight && labelWeight !== null && (
+            <div className="results-grid__item">
+              <dt>Est. label weight (after {finishingLabel.toLowerCase()})</dt>
+              <dd>{formatWeight(labelWeight, weightUnit)}</dd>
             </div>
           )}
         </dl>
