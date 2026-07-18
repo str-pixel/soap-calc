@@ -241,6 +241,50 @@ test('LS offers the solution dose modes; CP does not', () => {
   );
 });
 
+describe('AdditivesPanel hazard chips', () => {
+  it('renders hazard chips for a hazard-bearing catalog additive', () => {
+    const line = makeLine({ catalogId: 'eugenol', name: 'Eugenol' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText('can seize')).not.toBeNull();
+  });
+
+  it('renders no hazard chips for an additive without hazards', () => {
+    const line = makeLine({ catalogId: 'chelator', name: 'Chelator (citrate, gluconate)' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText('can seize')).toBeNull();
+  });
+
+  it('renders no hazard chips for a custom (non-catalog) line', () => {
+    const line = makeLine({ catalogId: '', name: 'My custom blend' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText('can seize')).toBeNull();
+  });
+});
+
 test('a stray solution line under CP still renders its dose-mode option (guard)', () => {
   const line = makeLine({ basis: 'solution', unit: 'percent' });
   render(<AdditivesPanel additives={[line]} computed={[]} weightUnit="g" process="cp" onChange={() => {}} />);

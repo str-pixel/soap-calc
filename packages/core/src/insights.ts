@@ -58,6 +58,11 @@ export type FormulationAnalysisInput = {
   /** Yogurt additive line's percent of oil weight (grams / totalOilGrams × 100); HP only —
    * its water content deducts from the recipe's lye water when stirred in after cook. */
   hpYogurtPercent?: number;
+  /** Combined percent of oil weight across sugar-family additives (sugar/sorbitol, honey,
+   * yogurt) — computed by the caller since {@link additiveEntries} carries no percentages.
+   * Ceiling is 4% (verified constant, roadmap CP 308); above that the batch can tunnel or
+   * overheat. Applies to any process, unlike the HP-only hpYogurtPercent above. */
+  sugarTotalPercent?: number;
   /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
   waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
   /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
@@ -289,6 +294,18 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       code: 'high_total_additives',
       message:
         'Total additives exceed ~10% of oil weight — may affect trace, texture, or shelf life; verify with a small test batch.',
+    });
+  }
+
+  // Sugar-family additives (sugar/sorbitol, honey, yogurt) all accelerate trace and heat
+  // retention similarly; a single message on the combined total, not per-additive, since
+  // it's the total dose that tunnels/overheats the batch. Verified ceiling: 4% (roadmap CP 308).
+  if (input.sugarTotalPercent !== undefined && input.sugarTotalPercent > 4) {
+    insights.push({
+      level: 'warning',
+      code: 'sugar_total_high',
+      message:
+        'Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~4% of oil weight — the batch can tunnel or overheat, especially insulated or in a hot process. Consider reducing the total dose.',
     });
   }
 

@@ -396,3 +396,28 @@ describe('HP-gated insights (process discriminator)', () => {
     }
   });
 });
+
+describe('sugar_total_high warning (total sugar-family additives, verified ceiling 4%)', () => {
+  it('fires above 4% total sugar-family additive dose', () => {
+    expect(has({ ...base, sugarTotalPercent: 5 }, 'sugar_total_high')).toBe(true);
+  });
+
+  it('does not fire at exactly 4% (boundary)', () => {
+    expect(has({ ...base, sugarTotalPercent: 4 }, 'sugar_total_high')).toBe(false);
+  });
+
+  it('does not fire at 3%', () => {
+    expect(has({ ...base, sugarTotalPercent: 3 }, 'sugar_total_high')).toBe(false);
+  });
+
+  it('does not fire when sugarTotalPercent is not provided', () => {
+    expect(has({ ...base }, 'sugar_total_high')).toBe(false);
+  });
+
+  it('emits a single message on the total, not one per additive', () => {
+    const matches = analyzeFormulation({ ...base, sugarTotalPercent: 6 }).filter(
+      (i) => i.code === 'sugar_total_high',
+    );
+    expect(matches).toHaveLength(1);
+  });
+});

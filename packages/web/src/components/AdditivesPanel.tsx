@@ -275,6 +275,15 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     oil weight
                   </p>
                 )}
+                {entry && entry.hazards && entry.hazards.length > 0 && (
+                  <ul className="additive-list__hazards" aria-label="Hazards">
+                    {entry.hazards.map((hazard) => (
+                      <li key={hazard} className="additive-list__hazard">
+                        {hazard}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             );
           })}

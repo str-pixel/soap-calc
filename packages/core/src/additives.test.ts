@@ -118,6 +118,33 @@ describe('additive catalog process scoping', () => {
   });
 });
 
+describe('additive hazard tags (behavior-only)', () => {
+  it('flags eugenol as able to seize', () => {
+    const entry = catalogEntryById('eugenol');
+    expect(entry?.hazards).toContain('can seize');
+  });
+
+  it('flags sugar/sorbitol as able to tunnel/overheat', () => {
+    const entry = catalogEntryById('sugar-sorbitol');
+    expect(entry?.hazards).toContain('can tunnel/overheat');
+  });
+
+  it('flags salt as able to make the bar crumbly', () => {
+    const entry = catalogEntryById('salt');
+    expect(entry?.hazards).toContain('can make the bar crumbly');
+  });
+
+  it('flags titanium dioxide as able to glycerin-river at high water', () => {
+    const entry = catalogEntryById('titanium-dioxide');
+    expect(entry?.hazards).toContain('can glycerin-river at high water');
+  });
+
+  it('leaves untagged entries without a hazards field', () => {
+    const entry = catalogEntryById('chelator');
+    expect(entry?.hazards).toBeUndefined();
+  });
+});
+
 describe('parseDoseAmount', () => {
   it('accepts percent up to 100 and rejects above', () => {
     expect(parseDoseAmount('5', 'percent')).toBe(5);

@@ -51,6 +51,23 @@ export function hpYogurtPercentForInsights(
     .reduce((sum, item) => sum + (item.grams / totalOilGrams) * 100, 0);
 }
 
+/** Sugar-family additives' (sugar/sorbitol, honey, yogurt) combined percent of oil weight —
+ * they all accelerate trace/heat retention similarly, so their doses are summed into one
+ * total rather than tracked per-additive. Mirrors hpYogurtPercentForInsights' percent-of-oil
+ * math; matches by catalog id or a custom-named line's keyword via additiveMatches. A line
+ * is counted once even if its name matches more than one keyword (e.g. "Sugar / sorbitol"
+ * matches both "sugar" and "sorbitol"). */
+export function sugarTotalPercentForInsights(
+  additives: Array<{ catalogId: string; name: string; grams: number }>,
+  totalOilGrams: number,
+): number {
+  if (totalOilGrams <= 0) return 0;
+  const keywords = ['sugar', 'sorbitol', 'honey', 'yogurt'];
+  return additives
+    .filter((item) => keywords.some((keyword) => additiveMatches([item], keyword, keyword)))
+    .reduce((sum, item) => sum + (item.grams / totalOilGrams) * 100, 0);
+}
+
 type FormulationInsightOptions = {
   excludedOilWeightGrams?: number;
   splitLiquidGrams?: number | null;
@@ -149,6 +166,10 @@ export function useFormulationInsights(
         options.process === 'hp'
           ? hpYogurtPercentForInsights(options.additives ?? [], lyeResult.totalOilWeightGrams)
           : undefined,
+      sugarTotalPercent: sugarTotalPercentForInsights(
+        options.additives ?? [],
+        lyeResult.totalOilWeightGrams,
+      ),
       waterBand,
       // At partial fatty-acid coverage the renormalized profile (and thus the predicted
       // trace speed derived from it) is unrepresentative — withhold the label rather than

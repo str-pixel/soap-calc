@@ -12,6 +12,9 @@ export type AdditiveCatalogEntry = {
   defaultStage: AdditiveStage;
   /** Processes this additive is offered for; absent = all processes. */
   processes?: AdditiveProcess[];
+  /** Short behavior-only hazard/caution tags shown next to the additive (e.g. "can seize").
+   * No source or dose-specific claim — just the known failure mode. */
+  hazards?: string[];
 };
 
 export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
@@ -21,6 +24,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.5,
     typicalHigh: 2,
     defaultStage: 'trace',
+    hazards: ['can tunnel/overheat'],
   },
   {
     id: 'chelator',
@@ -87,6 +91,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.05,
     typicalHigh: 1,
     defaultStage: 'lye',
+    hazards: ['can make the bar crumbly'],
   },
   {
     // Sodium lactate — humectant + hardener, water-soluble, added to the lye water.
@@ -120,6 +125,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.1,
     typicalHigh: 1,
     defaultStage: 'oils',
+    hazards: ['can glycerin-river at high water'],
   },
   {
     // Eugenol — clove-derived aromatic; dosed in parts-per-thousand, at trace, well below
@@ -129,6 +135,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 1,
     typicalHigh: 3,
     defaultStage: 'trace',
+    hazards: ['can seize'],
   },
   {
     // Loofah — fibrous exfoliant blended into the oils. No cited dose constant for this one;

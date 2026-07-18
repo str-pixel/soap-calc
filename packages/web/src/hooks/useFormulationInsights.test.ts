@@ -15,6 +15,7 @@ import { useRecipeCalculation } from './useRecipeCalculation';
 import {
   hpYogurtPercentForInsights,
   postCookSuperfatPufaPercent,
+  sugarTotalPercentForInsights,
   totalAdditivePercentForInsights,
   useFormulationInsights,
 } from './useFormulationInsights';
@@ -67,6 +68,59 @@ describe('hpYogurtPercentForInsights', () => {
     ).toBe(0);
     expect(
       hpYogurtPercentForInsights([{ catalogId: 'yogurt', name: 'Yogurt', grams: 20 }], 0),
+    ).toBe(0);
+  });
+});
+
+describe('sugarTotalPercentForInsights', () => {
+  it('sums grams from a sugar/sorbitol line as a percent of oil weight', () => {
+    expect(
+      sugarTotalPercentForInsights(
+        [{ catalogId: 'sugar-sorbitol', name: 'Sugar / sorbitol', grams: 30 }],
+        1000,
+      ),
+    ).toBe(3);
+  });
+
+  it('sums two sugar-family sources (sugar + honey) without double counting', () => {
+    expect(
+      sugarTotalPercentForInsights(
+        [
+          { catalogId: 'sugar-sorbitol', name: 'Sugar / sorbitol', grams: 30 },
+          { catalogId: 'honey', name: 'Honey', grams: 20 },
+        ],
+        1000,
+      ),
+    ).toBe(5);
+  });
+
+  it('matches a custom-named sorbitol or yogurt line by keyword, not just catalog id', () => {
+    expect(
+      sugarTotalPercentForInsights(
+        [{ catalogId: 'custom', name: 'Liquid sorbitol', grams: 10 }],
+        1000,
+      ),
+    ).toBe(1);
+    expect(
+      sugarTotalPercentForInsights(
+        [{ catalogId: 'custom', name: 'Greek yogurt', grams: 40 }],
+        1000,
+      ),
+    ).toBe(4);
+  });
+
+  it('ignores non-sugar-family lines and returns 0 with no oil weight', () => {
+    expect(
+      sugarTotalPercentForInsights(
+        [{ catalogId: 'salt', name: 'Table salt (NaCl)', grams: 20 }],
+        1000,
+      ),
+    ).toBe(0);
+    expect(
+      sugarTotalPercentForInsights(
+        [{ catalogId: 'sugar-sorbitol', name: 'Sugar / sorbitol', grams: 20 }],
+        0,
+      ),
     ).toBe(0);
   });
 });
@@ -177,6 +231,30 @@ function yogurtLine(percent: string): AdditiveLine {
   };
 }
 
+function sugarLine(percent: string): AdditiveLine {
+  return {
+    key: newAdditiveKey(),
+    catalogId: 'sugar-sorbitol',
+    name: 'Sugar / sorbitol',
+    amount: percent,
+    basis: 'oil',
+    unit: 'percent',
+    addAt: 'trace',
+  };
+}
+
+function honeyLine(percent: string): AdditiveLine {
+  return {
+    key: newAdditiveKey(),
+    catalogId: 'honey',
+    name: 'Honey',
+    amount: percent,
+    basis: 'oil',
+    unit: 'percent',
+    addAt: 'trace',
+  };
+}
+
 // Composes the same hooks useRecipeViewModel wires together, with `process` and the
 // resulting additive grams threaded into useFormulationInsights exactly as the view model
 // does — exercises Step 0/5's real wiring (process discriminator + hpYogurtPercent) rather
@@ -235,5 +313,25 @@ describe('useFormulationInsights HP process wiring (Step 0 + Step 5)', () => {
     const { result } = renderHook(() => useProcessWiringHarness(lines, 'cp', [yogurtLine('6')]));
     const codes = result.current.insights.map((i) => i.code);
     expect(codes).not.toContain('hp_yogurt_water');
+  });
+});
+
+describe('useFormulationInsights sugar aggregator (Step 3b)', () => {
+  const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+
+  it('fires sugar_total_high exactly once when two sugar-family additives sum past 4%', () => {
+    const { result } = renderHook(() =>
+      useProcessWiringHarness(lines, 'cp', [sugarLine('3'), honeyLine('2')]),
+    );
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes.filter((c) => c === 'sugar_total_high')).toHaveLength(1);
+  });
+
+  it('does not fire sugar_total_high when the sugar-family total stays at 3%', () => {
+    const { result } = renderHook(() =>
+      useProcessWiringHarness(lines, 'cp', [sugarLine('2'), honeyLine('1')]),
+    );
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).not.toContain('sugar_total_high');
   });
 });
