@@ -248,6 +248,7 @@ export function useRecipeViewModel({
       additives: computedAdditives,
       postCookSuperfat,
       isLiquidSoap: process === 'ls',
+      process,
     },
   );
   const lyeLabel =

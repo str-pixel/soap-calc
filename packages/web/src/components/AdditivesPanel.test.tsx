@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ADDITIVE_CATALOG } from '@soap-calc/core';
 import { AdditivesPanel } from './AdditivesPanel';
 import type { AdditiveLine } from '../lib/recipe';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
@@ -41,6 +42,62 @@ function optionValues(select: HTMLElement): string[] {
     .getAllByRole('option')
     .map((o) => (o as HTMLOptionElement).value);
 }
+
+describe('AdditivesPanel catalog picker', () => {
+  it('renders all current unscoped catalog entries in the CP picker (no regression)', () => {
+    render(
+      <AdditivesPanel
+        additives={[makeLine()]}
+        computed={[makeComputed(makeLine())]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    const select = screen.getByLabelText('Additive type');
+    const renderedIds = optionValues(select).filter((v) => v !== '');
+    // Unscoped entries only — process-scoped entries (e.g. HP's stearic/lauric/yogurt)
+    // are correctly absent from the CP picker; that's the scoping feature working, not
+    // a regression this test should catch.
+    for (const entry of ADDITIVE_CATALOG.filter((e) => !e.processes)) {
+      expect(renderedIds).toContain(entry.id);
+    }
+  });
+
+  it('excludes HP-scoped entries (stearic, lauric, yogurt) from the CP picker', () => {
+    render(
+      <AdditivesPanel
+        additives={[makeLine()]}
+        computed={[makeComputed(makeLine())]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    const select = screen.getByLabelText('Additive type');
+    const renderedIds = optionValues(select).filter((v) => v !== '');
+    expect(renderedIds).not.toContain('stearic');
+    expect(renderedIds).not.toContain('lauric');
+    expect(renderedIds).not.toContain('yogurt');
+  });
+
+  it('includes HP-scoped entries (stearic, lauric, yogurt) in the HP picker', () => {
+    render(
+      <AdditivesPanel
+        additives={[makeLine()]}
+        computed={[makeComputed(makeLine())]}
+        weightUnit="g"
+        process="hp"
+        onChange={() => {}}
+      />,
+    );
+    const select = screen.getByLabelText('Additive type');
+    const renderedIds = optionValues(select).filter((v) => v !== '');
+    expect(renderedIds).toContain('stearic');
+    expect(renderedIds).toContain('lauric');
+    expect(renderedIds).toContain('yogurt');
+  });
+});
 
 describe('AdditivesPanel stage options', () => {
   it('CP renders 4 stage options (no after-cook)', () => {
@@ -184,10 +241,70 @@ test('LS offers the solution dose modes; CP does not', () => {
   );
 });
 
+describe('AdditivesPanel hazard chips', () => {
+  it('renders hazard chips for a hazard-bearing catalog additive', () => {
+    const line = makeLine({ catalogId: 'eugenol', name: 'Eugenol' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText('can seize')).not.toBeNull();
+  });
+
+  it('renders no hazard chips for an additive without hazards', () => {
+    const line = makeLine({ catalogId: 'chelator', name: 'Chelator (citrate, gluconate)' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText('can seize')).toBeNull();
+  });
+
+  it('renders no hazard chips for a custom (non-catalog) line', () => {
+    const line = makeLine({ catalogId: '', name: 'My custom blend' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText('can seize')).toBeNull();
+  });
+});
+
 test('a stray solution line under CP still renders its dose-mode option (guard)', () => {
   const line = makeLine({ basis: 'solution', unit: 'percent' });
   render(<AdditivesPanel additives={[line]} computed={[]} weightUnit="g" process="cp" onChange={() => {}} />);
   const select = screen.getByLabelText('Dose mode') as HTMLSelectElement;
   expect(select.value).toBe('solution-percent');
   expect(doseModeValues(select)).toContain('solution-percent');
+});
+
+test('a line already set to an LS-scoped catalogId (guar) under CP still offers it as a selected option (mismatched-select guard)', () => {
+  const line = makeLine({ catalogId: 'guar', name: 'Guar gum' });
+  render(
+    <AdditivesPanel
+      additives={[line]}
+      computed={[makeComputed(line)]}
+      weightUnit="g"
+      process="cp"
+      onChange={() => {}}
+    />,
+  );
+  const select = screen.getByLabelText('Additive type') as HTMLSelectElement;
+  expect(select.value).toBe('guar');
+  expect(optionValues(select)).toContain('guar');
 });

@@ -13,6 +13,7 @@ import {
 } from '@soap-calc/core';
 import { oilById } from '../lib/oils';
 import { processProfileById, isProcessVariantId } from '../lib/processProfile';
+import type { ProcessId } from '../lib/process';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
@@ -37,6 +38,51 @@ export function postCookSuperfatPufaPercent(oilId: string): number | undefined {
   return fa ? sumFattyAcids(fa, FATTY_ACID_GROUP_KEYS.polyunsaturated) : undefined;
 }
 
+/** Yogurt additive line(s)' percent of oil weight (grams / totalOilGrams × 100) — mirrors
+ * totalAdditivePercentForInsights' percent-of-oil math, scoped to just the yogurt line(s)
+ * via additiveMatches (catalog id 'yogurt' or a custom-named line containing "yogurt"). */
+export function hpYogurtPercentForInsights(
+  additives: Array<{ catalogId: string; name: string; grams: number }>,
+  totalOilGrams: number,
+): number {
+  if (totalOilGrams <= 0) return 0;
+  return additives
+    .filter((item) => additiveMatches([item], 'yogurt', 'yogurt'))
+    .reduce((sum, item) => sum + (item.grams / totalOilGrams) * 100, 0);
+}
+
+/** Sugar-family additives' (sugar/sorbitol, honey, yogurt) combined percent of oil weight —
+ * they all accelerate trace/heat retention similarly, so their doses are summed into one
+ * total rather than tracked per-additive. Mirrors hpYogurtPercentForInsights' percent-of-oil
+ * math; matches by catalog id or a custom-named line's keyword via additiveMatches. A line
+ * is counted once even if its name matches more than one keyword (e.g. "Sugar / sorbitol"
+ * matches both "sugar" and "sorbitol").
+ *
+ * `excludeYogurt` drops 'yogurt' from the keyword list — pass true for HP recipes, where
+ * hp_yogurt_water already covers yogurt's water-deduction concern on its own; counting the
+ * same yogurt line into this total too would double-warn on one additive line. Non-HP
+ * callers (no hp_yogurt_water insight) omit the flag so yogurt still counts here.
+ *
+ * The result feeds the core `sugar_total_high` insight's 4% ceiling, which is oil-relative
+ * (a CP-derived constant) and intentionally applied across every process — see that
+ * insight's doc in @soap-calc/core/insights.ts for why. `additives[].grams` already reflects
+ * each line's resolved dose regardless of dosing basis (oil/batch/solution — resolved
+ * upstream by computeRecipeAdditives), so a solution-dosed LS sugar additive contributes its
+ * true %-of-oil here, not an inflated solution-relative figure. */
+export function sugarTotalPercentForInsights(
+  additives: Array<{ catalogId: string; name: string; grams: number }>,
+  totalOilGrams: number,
+  excludeYogurt = false,
+): number {
+  if (totalOilGrams <= 0) return 0;
+  const keywords = excludeYogurt
+    ? ['sugar', 'sorbitol', 'honey']
+    : ['sugar', 'sorbitol', 'honey', 'yogurt'];
+  return additives
+    .filter((item) => keywords.some((keyword) => additiveMatches([item], keyword, keyword)))
+    .reduce((sum, item) => sum + (item.grams / totalOilGrams) * 100, 0);
+}
+
 type FormulationInsightOptions = {
   excludedOilWeightGrams?: number;
   splitLiquidGrams?: number | null;
@@ -45,6 +91,9 @@ type FormulationInsightOptions = {
   additives?: ComputedAdditive[];
   postCookSuperfat?: ComputedPostCookSuperfat | null;
   isLiquidSoap?: boolean;
+  /** The recipe's process; threaded into analyzeFormulation so HP-only insights can gate on
+   * process === 'hp' rather than !isLiquidSoap (which is also true for CP). */
+  process?: ProcessId;
 };
 
 export function useFormulationInsights(
@@ -127,6 +176,16 @@ export function useFormulationInsights(
         ? postCookSuperfatPufaPercent(options.postCookSuperfat.oilId)
         : undefined,
       isLiquidSoap: options.isLiquidSoap ?? false,
+      process: options.process,
+      hpYogurtPercent:
+        options.process === 'hp'
+          ? hpYogurtPercentForInsights(options.additives ?? [], lyeResult.totalOilWeightGrams)
+          : undefined,
+      sugarTotalPercent: sugarTotalPercentForInsights(
+        options.additives ?? [],
+        lyeResult.totalOilWeightGrams,
+        options.process === 'hp',
+      ),
       waterBand,
       // At partial fatty-acid coverage the renormalized profile (and thus the predicted
       // trace speed derived from it) is unrepresentative — withhold the label rather than
@@ -158,6 +217,7 @@ export function useFormulationInsights(
     settings.waterMode,
     settings.processVariant,
     options.isLiquidSoap,
+    options.process,
   ]);
 
   return { insights };

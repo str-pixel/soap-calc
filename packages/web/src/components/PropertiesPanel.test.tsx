@@ -80,6 +80,27 @@ test('notes that all soap cleans, via the cleansing row InfoTip guidance', () =>
   ).toBeTruthy();
 });
 
+test('appends the LS solubility note to the cleansing guidance when isLiquidSoap', () => {
+  render(
+    <PropertiesPanel
+      result={FULL.properties}
+      indexes={FULL.indexes}
+      modeledOilIds={[]}
+      isLiquidSoap
+    />,
+  );
+  expect(
+    screen.getByText(/In liquid soap this tracks solubility\/how well it dilutes, not harshness\./),
+  ).toBeTruthy();
+});
+
+test('omits the LS solubility note for a bar-soap (CP/HP) recipe', () => {
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  expect(
+    screen.queryByText(/In liquid soap this tracks solubility/),
+  ).toBeNull();
+});
+
 test('renders no radar and a hint when there is no property data', () => {
   const empty = {
     properties: { properties: null, coveragePercent: 0, missingOilIds: [] },

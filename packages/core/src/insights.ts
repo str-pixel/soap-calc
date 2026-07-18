@@ -12,6 +12,11 @@ import {
   type NamedOilEntry,
 } from './keyword-match.js';
 
+// Coconut-heavy LS proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" — a
+// documented estimate, not a cited source constant. Shared by the dual-lye recommender and
+// the salt-thickening advisory below so the proxy (and this doc) lives in one place.
+const COCONUT_HEAVY_LAURIC_MYRISTIC = 55;
+
 export type FormulationInsightLevel = 'info' | 'warning';
 
 export type FormulationInsight = {
@@ -51,6 +56,26 @@ export type FormulationAnalysisInput = {
   /** True for liquid-soap (KOH) recipes; gates LS-specific insights and exempts LS from the
    * bar-soap lye-concentration warnings. */
   isLiquidSoap?: boolean;
+  /** The recipe's process. Unlike {@link isLiquidSoap} (which only distinguishes LS from
+   * everything else), this discriminates CP from HP too — HP-only insights must gate on
+   * `process === 'hp'`, since `!isLiquidSoap` is also true for CP and would wrongly include it. */
+  process?: 'cp' | 'hp' | 'ls';
+  /** Yogurt additive line's percent of oil weight (grams / totalOilGrams × 100); HP only —
+   * its water content deducts from the recipe's lye water when stirred in after cook. */
+  hpYogurtPercent?: number;
+  /** Combined percent of oil weight across sugar-family additives (sugar/sorbitol, honey,
+   * yogurt) — computed by the caller since {@link additiveEntries} carries no percentages.
+   * Ceiling is 4% (verified constant, roadmap CP 308); above that the batch can tunnel or
+   * overheat. Applies to any process, unlike the HP-only hpYogurtPercent above.
+   *
+   * The 4% ceiling is oil-relative (a CP-derived constant) and is deliberately applied
+   * across CP/HP/LS alike: it's the sugar-to-oil mass ratio that drives cook overheating,
+   * not the process. A solution-dosed LS additive still lands on the true %-of-oil here —
+   * computeRecipeAdditives resolves any dosing basis (oil/batch/solution) to actual grams
+   * upstream, before sugarTotalPercentForInsights divides by total oil weight — so LS isn't
+   * penalized for its different dosing basis. This is a documented judgment call, not an
+   * oversight — do not "fix" it by making the ceiling process-specific. */
+  sugarTotalPercent?: number;
   /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
   waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
   /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
@@ -173,7 +198,10 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     );
     const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
 
-    if (lauricMyristic > 35 && palmiticStearic < 15) {
+    // Bar-soap framing ("bar may feel... and wear quickly") — LS has its own lather/salt
+    // coaching (ls_salt_thickening, ls_dual_lye_recommendation) for a coconut-heavy profile,
+    // so this stays CP/HP-only, mirroring eutectic_lather_sources' LS gate above.
+    if (lauricMyristic > 35 && palmiticStearic < 15 && !input.isLiquidSoap) {
       insights.push({
         level: 'info',
         code: 'high_short_chain_low_long_chain',
@@ -193,7 +221,9 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
 
     const oleic = input.fattyAcids.oleic ?? 0;
     const lauric = input.fattyAcids.lauric ?? 0;
-    if (lauric >= 5 && oleic >= 20) {
+    // Bar-lather claim — liquid soap's lather framing is different (see ls_castor_no_lather
+    // and the LS salt/dual-lye advisories below), so this stays a CP/HP-only insight.
+    if (lauric >= 5 && oleic >= 20 && !input.isLiquidSoap) {
       insights.push({
         level: 'info',
         code: 'eutectic_lather_sources',
@@ -282,6 +312,24 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       code: 'high_total_additives',
       message:
         'Total additives exceed ~10% of oil weight — may affect trace, texture, or shelf life; verify with a small test batch.',
+    });
+  }
+
+  // Sugar-family additives (sugar/sorbitol, honey, yogurt) all accelerate trace and heat
+  // retention similarly; a single message on the combined total, not per-additive, since
+  // it's the total dose that tunnels/overheats the batch. Verified ceiling: 4% (roadmap CP 308).
+  //
+  // This 4% ceiling is oil-relative and CP-derived, but is intentionally applied to every
+  // process (CP/HP/LS) — it's the sugar mass relative to oil mass that overheats the cook,
+  // a physical relationship that doesn't change with process. See sugarTotalPercent's doc
+  // above for how a solution-dosed LS additive still resolves to its true %-of-oil here.
+  // Deliberate, not a bug to "fix" by scoping this to CP/HP only.
+  if (input.sugarTotalPercent !== undefined && input.sugarTotalPercent > 4) {
+    insights.push({
+      level: 'warning',
+      code: 'sugar_total_high',
+      message:
+        'Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~4% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.',
     });
   }
 
@@ -378,6 +426,138 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       message:
         'Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%.',
     });
+  }
+
+  // The bar-soap eutectic-lather framing (lauric + oleic → fluffy/stable lather) doesn't
+  // carry over to liquid soap; castor's role there is solubility/clarity, not lather. Detect
+  // castor via the ricinoleic fatty-acid reading (a documented proxy — castor is essentially
+  // the only common soaping oil with meaningful ricinoleic) gated by fatty-acid coverage, OR
+  // via oil identity, which needs no coverage gate (same pattern as the jojoba oil-identity
+  // check above).
+  const ricinoleicForCastor = input.fattyAcids?.ricinoleic ?? 0;
+  const hasCastorByFattyAcid =
+    ricinoleicForCastor >= 4 &&
+    (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+  const hasCastorByIdentity = recipeOilMatches(input.oilEntries, {
+    oilIds: ['castor-oil'],
+    nameKeyword: 'castor',
+  });
+  if (input.isLiquidSoap && (hasCastorByFattyAcid || hasCastorByIdentity)) {
+    insights.push({
+      level: 'info',
+      code: 'ls_castor_no_lather',
+      message:
+        'Castor adds little lather in liquid soap — its main contribution here is solubility and clarity, not lather.',
+    });
+  }
+
+  // Coconut-heavy LS proxy, computed once and reused by the dual-lye recommender and the
+  // salt-thickening advisory below. Gate mirrors what both blocks already required
+  // independently (LS + fatty-acid data present + coverage above the low-coverage floor),
+  // so hoisting it here changes no insight's firing condition.
+  const lsFattyAcidCoverageOk =
+    input.isLiquidSoap &&
+    !!input.fattyAcids &&
+    (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+  const lauricMyristicForCoconutHeavy = lsFattyAcidCoverageOk
+    ? sumFattyAcids(input.fattyAcids!, FATTY_ACID_GROUP_KEYS.lauricMyristic)
+    : undefined;
+  const isCoconutHeavyLS =
+    lauricMyristicForCoconutHeavy !== undefined &&
+    lauricMyristicForCoconutHeavy >= COCONUT_HEAVY_LAURIC_MYRISTIC;
+
+  // Dual-lye NaOH-share recommender (verified constants, roadmap LS 86): coconut-heavy LS
+  // benefits from a ~30% NaOH share regardless of current lye type (worth switching to dual
+  // lye for), while a low-palmitic+stearic blend that is already dual-lye benefits from a
+  // smaller ~0–20% NaOH share. Deliberately silent for a pure-KOH, low-P+S recipe with no
+  // coconut — nothing actionable to recommend without nagging the user into dual lye.
+  if (lsFattyAcidCoverageOk) {
+    const palmiticStearicForDualLye = sumFattyAcids(
+      input.fattyAcids!,
+      FATTY_ACID_GROUP_KEYS.palmiticStearic,
+    );
+
+    let dualLyeMessage: string | null = null;
+    if (isCoconutHeavyLS) {
+      dualLyeMessage =
+        'High-coconut liquid soap firms and thickens with a ~30% NaOH share in a dual-lye blend.';
+    } else if (palmiticStearicForDualLye <= 15 && input.lyeType === 'dual') {
+      dualLyeMessage =
+        'Low in palmitic + stearic — a small NaOH share (~0–20%) in your blend gives a firmer, thicker soap.';
+    }
+
+    if (dualLyeMessage) {
+      insights.push({
+        level: 'info',
+        code: 'ls_dual_lye_recommendation',
+        message: dualLyeMessage,
+      });
+    }
+  }
+
+  // Salt-thickening is a qualitative advisory, not a numeric viscosity model — no calibrated
+  // curve exists for how much salt thickens diluted LS by process/oil mix, so this ships
+  // behavior-only guidance (thickens then thins past a point) and never a number.
+  if (input.isLiquidSoap && additiveMatches(additiveEntries, 'salt', 'salt')) {
+    let message =
+      'Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go.';
+
+    if (isCoconutHeavyLS) {
+      message +=
+        ' High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body.';
+    }
+
+    insights.push({
+      level: 'info',
+      code: 'ls_salt_thickening',
+      message,
+    });
+  }
+
+  // HP-only insights. Gated on the explicit process discriminator, never on !isLiquidSoap —
+  // isLiquidSoap only distinguishes LS from "everything else" and is also false for CP, so
+  // a !isLiquidSoap gate would wrongly include CP bars here.
+  if (input.process === 'hp') {
+    if (
+      additiveMatches(additiveEntries, 'salt', 'salt') ||
+      additiveMatches(additiveEntries, 'sodium-lactate', 'sodium lactate')
+    ) {
+      insights.push({
+        level: 'info',
+        code: 'hp_thick_phase_suppressant',
+        message:
+          'Salt or sodium lactate suppresses the thick, translucent "mashed potato" middle phase of a hot-process cook — expect a smoother, faster transition through cook.',
+      });
+    }
+
+    if (input.hpYogurtPercent !== undefined && input.hpYogurtPercent > 5) {
+      insights.push({
+        level: 'warning',
+        code: 'hp_yogurt_water',
+        message:
+          'Yogurt above ~5% of oil weight deducts meaningfully from the lye water — check the cooked soap stays fluid enough to fold in additives and pour.',
+      });
+    }
+
+    // Ricinoleic is a fatty-acid reading, so it needs the same low-coverage gate the other
+    // FA-derived insights use above. Shea is an oil-identity check (recipeOilMatches), not
+    // an FA reading, so it fires independent of fatty-acid coverage — same pattern as the
+    // jojoba oil-identity insight elsewhere in this file.
+    const ricinoleic = input.fattyAcids?.ricinoleic ?? 0;
+    const hasElevatedCastor =
+      ricinoleic >= 10 && (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+    const hasShea = recipeOilMatches(input.oilEntries, {
+      oilIds: ['shea-butter', 'shea-oil-fractionated'],
+      nameKeyword: 'shea',
+    });
+    if (hasElevatedCastor || hasShea) {
+      insights.push({
+        level: 'info',
+        code: 'hp_relaxed_caps',
+        message:
+          'Fluid HP tolerates higher castor (about 10–15%) and shea (about 30–40%) than a typical CP bar — the hot cook and post-cook additions give more working room before trace or texture become unworkable.',
+      });
+    }
   }
 
   // Any negative superfat leaves free alkali in the finished soap, whatever the process or

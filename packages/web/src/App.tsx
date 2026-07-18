@@ -5,6 +5,7 @@ import { DilutionPanel } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
+import { PreservePanel } from './components/PreservePanel';
 import { ProcessTabs } from './components/ProcessTabs';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { RecipeOilsPanel } from './components/RecipeOilsPanel';
@@ -233,6 +234,8 @@ export default function App() {
             <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
           )}
 
+          {process === 'ls' && <PreservePanel />}
+
           <SettingsPanel
             process={process}
             settings={settings}
@@ -251,6 +254,7 @@ export default function App() {
             result={vm.properties}
             indexes={vm.indexes}
             modeledOilIds={vm.fattyAcids.modeledOilIds}
+            isLiquidSoap={process === 'ls'}
           />
           <FattyAcidPanel result={vm.fattyAcids} />
           <FormulationInsightsPanel insights={vm.insights} />

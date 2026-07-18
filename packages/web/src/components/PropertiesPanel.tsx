@@ -50,6 +50,9 @@ type PropertiesPanelProps = {
   /** Recipe oils whose fatty-acid profile is a modeled reconstruction, not a measured composition.
    *  Required: a data-honesty signal must not be omittable into silence. Pass [] when there are none. */
   modeledOilIds: string[];
+  /** True for liquid-soap (KOH) recipes. Appends an LS-specific note to the cleansing row's
+   *  guidance, since "cleansing" reads as solubility/dilution there, not bar harshness. */
+  isLiquidSoap?: boolean;
 };
 
 // memo: props are stable view-model memo outputs, so unrelated keystrokes
@@ -58,6 +61,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   result,
   indexes,
   modeledOilIds,
+  isLiquidSoap,
 }: PropertiesPanelProps) {
   const modeled = modeledOilIds;
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
@@ -160,14 +164,18 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               const guide = SOAP_PROPERTY_GUIDE[key];
               const preference = FORMULATION_PREFERENCE_GUIDE[key];
               const inSuggested = value >= guide.low && value <= guide.high;
+              // Append, don't mutate PROPERTY_GUIDANCE: cleansing reads as solubility/dilution
+              // in liquid soap, not bar harshness, so LS recipes get an extra clause here.
+              const guidance =
+                key === 'cleansing' && isLiquidSoap
+                  ? `${PROPERTY_GUIDANCE[key]} In liquid soap this tracks solubility/how well it dilutes, not harshness.`
+                  : PROPERTY_GUIDANCE[key];
               return (
                 <li key={key} className="property-bars__row">
                   <div className="property-bars__label">
                     <span>
                       {SOAP_PROPERTY_LABELS[key]}
-                      <InfoTip term={SOAP_PROPERTY_LABELS[key]}>
-                        {PROPERTY_GUIDANCE[key]}
-                      </InfoTip>
+                      <InfoTip term={SOAP_PROPERTY_LABELS[key]}>{guidance}</InfoTip>
                     </span>
                     <span
                       className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}

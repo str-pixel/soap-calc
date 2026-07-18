@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import {
-  ADDITIVE_CATALOG,
+  catalogEntriesForProcess,
   catalogEntryById,
   LATHER_SUPPORT_PACK,
   parseDoseAmount,
@@ -57,6 +57,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
 }: AdditivesPanelProps) {
   const offeredStages = offeredStagesForProcess(process);
   const offeredDoseModes = offeredDoseModesForProcess(process);
+  const catalogEntries = catalogEntriesForProcess(process);
 
   function updateLine(key: string, patch: Partial<AdditiveLine>) {
     onChange(
@@ -175,6 +176,15 @@ export const AdditivesPanel = memo(function AdditivesPanel({
             const doseModeOptions = offeredDoseModes.some((m) => m.value === doseModeValue)
               ? offeredDoseModes
               : [...offeredDoseModes, ...DOSE_MODES.filter((m) => m.value === doseModeValue)];
+            // Mismatched-select guard (catalog): a stray process-scoped catalogId (e.g.
+            // `guar` viewed under CP) must still render its current option, even though
+            // it's not offered for this process — see stageOptions/doseModeOptions above.
+            const catalogOptions =
+              line.catalogId === '' || catalogEntries.some((item) => item.id === line.catalogId)
+                ? catalogEntries
+                : entry
+                  ? [...catalogEntries, entry]
+                  : catalogEntries;
 
             return (
               <li key={line.key} className="additive-list__row">
@@ -186,7 +196,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     onChange={(e) => selectCatalog(line.key, e.target.value)}
                   >
                     <option value="">Custom…</option>
-                    {ADDITIVE_CATALOG.map((item) => (
+                    {catalogOptions.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
                       </option>
@@ -273,6 +283,15 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     {entry.typicalHigh !== entry.typicalLow ? `–${entry.typicalHigh}` : ''}% of
                     oil weight
                   </p>
+                )}
+                {entry && entry.hazards && entry.hazards.length > 0 && (
+                  <ul className="additive-list__hazards" aria-label="Hazards">
+                    {entry.hazards.map((hazard) => (
+                      <li key={hazard} className="additive-list__hazard">
+                        {hazard}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </li>
             );

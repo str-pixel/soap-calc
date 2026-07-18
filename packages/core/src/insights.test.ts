@@ -280,3 +280,360 @@ describe('trace-speed insight', () => {
     expect(withUndefined?.message).not.toContain('Driven by');
   });
 });
+
+describe('HP-gated insights (process discriminator)', () => {
+  it('hp_thick_phase_suppressant fires for HP + salt additive', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_thick_phase_suppressant');
+  });
+
+  it('hp_thick_phase_suppressant fires for HP + sodium-lactate additive', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      additiveEntries: [{ catalogId: 'sodium-lactate', name: 'Sodium lactate' }],
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_thick_phase_suppressant');
+  });
+
+  it('does NOT fire hp_thick_phase_suppressant for a CP recipe carrying salt (gating regression)', () => {
+    // This is the exact gap the process discriminator exists to close: !isLiquidSoap
+    // would wrongly include CP here. CP recipes never pass isLiquidSoap, so a check
+    // gated only on !isLiquidSoap would fire for CP too — process:'cp' must suppress it.
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'cp',
+      isLiquidSoap: false,
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_thick_phase_suppressant');
+  });
+
+  it('does not fire hp_thick_phase_suppressant for HP without salt/sodium-lactate', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      additiveEntries: [{ catalogId: 'honey', name: 'Honey' }],
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_thick_phase_suppressant');
+  });
+
+  it('hp_yogurt_water warns above 5% (boundary: 6 fires, 4 does not)', () => {
+    const above = analyzeFormulation({ ...base, process: 'hp', hpYogurtPercent: 6 }).map(
+      (i) => i.code,
+    );
+    const below = analyzeFormulation({ ...base, process: 'hp', hpYogurtPercent: 4 }).map(
+      (i) => i.code,
+    );
+    expect(above).toContain('hp_yogurt_water');
+    expect(below).not.toContain('hp_yogurt_water');
+  });
+
+  it('does not fire hp_yogurt_water for CP even above 5%', () => {
+    const codes = analyzeFormulation({ ...base, process: 'cp', hpYogurtPercent: 6 }).map(
+      (i) => i.code,
+    );
+    expect(codes).not.toContain('hp_yogurt_water');
+  });
+
+  it('hp_relaxed_caps fires for HP + elevated castor (ricinoleic proxy >= 10%)', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      fattyAcids: { ricinoleic: 12 },
+      fattyAcidCoveragePercent: 90,
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_relaxed_caps');
+  });
+
+  it('hp_relaxed_caps fires for HP + shea present, even with low castor', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      fattyAcids: { ricinoleic: 0 },
+      fattyAcidCoveragePercent: 90,
+      oilEntries: [{ oilId: 'shea-butter', name: 'Shea butter' }],
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_relaxed_caps');
+  });
+
+  it('does not fire hp_relaxed_caps below the low fatty-acid coverage gate', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      fattyAcids: { ricinoleic: 12 },
+      fattyAcidCoveragePercent: 50,
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_relaxed_caps');
+  });
+
+  it('does not fire any HP insight for CP or LS even with the same triggers present', () => {
+    const cpCodes = analyzeFormulation({
+      ...base,
+      process: 'cp',
+      hpYogurtPercent: 8,
+      fattyAcids: { ricinoleic: 15 },
+      fattyAcidCoveragePercent: 90,
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+    }).map((i) => i.code);
+    const lsCodes = analyzeFormulation({
+      ...base,
+      process: 'ls',
+      isLiquidSoap: true,
+      hpYogurtPercent: 8,
+      fattyAcids: { ricinoleic: 15 },
+      fattyAcidCoveragePercent: 90,
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+    }).map((i) => i.code);
+    for (const codes of [cpCodes, lsCodes]) {
+      expect(codes).not.toContain('hp_thick_phase_suppressant');
+      expect(codes).not.toContain('hp_yogurt_water');
+      expect(codes).not.toContain('hp_relaxed_caps');
+    }
+  });
+});
+
+describe('sugar_total_high warning (total sugar-family additives, verified ceiling 4%)', () => {
+  it('fires above 4% total sugar-family additive dose', () => {
+    expect(has({ ...base, sugarTotalPercent: 5 }, 'sugar_total_high')).toBe(true);
+  });
+
+  it('does not fire at exactly 4% (boundary)', () => {
+    expect(has({ ...base, sugarTotalPercent: 4 }, 'sugar_total_high')).toBe(false);
+  });
+
+  it('does not fire at 3%', () => {
+    expect(has({ ...base, sugarTotalPercent: 3 }, 'sugar_total_high')).toBe(false);
+  });
+
+  it('does not fire when sugarTotalPercent is not provided', () => {
+    expect(has({ ...base }, 'sugar_total_high')).toBe(false);
+  });
+
+  it('emits a single message on the total, not one per additive', () => {
+    const matches = analyzeFormulation({ ...base, sugarTotalPercent: 6 }).filter(
+      (i) => i.code === 'sugar_total_high',
+    );
+    expect(matches).toHaveLength(1);
+  });
+});
+
+describe('ls_salt_thickening advisory (qualitative, LS-only)', () => {
+  const lsBase: FormulationAnalysisInput = {
+    ...base,
+    process: 'ls',
+    isLiquidSoap: true,
+    fattyAcidCoveragePercent: 100,
+    additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+  };
+
+  it('fires for LS + salt additive', () => {
+    const normal = analyzeFormulation({ ...lsBase, fattyAcids: { oleic: 60 } }).find(
+      (i) => i.code === 'ls_salt_thickening',
+    );
+    expect(normal).toBeTruthy();
+    expect(normal?.level).toBe('info');
+  });
+
+  it('does not carry a coconut caveat for a non-coconut-heavy profile', () => {
+    const normal = analyzeFormulation({ ...lsBase, fattyAcids: { oleic: 60 } }).find(
+      (i) => i.code === 'ls_salt_thickening',
+    );
+    expect(normal?.message).not.toMatch(/coconut/i);
+  });
+
+  it('appends a coconut caveat when coconut-heavy (lauric+myristic proxy >= 55%)', () => {
+    const coconut = analyzeFormulation({
+      ...lsBase,
+      fattyAcids: { lauric: 45, myristic: 12 },
+    }).find((i) => i.code === 'ls_salt_thickening');
+    expect(coconut?.message).toMatch(/coconut|barely|little/i);
+  });
+
+  it('does not append the coconut caveat below the fatty-acid coverage gate', () => {
+    const belowCoverage = analyzeFormulation({
+      ...lsBase,
+      fattyAcidCoveragePercent: 50,
+      fattyAcids: { lauric: 45, myristic: 12 },
+    }).find((i) => i.code === 'ls_salt_thickening');
+    expect(belowCoverage?.message).not.toMatch(/coconut/i);
+  });
+
+  it('does not fire for a non-salt LS additive', () => {
+    const codes = analyzeFormulation({
+      ...lsBase,
+      additiveEntries: [{ catalogId: 'honey', name: 'Honey' }],
+      fattyAcids: { oleic: 60 },
+    }).map((i) => i.code);
+    expect(codes).not.toContain('ls_salt_thickening');
+  });
+
+  it('does not fire for CP even with salt (LS-only gate)', () => {
+    expect(
+      analyzeFormulation({
+        ...lsBase,
+        process: 'cp',
+        isLiquidSoap: false,
+        fattyAcids: { oleic: 60 },
+      }).some((i) => i.code === 'ls_salt_thickening'),
+    ).toBe(false);
+  });
+
+  it('ships the salt advisory with no numeric viscosity/peak claims', () => {
+    const insight = analyzeFormulation({
+      ...lsBase,
+      fattyAcids: { lauric: 45, myristic: 12 },
+    }).find((i) => i.code === 'ls_salt_thickening');
+    expect(insight?.message).not.toMatch(/\d/);
+  });
+});
+
+describe('LS quality remap + dual-lye recommender', () => {
+  const ls: FormulationAnalysisInput = {
+    ...base,
+    isLiquidSoap: true,
+    process: 'ls',
+    fattyAcidCoveragePercent: 100,
+  };
+
+  it('gates high_short_chain_low_long_chain out for liquid soap', () => {
+    // Coconut-heavy: lauric+myristic > 35, palmitic+stearic < 15 — fires for CP but must
+    // be suppressed for LS, mirroring eutectic_lather_sources' LS gate (C5), since the
+    // "wears quickly" bar-soap framing contradicts LS's own lather coaching.
+    const coconutHeavy = { lauric: 40, myristic: 10, palmitic: 5, stearic: 5 };
+    expect(
+      analyzeFormulation({ ...ls, fattyAcids: coconutHeavy }).map((i) => i.code),
+    ).not.toContain('high_short_chain_low_long_chain');
+    expect(
+      analyzeFormulation({ ...ls, isLiquidSoap: false, fattyAcids: coconutHeavy }).map(
+        (i) => i.code,
+      ),
+    ).toContain('high_short_chain_low_long_chain');
+  });
+
+  it('gates eutectic_lather_sources out for liquid soap', () => {
+    const codes = analyzeFormulation({ ...ls, fattyAcids: { lauric: 10, oleic: 40 } }).map(
+      (i) => i.code,
+    );
+    expect(codes).not.toContain('eutectic_lather_sources');
+    // still fires for CP:
+    expect(
+      analyzeFormulation({ ...ls, isLiquidSoap: false, fattyAcids: { lauric: 10, oleic: 40 } }).map(
+        (i) => i.code,
+      ),
+    ).toContain('eutectic_lather_sources');
+  });
+
+  describe('ls_castor_no_lather', () => {
+    it('notes castor gives little lather in LS (ricinoleic proxy)', () => {
+      expect(
+        analyzeFormulation({ ...ls, fattyAcids: { ricinoleic: 6, oleic: 50 } }).map((i) => i.code),
+      ).toContain('ls_castor_no_lather');
+    });
+
+    it('does not fire below the ricinoleic threshold', () => {
+      expect(
+        analyzeFormulation({ ...ls, fattyAcids: { ricinoleic: 3, oleic: 50 } }).map((i) => i.code),
+      ).not.toContain('ls_castor_no_lather');
+    });
+
+    it('does not fire the ricinoleic branch below the fatty-acid coverage gate', () => {
+      expect(
+        analyzeFormulation({
+          ...ls,
+          fattyAcidCoveragePercent: 50,
+          fattyAcids: { ricinoleic: 6, oleic: 50 },
+        }).map((i) => i.code),
+      ).not.toContain('ls_castor_no_lather');
+    });
+
+    it('fires on castor-oil identity alone, with no fatty-acid data at all', () => {
+      expect(
+        analyzeFormulation({
+          ...ls,
+          fattyAcids: null,
+          oilEntries: [{ oilId: 'castor-oil', name: 'Castor oil' }],
+        }).map((i) => i.code),
+      ).toContain('ls_castor_no_lather');
+    });
+
+    it('does not fire for CP even with castor present', () => {
+      expect(
+        analyzeFormulation({
+          ...ls,
+          isLiquidSoap: false,
+          fattyAcids: { ricinoleic: 6, oleic: 50 },
+        }).map((i) => i.code),
+      ).not.toContain('ls_castor_no_lather');
+    });
+  });
+
+  describe('ls_dual_lye_recommendation', () => {
+    it('recommends ~30% NaOH for coconut-heavy LS (always, even pure KOH)', () => {
+      const i = analyzeFormulation({
+        ...ls,
+        lyeType: 'koh',
+        fattyAcids: { lauric: 45, myristic: 12 },
+      }).find((x) => x.code === 'ls_dual_lye_recommendation');
+      expect(i?.message).toMatch(/30%/);
+    });
+
+    it('recommends ~30% NaOH for coconut-heavy LS with dual lye too', () => {
+      const i = analyzeFormulation({
+        ...ls,
+        lyeType: 'dual',
+        fattyAcids: { lauric: 45, myristic: 12 },
+      }).find((x) => x.code === 'ls_dual_lye_recommendation');
+      expect(i?.message).toMatch(/30%/);
+    });
+
+    it('stays silent for pure-KOH low-P+S recipes (no nagging)', () => {
+      const codes = analyzeFormulation({
+        ...ls,
+        lyeType: 'koh',
+        fattyAcids: { oleic: 70, palmitic: 5, stearic: 3 },
+      }).map((i) => i.code);
+      expect(codes).not.toContain('ls_dual_lye_recommendation');
+    });
+
+    it('recommends 0–20% NaOH only once already dual-lye and low P+S', () => {
+      const dual = analyzeFormulation({
+        ...ls,
+        lyeType: 'dual',
+        fattyAcids: { oleic: 70, palmitic: 5, stearic: 3 },
+      }).find((x) => x.code === 'ls_dual_lye_recommendation');
+      expect(dual?.message).toMatch(/0.?20%|20%/);
+    });
+
+    it('stays silent when P+S is above 15% and lye is not coconut-heavy, regardless of lye type', () => {
+      const codes = analyzeFormulation({
+        ...ls,
+        lyeType: 'dual',
+        fattyAcids: { oleic: 40, palmitic: 20, stearic: 10 },
+      }).map((i) => i.code);
+      expect(codes).not.toContain('ls_dual_lye_recommendation');
+    });
+
+    it('does not fire for CP even with a coconut-heavy profile', () => {
+      const codes = analyzeFormulation({
+        ...ls,
+        isLiquidSoap: false,
+        fattyAcids: { lauric: 45, myristic: 12 },
+      }).map((i) => i.code);
+      expect(codes).not.toContain('ls_dual_lye_recommendation');
+    });
+
+    it('does not fire below the fatty-acid coverage gate', () => {
+      const codes = analyzeFormulation({
+        ...ls,
+        fattyAcidCoveragePercent: 50,
+        fattyAcids: { lauric: 45, myristic: 12 },
+      }).map((i) => i.code);
+      expect(codes).not.toContain('ls_dual_lye_recommendation');
+    });
+  });
+});

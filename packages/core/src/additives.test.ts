@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ADDITIVE_CATALOG,
   ADDITIVE_STAGE_LABELS,
+  catalogEntryById,
+  catalogEntriesForProcess,
   gramsFromDose,
   gramsFromPercentOfOil,
   LATHER_SUPPORT_PACK,
@@ -65,6 +67,96 @@ describe('additives', () => {
   it('includes an after_cook stage labeled "After cook"', () => {
     const stage: AdditiveStage = 'after_cook';
     expect(ADDITIVE_STAGE_LABELS[stage]).toBe('After cook');
+  });
+});
+
+describe('additive catalog process scoping', () => {
+  it('sugar range is corrected to 0.5–2%', () => {
+    const sugar = catalogEntryById('sugar-sorbitol');
+    expect(sugar?.typicalLow).toBe(0.5);
+    expect(sugar?.typicalHigh).toBe(2);
+  });
+  it('unscoped entries appear for every process', () => {
+    const cp = catalogEntriesForProcess('cp');
+    expect(cp.some((e) => e.id === 'sugar-sorbitol')).toBe(true);
+  });
+
+  it('offers stearic, lauric, and yogurt only for HP', () => {
+    const hp = catalogEntriesForProcess('hp').map((e) => e.id);
+    expect(hp).toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
+
+    const cp = catalogEntriesForProcess('cp').map((e) => e.id);
+    expect(cp).not.toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
+    const ls = catalogEntriesForProcess('ls').map((e) => e.id);
+    expect(ls).not.toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
+  });
+
+  it('doses stearic and lauric as oils at 5–8%', () => {
+    const stearic = catalogEntryById('stearic');
+    const lauric = catalogEntryById('lauric');
+    for (const entry of [stearic, lauric]) {
+      expect(entry).toBeDefined();
+      expect(entry?.defaultStage).toBe('oils');
+      expect(entry?.typicalLow).toBe(5);
+      expect(entry?.typicalHigh).toBe(8);
+    }
+  });
+
+  it('doses yogurt after cook at 2–5%', () => {
+    const yogurt = catalogEntryById('yogurt');
+    expect(yogurt).toBeDefined();
+    expect(yogurt?.defaultStage).toBe('after_cook');
+    expect(yogurt?.typicalLow).toBe(2);
+    expect(yogurt?.typicalHigh).toBe(5);
+  });
+
+  it('guar and hec are LS-only thickeners at 0.5–1% added after dilution', () => {
+    for (const id of ['guar', 'hec']) {
+      const e = catalogEntryById(id)!;
+      expect(e).toBeDefined();
+      expect(e.typicalLow).toBe(0.5);
+      expect(e.typicalHigh).toBe(1);
+      expect(e.defaultStage).toBe('after_cook');
+      expect(e.processes).toEqual(['ls']);
+    }
+    expect(catalogEntriesForProcess('cp').some((e) => e.id === 'guar')).toBe(false);
+    expect(catalogEntriesForProcess('cp').some((e) => e.id === 'hec')).toBe(false);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'guar')).toBe(true);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'hec')).toBe(true);
+  });
+
+  it('keeps salt, sodium-lactate, sugar, and eugenol unscoped (reused across processes)', () => {
+    for (const id of ['salt', 'sodium-lactate', 'sugar-sorbitol', 'eugenol']) {
+      const entry = catalogEntryById(id);
+      expect(entry?.processes).toBeUndefined();
+    }
+  });
+});
+
+describe('additive hazard tags (behavior-only)', () => {
+  it('flags eugenol as able to seize', () => {
+    const entry = catalogEntryById('eugenol');
+    expect(entry?.hazards).toContain('can seize');
+  });
+
+  it('flags sugar/sorbitol as able to tunnel/overheat', () => {
+    const entry = catalogEntryById('sugar-sorbitol');
+    expect(entry?.hazards).toContain('can tunnel/overheat');
+  });
+
+  it('flags salt as able to make the bar crumbly', () => {
+    const entry = catalogEntryById('salt');
+    expect(entry?.hazards).toContain('can make the bar crumbly');
+  });
+
+  it('flags titanium dioxide as able to glycerin-river at high water', () => {
+    const entry = catalogEntryById('titanium-dioxide');
+    expect(entry?.hazards).toContain('can glycerin-river at high water');
+  });
+
+  it('leaves untagged entries without a hazards field', () => {
+    const entry = catalogEntryById('chelator');
+    expect(entry?.hazards).toBeUndefined();
   });
 });
 

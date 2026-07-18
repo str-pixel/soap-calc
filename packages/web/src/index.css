@@ -581,6 +581,24 @@ select {
   color: var(--text-muted);
 }
 
+.additive-list__hazards {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.additive-list__hazard {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
 .results-additives {
   margin: 1rem 0 0;
   padding-top: 0.85rem;

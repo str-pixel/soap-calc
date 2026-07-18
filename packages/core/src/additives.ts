@@ -1,20 +1,30 @@
 export type AdditiveStage = 'lye' | 'oils' | 'trace' | 'top' | 'after_cook';
 
+/** Structurally identical to web's ProcessId ('cp' | 'hp' | 'ls'), defined locally so core
+ * owns no import from packages/web. Web's ProcessId is assignable to this type. */
+export type AdditiveProcess = 'cp' | 'hp' | 'ls';
+
 export type AdditiveCatalogEntry = {
   id: string;
   name: string;
   typicalLow: number;
   typicalHigh: number;
   defaultStage: AdditiveStage;
+  /** Processes this additive is offered for; absent = all processes. */
+  processes?: AdditiveProcess[];
+  /** Short behavior-only hazard/caution tags shown next to the additive (e.g. "can seize").
+   * No source or dose-specific claim — just the known failure mode. */
+  hazards?: string[];
 };
 
 export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     id: 'sugar-sorbitol',
     name: 'Sugar / sorbitol',
-    typicalLow: 1,
-    typicalHigh: 5,
+    typicalLow: 0.5,
+    typicalHigh: 2,
     defaultStage: 'trace',
+    hazards: ['can tunnel/overheat'],
   },
   {
     id: 'chelator',
@@ -81,6 +91,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.05,
     typicalHigh: 1,
     defaultStage: 'lye',
+    hazards: ['can make the bar crumbly'],
   },
   {
     // Sodium lactate — humectant + hardener, water-soluble, added to the lye water.
@@ -91,7 +102,108 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 3,
     defaultStage: 'lye',
   },
+  {
+    // Hydrolyzed silk — dissolved into the lye water, reported to add slip/sheen to lather.
+    id: 'silk',
+    name: 'Silk (hydrolyzed)',
+    typicalLow: 0.1,
+    typicalHigh: 1,
+    defaultStage: 'lye',
+  },
+  {
+    // EDTA — synthetic chelator, added to the lye water alongside/instead of citrate.
+    id: 'edta',
+    name: 'EDTA',
+    typicalLow: 0.1,
+    typicalHigh: 0.5,
+    defaultStage: 'lye',
+  },
+  {
+    // Titanium dioxide — mineral whitener, dispersed into the oils before mixing.
+    id: 'titanium-dioxide',
+    name: 'Titanium dioxide',
+    typicalLow: 0.1,
+    typicalHigh: 1,
+    defaultStage: 'oils',
+    hazards: ['can glycerin-river at high water'],
+  },
+  {
+    // Eugenol — clove-derived aromatic; dosed in parts-per-thousand, at trace, well below
+    // fragrance-oil percentages.
+    id: 'eugenol',
+    name: 'Eugenol',
+    typicalLow: 1,
+    typicalHigh: 3,
+    defaultStage: 'trace',
+    hazards: ['can seize'],
+  },
+  {
+    // Loofah — fibrous exfoliant blended into the oils. No cited dose constant for this one;
+    // range is a conservative estimate, not a verified figure like the others above.
+    id: 'loofah',
+    name: 'Loofah',
+    typicalLow: 1,
+    typicalHigh: 5,
+    defaultStage: 'oils',
+  },
+  {
+    // Stearic acid — added "as oils" to a fluid-HP cook to help build the thick, translucent
+    // trace phase. HP-only: a CP or LS bar/liquid has no equivalent use for this in the catalog.
+    id: 'stearic',
+    name: 'Stearic acid',
+    typicalLow: 5,
+    typicalHigh: 8,
+    defaultStage: 'oils',
+    processes: ['hp'],
+  },
+  {
+    // Lauric acid — added "as oils" alongside stearic in a fluid-HP cook, same rationale.
+    id: 'lauric',
+    name: 'Lauric acid',
+    typicalLow: 5,
+    typicalHigh: 8,
+    defaultStage: 'oils',
+    processes: ['hp'],
+  },
+  {
+    // Yogurt — stirred in after cook/dilution in fluid HP; its water content deducts from
+    // the recipe's lye water, so it is dosed after the cook rather than into the oils/lye.
+    id: 'yogurt',
+    name: 'Yogurt',
+    typicalLow: 2,
+    typicalHigh: 5,
+    defaultStage: 'after_cook',
+    processes: ['hp'],
+  },
+  {
+    // Guar gum — LS-only thickener, dispersed into diluted liquid soap after cook/dilution
+    // (never into the concentrated paste). Salt thickens LS only up to a point and thins
+    // past it (see the ls_salt_thickening insight); guar/HEC are the standalone thickeners.
+    id: 'guar',
+    name: 'Guar gum',
+    typicalLow: 0.5,
+    typicalHigh: 1,
+    defaultStage: 'after_cook',
+    processes: ['ls'],
+  },
+  {
+    // Hydroxyethylcellulose (HEC) — LS-only thickener, same after-dilution dosing as guar.
+    id: 'hec',
+    name: 'Hydroxyethylcellulose (HEC)',
+    typicalLow: 0.5,
+    typicalHigh: 1,
+    defaultStage: 'after_cook',
+    processes: ['ls'],
+  },
 ] as const;
+
+/** Entries offered for a given process: unscoped entries (no `processes`) apply to all
+ * processes; scoped entries apply only when `process` is in their `processes` list. */
+export function catalogEntriesForProcess(
+  process: AdditiveProcess,
+): readonly AdditiveCatalogEntry[] {
+  return ADDITIVE_CATALOG.filter((entry) => !entry.processes || entry.processes.includes(process));
+}
 
 export const LATHER_SUPPORT_PACK = [
   { catalogId: 'sugar-sorbitol', percentOfOil: 1, stage: 'trace' as const },
