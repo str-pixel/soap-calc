@@ -53,24 +53,61 @@ function normalizePercentsTo100(lines: RecipeLine[]): RecipeLine[] {
   }));
 }
 
+/** After percent→gram rounding, the summed line weights can drift a few grams off a
+ * locked batch total. This corrects that drift so `sum(lines) === batch` exactly.
+ *
+ * Growing (diff > 0) is always safe on a single line — it can never go negative — so the
+ * whole surplus lands on one eligible line, same as before. Shrinking (diff < 0) is where
+ * the original implementation broke the locked-batch invariant: it dumped the entire
+ * deficit onto one line and, if that made the line negative, clamped it to 0 and returned
+ * — silently dropping the un-applied remainder instead of continuing to remove it from
+ * other lines. For recipes where the chosen line's weight is smaller than the deficit
+ * (e.g. many near-equal lines with little headroom), that left the stored total several
+ * grams off the locked batch.
+ *
+ * Fix: when shrinking, walk the eligible lines and take as much as each can give (down to
+ * 0, never negative), carrying whatever remains to the next eligible line, until the full
+ * deficit is absorbed or eligible lines run out. `skipKey` (the just-edited line) is never
+ * touched either way.
+ */
 function fixGramRounding(lines: RecipeLine[], batch: number, skipKey?: string): RecipeLine[] {
-  const sum = lines.reduce((total, line) => total + (parseNum(line.weightGrams) ?? 0), 0);
+  const grams = lines.map((line) => parseNum(line.weightGrams) ?? 0);
+  const sum = grams.reduce((total, g) => total + g, 0);
   const diff = batch - sum;
   if (diff === 0) return lines;
 
+  // Eligible lines in the order the original single-line correction preferred: from the
+  // end of the array, skipping the just-edited line.
+  const eligible: number[] = [];
   for (let i = lines.length - 1; i >= 0; i--) {
-    if (lines[i].key === skipKey) continue;
-    const grams = (parseNum(lines[i].weightGrams) ?? 0) + diff;
-    const next = [...lines];
-    next[i] = {
-      ...lines[i],
-      weightGrams: grams > 0 ? formatGrams(grams) : '',
-      weightPercent: formatPercent(batch > 0 ? (Math.max(0, grams) / batch) * 100 : 0),
-    };
-    return next;
+    if (lines[i].key !== skipKey) eligible.push(i);
+  }
+  if (eligible.length === 0) return lines;
+
+  const next = [...grams];
+  if (diff > 0) {
+    next[eligible[0]] += diff;
+  } else {
+    let remaining = -diff;
+    for (const i of eligible) {
+      if (remaining <= 0) break;
+      const take = Math.min(next[i], remaining);
+      next[i] -= take;
+      remaining -= take;
+    }
+    // If eligible lines' combined weight is less than the deficit, `remaining` stays > 0:
+    // the batch can't be hit without touching the skipped line. Best effort — every
+    // eligible line is already at 0, none went negative.
   }
 
-  return lines;
+  return lines.map((line, i) => {
+    if (next[i] === grams[i]) return line;
+    return {
+      ...line,
+      weightGrams: next[i] > 0 ? formatGrams(next[i]) : '',
+      weightPercent: formatPercent(batch > 0 ? (next[i] / batch) * 100 : 0),
+    };
+  });
 }
 
 function distributeWeightsToBatch(

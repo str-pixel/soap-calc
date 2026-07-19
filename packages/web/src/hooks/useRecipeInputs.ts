@@ -78,7 +78,7 @@ export type RecipeInputs = {
 
 export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   const { weightInputId, percentInputId, batchInputId } = makeInputIds();
-  const { lines, settings, additives, weightUnit, drafts } = deps;
+  const { settings, additives, weightUnit, drafts } = deps;
   const { setDraft, clearDraft, clearAllDrafts } = deps;
   const { applyEdit, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef } = deps.editor;
   const { undo: editorUndo, redo: editorRedo, canUndo, canRedo } = deps.editor;
@@ -235,7 +235,11 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   }
 
   function removeLine(key: string) {
-    if (lines.length <= 1) return;
+    // Read the live ref, not the render-scope `lines` prop: every other write path in this
+    // module goes through applySyncedUpdate/linesRef as the source of truth, and a same-tick
+    // multi-fire could pass a stale `lines.length` check here and drop below the enforced
+    // 1-line minimum.
+    if (linesRef.current.length <= 1) return;
     applySyncedUpdate((prev) => resyncFromWeights(prev.filter((line) => line.key !== key)));
     clearDraft(weightInputId(key));
     clearDraft(percentInputId(key));

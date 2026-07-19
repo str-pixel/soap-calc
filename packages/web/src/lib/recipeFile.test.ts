@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createStarterLines, DEFAULT_SETTINGS } from './recipe';
 import {
+  MAX_FIELD_LENGTH,
+  MAX_RECIPE_FILE_BYTES,
   parseRecipeFile,
   recipeAdditivesFromFile,
   recipeFileDownloadName,
@@ -216,6 +218,96 @@ describe('recipeFile', () => {
       ok: false,
       error: 'Too many oils in recipe file',
     });
+  });
+
+  it('rejects a file whose raw text exceeds the size cap', () => {
+    const huge = 'x'.repeat(MAX_RECIPE_FILE_BYTES + 1);
+    expect(parseRecipeFile(huge)).toEqual({
+      ok: false,
+      error: 'Recipe file is too large',
+    });
+  });
+
+  it('accepts a file right at the size cap', () => {
+    // A minimal valid payload padded with a long name, sized to land exactly at the cap.
+    const base = {
+      version: 2,
+      name: '',
+      lines: [],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const overhead = JSON.stringify(base).length;
+    const padded = { ...base, name: 'n'.repeat(Math.max(0, MAX_RECIPE_FILE_BYTES - overhead)) };
+    const raw = JSON.stringify(padded);
+    expect(raw.length).toBeLessThanOrEqual(MAX_RECIPE_FILE_BYTES);
+    expect(parseRecipeFile(raw).ok).toBe(true);
+  });
+
+  it('truncates an over-long oilId on import', () => {
+    const payload = {
+      version: 2,
+      name: 'Long oilId',
+      lines: [{ oilId: 'x'.repeat(MAX_FIELD_LENGTH + 100), weightGrams: '1000' }],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.lines[0].oilId.length).toBe(MAX_FIELD_LENGTH);
+  });
+
+  it('truncates an over-long weightGrams string on import', () => {
+    const payload = {
+      version: 2,
+      name: 'Long weight',
+      lines: [{ oilId: 'olive-oil', weightGrams: '9'.repeat(MAX_FIELD_LENGTH + 100) }],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.lines[0].weightGrams.length).toBe(MAX_FIELD_LENGTH);
+  });
+
+  it('truncates an over-long recipe name on import', () => {
+    const payload = {
+      version: 2,
+      name: 'N'.repeat(MAX_FIELD_LENGTH + 100),
+      lines: [],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.name.length).toBe(MAX_FIELD_LENGTH);
+  });
+
+  it('truncates an over-long additive catalogId on import', () => {
+    const payload = {
+      version: 2,
+      name: 'Long catalogId',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [
+        {
+          catalogId: 'c'.repeat(MAX_FIELD_LENGTH + 100),
+          name: 'X',
+          amount: '1',
+          unit: 'percent',
+          basis: 'oil',
+          addAt: 'trace',
+        },
+      ],
+      settings: DEFAULT_SETTINGS,
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.additives[0].catalogId.length).toBe(MAX_FIELD_LENGTH);
   });
 
   it('builds a safe download filename', () => {

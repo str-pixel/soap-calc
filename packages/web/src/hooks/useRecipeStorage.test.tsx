@@ -108,4 +108,47 @@ describe('useRecipeStorage process', () => {
     expect(result.current.process).toBe('ls');
     expect(loadDraft('cp')?.settings.superfatPercent).toBe('6');
   });
+
+  it('overlapping imports: a second import chosen before the first resolves wins deterministically, even if the first resolves later', async () => {
+    const { result } = renderHook(() => useRecipeStorage()); // defaults to cp
+
+    let resolveFirst!: (raw: string) => void;
+    let resolveSecond!: (raw: string) => void;
+    const first = {
+      text: () => new Promise<string>((resolve) => { resolveFirst = resolve; }),
+    } as unknown as File;
+    const second = {
+      text: () => new Promise<string>((resolve) => { resolveSecond = resolve; }),
+    } as unknown as File;
+
+    const rawFirst = JSON.stringify({
+      version: 2, process: 'ls', name: 'First import', lines: [],
+      settings: { ...DEFAULT_SETTINGS, lyeType: 'koh' },
+    });
+    const rawSecond = JSON.stringify({
+      version: 2, process: 'hp', name: 'Second import', lines: [],
+      settings: DEFAULT_SETTINGS,
+    });
+
+    act(() => {
+      result.current.handleImportFile(first);
+      result.current.handleImportFile(second);
+    });
+
+    // The second (later) import's file read resolves first — the fast path in a real
+    // double-click race. The stale first import then resolves after it.
+    await act(async () => {
+      resolveSecond(rawSecond);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      resolveFirst(rawFirst);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // The latest-fired import wins; the stale one's late resolution must not clobber it.
+    expect(result.current.process).toBe('hp');
+    expect(result.current.recipeName).toBe('Second import');
+    expect(loadDraft('hp')?.name).toBe('Second import');
+  });
 });

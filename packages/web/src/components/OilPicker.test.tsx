@@ -24,3 +24,9 @@ test('does not mark measured oils as modeled', () => {
   // Olive oils carry measured profiles — no option in these results should be tagged Modeled.
   expect(within(list).queryByText('Modeled')).toBeNull();
 });
+
+test('combobox advertises its popup type', () => {
+  render(<OilPicker value="" onChange={() => {}} />);
+  const input = screen.getByRole('combobox');
+  expect(input.getAttribute('aria-haspopup')).toBe('listbox');
+});

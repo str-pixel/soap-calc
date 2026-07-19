@@ -33,10 +33,15 @@ export function loadMoldSizerInput(): MoldSizerInput {
   }
 }
 
-export function saveMoldSizerInput(input: MoldSizerInput): void {
+/** Returns false when the write failed (e.g. quota exceeded or storage blocked in
+ * private mode), mirroring recipeStorage's saveDraft/safeSetItem so callers can be
+ * consistent about reporting a lost write. The mold sizer's caller is a fire-and-forget
+ * effect, so wiring a UI warning is left to the caller's discretion. */
+export function saveMoldSizerInput(input: MoldSizerInput): boolean {
   try {
     localStorage.setItem(MOLD_SIZER_KEY, JSON.stringify(input));
+    return true;
   } catch {
-    // ignore quota errors
+    return false;
   }
 }

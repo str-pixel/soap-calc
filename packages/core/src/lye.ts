@@ -347,7 +347,11 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
  * quantities (lye/water are linear in oil weight), preserving oil weights, concentration,
  * and water:lye ratio. Used for the post-cook-superfat "subtract" method (reserve oil). */
 export function scaleLyeResult(result: LyeCalculationResult, factor: number): LyeCalculationResult {
-  const f = Math.min(1, Math.max(0, factor));
+  // Math.min/max propagate NaN if either argument is non-finite, which would silently NaN
+  // every scaled field below. Currently unreachable (callers only pass computed 0–1
+  // factors) but undefended, so treat a non-finite factor as a no-op scale (1) rather than
+  // corrupting the result.
+  const f = Number.isFinite(factor) ? Math.min(1, Math.max(0, factor)) : 1;
   const lyeWeightGrams = result.lyeWeightGrams * f;
   const naohWeightGrams = result.naohWeightGrams * f;
   const kohWeightGrams = result.kohWeightGrams * f;

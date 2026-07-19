@@ -68,4 +68,80 @@ describe('useRecipeAutosave', () => {
       { catalogId: 'honey', name: 'Honey', amount: '1', basis: 'oil', unit: 'percent', addAt: 'trace' },
     ]);
   });
+
+  it('flushes a pending edit synchronously on pagehide, before the 500ms debounce fires', () => {
+    vi.useFakeTimers();
+    const { rerender, unmount } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, []),
+      { initialProps: { name: 'First name' } },
+    );
+    // A fresh edit lands mid-debounce (rerender re-runs the effect, resetting the timer,
+    // exactly like a keystroke would in the real app).
+    rerender({ name: 'Edited just before tab close' });
+    expect(loadDraft('cp')).toBeNull(); // nothing persisted yet — still inside the window
+
+    window.dispatchEvent(new Event('pagehide'));
+
+    expect(loadDraft('cp')?.name).toBe('Edited just before tab close');
+
+    unmount();
+    vi.useRealTimers();
+  });
+
+  it('flushes on visibilitychange when the tab becomes hidden', () => {
+    vi.useFakeTimers();
+    const { rerender, unmount } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, []),
+      { initialProps: { name: 'First name' } },
+    );
+    rerender({ name: 'Edited then tab is hidden' });
+    expect(loadDraft('cp')).toBeNull();
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+
+    expect(loadDraft('cp')?.name).toBe('Edited then tab is hidden');
+
+    unmount();
+    vi.useRealTimers();
+  });
+
+  it('does not double-save: the flushed pending timer does not also fire later', () => {
+    vi.useFakeTimers();
+    const setItemSpy = vi.spyOn(window.localStorage, 'setItem');
+    const { rerender, unmount } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, []),
+      { initialProps: { name: 'First name' } },
+    );
+    rerender({ name: 'Edited just before tab close' });
+
+    window.dispatchEvent(new Event('pagehide'));
+    const callsAfterFlush = setItemSpy.mock.calls.length;
+    expect(callsAfterFlush).toBeGreaterThan(0);
+
+    // The debounce timer that would have re-run the same save must have been cleared —
+    // advancing past it should not save again.
+    vi.advanceTimersByTime(600);
+    expect(setItemSpy.mock.calls.length).toBe(callsAfterFlush);
+
+    unmount();
+    setItemSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('removes its pagehide/visibilitychange listeners on unmount', () => {
+    vi.useFakeTimers();
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    const removeSpy = vi.spyOn(window, 'removeEventListener');
+    const { unmount } = renderHook(() =>
+      useRecipeAutosave('cp', 'Some name', createStarterLines(), DEFAULT_SETTINGS, []),
+    );
+    expect(addSpy).toHaveBeenCalledWith('pagehide', expect.any(Function));
+    unmount();
+    expect(removeSpy).toHaveBeenCalledWith('pagehide', expect.any(Function));
+    addSpy.mockRestore();
+    removeSpy.mockRestore();
+    vi.useRealTimers();
+  });
 });

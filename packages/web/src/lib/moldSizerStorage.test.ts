@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_MOLD_SIZER_INPUT } from './moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './moldSizerStorage';
 
@@ -31,6 +31,10 @@ describe('moldSizerStorage', () => {
     vi.stubGlobal('localStorage', createStorage());
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('round-trips mold sizer input', () => {
     const input = {
       ...DEFAULT_MOLD_SIZER_INPUT,
@@ -45,5 +49,25 @@ describe('moldSizerStorage', () => {
   it('returns defaults for invalid stored data', () => {
     localStorage.setItem('soap-calc:mold-sizer', '{bad');
     expect(loadMoldSizerInput()).toEqual({ ...DEFAULT_MOLD_SIZER_INPUT });
+  });
+
+  it('reports a successful write', () => {
+    expect(saveMoldSizerInput(DEFAULT_MOLD_SIZER_INPUT)).toBe(true);
+  });
+
+  it('reports a failed write so callers can warn instead of silently losing work', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      },
+      removeItem: () => {},
+      clear: () => {},
+      key: () => null,
+      get length() {
+        return 0;
+      },
+    });
+    expect(saveMoldSizerInput(DEFAULT_MOLD_SIZER_INPUT)).toBe(false);
   });
 });
