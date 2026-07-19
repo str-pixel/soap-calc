@@ -1,6 +1,11 @@
 import { HP_COOK_STAGES } from '@soap-calc/core';
 import type { ProcessId } from '../lib/process';
-import { processProfileById, type ProcessVariantId, type TempTarget } from '../lib/processProfile';
+import {
+  isProcessVariantId,
+  processProfileById,
+  type ProcessVariantId,
+  type TempTarget,
+} from '../lib/processProfile';
 
 type ProcessGuidePanelProps = {
   process: ProcessId;
@@ -19,7 +24,11 @@ function formatTempRange(temp: TempTarget): string {
 }
 
 export function ProcessGuidePanel({ process, processVariant }: ProcessGuidePanelProps) {
-  const profile = processProfileById(processVariant);
+  // Guard against a carried-forward-but-stale processVariant (same defensive pattern as
+  // useFormulationInsights.ts and useRecipeViewModel.ts) before resolving the profile —
+  // processProfileById is a bare Record index with no fallback for an unknown id.
+  const profile = isProcessVariantId(processVariant) ? processProfileById(processVariant) : null;
+  if (!profile) return null;
   const verified = VERIFIED_TEMP_VARIANTS.has(processVariant);
 
   return (

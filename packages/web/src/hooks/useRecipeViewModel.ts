@@ -243,6 +243,14 @@ export function useRecipeViewModel({
   // volume — additives fold in off-heat after the cook, so they aren't part of what the
   // vessel needs to hold while it expands. Optional: an unset/invalid vessel volume simply
   // omits hpVesselMultiple, which skips the guard entirely (see analyzeFormulation).
+  //
+  // SOAP_FILL_DENSITY_G_PER_CM3 (0.92) is the cured-bar fill-density proxy, not a
+  // raw-batter density — the water-bearing cook batter this divides is closer to ~1.0
+  // g/ml before water loss. Dividing by the lower cured density over-estimates
+  // batchVolumeCm3, which under-estimates the resulting multiple: the guard fires
+  // slightly more readily than the true (denser) batter would require. That's the safe
+  // direction (conservative under-estimate), so it's left as-is rather than introducing
+  // a separate raw-batter density constant.
   const hpVesselMultiple = useMemo(() => {
     if (process !== 'hp') return undefined;
     if (!Number.isFinite(vesselVolumeCm3) || (vesselVolumeCm3 ?? 0) <= 0) return undefined;

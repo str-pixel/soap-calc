@@ -241,7 +241,7 @@ export function SettingsPanel({
             </span>
             <input
               type="number"
-              className="input"
+              className="input input--number"
               aria-label="Cook vessel volume (L)"
               min={0}
               step={0.5}

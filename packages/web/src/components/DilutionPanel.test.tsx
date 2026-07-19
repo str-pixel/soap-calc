@@ -36,10 +36,10 @@ test('editing the concentration calls onSoapConcentrationChange', () => {
   expect(onChange).toHaveBeenCalledWith('25');
 });
 
-test('shows bottles filled from the finished solution weight and bottle size', () => {
+test('shows bottles filled from the finished solution weight and bottle size, hedged as approximate', () => {
   // 4000 g solution / 1.03 g/ml ≈ 3883 ml; 3883 / 250 = floor(15.5) = 15 bottles.
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
-  expect(screen.getByText(/Bottles filled/)).toBeTruthy();
+  expect(screen.getByText(/≈\s*Bottles filled/)).toBeTruthy();
   expect(screen.getByText('15')).toBeTruthy();
 });
 

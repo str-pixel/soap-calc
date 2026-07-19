@@ -34,3 +34,15 @@ test('an LS variant shows a hedged temp and no cook stages', () => {
   expect(screen.getByText(/≈.*°F.*\(estimated\)/)).toBeTruthy();
   expect(screen.queryByText('trace')).toBeNull();
 });
+
+test('an invalid processVariant renders nothing instead of throwing', () => {
+  expect(() =>
+    render(
+      <ProcessGuidePanel
+        process="cp"
+        processVariant={'bogus-variant' as unknown as import('../lib/processProfile').ProcessVariantId}
+      />,
+    ),
+  ).not.toThrow();
+  expect(screen.queryByText('Process guide')).toBeNull();
+});

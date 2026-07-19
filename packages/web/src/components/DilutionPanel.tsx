@@ -83,7 +83,7 @@ export function DilutionPanel({
             </div>
             {bottleCount !== null && (
               <div className="results-grid__item">
-                <dt>Bottles filled ({bottleSizeMl} ml)</dt>
+                <dt>≈ Bottles filled ({bottleSizeMl} ml)</dt>
                 <dd>{bottleCount}</dd>
               </div>
             )}
