@@ -4,7 +4,10 @@ import { deriveChemistryFromProfile } from '@soap-calc/core';
  * BOTH at least this many iodine-value units AND at least IODINE_REL_THRESHOLD_PCT. The
  * absolute floor kills low-IV noise (a 1-unit gap on a near-saturated oil is not a defect). */
 export const IODINE_ABS_THRESHOLD = 10;
-export const IODINE_REL_THRESHOLD_PCT = 8;
+/** Independent published iodine values scatter +/-10-16% per oil (research-papers cross-check),
+ * so a warn threshold below that flags literature spread, not error. 15% sits at the top of
+ * the measured scatter. */
+export const IODINE_REL_THRESHOLD_PCT = 15;
 /** A flagged deviation this large (relative) on a trusted value is a gross contradiction —
  * the corruption band that blocks the build. 25% is a heuristic beyond measurement noise
  * and PUFA-rounding, not a physical law. */
@@ -20,8 +23,6 @@ export const KNOWN_PROFILE_IODINE_DEVIATIONS: Record<string, string> = {
   'nutmeg-butter':
     'trimyristin + volatile unsaponifiables: measured iodine far exceeds the near-saturated triglyceride profile',
   'tallow-deer': 'community-only animal fat, no compositional standard to reconcile against',
-  'pomegranate-seed-oil':
-    'conjugated punicic acid: measured IV (~200) is below the ~232 the linolenic-mapped profile implies (Wijs under-reacts on conjugated double bonds)',
 };
 
 export type ProfileIodineDeviationTier = 'error' | 'warn' | 'acknowledged';

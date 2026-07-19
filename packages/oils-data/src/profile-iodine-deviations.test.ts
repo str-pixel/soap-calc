@@ -8,10 +8,12 @@ import {
 // Mid-IV profile so derive returns a value; stored iodine is set relative to derived
 // so deltas are controlled, not hard-coded.
 const PROFILE = { oleic: 80, palmitic: 10, stearic: 5, linoleic: 5 };
-const iv = deriveChemistryFromProfile(PROFILE)!.iodineValue; // ~80.9
-const grossHi = iv * 1.3; // rel +30%, abs ~+24  -> gross
-const moderate = iv * 1.14; // rel +14%, abs ~+11 -> flagged but not gross
-const relOnly = iv * 1.09; // rel +9%,  abs ~+7  -> abs below floor, NOT flagged
+const iv = deriveChemistryFromProfile(PROFILE)!.iodineValue; // ~77.4 (oil-basis, post Task 1)
+const grossHi = iv * 1.3; // rel +30% -> gross (>= IODINE_GROSS_PCT 25)
+const moderate = iv * 1.2; // rel +20% -> warn (>= 15% threshold, < 25% gross)
+// rel +14%, abs ~+10.8 (clears the 10-unit abs floor so this exercises the relative-threshold
+// check, not the floor) -> below the 15% warn threshold, NOT flagged
+const belowThreshold = iv * 1.14;
 
 type Oil = Parameters<typeof classifyProfileIodineDeviations>[0][number];
 const oil = (over: Partial<Oil>): Oil => ({
@@ -48,8 +50,8 @@ describe('classifyProfileIodineDeviations', () => {
     expect(d.tier).toBe('warn');
   });
 
-  it('does not flag when the absolute gap is below the floor (low-IV noise)', () => {
-    expect(classifyProfileIodineDeviations([oil({ id: 'rel', iodine: relOnly })])).toEqual([]);
+  it('does not flag a deviation below the relative warn threshold', () => {
+    expect(classifyProfileIodineDeviations([oil({ id: 'bt', iodine: belowThreshold })])).toEqual([]);
   });
 
   it('does not flag when stored agrees with the profile', () => {
@@ -95,5 +97,15 @@ describe('classifyProfileIodineDeviations', () => {
   it('does not flag a saturated profile whose stored iodine is also ~0 (abs gap below floor)', () => {
     const SAT = { myristic: 74, lauric: 18, palmitic: 8 };
     expect(classifyProfileIodineDeviations([oil({ id: 'sat3', fattyAcids: SAT, iodine: 2 })])).toEqual([]);
+  });
+
+  it('does not flag a low-IV oil whose deviation clears 15% but not the 10-unit floor', () => {
+    // deriveChemistry oil-basis IV for this profile is ~38.7; +20% rel is only ~+7.7 units.
+    const lowProfile = { oleic: 45, palmitic: 30, stearic: 25 };
+    const ivLow = deriveChemistryFromProfile(lowProfile)!.iodineValue;
+    const [none] = classifyProfileIodineDeviations([
+      oil({ id: 'lo', fattyAcids: lowProfile, iodine: ivLow * 1.2 }),
+    ]);
+    expect(none).toBeUndefined();
   });
 });
