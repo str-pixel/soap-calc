@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
+import { CpExtrasPanel } from './components/CpExtrasPanel';
 import { DilutionPanel } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
@@ -258,6 +259,8 @@ export default function App() {
           )}
 
           {process === 'ls' && <PreservePanel />}
+
+          {process === 'cp' && <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />}
 
           <ProcessGuidePanel process={process} processVariant={settings.processVariant} />
 
