@@ -14,6 +14,7 @@ const moderate = iv * 1.2; // rel +20% -> warn (>= 15% threshold, < 25% gross)
 // rel +14%, abs ~+10.8 (clears the 10-unit abs floor so this exercises the relative-threshold
 // check, not the floor) -> below the 15% warn threshold, NOT flagged
 const belowThreshold = iv * 1.14;
+const justOverThreshold = iv * 1.16; // rel +16% -> warn (just above the 15% threshold, < 25% gross)
 
 type Oil = Parameters<typeof classifyProfileIodineDeviations>[0][number];
 const oil = (over: Partial<Oil>): Oil => ({
@@ -52,6 +53,12 @@ describe('classifyProfileIodineDeviations', () => {
 
   it('does not flag a deviation below the relative warn threshold', () => {
     expect(classifyProfileIodineDeviations([oil({ id: 'bt', iodine: belowThreshold })])).toEqual([]);
+  });
+
+  it('flags a deviation just above the relative warn threshold (tight lower-edge pin)', () => {
+    // Together with belowThreshold (+14%, not flagged) this pins the threshold to (14%, 16%] ~ 15%.
+    const [d] = classifyProfileIodineDeviations([oil({ id: 'jo', iodine: justOverThreshold })]);
+    expect(d.tier).toBe('warn');
   });
 
   it('does not flag when stored agrees with the profile', () => {
