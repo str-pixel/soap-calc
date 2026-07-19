@@ -77,7 +77,7 @@ test('Add oil button calls inputs.addLine', () => {
   expect(inputs.addLine).toHaveBeenCalledTimes(1);
 });
 
-test('Weight, Percent, and Remove controls are disambiguated by oil name', () => {
+test('Weight, Percent, Remove, and the oil picker are disambiguated by oil name', () => {
   const inputs = makeInputs();
   renderPanel(inputs);
   const oliveName = oilById('olive-oil')!.displayName;
@@ -90,6 +90,34 @@ test('Weight, Percent, and Remove controls are disambiguated by oil name', () =>
   expect(screen.getByRole('spinbutton', { name: `Percent for ${coconutName}` })).toBeTruthy();
   expect(screen.getByRole('button', { name: `Remove ${oliveName}` })).toBeTruthy();
   expect(screen.getByRole('button', { name: `Remove ${coconutName}` })).toBeTruthy();
+  // The per-row OilPicker combobox must also carry a disambiguated accessible name,
+  // not the generic default 'Oil' it falls back to when no ariaLabel is passed.
+  expect(screen.getByRole('combobox', { name: `Oil for ${oliveName}` })).toBeTruthy();
+  expect(screen.getByRole('combobox', { name: `Oil for ${coconutName}` })).toBeTruthy();
+});
+
+test('the oil picker falls back to the stable row label when the row has no resolved oil name', () => {
+  const inputs = makeInputs();
+  const lines = [
+    { key: 'row-a', oilId: 'not-a-real-oil-id', weightGrams: '100', weightPercent: '100' },
+  ];
+  render(
+    <RecipeOilsPanel
+      lines={lines as any} weightUnit="g"
+      previewState={{ lines, batchOilGrams: '100' }}
+      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
+      lineTotals={{ totalWeightGrams: 100, totalPercent: 100 }}
+      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
+      getDraft={(_, c) => c} setDraft={vi.fn()}
+      inputs={inputs as any}
+    />,
+  );
+
+  // Matches the same "row N" fallback the Weight/Percent/Remove controls use.
+  expect(screen.getByRole('combobox', { name: 'Oil for row 1' })).toBeTruthy();
+  expect(screen.getByRole('spinbutton', { name: 'Weight in g for row 1' })).toBeTruthy();
+  expect(screen.getByRole('spinbutton', { name: 'Percent for row 1' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Remove row 1' })).toBeTruthy();
 });
 
 test('totals-off cue is textual, not color-only, and absent when totals reconcile', () => {

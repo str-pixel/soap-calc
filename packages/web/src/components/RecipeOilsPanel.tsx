@@ -131,6 +131,7 @@ export function RecipeOilsPanel({
                 <OilPicker
                   value={line.oilId}
                   onChange={(oilId) => inputs.updateLine(line.key, { oilId })}
+                  ariaLabel={`Oil for ${oilName}`}
                 />
                 {showTar && (
                   <label className="tar-treatment">
