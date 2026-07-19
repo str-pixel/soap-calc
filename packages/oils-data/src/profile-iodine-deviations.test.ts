@@ -74,4 +74,26 @@ describe('classifyProfileIodineDeviations', () => {
       classifyProfileIodineDeviations([oil({ id: 'p', fattyAcids: { oleic: 40 }, iodine: grossHi })]),
     ).toEqual([]);
   });
+
+  it('flags a fully-saturated profile (derived IV 0) on the absolute gap, rel is null, gross->error', () => {
+    const SAT = { myristic: 74, lauric: 18, palmitic: 8 };
+    const [d] = classifyProfileIodineDeviations([oil({ id: 'sat', fattyAcids: SAT, iodine: 38 })]);
+    expect(d.absDelta).toBeCloseTo(38, 1);
+    expect(d.relDeltaPct).toBeNull();
+    expect(d.tier).toBe('error'); // oil() defaults to verified
+  });
+
+  it('a legacy_only oil with a saturated profile (derived IV 0) is warn, not error', () => {
+    const SAT = { myristic: 74, lauric: 18, palmitic: 8 };
+    const [d] = classifyProfileIodineDeviations([
+      oil({ id: 'sat2', confidence: 'legacy_only', fattyAcids: SAT, iodine: 38 }),
+    ]);
+    expect(d.tier).toBe('warn');
+    expect(d.relDeltaPct).toBeNull();
+  });
+
+  it('does not flag a saturated profile whose stored iodine is also ~0 (abs gap below floor)', () => {
+    const SAT = { myristic: 74, lauric: 18, palmitic: 8 };
+    expect(classifyProfileIodineDeviations([oil({ id: 'sat3', fattyAcids: SAT, iodine: 2 })])).toEqual([]);
+  });
 });

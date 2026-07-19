@@ -28,8 +28,9 @@ export type ProfileIodineDeviation = {
   id: string;
   /** Signed stored − derived, iodine-value units, rounded to 0.1. */
   absDelta: number;
-  /** Signed (stored − derived)/derived, %, rounded to 0.1. */
-  relDeltaPct: number;
+  /** Signed (stored − derived)/derived, %, rounded to 0.1. `null` means the profile is fully
+   * saturated (derived IV 0), so the relative deviation is undefined. */
+  relDeltaPct: number | null;
   tier: ProfileIodineDeviationTier;
   /** Present only for acknowledged (documented) deviations. */
   reason?: string;
@@ -60,20 +61,24 @@ export function classifyProfileIodineDeviations(oils: OilLike[]): ProfileIodineD
     const derived = deriveChemistryFromProfile(oil.fattyAcids);
     if (!derived) continue; // incomplete profile — not judgeable
     const absDelta = oil.iodine - derived.iodineValue;
-    const relDeltaPct = (absDelta / derived.iodineValue) * 100;
     if (Math.abs(absDelta) < IODINE_ABS_THRESHOLD) continue;
-    if (Math.abs(relDeltaPct) < IODINE_REL_THRESHOLD_PCT) continue;
+    // A fully-saturated profile derives iodineValue 0, so the relative deviation is undefined.
+    // Such a profile implies ~zero iodine; a stored value past the absolute floor is then a
+    // total contradiction — judge it on the absolute gap alone and treat it as gross.
+    const saturatedProfile = derived.iodineValue === 0;
+    const relDeltaPct = saturatedProfile ? null : (absDelta / derived.iodineValue) * 100;
+    if (relDeltaPct !== null && Math.abs(relDeltaPct) < IODINE_REL_THRESHOLD_PCT) continue;
     const reason = KNOWN_PROFILE_IODINE_DEVIATIONS[oil.id];
+    const gross = saturatedProfile || (relDeltaPct !== null && Math.abs(relDeltaPct) >= IODINE_GROSS_PCT);
     const tier: ProfileIodineDeviationTier = reason
       ? 'acknowledged'
-      : Math.abs(relDeltaPct) >= IODINE_GROSS_PCT &&
-          (oil.confidence === 'verified' || oil.confidence === 'estimated')
+      : gross && (oil.confidence === 'verified' || oil.confidence === 'estimated')
         ? 'error'
         : 'warn';
     out.push({
       id: oil.id,
       absDelta: Math.round(absDelta * 10) / 10,
-      relDeltaPct: Math.round(relDeltaPct * 10) / 10,
+      relDeltaPct: relDeltaPct === null ? null : Math.round(relDeltaPct * 10) / 10,
       tier,
       reason,
     });
