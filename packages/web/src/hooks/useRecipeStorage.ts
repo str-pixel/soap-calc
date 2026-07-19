@@ -87,6 +87,12 @@ export function useRecipeStorage() {
   // undo history is stamped with this and gated on it, so a swap makes stale
   // history unreachable without a separate reset call. See useRecipeEditor.
   const [workspaceGeneration, setWorkspaceGeneration] = useState(0);
+  // Guards overlapping imports: if a second file is chosen before the first's file.text()
+  // resolves, each call bumps this token and stamps its own async continuation with it. A
+  // continuation whose token has been superseded by a later import bails out instead of
+  // flushing/swapping state, so a slow first read can never land after (and clobber) a
+  // faster second one — the latest-fired import always wins, deterministically.
+  const importTokenRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -138,9 +144,14 @@ export function useRecipeStorage() {
   }
 
   function handleImportFile(file: File) {
+    const token = ++importTokenRef.current;
     file
       .text()
       .then((raw) => {
+        // A newer import started (and thus owns the token) while this one's file.text()
+        // was in flight — bail out so this stale continuation can't flush/swap state over
+        // whatever the newer import already landed.
+        if (importTokenRef.current !== token) return;
         const parsed = parseRecipeFile(raw);
         if (!parsed.ok) {
           flashSaveMessage(parsed.error);
@@ -182,7 +193,10 @@ export function useRecipeStorage() {
             : `Imported “${parsed.data.name}” — but storage is full, so changes may not persist. Export to keep a copy.`,
         );
       })
-      .catch(() => flashSaveMessage('Could not read recipe file'));
+      .catch(() => {
+        if (importTokenRef.current !== token) return;
+        flashSaveMessage('Could not read recipe file');
+      });
   }
 
   return {
