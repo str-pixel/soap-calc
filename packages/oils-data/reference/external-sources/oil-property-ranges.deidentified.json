@@ -1,0 +1,918 @@
+{
+ "_provenance": "Published min/max property RANGES per oil: kohSapPpt = KOH saponification value (mg KOH/g = ppt), naohSapPpt = NaOH saponification value (mg NaOH/g), iv = iodine value. These min/max spans are the kind published by the American Oil Chemists Society (AOCS) and equivalent oleochemical standards. Intended use: an independent published-range OUTLIER GATE complementing the app profile-derived SAP oracle. Numeric ranges only.",
+ "_appId_key": "best-effort map from range-table oil name to app oil id; null = no confident app match",
+ "oils": [
+  {
+   "name": "Babassu Palm Oil",
+   "appId": "babassu-oil",
+   "kohSapPpt": [
+    245,
+    256
+   ],
+   "naohSapPpt": [
+    174,
+    182
+   ],
+   "iv": [
+    10,
+    18
+   ]
+  },
+  {
+   "name": "Butterfat",
+   "appId": null,
+   "kohSapPpt": [
+    210,
+    232
+   ],
+   "naohSapPpt": [
+    149,
+    165
+   ],
+   "iv": [
+    26,
+    40
+   ]
+  },
+  {
+   "name": "Coconut Oil",
+   "appId": "coconut-oil-76",
+   "kohSapPpt": [
+    248,
+    265
+   ],
+   "naohSapPpt": [
+    176,
+    189
+   ],
+   "iv": [
+    5,
+    13
+   ]
+  },
+  {
+   "name": "Cohune Nut Oil",
+   "appId": "cohune-oil",
+   "kohSapPpt": [
+    251,
+    260
+   ],
+   "naohSapPpt": [
+    178,
+    185
+   ],
+   "iv": [
+    9,
+    14
+   ]
+  },
+  {
+   "name": "Palm Kernel Oil",
+   "appId": "palm-kernel-oil",
+   "kohSapPpt": [
+    230,
+    254
+   ],
+   "naohSapPpt": [
+    163,
+    181
+   ],
+   "iv": [
+    14,
+    21
+   ]
+  },
+  {
+   "name": "Baobab Seed Oil",
+   "appId": "baobab-oil",
+   "kohSapPpt": [
+    133,
+    195
+   ],
+   "naohSapPpt": [
+    94,
+    139
+   ],
+   "iv": [
+    55,
+    96
+   ]
+  },
+  {
+   "name": "Cocoa Butter",
+   "appId": "cocoa-butter",
+   "kohSapPpt": [
+    192,
+    200
+   ],
+   "naohSapPpt": [
+    136,
+    143
+   ],
+   "iv": [
+    32,
+    40
+   ]
+  },
+  {
+   "name": "Emu Oil",
+   "appId": null,
+   "kohSapPpt": [
+    175,
+    210
+   ],
+   "naohSapPpt": [
+    124,
+    150
+   ],
+   "iv": [
+    40,
+    80
+   ]
+  },
+  {
+   "name": "Kokum Butter",
+   "appId": "kokum-butter",
+   "kohSapPpt": [
+    192,
+    192
+   ],
+   "naohSapPpt": [
+    136,
+    137
+   ],
+   "iv": [
+    33,
+    37
+   ]
+  },
+  {
+   "name": "Lard (Pork Fat)",
+   "appId": "lard-pig-tallow",
+   "kohSapPpt": [
+    192,
+    203
+   ],
+   "naohSapPpt": [
+    136,
+    145
+   ],
+   "iv": [
+    45,
+    70
+   ]
+  },
+  {
+   "name": "Mango Seed Oil",
+   "appId": "mango-seed-oil",
+   "kohSapPpt": [
+    188,
+    195
+   ],
+   "naohSapPpt": [
+    134,
+    139
+   ],
+   "iv": [
+    39,
+    48
+   ]
+  },
+  {
+   "name": "Palm Oil",
+   "appId": "palm-oil",
+   "kohSapPpt": [
+    190,
+    209
+   ],
+   "naohSapPpt": [
+    135,
+    149
+   ],
+   "iv": [
+    49,
+    55
+   ]
+  },
+  {
+   "name": "Palm Stearin",
+   "appId": "palm-stearin",
+   "kohSapPpt": [
+    193,
+    205
+   ],
+   "naohSapPpt": [
+    137,
+    146
+   ],
+   "iv": [
+    48,
+    48
+   ]
+  },
+  {
+   "name": "Sal (Shorea) Fat",
+   "appId": "sal-butter",
+   "kohSapPpt": [
+    175,
+    192
+   ],
+   "naohSapPpt": [
+    124,
+    137
+   ],
+   "iv": [
+    31,
+    45
+   ]
+  },
+  {
+   "name": "Sheanut Butter",
+   "appId": "shea-butter",
+   "kohSapPpt": [
+    178,
+    198
+   ],
+   "naohSapPpt": [
+    126,
+    141
+   ],
+   "iv": [
+    52,
+    66
+   ]
+  },
+  {
+   "name": "Tallow (Beef Fat)",
+   "appId": "tallow-beef",
+   "kohSapPpt": [
+    190,
+    200
+   ],
+   "naohSapPpt": [
+    135,
+    143
+   ],
+   "iv": [
+    33,
+    47
+   ]
+  },
+  {
+   "name": "Almond Kernel Oil",
+   "appId": "almond-oil-sweet",
+   "kohSapPpt": [
+    188,
+    200
+   ],
+   "naohSapPpt": [
+    134,
+    143
+   ],
+   "iv": [
+    89,
+    101
+   ]
+  },
+  {
+   "name": "Apricot Kernel Oil",
+   "appId": "apricot-kernel-oil",
+   "kohSapPpt": [
+    185,
+    199
+   ],
+   "naohSapPpt": [
+    131,
+    142
+   ],
+   "iv": [
+    97,
+    110
+   ]
+  },
+  {
+   "name": "Avocado Oil",
+   "appId": "avocado-oil",
+   "kohSapPpt": [
+    177,
+    198
+   ],
+   "naohSapPpt": [
+    126,
+    141
+   ],
+   "iv": [
+    85,
+    90
+   ]
+  },
+  {
+   "name": "Canola (Rapeseed) Oil",
+   "appId": "canola-oil",
+   "kohSapPpt": [
+    182,
+    193
+   ],
+   "naohSapPpt": [
+    129,
+    138
+   ],
+   "iv": [
+    110,
+    126
+   ]
+  },
+  {
+   "name": "Tamanu (Domba) Fat",
+   "appId": "tamanu-oil-kamani",
+   "kohSapPpt": [
+    192,
+    201
+   ],
+   "naohSapPpt": [
+    136,
+    143
+   ],
+   "iv": [
+    82,
+    98
+   ]
+  },
+  {
+   "name": "Hazelnut (Filbert) Oil",
+   "appId": "hazelnut-oil",
+   "kohSapPpt": [
+    188,
+    197
+   ],
+   "naohSapPpt": [
+    134,
+    140
+   ],
+   "iv": [
+    83,
+    90
+   ]
+  },
+  {
+   "name": "Karanja (Pongam) Oil",
+   "appId": "karanja-oil",
+   "kohSapPpt": [
+    177,
+    193
+   ],
+   "naohSapPpt": [
+    126,
+    138
+   ],
+   "iv": [
+    81,
+    96
+   ]
+  },
+  {
+   "name": "Neem (Margosa) Oil",
+   "appId": "neem-seed-oil",
+   "kohSapPpt": [
+    195,
+    204
+   ],
+   "naohSapPpt": [
+    139,
+    145
+   ],
+   "iv": [
+    68,
+    71
+   ]
+  },
+  {
+   "name": "Meadowfoam Seed Oil",
+   "appId": "meadowfoam-oil",
+   "kohSapPpt": [
+    168,
+    168
+   ],
+   "naohSapPpt": [
+    119,
+    120
+   ],
+   "iv": [
+    86,
+    91
+   ]
+  },
+  {
+   "name": "Olive Oil",
+   "appId": "olive-oil",
+   "kohSapPpt": [
+    184,
+    196
+   ],
+   "naohSapPpt": [
+    131,
+    140
+   ],
+   "iv": [
+    75,
+    94
+   ]
+  },
+  {
+   "name": "Palm Olein",
+   "appId": "palmolein",
+   "kohSapPpt": [
+    194,
+    202
+   ],
+   "naohSapPpt": [
+    138,
+    144
+   ],
+   "iv": [
+    56,
+    56
+   ]
+  },
+  {
+   "name": "Peach Kernel Oil",
+   "appId": "peach-kernel-oil",
+   "kohSapPpt": [
+    189,
+    194
+   ],
+   "naohSapPpt": [
+    134,
+    138
+   ],
+   "iv": [
+    94,
+    110
+   ]
+  },
+  {
+   "name": "Peanut (Groundnut) Oil",
+   "appId": "peanut-oil",
+   "kohSapPpt": [
+    187,
+    196
+   ],
+   "naohSapPpt": [
+    133,
+    140
+   ],
+   "iv": [
+    86,
+    107
+   ]
+  },
+  {
+   "name": "Pecan Nut Oil",
+   "appId": "pecan-oil",
+   "kohSapPpt": [
+    190,
+    198
+   ],
+   "naohSapPpt": [
+    135,
+    141
+   ],
+   "iv": [
+    100,
+    106
+   ]
+  },
+  {
+   "name": "Pistachio Nut Oil",
+   "appId": "pistachio-oil",
+   "kohSapPpt": [
+    189,
+    195
+   ],
+   "naohSapPpt": [
+    134,
+    139
+   ],
+   "iv": [
+    84,
+    96
+   ]
+  },
+  {
+   "name": "Rice Bran Oil",
+   "appId": "rice-bran-oil",
+   "kohSapPpt": [
+    181,
+    189
+   ],
+   "naohSapPpt": [
+    129,
+    135
+   ],
+   "iv": [
+    92,
+    108
+   ]
+  },
+  {
+   "name": "Teaseed Oil",
+   "appId": "camellia-oil-tea-seed",
+   "kohSapPpt": [
+    188,
+    196
+   ],
+   "naohSapPpt": [
+    134,
+    140
+   ],
+   "iv": [
+    80,
+    92
+   ]
+  },
+  {
+   "name": "Castor Oil",
+   "appId": "castor-oil",
+   "kohSapPpt": [
+    176,
+    187
+   ],
+   "naohSapPpt": [
+    125,
+    133
+   ],
+   "iv": [
+    81,
+    91
+   ]
+  },
+  {
+   "name": "Cod Liver Oil",
+   "appId": null,
+   "kohSapPpt": [
+    180,
+    192
+   ],
+   "naohSapPpt": [
+    128,
+    137
+   ],
+   "iv": [
+    142,
+    176
+   ]
+  },
+  {
+   "name": "Cherry Kernel Oil",
+   "appId": "cherry-kernel-oil-avium",
+   "kohSapPpt": [
+    190,
+    198
+   ],
+   "naohSapPpt": [
+    135,
+    141
+   ],
+   "iv": [
+    110,
+    118
+   ]
+  },
+  {
+   "name": "Coffee Bean Oil (Raw)",
+   "appId": "coffee-bean-oil-green",
+   "kohSapPpt": [
+    184,
+    195
+   ],
+   "naohSapPpt": [
+    131,
+    139
+   ],
+   "iv": [
+    100,
+    100
+   ]
+  },
+  {
+   "name": "Corn (Maize) Oil",
+   "appId": "corn-oil",
+   "kohSapPpt": [
+    187,
+    195
+   ],
+   "naohSapPpt": [
+    133,
+    139
+   ],
+   "iv": [
+    107,
+    135
+   ]
+  },
+  {
+   "name": "Cottonseed Oil",
+   "appId": "cottonseed-oil",
+   "kohSapPpt": [
+    189,
+    198
+   ],
+   "naohSapPpt": [
+    134,
+    141
+   ],
+   "iv": [
+    96,
+    115
+   ]
+  },
+  {
+   "name": "Evening Primrose Oil",
+   "appId": "evening-primrose-oil",
+   "kohSapPpt": [
+    193,
+    198
+   ],
+   "naohSapPpt": [
+    137,
+    141
+   ],
+   "iv": [
+    147,
+    155
+   ]
+  },
+  {
+   "name": "Grapefruit Seed Oil",
+   "appId": null,
+   "kohSapPpt": [
+    178,
+    197
+   ],
+   "naohSapPpt": [
+    126,
+    140
+   ],
+   "iv": [
+    92,
+    106
+   ]
+  },
+  {
+   "name": "Grape Seed Oil",
+   "appId": "grapeseed-oil",
+   "kohSapPpt": [
+    188,
+    194
+   ],
+   "naohSapPpt": [
+    134,
+    138
+   ],
+   "iv": [
+    130,
+    138
+   ]
+  },
+  {
+   "name": "Poppyseed Oil",
+   "appId": "poppy-seed-oil",
+   "kohSapPpt": [
+    188,
+    196
+   ],
+   "naohSapPpt": [
+    134,
+    140
+   ],
+   "iv": [
+    132,
+    146
+   ]
+  },
+  {
+   "name": "Pumpkin Seed Oil",
+   "appId": "pumpkin-seed-oil",
+   "kohSapPpt": [
+    174,
+    203
+   ],
+   "naohSapPpt": [
+    124,
+    145
+   ],
+   "iv": [
+    103,
+    133
+   ]
+  },
+  {
+   "name": "Safflower Seed Oil",
+   "appId": "safflower-oil",
+   "kohSapPpt": [
+    186,
+    198
+   ],
+   "naohSapPpt": [
+    132,
+    141
+   ],
+   "iv": [
+    136,
+    148
+   ]
+  },
+  {
+   "name": "Sesame Seed Oil",
+   "appId": "sesame-oil",
+   "kohSapPpt": [
+    187,
+    195
+   ],
+   "naohSapPpt": [
+    133,
+    139
+   ],
+   "iv": [
+    104,
+    120
+   ]
+  },
+  {
+   "name": "Soybean Oil",
+   "appId": "soybean-oil",
+   "kohSapPpt": [
+    189,
+    195
+   ],
+   "naohSapPpt": [
+    134,
+    139
+   ],
+   "iv": [
+    118,
+    139
+   ]
+  },
+  {
+   "name": "Sunflower Seed Oil",
+   "appId": "sunflower-oil",
+   "kohSapPpt": [
+    188,
+    194
+   ],
+   "naohSapPpt": [
+    134,
+    138
+   ],
+   "iv": [
+    118,
+    145
+   ]
+  },
+  {
+   "name": "Wheat Germ Oil",
+   "appId": "wheat-germ-oil",
+   "kohSapPpt": [
+    179,
+    217
+   ],
+   "naohSapPpt": [
+    127,
+    155
+   ],
+   "iv": [
+    100,
+    128
+   ]
+  },
+  {
+   "name": "Blackcurrant Oil",
+   "appId": null,
+   "kohSapPpt": [
+    185,
+    195
+   ],
+   "naohSapPpt": [
+    131,
+    139
+   ],
+   "iv": [
+    173,
+    182
+   ]
+  },
+  {
+   "name": "Borage Oil",
+   "appId": "borage-oil",
+   "kohSapPpt": [
+    189,
+    192
+   ],
+   "naohSapPpt": [
+    134,
+    137
+   ],
+   "iv": [
+    141,
+    160
+   ]
+  },
+  {
+   "name": "Cameline Oil",
+   "appId": "camelina-seed-oil",
+   "kohSapPpt": [
+    180,
+    190
+   ],
+   "naohSapPpt": [
+    128,
+    135
+   ],
+   "iv": [
+    127,
+    155
+   ]
+  },
+  {
+   "name": "Candlenut (Kukui) Oil",
+   "appId": "kukui-nut-oil",
+   "kohSapPpt": [
+    188,
+    202
+   ],
+   "naohSapPpt": [
+    134,
+    144
+   ],
+   "iv": [
+    136,
+    167
+   ]
+  },
+  {
+   "name": "Flaxseed (Linseed) Oil",
+   "appId": "flax-oil-linseed",
+   "kohSapPpt": [
+    188,
+    196
+   ],
+   "naohSapPpt": [
+    134,
+    140
+   ],
+   "iv": [
+    170,
+    203
+   ]
+  },
+  {
+   "name": "Hempseed Oil",
+   "appId": "hemp-oil",
+   "kohSapPpt": [
+    190,
+    195
+   ],
+   "naohSapPpt": [
+    135,
+    139
+   ],
+   "iv": [
+    145,
+    166
+   ]
+  },
+  {
+   "name": "Perilla Oil",
+   "appId": "perilla-seed-oil",
+   "kohSapPpt": [
+    188,
+    197
+   ],
+   "naohSapPpt": [
+    134,
+    140
+   ],
+   "iv": [
+    192,
+    208
+   ]
+  },
+  {
+   "name": "Walnut Oil",
+   "appId": "walnut-oil",
+   "kohSapPpt": [
+    189,
+    197
+   ],
+   "naohSapPpt": [
+    134,
+    140
+   ],
+   "iv": [
+    138,
+    162
+   ]
+  }
+ ]
+}

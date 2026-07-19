@@ -1,0 +1,619 @@
+{
+ "_about": "Cross-check dataset harvested from named, citable academic papers (see _sources) for the Soap Calc iodine-consistency gate and oil-data quality arc. Numbers verified by two independent blind PDF reads plus first-principles arithmetic (2026-07-19). Use as an external published-reference sanity band alongside the app profile-derived SAP/IV oracle; do NOT treat as ground truth to overwrite app values without review.",
+ "_verification": "Giakoumis & Toscano tables each read twice by independent blind agents; all iodine values and equations matched. One correction applied: Giakoumis castor 1.36 belongs to palmitic (C16:0), not myristic (C14:0). profileDerivedIodineValueOilBasis computed via AOCS-basis formula IV = glycerideFactor * sum(FA% * 253.809 * nDoubleBonds / MW_FA).",
+ "_sources": {
+  "giakoumis2018": "Giakoumis EG (2018). Analysis of 22 vegetable oils' physico-chemical properties and fatty acid composition, Renewable Energy. DOI 10.1016/j.renene.2018.03.057. Literature-compiled statistical means (695 papers). Reports iodine value; NO saponification value.",
+  "toscano2012": "Toscano G et al. (2012). Vegetable oil and fat viscosity forecast models based on iodine number and saponification number, Biomass & Bioenergy 46:511-516. DOI 10.1016/j.biombioe.2012.07.009. Lab-measured paired IV (ISO 3961) + SV (ISO 3657).",
+  "warra2010": "Warra AA, Hassan LG, Gunu SY, Jega SA (2010). Cold-Process Synthesis and Properties of Soaps..., Nigerian J. Basic & Applied Science 18(2):315-321. Primary measured SAP + IV + finished-bar pH."
+ },
+ "_iodineConsistencyNote": "deltaProfileMinusReported (profile-derived oil-basis IV minus Giakoumis's reported IV) scatters BOTH directions across oils, roughly +/-10 to 16, because Giakoumis compiles the FA-profile column and the iodine column as independent statistical means from different literature pools. So for a single oil, treat profile-derived IV and reported IV as two independent estimates; neither is authoritative to better than ~10 IV units. A per-oil delta alone is NOT a reliable inconsistency signal. Real inconsistency requires triangulation against a third source (this file's Toscano pairs, Warra, or the app's own profile). See _anomalies.",
+ "_anomalies": [
+  "palm: Giakoumis reported IV 43.2 disagrees with (a) its own profile (derived ~53.5), (b) Toscano palm 47.8-52.5, and (c) standard oleochemical refs (50-55) simultaneously -> Giakoumis palm IV is the low outlier; do not adopt it. Prefer ~50-53.",
+  "babassu: reported IV 21.7 vs profile-derived ~15.9 (delta -5.8); within single-source scatter, minor, but babassu here does resolve real C8 5.68 / C10 5.61 (candidate corrected profile for the app's inflated-babassu concern)."
+ ],
+ "_caveats": [
+  "Giakoumis provides NO SAP values and does NOT cover palm-kernel, tallow, lard, shea, or cocoa butter.",
+  "rapeseed (high-erucic) is distinct from canola; appId left null to avoid conflating with canola-oil.",
+  "Toscano oils are of deliberately unspecified provenance/cultivar (falls under the reference-derived anonymity rule)."
+ ],
+ "giakoumis2018_faProfileAndIodine": [
+  {
+   "name": "babassu",
+   "appId": "babassu-oil",
+   "fattyAcidPct": {
+    "caprylic_C8": 5.68,
+    "capric_C10": 5.61,
+    "lauric_C12": 41.58,
+    "myristic_C14": 16.86,
+    "palmitic_C16": 9.84,
+    "stearic_C18": 4.09,
+    "oleic_C18.1": 14.26,
+    "linoleic_C18.2": 2.18
+   },
+   "reportedIodineValue": 21.7,
+   "profileDerivedIodineValueOilBasis": 15.9,
+   "deltaProfileMinusReported": -5.8
+  },
+  {
+   "name": "canola",
+   "appId": "canola-oil",
+   "fattyAcidPct": {
+    "palmitic_C16": 4.52,
+    "palmitoleic_C16.1": 0.34,
+    "stearic_C18": 1.99,
+    "oleic_C18.1": 60.43,
+    "linoleic_C18.2": 21.19,
+    "linolenic_C18.3": 9.42,
+    "arachidic_C20": 0.57,
+    "gondoic_C20.1": 1.49,
+    "behenic_C22": 0.35,
+    "erucic_C22.1": 0.42,
+    "lignoceric_C24": 0.16
+   },
+   "reportedIodineValue": 109.3,
+   "profileDerivedIodineValueOilBasis": 115.1,
+   "deltaProfileMinusReported": 5.8
+  },
+  {
+   "name": "castor",
+   "appId": "castor-oil",
+   "fattyAcidPct": {
+    "palmitic_C16": 1.36,
+    "stearic_C18": 1.11,
+    "oleic_C18.1": 3.37,
+    "ricinoleic": 88.07,
+    "linoleic_C18.2": 4.82,
+    "linolenic_C18.3": 0.56,
+    "arachidic_C20": 0.25,
+    "gondoic_C20.1": 0.42
+   },
+   "reportedIodineValue": 85.3,
+   "profileDerivedIodineValueOilBasis": 84.9,
+   "deltaProfileMinusReported": -0.4
+  },
+  {
+   "name": "coconut",
+   "appId": "coconut-oil-76",
+   "fattyAcidPct": {
+    "caprylic_C8": 6.44,
+    "capric_C10": 5.62,
+    "lauric_C12": 46.7,
+    "myristic_C14": 18.75,
+    "palmitic_C16": 9.73,
+    "palmitoleic_C16.1": 0.11,
+    "stearic_C18": 2.78,
+    "oleic_C18.1": 6.86,
+    "linoleic_C18.2": 2.25,
+    "linolenic_C18.3": 0.04,
+    "arachidic_C20": 0.1,
+    "gondoic_C20.1": 0.03
+   },
+   "reportedIodineValue": 9.4,
+   "profileDerivedIodineValueOilBasis": 9.9,
+   "deltaProfileMinusReported": 0.5
+  },
+  {
+   "name": "corn",
+   "appId": "corn-oil",
+   "fattyAcidPct": {
+    "palmitic_C16": 11.88,
+    "palmitoleic_C16.1": 0.13,
+    "stearic_C18": 2.1,
+    "oleic_C18.1": 27.23,
+    "linoleic_C18.2": 57.74,
+    "linolenic_C18.3": 0.64,
+    "arachidic_C20": 0.32,
+    "gondoic_C20.1": 0.35,
+    "lignoceric_C24": 0.14
+   },
+   "reportedIodineValue": 120.5,
+   "profileDerivedIodineValueOilBasis": 125.4,
+   "deltaProfileMinusReported": 4.9
+  },
+  {
+   "name": "cottonseed",
+   "appId": "cottonseed-oil",
+   "fattyAcidPct": {
+    "myristic_C14": 0.72,
+    "palmitic_C16": 25.19,
+    "palmitoleic_C16.1": 0.36,
+    "stearic_C18": 1.79,
+    "oleic_C18.1": 16.47,
+    "linoleic_C18.2": 54.83,
+    "linolenic_C18.3": 0.19,
+    "arachidic_C20": 0.22,
+    "gondoic_C20.1": 0.07,
+    "behenic_C22": 0.11
+   },
+   "reportedIodineValue": 119.1,
+   "profileDerivedIodineValueOilBasis": 109.9,
+   "deltaProfileMinusReported": -9.2
+  },
+  {
+   "name": "hazelnut",
+   "appId": "hazelnut-oil",
+   "fattyAcidPct": {
+    "palmitic_C16": 6.21,
+    "palmitoleic_C16.1": 0.3,
+    "stearic_C18": 3.62,
+    "oleic_C18.1": 79.33,
+    "linoleic_C18.2": 10.66,
+    "linolenic_C18.3": 0.15,
+    "arachidic_C20": 0.1,
+    "gondoic_C20.1": 0.1
+   },
+   "reportedIodineValue": null,
+   "profileDerivedIodineValueOilBasis": 87.4,
+   "deltaProfileMinusReported": null
+  },
+  {
+   "name": "jatropha",
+   "appId": null,
+   "fattyAcidPct": {
+    "lauric_C12": 0.71,
+    "myristic_C14": 0.27,
+    "palmitic_C16": 14.39,
+    "palmitoleic_C16.1": 0.69,
+    "margaric_C17": 0.08,
+    "stearic_C18": 5.83,
+    "oleic_C18.1": 42.05,
+    "linoleic_C18.2": 35.9,
+    "linolenic_C18.3": 0.23,
+    "arachidic_C20": 0.09,
+    "gondoic_C20.1": 0.1,
+    "behenic_C22": 0.14,
+    "lignoceric_C24": 1.47
+   },
+   "reportedIodineValue": 100.2,
+   "profileDerivedIodineValueOilBasis": 99.6,
+   "deltaProfileMinusReported": -0.6
+  },
+  {
+   "name": "karanja",
+   "appId": "karanja-oil",
+   "fattyAcidPct": {
+    "palmitic_C16": 10.82,
+    "stearic_C18": 7.92,
+    "oleic_C18.1": 53.73,
+    "linoleic_C18.2": 20.68,
+    "linolenic_C18.3": 1.97,
+    "arachidic_C20": 1.82,
+    "gondoic_C20.1": 1.15,
+    "behenic_C22": 4.11,
+    "lignoceric_C24": 1.33
+   },
+   "reportedIodineValue": 87.4,
+   "profileDerivedIodineValueOilBasis": 88.1,
+   "deltaProfileMinusReported": 0.7
+  },
+  {
+   "name": "linseed",
+   "appId": "flax-oil-linseed",
+   "fattyAcidPct": {
+    "lauric_C12": 0.03,
+    "myristic_C14": 0.04,
+    "palmitic_C16": 5.18,
+    "palmitoleic_C16.1": 0.1,
+    "stearic_C18": 3.26,
+    "oleic_C18.1": 19.04,
+    "linoleic_C18.2": 16.12,
+    "linolenic_C18.3": 54.59,
+    "arachidic_C20": 0.09,
+    "gondoic_C20.1": 0.07,
+    "behenic_C22": 0.1,
+    "erucic_C22.1": 0.2,
+    "lignoceric_C24": 0.03
+   },
+   "reportedIodineValue": 171.9,
+   "profileDerivedIodineValueOilBasis": 187.4,
+   "deltaProfileMinusReported": 15.5
+  },
+  {
+   "name": "mahua",
+   "appId": null,
+   "fattyAcidPct": {
+    "myristic_C14": 0.15,
+    "palmitic_C16": 22.23,
+    "stearic_C18": 22.49,
+    "oleic_C18.1": 39.01,
+    "linoleic_C18.2": 14.87,
+    "linolenic_C18.3": 0.1,
+    "arachidic_C20": 1.01
+   },
+   "reportedIodineValue": 71.7,
+   "profileDerivedIodineValueOilBasis": 59.5,
+   "deltaProfileMinusReported": -12.2
+  },
+  {
+   "name": "neem",
+   "appId": "neem-seed-oil",
+   "fattyAcidPct": {
+    "lauric_C12": 0.4,
+    "myristic_C14": 0.18,
+    "palmitic_C16": 17.57,
+    "palmitoleic_C16.1": 0.05,
+    "stearic_C18": 16.6,
+    "oleic_C18.1": 45.83,
+    "linoleic_C18.2": 17.79,
+    "linolenic_C18.3": 0.72,
+    "arachidic_C20": 1.18,
+    "gondoic_C20.1": 0.05,
+    "behenic_C22": 0.15,
+    "lignoceric_C24": 0.1
+   },
+   "reportedIodineValue": 72.1,
+   "profileDerivedIodineValueOilBasis": 72.1,
+   "deltaProfileMinusReported": 0.0
+  },
+  {
+   "name": "olive",
+   "appId": "olive-oil",
+   "fattyAcidPct": {
+    "myristic_C14": 0.08,
+    "palmitic_C16": 11.26,
+    "palmitoleic_C16.1": 0.88,
+    "margaric_C17": 0.07,
+    "stearic_C18": 2.79,
+    "oleic_C18.1": 74.52,
+    "linoleic_C18.2": 9.82,
+    "linolenic_C18.3": 0.51,
+    "arachidic_C20": 0.49,
+    "gondoic_C20.1": 0.29,
+    "behenic_C22": 0.16,
+    "lignoceric_C24": 0.17
+   },
+   "reportedIodineValue": 88.2,
+   "profileDerivedIodineValueOilBasis": 83.5,
+   "deltaProfileMinusReported": -4.7
+  },
+  {
+   "name": "palm",
+   "appId": "palm-oil",
+   "fattyAcidPct": {
+    "caprylic_C8": 0.08,
+    "capric_C10": 0.06,
+    "lauric_C12": 0.36,
+    "myristic_C14": 1.13,
+    "palmitic_C16": 42.31,
+    "palmitoleic_C16.1": 0.17,
+    "margaric_C17": 0.06,
+    "stearic_C18": 4.27,
+    "oleic_C18.1": 40.9,
+    "linoleic_C18.2": 10.07,
+    "linolenic_C18.3": 0.28,
+    "arachidic_C20": 0.31,
+    "gondoic_C20.1": 0.16,
+    "behenic_C22": 0.04,
+    "lignoceric_C24": 0.05
+   },
+   "reportedIodineValue": 43.2,
+   "profileDerivedIodineValueOilBasis": 53.5,
+   "deltaProfileMinusReported": 10.3,
+   "bandExclude": true
+  },
+  {
+   "name": "peanut",
+   "appId": "peanut-oil",
+   "fattyAcidPct": {
+    "palmitic_C16": 10.33,
+    "stearic_C18": 2.79,
+    "oleic_C18.1": 49.63,
+    "linoleic_C18.2": 31.52,
+    "linolenic_C18.3": 0.64,
+    "arachidic_C20": 1.07,
+    "gondoic_C20.1": 1.48,
+    "behenic_C22": 2.86,
+    "erucic_C22.1": 0.1,
+    "lignoceric_C24": 1.3
+   },
+   "reportedIodineValue": 112.3,
+   "profileDerivedIodineValueOilBasis": 100.2,
+   "deltaProfileMinusReported": -12.1
+  },
+  {
+   "name": "rapeseed",
+   "appId": null,
+   "fattyAcidPct": {
+    "myristic_C14": 0.04,
+    "palmitic_C16": 4.06,
+    "palmitoleic_C16.1": 0.23,
+    "margaric_C17": 0.07,
+    "stearic_C18": 1.54,
+    "oleic_C18.1": 62.29,
+    "linoleic_C18.2": 20.65,
+    "linolenic_C18.3": 8.71,
+    "arachidic_C20": 0.87,
+    "gondoic_C20.1": 1.09,
+    "behenic_C22": 0.27,
+    "erucic_C22.1": 0.77,
+    "lignoceric_C24": 0.04
+   },
+   "reportedIodineValue": 110.5,
+   "profileDerivedIodineValueOilBasis": 113.7,
+   "deltaProfileMinusReported": 3.2
+  },
+  {
+   "name": "rice-bran",
+   "appId": "rice-bran-oil",
+   "fattyAcidPct": {
+    "lauric_C12": 0.08,
+    "myristic_C14": 0.45,
+    "palmitic_C16": 18.12,
+    "palmitoleic_C16.1": 0.2,
+    "stearic_C18": 2.17,
+    "oleic_C18.1": 42.35,
+    "linoleic_C18.2": 34.84,
+    "linolenic_C18.3": 0.93,
+    "arachidic_C20": 0.45,
+    "gondoic_C20.1": 0.22,
+    "behenic_C22": 0.21,
+    "lignoceric_C24": 0.16
+   },
+   "reportedIodineValue": 98.3,
+   "profileDerivedIodineValueOilBasis": 99.5,
+   "deltaProfileMinusReported": 1.2
+  },
+  {
+   "name": "rubber-seed",
+   "appId": null,
+   "fattyAcidPct": {
+    "myristic_C14": 0.51,
+    "palmitic_C16": 9.39,
+    "palmitoleic_C16.1": 0.13,
+    "margaric_C17": 0.04,
+    "stearic_C18": 9.41,
+    "oleic_C18.1": 24.22,
+    "linoleic_C18.2": 38.12,
+    "linolenic_C18.3": 17.54,
+    "arachidic_C20": 0.28,
+    "gondoic_C20.1": 0.12,
+    "behenic_C22": 0.08
+   },
+   "reportedIodineValue": 139.3,
+   "profileDerivedIodineValueOilBasis": 132.9,
+   "deltaProfileMinusReported": -6.4
+  },
+  {
+   "name": "safflower",
+   "appId": "safflower-oil",
+   "fattyAcidPct": {
+    "myristic_C14": 0.12,
+    "palmitic_C16": 7.41,
+    "palmitoleic_C16.1": 0.04,
+    "stearic_C18": 2.36,
+    "oleic_C18.1": 14.37,
+    "linoleic_C18.2": 75.17,
+    "linolenic_C18.3": 0.08,
+    "arachidic_C20": 0.08,
+    "behenic_C22": 0.1
+   },
+   "reportedIodineValue": 137.2,
+   "profileDerivedIodineValueOilBasis": 142.7,
+   "deltaProfileMinusReported": 5.5
+  },
+  {
+   "name": "sesame",
+   "appId": "sesame-oil",
+   "fattyAcidPct": {
+    "palmitic_C16": 10.06,
+    "palmitoleic_C16.1": 0.1,
+    "stearic_C18": 5.14,
+    "oleic_C18.1": 40.18,
+    "linoleic_C18.2": 43.46,
+    "linolenic_C18.3": 0.56,
+    "arachidic_C20": 0.57,
+    "gondoic_C20.1": 0.1,
+    "behenic_C22": 0.08
+   },
+   "reportedIodineValue": 101.7,
+   "profileDerivedIodineValueOilBasis": 111.4,
+   "deltaProfileMinusReported": 9.7
+  },
+  {
+   "name": "soybean",
+   "appId": "soybean-oil",
+   "fattyAcidPct": {
+    "lauric_C12": 0.08,
+    "myristic_C14": 0.12,
+    "palmitic_C16": 11.5,
+    "palmitoleic_C16.1": 0.16,
+    "margaric_C17": 0.04,
+    "stearic_C18": 4.11,
+    "oleic_C18.1": 23.5,
+    "linoleic_C18.2": 53.33,
+    "linolenic_C18.3": 6.76,
+    "arachidic_C20": 0.32,
+    "gondoic_C20.1": 0.22,
+    "behenic_C22": 0.27,
+    "erucic_C22.1": 0.07,
+    "lignoceric_C24": 0.13
+   },
+   "reportedIodineValue": 128.2,
+   "profileDerivedIodineValueOilBasis": 130.6,
+   "deltaProfileMinusReported": 2.4
+  },
+  {
+   "name": "sunflower",
+   "appId": "sunflower-oil",
+   "fattyAcidPct": {
+    "myristic_C14": 0.04,
+    "palmitic_C16": 6.35,
+    "palmitoleic_C16.1": 0.07,
+    "stearic_C18": 3.92,
+    "oleic_C18.1": 20.91,
+    "linoleic_C18.2": 67.58,
+    "linolenic_C18.3": 0.17,
+    "arachidic_C20": 0.22,
+    "gondoic_C20.1": 0.11,
+    "behenic_C22": 0.66,
+    "lignoceric_C24": 0.26
+   },
+   "reportedIodineValue": 119.4,
+   "profileDerivedIodineValueOilBasis": 135.6,
+   "deltaProfileMinusReported": 16.2
+  }
+ ],
+ "toscano2012_iodineSaponificationPairs": [
+  {
+   "name": "Argan",
+   "sapValueKOH": 193.7,
+   "iodineValue": 91.0,
+   "appId": null
+  },
+  {
+   "name": "Abyssinian cabbage (Brassica carinata)",
+   "sapValueKOH": 173.0,
+   "iodineValue": 111.7,
+   "appId": null
+  },
+  {
+   "name": "Cardoon",
+   "sapValueKOH": 188.3,
+   "iodineValue": 124.5,
+   "appId": null
+  },
+  {
+   "name": "Coconut palm",
+   "sapValueKOH": 249.3,
+   "iodineValue": 9.7,
+   "appId": "coconut-oil-76"
+  },
+  {
+   "name": "Rapeseed (crude)",
+   "sapValueKOH": 191.0,
+   "iodineValue": 111.7,
+   "appId": null
+  },
+  {
+   "name": "Cotton",
+   "sapValueKOH": 193.0,
+   "iodineValue": 108.0,
+   "appId": "cottonseed-oil"
+  },
+  {
+   "name": "Sunflower (high oleic, crude)",
+   "sapValueKOH": 191.3,
+   "iodineValue": 87.1,
+   "appId": "sunflower-oil"
+  },
+  {
+   "name": "Sunflower (refined)",
+   "sapValueKOH": 193.5,
+   "iodineValue": 111.2,
+   "appId": "sunflower-oil"
+  },
+  {
+   "name": "Bovine fat",
+   "sapValueKOH": 196.3,
+   "iodineValue": 42.2,
+   "appId": "tallow-beef"
+  },
+  {
+   "name": "Pig fat",
+   "sapValueKOH": 195.7,
+   "iodineValue": 44.8,
+   "appId": "lard-pig-tallow"
+  },
+  {
+   "name": "Jatropha (crude)",
+   "sapValueKOH": 192.0,
+   "iodineValue": 103.0,
+   "appId": null
+  },
+  {
+   "name": "Jatropha (refined)",
+   "sapValueKOH": 192.0,
+   "iodineValue": 103.0,
+   "appId": null
+  },
+  {
+   "name": "Flax",
+   "sapValueKOH": 193.7,
+   "iodineValue": 188.2,
+   "appId": "flax-oil-linseed"
+  },
+  {
+   "name": "Maize (crude)",
+   "sapValueKOH": 192.5,
+   "iodineValue": 122.6,
+   "appId": "corn-oil"
+  },
+  {
+   "name": "Maize (refined)",
+   "sapValueKOH": 189.9,
+   "iodineValue": 121.3,
+   "appId": "corn-oil"
+  },
+  {
+   "name": "Neem",
+   "sapValueKOH": 175.0,
+   "iodineValue": 71.0,
+   "appId": "neem-seed-oil"
+  },
+  {
+   "name": "Palm (crude)",
+   "sapValueKOH": 200.1,
+   "iodineValue": 52.5,
+   "appId": "palm-oil"
+  },
+  {
+   "name": "Palm (refined)",
+   "sapValueKOH": 199.1,
+   "iodineValue": 47.8,
+   "appId": "palm-oil"
+  },
+  {
+   "name": "Soybean (crude)",
+   "sapValueKOH": 194.2,
+   "iodineValue": 119.6,
+   "appId": "soybean-oil"
+  },
+  {
+   "name": "Soybean (refined)",
+   "sapValueKOH": 190.1,
+   "iodineValue": 123.7,
+   "appId": "soybean-oil"
+  },
+  {
+   "name": "Grapeseed",
+   "sapValueKOH": 192.0,
+   "iodineValue": 130.8,
+   "appId": "grapeseed-oil"
+  },
+  {
+   "name": "Tomato",
+   "sapValueKOH": 188.7,
+   "iodineValue": 120.3,
+   "appId": null
+  },
+  {
+   "name": "Olive",
+   "sapValueKOH": 190.0,
+   "iodineValue": 85.0,
+   "appId": "olive-oil"
+  }
+ ],
+ "warra2010_measuredSapIodine": [
+  {
+   "name": "Tallow (beef, rendered)",
+   "sapValueKOH": 140.3,
+   "iodineValue": 44.3,
+   "acidValue": 16.1,
+   "appId": "tallow-beef"
+  },
+  {
+   "name": "Shea butter (crude)",
+   "sapValueKOH": 183.9,
+   "iodineValue": 54.1,
+   "acidValue": 10.5,
+   "appId": "shea-butter"
+  },
+  {
+   "name": "Groundnut / peanut oil",
+   "sapValueKOH": 187.7,
+   "iodineValue": 84.8,
+   "acidValue": 3.83,
+   "appId": "peanut-oil"
+  }
+ ]
+}

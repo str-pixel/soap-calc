@@ -1,0 +1,987 @@
+{
+  "_about": "Pooled external published iodine/SAP references per app oil id. GENERATED from reference/external-sources/ by scripts/build-external-references.ts — do not hand-edit. sap in mg KOH/g.",
+  "oils": {
+    "almond-oil-sweet": {
+      "iodine": {
+        "min": 89,
+        "max": 101,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 200,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "apricot-kernel-oil": {
+      "iodine": {
+        "min": 97,
+        "max": 110,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 185,
+        "max": 199,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "avocado-oil": {
+      "iodine": {
+        "min": 85,
+        "max": 90,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 177,
+        "max": 198,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "babassu-oil": {
+      "iodine": {
+        "min": 10,
+        "max": 21.7,
+        "sourceCount": 2,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 245,
+        "max": 256,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "baobab-oil": {
+      "iodine": {
+        "min": 55,
+        "max": 96,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 133,
+        "max": 195,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "borage-oil": {
+      "iodine": {
+        "min": 141,
+        "max": 160,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 189,
+        "max": 192,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "camelina-seed-oil": {
+      "iodine": {
+        "min": 127,
+        "max": 155,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 180,
+        "max": 190,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "camellia-oil-tea-seed": {
+      "iodine": {
+        "min": 80,
+        "max": 92,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 196,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "canola-oil": {
+      "iodine": {
+        "min": 109.3,
+        "max": 126,
+        "sourceCount": 2,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 182,
+        "max": 193,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "castor-oil": {
+      "iodine": {
+        "min": 81,
+        "max": 91,
+        "sourceCount": 2,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 176,
+        "max": 187,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "cherry-kernel-oil-avium": {
+      "iodine": {
+        "min": 110,
+        "max": 118,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 190,
+        "max": 198,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "cocoa-butter": {
+      "iodine": {
+        "min": 32,
+        "max": 40,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 192,
+        "max": 200,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "coconut-oil-76": {
+      "iodine": {
+        "min": 5,
+        "max": 13,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 248,
+        "max": 265,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "coffee-bean-oil-green": {
+      "iodine": {
+        "min": 100,
+        "max": 100,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 184,
+        "max": 195,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "cohune-oil": {
+      "iodine": {
+        "min": 9,
+        "max": 14,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 251,
+        "max": 260,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "corn-oil": {
+      "iodine": {
+        "min": 107,
+        "max": 135,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 187,
+        "max": 195,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "cottonseed-oil": {
+      "iodine": {
+        "min": 96,
+        "max": 119.1,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 189,
+        "max": 198,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "evening-primrose-oil": {
+      "iodine": {
+        "min": 147,
+        "max": 155,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 193,
+        "max": 198,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "flax-oil-linseed": {
+      "iodine": {
+        "min": 170,
+        "max": 203,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 196,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "grapeseed-oil": {
+      "iodine": {
+        "min": 130,
+        "max": 138,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 194,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "hazelnut-oil": {
+      "iodine": {
+        "min": 83,
+        "max": 90,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 197,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "hemp-oil": {
+      "iodine": {
+        "min": 145,
+        "max": 166,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 190,
+        "max": 195,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "karanja-oil": {
+      "iodine": {
+        "min": 81,
+        "max": 96,
+        "sourceCount": 2,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 177,
+        "max": 193,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "kokum-butter": {
+      "iodine": {
+        "min": 33,
+        "max": 37,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 192,
+        "max": 192,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "kukui-nut-oil": {
+      "iodine": {
+        "min": 136,
+        "max": 167,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 202,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "lard-pig-tallow": {
+      "iodine": {
+        "min": 44.8,
+        "max": 70,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 192,
+        "max": 203,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "mango-seed-oil": {
+      "iodine": {
+        "min": 39,
+        "max": 48,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 195,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "meadowfoam-oil": {
+      "iodine": {
+        "min": 86,
+        "max": 91,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 168,
+        "max": 168,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "neem-seed-oil": {
+      "iodine": {
+        "min": 68,
+        "max": 72.1,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 175,
+        "max": 204,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "olive-oil": {
+      "iodine": {
+        "min": 75,
+        "max": 94,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 184,
+        "max": 196,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "palm-kernel-oil": {
+      "iodine": {
+        "min": 14,
+        "max": 21,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 230,
+        "max": 254,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "palm-oil": {
+      "iodine": {
+        "min": 47.8,
+        "max": 55,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 190,
+        "max": 209,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "palm-stearin": {
+      "iodine": {
+        "min": 48,
+        "max": 48,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 193,
+        "max": 205,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "palmolein": {
+      "iodine": {
+        "min": 56,
+        "max": 56,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 194,
+        "max": 202,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "peach-kernel-oil": {
+      "iodine": {
+        "min": 94,
+        "max": 110,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 189,
+        "max": 194,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "peanut-oil": {
+      "iodine": {
+        "min": 84.8,
+        "max": 112.3,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "warra2010"
+        ]
+      },
+      "sapKoh": {
+        "min": 187,
+        "max": 196,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "warra2010"
+        ]
+      }
+    },
+    "pecan-oil": {
+      "iodine": {
+        "min": 100,
+        "max": 106,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 190,
+        "max": 198,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "perilla-seed-oil": {
+      "iodine": {
+        "min": 192,
+        "max": 208,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 197,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "pistachio-oil": {
+      "iodine": {
+        "min": 84,
+        "max": 96,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 189,
+        "max": 195,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "poppy-seed-oil": {
+      "iodine": {
+        "min": 132,
+        "max": 146,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 196,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "pumpkin-seed-oil": {
+      "iodine": {
+        "min": 103,
+        "max": 133,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 174,
+        "max": 203,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "rice-bran-oil": {
+      "iodine": {
+        "min": 92,
+        "max": 108,
+        "sourceCount": 2,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 181,
+        "max": 189,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "safflower-oil": {
+      "iodine": {
+        "min": 136,
+        "max": 148,
+        "sourceCount": 2,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 186,
+        "max": 198,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "sal-butter": {
+      "iodine": {
+        "min": 31,
+        "max": 45,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 175,
+        "max": 192,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "sesame-oil": {
+      "iodine": {
+        "min": 101.7,
+        "max": 120,
+        "sourceCount": 2,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 187,
+        "max": 195,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "shea-butter": {
+      "iodine": {
+        "min": 52,
+        "max": 66,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "warra2010"
+        ]
+      },
+      "sapKoh": {
+        "min": 178,
+        "max": 198,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "warra2010"
+        ]
+      }
+    },
+    "soybean-oil": {
+      "iodine": {
+        "min": 118,
+        "max": 139,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 189,
+        "max": 195,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "sunflower-oil": {
+      "iodine": {
+        "min": 87.1,
+        "max": 145,
+        "sourceCount": 3,
+        "sources": [
+          "giakoumis2018",
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      },
+      "sapKoh": {
+        "min": 188,
+        "max": 194,
+        "sourceCount": 2,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012"
+        ]
+      }
+    },
+    "tallow-beef": {
+      "iodine": {
+        "min": 33,
+        "max": 47,
+        "sourceCount": 3,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012",
+          "warra2010"
+        ]
+      },
+      "sapKoh": {
+        "min": 140.3,
+        "max": 200,
+        "sourceCount": 3,
+        "sources": [
+          "oil-property-ranges",
+          "toscano2012",
+          "warra2010"
+        ]
+      }
+    },
+    "tamanu-oil-kamani": {
+      "iodine": {
+        "min": 82,
+        "max": 98,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 192,
+        "max": 201,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "walnut-oil": {
+      "iodine": {
+        "min": 138,
+        "max": 162,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 189,
+        "max": 197,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    },
+    "wheat-germ-oil": {
+      "iodine": {
+        "min": 100,
+        "max": 128,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      },
+      "sapKoh": {
+        "min": 179,
+        "max": 217,
+        "sourceCount": 1,
+        "sources": [
+          "oil-property-ranges"
+        ]
+      }
+    }
+  }
+}
