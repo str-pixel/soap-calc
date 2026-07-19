@@ -407,4 +407,20 @@ describe('scaleLyeResult', () => {
     expect(scaleLyeResult(full, 1.5).lyeWeightGrams).toBe(full.lyeWeightGrams);
     expect(scaleLyeResult(full, -0.5).lyeWeightGrams).toBe(0);
   });
+
+  it('finding C2: treats a non-finite factor as a no-op scale instead of propagating NaN', () => {
+    const s = scaleLyeResult(full, NaN);
+    expect(Number.isFinite(s.lyeWeightGrams)).toBe(true);
+    expect(Number.isFinite(s.naohWeightGrams)).toBe(true);
+    expect(Number.isFinite(s.kohWeightGrams)).toBe(true);
+    expect(Number.isFinite(s.waterWeightGrams)).toBe(true);
+    expect(Number.isFinite(s.totalBatchWeightGrams)).toBe(true);
+    expect(s.lyeWeightGrams).toBe(full.lyeWeightGrams);
+    expect(s.waterWeightGrams).toBe(full.waterWeightGrams);
+    for (const line of s.lines) {
+      expect(Number.isFinite(line.lyeGrams)).toBe(true);
+      expect(Number.isFinite(line.naohGrams)).toBe(true);
+      expect(Number.isFinite(line.kohGrams)).toBe(true);
+    }
+  });
 });

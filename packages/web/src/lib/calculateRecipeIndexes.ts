@@ -39,7 +39,7 @@ export function calculateRecipeIndexes(
   }
 
   if (coveredWeight <= 0) {
-    return { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] };
+    return { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [...missingOilIds] };
   }
 
   // Renormalize over covered weight so indexes stay on their usual scale; coveragePercent

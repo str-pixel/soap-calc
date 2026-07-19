@@ -48,4 +48,16 @@ describe('calculateRecipeIndexes', () => {
     expect(partial.ins!).toBeCloseTo(soloOlive.ins!, 5);
     expect(partial.coveragePercent).toBeCloseTo(50, 5);
   });
+
+  it('returns the populated missingOilIds when every oil lacks index data (finding R2)', () => {
+    const lines = [
+      { key: 'a', oilId: 'ghost-oil', weightGrams: '500' },
+      { key: 'b', oilId: 'ghost-oil-2', weightGrams: '500' },
+    ];
+    const result = calculateRecipeIndexes(lines, DEFAULT_SETTINGS);
+    expect(result.iodine).toBeNull();
+    expect(result.ins).toBeNull();
+    expect(result.coveragePercent).toBe(0);
+    expect(result.missingOilIds.sort()).toEqual(['ghost-oil', 'ghost-oil-2']);
+  });
 });
