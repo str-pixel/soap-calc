@@ -41,6 +41,17 @@ describe('deriveChemistryFromProfile', () => {
     expect(olive.iodineValue).toBeGreaterThan(70); // olive IV ~85
   });
 
+  it('derives iodine on the OIL (triglyceride) basis: FA-basis sum × glyceryl factor', () => {
+    // Pure oleic (C18:1, MW 282.46, 1 double bond): FA-basis IV = 100·253.809/282.46 = 89.86.
+    // Triglyceride factor = 3·282.46 / (3·282.46 + 38.049) = 0.95702 → oil-basis IV ≈ 86.00.
+    const r = deriveChemistryFromProfile({ oleic: 100 })!;
+    const faBasis = (100 * 253.809) / 282.46;
+    const factor = (3 * 282.46) / (3 * 282.46 + 38.049);
+    expect(r.iodineValue).toBeCloseTo(faBasis * factor, 4);
+    expect(r.iodineValue).toBeCloseTo(86.0, 1);
+    expect(r.iodineValue).toBeLessThan(faBasis); // strictly below the FA-basis value
+  });
+
   it('returns INS as round(sapKoh*1000 - iodineValue)', () => {
     const r = deriveChemistryFromProfile(OLIVE)!;
     expect(r.ins).toBe(Math.round(r.sapKoh * 1000 - r.iodineValue));

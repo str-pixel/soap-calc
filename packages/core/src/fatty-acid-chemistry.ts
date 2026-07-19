@@ -59,7 +59,7 @@ export const FATTY_ACID_PROPERTIES: Record<string, FattyAcidConstants> = {
 export type DerivedChemistry = {
   /** KOH saponification coefficient, g KOH / g oil. */
   sapKoh: number;
-  /** Iodine value, g I₂ / 100 g oil (calculated from double-bond count). */
+  /** Iodine value, g I₂ / 100 g oil (computed on the triglyceride basis, from double-bond count). */
   iodineValue: number;
   /** INS index = round(SAP mg KOH/g − iodine value). */
   ins: number;
@@ -76,20 +76,25 @@ export function deriveChemistryFromProfile(
 ): DerivedChemistry | null {
   let molarMassSum = 0;
   let mappedPercent = 0;
-  let iodineValue = 0;
+  let iodineValueFaBasis = 0;
 
   for (const [acid, percent] of Object.entries(profile)) {
     const fa = FATTY_ACID_PROPERTIES[acid];
     if (!fa || !(percent > 0)) continue;
     molarMassSum += percent * fa.molecularWeight;
     mappedPercent += percent;
-    iodineValue += (percent * fa.doubleBonds * DIIODINE_MASS) / fa.molecularWeight;
+    iodineValueFaBasis += (percent * fa.doubleBonds * DIIODINE_MASS) / fa.molecularWeight;
   }
 
   if (mappedPercent < MIN_MAPPED_PERCENT) return null;
 
   const meanMolarMass = molarMassSum / mappedPercent;
   const sapKoh = (3 * KOH_MOLAR_MASS) / (3 * meanMolarMass + GLYCERYL_ADJUSTMENT);
+  // The Σ above is per 100 g of *fatty acids*; an iodine value is defined per 100 g of *oil*.
+  // Convert with the same fatty-acyl mass fraction the SAP calc uses (shares the denominator),
+  // so iodineValue honors its "g I₂ / 100 g oil" contract instead of running ~4.4% high.
+  const glycerideFactor = (3 * meanMolarMass) / (3 * meanMolarMass + GLYCERYL_ADJUSTMENT);
+  const iodineValue = iodineValueFaBasis * glycerideFactor;
   const ins = Math.round(sapKoh * 1000 - iodineValue);
 
   return { sapKoh, iodineValue, ins, mappedPercent };
