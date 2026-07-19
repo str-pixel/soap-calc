@@ -50,19 +50,19 @@ Shape (keyed by app `id`; `sources`/`sourceCount` live *inside* each property, s
   "oils": {
     "palm-oil": {
       "iodine": { "min": 47.8, "max": 55, "sourceCount": 2, "sources": ["toscano2012", "oil-property-ranges"] },
-      "sapKoh": { "min": 199, "max": 200.1, "sourceCount": 2, "sources": ["toscano2012", "oil-property-ranges"] }
+      "sapKoh": { "min": 190, "max": 209, "sourceCount": 2, "sources": ["oil-property-ranges", "toscano2012"] }
     }
   }
 }
 ```
 
-(Palm iodine `[47.8, 55]` excludes Giakoumis's 43.2 per the anomaly rule; Warra has no palm, so it is not a palm source.)
+(Real values. Palm iodine `[47.8, 55]`: Toscano 47.8/52.5 + AOCS range `[49,55]`, with Giakoumis's 43.2 excluded per the anomaly rule. Palm SAP `[190, 209]`: AOCS `kohSapPpt [190,209]` with Toscano 199.1/200.1 sitting inside. Warra has no palm, so it is not a palm source.)
 
 Generator rules:
 
 - **Pool** every available iodine point (Giakoumis reported IV, Toscano IV, Warra IV, and both ends of each `oil-property-ranges.iv`) into one `[min,max]`; likewise SAP from Toscano `sapValueKOH`, Warra `sapValueKOH`, and `oil-property-ranges.kohSapPpt` (KOH only — never mix the NaOH column).
-- **Honor triangulated anomalies.** A source point flagged as a triangulated outlier is excluded from band construction so a known-bad value cannot define an edge (palm/Giakoumis 43.2 is the motivating case). The current `_anomalies` field is prose a generator cannot parse, so **add `"bandExclude": true`** to the relevant per-oil entry in the in-repo `research-papers-crosscheck.json` (palm's Giakoumis entry), keeping the prose `_anomalies` for humans. The generator drops any point with `bandExclude`.
-- **Record `sourceCount` and `sources`** per property (after exclusions) — the band's confidence signal.
+- **Honor triangulated anomalies.** A source point flagged as a triangulated outlier is excluded from band construction so a known-bad value cannot define an edge (palm/Giakoumis 43.2 is the motivating case). The current `_anomalies` field is prose a generator cannot parse, so **add `"bandExclude": true`** to the relevant per-oil entry in the in-repo `research-papers-crosscheck.json` (palm's Giakoumis entry), keeping the prose `_anomalies` for humans. The generator drops any point with `bandExclude`. (Giakoumis entries carry iodine only, so the flag is unambiguous today; if a future multi-property source needs partial exclusion, scope the flag to the property, e.g. `bandExclude: ["iodine"]`.)
+- **`sourceCount` counts distinct source *datasets*, not points.** A published min/max range (`oil-property-ranges`) is **one** source that contributes two band points; Toscano's crude+refined rows are **one** source (`toscano2012`) contributing two points. So an oil covered only by the AOCS range has `sourceCount: 1` even though its band already has width. Record `sourceCount` and `sources` per property, after exclusions — the band's confidence signal, and the input to single-source widening.
 - Oils with no external data are simply absent (no entry → not judged).
 
 The vendored output JSON is what ships and what the gate imports. Regeneration is a documented dev step (like the FNWL snapshots), not part of the runtime build.
@@ -79,17 +79,21 @@ classifyExternalReferenceDeviations(
 ```
 
 - `OilLike = { id; iodine?; sapMgKohPerGram? }` — **no category filter.** Unlike the internal gates (which need a glyceride backbone to derive), this one only compares numbers, so coverage is defined solely by the reference table. Any oil with an entry is judged.
-- For each oil with a reference, for each property present (`iodine`, `sapKoh`), flag when the stored value is **outside `[min − T, max + T]`**.
-- **Tolerance `T`** (named exports, provisional — see Calibration):
-  - iodine: `T = max(IODINE_ABS_TOL, IODINE_REL_TOL * edge)` with `IODINE_ABS_TOL = 5`, `IODINE_REL_TOL = 0.05`.
+- For each oil with a reference, for each property present (`iodine`, `sapKoh`), flag when the stored value is **below `min − T_low` or above `max + T_high`**. Tolerance is computed **per side** against that side's edge: `T_low = max(ABS, REL * min)`, `T_high = max(ABS, REL * max)` (the `[min−T, max+T]` shorthand elsewhere hides this).
+- **Tolerance constants** (named exports, provisional — see Calibration):
+  - iodine: `IODINE_ABS_TOL = 5`, `IODINE_REL_TOL = 0.05`.
   - sap: `SAP_ABS_TOL = 4` (mg KOH/g), `SAP_REL_TOL = 0.03`.
-  - **Single-source widening:** when `sourceCount === 1`, tolerance is widened (`× SINGLE_SOURCE_TOL_FACTOR`, provisional `2`). A lone reference point is weak evidence and must not trip easily (the `coffee-bean-oil-green` case, where the app value is likely right and the single reference is the outlier).
-- **Two tiers only** (warn-only design): `acknowledged` if the oil is in `KNOWN_EXTERNAL_REFERENCE_DEVIATIONS` (reviewed reason), else `warn`.
+  - **Single-source widening:** when a property's `sourceCount === 1`, its `T_low`/`T_high` are multiplied by `SINGLE_SOURCE_TOL_FACTOR` (provisional `2`). This *reduces* false trips on weak evidence; it is **not** a suppressor — a large single-source gap still flags (e.g. coffee 85 vs a lone `100`: widened low edge is 90, so 85 still trips) and is then adjudicated in calibration (acknowledge or add a source), not silently dropped.
+- **Two tiers only** (warn-only design): `acknowledged` if the `id:property` key is in `KNOWN_EXTERNAL_REFERENCE_DEVIATIONS` (reviewed reason), else `warn`.
 - Each deviation: `{ id, property: 'iodine' | 'sapKoh', stored, band: [min,max], sourceCount, deltaOutside, tier, reason? }`. `deltaOutside` = signed distance past the nearest tolerance edge (0 inside, used for ranking). Sorted by `id`, then `property`.
 
 ```ts
+// Keyed by `${id}:${property}` — one oil can deviate on iodine and SAP independently,
+// so an oil id alone cannot identify which deviation is acknowledged.
 export const KNOWN_EXTERNAL_REFERENCE_DEVIATIONS: Record<string, string> = {
   // reviewed, source-attributed reasons only; empty until calibration adds real entries.
+  // e.g. 'coffee-bean-oil-green:iodine': 'lone AOCS-style point (100) reads high vs the
+  //      typical ~80–90 for green coffee oil; app value 85 retained pending a 2nd source',
 };
 ```
 
@@ -100,8 +104,8 @@ export const KNOWN_EXTERNAL_REFERENCE_DEVIATIONS: Record<string, string> = {
 
 ### 4. Tests
 
-- `external-reference-deviations.test.ts` (unit, synthetic refs): stored inside band → none; outside on the high side → warn; outside on the low side → warn; just inside tolerance → none; single-source widened tolerance suppresses a small gap; acknowledged id → acknowledged tier + reason; oil absent from refs → skipped; SAP compared in mg KOH/g against `sapMgKohPerGram` (a value like `190` in-band, `19` or `1900` out).
-- `external-reference-consistency.test.ts` (drift guard against shipped `canonical-oils.json`): every id in `KNOWN_EXTERNAL_REFERENCE_DEVIATIONS` still actually deviates (no stale acknowledgment). **No "zero warn" assertion** — warns are an expected, evolving backlog, not a failure.
+- `external-reference-deviations.test.ts` (unit, synthetic refs): stored inside band → none; outside on the high side → warn; outside on the low side → warn; just inside tolerance → none; single-source widening turns a borderline gap that would warn at n≥2 into no-warn, **but a large single-source gap still warns**; an oil that deviates on both iodine and SAP yields two deviations, and acknowledging only `id:iodine` leaves the SAP one as `warn`; acknowledged `id:property` → acknowledged tier + reason; oil absent from refs → skipped; SAP compared in mg KOH/g against `sapMgKohPerGram` (a value like `190` in-band, `19` or `1900` out).
+- `external-reference-consistency.test.ts` (drift guard against shipped `canonical-oils.json`): every `id:property` key in `KNOWN_EXTERNAL_REFERENCE_DEVIATIONS` still actually appears as a deviation on that property (no stale acknowledgment). **No "zero warn" assertion** — warns are an expected, evolving backlog, not a failure.
 - Generator gets a small unit test: pooling picks correct min/max, `bandExclude` points are dropped, `sourceCount` counts post-exclusion.
 
 ### 5. Calibration (explicit first implementation step, not a claim)
@@ -111,7 +115,7 @@ Thresholds above are **provisional**. The first implementation step runs the gat
 | oil | property | stored | band | note |
 |---|---|---|---|---|
 | cherry-kernel-oil-avium | iodine | 128 | [110,118] | also on internal iodine backlog (corroborated) |
-| coffee-bean-oil-green | iodine | 85 | [100,100] | **single source** — app likely right; single-source widening should suppress |
+| coffee-bean-oil-green | iodine | 85 | [100,100] | **single source**, lone point reads high vs typical ~80–90; widening does *not* clear it (85 < 90) → acknowledge, app value kept |
 | hazelnut-oil | iodine | 97 | [83,90] | also on internal iodine backlog (corroborated) |
 | mango-seed-oil | iodine | 60 | [39,48] | internal-invisible — real app-vs-world catch |
 | pecan-oil | iodine | 113 | [100,106] | internal-invisible — real app-vs-world catch |
