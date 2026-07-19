@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { RecipeOilsPanel } from './RecipeOilsPanel';
 import { createStarterLines } from '../lib/recipe';
+import { oilById } from '../lib/oils';
 
 afterEach(cleanup);
 
@@ -74,4 +75,49 @@ test('Add oil button calls inputs.addLine', () => {
   );
   fireEvent.click(screen.getByRole('button', { name: '+ Add oil' }));
   expect(inputs.addLine).toHaveBeenCalledTimes(1);
+});
+
+test('Weight, Percent, and Remove controls are disambiguated by oil name', () => {
+  const inputs = makeInputs();
+  renderPanel(inputs);
+  const oliveName = oilById('olive-oil')!.displayName;
+  const coconutName = oilById('coconut-oil-76')!.displayName;
+
+  // Distinct accessible names per row, not the generic "Weight in g" / "Oil percent" / "Remove oil".
+  expect(screen.getByRole('spinbutton', { name: `Weight in g for ${oliveName}` })).toBeTruthy();
+  expect(screen.getByRole('spinbutton', { name: `Weight in g for ${coconutName}` })).toBeTruthy();
+  expect(screen.getByRole('spinbutton', { name: `Percent for ${oliveName}` })).toBeTruthy();
+  expect(screen.getByRole('spinbutton', { name: `Percent for ${coconutName}` })).toBeTruthy();
+  expect(screen.getByRole('button', { name: `Remove ${oliveName}` })).toBeTruthy();
+  expect(screen.getByRole('button', { name: `Remove ${coconutName}` })).toBeTruthy();
+});
+
+test('totals-off cue is textual, not color-only, and absent when totals reconcile', () => {
+  const inputs = makeInputs();
+  const lines = createStarterLines();
+  const { rerender } = render(
+    <RecipeOilsPanel
+      lines={lines} weightUnit="g"
+      previewState={{ lines, batchOilGrams: '1000' }}
+      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
+      lineTotals={{ totalWeightGrams: 900, totalPercent: 90 }}
+      showRecipeTotals percentTotalOff={true} weightTotalOff={true}
+      getDraft={(_, c) => c} setDraft={vi.fn()}
+      inputs={inputs as any}
+    />,
+  );
+  expect(screen.getByText(/totals don.t match/i)).toBeTruthy();
+
+  rerender(
+    <RecipeOilsPanel
+      lines={lines} weightUnit="g"
+      previewState={{ lines, batchOilGrams: '1000' }}
+      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
+      lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
+      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
+      getDraft={(_, c) => c} setDraft={vi.fn()}
+      inputs={inputs as any}
+    />,
+  );
+  expect(screen.queryByText(/totals don.t match/i)).toBeNull();
 });

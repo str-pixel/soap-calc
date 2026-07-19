@@ -53,6 +53,7 @@ export function OilPicker({ value, onChange, ariaLabel = 'Oil' }: OilPickerProps
         value={open ? query : (selected?.displayName ?? '')}
         placeholder="Search oils…"
         role="combobox"
+        aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
         aria-activedescendant={open ? activeId : undefined}

@@ -72,14 +72,21 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           const value = sumFattyAcids(result.profile!, acids);
           const fillPct = Math.min(100, (value / SCALE_MAX) * 100);
           const inBand = inGuideBand(value, guide.low, guide.high);
+          // Low-coverage values are already flagged as estimates (the "~" prefix); don't also
+          // mark them out-of-range — the guide band isn't a meaningful signal on partial data.
+          const outOfRange = !inBand && !lowCoverage;
 
           return (
             <li key={key} className="property-bars__row">
               <div className="property-bars__label">
                 <span>{guide.label}</span>
                 <span
-                  className={`property-bars__value${inBand || lowCoverage ? '' : ' property-bars__value--outside'}`}
+                  className={`property-bars__value${outOfRange ? ' property-bars__value--outside' : ''}`}
                 >
+                  {/* Non-color signal for out-of-range (WCAG 1.4.1): color alone doesn't reach
+                      colorblind users, and this glyph is real text so it isn't screen-reader-silent
+                      either — the meter's aria-label below carries the same status in words. */}
+                  {outOfRange ? '! ' : ''}
                   {lowCoverage ? '~' : ''}
                   {formatSoapPropertyPercent(value)}
                 </span>
@@ -90,7 +97,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
                 aria-valuemin={0}
                 aria-valuemax={SCALE_MAX}
                 aria-valuenow={Math.round(value * 10) / 10}
-                aria-label={`${guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}`}
+                aria-label={`${guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}${outOfRange ? ' — outside typical range' : ''}`}
               >
                 <span
                   className="property-bars__band property-bars__band--preference"

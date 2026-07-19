@@ -116,10 +116,14 @@ export function RecipeOilsPanel({
           <span className="sr-only">Actions</span>
         </div>
 
-        {lines.map((line) => {
+        {lines.map((line, index) => {
           const oil = oilById(line.oilId);
           const showTar = isTarOil(oil);
           const previewLine = previewLineByKey[line.key];
+          // Disambiguates each row's controls for screen-reader users (the layout is flex
+          // `<div>`s, not a real table, so there's no header-association fallback). Falls back
+          // to a stable row position when the oil is unset so the accessible name is never empty.
+          const oilName = oil?.displayName ?? `row ${index + 1}`;
 
           return (
             <div key={line.key} className="recipe-table__row">
@@ -157,7 +161,7 @@ export function RecipeOilsPanel({
                   )}
                   onChange={(e) => inputs.handleWeightChange(line.key, e.target.value)}
                   onBlur={(e) => inputs.commitWeightInput(line.key, e.target.value)}
-                  aria-label={`Weight in ${weightUnitConfig.short}`}
+                  aria-label={`Weight in ${weightUnitConfig.short} for ${oilName}`}
                 />
               </div>
               <div className="recipe-table__pct">
@@ -173,7 +177,7 @@ export function RecipeOilsPanel({
                   )}
                   onChange={(e) => setDraft(inputs.percentInputId(line.key), e.target.value)}
                   onBlur={(e) => inputs.commitPercentInput(line.key, e.target.value)}
-                  aria-label="Oil percent"
+                  aria-label={`Percent for ${oilName}`}
                 />
               </div>
               <div>
@@ -181,7 +185,7 @@ export function RecipeOilsPanel({
                   type="button"
                   className="btn btn--icon"
                   onClick={() => inputs.removeLine(line.key)}
-                  aria-label="Remove oil"
+                  aria-label={`Remove ${oilName}`}
                   disabled={lines.length <= 1}
                 >
                   ×
@@ -203,6 +207,12 @@ export function RecipeOilsPanel({
           <span className="recipe-table__total-pct">
             {showRecipeTotals ? formatRecipePercentTotal(lineTotals.totalPercent) : '—'}
           </span>
+          {/* The `--warn` color is not perceivable to colorblind or screen-reader users; fold the
+              off-total status into the announced text (this region is aria-live) rather than
+              leaving it to color alone. */}
+          {(percentTotalOff || weightTotalOff) && (
+            <span className="sr-only">Totals don&apos;t match</span>
+          )}
           <span className="sr-only">Actions</span>
         </div>
       </div>
