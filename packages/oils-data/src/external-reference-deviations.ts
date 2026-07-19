@@ -15,7 +15,10 @@ export const SINGLE_SOURCE_TOL_FACTOR = 2;
  * Keyed by `${id}:${property}` — one oil can deviate on iodine and SAP independently. Kept exact
  * by the drift guard (`external-reference-consistency.test.ts`). Reviewed, source-attributed only.
  */
-export const KNOWN_EXTERNAL_REFERENCE_DEVIATIONS: Record<string, string> = {};
+export const KNOWN_EXTERNAL_REFERENCE_DEVIATIONS: Record<string, string> = {
+  'coffee-bean-oil-green:iodine':
+    'single AOCS-style reference point (IV 100) reads high vs the typical ~80–90 for green coffee oil; stored 85 retained pending an independent second source',
+};
 
 export type ExternalReferenceProperty = 'iodine' | 'sapKoh';
 

@@ -27,6 +27,7 @@ import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
 import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviations.js';
+import { classifyExternalReferenceDeviations } from '../src/external-reference-deviations.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
@@ -562,6 +563,14 @@ function main() {
   writeFileSync(litePath, JSON.stringify(liteDb, null, 2) + '\n');
 
   (report as Record<string, unknown>).iodineDeviations = classifyProfileIodineDeviations(oils);
+
+  const externalRefs = JSON.parse(
+    readFileSync(join(__dirname, '../data/external-property-references.json'), 'utf8'),
+  ).oils;
+  (report as Record<string, unknown>).externalReferenceDeviations = classifyExternalReferenceDeviations(
+    oils,
+    externalRefs,
+  );
 
   writeFileSync(reportPath, JSON.stringify({
     generatedAt: db.generatedAt,
