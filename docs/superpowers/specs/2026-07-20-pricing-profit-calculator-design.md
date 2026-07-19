@@ -37,13 +37,13 @@ free of personal cost data.
 
 | Concern | Location | Notes |
 |---|---|---|
-| Pricing math (pure) | **new** `packages/core/src/pricing.ts` (+ `pricing.test.ts`) | add to `src/index.ts` barrel |
-| Batch-weight math (pure) | **new** `packages/core/src/batch-weight.ts` (+ test) | add to barrel |
-| Neutral constants | `PRICING_GUIDE` in `pricing.ts` | numeric defaults; neutral name (cf. `FORMULATION_PROPERTY_GUIDE`) |
-| Pricing store (remembered) | **new** `packages/web/src/lib/pricingStorage.ts` | key `soap-calc:pricing`; mirrors `moldSizerStorage.ts` |
+| Pricing math (pure) | **new** `packages/core/src/pricing.ts` (+ `pricing.test.ts`) | add `export * from './pricing.js';` to `src/index.ts` barrel (note `.js` ext) |
+| Batch-weight math (pure) | **new** `packages/core/src/batch-weight.ts` (+ test) | add `export * from './batch-weight.js';` to barrel |
+| Neutral constants | `PRICING_GUIDE` in `pricing.ts` | numeric defaults; neutral name per the `*_GUIDE` convention (AGENTS.md:128), e.g. real precedent `SOAP_PROPERTY_GUIDE` (`properties.ts:49`) |
+| Pricing store (remembered) | **new** `packages/web/src/lib/pricingStorage.ts` | key `soap-calc:pricing`; versioned load/save + a standalone `normalizePricingProfile()` — precedent is `normalizeSettings` (`recipe.ts:156`), **not** `moldSizerStorage` (which has neither) |
 | Pricing orchestration | **new** `packages/web/src/lib/pricing.ts` (unit parsing + assembling core inputs from the view model) | mirrors `lib/moldSizer.ts` |
-| Pricing UI | **new** `packages/web/src/components/PricingPanel.tsx` (+ `.test.tsx`) | top-level collapsible `<details>`, default collapsed |
-| Batch-weight display | extend `useRecipeViewModel` to expose the breakdown; render in the results/batch area | reads existing lye/water/additive numbers |
+| Pricing UI | **new** `packages/web/src/components/PricingPanel.tsx` (+ `.test.tsx`) | `<section className="panel">` in the sidebar; heavy sub-sections collapsible via `<details>` (like SettingsPanel's advanced area). See §6 for placement |
+| Batch-weight display | extend `useRecipeViewModel` to expose the breakdown; render in the results/batch area | see §3 for the exact accessors (only `totalOilGrams` is a clean field today) |
 
 No changes to recipe types, recipe storage, or recipe export.
 
@@ -52,34 +52,48 @@ No changes to recipe types, recipe storage, or recipe export.
 ### Core: `packages/core/src/batch-weight.ts`
 ```ts
 export interface BatchWeightInput {
-  oilGrams: number;
-  lyeGrams: number;
-  waterGrams: number;      // total liquid (water or alt-liquid); split-liquid already summed upstream
-  additiveGrams: number;   // Σ additive.grams
+  oilGrams: number;        // vm.totalOilGrams
+  lyeGrams: number;        // vm.result.lyeWeightGrams (NaOH+KOH combined)
+  waterGrams: number;      // vm.result.waterWeightGrams
+  extrasGrams: number;     // additives + split-liquid + post-cook-superfat (vm.extrasGrams)
 }
 export interface BatchWeightBreakdown {
-  oils: number; lye: number; water: number; additives: number; total: number;
+  oils: number; lye: number; water: number; extras: number; total: number;
 }
 // Sums the four components; negative/NaN inputs are treated as 0. total = sum.
 export function batchWeightBreakdown(input: BatchWeightInput): BatchWeightBreakdown;
 ```
+The four components are chosen so that `total` equals the app's own authoritative
+`batchWeightWithExtras` (`useRecipeViewModel.ts:260` = `baseBatchGrams + extrasGrams`). The
+`extras` slice deliberately bundles additives + split-liquid + post-cook-superfat because
+that is exactly what `extrasGrams` (`computeExtrasGrams`, `calculateAdditives.ts:71-79`)
+already sums — using it keeps this readout consistent with the rest of the app and with the
+cost-per-kg divisor in §5.
 
-### Web wiring
-- `useRecipeViewModel` already computes oil grams, lye grams, liquid grams
-  (`calculateRecipe`), and additive grams (`additives.reduce((s,a)=>s+a.grams,0)`).
-  Add a memo `vm.batchWeight = batchWeightBreakdown({...})`.
+### Web wiring (exact accessors — verified)
+Only `totalOilGrams` is a ready-made clean field; the rest need care:
+- **oils:** `vm.totalOilGrams` (`useRecipeViewModel.ts:135/333`).
+- **lye:** `vm.result?.lyeWeightGrams` — **null-guarded** (`vm.result` can be `null`;
+  `LyeCalculationResult`, `lye.ts:50-62`).
+- **water:** `vm.result?.waterWeightGrams` — null-guarded.
+- **extras:** `vm.extrasGrams` (`:347`). Do **not** try to isolate "additives only" for the
+  total — the app's total includes split-liquid/PCSF via `extrasGrams`. (If a UI wants an
+  additives-only sub-figure it must sum `computedAdditives` separately;
+  `additives.reduce((s,a)=>s+a.grams,0)` — but that is a display detail, not the total.)
+- Add a memo `vm.batchWeight = batchWeightBreakdown({...})`; when `vm.result` is null the
+  readout shows `—`.
 - Render a compact readout near the existing totals:
-  `Total batch: 1,540 g  ·  oils 1,000 · lye 138 · water 330 · additives 72`,
+  `Total batch: 1,612 g  ·  oils 1,000 · lye 138 · water 330 · extras 144`,
   formatted with the existing weight formatter and respecting the active weight unit.
 - This `total` is the divisor for cost-per-kg/lb in §5.
 
 ### Correctness notes
-- Verified: each additive item resolves to a gram value (`item.grams`), summed today in
-  `ResultsPanel.tsx`. So the additives slice and the total are reliable regardless of the
-  additive's dose unit/basis (percent/ppt, oil/batch/solution) — grams are already resolved
-  upstream.
-- Split-liquid: `waterGrams` is the total liquid; the breakdown shows liquid as one
-  "water" slice in v1 (no split sub-rows).
+- Verified: each additive item resolves to a gram value (`ComputedAdditive.grams`,
+  `calculateAdditives.ts:18`) regardless of dose unit/basis (percent/ppt · oil/batch/solution) —
+  grams are resolved upstream.
+- **Split-liquid & post-cook-superfat are NOT part of `waterWeightGrams`** — they live in
+  `extrasGrams`. That is why the total uses `extrasGrams` (not a bare additive sum); an
+  earlier draft's "split-liquid already summed into water" note was wrong and is removed.
 
 ## 4. Pricing data model & state
 
@@ -92,7 +106,7 @@ interface PricingProfile {
   // price book — remembered across recipes, keyed by stable id (see key strategy)
   oilPrices: Record<string, PricedEntry>;
   additivePrices: Record<string, PricedEntry>;
-  lyePrice: PricedEntry;                 // one price for the recipe's lye (NaOH/KOH)
+  lyePrice: PricedEntry;                 // ONE price, applied to total lyeWeightGrams (NaOH+KOH combined) — see key strategy note on dual-lye
   // assumptions
   packagingPerUnit: string;              // cost per kg/lb of finished soap (default '0')
   laborMinutes: string;                  // minutes per batch (global assumption; see §8)
@@ -110,14 +124,26 @@ interface PricingProfile {
   currencySymbol: string;                // plain prefix string, default '$'
 }
 ```
-- **Price-book key strategy:** use the catalog oil/additive **id** when present; fall back
-  to a normalized (lowercased, trimmed) **name** for custom/unlisted entries. Documented in
-  `pricingStorage.ts`.
+- **Price-book key strategy (oils vs additives differ — verified):**
+  - **Oils:** key is always `line.oilId` (`recipe.ts:8-14`, required; an unknown id is a hard
+    error at `lye.ts:233`). No name fallback needed — oils have no custom/unlisted case.
+  - **Additives:** `catalogId` (`recipe.ts:18`) can be **blank** for custom additives, and
+    `name` can also be blank. Key = `catalogId || normalizedName`; when **both are empty**,
+    fall back to the additive line's per-line `key` (accepting that a nameless custom additive's
+    price won't persist across sessions — a rare, acceptable edge case). This avoids the
+    collision where several blank custom additives would share the key `''`.
+- **Dual-lye / KOH note (verified):** a recipe carries both `naohWeightGrams` and
+  `kohWeightGrams` (default `lyeType:'dual'` ≈ 5% KOH; LS = 100% KOH) (`lye.ts:50-62`). v1
+  uses **one** lye price applied to `lyeWeightGrams` (the combined total). This is exact for
+  LS (all KOH) and for single-lye CP (all NaOH); for dual-lye the ~5% KOH share priced at the
+  NaOH rate introduces a sub-1% error on lye cost — itself a small share of COGS. Splitting
+  NaOH/KOH pricing is deferred (§8).
 - **Live reads from the current recipe (never stored here):** per-oil grams, per-additive
-  grams, lye grams, total batch weight.
-- Loaded/saved via `loadPricingProfile()` / `savePricingProfile()` with a version field and
-  a `normalizePricingProfile()` that fills defaults for missing keys (mirrors
-  `moldSizerStorage.ts` + `normalizeSettings`).
+  grams, `lyeWeightGrams`, `batchWeightWithExtras`.
+- Loaded/saved via `loadPricingProfile()` / `savePricingProfile()` with a `version` field and
+  a standalone `normalizePricingProfile()` that fills defaults for missing keys — following the
+  `normalizeSettings` precedent (`recipe.ts:156-198`). (`moldSizerStorage.ts` is *not* the
+  precedent here: it has no version field and inlines its normalization.)
 
 ### Constants (`PRICING_GUIDE`, neutral name, informed-not-copied defaults)
 ```ts
@@ -137,8 +163,8 @@ All money in the currency's base unit; all weights in grams internally. Conversi
 export interface PricingInput {
   oilLines: Array<{ grams: number; pricePerGram: number | null }>;
   additiveLines: Array<{ grams: number; pricePerGram: number | null }>;
-  lyeGrams: number; lyePricePerGram: number | null;
-  totalBatchGrams: number;
+  lyeGrams: number; lyePricePerGram: number | null;   // lyeGrams = vm.result.lyeWeightGrams (NaOH+KOH combined)
+  totalBatchGrams: number;                             // = vm.batchWeightWithExtras (the app's authoritative total; see §3)
   packagingPerGram: number;          // already converted from per kg/lb
   laborMinutes: number; hourlyRate: number; laborBurdenPercent: number;
   overhead: { mode: 'percent'; percent: number } | { mode: 'flat'; amount: number };
@@ -170,7 +196,7 @@ packaging         = packagingPerGram × totalBatchGrams
 cogsBatch         = materials + labor + overhead + packaging
 unitGrams         = outputUnit==='kg' ? 1000 : 453.59237
 costPerUnit       = totalBatchGrams > 0 ? cogsBatch / (totalBatchGrams / unitGrams) : null
-price (margin m)  = m < 1 ? costPerUnit / (1 − m/100) : null     // m as percent; guard m>=100
+price (margin m)  = m < 100 ? costPerUnit / (1 − m/100) : null    // m is a percent; guard m>=100 (unreachable margin)
 price (markup k)  = costPerUnit × (1 + k/100)
 profitPerUnit     = price − costPerUnit
 marginPercent     = price>0 ? (price − cost)/price × 100 : null
@@ -190,8 +216,13 @@ markupPercent     = cost>0 ? (price − cost)/cost × 100 : null
 
 ## 6. UI — `PricingPanel`
 
-Top-level collapsible `<details>` panel (default collapsed) in the app layout, near the
-results/batch area. Three sections:
+A `<section className="panel">` placed in the sidebar `<aside className="sidebar">`
+immediately after `ResultsPanel` (`App.tsx:199-217`). Note: there is **no** top-level
+`<details>` panel precedent in the app — every panel is a `<section className="panel">`, and
+the existing batch tool (`MoldSizerPanel`) is itself nested inside `SettingsPanel`'s advanced
+`<details>`, not a top-level sibling. The panel's heavier sub-sections use `<details>` for
+collapse (as `SettingsPanel`'s advanced area does), so pricing stays out of the way until
+opened. Three sections:
 
 1. **Materials** — auto list of the current recipe's oils, each row: name · grams (read-only)
    · price input · unit toggle (kg/lb) · line cost. Then the additive rows (same shape), a
@@ -206,9 +237,10 @@ results/batch area. Three sections:
 
 - Live recompute via `useMemo` off the pricing profile + `vm` weights (no explicit
   "calculate" button), consistent with the rest of the app.
-- Number formatting reuses the `toLocaleString('en-US', { minimumFractionDigits: 2 })`
-  pattern from `weightUnits.ts`; currency symbol is a plain prefix (e.g. `$12.00`).
-  Suffix-style currencies are a known v1 cosmetic limitation.
+- A **new** money formatter follows the `toLocaleString('en-US', …)` convention used in
+  `weightUnits.ts:74-77` but with `minimumFractionDigits: 2` (that file itself uses
+  `minimumFractionDigits: 0`, so this is new formatting code, not a reuse). Currency symbol is
+  a plain prefix (e.g. `$12.00`); suffix-style currencies are a known v1 cosmetic limitation.
 
 ## 7. Anonymity compliance
 
@@ -221,8 +253,11 @@ precedent:
 - **No** book title, author, publisher, website, third-party formula attributions, example
   company names, or paraphrased passages in code, UI copy, or docs. UI copy is original and
   behaviour-based.
-- Constant is `PRICING_GUIDE` (neutral), matching the `FORMULATION_PROPERTY_GUIDE`
-  convention. No reference **dataset** ships, so no `sourceType`/provenance record is needed.
+- Constant is `PRICING_GUIDE` (neutral), following the real `*_GUIDE` naming convention
+  (AGENTS.md:128; existing examples `SOAP_PROPERTY_GUIDE` in `properties.ts:49`,
+  `IODINE_GUIDE`/`INS_GUIDE` in `formulation-guide.ts`). (`FORMULATION_PROPERTY_GUIDE` from an
+  earlier draft is not a real constant — it appears only as an illustration in AGENTS.md.) No
+  reference **dataset** ships, so no `sourceType`/provenance record is needed.
 
 ## 8. Known limitations (accepted for v1)
 - **Labor minutes is a global assumption**, not per-recipe — a small test batch and a large
@@ -230,7 +265,11 @@ precedent:
   batch" so the assumption is visible. Making it per-recipe would mean touching recipe state,
   which this design deliberately avoids.
 - **Currency** is a prefix symbol only (no locale/suffix formatting).
-- **Water/liquid** shows as a single slice (no split-liquid sub-rows) in the batch breakdown.
+- **Single lye price** applied to combined `lyeWeightGrams`: exact for LS (100% KOH) and
+  single-lye CP (100% NaOH); ~sub-1% lye-cost error for the default dual-lye 5% KOH blend.
+  Splitting NaOH/KOH pricing is deferred.
+- **Batch breakdown** shows a single `extras` slice (additives + split-liquid + post-cook
+  superfat combined), matching the app's `extrasGrams`; no per-extra sub-rows in v1.
 
 ## 9. Testing
 - `packages/core/src/batch-weight.test.ts` — component sums, total, negative/NaN → 0.
