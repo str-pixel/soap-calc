@@ -94,6 +94,9 @@ type FormulationInsightOptions = {
   /** The recipe's process; threaded into analyzeFormulation so HP-only insights can gate on
    * process === 'hp' rather than !isLiquidSoap (which is also true for CP). */
   process?: ProcessId;
+  /** Cook vessel volume ÷ batch volume (HP only), computed by the caller from an optional
+   * vessel-size input. Undefined skips the hp_vessel_too_small guard entirely. */
+  hpVesselMultiple?: number;
 };
 
 export function useFormulationInsights(
@@ -194,6 +197,7 @@ export function useFormulationInsights(
       // naturally undefined together in that case.
       traceSpeedLabel: traceSpeed?.label,
       traceSpeedDrivers: traceSpeed?.drivers,
+      hpVesselMultiple: options.hpVesselMultiple,
     });
   }, [
     fattyAcids.profile,
@@ -218,6 +222,7 @@ export function useFormulationInsights(
     settings.processVariant,
     options.isLiquidSoap,
     options.process,
+    options.hpVesselMultiple,
   ]);
 
   return { insights };

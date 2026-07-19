@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calculateDilution, calculateNeutralization, parsePercentOfOil, scaleLyeResult, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { calculateDilution, calculateNeutralization, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import {
@@ -34,6 +34,10 @@ export type UseRecipeViewModelArgs = {
   drafts: Record<string, string>;
   weightUnit: WeightUnit;
   process: ProcessId;
+  /** Cook vessel volume (cm³), from an optional user input; HP only. Feeds hpVesselMultiple
+   * (vessel volume ÷ batch volume) for the hp_vessel_too_small guard. Omitted/invalid input
+   * simply skips the guard — it's an optional check, not a required one. */
+  vesselVolumeCm3?: number | null;
 };
 
 export type RecipeViewModel = {
@@ -67,6 +71,10 @@ export type RecipeViewModel = {
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
   cureEstimate: CureEstimate | null;
   labelWeight: number | null;
+  /** Cook vessel volume ÷ batch volume, when a vessel volume was supplied for an HP recipe;
+   * undefined otherwise. Mirrors what was fed into analyzeFormulation's hp_vessel_too_small
+   * guard, so callers can render the same ratio without recomputing it. */
+  hpVesselMultiple: number | undefined;
 };
 
 export function useRecipeViewModel({
@@ -77,6 +85,7 @@ export function useRecipeViewModel({
   drafts,
   weightUnit,
   process,
+  vesselVolumeCm3 = null,
 }: UseRecipeViewModelArgs): RecipeViewModel {
   const previewState = usePreviewRecipeState(
     lines,
@@ -230,6 +239,18 @@ export function useRecipeViewModel({
     splitLiquidGrams,
     totalOilGrams,
   ]);
+  // Vessel-size guard multiple (HP only): vessel volume ÷ the water-bearing base batter
+  // volume — additives fold in off-heat after the cook, so they aren't part of what the
+  // vessel needs to hold while it expands. Optional: an unset/invalid vessel volume simply
+  // omits hpVesselMultiple, which skips the guard entirely (see analyzeFormulation).
+  const hpVesselMultiple = useMemo(() => {
+    if (process !== 'hp') return undefined;
+    if (!Number.isFinite(vesselVolumeCm3) || (vesselVolumeCm3 ?? 0) <= 0) return undefined;
+    if (baseBatchGrams <= 0) return undefined;
+    const batchVolumeCm3 = baseBatchGrams / SOAP_FILL_DENSITY_G_PER_CM3;
+    if (batchVolumeCm3 <= 0) return undefined;
+    return (vesselVolumeCm3 as number) / batchVolumeCm3;
+  }, [process, vesselVolumeCm3, baseBatchGrams]);
   const { properties, indexes, fattyAcids } = useRecipeProperties(
     previewState.lines,
     previewSettings,
@@ -249,6 +270,7 @@ export function useRecipeViewModel({
       postCookSuperfat,
       isLiquidSoap: process === 'ls',
       process,
+      hpVesselMultiple,
     },
   );
   const lyeLabel =
@@ -375,5 +397,6 @@ export function useRecipeViewModel({
     batchSheetData,
     cureEstimate,
     labelWeight,
+    hpVesselMultiple,
   };
 }

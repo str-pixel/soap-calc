@@ -59,6 +59,13 @@ type SettingsPanelProps = {
   liveOilBatchFraction: number | null;
   onApplySuggestedOilGrams: (oilGrams: number) => void;
   process?: ProcessId;
+  /** Cook vessel volume in liters, for the HP vessel-size guard (hp_vessel_too_small).
+   * Optional UI-only helper input — HP-only, not part of the saved recipe. */
+  vesselVolumeLiters?: string;
+  onVesselVolumeLitersChange?: (value: string) => void;
+  /** The vessel-volume-to-batch-volume ratio computed from vesselVolumeLiters, for display
+   * alongside the input; undefined when no vessel volume is set. */
+  hpVesselMultiple?: number;
 };
 
 export function SettingsPanel({
@@ -73,6 +80,9 @@ export function SettingsPanel({
   liveOilBatchFraction,
   onApplySuggestedOilGrams,
   process = 'cp',
+  vesselVolumeLiters = '',
+  onVesselVolumeLitersChange = () => {},
+  hpVesselMultiple,
 }: SettingsPanelProps) {
   const updateField = (key: FieldSpec['key'], value: string) =>
     setSettings((s) => ({ ...s, [key]: value }));
@@ -217,6 +227,33 @@ export function SettingsPanel({
               </select>
             </label>
           </>
+        )}
+
+        {process === 'hp' && (
+          <label className="field">
+            <span>
+              Cook vessel volume (L)
+              <InfoTip term="Cook vessel volume">
+                The hot-process cook expands (a thick, translucent "mashed potato" phase) before
+                settling — a vessel at least ~2× the batch volume (~3× for coconut-heavy
+                recipes) gives it room to expand without overflowing.
+              </InfoTip>
+            </span>
+            <input
+              type="number"
+              className="input"
+              aria-label="Cook vessel volume (L)"
+              min={0}
+              step={0.5}
+              value={vesselVolumeLiters}
+              onChange={(e) => onVesselVolumeLitersChange(e.target.value)}
+            />
+            {hpVesselMultiple !== undefined && (
+              <span className="results-excluded">
+                ≈{hpVesselMultiple.toFixed(1)}× batch volume
+              </span>
+            )}
+          </label>
         )}
       </div>
 

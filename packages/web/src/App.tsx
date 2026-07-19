@@ -43,6 +43,11 @@ export default function App() {
 
   const importInputRef = useRef<HTMLInputElement>(null);
   const [moldSizerInput, setMoldSizerInput] = useState(loadMoldSizerInput);
+  // UI-only helper inputs (not part of the saved recipe), mirroring how moldSizerInput's
+  // fields are batch-sizing aids rather than recipe data: the HP cook-vessel guard input and
+  // the LS bottle-size readout input.
+  const [vesselVolumeLiters, setVesselVolumeLiters] = useState('');
+  const [bottleSizeMl, setBottleSizeMl] = useState('250');
   useEffect(() => {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
@@ -91,7 +96,21 @@ export default function App() {
   });
   useUndoShortcut(inputs.undo, inputs.redo);
 
-  const vm = useRecipeViewModel({ recipeName, lines, settings, additives, drafts, weightUnit, process });
+  const vesselVolumeLitersNumber = Number(vesselVolumeLiters);
+  const vesselVolumeCm3 =
+    Number.isFinite(vesselVolumeLitersNumber) && vesselVolumeLitersNumber > 0
+      ? vesselVolumeLitersNumber * 1000
+      : null;
+  const vm = useRecipeViewModel({
+    recipeName,
+    lines,
+    settings,
+    additives,
+    drafts,
+    weightUnit,
+    process,
+    vesselVolumeCm3,
+  });
   useRecipeAutosave(process, recipeName, lines, settings, additives, () =>
     flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
   );
@@ -227,6 +246,8 @@ export default function App() {
                 setSettings({ ...settings, soapConcentrationPercent: value })
               }
               weightUnit={weightUnit}
+              bottleSizeMl={bottleSizeMl}
+              onBottleSizeMlChange={setBottleSizeMl}
             />
           )}
 
@@ -248,6 +269,9 @@ export default function App() {
             onMoldSizerChange={setMoldSizerInput}
             liveOilBatchFraction={vm.liveOilBatchFraction}
             onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
+            vesselVolumeLiters={vesselVolumeLiters}
+            onVesselVolumeLitersChange={setVesselVolumeLiters}
+            hpVesselMultiple={vm.hpVesselMultiple}
           />
 
           <PropertiesPanel
