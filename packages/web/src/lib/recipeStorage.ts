@@ -2,6 +2,7 @@ import type { AdditiveLine, RecipeLine, RecipeSettings } from './recipe';
 import {
   additivesFromSaved,
   createEmptyAdditives,
+  createStarterLines,
   newLineKey,
   normalizeSettings,
 } from './recipe';
@@ -33,6 +34,10 @@ type DraftPayload = {
   updatedAt: string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 function safeSetItem(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
@@ -62,14 +67,27 @@ function cloneAdditives(additives: AdditiveLine[]): SavedAdditiveLine[] {
   }));
 }
 
-export function linesFromSaved(saved: SavedLine[]): RecipeLine[] {
-  return saved.map((line) => ({
-    key: newLineKey(),
-    oilId: line.oilId,
-    weightGrams: line.weightGrams,
-    ...(line.weightPercent !== undefined ? { weightPercent: line.weightPercent } : {}),
-    ...(line.tarLyeTreatment ? { tarLyeTreatment: line.tarLyeTreatment } : {}),
-  }));
+/** Guards each stored line the same way the recipe-file import path does (see
+ * `recipeFile.ts`'s `parseRecipeFile`): a corrupted/garbage draft must degrade
+ * gracefully rather than inject `undefined`-field rows or throw when `.map` hits a
+ * non-object entry. Bad entries are dropped; if none survive, fall back to the
+ * starter lines so the workspace never renders with zero oils.
+ */
+export function linesFromSaved(saved: unknown[]): RecipeLine[] {
+  const lines: RecipeLine[] = [];
+  for (const line of saved) {
+    if (!isRecord(line) || typeof line.oilId !== 'string') continue;
+    lines.push({
+      key: newLineKey(),
+      oilId: line.oilId,
+      weightGrams: typeof line.weightGrams === 'string' ? line.weightGrams : '',
+      ...(typeof line.weightPercent === 'string' ? { weightPercent: line.weightPercent } : {}),
+      ...(line.tarLyeTreatment === 'include' || line.tarLyeTreatment === 'additive'
+        ? { tarLyeTreatment: line.tarLyeTreatment }
+        : {}),
+    });
+  }
+  return lines.length > 0 ? lines : createStarterLines();
 }
 
 export function loadDraft(process: ProcessId): {
@@ -89,7 +107,7 @@ export function loadDraft(process: ProcessId): {
       return null;
     }
     return {
-      name: data.name || 'Untitled recipe',
+      name: typeof data.name === 'string' && data.name ? data.name : 'Untitled recipe',
       lines: linesFromSaved(data.lines),
       additives: additivesFromSaved(data.additives),
       settings: normalizeSettings(data.settings),

@@ -22,6 +22,17 @@ export const RECIPE_FILE_VERSION_LEGACY = 1 as const;
  * array builds an unbounded array + one React row each and hangs the tab. */
 export const MAX_RECIPE_LINES = 100;
 
+/** Import cap on the raw file's text length. Without this, a huge/hostile file (or a
+ * mistaken multi-MB drop) reaches `JSON.parse` and freezes the tab on a synchronous
+ * parse before any of the structural caps below even run. */
+export const MAX_RECIPE_FILE_BYTES = 1_000_000;
+
+/** Import cap on individual identifier/value strings (oilId, weightGrams, catalogId,
+ * recipe name) that have no other length guard, mirroring how MAX_ADDITIVE_NAME_LENGTH
+ * already caps additive names. Oversized values are truncated rather than rejected so a
+ * self-export with a merely-long name still imports. */
+export const MAX_FIELD_LENGTH = 200;
+
 export type RecipeFileAdditive = Omit<AdditiveLine, 'key'>;
 
 export type RecipeFilePayload = {
@@ -124,7 +135,7 @@ function parseAdditiveLine(value: unknown): RecipeFileAdditive | null {
   const name =
     typeof value.name === 'string' ? value.name.slice(0, MAX_ADDITIVE_NAME_LENGTH) : '';
   return {
-    catalogId: typeof value.catalogId === 'string' ? value.catalogId : '',
+    catalogId: typeof value.catalogId === 'string' ? value.catalogId.slice(0, MAX_FIELD_LENGTH) : '',
     name,
     amount,
     basis,
@@ -164,6 +175,10 @@ export function serializeRecipeFile(
 }
 
 export function parseRecipeFile(raw: string): ParsedRecipeFile {
+  if (raw.length > MAX_RECIPE_FILE_BYTES) {
+    return { ok: false, error: 'Recipe file is too large' };
+  }
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -194,8 +209,9 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
       return { ok: false, error: 'Invalid oil line in recipe file' };
     }
     lines.push({
-      oilId: line.oilId,
-      weightGrams: typeof line.weightGrams === 'string' ? line.weightGrams : '',
+      oilId: line.oilId.slice(0, MAX_FIELD_LENGTH),
+      weightGrams:
+        typeof line.weightGrams === 'string' ? line.weightGrams.slice(0, MAX_FIELD_LENGTH) : '',
       ...(typeof line.weightPercent === 'string' ? { weightPercent: line.weightPercent } : {}),
       ...(line.tarLyeTreatment === 'include' || line.tarLyeTreatment === 'additive'
         ? { tarLyeTreatment: line.tarLyeTreatment }
@@ -227,7 +243,7 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
       process: isProcessId(parsed.process)
         ? parsed.process
         : processForLyeType((parsed.settings as { lyeType?: unknown } | undefined)?.lyeType),
-      name: parsed.name,
+      name: parsed.name.slice(0, MAX_FIELD_LENGTH),
       lines,
       additives,
       settings: normalizeSettings(parsed.settings as Partial<RecipeSettings>),

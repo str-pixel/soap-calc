@@ -131,6 +131,56 @@ describe('recipeStorage', () => {
     const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
     expect(saveDraft('cp', 'Draft', lines, DEFAULT_SETTINGS)).toBe(true);
   });
+
+  it('drops non-record / missing-oilId garbage lines from a corrupted draft, keeping the valid ones', () => {
+    const payload = JSON.stringify({
+      version: 2,
+      name: 'Corrupt',
+      lines: [42, 'x', null, { oilId: 'olive-oil', weightGrams: '500' }],
+      settings: DEFAULT_SETTINGS,
+      updatedAt: new Date().toISOString(),
+    });
+    localStorage.setItem('soap-calc:draft:cp', payload);
+
+    expect(() => loadDraft('cp')).not.toThrow();
+    const draft = loadDraft('cp');
+
+    expect(draft?.lines).toHaveLength(1);
+    expect(draft?.lines[0]).toMatchObject({ oilId: 'olive-oil', weightGrams: '500' });
+    expect(draft?.lines.every((line) => typeof line.oilId === 'string' && typeof line.weightGrams === 'string')).toBe(
+      true,
+    );
+  });
+
+  it('falls back to starter lines when every stored line is garbage', () => {
+    const payload = JSON.stringify({
+      version: 2,
+      name: 'All garbage',
+      lines: [42, 'x', null, {}],
+      settings: DEFAULT_SETTINGS,
+      updatedAt: new Date().toISOString(),
+    });
+    localStorage.setItem('soap-calc:draft:cp', payload);
+
+    const draft = loadDraft('cp');
+    expect(draft?.lines.length).toBeGreaterThan(0);
+    expect(draft?.lines.every((line) => typeof line.oilId === 'string')).toBe(true);
+  });
+
+  it('falls back to the default name when the stored name is not a string', () => {
+    const payload = JSON.stringify({
+      version: 2,
+      name: 12345,
+      lines: [],
+      settings: DEFAULT_SETTINGS,
+      updatedAt: new Date().toISOString(),
+    });
+    localStorage.setItem('soap-calc:draft:cp', payload);
+
+    const draft = loadDraft('cp');
+    expect(draft?.name).toBe('Untitled recipe');
+    expect(typeof draft?.name).toBe('string');
+  });
 });
 
 describe('per-process drafts', () => {
