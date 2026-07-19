@@ -48,7 +48,7 @@ const iodineValue = iodineValueFaBasis * glycerideFactor;
 - `ins = round(sapKoh·1000 − iodineValue)` is recomputed with the corrected value. `derived.ins` has **no consumer** (shipped INS uses stored iodine), so this is internal-only.
 - Update the `DerivedChemistry.iodineValue` doc to note it is now genuinely oil-basis (matching the existing contract text).
 
-**Test additions** (`fatty-acid-chemistry.test.ts`): a known oil whose profile yields a published oil-basis IV (e.g. coconut → ~9.4, soybean → ~128) now derives within ~1–2 units of the published Wijs value, not ~4–5% above it. Assert the derived iodine equals the FA-basis sum × `glycerideFactor` for a hand-checked profile.
+**Test additions** (`fatty-acid-chemistry.test.ts`): the hard assertion is deterministic — derived iodine equals the FA-basis sum × `glycerideFactor` for a hand-checked profile (e.g. coconut derives ~9.4, matching published ~9.4–9.7, not the ~10.0 FA-basis value). Do **not** pin to a single published Wijs figure for scatter-prone oils (soybean's published IV spans ~120–143 across sources); the identity check is what locks the fix.
 
 ### Part 2 — recalibrate the warn threshold to the measured scatter
 
@@ -58,10 +58,14 @@ In `profile-iodine-deviations.ts`, raise the **relative** warn threshold from 8%
 - **Calibration step (first in implementation):** rebuild with the oil-basis fix, then inspect the warn set at 15% and confirm it is a short list of real disagreements (not the ~13-oil scatter backlog). Adjust the constant to the data; do not drop below the measured scatter to keep more warns.
 - The existing `KNOWN_PROFILE_IODINE_DEVIATIONS` acknowledgments and the consistency drift-guard test are re-verified after the change; any acknowledgment that no longer deviates (because the basis fix or threshold change cleared it) is removed (the drift guard enforces this).
 
+### Ship Part 1 and Part 2 together
+
+Part 1 is a **correctness** fix (removes the ~4.4% bias, fixes the contract), but on its own it does **not** shrink the warn backlog — it *churns* it: at the current 8% threshold, oil-basis clears the "stored-below-derived" oils (almond, argan, cherry, raspberry, sea-buckthorn, walnut) while surfacing a fresh crop of "stored-above-derived" scatter-warns (neem ~19%, tamanu ~14%, pumpkin ~11%, rosehip ~10%, wheat-germ ~11%). The noise only drops with Part 2's threshold raise. So land both in one change; Part 1 alone is not an improvement to the warn tier.
+
 ### Ordering (keeps the build green)
 
 1. Apply the basis fix (Part 1) + core tests.
-2. Rebuild the oils catalog; the gross/error tier stays empty (pomegranate etc. already corrected, robust in either basis), so validate stays `Errors: 0`.
+2. Rebuild the oils catalog. **Verified**: no verified/estimated oil reaches the 25% gross bar in *either* basis (the basis change only shifts moderate deltas by ~4.4%; the largest stored-above-derived case, neem, reaches only ~19%), so the error tier stays empty and validate stays `Errors: 0` throughout.
 3. Apply the threshold change (Part 2), recalibrate acknowledgments, re-run the consistency guard.
 
 ## Verification
