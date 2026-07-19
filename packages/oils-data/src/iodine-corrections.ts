@@ -9,7 +9,7 @@
 export const IODINE_CORRECTIONS: Record<string, { iodine: number; note: string }> = {
   'pomegranate-seed-oil': {
     iodine: 200,
-    note: 'Corrected: legacy iodine (22) is impossible for a ~78%-triene (punicic) oil; published pomegranate seed oil IV is ~195–220. Set to ~200. The profile-derived ~232 over-estimates because punicic acid is conjugated (each C=C adds less iodine in Wijs), so a residual deviation remains and is acknowledged.',
+    note: 'Corrected: legacy iodine (22) is impossible for a ~78%-triene (punicic) oil; published pomegranate seed oil IV is ~195–220. Set to ~200. The profile-derived value (~222 oil-basis) over-estimates because punicic acid is conjugated (each C=C adds less iodine in Wijs); the residual gap is within the iodine gate tolerance, so no acknowledgment is needed.',
   },
   'sacha-inchi-plukenetia-volubilis': {
     iodine: 193,

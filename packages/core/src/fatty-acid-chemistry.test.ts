@@ -38,7 +38,7 @@ describe('deriveChemistryFromProfile', () => {
     const olive = deriveChemistryFromProfile(OLIVE)!;
     const coconut = deriveChemistryFromProfile(COCONUT)!;
     expect(olive.iodineValue).toBeGreaterThan(coconut.iodineValue);
-    expect(olive.iodineValue).toBeGreaterThan(70); // olive IV ~85
+    expect(olive.iodineValue).toBeGreaterThan(70); // olive oil-basis IV ~81
   });
 
   it('derives iodine on the OIL (triglyceride) basis: FA-basis sum × glyceryl factor', () => {

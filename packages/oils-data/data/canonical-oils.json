@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-19T23:44:36.053Z",
+  "generatedAt": "2026-07-19T23:51:31.113Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -4619,7 +4619,7 @@
         },
         {
           "source": "manual",
-          "notes": "Corrected: legacy iodine (22) is impossible for a ~78%-triene (punicic) oil; published pomegranate seed oil IV is ~195–220. Set to ~200. The profile-derived ~232 over-estimates because punicic acid is conjugated (each C=C adds less iodine in Wijs), so a residual deviation remains and is acknowledged."
+          "notes": "Corrected: legacy iodine (22) is impossible for a ~78%-triene (punicic) oil; published pomegranate seed oil IV is ~195–220. Set to ~200. The profile-derived value (~222 oil-basis) over-estimates because punicic acid is conjugated (each C=C adds less iodine in Wijs); the residual gap is within the iodine gate tolerance, so no acknowledgment is needed."
         }
       ],
       "primarySource": "fnwl",
