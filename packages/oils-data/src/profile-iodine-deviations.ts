@@ -20,6 +20,8 @@ export const KNOWN_PROFILE_IODINE_DEVIATIONS: Record<string, string> = {
   'nutmeg-butter':
     'trimyristin + volatile unsaponifiables: measured iodine far exceeds the near-saturated triglyceride profile',
   'tallow-deer': 'community-only animal fat, no compositional standard to reconcile against',
+  'pomegranate-seed-oil':
+    'conjugated punicic acid: measured IV (~200) is below the ~232 the linolenic-mapped profile implies (Wijs under-reacts on conjugated double bonds)',
 };
 
 export type ProfileIodineDeviationTier = 'error' | 'warn' | 'acknowledged';
