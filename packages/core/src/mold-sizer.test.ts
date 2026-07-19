@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyOilWasteFactor,
+  cylinderMoldVolumeCm3,
   DEFAULT_OIL_BATCH_FRACTION,
   oilBatchFraction,
   oilGramsFromBarCount,
@@ -35,5 +36,21 @@ describe('mold-sizer', () => {
     expect(applyOilWasteFactor(1000, 5)).toBeCloseTo(1050, 5);
     expect(applyOilWasteFactor(1000, 0)).toBe(1000);
     expect(applyOilWasteFactor(1000, 60)).toBeNull();
+  });
+
+  it('cylinder volume is π r² h', () => {
+    expect(cylinderMoldVolumeCm3(4, 10)).toBeCloseTo(Math.PI * 16 * 10);
+    expect(cylinderMoldVolumeCm3(0, 10)).toBeNull();
+    expect(cylinderMoldVolumeCm3(4, 0)).toBeNull();
+    expect(cylinderMoldVolumeCm3(-1, 10)).toBeNull();
+    expect(cylinderMoldVolumeCm3(Infinity, 10)).toBeNull();
+  });
+
+  it('feeds oilGramsFromMoldVolumeCm3 like a rectangular volume', () => {
+    const volume = cylinderMoldVolumeCm3(4, 10)!;
+    expect(oilGramsFromMoldVolumeCm3(volume)).toBeCloseTo(
+      volume * 0.92 * DEFAULT_OIL_BATCH_FRACTION,
+      5,
+    );
   });
 });

@@ -64,42 +64,91 @@ export function MoldSizerPanel({
 
       {input.mode === 'mold' ? (
         <div className="settings-grid mold-sizer__grid">
+          <div className="mold-sizer__modes mold-sizer__hint--full">
+            <label className="field field--inline">
+              <input
+                type="radio"
+                name="mold-sizer-shape"
+                checked={input.moldShape === 'rectangular'}
+                onChange={() => onChange({ ...input, moldShape: 'rectangular' })}
+              />
+              <span>Rectangular</span>
+            </label>
+            <label className="field field--inline">
+              <input
+                type="radio"
+                name="mold-sizer-shape"
+                checked={input.moldShape === 'cylinder'}
+                onChange={() => onChange({ ...input, moldShape: 'cylinder' })}
+              />
+              <span>Cylinder</span>
+            </label>
+          </div>
           <p className="mold-sizer__hint mold-sizer__hint--full">
             For irregular molds, fill with water and measure volume, or weigh a test pour.
           </p>
-          <label className="field">
-            <span>Length ({dimensionUnit})</span>
-            <input
-              type="number"
-              className="input"
-              min={0}
-              step={0.1}
-              value={input.length}
-              onChange={(e) => onChange({ ...input, length: e.target.value })}
-            />
-          </label>
-          <label className="field">
-            <span>Width ({dimensionUnit})</span>
-            <input
-              type="number"
-              className="input"
-              min={0}
-              step={0.1}
-              value={input.width}
-              onChange={(e) => onChange({ ...input, width: e.target.value })}
-            />
-          </label>
-          <label className="field">
-            <span>Height ({dimensionUnit})</span>
-            <input
-              type="number"
-              className="input"
-              min={0}
-              step={0.1}
-              value={input.height}
-              onChange={(e) => onChange({ ...input, height: e.target.value })}
-            />
-          </label>
+          {input.moldShape === 'cylinder' ? (
+            <>
+              <label className="field">
+                <span>Radius ({dimensionUnit})</span>
+                <input
+                  type="number"
+                  className="input"
+                  min={0}
+                  step={0.1}
+                  value={input.radius}
+                  onChange={(e) => onChange({ ...input, radius: e.target.value })}
+                />
+              </label>
+              <label className="field">
+                <span>Height ({dimensionUnit})</span>
+                <input
+                  type="number"
+                  className="input"
+                  min={0}
+                  step={0.1}
+                  value={input.height}
+                  onChange={(e) => onChange({ ...input, height: e.target.value })}
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="field">
+                <span>Length ({dimensionUnit})</span>
+                <input
+                  type="number"
+                  className="input"
+                  min={0}
+                  step={0.1}
+                  value={input.length}
+                  onChange={(e) => onChange({ ...input, length: e.target.value })}
+                />
+              </label>
+              <label className="field">
+                <span>Width ({dimensionUnit})</span>
+                <input
+                  type="number"
+                  className="input"
+                  min={0}
+                  step={0.1}
+                  value={input.width}
+                  onChange={(e) => onChange({ ...input, width: e.target.value })}
+                />
+              </label>
+              <label className="field">
+                <span>Height ({dimensionUnit})</span>
+                <input
+                  type="number"
+                  className="input"
+                  min={0}
+                  step={0.1}
+                  value={input.height}
+                  onChange={(e) => onChange({ ...input, height: e.target.value })}
+                />
+              </label>
+            </>
+          )}
           <label className="field field--inline field--checkbox">
             <input
               type="checkbox"

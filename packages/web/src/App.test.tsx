@@ -48,4 +48,11 @@ describe('App process switch', () => {
     const options = within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
     expect(options).toEqual(['koh', 'dual']);
   });
+
+  it('shows CP extras (dose converters + notes) for Cold process but not Liquid Soap', async () => {
+    render(<App />);
+    expect(screen.getByText('CP extras')).toBeTruthy();
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    expect(screen.queryByText('CP extras')).toBeNull();
+  });
 });

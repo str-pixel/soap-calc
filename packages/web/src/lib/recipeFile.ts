@@ -12,6 +12,7 @@ import {
   type RecipeSettings,
 } from './recipe';
 import { isProcessId, processForLyeType, type ProcessId } from './process';
+import { ppoOzToPercentOfOil as ppoOzToPercentOfOilCore } from './doseConverters';
 
 export const RECIPE_FILE_VERSION = 2 as const;
 export const RECIPE_FILE_VERSION_LEGACY = 1 as const;
@@ -46,16 +47,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-/** SoapCalc-style ounces of additive per pound of oils → % of oil weight. */
-const OZ_PER_LB_OILS = 16;
-
 function roundPercentString(value: number): string {
   const rounded = Math.round(value * 100) / 100;
   return String(rounded);
 }
 
+/** Ounces of additive per pound of oils → % of oil weight, formatted for
+ * import. Delegates the oz/lb ratio to `doseConverters.ts`'s numeric core — one source of
+ * truth shared with the CP dose-converter UI — and just adds the string rounding this
+ * importer needs. */
 function ppoOzToPercentOfOil(ppoOz: number): string {
-  return roundPercentString((ppoOz / OZ_PER_LB_OILS) * 100);
+  const percent = ppoOzToPercentOfOilCore(ppoOz);
+  return percent === null ? '' : roundPercentString(percent);
 }
 
 function parseAdditivePercentOfOil(value: Record<string, unknown>): string {

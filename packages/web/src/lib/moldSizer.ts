@@ -1,5 +1,6 @@
 import {
   applyOilWasteFactor,
+  cylinderMoldVolumeCm3,
   DEFAULT_OIL_BATCH_FRACTION,
   oilBatchFraction,
   oilGramsFromBarCount,
@@ -11,12 +12,17 @@ import { displayValueToGrams, gramsToDisplayValue, type WeightUnit } from './wei
 const CM_PER_INCH = 2.54;
 
 export type MoldSizerMode = 'mold' | 'bars';
+export type MoldShape = 'rectangular' | 'cylinder';
 
 export type MoldSizerInput = {
   mode: MoldSizerMode;
+  /** Only consulted when mode === 'mold'. */
+  moldShape: MoldShape;
   length: string;
   width: string;
   height: string;
+  /** Cylinder radius; only consulted when moldShape === 'cylinder'. */
+  radius: string;
   barCount: string;
   barWeight: string;
   useInches: boolean;
@@ -26,9 +32,11 @@ export type MoldSizerInput = {
 
 export const DEFAULT_MOLD_SIZER_INPUT: MoldSizerInput = {
   mode: 'mold',
+  moldShape: 'rectangular',
   length: '',
   width: '',
   height: '',
+  radius: '',
   barCount: '',
   barWeight: '',
   useInches: false,
@@ -85,6 +93,17 @@ export function suggestOilGramsFromMoldSizer(
     if (barCount === null || barWeightDisplay === null) return null;
     const barWeightGrams = displayValueToGrams(barWeightDisplay, weightUnit);
     baseGrams = oilGramsFromBarCount(barCount, barWeightGrams, fraction);
+  } else if (input.moldShape === 'cylinder') {
+    const radius = parsePositive(input.radius);
+    const height = parsePositive(input.height);
+    if (radius === null || height === null) return null;
+
+    const volume = cylinderMoldVolumeCm3(
+      toCm(radius, input.useInches),
+      toCm(height, input.useInches),
+    );
+    if (volume === null) return null;
+    baseGrams = oilGramsFromMoldVolumeCm3(volume, { oilBatchFraction: fraction });
   } else {
     const length = parsePositive(input.length);
     const width = parsePositive(input.width);

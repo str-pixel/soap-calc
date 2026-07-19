@@ -43,4 +43,25 @@ describe('moldSizer', () => {
     });
     expect(grams).toBe(650);
   });
+
+  it('suggests oil grams from a cylinder mold in cm', () => {
+    const grams = suggestOilGramsFromMoldSizer({
+      ...DEFAULT_MOLD_SIZER_INPUT,
+      moldShape: 'cylinder',
+      radius: '4',
+      height: '10',
+    });
+    const expectedVolume = Math.PI * 16 * 10;
+    expect(grams).toBeCloseTo(expectedVolume * 0.92 * 0.65, 5);
+  });
+
+  it('returns null for a cylinder mold missing a dimension', () => {
+    const grams = suggestOilGramsFromMoldSizer({
+      ...DEFAULT_MOLD_SIZER_INPUT,
+      moldShape: 'cylinder',
+      radius: '4',
+      height: '',
+    });
+    expect(grams).toBeNull();
+  });
 });

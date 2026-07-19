@@ -15,6 +15,13 @@ export function rectangularMoldVolumeCm3(
   return lengthCm * widthCm * heightCm;
 }
 
+export function cylinderMoldVolumeCm3(radiusCm: number, heightCm: number): number | null {
+  if (![radiusCm, heightCm].every((n) => Number.isFinite(n) && n > 0)) {
+    return null;
+  }
+  return Math.PI * radiusCm * radiusCm * heightCm;
+}
+
 export function oilGramsFromMoldVolumeCm3(
   volumeCm3: number,
   options?: {

@@ -17,9 +17,11 @@ export function loadMoldSizerInput(): MoldSizerInput {
     if (!isRecord(data)) return { ...DEFAULT_MOLD_SIZER_INPUT };
     return {
       mode: data.mode === 'bars' ? 'bars' : 'mold',
+      moldShape: data.moldShape === 'cylinder' ? 'cylinder' : 'rectangular',
       length: typeof data.length === 'string' ? data.length : '',
       width: typeof data.width === 'string' ? data.width : '',
       height: typeof data.height === 'string' ? data.height : '',
+      radius: typeof data.radius === 'string' ? data.radius : '',
       barCount: typeof data.barCount === 'string' ? data.barCount : '',
       barWeight: typeof data.barWeight === 'string' ? data.barWeight : '',
       useInches: data.useInches === true,

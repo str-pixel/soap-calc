@@ -1,4 +1,4 @@
-import type { DilutionResult } from '@soap-calc/core';
+import { lsBottleCount, type DilutionResult } from '@soap-calc/core';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
@@ -7,6 +7,9 @@ type DilutionPanelProps = {
   soapConcentrationPercent: string;
   onSoapConcentrationChange: (value: string) => void;
   weightUnit: WeightUnit;
+  /** Bottle size in ml for the "bottles filled" readout below. */
+  bottleSizeMl: string;
+  onBottleSizeMlChange: (value: string) => void;
 };
 
 export function DilutionPanel({
@@ -14,7 +17,14 @@ export function DilutionPanel({
   soapConcentrationPercent,
   onSoapConcentrationChange,
   weightUnit,
+  bottleSizeMl,
+  onBottleSizeMlChange,
 }: DilutionPanelProps) {
+  const bottleMl = Number(bottleSizeMl);
+  const bottleCount =
+    dilution && Number.isFinite(bottleMl) && bottleMl > 0
+      ? lsBottleCount(dilution.solutionGrams, bottleMl)
+      : null;
   return (
     <section className="panel panel--nested">
       <div className="panel__head">
@@ -34,6 +44,18 @@ export function DilutionPanel({
           value={soapConcentrationPercent}
           onChange={(e) => onSoapConcentrationChange(e.target.value)}
           aria-label="Target soap concentration percent"
+        />
+      </label>
+      <label className="field">
+        <span>Bottle size (ml)</span>
+        <input
+          type="number"
+          className="input input--number"
+          min={1}
+          step={1}
+          value={bottleSizeMl}
+          onChange={(e) => onBottleSizeMlChange(e.target.value)}
+          aria-label="Bottle size (ml)"
         />
       </label>
       {dilution ? (
@@ -59,6 +81,12 @@ export function DilutionPanel({
               <dt>Glycerin (retained)</dt>
               <dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd>
             </div>
+            {bottleCount !== null && (
+              <div className="results-grid__item">
+                <dt>≈ Bottles filled ({bottleSizeMl} ml)</dt>
+                <dd>{bottleCount}</dd>
+              </div>
+            )}
           </dl>
           {dilution.targetExceedsPaste && (
             <p className="results-hint" role="alert">

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, test } from 'vitest';
+import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { useState } from 'react';
 import { SettingsPanel } from './SettingsPanel';
@@ -128,4 +128,45 @@ test('superfat input allows a negative min only for LS', () => {
   expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('0');
   rerender(<Harness process="ls" />);
   expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('-5');
+});
+
+describe('cook vessel volume (HP vessel-size guard input)', () => {
+  it('renders only for HP', () => {
+    render(<SettingsPanel {...baseProps} process="hp" settings={DEFAULT_SETTINGS} />);
+    expect(screen.getByLabelText('Cook vessel volume (L)')).toBeTruthy();
+    cleanup();
+    render(<SettingsPanel {...baseProps} process="cp" settings={DEFAULT_SETTINGS} />);
+    expect(screen.queryByLabelText('Cook vessel volume (L)')).toBeNull();
+    cleanup();
+    render(<SettingsPanel {...baseProps} process="ls" settings={{ ...DEFAULT_SETTINGS, lyeType: 'koh' }} />);
+    expect(screen.queryByLabelText('Cook vessel volume (L)')).toBeNull();
+  });
+
+  it('calls onVesselVolumeLitersChange when edited', () => {
+    const onChange = vi.fn();
+    render(
+      <SettingsPanel
+        {...baseProps}
+        process="hp"
+        settings={DEFAULT_SETTINGS}
+        vesselVolumeLiters=""
+        onVesselVolumeLitersChange={onChange}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('Cook vessel volume (L)'), { target: { value: '4' } });
+    expect(onChange).toHaveBeenCalledWith('4');
+  });
+
+  it('shows the computed multiple when supplied', () => {
+    render(
+      <SettingsPanel
+        {...baseProps}
+        process="hp"
+        settings={DEFAULT_SETTINGS}
+        vesselVolumeLiters="4"
+        hpVesselMultiple={2.3456}
+      />,
+    );
+    expect(screen.getByText(/2\.3.*batch volume/i)).toBeTruthy();
+  });
 });

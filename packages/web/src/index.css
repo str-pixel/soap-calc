@@ -529,6 +529,56 @@ select {
   transform: rotate(45deg);
 }
 
+.troubleshooting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.troubleshooting-entry {
+  border-top: 1px solid var(--border);
+  padding-top: 0.6rem;
+}
+
+.troubleshooting-entry:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.troubleshooting-entry__summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  user-select: none;
+}
+
+.troubleshooting-entry__summary::-webkit-details-marker {
+  display: none;
+}
+
+.troubleshooting-entry__summary::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.troubleshooting-entry[open] .troubleshooting-entry__summary {
+  margin-bottom: 0.4rem;
+}
+
+.troubleshooting-entry[open] .troubleshooting-entry__summary::before {
+  transform: rotate(45deg);
+}
+
 .split-liquid-preview {
   grid-column: 1 / -1;
   margin: 0;
@@ -1051,6 +1101,16 @@ select {
 .message-list--warn {
   background: var(--warn-bg);
   color: var(--warn);
+}
+
+.process-guide__stages {
+  margin: 0.6rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.85rem;
+}
+
+.process-guide__stages li + li {
+  margin-top: 0.2rem;
 }
 
 .results-hint {

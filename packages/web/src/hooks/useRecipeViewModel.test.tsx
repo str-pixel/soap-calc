@@ -17,6 +17,7 @@ function probe(
   onVm: (vm: unknown) => void,
   settingsOverride: Partial<RecipeSettings> = {},
   process: ProcessId = 'cp',
+  vesselVolumeCm3?: number | null,
 ) {
   function Probe() {
     const vm = useRecipeViewModel({
@@ -27,6 +28,7 @@ function probe(
       drafts: {},
       weightUnit: 'g',
       process,
+      vesselVolumeCm3,
     });
     onVm(vm);
     return null;
@@ -200,4 +202,28 @@ test('LS superfat above 3% raises the ls_superfat_high insight', () => {
   let vm: any;
   probe((v) => { vm = v; }, { superfatPercent: '5', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
   expect(vm.insights.some((i: any) => i.code === 'ls_superfat_high')).toBe(true);
+});
+
+test('hpVesselMultiple is undefined without a vessel volume, even for HP', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, {}, 'hp', null);
+  expect(vm.hpVesselMultiple).toBeUndefined();
+  expect(vm.insights.some((i: any) => i.code === 'hp_vessel_too_small')).toBe(false);
+});
+
+test('hpVesselMultiple is undefined for CP even with a vessel volume supplied', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, {}, 'cp', 500);
+  expect(vm.hpVesselMultiple).toBeUndefined();
+});
+
+test('a too-small HP vessel raises hp_vessel_too_small; a roomy one does not', () => {
+  let tooSmall: any;
+  let roomy: any;
+  probe((v) => { tooSmall = v; }, {}, 'hp', 1);
+  probe((v) => { roomy = v; }, {}, 'hp', 1_000_000);
+
+  expect(tooSmall.hpVesselMultiple).toBeGreaterThan(0);
+  expect(tooSmall.insights.some((i: any) => i.code === 'hp_vessel_too_small')).toBe(true);
+  expect(roomy.insights.some((i: any) => i.code === 'hp_vessel_too_small')).toBe(false);
 });

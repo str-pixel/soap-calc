@@ -85,6 +85,9 @@ export type FormulationAnalysisInput = {
    * (e.g. "high saturated fats", "castor / ricinoleic"). Gated the same as the label —
    * callers should only pass this when traceSpeedLabel is also emitted. */
   traceSpeedDrivers?: string[];
+  /** Cook vessel volume ÷ batch volume, computed by the caller (HP only). Gates
+   * hp_vessel_too_small; undefined omits the check entirely (the guard input is optional). */
+  hpVesselMultiple?: number;
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -557,6 +560,31 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         message:
           'Fluid HP tolerates higher castor (about 10–15%) and shea (about 30–40%) than a typical CP bar — the hot cook and post-cook additions give more working room before trace or texture become unworkable.',
       });
+    }
+
+    // Vessel-size guard: the cooking batter expands (gel/mashed-potato phase) and can
+    // overflow a too-small pot. Required multiple is the same coconut-heavy proxy used
+    // above (lauric+myristic >= COCONUT_HEAVY_LAURIC_MYRISTIC), coverage-gated so a
+    // sparse fatty-acid read doesn't wrongly demand the higher 3x minimum. hpVesselMultiple
+    // is caller-computed and optional — undefined skips the check entirely.
+    if (input.hpVesselMultiple !== undefined) {
+      const hpLauricMyristicCoverageOk =
+        !!input.fattyAcids && (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+      const hpLauricMyristic = hpLauricMyristicCoverageOk
+        ? sumFattyAcids(input.fattyAcids!, FATTY_ACID_GROUP_KEYS.lauricMyristic)
+        : undefined;
+      const isCoconutHeavyHP =
+        hpLauricMyristic !== undefined && hpLauricMyristic >= COCONUT_HEAVY_LAURIC_MYRISTIC;
+      const requiredVesselMultiple = isCoconutHeavyHP ? 3 : 2;
+      if (input.hpVesselMultiple < requiredVesselMultiple) {
+        insights.push({
+          level: 'warning',
+          code: 'hp_vessel_too_small',
+          message: isCoconutHeavyHP
+            ? "Use a cook vessel at least ~3× the batch volume so the expanding cook doesn't overflow."
+            : "Use a cook vessel at least ~2× the batch volume (~3× for coconut-heavy) so the expanding cook doesn't overflow.",
+        });
+      }
     }
   }
 

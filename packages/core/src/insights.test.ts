@@ -397,6 +397,108 @@ describe('HP-gated insights (process discriminator)', () => {
   });
 });
 
+describe('hp_vessel_too_small vessel-size guard', () => {
+  it('fires for HP with a vessel only 1.5x the batch (below the 2x default minimum)', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 1.5,
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_vessel_too_small');
+  });
+
+  it('non-coconut-heavy message states the 2x minimum and hints at 3x for coconut-heavy, without repeating "~3×"', () => {
+    const insight = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 1.5,
+    }).find((i) => i.code === 'hp_vessel_too_small');
+    expect(insight?.message).toBe(
+      "Use a cook vessel at least ~2× the batch volume (~3× for coconut-heavy) so the expanding cook doesn't overflow."
+    );
+  });
+
+  it('coconut-heavy message states only the 3x requirement, without a redundant "~3× for coconut-heavy" parenthetical', () => {
+    const insight = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 2.5,
+      fattyAcids: { lauric: 45, myristic: 15 },
+      fattyAcidCoveragePercent: 90,
+    }).find((i) => i.code === 'hp_vessel_too_small');
+    expect(insight?.message).toBe(
+      "Use a cook vessel at least ~3× the batch volume so the expanding cook doesn't overflow."
+    );
+  });
+
+  it('does not fire for HP with a 2.5x vessel on a non-coconut-heavy recipe', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 2.5,
+      fattyAcids: { lauric: 5, myristic: 2 },
+      fattyAcidCoveragePercent: 90,
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_vessel_too_small');
+  });
+
+  it('does not fire for CP even with a too-small multiple', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'cp',
+      hpVesselMultiple: 1.5,
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_vessel_too_small');
+  });
+
+  it('requires 3x for coconut-heavy HP (lauric+myristic >= 55%) — 2.5x still fires', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 2.5,
+      fattyAcids: { lauric: 45, myristic: 15 },
+      fattyAcidCoveragePercent: 90,
+    }).map((i) => i.code);
+    expect(codes).toContain('hp_vessel_too_small');
+  });
+
+  it('3x clears the coconut-heavy requirement', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 3,
+      fattyAcids: { lauric: 45, myristic: 15 },
+      fattyAcidCoveragePercent: 90,
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_vessel_too_small');
+  });
+
+  it('ignores low-coverage fatty-acid data for the coconut-heavy read (falls back to the 2x requirement)', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 2.5,
+      fattyAcids: { lauric: 45, myristic: 15 },
+      fattyAcidCoveragePercent: 30,
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_vessel_too_small');
+  });
+
+  it('does not fire when hpVesselMultiple is undefined', () => {
+    const codes = analyzeFormulation({ ...base, process: 'hp' }).map((i) => i.code);
+    expect(codes).not.toContain('hp_vessel_too_small');
+  });
+
+  it('2x exactly clears the non-coconut requirement', () => {
+    const codes = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 2,
+    }).map((i) => i.code);
+    expect(codes).not.toContain('hp_vessel_too_small');
+  });
+});
+
 describe('sugar_total_high warning (total sugar-family additives, verified ceiling 4%)', () => {
   it('fires above 4% total sugar-family additive dose', () => {
     expect(has({ ...base, sugarTotalPercent: 5 }, 'sugar_total_high')).toBe(true);
