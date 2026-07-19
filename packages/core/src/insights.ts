@@ -580,9 +580,9 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         insights.push({
           level: 'warning',
           code: 'hp_vessel_too_small',
-          message:
-            `Use a cook vessel at least ~${requiredVesselMultiple}× the batch volume — ` +
-            '~3× for coconut-heavy — so the expanding cook doesn\'t overflow.',
+          message: isCoconutHeavyHP
+            ? "Use a cook vessel at least ~3× the batch volume so the expanding cook doesn't overflow."
+            : "Use a cook vessel at least ~2× the batch volume (~3× for coconut-heavy) so the expanding cook doesn't overflow.",
         });
       }
     }

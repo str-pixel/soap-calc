@@ -407,6 +407,30 @@ describe('hp_vessel_too_small vessel-size guard', () => {
     expect(codes).toContain('hp_vessel_too_small');
   });
 
+  it('non-coconut-heavy message states the 2x minimum and hints at 3x for coconut-heavy, without repeating "~3×"', () => {
+    const insight = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 1.5,
+    }).find((i) => i.code === 'hp_vessel_too_small');
+    expect(insight?.message).toBe(
+      "Use a cook vessel at least ~2× the batch volume (~3× for coconut-heavy) so the expanding cook doesn't overflow."
+    );
+  });
+
+  it('coconut-heavy message states only the 3x requirement, without a redundant "~3× for coconut-heavy" parenthetical', () => {
+    const insight = analyzeFormulation({
+      ...base,
+      process: 'hp',
+      hpVesselMultiple: 2.5,
+      fattyAcids: { lauric: 45, myristic: 15 },
+      fattyAcidCoveragePercent: 90,
+    }).find((i) => i.code === 'hp_vessel_too_small');
+    expect(insight?.message).toBe(
+      "Use a cook vessel at least ~3× the batch volume so the expanding cook doesn't overflow."
+    );
+  });
+
   it('does not fire for HP with a 2.5x vessel on a non-coconut-heavy recipe', () => {
     const codes = analyzeFormulation({
       ...base,
