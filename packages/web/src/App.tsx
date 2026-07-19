@@ -6,6 +6,7 @@ import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
 import { PreservePanel } from './components/PreservePanel';
+import { ProcessGuidePanel } from './components/ProcessGuidePanel';
 import { ProcessTabs } from './components/ProcessTabs';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { RecipeOilsPanel } from './components/RecipeOilsPanel';
@@ -256,6 +257,8 @@ export default function App() {
           )}
 
           {process === 'ls' && <PreservePanel />}
+
+          <ProcessGuidePanel process={process} processVariant={settings.processVariant} />
 
           <SettingsPanel
             process={process}
