@@ -26,6 +26,7 @@ import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
+import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviations.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
@@ -559,6 +560,8 @@ function main() {
     })),
   };
   writeFileSync(litePath, JSON.stringify(liteDb, null, 2) + '\n');
+
+  (report as Record<string, unknown>).iodineDeviations = classifyProfileIodineDeviations(oils);
 
   writeFileSync(reportPath, JSON.stringify({
     generatedAt: db.generatedAt,
