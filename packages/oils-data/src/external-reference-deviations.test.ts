@@ -44,11 +44,10 @@ describe('classifyExternalReferenceDeviations', () => {
     expect(out.map((d) => d.property)).toEqual(['iodine', 'sapKoh']);
   });
 
-  it('widens tolerance for a single-source band but still flags a large gap', () => {
-    // lone band [100,100], T=5, single-source ×2 => low edge 90; 85 still flags, 92 does not
-    const flagged = classifyExternalReferenceDeviations([{ id: 'lone', iodine: 85 }], REFS);
-    expect(flagged).toHaveLength(1);
-    expect(classifyExternalReferenceDeviations([{ id: 'lone', iodine: 92 }], REFS)).toEqual([]);
+  it('surfaces single-source disagreements at base tolerance (no widening)', () => {
+    // lone band [100,100], base T = max(5, 0.05*100) = 5 => [95,105]; sourceCount 1 is NOT widened
+    expect(classifyExternalReferenceDeviations([{ id: 'lone', iodine: 85 }], REFS)).toHaveLength(1); // below 95
+    expect(classifyExternalReferenceDeviations([{ id: 'lone', iodine: 104 }], REFS)).toEqual([]); // inside 95..105
   });
 
   it('compares SAP in mg KOH/g against sapMgKohPerGram', () => {

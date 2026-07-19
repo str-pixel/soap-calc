@@ -4,7 +4,7 @@
 
 **Goal:** Add a warn-only external-reference gate to the oils build that flags stored iodine/SAP values falling outside the range of independent published sources (Giakoumis 2018, Toscano 2012, Warra 2010, plus AOCS-style ranges).
 
-**Architecture:** A pure `poolExternalReferences` merges the vendored source files into a per-oil `[min,max]` band table (honoring a `bandExclude` flag for triangulated outliers, counting distinct source datasets). A pure `classifyExternalReferenceDeviations` compares each oil's stored `iodine` and `sapMgKohPerGram` against its band ±per-side tolerance (widened for single-source bands), emitting `warn`/`acknowledged` deviations keyed by `id:property`. `build-canonical` records them in the report; `validate-canonical` prints warn-only lines; a consistency test guards acknowledgments against drift. Never blocks the build.
+**Architecture:** A pure `poolExternalReferences` merges the vendored source files into a per-oil `[min,max]` band table (honoring a `bandExclude` flag for triangulated outliers, counting distinct source datasets). A pure `classifyExternalReferenceDeviations` compares each oil's stored `iodine` and `sapMgKohPerGram` against its band ±per-side tolerance (a single-source lever exists but is calibrated to no widening — see Global Constraints), emitting `warn`/`acknowledged` deviations keyed by `id:property`. `build-canonical` records them in the report; `validate-canonical` prints warn-only lines; a consistency test guards acknowledgments against drift. Never blocks the build.
 
 **Tech Stack:** TypeScript (ESM, `.js` import specifiers), vitest, npm workspaces, tsx. Spec: `docs/superpowers/specs/2026-07-19-external-reference-band-design.md`.
 
@@ -12,7 +12,7 @@
 
 - **Warn-only. Never `errors.push`.** Only the internal profile gates block the build; this gate emits warnings and a report section exclusively.
 - Compare SAP against the built **`sapMgKohPerGram`** field (mg KOH/g), never `sapKoh` (g KOH/g) — no unit conversion.
-- Tolerance is **per-side**: `T_low = max(ABS, REL·min)`, `T_high = max(ABS, REL·max)`; when a band's `sourceCount === 1`, multiply both by `SINGLE_SOURCE_TOL_FACTOR`. Constants: `IODINE_ABS_TOL=5`, `IODINE_REL_TOL=0.05`, `SAP_ABS_TOL=4`, `SAP_REL_TOL=0.03`, `SINGLE_SOURCE_TOL_FACTOR=2`. Copy verbatim; these are provisional and calibrated in Task 3.
+- Tolerance is **per-side**: `T_low = max(ABS, REL·min)`, `T_high = max(ABS, REL·max)`; when a band's `sourceCount === 1`, multiply both by `SINGLE_SOURCE_TOL_FACTOR`. Constants: `IODINE_ABS_TOL=5`, `IODINE_REL_TOL=0.05`, `SAP_ABS_TOL=4`, `SAP_REL_TOL=0.03`, `SINGLE_SOURCE_TOL_FACTOR=1`. Copy verbatim; the base iodine/SAP margins are provisional and calibrated in Task 3, but `SINGLE_SOURCE_TOL_FACTOR=1` (no widening) is a settled calibration decision — an earlier factor of `2` silently suppressed `pecan-oil`, a spec-advertised app-vs-world catch, so single-source disagreements are surfaced at base tolerance and confirmed false positives are acknowledged individually instead.
 - `sourceCount` counts **distinct source datasets**, not data points — a min/max range is one source contributing two points.
 - The acknowledgment map is keyed by **`${id}:${property}`** (an oil can deviate on iodine and SAP independently).
 - **Isolation:** execute in a dedicated git worktree branched off `feat/iodine-consistency-gate` (a concurrent agent moved HEAD once this session). Create it with the `superpowers:using-git-worktrees` skill at execution start. Stage explicit paths only — never `git add -A`. Do not push/PR unless asked.
@@ -305,11 +305,10 @@ describe('classifyExternalReferenceDeviations', () => {
     expect(out.map((d) => d.property)).toEqual(['iodine', 'sapKoh']);
   });
 
-  it('widens tolerance for a single-source band but still flags a large gap', () => {
-    // lone band [100,100], T=5, single-source ×2 => low edge 90; 85 still flags, 92 does not
-    const flagged = classifyExternalReferenceDeviations([{ id: 'lone', iodine: 85 }], REFS);
-    expect(flagged).toHaveLength(1);
-    expect(classifyExternalReferenceDeviations([{ id: 'lone', iodine: 92 }], REFS)).toEqual([]);
+  it('surfaces single-source disagreements at base tolerance (no widening)', () => {
+    // lone band [100,100], base T = max(5, 0.05*100) = 5 => [95,105]; sourceCount 1 is NOT widened
+    expect(classifyExternalReferenceDeviations([{ id: 'lone', iodine: 85 }], REFS)).toHaveLength(1); // below 95
+    expect(classifyExternalReferenceDeviations([{ id: 'lone', iodine: 104 }], REFS)).toEqual([]); // inside 95..105
   });
 
   it('compares SAP in mg KOH/g against sapMgKohPerGram', () => {
@@ -353,9 +352,11 @@ export const IODINE_REL_TOL = 0.05;
 /** mg KOH/g / % beyond the SAP band edge. */
 export const SAP_ABS_TOL = 4;
 export const SAP_REL_TOL = 0.03;
-/** A single-source band is weak evidence — widen its tolerance so it doesn't trip on small gaps.
- * It is NOT a suppressor: a large single-source gap still flags and is adjudicated in review. */
-export const SINGLE_SOURCE_TOL_FACTOR = 2;
+/** Tolerance lever for single-source bands, calibrated to 1 (no widening). A lone reference is
+ * weak evidence, but WIDENING it would also hide real app-vs-world outliers (e.g. pecan-oil).
+ * Instead every single-source disagreement is surfaced as a warn; confirmed false positives from a
+ * lone weak reference are silenced via KNOWN_EXTERNAL_REFERENCE_DEVIATIONS (e.g. coffee-bean-oil). */
+export const SINGLE_SOURCE_TOL_FACTOR = 1;
 
 /**
  * Stored iodine/SAP that disagrees with the external published band for a REVIEWED reason.
@@ -562,7 +563,7 @@ Run: `npm run build -w @soap-calc/oils-data && npm run validate -w @soap-calc/oi
 Expected: build + validate succeed, **Errors: 0**; `build-report.json` gains an `externalReferenceDeviations` array. Inspect it:
 
 Run: `node -e "const r=require('./packages/oils-data/data/build-report.json'); console.log(r.externalReferenceDeviations.map(d=>d.id+':'+d.property+' stored '+d.stored+' band ['+d.band+'] n'+d.sourceCount))"`
-Expected (from the dry run; may shift slightly after single-source widening): `cherry-kernel-oil-avium:iodine`, `hazelnut-oil:iodine`, `mango-seed-oil:iodine`, `pecan-oil:iodine`, `tamanu-oil-kamani:iodine`, and possibly `coffee-bean-oil-green:iodine`. All `warn`. Zero SAP.
+Expected (base tolerance, `SINGLE_SOURCE_TOL_FACTOR=1` — no widening): 6 flags — `cherry-kernel-oil-avium:iodine`, `coffee-bean-oil-green:iodine`, `hazelnut-oil:iodine`, `mango-seed-oil:iodine`, `pecan-oil:iodine`, `tamanu-oil-kamani:iodine`. All `warn` before Step 6's acknowledgment. Zero SAP.
 
 - [ ] **Step 6: Calibrate — acknowledge only what review confirms**
 
@@ -575,7 +576,7 @@ export const KNOWN_EXTERNAL_REFERENCE_DEVIATIONS: Record<string, string> = {
 };
 ```
 
-Leave the app-vs-world catches (`mango-seed-oil`, `pecan-oil`, `tamanu-oil-kamani`) and the internally-corroborated ones (`hazelnut-oil`, `cherry-kernel-oil-avium`) as open **warn** backlog — they are real disagreements for row-by-row follow-up, not to be silenced here.
+Leave the app-vs-world catches (`mango-seed-oil`, `pecan-oil`, `tamanu-oil-kamani`) and the internally-corroborated ones (`hazelnut-oil`, `cherry-kernel-oil-avium`) as open **warn** backlog — five oils total — they are real disagreements for row-by-row follow-up, not to be silenced here. `pecan-oil` in particular only stays visible because `SINGLE_SOURCE_TOL_FACTOR=1`; an earlier widened factor of `2` silently suppressed it, which is why widening was dropped.
 
 - [ ] **Step 7: Re-run the consistency test + full suite**
 

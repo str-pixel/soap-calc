@@ -80,10 +80,10 @@ classifyExternalReferenceDeviations(
 
 - `OilLike = { id; iodine?; sapMgKohPerGram? }` — **no category filter.** Unlike the internal gates (which need a glyceride backbone to derive), this one only compares numbers, so coverage is defined solely by the reference table. Any oil with an entry is judged.
 - For each oil with a reference, for each property present (`iodine`, `sapKoh`), flag when the stored value is **below `min − T_low` or above `max + T_high`**. Tolerance is computed **per side** against that side's edge: `T_low = max(ABS, REL * min)`, `T_high = max(ABS, REL * max)` (the `[min−T, max+T]` shorthand elsewhere hides this).
-- **Tolerance constants** (named exports, provisional — see Calibration):
+- **Tolerance constants** (named exports; base iodine/SAP margins provisional — see Calibration, single-source factor decided):
   - iodine: `IODINE_ABS_TOL = 5`, `IODINE_REL_TOL = 0.05`.
   - sap: `SAP_ABS_TOL = 4` (mg KOH/g), `SAP_REL_TOL = 0.03`.
-  - **Single-source widening:** when a property's `sourceCount === 1`, its `T_low`/`T_high` are multiplied by `SINGLE_SOURCE_TOL_FACTOR` (provisional `2`). This *reduces* false trips on weak evidence; it is **not** a suppressor — a large single-source gap still flags (e.g. coffee 85 vs a lone `100`: widened low edge is 90, so 85 still trips) and is then adjudicated in calibration (acknowledge or add a source), not silently dropped.
+  - **Single-source tolerance:** `SINGLE_SOURCE_TOL_FACTOR = 1` (no widening) — the calibration decision. `T_low`/`T_high` would be multiplied by this factor when `sourceCount === 1`, but a factor of `1` leaves them unchanged. A lone reference is weak evidence, but widening it would also hide real app-vs-world outliers the gate exists to catch (`pecan-oil` is the motivating case — a widened band would have suppressed it). Every single-source disagreement is surfaced as a `warn` at base tolerance; confirmed false positives from a lone weak reference are silenced individually via `KNOWN_EXTERNAL_REFERENCE_DEVIATIONS` (e.g. coffee 85 vs a lone `100`, base low edge 95 — flags, then is acknowledged), never by loosening the lever for every oil.
 - **Two tiers only** (warn-only design): `acknowledged` if the `id:property` key is in `KNOWN_EXTERNAL_REFERENCE_DEVIATIONS` (reviewed reason), else `warn`.
 - Each deviation: `{ id, property: 'iodine' | 'sapKoh', stored, band: [min,max], sourceCount, deltaOutside, tier, reason? }`. `deltaOutside` = signed distance past the nearest tolerance edge (0 inside, used for ranking). Sorted by `id`, then `property`.
 
@@ -110,18 +110,18 @@ export const KNOWN_EXTERNAL_REFERENCE_DEVIATIONS: Record<string, string> = {
 
 ### 5. Calibration (explicit first implementation step, not a claim)
 
-Thresholds above are **provisional**. The first implementation step runs the gate against the live catalog, inspects the flag set, and tunes — exactly how the internal gates' thresholds were set. Grounded starting point from this session's dry run (`T = max(5, 5%)`, single-source not yet widened):
+Base iodine/SAP margins (`T = max(5, 5%)`) are **provisional**, tuned by running the gate against the live catalog and inspecting the flag set — exactly how the internal gates' thresholds were set. The single-source lever was calibrated separately, in the same way: an initial widened factor (`2`) was found to silently suppress `pecan-oil` — a spec-advertised app-vs-world catch — so the factor was set to `1` (no widening) and every single-source disagreement now surfaces as a `warn`, with confirmed false positives acknowledged individually. This is the resulting live flag set (6 oils, base tolerance, single-source factor `1`):
 
 | oil | property | stored | band | note |
 |---|---|---|---|---|
 | cherry-kernel-oil-avium | iodine | 128 | [110,118] | also on internal iodine backlog (corroborated) |
-| coffee-bean-oil-green | iodine | 85 | [100,100] | **single source**, lone point reads high vs typical ~80–90; widening does *not* clear it (85 < 90) → acknowledge, app value kept |
+| coffee-bean-oil-green | iodine | 85 | [100,100] | **single source**, lone point reads high vs typical ~80–90; flags at base tolerance (low edge 95) → acknowledged, app value kept pending a second source |
 | hazelnut-oil | iodine | 97 | [83,90] | also on internal iodine backlog (corroborated) |
-| mango-seed-oil | iodine | 60 | [39,48] | internal-invisible — real app-vs-world catch |
-| pecan-oil | iodine | 113 | [100,106] | internal-invisible — real app-vs-world catch |
-| tamanu-oil-kamani | iodine | 111 | [82,98] | internal-invisible — real app-vs-world catch |
+| mango-seed-oil | iodine | 60 | [39,48] | internal-invisible — real app-vs-world catch — open warn |
+| pecan-oil | iodine | 113 | [100,106] | internal-invisible — real app-vs-world catch — open warn |
+| tamanu-oil-kamani | iodine | 111 | [82,98] | internal-invisible — real app-vs-world catch — open warn |
 
-Coverage: 52/133 oils have an iodine reference, 52/133 a SAP reference; **zero SAP flags** today (all stored SAP already sits within published ranges — the SAP half is a forward regression guard). Calibration decides, per flagged oil, whether to leave it as an open warn (backlog), acknowledge it with a reviewed reason, or (separately, later) correct the stored value. No threshold is loosened to hide a real disagreement.
+Coverage: 52/133 oils have an iodine reference, 52/133 a SAP reference; **zero SAP flags** today (all stored SAP already sits within published ranges — the SAP half is a forward regression guard). The gate fires on all 6 of these oils today; five stay open `warn` (backlog) and one (`coffee-bean-oil-green:iodine`) is `acknowledged` with a reviewed, source-attributed reason in `KNOWN_EXTERNAL_REFERENCE_DEVIATIONS`. No threshold is loosened to hide a real disagreement.
 
 ### 6. Isolation
 
