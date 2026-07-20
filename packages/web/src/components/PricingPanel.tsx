@@ -3,17 +3,19 @@ import { computeRecipePricing, hasMissingMaterialPrice, additivePriceKey } from 
 import type { RecipePricingContext } from '../lib/recipePricing';
 import type { PricedEntry, PricingProfile } from '../lib/pricingProfile';
 import { formatMoney, type PriceUnit } from '../lib/money';
-import { formatWeight } from '../lib/weightUnits';
+import { formatWeight, type WeightUnit } from '../lib/weightUnits';
 
 interface PricingPanelProps {
   context: RecipePricingContext;
   profile: PricingProfile;
   onProfileChange: (next: PricingProfile) => void;
+  /** Active app weight unit for read-only ingredient weights; defaults to grams. */
+  weightUnit?: WeightUnit;
 }
 
 const UNIT_OPTIONS: PriceUnit[] = ['kg', 'lb'];
 
-export function PricingPanel({ context, profile, onProfileChange }: PricingPanelProps) {
+export function PricingPanel({ context, profile, onProfileChange, weightUnit = 'g' }: PricingPanelProps) {
   const result = computeRecipePricing(context, profile);
   const incomplete = hasMissingMaterialPrice(context, profile);
   const symbol = profile.currencySymbol;
@@ -37,7 +39,7 @@ export function PricingPanel({ context, profile, onProfileChange }: PricingPanel
   ) => (
     <div className="pricing-row">
       <span className="pricing-row__name">{label}</span>
-      <span className="pricing-row__grams">{formatWeight(grams, 'g')}</span>
+      <span className="pricing-row__grams">{formatWeight(grams, weightUnit)}</span>
       <input
         className="pricing-row__price"
         aria-label={`Price for ${label}`}

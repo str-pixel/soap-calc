@@ -5,6 +5,8 @@ describe('formatMoney', () => {
   it('formats with symbol prefix and 2 decimals', () => {
     expect(formatMoney(12, '$')).toBe('$12.00');
     expect(formatMoney(1234.5, '$')).toBe('$1,234.50');
+    expect(formatMoney(-5, '$')).toBe('-$5.00');
+    expect(formatMoney(-0, '$')).toBe('$0.00');
   });
 });
 

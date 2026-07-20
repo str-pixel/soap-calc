@@ -32,6 +32,14 @@ describe('PricingPanel', () => {
     expect(next.oilPrices['olive-oil'].price).toBe('4.50');
   });
 
+  it('renders ingredient weights in the active weight unit', () => {
+    render(
+      <PricingPanel context={context} profile={DEFAULT_PRICING_PROFILE} onProfileChange={() => {}} weightUnit="kg" />,
+    );
+    // 1000 g of olive oil shown as 1 kg (not "1,000 g") when the app unit is kg.
+    expect(screen.getByText(/^1 kg$/)).toBeTruthy();
+  });
+
   it('shows outputs once oils are priced', () => {
     const profile = {
       ...DEFAULT_PRICING_PROFILE,
