@@ -66,3 +66,20 @@ describe('deriveChemistryFromProfile', () => {
     expect(deriveChemistryFromProfile({ oleic: 94 })).not.toBeNull();
   });
 });
+
+describe('iodine renormalization (deep-review)', () => {
+  it('derives the same IV for the same substance regardless of profile completeness', () => {
+    // Pure triolein described two ways: profiles summing to 94 and to 100 are the
+    // same substance. SAP already renormalizes over mappedPercent; IV must too, or
+    // the derived-IV oracle skews by up to ±7% across legal (≥93%) profiles.
+    const at94 = deriveChemistryFromProfile({ oleic: 94 });
+    const at100 = deriveChemistryFromProfile({ oleic: 100 });
+    expect(at94).not.toBeNull();
+    expect(at100).not.toBeNull();
+    expect(at94!.sapKoh).toBeCloseTo(at100!.sapKoh, 10);
+    expect(at94!.iodineValue).toBeCloseTo(at100!.iodineValue, 6);
+    // and the absolute value stays the oil-basis figure (~86 for triolein)
+    expect(at100!.iodineValue).toBeGreaterThan(85);
+    expect(at100!.iodineValue).toBeLessThan(87);
+  });
+});
