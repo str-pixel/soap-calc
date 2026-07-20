@@ -1,0 +1,174 @@
+// packages/web/src/components/PricingPanel.tsx
+import { computeRecipePricing, hasMissingMaterialPrice, additivePriceKey } from '../lib/recipePricing';
+import type { RecipePricingContext } from '../lib/recipePricing';
+import type { PricedEntry, PricingProfile } from '../lib/pricingProfile';
+import { formatMoney, type PriceUnit } from '../lib/money';
+import { formatWeight } from '../lib/weightUnits';
+
+interface PricingPanelProps {
+  context: RecipePricingContext;
+  profile: PricingProfile;
+  onProfileChange: (next: PricingProfile) => void;
+}
+
+const UNIT_OPTIONS: PriceUnit[] = ['kg', 'lb'];
+
+export function PricingPanel({ context, profile, onProfileChange }: PricingPanelProps) {
+  const result = computeRecipePricing(context, profile);
+  const incomplete = hasMissingMaterialPrice(context, profile);
+  const symbol = profile.currencySymbol;
+  const money = (v: number | null) => (v == null || incomplete ? '—' : formatMoney(v, symbol));
+  const pct = (v: number | null) => (v == null || incomplete ? '—' : `${v.toFixed(1)}%`);
+
+  const setEntry = (
+    book: 'oilPrices' | 'additivePrices',
+    key: string,
+    patch: Partial<PricedEntry>,
+  ) => {
+    const prev = profile[book][key] ?? { price: '', unit: profile.outputUnit };
+    onProfileChange({ ...profile, [book]: { ...profile[book], [key]: { ...prev, ...patch } } });
+  };
+
+  const priceRow = (
+    label: string,
+    grams: number,
+    entry: PricedEntry | undefined,
+    onPatch: (patch: Partial<PricedEntry>) => void,
+  ) => (
+    <div className="pricing-row">
+      <span className="pricing-row__name">{label}</span>
+      <span className="pricing-row__grams">{formatWeight(grams, 'g')}</span>
+      <input
+        className="pricing-row__price"
+        aria-label={`Price for ${label}`}
+        inputMode="decimal"
+        value={entry?.price ?? ''}
+        onChange={(e) => onPatch({ price: e.target.value })}
+      />
+      <select
+        aria-label={`Unit for ${label}`}
+        value={entry?.unit ?? profile.outputUnit}
+        onChange={(e) => onPatch({ unit: e.target.value as PriceUnit })}
+      >
+        {UNIT_OPTIONS.map((u) => (
+          <option key={u} value={u}>{u}</option>
+        ))}
+      </select>
+    </div>
+  );
+
+  const setField = (patch: Partial<PricingProfile>) => onProfileChange({ ...profile, ...patch });
+
+  return (
+    <section className="panel">
+      <h2>Pricing &amp; profit</h2>
+
+      <details open>
+        <summary>Materials</summary>
+        {context.oilLines.map((o) =>
+          <div key={o.key}>
+            {priceRow(o.name, o.grams, profile.oilPrices[o.oilId], (patch) => setEntry('oilPrices', o.oilId, patch))}
+          </div>,
+        )}
+        {context.additives.map((a) => {
+          const key = additivePriceKey(a);
+          return (
+            <div key={a.key}>
+              {priceRow(a.name, a.grams, profile.additivePrices[key], (patch) => setEntry('additivePrices', key, patch))}
+            </div>
+          );
+        })}
+        {priceRow('Lye', context.lyeGrams, profile.lyePrice, (patch) =>
+          setField({ lyePrice: { ...profile.lyePrice, ...patch } }),
+        )}
+        <label className="field">
+          Packaging cost (per {profile.outputUnit})
+          <input
+            aria-label="Packaging cost"
+            inputMode="decimal"
+            value={profile.packagingPerUnit}
+            onChange={(e) => setField({ packagingPerUnit: e.target.value })}
+          />
+        </label>
+        {incomplete && (
+          <p className="pricing-hint" data-testid="price-incomplete">
+            Enter a price for every oil and additive for an accurate cost.
+          </p>
+        )}
+      </details>
+
+      <details>
+        <summary>Labour &amp; overhead</summary>
+        <label className="field">
+          Labour (minutes per batch)
+          <input aria-label="Labour minutes" inputMode="decimal" value={profile.laborMinutes}
+            onChange={(e) => setField({ laborMinutes: e.target.value })} />
+        </label>
+        <label className="field">
+          Rate per hour
+          <input aria-label="Labour rate per hour" inputMode="decimal" value={profile.laborRatePerHour}
+            onChange={(e) => setField({ laborRatePerHour: e.target.value })} />
+        </label>
+        <label className="field">
+          Labour burden %
+          <input aria-label="Labour burden percent" inputMode="decimal" value={profile.laborBurdenPercent}
+            onChange={(e) => setField({ laborBurdenPercent: e.target.value })} />
+        </label>
+        <label className="field">
+          Overhead
+          <select aria-label="Overhead mode" value={profile.overheadMode}
+            onChange={(e) => setField({ overheadMode: e.target.value === 'flat' ? 'flat' : 'percent' })}>
+            <option value="percent">% of cost</option>
+            <option value="flat">flat per batch</option>
+          </select>
+        </label>
+        {profile.overheadMode === 'percent' ? (
+          <input aria-label="Overhead percent" inputMode="decimal" value={profile.overheadPercent}
+            onChange={(e) => setField({ overheadPercent: e.target.value })} />
+        ) : (
+          <input aria-label="Overhead flat" inputMode="decimal" value={profile.overheadFlat}
+            onChange={(e) => setField({ overheadFlat: e.target.value })} />
+        )}
+      </details>
+
+      <div className="pricing-outputs">
+        <label className="field">
+          Currency symbol
+          <input aria-label="Currency symbol" value={profile.currencySymbol}
+            onChange={(e) => setField({ currencySymbol: e.target.value })} />
+        </label>
+        <label className="field">
+          Price per
+          <select aria-label="Output unit" value={profile.outputUnit}
+            onChange={(e) => setField({ outputUnit: e.target.value as PriceUnit })}>
+            {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+        </label>
+        <label className="field">
+          Price from
+          <select aria-label="Pricing lever" value={profile.priceLever}
+            onChange={(e) => setField({ priceLever: e.target.value === 'markup' ? 'markup' : 'margin' })}>
+            <option value="margin">target margin %</option>
+            <option value="markup">markup %</option>
+          </select>
+        </label>
+        {profile.priceLever === 'margin' ? (
+          <input aria-label="Target margin percent" inputMode="decimal" value={profile.targetMarginPercent}
+            onChange={(e) => setField({ targetMarginPercent: e.target.value })} />
+        ) : (
+          <input aria-label="Markup percent" inputMode="decimal" value={profile.markupPercent}
+            onChange={(e) => setField({ markupPercent: e.target.value })} />
+        )}
+
+        <dl className="pricing-results">
+          <dt>Cost per {profile.outputUnit}</dt><dd data-testid="cost-per-unit">{money(result.costPerUnit)}</dd>
+          <dt>Cost per batch</dt><dd>{money(result.cogsBatch)}</dd>
+          <dt>Suggested price per {profile.outputUnit}</dt><dd>{money(result.suggestedPricePerUnit)}</dd>
+          <dt>Profit per {profile.outputUnit}</dt><dd>{money(result.profitPerUnit)}</dd>
+          <dt>Margin</dt><dd>{pct(result.marginPercent)}</dd>
+          <dt>Markup</dt><dd>{pct(result.markupPercent)}</dd>
+        </dl>
+      </div>
+    </section>
+  );
+}

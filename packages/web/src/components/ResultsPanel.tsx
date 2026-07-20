@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { batchWeightBreakdown } from '@soap-calc/core';
 import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import type { CureEstimate } from '../lib/cureEstimate';
@@ -43,6 +44,8 @@ type ResultsPanelProps = {
   /** The vm's cured/label weight (batch weight after the process's water loss). Null when
    * there's no resolvable process variant; equals batchWeightWithExtras when loss is 0 (LS). */
   labelWeight?: number | null;
+  /** The vm's total oil weight in grams — used for the batch-weight breakdown readout. */
+  totalOilGrams?: number;
 };
 
 // The cure/sequester window is behavior-only guidance built from several unverified
@@ -88,6 +91,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   batchWeightWithExtras,
   cureEstimate = null,
   labelWeight = null,
+  totalOilGrams = 0,
 }: ResultsPanelProps) {
   if (inputErrors.length) {
     return (
@@ -138,6 +142,12 @@ export const ResultsPanel = memo(function ResultsPanel({
   ]
     .filter(Boolean)
     .join(' and ');
+  const batchWeight = batchWeightBreakdown({
+    oilGrams: totalOilGrams,
+    lyeGrams: result?.lyeWeightGrams ?? 0,
+    waterGrams: result?.waterWeightGrams ?? 0,
+    extrasGrams,
+  });
 
   return (
     <section className="panel panel--results" aria-live="polite">
@@ -289,6 +299,16 @@ export const ResultsPanel = memo(function ResultsPanel({
             </div>
           )}
         </dl>
+      )}
+
+      {batchWeight.total > 0 && (
+        <p className="results-batch-weight" data-testid="batch-weight">
+          <strong>Total batch:</strong> {formatWeight(batchWeight.total, weightUnit)}
+          {' · '}oils {formatWeight(batchWeight.oils, weightUnit)}
+          {' · '}lye {formatWeight(batchWeight.lye, weightUnit)}
+          {' · '}water {formatWeight(batchWeight.water, weightUnit)}
+          {batchWeight.extras > 0 && <> · extras {formatWeight(batchWeight.extras, weightUnit)}</>}
+        </p>
       )}
 
       {!isEmpty && additives.length > 0 && (
