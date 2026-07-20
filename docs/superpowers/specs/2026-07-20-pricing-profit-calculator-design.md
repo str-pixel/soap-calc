@@ -41,7 +41,7 @@ free of personal cost data.
 | Batch-weight math (pure) | **new** `packages/core/src/batch-weight.ts` (+ test) | add `export * from './batch-weight.js';` to barrel |
 | Neutral constants | `PRICING_GUIDE` in `pricing.ts` | numeric defaults; neutral name per the `*_GUIDE` convention (AGENTS.md:128), e.g. real precedent `SOAP_PROPERTY_GUIDE` (`properties.ts:49`) |
 | Pricing store (remembered) | **new** `packages/web/src/lib/pricingStorage.ts` | key `soap-calc:pricing`; versioned load/save + a standalone `normalizePricingProfile()` — precedent is `normalizeSettings` (`recipe.ts:156`), **not** `moldSizerStorage` (which has neither) |
-| Pricing orchestration | **new** `packages/web/src/lib/pricing.ts` (unit parsing + assembling core inputs from the view model) | mirrors `lib/moldSizer.ts` |
+| Pricing orchestration | **new** `packages/web/src/lib/recipePricing.ts` (unit parsing + assembling core inputs from the view model) | mirrors `lib/moldSizer.ts` |
 | Pricing UI | **new** `packages/web/src/components/PricingPanel.tsx` (+ `.test.tsx`) | `<section className="panel">` in the sidebar; heavy sub-sections collapsible via `<details>` (like SettingsPanel's advanced area). See §6 for placement |
 | Batch-weight display | extend `useRecipeViewModel` to expose the breakdown; render in the results/batch area | see §3 for the exact accessors (only `totalOilGrams` is a clean field today) |
 
@@ -284,7 +284,7 @@ precedent:
 
 ## 10. Rollout
 1. Core math + tests (`batch-weight.ts`, `pricing.ts`) — no UI, fully unit-tested.
-2. Web store + orchestration (`pricingStorage.ts`, `lib/pricing.ts`).
+2. Web store + orchestration (`pricingStorage.ts`, `lib/recipePricing.ts`).
 3. `useRecipeViewModel` batch-weight memo + results readout.
 4. `PricingPanel` + wiring into the app layout.
 5. Component tests; manual verification in the running app.
