@@ -7,7 +7,7 @@ import {
   oilGramsFromBarCount,
   oilGramsFromMoldVolumeCm3,
   rectangularMoldVolumeCm3,
-} from './mold-sizer.js';
+  MAX_WASTE_FACTOR_PERCENT } from './mold-sizer.js';
 
 describe('mold-sizer', () => {
   it('computes rectangular mold volume', () => {
@@ -52,5 +52,13 @@ describe('mold-sizer', () => {
       volume * 0.92 * DEFAULT_OIL_BATCH_FRACTION,
       5,
     );
+  });
+});
+
+describe('waste ceiling export (second wave)', () => {
+  it('exports the ceiling so UI and core cannot drift', () => {
+    expect(MAX_WASTE_FACTOR_PERCENT).toBe(50);
+    expect(applyOilWasteFactor(1000, MAX_WASTE_FACTOR_PERCENT)).not.toBeNull();
+    expect(applyOilWasteFactor(1000, MAX_WASTE_FACTOR_PERCENT + 1)).toBeNull();
   });
 });

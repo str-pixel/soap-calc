@@ -343,3 +343,25 @@ describe('per-row accessible names (deep-review)', () => {
     expect(screen.getByLabelText('Amount for additive 1')).toBeTruthy();
   });
 });
+
+describe('dose-unit reseeding (second wave)', () => {
+  it('resets the unit to percent when switching from a ppt entry to a %-dosed entry', () => {
+    const onChange = vi.fn();
+    const line = makeLine({ key: 'e1', catalogId: 'eugenol', name: 'Eugenol', unit: 'ppt', amount: '2' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={onChange}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('Additive type for Eugenol'), {
+      target: { value: 'sugar-sorbitol' },
+    });
+    const updated = onChange.mock.calls.at(-1)![0][0];
+    expect(updated.catalogId).toBe('sugar-sorbitol');
+    expect(updated.unit).toBe('percent');
+  });
+});

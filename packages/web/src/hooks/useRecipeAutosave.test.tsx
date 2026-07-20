@@ -176,3 +176,29 @@ describe('dirty-tracking (deep-review)', () => {
     vi.useRealTimers();
   });
 });
+
+describe('failed-save retry (second wave)', () => {
+  it('does not mark the workspace clean when saveDraft fails — the flush retries', () => {
+    vi.useFakeTimers();
+    const lines = createStarterLines();
+    const { rerender } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, []),
+      { initialProps: { name: 'Draft' } },
+    );
+    // Make the debounced save fail once (quota), then let storage recover.
+    const original = localStorage.setItem.bind(localStorage);
+    let failures = 0;
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      failures += 1;
+      throw new Error('QuotaExceededError');
+    });
+    rerender({ name: 'edited under quota pressure' });
+    vi.advanceTimersByTime(600); // debounce fires, save fails
+    expect(failures).toBeGreaterThan(0);
+    vi.mocked(localStorage.setItem).mockImplementation(original); // storage freed
+    window.dispatchEvent(new Event('pagehide')); // flush must see dirty and retry
+    expect(loadDraft('cp')?.name).toBe('edited under quota pressure');
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+});

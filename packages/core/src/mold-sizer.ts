@@ -59,10 +59,18 @@ export function oilBatchFraction(oilGrams: number, totalBatchGrams: number): num
   return fraction > 0 && fraction <= 1 ? fraction : null;
 }
 
+/** Ceiling for the shrinkage/waste allowance. Exported so the UI's bound, hint copy,
+ * and this validation cannot drift apart (same pattern as NEG_SUPERFAT_FLOOR). */
+export const MAX_WASTE_FACTOR_PERCENT = 50;
+
 /** Increase suggested oil weight for mold shrinkage, waste, or trimming. */
 export function applyOilWasteFactor(oilGrams: number, wasteFactorPercent: number): number | null {
   if (!Number.isFinite(oilGrams) || oilGrams <= 0) return null;
-  if (!Number.isFinite(wasteFactorPercent) || wasteFactorPercent < 0 || wasteFactorPercent > 50) {
+  if (
+    !Number.isFinite(wasteFactorPercent) ||
+    wasteFactorPercent < 0 ||
+    wasteFactorPercent > MAX_WASTE_FACTOR_PERCENT
+  ) {
     return null;
   }
   return oilGrams * (1 + wasteFactorPercent / 100);

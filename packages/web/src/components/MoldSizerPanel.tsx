@@ -1,10 +1,11 @@
+import { MAX_WASTE_FACTOR_PERCENT } from '@soap-calc/core';
 import { useMemo } from 'react';
 import { DEFAULT_OIL_BATCH_FRACTION } from '@soap-calc/core';
 import {
   DEFAULT_MOLD_SIZER_INPUT,
   type MoldSizerInput,
   suggestOilGramsFromMoldSizer,
-} from '../lib/moldSizer';
+  wasteFactorExceedsMax } from '../lib/moldSizer';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
@@ -163,7 +164,7 @@ export function MoldSizerPanel({
               type="number"
               className="input"
               min={0}
-              max={50}
+              max={MAX_WASTE_FACTOR_PERCENT}
               step={1}
               value={input.wasteFactorPercent}
               onChange={(e) => onChange({ ...input, wasteFactorPercent: e.target.value })}
@@ -204,7 +205,7 @@ export function MoldSizerPanel({
               type="number"
               className="input"
               min={0}
-              max={50}
+              max={MAX_WASTE_FACTOR_PERCENT}
               step={1}
               value={input.wasteFactorPercent}
               onChange={(e) => onChange({ ...input, wasteFactorPercent: e.target.value })}
@@ -217,9 +218,10 @@ export function MoldSizerPanel({
         </div>
       )}
 
-      {Number(input.wasteFactorPercent) > 50 && (
+      {wasteFactorExceedsMax(input.wasteFactorPercent) && (
         <p className="mold-sizer__hint" role="alert">
-          Shrinkage / waste % above 50 isn&apos;t supported — lower it to see a suggestion.
+          Shrinkage / waste % above {MAX_WASTE_FACTOR_PERCENT} isn&apos;t supported — lower it
+          to see a suggestion.
         </p>
       )}
       {applicableOilGrams !== null && (

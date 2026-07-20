@@ -142,7 +142,8 @@ function resolveBatchProvenance(partial: Partial<RecipeSettings> | null | undefi
  * hostile recipe file from smuggling a literal "__proto__"/"constructor" own-key into
  * persisted + re-exported settings. Legit settings fields are unaffected. */
 const MAX_SETTING_FIELD_LENGTH = 200;
-const MAX_NOTES_LENGTH = 20_000;
+/** Shared with the notes textarea's maxLength so entry and load agree on the cap. */
+export const MAX_NOTES_LENGTH = 20_000;
 
 /** Whitelist coercion for one free-text settings field: strings pass (length-capped),
  * finite numbers coerce losslessly (hand-edited files), anything else falls back.

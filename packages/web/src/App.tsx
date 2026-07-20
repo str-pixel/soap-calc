@@ -135,12 +135,16 @@ export default function App() {
   // weight includes — append-mode post-cook superfat and split liquid are priceable,
   // so per-unit cost can't be silently understated. Memo keeps PricingPanel's memo()
   // effective across unrelated keystrokes.
+  // Scalar, not vm.result: the result OBJECT gets a new identity on every settings
+  // keystroke (notes, purity, ...) even when the lye grams are unchanged — depending
+  // on it would defeat this memo and PricingPanel's memo() for exactly those edits.
+  const lyeGrams = vm.result?.lyeWeightGrams ?? 0;
   const pricingContext = useMemo(
     () =>
       buildRecipePricingContext({
         lines: vm.previewState.lines,
         computedAdditives: vm.computedAdditives,
-        lyeGrams: vm.result?.lyeWeightGrams ?? 0,
+        lyeGrams,
         batchWeightWithExtras: vm.batchWeightWithExtras,
         splitLiquid:
           vm.previewSettings.splitLiquid?.enabled && vm.splitLiquidGrams
@@ -157,7 +161,7 @@ export default function App() {
     [
       vm.previewState.lines,
       vm.computedAdditives,
-      vm.result,
+      lyeGrams,
       vm.batchWeightWithExtras,
       vm.previewSettings.splitLiquid,
       vm.splitLiquidGrams,

@@ -69,3 +69,16 @@ test('waste factor above 50% explains itself instead of silently hiding the sugg
   expect(screen.getByText(/above 50/i)).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Apply to batch' })).toBeNull();
 });
+
+test('a non-finite waste factor does not show the over-50 alert beside a live suggestion', () => {
+  render(
+    <MoldSizerPanel
+      input={{ ...DEFAULT_MOLD_SIZER_INPUT, mode: 'bars', barCount: '10', barWeight: '100', wasteFactorPercent: '1e999' }}
+      weightUnit="g"
+      oilBatchFraction={0.72}
+      onChange={() => {}}
+      onApply={() => {}}
+    />,
+  );
+  expect(screen.queryByText(/above 50/i)).toBeNull();
+});

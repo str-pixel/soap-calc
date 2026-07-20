@@ -107,8 +107,9 @@ export function loadDraft(process: ProcessId): {
   additives: AdditiveLine[];
   settings: RecipeSettings;
 } | null {
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(draftKey(process));
+    raw = localStorage.getItem(draftKey(process));
     if (!raw) return null;
     const data = JSON.parse(raw) as DraftPayload;
     if (
@@ -129,6 +130,10 @@ export function loadDraft(process: ProcessId): {
       settings: normalizeSettings(data.settings),
     };
   } catch {
+    // JSON.parse-throwing corruption (truncated write) must be preserved the same
+    // way as a parseable-but-invalid payload — this catch is the common corruption
+    // path, and returning bare null here lets the seeding autosave destroy it.
+    if (raw !== null) backupUnreadableDraft(process, raw);
     return null;
   }
 }

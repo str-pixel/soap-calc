@@ -61,3 +61,12 @@ test('cost breakdown line appears once all prices are set', async ({ page }) => 
   await expect(breakdown).toContainText(/materials \$/);
   await expect(breakdown).toContainText(/overhead \$/);
 });
+
+test('labour/output field grids collapse to one column on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('summary').filter({ hasText: 'Labour & overhead' }).click();
+  const grid = pricingPanel(page).locator('.settings-grid, .pricing-grid').first();
+  await expect(grid).toBeVisible();
+  const cols = await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+  expect(cols, 'pricing field grid should be single-column at 390px').toBe(1);
+});

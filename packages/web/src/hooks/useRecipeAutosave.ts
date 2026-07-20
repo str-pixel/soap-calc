@@ -65,8 +65,13 @@ export function useRecipeAutosave(
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
       const saved = saveDraft(process, recipeName, lines, settings, additives);
-      lastSavedRef.current = { process, recipeName, lines, settings, additives };
-      if (!saved) onSaveErrorRef.current?.();
+      // Only a SUCCESSFUL save marks the workspace clean — a quota failure must
+      // leave it dirty so the pagehide flush retries once storage recovers.
+      if (saved) {
+        lastSavedRef.current = { process, recipeName, lines, settings, additives };
+      } else {
+        onSaveErrorRef.current?.();
+      }
     }, AUTOSAVE_MS);
     return () => {
       if (timerRef.current !== null) clearTimeout(timerRef.current);
@@ -96,14 +101,17 @@ export function useRecipeAutosave(
         settingsRef.current,
         additivesRef.current,
       );
-      lastSavedRef.current = {
-        process: processRef.current,
-        recipeName: recipeNameRef.current,
-        lines: linesRef.current,
-        settings: settingsRef.current,
-        additives: additivesRef.current,
-      };
-      if (!saved) onSaveErrorRef.current?.();
+      if (saved) {
+        lastSavedRef.current = {
+          process: processRef.current,
+          recipeName: recipeNameRef.current,
+          lines: linesRef.current,
+          settings: settingsRef.current,
+          additives: additivesRef.current,
+        };
+      } else {
+        onSaveErrorRef.current?.();
+      }
     }
     function handleVisibilityChange() {
       if (document.visibilityState === 'hidden') flush();
