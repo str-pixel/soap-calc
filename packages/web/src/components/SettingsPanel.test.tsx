@@ -170,3 +170,9 @@ describe('cook vessel volume (HP vessel-size guard input)', () => {
     expect(screen.getByText(/2\.3.*batch volume/i)).toBeTruthy();
   });
 });
+
+test('process-notes textarea enforces the same cap normalizeSettings applies on load', () => {
+  render(<Harness />);
+  const notes = screen.getByPlaceholderText(/Trace notes/) as HTMLTextAreaElement;
+  expect(notes.maxLength).toBe(20_000);
+});

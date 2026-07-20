@@ -1,7 +1,7 @@
 import { computePricing, type PricingInput, type PricingResult } from '@soap-calc/core';
 import { pricePerGram } from './money';
 import { oilDisplayName } from './oilDisplay';
-import type { PricedEntry, PricingProfile } from './pricingProfile';
+import { bookEntry, type PricedEntry, type PricingProfile } from './pricingProfile';
 
 export interface RecipePricingContext {
   oilLines: Array<{ key: string; oilId: string; grams: number; name: string }>;
@@ -24,11 +24,11 @@ export function buildPricingInput(ctx: RecipePricingContext, profile: PricingPro
   return {
     oilLines: ctx.oilLines.map((o) => ({
       grams: o.grams,
-      pricePerGram: entryPerGram(profile.oilPrices[o.oilId]),
+      pricePerGram: entryPerGram(bookEntry(profile.oilPrices, o.oilId)),
     })),
     additiveLines: ctx.additives.map((a) => ({
       grams: a.grams,
-      pricePerGram: entryPerGram(profile.additivePrices[additivePriceKey(a)]),
+      pricePerGram: entryPerGram(bookEntry(profile.additivePrices, additivePriceKey(a))),
     })),
     lyeGrams: ctx.lyeGrams,
     lyePricePerGram: entryPerGram(profile.lyePrice),
@@ -54,8 +54,8 @@ export function computeRecipePricing(ctx: RecipePricingContext, profile: Pricing
 }
 
 export function hasMissingMaterialPrice(ctx: RecipePricingContext, profile: PricingProfile): boolean {
-  const oilMissing = ctx.oilLines.some((o) => entryPerGram(profile.oilPrices[o.oilId]) == null);
-  const addMissing = ctx.additives.some((a) => entryPerGram(profile.additivePrices[additivePriceKey(a)]) == null);
+  const oilMissing = ctx.oilLines.some((o) => entryPerGram(bookEntry(profile.oilPrices, o.oilId)) == null);
+  const addMissing = ctx.additives.some((a) => entryPerGram(bookEntry(profile.additivePrices, additivePriceKey(a))) == null);
   // Lye is a real material: leaving it blank used to silently price it at $0 while
   // every output rendered as a definite figure.
   const lyeMissing = ctx.lyeGrams > 0 && entryPerGram(profile.lyePrice) == null;
@@ -103,7 +103,9 @@ export function buildRecipePricingContext(src: RecipePricingSource): RecipePrici
   if (src.splitLiquid && src.splitLiquid.grams > 0) {
     additives.push({
       key: 'split-liquid',
-      catalogId: '',
+      // Id-stable synthetic catalogId: keying by the user-editable name orphaned the
+      // stored price on every rename (and collided with a same-named custom additive).
+      catalogId: 'split-liquid',
       name: src.splitLiquid.name.trim() || 'Alternative liquid',
       grams: src.splitLiquid.grams,
     });

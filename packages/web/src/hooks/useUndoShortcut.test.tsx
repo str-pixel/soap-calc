@@ -66,3 +66,15 @@ test('does not yield to non-text inputs (checkbox focus must not eat Cmd+Z)', ()
   fireEvent.keyDown(getByLabelText('cb'), { key: 'z', ctrlKey: true });
   expect(undo).toHaveBeenCalledTimes(1);
 });
+
+test('yields to segmented text-editable inputs (date) — recipe undo must not fire there', () => {
+  const undo = vi.fn();
+  const redo = vi.fn();
+  function DateHarness() {
+    useUndoShortcut(undo, redo);
+    return <input type="date" aria-label="d" />;
+  }
+  const { getByLabelText } = render(<DateHarness />);
+  fireEvent.keyDown(getByLabelText('d'), { key: 'z', ctrlKey: true });
+  expect(undo).not.toHaveBeenCalled();
+});

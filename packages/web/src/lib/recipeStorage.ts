@@ -101,14 +101,26 @@ function backupUnreadableDraft(process: ProcessId, raw: string): void {
   }
 }
 
+/** True when a draft (readable or not) occupies the slot. Used by the autosave
+ * flush: writing into an EMPTY slot can never clobber newer data, so a clean tab
+ * may safely re-persist its workspace after external deletion/eviction. */
+export function hasDraft(process: ProcessId): boolean {
+  try {
+    return localStorage.getItem(draftKey(process)) !== null;
+  } catch {
+    return true; // unreadable storage: don't trigger extra writes
+  }
+}
+
 export function loadDraft(process: ProcessId): {
   name: string;
   lines: RecipeLine[];
   additives: AdditiveLine[];
   settings: RecipeSettings;
 } | null {
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(draftKey(process));
+    raw = localStorage.getItem(draftKey(process));
     if (!raw) return null;
     const data = JSON.parse(raw) as DraftPayload;
     if (
@@ -129,6 +141,10 @@ export function loadDraft(process: ProcessId): {
       settings: normalizeSettings(data.settings),
     };
   } catch {
+    // JSON.parse-throwing corruption (truncated write) must be preserved the same
+    // way as a parseable-but-invalid payload — this catch is the common corruption
+    // path, and returning bare null here lets the seeding autosave destroy it.
+    if (raw !== null) backupUnreadableDraft(process, raw);
     return null;
   }
 }

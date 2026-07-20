@@ -2,7 +2,7 @@
 import { memo } from 'react';
 import { computeRecipePricing, hasMissingMaterialPrice, additivePriceKey } from '../lib/recipePricing';
 import type { RecipePricingContext } from '../lib/recipePricing';
-import type { PricedEntry, PricingProfile } from '../lib/pricingProfile';
+import { bookEntry, type PricedEntry, type PricingProfile } from '../lib/pricingProfile';
 import { formatCostBreakdown, formatMoney, type PriceUnit } from '../lib/money';
 import { formatWeight, type WeightUnit } from '../lib/weightUnits';
 
@@ -30,7 +30,7 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
     key: string,
     patch: Partial<PricedEntry>,
   ) => {
-    const prev = profile[book][key] ?? { price: '', unit: profile.outputUnit };
+    const prev = bookEntry(profile[book], key) ?? { price: '', unit: profile.outputUnit };
     onProfileChange({ ...profile, [book]: { ...profile[book], [key]: { ...prev, ...patch } } });
   };
 
@@ -86,14 +86,14 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
         <summary>Materials</summary>
         {context.oilLines.map((o) =>
           <div key={o.key}>
-            {priceRow(o.name, o.grams, profile.oilPrices[o.oilId], (patch) => setEntry('oilPrices', o.oilId, patch))}
+            {priceRow(o.name, o.grams, bookEntry(profile.oilPrices, o.oilId), (patch) => setEntry('oilPrices', o.oilId, patch))}
           </div>,
         )}
         {context.additives.map((a) => {
           const key = additivePriceKey(a);
           return (
             <div key={a.key}>
-              {priceRow(a.name, a.grams, profile.additivePrices[key], (patch) => setEntry('additivePrices', key, patch))}
+              {priceRow(a.name, a.grams, bookEntry(profile.additivePrices, key), (patch) => setEntry('additivePrices', key, patch))}
             </div>
           );
         })}
@@ -119,7 +119,7 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
 
       <details className="pricing-details">
         <summary>Labour &amp; overhead</summary>
-        <div className="pricing-grid">
+        <div className="settings-grid">
           <label className="field">
             Labour (minutes per batch)
             <input className="input" aria-label="Labour minutes" inputMode="decimal" value={profile.laborMinutes}
@@ -160,7 +160,7 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
       </details>
 
       <div className="pricing-outputs">
-        <div className="pricing-grid">
+        <div className="settings-grid">
           <label className="field">
             Currency symbol
             <input className="input" aria-label="Currency symbol" value={profile.currencySymbol}

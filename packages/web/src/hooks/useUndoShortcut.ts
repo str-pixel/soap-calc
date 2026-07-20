@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-const TEXT_INPUT_TYPES = new Set(['text', 'search', 'number', 'email', 'url', 'password', 'tel']);
+const TEXT_INPUT_TYPES = new Set([
+  'text', 'search', 'number', 'email', 'url', 'password', 'tel',
+  // Segmented editable inputs own their per-segment editing state too.
+  'date', 'time', 'datetime-local', 'month', 'week',
+]);
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;

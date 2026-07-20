@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { cleanup, renderHook } from '@testing-library/react';
 import { useRecipeAutosave } from './useRecipeAutosave';
 import { loadDraft } from '../lib/recipeStorage';
 import { DEFAULT_SETTINGS, createStarterLines } from '../lib/recipe';
@@ -38,6 +38,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Unmount every hook so leaked pagehide/visibilitychange listeners from one
+  // test cannot fire (and write drafts) during a later test's dispatch.
+  cleanup();
   vi.unstubAllGlobals();
 });
 
@@ -173,6 +176,52 @@ describe('dirty-tracking (deep-review)', () => {
     rerender({ name: 'renamed' });
     vi.advanceTimersByTime(1000);
     expect(loadDraft('cp')?.name).toBe('renamed');
+    vi.useRealTimers();
+  });
+});
+
+describe('failed-save retry (second wave)', () => {
+  it('does not mark the workspace clean when saveDraft fails — the flush retries', () => {
+    vi.useFakeTimers();
+    const lines = createStarterLines();
+    const { rerender } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, []),
+      { initialProps: { name: 'Draft' } },
+    );
+    // Make the debounced save fail once (quota), then let storage recover.
+    const original = localStorage.setItem.bind(localStorage);
+    let failures = 0;
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      failures += 1;
+      throw new Error('QuotaExceededError');
+    });
+    rerender({ name: 'edited under quota pressure' });
+    vi.advanceTimersByTime(600); // debounce fires, save fails
+    expect(failures).toBeGreaterThan(0);
+    vi.mocked(localStorage.setItem).mockImplementation(original); // storage freed
+    window.dispatchEvent(new Event('pagehide')); // flush must see dirty and retry
+    expect(loadDraft('cp')?.name).toBe('edited under quota pressure');
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+});
+
+describe('externally-deleted draft (third wave)', () => {
+  it('re-persists on pagehide when the draft slot was deleted out from under a clean tab', () => {
+    vi.useFakeTimers();
+    const lines = createStarterLines();
+    const { rerender } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, []),
+      { initialProps: { name: 'Draft' } },
+    );
+    rerender({ name: 'my recipe' });
+    vi.advanceTimersByTime(600); // saved, workspace clean
+    expect(loadDraft('cp')?.name).toBe('my recipe');
+
+    localStorage.removeItem('soap-calc:draft:cp'); // another tab cleared storage
+    window.dispatchEvent(new Event('pagehide'));
+    // Writing into an EMPTY slot cannot clobber newer data — the flush must restore it.
+    expect(loadDraft('cp')?.name).toBe('my recipe');
     vi.useRealTimers();
   });
 });

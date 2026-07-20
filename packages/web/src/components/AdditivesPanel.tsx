@@ -75,9 +75,10 @@ export const AdditivesPanel = memo(function AdditivesPanel({
       catalogId: entry.id,
       name: entry.name,
       addAt: entry.defaultStage,
-      // Seed the dose unit from the catalog: a ppt-dosed entry (e.g. eugenol) left on
-      // '%' would make the typical-range hint a 10x overdose invitation.
-      ...(entry.doseUnit ? { unit: entry.doseUnit } : {}),
+      // Seed the dose unit from the catalog IN BOTH DIRECTIONS: a ppt entry left on
+      // '%' invites a 10x overdose, and a lingering 'ppt' after switching to a
+      // %-dosed entry inverts it (hint says % while the amount computes as ppt).
+      unit: entry.doseUnit ?? 'percent',
     });
   }
 

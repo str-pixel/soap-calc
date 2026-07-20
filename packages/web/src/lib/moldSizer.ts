@@ -6,7 +6,7 @@ import {
   oilGramsFromBarCount,
   oilGramsFromMoldVolumeCm3,
   rectangularMoldVolumeCm3,
-} from '@soap-calc/core';
+  MAX_WASTE_FACTOR_PERCENT } from '@soap-calc/core';
 import { displayValueToGrams, gramsToDisplayValue, type WeightUnit } from './weightUnits';
 
 const CM_PER_INCH = 2.54;
@@ -124,3 +124,12 @@ export function suggestOilGramsFromMoldSizer(
 }
 
 export { oilBatchFraction };
+
+/** True only for a PARSEABLE waste factor above the core ceiling — uses the same
+ * parser as the suggestion math, so the UI can never warn about a value the
+ * calculator didn't reject for that reason (e.g. Infinity parses to null and
+ * falls back to 0% waste; warning there would contradict the live suggestion). */
+export function wasteFactorExceedsMax(value: string): boolean {
+  const parsed = parseNonNegative(value);
+  return parsed !== null && parsed > MAX_WASTE_FACTOR_PERCENT;
+}

@@ -1,6 +1,16 @@
 import { PRICING_GUIDE } from '@soap-calc/core';
 import type { PriceUnit } from './money';
 
+/** Own-property book lookup: price books are plain objects indexed by ids that can
+ * come from imported files, so a key like 'constructor' or 'toString' must not
+ * resolve Object.prototype members (a function there crashes pricePerGram). */
+export function bookEntry(
+  book: Record<string, PricedEntry>,
+  key: string,
+): PricedEntry | undefined {
+  return Object.prototype.hasOwnProperty.call(book, key) ? book[key] : undefined;
+}
+
 export interface PricedEntry {
   price: string;
   unit: PriceUnit;

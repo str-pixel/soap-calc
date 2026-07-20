@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { AdditiveLine, RecipeLine, RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
-import { saveDraft } from '../lib/recipeStorage';
+import { saveDraft, hasDraft } from '../lib/recipeStorage';
 
 const AUTOSAVE_MS = 500;
 
@@ -65,8 +65,13 @@ export function useRecipeAutosave(
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
       const saved = saveDraft(process, recipeName, lines, settings, additives);
-      lastSavedRef.current = { process, recipeName, lines, settings, additives };
-      if (!saved) onSaveErrorRef.current?.();
+      // Only a SUCCESSFUL save marks the workspace clean — a quota failure must
+      // leave it dirty so the pagehide flush retries once storage recovers.
+      if (saved) {
+        lastSavedRef.current = { process, recipeName, lines, settings, additives };
+      } else {
+        onSaveErrorRef.current?.();
+      }
     }, AUTOSAVE_MS);
     return () => {
       if (timerRef.current !== null) clearTimeout(timerRef.current);
@@ -87,8 +92,10 @@ export function useRecipeAutosave(
         timerRef.current = null;
       }
       // Dirty check instead of timer-presence: a committed edit whose debounce effect
-      // hasn't run yet has no timer but still needs saving.
-      if (!isDirty()) return;
+      // hasn't run yet has no timer but still needs saving. Also re-persist when the
+      // slot is EMPTY (external deletion/eviction): this tab may hold the only copy,
+      // and writing into an empty slot cannot clobber another tab's newer draft.
+      if (!isDirty() && hasDraft(processRef.current)) return;
       const saved = saveDraft(
         processRef.current,
         recipeNameRef.current,
@@ -96,14 +103,17 @@ export function useRecipeAutosave(
         settingsRef.current,
         additivesRef.current,
       );
-      lastSavedRef.current = {
-        process: processRef.current,
-        recipeName: recipeNameRef.current,
-        lines: linesRef.current,
-        settings: settingsRef.current,
-        additives: additivesRef.current,
-      };
-      if (!saved) onSaveErrorRef.current?.();
+      if (saved) {
+        lastSavedRef.current = {
+          process: processRef.current,
+          recipeName: recipeNameRef.current,
+          lines: linesRef.current,
+          settings: settingsRef.current,
+          additives: additivesRef.current,
+        };
+      } else {
+        onSaveErrorRef.current?.();
+      }
     }
     function handleVisibilityChange() {
       if (document.visibilityState === 'hidden') flush();

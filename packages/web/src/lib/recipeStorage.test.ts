@@ -268,3 +268,18 @@ describe('unreadable-draft preservation (deep-review)', () => {
     expect(localStorage.getItem('soap-calc:draft:cp')).toBeNull();
   });
 });
+
+describe('unparseable-draft backup (second wave)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createStorage());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('backs up a JSON.parse-throwing draft, same as a structurally invalid one', () => {
+    localStorage.setItem('soap-calc:draft:cp', '{truncated mid-wri');
+    expect(loadDraft('cp')).toBeNull();
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe('{truncated mid-wri');
+  });
+});

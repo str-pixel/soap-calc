@@ -144,3 +144,37 @@ describe('buildRecipePricingContext (deep-review)', () => {
     expect(hasMissingMaterialPrice(out, profile)).toBe(true);
   });
 });
+
+describe('second-wave hardening', () => {
+  const protoCtx = {
+    oilLines: [{ key: 'a', oilId: 'olive-oil', grams: 1000, name: 'Olive Oil' }],
+    additives: [{ key: 'x', catalogId: 'constructor', name: 'evil', grams: 10 }],
+    lyeGrams: 140,
+    totalBatchGrams: 1480,
+  };
+  const pricedProfile = {
+    ...DEFAULT_PRICING_PROFILE,
+    oilPrices: { 'olive-oil': { price: '4.50', unit: 'kg' as const } },
+    lyePrice: { price: '3.00', unit: 'kg' as const },
+  };
+
+  it('an imported catalogId shadowing an Object.prototype key must not crash pricing', () => {
+    expect(() => hasMissingMaterialPrice(protoCtx, pricedProfile)).not.toThrow();
+    expect(() => computeRecipePricing(protoCtx, pricedProfile)).not.toThrow();
+    // and the unpriced additive is correctly reported missing, not silently $0-priced
+    expect(hasMissingMaterialPrice(protoCtx, pricedProfile)).toBe(true);
+  });
+
+  it('keys the split liquid stably, so renaming it keeps the stored price', () => {
+    const base = {
+      lines: [{ key: 'l1', oilId: 'olive-oil', weightGrams: '900' }],
+      computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1700,
+      postCookSuperfat: null,
+    };
+    const a = buildRecipePricingContext({ ...base, splitLiquid: { name: 'goat milk', grams: 300 } });
+    const b = buildRecipePricingContext({ ...base, splitLiquid: { name: 'Goat milk 2%', grams: 300 } });
+    const keyA = additivePriceKey(a.additives[0]);
+    const keyB = additivePriceKey(b.additives[0]);
+    expect(keyA).toBe(keyB);
+  });
+});

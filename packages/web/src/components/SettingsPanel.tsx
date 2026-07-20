@@ -1,6 +1,7 @@
 import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import type { MoldSizerInput } from '../lib/moldSizer';
 import type { RecipeSettings, WeightUnit } from '../lib/recipe';
+import { MAX_NOTES_LENGTH } from '../lib/recipe';
 import {
   purityFieldsFor,
   WATER_FIELDS,
@@ -289,6 +290,7 @@ export function SettingsPanel({
           <span>Process notes</span>
           <textarea
             className="input input--textarea"
+            maxLength={MAX_NOTES_LENGTH}
             rows={3}
             placeholder="Trace notes, fragrance plan, cure reminders…"
             value={settings.batchNotes}

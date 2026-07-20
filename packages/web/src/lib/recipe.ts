@@ -142,7 +142,40 @@ function resolveBatchProvenance(partial: Partial<RecipeSettings> | null | undefi
  * hostile recipe file from smuggling a literal "__proto__"/"constructor" own-key into
  * persisted + re-exported settings. Legit settings fields are unaffected. */
 const MAX_SETTING_FIELD_LENGTH = 200;
-const MAX_NOTES_LENGTH = 20_000;
+/** Shared with the notes textarea's maxLength so entry and load agree on the cap. */
+export const MAX_NOTES_LENGTH = 20_000;
+
+const KNOWN_SETTING_KEYS = new Set(Object.keys(DEFAULT_SETTINGS));
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const MAX_UNKNOWN_KEYS = 32;
+const MAX_UNKNOWN_VALUE_JSON = 2_000;
+const UNKNOWN_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
+
+/** Forward-compat: preserve unknown-but-plausible settings keys (a newer build's
+ * fields surviving a rollback) without reopening the junk/prototype hole the
+ * whitelist closed — identifier-like names only, no prototype keys, JSON-bounded
+ * values, hard key cap. Known fields are spread AFTER this, so they always win. */
+function preserveUnknownSettings(
+  partial: Partial<RecipeSettings> | undefined,
+): Record<string, unknown> {
+  if (!partial) return {};
+  const pairs: Array<[string, unknown]> = [];
+  for (const [key, value] of Object.entries(partial)) {
+    if (pairs.length >= MAX_UNKNOWN_KEYS) break;
+    if (KNOWN_SETTING_KEYS.has(key) || DANGEROUS_KEYS.has(key)) continue;
+    if (!UNKNOWN_KEY_PATTERN.test(key)) continue;
+    let json: string;
+    try {
+      json = JSON.stringify(value) ?? '';
+    } catch {
+      continue;
+    }
+    if (json === '' || json.length > MAX_UNKNOWN_VALUE_JSON) continue;
+    pairs.push([key, value]);
+  }
+  // fromEntries creates own data properties (prototype-safe by construction).
+  return Object.fromEntries(pairs);
+}
 
 /** Whitelist coercion for one free-text settings field: strings pass (length-capped),
  * finite numbers coerce losslessly (hand-edited files), anything else falls back.
@@ -192,6 +225,7 @@ export function normalizeSettings(
     : defaultVariantFor(processForLyeType(lyeType));
   const d = DEFAULT_SETTINGS;
   return {
+    ...preserveUnknownSettings(partial),
     weightUnit,
     waterMode,
     lyeType,
