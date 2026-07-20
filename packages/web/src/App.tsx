@@ -239,6 +239,7 @@ export default function App() {
             batchWeightWithExtras={vm.batchWeightWithExtras}
             cureEstimate={vm.cureEstimate}
             labelWeight={vm.labelWeight}
+            totalOilGrams={vm.totalOilGrams}
           />
 
           {process === 'ls' && (
