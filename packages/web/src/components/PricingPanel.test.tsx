@@ -75,4 +75,27 @@ describe('PricingPanel', () => {
     expect(hadKeyWarning).toBe(false);
     errorSpy.mockRestore();
   });
+
+  it('uses the shared panel title convention for its heading', () => {
+    render(<PricingPanel context={context} profile={DEFAULT_PRICING_PROFILE} onProfileChange={() => {}} />);
+    const heading = screen.getByRole('heading', { name: 'Pricing & profit' });
+    expect(heading.className).toContain('panel__title');
+  });
+
+  it('shows a cost breakdown line once prices are complete', () => {
+    // olive 1 kg @ $4.50 → materials $4.50; default overhead 20% → $0.90; labour/packaging 0.
+    const profile = {
+      ...DEFAULT_PRICING_PROFILE,
+      oilPrices: { 'olive-oil': { price: '4.50', unit: 'kg' as const } },
+    };
+    render(<PricingPanel context={context} profile={profile} onProfileChange={() => {}} />);
+    expect(screen.getByTestId('pricing-breakdown').textContent).toBe(
+      'materials $4.50 · overhead $0.90',
+    );
+  });
+
+  it('hides the cost breakdown while prices are incomplete', () => {
+    render(<PricingPanel context={context} profile={DEFAULT_PRICING_PROFILE} onProfileChange={() => {}} />);
+    expect(screen.queryByTestId('pricing-breakdown')).toBeNull();
+  });
 });

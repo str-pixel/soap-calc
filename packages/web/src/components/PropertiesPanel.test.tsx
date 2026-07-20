@@ -65,6 +65,21 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
   expect(container.querySelectorAll('.property-bars__value--outside').length).toBe(0);
 });
 
+test('titles the panel per process: bar soap by default, soap for LS', () => {
+  const { rerender } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+  );
+  expect(screen.getByRole('heading', { name: 'Bar properties' })).toBeTruthy();
+
+  rerender(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} isLiquidSoap />,
+  );
+  expect(screen.getByRole('heading', { name: 'Soap properties' })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: 'Bar properties' })).toBeNull();
+  // The suggested ranges are bar-soap conventions — LS must say so.
+  expect(screen.getByText(/ranges reflect bar-soap conventions/i)).toBeTruthy();
+});
+
 test('gives every property bar a guidance tooltip', () => {
   render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
   // Derive the terms from the labels so a rename in core keeps this test honest.
