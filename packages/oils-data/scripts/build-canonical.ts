@@ -25,6 +25,8 @@ import { loadSupplementalOils, supplementalToCanonical, tarMetadataForLegacy } f
 import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
+import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
+import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviations.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
@@ -135,6 +137,7 @@ function main() {
     sapProfileClosest: [] as string[],
     sapMidpoint: [] as string[],
     sapCorrected: [] as string[],
+    iodineCorrected: [] as string[],
     ldgMethodologyNotes: [] as string[],
     inciResolved: [] as string[],
     inciMissing: [] as string[],
@@ -384,6 +387,15 @@ function main() {
     // (e.g. a high-erucic rapeseed mislabeled "unrefined canola"). Aliases follow the shown name
     // so search no longer matches the wrong identity; the stable id (baseSlug) is unchanged.
     const displayName = OIL_DISPLAY_NAMES[baseSlug] ?? backfill?.displayName ?? leg.name;
+
+    const iodineCorrection = IODINE_CORRECTIONS[baseSlug];
+    if (iodineCorrection) {
+      iodine = iodineCorrection.iodine;
+      ins = iodine !== undefined ? Math.round(sapKoh * 1000 - iodine) : undefined;
+      sources.push({ source: 'manual', notes: iodineCorrection.note });
+      report.iodineCorrected.push(leg.name);
+    }
+
     // The emitted public id may be overridden (e.g. a mislabeled slug); internal lookups above
     // still use baseSlug, and the web oilById migration resolves the old id for saved recipes.
     const id = OIL_ID_OVERRIDES[baseSlug] ?? baseSlug;
@@ -549,6 +561,8 @@ function main() {
   };
   writeFileSync(litePath, JSON.stringify(liteDb, null, 2) + '\n');
 
+  (report as Record<string, unknown>).iodineDeviations = classifyProfileIodineDeviations(oils);
+
   writeFileSync(reportPath, JSON.stringify({
     generatedAt: db.generatedAt,
     totalOils: oils.length,
@@ -565,6 +579,7 @@ function main() {
   console.log(`  SAP profile-closest (disputed >${VERIFIED_DELTA_PCT}%, profile judged): ${report.sapProfileClosest.length}`);
   console.log(`  SAP midpoint (disputed >${VERIFIED_DELTA_PCT}%, no profile): ${report.sapMidpoint.length}`);
   console.log(`  SAP corrected (legacy value vs profile): ${report.sapCorrected.length}`);
+  console.log(`  Iodine corrected (legacy value vs profile/published): ${report.iodineCorrected.length}`);
   console.log(`  LDG methodology cross-checks: ${report.ldgMethodologyNotes.length}`);
   console.log(`  INCI resolved (FNWL): ${report.inciResolved.length}`);
   console.log(`  INCI supplemental/fallback: ${report.inciSupplemental.length}`);

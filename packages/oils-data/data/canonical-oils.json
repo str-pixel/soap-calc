@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-17T13:07:58.903Z",
+  "generatedAt": "2026-07-19T23:51:31.113Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -3422,8 +3422,8 @@
       "sapKoh": 0.253,
       "sapNaoh": 0.1803921568627451,
       "sapMgKohPerGram": 253,
-      "iodine": 25,
-      "ins": 250,
+      "iodine": 13,
+      "ins": 240,
       "fattyAcids": {
         "lauric": 47,
         "myristic": 28,
@@ -3476,6 +3476,10 @@
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Astrocaryum Murumuru Seed Butter\" verified against the EU CosIng Ingredients Inventory snapshot"
+        },
+        {
+          "source": "manual",
+          "notes": "Corrected: legacy iodine (25) is high for a lauric butter; published murumuru IV is ~10–15, matching the profile-derived ~14. Set to ~13."
         }
       ],
       "primarySource": "fnwl",
@@ -4573,8 +4577,8 @@
       "sapKoh": 0.187,
       "sapNaoh": 0.13333333333333333,
       "sapMgKohPerGram": 187,
-      "iodine": 22,
-      "ins": 168,
+      "iodine": 200,
+      "ins": -13,
       "fattyAcids": {
         "oleic": 7,
         "stearic": 3,
@@ -4612,6 +4616,10 @@
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Punica Granatum (Pomegranate) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
+        },
+        {
+          "source": "manual",
+          "notes": "Corrected: legacy iodine (22) is impossible for a ~78%-triene (punicic) oil; published pomegranate seed oil IV is ~195–220. Set to ~200. The profile-derived value (~222 oil-basis) over-estimates because punicic acid is conjugated (each C=C adds less iodine in Wijs); the residual gap is within the iodine gate tolerance, so no acknowledgment is needed."
         }
       ],
       "primarySource": "fnwl",
@@ -5068,8 +5076,8 @@
       "sapKoh": 0.188,
       "sapNaoh": 0.13404634581105168,
       "sapMgKohPerGram": 188,
-      "iodine": 141,
-      "ins": 47,
+      "iodine": 193,
+      "ins": -5,
       "fattyAcids": {
         "oleic": 10,
         "stearic": 3,
@@ -5093,6 +5101,10 @@
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Plukenetia Volubilis (Sacha Inchi) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
+        },
+        {
+          "source": "manual",
+          "notes": "Corrected: legacy iodine (141) understates a ~48% α-linolenic oil; published sacha inchi IV is ~190–198, matching the profile-derived ~204. Set to ~193."
         }
       ],
       "primarySource": "legacy_catalog",

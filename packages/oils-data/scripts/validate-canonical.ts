@@ -13,6 +13,8 @@ import { loadSupplementalInci } from '../src/resolve-inci.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { classifyProfileSapDeviations } from '../src/profile-sap-deviations.js';
+import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviations.js';
+import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
@@ -274,6 +276,30 @@ function main() {
       );
     } else if (dev.tier === 'warn') {
       warnings.push(`${base} (legacy_only — low-confidence SAP, no external source to reconcile)`);
+    } else {
+      warnings.push(`${base} — acknowledged: ${dev.reason}`);
+    }
+  }
+
+  // Iodine corrections are the single source of truth (build applies, validate asserts).
+  for (const oil of db.oils) {
+    const corr = IODINE_CORRECTIONS[oil.id];
+    if (corr && oil.iodine !== corr.iodine) {
+      errors.push(`${oil.id}: built iodine ${oil.iodine} != IODINE_CORRECTIONS ${corr.iodine}`);
+    }
+  }
+
+  // Iodine-vs-profile gate. Unlike SAP, profile-derived iodine is a noisy oracle, so only a
+  // gross contradiction on a trusted value blocks; moderate gaps are a reported review backlog.
+  for (const dev of classifyProfileIodineDeviations(db.oils)) {
+    const rel = dev.relDeltaPct === null ? '∞ (profile IV 0)' : `${dev.relDeltaPct}%`;
+    const base = `${dev.id}: stored iodine deviates ${rel} (${dev.absDelta}) from its fatty-acid profile`;
+    if (dev.tier === 'error') {
+      errors.push(
+        `${base} — a gross contradiction on a trusted value; correct via IODINE_CORRECTIONS or add an acknowledged-deviation entry after review`,
+      );
+    } else if (dev.tier === 'warn') {
+      warnings.push(`${base} (review backlog — profile-derived iodine is a noisy oracle; confirm which side is right)`);
     } else {
       warnings.push(`${base} — acknowledged: ${dev.reason}`);
     }
