@@ -9,7 +9,7 @@ import {
 } from './recipePricing';
 
 const ctx: RecipePricingContext = {
-  oilLines: [{ oilId: 'olive-oil', grams: 1000, name: 'Olive Oil' }],
+  oilLines: [{ key: 'a', oilId: 'olive-oil', grams: 1000, name: 'Olive Oil' }],
   additives: [{ key: 'k1', catalogId: 'fragrance', name: 'Fragrance', grams: 30 }],
   lyeGrams: 140,
   totalBatchGrams: 1610,

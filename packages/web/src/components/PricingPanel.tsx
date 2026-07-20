@@ -17,8 +17,8 @@ export function PricingPanel({ context, profile, onProfileChange }: PricingPanel
   const result = computeRecipePricing(context, profile);
   const incomplete = hasMissingMaterialPrice(context, profile);
   const symbol = profile.currencySymbol;
-  const money = (v: number | null) => (v == null ? '—' : formatMoney(v, symbol));
-  const pct = (v: number | null) => (v == null ? '—' : `${v.toFixed(1)}%`);
+  const money = (v: number | null) => (v == null || incomplete ? '—' : formatMoney(v, symbol));
+  const pct = (v: number | null) => (v == null || incomplete ? '—' : `${v.toFixed(1)}%`);
 
   const setEntry = (
     book: 'oilPrices' | 'additivePrices',
@@ -66,7 +66,7 @@ export function PricingPanel({ context, profile, onProfileChange }: PricingPanel
       <details open>
         <summary>Materials</summary>
         {context.oilLines.map((o) =>
-          <div key={o.oilId}>
+          <div key={o.key}>
             {priceRow(o.name, o.grams, profile.oilPrices[o.oilId], (patch) => setEntry('oilPrices', o.oilId, patch))}
           </div>,
         )}

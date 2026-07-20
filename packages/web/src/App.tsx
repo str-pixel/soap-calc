@@ -133,11 +133,14 @@ export default function App() {
   }
 
   const pricingContext: RecipePricingContext = {
-    oilLines: vm.previewState.lines.map((l) => ({
-      oilId: l.oilId,
-      grams: Number(l.weightGrams) || 0,
-      name: oilDisplayName(l.oilId),
-    })),
+    oilLines: vm.previewState.lines
+      .filter((l) => (Number(l.weightGrams) || 0) > 0)
+      .map((l) => ({
+        key: l.key,
+        oilId: l.oilId,
+        grams: Number(l.weightGrams) || 0,
+        name: oilDisplayName(l.oilId),
+      })),
     additives: vm.computedAdditives.map((a) => ({
       key: a.key, catalogId: a.catalogId, name: a.name, grams: a.grams,
     })),

@@ -3,7 +3,7 @@ import { pricePerGram } from './money';
 import type { PricedEntry, PricingProfile } from './pricingProfile';
 
 export interface RecipePricingContext {
-  oilLines: Array<{ oilId: string; grams: number; name: string }>;
+  oilLines: Array<{ key: string; oilId: string; grams: number; name: string }>;
   additives: Array<{ key: string; catalogId: string; name: string; grams: number }>;
   lyeGrams: number;
   totalBatchGrams: number;

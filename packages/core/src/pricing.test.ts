@@ -51,6 +51,15 @@ describe('computePricing', () => {
       .toBeNull();
   });
 
+  it('guards a non-finite markup percent', () => {
+    expect(
+      computePricing({ ...base, lever: { mode: 'markup', markupPercent: Infinity } }).suggestedPricePerUnit,
+    ).toBeNull();
+    expect(
+      computePricing({ ...base, lever: { mode: 'markup', markupPercent: NaN } }).suggestedPricePerUnit,
+    ).toBeNull();
+  });
+
   it('treats null prices as zero cost', () => {
     const r = computePricing({
       ...base,

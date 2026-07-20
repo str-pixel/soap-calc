@@ -10,7 +10,7 @@ import { PricingPanel } from './PricingPanel';
 afterEach(cleanup);
 
 const context: RecipePricingContext = {
-  oilLines: [{ oilId: 'olive-oil', grams: 1000, name: 'Olive Oil' }],
+  oilLines: [{ key: 'a', oilId: 'olive-oil', grams: 1000, name: 'Olive Oil' }],
   additives: [],
   lyeGrams: 140,
   totalBatchGrams: 1610,
@@ -40,5 +40,31 @@ describe('PricingPanel', () => {
     render(<PricingPanel context={context} profile={profile} onProfileChange={() => {}} />);
     expect(screen.queryByTestId('price-incomplete')).toBeNull();
     expect(screen.getByTestId('cost-per-unit').textContent).toMatch(/\$/);
+  });
+
+  it('shows a dash (not $0.00) for cost-per-unit while prices are incomplete', () => {
+    render(<PricingPanel context={context} profile={DEFAULT_PRICING_PROFILE} onProfileChange={() => {}} />);
+    expect(screen.getByTestId('cost-per-unit').textContent).toBe('—');
+    expect(screen.getByTestId('cost-per-unit').textContent).not.toMatch(/\$/);
+  });
+
+  it('renders two same-oil rows (shared oilId, distinct keys) without a duplicate-key warning', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const dupContext: RecipePricingContext = {
+      oilLines: [
+        { key: 'a', oilId: 'olive-oil', grams: 500, name: 'Olive Oil' },
+        { key: 'b', oilId: 'olive-oil', grams: 500, name: 'Olive Oil' },
+      ],
+      additives: [],
+      lyeGrams: 140,
+      totalBatchGrams: 1610,
+    };
+    render(<PricingPanel context={dupContext} profile={DEFAULT_PRICING_PROFILE} onProfileChange={() => {}} />);
+    expect(screen.getAllByLabelText('Price for Olive Oil')).toHaveLength(2);
+    const hadKeyWarning = errorSpy.mock.calls.some((args) =>
+      String(args[0]).toLowerCase().includes('same key'),
+    );
+    expect(hadKeyWarning).toBe(false);
+    errorSpy.mockRestore();
   });
 });

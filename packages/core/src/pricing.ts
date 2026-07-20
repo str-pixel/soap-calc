@@ -79,7 +79,9 @@ export function computePricing(input: PricingInput): PricingResult {
       const m = input.lever.marginPercent;
       suggestedPricePerUnit = m < 100 ? costPerUnit / (1 - m / 100) : null;
     } else {
-      suggestedPricePerUnit = costPerUnit * (1 + input.lever.markupPercent / 100);
+      suggestedPricePerUnit = Number.isFinite(input.lever.markupPercent)
+        ? costPerUnit * (1 + input.lever.markupPercent / 100)
+        : null;
     }
   }
 
