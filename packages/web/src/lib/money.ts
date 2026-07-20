@@ -3,11 +3,12 @@ import { WEIGHT_UNITS } from './weightUnits';
 export type PriceUnit = 'kg' | 'lb';
 
 export function formatMoney(amount: number, currencySymbol: string): string {
-  const body = amount.toLocaleString('en-US', {
+  const sign = amount < 0 ? '-' : '';
+  const body = Math.abs(amount).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return `${currencySymbol}${body}`;
+  return `${sign}${currencySymbol}${body}`;
 }
 
 export function pricePerGram(priceStr: string, unit: PriceUnit): number | null {

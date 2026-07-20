@@ -271,6 +271,7 @@ export default function App() {
             context={pricingContext}
             profile={pricingProfile}
             onProfileChange={setPricingProfile}
+            weightUnit={weightUnit}
           />
 
           {process === 'ls' && (
