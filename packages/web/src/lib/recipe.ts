@@ -141,21 +141,28 @@ function resolveBatchProvenance(partial: Partial<RecipeSettings> | null | undefi
  * way Object.assign can), but stripping these makes the intent explicit and keeps a
  * hostile recipe file from smuggling a literal "__proto__"/"constructor" own-key into
  * persisted + re-exported settings. Legit settings fields are unaffected. */
-const UNSAFE_SETTING_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-function stripUnsafeKeys(
-  partial: Partial<RecipeSettings> | null | undefined,
-): Partial<RecipeSettings> {
-  if (!partial) return {};
-  const clean: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(partial)) {
-    if (!UNSAFE_SETTING_KEYS.has(key)) clean[key] = value;
-  }
-  return clean as Partial<RecipeSettings>;
+const MAX_SETTING_FIELD_LENGTH = 200;
+const MAX_NOTES_LENGTH = 20_000;
+
+/** Whitelist coercion for one free-text settings field: strings pass (length-capped),
+ * finite numbers coerce losslessly (hand-edited files), anything else falls back.
+ * Building settings from known keys only replaces the old blocklist spread, which let
+ * arbitrary junk (including `Object.entries('abc')` index keys) into state and storage. */
+function settingString(value: unknown, fallback: string, maxLength = MAX_SETTING_FIELD_LENGTH): string {
+  if (typeof value === 'string') return value.slice(0, maxLength);
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return fallback;
 }
 
 export function normalizeSettings(
-  partial: Partial<RecipeSettings> | null | undefined,
+  rawPartial: Partial<RecipeSettings> | null | undefined,
 ): RecipeSettings {
+  // A corrupted draft/import can hand us any JSON value here; only a plain object
+  // carries usable fields (a string would spread index keys via Object semantics).
+  const partial =
+    typeof rawPartial === 'object' && rawPartial !== null && !Array.isArray(rawPartial)
+      ? rawPartial
+      : undefined;
   const weightUnit = isWeightUnit(partial?.weightUnit)
     ? partial.weightUnit
     : DEFAULT_SETTINGS.weightUnit;
@@ -183,17 +190,27 @@ export function normalizeSettings(
   const processVariant = isProcessVariantId(partial?.processVariant)
     ? partial.processVariant
     : defaultVariantFor(processForLyeType(lyeType));
+  const d = DEFAULT_SETTINGS;
   return {
-    ...DEFAULT_SETTINGS,
-    ...stripUnsafeKeys(partial),
     weightUnit,
     waterMode,
     lyeType,
     postCookSuperfatMethod,
     processVariant,
     batchSetByUser: resolveBatchProvenance(partial),
-    ...(typeof partial?.batchNotes === 'string' ? { batchNotes: partial.batchNotes } : {}),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
+    batchOilGrams: settingString(partial?.batchOilGrams, d.batchOilGrams),
+    superfatPercent: settingString(partial?.superfatPercent, d.superfatPercent),
+    kohBlendPercent: settingString(partial?.kohBlendPercent, d.kohBlendPercent),
+    waterPercentOfOils: settingString(partial?.waterPercentOfOils, d.waterPercentOfOils),
+    lyeConcentrationPercent: settingString(partial?.lyeConcentrationPercent, d.lyeConcentrationPercent),
+    lyeWaterRatio: settingString(partial?.lyeWaterRatio, d.lyeWaterRatio),
+    naohPurityPercent: settingString(partial?.naohPurityPercent, d.naohPurityPercent),
+    kohPurityPercent: settingString(partial?.kohPurityPercent, d.kohPurityPercent),
+    batchNotes: settingString(partial?.batchNotes, d.batchNotes, MAX_NOTES_LENGTH),
+    postCookSuperfatPercent: settingString(partial?.postCookSuperfatPercent, d.postCookSuperfatPercent),
+    postCookSuperfatOilId: settingString(partial?.postCookSuperfatOilId, d.postCookSuperfatOilId),
+    soapConcentrationPercent: settingString(partial?.soapConcentrationPercent, d.soapConcentrationPercent),
   };
 }
 

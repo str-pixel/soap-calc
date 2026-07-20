@@ -39,7 +39,6 @@ export type FormulationAnalysisInput = {
   waterGrams: number;
   lyeGrams: number;
   waterMode?: WaterMode;
-  excludedOilWeightGrams?: number;
   splitLiquidEnabled?: boolean;
   splitLiquidGrams?: number | null;
   splitLiquidAddAt?: 'lye' | 'oils' | 'trace';

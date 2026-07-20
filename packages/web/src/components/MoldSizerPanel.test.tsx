@@ -55,3 +55,17 @@ test('shows radius and height inputs and computes a suggested weight for a cylin
   expect(screen.queryByText(/^Length/)).toBeNull();
   expect(screen.getByText(/Suggested oil weight/)).toBeTruthy();
 });
+
+test('waste factor above 50% explains itself instead of silently hiding the suggestion', () => {
+  render(
+    <MoldSizerPanel
+      input={{ ...DEFAULT_MOLD_SIZER_INPUT, mode: 'bars', barCount: '10', barWeight: '100', wasteFactorPercent: '60' }}
+      weightUnit="g"
+      oilBatchFraction={0.72}
+      onChange={() => {}}
+      onApply={() => {}}
+    />,
+  );
+  expect(screen.getByText(/above 50/i)).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Apply to batch' })).toBeNull();
+});

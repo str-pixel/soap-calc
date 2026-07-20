@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
 
+const TEXT_INPUT_TYPES = new Set(['text', 'search', 'number', 'email', 'url', 'password', 'tel']);
+
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
-  return (
-    tag === 'INPUT' ||
-    tag === 'TEXTAREA' ||
-    tag === 'SELECT' ||
-    target.isContentEditable
-  );
+  // Only text-like inputs own native text undo; a focused checkbox/radio/range/file
+  // input has nothing to undo, so the recipe shortcut should still fire there.
+  if (tag === 'INPUT') return TEXT_INPUT_TYPES.has((target as HTMLInputElement).type);
+  return tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 
 /**

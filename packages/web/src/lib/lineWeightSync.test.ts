@@ -361,3 +361,27 @@ describe('removeLine sequence (finding 1 regression)', () => {
     expect(edited.lines[1]).toMatchObject({ weightGrams: '500' });
   });
 });
+
+describe('locked-batch redistribution hardening', () => {
+  const mk = (key: string, g: string, p: string) => ({ key, oilId: 'olive-oil', weightGrams: g, weightPercent: p });
+
+  it('never emits a negative weightPercent when rounding overshoots (blank last line)', () => {
+    const lines = [mk('x', '958', '95.8'), mk('a', '10', '1'), mk('b', '10', '1'), mk('c', '10', '1'), mk('d', '10', '1'), mk('e', '', '')];
+    const out = syncWeightEdit(lines, 'x', '998', '1000', true);
+    for (const line of out.lines) {
+      const pct = line.weightPercent === '' ? 0 : Number(line.weightPercent);
+      expect(pct, `line ${line.key} percent ${line.weightPercent}`).toBeGreaterThanOrEqual(0);
+      const grams = line.weightGrams === '' ? 0 : Number(line.weightGrams);
+      expect(grams).toBeGreaterThanOrEqual(0);
+    }
+    const sum = out.lines.reduce((s, l) => s + (Number(l.weightGrams) || 0), 0);
+    expect(sum).toBe(1000);
+  });
+
+  it('holds the documented sum invariant for fractional locked batches (integer-gram basis)', () => {
+    const lines = [mk('x', '600', '60'), mk('y', '400', '40')];
+    const out = syncBatchTotalEdit(lines, '997.9');
+    const sum = out.reduce((s, l) => s + (Number(l.weightGrams) || 0), 0);
+    expect(sum).toBe(Math.round(997.9));
+  });
+});

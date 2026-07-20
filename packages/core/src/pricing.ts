@@ -47,19 +47,15 @@ export interface PricingResult {
 const pos = (n: number): number => (Number.isFinite(n) && n > 0 ? n : 0);
 
 function sumLines(lines: PricingLine[]): number {
-  return lines.reduce(
-    (s, l) => s + (l.pricePerGram != null && Number.isFinite(l.pricePerGram) ? pos(l.grams) * l.pricePerGram : 0),
-    0,
-  );
+  // pos() on the price too: a negative price is treated as unpriced (0), matching
+  // the web layer's pricePerGram which rejects negatives — COGS can never go negative.
+  return lines.reduce((s, l) => s + pos(l.grams) * pos(l.pricePerGram ?? 0), 0);
 }
 
 export function computePricing(input: PricingInput): PricingResult {
   const materialsOils = sumLines(input.oilLines);
   const materialsAdditives = sumLines(input.additiveLines);
-  const lyeCost =
-    input.lyePricePerGram != null && Number.isFinite(input.lyePricePerGram)
-      ? pos(input.lyeGrams) * input.lyePricePerGram
-      : 0;
+  const lyeCost = pos(input.lyeGrams) * pos(input.lyePricePerGram ?? 0);
 
   const labor = (pos(input.laborMinutes) / 60) * pos(input.hourlyRate) * (1 + pos(input.laborBurdenPercent) / 100);
   const materials = materialsOils + materialsAdditives + lyeCost;
@@ -77,7 +73,7 @@ export function computePricing(input: PricingInput): PricingResult {
   if (costPerUnit != null) {
     if (input.lever.mode === 'margin') {
       const m = input.lever.marginPercent;
-      suggestedPricePerUnit = m < 100 ? costPerUnit / (1 - m / 100) : null;
+      suggestedPricePerUnit = Number.isFinite(m) && m < 100 ? costPerUnit / (1 - m / 100) : null;
     } else {
       suggestedPricePerUnit = Number.isFinite(input.lever.markupPercent)
         ? costPerUnit * (1 + input.lever.markupPercent / 100)

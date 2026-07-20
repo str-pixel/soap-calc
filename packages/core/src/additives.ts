@@ -15,6 +15,10 @@ export type AdditiveCatalogEntry = {
   /** Short behavior-only hazard/caution tags shown next to the additive (e.g. "can seize").
    * No source or dose-specific claim — just the known failure mode. */
   hazards?: string[];
+  /** Unit for typicalLow/typicalHigh (default 'percent'). Entries whose guidance is
+   * parts-per-thousand MUST say so, or the UI renders a ppt range with a % sign —
+   * a 10× dose overstatement. */
+  doseUnit?: DoseUnit;
 };
 
 export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
@@ -134,6 +138,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     name: 'Eugenol',
     typicalLow: 1,
     typicalHigh: 3,
+    doseUnit: 'ppt',
     defaultStage: 'trace',
     hazards: ['can seize'],
   },

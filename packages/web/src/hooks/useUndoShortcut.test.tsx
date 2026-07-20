@@ -54,3 +54,15 @@ test('calls the latest handler after a re-render (listener binds once, forwards 
   expect(first).not.toHaveBeenCalled();
   expect(second).toHaveBeenCalledTimes(1);
 });
+
+test('does not yield to non-text inputs (checkbox focus must not eat Cmd+Z)', () => {
+  const undo = vi.fn();
+  const redo = vi.fn();
+  function CheckboxHarness() {
+    useUndoShortcut(undo, redo);
+    return <input type="checkbox" aria-label="cb" />;
+  }
+  const { getByLabelText } = render(<CheckboxHarness />);
+  fireEvent.keyDown(getByLabelText('cb'), { key: 'z', ctrlKey: true });
+  expect(undo).toHaveBeenCalledTimes(1);
+});

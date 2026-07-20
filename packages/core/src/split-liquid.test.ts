@@ -52,3 +52,10 @@ describe('suggestLyeWaterWithSplitLiquid', () => {
     expect(suggestion!.suggestedWaterPercentOfOils).toBeNull();
   });
 });
+
+describe('lyeConcentrationPercent input guards (deep-review)', () => {
+  it('rejects negative water instead of reporting impossible concentrations', () => {
+    expect(lyeConcentrationPercent(135, -35)).toBeNull();
+    expect(lyeConcentrationPercent(135, 0)).not.toBeNull();
+  });
+});

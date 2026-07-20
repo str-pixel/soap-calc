@@ -84,7 +84,6 @@ export function sugarTotalPercentForInsights(
 }
 
 type FormulationInsightOptions = {
-  excludedOilWeightGrams?: number;
   splitLiquidGrams?: number | null;
   suggestedLyeWaterGrams?: number | null;
   splitLiquidWaterReductionGrams?: number | null;
@@ -164,7 +163,6 @@ export function useFormulationInsights(
       waterGrams: lyeResult.waterWeightGrams,
       lyeGrams: lyeResult.lyeWeightGrams,
       waterMode: settings.waterMode,
-      excludedOilWeightGrams: options.excludedOilWeightGrams ?? 0,
       splitLiquidEnabled: settings.splitLiquid.enabled,
       splitLiquidGrams: options.splitLiquidGrams ?? null,
       splitLiquidAddAt: settings.splitLiquid.enabled ? settings.splitLiquid.addAt : undefined,
@@ -206,7 +204,6 @@ export function useFormulationInsights(
     lines,
     lyeResult,
     options.additives,
-    options.excludedOilWeightGrams,
     options.splitLiquidGrams,
     options.suggestedLyeWaterGrams,
     options.splitLiquidWaterReductionGrams,

@@ -76,3 +76,30 @@ describe('computePricing', () => {
     expect(PRICING_GUIDE.defaultOverheadPercent).toBe(20);
   });
 });
+
+describe('input guards (deep-review)', () => {
+  it('treats a negative price as unpriced (0 contribution), never negative COGS', () => {
+    const r = computePricing({
+      ...base,
+      oilLines: [{ grams: 1000, pricePerGram: -0.0045 }],
+    });
+    expect(r.materialsOils).toBe(0);
+    expect(r.cogsBatch).toBeGreaterThanOrEqual(0);
+  });
+
+  it('rejects a non-finite margin like the markup branch does', () => {
+    const r = computePricing({
+      ...base,
+      lever: { mode: 'margin', marginPercent: -Infinity },
+    });
+    expect(r.suggestedPricePerUnit).toBeNull();
+  });
+
+  it('still allows a finite negative margin (price below cost)', () => {
+    const r = computePricing({
+      ...base,
+      lever: { mode: 'margin', marginPercent: -20 },
+    });
+    expect(r.suggestedPricePerUnit).not.toBeNull();
+  });
+});

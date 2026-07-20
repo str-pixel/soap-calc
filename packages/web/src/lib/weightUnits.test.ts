@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatWeight,
+  isWeightUnit,
   gramsStringToInputDisplay,
   isCompleteNumericInput,
   parseInputDisplayToGrams,
@@ -40,5 +41,17 @@ describe('weightUnits', () => {
     expect(parsePercentInput('101')).toBeNull();
     expect(parsePercentInput('abc')).toBeNull();
     expect(parsePercentInput('36.')).toBeNull();
+  });
+});
+
+describe('isWeightUnit hardening', () => {
+  it('rejects prototype-chain keys', () => {
+    expect(isWeightUnit('toString')).toBe(false);
+    expect(isWeightUnit('__proto__')).toBe(false);
+    expect(isWeightUnit('constructor')).toBe(false);
+    expect(isWeightUnit('hasOwnProperty')).toBe(false);
+  });
+  it('still accepts real units', () => {
+    for (const u of ['g', 'kg', 'oz', 'lb']) expect(isWeightUnit(u)).toBe(true);
   });
 });

@@ -169,9 +169,19 @@ export function useRecipeViewModel({
             kohGrams: result.kohWeightGrams,
             naohGrams: result.naohWeightGrams,
             soapConcentrationPercent: Number(previewSettings.soapConcentrationPercent),
+            kohPurityPercent: Number(previewSettings.kohPurityPercent),
+            naohPurityPercent: Number(previewSettings.naohPurityPercent),
+            superfatPercent: Number(previewSettings.superfatPercent),
           })
         : null,
-    [process, result, previewSettings.soapConcentrationPercent],
+    [
+      process,
+      result,
+      previewSettings.soapConcentrationPercent,
+      previewSettings.kohPurityPercent,
+      previewSettings.naohPurityPercent,
+      previewSettings.superfatPercent,
+    ],
   );
   const neutralization = useMemo(
     () =>
@@ -270,7 +280,6 @@ export function useRecipeViewModel({
     fattyAcids,
     result,
     {
-      excludedOilWeightGrams: displayTotals?.excludedFromLyeOilWeightGrams ?? 0,
       splitLiquidGrams,
       suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
       splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
