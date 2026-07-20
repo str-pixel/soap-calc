@@ -6,11 +6,6 @@ export const IODINE_REL_TOL = 0.05;
 /** mg KOH/g / % beyond the SAP band edge. */
 export const SAP_ABS_TOL = 4;
 export const SAP_REL_TOL = 0.03;
-/** Tolerance lever for single-source bands, calibrated to 1 (no widening). A lone reference is
- * weak evidence, but WIDENING it would also hide real app-vs-world outliers (e.g. pecan-oil).
- * Instead every single-source disagreement is surfaced as a warn; confirmed false positives from a
- * lone weak reference are silenced via KNOWN_EXTERNAL_REFERENCE_DEVIATIONS (e.g. coffee-bean-oil). */
-export const SINGLE_SOURCE_TOL_FACTOR = 1;
 
 /**
  * Stored iodine/SAP that disagrees with the external published band for a REVIEWED reason.
@@ -49,9 +44,11 @@ function evaluate(
   absTol: number,
   relTol: number,
 ): ExternalReferenceDeviation | null {
-  const factor = band.sourceCount === 1 ? SINGLE_SOURCE_TOL_FACTOR : 1;
-  const lo = band.min - Math.max(absTol, relTol * band.min) * factor;
-  const hi = band.max + Math.max(absTol, relTol * band.max) * factor;
+  // Single-source bands are surfaced, not widened: a lone reference is weak evidence, but widening
+  // it would hide real app-vs-world outliers (e.g. pecan-oil). A confirmed lone-reference false
+  // positive is silenced via KNOWN_EXTERNAL_REFERENCE_DEVIATIONS (e.g. coffee-bean-oil) instead.
+  const lo = band.min - Math.max(absTol, relTol * band.min);
+  const hi = band.max + Math.max(absTol, relTol * band.max);
   let deltaOutside: number;
   if (stored < lo) deltaOutside = stored - lo;
   else if (stored > hi) deltaOutside = stored - hi;

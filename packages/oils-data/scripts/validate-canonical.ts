@@ -308,16 +308,21 @@ function main() {
 
   // External-reference sanity band (app-vs-world). Warn-only — external published values can
   // reflect a different cultivar/sample, so a disagreement is a review prompt, never a block.
-  const externalRefs = JSON.parse(
-    readFileSync(join(__dirname, '../data/external-property-references.json'), 'utf8'),
-  ).oils;
-  for (const dev of classifyExternalReferenceDeviations(db.oils, externalRefs)) {
-    const label = dev.property === 'iodine' ? 'iodine' : 'SAP';
-    const base = `${dev.id}: stored ${label} ${dev.stored} outside published band [${dev.band[0]},${dev.band[1]}] (${dev.sourceCount} source${dev.sourceCount === 1 ? '' : 's'})`;
-    if (dev.tier === 'acknowledged') {
-      warnings.push(`${base} — acknowledged: ${dev.reason}`);
-    } else {
-      warnings.push(`${base} — external cross-check; review which side is right`);
+  const externalRefsPath = join(__dirname, '../data/external-property-references.json');
+  if (!existsSync(externalRefsPath)) {
+    warnings.push(
+      'data/external-property-references.json missing — external-reference band skipped (run the oils build to regenerate it)',
+    );
+  } else {
+    const externalRefs = JSON.parse(readFileSync(externalRefsPath, 'utf8')).oils;
+    for (const dev of classifyExternalReferenceDeviations(db.oils, externalRefs)) {
+      const label = dev.property === 'iodine' ? 'iodine' : 'SAP';
+      const base = `${dev.id}: stored ${label} ${dev.stored} outside published band [${dev.band[0]},${dev.band[1]}] (${dev.sourceCount} source${dev.sourceCount === 1 ? '' : 's'})`;
+      if (dev.tier === 'acknowledged') {
+        warnings.push(`${base} — acknowledged: ${dev.reason}`);
+      } else {
+        warnings.push(`${base} — external cross-check; review which side is right`);
+      }
     }
   }
 
