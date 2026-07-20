@@ -401,7 +401,7 @@ test.describe('additives', () => {
     await page.getByRole('button', { name: '+ Add', exact: true }).click();
     const row = page.locator('ul[aria-label="Recipe additives"] li').first();
     await row.getByLabel('Additive type').selectOption({ label: 'Sugar / sorbitol' });
-    await row.getByLabel('Amount', { exact: true }).fill('3');
+    await row.getByLabel(/^Amount( for .*)?$/).fill('3');
     await row.getByLabel('Dose mode').selectOption({ label: '% of oil' });
     await expect(row.locator('.additive-list__grams')).toHaveText(/^30(\.0)? g$/);
     // batch weight now includes extras
@@ -414,14 +414,14 @@ test.describe('additives', () => {
   test('ppt mode and over-limit validation', async ({ page }) => {
     await page.getByRole('button', { name: '+ Add', exact: true }).click();
     const row = page.locator('ul[aria-label="Recipe additives"] li').first();
-    await row.getByLabel('Name', { exact: true }).fill('test additive');
+    await row.getByLabel(/^Name( for .*)?$/).fill('test additive');
     await row.getByLabel('Dose mode').selectOption({ label: 'ppt of oil' });
-    await row.getByLabel('Amount', { exact: true }).fill('30');
+    await row.getByLabel(/^Amount( for .*)?$/).fill('30');
     await expect(row.locator('.additive-list__grams')).toHaveText(/^30(\.0)? g$/);
-    await row.getByLabel('Amount', { exact: true }).fill('2000');
+    await row.getByLabel(/^Amount( for .*)?$/).fill('2000');
     await expect(row.getByRole('alert')).toContainText(/Max 1000 ppt/);
     await row.getByLabel('Dose mode').selectOption({ label: '% of oil' });
-    await row.getByLabel('Amount', { exact: true }).fill('150');
+    await row.getByLabel(/^Amount( for .*)?$/).fill('150');
     await expect(row.getByRole('alert')).toContainText(/Max 100%/);
   });
 
