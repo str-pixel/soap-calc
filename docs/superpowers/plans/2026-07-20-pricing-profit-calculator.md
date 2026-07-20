@@ -443,11 +443,27 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ```ts
 // packages/web/src/lib/pricingStorage.test.ts
-import { afterEach, describe, expect, it } from 'vitest';
+// Web unit tests run under environment:'node' (vitest.config.ts) — no global localStorage.
+// Mirror moldSizerStorage.test.ts: stub a Storage impl via vi.stubGlobal (NOT a jsdom pragma).
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_PRICING_PROFILE, normalizePricingProfile } from './pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './pricingStorage';
 
-afterEach(() => localStorage.clear());
+function createStorage(): Storage {
+  const store = new Map<string, string>();
+  return {
+    get length() { return store.size; },
+    clear() { store.clear(); },
+    getItem(key: string) { return store.get(key) ?? null; },
+    key(index: number) { return [...store.keys()][index] ?? null; },
+    removeItem(key: string) { store.delete(key); },
+    setItem(key: string, value: string) { store.set(key, value); },
+  };
+}
+
+beforeEach(() => {
+  vi.stubGlobal('localStorage', createStorage());
+});
 
 describe('normalizePricingProfile', () => {
   it('fills defaults for missing/invalid keys', () => {
@@ -822,16 +838,20 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 - Test: `packages/web/src/components/ResultsPanel.batchWeight.test.tsx`
 
 **Interfaces:**
-- Consumes: `batchWeightBreakdown` from `@soap-calc/core`; existing `ResultsPanel` props `result`, `extrasGrams`, `batchWeightWithExtras`, `weightUnit`; **new** prop `totalOilGrams: number`.
+- Consumes: `batchWeightBreakdown` from `@soap-calc/core`; existing `ResultsPanel` props `result`, `extrasGrams`, `batchWeightWithExtras`, `weightUnit`; **new OPTIONAL** prop `totalOilGrams?: number` (default `0`, mirroring the existing optional `extrasGrams?` — a required prop would break the 7 render sites in the existing `ResultsPanel.test.tsx`).
 - Produces: a `data-testid="batch-weight"` readout inside `ResultsPanel`.
 
 - [ ] **Step 1: Write the failing test**
 
 ```tsx
+// @vitest-environment jsdom
 // packages/web/src/components/ResultsPanel.batchWeight.test.tsx
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+// NOTE: the jsdom pragma above MUST be line 1 — web vitest defaults to environment:'node'.
+import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import { ResultsPanel } from './ResultsPanel';
+
+afterEach(cleanup);
 
 // Minimal props: a real recipe render is covered elsewhere; here we assert the
 // breakdown readout appears and totals the four slices from the props it receives.
@@ -884,10 +904,10 @@ Expected: FAIL — `totalOilGrams` not a prop / no `batch-weight` testid.
 
 - [ ] **Step 3: Implement — add the prop and readout**
 
-In `ResultsPanel.tsx`: add `totalOilGrams: number;` to the props type; import `batchWeightBreakdown` and `formatWeight`:
+In `ResultsPanel.tsx`: add `totalOilGrams?: number;` to the `ResultsPanelProps` type (optional, like `extrasGrams?`), and destructure it with a default in the component signature: `totalOilGrams = 0,` (next to the existing `extrasGrams = 0,`). Import `batchWeightBreakdown`; `formatWeight` may already be imported — add it only if absent:
 ```tsx
 import { batchWeightBreakdown } from '@soap-calc/core';
-import { formatWeight } from '../lib/weightUnits';
+import { formatWeight } from '../lib/weightUnits'; // skip if already imported
 ```
 Inside the component body (after existing derived values), compute:
 ```tsx
@@ -964,12 +984,16 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 1: Write the failing test**
 
 ```tsx
+// @vitest-environment jsdom
 // packages/web/src/components/PricingPanel.test.tsx
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+// NOTE: the jsdom pragma above MUST be line 1 — web vitest defaults to environment:'node'.
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { DEFAULT_PRICING_PROFILE } from '../lib/pricingProfile';
 import type { RecipePricingContext } from '../lib/recipePricing';
 import { PricingPanel } from './PricingPanel';
+
+afterEach(cleanup);
 
 const context: RecipePricingContext = {
   oilLines: [{ oilId: 'olive-oil', grams: 1000, name: 'Olive Oil' }],
@@ -1243,12 +1267,17 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 1: Write the failing test**
 
 ```tsx
+// @vitest-environment jsdom
 // packages/web/src/App.pricing.test.tsx
-import { render, screen } from '@testing-library/react';
+// NOTE: the jsdom pragma above MUST be line 1 — web vitest defaults to environment:'node'.
 import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import App from './App';
 
-afterEach(() => localStorage.clear());
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 describe('App pricing integration', () => {
   it('renders the pricing panel with the recipe default oils', () => {
@@ -1321,6 +1350,10 @@ Use `superpowers:finishing-a-development-branch` to decide merge/PR. Before merg
 
 ## Notes for the implementer
 
+- **Test environment (web package):** `packages/web/vitest.config.ts` sets `environment: 'node'`. Therefore:
+  - **Component tests** (render/DOM) MUST start with `// @vitest-environment jsdom` as **line 1** and use `afterEach(cleanup)` (import `cleanup` from `@testing-library/react`). jsdom also provides a real `localStorage`.
+  - **Pure-lib tests that touch `localStorage`** (e.g. `pricingStorage.test.ts`) stay under `node` and stub it with `vi.stubGlobal('localStorage', createStorage())` in `beforeEach` — mirror `moldSizerStorage.test.ts`. Do NOT rely on a global `localStorage` under node.
+  - **Pure-math tests** (core, `money.test.ts`, `recipePricing.test.ts`) need neither — no DOM, no storage.
 - **Styling:** class names (`pricing-row`, `pricing-hint`, `pricing-results`, `results-batch-weight`, etc.) are referenced but no CSS is required for tests to pass. Add styles in `packages/web/src/index.css` following the existing `.panel` / `.field` conventions; unstyled markup is functionally correct.
 - **Anonymity:** every string the user sees is original, behaviour-based copy. Do not add tooltips or help text that reference any book, author, brand, or third-party formula.
 - **Do not** add prices to `RecipeLine`/`RecipeSettings` or to recipe export — pricing lives only in `soap-calc:pricing`.
