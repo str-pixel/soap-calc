@@ -222,3 +222,44 @@ describe('normalizeSettings whitelist hardening', () => {
     expect(out.batchNotes.length).toBeLessThanOrEqual(20_000);
   });
 });
+
+describe('forward-compat settings round-trip (third wave)', () => {
+  it('preserves safe unknown keys so a rollback does not destroy newer-version fields', () => {
+    const out = normalizeSettings({
+      ...DEFAULT_SETTINGS,
+      cureWeeks: '4',
+      futureFlag: true,
+      futureCount: 7,
+    } as never);
+    expect((out as Record<string, unknown>).cureWeeks).toBe('4');
+    expect((out as Record<string, unknown>).futureFlag).toBe(true);
+    expect((out as Record<string, unknown>).futureCount).toBe(7);
+    // known fields still normalize and always win
+    expect(out.superfatPercent).toBe(DEFAULT_SETTINGS.superfatPercent);
+  });
+
+  it('still drops dangerous, malformed, and oversized unknown keys', () => {
+    const hostile = JSON.parse('{"__proto__": {"polluted": 1}, "constructor": "x"}');
+    const out = normalizeSettings({
+      ...DEFAULT_SETTINGS,
+      ...hostile,
+      'weird key!': 1,
+      hugeBlob: 'z'.repeat(50_000),
+    } as never);
+    const o = out as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(out, '__proto__')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(out, 'constructor')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(out, 'weird key!')).toBe(false);
+    expect(o.hugeBlob).toBeUndefined();
+    expect(Object.getPrototypeOf(out)).toBe(Object.prototype);
+  });
+
+  it('caps the number of preserved unknown keys', () => {
+    const many: Record<string, number> = {};
+    for (let i = 0; i < 100; i++) many[`extra_${i}`] = i;
+    const out = normalizeSettings({ ...DEFAULT_SETTINGS, ...many } as never);
+    const extras = Object.keys(out).filter((k) => k.startsWith('extra_'));
+    expect(extras.length).toBeLessThanOrEqual(32);
+    expect(extras.length).toBeGreaterThan(0);
+  });
+});

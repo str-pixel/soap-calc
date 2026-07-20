@@ -101,6 +101,17 @@ function backupUnreadableDraft(process: ProcessId, raw: string): void {
   }
 }
 
+/** True when a draft (readable or not) occupies the slot. Used by the autosave
+ * flush: writing into an EMPTY slot can never clobber newer data, so a clean tab
+ * may safely re-persist its workspace after external deletion/eviction. */
+export function hasDraft(process: ProcessId): boolean {
+  try {
+    return localStorage.getItem(draftKey(process)) !== null;
+  } catch {
+    return true; // unreadable storage: don't trigger extra writes
+  }
+}
+
 export function loadDraft(process: ProcessId): {
   name: string;
   lines: RecipeLine[];

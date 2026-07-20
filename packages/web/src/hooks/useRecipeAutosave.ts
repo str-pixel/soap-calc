@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { AdditiveLine, RecipeLine, RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
-import { saveDraft } from '../lib/recipeStorage';
+import { saveDraft, hasDraft } from '../lib/recipeStorage';
 
 const AUTOSAVE_MS = 500;
 
@@ -92,8 +92,10 @@ export function useRecipeAutosave(
         timerRef.current = null;
       }
       // Dirty check instead of timer-presence: a committed edit whose debounce effect
-      // hasn't run yet has no timer but still needs saving.
-      if (!isDirty()) return;
+      // hasn't run yet has no timer but still needs saving. Also re-persist when the
+      // slot is EMPTY (external deletion/eviction): this tab may hold the only copy,
+      // and writing into an empty slot cannot clobber another tab's newer draft.
+      if (!isDirty() && hasDraft(processRef.current)) return;
       const saved = saveDraft(
         processRef.current,
         recipeNameRef.current,
