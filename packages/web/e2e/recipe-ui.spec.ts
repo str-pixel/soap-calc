@@ -151,7 +151,7 @@ test.describe('recipe oils undo/redo', () => {
 
     const w = weightInputs(page);
     const n0 = await w.count();
-    await page.getByRole('button', { name: 'Remove oil' }).first().click();
+    await page.getByRole('button', { name: /^Remove / }).first().click();
     expect(await w.count()).toBe(n0 - 1);
 
     await undoBtn(page).click();

@@ -2,6 +2,22 @@ import { WEIGHT_UNITS } from './weightUnits';
 
 export type PriceUnit = 'kg' | 'lb';
 
+export interface CostParts {
+  materials: number;
+  labour: number;
+  overhead: number;
+  packaging: number;
+}
+
+/** One-line batch-cost composition, e.g. "materials $4.50 · overhead $0.90".
+ * Components that are zero, negative, or non-finite are omitted; null when nothing remains. */
+export function formatCostBreakdown(parts: CostParts, currencySymbol: string): string | null {
+  const order: (keyof CostParts)[] = ['materials', 'labour', 'overhead', 'packaging'];
+  const entries = order.filter((name) => Number.isFinite(parts[name]) && parts[name] > 0);
+  if (entries.length === 0) return null;
+  return entries.map((name) => `${name} ${formatMoney(parts[name], currencySymbol)}`).join(' · ');
+}
+
 export function formatMoney(amount: number, currencySymbol: string): string {
   const sign = amount < 0 ? '-' : '';
   const body = Math.abs(amount).toLocaleString('en-US', {

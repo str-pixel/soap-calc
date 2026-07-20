@@ -76,8 +76,12 @@ export const PropertiesPanel = memo(function PropertiesPanel({
 
   return (
     <section className="panel">
-      <h2 className="panel__title">Bar properties</h2>
-      <p className="panel__subtitle">Fatty-acid based scores, 0–100 scale</p>
+      <h2 className="panel__title">{isLiquidSoap ? 'Soap properties' : 'Bar properties'}</h2>
+      <p className="panel__subtitle">
+        {isLiquidSoap
+          ? 'Fatty-acid based scores, 0–100 scale — suggested ranges reflect bar-soap conventions'
+          : 'Fatty-acid based scores, 0–100 scale'}
+      </p>
 
       {showIndexes && (
         <dl className="recipe-indexes" aria-label="Recipe iodine and INS">
