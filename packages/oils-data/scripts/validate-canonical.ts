@@ -14,6 +14,7 @@ import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
 import { classifyProfileSapDeviations } from '../src/profile-sap-deviations.js';
 import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviations.js';
+import { classifyExternalReferenceDeviations } from '../src/external-reference-deviations.js';
 import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
@@ -302,6 +303,21 @@ function main() {
       warnings.push(`${base} (review backlog — profile-derived iodine is a noisy oracle; confirm which side is right)`);
     } else {
       warnings.push(`${base} — acknowledged: ${dev.reason}`);
+    }
+  }
+
+  // External-reference sanity band (app-vs-world). Warn-only — external published values can
+  // reflect a different cultivar/sample, so a disagreement is a review prompt, never a block.
+  const externalRefs = JSON.parse(
+    readFileSync(join(__dirname, '../data/external-property-references.json'), 'utf8'),
+  ).oils;
+  for (const dev of classifyExternalReferenceDeviations(db.oils, externalRefs)) {
+    const label = dev.property === 'iodine' ? 'iodine' : 'SAP';
+    const base = `${dev.id}: stored ${label} ${dev.stored} outside published band [${dev.band[0]},${dev.band[1]}] (${dev.sourceCount} source${dev.sourceCount === 1 ? '' : 's'})`;
+    if (dev.tier === 'acknowledged') {
+      warnings.push(`${base} — acknowledged: ${dev.reason}`);
+    } else {
+      warnings.push(`${base} — external cross-check; review which side is right`);
     }
   }
 
