@@ -152,3 +152,30 @@ describe('useRecipeStorage process', () => {
     expect(loadDraft('hp')?.name).toBe('Second import');
   });
 });
+
+describe('import flush freshness (deep-review)', () => {
+  it('flushes the workspace as it is when the file resolves, not as it was when import started', async () => {
+    const { result } = renderHook(() => useRecipeStorage());
+    let resolveText: (raw: string) => void;
+    const pending = new Promise<string>((res) => { resolveText = res; });
+    const file = { text: () => pending } as unknown as File;
+
+    act(() => { result.current.handleImportFile(file); });
+    // The user keeps working while the file is being read.
+    act(() => { result.current.setRecipeName('edited during import'); });
+
+    // Cross-process import: a same-process import would immediately overwrite the
+    // flushed cp slot with the imported recipe, hiding what this test observes.
+    const imported = JSON.stringify({
+      version: 1, name: 'incoming', process: 'hp',
+      lines: [{ oilId: 'olive-oil', weightGrams: '500' }],
+      settings: { ...DEFAULT_SETTINGS },
+    });
+    await act(async () => { resolveText!(imported); await pending; });
+
+    // The pre-swap flush of the outgoing workspace must contain the newer name.
+    // (Import replaces the in-memory workspace, so draft:cp holds the flushed snapshot.)
+    const flushed = loadDraft('cp');
+    expect(flushed?.name).toBe('edited during import');
+  });
+});

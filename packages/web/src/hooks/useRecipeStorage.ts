@@ -93,6 +93,11 @@ export function useRecipeStorage() {
   // flushing/swapping state, so a slow first read can never land after (and clobber) a
   // faster second one — the latest-fired import always wins, deterministically.
   const importTokenRef = useRef(0);
+  // Latest workspace, updated every render: the import continuation below runs after an
+  // async gap and must flush what the workspace IS at resolve time, not the stale render
+  // closure it was created in (same refs pattern as useRecipeAutosave).
+  const workspaceRef = useRef({ process, recipeName, lines, settings, additives });
+  workspaceRef.current = { process, recipeName, lines, settings, additives };
 
   useEffect(() => {
     return () => {
@@ -170,7 +175,8 @@ export function useRecipeStorage() {
         // Flush the outgoing process's in-memory workspace first, mirroring setProcess:
         // without this, edits made just before an import (still pending the autosave
         // debounce) would be silently discarded when the state below swaps process.
-        const flushedOutgoing = saveDraft(process, recipeName, lines, settings, additives);
+        const ws = workspaceRef.current;
+        const flushedOutgoing = saveDraft(ws.process, ws.recipeName, ws.lines, ws.settings, ws.additives);
         saveActiveProcess(nextProcess);
         setProcessState(nextProcess);
         setRecipeName(parsed.data.name);

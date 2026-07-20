@@ -248,7 +248,7 @@ export const ResultsPanel = memo(function ResultsPanel({
               </dd>
             </div>
           )}
-          {splitLiquid?.enabled && splitLiquidGrams !== null && (
+          {splitLiquid?.enabled && splitLiquidGrams !== null && splitLiquidGrams > 0 && (
             <div className="results-grid__item">
               <dt>{splitLiquid.name.trim() || 'Alternative liquid'}</dt>
               <dd>
@@ -301,9 +301,12 @@ export const ResultsPanel = memo(function ResultsPanel({
         </dl>
       )}
 
-      {batchWeight.total > 0 && (
+      {batchWeightWithExtras > 0 && (
         <p className="results-batch-weight" data-testid="batch-weight">
-          <strong>Total batch:</strong> {formatWeight(batchWeight.total, weightUnit)}
+          {/* Total single-sourced from batchWeightWithExtras (same figure as the dl row
+              above); the slices below stay from the breakdown, so the two totals shown
+              on this panel can never drift apart. */}
+          <strong>Total batch:</strong> {formatWeight(batchWeightWithExtras, weightUnit)}
           {' · '}oils {formatWeight(batchWeight.oils, weightUnit)}
           {' · '}lye {formatWeight(batchWeight.lye, weightUnit)}
           {' · '}water {formatWeight(batchWeight.water, weightUnit)}

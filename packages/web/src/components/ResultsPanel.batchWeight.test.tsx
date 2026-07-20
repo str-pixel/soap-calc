@@ -49,3 +49,34 @@ describe('ResultsPanel batch-weight breakdown', () => {
     expect(el.textContent).toMatch(/extras/i);
   });
 });
+
+describe('single-sourced batch weight (deep-review)', () => {
+  it('shows batchWeightWithExtras as the Total batch figure even if the slices drift', () => {
+    render(
+      <ResultsPanel
+        result={baseResult as never}
+        inputErrors={[] as never}
+        lyeLabel="NaOH"
+        process={'cp' as never}
+        lyeType={'naoh' as never}
+        kohBlendPercent={'0'}
+        displayTotals={{ recipeOilWeightGrams: 1000 } as never}
+        weightUnit="g"
+        waterMode={'concentration' as never}
+        splitLiquid={undefined as never}
+        splitLiquidGrams={null}
+        additives={[] as never}
+        superfatPercent={'5'}
+        postCookSuperfat={null as never}
+        pcsfIsExtra={false}
+        extrasGrams={144}
+        batchWeightWithExtras={1600}
+        totalOilGrams={1000}
+      />,
+    );
+    // The dl "Batch weight" row and the breakdown line must agree: both read
+    // batchWeightWithExtras (1,600), not an independently recomputed 1,612.
+    expect(screen.getByTestId('batch-weight').textContent).toMatch(/1,600 g/);
+    expect(screen.getByTestId('batch-weight').textContent).not.toMatch(/1,612 g/);
+  });
+});

@@ -61,13 +61,17 @@ function pricedEntry(v: unknown, fallback: PricedEntry): PricedEntry {
 
 function priceBook(v: unknown): Record<string, PricedEntry> {
   if (!isRecord(v)) return {};
-  const out: Record<string, PricedEntry> = {};
-  for (const [key, entry] of Object.entries(v)) {
-    if (isRecord(entry) && typeof entry.price === 'string') {
-      out[key] = { price: entry.price, unit: priceUnit(entry.unit, 'kg') };
-    }
-  }
-  return out;
+  // Object.fromEntries creates own data properties, so a '__proto__' price key
+  // (reachable via imported additive catalogIds) stays an own key instead of
+  // silently replacing the record's prototype and losing the user's price.
+  return Object.fromEntries(
+    Object.entries(v)
+      .filter((pair): pair is [string, Record<string, unknown>] => {
+        const entry = pair[1];
+        return isRecord(entry) && typeof entry.price === 'string';
+      })
+      .map(([key, entry]) => [key, { price: entry.price as string, unit: priceUnit(entry.unit, 'kg') }]),
+  );
 }
 
 export function normalizePricingProfile(raw: unknown): PricingProfile {

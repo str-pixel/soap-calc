@@ -508,3 +508,34 @@ describe('recipe file processVariant', () => {
     expect(parsed.data.settings.processVariant).toBe('cp');
   });
 });
+
+describe('import hardening (deep-review)', () => {
+  const validFile = (mutate: (j: Record<string, unknown>) => void): string => {
+    const j: Record<string, unknown> = {
+      version: 1,
+      name: 'test',
+      process: 'cp',
+      lines: [{ oilId: 'olive-oil', weightGrams: '450', weightPercent: '45' }],
+      settings: { ...DEFAULT_SETTINGS },
+    };
+    mutate(j);
+    return JSON.stringify(j);
+  };
+
+  it('caps weightPercent length like every other line field', () => {
+    const raw = validFile((j) => {
+      (j.lines as Array<Record<string, unknown>>)[0].weightPercent = '1'.repeat(9000);
+    });
+    const parsed = parseRecipeFile(raw);
+    if (!parsed.ok) throw new Error('expected parse success');
+    expect(parsed.data.lines[0].weightPercent!.length).toBeLessThanOrEqual(MAX_FIELD_LENGTH);
+  });
+
+  it('normalizes a non-object settings payload to defaults without junk keys', () => {
+    const raw = validFile((j) => { j.settings = 'abc'; });
+    const parsed = parseRecipeFile(raw);
+    if (!parsed.ok) throw new Error('expected parse success');
+    expect(Object.prototype.hasOwnProperty.call(parsed.data.settings, '0')).toBe(false);
+    expect(parsed.data.settings.superfatPercent).toBe(DEFAULT_SETTINGS.superfatPercent);
+  });
+});

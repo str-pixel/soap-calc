@@ -19,8 +19,11 @@ export function formatCostBreakdown(parts: CostParts, currencySymbol: string): s
 }
 
 export function formatMoney(amount: number, currencySymbol: string): string {
-  const sign = amount < 0 ? '-' : '';
-  const body = Math.abs(amount).toLocaleString('en-US', {
+  // Decide the sign on the rounded cents, not the raw value: -0.004 rounds to
+  // zero cents and must not print "-$0.00".
+  const cents = Math.round(amount * 100);
+  const sign = cents < 0 ? '-' : '';
+  const body = (Math.abs(cents) / 100).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

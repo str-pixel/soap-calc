@@ -55,9 +55,13 @@ describe('useRecipeAutosave', () => {
       },
     ];
     vi.useFakeTimers();
-    renderHook(() =>
-      useRecipeAutosave('ls', 'Body wash', createStarterLines(), DEFAULT_SETTINGS, additives),
+    // Mount alone must not write (dirty-tracking skips the just-loaded state);
+    // an edit is what triggers the autosave.
+    const { rerender } = renderHook(
+      ({ name }) => useRecipeAutosave('ls', name, createStarterLines(), DEFAULT_SETTINGS, additives),
+      { initialProps: { name: 'Draft' } },
     );
+    rerender({ name: 'Body wash' });
     vi.advanceTimersByTime(600);
     vi.useRealTimers();
     expect(loadDraft('ls')?.name).toBe('Body wash');
@@ -142,6 +146,33 @@ describe('useRecipeAutosave', () => {
     expect(removeSpy).toHaveBeenCalledWith('pagehide', expect.any(Function));
     addSpy.mockRestore();
     removeSpy.mockRestore();
+    vi.useRealTimers();
+  });
+});
+
+describe('dirty-tracking (deep-review)', () => {
+  it('does not write back what it just loaded on mount (multi-tab last-writer hazard)', () => {
+    vi.useFakeTimers();
+    const lines = createStarterLines();
+    renderHook(() =>
+      useRecipeAutosave('cp', 'Starter recipe', lines, DEFAULT_SETTINGS, []),
+    );
+    vi.advanceTimersByTime(1000);
+    expect(loadDraft('cp')).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('still saves an edit after the debounce', () => {
+    vi.useFakeTimers();
+    const lines = createStarterLines();
+    const { rerender } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, []),
+      { initialProps: { name: 'Starter recipe' } },
+    );
+    vi.advanceTimersByTime(1000);
+    rerender({ name: 'renamed' });
+    vi.advanceTimersByTime(1000);
+    expect(loadDraft('cp')?.name).toBe('renamed');
     vi.useRealTimers();
   });
 });

@@ -59,3 +59,11 @@ describe('ringPath', () => {
     expect(inner.trim().startsWith('60.00 57.50')).toBe(true);
   });
 });
+
+describe('degenerate inputs (deep-review)', () => {
+  it('returns empty geometry for empty axes instead of throwing', () => {
+    expect(() => polygonPoints([], 100, 120)).not.toThrow();
+    expect(() => ringPath([], [], 100, 120)).not.toThrow();
+    expect(ringPath([], [], 100, 120)).toBe('');
+  });
+});

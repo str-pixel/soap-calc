@@ -55,13 +55,23 @@ export function OilPicker({ value, onChange, ariaLabel = 'Oil' }: OilPickerProps
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-controls={listId}
+        aria-controls={open && results.length > 0 ? listId : undefined}
         aria-activedescendant={open ? activeId : undefined}
         aria-autocomplete="list"
         onFocus={() => {
           setOpen(true);
           setQuery('');
           setHighlight(-1);
+        }}
+        onClick={() => {
+          // Reopen on click: after a pick the input keeps focus (option mousedown is
+          // prevented), so no focus event will fire again — without this the list is
+          // unreachable by mouse until the user blurs and refocuses.
+          if (!open) {
+            setOpen(true);
+            setQuery('');
+            setHighlight(-1);
+          }
         }}
         onBlur={(e) => {
           if (e.relatedTarget && !rootRef.current?.contains(e.relatedTarget as Node)) {
@@ -85,7 +95,8 @@ export function OilPicker({ value, onChange, ariaLabel = 'Oil' }: OilPickerProps
             setHighlight((h) => Math.min(h + 1, results.length - 1));
           } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setHighlight((h) => Math.max(h - 1, 0));
+            // From the unhighlighted state, wrap to the last option (combobox convention).
+            setHighlight((h) => (h <= 0 ? results.length - 1 : h - 1));
           } else if (e.key === 'Enter') {
             e.preventDefault();
             if (results[highlight]) pick(results[highlight]);

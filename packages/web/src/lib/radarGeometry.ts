@@ -39,11 +39,12 @@ export function ringPath(
   center: number,
 ): string {
   const toSubpath = (values: number[]): string => {
+    if (values.length === 0) return '';
     const pts = values.map((v, i) => radarPoint(i, values.length, v, radius, center));
     const [head, ...rest] = pts;
     return `M ${head.x.toFixed(2)} ${head.y.toFixed(2)} ${rest
       .map((p) => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
       .join(' ')} Z`;
   };
-  return `${toSubpath(highs)} ${toSubpath(lows)}`;
+  return `${toSubpath(highs)} ${toSubpath(lows)}`.trim();
 }

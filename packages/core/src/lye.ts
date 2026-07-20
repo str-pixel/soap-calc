@@ -134,7 +134,7 @@ export function lyeForOilLine(
   lyeType: LyeType,
   superfatPercent: number,
   purity: { naohPurityPercent?: number; kohPurityPercent?: number },
-  kohBlendPercent = 0,
+  kohBlendPercent = DEFAULT_KOH_BLEND_PERCENT,
 ): { lyeGrams: number; naohGrams: number; kohGrams: number } {
   if (!shouldIncludeOilInLye(oil, line) || line.weightGrams <= 0) {
     return { lyeGrams: 0, naohGrams: 0, kohGrams: 0 };

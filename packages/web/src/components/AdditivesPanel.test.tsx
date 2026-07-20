@@ -308,3 +308,38 @@ test('a line already set to an LS-scoped catalogId (guar) under CP still offers 
   expect(select.value).toBe('guar');
   expect(optionValues(select)).toContain('guar');
 });
+
+describe('per-row accessible names (deep-review)', () => {
+  it('disambiguates every control by the additive name, like RecipeOilsPanel does for oils', () => {
+    const a = makeLine({ key: 'a1', catalogId: 'sugar-sorbitol', name: 'Sugar / sorbitol' });
+    const b = makeLine({ key: 'b2', name: 'oat milk' });
+    render(
+      <AdditivesPanel
+        additives={[a, b]}
+        computed={[makeComputed(a), makeComputed(b)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText('Amount for Sugar / sorbitol')).toBeTruthy();
+    expect(screen.getByLabelText('Amount for oat milk')).toBeTruthy();
+    expect(screen.getByLabelText('Dose mode for oat milk')).toBeTruthy();
+    expect(screen.getByLabelText('Add at for oat milk')).toBeTruthy();
+    expect(screen.getByLabelText('Remove oat milk')).toBeTruthy();
+  });
+
+  it('falls back to a row ordinal for unnamed additives', () => {
+    const a = makeLine({ key: 'a1', name: '' });
+    render(
+      <AdditivesPanel
+        additives={[a]}
+        computed={[makeComputed(a)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText('Amount for additive 1')).toBeTruthy();
+  });
+});
