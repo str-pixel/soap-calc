@@ -7,6 +7,7 @@ import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
 import { PreservePanel } from './components/PreservePanel';
+import { PricingPanel } from './components/PricingPanel';
 import { ProcessGuidePanel } from './components/ProcessGuidePanel';
 import { TroubleshootingPanel } from './components/TroubleshootingPanel';
 import { ProcessTabs } from './components/ProcessTabs';
@@ -21,8 +22,12 @@ import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { useRecipeViewModel } from './hooks/useRecipeViewModel';
 import { useUndoShortcut } from './hooks/useUndoShortcut';
+import { oilDisplayName } from './lib/oilDisplay';
 import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
+import type { PricingProfile } from './lib/pricingProfile';
+import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
+import type { RecipePricingContext } from './lib/recipePricing';
 
 export default function App() {
   const {
@@ -54,6 +59,10 @@ export default function App() {
   useEffect(() => {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
+  const [pricingProfile, setPricingProfile] = useState<PricingProfile>(() => loadPricingProfile());
+  useEffect(() => {
+    savePricingProfile(pricingProfile);
+  }, [pricingProfile]);
   const { getDraft, setDraft, clearDraft, clearAllDrafts, drafts } = useDraftInputs();
   const {
     applySynced,
@@ -122,6 +131,19 @@ export default function App() {
     if (!vm.batchSheetData) return;
     window.print();
   }
+
+  const pricingContext: RecipePricingContext = {
+    oilLines: vm.previewState.lines.map((l) => ({
+      oilId: l.oilId,
+      grams: Number(l.weightGrams) || 0,
+      name: oilDisplayName(l.oilId),
+    })),
+    additives: vm.computedAdditives.map((a) => ({
+      key: a.key, catalogId: a.catalogId, name: a.name, grams: a.grams,
+    })),
+    lyeGrams: vm.result?.lyeWeightGrams ?? 0,
+    totalBatchGrams: vm.batchWeightWithExtras,
+  };
 
   return (
     <div className="app">
@@ -240,6 +262,12 @@ export default function App() {
             cureEstimate={vm.cureEstimate}
             labelWeight={vm.labelWeight}
             totalOilGrams={vm.totalOilGrams}
+          />
+
+          <PricingPanel
+            context={pricingContext}
+            profile={pricingProfile}
+            onProfileChange={setPricingProfile}
           />
 
           {process === 'ls' && (
