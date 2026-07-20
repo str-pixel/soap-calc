@@ -90,11 +90,14 @@ export function deriveChemistryFromProfile(
 
   const meanMolarMass = molarMassSum / mappedPercent;
   const sapKoh = (3 * KOH_MOLAR_MASS) / (3 * meanMolarMass + GLYCERYL_ADJUSTMENT);
-  // The Σ above is per 100 g of *fatty acids*; an iodine value is defined per 100 g of *oil*.
-  // Convert with the same fatty-acyl mass fraction the SAP calc uses (shares the denominator),
-  // so iodineValue honors its "g I₂ / 100 g oil" contract instead of running ~4.4% high.
+  // The Σ above is per `mappedPercent` grams of *fatty acids*; renormalize to a
+  // per-100 g FA basis exactly like the SAP calc's meanMolarMass denominator —
+  // otherwise the same substance derives different IVs depending on how completely
+  // its profile sums (±7% across legal ≥93% profiles). Then convert FA→oil basis
+  // with the same fatty-acyl mass fraction SAP uses, honoring the
+  // "g I₂ / 100 g oil" contract.
   const glycerideFactor = (3 * meanMolarMass) / (3 * meanMolarMass + GLYCERYL_ADJUSTMENT);
-  const iodineValue = iodineValueFaBasis * glycerideFactor;
+  const iodineValue = iodineValueFaBasis * (100 / mappedPercent) * glycerideFactor;
   const ins = Math.round(sapKoh * 1000 - iodineValue);
 
   return { sapKoh, iodineValue, ins, mappedPercent };
