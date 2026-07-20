@@ -564,13 +564,10 @@ function main() {
 
   (report as Record<string, unknown>).iodineDeviations = classifyProfileIodineDeviations(oils);
 
-  const externalRefs = JSON.parse(
-    readFileSync(join(__dirname, '../data/external-property-references.json'), 'utf8'),
-  ).oils;
-  (report as Record<string, unknown>).externalReferenceDeviations = classifyExternalReferenceDeviations(
-    oils,
-    externalRefs,
-  );
+  const externalRefsPath = join(__dirname, '../data/external-property-references.json');
+  (report as Record<string, unknown>).externalReferenceDeviations = existsSync(externalRefsPath)
+    ? classifyExternalReferenceDeviations(oils, JSON.parse(readFileSync(externalRefsPath, 'utf8')).oils)
+    : [];
 
   writeFileSync(reportPath, JSON.stringify({
     generatedAt: db.generatedAt,
