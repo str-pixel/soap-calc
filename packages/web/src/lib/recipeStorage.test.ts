@@ -239,3 +239,32 @@ describe('per-process drafts', () => {
     expect(localStorage.getItem('soap-calc:draft')).toBe(legacyPayload);
   });
 });
+
+describe('unreadable-draft preservation (deep-review)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createStorage());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  it('backs up a future-version draft instead of leaving it to be overwritten', () => {
+    const future = JSON.stringify({ version: 99, name: 'from the future', lines: [], settings: {} });
+    localStorage.setItem('soap-calc:draft:cp', future);
+    expect(loadDraft('cp')).toBeNull();
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe(future);
+  });
+
+  it('does not clobber an existing backup on repeat loads', () => {
+    localStorage.setItem('soap-calc:draft:cp:unreadable', 'first');
+    localStorage.setItem('soap-calc:draft:cp', JSON.stringify({ version: 99 }));
+    loadDraft('cp');
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe('first');
+  });
+
+  it('leaves an unparseable legacy draft in place instead of migrating garbage', () => {
+    localStorage.setItem('soap-calc:draft', '{not json');
+    migrateLegacyDraft();
+    expect(localStorage.getItem('soap-calc:draft')).toBe('{not json');
+    expect(localStorage.getItem('soap-calc:draft:cp')).toBeNull();
+  });
+});

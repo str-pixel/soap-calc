@@ -75,6 +75,9 @@ export const AdditivesPanel = memo(function AdditivesPanel({
       catalogId: entry.id,
       name: entry.name,
       addAt: entry.defaultStage,
+      // Seed the dose unit from the catalog: a ppt-dosed entry (e.g. eugenol) left on
+      // '%' would make the typical-range hint a 10x overdose invitation.
+      ...(entry.doseUnit ? { unit: entry.doseUnit } : {}),
     });
   }
 
@@ -155,7 +158,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
         </p>
       ) : (
         <ul className="additive-list" aria-label="Recipe additives">
-          {additives.map((line) => {
+          {additives.map((line, rowIndex) => {
             const row = computed.find((item) => item.key === line.key);
             const entry = line.catalogId ? catalogEntryById(line.catalogId) : undefined;
             // An amount present but over its unit's ceiling (e.g. left at 500 after switching
@@ -186,12 +189,17 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                   ? [...catalogEntries, entry]
                   : catalogEntries;
 
+            // Per-row accessible names, mirroring RecipeOilsPanel's per-oil labels: with
+            // several rows, identical names ("Amount", "Amount", ...) are indistinguishable
+            // in a screen-reader form list.
+            const rowName = line.name.trim() || `additive ${rowIndex + 1}`;
             return (
               <li key={line.key} className="additive-list__row">
                 <label className="field">
                   <span className="sr-only">Additive type</span>
                   <select
                     className="input"
+                    aria-label={`Additive type for ${rowName}`}
                     value={line.catalogId}
                     onChange={(e) => selectCatalog(line.key, e.target.value)}
                   >
@@ -208,6 +216,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                   <input
                     type="text"
                     className="input"
+                    aria-label={`Name for ${rowName}`}
                     placeholder="Name"
                     value={line.name}
                     onChange={(e) => updateLine(line.key, { name: e.target.value })}
@@ -224,14 +233,14 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     placeholder={line.unit === 'ppt' ? 'ppt' : '%'}
                     value={line.amount}
                     onChange={(e) => updateLine(line.key, { amount: e.target.value })}
-                    aria-label="Amount"
+                    aria-label={`Amount for ${rowName}`}
                   />
                 </label>
                 <label className="field">
                   <span className="sr-only">Dose mode</span>
                   <select
                     className="input"
-                    aria-label="Dose mode"
+                    aria-label={`Dose mode for ${rowName}`}
                     value={`${line.basis}-${line.unit}`}
                     onChange={(e) => {
                       const mode = DOSE_MODES.find((m) => m.value === e.target.value);
@@ -249,6 +258,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                   <span className="sr-only">Add at</span>
                   <select
                     className="input"
+                    aria-label={`Add at for ${rowName}`}
                     value={line.addAt}
                     onChange={(e) =>
                       updateLine(line.key, { addAt: e.target.value as AdditiveStage })
@@ -268,7 +278,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                   type="button"
                   className="btn btn--icon"
                   onClick={() => removeLine(line.key)}
-                  aria-label="Remove additive"
+                  aria-label={`Remove ${rowName}`}
                 >
                   ×
                 </button>
@@ -280,8 +290,8 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                 {entry && (
                   <p className="additive-list__hint">
                     Typical {entry.typicalLow}
-                    {entry.typicalHigh !== entry.typicalLow ? `–${entry.typicalHigh}` : ''}% of
-                    oil weight
+                    {entry.typicalHigh !== entry.typicalLow ? `–${entry.typicalHigh}` : ''}
+                    {entry.doseUnit === 'ppt' ? ' ppt' : '%'} of oil weight
                   </p>
                 )}
                 {entry && entry.hazards && entry.hazards.length > 0 && (

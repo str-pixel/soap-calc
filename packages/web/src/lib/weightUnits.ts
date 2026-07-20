@@ -17,7 +17,9 @@ export const WEIGHT_UNIT_OPTIONS = (Object.keys(WEIGHT_UNITS) as WeightUnit[]).m
 }));
 
 export function isWeightUnit(value: unknown): value is WeightUnit {
-  return typeof value === 'string' && value in WEIGHT_UNITS;
+  // Own-key check: `in` walks the prototype chain, so 'toString' etc. would pass
+  // and turn every weight into NaN downstream (see processProfile.isProcessVariantId).
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(WEIGHT_UNITS, value);
 }
 
 export function gramsToDisplayValue(grams: number, unit: WeightUnit): number {

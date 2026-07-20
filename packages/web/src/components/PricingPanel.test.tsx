@@ -40,10 +40,11 @@ describe('PricingPanel', () => {
     expect(screen.getByText(/^1 kg$/)).toBeTruthy();
   });
 
-  it('shows outputs once oils are priced', () => {
+  it('shows outputs once oils and lye are priced', () => {
     const profile = {
       ...DEFAULT_PRICING_PROFILE,
       oilPrices: { 'olive-oil': { price: '4.50', unit: 'kg' as const } },
+      lyePrice: { price: '3.00', unit: 'kg' as const },
     };
     render(<PricingPanel context={context} profile={profile} onProfileChange={() => {}} />);
     expect(screen.queryByTestId('price-incomplete')).toBeNull();
@@ -83,14 +84,16 @@ describe('PricingPanel', () => {
   });
 
   it('shows a cost breakdown line once prices are complete', () => {
-    // olive 1 kg @ $4.50 → materials $4.50; default overhead 20% → $0.90; labour/packaging 0.
+    // olive 1 kg @ $4.50 + lye 140 g @ $3/kg = $0.42 → materials $4.92;
+    // default overhead 20% → $0.98; labour/packaging 0.
     const profile = {
       ...DEFAULT_PRICING_PROFILE,
       oilPrices: { 'olive-oil': { price: '4.50', unit: 'kg' as const } },
+      lyePrice: { price: '3.00', unit: 'kg' as const },
     };
     render(<PricingPanel context={context} profile={profile} onProfileChange={() => {}} />);
     expect(screen.getByTestId('pricing-breakdown').textContent).toBe(
-      'materials $4.50 · overhead $0.90',
+      'materials $4.92 · overhead $0.98',
     );
   });
 

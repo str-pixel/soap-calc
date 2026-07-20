@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, test, vi } from 'vitest';
 import { render, screen, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProcessTabs } from './ProcessTabs';
@@ -162,4 +162,19 @@ describe('ProcessTabs', () => {
     await userEvent.keyboard('{ArrowRight}');
     expect(onChange).toHaveBeenCalledWith('hp');
   });
+});
+
+test('a stale variant id still leaves the variant tablist keyboard-reachable (deep-review)', () => {
+  render(
+    <ProcessTabs
+      process="hp"
+      onChange={() => {}}
+      processVariant={'cp' as never}
+      onVariantChange={() => {}}
+    />,
+  );
+  const tablist = screen.getByRole('tablist', { name: 'Process variant' });
+  const tabs = within(tablist).getAllByRole('tab');
+  expect(tabs.filter((t) => t.tabIndex === 0)).toHaveLength(1);
+  expect(tabs.every((t) => t.getAttribute('aria-selected') === 'false')).toBe(true);
 });

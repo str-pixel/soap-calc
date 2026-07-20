@@ -8,7 +8,7 @@ export type SplitLiquidWaterSuggestion = {
 };
 
 export function lyeConcentrationPercent(lyeGrams: number, waterGrams: number): number | null {
-  if (!Number.isFinite(lyeGrams) || !Number.isFinite(waterGrams) || lyeGrams <= 0) {
+  if (!Number.isFinite(lyeGrams) || !Number.isFinite(waterGrams) || lyeGrams <= 0 || waterGrams < 0) {
     return null;
   }
   const total = lyeGrams + waterGrams;

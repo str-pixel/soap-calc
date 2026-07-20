@@ -45,3 +45,10 @@ describe('pricePerGram', () => {
     expect(pricePerGram('-2', 'kg')).toBeNull();
   });
 });
+
+describe('formatMoney sign after rounding', () => {
+  it('does not print -$0.00 for negatives that round to zero', () => {
+    expect(formatMoney(-0.004, '$')).toBe('$0.00');
+    expect(formatMoney(-0.006, '$')).toBe('-$0.01');
+  });
+});

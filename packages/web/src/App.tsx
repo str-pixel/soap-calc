@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
@@ -22,12 +22,11 @@ import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { useRecipeViewModel } from './hooks/useRecipeViewModel';
 import { useUndoShortcut } from './hooks/useUndoShortcut';
-import { oilDisplayName } from './lib/oilDisplay';
 import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 import type { PricingProfile } from './lib/pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
-import type { RecipePricingContext } from './lib/recipePricing';
+import { buildRecipePricingContext } from './lib/recipePricing';
 
 export default function App() {
   const {
@@ -132,21 +131,40 @@ export default function App() {
     window.print();
   }
 
-  const pricingContext: RecipePricingContext = {
-    oilLines: vm.previewState.lines
-      .filter((l) => (Number(l.weightGrams) || 0) > 0)
-      .map((l) => ({
-        key: l.key,
-        oilId: l.oilId,
-        grams: Number(l.weightGrams) || 0,
-        name: oilDisplayName(l.oilId),
-      })),
-    additives: vm.computedAdditives.map((a) => ({
-      key: a.key, catalogId: a.catalogId, name: a.name, grams: a.grams,
-    })),
-    lyeGrams: vm.result?.lyeWeightGrams ?? 0,
-    totalBatchGrams: vm.batchWeightWithExtras,
-  };
+  // Memoized + built by the lib (tested there): includes every material the batch
+  // weight includes — append-mode post-cook superfat and split liquid are priceable,
+  // so per-unit cost can't be silently understated. Memo keeps PricingPanel's memo()
+  // effective across unrelated keystrokes.
+  const pricingContext = useMemo(
+    () =>
+      buildRecipePricingContext({
+        lines: vm.previewState.lines,
+        computedAdditives: vm.computedAdditives,
+        lyeGrams: vm.result?.lyeWeightGrams ?? 0,
+        batchWeightWithExtras: vm.batchWeightWithExtras,
+        splitLiquid:
+          vm.previewSettings.splitLiquid?.enabled && vm.splitLiquidGrams
+            ? { name: vm.previewSettings.splitLiquid.name, grams: vm.splitLiquidGrams }
+            : null,
+        postCookSuperfat: vm.postCookSuperfat
+          ? {
+              oilId: vm.postCookSuperfat.oilId,
+              grams: vm.postCookSuperfat.grams,
+              isExtra: vm.pcsfIsExtra,
+            }
+          : null,
+      }),
+    [
+      vm.previewState.lines,
+      vm.computedAdditives,
+      vm.result,
+      vm.batchWeightWithExtras,
+      vm.previewSettings.splitLiquid,
+      vm.splitLiquidGrams,
+      vm.postCookSuperfat,
+      vm.pcsfIsExtra,
+    ],
+  );
 
   return (
     <div className="app">

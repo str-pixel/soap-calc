@@ -61,7 +61,11 @@ export function ProcessTabs({
   );
   const variantIds = variants.map((profile) => profile.variant);
   const variantActiveIndex = variantIds.indexOf(processVariant);
-  const handleVariantKeyDown = makeTabsKeyDownHandler(variantIds, variantActiveIndex, onVariantChange);
+  // A stale/foreign variant (transient render between process and settings updates, or a
+  // corrupted draft) yields -1: keep the tablist reachable by giving the roving tabindex
+  // a home on the first tab, and keep arrow-key math anchored there too.
+  const variantHomeIndex = variantActiveIndex === -1 ? 0 : variantActiveIndex;
+  const handleVariantKeyDown = makeTabsKeyDownHandler(variantIds, variantHomeIndex, onVariantChange);
 
   return (
     <div className="process-tabs-group">
@@ -89,13 +93,14 @@ export function ProcessTabs({
         <div className="process-tabs__variants" role="tablist" aria-label="Process variant">
           {variants.map((profile) => {
             const active = profile.variant === processVariant;
+            const index = variantIds.indexOf(profile.variant);
             return (
               <button
                 key={profile.variant}
                 type="button"
                 role="tab"
                 aria-selected={active}
-                tabIndex={active ? 0 : -1}
+                tabIndex={index === variantHomeIndex ? 0 : -1}
                 className={`process-tabs__variant${active ? ' process-tabs__variant--active' : ''}`}
                 onClick={() => onVariantChange(profile.variant)}
                 onKeyDown={handleVariantKeyDown}

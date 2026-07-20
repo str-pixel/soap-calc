@@ -188,3 +188,14 @@ describe('gramsFromDose', () => {
     expect(gramsFromDose(1000, -5, 'ppt')).toBeNull();
   });
 });
+
+describe('dose units (deep-review)', () => {
+  it('eugenol is dosed in ppt per its own guidance, and the schema can say so', () => {
+    const eugenol = catalogEntryById('eugenol');
+    expect(eugenol?.doseUnit).toBe('ppt');
+  });
+  it('entries without a doseUnit are percent by definition', () => {
+    const sugar = catalogEntryById('sugar-sorbitol');
+    expect(sugar?.doseUnit ?? 'percent').toBe('percent');
+  });
+});

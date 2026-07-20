@@ -90,6 +90,17 @@ export function linesFromSaved(saved: unknown[]): RecipeLine[] {
   return lines.length > 0 ? lines : createStarterLines();
 }
 
+function backupUnreadableDraft(process: ProcessId, raw: string): void {
+  const backupKey = `${draftKey(process)}:unreadable`;
+  try {
+    if (localStorage.getItem(backupKey) === null) {
+      safeSetItem(backupKey, raw);
+    }
+  } catch {
+    // best effort only
+  }
+}
+
 export function loadDraft(process: ProcessId): {
   name: string;
   lines: RecipeLine[];
@@ -104,6 +115,11 @@ export function loadDraft(process: ProcessId): {
       (data.version !== STORAGE_VERSION && data.version !== 1) ||
       !Array.isArray(data.lines)
     ) {
+      // Preserve what we can't read: returning null seeds a starter workspace whose
+      // first autosave overwrites this slot ~500ms later. A future-version draft
+      // (app rollback) or corrupted payload is parked in a backup slot instead of
+      // being destroyed. First writer wins — don't churn the backup on every load.
+      backupUnreadableDraft(process, raw);
       return null;
     }
     return {
@@ -157,11 +173,18 @@ export function migrateLegacyDraft(): void {
     // Route by the legacy recipe's alkali: a KOH (liquid soap) recipe lands on LS,
     // everything else on CP. Otherwise coerceSettingsForProcess would silently flip a
     // KOH recipe to NaOH when it loads under CP (different SAP → wrong lye weight).
-    let parsed: { settings?: { lyeType?: unknown } } | undefined;
+    let parsed: { lines?: unknown; settings?: { lyeType?: unknown } } | undefined;
     try {
-      parsed = JSON.parse(legacy) as { settings?: { lyeType?: unknown } };
+      parsed = JSON.parse(legacy) as { lines?: unknown; settings?: { lyeType?: unknown } };
     } catch {
-      // unparseable legacy payload → processForLyeType(undefined) below defaults to cp
+      // fall through to the validity gate below
+    }
+    // Migrate only what loadDraft could actually read back. An unparseable or
+    // structurally alien legacy payload stays under its own key — copying it into a
+    // per-process slot would get it rejected by the version gate and then destroyed
+    // by the first autosave, instead of merely ignored.
+    if (parsed === undefined || typeof parsed !== 'object' || !Array.isArray(parsed.lines)) {
+      return;
     }
     const target = processForLyeType(parsed?.settings?.lyeType);
     // Only migrate — and only clear the legacy key — when the target slot is empty. A

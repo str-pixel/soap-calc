@@ -194,3 +194,31 @@ describe('normalizeAdditiveLine', () => {
     expect(line.addAt).toBe('trace');
   });
 });
+
+describe('normalizeSettings whitelist hardening', () => {
+  it('rebuilds from known keys only — a string settings payload adds no junk keys', () => {
+    const out = normalizeSettings('abc' as never);
+    expect(out).toEqual({ ...DEFAULT_SETTINGS, processVariant: out.processVariant });
+    expect(Object.prototype.hasOwnProperty.call(out, '0')).toBe(false);
+  });
+
+  it('drops non-string field values, coercing finite numbers losslessly', () => {
+    const out = normalizeSettings({
+      superfatPercent: 7 as never,
+      batchOilGrams: { a: 1 } as never,
+      naohPurityPercent: [99] as never,
+      batchNotes: 42 as never,
+    });
+    expect(out.superfatPercent).toBe('7');
+    expect(out.batchOilGrams).toBe(DEFAULT_SETTINGS.batchOilGrams);
+    expect(out.naohPurityPercent).toBe(DEFAULT_SETTINGS.naohPurityPercent);
+    expect(out.batchNotes).toBe('42');
+  });
+
+  it('caps runaway string lengths on every free-text field', () => {
+    const big = '9'.repeat(50_000);
+    const out = normalizeSettings({ superfatPercent: big, batchNotes: big });
+    expect(out.superfatPercent.length).toBeLessThanOrEqual(200);
+    expect(out.batchNotes.length).toBeLessThanOrEqual(20_000);
+  });
+});

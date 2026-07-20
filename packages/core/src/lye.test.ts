@@ -424,3 +424,15 @@ describe('scaleLyeResult', () => {
     }
   });
 });
+
+describe('lyeForOilLine default blend (deep-review)', () => {
+  it('defaults the dual-lye blend to DEFAULT_KOH_BLEND_PERCENT like calculateLye', () => {
+    const oil = { id: 'olive-oil', sapNaoh: 0.134, sapKoh: 0.188 };
+    const line = { oilId: 'olive-oil', weightGrams: 1000 };
+    const r = lyeForOilLine(oil, line, 'dual', 5, {});
+    expect(r.kohGrams).toBeGreaterThan(0);
+    const kohShare = r.kohGrams / (r.kohGrams + r.naohGrams);
+    expect(kohShare).toBeGreaterThan(0.03);
+    expect(kohShare).toBeLessThan(0.09);
+  });
+});

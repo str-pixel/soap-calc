@@ -54,7 +54,9 @@ function normalizePercentsTo100(lines: RecipeLine[]): RecipeLine[] {
 }
 
 /** After percent→gram rounding, the summed line weights can drift a few grams off a
- * locked batch total. This corrects that drift so `sum(lines) === batch` exactly.
+ * locked batch total. This corrects that drift so `sum(lines) === Math.round(batch)`
+ * exactly — line grams are integers, so a fractional batch total (oz/kg entry) is
+ * honored on the integer-gram basis.
  *
  * Growing (diff > 0) is always safe on a single line — it can never go negative — so the
  * whole surplus lands on one eligible line, same as before. Shrinking (diff < 0) is where
@@ -73,7 +75,7 @@ function normalizePercentsTo100(lines: RecipeLine[]): RecipeLine[] {
 function fixGramRounding(lines: RecipeLine[], batch: number, skipKey?: string): RecipeLine[] {
   const grams = lines.map((line) => parseNum(line.weightGrams) ?? 0);
   const sum = grams.reduce((total, g) => total + g, 0);
-  const diff = batch - sum;
+  const diff = Math.round(batch) - sum;
   if (diff === 0) return lines;
 
   // Eligible lines in the order the original single-line correction preferred: from the
@@ -145,9 +147,14 @@ function distributeWeightsToBatch(
   });
 
   const allocated = editedClamped + otherGrams.reduce((sum, grams) => sum + grams, 0);
-  const diff = batch - allocated;
-  if (diff !== 0 && otherGrams.length > 0) {
-    otherGrams[otherGrams.length - 1] += diff;
+  // Distribute the rounding remainder without driving any line negative: per-line
+  // Math.round can overshoot the batch, and dumping the whole deficit on the last
+  // line (often a blank row at 0 g) used to persist a negative weightPercent.
+  let diff = Math.round(batch) - allocated;
+  for (let i = otherGrams.length - 1; i >= 0 && diff !== 0; i--) {
+    const adjusted = Math.max(0, otherGrams[i] + diff);
+    diff -= adjusted - otherGrams[i];
+    otherGrams[i] = adjusted;
   }
 
   let otherIndex = 0;

@@ -1,4 +1,5 @@
 // packages/web/src/components/PricingPanel.tsx
+import { memo } from 'react';
 import { computeRecipePricing, hasMissingMaterialPrice, additivePriceKey } from '../lib/recipePricing';
 import type { RecipePricingContext } from '../lib/recipePricing';
 import type { PricedEntry, PricingProfile } from '../lib/pricingProfile';
@@ -15,7 +16,9 @@ interface PricingPanelProps {
 
 const UNIT_OPTIONS: PriceUnit[] = ['kg', 'lb'];
 
-export function PricingPanel({ context, profile, onProfileChange, weightUnit = 'g' }: PricingPanelProps) {
+// memo: like the other sidebar panels, props are stable view-model outputs — without
+// this every keystroke anywhere (recipe name, notes) re-runs computeRecipePricing.
+export const PricingPanel = memo(function PricingPanel({ context, profile, onProfileChange, weightUnit = 'g' }: PricingPanelProps) {
   const result = computeRecipePricing(context, profile);
   const incomplete = hasMissingMaterialPrice(context, profile);
   const symbol = profile.currencySymbol;
@@ -109,7 +112,7 @@ export function PricingPanel({ context, profile, onProfileChange, weightUnit = '
         </label>
         {incomplete && (
           <p className="pricing-hint" data-testid="price-incomplete">
-            Enter a price for every oil and additive for an accurate cost.
+            Enter a price for every material — oils, additives, and the lye — for an accurate cost.
           </p>
         )}
       </details>
@@ -207,4 +210,4 @@ export function PricingPanel({ context, profile, onProfileChange, weightUnit = '
       </div>
     </section>
   );
-}
+});

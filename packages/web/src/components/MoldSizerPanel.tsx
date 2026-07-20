@@ -217,6 +217,11 @@ export function MoldSizerPanel({
         </div>
       )}
 
+      {Number(input.wasteFactorPercent) > 50 && (
+        <p className="mold-sizer__hint" role="alert">
+          Shrinkage / waste % above 50 isn&apos;t supported — lower it to see a suggestion.
+        </p>
+      )}
       {applicableOilGrams !== null && (
         <div className="mold-sizer__result">
           <p>

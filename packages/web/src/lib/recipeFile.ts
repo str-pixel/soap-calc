@@ -212,7 +212,9 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
       oilId: line.oilId.slice(0, MAX_FIELD_LENGTH),
       weightGrams:
         typeof line.weightGrams === 'string' ? line.weightGrams.slice(0, MAX_FIELD_LENGTH) : '',
-      ...(typeof line.weightPercent === 'string' ? { weightPercent: line.weightPercent } : {}),
+      ...(typeof line.weightPercent === 'string'
+        ? { weightPercent: line.weightPercent.slice(0, MAX_FIELD_LENGTH) }
+        : {}),
       ...(line.tarLyeTreatment === 'include' || line.tarLyeTreatment === 'additive'
         ? { tarLyeTreatment: line.tarLyeTreatment }
         : {}),
@@ -246,7 +248,9 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
       name: parsed.name.slice(0, MAX_FIELD_LENGTH),
       lines,
       additives,
-      settings: normalizeSettings(parsed.settings as Partial<RecipeSettings>),
+      settings: normalizeSettings(
+        isRecord(parsed.settings) ? (parsed.settings as Partial<RecipeSettings>) : undefined,
+      ),
       exportedAt:
         typeof parsed.exportedAt === 'string'
           ? parsed.exportedAt

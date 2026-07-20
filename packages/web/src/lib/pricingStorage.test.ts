@@ -48,3 +48,13 @@ describe('load/save round-trip', () => {
     expect(loadPricingProfile()).toEqual(DEFAULT_PRICING_PROFILE);
   });
 });
+
+describe('normalizePricingProfile prototype safety', () => {
+  it('keeps a "__proto__" price key as an own key instead of replacing the prototype', () => {
+    const raw = JSON.parse('{"additivePrices":{"__proto__":{"price":"5","unit":"kg"}}}');
+    const p = normalizePricingProfile(raw);
+    expect(Object.getPrototypeOf(p.additivePrices)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(p.additivePrices, '__proto__')).toBe(true);
+    expect((p.additivePrices as Record<string, { price: string }>)['__proto__'].price).toBe('5');
+  });
+});
