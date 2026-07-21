@@ -1393,8 +1393,8 @@ a:hover {
 
 .property-bars__value {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  font-weight: 400;
+  font-size: 1rem;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
@@ -1447,9 +1447,16 @@ a:hover {
   background: var(--accent);
 }
 
-/* Out-of-range callout above a property meter. */
-.property-status {
-  margin: 0 0 0.35rem;
+/* Value cluster on a property row: optional out-of-range verdict + the score, sharing
+   one baseline so the judgment reads as part of the number. */
+.property-bars__reading {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+.property-bars__status {
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.14em;

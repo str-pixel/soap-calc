@@ -187,25 +187,28 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       {SOAP_PROPERTY_LABELS[key]}
                       <InfoTip term={SOAP_PROPERTY_LABELS[key]}>{guidance}</InfoTip>
                     </span>
-                    <span
-                      className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
-                      role="meter"
-                      aria-valuemin={0}
-                      aria-valuemax={SCALE_MAX}
-                      aria-valuenow={Math.round(value)}
-                      aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatPropertyScore(value)}`}
-                    >
-                      {lowCoverage ? '~' : ''}
-                      {formatPropertyScore(value)}
+                    <span className="property-bars__reading">
+                      {/* Out-of-range verdict sits on the same baseline as the number it
+                          judges. Gated by !lowCoverage for the same reason as the value
+                          color and the dot: a partial-data estimate isn't a real signal. */}
+                      {!inSuggested && !lowCoverage && (
+                        <span className="property-bars__status">
+                          {value < guide.low ? 'Too low' : 'Too high'}
+                        </span>
+                      )}
+                      <span
+                        className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
+                        role="meter"
+                        aria-valuemin={0}
+                        aria-valuemax={SCALE_MAX}
+                        aria-valuenow={Math.round(value)}
+                        aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatPropertyScore(value)}`}
+                      >
+                        {lowCoverage ? '~' : ''}
+                        {formatPropertyScore(value)}
+                      </span>
                     </span>
                   </div>
-                  {/* Out-of-range callout above the bar. Gated by !lowCoverage for the same
-                      reason as the value/dot: a partial-data estimate isn't a real signal. */}
-                  {!inSuggested && !lowCoverage && (
-                    <p className="property-status">
-                      {value < guide.low ? 'Too low' : 'Too high'}
-                    </p>
-                  )}
                   {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
                       suggested range, stronger band = target, dot = where this recipe lands.
                       Decorative — the value's role="meter" and the range text carry it for AT. */}
