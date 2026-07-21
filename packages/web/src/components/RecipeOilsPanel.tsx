@@ -137,13 +137,6 @@ export function RecipeOilsPanel({
       </div>
 
       <div className="recipe-table">
-        <div className="recipe-table__head">
-          <span>Oil</span>
-          <span>Weight ({weightUnitConfig.short})</span>
-          <span>%</span>
-          <span className="sr-only">Actions</span>
-        </div>
-
         {lines.map((line, index) => {
           const oil = oilById(line.oilId);
           const showTar = isTarOil(oil);
@@ -178,41 +171,45 @@ export function RecipeOilsPanel({
                   </label>
                 )}
               </div>
-              <div>
-                <input
-                  type="number"
-                  className="input input--number"
-                  min={0}
-                  step={weightUnitConfig.inputStep}
-                  value={getDraft(
-                    inputs.weightInputId(line.key),
-                    previewWeightDisplay(line, previewLine, weightUnit),
-                  )}
-                  onChange={(e) => inputs.handleWeightChange(line.key, e.target.value)}
-                  onBlur={(e) => inputs.commitWeightInput(line.key, e.target.value)}
-                  aria-label={`Weight in ${weightUnitConfig.short} for ${oilName}`}
-                />
-              </div>
-              <div className="recipe-table__pct">
-                <input
-                  type="number"
-                  className="input input--number"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={getDraft(
-                    inputs.percentInputId(line.key),
-                    previewPercentDisplay(line, previewLine),
-                  )}
-                  onChange={(e) => setDraft(inputs.percentInputId(line.key), e.target.value)}
-                  onBlur={(e) => inputs.commitPercentInput(line.key, e.target.value)}
-                  aria-label={`Percent for ${oilName}`}
-                />
-              </div>
-              <div>
+              <div className="recipe-table__controls">
+                <label className="recipe-table__num">
+                  <span className="recipe-table__num-label">
+                    Weight ({weightUnitConfig.short})
+                  </span>
+                  <input
+                    type="number"
+                    className="input input--number"
+                    min={0}
+                    step={weightUnitConfig.inputStep}
+                    value={getDraft(
+                      inputs.weightInputId(line.key),
+                      previewWeightDisplay(line, previewLine, weightUnit),
+                    )}
+                    onChange={(e) => inputs.handleWeightChange(line.key, e.target.value)}
+                    onBlur={(e) => inputs.commitWeightInput(line.key, e.target.value)}
+                    aria-label={`Weight in ${weightUnitConfig.short} for ${oilName}`}
+                  />
+                </label>
+                <label className="recipe-table__num recipe-table__pct">
+                  <span className="recipe-table__num-label">%</span>
+                  <input
+                    type="number"
+                    className="input input--number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={getDraft(
+                      inputs.percentInputId(line.key),
+                      previewPercentDisplay(line, previewLine),
+                    )}
+                    onChange={(e) => setDraft(inputs.percentInputId(line.key), e.target.value)}
+                    onBlur={(e) => inputs.commitPercentInput(line.key, e.target.value)}
+                    aria-label={`Percent for ${oilName}`}
+                  />
+                </label>
                 <button
                   type="button"
-                  className="btn btn--icon"
+                  className="btn btn--icon recipe-table__remove"
                   onClick={() => inputs.removeLine(line.key)}
                   aria-label={`Remove ${oilName}`}
                   disabled={lines.length <= 1}
@@ -228,13 +225,15 @@ export function RecipeOilsPanel({
           aria-live="polite"
         >
           <span>Total</span>
-          <span className="recipe-table__total-weight">
-            {showRecipeTotals && lineTotals.totalWeightGrams > 0
-              ? formatWeight(lineTotals.totalWeightGrams, weightUnit)
-              : '—'}
-          </span>
-          <span className="recipe-table__total-pct">
-            {showRecipeTotals ? formatRecipePercentTotal(lineTotals.totalPercent) : '—'}
+          <span className="recipe-table__foot-totals">
+            <span className="recipe-table__total-weight">
+              {showRecipeTotals && lineTotals.totalWeightGrams > 0
+                ? formatWeight(lineTotals.totalWeightGrams, weightUnit)
+                : '—'}
+            </span>
+            <span className="recipe-table__total-pct">
+              {showRecipeTotals ? formatRecipePercentTotal(lineTotals.totalPercent) : '—'}
+            </span>
           </span>
           {/* The `--warn` color is not perceivable to colorblind or screen-reader users; fold the
               off-total status into the announced text (this region is aria-live) rather than
@@ -242,7 +241,6 @@ export function RecipeOilsPanel({
           {(percentTotalOff || weightTotalOff) && (
             <span className="sr-only">Totals don&apos;t match</span>
           )}
-          <span className="sr-only">Actions</span>
         </div>
       </div>
     </section>
