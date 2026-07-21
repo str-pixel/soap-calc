@@ -102,6 +102,8 @@ function SliderField({
   sliderMax,
   value,
   onChange,
+  help,
+  term,
 }: {
   label: string;
   valueLabel: string;
@@ -112,16 +114,24 @@ function SliderField({
   sliderMax: number;
   value: string;
   onChange: (value: string) => void;
+  help?: string;
+  term?: string;
 }) {
   const num = Number(value);
   const finite = value.trim() !== '' && Number.isFinite(num);
-  const clamped = finite ? Math.max(min, Math.min(sliderMax, num)) : min;
-  const fillPct =
-    sliderMax > min ? Math.max(0, Math.min(100, ((clamped - min) / (sliderMax - min)) * 100)) : 0;
+  // The slider spans the mode's typical range, but expands to include a value typed beyond
+  // it (via the readout) so the thumb never parks at the end while the readout says otherwise.
+  const lo = finite ? Math.min(min, num) : min;
+  const hi = finite ? Math.max(sliderMax, num) : sliderMax;
+  const pos = finite ? num : min;
+  const fillPct = hi > lo ? Math.max(0, Math.min(100, ((pos - lo) / (hi - lo)) * 100)) : 0;
   return (
     <div className="slider-field">
       <div className="slider-field__head">
-        <span className="slider-field__label">{label}</span>
+        <span className="slider-field__label">
+          {label}
+          {help && <InfoTip term={term ?? label}>{help}</InfoTip>}
+        </span>
         <span className="slider-field__value-wrap">
           <input
             className="slider-field__value"
@@ -136,17 +146,21 @@ function SliderField({
           {unit && <span className="slider-field__unit">{unit}</span>}
         </span>
       </div>
+      {/* Pointer/mouse drag affordance only: the labeled number readout above is the
+          accessible control (keyboard arrows adjust it), so the slider is aria-hidden and
+          out of the tab order to avoid announcing the same value twice. */}
       <input
         className="slider-field__range"
         type="range"
-        aria-label={`${label} slider`}
-        min={min}
-        max={sliderMax}
+        aria-hidden="true"
+        tabIndex={-1}
+        min={lo}
+        max={hi}
         step={step}
-        value={clamped}
+        value={pos}
         onChange={(e) => onChange(e.target.value)}
         style={{
-          background: `linear-gradient(to right, var(--accent) ${fillPct}%, var(--border) ${fillPct}%)`,
+          background: `linear-gradient(to right, var(--accent) ${fillPct}%, var(--hairline) ${fillPct}%)`,
         }}
       />
     </div>
@@ -191,6 +205,8 @@ export const ResultsPanel = memo(function ResultsPanel({
           label="Superfat"
           valueLabel="Superfat %"
           unit="%"
+          term="Superfat"
+          help="The share of oils left unsaponified for a gentler, more moisturizing bar. Around 5% is common."
           min={process === 'ls' ? NEG_SUPERFAT_FLOOR : 0}
           max={50}
           step={0.5}
@@ -220,6 +236,8 @@ export const ResultsPanel = memo(function ResultsPanel({
             label={waterField.label}
             valueLabel={waterField.label}
             unit={waterField.label.trim().endsWith('%') ? '%' : ''}
+            term={waterField.label.replace(/\s*%$/, '')}
+            help={waterField.help}
             min={waterField.min}
             max={'max' in waterField ? waterField.max : undefined}
             step={waterField.step}
