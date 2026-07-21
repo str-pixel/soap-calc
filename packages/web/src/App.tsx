@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
@@ -28,6 +28,15 @@ import type { PricingProfile } from './lib/pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
 import { buildRecipePricingContext } from './lib/recipePricing';
 
+const VIEW_STORAGE_KEY = 'soap-calc:view';
+
+const VIEWS = [
+  { key: 'recipe', label: 'Recipe' },
+  { key: 'pricing', label: 'Pricing & profit' },
+] as const;
+
+type ViewKey = (typeof VIEWS)[number]['key'];
+
 export default function App() {
   const {
     process,
@@ -50,7 +59,21 @@ export default function App() {
 
   const importInputRef = useRef<HTMLInputElement>(null);
   // Top-level view: the recipe calculator vs. the pricing & profit calculator (its own tab).
-  const [view, setView] = useState<'recipe' | 'pricing'>('recipe');
+  // Persisted like the rest of the workspace so a reload keeps you on the tab you were using.
+  const [view, setView] = useState<ViewKey>(() => {
+    try {
+      return localStorage.getItem(VIEW_STORAGE_KEY) === 'pricing' ? 'pricing' : 'recipe';
+    } catch {
+      return 'recipe';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, view);
+    } catch {
+      /* storage unavailable (private mode / quota) — view just won't persist */
+    }
+  }, [view]);
   const [moldSizerInput, setMoldSizerInput] = useState(loadMoldSizerInput);
   // UI-only helper inputs (not part of the saved recipe), mirroring how moldSizerInput's
   // fields are batch-sizing aids rather than recipe data: the HP cook-vessel guard input and
@@ -211,6 +234,36 @@ export default function App() {
     />
   );
 
+  // WAI-ARIA tabs keyboard pattern for the view switch, matching ProcessTabs: arrow keys
+  // move selection + focus among the tabs, Home/End jump to the ends.
+  const viewIndex = VIEWS.findIndex((v) => v.key === view);
+  function handleViewKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    let nextIndex: number | null = null;
+    switch (event.key) {
+      case 'ArrowRight':
+        nextIndex = (viewIndex + 1) % VIEWS.length;
+        break;
+      case 'ArrowLeft':
+        nextIndex = (viewIndex - 1 + VIEWS.length) % VIEWS.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = VIEWS.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    setView(VIEWS[nextIndex].key);
+    const tablist = event.currentTarget.closest('[role="tablist"]');
+    const tabs = tablist
+      ? Array.from(tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+      : [];
+    tabs[nextIndex]?.focus();
+  }
+
   return (
     <div className="app">
       <header className="masthead no-print">
@@ -225,21 +278,20 @@ export default function App() {
         </div>
 
         <nav className="view-tabs" role="tablist" aria-label="View">
-          {(
-            [
-              { key: 'recipe', label: 'Recipe' },
-              { key: 'pricing', label: 'Pricing & profit' },
-            ] as const
-          ).map((t) => {
+          {VIEWS.map((t) => {
             const active = view === t.key;
             return (
               <button
                 key={t.key}
+                id={`view-tab-${t.key}`}
                 type="button"
                 role="tab"
                 aria-selected={active}
+                aria-controls="view-panel"
+                tabIndex={active ? 0 : -1}
                 className={`view-tabs__tab${active ? ' view-tabs__tab--active' : ''}`}
                 onClick={() => setView(t.key)}
+                onKeyDown={handleViewKeyDown}
               >
                 {t.label}
               </button>
@@ -315,7 +367,13 @@ export default function App() {
       </header>
 
       {view === 'recipe' ? (
-        <main className="layout no-print">
+        <main
+          className="layout no-print"
+          id="view-panel"
+          role="tabpanel"
+          aria-labelledby={`view-tab-${view}`}
+          tabIndex={0}
+        >
           {/* Column 1 — Formula: the recipe inputs. */}
           <div className="col col--formula">
             <RecipeOilsPanel
@@ -395,7 +453,13 @@ export default function App() {
         </main>
       ) : (
         /* Pricing view: the pricing calculator beside the batch figures it prices. */
-        <main className="layout no-print">
+        <main
+          className="layout no-print"
+          id="view-panel"
+          role="tabpanel"
+          aria-labelledby={`view-tab-${view}`}
+          tabIndex={0}
+        >
           <div className="col col--numbers">{resultsPanel}</div>
           <div className="col">{pricingPanel}</div>
         </main>
