@@ -49,28 +49,54 @@ export function RecipeOilsPanel({
         <div className="panel__head-actions">
           {/* onMouseDown preventDefault keeps focus in any active weight field, so clicking
               Undo can't blur-commit the pending draft and then undo that fresh commit. */}
-          <button
-            type="button"
-            className="btn btn--ghost btn--icon"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={inputs.undo}
-            disabled={!inputs.canUndo}
-            aria-label="Undo"
-            title="Undo last recipe-oils edit"
-          >
-            ↶
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost btn--icon"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={inputs.redo}
-            disabled={!inputs.canRedo}
-            aria-label="Redo"
-            title="Redo recipe-oils edit"
-          >
-            ↷
-          </button>
+          <div className="history-controls" role="group" aria-label="Edit history">
+            <button
+              type="button"
+              className="history-controls__btn"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={inputs.undo}
+              disabled={!inputs.canUndo}
+              aria-label="Undo"
+              title="Undo last recipe-oils edit"
+            >
+              <svg
+                className="history-controls__icon"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 6.5h6.5a3.25 3.25 0 1 1 0 6.5H6" />
+                <path d="M5.25 4 3 6.5l2.25 2.5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="history-controls__btn"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={inputs.redo}
+              disabled={!inputs.canRedo}
+              aria-label="Redo"
+              title="Redo recipe-oils edit"
+            >
+              <svg
+                className="history-controls__icon"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M13 6.5H6.5a3.25 3.25 0 1 0 0 6.5H10" />
+                <path d="M10.75 4 13 6.5l-2.25 2.5" />
+              </svg>
+            </button>
+          </div>
           <button type="button" className="btn btn--ghost" onClick={inputs.addLine}>
             + Add oil
           </button>
