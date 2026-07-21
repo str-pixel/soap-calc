@@ -1,12 +1,83 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { useState } from 'react';
 import { ResultsPanel } from './ResultsPanel';
 import { calculateRecipe } from '../lib/calculateRecipe';
-import { createStarterLines, DEFAULT_SETTINGS } from '../lib/recipe';
+import { createStarterLines, DEFAULT_SETTINGS, type RecipeSettings } from '../lib/recipe';
+import type { ProcessId } from '../lib/process';
 import { formatWeight } from '../lib/weightUnits';
 
 afterEach(cleanup);
+
+// Superfat and the water ratio are editable inline in The Numbers (moved out of Settings),
+// so their behavior is exercised here rather than in SettingsPanel.test.
+function EditableHarness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) {
+  const [settings, setSettings] = useState<RecipeSettings>(DEFAULT_SETTINGS);
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), settings);
+  return (
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process={process}
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      settings={settings}
+      setSettings={setSettings}
+    />
+  );
+}
+
+test('editing the Superfat field in The Numbers updates settings state', () => {
+  render(<EditableHarness />);
+  const input = screen.getByLabelText('Superfat %') as HTMLInputElement;
+  expect(input.value).toBe('5');
+  fireEvent.change(input, { target: { value: '8' } });
+  expect((screen.getByLabelText('Superfat %') as HTMLInputElement).value).toBe('8');
+});
+
+test('Superfat allows a negative min only for LS', () => {
+  const { rerender } = render(<EditableHarness process="cp" />);
+  expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('0');
+  rerender(<EditableHarness process="ls" />);
+  expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('-5');
+});
+
+test('changing the water method swaps the editable water-ratio field', () => {
+  render(<EditableHarness />);
+  // Default water mode is percent_of_oils.
+  expect(screen.getByLabelText('Water % of oils')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Water method'), {
+    target: { value: 'lye_concentration' },
+  });
+  expect(screen.getByLabelText('Lye concentration %')).toBeTruthy();
+  expect(screen.queryByLabelText('Water % of oils')).toBeNull();
+});
+
+test('the editable Superfat/Water block stays reachable when the recipe is empty', () => {
+  function EmptyHarness() {
+    const [settings, setSettings] = useState<RecipeSettings>(DEFAULT_SETTINGS);
+    return (
+      <ResultsPanel
+        result={null}
+        inputErrors={[]}
+        lyeLabel="NaOH"
+        process="cp"
+        lyeType="naoh"
+        displayTotals={null}
+        weightUnit="g"
+        batchWeightWithExtras={0}
+        settings={settings}
+        setSettings={setSettings}
+      />
+    );
+  }
+  render(<EmptyHarness />);
+  expect(screen.getByLabelText('Superfat %')).toBeTruthy();
+});
 
 test('an after-cook additive uses the process-aware label — LS shows "After dilution"', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);

@@ -251,7 +251,8 @@ export default function App() {
       </header>
 
       <main className="layout no-print">
-        <div className="layout__primary">
+        {/* Column 1 — Formula: the recipe inputs. */}
+        <div className="col col--formula">
           <RecipeOilsPanel
             lines={lines} weightUnit={weightUnit}
             previewState={vm.previewState} previewLineByKey={vm.previewLineByKey}
@@ -268,9 +269,29 @@ export default function App() {
             process={process}
             onChange={setAdditives}
           />
+
+          {process === 'cp' && <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />}
+
+          <SettingsPanel
+            process={process}
+            settings={settings}
+            setSettings={setSettings}
+            weightUnit={weightUnit}
+            totalOilGrams={vm.totalOilGrams}
+            lyeGrams={vm.result?.lyeWeightGrams ?? 0}
+            waterSuggestion={vm.waterSuggestion}
+            moldSizerInput={moldSizerInput}
+            onMoldSizerChange={setMoldSizerInput}
+            liveOilBatchFraction={vm.liveOilBatchFraction}
+            onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
+            vesselVolumeLiters={vesselVolumeLiters}
+            onVesselVolumeLitersChange={setVesselVolumeLiters}
+            hpVesselMultiple={vm.hpVesselMultiple}
+          />
         </div>
 
-        <aside className="sidebar">
+        {/* Column 2 — The Numbers: the computed outputs and the knobs that drive them. */}
+        <div className="col col--numbers">
           <ResultsPanel
             result={vm.result}
             inputErrors={vm.inputErrors}
@@ -292,6 +313,8 @@ export default function App() {
             cureEstimate={vm.cureEstimate}
             labelWeight={vm.labelWeight}
             totalOilGrams={vm.totalOilGrams}
+            settings={settings}
+            setSettings={setSettings}
           />
 
           <PricingPanel
@@ -319,30 +342,10 @@ export default function App() {
           )}
 
           {process === 'ls' && <PreservePanel />}
+        </div>
 
-          {process === 'cp' && <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />}
-
-          <ProcessGuidePanel process={process} processVariant={settings.processVariant} />
-
-          <TroubleshootingPanel process={process} />
-
-          <SettingsPanel
-            process={process}
-            settings={settings}
-            setSettings={setSettings}
-            weightUnit={weightUnit}
-            totalOilGrams={vm.totalOilGrams}
-            lyeGrams={vm.result?.lyeWeightGrams ?? 0}
-            waterSuggestion={vm.waterSuggestion}
-            moldSizerInput={moldSizerInput}
-            onMoldSizerChange={setMoldSizerInput}
-            liveOilBatchFraction={vm.liveOilBatchFraction}
-            onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
-            vesselVolumeLiters={vesselVolumeLiters}
-            onVesselVolumeLitersChange={setVesselVolumeLiters}
-            hpVesselMultiple={vm.hpVesselMultiple}
-          />
-
+        {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}
+        <div className="col col--bar">
           <PropertiesPanel
             result={vm.properties}
             indexes={vm.indexes}
@@ -351,7 +354,9 @@ export default function App() {
           />
           <FattyAcidPanel result={vm.fattyAcids} />
           <FormulationInsightsPanel insights={vm.insights} />
-        </aside>
+          <ProcessGuidePanel process={process} processVariant={settings.processVariant} />
+          <TroubleshootingPanel process={process} />
+        </div>
       </main>
 
       <footer className="footer no-print">

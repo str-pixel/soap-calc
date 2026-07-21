@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type Dispatch, type SetStateAction } from 'react';
 import { batchWeightBreakdown } from '@soap-calc/core';
 import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
@@ -9,7 +9,9 @@ import { formatDose } from '../lib/formatDose';
 import { oilById } from '../lib/oils';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
-import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
+import type { RecipeSettings, SplitLiquidSettings, WeightUnit } from '../lib/recipe';
+import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
+import { WATER_FIELDS, WATER_MODE_LABELS, waterModeChoicesFor } from '../lib/settingsFields';
 import { formatWeight } from '../lib/weightUnits';
 import { InfoTip } from './InfoTip';
 
@@ -46,6 +48,11 @@ type ResultsPanelProps = {
   labelWeight?: number | null;
   /** The vm's total oil weight in grams — used for the batch-weight breakdown readout. */
   totalOilGrams?: number;
+  /** Raw recipe settings + setter, so the two most-adjusted knobs (superfat and the water
+   *  ratio) are editable inline in The Numbers column. Optional: when omitted (e.g. in unit
+   *  tests that render the panel in isolation) the editable block simply doesn't render. */
+  settings?: RecipeSettings;
+  setSettings?: Dispatch<SetStateAction<RecipeSettings>>;
 };
 
 // The cure/sequester window is behavior-only guidance built from several unverified
@@ -92,11 +99,86 @@ export const ResultsPanel = memo(function ResultsPanel({
   cureEstimate = null,
   labelWeight = null,
   totalOilGrams = 0,
+  settings,
+  setSettings,
 }: ResultsPanelProps) {
+  // The editable Superfat + Water controls live here (in The Numbers), not in Settings —
+  // they're the two knobs makers touch most, so they sit beside the figures they drive.
+  // Rendered whenever settings + setSettings are supplied, so they stay reachable even when
+  // the recipe is empty (result null) or has input errors.
+  const waterField = settings ? WATER_FIELDS[settings.waterMode] : null;
+  const editableNumbers =
+    settings && setSettings ? (
+      <div className="numbers-inputs">
+        <label className="field field--compact">
+          <span>
+            Superfat %
+            <InfoTip term="Superfat">
+              The share of oils left unsaponified for a gentler, more moisturizing bar. Around 5%
+              is common.
+            </InfoTip>
+          </span>
+          <input
+            type="number"
+            className="input input--number"
+            aria-label="Superfat %"
+            min={process === 'ls' ? NEG_SUPERFAT_FLOOR : 0}
+            max={50}
+            step={0.5}
+            value={settings.superfatPercent}
+            onChange={(e) => setSettings((s) => ({ ...s, superfatPercent: e.target.value }))}
+          />
+        </label>
+        <label className="field field--compact">
+          <span>Water method</span>
+          <select
+            className="input"
+            aria-label="Water method"
+            value={settings.waterMode}
+            onChange={(e) =>
+              setSettings((s) => ({ ...s, waterMode: e.target.value as RecipeSettings['waterMode'] }))
+            }
+          >
+            {waterModeChoicesFor(process).map((mode) => (
+              <option key={mode} value={mode}>
+                {WATER_MODE_LABELS[mode]}
+              </option>
+            ))}
+          </select>
+        </label>
+        {waterField && (
+          <label className="field field--compact">
+            <span>
+              {waterField.label}
+              {waterField.help && (
+                <InfoTip term={waterField.label.replace(/\s*%$/, '')}>{waterField.help}</InfoTip>
+              )}
+            </span>
+            <input
+              type="number"
+              className="input input--number"
+              aria-label={waterField.label}
+              min={waterField.min}
+              max={'max' in waterField ? waterField.max : undefined}
+              step={waterField.step}
+              value={settings[waterField.key]}
+              onChange={(e) => {
+                const key = waterField.key;
+                setSettings((s) => ({ ...s, [key]: e.target.value }));
+              }}
+            />
+          </label>
+        )}
+      </div>
+    ) : null;
+
   if (inputErrors.length) {
     return (
       <section className="panel panel--results" aria-live="polite">
-        <h2 className="panel__title">Results</h2>
+        <h2 className="panel__title">
+          <span className="panel__num" aria-hidden="true">03</span>Results
+        </h2>
+        {editableNumbers}
         <ul className="message-list message-list--error">
           {inputErrors.map((msg) => (
             <li key={msg}>{msg}</li>
@@ -106,7 +188,18 @@ export const ResultsPanel = memo(function ResultsPanel({
     );
   }
 
-  if (!result) return null;
+  if (!result) {
+    if (!editableNumbers) return null;
+    return (
+      <section className="panel panel--results" aria-live="polite">
+        <h2 className="panel__title">
+          <span className="panel__num" aria-hidden="true">03</span>Results
+        </h2>
+        {editableNumbers}
+        <p className="results-hint">Enter oil weights to calculate lye and water.</p>
+      </section>
+    );
+  }
 
   const hasLineErrors = result.errors.length > 0;
   const recipeOilWeightGrams =
@@ -151,7 +244,11 @@ export const ResultsPanel = memo(function ResultsPanel({
 
   return (
     <section className="panel panel--results" aria-live="polite">
-      <h2 className="panel__title">Results</h2>
+      <h2 className="panel__title">
+        <span className="panel__num" aria-hidden="true">03</span>Results
+      </h2>
+
+      {editableNumbers}
 
       {hasLineErrors && (
         <ul className="message-list message-list--error">

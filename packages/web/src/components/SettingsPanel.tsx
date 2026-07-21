@@ -4,14 +4,10 @@ import type { RecipeSettings, WeightUnit } from '../lib/recipe';
 import { MAX_NOTES_LENGTH } from '../lib/recipe';
 import {
   purityFieldsFor,
-  WATER_FIELDS,
   lyeChoicesFor,
-  waterModeChoicesFor,
   LYE_TYPE_LABELS,
-  WATER_MODE_LABELS,
 } from '../lib/settingsFields';
 import type { ProcessId } from '../lib/process';
-import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
 import { InfoTip } from './InfoTip';
 import { MoldSizerPanel } from './MoldSizerPanel';
 import { OilPicker } from './OilPicker';
@@ -87,33 +83,13 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const updateField = (key: FieldSpec['key'], value: string) =>
     setSettings((s) => ({ ...s, [key]: value }));
-  const waterField = WATER_FIELDS[settings.waterMode];
   return (
     <section className="panel">
       <h2 className="panel__title">Settings</h2>
+      <p className="panel__subtitle">
+        Superfat and the water ratio now live in The&nbsp;Numbers, beside the figures they drive.
+      </p>
       <div className="settings-grid">
-        <label className="field">
-          <span>
-            Superfat %
-            <InfoTip term="Superfat">
-              The share of oils left unsaponified for a gentler, more moisturizing bar. Around 5%
-              is common.
-            </InfoTip>
-          </span>
-          <input
-            type="number"
-            className="input"
-            aria-label="Superfat %"
-            min={process === 'ls' ? NEG_SUPERFAT_FLOOR : 0}
-            max={50}
-            step={0.5}
-            value={settings.superfatPercent}
-            onChange={(e) =>
-              setSettings((s) => ({ ...s, superfatPercent: e.target.value }))
-            }
-          />
-        </label>
-
         <label className="field">
           <span>Lye type</span>
           <select
@@ -149,31 +125,6 @@ export function SettingsPanel({
             />
           </label>
         )}
-
-        <label className="field">
-          <span>Water method</span>
-          <select
-            className="input"
-            aria-label="Water method"
-            value={settings.waterMode}
-            onChange={(e) =>
-              setSettings((s) => ({
-                ...s,
-                waterMode: e.target.value as typeof settings.waterMode,
-              }))
-            }
-          >
-            {waterModeChoicesFor(process).map((mode) => (
-              <option key={mode} value={mode}>{WATER_MODE_LABELS[mode]}</option>
-            ))}
-          </select>
-        </label>
-
-        <NumericSettingField
-          spec={waterField}
-          value={settings[waterField.key]}
-          onValueChange={(v) => updateField(waterField.key, v)}
-        />
 
         {purityFieldsFor(settings.lyeType).map((spec) => (
           <NumericSettingField
