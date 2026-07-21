@@ -1447,6 +1447,16 @@ a:hover {
   background: var(--accent);
 }
 
+/* Out-of-range callout above a property meter. */
+.property-status {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+
 /* Zoned property meter: plain track = too-low / too-high, shaded = suggested range,
    stronger band = target, dot = current value. */
 .property-meter {
