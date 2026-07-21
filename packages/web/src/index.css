@@ -1,3 +1,49 @@
+/* Self-hosted fonts (latin + latin-ext subsets) — no third-party CDN, so the app keeps
+   its exact typography with no network dependency. font-display: swap keeps text visible
+   during load. Files live in public/fonts/. */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/jetbrainsmono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/jetbrainsmono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
   /* Signal — Swiss-editorial / broadsheet. Separation from tone, space, weight;
      no card shadows, no gradients, no rounded SaaS containers. One accent only. */
@@ -326,42 +372,36 @@ a:hover {
 }
 
 /* ── Layout ───────────────────────────────────────────────────────────── */
+/* Three-column broadsheet: Formula · The Numbers (tinted) · The Bar. Columns fill the
+   window and wrap gracefully to 2, then 1, on narrower viewports. */
 .layout {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 2.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+  align-items: start;
+  gap: 0;
   flex: 1;
-  padding: 1.6rem 3rem 0;
+  padding: 0;
 }
 
-@media (min-width: 900px) {
-  .layout {
-    grid-template-columns: 1.5fr 1fr;
-    align-items: start;
-    gap: 3rem;
-  }
-
-  .layout__primary {
-    min-width: 0;
-  }
-
-  .sidebar {
-    grid-column: 2;
-    grid-row: 1;
-  }
-}
-
-.layout__primary {
+.col {
   display: flex;
   flex-direction: column;
   gap: 2.6rem;
   min-width: 0;
+  padding: 1.8rem 2.4rem 2.6rem;
 }
 
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 2.4rem;
+.col:first-child {
+  padding-left: 3rem;
+}
+
+.col:last-child {
+  padding-right: 3rem;
+}
+
+/* The Numbers is the tinted ground. */
+.col--numbers {
+  background: var(--surface-2);
 }
 
 /* ── Panels: flat broadsheet sections, no cards ───────────────────────── */
@@ -373,10 +413,35 @@ a:hover {
   padding: 0;
 }
 
-/* The tinted "Numbers" ground. */
+/* The tinting now comes from the whole column, so the results panel stays flat. */
 .panel--results {
-  background: var(--surface-2);
-  padding: 1.6rem 1.5rem;
+  background: transparent;
+  padding: 0;
+}
+
+/* Section numbers (01–04) — aria-hidden in markup, so they don't alter heading names. */
+.panel__num {
+  color: var(--accent);
+  margin-right: 0.55rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Editable Superfat + Water knobs at the top of The Numbers. */
+.numbers-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 1rem;
+  margin: 0 0 1.5rem;
+  padding: 0 0 1.5rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.numbers-inputs .field {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--label);
 }
 
 .panel--compact {
@@ -1556,10 +1621,20 @@ a:hover {
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
   .masthead,
-  .layout,
   .footer {
     padding-left: 1.25rem;
     padding-right: 1.25rem;
+  }
+
+  .col,
+  .col:first-child,
+  .col:last-child {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .numbers-inputs {
+    grid-template-columns: 1fr;
   }
 
   .masthead__meta {

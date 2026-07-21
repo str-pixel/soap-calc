@@ -43,7 +43,9 @@ export function RecipeOilsPanel({
   return (
     <section className="panel">
       <div className="panel__head">
-        <h2 className="panel__title">Recipe oils</h2>
+        <h2 className="panel__title">
+          <span className="panel__num" aria-hidden="true">01</span>Recipe oils
+        </h2>
         <div className="panel__head-actions">
           {/* onMouseDown preventDefault keeps focus in any active weight field, so clicking
               Undo can't blur-commit the pending draft and then undo that fresh commit. */}

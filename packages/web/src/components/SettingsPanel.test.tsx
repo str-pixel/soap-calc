@@ -26,14 +26,6 @@ function Harness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) 
   );
 }
 
-test('editing superfat updates settings state', () => {
-  render(<Harness />);
-  const input = screen.getByLabelText('Superfat %') as HTMLInputElement;
-  expect(input.value).toBe('5');
-  fireEvent.change(input, { target: { value: '8' } });
-  expect(screen.getByLabelText('superfat-echo').textContent).toBe('8');
-});
-
 test('dual lye type reveals the KOH blend field', () => {
   render(<Harness />);
   fireEvent.change(screen.getByLabelText('Lye type'), { target: { value: 'dual' } });
@@ -121,13 +113,6 @@ test('HP shows the PCSF method toggle and updates it; CP hides it', () => {
   cleanup();
   render(<Harness process="cp" />);
   expect(screen.queryByLabelText('Post-cook superfat method')).toBeNull();
-});
-
-test('superfat input allows a negative min only for LS', () => {
-  const { rerender } = render(<Harness process="cp" />);
-  expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('0');
-  rerender(<Harness process="ls" />);
-  expect(screen.getByLabelText('Superfat %').getAttribute('min')).toBe('-5');
 });
 
 describe('cook vessel volume (HP vessel-size guard input)', () => {
