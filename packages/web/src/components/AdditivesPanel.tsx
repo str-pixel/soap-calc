@@ -198,6 +198,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
             const rowName = line.name.trim() || `additive ${rowIndex + 1}`;
             return (
               <li key={line.key} className="additive-list__row">
+                <div className="additive-list__names">
                 <label className="field">
                   <span className="sr-only">Additive type</span>
                   <select
@@ -225,6 +226,8 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     onChange={(e) => updateLine(line.key, { name: e.target.value })}
                   />
                 </label>
+                </div>
+                <div className="additive-list__dose">
                 <label className="field field--compact">
                   <span className="sr-only">Amount</span>
                   <input
@@ -274,6 +277,8 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     ))}
                   </select>
                 </label>
+                </div>
+                <div className="additive-list__foot">
                 <div className="additive-list__grams" aria-live="polite">
                   {row ? formatWeight(row.grams, weightUnit) : '—'}
                 </div>
@@ -285,6 +290,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                 >
                   ×
                 </button>
+                </div>
                 {amountInvalid && (
                   <p className="additive-list__hint" role="alert">
                     Max {line.unit === 'ppt' ? '1000 ppt' : '100%'} — reduce the amount
