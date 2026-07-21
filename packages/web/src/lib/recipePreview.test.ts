@@ -14,7 +14,7 @@ const lines: RecipeLine[] = [
 describe('recipePreview', () => {
   it('uses in-progress weight drafts for preview without mutating committed lines', () => {
     const preview = previewRecipeState(lines, '1000', { 'weight-a': '16' }, 'oz', true);
-    expect(preview.lines[0].weightGrams).toBe('454');
+    expect(preview.lines[0].weightGrams).toBe('454'); // 16 oz → 454 g (integer basis)
     expect(lines[0].weightGrams).toBe('600');
   });
 
