@@ -172,22 +172,26 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="header no-print">
-        <div className="header__brand">
-          <h1>Soap Calc</h1>
-          <p className="header__tagline">
-            Lye &amp; water from a public oil database — FNWL cross-check &amp; ISO 3657 units
-          </p>
+      <header className="masthead no-print">
+        <div className="masthead__brand">
+          <h1 className="masthead__logo">Soap&nbsp;Calc</h1>
+          <div className="masthead__meta">
+            <p className="masthead__tagline">The soap calculator you actually understand.</p>
+            <p className="masthead__eyebrow">
+              Public SAP data · FNWL cross-check · ISO 3657 units
+            </p>
+          </div>
         </div>
 
-        <ProcessTabs
-          process={process}
-          onChange={setProcess}
-          processVariant={settings.processVariant}
-          onVariantChange={(processVariant) => setSettings({ ...settings, processVariant })}
-        />
+        <div className="process-bar">
+          <ProcessTabs
+            process={process}
+            onChange={setProcess}
+            processVariant={settings.processVariant}
+            onVariantChange={(processVariant) => setSettings({ ...settings, processVariant })}
+          />
 
-        <div className="recipe-toolbar">
+          <div className="recipe-toolbar">
           <label className="recipe-toolbar__name">
             <span className="sr-only">Recipe name</span>
             <input
@@ -242,6 +246,7 @@ export default function App() {
               {saveMessage}
             </p>
           )}
+          </div>
         </div>
       </header>
 
