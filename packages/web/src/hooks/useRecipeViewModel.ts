@@ -120,11 +120,15 @@ export function useRecipeViewModel({
   const percentTotalOff =
     lineTotals.totalPercent > 0 &&
     Math.abs(lineTotals.totalPercent - 100) > percentRoundingTolerance;
+  // Each line's grams is rounded to a whole gram (round(percent × total)), so a recipe that
+  // sums to 100% can still miss the batch by up to ~0.5 g per line. Absorb that — otherwise
+  // this warning fires while percentTotalOff (which tolerates the same rounding) stays clean.
+  const weightRoundingTolerance = Math.max(1, percentLineCount * 0.5 + 0.5);
   const weightTotalOff =
     Number.isFinite(batchGramsTarget) &&
     batchGramsTarget > 0 &&
     lineTotals.totalWeightGrams > 0 &&
-    Math.abs(lineTotals.totalWeightGrams - batchGramsTarget) > 1;
+    Math.abs(lineTotals.totalWeightGrams - batchGramsTarget) > weightRoundingTolerance;
   const { result: fullResult, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
     previewState.lines,
     previewSettings,

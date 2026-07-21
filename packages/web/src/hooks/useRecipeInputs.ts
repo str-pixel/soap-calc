@@ -164,8 +164,12 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     if (rounded <= 0) return;
     const batchOilGrams = String(rounded);
     discardDrafts();
+    // "Apply to batch" (mold sizer) must make the OIL WEIGHT equal the suggested total, so
+    // scale from the current gram proportions — resyncFromWeights re-derives each percent
+    // from the weights (summing to 100) so syncBatchTotalEdit then hits the target exactly,
+    // even if the recipe was mid-edit at an off-100% total.
     applySyncedUpdate((prev) => ({
-      lines: syncBatchTotalEdit(prev, batchOilGrams),
+      lines: syncBatchTotalEdit(resyncFromWeights(prev).lines, batchOilGrams),
       batchOilGrams,
       batchSetByUser: true,
     }));

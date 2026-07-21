@@ -1080,6 +1080,14 @@ a:hover {
   gap: 1.1rem;
 }
 
+.recipe-table__hint {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--warn);
+}
+
 .recipe-table__foot--warn .recipe-table__total-weight,
 .recipe-table__foot--warn .recipe-table__total-pct {
   color: var(--warn);

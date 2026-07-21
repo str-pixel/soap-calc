@@ -84,9 +84,9 @@ describe('syncPercentEdit (independent)', () => {
     expect(lines.map((l) => l.weightGrams)).toEqual(['300', '600', '100']);
   });
 
-  it('does not clamp — a percent over 100 is stored and drives grams past the batch', () => {
+  it('caps a single oil at 100% (it cannot exceed the whole) without touching siblings', () => {
     const r = syncPercentEdit(twoLines, 'a', '150', '1000', true);
-    expect(r.lines[0]).toMatchObject({ weightPercent: '150', weightGrams: '1500' });
+    expect(r.lines[0]).toMatchObject({ weightPercent: '100', weightGrams: '1000' });
     expect(r.lines[1]).toBe(twoLines[1]);
   });
 

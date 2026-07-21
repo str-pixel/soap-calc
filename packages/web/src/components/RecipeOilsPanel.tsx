@@ -235,13 +235,16 @@ export function RecipeOilsPanel({
               {showRecipeTotals ? formatRecipePercentTotal(lineTotals.totalPercent) : '—'}
             </span>
           </span>
-          {/* The `--warn` color is not perceivable to colorblind or screen-reader users; fold the
-              off-total status into the announced text (this region is aria-live) rather than
-              leaving it to color alone. */}
-          {(percentTotalOff || weightTotalOff) && (
-            <span className="sr-only">Totals don&apos;t match</span>
-          )}
         </div>
+        {/* Off-100% is now a normal, reconcilable state (entry is independent — the app no
+            longer auto-balances), so name the gap the user needs to close rather than a
+            generic "totals don't match". Also carries the status as text for colorblind /
+            screen-reader users, since the --warn color alone isn't perceivable. */}
+        {(percentTotalOff || weightTotalOff) && showRecipeTotals && (
+          <p className="recipe-table__hint" role="status">
+            Oils total {formatRecipePercentTotal(lineTotals.totalPercent)} — aim for 100%.
+          </p>
+        )}
       </div>
     </section>
   );

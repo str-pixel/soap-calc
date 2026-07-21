@@ -18,6 +18,12 @@ function formatPercent(n: number): string {
   return String(Math.round(n * 10) / 10);
 }
 
+/** A single oil can be at most 100% of the total (and never negative). This caps only the
+ * edited line's own value — it does NOT rescale the other oils. */
+function clampPercent(n: number): number {
+  return Math.min(100, Math.max(0, n));
+}
+
 function totalGrams(lines: RecipeLine[]): number {
   return lines.reduce((sum, line) => sum + (parseNum(line.weightGrams) ?? 0), 0);
 }
@@ -111,13 +117,17 @@ export function syncPercentEdit(
     if (editedPct === null) {
       return { ...line, weightPercent, weightGrams: '' };
     }
-    if (editedPct === 0) {
+    // Cap the edited line at 100% (an oil can't exceed the whole) and store it display-
+    // rounded, so the stored percent matches the input's max and the weight-derived
+    // percents' precision. Only this line is affected — siblings are never rescaled.
+    const p = clampPercent(editedPct);
+    if (p <= 0) {
       return { ...line, weightPercent: '', weightGrams: '' };
     }
-    const grams = batch !== null && batch > 0 ? (batch * editedPct) / 100 : null;
+    const grams = batch !== null && batch > 0 ? (batch * p) / 100 : null;
     return {
       ...line,
-      weightPercent,
+      weightPercent: formatPercent(p),
       weightGrams: grams !== null && grams > 0 ? formatGrams(grams) : '',
     };
   });
