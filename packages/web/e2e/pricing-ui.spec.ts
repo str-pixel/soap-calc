@@ -46,7 +46,8 @@ test('price input and unit select sit on the same line in every row', async ({ p
 
 test('panel heading uses the shared panel-title size', async ({ page }) => {
   const heading = page.getByRole('heading', { name: 'Pricing & profit' });
-  expect(await heading.evaluate((el) => getComputedStyle(el).fontSize)).toBe('16px');
+  // Shared .panel__title size — Signal section heads are 1.05rem (16.8px).
+  expect(await heading.evaluate((el) => getComputedStyle(el).fontSize)).toBe('16.8px');
 });
 
 test('cost breakdown line appears once all prices are set', async ({ page }) => {
