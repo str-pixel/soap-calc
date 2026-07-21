@@ -134,7 +134,8 @@ test('totals-off cue is textual, not color-only, and absent when totals reconcil
       inputs={inputs as any}
     />,
   );
-  expect(screen.getByText(/totals don.t match/i)).toBeTruthy();
+  // The off-total cue names the gap (and is real text, not color-only): "Oils total 90% — aim for 100%".
+  expect(screen.getByText(/oils total 90% — aim for 100%/i)).toBeTruthy();
 
   rerender(
     <RecipeOilsPanel
@@ -147,5 +148,5 @@ test('totals-off cue is textual, not color-only, and absent when totals reconcil
       inputs={inputs as any}
     />,
   );
-  expect(screen.queryByText(/totals don.t match/i)).toBeNull();
+  expect(screen.queryByText(/aim for 100%/i)).toBeNull();
 });

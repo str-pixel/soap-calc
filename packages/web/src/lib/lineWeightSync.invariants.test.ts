@@ -1,62 +1,59 @@
 import { describe, expect, it } from 'vitest';
 import { syncPercentEdit, syncWeightEdit } from './lineWeightSync';
+import type { RecipeLine } from './recipe';
 
-describe('recipe sync invariants', () => {
-  const twoLines = [
+describe('recipe sync invariants (independent entry)', () => {
+  const twoLines: RecipeLine[] = [
     { key: 'a', oilId: 'olive-oil', weightGrams: '600', weightPercent: '60' },
     { key: 'b', oilId: 'coconut-oil-76', weightGrams: '400', weightPercent: '40' },
   ];
 
-  it('keeps batch fixed when editing percent on a single-line recipe with a user-set total', () => {
+  it('single-line percent edit sets grams from the batch anchor', () => {
     const single = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000', weightPercent: '100' }];
     const result = syncPercentEdit(single, 'a', '80', '1000', true);
     expect(result.batchOilGrams).toBe('1000');
     expect(result.lines[0]).toMatchObject({ weightGrams: '800', weightPercent: '80' });
   });
 
-  it('clamps edited weight to batch when the user set the total explicitly', () => {
+  it('does NOT clamp an edited weight to the batch — it just drives that line past 100 %', () => {
     const result = syncWeightEdit(twoLines, 'a', '1500', '1000', true);
     expect(result.batchOilGrams).toBe('1000');
-    expect(result.lines[0].weightGrams).toBe('1000');
-    expect(result.lines[1].weightGrams).toBe('');
+    expect(result.lines[0]).toMatchObject({ weightGrams: '1500', weightPercent: '150' });
+    expect(result.lines[1]).toBe(twoLines[1]); // sibling untouched
   });
 
-  function sumGrams(lines: { weightGrams: string }[]): number {
-    return lines.reduce((sum, line) => sum + Number(line.weightGrams || 0), 0);
-  }
+  // The central invariant: an edit to one line returns every OTHER line by reference
+  // identity (never a copy with shifted numbers), across many lines and both columns.
+  const many: RecipeLine[] = Array.from({ length: 12 }, (_, i) => ({
+    key: `k${i}`,
+    oilId: 'olive-oil',
+    weightGrams: '50',
+    weightPercent: '5',
+  }));
 
-  it('finding #2: 10 near-equal lines under a locked batch stay summed to the batch after an edit', () => {
-    // Editing one line to near the full batch leaves the other 9 lines with very little
-    // headroom; the rounding remainder must carry across multiple lines rather than
-    // dumping onto (and clamping) a single one, which previously lost grams silently.
-    const lines = Array.from({ length: 10 }, (_, i) => ({
-      key: `k${i}`,
-      oilId: 'olive-oil',
-      weightGrams: '100',
-      weightPercent: '10',
-    }));
-    const result = syncWeightEdit(lines, 'k0', '1000', '1006', true);
-    expect(result.batchOilGrams).toBe('1006');
-    expect(sumGrams(result.lines)).toBe(1006);
-    for (const line of result.lines) {
-      expect(Number(line.weightGrams || 0)).toBeGreaterThanOrEqual(0);
+  it('editing any single line leaves all other lines referentially identical', () => {
+    for (const editKey of ['k0', 'k5', 'k11']) {
+      const w = syncWeightEdit(many, editKey, '123', '1000', true);
+      const p = syncPercentEdit(many, editKey, '12.5', '1000', true);
+      for (let i = 0; i < many.length; i++) {
+        if (many[i].key === editKey) continue;
+        expect(w.lines[i], `weight edit left ${many[i].key} untouched`).toBe(many[i]);
+        expect(p.lines[i], `percent edit left ${many[i].key} untouched`).toBe(many[i]);
+      }
     }
   });
 
-  it('finding #2: 40 near-equal lines under a locked batch stay summed to the batch after an edit', () => {
-    const lines = Array.from({ length: 40 }, (_, i) => ({
-      key: `k${i}`,
-      oilId: 'olive-oil',
-      weightGrams: '25',
-      weightPercent: '2.5',
-    }));
-    // Batch total of 1013 (40 * 25 + 13) forces a non-trivial rounding remainder; editing
-    // one line to near the full batch squeezes the other 39 lines to near-zero headroom.
-    const result = syncWeightEdit(lines, 'k0', '990', '1013', true);
-    expect(result.batchOilGrams).toBe('1013');
-    expect(sumGrams(result.lines)).toBe(1013);
-    for (const line of result.lines) {
-      expect(Number(line.weightGrams || 0)).toBeGreaterThanOrEqual(0);
+  it('never emits a negative weight or percent', () => {
+    for (const value of ['', '0', '5', '999999']) {
+      for (const out of [
+        syncWeightEdit(many, 'k0', value, '1000', true),
+        syncPercentEdit(many, 'k0', value, '1000', true),
+      ]) {
+        for (const line of out.lines) {
+          expect(Number(line.weightGrams || 0)).toBeGreaterThanOrEqual(0);
+          expect(Number(line.weightPercent || 0)).toBeGreaterThanOrEqual(0);
+        }
+      }
     }
   });
 });
