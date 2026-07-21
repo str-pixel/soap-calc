@@ -935,6 +935,47 @@ a:hover {
   opacity: 0.35;
 }
 
+/* Undo/redo: a single hairline-bordered segmented pair — reads as one "history"
+   instrument in the Signal system rather than two loose glyph buttons. */
+.history-controls {
+  display: inline-flex;
+  border: 1px solid var(--border);
+}
+
+.history-controls__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.history-controls__btn + .history-controls__btn {
+  border-left: 1px solid var(--border);
+}
+
+.history-controls__btn:hover:not(:disabled) {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.history-controls__btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.history-controls__icon {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
 /* ── Recipe table ─────────────────────────────────────────────────────── */
 .recipe-table {
   display: flex;
