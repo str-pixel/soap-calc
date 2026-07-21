@@ -762,14 +762,42 @@ a:hover {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1.4rem;
 }
 
+/* Each additive stacks into legible sub-rows so its selects/inputs are wide enough to
+   show their full text (catalog names, dose modes, stages) in the narrow Formula column. */
 .additive-list__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* Additive type + custom name. */
+.additive-list__names {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 4.5rem 1fr auto;
-  gap: 0.45rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+/* Amount + dose mode + stage. */
+.additive-list__dose {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 1fr;
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.additive-list__foot {
+  display: flex;
   align-items: center;
+  gap: 0.9rem;
+}
+
+.additive-list__names .field,
+.additive-list__dose .field {
+  min-width: 0;
 }
 
 .additive-list__grams {
@@ -777,12 +805,10 @@ a:hover {
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
   color: var(--text-figure);
-  text-align: right;
   white-space: nowrap;
 }
 
 .additive-list__hint {
-  grid-column: 1 / -1;
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -790,7 +816,6 @@ a:hover {
 }
 
 .additive-list__hazards {
-  grid-column: 1 / -1;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -807,13 +832,9 @@ a:hover {
   padding: 0.1rem 0.4rem;
 }
 
-@media (max-width: 700px) {
-  .additive-list__row {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .additive-list__grams {
-    text-align: left;
+@media (max-width: 460px) {
+  .additive-list__names {
+    grid-template-columns: 1fr;
   }
 }
 
