@@ -44,6 +44,9 @@ const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
 
 const SCALE_MAX = 100;
 
+/** Clamp a 0–100 score to a track position percentage. */
+const pct = (n: number): number => Math.max(0, Math.min(100, n));
+
 type PropertiesPanelProps = {
   result: RecipePropertiesResult;
   indexes: RecipeIndexResult;
@@ -195,6 +198,31 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       {lowCoverage ? '~' : ''}
                       {formatPropertyScore(value)}
                     </span>
+                  </div>
+                  {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
+                      suggested range, stronger band = target, dot = where this recipe lands.
+                      Decorative — the value's role="meter" and the range text carry it for AT. */}
+                  <div className="property-meter" aria-hidden="true">
+                    <span
+                      className="property-meter__band property-meter__band--suggested"
+                      style={{
+                        left: `${pct(guide.low)}%`,
+                        width: `${pct(guide.high) - pct(guide.low)}%`,
+                      }}
+                    />
+                    {preference && (
+                      <span
+                        className="property-meter__band property-meter__band--target"
+                        style={{
+                          left: `${pct(preference.low)}%`,
+                          width: `${pct(preference.high) - pct(preference.low)}%`,
+                        }}
+                      />
+                    )}
+                    <span
+                      className={`property-meter__dot${inSuggested || lowCoverage ? '' : ' property-meter__dot--outside'}`}
+                      style={{ left: `${pct(value)}%` }}
+                    />
                   </div>
                   <p className="property-bars__range">
                     Suggested {formatPropertyScoreRange(guide.low, guide.high)}

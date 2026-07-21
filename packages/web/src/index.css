@@ -428,20 +428,131 @@ a:hover {
 
 /* Editable Superfat + Water knobs at the top of The Numbers. */
 .numbers-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem 1rem;
-  margin: 0 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin: 0 0 1.6rem;
   padding: 0 0 1.5rem;
   border-bottom: 1px solid var(--hairline);
 }
 
-.numbers-inputs .field {
+/* The water-method chooser: a compact inline row, not a slider. */
+.numbers-inputs__method {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.numbers-inputs__method span {
   font-family: var(--font-mono);
   font-size: 0.62rem;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--label);
+}
+
+.numbers-inputs__method .input {
+  width: auto;
+  min-width: 11rem;
+  flex: 0 1 auto;
+}
+
+/* Signal-styled range slider: thin ink/hairline track, accent fill + thumb, editable
+   accent value readout on the right. */
+.slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.slider-field__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.slider-field__label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.slider-field__value-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.1rem;
+  color: var(--accent);
+}
+
+.slider-field__value {
+  width: 3.2rem;
+  border: none;
+  background: transparent;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  padding: 0;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.slider-field__value::-webkit-inner-spin-button,
+.slider-field__value::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.slider-field__value:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.slider-field__unit {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.slider-field__range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 0;
+  background: var(--border);
+  cursor: pointer;
+}
+
+.slider-field__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+.slider-field__range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+.slider-field__range:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 .panel--compact {
@@ -1336,6 +1447,48 @@ a:hover {
   background: var(--accent);
 }
 
+/* Zoned property meter: plain track = too-low / too-high, shaded = suggested range,
+   stronger band = target, dot = current value. */
+.property-meter {
+  position: relative;
+  height: 7px;
+  margin: 0.5rem 0 0.45rem;
+  background: var(--border);
+  overflow: visible;
+}
+
+.property-meter__band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.property-meter__band--suggested {
+  background: var(--accent-soft);
+}
+
+.property-meter__band--target {
+  background: rgb(212 11 30 / 28%);
+}
+
+.property-meter__dot {
+  position: absolute;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 2px solid var(--bg);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+/* Outside the suggested range (too low / too high) — flag the marker in the accent. */
+.property-meter__dot--outside {
+  background: var(--accent);
+}
+
 .property-legend {
   display: flex;
   flex-wrap: wrap;
@@ -1631,10 +1784,6 @@ a:hover {
   .col:last-child {
     padding-left: 1.25rem;
     padding-right: 1.25rem;
-  }
-
-  .numbers-inputs {
-    grid-template-columns: 1fr;
   }
 
   .masthead__meta {
