@@ -771,22 +771,38 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  min-width: 0;
 }
 
-/* Additive type + custom name. */
+/* Additive type + custom name, each on its own full-width line — so even the longest
+   catalog names (e.g. "Chelator (citrate, gluconate)") show in full no matter how narrow
+   the Formula column gets (a half-width cell clips them in the 2-column app layout). */
 .additive-list__names {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.55rem;
 }
 
-/* Amount + dose mode + stage. */
+/* Amount + dose mode share a line; stage gets its own — keeps each select wide enough
+   for its longest option ("ppt of solution", "In lye water") at any column width. */
 .additive-list__dose {
   display: grid;
-  grid-template-columns: 4.5rem 1fr 1fr;
+  grid-template-columns: 4.5rem 1fr;
+  grid-template-areas:
+    'amount mode'
+    'stage  stage';
   gap: 0.55rem;
-  align-items: end;
+}
+
+.additive-list__dose > :nth-child(1) {
+  grid-area: amount;
+}
+
+.additive-list__dose > :nth-child(2) {
+  grid-area: mode;
+}
+
+.additive-list__dose > :nth-child(3) {
+  grid-area: stage;
 }
 
 .additive-list__foot {
@@ -832,11 +848,6 @@ a:hover {
   padding: 0.1rem 0.4rem;
 }
 
-@media (max-width: 460px) {
-  .additive-list__names {
-    grid-template-columns: 1fr;
-  }
-}
 
 /* ── Fields / inputs ──────────────────────────────────────────────────── */
 .field {
