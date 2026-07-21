@@ -37,8 +37,8 @@ test('stays silent for a measured-only recipe', () => {
 });
 
 // PROFILE.elaidic = 22 falls in the "trans" bar (typical 0–2%), well outside its band — the panel
-// must signal that with more than color (WCAG 1.4.1): a non-color glyph plus the status folded
-// into the meter's accessible name, not left for sighted users only.
+// must signal that with more than color (WCAG 1.4.1): a non-color, real-text verdict plus the
+// status folded into the meter's accessible name, not left for sighted users only.
 test('flags an out-of-range bar with a non-color marker and names the status in the meter', () => {
   render(
     <FattyAcidPanel
@@ -48,10 +48,11 @@ test('flags an out-of-range bar with a non-color marker and names the status in 
   const transMeter = screen.getByRole('meter', { name: /Trans \(elaidic\)/i });
   expect(transMeter.getAttribute('aria-label')).toMatch(/outside typical range/i);
 
-  // A non-color, visible marker accompanies the value — not only a CSS color class.
-  const outsideValue = document.querySelector('.property-bars__value--outside');
-  expect(outsideValue).not.toBeNull();
-  expect(outsideValue?.textContent).toMatch(/[!⚠]/);
+  // A non-color, visible verdict accompanies the value — real text, not only a CSS color class.
+  // 22% against a 0–2% band reads as "Too high" on the trans row specifically.
+  const transRow = transMeter.closest('.property-bars__row');
+  expect(transRow?.querySelector('.property-bars__value--outside')).not.toBeNull();
+  expect(transRow?.querySelector('.property-bars__status')?.textContent).toMatch(/^Too high$/);
 });
 
 test('does not flag an in-range bar as outside range', () => {
