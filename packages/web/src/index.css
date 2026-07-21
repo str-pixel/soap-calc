@@ -210,6 +210,40 @@ a:hover {
 }
 
 /* ── Process / recipe bar ─────────────────────────────────────────────── */
+/* Top-level view switch (Recipe / Pricing). Underline-active "page tabs" — distinct
+   from the filled-ink process tabs so the two navs don't read as the same control. */
+.view-tabs {
+  display: flex;
+  gap: 1.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.view-tabs__tab {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.55rem 0 0.6rem;
+  margin-bottom: -1px;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-stretch: 115%;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--label);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.view-tabs__tab:hover:not(.view-tabs__tab--active) {
+  color: var(--text);
+}
+
+.view-tabs__tab--active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
 .process-bar {
   display: flex;
   align-items: flex-end;

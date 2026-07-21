@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
@@ -28,6 +28,15 @@ import type { PricingProfile } from './lib/pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
 import { buildRecipePricingContext } from './lib/recipePricing';
 
+const VIEW_STORAGE_KEY = 'soap-calc:view';
+
+const VIEWS = [
+  { key: 'recipe', label: 'Recipe' },
+  { key: 'pricing', label: 'Pricing & profit' },
+] as const;
+
+type ViewKey = (typeof VIEWS)[number]['key'];
+
 export default function App() {
   const {
     process,
@@ -49,6 +58,22 @@ export default function App() {
   } = useRecipeStorage();
 
   const importInputRef = useRef<HTMLInputElement>(null);
+  // Top-level view: the recipe calculator vs. the pricing & profit calculator (its own tab).
+  // Persisted like the rest of the workspace so a reload keeps you on the tab you were using.
+  const [view, setView] = useState<ViewKey>(() => {
+    try {
+      return localStorage.getItem(VIEW_STORAGE_KEY) === 'pricing' ? 'pricing' : 'recipe';
+    } catch {
+      return 'recipe';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, view);
+    } catch {
+      /* storage unavailable (private mode / quota) — view just won't persist */
+    }
+  }, [view]);
   const [moldSizerInput, setMoldSizerInput] = useState(loadMoldSizerInput);
   // UI-only helper inputs (not part of the saved recipe), mirroring how moldSizerInput's
   // fields are batch-sizing aids rather than recipe data: the HP cook-vessel guard input and
@@ -170,6 +195,75 @@ export default function App() {
     ],
   );
 
+  // Extracted so The Numbers reads identically in both the Recipe and Pricing views:
+  // the pricing calculator needs the same batch figures it prices, so both share one
+  // ResultsPanel element rather than duplicating its (large) prop wiring.
+  const resultsPanel = (
+    <ResultsPanel
+      result={vm.result}
+      inputErrors={vm.inputErrors}
+      lyeLabel={vm.lyeLabel}
+      process={process}
+      lyeType={vm.previewSettings.lyeType}
+      kohBlendPercent={vm.previewSettings.kohBlendPercent}
+      displayTotals={vm.displayTotals}
+      weightUnit={weightUnit}
+      waterMode={vm.previewSettings.waterMode}
+      splitLiquid={vm.previewSettings.splitLiquid}
+      splitLiquidGrams={vm.splitLiquidGrams}
+      additives={vm.computedAdditives}
+      superfatPercent={vm.previewSettings.superfatPercent}
+      postCookSuperfat={vm.postCookSuperfat}
+      pcsfIsExtra={vm.pcsfIsExtra}
+      extrasGrams={vm.extrasGrams}
+      batchWeightWithExtras={vm.batchWeightWithExtras}
+      cureEstimate={vm.cureEstimate}
+      labelWeight={vm.labelWeight}
+      totalOilGrams={vm.totalOilGrams}
+      settings={settings}
+      setSettings={setSettings}
+    />
+  );
+
+  const pricingPanel = (
+    <PricingPanel
+      context={pricingContext}
+      profile={pricingProfile}
+      onProfileChange={setPricingProfile}
+      weightUnit={weightUnit}
+    />
+  );
+
+  // WAI-ARIA tabs keyboard pattern for the view switch, matching ProcessTabs: arrow keys
+  // move selection + focus among the tabs, Home/End jump to the ends.
+  const viewIndex = VIEWS.findIndex((v) => v.key === view);
+  function handleViewKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    let nextIndex: number | null = null;
+    switch (event.key) {
+      case 'ArrowRight':
+        nextIndex = (viewIndex + 1) % VIEWS.length;
+        break;
+      case 'ArrowLeft':
+        nextIndex = (viewIndex - 1 + VIEWS.length) % VIEWS.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = VIEWS.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    setView(VIEWS[nextIndex].key);
+    const tablist = event.currentTarget.closest('[role="tablist"]');
+    const tabs = tablist
+      ? Array.from(tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+      : [];
+    tabs[nextIndex]?.focus();
+  }
+
   return (
     <div className="app">
       <header className="masthead no-print">
@@ -182,6 +276,28 @@ export default function App() {
             </p>
           </div>
         </div>
+
+        <nav className="view-tabs" role="tablist" aria-label="View">
+          {VIEWS.map((t) => {
+            const active = view === t.key;
+            return (
+              <button
+                key={t.key}
+                id={`view-tab-${t.key}`}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-controls="view-panel"
+                tabIndex={active ? 0 : -1}
+                className={`view-tabs__tab${active ? ' view-tabs__tab--active' : ''}`}
+                onClick={() => setView(t.key)}
+                onKeyDown={handleViewKeyDown}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </nav>
 
         <div className="process-bar">
           <ProcessTabs
@@ -250,114 +366,104 @@ export default function App() {
         </div>
       </header>
 
-      <main className="layout no-print">
-        {/* Column 1 — Formula: the recipe inputs. */}
-        <div className="col col--formula">
-          <RecipeOilsPanel
-            lines={lines} weightUnit={weightUnit}
-            previewState={vm.previewState} previewLineByKey={vm.previewLineByKey}
-            lineTotals={vm.lineTotals} showRecipeTotals={vm.showRecipeTotals}
-            percentTotalOff={vm.percentTotalOff} weightTotalOff={vm.weightTotalOff}
-            getDraft={getDraft} setDraft={setDraft}
-            inputs={inputs}
-          />
-
-          <AdditivesPanel
-            additives={additives}
-            computed={vm.computedAdditives}
-            weightUnit={weightUnit}
-            process={process}
-            onChange={setAdditives}
-          />
-
-          {process === 'cp' && <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />}
-
-          <SettingsPanel
-            process={process}
-            settings={settings}
-            setSettings={setSettings}
-            weightUnit={weightUnit}
-            totalOilGrams={vm.totalOilGrams}
-            lyeGrams={vm.result?.lyeWeightGrams ?? 0}
-            waterSuggestion={vm.waterSuggestion}
-            moldSizerInput={moldSizerInput}
-            onMoldSizerChange={setMoldSizerInput}
-            liveOilBatchFraction={vm.liveOilBatchFraction}
-            onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
-            vesselVolumeLiters={vesselVolumeLiters}
-            onVesselVolumeLitersChange={setVesselVolumeLiters}
-            hpVesselMultiple={vm.hpVesselMultiple}
-          />
-        </div>
-
-        {/* Column 2 — The Numbers: the computed outputs and the knobs that drive them. */}
-        <div className="col col--numbers">
-          <ResultsPanel
-            result={vm.result}
-            inputErrors={vm.inputErrors}
-            lyeLabel={vm.lyeLabel}
-            process={process}
-            lyeType={vm.previewSettings.lyeType}
-            kohBlendPercent={vm.previewSettings.kohBlendPercent}
-            displayTotals={vm.displayTotals}
-            weightUnit={weightUnit}
-            waterMode={vm.previewSettings.waterMode}
-            splitLiquid={vm.previewSettings.splitLiquid}
-            splitLiquidGrams={vm.splitLiquidGrams}
-            additives={vm.computedAdditives}
-            superfatPercent={vm.previewSettings.superfatPercent}
-            postCookSuperfat={vm.postCookSuperfat}
-            pcsfIsExtra={vm.pcsfIsExtra}
-            extrasGrams={vm.extrasGrams}
-            batchWeightWithExtras={vm.batchWeightWithExtras}
-            cureEstimate={vm.cureEstimate}
-            labelWeight={vm.labelWeight}
-            totalOilGrams={vm.totalOilGrams}
-            settings={settings}
-            setSettings={setSettings}
-          />
-
-          <PricingPanel
-            context={pricingContext}
-            profile={pricingProfile}
-            onProfileChange={setPricingProfile}
-            weightUnit={weightUnit}
-          />
-
-          {process === 'ls' && (
-            <DilutionPanel
-              dilution={vm.dilution}
-              soapConcentrationPercent={settings.soapConcentrationPercent}
-              onSoapConcentrationChange={(value) =>
-                setSettings({ ...settings, soapConcentrationPercent: value })
-              }
-              weightUnit={weightUnit}
-              bottleSizeMl={bottleSizeMl}
-              onBottleSizeMlChange={setBottleSizeMl}
+      {view === 'recipe' ? (
+        <main
+          className="layout no-print"
+          id="view-panel"
+          role="tabpanel"
+          aria-labelledby={`view-tab-${view}`}
+          tabIndex={0}
+        >
+          {/* Column 1 — Formula: the recipe inputs. */}
+          <div className="col col--formula">
+            <RecipeOilsPanel
+              lines={lines} weightUnit={weightUnit}
+              previewState={vm.previewState} previewLineByKey={vm.previewLineByKey}
+              lineTotals={vm.lineTotals} showRecipeTotals={vm.showRecipeTotals}
+              percentTotalOff={vm.percentTotalOff} weightTotalOff={vm.weightTotalOff}
+              getDraft={getDraft} setDraft={setDraft}
+              inputs={inputs}
             />
-          )}
 
-          {process === 'ls' && vm.neutralization && (
-            <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
-          )}
+            <AdditivesPanel
+              additives={additives}
+              computed={vm.computedAdditives}
+              weightUnit={weightUnit}
+              process={process}
+              onChange={setAdditives}
+            />
 
-          {process === 'ls' && <PreservePanel />}
-        </div>
+            {process === 'cp' && <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />}
 
-        {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}
-        <div className="col col--bar">
-          <PropertiesPanel
-            result={vm.properties}
-            indexes={vm.indexes}
-            modeledOilIds={vm.fattyAcids.modeledOilIds}
-            isLiquidSoap={process === 'ls'}
-          />
-          <FattyAcidPanel result={vm.fattyAcids} />
-          <FormulationInsightsPanel insights={vm.insights} />
-          <ProcessGuidePanel process={process} processVariant={settings.processVariant} />
-          <TroubleshootingPanel process={process} />
-        </div>
-      </main>
+            <SettingsPanel
+              process={process}
+              settings={settings}
+              setSettings={setSettings}
+              weightUnit={weightUnit}
+              totalOilGrams={vm.totalOilGrams}
+              lyeGrams={vm.result?.lyeWeightGrams ?? 0}
+              waterSuggestion={vm.waterSuggestion}
+              moldSizerInput={moldSizerInput}
+              onMoldSizerChange={setMoldSizerInput}
+              liveOilBatchFraction={vm.liveOilBatchFraction}
+              onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
+              vesselVolumeLiters={vesselVolumeLiters}
+              onVesselVolumeLitersChange={setVesselVolumeLiters}
+              hpVesselMultiple={vm.hpVesselMultiple}
+            />
+          </div>
+
+          {/* Column 2 — The Numbers: the computed outputs and the knobs that drive them. */}
+          <div className="col col--numbers">
+            {resultsPanel}
+
+            {process === 'ls' && (
+              <DilutionPanel
+                dilution={vm.dilution}
+                soapConcentrationPercent={settings.soapConcentrationPercent}
+                onSoapConcentrationChange={(value) =>
+                  setSettings({ ...settings, soapConcentrationPercent: value })
+                }
+                weightUnit={weightUnit}
+                bottleSizeMl={bottleSizeMl}
+                onBottleSizeMlChange={setBottleSizeMl}
+              />
+            )}
+
+            {process === 'ls' && vm.neutralization && (
+              <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
+            )}
+
+            {process === 'ls' && <PreservePanel />}
+          </div>
+
+          {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}
+          <div className="col col--bar">
+            <PropertiesPanel
+              result={vm.properties}
+              indexes={vm.indexes}
+              modeledOilIds={vm.fattyAcids.modeledOilIds}
+              isLiquidSoap={process === 'ls'}
+            />
+            <FattyAcidPanel result={vm.fattyAcids} />
+            <FormulationInsightsPanel insights={vm.insights} />
+            <ProcessGuidePanel process={process} processVariant={settings.processVariant} />
+            <TroubleshootingPanel process={process} />
+          </div>
+        </main>
+      ) : (
+        /* Pricing view: the pricing calculator beside the batch figures it prices. */
+        <main
+          className="layout no-print"
+          id="view-panel"
+          role="tabpanel"
+          aria-labelledby={`view-tab-${view}`}
+          tabIndex={0}
+        >
+          <div className="col col--numbers">{resultsPanel}</div>
+          <div className="col">{pricingPanel}</div>
+        </main>
+      )}
 
       <footer className="footer no-print">
         <p>

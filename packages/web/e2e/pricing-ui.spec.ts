@@ -14,6 +14,8 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+  // Pricing lives on its own top-level tab now.
+  await page.getByRole('tab', { name: 'Pricing & profit' }).click();
 });
 
 test('materials rows are grids with separated name/weight cells', async ({ page }) => {
