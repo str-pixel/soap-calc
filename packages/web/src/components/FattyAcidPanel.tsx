@@ -18,6 +18,9 @@ type FattyAcidPanelProps = {
 
 const SCALE_MAX = 100;
 
+/** Clamp a 0–100 percentage to a track position. */
+const pct = (n: number): number => Math.max(0, Math.min(100, n));
+
 function inGuideBand(value: number, low: number, high: number): boolean {
   return value >= low && value <= high;
 }
@@ -70,7 +73,6 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
         {FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
           const guide = FORMULATION_FATTY_ACID_GUIDE[key];
           const value = sumFattyAcids(result.profile!, acids);
-          const fillPct = Math.min(100, (value / SCALE_MAX) * 100);
           const inBand = inGuideBand(value, guide.low, guide.high);
           // Low-coverage values are already flagged as estimates (the "~" prefix); don't also
           // mark them out-of-range — the guide band isn't a meaningful signal on partial data.
@@ -80,34 +82,42 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
             <li key={key} className="property-bars__row">
               <div className="property-bars__label">
                 <span>{guide.label}</span>
-                <span
-                  className={`property-bars__value${outOfRange ? ' property-bars__value--outside' : ''}`}
-                >
-                  {/* Non-color signal for out-of-range (WCAG 1.4.1): color alone doesn't reach
-                      colorblind users, and this glyph is real text so it isn't screen-reader-silent
-                      either — the meter's aria-label below carries the same status in words. */}
-                  {outOfRange ? '! ' : ''}
-                  {lowCoverage ? '~' : ''}
-                  {formatSoapPropertyPercent(value)}
+                <span className="property-bars__reading">
+                  {/* Non-color, real-text out-of-range signal (WCAG 1.4.1), the same verdict the
+                      bar-property rows use; the meter's aria-label below also names the status. */}
+                  {outOfRange && (
+                    <span className="property-bars__status">
+                      {value < guide.low ? 'Too low' : 'Too high'}
+                    </span>
+                  )}
+                  <span
+                    className={`property-bars__value${outOfRange ? ' property-bars__value--outside' : ''}`}
+                    role="meter"
+                    aria-valuemin={0}
+                    aria-valuemax={SCALE_MAX}
+                    aria-valuenow={Math.round(value * 10) / 10}
+                    aria-label={`${guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}${outOfRange ? ' — outside typical range' : ''}`}
+                  >
+                    {lowCoverage ? '~' : ''}
+                    {formatSoapPropertyPercent(value)}
+                  </span>
                 </span>
               </div>
-              <div
-                className="property-bars__track"
-                role="meter"
-                aria-valuemin={0}
-                aria-valuemax={SCALE_MAX}
-                aria-valuenow={Math.round(value * 10) / 10}
-                aria-label={`${guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}${outOfRange ? ' — outside typical range' : ''}`}
-              >
+              {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band = typical
+                  range, dot = where this recipe lands. Decorative — the value's role="meter"
+                  and the range text carry it for AT. */}
+              <div className="property-meter" aria-hidden="true">
                 <span
-                  className="property-bars__band property-bars__band--preference"
+                  className="property-meter__band property-meter__band--suggested"
                   style={{
-                    left: `${guide.low}%`,
-                    width: `${guide.high - guide.low}%`,
+                    left: `${pct(guide.low)}%`,
+                    width: `${pct(guide.high) - pct(guide.low)}%`,
                   }}
-                  aria-hidden
                 />
-                <span className="property-bars__fill" style={{ width: `${fillPct}%` }} />
+                <span
+                  className={`property-meter__dot${outOfRange ? ' property-meter__dot--outside' : ''}`}
+                  style={{ left: `${pct(value)}%` }}
+                />
               </div>
               <p className="property-bars__range">
                 Typical {formatPropertyRangePercent(guide.low, guide.high)}
