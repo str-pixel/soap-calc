@@ -1199,7 +1199,7 @@ a:hover {
 .oil-picker__option {
   width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
   border: none;
@@ -1222,24 +1222,22 @@ a:hover {
   gap: 0.1rem;
 }
 
+/* Wrap rather than ellipsis so the full oil name / INCI is always readable while choosing. */
 .oil-picker__name {
   font-size: 0.9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .oil-picker__inci {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   color: var(--label);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .oil-picker__tag {
   flex-shrink: 0;
+  margin-top: 0.1rem;
   font-family: var(--font-mono);
   font-size: 0.62rem;
   text-transform: uppercase;
@@ -1745,9 +1743,7 @@ a:hover {
 
 .pricing-row__name {
   font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .pricing-row__unit {
