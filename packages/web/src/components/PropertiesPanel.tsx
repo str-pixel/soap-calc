@@ -199,6 +199,13 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       {formatPropertyScore(value)}
                     </span>
                   </div>
+                  {/* Out-of-range callout above the bar. Gated by !lowCoverage for the same
+                      reason as the value/dot: a partial-data estimate isn't a real signal. */}
+                  {!inSuggested && !lowCoverage && (
+                    <p className="property-status">
+                      {value < guide.low ? 'Too low' : 'Too high'}
+                    </p>
+                  )}
                   {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
                       suggested range, stronger band = target, dot = where this recipe lands.
                       Decorative — the value's role="meter" and the range text carry it for AT. */}
