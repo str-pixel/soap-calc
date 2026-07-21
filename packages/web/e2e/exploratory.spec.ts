@@ -80,8 +80,9 @@ test.afterEach(async ({ page }) => {
 test.describe('smoke & layout', () => {
   test('all always-visible panels render on CP default', async ({ page }, testInfo) => {
     await expect(page).toHaveTitle(/Soap Calc/);
+    // 'Pricing & profit' now lives on its own top-level tab, not the Recipe view.
     for (const h of [
-      'Recipe oils', 'Additives', 'Results', 'Pricing & profit', 'Process guide',
+      'Recipe oils', 'Additives', 'Results', 'Process guide',
       'Troubleshooting', 'Settings', 'Bar properties', 'Fatty acid profile',
     ]) {
       await expect(page.getByRole('heading', { name: h })).toBeVisible();
@@ -454,6 +455,11 @@ test.describe('additives', () => {
 // ---------- 9. pricing ----------
 
 test.describe('pricing & profit', () => {
+  // Pricing is its own top-level tab; the shared beforeEach lands on the Recipe view.
+  test.beforeEach(async ({ page }) => {
+    await page.getByRole('tab', { name: 'Pricing & profit' }).click();
+  });
+
   async function fillAllPrices(page: Page, value: string) {
     const inputs = page.locator('input[aria-label^="Price for"]');
     const n = await inputs.count();

@@ -2,7 +2,7 @@
 // packages/web/src/App.pricing.test.tsx
 // NOTE: the jsdom pragma above MUST be line 1 — web vitest defaults to environment:'node'.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 
 // Node 22+ defines its own (experimental, file-backed) global `localStorage` getter
@@ -44,6 +44,8 @@ afterEach(() => {
 describe('App pricing integration', () => {
   it('renders the pricing panel with the recipe default oils', () => {
     render(<App />);
+    // Pricing lives on its own top-level tab now; switch to it first.
+    fireEvent.click(screen.getByRole('tab', { name: 'Pricing & profit' }));
     // The default recipe has oils; the pricing panel heading and at least one oil row appear.
     expect(screen.getByRole('heading', { name: /pricing/i })).toBeTruthy();
     // Every default oil exposes a price input labelled "Price for <name>".
