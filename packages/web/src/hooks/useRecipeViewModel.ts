@@ -10,6 +10,7 @@ import {
 } from '../lib/calculateAdditives';
 import { estimateCure, labelWeightGrams } from '../lib/cureEstimate';
 import type { CureEstimate } from '../lib/cureEstimate';
+import { computeWorkability } from '../lib/workabilityInput';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
 import { isProcessVariantId, processProfileById } from '../lib/processProfile';
@@ -316,7 +317,32 @@ export function useRecipeViewModel({
   // referentially stable across renders — memoizing on it (rather than recomputing inline
   // every render) keeps these two objects/values stable too, which matters because
   // ResultsPanel is React.memo'd and a fresh object each render would defeat that memo (#1).
-  const cureEstimate = useMemo(() => (profile ? estimateCure(profile) : null), [profile]);
+  const workability = useMemo(
+    () =>
+      computeWorkability({
+        hardness: properties.properties?.hardness ?? null,
+        coveragePercent: properties.coveragePercent,
+        lyeConcentrationPercent: result?.lyeConcentrationPercent ?? null,
+        superfatPercent: previewSettings.superfatPercent,
+        process,
+        gelMode: previewSettings.gelMode,
+        additives: computedAdditives,
+        totalOilGrams,
+      }),
+    [
+      properties,
+      result,
+      previewSettings.superfatPercent,
+      previewSettings.gelMode,
+      computedAdditives,
+      totalOilGrams,
+      process,
+    ],
+  );
+  const cureEstimate = useMemo(
+    () => (profile ? { ...estimateCure(profile), workability } : null),
+    [profile, workability],
+  );
   // Only the water-bearing base batter evaporates over cure — after-cook extras (fragrance,
   // PCSF oil, additives) don't lose water, so the loss is computed off baseBatchGrams and
   // subtracted from the full batch weight (#6).

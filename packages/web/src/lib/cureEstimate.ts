@@ -1,3 +1,4 @@
+import type { WorkabilityEstimate } from '@soap-calc/core';
 import type { ProcessProfile } from './processProfile';
 import { PROCESS_DEFINITIONS } from './process';
 
@@ -9,15 +10,20 @@ export type CureEstimate = {
    * same profile the cure window is derived from, so it can never disagree with a
    * transiently mismatched process prop. */
   finishingLabel: string;
+  workability?: WorkabilityEstimate | null;
 };
 
 /** Cure/sequester window for a process; hot process is usable straight from the mold. */
-export function estimateCure(profile: ProcessProfile): CureEstimate {
+export function estimateCure(
+  profile: ProcessProfile,
+  workability: WorkabilityEstimate | null = null,
+): CureEstimate {
   return {
     minWeeks: profile.finish.minWeeks,
     maxWeeks: profile.finish.maxWeeks,
     usableAtUnmold: profile.process === 'hp',
     finishingLabel: PROCESS_DEFINITIONS[profile.process].terms.finishingLabel,
+    workability,
   };
 }
 

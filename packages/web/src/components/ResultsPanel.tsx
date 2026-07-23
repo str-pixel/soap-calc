@@ -12,6 +12,7 @@ import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
 import { buildAddOrderSteps, buildFullRecipe } from '../lib/recipeSummary';
 import { formatWeight } from '../lib/weightUnits';
+import { formatWorkabilityRange } from '../lib/workabilityFormat';
 import { InfoTip } from './InfoTip';
 
 type ResultsPanelProps = {
@@ -340,6 +341,46 @@ export const ResultsPanel = memo(function ResultsPanel({
             </div>
           )}
         </dl>
+      )}
+
+      {cureEstimate?.workability && (
+        <section className="results-workability">
+          <h3 className="results-workability__title">Workability</h3>
+          <span className={`chip chip--${cureEstimate.workability.confidence}`}>
+            {cureEstimate.workability.confidence} confidence
+          </span>
+          <dl className="results-workability__rows">
+            <div>
+              <dt>Unmold</dt>
+              <dd>{formatWorkabilityRange(cureEstimate.workability.unmold)}</dd>
+            </div>
+            <div>
+              <dt>Cut</dt>
+              <dd>{formatWorkabilityRange(cureEstimate.workability.cut)}</dd>
+            </div>
+            {cureEstimate.workability.stamp && (
+              <div>
+                <dt>Stamp from</dt>
+                <dd>
+                  {formatWorkabilityRange({
+                    minHours: cureEstimate.workability.stamp.opensMinHours,
+                    maxHours: cureEstimate.workability.stamp.opensMaxHours,
+                  })}
+                </dd>
+              </div>
+            )}
+          </dl>
+          {cureEstimate.workability.factors.length > 0 && (
+            <p className="results-hint">{cureEstimate.workability.factors.join(' · ')}</p>
+          )}
+          <ul className="message-list message-list--insights">
+            {cureEstimate.workability.caveats.map((c) => (
+              <li key={c} className="message-list__item--info">
+                {c}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {batchWeightWithExtras > 0 && (

@@ -1,4 +1,4 @@
-import type { AdditiveStage, DoseBasis, DoseUnit, TarLyeTreatment, WaterMode } from '@soap-calc/core';
+import type { AdditiveStage, DoseBasis, DoseUnit, GelMode, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
 import { processForLyeType } from './process';
 import { defaultVariantFor, isProcessVariantId, type ProcessVariantId } from './processProfile';
@@ -52,6 +52,7 @@ export type RecipeSettings = {
   postCookSuperfatMethod: 'append' | 'subtract';
   soapConcentrationPercent: string;
   processVariant: ProcessVariantId;
+  gelMode: GelMode;
 };
 
 export function newLineKey(): string {
@@ -92,6 +93,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   postCookSuperfatMethod: 'append',
   soapConcentrationPercent: '30',
   processVariant: 'cp',
+  gelMode: 'natural',
 };
 
 export function normalizeSplitLiquid(
@@ -111,6 +113,7 @@ export function normalizeSplitLiquid(
 
 const WATER_MODES = ['percent_of_oils', 'lye_concentration', 'lye_water_ratio'] as const;
 const LYE_TYPES = ['naoh', 'koh', 'dual'] as const;
+const GEL_MODES = ['none', 'natural', 'forced'] as const;
 
 function isWaterMode(value: unknown): value is WaterMode {
   return typeof value === 'string' && (WATER_MODES as readonly string[]).includes(value);
@@ -118,6 +121,10 @@ function isWaterMode(value: unknown): value is WaterMode {
 
 function isLyeType(value: unknown): value is RecipeSettings['lyeType'] {
   return typeof value === 'string' && (LYE_TYPES as readonly string[]).includes(value);
+}
+
+function isGelMode(value: unknown): value is GelMode {
+  return typeof value === 'string' && (GEL_MODES as readonly string[]).includes(value);
 }
 
 /**
@@ -234,6 +241,7 @@ export function normalizeSettings(
     lyeType,
     postCookSuperfatMethod,
     processVariant,
+    gelMode: isGelMode(partial?.gelMode) ? partial.gelMode : DEFAULT_SETTINGS.gelMode,
     batchSetByUser: resolveBatchProvenance(partial),
     splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
     batchOilGrams: settingString(partial?.batchOilGrams, d.batchOilGrams),

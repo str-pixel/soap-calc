@@ -1545,6 +1545,84 @@ a:hover {
   color: var(--text-muted);
 }
 
+/* ── Workability timeline (unmold / cut / stamp) ──────────────────────── */
+.results-workability {
+  margin-top: 1.6rem;
+  padding-top: 1.3rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.results-workability__title {
+  display: inline-block;
+  margin: 0 0 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.results-workability__rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.results-workability__rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-workability__rows > div:last-child {
+  border-bottom: none;
+}
+
+.results-workability__rows dt {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+}
+
+.results-workability__rows dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-figure);
+  white-space: nowrap;
+}
+
+/* Confidence chip — sits inline beside the section title. Only 'low' and
+   'moderate' exist (the estimate never claims 'high'). */
+.chip {
+  display: inline-block;
+  margin-left: 0.6rem;
+  padding: 0.08rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  vertical-align: 0.1em;
+  border: 1px solid var(--hairline);
+  color: var(--text-muted);
+}
+
+.chip--moderate {
+  color: var(--text-figure);
+  border-color: var(--hairline);
+}
+
+.chip--low {
+  color: var(--warn);
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+
 .results-partial {
   font-size: 0.75rem;
   font-weight: 400;
