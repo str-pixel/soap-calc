@@ -104,3 +104,21 @@ test('buildAddOrderSteps switches copy for liquid soap and hot process', () => {
   });
   expect(hp.join(' ')).toContain('cook to a thick, translucent paste');
 });
+
+test('buildFullRecipe omits the blend share when kohBlendPercent is missing', () => {
+  const items = buildFullRecipe({
+    lines: [{ oilId: 'olive-oil', weightGrams: 400 }],
+    recipeOilWeightGrams: 400,
+    weightUnit: 'g',
+    lyeType: 'dual',
+    naohGrams: 40,
+    kohGrams: 17,
+    lyeGrams: 57,
+    waterGrams: 130,
+    additives: [],
+    process: 'cp',
+  });
+  const names = items.map((i) => i.name);
+  expect(names).toContain('Potassium hydroxide (KOH)');
+  expect(names.some((n) => n.includes('0%'))).toBe(false);
+});

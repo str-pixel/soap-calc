@@ -19,7 +19,7 @@ const AXIS_LABEL: Record<SoapPropertyName, string> = {
 };
 
 const CX = 230;
-const CY = 162;
+const CY = 200;
 const R = 112;
 const RINGS = [0.25, 0.5, 0.75, 1];
 
@@ -45,7 +45,7 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
   const polygon = valuePoints.map((p) => `${p.x},${p.y}`).join(' ');
 
   return (
-    <svg className="property-radar" viewBox="0 0 460 350" role="presentation" aria-hidden="true">
+    <svg className="property-radar" viewBox="0 0 460 380" role="presentation" aria-hidden="true">
       {RINGS.map((f) => (
         <circle
           key={f}
@@ -95,6 +95,10 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
         const lab = point(i, n, R + 30);
         const c = Math.cos(angle(i, n));
         const anchor = c < -0.3 ? 'end' : c > 0.3 ? 'start' : 'middle';
+        // Stack the label / value / status block away from the ring so a high vertex can't
+        // crowd it: upper axes lift their block above the anchor, lower axes hang below.
+        const s = Math.sin(angle(i, n));
+        const labelY = lab.y + (s <= -0.7 ? -40 : s < -0.3 ? -20 : 0);
         const status = lowCoverage
           ? 'Low data'
           : value < guide.low
@@ -106,7 +110,7 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
           <g key={key}>
             <text
               x={lab.x}
-              y={lab.y}
+              y={labelY}
               textAnchor={anchor}
               style={{
                 fontFamily: 'var(--font-ui)',
@@ -121,7 +125,7 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
             </text>
             <text
               x={lab.x}
-              y={lab.y + 22}
+              y={labelY + 22}
               textAnchor={anchor}
               style={{
                 fontFamily: 'var(--font-ui)',
@@ -136,7 +140,7 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
             </text>
             <text
               x={lab.x}
-              y={lab.y + 37}
+              y={labelY + 37}
               textAnchor={anchor}
               style={{
                 fontFamily: 'var(--font-mono)',
