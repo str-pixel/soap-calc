@@ -1080,12 +1080,25 @@ a:hover {
   gap: 1.1rem;
 }
 
+.recipe-table__reconcile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  margin: 0.55rem 0 0;
+}
+
 .recipe-table__hint {
-  margin: 0.5rem 0 0;
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 0.66rem;
   letter-spacing: 0.04em;
   color: var(--warn);
+}
+
+.recipe-table__match-total {
+  flex: 0 0 auto;
 }
 
 .recipe-table__foot--warn .recipe-table__total-weight,

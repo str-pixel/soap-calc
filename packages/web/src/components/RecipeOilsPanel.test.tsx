@@ -17,6 +17,7 @@ function makeInputs(over: Partial<any> = {}) {
     handleWeightChange: vi.fn(), handleBatchChange: vi.fn(),
     flushCommittedDrafts: vi.fn(), discardDrafts: vi.fn(), handleExportCommitted: vi.fn(),
     handleNewRecipe: vi.fn(), handleApplySuggestedOilGrams: vi.fn(), setWeightUnit: vi.fn(),
+    matchTotalToWeights: vi.fn(),
     undo: vi.fn(), redo: vi.fn(), canUndo: false, canRedo: false,
     ...over,
   };

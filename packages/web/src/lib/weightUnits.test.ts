@@ -38,7 +38,7 @@ describe('weightUnits', () => {
 
   it('validates percent input range', () => {
     expect(parsePercentInput('50')).toBe('50');
-    expect(parsePercentInput('101')).toBeNull();
+    expect(parsePercentInput('101')).toBe('100'); // capped, not rejected
     expect(parsePercentInput('abc')).toBeNull();
     expect(parsePercentInput('36.')).toBeNull();
   });

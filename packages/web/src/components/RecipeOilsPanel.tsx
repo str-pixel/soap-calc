@@ -241,9 +241,22 @@ export function RecipeOilsPanel({
             generic "totals don't match". Also carries the status as text for colorblind /
             screen-reader users, since the --warn color alone isn't perceivable. */}
         {(percentTotalOff || weightTotalOff) && showRecipeTotals && (
-          <p className="recipe-table__hint" role="status">
-            Oils total {formatRecipePercentTotal(lineTotals.totalPercent)} — aim for 100%.
-          </p>
+          <div className="recipe-table__reconcile" role="status">
+            <p className="recipe-table__hint">
+              Oils total {formatRecipePercentTotal(lineTotals.totalPercent)} — aim for 100%.
+            </p>
+            {/* One-tap reconcile for gram-first entry: adopt the current oil weights as the
+                recipe (Total oil = their sum, percentages re-derived to 100). */}
+            {lineTotals.totalWeightGrams > 0 && (
+              <button
+                type="button"
+                className="btn btn--ghost recipe-table__match-total"
+                onClick={inputs.matchTotalToWeights}
+              >
+                Set total to {formatWeight(lineTotals.totalWeightGrams, weightUnit)}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </section>
