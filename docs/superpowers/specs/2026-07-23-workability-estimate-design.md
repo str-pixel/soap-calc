@@ -157,28 +157,31 @@ range** so no input runs away:
 1. `baseUnmold` = band lookup (min, max hours).
 2. `m = composite` (each factor clamped as above).
 3. `unmold = { min: baseUnmold.min × m, max: baseUnmold.max × m }`.
-4. **Floor + cap each edge** to `[ABSOLUTE_FLOOR_HOURS = 4, CAP_HOURS = 336]` (≈14 days). The
-   band floor (12 h) is *pre-modulator only*; modulators may push below it down to 4 h — that
-   is how forced gel + discount + sodium lactate reaches ~8 h. The cap is a hard value cap
-   applied here, before ordering, so every later edge inherits it.
-5. **Minimum band width:** if `unmold.max < unmold.min × 1.5`, set `unmold.max = min(unmold.min
-   × 1.5, CAP_HOURS)`. Guarantees D3 (never a single-point band, even at the 4 h floor).
+4. **Floor each edge** to `ABSOLUTE_FLOOR_HOURS = 4` (no hard value cap — see step 5 and the
+   display ceiling). The band floor (12 h) is *pre-modulator only*; modulators may push below
+   it down to 4 h — that is how forced gel + discount + sodium lactate reaches ~8 h.
+5. **Minimum band width:** if `unmold.max < unmold.min × 1.5`, set `unmold.max = unmold.min ×
+   1.5`. Guarantees D3 (never a single-point band). *(This is why there is no hard value cap:
+   an earlier draft capped both edges at 336 h, which collapsed the slow case to a
+   single-point 336–336 h band and broke this rule — verified by a fuzz over 25 200 inputs.
+   The 2-week ceiling is applied at **display** time instead, below, leaving internal widths
+   and ordering intact.)*
 6. `cut = { min: unmold.min + BUFFER_HOURS, max: unmold.max + BUFFER_HOURS }`,
-   `BUFFER_HOURS = 4`, added **after** flooring so it never scales away or vanishes; then
-   cap `cut.max`.
-7. `stamp = { opensMinHours: cut.max, opensMaxHours: min(cut.max × 1.3, CAP_HOURS) }` — a
-   *range for when stamping becomes possible* (not a scalar). You cut first, so it starts at
-   `cut.max`; the ×1.3 spread reflects that firmer-is-cleaner without asserting a hard close.
-   The over-hardening **close** stays a qualitative caveat (D2).
+   `BUFFER_HOURS = 4`, added **after** flooring so it never scales away or vanishes.
+7. `stamp = { opensMinHours: cut.max, opensMaxHours: cut.max × 1.3 }` — a *range for when
+   stamping becomes possible* (not a scalar). You cut first, so it starts at `cut.max`; the
+   ×1.3 spread reflects firmer-is-cleaner without asserting a hard close (the over-hardening
+   **close** stays a qualitative caveat, D2).
 8. Ordering is guaranteed by construction (`cut = unmold + positive buffer`;
    `stamp.opensMin = cut.max ≥ cut.min`), compared per-edge; overlap between unmold and cut is
-   expected and allowed.
+   expected and allowed. Monotonic non-decreasing in hardness (verified by fuzz).
 
-**Worked fast case:** hardness ≥45 → base 12–36 h; forced gel 0.55 × lye@38%≈0.82 ×
-superfat@3%≈0.95 × SL@3% 0.90 ≈ composite 0.385 → 4.6–13.9 h → floor/width → **≈5–14 h**,
-cut ≈9–18 h, stamp opens ≈18–23 h. The ~8 h unmold-and-cut the fast workflow needs, above the
-4 h floor. **Worked slow case:** 100% olive (score 14) → 192–336 h; none-gel 1.30 × lye@28%≈
-1.18 × superfat@8% 1.12 ≈ 1.72 → 330–578 h → **capped 330–336 h ≈ 2 weeks**, not 24 days.
+**Worked fast case (verified):** hardness ≥45 → base 12–36 h; forced gel 0.55 × lye@38%≈0.84
+× superfat@3%≈0.93 × SL@3% 0.90 ≈ composite 0.39 → 4.7–14.0 h → **≈5–14 h**, cut ≈9–18 h,
+stamp opens ≈18–23 h — the ~8 h unmold-and-cut the fast workflow needs, above the 4 h floor.
+**Worked slow case (verified):** 100% olive (score 14) → 192–336 h; none-gel 1.30 ×
+lye@28%≈1.19 × superfat@8% 1.12 ≈ 1.73 → 332–581 h (width 1.75×) → **displayed "≈ 2+ weeks"**,
+not a bogus 24-day figure.
 
 ### HP
 Fixed band `unmold/cut = 6–18 h`, `stamp = null` (rustic surface stamps unevenly — a texture
@@ -269,12 +272,16 @@ merged into `packages/web/src/lib/cureEstimate.ts`'s `CureEstimate` as a **new**
 field (existing `usableAtUnmold` + finishing-label logic untouched — D5) →
 rendered by `packages/web/src/components/ResultsPanel.tsx`.
 
-### Display (unit-adaptive)
+### Display (unit-adaptive, with a 2-week ceiling)
 Each range picks **one** unit from its **`maxHours`** (single stated basis), boundaries
 half-open so exactly-48 h and exactly-240 h are unambiguous:
 - `maxHours < 48` → hours (e.g. "≈ 12–36 h")
 - `48 ≤ maxHours < 240` → days (e.g. "≈ 3–5 days"; a 40–56 h range renders in days as ~2–2.3 d)
-- `maxHours ≥ 240` → weeks (e.g. "≈ 1–2 weeks")
+- `240 ≤ maxHours < 336` → weeks (e.g. "≈ 1–2 weeks")
+- `maxHours ≥ 336` (14 days) → **open-ended ceiling: render "≈ 2+ weeks"** (a single label, no
+  numeric range). This is `CEILING_HOURS = 336` applied only at display — internal values stay
+  uncapped so widths/ordering/monotonicity hold. Past two weeks the estimate is meaningless
+  precision anyway, so an open-ended label is the honest output.
 
 Both edges render in the chosen unit (no split-unit ranges). Hours round to whole numbers,
 days to 0.5, weeks to 0.5.
@@ -301,17 +308,19 @@ A compact block in `ResultsPanel` near the cure estimate:
 **Core unit tests (`workability.test.ts`):**
 - Anchors: baseline hard bar (score ≥45, natural gel, 33% lye, 5% SF) → unmold ~12–36 h;
   same + `forced` gel + ~38% lye + 3% SF + sodium-lactate → ~5–14 h (fast case, above the
-  4 h floor); 100% olive (score ~14, none gel, 28% lye, 8% SF) → capped ~2 weeks, **not**
-  ~24 days; trinity 34/33/33 (score ≈47, natural) → the 12–36 h band; all-unsaturated
-  (score ≈0, coverage high) → ~2 weeks, **not** `null`.
+  4 h floor); 100% olive (score ~14, none gel, 28% lye, 8% SF) → internal ~332–581 h,
+  **displays "≈ 2+ weeks"** (not a 24-day figure); trinity 34/33/33 (score ≈47, natural) →
+  the 12–36 h band; all-unsaturated (score ≈0, coverage high) → "2+ weeks", **not** `null`.
 - Composition: baseline recipe → composite exactly 1.0 (lye 33%, SF 5%, natural, no
-  additives all neutral). Compounded extremes stay finite and within [4 h, 336 h].
+  additives all neutral). Compounded extremes stay finite and ≥ 4 h (no upper clamp internally).
 - Monotonicity: gel `forced` < `natural` < `none`; more water (lower lye conc) ⇒ later;
   higher superfat ⇒ later; higher SL/salt dose ⇒ earlier; non-decreasing in hardness.
-- Pipeline invariants: `unmold ≤ cut ≤ stamp.opensMin` per-edge across a fuzz; band width
-  `max ≥ min × 1.5` always (no single-point band); every edge within [4, 336].
+- Pipeline invariants (fuzz ≥25 000 inputs): `unmold ≤ cut ≤ stamp.opensMin` per-edge; band
+  width `max ≥ min × 1.5` **always**, including at the display ceiling (regression: the hard
+  336 h cap collapsed the slow case to 336–336 h — must not recur); every edge ≥ 4 h.
 - Display: unit chosen from `maxHours` with half-open boundaries; a 40–56 h range renders in
-  days; exactly-48 h and exactly-240 h land on the defined side.
+  days; exactly-48 h and exactly-240 h land on the defined side; `maxHours ≥ 336` → the
+  open-ended "≈ 2+ weeks" label (no numeric range).
 - Gates: `process:'ls'` → `null`; non-finite `lyeConcentrationPercent` → `null`; CP
   `faCoverage:0` → `null`; `faCoverage:79.9` → `'low'`, `80` → `'moderate'`; HP with sparse
   coverage still returns its 6–18 h band (never `null`).
