@@ -271,3 +271,17 @@ describe('default lye purity', () => {
     expect(DEFAULT_SETTINGS.kohPurityPercent).toBe('90');
   });
 });
+
+describe('gelMode', () => {
+  it('defaults to natural when absent', () => {
+    expect(DEFAULT_SETTINGS.gelMode).toBe('natural');
+    expect(normalizeSettings({}).gelMode).toBe('natural');
+  });
+  it('preserves a valid saved value', () => {
+    expect(normalizeSettings({ gelMode: 'forced' }).gelMode).toBe('forced');
+  });
+  it('coerces an invalid value back to natural', () => {
+    // @ts-expect-error deliberately invalid
+    expect(normalizeSettings({ gelMode: 'bogus' }).gelMode).toBe('natural');
+  });
+});
