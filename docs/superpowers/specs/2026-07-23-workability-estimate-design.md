@@ -42,26 +42,29 @@ craftedsurprise & houseoftomorrow stamping-timing posts; lilswatara stamping gui
 
 ## Scope
 
-- **CP:** full chemistry timeline — unmold, cut, stamp-open.
-- **HP:** fixed short unmold/cut band (its cook/gel is intrinsic — see gel decision below);
-  stamp shown as a texture-dependent note, no chemistry window.
+- **CP:** full chemistry timeline — unmold, cut, stamp-open — modulated by a new
+  three-state CP **gel** control (see D1).
+- **HP:** fixed short unmold/cut band (its cook/gel is intrinsic); stamp shown as a
+  texture-dependent note, no chemistry window.
 - **LS:** no estimate (diluted to liquid, never molded as a bar) — returns `null`, UI omits
   the whole block.
 
 ### Explicitly out of scope (YAGNI)
-- No new gel/insulation/temperature input for CP (see decision D1).
+- No per-mold-type input or soaping-temperature input; those effects stay in caveat text.
 - No numeric stamp-window *close* edge (see decision D2).
 - No change to the existing cure-week estimate or label-weight math; this feature only
   *adds* a workability block and *derives* the existing `usableAtUnmold` boolean from it.
-- No per-mold-type input; mold effects live in the caveat text.
 
 ## Key decisions
 
-- **D1 — Gel phase is HP-only.** No CP gel input is added (it would fight the existing
-  "gel phase is optional — it changes look, not safety" copy in `CpExtrasPanel.tsx` and add
-  UI/state). CP is calibrated to the **non-gelled baseline**; forcing gel is surfaced as a
-  caveat ("insulate / force gel to reach the fast ~8 h end"). HP is inherently cooked/gelled,
-  so its speed is baked into its fixed band.
+- **D1 — CP gets a three-state gel control.** A new persisted `gelMode`
+  (`'none' | 'natural' | 'forced'`) feeds the CP timeline as a multiplier: `none`
+  (gel prevented, e.g. refrigerated) slower, `natural` baseline, `forced`
+  (insulated / CPOP) faster — the lever that reaches the fast ~8 h end. Lives in the CP
+  extras panel (the CP-only home that already discusses gel). This supersedes the earlier
+  "HP-only" idea. The existing "gel phase is optional — it changes look, not safety" myth
+  line is reworded: gel doesn't change *safety*, but it does change how fast the bar firms
+  and unmolds. HP remains fixed (its cook/gel is intrinsic, not user-selectable).
 - **D2 — Stamp window: open edge only.** The *open* edge is well-sourced (hard oils reach
   the stamp state sooner). The *close* edge ("harder recipes over-harden faster") is a
   reasoned inference, not sourced, so it is shown as a **qualitative caveat**, not a
@@ -83,10 +86,14 @@ from values the app already has. Constants live in a single tunable block marked
   `LOW_COVERAGE` threshold, 80%).
 - `lyeConcentrationPercent`, `superfatPercent` — from `packages/core/src/lye.ts`.
 - `process` — `'cp' | 'hp' | 'ls'`.
+- `gelMode` — `'none' | 'natural' | 'forced'` (CP only; ignored for HP/LS).
 - `additives` — the recipe's additive entries (id + dose), to read `sodium-lactate` and
   `salt` presence *and dose*.
 
-### CP — base bands (non-gelled baseline)
+### CP — base bands (Natural-gel baseline)
+
+The base bands below represent a **naturally-gelled** batch (`gelMode: 'natural'`, the
+default — most uninsulated CP partially gels). The gel multiplier (below) shifts them.
 
 **Unmold**, from the hardness score (calibrated to the anchors above):
 
@@ -107,13 +114,18 @@ without sticking). No close number; a caveat carries the over-hardening warning.
 
 ### Modulators (multiplicative on the whole CP timeline)
 
-Baseline = CP defaults (lye concentration 33%, superfat 5%):
+Baseline = CP defaults (lye concentration 33%, superfat 5%, `gelMode: 'natural'`):
 
+- **Gel:** `none` → slower (≈ ×1.3); `natural` → ×1.0 (baseline); `forced` → faster
+  (≈ ×0.5). This is the strongest single lever for reaching the ~8 h fast end.
 - Lye concentration: > ~35% → faster (≈ ×0.85); < ~28% → slower (≈ ×1.25); interpolate.
 - Superfat: > ~7% → slower (≈ ×1.15); < ~4% → faster (≈ ×0.9).
 - `sodium-lactate` present → faster; **scaled by dose** within its typical 1–3% range
   (about −½ to −1½ days near the fast end, floored at the fastest band).
 - `salt` present → mild hardening (≈ ×0.9), scaled by dose within its 0.05–1% range.
+
+Worked fast-case: hardness ≥45 (12–24 h base) × forced gel (×0.5) × low water/superfat and
+sodium lactate → lands at the ~8 h unmold-and-cut the fast workflow needs.
 
 ### HP
 
@@ -160,14 +172,26 @@ export function estimateWorkability(input: {
   lyeConcentrationPercent: number;
   superfatPercent: number;
   process: 'cp' | 'hp' | 'ls';
+  gelMode: 'none' | 'natural' | 'forced';
   additives: ReadonlyArray<{ id: string; dosePercent: number }>;
 }): WorkabilityEstimate | null;
 ```
+
+### State plumbing for `gelMode`
+- Add `gelMode: 'none' | 'natural' | 'forced'` to `RecipeSettings` in
+  `packages/web/src/lib/recipe.ts`, with `DEFAULT_SETTINGS.gelMode = 'natural'`.
+- Extend the settings coercion/normalizer so saved / URL-shared recipes without the field
+  fall back to `'natural'` (an `isGelMode` guard, matching the existing `isLyeType` /
+  `isWaterMode` pattern) — keeps round-trip persistence intact.
+- Render the control in `CpExtrasPanel.tsx`: it must receive the current `gelMode` and a
+  setter as props (it currently holds only local converter state), and reword the gel myth
+  line. Wired through the same App → panel path used for other settings.
 
 ### Data flow
 `recipe` →
 `calculateRecipeProperties` (hardness + coverage) +
 `lye` result (lyeConcentrationPercent, superfatPercent) +
+`settings.gelMode` +
 `recipe.additives` +
 `process`
 → `estimateWorkability()` →
@@ -188,8 +212,8 @@ A compact block in `ResultsPanel` near the cure estimate:
 - A small confidence chip.
 - A factor line (e.g. "Hard-oil score 44 · 33% lye conc · 5% superfat · sodium lactate").
 - Caveats (always shown):
-  - "Mold type, gel phase, and room temperature shift these by hours — plastic molds and
-    no-gel run slower; insulating / forcing gel runs faster (and can reach the ~8 h end)."
+  - "Mold type and room temperature shift these by hours — plastic molds run slower.
+    (Gel is set above; forcing it reaches the ~8 h end, preventing it runs slower.)"
   - "Don't wait to stamp — hard bars over-harden within a day or two and take faint,
     cracked impressions."
   - "Test firmness on a loaf offcut before stamping the batch."
@@ -198,9 +222,10 @@ A compact block in `ResultsPanel` near the cure estimate:
 ## Testing
 
 **Core unit tests (`workability.test.ts`):**
-- Anchors: hard + water-discount + sodium-lactate → unmold ~12–24 h, cut shortly after,
-  stamp opens same-day (the fast case; ~8 h reached only with the "gelled" caveat noted);
+- Anchors (at `gelMode: 'natural'`): hard + water-discount + sodium-lactate → unmold
+  ~12–24 h; hard + `forced` gel + water-discount + sodium-lactate → ~8 h (the fast case);
   100% olive → unmold ~1–2 weeks; balanced 34/33/33 → unmold ~1–2 days.
+- Gel monotonicity: `forced` < `natural` < `none` for the same recipe, on every edge.
 - Modulator monotonicity: more water ⇒ later; higher superfat ⇒ later; sodium lactate ⇒
   earlier; dose scaling moves the effect in the right direction.
 - Ordering invariant `unmold ≤ cut ≤ stampOpens` holds across a fuzz of inputs.
@@ -213,11 +238,18 @@ A compact block in `ResultsPanel` near the cure estimate:
   derived `usableAtUnmold` boolean still matches its existing expectations.
 - `ResultsPanel.test.tsx`: renders the three rows, chip, factor line, and caveats for CP;
   omits the block for LS; shows the HP texture note.
+- `CpExtrasPanel.test.tsx`: renders the three-state gel control, calls the setter on change,
+  and shows the reworded gel note.
+- `recipe.ts` settings round-trip: a recipe missing `gelMode` coerces to `'natural'`; a
+  saved `gelMode` survives serialize → parse.
 
 ## Risks & mitigations
 - **Calibration is provisional** (sparse blog anchors) → constants centralized and clearly
   marked unverified for easy re-tuning; ranges kept wide; confidence capped at moderate.
-- **Gel unmodeled for CP** → non-gelled baseline + explicit caveat; the fast ~8 h figure is
-  framed as "if gelled," not a headline output.
+- **Gel multiplier magnitudes** (×0.5 / ×1.0 / ×1.3) are estimates → tunable constants,
+  wide ranges, moderate confidence cap; `natural` default keeps existing-recipe behavior
+  sensible.
+- **New `RecipeSettings` field** → guarded coercion defaulting to `'natural'` so older saved
+  and URL-shared recipes keep loading; explicit round-trip test.
 - **`usableAtUnmold` repurposing** → derive it from the new estimate rather than replace its
   consumers; existing tests must stay green.
