@@ -301,6 +301,8 @@ A compact block in `ResultsPanel` near the cure estimate:
   - "Test firmness on a loaf offcut before cutting/stamping the batch."
   - "Salt bars (salt at 25%+ of oils) are out of scope — they must be cut within ~1–2 h and
     break the 4 h floor."
+  - Shown only when the estimate hits the "2+ weeks" ceiling: "High-olive (castile) bars can
+    exceed two weeks — a still-soft loaf at day 10 is normal, not a failed batch."
 - Hidden entirely for LS; HP shows unmold/cut + the texture note instead of a stamp row.
 
 ## Testing
