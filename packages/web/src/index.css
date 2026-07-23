@@ -516,9 +516,28 @@ a:hover {
   padding-right: 3rem;
 }
 
-/* The Numbers is the tinted ground. */
-.col--numbers {
+/* Tinted ground — carried by whichever column is the visual middle: The Bar in the Recipe
+   view, the batch-cost/results column in the Pricing view. Tint a whole column, not cards. */
+.col--tinted {
   background: var(--surface-2);
+}
+
+/* Desktop (≥3 columns): show the comp's reading order — inputs · The Bar · The Numbers — by
+   promoting The Bar ahead of The Numbers visually. DOM order stays formula → numbers → bar,
+   so at ≤2 columns The Numbers (the safety-critical lye/water figures) still sits directly
+   below the inputs instead of beneath the whole properties column. */
+@media (min-width: 63rem) {
+  .layout .col--bar {
+    order: 2;
+    /* DOM-last, but now the visual middle: hand its 3rem right-edge gutter to The Numbers
+       below and fall back to the standard column padding. */
+    padding-right: 2.4rem;
+  }
+
+  .layout .col--numbers {
+    order: 3;
+    padding-right: 3rem;
+  }
 }
 
 /* ── Panels: flat broadsheet sections, no cards ───────────────────────── */
@@ -543,7 +562,7 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* Editable Superfat + Water knobs at the top of The Numbers. */
+/* Editable Superfat + Water knobs, grouped in their own Superfat & water panel. */
 .numbers-inputs {
   display: flex;
   flex-direction: column;

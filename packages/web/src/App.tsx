@@ -360,9 +360,27 @@ export default function App() {
           aria-labelledby={`view-tab-${view}`}
           tabIndex={0}
         >
-          {/* Column 1 — Formula: the recipe inputs. */}
+          {/* Column 1 — Formula: settings, then the recipe inputs. */}
           <div className="col col--formula">
+            <SettingsPanel
+              process={process}
+              settings={settings}
+              setSettings={setSettings}
+              weightUnit={weightUnit}
+              totalOilGrams={vm.totalOilGrams}
+              lyeGrams={vm.result?.lyeWeightGrams ?? 0}
+              waterSuggestion={vm.waterSuggestion}
+              moldSizerInput={moldSizerInput}
+              onMoldSizerChange={setMoldSizerInput}
+              liveOilBatchFraction={vm.liveOilBatchFraction}
+              onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
+              vesselVolumeLiters={vesselVolumeLiters}
+              onVesselVolumeLitersChange={setVesselVolumeLiters}
+              hpVesselMultiple={vm.hpVesselMultiple}
+            />
+
             <SuperfatWaterPanel settings={settings} setSettings={setSettings} process={process} />
+
             <RecipeOilsPanel
               lines={lines} weightUnit={weightUnit}
               previewState={vm.previewState} previewLineByKey={vm.previewLineByKey}
@@ -381,23 +399,6 @@ export default function App() {
             />
 
             {process === 'cp' && <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />}
-
-            <SettingsPanel
-              process={process}
-              settings={settings}
-              setSettings={setSettings}
-              weightUnit={weightUnit}
-              totalOilGrams={vm.totalOilGrams}
-              lyeGrams={vm.result?.lyeWeightGrams ?? 0}
-              waterSuggestion={vm.waterSuggestion}
-              moldSizerInput={moldSizerInput}
-              onMoldSizerChange={setMoldSizerInput}
-              liveOilBatchFraction={vm.liveOilBatchFraction}
-              onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
-              vesselVolumeLiters={vesselVolumeLiters}
-              onVesselVolumeLitersChange={setVesselVolumeLiters}
-              hpVesselMultiple={vm.hpVesselMultiple}
-            />
           </div>
 
           {/* Column 2 — The Numbers: the computed outputs and the knobs that drive them. */}
@@ -425,7 +426,7 @@ export default function App() {
           </div>
 
           {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}
-          <div className="col col--bar">
+          <div className="col col--bar col--tinted">
             <PropertiesPanel
               result={vm.properties}
               indexes={vm.indexes}
@@ -447,7 +448,7 @@ export default function App() {
           aria-labelledby={`view-tab-${view}`}
           tabIndex={0}
         >
-          <div className="col col--numbers">{resultsPanel}</div>
+          <div className="col col--numbers col--tinted">{resultsPanel}</div>
           <div className="col">{pricingPanel}</div>
         </main>
       )}
