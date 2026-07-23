@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test } from 'vitest';
-import { render, screen, cleanup, within } from '@testing-library/react';
+import { render, screen, cleanup, within, fireEvent } from '@testing-library/react';
 import { SOAP_PROPERTY_LABELS } from '@soap-calc/core';
 import { PropertiesPanel } from './PropertiesPanel';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
@@ -126,4 +126,24 @@ test('renders no radar and a hint when there is no property data', () => {
   );
   expect(container.querySelector('.property-radar')).toBeNull();
   expect(screen.getByText(/Add triglyceride oils/i)).toBeTruthy();
+});
+
+test('defaults to the Bars view — meters visible, radar hidden', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+  );
+  expect(container.querySelector('.property-bars')).not.toBeNull();
+  expect(container.querySelector('.property-radar')).toBeNull();
+  expect(screen.getByRole('meter', { name: /Hardness/i })).toBeTruthy();
+});
+
+test('switching to Radar shows the chart and keeps the property readings for AT', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+  );
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  expect(container.querySelector('.property-radar')).not.toBeNull();
+  expect(container.querySelector('.property-bars')).toBeNull();
+  // Readings remain reachable via role=meter even though the visual bars are hidden.
+  expect(screen.getByRole('meter', { name: /Hardness/i })).toBeTruthy();
 });

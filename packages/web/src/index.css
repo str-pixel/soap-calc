@@ -1679,6 +1679,36 @@ a:hover {
   fill: var(--accent);
 }
 
+/* ── Property view toggle (Radar / Bars) ──────────────────────────────── */
+.property-view-toggle {
+  display: flex;
+  margin: 0 0 1.4rem;
+}
+
+.property-view-toggle__tab {
+  appearance: none;
+  border: 1px solid var(--text);
+  background: transparent;
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.42rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.property-view-toggle__tab + .property-view-toggle__tab {
+  margin-left: -1px;
+}
+
+.property-view-toggle__tab--active {
+  background: var(--text);
+  color: var(--bg);
+}
+
 /* ── Messages / insights ──────────────────────────────────────────────── */
 .message-list {
   margin: 0.75rem 0 0;
