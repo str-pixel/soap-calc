@@ -10,6 +10,7 @@ import { oilById } from '../lib/oils';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
+import { buildAddOrderSteps, buildFullRecipe } from '../lib/recipeSummary';
 import { formatWeight } from '../lib/weightUnits';
 import { InfoTip } from './InfoTip';
 
@@ -158,6 +159,33 @@ export const ResultsPanel = memo(function ResultsPanel({
     lyeGrams: result?.lyeWeightGrams ?? 0,
     waterGrams: result?.waterWeightGrams ?? 0,
     extrasGrams,
+  });
+  // The itemized recipe + build steps read straight off the figures above, so the on-screen
+  // summary can never quote a weight the results grid doesn't.
+  const fullRecipe = buildFullRecipe({
+    lines: result.lines.map((line) => ({ oilId: line.oilId, weightGrams: line.weightGrams })),
+    recipeOilWeightGrams,
+    weightUnit,
+    lyeType,
+    naohGrams: result.naohWeightGrams,
+    kohGrams: result.kohWeightGrams,
+    lyeGrams: result.lyeWeightGrams,
+    kohBlendPercent,
+    waterGrams: result.waterWeightGrams,
+    additives,
+    splitLiquid,
+    splitLiquidGrams,
+    postCookSuperfat,
+    postCookSuperfatName: postCookSuperfatOilName,
+    process,
+  });
+  const addOrderSteps = buildAddOrderSteps({
+    process,
+    lyeType,
+    totalOilGrams: recipeOilWeightGrams,
+    lyeGrams: result.lyeWeightGrams,
+    waterGrams: result.waterWeightGrams,
+    weightUnit,
   });
 
   return (
@@ -341,6 +369,31 @@ export const ResultsPanel = memo(function ResultsPanel({
             </div>
           ))}
         </dl>
+      )}
+
+      {!isEmpty && fullRecipe.length > 0 && (
+        <div className="results-recipe">
+          <div className="results-recipe__label">Full recipe</div>
+          <dl className="results-recipe__list">
+            {fullRecipe.map((item, index) => (
+              <div key={`${item.name}-${index}`} className="results-recipe__row">
+                <dt>{item.name}</dt>
+                <dd>{item.detail}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {!isEmpty && (
+        <div className="results-steps">
+          <div className="results-steps__label">Add in this order</div>
+          <ol className="results-steps__list">
+            {addOrderSteps.map((step, index) => (
+              <li key={index}>{step}</li>
+            ))}
+          </ol>
+        </div>
       )}
 
       {result.warnings.length > 0 && (
