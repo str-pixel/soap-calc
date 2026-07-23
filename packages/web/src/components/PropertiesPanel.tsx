@@ -205,17 +205,29 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               <ul className="sr-only" aria-label="Soap bar property readings">
                 {PROPERTY_ORDER.map((key) => {
                   const value = result.properties![key];
+                  const guide = SOAP_PROPERTY_GUIDE[key];
+                  const preference = FORMULATION_PREFERENCE_GUIDE[key];
                   return (
-                    <li
-                      key={key}
-                      role="meter"
-                      aria-valuemin={0}
-                      aria-valuemax={SCALE_MAX}
-                      aria-valuenow={Math.round(value)}
-                      aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatPropertyScore(value)}`}
-                    >
-                      {SOAP_PROPERTY_LABELS[key]}: {lowCoverage ? '~' : ''}
-                      {formatPropertyScore(value)}
+                    <li key={key}>
+                      <span
+                        role="meter"
+                        aria-valuemin={0}
+                        aria-valuemax={SCALE_MAX}
+                        aria-valuenow={Math.round(value)}
+                        aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatPropertyScore(value)}`}
+                      >
+                        {SOAP_PROPERTY_LABELS[key]}: {lowCoverage ? '~' : ''}
+                        {formatPropertyScore(value)}
+                      </span>{' '}
+                      {/* Match the Bars rows: keep the suggested/target range in AT reach
+                          in Radar mode too, so switching views never drops the context. */}
+                      Suggested {formatPropertyScoreRange(guide.low, guide.high)}
+                      {preference && (
+                        <>
+                          {' · '}
+                          Target {formatPropertyScoreRange(preference.low, preference.high)}
+                        </>
+                      )}
                     </li>
                   );
                 })}

@@ -107,7 +107,7 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
   return (
     <section className="panel">
       <h2 className="panel__title">Superfat &amp; water</h2>
-      <div className="numbers-inputs numbers-inputs--panel">
+      <div className="numbers-inputs">
         <SliderField
           label="Superfat"
           valueLabel="Superfat %"

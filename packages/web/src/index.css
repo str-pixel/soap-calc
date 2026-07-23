@@ -567,17 +567,6 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
-  margin: 0 0 1.6rem;
-  padding: 0 0 1.5rem;
-  border-bottom: 1px solid var(--hairline);
-}
-
-/* Standalone panel context (Superfat & water) — no header-divider border/padding, since
-   it's its own section now rather than a block stacked atop the Results figures. */
-.numbers-inputs--panel {
-  margin: 0;
-  padding: 0;
-  border-bottom: 0;
 }
 
 /* The water-method chooser: a compact inline row, not a slider. */
