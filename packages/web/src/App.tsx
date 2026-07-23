@@ -354,7 +354,7 @@ export default function App() {
 
       {view === 'recipe' ? (
         <main
-          className="layout no-print"
+          className="layout layout--recipe no-print"
           id="view-panel"
           role="tabpanel"
           aria-labelledby={`view-tab-${view}`}

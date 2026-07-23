@@ -87,7 +87,7 @@ export function SettingsPanel({
     <section className="panel">
       <h2 className="panel__title">Settings</h2>
       <p className="panel__subtitle">
-        Superfat and the water ratio sit in the Superfat&nbsp;&amp;&nbsp;water panel above.
+        Superfat and the water ratio sit in the Superfat&nbsp;&amp;&nbsp;water panel below.
       </p>
       <div className="settings-grid">
         <label className="field">

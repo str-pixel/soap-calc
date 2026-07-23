@@ -12,6 +12,7 @@ import {
 } from '@soap-calc/core';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
 import { oilDisplayName } from '../lib/oilDisplay';
+import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
 import { InfoTip } from './InfoTip';
 import { ModeledOilsNote } from './ModeledOilsNote';
 import { PropertyRadar } from './PropertyRadar';
@@ -44,6 +45,8 @@ const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
 
 const SCALE_MAX = 100;
 
+const PROPERTY_VIEWS: Array<'radar' | 'bars'> = ['radar', 'bars'];
+
 /** Clamp a 0–100 score to a track position percentage. */
 const pct = (n: number): number => Math.max(0, Math.min(100, n));
 
@@ -73,6 +76,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   const lowCoverage = result.properties
     ? Math.round(result.coveragePercent) < LOW_COVERAGE_PERCENT
     : false;
+  const viewActiveIndex = PROPERTY_VIEWS.indexOf(view);
+  const handleViewKeyDown = makeTabsKeyDownHandler(PROPERTY_VIEWS, viewActiveIndex, setView);
   const showIndexes = indexes.iodine !== null && indexes.ins !== null;
   const indexPartial = indexes.coveragePercent < 99.9;
   const indexLowCoverage =
@@ -168,8 +173,10 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               type="button"
               role="tab"
               aria-selected={view === 'radar'}
+              tabIndex={view === 'radar' ? 0 : -1}
               className={`property-view-toggle__tab${view === 'radar' ? ' property-view-toggle__tab--active' : ''}`}
               onClick={() => setView('radar')}
+              onKeyDown={handleViewKeyDown}
             >
               Radar
             </button>
@@ -177,8 +184,10 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               type="button"
               role="tab"
               aria-selected={view === 'bars'}
+              tabIndex={view === 'bars' ? 0 : -1}
               className={`property-view-toggle__tab${view === 'bars' ? ' property-view-toggle__tab--active' : ''}`}
               onClick={() => setView('bars')}
+              onKeyDown={handleViewKeyDown}
             >
               Bars
             </button>

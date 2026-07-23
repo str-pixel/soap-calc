@@ -526,15 +526,15 @@ a:hover {
    promoting The Bar ahead of The Numbers visually. DOM order stays formula → numbers → bar,
    so at ≤2 columns The Numbers (the safety-critical lye/water figures) still sits directly
    below the inputs instead of beneath the whole properties column. */
-@media (min-width: 63rem) {
-  .layout .col--bar {
+@media (min-width: 64rem) {
+  .layout--recipe .col--bar {
     order: 2;
     /* DOM-last, but now the visual middle: hand its 3rem right-edge gutter to The Numbers
        below and fall back to the standard column padding. */
     padding-right: 2.4rem;
   }
 
-  .layout .col--numbers {
+  .layout--recipe .col--numbers {
     order: 3;
     padding-right: 3rem;
   }
@@ -1804,6 +1804,10 @@ a:hover {
 
 .property-view-toggle__tab + .property-view-toggle__tab {
   margin-left: -1px;
+}
+
+.property-view-toggle__tab:hover:not(.property-view-toggle__tab--active) {
+  color: var(--text);
 }
 
 .property-view-toggle__tab--active {
