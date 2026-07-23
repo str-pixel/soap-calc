@@ -35,7 +35,8 @@ test('an after-cook additive uses the process-aware label — LS shows "After di
     />,
   );
   // The always-visible Results sidebar must say "After dilution" on LS, not the raw "After cook".
-  expect(screen.getByText(/After dilution/)).toBeTruthy();
+  // (Now shown both in the additive amounts and the Full recipe list, so allow more than one.)
+  expect(screen.getAllByText(/After dilution/).length).toBeGreaterThan(0);
   expect(screen.queryByText(/After cook/)).toBeNull();
 });
 
@@ -75,7 +76,8 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
       postCookSuperfat={{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }}
     />,
   );
-  expect(screen.getByText(/Shea Butter/)).toBeTruthy();
+  // Shea Butter now appears in both the post-cook-superfat line and the Full recipe list.
+  expect(screen.getAllByText(/Shea Butter/).length).toBeGreaterThan(0);
   expect(screen.getByText('30 g')).toBeTruthy();
   // cook (5% default) + post-cook (3%) = 8%
   expect(screen.getByText('8%')).toBeTruthy();
@@ -258,4 +260,27 @@ test('LS with zero water loss shows the sequester window but no separate label-w
   );
   expect(screen.getByText(/≈ 1–4 weeks/)).toBeTruthy();
   expect(screen.queryByText(/Label weight/i)).toBeNull();
+});
+
+test('renders the Full recipe list and process-aware Add-in-order steps', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      totalOilGrams={displayTotals?.recipeOilWeightGrams ?? 0}
+    />,
+  );
+  expect(screen.getByText('Full recipe')).toBeTruthy();
+  expect(screen.getByText('Add in this order')).toBeTruthy();
+  // Itemized alkali by its full name (the grid uses the short "NaOH").
+  expect(screen.getByText('Sodium hydroxide (NaOH)')).toBeTruthy();
+  // CP build steps keep the lye-into-water safety note.
+  expect(screen.getByText(/never the reverse/)).toBeTruthy();
 });
