@@ -398,7 +398,13 @@ export default function App() {
               onChange={setAdditives}
             />
 
-            {process === 'cp' && <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />}
+            {process === 'cp' && (
+              <CpExtrasPanel
+                totalOilGrams={vm.totalOilGrams}
+                gelMode={settings.gelMode}
+                onGelModeChange={(gelMode) => setSettings({ ...settings, gelMode })}
+              />
+            )}
           </div>
 
           {/* Column 2 — The Numbers: the computed outputs and the knobs that drive them. */}
