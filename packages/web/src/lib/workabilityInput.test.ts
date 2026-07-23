@@ -33,4 +33,11 @@ describe('computeWorkability', () => {
     });
     expect(e).toBeNull();
   });
+  it('treats an empty superfat field as 0% (still returns an estimate, not null)', () => {
+    const e = computeWorkability({
+      hardness: 47, coveragePercent: 100, lyeConcentrationPercent: 33,
+      superfatPercent: '', process: 'cp', gelMode: 'natural', additives: [], totalOilGrams: 500,
+    });
+    expect(e).not.toBeNull();
+  });
 });

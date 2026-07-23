@@ -1,6 +1,8 @@
-import type { WorkabilityRange } from '@soap-calc/core';
+import { WORKABILITY_TUNING, type WorkabilityRange } from '@soap-calc/core';
 
-const CEILING_HOURS = 336; // 14 days — display ceiling only (see design doc)
+// 14 days — display ceiling only. Single-sourced from the estimator's tuning so the
+// display cutoff can never silently drift from the model's own ceiling constant.
+const CEILING_HOURS = WORKABILITY_TUNING.ceilingHours;
 const half = (x: number): number => Math.round(x * 2) / 2;
 
 /** Unit-adaptive label chosen from maxHours; open-ended "2+ weeks" at/over the 14-day ceiling. */

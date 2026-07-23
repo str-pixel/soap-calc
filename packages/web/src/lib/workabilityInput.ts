@@ -25,7 +25,10 @@ export function computeWorkability(args: {
     hardnessScore: args.hardness ?? 0,
     faCoverage: args.coveragePercent,
     lyeConcentrationPercent: args.lyeConcentrationPercent ?? Number.NaN,
-    superfatPercent: Number.parseFloat(args.superfatPercent),
+    // Use Number(), not parseFloat(): an empty field must read as 0 (matching the app's
+    // parseSuperfat, which shows results at 0% superfat) rather than NaN — otherwise the
+    // whole block would uniquely vanish mid-edit while every other result stays visible.
+    superfatPercent: Number(args.superfatPercent),
     process: args.process,
     gelMode: args.gelMode,
     additives: additivesToDoses(args.additives, args.totalOilGrams),
