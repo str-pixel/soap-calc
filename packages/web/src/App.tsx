@@ -15,6 +15,7 @@ import { PropertiesPanel } from './components/PropertiesPanel';
 import { RecipeOilsPanel } from './components/RecipeOilsPanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { SettingsPanel } from './components/SettingsPanel';
+import { SuperfatWaterPanel } from './components/SuperfatWaterPanel';
 import { useDraftInputs } from './hooks/useDraftInputs';
 import { useRecipeAutosave } from './hooks/useRecipeAutosave';
 import { useRecipeEditor } from './hooks/useRecipeEditor';
@@ -220,8 +221,6 @@ export default function App() {
       cureEstimate={vm.cureEstimate}
       labelWeight={vm.labelWeight}
       totalOilGrams={vm.totalOilGrams}
-      settings={settings}
-      setSettings={setSettings}
     />
   );
 
@@ -376,6 +375,7 @@ export default function App() {
         >
           {/* Column 1 — Formula: the recipe inputs. */}
           <div className="col col--formula">
+            <SuperfatWaterPanel settings={settings} setSettings={setSettings} process={process} />
             <RecipeOilsPanel
               lines={lines} weightUnit={weightUnit}
               previewState={vm.previewState} previewLineByKey={vm.previewLineByKey}
