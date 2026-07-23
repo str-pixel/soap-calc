@@ -116,7 +116,9 @@ export function estimateWorkability(input: WorkabilityInput): WorkabilityEstimat
   const hardness = clamp(input.hardnessScore, T.hardnessClamp[0], T.hardnessClamp[1]);
   const band = T.bands.find((b) => hardness >= b.min) ?? T.bands[T.bands.length - 1];
 
-  const gelMode: GelMode = input.gelMode in T.gel ? input.gelMode : 'natural';
+  // Object.hasOwn, not `in`: `in` walks the prototype chain, so a garbage gelMode like
+  // 'toString' would pass and turn the multiplier into a Function → NaN hours.
+  const gelMode: GelMode = Object.hasOwn(T.gel, input.gelMode) ? input.gelMode : 'natural';
   const slDose = clamp(sumDose(input.additives, 'sodium-lactate'), T.sodiumLactate.doseClamp[0], T.sodiumLactate.doseClamp[1]);
   const saltDose = clamp(sumDose(input.additives, 'salt'), T.salt.doseClamp[0], T.salt.doseClamp[1]);
 

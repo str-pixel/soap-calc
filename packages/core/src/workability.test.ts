@@ -88,6 +88,10 @@ describe('estimateWorkability', () => {
   it('guards: unknown gelMode→natural; SL dose clamps; hardness clamps', () => {
     // @ts-expect-error deliberately invalid
     expect(est({ gelMode: 'bogus' })!.unmold).toEqual(est({ gelMode: 'natural' })!.unmold);
+    // Prototype-chain hole: 'toString' passes an `in` check ('toString' in {}) === true,
+    // turning the gel multiplier into a Function → NaN hours. Must fall back to natural.
+    // @ts-expect-error deliberately invalid
+    expect(est({ gelMode: 'toString' })!.unmold).toEqual(est({ gelMode: 'natural' })!.unmold);
     const clamped = est({ additives: [{ id: 'sodium-lactate', dosePercent: 50 }] })!;
     const atMax = est({ additives: [{ id: 'sodium-lactate', dosePercent: 3 }] })!;
     expect(clamped.unmold.minHours).toBeCloseTo(atMax.unmold.minHours, 5);

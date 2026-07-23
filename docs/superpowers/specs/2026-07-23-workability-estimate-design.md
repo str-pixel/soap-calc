@@ -345,6 +345,14 @@ A compact block in `ResultsPanel` near the cure estimate:
 ## Risks & mitigations
 - **Calibration is provisional** (blog/anecdote anchors, no validated formula) → all
   constants in one tunable block, wide ranges, confidence capped at moderate, honest caveats.
+  **Closing the loop:** `packages/core/src/workability-calibration.test.ts` executes the real
+  estimator against sourced field anchors (coverage table logged on every run) and carries a
+  `REAL_BATCHES` section + step-by-step protocol for recording actual unmold hours and
+  retuning `WORKABILITY_TUNING` once ≥5 batches disagree in a consistent direction.
+  Known tensions as of 2026-07-24: trinity anchor 23% field coverage and sixty-hard 40% —
+  the 44–47 score seam splits near-identical recipes across the 45 band boundary, and the
+  model's bands there are narrower than the field's 18–96 h variance. Deliberately NOT
+  retuned on anecdotes; real batches decide.
 - **Gel & modulator magnitudes** are estimates → tunable; `natural`/33%/5% compose to exactly
   ×1.0 so a default recipe is never silently shifted.
 - **Water is co-primary, not secondary** (sources: physical hardness tracks water as much as
