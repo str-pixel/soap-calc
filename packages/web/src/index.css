@@ -1495,13 +1495,6 @@ a:hover {
   color: var(--warn);
 }
 
-.property-bars__range {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--caption);
-}
-
 /* Value cluster on a property row: optional out-of-range verdict + the score, sharing
    one baseline so the judgment reads as part of the number. */
 .property-bars__reading {
@@ -1542,23 +1535,6 @@ a:hover {
 
 .property-meter__band--target {
   background: rgb(212 11 30 / 28%);
-}
-
-.property-meter__dot {
-  position: absolute;
-  top: 50%;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--text);
-  border: 2px solid var(--bg);
-  transform: translate(-50%, -50%);
-  z-index: 2;
-}
-
-/* Outside the suggested range (too low / too high) — flag the marker in the accent. */
-.property-meter__dot--outside {
-  background: var(--accent);
 }
 
 /* Vertical capsule marker — where this recipe lands on the 0–100 track. Taller than

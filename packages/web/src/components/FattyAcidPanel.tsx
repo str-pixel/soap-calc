@@ -21,6 +21,20 @@ const SCALE_MAX = 100;
 /** Clamp a 0–100 percentage to a track position. */
 const pct = (n: number): number => Math.max(0, Math.min(100, n));
 
+// A boundary tick renders unless it would clip off the track edge — a value at/near 0 centered
+// with translateX(-50%) spills past the left edge. Values ≥3% clear it even on a ~300px mobile
+// track, so linolenic's 0/1 and the 0–2 trace bands drop while 4 (ricinoleic) still shows.
+const TICK_EDGE = 3;
+const tickFits = (position: number): boolean =>
+  pct(position) >= TICK_EDGE && pct(position) <= 100 - TICK_EDGE;
+
+// A "Low"/"High" caption yields to any tick that lands in its end zone, so the precise number
+// shows in place of the generic label instead of colliding with it. Unlike the mid-scale
+// bar-property bands, several fatty-acid bands hug zero (linoleic 7–14, ricinoleic 4–7), so
+// their numbers fall where the caption sits; the number is the more useful of the two. The zone
+// must exceed the caption's width as a share of the narrowest real track (~300px): 9% clears it.
+const CAPTION_ZONE = 9;
+
 function inGuideBand(value: number, low: number, high: number): boolean {
   return value >= low && value <= high;
 }
@@ -78,6 +92,18 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           // mark them out-of-range — the guide band isn't a meaningful signal on partial data.
           const outOfRange = !inBand && !lowCoverage;
 
+          // Scale row: render each boundary number that fits, and hide a Low/High caption when a
+          // fitting tick would otherwise collide with it (see CAPTION_ZONE). Both ends checked
+          // symmetrically so a left-hugging band (ricinoleic 4–7) yields Low, not High.
+          const lowFits = tickFits(guide.low);
+          const highFits = tickFits(guide.high);
+          const showLow =
+            !(lowFits && pct(guide.low) < CAPTION_ZONE) &&
+            !(highFits && pct(guide.high) < CAPTION_ZONE);
+          const showHigh =
+            !(highFits && pct(guide.high) > 100 - CAPTION_ZONE) &&
+            !(lowFits && pct(guide.low) > 100 - CAPTION_ZONE);
+
           return (
             <li key={key} className="property-bars__row">
               <div className="property-bars__label">
@@ -104,8 +130,8 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
                 </span>
               </div>
               {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band = typical
-                  range, dot = where this recipe lands. Decorative — the value's role="meter"
-                  and the range text carry it for AT. */}
+                  range, marker = where this recipe lands. Decorative — the value's role="meter"
+                  and the sr-only range text carry it for AT. */}
               <div className="property-meter" aria-hidden="true">
                 <span
                   className="property-meter__band property-meter__band--suggested"
@@ -115,13 +141,29 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
                   }}
                 />
                 <span
-                  className={`property-meter__dot${outOfRange ? ' property-meter__dot--outside' : ''}`}
+                  className={`property-meter__marker${outOfRange ? ' property-meter__marker--outside' : ''}`}
                   style={{ left: `${pct(value)}%` }}
                 />
               </div>
-              <p className="property-bars__range">
-                Typical {formatPropertyRangePercent(guide.low, guide.high)}
-              </p>
+              {/* Scale row: Low / High at the extremes, typical-range boundary numbers under the
+                  band edges. A caption yields to a boundary number that lands in its zone. */}
+              <div className="property-meter__scale" aria-hidden="true">
+                {showLow && <span className="property-meter__extreme">Low</span>}
+                {lowFits && (
+                  <span className="property-meter__tick" style={{ left: `${pct(guide.low)}%` }}>
+                    {Math.round(guide.low)}
+                  </span>
+                )}
+                {highFits && (
+                  <span className="property-meter__tick" style={{ left: `${pct(guide.high)}%` }}>
+                    {Math.round(guide.high)}
+                  </span>
+                )}
+                {showHigh && (
+                  <span className="property-meter__extreme property-meter__extreme--high">High</span>
+                )}
+              </div>
+              <p className="sr-only">Typical {formatPropertyRangePercent(guide.low, guide.high)}</p>
             </li>
           );
         })}
