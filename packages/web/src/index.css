@@ -1724,50 +1724,14 @@ a:hover {
 }
 
 /* ── Property radar ───────────────────────────────────────────────────── */
+/* Rings, spokes, polygon, and axis-label typography are inline on the SVG (the whole chart
+   is decorative — the panel's sr-only meter list carries the readings for AT). */
 .property-radar {
   display: block;
   width: 100%;
-  max-width: 300px;
+  max-width: 420px;
   margin: 0 auto 1.4rem;
   overflow: visible;
-}
-
-.property-radar__grid {
-  fill: none;
-  stroke: var(--border);
-  stroke-width: 1;
-}
-
-.property-radar__spoke {
-  stroke: var(--border);
-  stroke-width: 1;
-}
-
-.property-radar__axis-label {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 500;
-  fill: var(--text-strong);
-}
-
-.property-radar__band {
-  fill: var(--accent-soft);
-  stroke: none;
-}
-
-.property-radar__recipe {
-  fill: var(--accent-soft);
-  stroke: var(--text);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
-}
-
-.property-radar__recipe--estimated {
-  stroke-dasharray: 4 3;
-}
-
-.property-radar__vertex {
-  fill: var(--accent);
 }
 
 /* ── Property view toggle (Radar / Bars) ──────────────────────────────── */
