@@ -243,13 +243,26 @@ test.describe('edge inputs', () => {
     expect(parseFloat(v)).toBeGreaterThanOrEqual(0);
   });
 
-  test('percent edit >100 does not corrupt state', async ({ page }) => {
+  test('percent edit >100 caps at 100 and leaves the other oils untouched', async ({ page }) => {
+    // Independent entry: an over-100 entry is capped to 100 on that line only; siblings
+    // are never rescaled, and nothing goes negative/NaN.
+    const before = await percentInputs(page).evaluateAll((els) =>
+      (els as HTMLInputElement[]).map((e) => e.value),
+    );
     await percentInputs(page).nth(0).fill('150');
     await percentInputs(page).nth(0).blur();
     await expect(page.locator('.panel--results')).toBeVisible();
-    const pcts = (await percentInputs(page).evaluateAll((els) => (els as HTMLInputElement[]).map((e) => e.value))).map(Number);
-    const sum = pcts.reduce((a, b) => a + b, 0);
-    expect(relClose(sum, 100, 0.01, 0.5), `percent sum ${sum} after 150% commit`).toBe(true);
+    const after = await percentInputs(page).evaluateAll((els) =>
+      (els as HTMLInputElement[]).map((e) => e.value),
+    );
+    expect(after[0], 'edited oil capped to 100%').toBe('100');
+    for (let i = 1; i < after.length; i++) {
+      expect(after[i], `sibling ${i} unchanged`).toBe(before[i]);
+    }
+    for (const v of after) {
+      const n = Number(v || 0);
+      expect(Number.isFinite(n) && n >= 0, `percent ${v} is finite and non-negative`).toBe(true);
+    }
   });
 
   test('duplicate oil lines are tolerated', async ({ page }) => {

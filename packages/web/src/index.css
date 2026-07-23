@@ -1080,12 +1080,25 @@ a:hover {
   gap: 1.1rem;
 }
 
+.recipe-table__reconcile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  margin: 0.55rem 0 0;
+}
+
 .recipe-table__hint {
-  margin: 0.5rem 0 0;
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 0.66rem;
   letter-spacing: 0.04em;
   color: var(--warn);
+}
+
+.recipe-table__match-total {
+  flex: 0 0 auto;
 }
 
 .recipe-table__foot--warn .recipe-table__total-weight,
@@ -1482,13 +1495,6 @@ a:hover {
   color: var(--warn);
 }
 
-.property-bars__range {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--caption);
-}
-
 /* Value cluster on a property row: optional out-of-range verdict + the score, sharing
    one baseline so the judgment reads as part of the number. */
 .property-bars__reading {
@@ -1531,21 +1537,55 @@ a:hover {
   background: rgb(212 11 30 / 28%);
 }
 
-.property-meter__dot {
+/* Vertical capsule marker — where this recipe lands on the 0–100 track. Taller than
+   the track so it reads as a slider handle riding over the shaded range. */
+.property-meter__marker {
   position: absolute;
   top: 50%;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
+  width: 7px;
+  height: 17px;
+  border-radius: 4px;
   background: var(--text);
   border: 2px solid var(--bg);
   transform: translate(-50%, -50%);
   z-index: 2;
 }
 
-/* Outside the suggested range (too low / too high) — flag the marker in the accent. */
-.property-meter__dot--outside {
+.property-meter__marker--outside {
   background: var(--accent);
+}
+
+/* Scale row under the track: LOW / HIGH at the extremes, suggested-range
+   boundary numbers positioned under the band edges. */
+.property-meter__scale {
+  position: relative;
+  height: 0.95rem;
+  margin: 0 0 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--caption);
+}
+
+.property-meter__extreme {
+  position: absolute;
+  top: 0;
+  left: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.property-meter__extreme--high {
+  left: auto;
+  right: 0;
+}
+
+.property-meter__tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 .property-legend {

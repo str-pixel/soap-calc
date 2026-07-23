@@ -65,7 +65,10 @@ export function parsePercentInput(value: string): string | null {
   if (value === '') return '';
   if (!isCompleteNumericInput(value)) return null;
   const n = Number(value);
-  if (!Number.isFinite(n) || n < 0 || n > 100) return null;
+  if (!Number.isFinite(n) || n < 0) return null;
+  // An oil can't exceed 100% of the total: cap it visibly (the field shows 100) rather
+  // than rejecting the commit, which used to snap the field back to its old value silently.
+  if (n > 100) return '100';
   return value;
 }
 

@@ -70,6 +70,7 @@ export type RecipeInputs = {
   setWeightUnit: (nextUnit: WeightUnit) => void;
   addLine: () => void;
   removeLine: (key: string) => void;
+  matchTotalToWeights: () => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -256,8 +257,17 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     clearDraft(percentInputId(key));
   }
 
+  // Reconcile a weight-first recipe: set "Total oil" to the current sum of oil weights and
+  // re-derive each percent from the weights (so they sum to 100). Lets gram-first makers
+  // clear the off-100% warning in one tap without the app auto-following their weights.
+  function matchTotalToWeights() {
+    discardDrafts();
+    applySyncedUpdate((prev) => resyncFromWeights(prev));
+  }
+
   return { weightInputId, percentInputId, batchInputId, updateLine, flushCommittedDrafts,
     discardDrafts, handleExportCommitted, handleNewRecipe, handleApplySuggestedOilGrams,
     commitWeightInput, commitPercentInput, commitBatchInput, handleWeightChange,
-    handleBatchChange, setWeightUnit, addLine, removeLine, undo, redo, canUndo, canRedo };
+    handleBatchChange, setWeightUnit, addLine, removeLine, matchTotalToWeights,
+    undo, redo, canUndo, canRedo };
 }
