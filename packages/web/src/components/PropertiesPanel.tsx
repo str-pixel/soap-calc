@@ -244,10 +244,6 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   );
                 })}
               </ul>
-              <p className="property-legend">
-                <span className="property-legend__swatch property-legend__swatch--suggested" />
-                Shaded band on the chart = suggested range
-              </p>
             </>
           ) : (
             <ul className="property-bars" aria-label="Soap bar properties">

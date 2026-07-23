@@ -22,27 +22,38 @@ test('renders an aria-hidden svg with a recipe polygon', () => {
   expect(container.querySelector('[data-testid="radar-recipe"]')).toBeTruthy();
 });
 
-test('marks the recipe polygon estimated under low coverage', () => {
+test('dashes the recipe polygon under low coverage', () => {
   const { container } = render(
     <PropertyRadar properties={PROPS} order={ORDER} lowCoverage />,
   );
-  const recipe = container.querySelector('[data-testid="radar-recipe"]');
-  expect(recipe?.getAttribute('class')).toContain('property-radar__recipe--estimated');
+  const recipe = container.querySelector('[data-testid="radar-recipe"]') as SVGPolygonElement;
+  expect(recipe.style.strokeDasharray).toBe('4 3');
 });
 
-test('does not mark the recipe polygon estimated when coverage is not low', () => {
+test('draws a solid recipe polygon when coverage is not low', () => {
   const { container } = render(
     <PropertyRadar properties={PROPS} order={ORDER} lowCoverage={false} />,
   );
-  expect(
-    container.querySelector('[data-testid="radar-recipe"]')?.getAttribute('class'),
-  ).not.toContain('property-radar__recipe--estimated');
+  const recipe = container.querySelector('[data-testid="radar-recipe"]') as SVGPolygonElement;
+  expect(recipe.style.strokeDasharray === 'none' || recipe.style.strokeDasharray === '').toBe(true);
 });
 
-test('renders the suggested-range band with an evenodd fill rule', () => {
+test('labels each axis with its rounded value and a range verdict', () => {
   const { container } = render(
     <PropertyRadar properties={PROPS} order={ORDER} lowCoverage={false} />,
   );
-  const band = container.querySelector('.property-radar__band');
-  expect(band?.getAttribute('fill-rule')).toBe('evenodd');
+  const text = container.textContent ?? '';
+  expect(text).toContain('Hardness');
+  expect(text).toContain('41'); // hardness value
+  expect(text).toMatch(/In range|Too low|Too high/);
+});
+
+test('flags low coverage with tilde values and Low data verdicts, not range verdicts', () => {
+  const { container } = render(
+    <PropertyRadar properties={PROPS} order={ORDER} lowCoverage />,
+  );
+  const text = container.textContent ?? '';
+  expect(text).toContain('~41');
+  expect(text).toContain('Low data');
+  expect(text).not.toMatch(/Too low|Too high|In range/);
 });
