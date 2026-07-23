@@ -262,6 +262,99 @@ test('LS with zero water loss shows the sequester window but no separate label-w
   expect(screen.queryByText(/Label weight/i)).toBeNull();
 });
 
+const workability = {
+  unmold: { minHours: 12, maxHours: 36 },
+  cut: { minHours: 16, maxHours: 40 },
+  stamp: { opensMinHours: 40, opensMaxHours: 52 },
+  confidence: 'moderate' as const,
+  factors: ['Hard-oil score 47', 'Natural gel'],
+  caveats: ['Test firmness on a loaf offcut before cutting or stamping the batch.'],
+};
+
+test('renders the workability timeline for CP', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={batchWeightWithExtras}
+      cureEstimate={{ minWeeks: 4, usableAtUnmold: false, finishingLabel: 'Cure', workability }}
+      labelWeight={batchWeightWithExtras}
+    />,
+  );
+  // Exact dt text — the surrounding cure/add-order copy also contains the word "unmold"
+  // in prose (e.g. "unmold in 24–48 h"), so a loose /Unmold/i regex would over-match.
+  expect(screen.getByText('Unmold')).toBeTruthy();
+  expect(screen.getByText('Cut')).toBeTruthy();
+  expect(screen.getByText('Stamp from')).toBeTruthy();
+  expect(screen.getByText('≈ 12–36 h')).toBeTruthy();
+  expect(screen.getByText(/loaf offcut/i)).toBeTruthy();
+});
+
+test('omits the workability block when there is no estimate (e.g. LS)', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="KOH"
+      process="ls"
+      lyeType="koh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={batchWeightWithExtras}
+      cureEstimate={{ minWeeks: 4, usableAtUnmold: false, finishingLabel: 'Sequester', workability: null }}
+      labelWeight={batchWeightWithExtras}
+    />,
+  );
+  expect(screen.queryByText(/Unmold/i)).toBeNull();
+});
+
+test('shows the HP texture note and no stamp row', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="hp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={batchWeightWithExtras}
+      cureEstimate={{
+        minWeeks: 0,
+        usableAtUnmold: true,
+        finishingLabel: 'Cure',
+        workability: {
+          unmold: { minHours: 6, maxHours: 18 },
+          cut: { minHours: 6, maxHours: 18 },
+          stamp: null,
+          confidence: 'moderate',
+          factors: [],
+          caveats: [
+            'Hot-process bars are unmoldable soon after the cook firms; their rustic surface takes stamps unevenly, so stamp timing varies.',
+          ],
+        },
+      }}
+      labelWeight={batchWeightWithExtras}
+    />,
+  );
+  // Exact dt text — HP's own "usable at unmold" cure note and add-order step prose both
+  // contain the word "unmold", so a loose /Unmold/i regex would over-match.
+  expect(screen.getByText('Unmold')).toBeTruthy();
+  expect(screen.queryByText(/Stamp from/i)).toBeNull();
+  expect(screen.getByText(/rustic surface/i)).toBeTruthy();
+});
+
 test('renders the Full recipe list and process-aware Add-in-order steps', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
