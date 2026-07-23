@@ -67,8 +67,10 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
 
   if (lyeType === 'dual') {
     items.push({ name: 'Sodium hydroxide (NaOH)', detail: formatWeight(naohGrams, weightUnit) });
+    // Only state the blend share when it's actually set — never invent "0%".
+    const kohShare = kohBlendPercent?.trim();
     items.push({
-      name: `Potassium hydroxide (KOH, ${kohBlendPercent || '0'}%)`,
+      name: kohShare ? `Potassium hydroxide (KOH, ${kohShare}%)` : 'Potassium hydroxide (KOH)',
       detail: formatWeight(kohGrams, weightUnit),
     });
   } else {
