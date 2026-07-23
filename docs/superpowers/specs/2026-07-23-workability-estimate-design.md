@@ -13,7 +13,8 @@ unmold in ~8 hours so the loaf can be cut and logo-stamped the same day; others 
 olive) stay in the mold for 1–2 weeks. The app already computes everything that drives
 this (a hardness score, lye concentration, superfat, additives) but exposes no estimate.
 Current unmold signalling is a hardcoded `usableAtUnmold = process === 'hp'` boolean in
-`packages/web/src/lib/cureEstimate.ts` — a process flag, not recipe chemistry.
+`packages/web/src/lib/cureEstimate.ts` — a process flag meaning "cured enough to *use* at
+unmold," which is a distinct concept from *releasability* and is left unchanged (see D5).
 
 Goal: a recipe-chemistry-driven **workability timeline** — unmold → cut → stamp — that is
 useful for planning (including the fast, same-day case) without pretending to a precision
@@ -52,8 +53,8 @@ craftedsurprise & houseoftomorrow stamping-timing posts; lilswatara stamping gui
 ### Explicitly out of scope (YAGNI)
 - No per-mold-type input or soaping-temperature input; those effects stay in caveat text.
 - No numeric stamp-window *close* edge (see decision D2).
-- No change to the existing cure-week estimate or label-weight math; this feature only
-  *adds* a workability block and *derives* the existing `usableAtUnmold` boolean from it.
+- No change to the existing cure-week estimate, label-weight math, or `usableAtUnmold`
+  boolean; this feature only *adds* a workability block (see D5).
 
 ## Key decisions
 
@@ -72,6 +73,10 @@ craftedsurprise & houseoftomorrow stamping-timing posts; lilswatara stamping gui
 - **D3 — Output is a range + confidence, never a single day/hour.** Unit-adaptive display.
 - **D4 — Confidence is never "high."** Default moderate; drops to low under 80% FA coverage;
   `null` when there is no usable FA data.
+- **D5 — `usableAtUnmold` is left untouched.** It means "cured enough to *use* at unmold"
+  (an HP trait), which is distinct from *releasability*. `cureEstimate` only *adds* a
+  `workability` field; the existing boolean and finishing-label logic are unchanged, so their
+  tests stay green as-is.
 
 ## Model
 
@@ -109,8 +114,11 @@ default — most uninsulated CP partially gels). The gel multiplier (below) shif
 Rationale: for loaf molds cut ≈ unmold; a small buffer represents "outer surface no longer
 sticky/dragging." UI notes slab/individual molds skip the cut step.
 
-**Stamp — open edge only.** `stampOpensHours ≈ cut midpoint` (firm-to-touch, takes a dent
-without sticking). No close number; a caveat carries the over-hardening warning.
+**Stamp — open edge only.** You cut first, then stamp, so `stampOpensHours ≥ cut.maxHours`:
+the bar opens to stamping a short firm-up after it can be cut (research: stamp when "firm to
+touch but slightly soft inside," often ~a day after cutting for a normal recipe; sooner for
+hard/fast bars). Model it as `cut.maxHours × ~1.1`, floored at `cut.maxHours`. No close
+number; a caveat carries the over-hardening warning.
 
 ### Modulators (multiplicative on the whole CP timeline)
 
@@ -121,7 +129,7 @@ Baseline = CP defaults (lye concentration 33%, superfat 5%, `gelMode: 'natural'`
 - Lye concentration: > ~35% → faster (≈ ×0.85); < ~28% → slower (≈ ×1.25); interpolate.
 - Superfat: > ~7% → slower (≈ ×1.15); < ~4% → faster (≈ ×0.9).
 - `sodium-lactate` present → faster; **scaled by dose** within its typical 1–3% range
-  (about −½ to −1½ days near the fast end, floored at the fastest band).
+  (about −½ to −1½ days near the fast end, subject to the absolute floor below).
 - `salt` present → mild hardening (≈ ×0.9), scaled by dose within its 0.05–1% range.
 
 Worked fast-case: hardness ≥45 (12–24 h base) × forced gel (×0.5) × low water/superfat and
@@ -137,11 +145,16 @@ Confidence: moderate at best.
 
 Returns `null`. No milestones.
 
-### Invariants
-- Ordering: `unmold ≤ cut ≤ stampOpens`, enforced by clamping.
-- Monotonic in hardness: higher hardness ⇒ all edges earlier.
-- Extremes clamped: e.g. 100% coconut floors at the fastest band (12–24 h, not less); 100%
-  soft caps display at ~2 weeks.
+### Floors, caps, and invariants
+- **Two distinct floors.** The hardness→band lookup bottoms out at the **base band** 12–24 h
+  (so 100% coconut and a merely-hard recipe share the same *pre-modulator* base). The
+  modulators (gel / water / superfat / additives) may then push the final estimate *below*
+  that base band — that is how forced-gel + discount + sodium-lactate reaches ~8 h — but
+  never below an absolute physical floor `ABSOLUTE_FLOOR_HOURS ≈ 4 h` (CP needs a minimum
+  time to firm enough to release). High end caps display at ~2 weeks.
+- **Ordering** `unmold ≤ cut ≤ stampOpens`, enforced by clamping after modulators/floors.
+- **Monotonic (non-decreasing) in hardness:** higher hardness never yields a later edge;
+  within a band the edge is flat (the fuzz test allows equality).
 
 ### Confidence & null
 - `null` when no usable FA data (avoid emitting a garbage number).
@@ -195,9 +208,9 @@ export function estimateWorkability(input: {
 `recipe.additives` +
 `process`
 → `estimateWorkability()` →
-consumed by `packages/web/src/lib/cureEstimate.ts`, which adds a `workability` field to its
-return **and derives the existing `usableAtUnmold` boolean from it** (so `ResultsPanel` and
-the finishing-label logic keep working unchanged) →
+consumed by `packages/web/src/lib/cureEstimate.ts`, which **adds** a `workability` field to
+its return (the existing `usableAtUnmold` boolean and finishing-label logic are untouched —
+see D5) →
 rendered by `packages/web/src/components/ResultsPanel.tsx`.
 
 ### Display (unit-adaptive)
@@ -223,8 +236,10 @@ A compact block in `ResultsPanel` near the cure estimate:
 
 **Core unit tests (`workability.test.ts`):**
 - Anchors (at `gelMode: 'natural'`): hard + water-discount + sodium-lactate → unmold
-  ~12–24 h; hard + `forced` gel + water-discount + sodium-lactate → ~8 h (the fast case);
-  100% olive → unmold ~1–2 weeks; balanced 34/33/33 → unmold ~1–2 days.
+  ~12–24 h; hard + `forced` gel + water-discount + sodium-lactate → ~8 h (the fast case,
+  above the 4 h absolute floor); 100% olive (score ≈14) → unmold ~1–2 weeks; a moderate
+  ~40-score recipe (e.g. 30% coconut / 20% palm / 50% olive) → ~1–2 days. Note 34/33/33
+  olive/coconut/palm scores ≈47 → the 12–24 h band, *not* 1–2 days.
 - Gel monotonicity: `forced` < `natural` < `none` for the same recipe, on every edge.
 - Modulator monotonicity: more water ⇒ later; higher superfat ⇒ later; sodium lactate ⇒
   earlier; dose scaling moves the effect in the right direction.
@@ -234,8 +249,8 @@ A compact block in `ResultsPanel` near the cure estimate:
   `null` / `'low'`; extreme hardness clamps.
 
 **Web tests:**
-- `cureEstimate.test.ts`: `workability` populated for CP/HP, absent/omitted for LS, and the
-  derived `usableAtUnmold` boolean still matches its existing expectations.
+- `cureEstimate.test.ts`: `workability` populated for CP/HP, absent/omitted for LS; existing
+  `usableAtUnmold` assertions unchanged (D5).
 - `ResultsPanel.test.tsx`: renders the three rows, chip, factor line, and caveats for CP;
   omits the block for LS; shows the HP texture note.
 - `CpExtrasPanel.test.tsx`: renders the three-state gel control, calls the setter on change,
@@ -251,5 +266,5 @@ A compact block in `ResultsPanel` near the cure estimate:
   sensible.
 - **New `RecipeSettings` field** → guarded coercion defaulting to `'natural'` so older saved
   and URL-shared recipes keep loading; explicit round-trip test.
-- **`usableAtUnmold` repurposing** → derive it from the new estimate rather than replace its
-  consumers; existing tests must stay green.
+- **`usableAtUnmold` conflation** → *not* repurposed (D5); the feature only adds a
+  `workability` field, so the boolean's consumers and tests are untouched.
