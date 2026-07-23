@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { WorkabilityEstimate } from '@soap-calc/core';
 import { estimateCure, labelWeightGrams } from './cureEstimate';
 import { processProfileById } from './processProfile';
 
@@ -16,6 +17,17 @@ describe('estimateCure', () => {
   it('an LS variant is labeled "Sequester"', () => {
     const e = estimateCure(processProfileById('ls-cpls'));
     expect(e.finishingLabel).toBe('Sequester');
+  });
+  it('includes a passed workability estimate; usableAtUnmold unchanged', () => {
+    const wk = { unmold: { minHours: 12, maxHours: 36 } } as unknown as WorkabilityEstimate;
+    const cpProfile = processProfileById('cp');
+    const e = estimateCure(cpProfile, wk);
+    expect(e.workability).toBe(wk);
+    expect(e.usableAtUnmold).toBe(false); // CP still not usable at unmold (D5)
+  });
+  it('defaults workability to null when omitted', () => {
+    const cpProfile = processProfileById('cp');
+    expect(estimateCure(cpProfile).workability ?? null).toBeNull();
   });
 });
 
