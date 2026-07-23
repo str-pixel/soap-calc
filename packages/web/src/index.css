@@ -380,6 +380,89 @@ a:hover {
   text-align: right;
 }
 
+/* ── Actions menu ─────────────────────────────────────────────────────── */
+.actions-menu {
+  position: relative;
+}
+
+.actions-menu__trigger {
+  appearance: none;
+  border: 1px solid var(--text);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.actions-menu__trigger:hover,
+.actions-menu__trigger--open {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.actions-menu__chevron {
+  width: 6px;
+  height: 6px;
+  border-right: 1.4px solid currentColor;
+  border-bottom: 1.4px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 0.15s ease;
+}
+
+.actions-menu__trigger--open .actions-menu__chevron {
+  transform: rotate(-135deg) translate(-1px, -1px);
+}
+
+.actions-menu__list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 11rem;
+  background: var(--bg);
+  border: 1px solid var(--text);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+}
+
+.actions-menu__item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.actions-menu__item + .actions-menu__item {
+  border-top: 1px solid var(--border);
+}
+
+.actions-menu__item:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.actions-menu__item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .recipe-entry-bar {
   display: flex;
   flex-wrap: wrap;

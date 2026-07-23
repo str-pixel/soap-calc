@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
+import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
@@ -319,42 +320,28 @@ export default function App() {
           </label>
 
           <div className="recipe-toolbar__actions">
-            <button type="button" className="btn btn--ghost" onClick={inputs.handleNewRecipe}>
-              New
-            </button>
-            <button type="button" className="btn btn--ghost" onClick={inputs.handleExportCommitted}>
-              Export
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={handlePrintBatchSheet}
-              disabled={!vm.batchSheetData}
-            >
-              Print
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={() => importInputRef.current?.click()}
-            >
-              Import
-            </button>
-            <input
-              ref={importInputRef}
-              type="file"
-              accept="application/json,.json"
-              className="sr-only"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  inputs.discardDrafts();
-                  handleImportFile(file);
-                }
-                e.target.value = '';
-              }}
+            <ActionsMenu
+              onNew={inputs.handleNewRecipe}
+              onExport={inputs.handleExportCommitted}
+              onPrint={handlePrintBatchSheet}
+              onImport={() => importInputRef.current?.click()}
+              canPrint={!!vm.batchSheetData}
             />
           </div>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                inputs.discardDrafts();
+                handleImportFile(file);
+              }
+              e.target.value = '';
+            }}
+          />
 
           {saveMessage && (
             <p className="recipe-toolbar__status" role="status">

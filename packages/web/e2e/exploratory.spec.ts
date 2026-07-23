@@ -661,11 +661,13 @@ test.describe('persistence & files', () => {
     await page.getByPlaceholder('Recipe name').fill('roundtrip test');
     await page.getByPlaceholder('Recipe name').blur();
     const dlPromise = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Export' }).click();
+    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.getByRole('menuitem', { name: 'Export' }).click();
     const dl = await dlPromise;
     const path = testInfo.outputPath('roundtrip.json');
     await dl.saveAs(path);
-    await page.getByRole('button', { name: 'New' }).click();
+    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.getByRole('menuitem', { name: 'New recipe' }).click();
     await expect(page.getByPlaceholder('Recipe name')).toHaveValue(/New recipe/);
     await page.locator('input[type="file"]').setInputFiles(path);
     await expect(page.getByPlaceholder('Recipe name')).toHaveValue(/roundtrip test/);
