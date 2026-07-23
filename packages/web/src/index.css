@@ -1561,6 +1561,57 @@ a:hover {
   background: var(--accent);
 }
 
+/* Vertical capsule marker — where this recipe lands on the 0–100 track. Taller than
+   the track so it reads as a slider handle riding over the shaded range. */
+.property-meter__marker {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 17px;
+  border-radius: 4px;
+  background: var(--text);
+  border: 2px solid var(--bg);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.property-meter__marker--outside {
+  background: var(--accent);
+}
+
+/* Scale row under the track: LOW / HIGH at the extremes, suggested-range
+   boundary numbers positioned under the band edges. */
+.property-meter__scale {
+  position: relative;
+  height: 0.95rem;
+  margin: 0 0 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--caption);
+}
+
+.property-meter__extreme {
+  position: absolute;
+  top: 0;
+  left: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.property-meter__extreme--high {
+  left: auto;
+  right: 0;
+}
+
+.property-meter__tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
 .property-legend {
   display: flex;
   flex-wrap: wrap;

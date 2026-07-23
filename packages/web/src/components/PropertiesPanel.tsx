@@ -210,8 +210,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                     </span>
                   </div>
                   {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
-                      suggested range, stronger band = target, dot = where this recipe lands.
-                      Decorative — the value's role="meter" and the range text carry it for AT. */}
+                      suggested range, stronger band = target, marker = where this recipe lands.
+                      Decorative — the value's role="meter" and the sr-only range text carry it for AT. */}
                   <div className="property-meter" aria-hidden="true">
                     <span
                       className="property-meter__band property-meter__band--suggested"
@@ -230,11 +230,31 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       />
                     )}
                     <span
-                      className={`property-meter__dot${inSuggested || lowCoverage ? '' : ' property-meter__dot--outside'}`}
+                      className={`property-meter__marker${inSuggested || lowCoverage ? '' : ' property-meter__marker--outside'}`}
                       style={{ left: `${pct(value)}%` }}
                     />
                   </div>
-                  <p className="property-bars__range">
+                  {/* Scale row: Low / High at the extremes, suggested-range boundary
+                      numbers positioned under the band edges. Decorative — sr-only range below. */}
+                  <div className="property-meter__scale" aria-hidden="true">
+                    <span className="property-meter__extreme">Low</span>
+                    <span
+                      className="property-meter__tick"
+                      style={{ left: `${pct(guide.low)}%` }}
+                    >
+                      {formatPropertyScore(guide.low)}
+                    </span>
+                    <span
+                      className="property-meter__tick"
+                      style={{ left: `${pct(guide.high)}%` }}
+                    >
+                      {formatPropertyScore(guide.high)}
+                    </span>
+                    <span className="property-meter__extreme property-meter__extreme--high">
+                      High
+                    </span>
+                  </div>
+                  <p className="sr-only">
                     Suggested {formatPropertyScoreRange(guide.low, guide.high)}
                     {preference && (
                       <>
