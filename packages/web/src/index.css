@@ -380,6 +380,89 @@ a:hover {
   text-align: right;
 }
 
+/* ── Actions menu ─────────────────────────────────────────────────────── */
+.actions-menu {
+  position: relative;
+}
+
+.actions-menu__trigger {
+  appearance: none;
+  border: 1px solid var(--text);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.actions-menu__trigger:hover,
+.actions-menu__trigger--open {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.actions-menu__chevron {
+  width: 6px;
+  height: 6px;
+  border-right: 1.4px solid currentColor;
+  border-bottom: 1.4px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 0.15s ease;
+}
+
+.actions-menu__trigger--open .actions-menu__chevron {
+  transform: rotate(-135deg) translate(-1px, -1px);
+}
+
+.actions-menu__list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  min-width: 11rem;
+  background: var(--bg);
+  border: 1px solid var(--text);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+}
+
+.actions-menu__item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.actions-menu__item + .actions-menu__item {
+  border-top: 1px solid var(--border);
+}
+
+.actions-menu__item:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.actions-menu__item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .recipe-entry-bar {
   display: flex;
   flex-wrap: wrap;
@@ -433,9 +516,28 @@ a:hover {
   padding-right: 3rem;
 }
 
-/* The Numbers is the tinted ground. */
-.col--numbers {
+/* Tinted ground — carried by whichever column is the visual middle: The Bar in the Recipe
+   view, the batch-cost/results column in the Pricing view. Tint a whole column, not cards. */
+.col--tinted {
   background: var(--surface-2);
+}
+
+/* Desktop (≥3 columns): show the comp's reading order — inputs · The Bar · The Numbers — by
+   promoting The Bar ahead of The Numbers visually. DOM order stays formula → numbers → bar,
+   so at ≤2 columns The Numbers (the safety-critical lye/water figures) still sits directly
+   below the inputs instead of beneath the whole properties column. */
+@media (min-width: 64rem) {
+  .layout--recipe .col--bar {
+    order: 2;
+    /* DOM-last, but now the visual middle: hand its 3rem right-edge gutter to The Numbers
+       below and fall back to the standard column padding. */
+    padding-right: 2.4rem;
+  }
+
+  .layout--recipe .col--numbers {
+    order: 3;
+    padding-right: 3rem;
+  }
 }
 
 /* ── Panels: flat broadsheet sections, no cards ───────────────────────── */
@@ -460,14 +562,11 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* Editable Superfat + Water knobs at the top of The Numbers. */
+/* Editable Superfat + Water knobs, grouped in their own Superfat & water panel. */
 .numbers-inputs {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
-  margin: 0 0 1.6rem;
-  padding: 0 0 1.5rem;
-  border-bottom: 1px solid var(--hairline);
 }
 
 /* The water-method chooser: a compact inline row, not a slider. */
@@ -1669,6 +1768,40 @@ a:hover {
 
 .property-radar__vertex {
   fill: var(--accent);
+}
+
+/* ── Property view toggle (Radar / Bars) ──────────────────────────────── */
+.property-view-toggle {
+  display: flex;
+  margin: 0 0 1.4rem;
+}
+
+.property-view-toggle__tab {
+  appearance: none;
+  border: 1px solid var(--text);
+  background: transparent;
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.42rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.property-view-toggle__tab + .property-view-toggle__tab {
+  margin-left: -1px;
+}
+
+.property-view-toggle__tab:hover:not(.property-view-toggle__tab--active) {
+  color: var(--text);
+}
+
+.property-view-toggle__tab--active {
+  background: var(--text);
+  color: var(--bg);
 }
 
 /* ── Messages / insights ──────────────────────────────────────────────── */

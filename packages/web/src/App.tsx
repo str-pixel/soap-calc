@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
+import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
@@ -15,6 +16,7 @@ import { PropertiesPanel } from './components/PropertiesPanel';
 import { RecipeOilsPanel } from './components/RecipeOilsPanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { SettingsPanel } from './components/SettingsPanel';
+import { SuperfatWaterPanel } from './components/SuperfatWaterPanel';
 import { useDraftInputs } from './hooks/useDraftInputs';
 import { useRecipeAutosave } from './hooks/useRecipeAutosave';
 import { useRecipeEditor } from './hooks/useRecipeEditor';
@@ -220,8 +222,6 @@ export default function App() {
       cureEstimate={vm.cureEstimate}
       labelWeight={vm.labelWeight}
       totalOilGrams={vm.totalOilGrams}
-      settings={settings}
-      setSettings={setSettings}
     />
   );
 
@@ -320,42 +320,28 @@ export default function App() {
           </label>
 
           <div className="recipe-toolbar__actions">
-            <button type="button" className="btn btn--ghost" onClick={inputs.handleNewRecipe}>
-              New
-            </button>
-            <button type="button" className="btn btn--ghost" onClick={inputs.handleExportCommitted}>
-              Export
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={handlePrintBatchSheet}
-              disabled={!vm.batchSheetData}
-            >
-              Print
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={() => importInputRef.current?.click()}
-            >
-              Import
-            </button>
-            <input
-              ref={importInputRef}
-              type="file"
-              accept="application/json,.json"
-              className="sr-only"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  inputs.discardDrafts();
-                  handleImportFile(file);
-                }
-                e.target.value = '';
-              }}
+            <ActionsMenu
+              onNew={inputs.handleNewRecipe}
+              onExport={inputs.handleExportCommitted}
+              onPrint={handlePrintBatchSheet}
+              onImport={() => importInputRef.current?.click()}
+              canPrint={!!vm.batchSheetData}
             />
           </div>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                inputs.discardDrafts();
+                handleImportFile(file);
+              }
+              e.target.value = '';
+            }}
+          />
 
           {saveMessage && (
             <p className="recipe-toolbar__status" role="status">
@@ -368,14 +354,33 @@ export default function App() {
 
       {view === 'recipe' ? (
         <main
-          className="layout no-print"
+          className="layout layout--recipe no-print"
           id="view-panel"
           role="tabpanel"
           aria-labelledby={`view-tab-${view}`}
           tabIndex={0}
         >
-          {/* Column 1 — Formula: the recipe inputs. */}
+          {/* Column 1 — Formula: settings, then the recipe inputs. */}
           <div className="col col--formula">
+            <SettingsPanel
+              process={process}
+              settings={settings}
+              setSettings={setSettings}
+              weightUnit={weightUnit}
+              totalOilGrams={vm.totalOilGrams}
+              lyeGrams={vm.result?.lyeWeightGrams ?? 0}
+              waterSuggestion={vm.waterSuggestion}
+              moldSizerInput={moldSizerInput}
+              onMoldSizerChange={setMoldSizerInput}
+              liveOilBatchFraction={vm.liveOilBatchFraction}
+              onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
+              vesselVolumeLiters={vesselVolumeLiters}
+              onVesselVolumeLitersChange={setVesselVolumeLiters}
+              hpVesselMultiple={vm.hpVesselMultiple}
+            />
+
+            <SuperfatWaterPanel settings={settings} setSettings={setSettings} process={process} />
+
             <RecipeOilsPanel
               lines={lines} weightUnit={weightUnit}
               previewState={vm.previewState} previewLineByKey={vm.previewLineByKey}
@@ -394,23 +399,6 @@ export default function App() {
             />
 
             {process === 'cp' && <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />}
-
-            <SettingsPanel
-              process={process}
-              settings={settings}
-              setSettings={setSettings}
-              weightUnit={weightUnit}
-              totalOilGrams={vm.totalOilGrams}
-              lyeGrams={vm.result?.lyeWeightGrams ?? 0}
-              waterSuggestion={vm.waterSuggestion}
-              moldSizerInput={moldSizerInput}
-              onMoldSizerChange={setMoldSizerInput}
-              liveOilBatchFraction={vm.liveOilBatchFraction}
-              onApplySuggestedOilGrams={inputs.handleApplySuggestedOilGrams}
-              vesselVolumeLiters={vesselVolumeLiters}
-              onVesselVolumeLitersChange={setVesselVolumeLiters}
-              hpVesselMultiple={vm.hpVesselMultiple}
-            />
           </div>
 
           {/* Column 2 — The Numbers: the computed outputs and the knobs that drive them. */}
@@ -438,7 +426,7 @@ export default function App() {
           </div>
 
           {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}
-          <div className="col col--bar">
+          <div className="col col--bar col--tinted">
             <PropertiesPanel
               result={vm.properties}
               indexes={vm.indexes}
@@ -460,7 +448,7 @@ export default function App() {
           aria-labelledby={`view-tab-${view}`}
           tabIndex={0}
         >
-          <div className="col col--numbers">{resultsPanel}</div>
+          <div className="col col--numbers col--tinted">{resultsPanel}</div>
           <div className="col">{pricingPanel}</div>
         </main>
       )}

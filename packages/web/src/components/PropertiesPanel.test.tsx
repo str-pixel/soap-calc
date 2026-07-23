@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test } from 'vitest';
-import { render, screen, cleanup, within } from '@testing-library/react';
+import { render, screen, cleanup, within, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { SOAP_PROPERTY_LABELS } from '@soap-calc/core';
 import { PropertiesPanel } from './PropertiesPanel';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
@@ -126,4 +127,70 @@ test('renders no radar and a hint when there is no property data', () => {
   );
   expect(container.querySelector('.property-radar')).toBeNull();
   expect(screen.getByText(/Add triglyceride oils/i)).toBeTruthy();
+});
+
+test('defaults to the Bars view — meters visible, radar hidden', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+  );
+  expect(container.querySelector('.property-bars')).not.toBeNull();
+  expect(container.querySelector('.property-radar')).toBeNull();
+  expect(screen.getByRole('meter', { name: /Hardness/i })).toBeTruthy();
+});
+
+test('wires the toggle tabs to the tabpanel via aria-controls / aria-labelledby', () => {
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  const panel = screen.getByRole('tabpanel');
+  const barsTab = screen.getByRole('tab', { name: 'Bars' });
+  const radarTab = screen.getByRole('tab', { name: 'Radar' });
+  expect(barsTab.getAttribute('aria-controls')).toBe('property-tabpanel');
+  expect(radarTab.getAttribute('aria-controls')).toBe('property-tabpanel');
+  expect(panel.id).toBe('property-tabpanel');
+  // Default view is Bars → the panel is labelled by the Bars tab.
+  expect(panel.getAttribute('aria-labelledby')).toBe(barsTab.id);
+  fireEvent.click(radarTab);
+  expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe(radarTab.id);
+});
+
+test('switching to Radar shows the chart and keeps the property readings for AT', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+  );
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  expect(container.querySelector('.property-radar')).not.toBeNull();
+  expect(container.querySelector('.property-bars')).toBeNull();
+  // Readings remain reachable via role=meter even though the visual bars are hidden.
+  expect(screen.getByRole('meter', { name: /Hardness/i })).toBeTruthy();
+});
+
+test('gives the active view-toggle tab tabIndex=0 and the other -1', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+  );
+  // Default view is Bars.
+  expect(screen.getByRole('tab', { name: 'Bars' }).getAttribute('tabindex')).toBe('0');
+  expect(screen.getByRole('tab', { name: 'Radar' }).getAttribute('tabindex')).toBe('-1');
+  expect(container).toBeTruthy();
+});
+
+test('ArrowLeft on the Bars tab moves the roving tabindex to Radar and switches the view', async () => {
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  const bars = screen.getByRole('tab', { name: 'Bars' });
+  bars.focus();
+  await userEvent.keyboard('{ArrowLeft}');
+  expect(screen.getByRole('tab', { name: 'Radar' }).getAttribute('aria-selected')).toBe('true');
+  expect(document.querySelector('.property-radar')).not.toBeNull();
+  expect(document.querySelector('.property-bars')).toBeNull();
+  expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Radar' }));
+});
+
+test('ArrowRight on the Radar tab wraps the roving tabindex back to Bars and switches the view', async () => {
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  const radar = screen.getByRole('tab', { name: 'Radar' });
+  radar.focus();
+  await userEvent.keyboard('{ArrowRight}');
+  expect(screen.getByRole('tab', { name: 'Bars' }).getAttribute('aria-selected')).toBe('true');
+  expect(document.querySelector('.property-bars')).not.toBeNull();
+  expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Bars' }));
 });

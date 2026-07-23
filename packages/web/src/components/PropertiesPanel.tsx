@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import type { RecipePropertiesResult, SoapPropertyName } from '@soap-calc/core';
 import {
   FORMULATION_PREFERENCE_GUIDE,
@@ -12,6 +12,7 @@ import {
 } from '@soap-calc/core';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
 import { oilDisplayName } from '../lib/oilDisplay';
+import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
 import { InfoTip } from './InfoTip';
 import { ModeledOilsNote } from './ModeledOilsNote';
 import { PropertyRadar } from './PropertyRadar';
@@ -44,6 +45,8 @@ const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
 
 const SCALE_MAX = 100;
 
+const PROPERTY_VIEWS: Array<'radar' | 'bars'> = ['radar', 'bars'];
+
 /** Clamp a 0–100 score to a track position percentage. */
 const pct = (n: number): number => Math.max(0, Math.min(100, n));
 
@@ -66,12 +69,15 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   modeledOilIds,
   isLiquidSoap,
 }: PropertiesPanelProps) {
+  const [view, setView] = useState<'bars' | 'radar'>('bars');
   const modeled = modeledOilIds;
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.properties
     ? Math.round(result.coveragePercent) < LOW_COVERAGE_PERCENT
     : false;
+  const viewActiveIndex = PROPERTY_VIEWS.indexOf(view);
+  const handleViewKeyDown = makeTabsKeyDownHandler(PROPERTY_VIEWS, viewActiveIndex, setView);
   const showIndexes = indexes.iodine !== null && indexes.ins !== null;
   const indexPartial = indexes.coveragePercent < 99.9;
   const indexLowCoverage =
@@ -80,7 +86,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   return (
     <section className="panel">
       <h2 className="panel__title">
-        <span className="panel__num" aria-hidden="true">04</span>
+        <span className="panel__num" aria-hidden="true">03</span>
         {isLiquidSoap ? 'Soap properties' : 'Bar properties'}
       </h2>
       <p className="panel__subtitle">
@@ -162,116 +168,189 @@ export const PropertiesPanel = memo(function PropertiesPanel({
 
           <ModeledOilsNote oilIds={modeled} />
 
-          <PropertyRadar
-            properties={result.properties}
-            order={PROPERTY_ORDER}
-            lowCoverage={lowCoverage}
-          />
+          <div className="property-view-toggle" role="tablist" aria-label="Property display">
+            <button
+              type="button"
+              role="tab"
+              id="property-tab-radar"
+              aria-controls="property-tabpanel"
+              aria-selected={view === 'radar'}
+              tabIndex={view === 'radar' ? 0 : -1}
+              className={`property-view-toggle__tab${view === 'radar' ? ' property-view-toggle__tab--active' : ''}`}
+              onClick={() => setView('radar')}
+              onKeyDown={handleViewKeyDown}
+            >
+              Radar
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="property-tab-bars"
+              aria-controls="property-tabpanel"
+              aria-selected={view === 'bars'}
+              tabIndex={view === 'bars' ? 0 : -1}
+              className={`property-view-toggle__tab${view === 'bars' ? ' property-view-toggle__tab--active' : ''}`}
+              onClick={() => setView('bars')}
+              onKeyDown={handleViewKeyDown}
+            >
+              Bars
+            </button>
+          </div>
 
-          <ul className="property-bars" aria-label="Soap bar properties">
-            {PROPERTY_ORDER.map((key) => {
-              const value = result.properties![key];
-              const guide = SOAP_PROPERTY_GUIDE[key];
-              const preference = FORMULATION_PREFERENCE_GUIDE[key];
-              const inSuggested = value >= guide.low && value <= guide.high;
-              // Append, don't mutate PROPERTY_GUIDANCE: cleansing reads as solubility/dilution
-              // in liquid soap, not bar harshness, so LS recipes get an extra clause here.
-              const guidance =
-                key === 'cleansing' && isLiquidSoap
-                  ? `${PROPERTY_GUIDANCE[key]} In liquid soap this tracks solubility/how well it dilutes, not harshness.`
-                  : PROPERTY_GUIDANCE[key];
-              return (
-                <li key={key} className="property-bars__row">
-                  <div className="property-bars__label">
-                    <span>
-                      {SOAP_PROPERTY_LABELS[key]}
-                      <InfoTip term={SOAP_PROPERTY_LABELS[key]}>{guidance}</InfoTip>
-                    </span>
-                    <span className="property-bars__reading">
-                      {/* Out-of-range verdict sits on the same baseline as the number it
-                          judges. Gated by !lowCoverage for the same reason as the value
-                          color and the dot: a partial-data estimate isn't a real signal. */}
-                      {!inSuggested && !lowCoverage && (
-                        <span className="property-bars__status">
-                          {value < guide.low ? 'Too low' : 'Too high'}
-                        </span>
-                      )}
+          {/* One tabpanel whose content swaps with the active tab; tabIndex 0 in Radar mode
+              (no focusable children) keeps it keyboard-reachable per the ARIA Tabs pattern. */}
+          <div
+            role="tabpanel"
+            id="property-tabpanel"
+            aria-labelledby={`property-tab-${view}`}
+            tabIndex={view === 'radar' ? 0 : undefined}
+          >
+          {view === 'radar' ? (
+            <>
+              <PropertyRadar
+                properties={result.properties}
+                order={PROPERTY_ORDER}
+                lowCoverage={lowCoverage}
+              />
+              {/* The chart is aria-hidden; keep the six readings reachable to AT so the
+                  toggle never hides the actual numbers from a screen reader. */}
+              <ul className="sr-only" aria-label="Soap bar property readings">
+                {PROPERTY_ORDER.map((key) => {
+                  const value = result.properties![key];
+                  const guide = SOAP_PROPERTY_GUIDE[key];
+                  const preference = FORMULATION_PREFERENCE_GUIDE[key];
+                  return (
+                    <li key={key}>
                       <span
-                        className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
                         role="meter"
                         aria-valuemin={0}
                         aria-valuemax={SCALE_MAX}
                         aria-valuenow={Math.round(value)}
                         aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatPropertyScore(value)}`}
                       >
-                        {lowCoverage ? '~' : ''}
+                        {SOAP_PROPERTY_LABELS[key]}: {lowCoverage ? '~' : ''}
                         {formatPropertyScore(value)}
+                      </span>{' '}
+                      {/* Match the Bars rows: keep the suggested/target range in AT reach
+                          in Radar mode too, so switching views never drops the context. */}
+                      Suggested {formatPropertyScoreRange(guide.low, guide.high)}
+                      {preference && (
+                        <>
+                          {' · '}
+                          Target {formatPropertyScoreRange(preference.low, preference.high)}
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="property-legend">
+                <span className="property-legend__swatch property-legend__swatch--suggested" />
+                Shaded band on the chart = suggested range
+              </p>
+            </>
+          ) : (
+            <ul className="property-bars" aria-label="Soap bar properties">
+              {PROPERTY_ORDER.map((key) => {
+                const value = result.properties![key];
+                const guide = SOAP_PROPERTY_GUIDE[key];
+                const preference = FORMULATION_PREFERENCE_GUIDE[key];
+                const inSuggested = value >= guide.low && value <= guide.high;
+                // Append, don't mutate PROPERTY_GUIDANCE: cleansing reads as solubility/dilution
+                // in liquid soap, not bar harshness, so LS recipes get an extra clause here.
+                const guidance =
+                  key === 'cleansing' && isLiquidSoap
+                    ? `${PROPERTY_GUIDANCE[key]} In liquid soap this tracks solubility/how well it dilutes, not harshness.`
+                    : PROPERTY_GUIDANCE[key];
+                return (
+                  <li key={key} className="property-bars__row">
+                    <div className="property-bars__label">
+                      <span>
+                        {SOAP_PROPERTY_LABELS[key]}
+                        <InfoTip term={SOAP_PROPERTY_LABELS[key]}>{guidance}</InfoTip>
                       </span>
-                    </span>
-                  </div>
-                  {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
-                      suggested range, stronger band = target, marker = where this recipe lands.
-                      Decorative — the value's role="meter" and the sr-only range text carry it for AT. */}
-                  <div className="property-meter" aria-hidden="true">
-                    <span
-                      className="property-meter__band property-meter__band--suggested"
-                      style={{
-                        left: `${pct(guide.low)}%`,
-                        width: `${pct(guide.high) - pct(guide.low)}%`,
-                      }}
-                    />
-                    {preference && (
+                      <span className="property-bars__reading">
+                        {/* Out-of-range verdict sits on the same baseline as the number it
+                            judges. Gated by !lowCoverage for the same reason as the value
+                            color and the dot: a partial-data estimate isn't a real signal. */}
+                        {!inSuggested && !lowCoverage && (
+                          <span className="property-bars__status">
+                            {value < guide.low ? 'Too low' : 'Too high'}
+                          </span>
+                        )}
+                        <span
+                          className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
+                          role="meter"
+                          aria-valuemin={0}
+                          aria-valuemax={SCALE_MAX}
+                          aria-valuenow={Math.round(value)}
+                          aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatPropertyScore(value)}`}
+                        >
+                          {lowCoverage ? '~' : ''}
+                          {formatPropertyScore(value)}
+                        </span>
+                      </span>
+                    </div>
+                    {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
+                        suggested range, stronger band = target, marker = where this recipe lands.
+                        Decorative — the value's role="meter" and the sr-only range text carry it for AT. */}
+                    <div className="property-meter" aria-hidden="true">
                       <span
-                        className="property-meter__band property-meter__band--target"
+                        className="property-meter__band property-meter__band--suggested"
                         style={{
-                          left: `${pct(preference.low)}%`,
-                          width: `${pct(preference.high) - pct(preference.low)}%`,
+                          left: `${pct(guide.low)}%`,
+                          width: `${pct(guide.high) - pct(guide.low)}%`,
                         }}
                       />
-                    )}
-                    <span
-                      className={`property-meter__marker${inSuggested || lowCoverage ? '' : ' property-meter__marker--outside'}`}
-                      style={{ left: `${pct(value)}%` }}
-                    />
-                  </div>
-                  {/* Scale row: Low / High at the extremes, suggested-range boundary
-                      numbers positioned under the band edges. Decorative — sr-only range below. */}
-                  <div className="property-meter__scale" aria-hidden="true">
-                    <span className="property-meter__extreme">Low</span>
-                    <span
-                      className="property-meter__tick"
-                      style={{ left: `${pct(guide.low)}%` }}
-                    >
-                      {formatPropertyScore(guide.low)}
-                    </span>
-                    <span
-                      className="property-meter__tick"
-                      style={{ left: `${pct(guide.high)}%` }}
-                    >
-                      {formatPropertyScore(guide.high)}
-                    </span>
-                    <span className="property-meter__extreme property-meter__extreme--high">
-                      High
-                    </span>
-                  </div>
-                  <p className="sr-only">
-                    Suggested {formatPropertyScoreRange(guide.low, guide.high)}
-                    {preference && (
-                      <>
-                        {' · '}
-                        Target {formatPropertyScoreRange(preference.low, preference.high)}
-                      </>
-                    )}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-
-          <p className="property-legend">
-            <span className="property-legend__swatch property-legend__swatch--suggested" />
-            Shaded band on the chart = suggested range
-          </p>
+                      {preference && (
+                        <span
+                          className="property-meter__band property-meter__band--target"
+                          style={{
+                            left: `${pct(preference.low)}%`,
+                            width: `${pct(preference.high) - pct(preference.low)}%`,
+                          }}
+                        />
+                      )}
+                      <span
+                        className={`property-meter__marker${inSuggested || lowCoverage ? '' : ' property-meter__marker--outside'}`}
+                        style={{ left: `${pct(value)}%` }}
+                      />
+                    </div>
+                    {/* Scale row: Low / High at the extremes, suggested-range boundary
+                        numbers positioned under the band edges. Decorative — sr-only range below. */}
+                    <div className="property-meter__scale" aria-hidden="true">
+                      <span className="property-meter__extreme">Low</span>
+                      <span
+                        className="property-meter__tick"
+                        style={{ left: `${pct(guide.low)}%` }}
+                      >
+                        {formatPropertyScore(guide.low)}
+                      </span>
+                      <span
+                        className="property-meter__tick"
+                        style={{ left: `${pct(guide.high)}%` }}
+                      >
+                        {formatPropertyScore(guide.high)}
+                      </span>
+                      <span className="property-meter__extreme property-meter__extreme--high">
+                        High
+                      </span>
+                    </div>
+                    <p className="sr-only">
+                      Suggested {formatPropertyScoreRange(guide.low, guide.high)}
+                      {preference && (
+                        <>
+                          {' · '}
+                          Target {formatPropertyScoreRange(preference.low, preference.high)}
+                        </>
+                      )}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          </div>
         </>
       )}
     </section>
