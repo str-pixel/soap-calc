@@ -80,7 +80,10 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   waterPercentOfOils: '33',
   lyeConcentrationPercent: '33.33',
   lyeWaterRatio: '2',
-  naohPurityPercent: '100',
+  // NaOH is sold at ~97–99.8% (100% isn't attainable); 99% assumes fresh, high-purity lye.
+  // KOH flake is ~90% (the rest is water + carbonates) — assuming higher silently builds a
+  // hidden superfat that separates after dilution, so 90% is the safe default.
+  naohPurityPercent: '99',
   kohPurityPercent: '90',
   splitLiquid: { ...DEFAULT_SPLIT_LIQUID },
   batchNotes: '',

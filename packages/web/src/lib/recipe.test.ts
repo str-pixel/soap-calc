@@ -263,3 +263,11 @@ describe('forward-compat settings round-trip (third wave)', () => {
     expect(extras.length).toBeGreaterThan(0);
   });
 });
+
+describe('default lye purity', () => {
+  it('defaults NaOH to a realistic 99% (100% is not attainable) and KOH to 90% flake', () => {
+    // KOH assumed above ~90% silently builds a hidden superfat that separates after dilution.
+    expect(DEFAULT_SETTINGS.naohPurityPercent).toBe('99');
+    expect(DEFAULT_SETTINGS.kohPurityPercent).toBe('90');
+  });
+});
