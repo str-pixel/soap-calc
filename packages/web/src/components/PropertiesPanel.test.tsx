@@ -138,6 +138,20 @@ test('defaults to the Bars view — meters visible, radar hidden', () => {
   expect(screen.getByRole('meter', { name: /Hardness/i })).toBeTruthy();
 });
 
+test('wires the toggle tabs to the tabpanel via aria-controls / aria-labelledby', () => {
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  const panel = screen.getByRole('tabpanel');
+  const barsTab = screen.getByRole('tab', { name: 'Bars' });
+  const radarTab = screen.getByRole('tab', { name: 'Radar' });
+  expect(barsTab.getAttribute('aria-controls')).toBe('property-tabpanel');
+  expect(radarTab.getAttribute('aria-controls')).toBe('property-tabpanel');
+  expect(panel.id).toBe('property-tabpanel');
+  // Default view is Bars → the panel is labelled by the Bars tab.
+  expect(panel.getAttribute('aria-labelledby')).toBe(barsTab.id);
+  fireEvent.click(radarTab);
+  expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe(radarTab.id);
+});
+
 test('switching to Radar shows the chart and keeps the property readings for AT', () => {
   const { container } = render(
     <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,

@@ -172,6 +172,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
             <button
               type="button"
               role="tab"
+              id="property-tab-radar"
+              aria-controls="property-tabpanel"
               aria-selected={view === 'radar'}
               tabIndex={view === 'radar' ? 0 : -1}
               className={`property-view-toggle__tab${view === 'radar' ? ' property-view-toggle__tab--active' : ''}`}
@@ -183,6 +185,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
             <button
               type="button"
               role="tab"
+              id="property-tab-bars"
+              aria-controls="property-tabpanel"
               aria-selected={view === 'bars'}
               tabIndex={view === 'bars' ? 0 : -1}
               className={`property-view-toggle__tab${view === 'bars' ? ' property-view-toggle__tab--active' : ''}`}
@@ -193,6 +197,14 @@ export const PropertiesPanel = memo(function PropertiesPanel({
             </button>
           </div>
 
+          {/* One tabpanel whose content swaps with the active tab; tabIndex 0 in Radar mode
+              (no focusable children) keeps it keyboard-reachable per the ARIA Tabs pattern. */}
+          <div
+            role="tabpanel"
+            id="property-tabpanel"
+            aria-labelledby={`property-tab-${view}`}
+            tabIndex={view === 'radar' ? 0 : undefined}
+          >
           {view === 'radar' ? (
             <>
               <PropertyRadar
@@ -338,6 +350,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               })}
             </ul>
           )}
+          </div>
         </>
       )}
     </section>
