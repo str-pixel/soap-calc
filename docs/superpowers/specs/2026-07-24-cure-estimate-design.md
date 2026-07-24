@@ -97,11 +97,11 @@ consistent with the anonymity rule for reference-derived data.
 |---|---|---|---|
 | 100% coconut | 2.0–3.0 wk (floor) | 4–6.4 wk | usable ~2–3 wk |
 | Balanced trinity 40/30/30 | ~4.2–6.3 wk | ~7.7–12 wk | 4–6 wk |
-| Castile (100% olive) | ~7.6–11 wk | ~25–40 wk (≈6–9 mo) | ~8 wk / 6–12 mo |
+| Castile (100% olive) | ~7.5–11.3 wk | ~25–40 wk (≈6–9 mo) | ~8 wk / 6–12 mo |
 | Bastile 70/20/10 | ~5.7–8.6 wk | 13–21 wk | ~6–8 wk |
 | 100% lard | ~4.7–7 wk | 8–13 wk | 4–6 wk |
 | 100% tallow | ~3.9–5.8 wk | 7–11 wk | 4–6 wk |
-| 100% sunflower (PUFA 71%) | ~5.4–8.2 wk | **use within ~13 wk** + DOS caveat | long cure, DOS risk |
+| 100% sunflower (PUFA 71%) | ~5.4–8.0 wk | **use within ~13 wk** + DOS caveat | long cure, DOS risk |
 
 Seam probes validated in the prototype: olive 50%→100% sweep is smooth and monotonic (no
 archetype-threshold cliff); lye-concentration factor moves usable-from ±25% with no
@@ -112,7 +112,9 @@ discontinuities.
 Mirrors the workability split exactly:
 
 - **`packages/core/src/cure.ts`** — pure model. Input
-  `{ fa: Partial<Record<FattyAcid, number>>, faCoverage, lyeConcentrationPercent, process }`;
+  `{ fa: FattyAcidProfile, faCoverage, lyeConcentrationPercent, process }` (the
+  `FattyAcidProfile` type core already exports from `fatty-acids.ts`; the web adapter feeds
+  it the view model's existing `fattyAcids` + `properties.coveragePercent`);
   output `CureModelEstimate { usable: WeeksRange, second: { kind: 'best' | 'useWithin' } & WeeksRange, confidence, factors, caveats } | null`.
   Returns `null` for LS (sequester is not an oil-driven cure) and for non-finite inputs.
 - **`packages/core/src/cure.test.ts`** — unit tests + anchor fixtures.
