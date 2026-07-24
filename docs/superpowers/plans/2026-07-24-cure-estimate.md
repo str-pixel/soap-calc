@@ -440,14 +440,16 @@ describe('cure anchors (predicted usable window overlaps the field window)', () 
 });
 
 describe('real batches (empty until logged — see protocol above)', () => {
-  for (const b of REAL_BATCHES) {
-    it(b.name, () => {
+  // House pattern (workability-calibration.test.ts): one `it` looping inside — vacuously
+  // green while REAL_BATCHES is empty, a real inside-the-window assertion once rows exist.
+  it('recorded real batches (if any) fall inside the predicted usable window', () => {
+    for (const b of REAL_BATCHES) {
       const e = estimateCureModel(b.input)!;
-      expect(overlap([e.usable.minWeeks, e.usable.maxWeeks], [b.observedUsableWeeks, b.observedUsableWeeks])).toBeGreaterThanOrEqual(0);
-    });
-  }
-  it('harness compiles', () => {
-    expect(REAL_BATCHES.length).toBeGreaterThanOrEqual(0);
+      expect(
+        b.observedUsableWeeks >= e.usable.minWeeks && b.observedUsableWeeks <= e.usable.maxWeeks,
+        `${b.name}: observed ${b.observedUsableWeeks}wk vs predicted ${e.usable.minWeeks}–${e.usable.maxWeeks}wk`,
+      ).toBe(true);
+    }
   });
 });
 ```
