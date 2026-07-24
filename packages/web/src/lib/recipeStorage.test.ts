@@ -167,6 +167,39 @@ describe('recipeStorage', () => {
     expect(draft?.lines.every((line) => typeof line.oilId === 'string')).toBe(true);
   });
 
+  it('migrates the pre-#86 NaOH purity default (100) to 99 in pre-v3 drafts', () => {
+    const payload = JSON.stringify({
+      version: 2,
+      name: 'Old draft',
+      lines: [],
+      settings: { ...DEFAULT_SETTINGS, naohPurityPercent: '100' },
+      updatedAt: new Date().toISOString(),
+    });
+    localStorage.setItem('soap-calc:draft:cp', payload);
+
+    expect(loadDraft('cp')?.settings.naohPurityPercent).toBe('99');
+  });
+
+  it('keeps a non-default purity in pre-v3 drafts (only the old default migrates)', () => {
+    const payload = JSON.stringify({
+      version: 2,
+      name: 'Old draft',
+      lines: [],
+      settings: { ...DEFAULT_SETTINGS, naohPurityPercent: '97.5' },
+      updatedAt: new Date().toISOString(),
+    });
+    localStorage.setItem('soap-calc:draft:cp', payload);
+
+    expect(loadDraft('cp')?.settings.naohPurityPercent).toBe('97.5');
+  });
+
+  it('keeps a deliberately typed 100% purity in v3+ drafts (migration is one-time)', () => {
+    const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
+    saveDraft('cp', 'Draft', lines, { ...DEFAULT_SETTINGS, naohPurityPercent: '100' });
+
+    expect(loadDraft('cp')?.settings.naohPurityPercent).toBe('100');
+  });
+
   it('falls back to the default name when the stored name is not a string', () => {
     const payload = JSON.stringify({
       version: 2,
