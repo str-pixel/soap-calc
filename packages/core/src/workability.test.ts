@@ -85,6 +85,21 @@ describe('estimateWorkability', () => {
     expect(e.confidence).toBe('moderate');
   });
 
+  it('displayed score is consistent with the band it lands in (no 44.6→"45" seam)', () => {
+    // 44.6 sits in the <45 band, so the factor line must NOT show "45" (which would imply
+    // the ≥45 band and a 3× faster range). floor() aligns the shown integer with the
+    // half-open band lookup.
+    const e = est({ hardnessScore: 44.6 })!;
+    expect(e.factors).toContain('Hard-oil score 44');
+    expect(e.factors).not.toContain('Hard-oil score 45');
+    // and it really is the <45 band (36–72h base), not the ≥45 band (12–36h)
+    expect(e.unmold.minHours).toBeCloseTo(36, 5);
+    // whereas an exact 45 shows "45" and uses the ≥45 band
+    const top = est({ hardnessScore: 45 })!;
+    expect(top.factors).toContain('Hard-oil score 45');
+    expect(top.unmold.minHours).toBeCloseTo(12, 5);
+  });
+
   it('guards: unknown gelMode→natural; SL dose clamps; hardness clamps', () => {
     // @ts-expect-error deliberately invalid
     expect(est({ gelMode: 'bogus' })!.unmold).toEqual(est({ gelMode: 'natural' })!.unmold);

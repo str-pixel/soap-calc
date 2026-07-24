@@ -141,7 +141,12 @@ export function estimateWorkability(input: WorkabilityInput): WorkabilityEstimat
   if (unmold.maxHours >= T.ceilingHours) caveats.push(CEILING_CAVEAT);
 
   const factors = [
-    `Hard-oil score ${Math.round(hardness)}`,
+    // floor, not round: the bands are half-open (`hardness >= min`), so flooring keeps the
+    // shown integer on the same side of every boundary as the band lookup — otherwise 44.6
+    // would display "45" while computing the <45 band (a 3× range gap behind one number).
+    // (The deeper fix — continuous interpolation, no bands, no seam — is deferred to the
+    // real-batch calibration retune; see workability-calibration.test.ts.)
+    `Hard-oil score ${Math.floor(hardness)}`,
     `${GEL_LABEL[gelMode]} gel`,
     `${Math.round(input.lyeConcentrationPercent)}% lye concentration`,
     `${fmtNum(input.superfatPercent)}% superfat`,
