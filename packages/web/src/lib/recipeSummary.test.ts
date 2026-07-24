@@ -122,3 +122,25 @@ test('buildFullRecipe omits the blend share when kohBlendPercent is missing', ()
   expect(names).toContain('Potassium hydroxide (KOH)');
   expect(names.some((n) => n.includes('0%'))).toBe(false);
 });
+
+test('buildAddOrderSteps derives CP unmold/cure timing from the estimates when provided', () => {
+  const steps = buildAddOrderSteps({
+    process: 'cp',
+    lyeType: 'naoh',
+    totalOilGrams: 400,
+    lyeGrams: 56.7,
+    waterGrams: 132,
+    weightUnit: 'g',
+    unmoldText: '≈ 11–34 h',
+    cureText: '≈ 5–7.5 weeks',
+  });
+  expect(steps[4]).toBe('Pour into the mold; unmold ≈ 11–34 h and cure ≈ 5–7.5 weeks.');
+  expect(steps[4]).not.toContain('24–48');
+});
+
+test('buildAddOrderSteps keeps the generic CP timing copy when estimates are unavailable', () => {
+  const steps = buildAddOrderSteps({
+    process: 'cp', lyeType: 'naoh', totalOilGrams: 400, lyeGrams: 56.7, waterGrams: 132, weightUnit: 'g',
+  });
+  expect(steps[4]).toContain('unmold in 24–48 h and cure 4–6 weeks');
+});
