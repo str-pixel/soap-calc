@@ -388,6 +388,7 @@ export default function App() {
               percentTotalOff={vm.percentTotalOff} weightTotalOff={vm.weightTotalOff}
               getDraft={getDraft} setDraft={setDraft}
               inputs={inputs}
+              oilBatchFraction={vm.liveOilBatchFraction}
             />
 
             <AdditivesPanel
