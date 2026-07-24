@@ -116,6 +116,13 @@ type AddOrderInput = {
   lyeGrams: number;
   waterGrams: number;
   weightUnit: WeightUnit;
+  /** Preformatted unmold window from the workability estimate (e.g. "≈ 11–34 h"). When
+   * present it replaces the generic CP timing so this list can never disagree with the
+   * Workability rows above it. */
+  unmoldText?: string | null;
+  /** Preformatted usable-from window from the cure model (e.g. "≈ 5–7.5 weeks") — same
+   * single-sourcing contract as unmoldText, against the cure milestone rows. */
+  cureText?: string | null;
 };
 
 /**
@@ -124,7 +131,7 @@ type AddOrderInput = {
  * lye into water, never the reverse.
  */
 export function buildAddOrderSteps(input: AddOrderInput): string[] {
-  const { process, lyeType, totalOilGrams, lyeGrams, waterGrams, weightUnit } = input;
+  const { process, lyeType, totalOilGrams, lyeGrams, waterGrams, weightUnit, unmoldText, cureText } = input;
   const oil = formatWeight(totalOilGrams, weightUnit);
   const lye = formatWeight(lyeGrams, weightUnit);
   const water = formatWeight(waterGrams, weightUnit);
@@ -155,6 +162,6 @@ export function buildAddOrderSteps(input: AddOrderInput): string[] {
     `Weigh ${lye} ${alkali} and ${water} distilled water; add the lye to the water (never the reverse) and cool to 38–43 °C.`,
     `Pour the lye solution into the oils and blend to light trace.`,
     `Stir in fragrance and any additives at trace.`,
-    `Pour into the mold; unmold in 24–48 h and cure 4–6 weeks.`,
+    `Pour into the mold; unmold ${unmoldText ?? 'in 24–48 h'} and cure ${cureText ?? '4–6 weeks'}.`,
   ];
 }

@@ -188,6 +188,12 @@ export const ResultsPanel = memo(function ResultsPanel({
     lyeGrams: result.lyeWeightGrams,
     waterGrams: result.waterWeightGrams,
     weightUnit,
+    // Same formatted strings the Workability rows / cure milestones render, so the step
+    // copy can never contradict the estimates shown two panels up.
+    unmoldText: cureEstimate?.workability
+      ? formatWorkabilityRange(cureEstimate.workability.unmold, cureEstimate.workability.unmold.maxHours)
+      : null,
+    cureText: cureEstimate?.model ? formatCureRange(cureEstimate.model.usable) : null,
   });
 
   return (

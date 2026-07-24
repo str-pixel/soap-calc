@@ -534,3 +534,41 @@ test('a null model falls back to the fixed per-process window row', () => {
   // there's no workability chip either, making a bare null-check on "low confidence" valid.
   expect(screen.queryByText(/low confidence/)).toBeNull();
 });
+
+test('the add-in-order CP step quotes the same unmold/cure windows as the estimate rows', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      cureEstimate={{
+        minWeeks: 4,
+        usableAtUnmold: false,
+        finishingLabel: 'Cure',
+        workability: {
+          unmold: { minHours: 11, maxHours: 34 },
+          cut: { minHours: 15, maxHours: 38 },
+          stamp: null,
+          confidence: 'moderate',
+          factors: [],
+          caveats: [],
+        },
+        model: {
+          usable: { minWeeks: 5, maxWeeks: 7.5 },
+          second: { kind: 'best', minWeeks: 8, maxWeeks: 12.8 },
+          confidence: 'low',
+          factors: [],
+          caveats: [],
+        },
+      }}
+    />,
+  );
+  expect(screen.getByText(/unmold ≈ 11–34 h and cure ≈ 5–7.5 weeks/)).toBeTruthy();
+  expect(screen.queryByText(/24–48 h/)).toBeNull();
+});
