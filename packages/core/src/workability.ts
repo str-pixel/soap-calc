@@ -69,7 +69,7 @@ const HP_CAVEAT =
 const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x));
 
 /** Piecewise-linear through sorted knees; flat outside the first/last knee. */
-function piecewise(x: number, knees: ReadonlyArray<readonly [number, number]>): number {
+export function piecewise(x: number, knees: ReadonlyArray<readonly [number, number]>): number {
   if (x <= knees[0][0]) return knees[0][1];
   const last = knees[knees.length - 1];
   if (x >= last[0]) return last[1];

@@ -406,3 +406,131 @@ test('renders the Full recipe list and process-aware Add-in-order steps', () => 
   // CP build steps keep the lye-into-water safety note.
   expect(screen.getByText(/never the reverse/)).toBeTruthy();
 });
+
+test('a recipe-derived cure model renders the two milestone rows instead of the fixed window', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      cureEstimate={{
+        minWeeks: 4,
+        usableAtUnmold: false,
+        finishingLabel: 'Cure',
+        workability: null,
+        model: {
+          usable: { minWeeks: 4.2, maxWeeks: 6.3 },
+          second: { kind: 'best', minWeeks: 8, maxWeeks: 12.8 },
+          confidence: 'low',
+          factors: ['Slow FAs 77%'],
+          caveats: ['Fatty-acid data covers only 60% of these oils — the cure drivers are partly estimated.'],
+        },
+      }}
+    />,
+  );
+  expect(screen.getByText('Usable from (est.)')).toBeTruthy();
+  expect(screen.getByText('At its best (est.)')).toBeTruthy();
+  expect(screen.queryByText('Cure (est.)')).toBeNull();
+  expect(screen.getByText(/covers only 60%/)).toBeTruthy();
+  expect(screen.getByText('low confidence')).toBeTruthy();
+  expect(screen.getByText('Slow FAs 77%')).toBeTruthy();
+});
+
+test('HP with usableAtUnmold and a model shows "At unmold", not a contradictory weeks range', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="hp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      cureEstimate={{
+        minWeeks: 3,
+        maxWeeks: 4,
+        usableAtUnmold: true,
+        finishingLabel: 'Cure',
+        workability: null,
+        model: {
+          usable: { minWeeks: 3, maxWeeks: 4.5 },
+          second: { kind: 'best', minWeeks: 8, maxWeeks: 12.8 },
+          confidence: 'low',
+          factors: [],
+          caveats: [],
+        },
+      }}
+    />,
+  );
+  expect(screen.getByText('At unmold')).toBeTruthy();
+  expect(screen.queryByText('Usable from (est.)')).toBeNull();
+  expect(screen.getByText('At its best (est.)')).toBeTruthy();
+});
+
+test('a use-within model renders the shelf label, not "At its best"', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      cureEstimate={{
+        minWeeks: 4,
+        usableAtUnmold: false,
+        finishingLabel: 'Cure',
+        workability: null,
+        model: {
+          usable: { minWeeks: 5.4, maxWeeks: 8 },
+          second: { kind: 'useWithin', minWeeks: 13, maxWeeks: 13 },
+          confidence: 'low',
+          factors: [],
+          caveats: [],
+        },
+      }}
+    />,
+  );
+  expect(screen.getByText('Use within (est.)')).toBeTruthy();
+  expect(screen.queryByText('At its best (est.)')).toBeNull();
+});
+
+test('a null model falls back to the fixed per-process window row', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="KOH"
+      process="ls"
+      lyeType="koh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      cureEstimate={{
+        minWeeks: 1,
+        maxWeeks: 4,
+        usableAtUnmold: false,
+        finishingLabel: 'Sequester',
+        workability: null,
+        model: null,
+      }}
+    />,
+  );
+  expect(screen.getByText('Sequester (est.)')).toBeTruthy();
+  expect(screen.queryByText('Usable from (est.)')).toBeNull();
+  // null model → no cure confidence chip; this fixture's workability is also null, so
+  // there's no workability chip either, making a bare null-check on "low confidence" valid.
+  expect(screen.queryByText(/low confidence/)).toBeNull();
+});

@@ -1,6 +1,11 @@
-import type { WorkabilityEstimate } from '@soap-calc/core';
+import {
+  estimateCureModel,
+  type CureModelEstimate,
+  type FattyAcidProfile,
+  type WorkabilityEstimate,
+} from '@soap-calc/core';
 import type { ProcessProfile } from './processProfile';
-import { PROCESS_DEFINITIONS } from './process';
+import { PROCESS_DEFINITIONS, type ProcessId } from './process';
 
 export type CureEstimate = {
   minWeeks: number;
@@ -11,12 +16,16 @@ export type CureEstimate = {
    * transiently mismatched process prop. */
   finishingLabel: string;
   workability?: WorkabilityEstimate | null;
+  /** Recipe-derived two-milestone model; null falls back to the fixed per-process window
+   * above (LS sequester, mid-edit recipes, unresolvable FA data). */
+  model?: CureModelEstimate | null;
 };
 
 /** Cure/sequester window for a process; hot process is usable straight from the mold. */
 export function estimateCure(
   profile: ProcessProfile,
   workability: WorkabilityEstimate | null = null,
+  model: CureModelEstimate | null = null,
 ): CureEstimate {
   return {
     minWeeks: profile.finish.minWeeks,
@@ -24,7 +33,24 @@ export function estimateCure(
     usableAtUnmold: profile.process === 'hp',
     finishingLabel: PROCESS_DEFINITIONS[profile.process].terms.finishingLabel,
     workability,
+    model,
   };
+}
+
+/** Build the core model input from view-model state (mirrors computeWorkability's role). */
+export function computeCureModel(args: {
+  faProfile: FattyAcidProfile | null;
+  coveragePercent: number;
+  lyeConcentrationPercent: number | null | undefined;
+  process: ProcessId;
+}): CureModelEstimate | null {
+  if (!args.faProfile) return null;
+  return estimateCureModel({
+    fa: args.faProfile,
+    faCoverage: args.coveragePercent,
+    lyeConcentrationPercent: args.lyeConcentrationPercent ?? Number.NaN,
+    process: args.process,
+  });
 }
 
 /**

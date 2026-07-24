@@ -8,7 +8,7 @@ import {
   computeRecipeAdditives,
   computeSplitLiquidGrams,
 } from '../lib/calculateAdditives';
-import { estimateCure, labelWeightGrams } from '../lib/cureEstimate';
+import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
 import type { CureEstimate } from '../lib/cureEstimate';
 import { computeWorkability } from '../lib/workabilityInput';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
@@ -339,9 +339,21 @@ export function useRecipeViewModel({
       process,
     ],
   );
+  // Recipe-derived cure model (two milestones); null mid-edit or on LS, where the
+  // fixed per-process window below is the fallback the panel renders.
+  const cureModel = useMemo(
+    () =>
+      computeCureModel({
+        faProfile: fattyAcids.profile,
+        coveragePercent: properties.coveragePercent,
+        lyeConcentrationPercent: result?.lyeConcentrationPercent ?? null,
+        process,
+      }),
+    [fattyAcids, properties, result, process],
+  );
   const cureEstimate = useMemo(
-    () => (profile ? { ...estimateCure(profile), workability } : null),
-    [profile, workability],
+    () => (profile ? estimateCure(profile, workability, cureModel) : null),
+    [profile, workability, cureModel],
   );
   // Only the water-bearing base batter evaporates over cure — after-cook extras (fragrance,
   // PCSF oil, additives) don't lose water, so the loss is computed off baseBatchGrams and
