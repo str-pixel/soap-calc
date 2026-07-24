@@ -3,6 +3,7 @@ import {
   additivesFromSaved,
   createEmptyAdditives,
   createStarterLines,
+  DEFAULT_SETTINGS,
   newLineKey,
   normalizeSettings,
 } from './recipe';
@@ -10,7 +11,10 @@ import { isProcessId, processForLyeType, type ProcessId } from './process';
 
 const LEGACY_DRAFT_KEY = 'soap-calc:draft';
 const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
-const STORAGE_VERSION = 2;
+// v3: NaOH purity '100' in older drafts is migrated to the current default (see
+// migrateSettings). Version list accepted by loadDraft must include every older version.
+const STORAGE_VERSION = 3;
+const READABLE_VERSIONS = [1, 2, STORAGE_VERSION];
 
 function draftKey(process: ProcessId): string {
   return `soap-calc:draft:${process}`;
@@ -112,6 +116,17 @@ export function hasDraft(process: ProcessId): boolean {
   }
 }
 
+/** Pre-v3 drafts predate the NaOH-purity default change (100 → 99, #86), so a stored
+ * '100' there is the old default carried forward, not a user choice — move it to the
+ * current default once. A v3+ draft keeps '100' verbatim: after this migration ships,
+ * that value can only exist because the user typed it. */
+function migrateSettings(settings: RecipeSettings, version: number): RecipeSettings {
+  if (version < 3 && settings.naohPurityPercent === '100') {
+    return { ...settings, naohPurityPercent: DEFAULT_SETTINGS.naohPurityPercent };
+  }
+  return settings;
+}
+
 export function loadDraft(process: ProcessId): {
   name: string;
   lines: RecipeLine[];
@@ -123,10 +138,7 @@ export function loadDraft(process: ProcessId): {
     raw = localStorage.getItem(draftKey(process));
     if (!raw) return null;
     const data = JSON.parse(raw) as DraftPayload;
-    if (
-      (data.version !== STORAGE_VERSION && data.version !== 1) ||
-      !Array.isArray(data.lines)
-    ) {
+    if (!READABLE_VERSIONS.includes(data.version) || !Array.isArray(data.lines)) {
       // Preserve what we can't read: returning null seeds a starter workspace whose
       // first autosave overwrites this slot ~500ms later. A future-version draft
       // (app rollback) or corrupted payload is parked in a backup slot instead of
@@ -138,7 +150,7 @@ export function loadDraft(process: ProcessId): {
       name: typeof data.name === 'string' && data.name ? data.name : 'Untitled recipe',
       lines: linesFromSaved(data.lines),
       additives: additivesFromSaved(data.additives),
-      settings: normalizeSettings(data.settings),
+      settings: migrateSettings(normalizeSettings(data.settings), data.version),
     };
   } catch {
     // JSON.parse-throwing corruption (truncated write) must be preserved the same
