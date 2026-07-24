@@ -161,13 +161,65 @@ export function syncBatchTotalEdit(lines: RecipeLine[], batchOilGrams: string): 
     baseLines = syncPercentsFromWeights(lines, currentTotal);
   }
 
-  return baseLines.map((line) => {
+  // Joint rounding (largest remainder), not per-line Math.round: rounding each line
+  // independently drifts the realized sum by up to ±(lines/2) g from pctSum×batch, which
+  // makes some whole-gram oil totals unreachable and widens the achievable-batch
+  // staircase (the "typed 2000, got 1998" report). Floor every line, then hand the
+  // missing grams to the largest fractional parts, so the realized sum always equals
+  // round(pctSum×batch/100) — honoring an off-100% pctSum rather than normalizing it.
+  const exact = baseLines.map((line) => {
     const pct = parseNum(line.weightPercent ?? '') ?? 0;
-    if (pct <= 0) {
-      return { ...line, weightGrams: '' };
-    }
-    return { ...line, weightGrams: formatGrams((batch * pct) / 100) };
+    return pct > 0 ? (batch * pct) / 100 : null;
   });
+  const targetSum = Math.round(exact.reduce((sum: number, g) => sum + (g ?? 0), 0));
+  const floors = exact.map((g) => (g === null ? 0 : Math.floor(g)));
+  let remainder = targetSum - floors.reduce((a, b) => a + b, 0);
+  const byFraction = exact
+    .map((g, i) => ({ i, frac: g === null ? -1 : g - Math.floor(g) }))
+    .filter((e) => e.frac >= 0)
+    .sort((a, b) => b.frac - a.frac);
+  const bumped = new Set<number>();
+  for (const { i } of byFraction) {
+    if (remainder <= 0) break;
+    bumped.add(i);
+    remainder -= 1;
+  }
+  return baseLines.map((line, i) => {
+    if (exact[i] === null) return { ...line, weightGrams: '' };
+    return { ...line, weightGrams: String(floors[i] + (bumped.has(i) ? 1 : 0)) };
+  });
+}
+
+/**
+ * Best whole-gram oil total for a target BATCH weight. The pure ratio back-solve
+ * (oil0 × target ÷ batch0) is exact only before quantization: syncBatchTotalEdit stores
+ * whole grams from 0.1%-rounded percents, so neighboring oil totals realize slightly
+ * different batches. Simulate the actual scaling for a few candidates around the linear
+ * solve and pick the one whose realized batch (linear in realized oil — see
+ * batchWeightLinearity.test.ts) lands closest to the target.
+ */
+export function solveOilTotalForBatchTarget(
+  lines: RecipeLine[],
+  targetBatchGrams: number,
+  currentOilTotalGrams: number,
+  currentBatchGrams: number,
+): number {
+  const linear = Math.round(currentOilTotalGrams * (targetBatchGrams / currentBatchGrams));
+  const resynced = resyncFromWeights(lines).lines;
+  let best = Math.max(1, linear);
+  let bestErr = Infinity;
+  for (let candidate = linear - 2; candidate <= linear + 2; candidate++) {
+    if (candidate <= 0) continue;
+    const scaled = syncBatchTotalEdit(resynced, String(candidate));
+    const realizedOil = totalGrams(scaled);
+    const predictedBatch = currentBatchGrams * (realizedOil / currentOilTotalGrams);
+    const err = Math.abs(predictedBatch - targetBatchGrams);
+    if (err < bestErr) {
+      bestErr = err;
+      best = candidate;
+    }
+  }
+  return best;
 }
 
 export function addRecipeLine(
