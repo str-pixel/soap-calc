@@ -68,7 +68,7 @@ Commit is a no-op (display reverts to the live value) when any of:
   Results panel is empty. Note: "percent-only" recipes do not persist as a gram-less
   state — a percent edit materializes grams from the anchor immediately
   (`lineWeightSync.ts` syncPercentEdit), so no special percent-only path exists or is
-  needed. When there's truly nothing resolvable, the batch field displays "—".
+  needed. When there's truly nothing resolvable, the batch field renders empty.
 - target is non-finite or `<= 0`, or `newOilTotal <= 0`.
 
 LS is not special-cased: the field tracks the same displayed batch figure Results shows
@@ -96,9 +96,9 @@ linear in oil scale).
 - `packages/web/src/components/RecipeOilsPanel.tsx` — second field in
   `.recipe-entry-bar`, labeled `Total batch ({unit})`, fed by two new props
   (`batchWeightWithExtras`, `recipeOilWeightGrams`); display via
-  `gramsToDisplayValue(number, unit)`, commit parsing via
-  `parseInputDisplayToGrams(string, unit)` (the numeric-value helpers — NOT
-  `gramsStringToInputDisplay`, which takes a string setting).
+  `gramsStringToInputDisplay(String(batchWeightWithExtras), unit)` (display-digit
+  rounding, same as the oil field), commit parsing via
+  `parseInputDisplayToGrams(string, unit)`.
 - `packages/web/src/App.tsx` (~line 384) — pass both props (already on the view model)
   to `RecipeOilsPanel`.
 - No changes to: core package, `calculateRecipe`, recipe data model, persisted settings.
