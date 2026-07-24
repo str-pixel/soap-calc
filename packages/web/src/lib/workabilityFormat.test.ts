@@ -23,13 +23,11 @@ describe('formatWorkabilityRange', () => {
     expect(formatWorkabilityRange({ minHours: 400, maxHours: 400 })).toBe(expected);
   });
 
-  it('a shared unit basis keeps adjacent rows in one unit (fixes the mixed-unit seam)', () => {
-    // unmold {15.6, 46.8} + cut {19.6, 50.8}: independently these mix hours+days and
-    // overstate the cut min (19.6h → "1 day"). With the block basis = unmold.max they agree.
-    const basis = 46.8;
-    expect(formatWorkabilityRange({ minHours: 15.6, maxHours: 46.8 }, basis)).toBe('≈ 16–47 h');
-    expect(formatWorkabilityRange({ minHours: 19.6, maxHours: 50.8 }, basis)).toBe('≈ 20–51 h');
-    // (independent formatting is what produced the mixed units)
+  it('each range picks its own unit — anything past 48h renders in days, not hours', () => {
+    // unmold max 46.8h sits just under the seam and stays in hours; cut/stamp cross it
+    // and switch to days even though they sit in the same block.
+    expect(formatWorkabilityRange({ minHours: 15.6, maxHours: 46.8 })).toBe('≈ 16–47 h');
     expect(formatWorkabilityRange({ minHours: 19.6, maxHours: 50.8 })).toBe('≈ 1–2 days');
+    expect(formatWorkabilityRange({ minHours: 50.8, maxHours: 66.2 })).toBe('≈ 2–3 days');
   });
 });
