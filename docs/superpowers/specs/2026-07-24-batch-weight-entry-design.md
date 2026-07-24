@@ -83,12 +83,24 @@ linear in oil scale).
   `{ currentBatchGrams, currentOilTotalGrams }`; internally reuses the
   `handleApplySuggestedOilGrams` core (extract its body into a shared local
   `applyOilTotal(rounded)` so mold-apply and batch-commit share one code path).
+  Commit must mirror `commitBatchInput`'s draft contract — `shouldCommitDraft` /
+  `clearDraft` / `if (!hadDraft) return` — so a blur without an edit NEVER rescales
+  (pinned by a test).
+- **Basis consistency (load-bearing):** both context values come from the view model's
+  displayTotals-derived figures — `currentBatchGrams` = `batchWeightWithExtras`,
+  `currentOilTotalGrams` = `displayTotals.recipeOilWeightGrams` — NOT from the panel's
+  `lineTotals.totalWeightGrams` (raw line-sum), which can differ mid-edit (e.g. a row
+  with grams but no oil picked). The ratio must use the same oil basis the batch figure
+  was computed from. Malformed rows degrade gracefully: the achieved figure re-renders
+  after commit.
 - `packages/web/src/components/RecipeOilsPanel.tsx` — second field in
-  `.recipe-entry-bar`, labeled `Total batch ({unit})`, fed by a new
-  `batchWeightWithExtras` prop; unit conversion via the same
-  `gramsStringToInputDisplay`-style helpers the oil field uses.
-- `packages/web/src/App.tsx` (~line 384) — pass `batchWeightWithExtras` (already on the
-  view model) to `RecipeOilsPanel`.
+  `.recipe-entry-bar`, labeled `Total batch ({unit})`, fed by two new props
+  (`batchWeightWithExtras`, `recipeOilWeightGrams`); display via
+  `gramsToDisplayValue(number, unit)`, commit parsing via
+  `parseInputDisplayToGrams(string, unit)` (the numeric-value helpers — NOT
+  `gramsStringToInputDisplay`, which takes a string setting).
+- `packages/web/src/App.tsx` (~line 384) — pass both props (already on the view model)
+  to `RecipeOilsPanel`.
 - No changes to: core package, `calculateRecipe`, recipe data model, persisted settings.
 
 ## Testing
@@ -99,7 +111,8 @@ linear in oil scale).
    points at the ratio solver's assumption.
 2. **Commit unit tests (useRecipeInputs):** 1,500 g target scales starter lines and sets
    `batchOilGrams` (achieved within 3 g); off-100% shape reconciles to 100% and lands;
-   invalid targets (`''`, `0`, `-5`, `abc`) and zero-batch state no-op.
+   invalid targets (`''`, `0`, `-5`, `abc`) and zero-batch state no-op; blur with no
+   draft (`shouldCommitDraft` false) never rescales.
 3. **Panel test:** both fields render with their labels; batch field shows the formatted
    `batchWeightWithExtras`; empty/unresolvable recipe renders "—".
 4. **E2E:** type 1500 into "Total batch", blur; assert Results "Total batch" ≈ 1.5 kg and
