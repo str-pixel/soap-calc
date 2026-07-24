@@ -406,3 +406,93 @@ test('renders the Full recipe list and process-aware Add-in-order steps', () => 
   // CP build steps keep the lye-into-water safety note.
   expect(screen.getByText(/never the reverse/)).toBeTruthy();
 });
+
+test('a recipe-derived cure model renders the two milestone rows instead of the fixed window', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      cureEstimate={{
+        minWeeks: 4,
+        usableAtUnmold: false,
+        finishingLabel: 'Cure',
+        workability: null,
+        model: {
+          usable: { minWeeks: 4.2, maxWeeks: 6.3 },
+          second: { kind: 'best', minWeeks: 8, maxWeeks: 12.8 },
+          confidence: 'low',
+          factors: [],
+          caveats: ['Fatty-acid data covers only 60% of these oils — the cure drivers are partly estimated.'],
+        },
+      }}
+    />,
+  );
+  expect(screen.getByText('Usable from (est.)')).toBeTruthy();
+  expect(screen.getByText('At its best (est.)')).toBeTruthy();
+  expect(screen.queryByText('Cure (est.)')).toBeNull();
+  expect(screen.getByText(/covers only 60%/)).toBeTruthy();
+});
+
+test('a use-within model renders the shelf label, not "At its best"', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      cureEstimate={{
+        minWeeks: 4,
+        usableAtUnmold: false,
+        finishingLabel: 'Cure',
+        workability: null,
+        model: {
+          usable: { minWeeks: 5.4, maxWeeks: 8 },
+          second: { kind: 'useWithin', minWeeks: 13, maxWeeks: 13 },
+          confidence: 'low',
+          factors: [],
+          caveats: [],
+        },
+      }}
+    />,
+  );
+  expect(screen.getByText('Use within (est.)')).toBeTruthy();
+  expect(screen.queryByText('At its best (est.)')).toBeNull();
+});
+
+test('a null model falls back to the fixed per-process window row', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="KOH"
+      process="ls"
+      lyeType="koh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      cureEstimate={{
+        minWeeks: 1,
+        maxWeeks: 4,
+        usableAtUnmold: false,
+        finishingLabel: 'Sequester',
+        workability: null,
+        model: null,
+      }}
+    />,
+  );
+  expect(screen.getByText('Sequester (est.)')).toBeTruthy();
+  expect(screen.queryByText('Usable from (est.)')).toBeNull();
+});

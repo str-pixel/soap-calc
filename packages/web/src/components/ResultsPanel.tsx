@@ -13,6 +13,7 @@ import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
 import { buildAddOrderSteps, buildFullRecipe } from '../lib/recipeSummary';
 import { formatWeight } from '../lib/weightUnits';
 import { formatWorkabilityRange } from '../lib/workabilityFormat';
+import { formatCureRange } from '../lib/cureFormat';
 import { InfoTip } from './InfoTip';
 
 type ResultsPanelProps = {
@@ -323,7 +324,7 @@ export const ResultsPanel = memo(function ResultsPanel({
               <dd>{formatGrams(totalSuperfatPercent, 1)}%</dd>
             </div>
           )}
-          {cureEstimate && (
+          {cureEstimate && !cureEstimate.model && (
             <div className="results-grid__item">
               <dt>{finishingLabel} (est.)</dt>
               <dd>
@@ -334,6 +335,23 @@ export const ResultsPanel = memo(function ResultsPanel({
               </dd>
             </div>
           )}
+          {cureEstimate?.model && (
+            <>
+              <div className="results-grid__item">
+                <dt>Usable from (est.)</dt>
+                <dd>
+                  {formatCureRange(cureEstimate.model.usable)}
+                  {cureEstimate.usableAtUnmold && (
+                    <span className="results-excluded"> · usable at unmold</span>
+                  )}
+                </dd>
+              </div>
+              <div className="results-grid__item">
+                <dt>{cureEstimate.model.second.kind === 'useWithin' ? 'Use within' : 'At its best'} (est.)</dt>
+                <dd>{formatCureRange(cureEstimate.model.second)}</dd>
+              </div>
+            </>
+          )}
           {showLabelWeight && labelWeight !== null && (
             <div className="results-grid__item">
               <dt>Est. label weight (after {finishingLabel.toLowerCase()})</dt>
@@ -341,6 +359,16 @@ export const ResultsPanel = memo(function ResultsPanel({
             </div>
           )}
         </dl>
+      )}
+
+      {cureEstimate?.model && cureEstimate.model.caveats.length > 0 && (
+        <ul className="message-list message-list--insights" data-testid="cure-caveats">
+          {cureEstimate.model.caveats.map((c) => (
+            <li key={c} className="message-list__item--info">
+              {c}
+            </li>
+          ))}
+        </ul>
       )}
 
       {cureEstimate?.workability && (
