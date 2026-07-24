@@ -371,9 +371,9 @@ export const ResultsPanel = memo(function ResultsPanel({
 
       {cureEstimate?.model && (
         <>
-          <span className={`chip chip--${cureEstimate.model.confidence}`}>
-            {cureEstimate.model.confidence} confidence
-          </span>
+          {/* No confidence chip here by design: the cure model is not yet calibrated against
+              real batches, but that is tracked internally (model.confidence stays 'low' until
+              REAL_BATCHES exists) rather than surfaced as a user-facing warning. */}
           {cureEstimate.model.factors.length > 0 && (
             <p className="results-hint">{cureEstimate.model.factors.join(' · ')}</p>
           )}
