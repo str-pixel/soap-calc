@@ -69,9 +69,12 @@ export function estimateCureModel(input: CureModelInput): CureModelEstimate | nu
   if (!Number.isFinite(input.lyeConcentrationPercent) || !Number.isFinite(input.faCoverage)) {
     return null;
   }
+  // A present-but-non-finite FA value means corrupted input — fall back to the fixed
+  // window (spec: non-finite FA inputs → null); missing keys are legitimately 0.
+  if (!Object.values(input.fa).every((v) => Number.isFinite(v))) return null;
   if (input.faCoverage <= 0) return null;
 
-  const fa = (k: string): number => (Number.isFinite(input.fa[k]) ? (input.fa[k] as number) : 0);
+  const fa = (k: string): number => input.fa[k] ?? 0;
   const fast = fa('lauric') + fa('myristic');
   const pufa = fa('linoleic') + fa('linolenic');
   const slow = fa('oleic') + fa('ricinoleic') + T.linoleicWeight * pufa;

@@ -29,3 +29,10 @@ test('LS falls back to the fixed sequester window (no oil-driven cure for liquid
   await expect(page.getByText('Sequester (est.)')).toBeVisible();
   await expect(page.getByText('Usable from (est.)')).toHaveCount(0);
 });
+
+test('HP shows "At unmold", not a contradictory weeks-range usable row', async ({ page }) => {
+  await freshRecipe(page);
+  await processTab(page, /Hot process/).click();
+  await expect(page.getByText('At unmold')).toBeVisible();
+  await expect(page.getByText('Usable from (est.)')).toHaveCount(0);
+});

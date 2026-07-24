@@ -80,7 +80,7 @@ export const CURE_TUNING = {
 
 Pipeline:
 
-```
+```text
 usableMin = piecewise(slow, usableKnees) × piecewise(fast, fastCredit) × piecewise(lyeConc%, lyeConc)
 usableMin = max(usableMin, usableFloorWeeks);  usableMax = usableMin × usableSpread
 bestMin   = max(piecewise(slow, bestKnees), usableMin);  bestMax = bestMin × bestSpread
@@ -113,8 +113,9 @@ Mirrors the workability split exactly:
 
 - **`packages/core/src/cure.ts`** — pure model. Input
   `{ fa: FattyAcidProfile, faCoverage, lyeConcentrationPercent, process }` (the
-  `FattyAcidProfile` type core already exports from `fatty-acids.ts`; the web adapter feeds
-  it the view model's existing `fattyAcids` + `properties.coveragePercent`);
+  `FattyAcidProfile` type defined in core's `properties.ts` and re-exported via
+  `fatty-acids.ts`; the web adapter feeds it the view model's existing `fattyAcids` +
+  `properties.coveragePercent`);
   output `CureModelEstimate { usable: WeeksRange, second: { kind: 'best' | 'useWithin' } & WeeksRange, confidence, factors, caveats } | null`.
   Returns `null` for LS (sequester is not an oil-driven cure) and for non-finite inputs.
 - **`packages/core/src/cure.test.ts`** — unit tests + anchor fixtures.

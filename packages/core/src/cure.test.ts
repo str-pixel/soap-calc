@@ -29,6 +29,9 @@ describe('guards', () => {
     expect(e!.usable.minWeeks).toBe(CURE_TUNING.usableFloorWeeks);
     expect(Number.isFinite(e!.second.maxWeeks)).toBe(true);
   });
+  it('returns null when a present FA value is non-finite (corrupted input, not zero)', () => {
+    expect(estimateCureModel(input({ fa: { oleic: Number.NaN } }))).toBeNull();
+  });
 });
 
 describe('milestones', () => {

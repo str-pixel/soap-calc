@@ -337,15 +337,17 @@ export const ResultsPanel = memo(function ResultsPanel({
           )}
           {cureEstimate?.model && (
             <>
-              <div className="results-grid__item">
-                <dt>Usable from (est.)</dt>
-                <dd>
-                  {formatCureRange(cureEstimate.model.usable)}
-                  {cureEstimate.usableAtUnmold && (
-                    <span className="results-excluded"> · usable at unmold</span>
-                  )}
-                </dd>
-              </div>
+              {cureEstimate.usableAtUnmold ? (
+                <div className="results-grid__item">
+                  <dt>Usable</dt>
+                  <dd>At unmold</dd>
+                </div>
+              ) : (
+                <div className="results-grid__item">
+                  <dt>Usable from (est.)</dt>
+                  <dd>{formatCureRange(cureEstimate.model.usable)}</dd>
+                </div>
+              )}
               <div className="results-grid__item">
                 <dt>{cureEstimate.model.second.kind === 'useWithin' ? 'Use within' : 'At its best'} (est.)</dt>
                 <dd>{formatCureRange(cureEstimate.model.second)}</dd>
