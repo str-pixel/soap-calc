@@ -34,6 +34,18 @@ test('committing a Total batch target rescales the oils to hit it', async ({ pag
   expect(oilAfter).toBeGreaterThan(oilBefore);
 });
 
+test('pressing Enter commits the target — no click-away needed', async ({ page }) => {
+  await freshRecipe(page);
+  const oilTotal = page.getByLabel(/Total oil \(g\)/);
+  const oilBefore = Number(await oilTotal.inputValue());
+
+  await batchField(page).fill('1500');
+  await batchField(page).press('Enter'); // commit via Enter, focus stays in the field
+
+  await expect(page.getByTestId('batch-weight')).toContainText(/1,49\d|1,50\d/);
+  expect(Number(await oilTotal.inputValue())).toBeGreaterThan(oilBefore);
+});
+
 test('blur without an edit never rescales', async ({ page }) => {
   await freshRecipe(page);
   const before = await weightInputs(page).nth(0).inputValue();
