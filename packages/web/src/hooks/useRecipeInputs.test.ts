@@ -93,3 +93,74 @@ test('removeLine proceeds when the live ref has more than the minimum', () => {
 
   expect(applySyncedUpdate).toHaveBeenCalledTimes(1);
 });
+
+test('batchWeightInputId is stable and distinct from the oil total id', () => {
+  const ids = makeInputIds();
+  expect(ids.batchWeightInputId).toBe('batch-weight-total');
+  expect(ids.batchWeightInputId).not.toBe(ids.batchInputId);
+});
+
+test('commitBatchWeightInput ratio-scales the recipe through the shared apply path', () => {
+  const applySyncedUpdate = vi.fn();
+  const lines = [
+    { key: 'a', oilId: 'olive-oil', weightGrams: '450', weightPercent: '45' },
+    { key: 'b', oilId: 'coconut-oil-76', weightGrams: '250', weightPercent: '25' },
+    { key: 'c', oilId: 'shea-butter', weightGrams: '300', weightPercent: '30' },
+  ];
+  const deps = makeDeps({
+    drafts: { 'batch-weight-total': '1500' },
+    editor: { ...makeDeps().editor, applySyncedUpdate, linesRef: { current: lines } },
+  });
+  const inputs = useRecipeInputs(deps);
+  inputs.commitBatchWeightInput('1500', { currentBatchGrams: 1469.58, currentOilTotalGrams: 1000 });
+
+  expect(applySyncedUpdate).toHaveBeenCalledTimes(1);
+  // 1000 × 1500 / 1469.58 = 1020.7 → 1021
+  const synced = applySyncedUpdate.mock.calls[0][0](lines, '1000', true);
+  expect(synced.batchOilGrams).toBe('1021');
+  expect(synced.batchSetByUser).toBe(true);
+  const sum = synced.lines.reduce((s: number, l: { weightGrams: string }) => s + Number(l.weightGrams), 0);
+  expect(Math.abs(sum - 1021)).toBeLessThan(2);
+});
+
+test('commitBatchWeightInput without a draft never rescales (blur is not an edit)', () => {
+  const applySyncedUpdate = vi.fn();
+  const clearDraft = vi.fn();
+  const deps = makeDeps({
+    drafts: {},
+    clearDraft,
+    editor: { ...makeDeps().editor, applySyncedUpdate },
+  });
+  useRecipeInputs(deps).commitBatchWeightInput('1500', { currentBatchGrams: 1469.58, currentOilTotalGrams: 1000 });
+  expect(clearDraft).toHaveBeenCalledWith('batch-weight-total');
+  expect(applySyncedUpdate).not.toHaveBeenCalled();
+});
+
+test('commitBatchWeightInput no-ops on invalid targets and a zero batch', () => {
+  for (const [displayValue, context] of [
+    ['', { currentBatchGrams: 1469.58, currentOilTotalGrams: 1000 }],
+    ['abc', { currentBatchGrams: 1469.58, currentOilTotalGrams: 1000 }],
+    ['0', { currentBatchGrams: 1469.58, currentOilTotalGrams: 1000 }],
+    ['-5', { currentBatchGrams: 1469.58, currentOilTotalGrams: 1000 }],
+    ['1500', { currentBatchGrams: 0, currentOilTotalGrams: 1000 }],
+    ['1500', { currentBatchGrams: 1469.58, currentOilTotalGrams: 0 }],
+  ] as const) {
+    const applySyncedUpdate = vi.fn();
+    const deps = makeDeps({
+      drafts: { 'batch-weight-total': String(displayValue) },
+      editor: { ...makeDeps().editor, applySyncedUpdate },
+    });
+    useRecipeInputs(deps).commitBatchWeightInput(displayValue as string, context);
+    expect(applySyncedUpdate, `target=${displayValue} batch=${context.currentBatchGrams}`).not.toHaveBeenCalled();
+  }
+});
+
+test('handleApplySuggestedOilGrams still applies a rounded oil total (mold-sizer regression)', () => {
+  const applySyncedUpdate = vi.fn();
+  const deps = makeDeps({ editor: { ...makeDeps().editor, applySyncedUpdate } });
+  useRecipeInputs(deps).handleApplySuggestedOilGrams(850.4);
+  expect(applySyncedUpdate).toHaveBeenCalledTimes(1);
+  const synced = applySyncedUpdate.mock.calls[0][0](deps.lines, '500', true);
+  expect(synced.batchOilGrams).toBe('850');
+  expect(synced.batchSetByUser).toBe(true);
+});
