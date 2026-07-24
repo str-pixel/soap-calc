@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { WORKABILITY_TUNING } from '@soap-calc/core';
 import { formatWorkabilityRange } from './workabilityFormat';
 
 describe('formatWorkabilityRange', () => {
@@ -15,5 +16,20 @@ describe('formatWorkabilityRange', () => {
   it('renders the open-ended ceiling at/over 14 days', () => {
     expect(formatWorkabilityRange({ minHours: 332, maxHours: 581 })).toBe('≈ 2+ weeks');
     expect(formatWorkabilityRange({ minHours: 300, maxHours: 336 })).toBe('≈ 2+ weeks');
+  });
+
+  it('derives the ceiling label from tuning (no baked-in "2")', () => {
+    const expected = `≈ ${WORKABILITY_TUNING.ceilingHours / 168}+ weeks`;
+    expect(formatWorkabilityRange({ minHours: 400, maxHours: 400 })).toBe(expected);
+  });
+
+  it('a shared unit basis keeps adjacent rows in one unit (fixes the mixed-unit seam)', () => {
+    // unmold {15.6, 46.8} + cut {19.6, 50.8}: independently these mix hours+days and
+    // overstate the cut min (19.6h → "1 day"). With the block basis = unmold.max they agree.
+    const basis = 46.8;
+    expect(formatWorkabilityRange({ minHours: 15.6, maxHours: 46.8 }, basis)).toBe('≈ 16–47 h');
+    expect(formatWorkabilityRange({ minHours: 19.6, maxHours: 50.8 }, basis)).toBe('≈ 20–51 h');
+    // (independent formatting is what produced the mixed units)
+    expect(formatWorkabilityRange({ minHours: 19.6, maxHours: 50.8 })).toBe('≈ 1–2 days');
   });
 });
