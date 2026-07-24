@@ -438,7 +438,8 @@ test('a recipe-derived cure model renders the two milestone rows instead of the 
   expect(screen.getByText('At its best (est.)')).toBeTruthy();
   expect(screen.queryByText('Cure (est.)')).toBeNull();
   expect(screen.getByText(/covers only 60%/)).toBeTruthy();
-  expect(screen.getByText('low confidence')).toBeTruthy();
+  // The cure model carries confidence internally but does not surface it as a chip.
+  expect(screen.queryByText('low confidence')).toBeNull();
   expect(screen.getByText('Slow FAs 77%')).toBeTruthy();
 });
 
@@ -530,8 +531,7 @@ test('a null model falls back to the fixed per-process window row', () => {
   );
   expect(screen.getByText('Sequester (est.)')).toBeTruthy();
   expect(screen.queryByText('Usable from (est.)')).toBeNull();
-  // null model → no cure confidence chip; this fixture's workability is also null, so
-  // there's no workability chip either, making a bare null-check on "low confidence" valid.
+  // Workability is null here, so no chip renders (the cure block never shows a chip anyway).
   expect(screen.queryByText(/low confidence/)).toBeNull();
 });
 
