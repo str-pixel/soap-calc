@@ -19,9 +19,9 @@ import type { FattyAcidProfile } from './properties.js';
  *    measurement — retune bestKnees only from usable-side evidence ratios.
  */
 
-// Canonical FA breakdowns (copied from the app's oils data).
+// Canonical FA breakdowns (packages/oils-data/data/canonical-oils.json — the data the live app consumes).
 const OILS = {
-  coconut76: { oleic: 8, lauric: 48, stearic: 3, linoleic: 2, myristic: 19, palmitic: 9 },
+  coconut76: { lauric: 47.6, myristic: 18.3, palmitic: 8.6, caprylic: 7.1, capric: 6.3, stearic: 2.9, oleic: 7.3, linoleic: 1.7, linolenic: 0.1, arachidic: 0.1, eicosenoic: 0.1 },
   olive: { oleic: 69, stearic: 3, linoleic: 12, palmitic: 14, linolenic: 1 },
   palm: { oleic: 39, stearic: 5, linoleic: 10, myristic: 1, palmitic: 44 },
   lard: { oleic: 46, stearic: 13, linoleic: 6, myristic: 1, palmitic: 28 },

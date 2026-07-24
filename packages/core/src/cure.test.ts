@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { estimateCureModel, CURE_TUNING, type CureModelInput } from './cure';
 
 const OLIVE = { oleic: 69, stearic: 3, linoleic: 12, palmitic: 14, linolenic: 1 };
-const COCONUT = { oleic: 8, lauric: 48, stearic: 3, linoleic: 2, myristic: 19, palmitic: 9 };
+const COCONUT = { lauric: 47.6, myristic: 18.3, palmitic: 8.6, caprylic: 7.1, capric: 6.3, stearic: 2.9, oleic: 7.3, linoleic: 1.7, linolenic: 0.1, arachidic: 0.1, eicosenoic: 0.1 };
 const SUNFLOWER = { oleic: 16, stearic: 4, linoleic: 70, palmitic: 7, linolenic: 1 };
 
 const input = (over: Partial<CureModelInput>): CureModelInput => ({
