@@ -349,27 +349,35 @@ export const ResultsPanel = memo(function ResultsPanel({
           <span className={`chip chip--${cureEstimate.workability.confidence}`}>
             {cureEstimate.workability.confidence} confidence
           </span>
-          <dl className="results-workability__rows">
-            <div>
-              <dt>Unmold</dt>
-              <dd>{formatWorkabilityRange(cureEstimate.workability.unmold)}</dd>
-            </div>
-            <div>
-              <dt>Cut</dt>
-              <dd>{formatWorkabilityRange(cureEstimate.workability.cut)}</dd>
-            </div>
-            {cureEstimate.workability.stamp && (
-              <div>
-                <dt>Stamp from</dt>
-                <dd>
-                  {formatWorkabilityRange({
-                    minHours: cureEstimate.workability.stamp.opensMinHours,
-                    maxHours: cureEstimate.workability.stamp.opensMaxHours,
-                  })}
-                </dd>
-              </div>
-            )}
-          </dl>
+          {/* All rows share one display unit, chosen from the earliest (unmold) row's max,
+              so adjacent rows never render in mixed units. */}
+          {(() => {
+            const wk = cureEstimate.workability;
+            const unitBasis = wk.unmold.maxHours;
+            return (
+              <dl className="results-workability__rows">
+                <div>
+                  <dt>Unmold</dt>
+                  <dd>{formatWorkabilityRange(wk.unmold, unitBasis)}</dd>
+                </div>
+                <div>
+                  <dt>Cut</dt>
+                  <dd>{formatWorkabilityRange(wk.cut, unitBasis)}</dd>
+                </div>
+                {wk.stamp && (
+                  <div>
+                    <dt>Stamp from</dt>
+                    <dd>
+                      {formatWorkabilityRange(
+                        { minHours: wk.stamp.opensMinHours, maxHours: wk.stamp.opensMaxHours },
+                        unitBasis,
+                      )}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            );
+          })()}
           {cureEstimate.workability.factors.length > 0 && (
             <p className="results-hint">{cureEstimate.workability.factors.join(' · ')}</p>
           )}

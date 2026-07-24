@@ -297,6 +297,35 @@ test('renders the workability timeline for CP', () => {
   expect(screen.getByText(/loaf offcut/i)).toBeTruthy();
 });
 
+test('workability rows all share one unit (no unmold-in-hours / cut-in-days mix)', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
+  // unmold max 46.8h sits just under the 48h hours/days seam; cut max 50.8h sits just over.
+  const straddling = {
+    ...workability,
+    unmold: { minHours: 15.6, maxHours: 46.8 },
+    cut: { minHours: 19.6, maxHours: 50.8 },
+    stamp: { opensMinHours: 54.8, opensMaxHours: 71.2 },
+  };
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={batchWeightWithExtras}
+      cureEstimate={{ minWeeks: 4, usableAtUnmold: false, finishingLabel: 'Cure', workability: straddling }}
+      labelWeight={batchWeightWithExtras}
+    />,
+  );
+  expect(screen.getByText('≈ 16–47 h')).toBeTruthy(); // unmold
+  expect(screen.getByText('≈ 20–51 h')).toBeTruthy(); // cut — hours, not "≈ 1–2 days"
+  expect(screen.queryByText(/days/)).toBeNull();
+});
+
 test('omits the workability block when there is no estimate (e.g. LS)', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
