@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkabilityEstimate } from '@soap-calc/core';
-import { estimateCure, labelWeightGrams } from './cureEstimate';
+import { estimateCure, labelWeightGrams, computeCureModel } from './cureEstimate';
 import { processProfileById } from './processProfile';
 
 describe('estimateCure', () => {
@@ -42,5 +42,38 @@ describe('labelWeightGrams', () => {
     // 1000 g total batch = 800 g water-bearing base + 200 g after-cook extras (e.g.
     // fragrance). Only the 800 g base loses water; the 200 g extras pass through untouched.
     expect(labelWeightGrams(1000, 800, 0.15)).toBeCloseTo(1000 - 800 * 0.15);
+  });
+});
+
+describe('computeCureModel', () => {
+  const OLIVE = { oleic: 69, stearic: 3, linoleic: 12, palmitic: 14, linolenic: 1 };
+
+  it('null FA profile -> null (fallback to the fixed window)', () => {
+    expect(
+      computeCureModel({ faProfile: null, coveragePercent: 100, lyeConcentrationPercent: 33, process: 'cp' }),
+    ).toBeNull();
+  });
+  it('null lye concentration -> null (mid-edit recipes never show a bogus window)', () => {
+    expect(
+      computeCureModel({ faProfile: OLIVE, coveragePercent: 100, lyeConcentrationPercent: null, process: 'cp' }),
+    ).toBeNull();
+  });
+  it('CP castile produces the two milestones', () => {
+    const m = computeCureModel({ faProfile: OLIVE, coveragePercent: 100, lyeConcentrationPercent: 33, process: 'cp' });
+    expect(m).not.toBeNull();
+    expect(m!.usable.minWeeks).toBeGreaterThan(6);
+    expect(m!.second.kind).toBe('best');
+  });
+  it('estimateCure threads the model through; fixed-window fields stay unchanged', () => {
+    const cpProfile = processProfileById('cp');
+    const model = computeCureModel({
+      faProfile: OLIVE, coveragePercent: 100, lyeConcentrationPercent: 33, process: 'cp',
+    });
+    const e = estimateCure(cpProfile, null, model);
+    expect(e.model).toBe(model);
+    expect(e.minWeeks).toBe(cpProfile.finish.minWeeks); // fallback data still present
+  });
+  it('estimateCure defaults model to null when omitted (existing callers unaffected)', () => {
+    expect(estimateCure(processProfileById('cp')).model ?? null).toBeNull();
   });
 });
