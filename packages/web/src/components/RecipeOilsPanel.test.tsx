@@ -12,6 +12,8 @@ function makeInputs(over: Partial<any> = {}) {
     weightInputId: (k: string) => `weight-${k}`,
     percentInputId: (k: string) => `percent-${k}`,
     batchInputId: 'batch-total',
+    batchWeightInputId: 'batch-weight-total',
+    commitBatchWeightInput: vi.fn(), handleBatchWeightChange: vi.fn(),
     updateLine: vi.fn(), addLine: vi.fn(), removeLine: vi.fn(),
     commitWeightInput: vi.fn(), commitPercentInput: vi.fn(), commitBatchInput: vi.fn(),
     handleWeightChange: vi.fn(), handleBatchChange: vi.fn(),
@@ -34,6 +36,7 @@ function renderPanel(inputs: ReturnType<typeof makeInputs>) {
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
+      batchWeightWithExtras={1469.58} recipeOilWeightGrams={1000}
     />,
   );
 }
@@ -72,6 +75,7 @@ test('Add oil button calls inputs.addLine', () => {
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
+      batchWeightWithExtras={1469.58} recipeOilWeightGrams={1000}
     />
   );
   fireEvent.click(screen.getByRole('button', { name: '+ Add oil' }));
@@ -111,6 +115,7 @@ test('the oil picker falls back to the stable row label when the row has no reso
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
+      batchWeightWithExtras={146.958} recipeOilWeightGrams={100}
     />,
   );
 
@@ -119,48 +124,6 @@ test('the oil picker falls back to the stable row label when the row has no reso
   expect(screen.getByRole('spinbutton', { name: 'Weight in g for row 1' })).toBeTruthy();
   expect(screen.getByRole('spinbutton', { name: 'Percent for row 1' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Remove row 1' })).toBeTruthy();
-});
-
-test('Total batch field back-solves oil via the fraction and applies it', () => {
-  const inputs = makeInputs();
-  const lines = createStarterLines();
-  render(
-    <RecipeOilsPanel
-      lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
-      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
-      lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
-      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
-      getDraft={(_, c) => c} setDraft={vi.fn()}
-      inputs={inputs as any}
-      oilBatchFraction={0.65}
-    />,
-  );
-  const field = screen.getByLabelText('Total batch weight in g') as HTMLInputElement;
-  fireEvent.change(field, { target: { value: '1000' } });
-  fireEvent.blur(field, { target: { value: '1000' } });
-  // 1000 g target × 0.65 fraction → 650 g oil, applied via the shared apply path.
-  expect(inputs.handleApplySuggestedOilGrams).toHaveBeenCalledWith(650);
-});
-
-test('Total batch field ignores empty/invalid input (no apply)', () => {
-  const inputs = makeInputs();
-  const lines = createStarterLines();
-  render(
-    <RecipeOilsPanel
-      lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
-      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
-      lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
-      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
-      getDraft={(_, c) => c} setDraft={vi.fn()}
-      inputs={inputs as any}
-      oilBatchFraction={0.65}
-    />,
-  );
-  const field = screen.getByLabelText('Total batch weight in g') as HTMLInputElement;
-  fireEvent.blur(field, { target: { value: '' } });
-  expect(inputs.handleApplySuggestedOilGrams).not.toHaveBeenCalled();
 });
 
 test('totals-off cue is textual, not color-only, and absent when totals reconcile', () => {
@@ -175,6 +138,7 @@ test('totals-off cue is textual, not color-only, and absent when totals reconcil
       showRecipeTotals percentTotalOff={true} weightTotalOff={true}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
+      batchWeightWithExtras={1322.62} recipeOilWeightGrams={900}
     />,
   );
   // The off-total cue names the gap (and is real text, not color-only): "Oils total 90% — aim for 100%".
@@ -189,7 +153,47 @@ test('totals-off cue is textual, not color-only, and absent when totals reconcil
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
+      batchWeightWithExtras={1469.58} recipeOilWeightGrams={1000}
     />,
   );
   expect(screen.queryByText(/aim for 100%/i)).toBeNull();
+});
+
+test('Total batch field shows the display-rounded live batch weight', () => {
+  renderPanel(makeInputs());
+  const field = screen.getByLabelText(/Total batch in g/) as HTMLInputElement;
+  // 1469.58 g display-rounded per the unit's digits (g has displayDigits: 0 — same helper
+  // as the oil field, via gramsStringToInputDisplay('1469.58', 'g'))
+  expect(field.value).toBe('1470');
+});
+
+test('blurring Total batch commits with the displayTotals-based context', () => {
+  const inputs = makeInputs();
+  renderPanel(inputs);
+  const field = screen.getByLabelText(/Total batch in g/) as HTMLInputElement;
+  fireEvent.change(field, { target: { value: '1500' } });
+  fireEvent.blur(field, { target: { value: '1500' } });
+  expect(inputs.handleBatchWeightChange).toHaveBeenCalledWith('1500');
+  expect(inputs.commitBatchWeightInput).toHaveBeenCalledWith('1500', {
+    currentBatchGrams: 1469.58,
+    currentOilTotalGrams: 1000,
+  });
+});
+
+test('Total batch field is empty when the recipe has no resolvable batch weight', () => {
+  const inputs = makeInputs();
+  const lines = createStarterLines();
+  render(
+    <RecipeOilsPanel
+      lines={lines} weightUnit="g"
+      previewState={{ lines, batchOilGrams: '1000' }}
+      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
+      lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
+      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
+      getDraft={(_, c) => c} setDraft={vi.fn()}
+      inputs={inputs as any}
+      batchWeightWithExtras={0} recipeOilWeightGrams={0}
+    />,
+  );
+  expect((screen.getByLabelText(/Total batch in g/) as HTMLInputElement).value).toBe('');
 });

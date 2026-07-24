@@ -16,6 +16,7 @@ export function makeInputIds() {
     weightInputId: (key: string) => `weight-${key}`,
     percentInputId: (key: string) => `percent-${key}`,
     batchInputId: 'batch-total' as const,
+    batchWeightInputId: 'batch-weight-total' as const,
   };
 }
 
@@ -56,6 +57,7 @@ export type RecipeInputs = {
   weightInputId: (key: string) => string;
   percentInputId: (key: string) => string;
   batchInputId: string;
+  batchWeightInputId: string;
   updateLine: (key: string, patch: Partial<RecipeLine>) => void;
   flushCommittedDrafts: () => SyncedRecipe;
   discardDrafts: () => void;
@@ -67,6 +69,11 @@ export type RecipeInputs = {
   commitBatchInput: (displayValue: string) => void;
   handleWeightChange: (key: string, displayValue: string) => void;
   handleBatchChange: (displayValue: string) => void;
+  handleBatchWeightChange: (displayValue: string) => void;
+  commitBatchWeightInput: (
+    displayValue: string,
+    context: { currentBatchGrams: number; currentOilTotalGrams: number },
+  ) => void;
   setWeightUnit: (nextUnit: WeightUnit) => void;
   addLine: () => void;
   removeLine: (key: string) => void;
@@ -78,7 +85,7 @@ export type RecipeInputs = {
 };
 
 export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
-  const { weightInputId, percentInputId, batchInputId } = makeInputIds();
+  const { weightInputId, percentInputId, batchInputId, batchWeightInputId } = makeInputIds();
   const { settings, additives, weightUnit, drafts } = deps;
   const { setDraft, clearDraft, clearAllDrafts } = deps;
   const { applyEdit, applySyncedUpdate, linesRef, batchRef, batchSetByUserRef } = deps.editor;
@@ -160,20 +167,48 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     handleNew();
   }
 
-  function handleApplySuggestedOilGrams(oilGrams: number) {
-    const rounded = Math.round(oilGrams);
+  // Shared "set the oil total, rescale proportionally" core: mold-sizer Apply and the
+  // batch-weight field commit are the same operation with differently-derived totals.
+  // "Apply to batch" (mold sizer) must make the OIL WEIGHT equal the suggested total, so
+  // scale from the current gram proportions — resyncFromWeights re-derives each percent
+  // from the weights (summing to 100) so syncBatchTotalEdit then hits the target exactly,
+  // even if the recipe was mid-edit at an off-100% total.
+  function applyOilTotal(rounded: number) {
     if (rounded <= 0) return;
     const batchOilGrams = String(rounded);
     discardDrafts();
-    // "Apply to batch" (mold sizer) must make the OIL WEIGHT equal the suggested total, so
-    // scale from the current gram proportions — resyncFromWeights re-derives each percent
-    // from the weights (summing to 100) so syncBatchTotalEdit then hits the target exactly,
-    // even if the recipe was mid-edit at an off-100% total.
     applySyncedUpdate((prev) => ({
       lines: syncBatchTotalEdit(resyncFromWeights(prev).lines, batchOilGrams),
       batchOilGrams,
       batchSetByUser: true,
     }));
+  }
+
+  function handleApplySuggestedOilGrams(oilGrams: number) {
+    applyOilTotal(Math.round(oilGrams));
+  }
+
+  // Batch-weight field commit: pure ratio back-solve (batch weight is linear in oil
+  // scale — see batchWeightLinearity.test.ts). Context values MUST be the view model's
+  // displayTotals-derived figures, never the panel's raw line-sum (basis consistency).
+  function commitBatchWeightInput(
+    displayValue: string,
+    context: { currentBatchGrams: number; currentOilTotalGrams: number },
+  ) {
+    const hadDraft = shouldCommitDraft(drafts, batchWeightInputId);
+    clearDraft(batchWeightInputId);
+    if (!hadDraft) return;
+    const parsed = parseInputDisplayToGrams(displayValue, weightUnit);
+    if (parsed === null || parsed === '') return; // invalid, mid-typing, or cleared → keep live value
+    const target = Number(parsed);
+    const { currentBatchGrams, currentOilTotalGrams } = context;
+    if (!Number.isFinite(target) || target <= 0) return;
+    if (!(currentBatchGrams > 0) || !(currentOilTotalGrams > 0)) return;
+    applyOilTotal(Math.round(currentOilTotalGrams * (target / currentBatchGrams)));
+  }
+
+  function handleBatchWeightChange(displayValue: string) {
+    setDraft(batchWeightInputId, displayValue);
   }
 
   function commitWeightInput(key: string, displayValue: string) {
@@ -265,9 +300,9 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     applySyncedUpdate((prev) => resyncFromWeights(prev));
   }
 
-  return { weightInputId, percentInputId, batchInputId, updateLine, flushCommittedDrafts,
+  return { weightInputId, percentInputId, batchInputId, batchWeightInputId, updateLine, flushCommittedDrafts,
     discardDrafts, handleExportCommitted, handleNewRecipe, handleApplySuggestedOilGrams,
     commitWeightInput, commitPercentInput, commitBatchInput, handleWeightChange,
-    handleBatchChange, setWeightUnit, addLine, removeLine, matchTotalToWeights,
+    handleBatchChange, handleBatchWeightChange, commitBatchWeightInput, setWeightUnit, addLine, removeLine, matchTotalToWeights,
     undo, redo, canUndo, canRedo };
 }

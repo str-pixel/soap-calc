@@ -19,6 +19,11 @@ export function commitDrafts(
   let currentBatch = batchOilGrams;
   let currentBatchSetByUser = batchSetByUser;
 
+  // Note: drafts['batch-weight-total'] (the batch-weight entry field) is intentionally
+  // never consulted here. Its ratio back-solve needs the view model's displayTotals-derived
+  // currentBatchGrams/currentOilTotalGrams context, which flush paths don't have — dropping
+  // it on flush is the only safe option, and it's interactively unreachable since blur
+  // commits the field (via commitBatchWeightInput) before any flush path can run.
   const batchDraft = drafts['batch-total'];
   if (batchDraft !== undefined) {
     const parsedBatch = parseInputDisplayToGrams(batchDraft, weightUnit);

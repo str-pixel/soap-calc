@@ -52,22 +52,6 @@ export function oilGramsFromBarCount(
   return barCount * finishedBarWeightGrams * oilBatchFraction;
 }
 
-/**
- * Back-solve the oil weight that yields a target total batch weight, via the recipe's
- * oil/batch fraction. Exact inverse of `oilBatchFraction` for this app, since every extra
- * (additives, split liquid, post-cook superfat) is a % of oil and scales with it.
- */
-export function oilGramsFromTotalWeight(
-  totalBatchGrams: number,
-  oilBatchFraction = DEFAULT_OIL_BATCH_FRACTION,
-): number | null {
-  if (!Number.isFinite(totalBatchGrams) || totalBatchGrams <= 0) return null;
-  if (!Number.isFinite(oilBatchFraction) || oilBatchFraction <= 0 || oilBatchFraction > 1) {
-    return null;
-  }
-  return totalBatchGrams * oilBatchFraction;
-}
-
 export function oilBatchFraction(oilGrams: number, totalBatchGrams: number): number | null {
   if (!Number.isFinite(oilGrams) || oilGrams <= 0) return null;
   if (!Number.isFinite(totalBatchGrams) || totalBatchGrams <= oilGrams) return null;

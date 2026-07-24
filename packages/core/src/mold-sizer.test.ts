@@ -6,7 +6,6 @@ import {
   oilBatchFraction,
   oilGramsFromBarCount,
   oilGramsFromMoldVolumeCm3,
-  oilGramsFromTotalWeight,
   rectangularMoldVolumeCm3,
   MAX_WASTE_FACTOR_PERCENT } from './mold-sizer.js';
 
@@ -26,21 +25,6 @@ describe('mold-sizer', () => {
 
   it('suggests oil grams from bar count', () => {
     expect(oilGramsFromBarCount(10, 100)).toBeCloseTo(10 * 100 * DEFAULT_OIL_BATCH_FRACTION, 5);
-  });
-
-  it('back-solves oil grams from a target total batch weight', () => {
-    // oil = target × fraction; exact inverse of oilBatchFraction since app extras are %-of-oil
-    expect(oilGramsFromTotalWeight(1000, 0.65)).toBeCloseTo(650, 5);
-    // round-trips with oilBatchFraction
-    const frac = oilBatchFraction(650, 1000)!;
-    expect(oilGramsFromTotalWeight(1000, frac)).toBeCloseTo(650, 5);
-    // default fraction when omitted
-    expect(oilGramsFromTotalWeight(1000)).toBeCloseTo(1000 * DEFAULT_OIL_BATCH_FRACTION, 5);
-    // guards: non-positive target, invalid fraction
-    expect(oilGramsFromTotalWeight(0, 0.65)).toBeNull();
-    expect(oilGramsFromTotalWeight(1000, 0)).toBeNull();
-    expect(oilGramsFromTotalWeight(1000, 1.2)).toBeNull();
-    expect(oilGramsFromTotalWeight(Number.NaN, 0.65)).toBeNull();
   });
 
   it('derives oil batch fraction', () => {
