@@ -204,8 +204,9 @@ test('totals-off cue is textual, not color-only, and absent when totals reconcil
 test('Total batch field shows the display-rounded live batch weight', () => {
   renderPanel(makeInputs());
   const field = screen.getByLabelText(/Total batch in g/) as HTMLInputElement;
-  // 1469.58 g display-rounded per the unit's digits (same helper as the oil field)
-  expect(Number(field.value)).toBeCloseTo(1469.58, 0);
+  // 1469.58 g display-rounded per the unit's digits (g has displayDigits: 0 — same helper
+  // as the oil field, via gramsStringToInputDisplay('1469.58', 'g'))
+  expect(field.value).toBe('1470');
 });
 
 test('blurring Total batch commits with the displayTotals-based context', () => {

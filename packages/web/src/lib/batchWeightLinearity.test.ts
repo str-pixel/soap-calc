@@ -2,6 +2,13 @@ import { expect, test } from 'vitest';
 import { calculateRecipe } from './calculateRecipe';
 import { computeRecipeAdditives, computeExtrasGrams } from './calculateAdditives';
 import { createStarterLines, DEFAULT_SETTINGS, type RecipeLine, type RecipeSettings } from './recipe';
+import type { DoseUnit } from '@soap-calc/core';
+
+// Compile-time tripwire companion: if DoseUnit ever gains a member (e.g. a fixed-gram
+// dose), this stops typechecking — extend CASES below with the new unit and re-verify
+// linearity before touching the ratio solve in useRecipeInputs.
+const OIL_SCALED_UNITS: Record<DoseUnit, true> = { percent: true, ppt: true };
+void OIL_SCALED_UNITS;
 
 /**
  * Tripwire for the batch-weight entry field's ratio solve (commitBatchWeightInput):

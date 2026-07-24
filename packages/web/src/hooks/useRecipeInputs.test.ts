@@ -155,6 +155,28 @@ test('commitBatchWeightInput no-ops on invalid targets and a zero batch', () => 
   }
 });
 
+test('commitBatchWeightInput lands from an off-100% mid-edit shape (stale percents)', () => {
+  const applySyncedUpdate = vi.fn();
+  const lines = [
+    { key: 'a', oilId: 'olive-oil', weightGrams: '540', weightPercent: '45' },
+    { key: 'b', oilId: 'coconut-oil-76', weightGrams: '300', weightPercent: '25' },
+    { key: 'c', oilId: 'shea-butter', weightGrams: '360', weightPercent: '30' },
+  ]; // weights sum 1200; stored percents are stale
+  const deps = makeDeps({
+    drafts: { 'batch-weight-total': '1500' },
+    editor: { ...makeDeps().editor, applySyncedUpdate, linesRef: { current: lines } },
+  });
+  useRecipeInputs(deps).commitBatchWeightInput('1500', {
+    currentBatchGrams: 1763.5, // 1200 g oil basis
+    currentOilTotalGrams: 1200,
+  });
+  const synced = applySyncedUpdate.mock.calls[0][0](lines, '1200', true);
+  // 1200 × 1500/1763.5 = 1020.7 → 1021; resyncFromWeights re-derives percents to 100 first
+  expect(synced.batchOilGrams).toBe('1021');
+  const sum = synced.lines.reduce((s: number, l: { weightGrams: string }) => s + Number(l.weightGrams), 0);
+  expect(Math.abs(sum - 1021)).toBeLessThan(2);
+});
+
 test('handleApplySuggestedOilGrams still applies a rounded oil total (mold-sizer regression)', () => {
   const applySyncedUpdate = vi.fn();
   const deps = makeDeps({ editor: { ...makeDeps().editor, applySyncedUpdate } });

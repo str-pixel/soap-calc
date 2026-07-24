@@ -19,6 +19,8 @@ async function freshRecipe(page: Page) {
 test('committing a Total batch target rescales the oils to hit it', async ({ page }) => {
   await freshRecipe(page);
   const firstOilBefore = Number(await weightInputs(page).nth(0).inputValue());
+  const oilTotal = page.getByLabel(/Total oil \(g\)/);
+  const oilBefore = Number(await oilTotal.inputValue());
 
   await batchField(page).fill('1500');
   await batchField(page).blur();
@@ -28,6 +30,8 @@ test('committing a Total batch target rescales the oils to hit it', async ({ pag
   // Oils scaled up proportionally.
   const firstOilAfter = Number(await weightInputs(page).nth(0).inputValue());
   expect(firstOilAfter).toBeGreaterThan(firstOilBefore);
+  const oilAfter = Number(await oilTotal.inputValue());
+  expect(oilAfter).toBeGreaterThan(oilBefore);
 });
 
 test('blur without an edit never rescales', async ({ page }) => {
