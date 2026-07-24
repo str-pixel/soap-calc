@@ -180,6 +180,26 @@ test('blurring Total batch commits with the displayTotals-based context', () => 
   });
 });
 
+test('pressing Enter commits the Total batch field (no click-away needed)', () => {
+  const inputs = makeInputs();
+  renderPanel(inputs);
+  const field = screen.getByLabelText(/Total batch in g/) as HTMLInputElement;
+  field.focus();
+  fireEvent.change(field, { target: { value: '1500' } });
+  fireEvent.keyDown(field, { key: 'Enter' });
+  expect(inputs.commitBatchWeightInput).toHaveBeenCalled();
+});
+
+test('pressing Enter commits the Total oil field too (consistent with Total batch)', () => {
+  const inputs = makeInputs();
+  renderPanel(inputs);
+  const field = screen.getByLabelText(/Total oil/) as HTMLInputElement;
+  field.focus();
+  fireEvent.change(field, { target: { value: '900' } });
+  fireEvent.keyDown(field, { key: 'Enter' });
+  expect(inputs.commitBatchInput).toHaveBeenCalled();
+});
+
 test('Total batch field is empty when the recipe has no resolvable batch weight', () => {
   const inputs = makeInputs();
   const lines = createStarterLines();
