@@ -1,5 +1,3 @@
-import { useState } from 'react';
-import { DEFAULT_OIL_BATCH_FRACTION, oilGramsFromTotalWeight } from '@soap-calc/core';
 import type { RecipeInputs } from '../hooks/useRecipeInputs';
 import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import { isTarOil, oilById } from '../lib/oils';
@@ -8,7 +6,6 @@ import { formatRecipePercentTotal, previewPercentDisplay, previewWeightDisplay }
 import {
   formatWeight,
   gramsStringToInputDisplay,
-  parseInputDisplayToGrams,
   WEIGHT_UNITS,
   WEIGHT_UNIT_OPTIONS,
 } from '../lib/weightUnits';
@@ -50,18 +47,6 @@ export function RecipeOilsPanel({
   recipeOilWeightGrams,
 }: RecipeOilsPanelProps) {
   const weightUnitConfig = WEIGHT_UNITS[weightUnit];
-  // "Size by total batch weight": a one-shot converter that back-solves Total oil to hit a
-  // target finished-batch weight. Local state — it's an input method, not recipe data.
-  const [batchWeightTarget, setBatchWeightTarget] = useState('');
-  const applyBatchWeight = (display: string) => {
-    const gramsStr = parseInputDisplayToGrams(display, weightUnit);
-    if (gramsStr === null || gramsStr === '') return;
-    const oil = oilGramsFromTotalWeight(
-      Number(gramsStr),
-      oilBatchFraction ?? DEFAULT_OIL_BATCH_FRACTION,
-    );
-    if (oil !== null) inputs.handleApplySuggestedOilGrams(oil);
-  };
 
   return (
     <section className="panel">
@@ -182,9 +167,6 @@ export function RecipeOilsPanel({
           />
         </label>
       </div>
-      <p className="results-hint">
-        Total batch sets Total oil to hit that finished weight (oils + lye + water + extras).
-      </p>
 
       <div className="recipe-table">
         {lines.map((line, index) => {

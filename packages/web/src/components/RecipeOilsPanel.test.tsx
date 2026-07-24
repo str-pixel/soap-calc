@@ -126,48 +126,6 @@ test('the oil picker falls back to the stable row label when the row has no reso
   expect(screen.getByRole('button', { name: 'Remove row 1' })).toBeTruthy();
 });
 
-test('Total batch field back-solves oil via the fraction and applies it', () => {
-  const inputs = makeInputs();
-  const lines = createStarterLines();
-  render(
-    <RecipeOilsPanel
-      lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
-      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
-      lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
-      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
-      getDraft={(_, c) => c} setDraft={vi.fn()}
-      inputs={inputs as any}
-      oilBatchFraction={0.65}
-    />,
-  );
-  const field = screen.getByLabelText('Total batch weight in g') as HTMLInputElement;
-  fireEvent.change(field, { target: { value: '1000' } });
-  fireEvent.blur(field, { target: { value: '1000' } });
-  // 1000 g target × 0.65 fraction → 650 g oil, applied via the shared apply path.
-  expect(inputs.handleApplySuggestedOilGrams).toHaveBeenCalledWith(650);
-});
-
-test('Total batch field ignores empty/invalid input (no apply)', () => {
-  const inputs = makeInputs();
-  const lines = createStarterLines();
-  render(
-    <RecipeOilsPanel
-      lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
-      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
-      lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
-      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
-      getDraft={(_, c) => c} setDraft={vi.fn()}
-      inputs={inputs as any}
-      oilBatchFraction={0.65}
-    />,
-  );
-  const field = screen.getByLabelText('Total batch weight in g') as HTMLInputElement;
-  fireEvent.blur(field, { target: { value: '' } });
-  expect(inputs.handleApplySuggestedOilGrams).not.toHaveBeenCalled();
-});
-
 test('totals-off cue is textual, not color-only, and absent when totals reconcile', () => {
   const inputs = makeInputs();
   const lines = createStarterLines();
