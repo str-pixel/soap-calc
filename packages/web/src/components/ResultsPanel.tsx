@@ -361,14 +361,24 @@ export const ResultsPanel = memo(function ResultsPanel({
         </dl>
       )}
 
-      {cureEstimate?.model && cureEstimate.model.caveats.length > 0 && (
-        <ul className="message-list message-list--insights" data-testid="cure-caveats">
-          {cureEstimate.model.caveats.map((c) => (
-            <li key={c} className="message-list__item--info">
-              {c}
-            </li>
-          ))}
-        </ul>
+      {cureEstimate?.model && (
+        <>
+          <span className={`chip chip--${cureEstimate.model.confidence}`}>
+            {cureEstimate.model.confidence} confidence
+          </span>
+          {cureEstimate.model.factors.length > 0 && (
+            <p className="results-hint">{cureEstimate.model.factors.join(' · ')}</p>
+          )}
+          {cureEstimate.model.caveats.length > 0 && (
+            <ul className="message-list message-list--insights" data-testid="cure-caveats">
+              {cureEstimate.model.caveats.map((c) => (
+                <li key={c} className="message-list__item--info">
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       {cureEstimate?.workability && (

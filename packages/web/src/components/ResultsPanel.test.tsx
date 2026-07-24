@@ -428,7 +428,7 @@ test('a recipe-derived cure model renders the two milestone rows instead of the 
           usable: { minWeeks: 4.2, maxWeeks: 6.3 },
           second: { kind: 'best', minWeeks: 8, maxWeeks: 12.8 },
           confidence: 'low',
-          factors: [],
+          factors: ['Slow FAs 77%'],
           caveats: ['Fatty-acid data covers only 60% of these oils — the cure drivers are partly estimated.'],
         },
       }}
@@ -438,6 +438,8 @@ test('a recipe-derived cure model renders the two milestone rows instead of the 
   expect(screen.getByText('At its best (est.)')).toBeTruthy();
   expect(screen.queryByText('Cure (est.)')).toBeNull();
   expect(screen.getByText(/covers only 60%/)).toBeTruthy();
+  expect(screen.getByText('low confidence')).toBeTruthy();
+  expect(screen.getByText('Slow FAs 77%')).toBeTruthy();
 });
 
 test('a use-within model renders the shelf label, not "At its best"', () => {
@@ -495,4 +497,7 @@ test('a null model falls back to the fixed per-process window row', () => {
   );
   expect(screen.getByText('Sequester (est.)')).toBeTruthy();
   expect(screen.queryByText('Usable from (est.)')).toBeNull();
+  // null model → no cure confidence chip; this fixture's workability is also null, so
+  // there's no workability chip either, making a bare null-check on "low confidence" valid.
+  expect(screen.queryByText(/low confidence/)).toBeNull();
 });
