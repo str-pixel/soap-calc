@@ -2,6 +2,7 @@ import { commitDrafts } from '../lib/commitDrafts';
 import {
   addRecipeLine,
   resyncFromWeights,
+  solveOilTotalForBatchTarget,
   syncBatchTotalEdit,
   syncPercentEdit,
   syncWeightEdit,
@@ -188,8 +189,9 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     applyOilTotal(Math.round(oilGrams));
   }
 
-  // Batch-weight field commit: pure ratio back-solve (batch weight is linear in oil
-  // scale — see batchWeightLinearity.test.ts). Context values MUST be the view model's
+  // Batch-weight field commit: ratio back-solve refined by a quantization-aware candidate
+  // search (see solveOilTotalForBatchTarget) so the realized batch lands as close to the
+  // typed target as whole-gram line weights allow. Context values MUST be the view model's
   // displayTotals-derived figures, never the panel's raw line-sum (basis consistency).
   function commitBatchWeightInput(
     displayValue: string,
@@ -204,7 +206,9 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     const { currentBatchGrams, currentOilTotalGrams } = context;
     if (!Number.isFinite(target) || target <= 0) return;
     if (!(currentBatchGrams > 0) || !(currentOilTotalGrams > 0)) return;
-    applyOilTotal(Math.round(currentOilTotalGrams * (target / currentBatchGrams)));
+    applyOilTotal(
+      solveOilTotalForBatchTarget(linesRef.current, target, currentOilTotalGrams, currentBatchGrams),
+    );
   }
 
   function handleBatchWeightChange(displayValue: string) {
