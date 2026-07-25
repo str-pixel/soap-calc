@@ -613,24 +613,38 @@ a:hover {
 
 .pcsf__row {
   display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.pcsf__row-top {
+  display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.pcsf__row > :first-child {
+.pcsf__row-top > :first-child {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.pcsf__pct {
-  display: inline-flex;
+/* Per-row slider: the accent track takes the width, the editable readout sits at the right
+   (mirrors .slider-field, without the head/label row). */
+.pcsf__slider {
+  display: flex;
   align-items: center;
-  gap: 0.2rem;
-  flex: 0 0 auto;
+  gap: 0.6rem;
 }
 
-.pcsf__pct .input {
-  width: 4.5rem;
+.pcsf__slider .slider-field__range {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pcsf__slider .slider-field__value-wrap {
+  flex: 0 0 auto;
 }
 
 .pcsf__remove {
