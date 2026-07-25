@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calculateDilution, calculateNeutralization, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { alternativeLiquidPreset, calculateDilution, calculateNeutralization, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import {
@@ -58,6 +58,7 @@ export type RecipeViewModel = {
   splitLiquidGrams: number | null;
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
+  lyeWaterStatus: ReturnType<typeof lyeSolutionWaterStatus> | null;
   properties: ReturnType<typeof useRecipeProperties>['properties'];
   indexes: ReturnType<typeof useRecipeProperties>['indexes'];
   fattyAcids: ReturnType<typeof useRecipeProperties>['fattyAcids'];
@@ -269,6 +270,32 @@ export function useRecipeViewModel({
     splitLiquidGrams,
     totalOilGrams,
   ]);
+
+  // Effective-water floor check: only when the alternative liquid goes into the lye
+  // solution. A custom liquid (no preset) is treated as pure water — no false alarms.
+  const lyeWaterStatus = useMemo(() => {
+    if (
+      !result ||
+      !splitLiquidGrams ||
+      !previewSettings.splitLiquid.enabled ||
+      previewSettings.splitLiquid.addAt !== 'lye'
+    ) {
+      return null;
+    }
+    const preset = alternativeLiquidPreset(previewSettings.splitLiquid.presetKey);
+    return lyeSolutionWaterStatus({
+      waterGrams: result.waterWeightGrams,
+      lyeGrams: result.lyeWeightGrams,
+      splitLiquidGrams,
+      waterFraction: preset?.waterFraction ?? 1,
+    });
+  }, [
+    previewSettings.splitLiquid.addAt,
+    previewSettings.splitLiquid.enabled,
+    previewSettings.splitLiquid.presetKey,
+    result,
+    splitLiquidGrams,
+  ]);
   // Vessel-size guard multiple (HP only): vessel volume ÷ the water-bearing base batter
   // volume — additives fold in off-heat after the cook, so they aren't part of what the
   // vessel needs to hold while it expands. Optional: an unset/invalid vessel volume simply
@@ -457,6 +484,7 @@ export function useRecipeViewModel({
     splitLiquidGrams,
     postCookSuperfat,
     waterSuggestion,
+    lyeWaterStatus,
     properties,
     indexes,
     fattyAcids,

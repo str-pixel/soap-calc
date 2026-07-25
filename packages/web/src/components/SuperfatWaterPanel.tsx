@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { SplitLiquidWaterSuggestion, WaterMode } from '@soap-calc/core';
+import type { LyeSolutionWaterStatus, SplitLiquidWaterSuggestion, WaterMode } from '@soap-calc/core';
 import { postCookSuperfatAllocated, type RecipeSettings, type WeightUnit } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
@@ -125,6 +125,7 @@ type SuperfatWaterPanelProps = {
   lyeGrams: number;
   weightUnit: WeightUnit;
   waterSuggestion: SplitLiquidWaterSuggestion | null;
+  lyeWaterStatus: LyeSolutionWaterStatus | null;
 };
 
 /**
@@ -140,6 +141,7 @@ export function SuperfatWaterPanel({
   lyeGrams,
   weightUnit,
   waterSuggestion,
+  lyeWaterStatus,
 }: SuperfatWaterPanelProps) {
   const waterField = WATER_FIELDS[settings.waterMode];
 
@@ -262,6 +264,7 @@ export function SuperfatWaterPanel({
           weightUnit={weightUnit}
           waterMode={settings.waterMode}
           waterSuggestion={waterSuggestion}
+          lyeWaterStatus={lyeWaterStatus}
           onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
           onApplySuggestedWater={(waterPercentOfOils) =>
             setSettings((s) => ({ ...s, waterMode: 'percent_of_oils', waterPercentOfOils }))

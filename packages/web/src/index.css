@@ -941,6 +941,23 @@ a:hover {
   font-size: 0.8rem;
 }
 
+.split-liquid-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.split-liquid-warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-left: 3px solid var(--warn);
+}
+
 /* ── Additives ────────────────────────────────────────────────────────── */
 .additive-list {
   list-style: none;

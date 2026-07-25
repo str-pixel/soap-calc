@@ -16,6 +16,46 @@ export function lyeConcentrationPercent(lyeGrams: number, waterGrams: number): n
   return (lyeGrams / total) * 100;
 }
 
+export type LyeSolutionWaterStatus = {
+  /** Water actually available to dissolve the lye: plain water plus the water fraction of
+   * an alternative liquid added to the lye solution. */
+  effectiveWaterGrams: number;
+  /** The 1:1 water:lye dissolving floor. */
+  floorGrams: number;
+  /** How far the effective water falls below the floor (0 when the floor is met). */
+  shortfallGrams: number;
+};
+
+/** Checks whether the lye solution still has enough real water to dissolve the lye when an
+ * alternative liquid (which is never 100% water) is part of it. Liquids like canned coconut
+ * milk (~68% water) or greek yogurt (~81%) can silently starve a 1:1 solution. */
+export function lyeSolutionWaterStatus(input: {
+  waterGrams: number;
+  lyeGrams: number;
+  splitLiquidGrams: number;
+  waterFraction: number;
+}): LyeSolutionWaterStatus | null {
+  const { waterGrams, lyeGrams, splitLiquidGrams, waterFraction } = input;
+  if (
+    !Number.isFinite(waterGrams) ||
+    !Number.isFinite(lyeGrams) ||
+    !Number.isFinite(splitLiquidGrams) ||
+    !Number.isFinite(waterFraction) ||
+    waterGrams < 0 ||
+    lyeGrams <= 0 ||
+    splitLiquidGrams < 0 ||
+    waterFraction <= 0 ||
+    waterFraction > 1
+  ) {
+    return null;
+  }
+
+  const effectiveWaterGrams = waterGrams + splitLiquidGrams * waterFraction;
+  const floorGrams = lyeGrams;
+  const shortfallGrams = Math.max(0, floorGrams - effectiveWaterGrams);
+  return { effectiveWaterGrams, floorGrams, shortfallGrams };
+}
+
 export function suggestLyeWaterWithSplitLiquid(input: {
   waterGrams: number;
   lyeGrams: number;

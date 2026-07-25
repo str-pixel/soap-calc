@@ -121,6 +121,7 @@ describe('recipeFile', () => {
       splitLiquid: {
         enabled: true,
         name: 'Goat milk',
+        presetKey: '',
         percentOfOil: '20',
         addAt: 'trace' as const,
       },

@@ -6,6 +6,7 @@ import {
   migrateRecipeLines,
   normalizeAdditiveLine,
   normalizeSettings,
+  normalizeSplitLiquid,
   type AdditiveLine,
   type RecipeSettings,
 } from './recipe';
@@ -365,5 +366,21 @@ describe('gelMode', () => {
   it('coerces an invalid value back to natural', () => {
     // @ts-expect-error deliberately invalid
     expect(normalizeSettings({ gelMode: 'bogus' }).gelMode).toBe('natural');
+  });
+});
+
+describe('normalizeSplitLiquid presetKey', () => {
+  it('keeps a valid preset key and drops an unknown one', () => {
+    const valid = normalizeSplitLiquid({ enabled: true, presetKey: 'yogurt-greek' });
+    expect(valid.presetKey).toBe('yogurt-greek');
+    const junk = normalizeSplitLiquid({ enabled: true, presetKey: 'motor-oil' });
+    expect(junk.presetKey).toBe('');
+  });
+
+  it('loads legacy recipes (no presetKey) as custom with the name intact', () => {
+    const legacy = normalizeSplitLiquid({ enabled: true, name: 'goat milk', percentOfOil: '10', addAt: 'trace' });
+    expect(legacy.presetKey).toBe('');
+    expect(legacy.name).toBe('goat milk');
+    expect(legacy.percentOfOil).toBe('10');
   });
 });
