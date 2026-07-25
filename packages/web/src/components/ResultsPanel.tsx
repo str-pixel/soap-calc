@@ -189,6 +189,8 @@ export const ResultsPanel = memo(function ResultsPanel({
     lyeGrams: result.lyeWeightGrams,
     waterGrams: result.waterWeightGrams,
     weightUnit,
+    splitLiquid,
+    splitLiquidGrams,
     // Same formatted strings the Workability rows / cure milestones render, so the step
     // copy can never contradict the estimates shown two panels up.
     unmoldText: cureEstimate?.workability

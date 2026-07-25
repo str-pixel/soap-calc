@@ -2313,6 +2313,12 @@ a:hover {
   color: #8b1a1a;
 }
 
+.batch-sheet__note {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
 .batch-sheet__notes {
   margin: 0;
   font-size: 0.85rem;

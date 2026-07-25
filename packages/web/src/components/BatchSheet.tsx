@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
+  alternativeLiquidPreset,
   formatPropertyScore,
   formatSoapPropertyPercent,
   LOW_COVERAGE_PERCENT,
@@ -14,6 +15,7 @@ import {
   formatBatchWeight,
 } from '../lib/batchSheet';
 import { formatGrams } from '../lib/format';
+import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
 
@@ -241,6 +243,21 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 {splitLiquid.name.trim() || 'Alternative liquid'} —{' '}
                 {formatWeight(splitLiquidGrams, weightUnit)} (
                 {additiveStageLabel(splitLiquid.addAt, process)})
+                {(() => {
+                  const step = splitLiquidProcedureStep({
+                    splitLiquid,
+                    splitLiquidGrams,
+                    weightUnit,
+                    process,
+                  });
+                  const note = alternativeLiquidPreset(splitLiquid.presetKey)?.note;
+                  return (
+                    <>
+                      {step && <div className="batch-sheet__note">{step.step}</div>}
+                      {note && <div className="batch-sheet__note">{note}</div>}
+                    </>
+                  );
+                })()}
               </li>
             )}
             {postCookSuperfat?.oils.map((oil, i) => (
