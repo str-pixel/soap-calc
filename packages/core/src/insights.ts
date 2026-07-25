@@ -374,7 +374,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       level: 'warning',
       code: 'high_pufa_post_cook_superfat',
       message:
-        'Post-cook superfat oil is high in linoleic + linolenic — added unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool.',
+        'Post-cook superfat oil is high in linoleic + linolenic — left unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool.',
     });
   }
 
