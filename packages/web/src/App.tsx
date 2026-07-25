@@ -366,9 +366,6 @@ export default function App() {
               settings={settings}
               setSettings={setSettings}
               weightUnit={weightUnit}
-              totalOilGrams={vm.totalOilGrams}
-              lyeGrams={vm.result?.lyeWeightGrams ?? 0}
-              waterSuggestion={vm.waterSuggestion}
               moldSizerInput={moldSizerInput}
               onMoldSizerChange={setMoldSizerInput}
               liveOilBatchFraction={vm.liveOilBatchFraction}
@@ -378,7 +375,15 @@ export default function App() {
               hpVesselMultiple={vm.hpVesselMultiple}
             />
 
-            <SuperfatWaterPanel settings={settings} setSettings={setSettings} process={process} />
+            <SuperfatWaterPanel
+              settings={settings}
+              setSettings={setSettings}
+              process={process}
+              totalOilGrams={vm.totalOilGrams}
+              lyeGrams={vm.result?.lyeWeightGrams ?? 0}
+              weightUnit={weightUnit}
+              waterSuggestion={vm.waterSuggestion}
+            />
 
             <RecipeOilsPanel
               lines={lines} weightUnit={weightUnit}

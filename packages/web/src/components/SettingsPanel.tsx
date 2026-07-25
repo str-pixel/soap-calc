@@ -1,4 +1,3 @@
-import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import type { MoldSizerInput } from '../lib/moldSizer';
 import type { RecipeSettings, WeightUnit } from '../lib/recipe';
 import { MAX_NOTES_LENGTH } from '../lib/recipe';
@@ -10,7 +9,6 @@ import {
 import type { ProcessId } from '../lib/process';
 import { InfoTip } from './InfoTip';
 import { MoldSizerPanel } from './MoldSizerPanel';
-import { SplitLiquidPanel } from './SplitLiquidPanel';
 
 type FieldSpec = ReturnType<typeof purityFieldsFor>[number];
 
@@ -47,9 +45,6 @@ type SettingsPanelProps = {
   settings: RecipeSettings;
   setSettings: React.Dispatch<React.SetStateAction<RecipeSettings>>;
   weightUnit: WeightUnit;
-  totalOilGrams: number;
-  lyeGrams: number; // vm.result?.lyeWeightGrams ?? 0
-  waterSuggestion: RecipeViewModel['waterSuggestion'];
   moldSizerInput: MoldSizerInput;
   onMoldSizerChange: (next: MoldSizerInput) => void;
   liveOilBatchFraction: number | null;
@@ -68,9 +63,6 @@ export function SettingsPanel({
   settings,
   setSettings,
   weightUnit,
-  totalOilGrams,
-  lyeGrams,
-  waterSuggestion,
   moldSizerInput,
   onMoldSizerChange,
   liveOilBatchFraction,
@@ -164,23 +156,6 @@ export function SettingsPanel({
 
       <details className="settings-advanced">
         <summary className="settings-advanced__summary">Advanced</summary>
-
-        <SplitLiquidPanel
-          splitLiquid={settings.splitLiquid}
-          totalOilGrams={totalOilGrams}
-          lyeGrams={lyeGrams}
-          weightUnit={weightUnit}
-          waterMode={settings.waterMode}
-          waterSuggestion={waterSuggestion}
-          onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
-          onApplySuggestedWater={(waterPercentOfOils) =>
-            setSettings((s) => ({
-              ...s,
-              waterMode: 'percent_of_oils',
-              waterPercentOfOils,
-            }))
-          }
-        />
 
         <MoldSizerPanel
           input={moldSizerInput}

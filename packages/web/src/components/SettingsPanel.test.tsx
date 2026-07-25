@@ -16,7 +16,6 @@ function Harness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) 
       <SettingsPanel
         process={process}
         settings={settings} setSettings={setSettings} weightUnit="g"
-        totalOilGrams={1000} lyeGrams={140} waterSuggestion={null}
         moldSizerInput={DEFAULT_MOLD_SIZER_INPUT} onMoldSizerChange={() => {}}
         liveOilBatchFraction={null} onApplySuggestedOilGrams={() => {}}
       />
@@ -44,9 +43,6 @@ const noop = () => {};
 const baseProps = {
   setSettings: noop,
   weightUnit: 'g' as const,
-  totalOilGrams: 0,
-  lyeGrams: 0,
-  waterSuggestion: null,
   moldSizerInput: DEFAULT_MOLD_SIZER_INPUT,
   onMoldSizerChange: noop,
   liveOilBatchFraction: null,
@@ -132,4 +128,9 @@ test('process-notes textarea enforces the same cap normalizeSettings applies on 
   render(<Harness />);
   const notes = screen.getByPlaceholderText(/Trace notes/) as HTMLTextAreaElement;
   expect(notes.maxLength).toBe(20_000);
+});
+
+test('no longer hosts the Split liquid option (moved to the Superfat & water panel)', () => {
+  render(<Harness />);
+  expect(screen.queryByRole('heading', { name: 'Split liquid' })).toBeNull();
 });
