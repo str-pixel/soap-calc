@@ -148,8 +148,10 @@ export function SplitLiquidPanel({
           {preset?.note && <p className="split-liquid-note">{preset.note}</p>}
           {showShortfall && (
             <p className="split-liquid-warning" role="alert">
-              Not enough water to dissolve the lye: this liquid is only{' '}
-              {Math.round(preset ? preset.waterFraction * 100 : 100)}% water, leaving{' '}
+              Not enough water to dissolve the lye:{' '}
+              {preset && preset.waterFraction < 1
+                ? `this liquid is only ${Math.round(preset.waterFraction * 100)}% water, leaving `
+                : 'the lye solution has less water than lye, with '}
               {formatWeight(lyeWaterStatus!.effectiveWaterGrams, weightUnit)} of real water against
               a {formatWeight(lyeWaterStatus!.floorGrams, weightUnit)} 1:1 floor. Add at least{' '}
               {formatWeight(lyeWaterStatus!.shortfallGrams, weightUnit)} more water, or add the
