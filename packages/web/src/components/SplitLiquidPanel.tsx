@@ -6,6 +6,7 @@ import {
   type SplitLiquidWaterSuggestion,
   type WaterMode,
 } from '@soap-calc/core';
+import { InfoTip } from './InfoTip';
 import type { SplitLiquidSettings } from '../lib/recipe';
 import { computeSplitLiquidGrams } from '../lib/calculateAdditives';
 import { formatInputNumber } from '../lib/format';
@@ -65,7 +66,14 @@ export function SplitLiquidPanel({
     <section className="panel panel--nested">
       <div className="panel__head">
         <div>
-          <h2 className="panel__title">Split liquid</h2>
+          <span className="panel__title-row">
+            <h2 className="panel__title">Split liquid</h2>
+            <InfoTip term="split liquid">
+              Dissolve the lye in a minimum of plain water, and add the rest of the
+              recipe&apos;s liquid — milk, puree, beer — separately. Sugary liquids never meet
+              hot lye, so they don&apos;t scorch or darken.
+            </InfoTip>
+          </span>
           <p className="panel__subtitle">
             Minimum water in lye; alternative liquid added separately
           </p>
@@ -116,6 +124,21 @@ export function SplitLiquidPanel({
               onChange={(e) => onChange({ ...splitLiquid, name: e.target.value })}
             />
           </label>
+          {preset === null && (
+            <label className="field">
+              <span>% water (optional)</span>
+              <input
+                type="number"
+                className="input"
+                min={1}
+                max={100}
+                step={1}
+                placeholder="100"
+                value={splitLiquid.customWaterPercent}
+                onChange={(e) => onChange({ ...splitLiquid, customWaterPercent: e.target.value })}
+              />
+            </label>
+          )}
           <label className="field">
             <span>% of oil weight</span>
             <input
@@ -129,7 +152,14 @@ export function SplitLiquidPanel({
             />
           </label>
           <label className="field">
-            <span>Add at</span>
+            <span>
+              Add at
+              <InfoTip term="add at">
+                Where the alternative liquid joins the batch. At trace (after the oils and
+                lye are blended) is the safest default for milks and other sugary liquids;
+                in the lye water exposes them to the hottest step.
+              </InfoTip>
+            </span>
             <select
               className="input"
               value={splitLiquid.addAt}
@@ -153,7 +183,8 @@ export function SplitLiquidPanel({
                 ? `this liquid is only ${Math.round(preset.waterFraction * 100)}% water, leaving `
                 : 'the lye solution has less water than lye, with '}
               {formatWeight(lyeWaterStatus!.effectiveWaterGrams, weightUnit)} of real water against
-              a {formatWeight(lyeWaterStatus!.floorGrams, weightUnit)} 1:1 floor. Add at least{' '}
+              the {formatWeight(lyeWaterStatus!.floorGrams, weightUnit)} minimum — equal parts water
+              and lye — needed to dissolve it. Add at least{' '}
               {formatWeight(lyeWaterStatus!.shortfallGrams, weightUnit)} more water, or add the
               liquid at trace instead.
             </p>

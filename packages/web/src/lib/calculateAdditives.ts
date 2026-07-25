@@ -1,3 +1,4 @@
+import { alternativeLiquidPreset } from '@soap-calc/core';
 import {
   gramsFromDose,
   gramsFromPercentOfOil,
@@ -6,7 +7,7 @@ import {
   type DoseBasis,
   type DoseUnit,
 } from '@soap-calc/core';
-import type { AdditiveLine, RecipeSettings } from './recipe';
+import type { AdditiveLine, RecipeSettings, SplitLiquidSettings } from './recipe';
 
 export type ComputedAdditive = {
   key: string;
@@ -111,4 +112,22 @@ export function computePostCookSuperfat(
     percentOfOil: oils.reduce((sum, o) => sum + o.percentOfOil, 0),
     grams: oils.reduce((sum, o) => sum + o.grams, 0),
   };
+}
+
+/** Resolve the fraction of a split liquid that is actually water. Presets carry their own
+ * value; custom liquids use the optional % water input, and fall back to pure water when
+ * it is blank or out of range — the assumption is disclosed in the panel. */
+export function splitLiquidWaterFraction(splitLiquid: SplitLiquidSettings): number {
+  const preset = alternativeLiquidPreset(splitLiquid.presetKey);
+  if (preset) return preset.waterFraction;
+  const percent = Number(splitLiquid.customWaterPercent);
+  if (
+    splitLiquid.customWaterPercent.trim() !== '' &&
+    Number.isFinite(percent) &&
+    percent > 0 &&
+    percent <= 100
+  ) {
+    return percent / 100;
+  }
+  return 1;
 }

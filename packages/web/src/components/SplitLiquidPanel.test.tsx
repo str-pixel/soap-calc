@@ -10,6 +10,7 @@ const ENABLED: SplitLiquidSettings = {
   enabled: true,
   presetKey: '',
   name: '',
+  customWaterPercent: '',
   percentOfOil: '10',
   addAt: 'trace',
 };
@@ -83,6 +84,32 @@ test('preset shortfall names the liquid water fraction', () => {
     lyeWaterStatus: { effectiveWaterGrams: 133.7, floorGrams: 135, shortfallGrams: 1.3 },
   });
   expect(screen.getByRole('alert').textContent).toMatch(/only 68% water/i);
+});
+
+test('custom liquid shows an optional % water field; presets hide it', () => {
+  const { onChange } = renderPanel({ splitLiquid: { ...ENABLED, presetKey: '', name: 'coconut cream' } });
+  const field = screen.getByLabelText('% water (optional)');
+  fireEvent.change(field, { target: { value: '55' } });
+  expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ customWaterPercent: '55' }));
+  cleanup();
+  renderPanel({ splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)' } });
+  expect(screen.queryByLabelText('% water (optional)')).toBeNull();
+});
+
+test('explains the technique and the add-at choice with info tips', () => {
+  renderPanel();
+  expect(screen.getByLabelText('About split liquid')).toBeTruthy();
+  expect(screen.getByLabelText('About add at')).toBeTruthy();
+});
+
+test('shortfall warning explains the minimum in plain words, not "1:1 floor"', () => {
+  renderPanel({
+    splitLiquid: { ...ENABLED, presetKey: 'coconut-milk-canned', name: 'Coconut milk (canned)', addAt: 'lye' },
+    lyeWaterStatus: { effectiveWaterGrams: 133.7, floorGrams: 135, shortfallGrams: 1.3 },
+  });
+  const alert = screen.getByRole('alert').textContent ?? '';
+  expect(alert).toMatch(/equal parts water and lye/i);
+  expect(alert).not.toMatch(/floor/i);
 });
 
 test('no shortfall warning when the floor is met', () => {

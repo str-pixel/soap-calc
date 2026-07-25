@@ -377,6 +377,13 @@ describe('normalizeSplitLiquid presetKey', () => {
     expect(junk.presetKey).toBe('');
   });
 
+  it('keeps customWaterPercent as a string and defaults junk to empty', () => {
+    expect(normalizeSplitLiquid({ enabled: true, customWaterPercent: '55' }).customWaterPercent).toBe('55');
+    expect(
+      normalizeSplitLiquid({ enabled: true, customWaterPercent: 55 as unknown as string }).customWaterPercent,
+    ).toBe('');
+  });
+
   it('loads legacy recipes (no presetKey) as custom with the name intact', () => {
     const legacy = normalizeSplitLiquid({ enabled: true, name: 'goat milk', percentOfOil: '10', addAt: 'trace' });
     expect(legacy.presetKey).toBe('');

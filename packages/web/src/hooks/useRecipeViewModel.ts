@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
-import { alternativeLiquidPreset, calculateDilution, calculateNeutralization, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { calculateDilution, calculateNeutralization, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import {
   computeExtrasGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
-  computeSplitLiquidGrams,
-} from '../lib/calculateAdditives';
+  computeSplitLiquidGrams, splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
 import type { CureEstimate } from '../lib/cureEstimate';
 import { computeWorkability } from '../lib/workabilityInput';
@@ -282,17 +281,14 @@ export function useRecipeViewModel({
     ) {
       return null;
     }
-    const preset = alternativeLiquidPreset(previewSettings.splitLiquid.presetKey);
     return lyeSolutionWaterStatus({
       waterGrams: result.waterWeightGrams,
       lyeGrams: result.lyeWeightGrams,
       splitLiquidGrams,
-      waterFraction: preset?.waterFraction ?? 1,
+      waterFraction: splitLiquidWaterFraction(previewSettings.splitLiquid),
     });
   }, [
-    previewSettings.splitLiquid.addAt,
-    previewSettings.splitLiquid.enabled,
-    previewSettings.splitLiquid.presetKey,
+    previewSettings.splitLiquid,
     result,
     splitLiquidGrams,
   ]);

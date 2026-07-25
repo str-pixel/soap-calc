@@ -29,6 +29,9 @@ export type SplitLiquidSettings = {
   /** Key into ALTERNATIVE_LIQUID_GUIDE, or '' for a custom (free-text) liquid. */
   presetKey: string;
   name: string;
+  /** For custom liquids only: how much of the liquid is water, as a % (input string).
+   * Blank means "treat as pure water". Presets carry their own water fraction. */
+  customWaterPercent: string;
   percentOfOil: string;
   addAt: 'lye' | 'oils' | 'trace';
 };
@@ -83,6 +86,7 @@ export const DEFAULT_SPLIT_LIQUID: SplitLiquidSettings = {
   enabled: false,
   presetKey: '',
   name: '',
+  customWaterPercent: '',
   percentOfOil: '',
   addAt: 'trace',
 };
@@ -130,6 +134,8 @@ export function normalizeSplitLiquid(
     enabled: partial?.enabled === true,
     presetKey,
     name: typeof partial?.name === 'string' ? partial.name : '',
+    customWaterPercent:
+      typeof partial?.customWaterPercent === 'string' ? partial.customWaterPercent : '',
     percentOfOil: typeof partial?.percentOfOil === 'string' ? partial.percentOfOil : '',
     addAt,
   };
