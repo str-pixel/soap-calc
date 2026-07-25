@@ -40,3 +40,37 @@ test('changing the water method swaps the editable water-ratio field', () => {
   expect(screen.getByLabelText('Lye concentration %')).toBeTruthy();
   expect(screen.queryByLabelText('Water % of oils')).toBeNull();
 });
+
+test('post-cook superfat controls render for HP (% slider readout, oil, method)', () => {
+  render(<Harness process="hp" />);
+  expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
+  expect(screen.getByLabelText('Post-cook superfat oil')).toBeTruthy();
+  expect(screen.getByLabelText('Post-cook superfat method')).toBeTruthy();
+});
+
+test('post-cook superfat controls render for LS', () => {
+  render(<Harness process="ls" />);
+  expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
+});
+
+test('post-cook superfat controls are hidden for CP (no cook stage)', () => {
+  render(<Harness process="cp" />);
+  expect(screen.queryByLabelText('Post-cook superfat %')).toBeNull();
+  expect(screen.queryByLabelText('Post-cook superfat oil')).toBeNull();
+  expect(screen.queryByLabelText('Post-cook superfat method')).toBeNull();
+});
+
+test('editing the post-cook superfat % slider readout updates settings state', () => {
+  render(<Harness process="hp" />);
+  const input = screen.getByLabelText('Post-cook superfat %') as HTMLInputElement;
+  fireEvent.change(input, { target: { value: '4' } });
+  expect((screen.getByLabelText('Post-cook superfat %') as HTMLInputElement).value).toBe('4');
+});
+
+test('the post-cook superfat method toggles between append and subtract', () => {
+  render(<Harness process="hp" />);
+  const select = screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement;
+  expect(select.value).toBe('append');
+  fireEvent.change(select, { target: { value: 'subtract' } });
+  expect((screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement).value).toBe('subtract');
+});
