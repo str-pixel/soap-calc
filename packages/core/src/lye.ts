@@ -75,7 +75,11 @@ const MAX_SUPERFAT_PERCENT = 50;
  * Exported so the UI slider bound can't drift from the core validation floor. */
 export const NEG_SUPERFAT_FLOOR = -5;
 /** Default KOH share for dual-lye recipes; shared with analyzeFormulation so the
- * "advanced technique" insight matches what calculateLye actually blends. */
+ * "advanced technique" insight matches what calculateLye actually blends.
+ * 5% is deliberate, not a placeholder: a small KOH fraction raises lather rate and
+ * stability (KOH soaps are more soluble than NaOH soaps) without reducing bar hardness.
+ * This is the standard lather-booster ratio for hard or high-olive (castile) NaOH bars —
+ * KOH here is a minor additive to a NaOH-primary bar, not a co-equal alkali. */
 export const DEFAULT_KOH_BLEND_PERCENT = 5;
 
 function validatePurityPercent(
