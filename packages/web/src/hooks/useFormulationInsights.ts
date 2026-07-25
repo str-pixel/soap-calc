@@ -33,9 +33,21 @@ export function totalAdditivePercentForInsights(
   return additivePercent + splitLiquidPercent;
 }
 
-export function postCookSuperfatPufaPercent(oilId: string): number | undefined {
-  const fa = oilById(oilId)?.fattyAcids;
-  return fa ? sumFattyAcids(fa, FATTY_ACID_GROUP_KEYS.polyunsaturated) : undefined;
+/** Grams-weighted average PUFA % across the post-cook superfat oils — the blend's overall
+ * polyunsaturated share, which is what the rancidity insight cares about. Oils without
+ * fatty-acid data are skipped; returns undefined when none of the oils have data. */
+export function postCookSuperfatPufaPercent(
+  oils: ReadonlyArray<{ oilId: string; grams: number }>,
+): number | undefined {
+  let knownGrams = 0;
+  let pufaWeighted = 0;
+  for (const o of oils) {
+    const fa = oilById(o.oilId)?.fattyAcids;
+    if (!fa) continue;
+    knownGrams += o.grams;
+    pufaWeighted += sumFattyAcids(fa, FATTY_ACID_GROUP_KEYS.polyunsaturated) * o.grams;
+  }
+  return knownGrams > 0 ? pufaWeighted / knownGrams : undefined;
 }
 
 /** Yogurt additive line(s)' percent of oil weight (grams / totalOilGrams × 100) — mirrors
@@ -174,7 +186,7 @@ export function useFormulationInsights(
       lyeType: settings.lyeType,
       kohBlendPercent: Number(settings.kohBlendPercent) || 0,
       postCookSuperfatPufaPercent: options.postCookSuperfat
-        ? postCookSuperfatPufaPercent(options.postCookSuperfat.oilId)
+        ? postCookSuperfatPufaPercent(options.postCookSuperfat.oils)
         : undefined,
       isLiquidSoap: options.isLiquidSoap ?? false,
       process: options.process,

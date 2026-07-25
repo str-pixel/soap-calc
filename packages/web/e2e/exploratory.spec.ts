@@ -379,9 +379,9 @@ test.describe('liquid soap', () => {
   });
 
   test('post-cook superfat subtract reserves oil and notes lye reduction', async ({ page }) => {
-    await page.getByLabel('Post-cook superfat %').fill('3');
-    await page.getByLabel('Post-cook superfat %').blur();
-    const picker = page.getByLabel('Post-cook superfat oil');
+    await page.getByLabel('Post-cook superfat % 1').fill('3');
+    await page.getByLabel('Post-cook superfat % 1').blur();
+    const picker = page.getByLabel('Post-cook superfat oil 1');
     await picker.click();
     await picker.fill('jojoba');
     await page.locator('.oil-picker__option').first().click();
@@ -390,6 +390,30 @@ test.describe('liquid soap', () => {
       page.locator('.panel--results .results-grid dt').filter({ hasText: /Post-cook superfat/ }).first(),
     ).toBeVisible();
     await expect(page.locator('.panel--results')).toContainText(/reserved, lye reduced/);
+  });
+
+  test('post-cook superfat supports more than one oil', async ({ page }) => {
+    // Seeded row 1 + an added row 2, each with its own %.
+    await page.getByLabel('Post-cook superfat % 1').fill('3');
+    await page.getByLabel('Post-cook superfat % 1').blur();
+    await page.getByRole('button', { name: 'Add post-cook superfat oil' }).click();
+    const oil2 = page.getByLabel('Post-cook superfat oil 2');
+    await oil2.click();
+    await oil2.fill('jojoba');
+    await page.locator('.oil-picker__option').first().click();
+    await page.getByLabel('Post-cook superfat % 2').fill('2');
+    await page.getByLabel('Post-cook superfat % 2').blur();
+    // The results PCSF line names both oils (aggregate), and the Full recipe lists each
+    // as its own post-cook superfat line.
+    const pcsfLine = page
+      .locator('.panel--results .results-grid__item')
+      .filter({ hasText: /Post-cook superfat/ })
+      .first();
+    await expect(pcsfLine).toContainText(/Olive Oil/);
+    await expect(pcsfLine).toContainText(/Jojoba/);
+    await expect(
+      page.locator('.panel--results').getByText(/Jojoba.*\(post-cook superfat\)/),
+    ).toBeVisible();
   });
 });
 

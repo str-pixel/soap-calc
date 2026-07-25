@@ -8,10 +8,19 @@ import type { ProcessId } from '../lib/process';
 
 afterEach(cleanup);
 
-function Harness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) {
-  const [settings, setSettings] = useState<RecipeSettings>(DEFAULT_SETTINGS);
+function Harness({
+  process = 'cp' as ProcessId,
+  initial,
+}: {
+  process?: ProcessId;
+  initial?: Partial<RecipeSettings>;
+} = {}) {
+  const [settings, setSettings] = useState<RecipeSettings>({ ...DEFAULT_SETTINGS, ...initial });
   return <SuperfatWaterPanel settings={settings} setSettings={setSettings} process={process} />;
 }
+
+// A one-row post-cook superfat, matching what the HP/LS process defaults seed.
+const ONE_PCSF = { postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }] };
 
 test('renders the Superfat & water panel heading', () => {
   render(<Harness />);
@@ -41,34 +50,61 @@ test('changing the water method swaps the editable water-ratio field', () => {
   expect(screen.queryByLabelText('Water % of oils')).toBeNull();
 });
 
-test('post-cook superfat controls render for HP (% slider readout, oil, method)', () => {
-  render(<Harness process="hp" />);
-  expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
-  expect(screen.getByLabelText('Post-cook superfat oil')).toBeTruthy();
+test('post-cook superfat controls render for HP (per-oil row + method)', () => {
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  expect(screen.getByLabelText('Post-cook superfat oil 1')).toBeTruthy();
+  expect(screen.getByLabelText('Post-cook superfat % 1')).toBeTruthy();
   expect(screen.getByLabelText('Post-cook superfat method')).toBeTruthy();
 });
 
 test('post-cook superfat controls render for LS', () => {
-  render(<Harness process="ls" />);
-  expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
+  render(<Harness process="ls" initial={ONE_PCSF} />);
+  expect(screen.getByLabelText('Post-cook superfat % 1')).toBeTruthy();
 });
 
 test('post-cook superfat controls are hidden for CP (no cook stage)', () => {
-  render(<Harness process="cp" />);
-  expect(screen.queryByLabelText('Post-cook superfat %')).toBeNull();
-  expect(screen.queryByLabelText('Post-cook superfat oil')).toBeNull();
+  render(<Harness process="cp" initial={ONE_PCSF} />);
+  expect(screen.queryByLabelText('Post-cook superfat % 1')).toBeNull();
   expect(screen.queryByLabelText('Post-cook superfat method')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Add post-cook superfat oil' })).toBeNull();
 });
 
-test('editing the post-cook superfat % slider readout updates settings state', () => {
-  render(<Harness process="hp" />);
-  const input = screen.getByLabelText('Post-cook superfat %') as HTMLInputElement;
+test('editing a post-cook superfat row % updates settings state', () => {
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  const input = screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement;
   fireEvent.change(input, { target: { value: '4' } });
-  expect((screen.getByLabelText('Post-cook superfat %') as HTMLInputElement).value).toBe('4');
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('4');
+});
+
+test('Add oil appends a second post-cook superfat row', () => {
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  expect(screen.queryByLabelText('Post-cook superfat oil 2')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Add post-cook superfat oil' }));
+  expect(screen.getByLabelText('Post-cook superfat oil 2')).toBeTruthy();
+  expect(screen.getByLabelText('Post-cook superfat % 2')).toBeTruthy();
+});
+
+test('Remove drops a post-cook superfat row', () => {
+  render(
+    <Harness
+      process="hp"
+      initial={{
+        postCookSuperfatOils: [
+          { oilId: 'shea-butter', percent: '3' },
+          { oilId: 'jojoba-oil', percent: '2' },
+        ],
+      }}
+    />,
+  );
+  expect(screen.getByLabelText('Post-cook superfat oil 2')).toBeTruthy();
+  fireEvent.click(screen.getByLabelText('Remove post-cook superfat row 1'));
+  // One row left; the second row's controls are gone.
+  expect(screen.queryByLabelText('Post-cook superfat oil 2')).toBeNull();
+  expect(screen.getByLabelText('Post-cook superfat oil 1')).toBeTruthy();
 });
 
 test('the post-cook superfat method toggles between append and subtract', () => {
-  render(<Harness process="hp" />);
+  render(<Harness process="hp" initial={ONE_PCSF} />);
   const select = screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement;
   expect(select.value).toBe('append');
   fireEvent.change(select, { target: { value: 'subtract' } });

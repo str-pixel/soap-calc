@@ -158,11 +158,35 @@ describe('sugarTotalPercentForInsights', () => {
 });
 
 describe('postCookSuperfatPufaPercent', () => {
-  it('returns the oil linoleic+linolenic total, undefined for unknown oil', () => {
-    const coconut = postCookSuperfatPufaPercent('coconut-oil-76');
+  it('returns a single oil linoleic+linolenic total, undefined when no oil has data', () => {
+    const coconut = postCookSuperfatPufaPercent([{ oilId: 'coconut-oil-76', grams: 50 }]);
     expect(coconut).toBeDefined();
     expect(coconut!).toBeLessThan(30); // coconut is low-PUFA
-    expect(postCookSuperfatPufaPercent('not-an-oil')).toBeUndefined();
+    expect(postCookSuperfatPufaPercent([{ oilId: 'not-an-oil', grams: 50 }])).toBeUndefined();
+  });
+
+  it('grams-weights the PUFA across a blend', () => {
+    // Equal grams of a low-PUFA (coconut) and a high-PUFA (sunflower) oil → the average
+    // sits between the two single-oil values.
+    const coconut = postCookSuperfatPufaPercent([{ oilId: 'coconut-oil-76', grams: 100 }])!;
+    const sunflower = postCookSuperfatPufaPercent([{ oilId: 'sunflower-oil', grams: 100 }])!;
+    const blend = postCookSuperfatPufaPercent([
+      { oilId: 'coconut-oil-76', grams: 100 },
+      { oilId: 'sunflower-oil', grams: 100 },
+    ])!;
+    expect(blend).toBeGreaterThan(coconut);
+    expect(blend).toBeLessThan(sunflower);
+    expect(blend).toBeCloseTo((coconut + sunflower) / 2, 5);
+  });
+
+  it('skips oils without fatty-acid data when weighting', () => {
+    // The unknown oil contributes nothing, so the result equals the known oil alone.
+    const known = postCookSuperfatPufaPercent([{ oilId: 'sunflower-oil', grams: 100 }])!;
+    const mixed = postCookSuperfatPufaPercent([
+      { oilId: 'sunflower-oil', grams: 100 },
+      { oilId: 'not-an-oil', grams: 100 },
+    ])!;
+    expect(mixed).toBeCloseTo(known, 5);
   });
 });
 

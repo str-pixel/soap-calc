@@ -69,9 +69,9 @@ export interface RecipePricingSource {
   batchWeightWithExtras: number;
   /** Enabled split liquid, if any — a real material the batch weight already includes. */
   splitLiquid: { name: string; grams: number } | null;
-  /** Post-cook superfat; `isExtra` (append mode) means the grams are ADDED to the batch
+  /** Post-cook superfat oils; `isExtra` (append mode) means the grams are ADDED to the batch
    * and must be priced — subtract mode reserves oil already priced in `lines`. */
-  postCookSuperfat: { oilId: string; grams: number; isExtra: boolean } | null;
+  postCookSuperfat: { oils: { oilId: string; grams: number }[]; isExtra: boolean } | null;
 }
 
 /** Single source for what the pricing panel can price. Everything included in
@@ -86,12 +86,15 @@ export function buildRecipePricingContext(src: RecipePricingSource): RecipePrici
       grams: Number(l.weightGrams) || 0,
       name: oilDisplayName(l.oilId),
     }));
-  if (src.postCookSuperfat && src.postCookSuperfat.isExtra && src.postCookSuperfat.grams > 0) {
-    oilLines.push({
-      key: 'post-cook-superfat',
-      oilId: src.postCookSuperfat.oilId,
-      grams: src.postCookSuperfat.grams,
-      name: oilDisplayName(src.postCookSuperfat.oilId),
+  if (src.postCookSuperfat && src.postCookSuperfat.isExtra) {
+    src.postCookSuperfat.oils.forEach((o, i) => {
+      if (o.grams <= 0) return;
+      oilLines.push({
+        key: `post-cook-superfat-${i}`,
+        oilId: o.oilId,
+        grams: o.grams,
+        name: oilDisplayName(o.oilId),
+      });
     });
   }
   const additives = src.computedAdditives.map((a) => ({

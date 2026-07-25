@@ -79,16 +79,20 @@ describe('recipeStorage', () => {
     expect(normalizeSettings({ superfatPercent: '8' }).lyeConcentrationPercent).toBe('33.33');
   });
 
-  it('round-trips post-cook superfat settings through a draft', () => {
+  it('round-trips post-cook superfat oils through a draft', () => {
     const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }];
     saveDraft('cp', 'PCSF', lines, {
       ...DEFAULT_SETTINGS,
-      postCookSuperfatPercent: '5',
-      postCookSuperfatOilId: 'shea-butter',
+      postCookSuperfatOils: [
+        { oilId: 'shea-butter', percent: '3' },
+        { oilId: 'jojoba-oil', percent: '2' },
+      ],
     });
     const draft = loadDraft('cp');
-    expect(draft?.settings.postCookSuperfatPercent).toBe('5');
-    expect(draft?.settings.postCookSuperfatOilId).toBe('shea-butter');
+    expect(draft?.settings.postCookSuperfatOils).toEqual([
+      { oilId: 'shea-butter', percent: '3' },
+      { oilId: 'jojoba-oil', percent: '2' },
+    ]);
   });
 
   it('does not throw when localStorage writes fail', () => {

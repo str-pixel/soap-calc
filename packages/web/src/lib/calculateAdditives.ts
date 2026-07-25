@@ -56,9 +56,18 @@ export function computeSplitLiquidGrams(
   return gramsFromPercentOfOil(totalOilGrams, percent);
 }
 
-export type ComputedPostCookSuperfat = {
+export type ComputedPostCookSuperfatOil = {
   oilId: string;
   percentOfOil: number;
+  grams: number;
+};
+
+export type ComputedPostCookSuperfat = {
+  /** One entry per contributing oil row (percent > 0). */
+  oils: ComputedPostCookSuperfatOil[];
+  /** Sum of the rows' percent-of-oil — the total post-cook superfat %. */
+  percentOfOil: number;
+  /** Sum of the rows' grams — the total post-cook superfat weight. */
   grams: number;
 };
 
@@ -79,17 +88,27 @@ export function computeExtrasGrams(
   return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams;
 }
 
-/** The post-cook superfat: an oil added after cook/dilution with no lye effect.
- * Same % of recipe oil weight basis as additives/split-liquid; `null` when the % is
- * empty/zero/invalid or there's no recipe oil weight yet. */
+/** The post-cook superfat: one or more oils added after cook/dilution with no lye effect.
+ * Each row is a % of recipe oil weight (same basis as additives/split-liquid); the aggregate
+ * `percentOfOil`/`grams` sum the contributing rows. `null` when no row has a valid, non-zero
+ * percent or there's no recipe oil weight yet. */
 export function computePostCookSuperfat(
-  settings: Pick<RecipeSettings, 'postCookSuperfatPercent' | 'postCookSuperfatOilId'>,
+  settings: Pick<RecipeSettings, 'postCookSuperfatOils'>,
   totalOilGrams: number,
 ): ComputedPostCookSuperfat | null {
   if (totalOilGrams <= 0) return null;
-  const percent = parsePercentOfOil(settings.postCookSuperfatPercent);
-  if (percent === null || percent === 0) return null;
-  const grams = gramsFromPercentOfOil(totalOilGrams, percent);
-  if (grams === null) return null;
-  return { oilId: settings.postCookSuperfatOilId, percentOfOil: percent, grams };
+  const oils: ComputedPostCookSuperfatOil[] = [];
+  for (const row of settings.postCookSuperfatOils) {
+    const percent = parsePercentOfOil(row.percent);
+    if (percent === null || percent === 0) continue;
+    const grams = gramsFromPercentOfOil(totalOilGrams, percent);
+    if (grams === null) continue;
+    oils.push({ oilId: row.oilId, percentOfOil: percent, grams });
+  }
+  if (oils.length === 0) return null;
+  return {
+    oils,
+    percentOfOil: oils.reduce((sum, o) => sum + o.percentOfOil, 0),
+    grams: oils.reduce((sum, o) => sum + o.grams, 0),
+  };
 }
