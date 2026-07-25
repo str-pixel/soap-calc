@@ -1,11 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { WaterMode } from '@soap-calc/core';
-import { postCookSuperfatAllocated, type RecipeSettings } from '../lib/recipe';
+import type { SplitLiquidWaterSuggestion, WaterMode } from '@soap-calc/core';
+import { postCookSuperfatAllocated, type RecipeSettings, type WeightUnit } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
 import { WATER_FIELDS, WATER_MODE_LABELS, waterModeChoicesFor } from '../lib/settingsFields';
 import { InfoTip } from './InfoTip';
 import { OilPicker } from './OilPicker';
+import { SplitLiquidPanel } from './SplitLiquidPanel';
 
 // Upper bound for each water mode's drag slider — the typical working range, not the hard
 // input cap. The editable value readout keeps the field's real min/max, so out-of-range
@@ -118,13 +119,28 @@ type SuperfatWaterPanelProps = {
   settings: RecipeSettings;
   setSettings: Dispatch<SetStateAction<RecipeSettings>>;
   process: ProcessId;
+  /** Split-liquid figures — the split option lives with the water controls (it's a slice of
+   * the water amount). See SplitLiquidPanel. */
+  totalOilGrams: number;
+  lyeGrams: number;
+  weightUnit: WeightUnit;
+  waterSuggestion: SplitLiquidWaterSuggestion | null;
 };
 
 /**
  * The two knobs makers touch most — Superfat and the water ratio — as their own left-column
- * panel (moved here from The Numbers to match the comp's arrangement).
+ * panel (moved here from The Numbers to match the comp's arrangement). Split liquid lives here
+ * too: it's a portion of the water, so it belongs with the water controls, not in Settings.
  */
-export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatWaterPanelProps) {
+export function SuperfatWaterPanel({
+  settings,
+  setSettings,
+  process,
+  totalOilGrams,
+  lyeGrams,
+  weightUnit,
+  waterSuggestion,
+}: SuperfatWaterPanelProps) {
   const waterField = WATER_FIELDS[settings.waterMode];
 
   const pcsfOils = settings.postCookSuperfatOils;
@@ -235,6 +251,21 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
             const key = waterField.key;
             setSettings((s) => ({ ...s, [key]: v }));
           }}
+        />
+
+        {/* Split liquid — replaces part of the water with an alternative liquid (milk, beer,
+            tea…), so it lives with the water controls. */}
+        <SplitLiquidPanel
+          splitLiquid={settings.splitLiquid}
+          totalOilGrams={totalOilGrams}
+          lyeGrams={lyeGrams}
+          weightUnit={weightUnit}
+          waterMode={settings.waterMode}
+          waterSuggestion={waterSuggestion}
+          onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
+          onApplySuggestedWater={(waterPercentOfOils) =>
+            setSettings((s) => ({ ...s, waterMode: 'percent_of_oils', waterPercentOfOils }))
+          }
         />
 
         {/* Post-cook superfat — an HP/LS-only knob (oils held back from the cook and folded

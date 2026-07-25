@@ -16,7 +16,17 @@ function Harness({
   initial?: Partial<RecipeSettings>;
 } = {}) {
   const [settings, setSettings] = useState<RecipeSettings>({ ...DEFAULT_SETTINGS, ...initial });
-  return <SuperfatWaterPanel settings={settings} setSettings={setSettings} process={process} />;
+  return (
+    <SuperfatWaterPanel
+      settings={settings}
+      setSettings={setSettings}
+      process={process}
+      totalOilGrams={1000}
+      lyeGrams={140}
+      weightUnit="g"
+      waterSuggestion={null}
+    />
+  );
 }
 
 // A one-row post-cook superfat fully allocating a 5% budget, matching the HP process default.
@@ -28,6 +38,11 @@ const ONE_PCSF = {
 test('renders the Superfat & water panel heading', () => {
   render(<Harness />);
   expect(screen.getByRole('heading', { name: 'Superfat & water' })).toBeTruthy();
+});
+
+test('hosts the Split liquid option (moved here from Settings, alongside the water controls)', () => {
+  render(<Harness />);
+  expect(screen.getByRole('heading', { name: 'Split liquid' })).toBeTruthy();
 });
 
 test('editing the Superfat field updates settings state', () => {

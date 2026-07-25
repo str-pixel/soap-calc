@@ -621,26 +621,27 @@ test.describe('pricing & profit', () => {
   });
 });
 
-// ---------- 10. advanced: split liquid & batch sizer ----------
+// ---------- 10. split liquid (now in the Superfat & water panel) & batch sizer ----------
+
+test('split liquid adds a named liquid and total-liquid row', async ({ page }) => {
+  // Split liquid now lives in the always-visible Superfat & water panel — no Advanced click.
+  const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Split liquid' }) }).first();
+  await section.getByText('Enable').click();
+  await section.getByPlaceholder(/goat milk/).fill('goat milk');
+  await section.getByLabel(/% of oil weight/).fill('20');
+  await section.getByLabel(/% of oil weight/).blur();
+  await expect(
+    page.locator('.panel--results .results-grid dt').filter({ hasText: /Total liquid/ }).first(),
+  ).toBeVisible();
+  await expect(page.locator('.panel--results')).toContainText(/goat milk/i);
+  const totalLiquid = num(await resultDd(page, /^Total liquid/));
+  const water = num(await resultDd(page, /^Water$/));
+  expect(relClose(totalLiquid, water + 200, 0.02, 2), `total liquid ${totalLiquid} vs water ${water} + 200`).toBe(true);
+});
 
 test.describe('advanced settings', () => {
   test.beforeEach(async ({ page }) => {
     await page.locator('summary').filter({ hasText: 'Advanced' }).click();
-  });
-
-  test('split liquid adds a named liquid and total-liquid row', async ({ page }) => {
-    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Split liquid' }) }).first();
-    await section.getByText('Enable').click();
-    await section.getByPlaceholder(/goat milk/).fill('goat milk');
-    await section.getByLabel(/% of oil weight/).fill('20');
-    await section.getByLabel(/% of oil weight/).blur();
-    await expect(
-      page.locator('.panel--results .results-grid dt').filter({ hasText: /Total liquid/ }).first(),
-    ).toBeVisible();
-    await expect(page.locator('.panel--results')).toContainText(/goat milk/i);
-    const totalLiquid = num(await resultDd(page, /^Total liquid/));
-    const water = num(await resultDd(page, /^Water$/));
-    expect(relClose(totalLiquid, water + 200, 0.02, 2), `total liquid ${totalLiquid} vs water ${water} + 200`).toBe(true);
   });
 
   test('batch sizer bar mode suggests and applies oil weight', async ({ page }) => {
