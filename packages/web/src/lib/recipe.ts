@@ -1,3 +1,4 @@
+import { alternativeLiquidPreset } from '@soap-calc/core';
 import type { AdditiveStage, DoseBasis, DoseUnit, GelMode, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
 import { processForLyeType } from './process';
@@ -25,6 +26,8 @@ export type AdditiveLine = {
 
 export type SplitLiquidSettings = {
   enabled: boolean;
+  /** Key into ALTERNATIVE_LIQUID_GUIDE, or '' for a custom (free-text) liquid. */
+  presetKey: string;
   name: string;
   percentOfOil: string;
   addAt: 'lye' | 'oils' | 'trace';
@@ -78,6 +81,7 @@ export function newAdditiveKey(): string {
 
 export const DEFAULT_SPLIT_LIQUID: SplitLiquidSettings = {
   enabled: false,
+  presetKey: '',
   name: '',
   percentOfOil: '',
   addAt: 'trace',
@@ -118,8 +122,13 @@ export function normalizeSplitLiquid(
     partial?.addAt === 'lye' || partial?.addAt === 'oils' || partial?.addAt === 'trace'
       ? partial.addAt
       : DEFAULT_SPLIT_LIQUID.addAt;
+  const presetKey =
+    typeof partial?.presetKey === 'string' && alternativeLiquidPreset(partial.presetKey)
+      ? partial.presetKey
+      : '';
   return {
     enabled: partial?.enabled === true,
+    presetKey,
     name: typeof partial?.name === 'string' ? partial.name : '',
     percentOfOil: typeof partial?.percentOfOil === 'string' ? partial.percentOfOil : '',
     addAt,

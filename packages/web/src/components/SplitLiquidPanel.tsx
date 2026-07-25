@@ -1,4 +1,11 @@
-import { ADDITIVE_STAGE_LABELS, type SplitLiquidWaterSuggestion, type WaterMode } from '@soap-calc/core';
+import {
+  ADDITIVE_STAGE_LABELS,
+  ALTERNATIVE_LIQUID_GUIDE,
+  alternativeLiquidPreset,
+  type LyeSolutionWaterStatus,
+  type SplitLiquidWaterSuggestion,
+  type WaterMode,
+} from '@soap-calc/core';
 import type { SplitLiquidSettings } from '../lib/recipe';
 import { computeSplitLiquidGrams } from '../lib/calculateAdditives';
 import { formatInputNumber } from '../lib/format';
@@ -13,6 +20,8 @@ type SplitLiquidPanelProps = {
   weightUnit: WeightUnit;
   waterMode: WaterMode;
   waterSuggestion: SplitLiquidWaterSuggestion | null;
+  /** Effective-water check for the lye solution; only meaningful when addAt is 'lye'. */
+  lyeWaterStatus: LyeSolutionWaterStatus | null;
   onChange: (splitLiquid: SplitLiquidSettings) => void;
   onApplySuggestedWater?: (waterPercentOfOils: string) => void;
 };
@@ -24,12 +33,17 @@ export function SplitLiquidPanel({
   weightUnit,
   waterMode,
   waterSuggestion,
+  lyeWaterStatus,
   onChange,
   onApplySuggestedWater,
 }: SplitLiquidPanelProps) {
   const grams = splitLiquid.enabled
     ? computeSplitLiquidGrams(splitLiquid.percentOfOil, totalOilGrams)
     : null;
+
+  const preset = alternativeLiquidPreset(splitLiquid.presetKey);
+  const showShortfall =
+    splitLiquid.addAt === 'lye' && lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
 
   const canApplyWater =
     waterMode === 'percent_of_oils' &&
@@ -69,6 +83,30 @@ export function SplitLiquidPanel({
       {splitLiquid.enabled && (
         <div className="settings-grid">
           <label className="field">
+            <span>Liquid preset</span>
+            <select
+              className="input"
+              value={splitLiquid.presetKey}
+              onChange={(e) => {
+                const nextKey = e.target.value;
+                const nextPreset = alternativeLiquidPreset(nextKey);
+                onChange({
+                  ...splitLiquid,
+                  presetKey: nextPreset ? nextKey : '',
+                  // A preset names the liquid; back to custom keeps whatever was typed.
+                  name: nextPreset ? nextPreset.label : splitLiquid.name,
+                });
+              }}
+            >
+              <option value="">Custom…</option>
+              {ALTERNATIVE_LIQUID_GUIDE.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
             <span>Liquid name</span>
             <input
               type="text"
@@ -107,6 +145,17 @@ export function SplitLiquidPanel({
               <option value="trace">At trace</option>
             </select>
           </label>
+          {preset?.note && <p className="split-liquid-note">{preset.note}</p>}
+          {showShortfall && (
+            <p className="split-liquid-warning" role="alert">
+              Not enough water to dissolve the lye: this liquid is only{' '}
+              {Math.round(preset ? preset.waterFraction * 100 : 100)}% water, leaving{' '}
+              {formatWeight(lyeWaterStatus!.effectiveWaterGrams, weightUnit)} of real water against
+              a {formatWeight(lyeWaterStatus!.floorGrams, weightUnit)} 1:1 floor. Add at least{' '}
+              {formatWeight(lyeWaterStatus!.shortfallGrams, weightUnit)} more water, or add the
+              liquid at trace instead.
+            </p>
+          )}
           {grams !== null && (
             <p className="split-liquid-preview">
               {splitLiquid.name.trim() || 'Alternative liquid'}:{' '}

@@ -12,6 +12,7 @@ export * from './ls-yield.js';
 export * from './batch-weight.js';
 export * from './pricing.js';
 export * from './keyword-match.js';
+export * from './alternative-liquids.js';
 export * from './split-liquid.js';
 export * from './dilution.js';
 export * from './neutralization.js';

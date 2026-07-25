@@ -25,6 +25,7 @@ function Harness({
       lyeGrams={140}
       weightUnit="g"
       waterSuggestion={null}
+      lyeWaterStatus={null}
     />
   );
 }

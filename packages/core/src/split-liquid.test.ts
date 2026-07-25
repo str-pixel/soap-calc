@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   lyeConcentrationPercent,
+  lyeSolutionWaterStatus,
   suggestLyeWaterWithSplitLiquid,
 } from './split-liquid.js';
 
@@ -50,6 +51,57 @@ describe('suggestLyeWaterWithSplitLiquid', () => {
 
     expect(suggestion!.suggestedWaterGrams).toBe(220);
     expect(suggestion!.suggestedWaterPercentOfOils).toBeNull();
+  });
+});
+
+describe('lyeSolutionWaterStatus', () => {
+  it('reports a shortfall when the liquid cannot dissolve the lye at the 1:1 floor', () => {
+    // Greek yogurt as the entire lye liquid: 165 g at 81% water is only 133.65 g of
+    // real water against a 135 g lye floor — the supersaturation trap.
+    const status = lyeSolutionWaterStatus({
+      waterGrams: 0,
+      lyeGrams: 135,
+      splitLiquidGrams: 165,
+      waterFraction: 0.81,
+    });
+    expect(status).not.toBeNull();
+    expect(status!.effectiveWaterGrams).toBeCloseTo(133.65, 2);
+    expect(status!.floorGrams).toBe(135);
+    expect(status!.shortfallGrams).toBeCloseTo(1.35, 2);
+  });
+
+  it('reports no shortfall when plain water already meets the floor', () => {
+    const status = lyeSolutionWaterStatus({
+      waterGrams: 135,
+      lyeGrams: 135,
+      splitLiquidGrams: 100,
+      waterFraction: 0.81,
+    });
+    expect(status!.effectiveWaterGrams).toBeCloseTo(216, 0);
+    expect(status!.shortfallGrams).toBe(0);
+  });
+
+  it('treats an unknown liquid as pure water (no false warnings for custom entries)', () => {
+    const status = lyeSolutionWaterStatus({
+      waterGrams: 100,
+      lyeGrams: 135,
+      splitLiquidGrams: 40,
+      waterFraction: 1,
+    });
+    expect(status!.effectiveWaterGrams).toBe(140);
+    expect(status!.shortfallGrams).toBe(0);
+  });
+
+  it('rejects invalid inputs', () => {
+    expect(
+      lyeSolutionWaterStatus({ waterGrams: -1, lyeGrams: 135, splitLiquidGrams: 10, waterFraction: 0.9 }),
+    ).toBeNull();
+    expect(
+      lyeSolutionWaterStatus({ waterGrams: 100, lyeGrams: 0, splitLiquidGrams: 10, waterFraction: 0.9 }),
+    ).toBeNull();
+    expect(
+      lyeSolutionWaterStatus({ waterGrams: 100, lyeGrams: 135, splitLiquidGrams: 10, waterFraction: 1.5 }),
+    ).toBeNull();
   });
 });
 

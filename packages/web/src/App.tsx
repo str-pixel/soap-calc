@@ -383,6 +383,7 @@ export default function App() {
               lyeGrams={vm.result?.lyeWeightGrams ?? 0}
               weightUnit={weightUnit}
               waterSuggestion={vm.waterSuggestion}
+              lyeWaterStatus={vm.lyeWaterStatus}
             />
 
             <RecipeOilsPanel
