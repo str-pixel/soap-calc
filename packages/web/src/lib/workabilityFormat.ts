@@ -7,15 +7,27 @@ const CEILING_HOURS = WORKABILITY_TUNING.ceilingHours;
 const CEILING_LABEL = `≈ ${WORKABILITY_TUNING.ceilingHours / 168}+ weeks`;
 const half = (x: number): number => Math.round(x * 2) / 2;
 
+/** Each endpoint carries its own unit tier: hours up to 48 h, days up to 240 h, weeks
+ * beyond. The tier is chosen from the ROUNDED hour value so 47.6 h reads "2 days", never
+ * a nonsensical "48 h". */
+function endpoint(hours: number): { value: number; unit: 'h' | 'days' | 'weeks' } {
+  const h = Math.round(hours);
+  if (h < 48) return { value: h, unit: 'h' };
+  if (hours < 240) return { value: half(hours / 24), unit: 'days' };
+  return { value: half(hours / 168), unit: 'weeks' };
+}
+
 /**
- * Unit-adaptive label for one range, chosen from the range's own max: hours under 48 h,
- * days under 240 h, weeks beyond. Rows format independently — a block can legitimately
- * show unmold in hours next to cut in days once cut crosses the 48 h seam.
- * A row that reaches the ceiling shows the open-ended ceiling label regardless.
+ * Unit-adaptive label for one range, resolved PER ENDPOINT: time up to 48 h renders in
+ * hours, beyond it in days (then weeks past 10 days). A range that straddles a seam mixes
+ * units — "≈ 24 h – 2.5 days" — rather than dragging the early endpoint into the later
+ * unit. A row that reaches the ceiling shows the open-ended ceiling label regardless.
  */
 export function formatWorkabilityRange(range: WorkabilityRange): string {
   if (range.maxHours >= CEILING_HOURS) return CEILING_LABEL;
-  if (range.maxHours < 48) return `≈ ${Math.round(range.minHours)}–${Math.round(range.maxHours)} h`;
-  if (range.maxHours < 240) return `≈ ${half(range.minHours / 24)}–${half(range.maxHours / 24)} days`;
-  return `≈ ${half(range.minHours / 168)}–${half(range.maxHours / 168)} weeks`;
+  const lo = endpoint(range.minHours);
+  const hi = endpoint(range.maxHours);
+  if (lo.unit !== hi.unit) return `≈ ${lo.value} ${lo.unit} – ${hi.value} ${hi.unit}`;
+  if (lo.value === hi.value) return `≈ ${hi.value} ${hi.unit}`;
+  return `≈ ${lo.value}–${hi.value} ${hi.unit}`;
 }
