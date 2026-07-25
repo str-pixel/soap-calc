@@ -941,6 +941,12 @@ a:hover {
   font-size: 0.8rem;
 }
 
+.panel__title-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
 .split-liquid-note {
   grid-column: 1 / -1;
   margin: 0;
@@ -955,7 +961,8 @@ a:hover {
   font-size: 0.85rem;
   color: var(--warn);
   background: var(--warn-bg);
-  border-left: 3px solid var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+  border-radius: 6px;
 }
 
 /* ── Additives ────────────────────────────────────────────────────────── */

@@ -122,6 +122,7 @@ describe('recipeFile', () => {
         enabled: true,
         name: 'Goat milk',
         presetKey: '',
+        customWaterPercent: '',
         percentOfOil: '20',
         addAt: 'trace' as const,
       },

@@ -3,6 +3,7 @@ import {
   computePostCookSuperfat,
   computeRecipeAdditives,
   computeSplitLiquidGrams,
+  splitLiquidWaterFraction,
 } from './calculateAdditives';
 import type { AdditiveLine } from './recipe';
 
@@ -166,5 +167,27 @@ describe('computePostCookSuperfat', () => {
     expect(
       computePostCookSuperfat({ postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }] }, 0),
     ).toBeNull();
+  });
+});
+
+describe('splitLiquidWaterFraction', () => {
+  it('uses the preset fraction when a preset is selected', () => {
+    expect(
+      splitLiquidWaterFraction({ enabled: true, presetKey: 'coconut-milk-canned', name: '', customWaterPercent: '', percentOfOil: '10', addAt: 'lye' }),
+    ).toBeCloseTo(0.68, 2);
+  });
+
+  it('uses the custom % water for custom liquids', () => {
+    expect(
+      splitLiquidWaterFraction({ enabled: true, presetKey: '', name: 'coconut cream', customWaterPercent: '55', percentOfOil: '10', addAt: 'lye' }),
+    ).toBeCloseTo(0.55, 2);
+  });
+
+  it('treats blank or invalid custom percents as pure water', () => {
+    for (const customWaterPercent of ['', '0', '-5', '250', 'abc']) {
+      expect(
+        splitLiquidWaterFraction({ enabled: true, presetKey: '', name: '', customWaterPercent, percentOfOil: '10', addAt: 'lye' }),
+      ).toBe(1);
+    }
   });
 });
