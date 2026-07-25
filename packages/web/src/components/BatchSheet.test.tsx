@@ -325,3 +325,55 @@ test('prints bar-property scores without a percent sign', () => {
   const hardnessValue = hardnessTerm.parentElement?.querySelector('dd');
   expect(hardnessValue?.textContent).toBe('41');
 });
+
+test('prints the split-liquid advisory note and an explicit liquid step', () => {
+  const lines = createStarterLines();
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    splitLiquid: {
+      enabled: true,
+      presetKey: 'milk',
+      name: 'Milk (dairy or plant)',
+      customWaterPercent: '',
+      percentOfOil: '20',
+      addAt: 'trace' as const,
+    },
+  };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  const splitLiquidGrams = displayTotals.recipeOilWeightGrams * 0.2;
+
+  const data = buildBatchSheetData({
+    recipeName: 'Milk batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquid: settings.splitLiquid,
+    splitLiquidGrams,
+    postCookSuperfat: null,
+    pcsfIsExtra: true,
+    extrasGrams: splitLiquidGrams,
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams + splitLiquidGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    insights: [],
+    process: 'cp',
+  });
+
+  render(<BatchSheet data={data} />);
+
+  // Advisory persists onto the printed artifact…
+  expect(screen.getByText(/sugars can accelerate trace/i)).toBeTruthy();
+  // …and the procedure names the liquid at its stage.
+  expect(screen.getByText(/blend in .*milk \(dairy or plant\) at light trace/i)).toBeTruthy();
+});

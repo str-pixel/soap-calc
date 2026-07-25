@@ -1,3 +1,4 @@
+import { alternativeLiquidPreset } from '@soap-calc/core';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from './calculateAdditives';
 import type { SplitLiquidSettings, WeightUnit } from './recipe';
 import type { ProcessId } from './process';
@@ -116,6 +117,10 @@ type AddOrderInput = {
   lyeGrams: number;
   waterGrams: number;
   weightUnit: WeightUnit;
+  /** Split-liquid settings + resolved grams: when enabled, the procedure gains an explicit
+   * "add the {liquid}" step at the right point, so the printed sheet never omits it. */
+  splitLiquid?: SplitLiquidSettings;
+  splitLiquidGrams?: number | null;
   /** Preformatted unmold window from the workability estimate (e.g. "≈ 11–34 h"). When
    * present it replaces the generic CP timing so this list can never disagree with the
    * Workability rows above it. */
@@ -130,38 +135,88 @@ type AddOrderInput = {
  * lye and water weights. Original, concise cold-process/hot-process/liquid-soap copy — always
  * lye into water, never the reverse.
  */
+/** The split-liquid procedure step, phrased for where it joins the batch, or null when the
+ * split is off. In-lye liquids get a scorch caution when the preset carries a sugars flag —
+ * the one advisory that must survive onto the printed sheet. */
+export function splitLiquidProcedureStep(input: {
+  splitLiquid?: SplitLiquidSettings;
+  splitLiquidGrams?: number | null;
+  weightUnit: WeightUnit;
+  process: ProcessId;
+}): { step: string; addAt: SplitLiquidSettings['addAt'] } | null {
+  const { splitLiquid, splitLiquidGrams, weightUnit, process } = input;
+  if (!splitLiquid?.enabled || splitLiquidGrams == null || splitLiquidGrams <= 0) return null;
+  const amount = formatWeight(splitLiquidGrams, weightUnit);
+  const name = splitLiquid.name.trim() || 'the alternative liquid';
+  const sugary = alternativeLiquidPreset(splitLiquid.presetKey)?.flags.includes('sugars') ?? false;
+
+  if (splitLiquid.addAt === 'lye') {
+    return {
+      addAt: 'lye',
+      step: `Stir ${amount} ${name} into the cooled lye solution${sugary ? ' — keep it cool; sugars scorch in hot lye' : ''}.`,
+    };
+  }
+  if (splitLiquid.addAt === 'oils') {
+    return { addAt: 'oils', step: `Blend ${amount} ${name} into the oils before the lye goes in.` };
+  }
+  const trace =
+    process === 'hp'
+      ? `Stir ${amount} ${name} in after the cook.`
+      : process === 'ls'
+        ? `Add ${amount} ${name} during dilution.`
+        : `Blend in ${amount} ${name} at light trace.`;
+  return { addAt: 'trace', step: trace };
+}
+
 export function buildAddOrderSteps(input: AddOrderInput): string[] {
   const { process, lyeType, totalOilGrams, lyeGrams, waterGrams, weightUnit, unmoldText, cureText } = input;
   const oil = formatWeight(totalOilGrams, weightUnit);
   const lye = formatWeight(lyeGrams, weightUnit);
   const water = formatWeight(waterGrams, weightUnit);
   const alkali = lyeType === 'dual' ? 'lye' : lyeType === 'koh' ? 'KOH' : 'NaOH';
+  const liquid = splitLiquidProcedureStep(input);
+  // Where the liquid step slots in, per process: after the oils step for 'oils', after the
+  // lye step for 'lye', and at the process's own late stage for 'trace'.
+  const withLiquid = (steps: string[], positions: { lye: number; oils: number; trace: number }) => {
+    if (!liquid) return steps;
+    steps.splice(positions[liquid.addAt], 0, liquid.step);
+    return steps;
+  };
 
   if (process === 'ls') {
-    return [
-      `Weigh the oils — ${oil} total — and heat to melt.`,
-      `Weigh ${lye} KOH and ${water} water; add the KOH to the water and stir until clear.`,
-      `Combine the lye solution with the oils and cook to a thick, translucent paste.`,
-      `Dilute the paste with hot water, then blend in fragrance and additives.`,
-      `Bottle and rest 1–2 weeks before use.`,
-    ];
+    return withLiquid(
+      [
+        `Weigh the oils — ${oil} total — and heat to melt.`,
+        `Weigh ${lye} KOH and ${water} water; add the KOH to the water and stir until clear.`,
+        `Combine the lye solution with the oils and cook to a thick, translucent paste.`,
+        `Dilute the paste with hot water, then blend in fragrance and additives.`,
+        `Bottle and rest 1–2 weeks before use.`,
+      ],
+      { oils: 1, lye: 2, trace: 4 },
+    );
   }
 
   if (process === 'hp') {
-    return [
-      `Weigh each oil — ${oil} total — and heat until melted.`,
-      `Weigh ${lye} ${alkali} and ${water} distilled water; add the lye to the water, never the reverse.`,
-      `Blend the lye solution into the oils and cook to a thick, translucent paste.`,
-      `After the cook, stir in fragrance, additives, and any post-cook superfat.`,
-      `Pack into the mold; unmold once firm and use after a short cure.`,
-    ];
+    return withLiquid(
+      [
+        `Weigh each oil — ${oil} total — and heat until melted.`,
+        `Weigh ${lye} ${alkali} and ${water} distilled water; add the lye to the water, never the reverse.`,
+        `Blend the lye solution into the oils and cook to a thick, translucent paste.`,
+        `After the cook, stir in fragrance, additives, and any post-cook superfat.`,
+        `Pack into the mold; unmold once firm and use after a short cure.`,
+      ],
+      { oils: 1, lye: 2, trace: 3 },
+    );
   }
 
-  return [
-    `Weigh each oil — ${oil} total — and warm to 38–43 °C.`,
-    `Weigh ${lye} ${alkali} and ${water} distilled water; add the lye to the water (never the reverse) and cool to 38–43 °C.`,
-    `Pour the lye solution into the oils and blend to light trace.`,
-    `Stir in fragrance and any additives at trace.`,
-    `Pour into the mold; unmold ${unmoldText ?? 'in 24–48 h'} and cure ${cureText ?? '4–6 weeks'}.`,
-  ];
+  return withLiquid(
+    [
+      `Weigh each oil — ${oil} total — and warm to 38–43 °C.`,
+      `Weigh ${lye} ${alkali} and ${water} distilled water; add the lye to the water (never the reverse) and cool to 38–43 °C.`,
+      `Pour the lye solution into the oils and blend to light trace.`,
+      `Stir in fragrance and any additives at trace.`,
+      `Pour into the mold; unmold ${unmoldText ?? 'in 24–48 h'} and cure ${cureText ?? '4–6 weeks'}.`,
+    ],
+    { oils: 1, lye: 2, trace: 3 },
+  );
 }
