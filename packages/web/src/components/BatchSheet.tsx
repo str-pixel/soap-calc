@@ -243,14 +243,14 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 {additiveStageLabel(splitLiquid.addAt, process)})
               </li>
             )}
-            {postCookSuperfat && (
-              <li>
-                {batchSheetOilName(postCookSuperfat.oilId)} —{' '}
-                {formatWeight(postCookSuperfat.grams, weightUnit)} (
-                {formatGrams(postCookSuperfat.percentOfOil, 1)}% post-cook superfat)
+            {postCookSuperfat?.oils.map((oil, i) => (
+              <li key={`pcsf-${i}`}>
+                {batchSheetOilName(oil.oilId)} —{' '}
+                {formatWeight(oil.grams, weightUnit)} (
+                {formatGrams(oil.percentOfOil, 1)}% post-cook superfat)
                 {!pcsfIsExtra ? ' — reserved (lye reduced)' : ''}
               </li>
-            )}
+            ))}
             {additives.map((item) => (
               <li key={item.key}>
                 {item.name} — {formatWeight(item.grams, weightUnit)} (

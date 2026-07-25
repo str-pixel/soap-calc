@@ -94,48 +94,77 @@ describe('computeRecipeAdditives dose basis/unit', () => {
 });
 
 describe('computePostCookSuperfat', () => {
-  it('computes grams from percent of oil and returns the given oil id', () => {
+  it('computes grams from percent of oil for a single oil row', () => {
     expect(
-      computePostCookSuperfat(
-        { postCookSuperfatPercent: '5', postCookSuperfatOilId: 'shea-butter' },
-        1000,
-      ),
-    ).toEqual({ oilId: 'shea-butter', percentOfOil: 5, grams: 50 });
+      computePostCookSuperfat({ postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '5' }] }, 1000),
+    ).toEqual({
+      oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }],
+      percentOfOil: 5,
+      grams: 50,
+    });
   });
 
-  it('returns null for an empty percent', () => {
+  it('sums multiple oil rows into the aggregate percent and grams', () => {
     expect(
       computePostCookSuperfat(
-        { postCookSuperfatPercent: '', postCookSuperfatOilId: 'olive-oil' },
+        {
+          postCookSuperfatOils: [
+            { oilId: 'shea-butter', percent: '3' },
+            { oilId: 'jojoba-oil', percent: '2' },
+          ],
+        },
+        1000,
+      ),
+    ).toEqual({
+      oils: [
+        { oilId: 'shea-butter', percentOfOil: 3, grams: 30 },
+        { oilId: 'jojoba-oil', percentOfOil: 2, grams: 20 },
+      ],
+      percentOfOil: 5,
+      grams: 50,
+    });
+  });
+
+  it('skips empty/zero/invalid rows and returns null when none contribute', () => {
+    expect(
+      computePostCookSuperfat(
+        {
+          postCookSuperfatOils: [
+            { oilId: 'olive-oil', percent: '' },
+            { oilId: 'olive-oil', percent: '0' },
+            { oilId: 'olive-oil', percent: 'abc' },
+          ],
+        },
         1000,
       ),
     ).toBeNull();
   });
 
-  it('returns null for a zero percent', () => {
+  it('drops a zero-percent row but keeps a valid sibling', () => {
     expect(
       computePostCookSuperfat(
-        { postCookSuperfatPercent: '0', postCookSuperfatOilId: 'olive-oil' },
+        {
+          postCookSuperfatOils: [
+            { oilId: 'olive-oil', percent: '0' },
+            { oilId: 'shea-butter', percent: '4' },
+          ],
+        },
         1000,
       ),
-    ).toBeNull();
+    ).toEqual({
+      oils: [{ oilId: 'shea-butter', percentOfOil: 4, grams: 40 }],
+      percentOfOil: 4,
+      grams: 40,
+    });
   });
 
-  it('returns null for an invalid percent', () => {
-    expect(
-      computePostCookSuperfat(
-        { postCookSuperfatPercent: 'abc', postCookSuperfatOilId: 'olive-oil' },
-        1000,
-      ),
-    ).toBeNull();
+  it('returns null for an empty list', () => {
+    expect(computePostCookSuperfat({ postCookSuperfatOils: [] }, 1000)).toBeNull();
   });
 
   it('returns null when total oil weight is not positive', () => {
     expect(
-      computePostCookSuperfat(
-        { postCookSuperfatPercent: '5', postCookSuperfatOilId: 'olive-oil' },
-        0,
-      ),
+      computePostCookSuperfat({ postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }] }, 0),
     ).toBeNull();
   });
 });

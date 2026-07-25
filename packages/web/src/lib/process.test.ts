@@ -52,9 +52,13 @@ describe('process definitions', () => {
     expect(coerceSettingsForProcess(dualInLs, 'ls')).toBe(dualInLs);
   });
 
-  it('seeds HP 5% / LS 2% post-cook superfat defaults', () => {
-    expect(PROCESS_DEFINITIONS.hp.defaultSettings.postCookSuperfatPercent).toBe('5');
-    expect(PROCESS_DEFINITIONS.ls.defaultSettings.postCookSuperfatPercent).toBe('2');
+  it('seeds HP 5% / LS 2% post-cook superfat defaults (single olive-oil row)', () => {
+    expect(PROCESS_DEFINITIONS.hp.defaultSettings.postCookSuperfatOils).toEqual([
+      { oilId: 'olive-oil', percent: '5' },
+    ]);
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.postCookSuperfatOils).toEqual([
+      { oilId: 'olive-oil', percent: '2' },
+    ]);
   });
 });
 

@@ -137,7 +137,11 @@ export function useRecipeViewModel({
   );
   // Gate on parsePercentOfOil (caps at 100, matching computePostCookSuperfat) so the lye
   // reduction and the "reserved" PCSF line can never diverge at an out-of-range percent.
-  const pcsfSubtractPercent = parsePercentOfOil(previewSettings.postCookSuperfatPercent) ?? 0;
+  // Subtract mode reserves EVERY post-cook oil from the recipe, so sum their percents.
+  const pcsfSubtractPercent = previewSettings.postCookSuperfatOils.reduce(
+    (sum, o) => sum + (parsePercentOfOil(o.percent) ?? 0),
+    0,
+  );
   const cookFactor =
     process !== 'cp' &&
     previewSettings.postCookSuperfatMethod === 'subtract' &&
@@ -226,9 +230,14 @@ export function useRecipeViewModel({
   // the user has no way to clear it) can never silently change batch weight or render a PCSF
   // line. Memoize (like computedAdditives) so this object reference is stable across unrelated
   // renders and doesn't defeat the batchSheetData memo below.
+  // Serialize the oils list for a by-value memo key (an array ref alone would recompute
+  // whenever previewSettings is rebuilt), so the PCSF object identity stays stable across
+  // unrelated renders and doesn't defeat the batchSheetData memo below.
+  const pcsfOilsKey = JSON.stringify(previewSettings.postCookSuperfatOils);
   const postCookSuperfat = useMemo(
     () => (process === 'cp' ? null : computePostCookSuperfat(previewSettings, totalOilGrams)),
-    [process, previewSettings.postCookSuperfatPercent, previewSettings.postCookSuperfatOilId, totalOilGrams],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [process, pcsfOilsKey, totalOilGrams],
   );
   const waterSuggestion = useMemo(() => {
     if (

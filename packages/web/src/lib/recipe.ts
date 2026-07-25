@@ -30,6 +30,13 @@ export type SplitLiquidSettings = {
   addAt: 'lye' | 'oils' | 'trace';
 };
 
+/** One post-cook superfat oil: an oil id and its own % of oil weight (kept as an input
+ * string, like every other numeric setting). */
+export type PostCookSuperfatOil = {
+  oilId: string;
+  percent: string;
+};
+
 export type RecipeSettings = {
   weightUnit: WeightUnit;
   batchOilGrams: string;
@@ -47,8 +54,9 @@ export type RecipeSettings = {
   kohPurityPercent: string;
   splitLiquid: SplitLiquidSettings;
   batchNotes: string;
-  postCookSuperfatPercent: string;
-  postCookSuperfatOilId: string;
+  /** Post-cook superfat oils — one or more oils, each with its own % of oil weight, added
+   * after the cook. Empty means no post-cook superfat. */
+  postCookSuperfatOils: PostCookSuperfatOil[];
   postCookSuperfatMethod: 'append' | 'subtract';
   soapConcentrationPercent: string;
   processVariant: ProcessVariantId;
@@ -88,8 +96,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   kohPurityPercent: '90',
   splitLiquid: { ...DEFAULT_SPLIT_LIQUID },
   batchNotes: '',
-  postCookSuperfatPercent: '0',
-  postCookSuperfatOilId: 'olive-oil',
+  postCookSuperfatOils: [],
   postCookSuperfatMethod: 'append',
   soapConcentrationPercent: '30',
   processVariant: 'cp',
@@ -109,6 +116,42 @@ export function normalizeSplitLiquid(
     percentOfOil: typeof partial?.percentOfOil === 'string' ? partial.percentOfOil : '',
     addAt,
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** Normalize the post-cook superfat oils, migrating the pre-multi-oil single-field shape
+ * (`postCookSuperfatPercent` + `postCookSuperfatOilId`) into a one-row list. A stored list
+ * wins over the legacy fields; each row keeps its raw input string percent. */
+export function normalizePostCookSuperfatOils(
+  partial: Partial<RecipeSettings> & {
+    postCookSuperfatPercent?: unknown;
+    postCookSuperfatOilId?: unknown;
+  },
+): PostCookSuperfatOil[] {
+  const list = (partial as { postCookSuperfatOils?: unknown }).postCookSuperfatOils;
+  if (Array.isArray(list)) {
+    return list
+      .filter((row): row is Record<string, unknown> => isRecord(row) && typeof row.oilId === 'string')
+      .map((row) => ({
+        oilId: row.oilId as string,
+        percent: typeof row.percent === 'string' ? row.percent : '',
+      }));
+  }
+  // Legacy single-oil shape → one row, only when it carried a real, non-zero percent.
+  const legacyOilId = partial.postCookSuperfatOilId;
+  const legacyPercent = partial.postCookSuperfatPercent;
+  if (
+    typeof legacyOilId === 'string' &&
+    legacyOilId !== '' &&
+    typeof legacyPercent === 'string' &&
+    Number(legacyPercent) > 0
+  ) {
+    return [{ oilId: legacyOilId, percent: legacyPercent }];
+  }
+  return [];
 }
 
 const WATER_MODES = ['percent_of_oils', 'lye_concentration', 'lye_water_ratio'] as const;
@@ -156,6 +199,9 @@ const MAX_SETTING_FIELD_LENGTH = 200;
 export const MAX_NOTES_LENGTH = 20_000;
 
 const KNOWN_SETTING_KEYS = new Set(Object.keys(DEFAULT_SETTINGS));
+// Legacy fields folded into postCookSuperfatOils by normalizePostCookSuperfatOils — drop
+// them so they don't survive as stale "unknown" keys (and get re-exported) after migration.
+const MIGRATED_LEGACY_KEYS = new Set(['postCookSuperfatPercent', 'postCookSuperfatOilId']);
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const MAX_UNKNOWN_KEYS = 32;
 const MAX_UNKNOWN_VALUE_JSON = 2_000;
@@ -172,7 +218,7 @@ function preserveUnknownSettings(
   const pairs: Array<[string, unknown]> = [];
   for (const [key, value] of Object.entries(partial)) {
     if (pairs.length >= MAX_UNKNOWN_KEYS) break;
-    if (KNOWN_SETTING_KEYS.has(key) || DANGEROUS_KEYS.has(key)) continue;
+    if (KNOWN_SETTING_KEYS.has(key) || MIGRATED_LEGACY_KEYS.has(key) || DANGEROUS_KEYS.has(key)) continue;
     if (!UNKNOWN_KEY_PATTERN.test(key)) continue;
     let json: string;
     try {
@@ -253,8 +299,7 @@ export function normalizeSettings(
     naohPurityPercent: settingString(partial?.naohPurityPercent, d.naohPurityPercent),
     kohPurityPercent: settingString(partial?.kohPurityPercent, d.kohPurityPercent),
     batchNotes: settingString(partial?.batchNotes, d.batchNotes, MAX_NOTES_LENGTH),
-    postCookSuperfatPercent: settingString(partial?.postCookSuperfatPercent, d.postCookSuperfatPercent),
-    postCookSuperfatOilId: settingString(partial?.postCookSuperfatOilId, d.postCookSuperfatOilId),
+    postCookSuperfatOils: normalizePostCookSuperfatOils(partial ?? {}),
     soapConcentrationPercent: settingString(partial?.soapConcentrationPercent, d.soapConcentrationPercent),
   };
 }

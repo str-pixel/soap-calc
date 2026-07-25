@@ -132,19 +132,23 @@ describe('recipeFile', () => {
     expect(parsed.data.settings.splitLiquid).toEqual(settings.splitLiquid);
   });
 
-  it('round-trips post-cook superfat settings', () => {
+  it('round-trips post-cook superfat oils (multi-oil)', () => {
     const lines = createStarterLines();
     const settings = {
       ...DEFAULT_SETTINGS,
-      postCookSuperfatPercent: '5',
-      postCookSuperfatOilId: 'shea-butter',
+      postCookSuperfatOils: [
+        { oilId: 'shea-butter', percent: '3' },
+        { oilId: 'jojoba-oil', percent: '2' },
+      ],
     };
     const payload = serializeRecipeFile('HP with PCSF', lines, settings, [], 'hp');
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.data.settings.postCookSuperfatPercent).toBe('5');
-    expect(parsed.data.settings.postCookSuperfatOilId).toBe('shea-butter');
+    expect(parsed.data.settings.postCookSuperfatOils).toEqual([
+      { oilId: 'shea-butter', percent: '3' },
+      { oilId: 'jojoba-oil', percent: '2' },
+    ]);
   });
 
   it('accepts a hand-edited numeric additive amount', () => {

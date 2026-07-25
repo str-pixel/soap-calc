@@ -115,7 +115,7 @@ describe('buildRecipePricingContext (deep-review)', () => {
     const out = buildRecipePricingContext({
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1450,
       splitLiquid: null,
-      postCookSuperfat: { oilId: 'jojoba-oil', grams: 50, isExtra: true },
+      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }], isExtra: true },
     });
     expect(out.oilLines.some((o) => o.oilId === 'jojoba-oil' && o.grams === 50)).toBe(true);
   });
@@ -124,7 +124,7 @@ describe('buildRecipePricingContext (deep-review)', () => {
     const out = buildRecipePricingContext({
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1400,
       splitLiquid: null,
-      postCookSuperfat: { oilId: 'jojoba-oil', grams: 50, isExtra: false },
+      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }], isExtra: false },
     });
     expect(out.oilLines.some((o) => o.oilId === 'jojoba-oil')).toBe(false);
   });

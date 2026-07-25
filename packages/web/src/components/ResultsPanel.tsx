@@ -145,7 +145,9 @@ export const ResultsPanel = memo(function ResultsPanel({
   // actually sheds water.
   const showLabelWeight = labelWeight !== null && labelWeight < batchWeightWithExtras;
   const postCookSuperfatOilName = postCookSuperfat
-    ? (oilById(postCookSuperfat.oilId)?.displayName ?? postCookSuperfat.oilId)
+    ? postCookSuperfat.oils
+        .map((o) => oilById(o.oilId)?.displayName ?? o.oilId)
+        .join(' + ')
     : null;
   // List only the extras actually present — a post-cook-superfat-only batch (no additive
   // lines) must not claim "includes additives".
@@ -178,7 +180,6 @@ export const ResultsPanel = memo(function ResultsPanel({
     splitLiquid,
     splitLiquidGrams,
     postCookSuperfat,
-    postCookSuperfatName: postCookSuperfatOilName,
     process,
   });
   const addOrderSteps = buildAddOrderSteps({

@@ -52,13 +52,13 @@ test('postCookSuperfat is null when off, and its grams fold into batchWeightWith
   probe((vm) => { withoutPcsf = vm; }, {}, 'hp');
   probe(
     (vm) => { withPcsf = vm; },
-    { postCookSuperfatPercent: '5', postCookSuperfatOilId: 'shea-butter' },
+    { postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '5' }] },
     'hp',
   );
 
   expect(withoutPcsf.postCookSuperfat).toBeNull();
   expect(withPcsf.postCookSuperfat).toEqual({
-    oilId: 'shea-butter',
+    oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: expect.any(Number) }],
     percentOfOil: 5,
     grams: expect.any(Number),
   });
@@ -78,7 +78,7 @@ test('a stray post-cook superfat never applies under CP (no field exists to clea
   let cleanCp: any;
   probe(
     (vm) => { strayCp = vm; },
-    { postCookSuperfatPercent: '5', postCookSuperfatOilId: 'shea-butter' },
+    { postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '5' }] },
     'cp',
   );
   probe((vm) => { cleanCp = vm; }, {}, 'cp');
@@ -90,8 +90,8 @@ test('a stray post-cook superfat never applies under CP (no field exists to clea
 test('subtract reduces the lye by (1 − PCSF%) while oil weight stays on the full recipe', () => {
   let append: any;
   let subtract: any;
-  probe((vm) => { append = vm; }, { postCookSuperfatPercent: '10', postCookSuperfatMethod: 'append' }, 'hp');
-  probe((vm) => { subtract = vm; }, { postCookSuperfatPercent: '10', postCookSuperfatMethod: 'subtract' }, 'hp');
+  probe((vm) => { append = vm; }, { postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '10' }], postCookSuperfatMethod: 'append' }, 'hp');
+  probe((vm) => { subtract = vm; }, { postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '10' }], postCookSuperfatMethod: 'subtract' }, 'hp');
 
   expect(subtract.result.lyeWeightGrams).toBeCloseTo(append.result.lyeWeightGrams * 0.9);
   expect(subtract.result.waterWeightGrams).toBeCloseTo(append.result.waterWeightGrams * 0.9);
@@ -129,7 +129,7 @@ test('LS lye excess computes neutralization and disables PCSF-subtract', () => {
     lyeType: 'koh' as const,
     waterMode: 'lye_water_ratio' as const,
     lyeWaterRatio: '2',
-    postCookSuperfatPercent: '5',
+    postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }],
   };
   probe((vm) => { withSubtract = vm; }, { ...ls, postCookSuperfatMethod: 'subtract' }, 'ls');
   probe((vm) => { withAppend = vm; }, { ...ls, postCookSuperfatMethod: 'append' }, 'ls');
@@ -144,7 +144,7 @@ test('LS lye excess computes neutralization and disables PCSF-subtract', () => {
   // batchWeightWithExtras must agree between subtract and append instead of undercounting by
   // the PCSF grams (empirically: 1695.3 g vs 1745.3 g, off by exactly the 50 g PCSF reserve).
   let withoutPcsf: any;
-  probe((vm) => { withoutPcsf = vm; }, { ...ls, postCookSuperfatPercent: '', postCookSuperfatMethod: 'subtract' }, 'ls');
+  probe((vm) => { withoutPcsf = vm; }, { ...ls, postCookSuperfatOils: [], postCookSuperfatMethod: 'subtract' }, 'ls');
 
   expect(withSubtract.postCookSuperfat.grams).toBeGreaterThan(0);
   expect(withSubtract.batchWeightWithExtras).toBeCloseTo(withAppend.batchWeightWithExtras);
@@ -178,8 +178,7 @@ test('label weight loses water only from the water-bearing base batch, not after
     (vm) => { withPcsf = vm; },
     {
       processVariant: 'hp-lthp',
-      postCookSuperfatPercent: '5',
-      postCookSuperfatOilId: 'shea-butter',
+      postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '5' }],
       postCookSuperfatMethod: 'append',
     },
     'hp',

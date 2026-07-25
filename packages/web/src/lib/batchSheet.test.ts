@@ -118,7 +118,11 @@ describe('additiveStageLabel (re-exported for the batch sheet)', () => {
 
 describe('buildBatchSheetData post-cook superfat threading', () => {
   it('threads a post-cook superfat through to the batch sheet data', () => {
-    const pcsf = { oilId: 'shea-butter', percentOfOil: 5, grams: 50 };
+    const pcsf = {
+      oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }],
+      percentOfOil: 5,
+      grams: 50,
+    };
     const data = buildBatchSheetData(makeBatchSheetInput({ postCookSuperfat: pcsf }));
     expect(data.postCookSuperfat).toEqual(pcsf);
   });

@@ -179,8 +179,7 @@ export default function App() {
             : null,
         postCookSuperfat: vm.postCookSuperfat
           ? {
-              oilId: vm.postCookSuperfat.oilId,
-              grams: vm.postCookSuperfat.grams,
+              oils: vm.postCookSuperfat.oils.map((o) => ({ oilId: o.oilId, grams: o.grams })),
               isExtra: vm.pcsfIsExtra,
             }
           : null,

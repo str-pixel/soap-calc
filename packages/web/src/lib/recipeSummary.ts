@@ -25,7 +25,6 @@ type FullRecipeInput = {
   splitLiquid?: SplitLiquidSettings;
   splitLiquidGrams?: number | null;
   postCookSuperfat?: ComputedPostCookSuperfat | null;
-  postCookSuperfatName?: string | null;
   process: ProcessId;
 };
 
@@ -50,7 +49,6 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
     splitLiquid,
     splitLiquidGrams,
     postCookSuperfat,
-    postCookSuperfatName,
     process,
   } = input;
 
@@ -93,10 +91,12 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
   }
 
   if (postCookSuperfat) {
-    items.push({
-      name: `${postCookSuperfatName ?? 'Post-cook superfat'} (post-cook superfat)`,
-      detail: `${formatWeight(postCookSuperfat.grams, weightUnit)} · ${formatGrams(postCookSuperfat.percentOfOil, 1)}%`,
-    });
+    for (const oil of postCookSuperfat.oils) {
+      items.push({
+        name: `${oilDisplayName(oil.oilId)} (post-cook superfat)`,
+        detail: `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}%`,
+      });
+    }
   }
 
   for (const additive of additives) {

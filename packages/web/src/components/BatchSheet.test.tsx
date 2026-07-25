@@ -13,10 +13,9 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
   const lines = createStarterLines();
   const settings = {
     ...DEFAULT_SETTINGS,
-    postCookSuperfatPercent: '5',
     // Deliberately not an oil already in createStarterLines() (which includes shea
     // butter) — avoids an ambiguous match against the oils table below.
-    postCookSuperfatOilId: 'castor-oil',
+    postCookSuperfatOils: [{ oilId: 'castor-oil', percent: '5' }],
   };
   const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
   if (!result || !displayTotals) throw new Error('expected a valid calculation');
@@ -109,8 +108,7 @@ test('prints a total superfat (cook + post-cook) row', () => {
   const settings = {
     ...DEFAULT_SETTINGS,
     superfatPercent: '5',
-    postCookSuperfatPercent: '3',
-    postCookSuperfatOilId: 'castor-oil',
+    postCookSuperfatOils: [{ oilId: 'castor-oil', percent: '3' }],
   };
   const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
   if (!result || !displayTotals) throw new Error('expected a valid calculation');
@@ -157,8 +155,7 @@ test('subtract + negative main superfat: prints no "reserved" note and no Total 
   const settings = {
     ...DEFAULT_SETTINGS,
     superfatPercent: '-2',
-    postCookSuperfatPercent: '5',
-    postCookSuperfatOilId: 'castor-oil',
+    postCookSuperfatOils: [{ oilId: 'castor-oil', percent: '5' }],
   };
   // process 'ls' is required here: calculateRecipe only allows a negative superfat
   // (a lye excess) when allowNegativeSuperfat is set, which it derives from process === 'ls'.
@@ -207,8 +204,7 @@ test('subtract + non-negative main superfat: prints "reserved" note and Total su
   const settings = {
     ...DEFAULT_SETTINGS,
     superfatPercent: '2',
-    postCookSuperfatPercent: '5',
-    postCookSuperfatOilId: 'castor-oil',
+    postCookSuperfatOils: [{ oilId: 'castor-oil', percent: '5' }],
   };
   const { result, displayTotals, linePercents } = calculateRecipe(lines, settings, 'ls');
   if (!result || !displayTotals) throw new Error('expected a valid calculation');

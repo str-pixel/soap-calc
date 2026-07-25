@@ -135,18 +135,40 @@ describe('soapConcentrationPercent setting', () => {
 });
 
 describe('postCookSuperfat settings', () => {
-  it('defaults post-cook superfat off, with a valid default oil', () => {
-    expect(DEFAULT_SETTINGS.postCookSuperfatPercent).toBe('0');
-    expect(DEFAULT_SETTINGS.postCookSuperfatOilId).toBe('olive-oil');
+  it('defaults post-cook superfat off (empty oils list)', () => {
+    expect(DEFAULT_SETTINGS.postCookSuperfatOils).toEqual([]);
   });
 
-  it('normalizeSettings round-trips a set post-cook superfat', () => {
+  it('normalizeSettings round-trips a multi-oil post-cook superfat list', () => {
+    const s = normalizeSettings({
+      postCookSuperfatOils: [
+        { oilId: 'shea-butter', percent: '3' },
+        { oilId: 'jojoba-oil', percent: '2' },
+      ],
+    });
+    expect(s.postCookSuperfatOils).toEqual([
+      { oilId: 'shea-butter', percent: '3' },
+      { oilId: 'jojoba-oil', percent: '2' },
+    ]);
+  });
+
+  it('migrates the legacy single-oil fields into a one-row list', () => {
     const s = normalizeSettings({
       postCookSuperfatPercent: '5',
       postCookSuperfatOilId: 'shea-butter',
-    });
-    expect(s.postCookSuperfatPercent).toBe('5');
-    expect(s.postCookSuperfatOilId).toBe('shea-butter');
+    } as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatOils).toEqual([{ oilId: 'shea-butter', percent: '5' }]);
+    // The legacy keys must not survive as stale unknown properties.
+    expect('postCookSuperfatPercent' in s).toBe(false);
+    expect('postCookSuperfatOilId' in s).toBe(false);
+  });
+
+  it('does not migrate a legacy zero-percent superfat (stays off)', () => {
+    const s = normalizeSettings({
+      postCookSuperfatPercent: '0',
+      postCookSuperfatOilId: 'olive-oil',
+    } as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatOils).toEqual([]);
   });
 
   it('defaults postCookSuperfatMethod to append', () => {
