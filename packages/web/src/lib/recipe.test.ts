@@ -33,13 +33,13 @@ describe('normalizeSettings enum sanitization', () => {
     expect(s.lyeType).toBe('koh');
   });
 
-  it('falls back to append when an imported postCookSuperfatMethod is invalid', () => {
+  it('falls back to the subtract default when an imported postCookSuperfatMethod is invalid', () => {
     const s = normalizeSettings({ postCookSuperfatMethod: 'bogus' } as unknown as Partial<RecipeSettings>);
-    expect(s.postCookSuperfatMethod).toBe('append');
+    expect(s.postCookSuperfatMethod).toBe('subtract');
   });
 
-  it('keeps a valid subtract postCookSuperfatMethod', () => {
-    expect(normalizeSettings({ postCookSuperfatMethod: 'subtract' }).postCookSuperfatMethod).toBe('subtract');
+  it('keeps a valid append postCookSuperfatMethod (opt-out of the subtract default)', () => {
+    expect(normalizeSettings({ postCookSuperfatMethod: 'append' }).postCookSuperfatMethod).toBe('append');
   });
 });
 
@@ -183,8 +183,39 @@ describe('postCookSuperfat settings', () => {
     expect(s.postCookSuperfatOils).toEqual([{ oilId: 'shea-butter', percent: '3' }]);
   });
 
-  it('defaults postCookSuperfatMethod to append', () => {
-    expect(DEFAULT_SETTINGS.postCookSuperfatMethod).toBe('append');
+  it('defaults postCookSuperfatMethod to subtract (true % / exact batch total)', () => {
+    expect(DEFAULT_SETTINGS.postCookSuperfatMethod).toBe('subtract');
+  });
+
+  it('defaults the post-cook superfat total budget to 0', () => {
+    expect(DEFAULT_SETTINGS.postCookSuperfatTotalPercent).toBe('0');
+  });
+
+  it('derives the total budget from the allocated oils when none is stored (pre-total recipes)', () => {
+    const s = normalizeSettings({
+      postCookSuperfatOils: [
+        { oilId: 'shea-butter', percent: '3' },
+        { oilId: 'jojoba-oil', percent: '2' },
+      ],
+    });
+    expect(s.postCookSuperfatTotalPercent).toBe('5');
+  });
+
+  it('never lets the stored total fall below the allocated sum', () => {
+    const s = normalizeSettings({
+      postCookSuperfatTotalPercent: '1',
+      postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '4' }],
+    });
+    expect(s.postCookSuperfatTotalPercent).toBe('4');
+  });
+
+  it('migrates the legacy single percent into the total budget', () => {
+    const s = normalizeSettings({
+      postCookSuperfatPercent: '6',
+      postCookSuperfatOilId: 'shea-butter',
+    } as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatTotalPercent).toBe('6');
+    expect(s.postCookSuperfatOils).toEqual([{ oilId: 'shea-butter', percent: '6' }]);
   });
 });
 

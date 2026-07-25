@@ -50,9 +50,10 @@ test('postCookSuperfat is null when off, and its grams fold into batchWeightWith
   let withoutPcsf: any;
   let withPcsf: any;
   probe((vm) => { withoutPcsf = vm; }, {}, 'hp');
+  // Append so the grams are an EXTRA folded into the batch (subtract would reserve them).
   probe(
     (vm) => { withPcsf = vm; },
-    { postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '5' }] },
+    { postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '5' }], postCookSuperfatMethod: 'append' },
     'hp',
   );
 

@@ -598,53 +598,53 @@ a:hover {
   gap: 0.6rem;
 }
 
-.pcsf__head {
+/* Allocation summary between the total slider and the oil rows. */
+.pcsf__alloc {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.pcsf__total {
+.pcsf__alloc-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.pcsf__alloc-note {
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  color: var(--accent);
+  color: var(--text-muted);
 }
 
+/* One oil row: picker takes the width, a small % input, then the remove button. */
 .pcsf__row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--hairline);
-}
-
-.pcsf__row-top {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.pcsf__row-top > :first-child {
+.pcsf__row > :first-child {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-/* Per-row slider: the accent track takes the width, the editable readout sits at the right
-   (mirrors .slider-field, without the head/label row). */
-.pcsf__slider {
-  display: flex;
+.pcsf__pct {
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-}
-
-.pcsf__slider .slider-field__range {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.pcsf__slider .slider-field__value-wrap {
+  gap: 0.2rem;
   flex: 0 0 auto;
+}
+
+.pcsf__pct .input {
+  width: 4.5rem;
+}
+
+.pcsf__method-help {
+  margin-top: 0.1rem;
 }
 
 .pcsf__remove {

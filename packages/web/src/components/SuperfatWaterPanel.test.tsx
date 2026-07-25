@@ -19,8 +19,11 @@ function Harness({
   return <SuperfatWaterPanel settings={settings} setSettings={setSettings} process={process} />;
 }
 
-// A one-row post-cook superfat, matching what the HP/LS process defaults seed.
-const ONE_PCSF = { postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }] };
+// A one-row post-cook superfat fully allocating a 5% budget, matching the HP process default.
+const ONE_PCSF = {
+  postCookSuperfatTotalPercent: '5',
+  postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }],
+};
 
 test('renders the Superfat & water panel heading', () => {
   render(<Harness />);
@@ -76,13 +79,71 @@ test('editing a post-cook superfat row % updates settings state', () => {
   expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('4');
 });
 
-test('each post-cook superfat row renders a range slider bound to its %', () => {
-  const { container } = render(<Harness process="hp" initial={ONE_PCSF} />);
-  const range = container.querySelector('.pcsf__slider input[type="range"]') as HTMLInputElement;
-  expect(range).toBeTruthy();
-  // Slider and readout share the value: dragging the range updates the same % setting.
-  fireEvent.change(range, { target: { value: '7' } });
-  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('7');
+test('the post-cook superfat total is a single slider (not one per oil)', () => {
+  const { container } = render(
+    <Harness
+      process="hp"
+      initial={{
+        postCookSuperfatTotalPercent: '5',
+        postCookSuperfatOils: [
+          { oilId: 'shea-butter', percent: '3' },
+          { oilId: 'jojoba-oil', percent: '2' },
+        ],
+      }}
+    />,
+  );
+  // One total slider drives the budget; the oil rows are plain number inputs, no per-oil
+  // sliders. Three range inputs total: Superfat, water, and the PCSF total (2 oils add none).
+  expect(screen.getByLabelText('Post-cook superfat total %')).toBeTruthy();
+  expect(container.querySelectorAll('input[type="range"]').length).toBe(3);
+});
+
+test('an oil % is capped at the remaining budget (sum can never exceed the total)', () => {
+  render(
+    <Harness
+      process="hp"
+      initial={{
+        postCookSuperfatTotalPercent: '5',
+        postCookSuperfatOils: [
+          { oilId: 'shea-butter', percent: '3' },
+          { oilId: 'jojoba-oil', percent: '2' },
+        ],
+      }}
+    />,
+  );
+  // Row 2 has only 2% headroom (5 total − 3 on row 1); typing 9 clamps to 2.
+  const row2 = screen.getByLabelText('Post-cook superfat % 2') as HTMLInputElement;
+  fireEvent.change(row2, { target: { value: '9' } });
+  expect((screen.getByLabelText('Post-cook superfat % 2') as HTMLInputElement).value).toBe('2');
+  // Row 1 is untouched (siblings are independent, never rescaled).
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('3');
+});
+
+test('lowering the total below the allocated sum trims the oils to fit', () => {
+  render(
+    <Harness
+      process="hp"
+      initial={{
+        postCookSuperfatTotalPercent: '10',
+        postCookSuperfatOils: [
+          { oilId: 'shea-butter', percent: '6' },
+          { oilId: 'jojoba-oil', percent: '4' },
+        ],
+      }}
+    />,
+  );
+  // Drop the budget 10 → 5; the 6/4 split scales to 3/2 (proportional trim).
+  fireEvent.change(screen.getByLabelText('Post-cook superfat total %'), { target: { value: '5' } });
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('3');
+  expect((screen.getByLabelText('Post-cook superfat % 2') as HTMLInputElement).value).toBe('2');
+});
+
+test('each method shows a plain-language explanation that changes with the selection', () => {
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  // Subtract is the default — its explanation is shown.
+  expect(screen.getByText(/trims the lye/i)).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Post-cook superfat method'), { target: { value: 'append' } });
+  expect(screen.getByText(/on top after the cook/i)).toBeTruthy();
 });
 
 test('Add oil appends a second post-cook superfat row', () => {
@@ -112,10 +173,10 @@ test('Remove drops a post-cook superfat row', () => {
   expect(screen.getByLabelText('Post-cook superfat oil 1')).toBeTruthy();
 });
 
-test('the post-cook superfat method toggles between append and subtract', () => {
+test('the post-cook superfat method toggles, defaulting to subtract', () => {
   render(<Harness process="hp" initial={ONE_PCSF} />);
   const select = screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement;
-  expect(select.value).toBe('append');
-  fireEvent.change(select, { target: { value: 'subtract' } });
-  expect((screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement).value).toBe('subtract');
+  expect(select.value).toBe('subtract');
+  fireEvent.change(select, { target: { value: 'append' } });
+  expect((screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement).value).toBe('append');
 });
