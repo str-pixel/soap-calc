@@ -295,6 +295,8 @@ test('renders the workability timeline for CP', () => {
   expect(screen.getByText('Stamp from')).toBeTruthy();
   expect(screen.getByText('≈ 12–36 h')).toBeTruthy();
   expect(screen.getByText(/loaf offcut/i)).toBeTruthy();
+  // Confidence stays internal (mirrors the cure block, #91) — never surfaced as a chip.
+  expect(screen.queryByText(/confidence/i)).toBeNull();
 });
 
 test('workability endpoints past 48h switch to days, earlier endpoints stay in hours', () => {
