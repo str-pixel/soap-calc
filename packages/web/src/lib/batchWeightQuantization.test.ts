@@ -68,6 +68,23 @@ describe('batch-weight commit quantization', () => {
     expect(Math.round(r.achievedBatchG)).toBe(2000);
   });
 
+  it('holds the bound when the resynced percent sum is off 100 (many-oil recipes)', () => {
+    // 12 equal lines → each percent stores as 8.3 → pctSum 99.6. The solver must center
+    // its candidate window on the pctSum-corrected solve; centering on the naive linear
+    // solve drifts the landing by ~0.4% of the target (≈78 g short on a 20 kg batch).
+    const lines: RecipeLine[] = Array.from({ length: 12 }, (_, i) => ({
+      key: `k${i}`,
+      oilId: 'olive-oil',
+      weightGrams: '100',
+      weightPercent: '',
+    }));
+    for (const target of ['2000', '20000'] as const) {
+      const r = commit(lines, target, 'g');
+      const err = Math.abs(r.achievedBatchG - r.targetG);
+      expect(err, `${target} g: |${r.achievedBatchG.toFixed(2)} − ${r.targetG}|`).toBeLessThanOrEqual(1.5);
+    }
+  });
+
   it('documents the inherent limit: a target can still display ±1 g off', () => {
     // 1000 g on the starter: the nearest achievable batches are ~999.31 and ~1000.78
     // (staircase step ~1.47 g), so the honest mirror shows 999. Exact hits for every
