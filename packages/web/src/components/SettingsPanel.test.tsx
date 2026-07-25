@@ -21,7 +21,6 @@ function Harness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) 
         liveOilBatchFraction={null} onApplySuggestedOilGrams={() => {}}
       />
       <output aria-label="superfat-echo">{settings.superfatPercent}</output>
-      <output aria-label="pcsf-echo">{settings.postCookSuperfatPercent}</output>
     </>
   );
 }
@@ -70,49 +69,22 @@ describe('SettingsPanel lye gating', () => {
   });
 });
 
-describe('post-cook superfat fields', () => {
-  it('render for hp (% field + oil picker)', () => {
+describe('post-cook superfat fields moved to Superfat & water', () => {
+  // The %, oil, and method controls now live in SuperfatWaterPanel (see its test file);
+  // SettingsPanel must not still render them, or they'd appear twice for HP/LS.
+  it('are absent from SettingsPanel for hp', () => {
     render(<SettingsPanel {...baseProps} process="hp" settings={DEFAULT_SETTINGS} />);
-    expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
-    expect(screen.getByLabelText('Post-cook superfat oil')).toBeTruthy();
-  });
-
-  it('render for ls', () => {
-    render(
-      <SettingsPanel
-        {...baseProps}
-        process="ls"
-        settings={{ ...DEFAULT_SETTINGS, lyeType: 'koh' }}
-      />,
-    );
-    expect(screen.getByLabelText('Post-cook superfat %')).toBeTruthy();
-    expect(screen.getByLabelText('Post-cook superfat oil')).toBeTruthy();
-  });
-
-  it('are hidden for cp', () => {
-    render(<SettingsPanel {...baseProps} process="cp" settings={DEFAULT_SETTINGS} />);
     expect(screen.queryByLabelText('Post-cook superfat %')).toBeNull();
     expect(screen.queryByLabelText('Post-cook superfat oil')).toBeNull();
+    expect(screen.queryByLabelText('Post-cook superfat method')).toBeNull();
   });
 
-  it('editing post-cook superfat % updates settings state', () => {
-    render(<Harness process="hp" />);
-    const input = screen.getByLabelText('Post-cook superfat %') as HTMLInputElement;
-    expect(input.value).toBe('0');
-    fireEvent.change(input, { target: { value: '5' } });
-    expect(screen.getByLabelText('pcsf-echo').textContent).toBe('5');
+  it('are absent from SettingsPanel for ls', () => {
+    render(
+      <SettingsPanel {...baseProps} process="ls" settings={{ ...DEFAULT_SETTINGS, lyeType: 'koh' }} />,
+    );
+    expect(screen.queryByLabelText('Post-cook superfat %')).toBeNull();
   });
-});
-
-test('HP shows the PCSF method toggle and updates it; CP hides it', () => {
-  render(<Harness process="hp" />);
-  const select = screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement;
-  expect(select.value).toBe('append');
-  fireEvent.change(select, { target: { value: 'subtract' } });
-  expect(select.value).toBe('subtract'); // controlled by the Harness settings state
-  cleanup();
-  render(<Harness process="cp" />);
-  expect(screen.queryByLabelText('Post-cook superfat method')).toBeNull();
 });
 
 describe('cook vessel volume (HP vessel-size guard input)', () => {

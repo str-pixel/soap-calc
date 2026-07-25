@@ -10,7 +10,6 @@ import {
 import type { ProcessId } from '../lib/process';
 import { InfoTip } from './InfoTip';
 import { MoldSizerPanel } from './MoldSizerPanel';
-import { OilPicker } from './OilPicker';
 import { SplitLiquidPanel } from './SplitLiquidPanel';
 
 type FieldSpec = ReturnType<typeof purityFieldsFor>[number];
@@ -134,52 +133,6 @@ export function SettingsPanel({
             onValueChange={(v) => updateField(spec.key, v)}
           />
         ))}
-
-        {process !== 'cp' && (
-          <>
-            <label className="field">
-              <span>Post-cook superfat %</span>
-              <input
-                type="number"
-                className="input"
-                min={0}
-                max={50}
-                step={0.5}
-                value={settings.postCookSuperfatPercent}
-                onChange={(e) =>
-                  setSettings((s) => ({ ...s, postCookSuperfatPercent: e.target.value }))
-                }
-              />
-            </label>
-            <div className="field">
-              <span>Post-cook superfat oil</span>
-              <OilPicker
-                value={settings.postCookSuperfatOilId}
-                onChange={(oilId) =>
-                  setSettings((s) => ({ ...s, postCookSuperfatOilId: oilId }))
-                }
-                ariaLabel="Post-cook superfat oil"
-              />
-            </div>
-            <label className="field">
-              <span>Post-cook superfat method</span>
-              <select
-                className="input"
-                aria-label="Post-cook superfat method"
-                value={settings.postCookSuperfatMethod}
-                onChange={(e) =>
-                  setSettings((s) => ({
-                    ...s,
-                    postCookSuperfatMethod: e.target.value as 'append' | 'subtract',
-                  }))
-                }
-              >
-                <option value="append">Append (add oil)</option>
-                <option value="subtract">Subtract (reserve)</option>
-              </select>
-            </label>
-          </>
-        )}
 
         {process === 'hp' && (
           <label className="field">

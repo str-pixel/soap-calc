@@ -5,6 +5,7 @@ import type { ProcessId } from '../lib/process';
 import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
 import { WATER_FIELDS, WATER_MODE_LABELS, waterModeChoicesFor } from '../lib/settingsFields';
 import { InfoTip } from './InfoTip';
+import { OilPicker } from './OilPicker';
 
 // Upper bound for each water mode's drag slider — the typical working range, not the hard
 // input cap. The editable value readout keeps the field's real min/max, so out-of-range
@@ -154,6 +155,52 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
             setSettings((s) => ({ ...s, [key]: v }));
           }}
         />
+
+        {/* Post-cook superfat — an HP/LS-only knob (the oils held back from the cook and
+            folded in after saponification). Moved here from Settings so all superfat
+            controls live together; still hidden for CP, which has no cook stage. */}
+        {process !== 'cp' && (
+          <>
+            <SliderField
+              label="Post-cook superfat"
+              valueLabel="Post-cook superfat %"
+              unit="%"
+              term="Post-cook superfat"
+              help="Oils held back from the cook and stirred in after saponification, so they stay unsaponified for a gentler bar."
+              min={0}
+              max={50}
+              step={0.5}
+              sliderMax={20}
+              value={settings.postCookSuperfatPercent}
+              onChange={(v) => setSettings((s) => ({ ...s, postCookSuperfatPercent: v }))}
+            />
+            <div className="field field--compact">
+              <span>Post-cook superfat oil</span>
+              <OilPicker
+                value={settings.postCookSuperfatOilId}
+                onChange={(oilId) => setSettings((s) => ({ ...s, postCookSuperfatOilId: oilId }))}
+                ariaLabel="Post-cook superfat oil"
+              />
+            </div>
+            <label className="field field--compact">
+              <span>Post-cook superfat method</span>
+              <select
+                className="input"
+                aria-label="Post-cook superfat method"
+                value={settings.postCookSuperfatMethod}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    postCookSuperfatMethod: e.target.value as 'append' | 'subtract',
+                  }))
+                }
+              >
+                <option value="append">Append (add oil)</option>
+                <option value="subtract">Subtract (reserve)</option>
+              </select>
+            </label>
+          </>
+        )}
       </div>
     </section>
   );
