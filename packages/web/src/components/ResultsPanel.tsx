@@ -391,10 +391,9 @@ export const ResultsPanel = memo(function ResultsPanel({
 
       {cureEstimate?.workability && (
         <section className="results-workability">
+          {/* No confidence chip here (mirrors the cure block, #91): workability.confidence
+              stays internal until the model is calibrated against real batches. */}
           <h3 className="results-workability__title">Workability</h3>
-          <span className={`chip chip--${cureEstimate.workability.confidence}`}>
-            {cureEstimate.workability.confidence} confidence
-          </span>
           <dl className="results-workability__rows">
             <div>
               <dt>Unmold</dt>

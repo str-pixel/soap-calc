@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 /**
  * Browser-level regression guard for the workability timeline block. The block's
- * class names (`results-workability`, `results-workability__rows`, `chip`) are
+ * class names (`results-workability`, `results-workability__rows`) are
  * load-bearing for its CSS, and its render/omit logic is process-dependent
  * (CP shows it; LS omits it). Unit tests cover the estimator; this covers the
  * live wiring + guard.
@@ -21,7 +21,7 @@ async function freshRecipe(page: Page) {
   await weightInputs(page).nth(0).blur();
 }
 
-test('CP shows the workability timeline with unmold/cut/stamp rows and a confidence chip', async ({
+test('CP shows the workability timeline with unmold/cut/stamp rows and no confidence chip', async ({
   page,
 }) => {
   await freshRecipe(page);
@@ -29,7 +29,8 @@ test('CP shows the workability timeline with unmold/cut/stamp rows and a confide
   const block = workability(page);
   await expect(block).toBeVisible();
   await expect(block.locator('.results-workability__title')).toHaveText(/workability/i);
-  await expect(block.locator('.chip')).toHaveText(/confidence/i);
+  // Confidence stays internal (mirrors the cure block, #91) — no chip in the DOM.
+  await expect(block.locator('.chip')).toHaveCount(0);
 
   const rows = block.locator('.results-workability__rows > div');
   await expect(rows).toHaveCount(3);
