@@ -11,7 +11,8 @@ const ENABLED: SplitLiquidSettings = {
   presetKey: '',
   name: '',
   customWaterPercent: '',
-  percentOfOil: '10',
+  sizeMode: 'percent_of_oils',
+  amount: '10',
   addAt: 'trace',
 };
 
@@ -26,6 +27,8 @@ function renderPanel(overrides: Partial<Parameters<typeof SplitLiquidPanel>[0]> 
       waterMode="percent_of_oils"
       waterSuggestion={null}
       lyeWaterStatus={null}
+      splitLiquidGrams={100}
+      allocation={null}
       onChange={onChange}
       {...overrides}
     />,
@@ -118,4 +121,44 @@ test('no shortfall warning when the floor is met', () => {
     lyeWaterStatus: { effectiveWaterGrams: 220, floorGrams: 135, shortfallGrams: 0 },
   });
   expect(screen.queryByRole('alert')).toBeNull();
+});
+
+test('offers the four sizing modes, disabling budget modes outside percent-of-oils water', () => {
+  renderPanel({ waterMode: 'lye_concentration' });
+  const select = screen.getByLabelText('Sized by') as HTMLSelectElement;
+  const rest = Array.from(select.options).find((o) => o.value === 'rest')!;
+  const pctLiquid = Array.from(select.options).find((o) => o.value === 'percent_of_liquid')!;
+  expect(rest.disabled).toBe(true);
+  expect(pctLiquid.disabled).toBe(true);
+  cleanup();
+  renderPanel({ waterMode: 'percent_of_oils' });
+  const select2 = screen.getByLabelText('Sized by') as HTMLSelectElement;
+  expect(Array.from(select2.options).every((o) => !o.disabled)).toBe(true);
+});
+
+test('hides the amount field for rest sizing and shows the allocation line', () => {
+  renderPanel({
+    splitLiquid: { ...ENABLED, sizeMode: 'rest', amount: '' },
+    splitLiquidGrams: 192,
+    allocation: { lyeWaterGrams: 138, targetLiquidGrams: 330 },
+  });
+  expect(screen.queryByLabelText('Amount')).toBeNull();
+  expect(screen.getByText(/138 g lye water .* 192 g .* 330 g total liquid/i)).toBeTruthy();
+});
+
+test('recommends trace when a sugary preset is set to the lye water', () => {
+  renderPanel({
+    splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)', addAt: 'lye' },
+  });
+  expect(screen.getByText(/recommended: at trace/i)).toBeTruthy();
+});
+
+test('warns about thicker trace when a thick liquid displaces meaningful water', () => {
+  // Heavy cream at 42% non-water: 200 g displaces 84 g of real water from a 330 g budget.
+  renderPanel({
+    splitLiquid: { ...ENABLED, presetKey: 'heavy-cream', name: 'Heavy cream', sizeMode: 'percent_of_liquid', amount: '60' },
+    splitLiquidGrams: 200,
+    allocation: { lyeWaterGrams: 130, targetLiquidGrams: 330 },
+  });
+  expect(screen.getByText(/thicker, faster trace/i)).toBeTruthy();
 });

@@ -126,6 +126,8 @@ type SuperfatWaterPanelProps = {
   weightUnit: WeightUnit;
   waterSuggestion: SplitLiquidWaterSuggestion | null;
   lyeWaterStatus: LyeSolutionWaterStatus | null;
+  splitLiquidGrams: number | null;
+  splitAllocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
 };
 
 /**
@@ -142,6 +144,8 @@ export function SuperfatWaterPanel({
   weightUnit,
   waterSuggestion,
   lyeWaterStatus,
+  splitLiquidGrams,
+  splitAllocation,
 }: SuperfatWaterPanelProps) {
   const waterField = WATER_FIELDS[settings.waterMode];
 
@@ -265,6 +269,8 @@ export function SuperfatWaterPanel({
           waterMode={settings.waterMode}
           waterSuggestion={waterSuggestion}
           lyeWaterStatus={lyeWaterStatus}
+          splitLiquidGrams={splitLiquidGrams}
+          allocation={splitAllocation}
           onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
           onApplySuggestedWater={(waterPercentOfOils) =>
             setSettings((s) => ({ ...s, waterMode: 'percent_of_oils', waterPercentOfOils }))

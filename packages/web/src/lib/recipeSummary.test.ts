@@ -145,13 +145,16 @@ test('buildAddOrderSteps keeps the generic CP timing copy when estimates are una
   expect(steps[4]).toContain('unmold in 24–48 h and cure 4–6 weeks');
 });
 
-const SPLIT = (over: Partial<import('./recipe').SplitLiquidSettings> = {}) => ({
+const SPLIT = (
+  over: Partial<import('./recipe').SplitLiquidSettings> = {},
+): import('./recipe').SplitLiquidSettings => ({
   enabled: true,
   presetKey: '',
   name: 'goat milk',
   customWaterPercent: '',
-  percentOfOil: '20',
-  addAt: 'trace' as const,
+  sizeMode: 'percent_of_oils',
+  amount: '20',
+  addAt: 'trace',
   ...over,
 });
 const CP_BASE = {

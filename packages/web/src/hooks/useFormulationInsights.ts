@@ -3,7 +3,7 @@ import {
   additiveMatches,
   analyzeFormulation,
   estimateTraceSpeed,
-  parsePercentOfOil,
+  
   sumFattyAcids,
   FATTY_ACID_GROUP_KEYS,
   LOW_COVERAGE_PERCENT,
@@ -20,16 +20,19 @@ import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/rec
 export function totalAdditivePercentForInsights(
   additives: Array<{ grams: number }>,
   oilGrams: number,
-  splitLiquid: Pick<SplitLiquidSettings, 'enabled' | 'addAt' | 'percentOfOil'>,
+  splitLiquid: Pick<SplitLiquidSettings, 'enabled' | 'addAt'>,
+  splitLiquidGrams?: number | null,
 ): number {
   const additivePercent =
     oilGrams > 0 ? additives.reduce((sum, item) => sum + (item.grams / oilGrams) * 100, 0) : 0;
   const splitLiquidCountsAsAdditive =
     splitLiquid.enabled &&
     (splitLiquid.addAt === 'trace' || splitLiquid.addAt === 'oils');
-  const splitLiquidPercent = splitLiquidCountsAsAdditive
-    ? parsePercentOfOil(splitLiquid.percentOfOil) ?? 0
-    : 0;
+  // Sized in grams by the view model (whatever the sizing mode), folded back to % of oils.
+  const splitLiquidPercent =
+    splitLiquidCountsAsAdditive && splitLiquidGrams != null && splitLiquidGrams > 0 && oilGrams > 0
+      ? (splitLiquidGrams / oilGrams) * 100
+      : 0;
   return additivePercent + splitLiquidPercent;
 }
 
@@ -126,6 +129,7 @@ export function useFormulationInsights(
       options.additives ?? [],
       lyeResult.totalOilWeightGrams,
       settings.splitLiquid,
+      options.splitLiquidGrams,
     );
     const oilEntries = lines
       .filter((line) => Number(line.weightGrams) > 0 || Number(line.weightPercent) > 0)
@@ -223,7 +227,6 @@ export function useFormulationInsights(
     properties.properties,
     settings.splitLiquid.addAt,
     settings.splitLiquid.enabled,
-    settings.splitLiquid.percentOfOil,
     settings.lyeType,
     settings.kohBlendPercent,
     settings.superfatPercent,

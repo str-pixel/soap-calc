@@ -23,16 +23,22 @@ import {
 describe('totalAdditivePercentForInsights', () => {
   it('excludes split liquid added in lye water', () => {
     expect(
-      totalAdditivePercentForInsights([{ grams: 50 }], 1000, {
-        ...DEFAULT_SPLIT_LIQUID, enabled: true, percentOfOil: '25', addAt: 'lye',
-      }),
+      totalAdditivePercentForInsights(
+        [{ grams: 50 }],
+        1000,
+        { ...DEFAULT_SPLIT_LIQUID, enabled: true, addAt: 'lye' },
+        80,
+      ),
     ).toBe(5);
   });
-  it('includes split liquid added at trace', () => {
+  it('includes split liquid added at trace (grams folded back to % of oils)', () => {
     expect(
-      totalAdditivePercentForInsights([{ grams: 50 }], 1000, {
-        ...DEFAULT_SPLIT_LIQUID, enabled: true, percentOfOil: '8', addAt: 'trace',
-      }),
+      totalAdditivePercentForInsights(
+        [{ grams: 50 }],
+        1000,
+        { ...DEFAULT_SPLIT_LIQUID, enabled: true, addAt: 'trace' },
+        80,
+      ),
     ).toBe(13);
   });
   it('sums additive grams as oil-equivalent percent regardless of dose basis/unit', () => {
