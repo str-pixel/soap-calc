@@ -204,11 +204,18 @@ export function solveOilTotalForBatchTarget(
   currentOilTotalGrams: number,
   currentBatchGrams: number,
 ): number {
-  const linear = Math.round(currentOilTotalGrams * (targetBatchGrams / currentBatchGrams));
+  const linear = currentOilTotalGrams * (targetBatchGrams / currentBatchGrams);
   const resynced = resyncFromWeights(lines).lines;
-  let best = Math.max(1, linear);
+  // Percents store 0.1%-rounded, so the resynced sum can land off 100 (12 equal oils →
+  // 8.3 each → 99.6). syncBatchTotalEdit realizes round(pctSum×total/100) grams, so
+  // center the search where the REALIZED oil hits the linear solve, not where the nominal
+  // total does — centering on `linear` itself drifts the landing by pctSum/100 of the
+  // target (≈78 g short on a 20 kg batch), outside any fixed candidate window.
+  const pctSum = resynced.reduce((sum, line) => sum + (parseNum(line.weightPercent ?? '') ?? 0), 0);
+  const center = Math.round(pctSum > 0 ? (linear * 100) / pctSum : linear);
+  let best = Math.max(1, center);
   let bestErr = Infinity;
-  for (let candidate = linear - 2; candidate <= linear + 2; candidate++) {
+  for (let candidate = center - 2; candidate <= center + 2; candidate++) {
     if (candidate <= 0) continue;
     const scaled = syncBatchTotalEdit(resynced, String(candidate));
     const realizedOil = totalGrams(scaled);
