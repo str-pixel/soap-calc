@@ -20,6 +20,9 @@ const WATER_SLIDER_MAX: Record<WaterMode, number> = {
 const formatTotal = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 // Round a percent to 0.1 to keep clamped/scaled values tidy.
 const roundPct = (n: number): number => Math.round(n * 10) / 10;
+// Floor a percent to 0.1 — used when trimming so the rounded rows can only ever sum to
+// LESS than the target (never over it), keeping the sum ≤ total invariant exact.
+const floorPct = (n: number): number => Math.floor(n * 10) / 10;
 // A row percent as a non-negative number (blank/invalid/negative → 0).
 const posNum = (s: string): number => {
   const n = Number(s);
@@ -175,7 +178,7 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
           postCookSuperfatTotalPercent: value,
           postCookSuperfatOils: s.postCookSuperfatOils.map((row) =>
             posNum(row.percent) > 0
-              ? { ...row, percent: String(roundPct(posNum(row.percent) * factor)) }
+              ? { ...row, percent: String(floorPct(posNum(row.percent) * factor)) }
               : row,
           ),
         };

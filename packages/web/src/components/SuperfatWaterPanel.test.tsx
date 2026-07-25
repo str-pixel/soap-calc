@@ -138,6 +138,30 @@ test('lowering the total below the allocated sum trims the oils to fit', () => {
   expect((screen.getByLabelText('Post-cook superfat % 2') as HTMLInputElement).value).toBe('2');
 });
 
+test('trimming an uneven split never lets the oils sum above the new total', () => {
+  render(
+    <Harness
+      process="hp"
+      initial={{
+        postCookSuperfatTotalPercent: '9',
+        postCookSuperfatOils: [
+          { oilId: 'shea-butter', percent: '3' },
+          { oilId: 'jojoba-oil', percent: '3' },
+          { oilId: 'castor-oil', percent: '3' },
+        ],
+      }}
+    />,
+  );
+  // 3+3+3 = 9 trimmed to 5: proportional scale is 1.666…% each. Rounding each up would sum
+  // to 5.1 (> 5); flooring to 0.1 keeps the sum ≤ 5.
+  fireEvent.change(screen.getByLabelText('Post-cook superfat total %'), { target: { value: '5' } });
+  const rows = [1, 2, 3].map(
+    (n) => Number((screen.getByLabelText(`Post-cook superfat % ${n}`) as HTMLInputElement).value),
+  );
+  const sum = rows.reduce((a, b) => a + b, 0);
+  expect(sum).toBeLessThanOrEqual(5);
+});
+
 test('each method shows a plain-language explanation that changes with the selection', () => {
   render(<Harness process="hp" initial={ONE_PCSF} />);
   // Subtract is the default — its explanation is shown.
