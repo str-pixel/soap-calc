@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { WaterMode } from '@soap-calc/core';
-import type { RecipeSettings } from '../lib/recipe';
+import { postCookSuperfatAllocated, type RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
 import { WATER_FIELDS, WATER_MODE_LABELS, waterModeChoicesFor } from '../lib/settingsFields';
@@ -18,6 +18,21 @@ const WATER_SLIDER_MAX: Record<WaterMode, number> = {
 
 // Whole numbers show bare (5, not 5.0); fractions keep one decimal.
 const formatTotal = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+// Round a percent to 0.1 to keep clamped/scaled values tidy.
+const roundPct = (n: number): number => Math.round(n * 10) / 10;
+// A row percent as a non-negative number (blank/invalid/negative → 0).
+const posNum = (s: string): number => {
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+};
+
+// Plain-language descriptions of the two post-cook superfat methods (original wording).
+const PCSF_METHOD_HELP: Record<'append' | 'subtract', string> = {
+  subtract:
+    'Holds the superfat oils back from the recipe and trims the lye to match, so the batch still totals your target oil weight and the superfat comes out at exactly the number you set.',
+  append:
+    'Stirs the superfat oils in on top after the cook, leaving the base recipe untouched. Simplest to weigh, but the real superfat lands a little below the number you set because the base wasn’t reduced.',
+};
 
 /**
  * A Signal-styled range slider with an editable value readout on the right. The readout is
@@ -96,67 +111,6 @@ function SliderField({
   );
 }
 
-/**
- * The Signal slider + editable readout, sized for a post-cook superfat row (no head/label —
- * the oil picker above it names the row). Same fill-to-thumb gradient and readout-as-source-
- * of-truth behavior as SliderField; the readout carries the aria-label for tests/validation.
- */
-function RowPercentSlider({
-  ariaLabel,
-  value,
-  onChange,
-  min = 0,
-  max = 50,
-  step = 0.5,
-  sliderMax = 20,
-}: {
-  ariaLabel: string;
-  value: string;
-  onChange: (value: string) => void;
-  min?: number;
-  max?: number;
-  step?: number;
-  sliderMax?: number;
-}) {
-  const num = Number(value);
-  const finite = value.trim() !== '' && Number.isFinite(num);
-  const lo = finite ? Math.min(min, num) : min;
-  const hi = finite ? Math.max(sliderMax, num) : sliderMax;
-  const pos = finite ? num : min;
-  const fillPct = hi > lo ? Math.max(0, Math.min(100, ((pos - lo) / (hi - lo)) * 100)) : 0;
-  return (
-    <div className="pcsf__slider">
-      <input
-        className="slider-field__range"
-        type="range"
-        aria-hidden="true"
-        tabIndex={-1}
-        min={lo}
-        max={hi}
-        step={step}
-        value={pos}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          background: `linear-gradient(to right, var(--accent) ${fillPct}%, var(--hairline) ${fillPct}%)`,
-        }}
-      />
-      <span className="slider-field__value-wrap">
-        <input
-          className="slider-field__value"
-          type="number"
-          aria-label={ariaLabel}
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-        <span className="slider-field__unit">%</span>
-      </span>
-    </div>
-  );
-}
-
 type SuperfatWaterPanelProps = {
   settings: RecipeSettings;
   setSettings: Dispatch<SetStateAction<RecipeSettings>>;
@@ -171,13 +125,32 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
   const waterField = WATER_FIELDS[settings.waterMode];
 
   const pcsfOils = settings.postCookSuperfatOils;
+  const pcsfTotal = Math.max(0, Number(settings.postCookSuperfatTotalPercent) || 0);
+  const pcsfAllocated = postCookSuperfatAllocated(pcsfOils);
+  const pcsfRemaining = Math.max(0, roundPct(pcsfTotal - pcsfAllocated));
+
+  // Editing an oil's OWN percent: cap it at the budget minus the other rows' allocation, so
+  // the running sum can never exceed the total. Siblings are never rescaled (independent).
   const updatePcsfOil = (index: number, patch: Partial<{ oilId: string; percent: string }>) =>
-    setSettings((s) => ({
-      ...s,
-      postCookSuperfatOils: s.postCookSuperfatOils.map((row, i) =>
-        i === index ? { ...row, ...patch } : row,
-      ),
-    }));
+    setSettings((s) => {
+      const oils = s.postCookSuperfatOils.map((row, i) => {
+        if (i !== index) return row;
+        if (!('percent' in patch)) return { ...row, ...patch };
+        const others = s.postCookSuperfatOils.reduce(
+          (sum, r, j) => (j === index ? sum : sum + posNum(r.percent)),
+          0,
+        );
+        const budget = Math.max(0, Number(s.postCookSuperfatTotalPercent) || 0);
+        const headroom = Math.max(0, roundPct(budget - others));
+        const typed = patch.percent ?? '';
+        const n = Number(typed);
+        // Empty/invalid stays as typed (mid-edit); a valid over-budget number clamps.
+        const capped =
+          typed.trim() !== '' && Number.isFinite(n) && n > headroom ? String(headroom) : typed;
+        return { ...row, percent: capped };
+      });
+      return { ...s, postCookSuperfatOils: oils };
+    });
   const addPcsfOil = () =>
     setSettings((s) => ({
       ...s,
@@ -188,11 +161,27 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
       ...s,
       postCookSuperfatOils: s.postCookSuperfatOils.filter((_, i) => i !== index),
     }));
-  // Total across the rows, for the readout — mirrors computePostCookSuperfat's per-row sum.
-  const pcsfTotalPercent = pcsfOils.reduce((sum, row) => {
-    const n = Number(row.percent);
-    return sum + (Number.isFinite(n) && n > 0 ? n : 0);
-  }, 0);
+  // Editing the TOTAL budget: if it drops below what's already allocated, trim the oils to
+  // fit by scaling them proportionally (the one action that moves the oil numbers — like the
+  // recipe's Total-oil field). Raising it just opens headroom; the oils stay put.
+  const setPcsfTotal = (value: string) =>
+    setSettings((s) => {
+      const allocated = postCookSuperfatAllocated(s.postCookSuperfatOils);
+      const next = Number(value);
+      if (value.trim() !== '' && Number.isFinite(next) && next >= 0 && next < allocated && allocated > 0) {
+        const factor = next / allocated;
+        return {
+          ...s,
+          postCookSuperfatTotalPercent: value,
+          postCookSuperfatOils: s.postCookSuperfatOils.map((row) =>
+            posNum(row.percent) > 0
+              ? { ...row, percent: String(roundPct(posNum(row.percent) * factor)) }
+              : row,
+          ),
+        };
+      }
+      return { ...s, postCookSuperfatTotalPercent: value };
+    });
 
   return (
     <section className="panel">
@@ -246,43 +235,62 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
         />
 
         {/* Post-cook superfat — an HP/LS-only knob (oils held back from the cook and folded
-            in after saponification). One row per oil, each with its own %; the total sums
-            the rows. Hidden for CP, which has no cook stage. */}
+            in after saponification). One TOTAL budget slider; the oil rows allocate within
+            it (their percents sum to at most the total). Hidden for CP, no cook stage. */}
         {process !== 'cp' && (
           <div className="pcsf">
-            <div className="pcsf__head">
-              <span className="slider-field__label">
-                Post-cook superfat
-                <InfoTip term="Post-cook superfat">
-                  Oils held back from the cook and stirred in after saponification, so they stay
-                  unsaponified for a gentler bar. Add more than one to superfat with a blend.
-                </InfoTip>
+            <SliderField
+              label="Post-cook superfat"
+              valueLabel="Post-cook superfat total %"
+              unit="%"
+              term="Post-cook superfat"
+              help="The total oils held back from the cook and stirred in afterward, so they stay unsaponified for a gentler bar. Split the total across one or more oils below."
+              min={0}
+              max={50}
+              step={0.5}
+              sliderMax={20}
+              value={settings.postCookSuperfatTotalPercent}
+              onChange={setPcsfTotal}
+            />
+
+            <div className="pcsf__alloc">
+              <span className="pcsf__alloc-label">Oils</span>
+              <span className="pcsf__alloc-note">
+                {pcsfAllocated > 0
+                  ? `${formatTotal(pcsfAllocated)}% of ${formatTotal(pcsfTotal)}% allocated`
+                  : `${formatTotal(pcsfTotal)}% unallocated`}
+                {pcsfRemaining > 0 && pcsfAllocated > 0 ? ` · ${formatTotal(pcsfRemaining)}% left` : ''}
               </span>
-              <span className="pcsf__total">{formatTotal(pcsfTotalPercent)}% total</span>
             </div>
 
             {pcsfOils.map((row, i) => (
               <div className="pcsf__row" key={i}>
-                <div className="pcsf__row-top">
-                  <OilPicker
-                    value={row.oilId}
-                    onChange={(oilId) => updatePcsfOil(i, { oilId })}
-                    ariaLabel={`Post-cook superfat oil ${i + 1}`}
-                  />
-                  <button
-                    type="button"
-                    className="pcsf__remove"
-                    aria-label={`Remove post-cook superfat row ${i + 1}`}
-                    onClick={() => removePcsfOil(i)}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <RowPercentSlider
-                  ariaLabel={`Post-cook superfat % ${i + 1}`}
-                  value={row.percent}
-                  onChange={(v) => updatePcsfOil(i, { percent: v })}
+                <OilPicker
+                  value={row.oilId}
+                  onChange={(oilId) => updatePcsfOil(i, { oilId })}
+                  ariaLabel={`Post-cook superfat oil ${i + 1}`}
                 />
+                <span className="pcsf__pct">
+                  <input
+                    type="number"
+                    className="input input--number"
+                    aria-label={`Post-cook superfat % ${i + 1}`}
+                    min={0}
+                    max={50}
+                    step={0.5}
+                    value={row.percent}
+                    onChange={(e) => updatePcsfOil(i, { percent: e.target.value })}
+                  />
+                  <span className="slider-field__unit">%</span>
+                </span>
+                <button
+                  type="button"
+                  className="pcsf__remove"
+                  aria-label={`Remove post-cook superfat row ${i + 1}`}
+                  onClick={() => removePcsfOil(i)}
+                >
+                  ✕
+                </button>
               </div>
             ))}
 
@@ -308,10 +316,13 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
                   }))
                 }
               >
-                <option value="append">Append (add oil)</option>
                 <option value="subtract">Subtract (reserve)</option>
+                <option value="append">Append (add oil)</option>
               </select>
             </label>
+            <p className="pcsf__method-help results-hint">
+              {PCSF_METHOD_HELP[settings.postCookSuperfatMethod]}
+            </p>
           </div>
         )}
       </div>

@@ -54,8 +54,13 @@ export type RecipeSettings = {
   kohPurityPercent: string;
   splitLiquid: SplitLiquidSettings;
   batchNotes: string;
+  /** Total post-cook superfat budget as a % of oil weight — the ceiling the per-oil rows
+   * are allocated within (their percents may sum to less, never more). UI/constraint value;
+   * the calc uses the actual per-oil sum. */
+  postCookSuperfatTotalPercent: string;
   /** Post-cook superfat oils — one or more oils, each with its own % of oil weight, added
-   * after the cook. Empty means no post-cook superfat. */
+   * after the cook. Their percents sum to at most postCookSuperfatTotalPercent. Empty means
+   * no post-cook superfat. */
   postCookSuperfatOils: PostCookSuperfatOil[];
   postCookSuperfatMethod: 'append' | 'subtract';
   soapConcentrationPercent: string;
@@ -96,8 +101,11 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   kohPurityPercent: '90',
   splitLiquid: { ...DEFAULT_SPLIT_LIQUID },
   batchNotes: '',
+  postCookSuperfatTotalPercent: '0',
   postCookSuperfatOils: [],
-  postCookSuperfatMethod: 'append',
+  // Subtract is the default: it reserves the superfat oils from the recipe (and reduces the
+  // lye), keeping the batch at exactly the target oil weight and yielding a true superfat %.
+  postCookSuperfatMethod: 'subtract',
   soapConcentrationPercent: '30',
   processVariant: 'cp',
   gelMode: 'natural',
@@ -155,6 +163,39 @@ export function normalizePostCookSuperfatOils(
     return [{ oilId: legacyOilId, percent: legacyPercent }];
   }
   return [];
+}
+
+/** Sum of a post-cook superfat oil list's positive percents. */
+export function postCookSuperfatAllocated(oils: PostCookSuperfatOil[]): number {
+  return oils.reduce((sum, o) => {
+    const n = Number(o.percent);
+    return sum + (Number.isFinite(n) && n > 0 ? n : 0);
+  }, 0);
+}
+
+/** Normalize the post-cook superfat total (the budget/ceiling the oils allocate within).
+ * Resolution order: an explicit stored total → the legacy single `postCookSuperfatPercent`
+ * → the allocated sum (pre-total recipes from the multi-oil era). Never below the allocated
+ * sum, so the budget-≥-allocation invariant always holds on load. */
+function normalizePostCookSuperfatTotal(
+  partial: (Partial<RecipeSettings> & { postCookSuperfatPercent?: unknown }) | undefined,
+  oils: PostCookSuperfatOil[],
+): string {
+  const allocated = postCookSuperfatAllocated(oils);
+  const raw = (partial as { postCookSuperfatTotalPercent?: unknown } | undefined)
+    ?.postCookSuperfatTotalPercent;
+  const legacy = partial?.postCookSuperfatPercent;
+  let total: number;
+  if (typeof raw === 'string' && raw.trim() !== '' && Number.isFinite(Number(raw)) && Number(raw) >= 0) {
+    total = Number(raw);
+  } else if (typeof legacy === 'string' && Number.isFinite(Number(legacy)) && Number(legacy) > 0) {
+    total = Number(legacy);
+  } else {
+    total = allocated;
+  }
+  total = Math.max(total, allocated);
+  // Whole numbers print bare; keep one decimal otherwise.
+  return Number.isInteger(total) ? String(total) : String(Math.round(total * 10) / 10);
 }
 
 const WATER_MODES = ['percent_of_oils', 'lye_concentration', 'lye_water_ratio'] as const;
@@ -262,8 +303,10 @@ export function normalizeSettings(
     ? partial.waterMode
     : DEFAULT_SETTINGS.waterMode;
   const lyeType = isLyeType(partial?.lyeType) ? partial.lyeType : DEFAULT_SETTINGS.lyeType;
+  // Subtract is the default (true superfat %, exact batch total); only an explicit 'append'
+  // opts out.
   const postCookSuperfatMethod =
-    partial?.postCookSuperfatMethod === 'subtract' ? 'subtract' : 'append';
+    partial?.postCookSuperfatMethod === 'append' ? 'append' : 'subtract';
   // A recipe saved or exported before sub-variants existed has no processVariant at all,
   // and a hand-edited or corrupted one may carry a stale/invalid string. Either way, fall
   // back to the variant the recipe's own alkali implies (KOH → an LS variant, else CP) —
@@ -302,6 +345,10 @@ export function normalizeSettings(
     naohPurityPercent: settingString(partial?.naohPurityPercent, d.naohPurityPercent),
     kohPurityPercent: settingString(partial?.kohPurityPercent, d.kohPurityPercent),
     batchNotes: settingString(partial?.batchNotes, d.batchNotes, MAX_NOTES_LENGTH),
+    postCookSuperfatTotalPercent: normalizePostCookSuperfatTotal(
+      partial ?? {},
+      normalizePostCookSuperfatOils(partial ?? {}),
+    ),
     postCookSuperfatOils: normalizePostCookSuperfatOils(partial ?? {}),
     soapConcentrationPercent: settingString(partial?.soapConcentrationPercent, d.soapConcentrationPercent),
   };
