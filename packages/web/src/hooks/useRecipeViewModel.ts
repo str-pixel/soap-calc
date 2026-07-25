@@ -135,20 +135,26 @@ export function useRecipeViewModel({
     previewSettings,
     process,
   );
-  // Gate on parsePercentOfOil (caps at 100, matching computePostCookSuperfat) so the lye
-  // reduction and the "reserved" PCSF line can never diverge at an out-of-range percent.
-  // Subtract mode reserves EVERY post-cook oil from the recipe, so sum their percents.
-  const pcsfSubtractPercent = previewSettings.postCookSuperfatOils.reduce(
-    (sum, o) => sum + (parsePercentOfOil(o.percent) ?? 0),
-    0,
+  // Gate on parsePercentOfOil (caps each row at 100, matching computePostCookSuperfat) so the
+  // lye reduction and the "reserved" PCSF line can never diverge at an out-of-range percent.
+  // Subtract mode reserves EVERY post-cook oil from the recipe, so sum their percents — and,
+  // unlike a single row, the SUM can exceed 100 (e.g. 3 rows at 50%), so clamp the total to
+  // just under 100. Reserving 100%+ of saponification is nonsensical; the clamp keeps
+  // cookFactor in (0,1] rather than driving the scaled lye to zero or negative.
+  const pcsfSubtractPercent = Math.min(
+    99,
+    previewSettings.postCookSuperfatOils.reduce(
+      (sum, o) => sum + (parsePercentOfOil(o.percent) ?? 0),
+      0,
+    ),
   );
   const cookFactor =
     process !== 'cp' &&
     previewSettings.postCookSuperfatMethod === 'subtract' &&
     pcsfSubtractPercent > 0 &&
     Number(previewSettings.superfatPercent) >= 0
-      ? // parsePercentOfOil caps the percent to [0,100] and this branch requires > 0, so the
-        // value is already in (0,1) — no further clamping needed.
+      ? // pcsfSubtractPercent is clamped to (0,99], so this stays in [0.01,1) — no negative
+        // or zero cook factor even when several rows sum past 100.
         1 - pcsfSubtractPercent / 100
       : 1;
   const result = useMemo(

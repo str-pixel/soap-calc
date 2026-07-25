@@ -134,7 +134,10 @@ export function normalizePostCookSuperfatOils(
   const list = (partial as { postCookSuperfatOils?: unknown }).postCookSuperfatOils;
   if (Array.isArray(list)) {
     return list
-      .filter((row): row is Record<string, unknown> => isRecord(row) && typeof row.oilId === 'string')
+      .filter(
+        (row): row is Record<string, unknown> =>
+          isRecord(row) && typeof row.oilId === 'string' && row.oilId !== '',
+      )
       .map((row) => ({
         oilId: row.oilId as string,
         percent: typeof row.percent === 'string' ? row.percent : '',
