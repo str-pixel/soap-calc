@@ -185,12 +185,23 @@ test('CP steps blend a with-oils liquid into the oils before the lye goes in', (
   expect(idx).toBeLessThan(steps.findIndex((s) => s.includes('lye solution into the oils')));
 });
 
-test('HP steps add the liquid after the cook', () => {
+test('HP steps stir the liquid into the cooked paste, without repeating "after the cook"', () => {
   const steps = buildAddOrderSteps({
     ...CP_BASE, process: 'hp', splitLiquid: SPLIT(), splitLiquidGrams: 200,
   });
-  const step = steps.find((s) => s.includes('goat milk'))!;
-  expect(step.toLowerCase()).toContain('after the cook');
+  const idx = steps.findIndex((s) => s.includes('goat milk'));
+  expect(steps[idx].toLowerCase()).toContain('cooked paste');
+  expect(steps[idx].toLowerCase()).not.toContain('after the cook');
+  expect(idx).toBeGreaterThan(steps.findIndex((s) => s.includes('cook to a thick')));
+});
+
+test('LS steps add the liquid to the diluted soap', () => {
+  const steps = buildAddOrderSteps({
+    ...CP_BASE, process: 'ls', splitLiquid: SPLIT(), splitLiquidGrams: 200,
+  });
+  const idx = steps.findIndex((s) => s.includes('goat milk'));
+  expect(steps[idx].toLowerCase()).toContain('diluted soap');
+  expect(idx).toBeGreaterThan(steps.findIndex((s) => s.includes('Dilute the paste')));
 });
 
 test('steps are unchanged when the split is disabled or empty', () => {

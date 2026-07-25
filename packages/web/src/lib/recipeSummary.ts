@@ -161,9 +161,9 @@ export function splitLiquidProcedureStep(input: {
   }
   const trace =
     process === 'hp'
-      ? `Stir ${amount} ${name} in after the cook.`
+      ? `Stir ${amount} ${name} into the cooked paste.`
       : process === 'ls'
-        ? `Add ${amount} ${name} during dilution.`
+        ? `Add ${amount} ${name} to the diluted soap.`
         : `Blend in ${amount} ${name} at light trace.`;
   return { addAt: 'trace', step: trace };
 }
