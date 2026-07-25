@@ -76,6 +76,15 @@ test('editing a post-cook superfat row % updates settings state', () => {
   expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('4');
 });
 
+test('each post-cook superfat row renders a range slider bound to its %', () => {
+  const { container } = render(<Harness process="hp" initial={ONE_PCSF} />);
+  const range = container.querySelector('.pcsf__slider input[type="range"]') as HTMLInputElement;
+  expect(range).toBeTruthy();
+  // Slider and readout share the value: dragging the range updates the same % setting.
+  fireEvent.change(range, { target: { value: '7' } });
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('7');
+});
+
 test('Add oil appends a second post-cook superfat row', () => {
   render(<Harness process="hp" initial={ONE_PCSF} />);
   expect(screen.queryByLabelText('Post-cook superfat oil 2')).toBeNull();

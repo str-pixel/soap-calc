@@ -96,6 +96,67 @@ function SliderField({
   );
 }
 
+/**
+ * The Signal slider + editable readout, sized for a post-cook superfat row (no head/label —
+ * the oil picker above it names the row). Same fill-to-thumb gradient and readout-as-source-
+ * of-truth behavior as SliderField; the readout carries the aria-label for tests/validation.
+ */
+function RowPercentSlider({
+  ariaLabel,
+  value,
+  onChange,
+  min = 0,
+  max = 50,
+  step = 0.5,
+  sliderMax = 20,
+}: {
+  ariaLabel: string;
+  value: string;
+  onChange: (value: string) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  sliderMax?: number;
+}) {
+  const num = Number(value);
+  const finite = value.trim() !== '' && Number.isFinite(num);
+  const lo = finite ? Math.min(min, num) : min;
+  const hi = finite ? Math.max(sliderMax, num) : sliderMax;
+  const pos = finite ? num : min;
+  const fillPct = hi > lo ? Math.max(0, Math.min(100, ((pos - lo) / (hi - lo)) * 100)) : 0;
+  return (
+    <div className="pcsf__slider">
+      <input
+        className="slider-field__range"
+        type="range"
+        aria-hidden="true"
+        tabIndex={-1}
+        min={lo}
+        max={hi}
+        step={step}
+        value={pos}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          background: `linear-gradient(to right, var(--accent) ${fillPct}%, var(--hairline) ${fillPct}%)`,
+        }}
+      />
+      <span className="slider-field__value-wrap">
+        <input
+          className="slider-field__value"
+          type="number"
+          aria-label={ariaLabel}
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <span className="slider-field__unit">%</span>
+      </span>
+    </div>
+  );
+}
+
 type SuperfatWaterPanelProps = {
   settings: RecipeSettings;
   setSettings: Dispatch<SetStateAction<RecipeSettings>>;
@@ -202,32 +263,26 @@ export function SuperfatWaterPanel({ settings, setSettings, process }: SuperfatW
 
             {pcsfOils.map((row, i) => (
               <div className="pcsf__row" key={i}>
-                <OilPicker
-                  value={row.oilId}
-                  onChange={(oilId) => updatePcsfOil(i, { oilId })}
-                  ariaLabel={`Post-cook superfat oil ${i + 1}`}
-                />
-                <span className="pcsf__pct">
-                  <input
-                    type="number"
-                    className="input input--number"
-                    aria-label={`Post-cook superfat % ${i + 1}`}
-                    min={0}
-                    max={50}
-                    step={0.5}
-                    value={row.percent}
-                    onChange={(e) => updatePcsfOil(i, { percent: e.target.value })}
+                <div className="pcsf__row-top">
+                  <OilPicker
+                    value={row.oilId}
+                    onChange={(oilId) => updatePcsfOil(i, { oilId })}
+                    ariaLabel={`Post-cook superfat oil ${i + 1}`}
                   />
-                  <span className="slider-field__unit">%</span>
-                </span>
-                <button
-                  type="button"
-                  className="pcsf__remove"
-                  aria-label={`Remove post-cook superfat row ${i + 1}`}
-                  onClick={() => removePcsfOil(i)}
-                >
-                  ✕
-                </button>
+                  <button
+                    type="button"
+                    className="pcsf__remove"
+                    aria-label={`Remove post-cook superfat row ${i + 1}`}
+                    onClick={() => removePcsfOil(i)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <RowPercentSlider
+                  ariaLabel={`Post-cook superfat % ${i + 1}`}
+                  value={row.percent}
+                  onChange={(v) => updatePcsfOil(i, { percent: v })}
+                />
               </div>
             ))}
 
