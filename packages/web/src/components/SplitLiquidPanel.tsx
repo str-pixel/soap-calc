@@ -70,8 +70,8 @@ export function SplitLiquidPanel({
             <h2 className="panel__title">Split liquid</h2>
             <InfoTip term="split liquid">
               Dissolve the lye in a minimum of plain water, and add the rest of the
-              recipe&apos;s liquid — milk, puree, beer — separately. Sugary liquids never meet
-              hot lye, so they don&apos;t scorch or darken.
+              recipe&apos;s liquid — milk, puree, beer — separately. Keeping sugary liquids
+              out of hot lye helps prevent scorching and darkening.
             </InfoTip>
           </span>
           <p className="panel__subtitle">

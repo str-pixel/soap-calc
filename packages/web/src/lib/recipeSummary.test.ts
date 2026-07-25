@@ -144,3 +144,68 @@ test('buildAddOrderSteps keeps the generic CP timing copy when estimates are una
   });
   expect(steps[4]).toContain('unmold in 24–48 h and cure 4–6 weeks');
 });
+
+const SPLIT = (over: Partial<import('./recipe').SplitLiquidSettings> = {}) => ({
+  enabled: true,
+  presetKey: '',
+  name: 'goat milk',
+  customWaterPercent: '',
+  percentOfOil: '20',
+  addAt: 'trace' as const,
+  ...over,
+});
+const CP_BASE = {
+  process: 'cp' as const, lyeType: 'naoh' as const, totalOilGrams: 1000,
+  lyeGrams: 138, waterGrams: 330, weightUnit: 'g' as const,
+};
+
+test('CP steps blend the alternative liquid in at trace, before fragrance', () => {
+  const steps = buildAddOrderSteps({ ...CP_BASE, splitLiquid: SPLIT(), splitLiquidGrams: 200 });
+  const idx = steps.findIndex((s) => s.includes('goat milk'));
+  expect(steps[idx]).toContain('200 g');
+  expect(steps[idx].toLowerCase()).toContain('trace');
+  expect(idx).toBeLessThan(steps.findIndex((s) => s.includes('fragrance')));
+});
+
+test('CP steps stir an in-lye liquid into the cooled lye solution, with a sugar caution for sugary presets', () => {
+  const steps = buildAddOrderSteps({
+    ...CP_BASE,
+    splitLiquid: SPLIT({ presetKey: 'milk', name: 'Milk (dairy or plant)', addAt: 'lye' }),
+    splitLiquidGrams: 200,
+  });
+  const step = steps.find((s) => s.includes('Milk (dairy or plant)'))!;
+  expect(step).toContain('cooled lye solution');
+  expect(step.toLowerCase()).toContain('scorch');
+});
+
+test('CP steps blend a with-oils liquid into the oils before the lye goes in', () => {
+  const steps = buildAddOrderSteps({ ...CP_BASE, splitLiquid: SPLIT({ addAt: 'oils' }), splitLiquidGrams: 200 });
+  const idx = steps.findIndex((s) => s.includes('goat milk'));
+  expect(steps[idx].toLowerCase()).toContain('oils');
+  expect(idx).toBeLessThan(steps.findIndex((s) => s.includes('lye solution into the oils')));
+});
+
+test('HP steps stir the liquid into the cooked paste, without repeating "after the cook"', () => {
+  const steps = buildAddOrderSteps({
+    ...CP_BASE, process: 'hp', splitLiquid: SPLIT(), splitLiquidGrams: 200,
+  });
+  const idx = steps.findIndex((s) => s.includes('goat milk'));
+  expect(steps[idx].toLowerCase()).toContain('cooked paste');
+  expect(steps[idx].toLowerCase()).not.toContain('after the cook');
+  expect(idx).toBeGreaterThan(steps.findIndex((s) => s.includes('cook to a thick')));
+});
+
+test('LS steps add the liquid to the diluted soap', () => {
+  const steps = buildAddOrderSteps({
+    ...CP_BASE, process: 'ls', splitLiquid: SPLIT(), splitLiquidGrams: 200,
+  });
+  const idx = steps.findIndex((s) => s.includes('goat milk'));
+  expect(steps[idx].toLowerCase()).toContain('diluted soap');
+  expect(idx).toBeGreaterThan(steps.findIndex((s) => s.includes('Dilute the paste')));
+});
+
+test('steps are unchanged when the split is disabled or empty', () => {
+  const base = buildAddOrderSteps(CP_BASE);
+  expect(buildAddOrderSteps({ ...CP_BASE, splitLiquid: SPLIT({ enabled: false }), splitLiquidGrams: 200 })).toEqual(base);
+  expect(buildAddOrderSteps({ ...CP_BASE, splitLiquid: SPLIT(), splitLiquidGrams: 0 })).toEqual(base);
+});
