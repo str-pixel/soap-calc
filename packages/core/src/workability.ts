@@ -103,7 +103,9 @@ export function estimateWorkability(input: WorkabilityInput): WorkabilityEstimat
     return {
       unmold: { minHours: lo, maxHours: hi },
       cut: { minHours: lo, maxHours: hi },
-      stamp: null,
+      // Same construction as CP (opens at cut's max, spans stampSpread) — no HP-specific
+      // constant to invent; the rustic-surface caveat below carries the extra variance.
+      stamp: { opensMinHours: hi, opensMaxHours: hi * T.stampSpread },
       confidence: 'moderate',
       factors: ['Hot process — the cook sets the timing, not the oils'],
       caveats: [HP_CAVEAT],

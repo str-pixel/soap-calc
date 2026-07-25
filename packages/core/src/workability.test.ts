@@ -78,10 +78,10 @@ describe('estimateWorkability', () => {
     expect(est({ faCoverage: 80 })!.confidence).toBe('moderate');
   });
 
-  it('HP: fixed 6–18h band, stamp null, never gated by coverage', () => {
+  it('HP: fixed 6–18h band, stamp opens at cut max (CP construction), never gated by coverage', () => {
     const e = est({ process: 'hp', faCoverage: 5 })!;
     expect(e.unmold).toEqual({ minHours: 6, maxHours: 18 });
-    expect(e.stamp).toBeNull();
+    expect(e.stamp).toEqual({ opensMinHours: 18, opensMaxHours: 18 * 1.3 });
     expect(e.confidence).toBe('moderate');
   });
 
