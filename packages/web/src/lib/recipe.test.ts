@@ -171,6 +171,18 @@ describe('postCookSuperfat settings', () => {
     expect(s.postCookSuperfatOils).toEqual([]);
   });
 
+  it('drops list rows with a blank or non-string oilId (parity with the legacy guard)', () => {
+    const s = normalizeSettings({
+      postCookSuperfatOils: [
+        { oilId: '', percent: '5' },
+        { oilId: 42, percent: '5' },
+        null,
+        { oilId: 'shea-butter', percent: '3' },
+      ],
+    } as unknown as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatOils).toEqual([{ oilId: 'shea-butter', percent: '3' }]);
+  });
+
   it('defaults postCookSuperfatMethod to append', () => {
     expect(DEFAULT_SETTINGS.postCookSuperfatMethod).toBe('append');
   });

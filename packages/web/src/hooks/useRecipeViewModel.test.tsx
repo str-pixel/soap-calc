@@ -100,6 +100,23 @@ test('subtract reduces the lye by (1 − PCSF%) while oil weight stays on the fu
   expect(subtract.batchWeightWithExtras).toBeLessThan(append.batchWeightWithExtras);
 });
 
+test('subtract clamps a summed PCSF total past 100% so the lye never zeroes out', () => {
+  let append: any;
+  let subtract: any;
+  const threeOils = [
+    { oilId: 'olive-oil', percent: '50' },
+    { oilId: 'shea-butter', percent: '50' },
+    { oilId: 'coconut-oil-76', percent: '50' },
+  ];
+  probe((vm) => { append = vm; }, { postCookSuperfatOils: threeOils, postCookSuperfatMethod: 'append' }, 'hp');
+  probe((vm) => { subtract = vm; }, { postCookSuperfatOils: threeOils, postCookSuperfatMethod: 'subtract' }, 'hp');
+
+  // 150% total is clamped to 99% reserve → cookFactor 0.01, NOT ≤ 0. Lye stays positive
+  // (append × 0.01) rather than collapsing to zero.
+  expect(subtract.result.lyeWeightGrams).toBeGreaterThan(0);
+  expect(subtract.result.lyeWeightGrams).toBeCloseTo(append.result.lyeWeightGrams * 0.01, 4);
+});
+
 test('dilution: computed for LS, null for CP, null (no crash) for an empty LS recipe', () => {
   let ls: any;
   let cp: any;
