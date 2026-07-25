@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_KOH_BLEND_PERCENT } from '@soap-calc/core';
 import {
   createStarterLines,
   DEFAULT_SETTINGS,
@@ -267,6 +268,22 @@ describe('forward-compat settings round-trip (third wave)', () => {
 describe('default lye purity', () => {
   it('defaults NaOH to a realistic 99% (100% is not attainable) and KOH to 90% flake', () => {
     // KOH assumed above ~90% silently builds a hidden superfat that separates after dilution.
+    expect(DEFAULT_SETTINGS.naohPurityPercent).toBe('99');
+    expect(DEFAULT_SETTINGS.kohPurityPercent).toBe('90');
+  });
+});
+
+describe('default dual-lye (hybrid) blend', () => {
+  // Selecting "NaOH + KOH blend" must start at the canonical hybrid-bar settings:
+  // 5% KOH (lather booster that doesn't soften the bar), NaOH 99% / KOH 90% purity.
+  it('defaults KOH share to 5% and stays in sync with the core constant', () => {
+    expect(DEFAULT_SETTINGS.kohBlendPercent).toBe('5');
+    expect(Number(DEFAULT_SETTINGS.kohBlendPercent)).toBe(DEFAULT_KOH_BLEND_PERCENT);
+  });
+  it('falls back to 5% KOH for a dual recipe that omits the field', () => {
+    expect(normalizeSettings({ lyeType: 'dual' }).kohBlendPercent).toBe('5');
+  });
+  it('pairs the 5% blend with the NaOH 99 / KOH 90 purities', () => {
     expect(DEFAULT_SETTINGS.naohPurityPercent).toBe('99');
     expect(DEFAULT_SETTINGS.kohPurityPercent).toBe('90');
   });
