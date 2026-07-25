@@ -297,7 +297,7 @@ test('renders the workability timeline for CP', () => {
   expect(screen.getByText(/loaf offcut/i)).toBeTruthy();
 });
 
-test('workability rows past 48h switch to days, earlier rows stay in hours', () => {
+test('workability endpoints past 48h switch to days, earlier endpoints stay in hours', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
   // unmold max 46.8h sits just under the 48h hours/days seam; cut max 50.8h sits just over.
@@ -321,9 +321,9 @@ test('workability rows past 48h switch to days, earlier rows stay in hours', () 
       labelWeight={batchWeightWithExtras}
     />,
   );
-  expect(screen.getByText('≈ 16–47 h')).toBeTruthy(); // unmold — under the seam, stays hours
-  expect(screen.getByText('≈ 1–2 days')).toBeTruthy(); // cut — max 50.8h > 48h → days
-  expect(screen.getByText('≈ 2.5–3 days')).toBeTruthy(); // stamp — days
+  expect(screen.getByText('≈ 16–47 h')).toBeTruthy(); // unmold — fully under the seam, hours
+  expect(screen.getByText('≈ 20 h – 2 days')).toBeTruthy(); // cut — straddles 48h, mixed units
+  expect(screen.getByText('≈ 2.5–3 days')).toBeTruthy(); // stamp — fully past the seam, days
 });
 
 test('omits the workability block when there is no estimate (e.g. LS)', () => {
