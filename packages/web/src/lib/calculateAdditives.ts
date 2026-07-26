@@ -1,4 +1,6 @@
 import { alternativeLiquidPreset } from '@soap-calc/core';
+import { catalogEntryById } from '@soap-calc/core';
+import { extraLyeForAcid } from '@soap-calc/core';
 import {
   gramsFromDose,
   gramsFromPercentOfOil,
@@ -7,6 +9,7 @@ import {
   type DoseBasis,
   type DoseUnit,
 } from '@soap-calc/core';
+import type { AcidLyeRecipe } from '@soap-calc/core';
 import type { AdditiveLine, RecipeSettings, SplitLiquidSettings } from './recipe';
 
 export type ComputedAdditive = {
@@ -18,11 +21,15 @@ export type ComputedAdditive = {
   unit: DoseUnit;
   grams: number;
   addAt: AdditiveLine['addAt'];
+  /** Acid additives only (citric): compensation lye this line demands, for display.
+   * Present only when computeRecipeAdditives received the acid recipe context. */
+  extraLye?: { naohGrams: number; kohGrams: number };
 };
 
 export function computeRecipeAdditives(
   additives: AdditiveLine[],
   { oilGrams, batchGrams, solutionGrams }: { oilGrams: number; batchGrams: number; solutionGrams: number },
+  acidLyeRecipe?: AcidLyeRecipe,
 ): ComputedAdditive[] {
   const result: ComputedAdditive[] = [];
   for (const line of additives) {
@@ -33,6 +40,8 @@ export function computeRecipeAdditives(
     if (amount === null || amount === 0) continue;
     const grams = gramsFromDose(basisWeight, amount, line.unit);
     if (grams === null) continue;
+    const factors = acidLyeRecipe ? catalogEntryById(line.catalogId)?.lyeNeutralization : undefined;
+    const extraLye = factors ? extraLyeForAcid(factors, grams, acidLyeRecipe!) : undefined;
     result.push({
       key: line.key,
       catalogId: line.catalogId,
@@ -42,6 +51,7 @@ export function computeRecipeAdditives(
       unit: line.unit,
       grams,
       addAt: line.addAt,
+      ...(extraLye ? { extraLye } : {}),
     });
   }
   return result;
