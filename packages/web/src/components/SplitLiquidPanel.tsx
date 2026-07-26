@@ -7,6 +7,7 @@ import {
   type WaterMode,
 } from '@soap-calc/core';
 import { InfoTip } from './InfoTip';
+import type { ProcessId } from '../lib/process';
 import type { SplitLiquidRow } from '../lib/recipe';
 import { newSplitLiquidKey } from '../lib/recipe';
 import { splitLiquidWaterFraction } from '../lib/calculateAdditives';
@@ -18,6 +19,11 @@ import type { WeightUnit } from '../lib/recipe';
 
 type SplitLiquidPanelProps = {
   rows: SplitLiquidRow[];
+  /** The recipe's process — picks the book-faithful default sizing for a NEW liquid:
+   * CP defaults to 'rest' (the split-not-discount remainder method); HP to '% of oil
+   * weight' (the additive "+10% at the end" idiom); LS stays additive too, since the
+   * dilution phase makes a total-liquid budget ambiguous. */
+  process: ProcessId;
   /** View-model-resolved grams per row (same order as `rows`). */
   resolvedRows: ResolvedSplitLiquidRow[];
   totalOilGrams: number;
@@ -35,18 +41,19 @@ type SplitLiquidPanelProps = {
   onApplySuggestedWater?: (waterPercentOfOils: string) => void;
 };
 
-const NEW_ROW = (): SplitLiquidRow => ({
+const NEW_ROW = (sizeMode: SplitLiquidRow['sizeMode']): SplitLiquidRow => ({
   key: newSplitLiquidKey(),
   presetKey: '',
   name: '',
   customWaterPercent: '',
-  sizeMode: 'percent_of_oils',
+  sizeMode,
   amount: '',
   addAt: 'trace',
 });
 
 export function SplitLiquidPanel({
   rows,
+  process,
   resolvedRows,
   totalOilGrams,
   lyeGrams,
@@ -111,7 +118,12 @@ export function SplitLiquidPanel({
         <button
           type="button"
           className="btn btn--ghost"
-          onClick={() => onChange([...rows, NEW_ROW()])}
+          onClick={() => {
+            const restFree = !rows.some((r) => r.sizeMode === 'rest');
+            const defaultSizeMode =
+              process === 'cp' && budgetModesAvailable && restFree ? 'rest' : 'percent_of_oils';
+            onChange([...rows, NEW_ROW(defaultSizeMode)]);
+          }}
         >
           + Add liquid
         </button>

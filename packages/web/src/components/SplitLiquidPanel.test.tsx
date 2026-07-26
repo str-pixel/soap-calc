@@ -24,6 +24,7 @@ function renderPanel(overrides: Partial<Parameters<typeof SplitLiquidPanel>[0]> 
   render(
     <SplitLiquidPanel
       rows={rows}
+      process="cp"
       resolvedRows={rows.map((row) => ({ row, grams: 100 }))}
       totalOilGrams={1000}
       lyeGrams={135}
@@ -134,4 +135,32 @@ test('allocation ratio label reflects acid-adjusted lye', () => {
   const line = screen.getByText(/0\.97 : 1/).textContent ?? '';
   expect(line).toMatch(/lye water/i);
   expect(line).not.toMatch(/\(1 : 1\)/);
+});
+
+test('CP defaults a new liquid to the rest of the liquid budget', () => {
+  const { onChange } = renderPanel({ rows: [], process: 'cp' });
+  fireEvent.click(screen.getByRole('button', { name: /add liquid/i }));
+  const rows = onChange.mock.calls[0][0] as SplitLiquidRow[];
+  expect(rows[0].sizeMode).toBe('rest');
+});
+
+test('CP falls back to % of oils when rest is taken or budget modes are unavailable', () => {
+  const existing = [ROW({ sizeMode: 'rest', amount: '' })];
+  const { onChange } = renderPanel({ rows: existing, process: 'cp' });
+  fireEvent.click(screen.getByRole('button', { name: /add liquid/i }));
+  expect((onChange.mock.calls[0][0] as SplitLiquidRow[])[1].sizeMode).toBe('percent_of_oils');
+
+  cleanup();
+  const second = renderPanel({ rows: [], process: 'cp', waterMode: 'lye_concentration' });
+  fireEvent.click(screen.getByRole('button', { name: /add liquid/i }));
+  expect((second.onChange.mock.calls[0][0] as SplitLiquidRow[])[0].sizeMode).toBe('percent_of_oils');
+});
+
+test('HP and LS default a new liquid to % of oil weight', () => {
+  for (const process of ['hp', 'ls'] as const) {
+    cleanup();
+    const { onChange } = renderPanel({ rows: [], process });
+    fireEvent.click(screen.getByRole('button', { name: /add liquid/i }));
+    expect((onChange.mock.calls[0][0] as SplitLiquidRow[])[0].sizeMode).toBe('percent_of_oils');
+  }
 });
