@@ -47,8 +47,10 @@ describe('citric acid additive (auto-lye)', () => {
 
   it('carries stoichiometric neutralization factors (triprotic, anhydrous MW 192.123)', () => {
     const factors = catalogEntryById('citric-acid')?.lyeNeutralization;
-    expect(factors?.naohPerGram).toBeCloseTo(0.6246, 4);
-    expect(factors?.kohPerGram).toBeCloseTo(0.8761, 4);
+    // digits: 3 — the exact values are 0.6245530/0.8760794; a 4-digit pin on the rounded
+    // figures would sit within 5e-5 of the tolerance edge.
+    expect(factors?.naohPerGram).toBeCloseTo(0.6246, 3);
+    expect(factors?.kohPerGram).toBeCloseTo(0.8761, 3);
   });
 
   it('leaves every other entry without neutralization factors', () => {
@@ -184,7 +186,7 @@ describe('extraLyeForAcid (shared acid math)', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure** — `npx vitest run src/alternative-liquids.test.ts`. Expected: new tests FAIL (functions not exported); existing vinegar tests PASS.
+- [ ] **Step 2: Run to verify failure** — `npx vitest run src/alternative-liquids.test.ts`. Expected: the WHOLE FILE errors at module load (importing the not-yet-existing named exports `extraLyeForAcid`/`extraLyeForAcidAdditives` fails the import) — the existing vinegar tests in this file will not run on this pass. That module-level import error IS the expected failure.
 
 - [ ] **Step 3: Implement** — in `packages/core/src/alternative-liquids.ts`:
 
@@ -307,7 +309,7 @@ describe('per-line acid extra lye', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure** — `cd packages/web && npx vitest run src/lib/calculateAdditives.test.ts`. Expected: FAIL (`extraLye` missing / arity).
+- [ ] **Step 2: Run to verify failure** — `cd packages/web && npx vitest run src/lib/calculateAdditives.test.ts`. Expected: the FIRST new test FAILS (`extraLye` undefined). The second new test ("attaches no extraLye…") passes already — `extraLye` is currently undefined everywhere; it is a regression guard for the implementation, not a red test.
 
 - [ ] **Step 3: Implement** — in `calculateAdditives.ts`: add `extraLyeForAcid, catalogEntryById, type AcidLyeRecipe` to the `@soap-calc/core` import; extend the type and function:
 
@@ -381,7 +383,9 @@ test('a citric additive raises the lye result but not the split-liquid acid figu
   probe((vm) => { without = vm; });
   probe((vm) => { withCitric = vm; }, {}, 'cp', undefined, [CITRIC_LINE]);
   const oilGrams = withCitric.totalOilGrams;
-  const expectedExtra = (oilGrams * 0.02 * 0.6246); // NaOH purity 100 in DEFAULT_SETTINGS — adjust if not
+  // DEFAULT_SETTINGS.naohPurityPercent is '99' (recipe.ts:122) — the compensation is
+  // grossed up by purity like every other lye figure.
+  const expectedExtra = (oilGrams * 0.02 * 0.6246) / 0.99;
   expect(withCitric.result.naohWeightGrams - without.result.naohWeightGrams).toBeCloseTo(expectedExtra, 1);
   // acidExtraLye is SplitLiquidPanel's display prop — additive acid must not leak into it.
   expect(withCitric.acidExtraLye).toBeNull();
@@ -389,18 +393,43 @@ test('a citric additive raises the lye result but not the split-liquid acid figu
   expect(line.extraLye.naohGrams).toBeCloseTo(expectedExtra, 1);
 });
 
+test('vinegar split liquid and citric additive stack; the split acid figure stays vinegar-only', () => {
+  // The two-memo design exists to prevent exactly this misattribution — pin it.
+  const VINEGAR_ROW = {
+    key: 'v1',
+    presetKey: 'vinegar',
+    name: 'Vinegar (5%)',
+    customWaterPercent: '',
+    sizeMode: 'grams' as const,
+    amount: '100',
+    addAt: 'lye' as const,
+  };
+  let vinegarOnly: any;
+  let both: any;
+  probe((vm) => { vinegarOnly = vm; }, { splitLiquids: [VINEGAR_ROW] });
+  probe((vm) => { both = vm; }, { splitLiquids: [VINEGAR_ROW] }, 'cp', undefined, [CITRIC_LINE]);
+  const vinegarExtra = (100 * 0.0333) / 0.99;
+  const citricExtra = (both.totalOilGrams * 0.02 * 0.6246) / 0.99;
+  // The split-liquid display figure is identical with and without the citric line.
+  expect(both.acidExtraLye.naohGrams).toBeCloseTo(vinegarOnly.acidExtraLye.naohGrams, 3);
+  expect(both.acidExtraLye.naohGrams).toBeCloseTo(vinegarExtra, 1);
+  // The lye result carries BOTH compensations.
+  expect(both.result.naohWeightGrams - vinegarOnly.result.naohWeightGrams).toBeCloseTo(citricExtra, 1);
+});
+
 test('batch-basis citric resolves against the pre-compensation batch weight (one-pass pin)', () => {
   let vm: any;
   probe((v) => { vm = v; }, {}, 'cp', undefined, [{ ...CITRIC_LINE, basis: 'batch' }]);
   const line = vm.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
-  // The dose basis must be the batch weight BEFORE addExtraLye. If a refactor ever feeds
-  // the compensated result back into dose resolution, grams inflate and this fails.
-  const preBatch = vm.batchSheetData /* sanity only */ && line.grams;
+  // The dose basis must be the batch weight BEFORE addExtraLye (which added exactly
+  // line.extraLye.naohGrams to totalBatchWeightGrams; kohGrams is 0 under NaOH). If a
+  // refactor ever feeds the compensated result back into dose resolution, grams inflate
+  // and this fails.
   expect(line.grams).toBeCloseTo(0.02 * (vm.result.totalBatchWeightGrams - line.extraLye.naohGrams), 1);
 });
 ```
 
-Note for the implementer: `DEFAULT_SETTINGS.naohPurityPercent` — check its value first (`grep naohPurityPercent packages/web/src/lib/recipe.ts`); if it is not 100, divide `expectedExtra` by purity/100. If the pin test's arithmetic proves awkward against the real shape, an equivalent pin is: compute `probe` twice, once with `basis: 'oil'` at an amount chosen so grams match — the REQUIRED property is only that batch-basis grams are derived from the pre-compensation batch weight; assert that exact relation with whatever expression the real fields support, and document it in the test name.
+(Verified against the code: the view model returns `computedAdditives`, `acidExtraLye`, `totalOilGrams`, and `result` = post-compensation `finalResult`; for the CP starter recipe `baseBatchGrams` equals the pre-compensation `totalBatchWeightGrams`, so the pin expression is exact.)
 
 - [ ] **Step 3: Run to verify failure** — `npx vitest run src/hooks/useRecipeViewModel.test.tsx`. Expected: new tests FAIL (no compensation applied yet; delta ≈ 0).
 
@@ -427,21 +456,18 @@ Note for the implementer: `DEFAULT_SETTINGS.naohPurityPercent` — check its val
 
 (The existing `acidExtraLye` and `fixedBatchExtrasGrams` memos can also consume `acidLyeRecipe` in place of their inline objects — same values, less duplication; keep their behavior identical.)
 
-3. Additive extra memo (after `computedAdditives`), summing the per-line values Task 3 attached (no double math):
+3. Additive extra memo (after `computedAdditives`), via the core summing function — do NOT
+   hand-sum the per-line values here, or the imported `extraLyeForAcidAdditives` would be
+   unused and `noUnusedLocals` fails the typecheck gate (`ComputedAdditive` satisfies the
+   `{catalogId, grams}` input shape; per-line `extraLye` from Task 3 is display-only data):
 
 ```ts
   // Acid ADDITIVES (citric) get the same compensation as acid liquids, but through their
   // own memo: acidExtraLye is SplitLiquidPanel's display prop and must stay split-only.
   const additiveAcidExtraLye = useMemo(() => {
-    let naohGrams = 0;
-    let kohGrams = 0;
-    for (const line of computedAdditives) {
-      if (!line.extraLye) continue;
-      naohGrams += line.extraLye.naohGrams;
-      kohGrams += line.extraLye.kohGrams;
-    }
-    return naohGrams > 0 || kohGrams > 0 ? { naohGrams, kohGrams } : null;
-  }, [computedAdditives]);
+    const extra = extraLyeForAcidAdditives(computedAdditives, acidLyeRecipe);
+    return extra.naohGrams > 0 || extra.kohGrams > 0 ? extra : null;
+  }, [computedAdditives, acidLyeRecipe]);
 ```
 
 4. `finalResult` sums both (one `addExtraLye` call):
@@ -462,7 +488,7 @@ Note for the implementer: `DEFAULT_SETTINGS.naohPurityPercent` — check its val
 
 The returned `acidExtraLye` field stays exactly as-is.
 
-- [ ] **Step 5: Run to verify pass** — `npx vitest run src/hooks/useRecipeViewModel.test.tsx`, then all web unit tests: `npx vitest run`. Expected: all pass (the pin test may need its arithmetic finalized per the Step 2 note — the invariant, not the expression, is the requirement).
+- [ ] **Step 5: Run to verify pass** — `npx vitest run src/hooks/useRecipeViewModel.test.tsx`, then all web unit tests: `npx vitest run`, then the typecheck the root test script runs: `npx tsc --noEmit` from `packages/web` (this is what catches an unused import — vitest alone does not typecheck). Expected: all pass.
 
 - [ ] **Step 6: Commit**
 
@@ -476,13 +502,13 @@ git commit -m "feat(web): compensate citric-acid additive lye in the recipe resu
 ### Task 5: Web — panel display + empty-state copy
 
 **Files:**
-- Modify: `packages/web/src/components/AdditivesPanel.tsx` (hint area after the typical-range hint ~299–305; empty state ~157–161)
+- Modify: `packages/web/src/components/AdditivesPanel.tsx` (hint area after the typical-range hint at 305–311; empty state ~157–161)
 - Test: `packages/web/src/components/AdditivesPanel.test.tsx`
 
 **Interfaces:**
 - Consumes: `ComputedAdditive.extraLye` (Task 3) via the panel's existing `computed` prop; `formatWeight`/`weightUnit` already imported.
 
-- [ ] **Step 1: Write the failing tests** — the file's `makeComputed(line)` helper builds a `ComputedAdditive`; give it an optional second param `extra?: { naohGrams: number; kohGrams: number }` spread as `...(extra ? { extraLye: extra } : {})`. Append:
+- [ ] **Step 1: Write the failing tests** — the file's `makeComputed(line, oilGrams = 1000)` helper builds a `ComputedAdditive` and uses `oilGrams` in its body. No existing call site passes the second argument, so REPLACE that parameter: change the signature to `makeComputed(line, extra?: { naohGrams: number; kohGrams: number })`, hardcode `const oilGrams = 1000;` in the body, and spread `...(extra ? { extraLye: extra } : {})` into the returned object. Append:
 
 ```ts
 describe('acid compensation line', () => {
@@ -498,7 +524,9 @@ describe('acid compensation line', () => {
       />,
     );
     const hint = screen.getByText(/added to lye/);
-    expect(hint.textContent).toContain('+12.5 g NaOH');
+    // formatWeight uses displayDigits 0 for grams (weightUnits.ts) → "12 g", not "12.5 g" —
+    // same rendering as SplitLiquidPanel's vinegar figure.
+    expect(hint.textContent).toContain('+12 g NaOH');
     expect(hint.textContent).toContain('citrate');
     expect(hint.textContent?.toLowerCase()).not.toContain('ph');
   });
@@ -513,7 +541,6 @@ describe('acid compensation line', () => {
 });
 ```
 
-(If `formatWeight(12.49, 'g')` renders other than `12.5 g`, run `grep -n "formatWeight" packages/web/src/lib/weightUnits.ts`, check its rounding, and match the assertion to the real format — the assertion must test the actual formatter, not force a new one.)
 
 - [ ] **Step 2: Run to verify failure** — `npx vitest run src/components/AdditivesPanel.test.tsx`. Expected: first new test FAILS (no compensation line rendered).
 
@@ -562,13 +589,13 @@ git commit -m "feat(web): show citric-acid compensation lye on the additive row"
 
 ```ts
   test('citric acid at 2% adds compensation NaOH to the lye figures', async ({ page }) => {
-    const naohBefore = num(await resultDd(page, /NaOH/));
+    const naohBefore = num(await resultDd(page, /^NaOH/));
     await page.getByRole('button', { name: '+ Add', exact: true }).click();
     const row = page.locator('ul[aria-label="Recipe additives"] li').first();
     await row.getByLabel('Additive type').selectOption({ label: 'Citric acid (anhydrous)' });
     await row.getByLabel(/^Amount( for .*)?$/).fill('2');
     await expect(row.getByText(/added to lye/)).toBeVisible();
-    const naohAfter = num(await resultDd(page, /NaOH/));
+    const naohAfter = num(await resultDd(page, /^NaOH/));
     // 2% of the recipe's oils × 0.6246 — assert the delta is positive and in range rather
     // than exact, since the starter recipe's oil weight is what the page defines.
     expect(naohAfter).toBeGreaterThan(naohBefore);
@@ -590,8 +617,9 @@ git commit -m "test(e2e): citric-acid additive raises the NaOH figure"
 
 ---
 
-## Self-Review (completed)
+## Self-Review (completed; independently reviewed 2026-07-26, amendments applied)
 
-- **Spec coverage:** catalog entry + factors (Task 1); shared extraction + additive summing + purity/dual (Task 2); per-line `extraLye` (Task 3); split memos, one `addExtraLye`, one-pass pin, `acidExtraLye` stays split-only (Task 4); panel line + empty-state copy + pH guardrail (Task 5); e2e + full suite (Task 6). `fixedBatchExtrasGrams`/batch-weight parity: intentionally no task — constraint section forbids touching them.
+- **Spec coverage:** catalog entry + factors (Task 1); shared extraction + additive summing + purity/dual (Task 2); per-line `extraLye` (Task 3); split memos, one `addExtraLye`, one-pass pin, `acidExtraLye` stays split-only, vinegar+citric stacking (Task 4); panel line + empty-state copy + pH guardrail (Task 5); e2e + full suite (Task 6). `fixedBatchExtrasGrams`/batch-weight parity: intentionally no task — constraint section forbids touching them.
+- **Review amendments applied:** `additiveAcidExtraLye` uses `extraLyeForAcidAdditives` (unused-import typecheck trap); dead pin-test local removed; purity 99 baked into expected values; `+12 g` formatting pinned per `displayDigits: 0`; vinegar+citric stacking test added; `makeComputed` signature change spelled out; `/^NaOH/` anchoring; factor pins at 3 digits.
 - **Copy deviation from spec (flagged):** "forms the citrate chelator" instead of "forms sodium citrate" — alkali-correct under KOH/dual. Noted in Global Constraints for the PR description.
 - **Type consistency:** `AcidLyeRecipe`, `ExtraLyeForAcid`, `ComputedAdditive.extraLye`, `extraLyeForAcid(factors, grams, recipe)` used identically across Tasks 2–5.
