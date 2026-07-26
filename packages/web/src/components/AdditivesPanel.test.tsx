@@ -22,7 +22,11 @@ function makeLine(overrides: Partial<AdditiveLine> = {}): AdditiveLine {
   };
 }
 
-function makeComputed(line: AdditiveLine, oilGrams = 1000): ComputedAdditive {
+function makeComputed(
+  line: AdditiveLine,
+  extra?: { naohGrams: number; kohGrams: number },
+): ComputedAdditive {
+  const oilGrams = 1000;
   const amount = Number(line.amount);
   const grams = (oilGrams * amount) / 100;
   return {
@@ -34,6 +38,7 @@ function makeComputed(line: AdditiveLine, oilGrams = 1000): ComputedAdditive {
     basis: line.basis,
     grams,
     addAt: line.addAt,
+    ...(extra ? { extraLye: extra } : {}),
   };
 }
 
@@ -221,6 +226,35 @@ test('changing the dose mode updates the line basis and unit', async () => {
   expect(onChange).toHaveBeenCalledWith([
     expect.objectContaining({ key: 'a', basis: 'oil', unit: 'ppt' }),
   ]);
+});
+
+describe('acid compensation line', () => {
+  it('shows the compensation lye for a citric row', () => {
+    const line = makeLine({ catalogId: 'citric-acid', name: 'Citric acid (anhydrous)', amount: '2', addAt: 'lye' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line, { naohGrams: 12.49, kohGrams: 0 })]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    const hint = screen.getByText(/added to lye/);
+    // formatWeight uses displayDigits 0 for grams (weightUnits.ts) → "12 g", not "12.5 g" —
+    // same rendering as SplitLiquidPanel's vinegar figure.
+    expect(hint.textContent).toContain('+12 g NaOH');
+    expect(hint.textContent).toContain('citrate');
+    expect(hint.textContent?.toLowerCase()).not.toContain('ph');
+  });
+
+  it('shows no compensation line for additives without extraLye', () => {
+    const line = makeLine({ catalogId: 'sugar-sorbitol', name: 'Sugar' });
+    render(
+      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="cp" onChange={() => {}} />,
+    );
+    expect(screen.queryByText(/added to lye/)).toBeNull();
+  });
 });
 
 function doseModeValues(select: HTMLElement): string[] {
