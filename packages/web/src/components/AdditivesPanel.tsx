@@ -157,7 +157,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
       {additives.length === 0 ? (
         <p className="results-hint">
           Optional extras (fragrance, sugar, clay, etc.) dosed per additive — not included in lye
-          math.
+          math{process === 'ls' ? '' : " (citric acid's compensation lye is added automatically)"}.
         </p>
       ) : (
         <ul className="additive-list" aria-label="Recipe additives">
@@ -307,6 +307,21 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     Typical {entry.typicalLow}
                     {entry.typicalHigh !== entry.typicalLow ? `–${entry.typicalHigh}` : ''}
                     {entry.doseUnit === 'ppt' ? ' ppt' : '%'} of oil weight
+                  </p>
+                )}
+                {row?.extraLye && (row.extraLye.naohGrams > 0 || row.extraLye.kohGrams > 0) && (
+                  <p className="additive-list__hint">
+                    {[
+                      row.extraLye.naohGrams > 0
+                        ? `+${formatWeight(row.extraLye.naohGrams, weightUnit)} NaOH`
+                        : null,
+                      row.extraLye.kohGrams > 0
+                        ? `+${formatWeight(row.extraLye.kohGrams, weightUnit)} KOH`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}{' '}
+                    added to lye — forms the citrate chelator
                   </p>
                 )}
                 {entry && entry.hazards && entry.hazards.length > 0 && (

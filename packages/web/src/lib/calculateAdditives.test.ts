@@ -183,3 +183,32 @@ describe('splitLiquidWaterFraction', () => {
     }
   });
 });
+
+const NAOH_RECIPE = { lyeType: 'naoh' as const, kohBlendPercent: 0, naohPurityPercent: 100, kohPurityPercent: 100 };
+
+describe('per-line acid extra lye', () => {
+  it('attaches extraLye to a citric line when the acid recipe context is passed', () => {
+    const [line] = computeRecipeAdditives(
+      [{ key: 'c', catalogId: 'citric-acid', name: 'Citric acid (anhydrous)', amount: '2', basis: 'oil', unit: 'percent', addAt: 'lye' }],
+      { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 },
+      NAOH_RECIPE,
+    );
+    expect(line.grams).toBe(20);
+    expect(line.extraLye?.naohGrams).toBeCloseTo(20 * 0.6246, 2);
+    expect(line.extraLye?.kohGrams).toBe(0);
+  });
+
+  it('attaches no extraLye without the context or for factor-less entries', () => {
+    const noContext = computeRecipeAdditives(
+      [{ key: 'c', catalogId: 'citric-acid', name: 'Citric', amount: '2', basis: 'oil', unit: 'percent', addAt: 'lye' }],
+      { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 },
+    );
+    expect(noContext[0].extraLye).toBeUndefined();
+    const sugar = computeRecipeAdditives(
+      [{ key: 's', catalogId: 'sugar-sorbitol', name: 'Sugar', amount: '2', basis: 'oil', unit: 'percent', addAt: 'trace' }],
+      { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 },
+      NAOH_RECIPE,
+    );
+    expect(sugar[0].extraLye).toBeUndefined();
+  });
+});

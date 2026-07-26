@@ -127,21 +127,21 @@ export function alternativeLiquidPreset(key: string): AlternativeLiquidPreset | 
 
 export type ExtraLyeForAcid = { naohGrams: number; kohGrams: number };
 
-/** As-weighed extra lye needed to offset an acid liquid, split across the recipe's alkalis
- * (dual lye allocates the acid by the KOH blend share) and grossed up by each purity —
- * matching how the lye calc reports every other lye figure. Zero for non-acid liquids. */
-export function extraLyeForAcidLiquid(
-  preset: AlternativeLiquidPreset,
-  liquidGrams: number,
-  recipe: {
-    lyeType: 'naoh' | 'koh' | 'dual';
-    kohBlendPercent: number;
-    naohPurityPercent: number;
-    kohPurityPercent: number;
-  },
+export type AcidLyeRecipe = {
+  lyeType: 'naoh' | 'koh' | 'dual';
+  kohBlendPercent: number;
+  naohPurityPercent: number;
+  kohPurityPercent: number;
+};
+
+/** Shared acid math: as-weighed extra lye for `grams` of an acid with the given pure-alkali
+ * factors — dual lye allocates by KOH blend share, each alkali grossed up by its purity. */
+export function extraLyeForAcid(
+  factors: { naohPerGram: number; kohPerGram: number },
+  grams: number,
+  recipe: AcidLyeRecipe,
 ): ExtraLyeForAcid {
-  const factors = preset.lyeNeutralization;
-  if (!factors || !Number.isFinite(liquidGrams) || liquidGrams <= 0) {
+  if (!Number.isFinite(grams) || grams <= 0) {
     return { naohGrams: 0, kohGrams: 0 };
   }
   const naohPurity = recipe.naohPurityPercent > 0 ? recipe.naohPurityPercent / 100 : 1;
@@ -152,7 +152,17 @@ export function extraLyeForAcidLiquid(
       : recipe.lyeType === 'dual'
         ? Math.min(100, Math.max(0, recipe.kohBlendPercent)) / 100
         : 0;
-  const naohGrams = (liquidGrams * (1 - kohShare) * factors.naohPerGram) / naohPurity;
-  const kohGrams = (liquidGrams * kohShare * factors.kohPerGram) / kohPurity;
+  const naohGrams = (grams * (1 - kohShare) * factors.naohPerGram) / naohPurity;
+  const kohGrams = (grams * kohShare * factors.kohPerGram) / kohPurity;
   return { naohGrams, kohGrams };
+}
+
+export function extraLyeForAcidLiquid(
+  preset: AlternativeLiquidPreset,
+  liquidGrams: number,
+  recipe: AcidLyeRecipe,
+): ExtraLyeForAcid {
+  const factors = preset.lyeNeutralization;
+  if (!factors) return { naohGrams: 0, kohGrams: 0 };
+  return extraLyeForAcid(factors, liquidGrams, recipe);
 }

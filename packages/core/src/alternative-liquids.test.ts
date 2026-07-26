@@ -3,7 +3,9 @@ import {
   ALTERNATIVE_LIQUID_GUIDE,
   alternativeLiquidPreset,
   extraLyeForAcidLiquid,
+  extraLyeForAcid,
 } from './alternative-liquids.js';
+import { catalogEntryById } from './additives.js';
 
 describe('ALTERNATIVE_LIQUID_GUIDE', () => {
   it('has unique keys and water fractions in (0, 1]', () => {
@@ -102,5 +104,28 @@ describe('vinegar (acid) preset and extra-lye compensation', () => {
     });
     expect(extra.naohGrams).toBe(0);
     expect(extra.kohGrams).toBe(0);
+  });
+});
+
+describe('extraLyeForAcid (shared acid math)', () => {
+  const recipe = { lyeType: 'naoh' as const, kohBlendPercent: 0, naohPurityPercent: 100, kohPurityPercent: 100 };
+
+  it('extraLyeForAcidLiquid delegates: vinegar result is identical through both paths', () => {
+    const preset = alternativeLiquidPreset('vinegar')!;
+    const viaPreset = extraLyeForAcidLiquid(preset, 330, recipe);
+    const viaFactors = extraLyeForAcid(preset.lyeNeutralization!, 330, recipe);
+    expect(viaFactors).toEqual(viaPreset);
+  });
+
+  it('splits dual lye by KOH blend share and grosses up by each purity', () => {
+    const factors = catalogEntryById('citric-acid')!.lyeNeutralization!;
+    const extra = extraLyeForAcid(factors, 10, {
+      lyeType: 'dual',
+      kohBlendPercent: 40,
+      naohPurityPercent: 97,
+      kohPurityPercent: 90,
+    });
+    expect(extra.naohGrams).toBeCloseTo((10 * 0.6 * 0.6246) / 0.97, 2);
+    expect(extra.kohGrams).toBeCloseTo((10 * 0.4 * 0.8761) / 0.9, 2);
   });
 });

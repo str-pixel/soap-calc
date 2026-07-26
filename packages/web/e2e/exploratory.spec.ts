@@ -492,6 +492,22 @@ test.describe('additives', () => {
     expect(await rows.count()).toBeGreaterThan(0);
     await expect(btn).toBeDisabled();
   });
+
+  test('citric acid at 2% adds compensation NaOH to the lye figures', async ({ page }) => {
+    const naohBefore = num(await resultDd(page, /^NaOH/));
+    await page.getByRole('button', { name: '+ Add', exact: true }).click();
+    const row = page.locator('ul[aria-label="Recipe additives"] li').first();
+    await row.getByLabel('Additive type').selectOption({ label: 'Citric acid (anhydrous)' });
+    await row.getByLabel(/^Amount( for .*)?$/).fill('2');
+    await expect(row.getByText(/added to lye/)).toBeVisible();
+    const naohAfter = num(await resultDd(page, /^NaOH/));
+    // 2% of the starter's 1000 g oils × 0.6246 / 0.99 purity ≈ 12.6 g. Assert a generous
+    // band rather than exact (the displayed figure is rounded): a wrong factor, unit, or
+    // purity handling lands an order of magnitude out and still fails this.
+    const delta = naohAfter - naohBefore;
+    expect(delta).toBeGreaterThan(5);
+    expect(delta).toBeLessThan(25);
+  });
 });
 
 // ---------- 9. pricing ----------

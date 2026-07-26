@@ -6,6 +6,7 @@ import {
   createStarterLines,
   DEFAULT_SETTINGS,
   createEmptyAdditives,
+  type AdditiveLine,
   type RecipeSettings,
 } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
@@ -18,13 +19,14 @@ function probe(
   settingsOverride: Partial<RecipeSettings> = {},
   process: ProcessId = 'cp',
   vesselVolumeCm3?: number | null,
+  additivesOverride?: AdditiveLine[],
 ) {
   function Probe() {
     const vm = useRecipeViewModel({
       recipeName: 'Test',
       lines: createStarterLines(),
       settings: { ...DEFAULT_SETTINGS, ...settingsOverride },
-      additives: createEmptyAdditives(),
+      additives: additivesOverride ?? createEmptyAdditives(),
       drafts: {},
       weightUnit: 'g',
       process,
@@ -243,4 +245,94 @@ test('a too-small HP vessel raises hp_vessel_too_small; a roomy one does not', (
   expect(tooSmall.hpVesselMultiple).toBeGreaterThan(0);
   expect(tooSmall.insights.some((i: any) => i.code === 'hp_vessel_too_small')).toBe(true);
   expect(roomy.insights.some((i: any) => i.code === 'hp_vessel_too_small')).toBe(false);
+});
+
+const CITRIC_LINE: AdditiveLine = {
+  key: 'citric-1', catalogId: 'citric-acid', name: 'Citric acid (anhydrous)',
+  amount: '2', basis: 'oil', unit: 'percent', addAt: 'lye',
+};
+
+test('a citric additive raises the lye result but not the split-liquid acid figure', () => {
+  let without: any;
+  let withCitric: any;
+  probe((vm) => { without = vm; });
+  probe((vm) => { withCitric = vm; }, {}, 'cp', undefined, [CITRIC_LINE]);
+  const oilGrams = withCitric.totalOilGrams;
+  // DEFAULT_SETTINGS.naohPurityPercent is '99' (recipe.ts:122) — the compensation is
+  // grossed up by purity like every other lye figure.
+  const expectedExtra = (oilGrams * 0.02 * 0.6246) / 0.99;
+  expect(withCitric.result.naohWeightGrams - without.result.naohWeightGrams).toBeCloseTo(expectedExtra, 1);
+  // acidExtraLye is SplitLiquidPanel's display prop — additive acid must not leak into it.
+  expect(withCitric.acidExtraLye).toBeNull();
+  const line = withCitric.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
+  expect(line.extraLye.naohGrams).toBeCloseTo(expectedExtra, 1);
+});
+
+test('vinegar split liquid and citric additive stack; the split acid figure stays vinegar-only', () => {
+  // The two-memo design exists to prevent exactly this misattribution — pin it.
+  const VINEGAR_ROW = {
+    key: 'v1',
+    presetKey: 'vinegar',
+    name: 'Vinegar (5%)',
+    customWaterPercent: '',
+    sizeMode: 'grams' as const,
+    amount: '100',
+    addAt: 'lye' as const,
+  };
+  let vinegarOnly: any;
+  let both: any;
+  probe((vm) => { vinegarOnly = vm; }, { splitLiquids: [VINEGAR_ROW] });
+  probe((vm) => { both = vm; }, { splitLiquids: [VINEGAR_ROW] }, 'cp', undefined, [CITRIC_LINE]);
+  const vinegarExtra = (100 * 0.0333) / 0.99;
+  const citricExtra = (both.totalOilGrams * 0.02 * 0.6246) / 0.99;
+  // The split-liquid display figure is identical with and without the citric line.
+  expect(both.acidExtraLye.naohGrams).toBeCloseTo(vinegarOnly.acidExtraLye.naohGrams, 3);
+  expect(both.acidExtraLye.naohGrams).toBeCloseTo(vinegarExtra, 1);
+  // The lye result carries BOTH compensations.
+  expect(both.result.naohWeightGrams - vinegarOnly.result.naohWeightGrams).toBeCloseTo(citricExtra, 1);
+});
+
+test('under LS a stray citric line is never compensated (LS doses citric uncompensated, post-cook)', () => {
+  // Citric is CP/HP-only in the catalog, but a hand-edited or imported LS recipe can still
+  // carry a line. Compensating it would add the lye straight back — the exact failure the
+  // catalog comment forbids. Gate mirrors the PCSF process gate below it.
+  let without: any;
+  let withCitric: any;
+  probe((vm) => { without = vm; }, { lyeType: 'koh' }, 'ls');
+  probe((vm) => { withCitric = vm; }, { lyeType: 'koh' }, 'ls', undefined, [CITRIC_LINE]);
+  const line = withCitric.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
+  // The line still resolves (dose math is process-blind) but carries no compensation…
+  expect(line.grams).toBeGreaterThan(0);
+  expect(line.extraLye).toBeUndefined();
+  // …and the lye result is untouched.
+  expect(withCitric.result.kohWeightGrams).toBeCloseTo(without.result.kohWeightGrams, 6);
+  expect(withCitric.result.naohWeightGrams).toBeCloseTo(without.result.naohWeightGrams, 6);
+});
+
+test('two citric lines each carry their share and the lye result sums both (per-line pin)', () => {
+  // Pins that the result-level compensation is the sum of the lines' own extraLye figures —
+  // one computation, panel and lye result provably agree.
+  let vm: any;
+  probe((v) => { vm = v; }, {}, 'cp', undefined, [
+    CITRIC_LINE,
+    { ...CITRIC_LINE, key: 'citric-2', amount: '1' },
+  ]);
+  let without: any;
+  probe((v) => { without = v; });
+  const oilGrams = vm.totalOilGrams;
+  const expectedTotal = (oilGrams * 0.03 * 0.6246) / 0.99;
+  expect(vm.result.naohWeightGrams - without.result.naohWeightGrams).toBeCloseTo(expectedTotal, 1);
+  const lineSum = vm.computedAdditives.reduce((s: number, a: any) => s + (a.extraLye?.naohGrams ?? 0), 0);
+  expect(lineSum).toBeCloseTo(expectedTotal, 1);
+});
+
+test('batch-basis citric resolves against the pre-compensation batch weight (one-pass pin)', () => {
+  let vm: any;
+  probe((v) => { vm = v; }, {}, 'cp', undefined, [{ ...CITRIC_LINE, basis: 'batch' }]);
+  const line = vm.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
+  // The dose basis must be the batch weight BEFORE addExtraLye (which added exactly
+  // line.extraLye.naohGrams to totalBatchWeightGrams; kohGrams is 0 under NaOH). If a
+  // refactor ever feeds the compensated result back into dose resolution, grams inflate
+  // and this fails.
+  expect(line.grams).toBeCloseTo(0.02 * (vm.result.totalBatchWeightGrams - line.extraLye.naohGrams), 1);
 });
