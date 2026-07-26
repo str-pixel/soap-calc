@@ -28,6 +28,7 @@ function Harness({
       lyeWaterStatus={null}
       splitLiquidGrams={null}
       splitAllocation={null}
+      acidExtraLye={null}
     />
   );
 }

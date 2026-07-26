@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
+import { addExtraLye,
   calculateLye,
   lyeForOilLine,
   scaleLyeResult,
@@ -434,5 +434,44 @@ describe('lyeForOilLine default blend (deep-review)', () => {
     const kohShare = r.kohGrams / (r.kohGrams + r.naohGrams);
     expect(kohShare).toBeGreaterThan(0.03);
     expect(kohShare).toBeLessThan(0.09);
+  });
+});
+
+describe('addExtraLye', () => {
+  it('adds acid-compensation lye to the totals and re-derives concentration and ratio', () => {
+    const base = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      lyeType: 'naoh',
+      waterMode: 'percent_of_oils',
+      waterPercentOfOils: 33,
+    });
+    const adjusted = addExtraLye(base, { naohGrams: 11.1, kohGrams: 0 });
+    expect(adjusted.naohWeightGrams).toBeCloseTo(base.naohWeightGrams + 11.1, 3);
+    expect(adjusted.lyeWeightGrams).toBeCloseTo(base.lyeWeightGrams + 11.1, 3);
+    expect(adjusted.totalBatchWeightGrams).toBeCloseTo(base.totalBatchWeightGrams + 11.1, 3);
+    expect(adjusted.waterWeightGrams).toBe(base.waterWeightGrams);
+    // Concentration reflects the heavier solution.
+    expect(adjusted.lyeConcentrationPercent).toBeCloseTo(
+      (adjusted.lyeWeightGrams / (adjusted.lyeWeightGrams + adjusted.waterWeightGrams)) * 100,
+      5,
+    );
+    expect(adjusted.waterLyeRatio).toBeCloseTo(
+      adjusted.waterWeightGrams / adjusted.lyeWeightGrams,
+      5,
+    );
+  });
+
+  it('is a no-op for zero extra', () => {
+    const base = calculateLye({
+      oils: [{ oilId: 'olive-oil', weightGrams: 500 }],
+      oilLookup: { 'olive-oil': OLIVE },
+      superfatPercent: 5,
+      lyeType: 'naoh',
+      waterMode: 'percent_of_oils',
+      waterPercentOfOils: 33,
+    });
+    expect(addExtraLye(base, { naohGrams: 0, kohGrams: 0 })).toEqual(base);
   });
 });

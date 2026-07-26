@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ALTERNATIVE_LIQUID_GUIDE,
   alternativeLiquidPreset,
+  extraLyeForAcidLiquid,
 } from './alternative-liquids.js';
 
 describe('ALTERNATIVE_LIQUID_GUIDE', () => {
@@ -53,7 +54,53 @@ describe('ALTERNATIVE_LIQUID_GUIDE', () => {
   });
 
   it('returns null for unknown keys', () => {
-    expect(alternativeLiquidPreset('vinegar')).toBeNull();
+    expect(alternativeLiquidPreset('motor-oil')).toBeNull();
     expect(alternativeLiquidPreset('')).toBeNull();
+  });
+});
+
+describe('vinegar (acid) preset and extra-lye compensation', () => {
+  it('ships vinegar with the acid flag and its neutralization factors (pure basis)', () => {
+    const vinegar = alternativeLiquidPreset('vinegar');
+    expect(vinegar?.flags).toContain('acid');
+    expect(vinegar?.waterFraction).toBeCloseTo(0.95, 2);
+    // 5 g acetic acid per 100 g ÷ 60.05 g/mol × 40.00 (NaOH) / 56.11 (KOH)
+    expect(vinegar?.lyeNeutralization?.naohPerGram).toBeCloseTo(0.0333, 4);
+    expect(vinegar?.lyeNeutralization?.kohPerGram).toBeCloseTo(0.0467, 4);
+  });
+
+  it('computes as-weighed extra lye for NaOH at 99% purity', () => {
+    const extra = extraLyeForAcidLiquid(alternativeLiquidPreset('vinegar')!, 330, {
+      lyeType: 'naoh',
+      kohBlendPercent: 0,
+      naohPurityPercent: 99,
+      kohPurityPercent: 90,
+    });
+    // 330 × 0.0333 = 10.99 pure → /0.99 = 11.10 as weighed
+    expect(extra.naohGrams).toBeCloseTo(11.1, 1);
+    expect(extra.kohGrams).toBe(0);
+  });
+
+  it('splits dual-lye compensation by the KOH blend share, each at its own purity', () => {
+    const extra = extraLyeForAcidLiquid(alternativeLiquidPreset('vinegar')!, 100, {
+      lyeType: 'dual',
+      kohBlendPercent: 5,
+      naohPurityPercent: 99,
+      kohPurityPercent: 90,
+    });
+    // NaOH: 95 g share → 95×0.0333/0.99 ≈ 3.196; KOH: 5 g share → 5×0.0467/0.90 ≈ 0.2595
+    expect(extra.naohGrams).toBeCloseTo(3.2, 1);
+    expect(extra.kohGrams).toBeCloseTo(0.26, 2);
+  });
+
+  it('returns zero for non-acid presets', () => {
+    const extra = extraLyeForAcidLiquid(alternativeLiquidPreset('milk')!, 330, {
+      lyeType: 'naoh',
+      kohBlendPercent: 0,
+      naohPurityPercent: 99,
+      kohPurityPercent: 90,
+    });
+    expect(extra.naohGrams).toBe(0);
+    expect(extra.kohGrams).toBe(0);
   });
 });

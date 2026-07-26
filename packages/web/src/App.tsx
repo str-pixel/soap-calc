@@ -386,6 +386,7 @@ export default function App() {
               lyeWaterStatus={vm.lyeWaterStatus}
               splitLiquidGrams={vm.splitLiquidGrams}
               splitAllocation={vm.splitAllocation}
+              acidExtraLye={vm.acidExtraLye}
             />
 
             <RecipeOilsPanel

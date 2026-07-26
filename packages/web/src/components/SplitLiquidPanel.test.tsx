@@ -29,6 +29,7 @@ function renderPanel(overrides: Partial<Parameters<typeof SplitLiquidPanel>[0]> 
       lyeWaterStatus={null}
       splitLiquidGrams={100}
       allocation={null}
+      acidExtraLye={null}
       onChange={onChange}
       {...overrides}
     />,
@@ -175,4 +176,21 @@ test('warns when budget allocation starves the lye water, blaming the allocation
   const alert = screen.getByRole('alert').textContent ?? '';
   expect(alert).toMatch(/not enough water/i);
   expect(alert).not.toMatch(/% water/);
+});
+
+test('shows the auto-added extra lye for an acid liquid', () => {
+  renderPanel({
+    splitLiquid: { ...ENABLED, presetKey: 'vinegar', name: 'Vinegar (5%)' },
+    splitLiquidGrams: 330,
+    acidExtraLye: { naohGrams: 11.1, kohGrams: 0 },
+  });
+  expect(screen.getByText(/\+11 g NaOH added to offset/i)).toBeTruthy();
+});
+
+test('no extra-lye line for non-acid liquids', () => {
+  renderPanel({
+    splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)' },
+    acidExtraLye: null,
+  });
+  expect(screen.queryByText(/added to offset/i)).toBeNull();
 });
