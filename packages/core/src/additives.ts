@@ -19,7 +19,16 @@ export type AdditiveCatalogEntry = {
    * parts-per-thousand MUST say so, or the UI renders a ppt range with a % sign —
    * a 10× dose overstatement. */
   doseUnit?: DoseUnit;
+  /** Acid additives: grams of PURE alkali consumed per gram of additive — identical in
+   * meaning to AlternativeLiquidPreset.lyeNeutralization. The calc compensates
+   * automatically (extraLyeForAcidAdditives) so the stated superfat survives. */
+  lyeNeutralization?: { naohPerGram: number; kohPerGram: number };
 };
+
+/** Citric acid (anhydrous) C6H8O7 — triprotic, MW 192.123; moles of acid per gram.
+ * (neutralization.ts carries 192.124/56.1056 for the LS after-cook path — different
+ * atomic-mass rounding, numerically irrelevant.) */
+const CITRIC_MOL_PER_GRAM = 1 / 192.123;
 
 export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
@@ -49,6 +58,24 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 1,
     typicalHigh: 1,
     defaultStage: 'lye',
+  },
+  {
+    // Acid form of the citrate chelator: dissolved in the lye water it reacts with the
+    // alkali to form citrate in situ. Consumes lye — compensated automatically, which is
+    // the whole point of lyeNeutralization. CP/HP only: the LS neutralization feature
+    // deliberately doses UNCOMPENSATED citric acid to consume a post-cook lye excess,
+    // and compensating a logged line would add that lye straight back. Does not lower
+    // finished-soap pH; copy must never imply it does.
+    id: 'citric-acid',
+    name: 'Citric acid (anhydrous)',
+    typicalLow: 1,
+    typicalHigh: 2,
+    defaultStage: 'lye',
+    processes: ['cp', 'hp'],
+    lyeNeutralization: {
+      naohPerGram: 3 * CITRIC_MOL_PER_GRAM * 39.997,
+      kohPerGram: 3 * CITRIC_MOL_PER_GRAM * 56.105,
+    },
   },
   {
     id: 'cetyl-alcohol',

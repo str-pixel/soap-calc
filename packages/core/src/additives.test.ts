@@ -249,3 +249,30 @@ describe('dose units (deep-review)', () => {
     expect(sugar?.doseUnit ?? 'percent').toBe('percent');
   });
 });
+
+describe('citric acid additive (auto-lye)', () => {
+  it('offers citric acid for CP/HP at 1–2% into the lye water, never for LS', () => {
+    const citric = catalogEntryById('citric-acid');
+    expect(citric?.name).toBe('Citric acid (anhydrous)');
+    expect(citric?.typicalLow).toBe(1);
+    expect(citric?.typicalHigh).toBe(2);
+    expect(citric?.defaultStage).toBe('lye');
+    expect(citric?.processes).toEqual(['cp', 'hp']);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'citric-acid')).toBe(false);
+    expect(catalogEntriesForProcess('cp').some((e) => e.id === 'citric-acid')).toBe(true);
+  });
+
+  it('carries stoichiometric neutralization factors (triprotic, anhydrous MW 192.123)', () => {
+    const factors = catalogEntryById('citric-acid')?.lyeNeutralization;
+    // digits: 3 — the exact values are 0.6245530/0.8760794; a 4-digit pin on the rounded
+    // figures would sit within 5e-5 of the tolerance edge.
+    expect(factors?.naohPerGram).toBeCloseTo(0.6246, 3);
+    expect(factors?.kohPerGram).toBeCloseTo(0.8761, 3);
+  });
+
+  it('leaves every other entry without neutralization factors', () => {
+    for (const entry of ADDITIVE_CATALOG) {
+      if (entry.id !== 'citric-acid') expect(entry.lyeNeutralization).toBeUndefined();
+    }
+  });
+});
