@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { addExtraLye, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { addExtraLye, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidAdditives, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
@@ -230,14 +230,27 @@ export function useRecipeViewModel({
     ],
   );
   const solutionGrams = dilution?.solutionGrams ?? 0;
+  const acidLyeRecipe = useMemo(
+    () => ({
+      lyeType: previewSettings.lyeType,
+      kohBlendPercent: Number(previewSettings.kohBlendPercent) || 0,
+      naohPurityPercent: Number(previewSettings.naohPurityPercent) || 100,
+      kohPurityPercent: Number(previewSettings.kohPurityPercent) || 100,
+    }),
+    [previewSettings.lyeType, previewSettings.kohBlendPercent, previewSettings.naohPurityPercent, previewSettings.kohPurityPercent],
+  );
   const computedAdditives = useMemo(
     () =>
-      computeRecipeAdditives(additives, {
-        oilGrams: totalOilGrams,
-        batchGrams: baseBatchGrams,
-        solutionGrams,
-      }),
-    [additives, totalOilGrams, baseBatchGrams, solutionGrams],
+      computeRecipeAdditives(
+        additives,
+        {
+          oilGrams: totalOilGrams,
+          batchGrams: baseBatchGrams,
+          solutionGrams,
+        },
+        acidLyeRecipe,
+      ),
+    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe],
   );
   const splitAllocation =
     splitOverride && result
@@ -273,23 +286,18 @@ export function useRecipeViewModel({
     for (const { row, grams } of splitLiquidRows) {
       const preset = alternativeLiquidPreset(row.presetKey);
       if (!preset?.lyeNeutralization || grams == null || grams <= 0) continue;
-      const extra = extraLyeForAcidLiquid(preset, grams, {
-        lyeType: previewSettings.lyeType,
-        kohBlendPercent: Number(previewSettings.kohBlendPercent) || 0,
-        naohPurityPercent: Number(previewSettings.naohPurityPercent) || 100,
-        kohPurityPercent: Number(previewSettings.kohPurityPercent) || 100,
-      });
+      const extra = extraLyeForAcidLiquid(preset, grams, acidLyeRecipe);
       naohGrams += extra.naohGrams;
       kohGrams += extra.kohGrams;
     }
     return naohGrams > 0 || kohGrams > 0 ? { naohGrams, kohGrams } : null;
-  }, [
-    previewSettings.lyeType,
-    previewSettings.kohBlendPercent,
-    previewSettings.naohPurityPercent,
-    previewSettings.kohPurityPercent,
-    splitLiquidRows,
-  ]);
+  }, [acidLyeRecipe, splitLiquidRows]);
+  // Acid ADDITIVES (citric) get the same compensation as acid liquids, but through their
+  // own memo: acidExtraLye is SplitLiquidPanel's display prop and must stay split-only.
+  const additiveAcidExtraLye = useMemo(() => {
+    const extra = extraLyeForAcidAdditives(computedAdditives, acidLyeRecipe);
+    return extra.naohGrams > 0 || extra.kohGrams > 0 ? extra : null;
+  }, [computedAdditives, acidLyeRecipe]);
   // Grams in the batch that do not scale with the oils: grams-sized liquid rows plus the
   // acid lye they demand. The batch-target back-solve needs these to treat the batch as
   // affine rather than proportional. (%-based rows, budget rows, and %-dosed additives all
@@ -301,26 +309,22 @@ export function useRecipeViewModel({
       fixed += grams;
       const preset = alternativeLiquidPreset(row.presetKey);
       if (preset?.lyeNeutralization) {
-        const extra = extraLyeForAcidLiquid(preset, grams, {
-          lyeType: previewSettings.lyeType,
-          kohBlendPercent: Number(previewSettings.kohBlendPercent) || 0,
-          naohPurityPercent: Number(previewSettings.naohPurityPercent) || 100,
-          kohPurityPercent: Number(previewSettings.kohPurityPercent) || 100,
-        });
+        const extra = extraLyeForAcidLiquid(preset, grams, acidLyeRecipe);
         fixed += extra.naohGrams + extra.kohGrams;
       }
     }
     return fixed;
-  }, [
-    previewSettings.lyeType,
-    previewSettings.kohBlendPercent,
-    previewSettings.naohPurityPercent,
-    previewSettings.kohPurityPercent,
-    splitLiquidRows,
-  ]);
+  }, [acidLyeRecipe, splitLiquidRows]);
+  const totalAcidExtraLye = useMemo(() => {
+    if (!acidExtraLye && !additiveAcidExtraLye) return null;
+    return {
+      naohGrams: (acidExtraLye?.naohGrams ?? 0) + (additiveAcidExtraLye?.naohGrams ?? 0),
+      kohGrams: (acidExtraLye?.kohGrams ?? 0) + (additiveAcidExtraLye?.kohGrams ?? 0),
+    };
+  }, [acidExtraLye, additiveAcidExtraLye]);
   const finalResult = useMemo(
-    () => (result && acidExtraLye ? addExtraLye(result, acidExtraLye) : result),
-    [result, acidExtraLye],
+    () => (result && totalAcidExtraLye ? addExtraLye(result, totalAcidExtraLye) : result),
+    [result, totalAcidExtraLye],
   );
   // Post-cook superfat is an HP/LS-only concept. Gate on process so a CP recipe carrying a
   // stray non-zero postCookSuperfatPercent (hand-edited or imported — CP hides the field, so
