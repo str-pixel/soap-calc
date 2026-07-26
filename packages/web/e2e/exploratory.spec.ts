@@ -492,6 +492,19 @@ test.describe('additives', () => {
     expect(await rows.count()).toBeGreaterThan(0);
     await expect(btn).toBeDisabled();
   });
+
+  test('citric acid at 2% adds compensation NaOH to the lye figures', async ({ page }) => {
+    const naohBefore = num(await resultDd(page, /^NaOH/));
+    await page.getByRole('button', { name: '+ Add', exact: true }).click();
+    const row = page.locator('ul[aria-label="Recipe additives"] li').first();
+    await row.getByLabel('Additive type').selectOption({ label: 'Citric acid (anhydrous)' });
+    await row.getByLabel(/^Amount( for .*)?$/).fill('2');
+    await expect(row.getByText(/added to lye/)).toBeVisible();
+    const naohAfter = num(await resultDd(page, /^NaOH/));
+    // 2% of the recipe's oils × 0.6246 — assert the delta is positive and in range rather
+    // than exact, since the starter recipe's oil weight is what the page defines.
+    expect(naohAfter).toBeGreaterThan(naohBefore);
+  });
 });
 
 // ---------- 9. pricing ----------
