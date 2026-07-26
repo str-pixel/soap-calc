@@ -81,9 +81,9 @@ export function hpYogurtPercentForInsights(
  * same yogurt line into this total too would double-warn on one additive line. Non-HP
  * callers (no hp_yogurt_water insight) omit the flag so yogurt still counts here.
  *
- * The result feeds the core `sugar_total_high` insight's 4% ceiling, which is oil-relative
- * (a CP-derived constant) and intentionally applied across every process — see that
- * insight's doc in @soap-calc/core/insights.ts for why. `additives[].grams` already reflects
+ * The result feeds the core `sugar_total_high` insight, whose ceiling is process-aware
+ * (4% under CP/LS, 5% under HP) — this helper only computes the oil-relative total; the
+ * threshold choice lives in @soap-calc/core/insights.ts. `additives[].grams` already reflects
  * each line's resolved dose regardless of dosing basis (oil/batch/solution — resolved
  * upstream by computeRecipeAdditives), so a solution-dosed LS sugar additive contributes its
  * true %-of-oil here, not an inflated solution-relative figure. */
