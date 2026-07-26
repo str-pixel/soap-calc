@@ -261,6 +261,22 @@ describe('normalizeAdditiveLine', () => {
     );
     expect(line.addAt).toBe('trace');
   });
+
+  it('clears a catalogId that no longer resolves, keeping the line as a custom row', () => {
+    // A recipe saved with the removed 'jojoba' additive loads as a custom row (name kept),
+    // not a broken catalog pick with no matching <option>.
+    const line = normalizeAdditiveLine({ key: 'a', catalogId: 'jojoba', name: 'Jojoba oil' });
+    expect(line.catalogId).toBe('');
+    expect(line.name).toBe('Jojoba oil');
+  });
+
+  it('keeps a valid catalogId (including process-scoped entries) untouched', () => {
+    expect(normalizeAdditiveLine({ key: 'a', catalogId: 'sugar-sorbitol' }).catalogId).toBe(
+      'sugar-sorbitol',
+    );
+    // guar is LS-scoped but still a real catalog entry — catalogEntryById is process-agnostic.
+    expect(normalizeAdditiveLine({ key: 'a', catalogId: 'guar' }).catalogId).toBe('guar');
+  });
 });
 
 describe('normalizeSettings whitelist hardening', () => {

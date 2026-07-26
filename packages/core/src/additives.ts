@@ -23,10 +23,23 @@ export type AdditiveCatalogEntry = {
 
 export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
+    // Table sugar and other sugar sources (honey, molasses, milks). Sorbitol is its own
+    // entry below — it carries a higher typical range. (id stays 'sugar-sorbitol' so
+    // recipes saved before the split still resolve.)
     id: 'sugar-sorbitol',
-    name: 'Sugar / sorbitol',
+    name: 'Sugar',
     typicalLow: 0.5,
     typicalHigh: 2,
+    defaultStage: 'trace',
+    hazards: ['can tunnel/overheat'],
+  },
+  {
+    // Sorbitol — sugar alcohol with a stronger lather effect than sucrose, tolerating a
+    // higher dose; same overheat behavior as other sugars.
+    id: 'sorbitol',
+    name: 'Sorbitol',
+    typicalLow: 1,
+    typicalHigh: 5,
     defaultStage: 'trace',
     hazards: ['can tunnel/overheat'],
   },
@@ -59,11 +72,13 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'trace',
   },
   {
+    // Honey is a sugar source — same overheat/tunnel behavior as table sugar.
     id: 'honey',
     name: 'Honey',
     typicalLow: 1,
     typicalHigh: 1,
     defaultStage: 'trace',
+    hazards: ['can tunnel/overheat'],
   },
   {
     id: 'fragrance',
@@ -73,16 +88,13 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'trace',
   },
   {
-    id: 'jojoba',
-    name: 'Jojoba oil',
-    typicalLow: 5,
-    typicalHigh: 10,
-    defaultStage: 'trace',
-  },
-  {
+    // Jojoba is deliberately NOT in this catalog: it belongs in the saponified oil blend
+    // (it is in the oils database, and the jojoba_superfat_note insight still covers it),
+    // not dosed outside the lye math. Legacy saved lines with catalogId 'jojoba' load as
+    // custom rows (normalizeAdditiveLine clears unknown catalog ids).
     id: 'clay',
     name: 'Clay (bentonite, kaolin)',
-    typicalLow: 0.5,
+    typicalLow: 0.1,
     typicalHigh: 2,
     defaultStage: 'oils',
   },
@@ -102,15 +114,15 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Higher dose range than table salt; it hardens the bar without the seize risk.
     id: 'sodium-lactate',
     name: 'Sodium lactate',
-    typicalLow: 1,
-    typicalHigh: 3,
+    typicalLow: 0.5,
+    typicalHigh: 2,
     defaultStage: 'lye',
   },
   {
     // Hydrolyzed silk — dissolved into the lye water, reported to add slip/sheen to lather.
     id: 'silk',
     name: 'Silk (hydrolyzed)',
-    typicalLow: 0.1,
+    typicalLow: 0.25,
     typicalHigh: 1,
     defaultStage: 'lye',
   },
@@ -132,23 +144,23 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     hazards: ['can glycerin-river at high water'],
   },
   {
-    // Eugenol — clove-derived aromatic; dosed in parts-per-thousand, at trace, well below
-    // fragrance-oil percentages.
+    // Eugenol — clove-derived aromatic used as a trace accelerant; dosed in parts-per-thousand,
+    // well below fragrance-oil percentages. Added to the heated oils so it reacts with the lye
+    // from the start (as an accelerant it does nothing added at trace).
     id: 'eugenol',
     name: 'Eugenol',
     typicalLow: 1,
     typicalHigh: 3,
     doseUnit: 'ppt',
-    defaultStage: 'trace',
+    defaultStage: 'oils',
     hazards: ['can seize'],
   },
   {
-    // Loofah — fibrous exfoliant blended into the oils. No cited dose constant for this one;
-    // range is a conservative estimate, not a verified figure like the others above.
+    // Loofah — fibrous exfoliant, ground and blended into the oils.
     id: 'loofah',
     name: 'Loofah',
-    typicalLow: 1,
-    typicalHigh: 5,
+    typicalLow: 0.1,
+    typicalHigh: 0.3,
     defaultStage: 'oils',
   },
   {

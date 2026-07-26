@@ -43,12 +43,12 @@ describe('additives', () => {
     }
   });
 
-  it('offers sodium lactate as a lye-water hardener at 1–3%', () => {
+  it('offers sodium lactate as a lye-water hardener at 0.5–2%', () => {
     const sl = ADDITIVE_CATALOG.find((e) => e.id === 'sodium-lactate');
     expect(sl).toBeDefined();
     expect(sl?.defaultStage).toBe('lye');
-    expect(sl?.typicalLow).toBe(1);
-    expect(sl?.typicalHigh).toBe(3);
+    expect(sl?.typicalLow).toBe(0.5);
+    expect(sl?.typicalHigh).toBe(2);
   });
 
   it('keeps table salt (id "salt") tightened to a hardener dose', () => {
@@ -130,6 +130,56 @@ describe('additive catalog process scoping', () => {
       const entry = catalogEntryById(id);
       expect(entry?.processes).toBeUndefined();
     }
+  });
+});
+
+describe('additive catalog book audit (2026-07-26)', () => {
+  it('doses eugenol into the heated oils (a trace accelerant is pointless at trace)', () => {
+    expect(catalogEntryById('eugenol')?.defaultStage).toBe('oils');
+  });
+
+  it('doses ground loofah at 0.1–0.3%', () => {
+    const loofah = catalogEntryById('loofah');
+    expect(loofah?.typicalLow).toBe(0.1);
+    expect(loofah?.typicalHigh).toBe(0.3);
+  });
+
+  it('doses silk at 0.25–1% in the lye water', () => {
+    const silk = catalogEntryById('silk');
+    expect(silk?.typicalLow).toBe(0.25);
+    expect(silk?.typicalHigh).toBe(1);
+    expect(silk?.defaultStage).toBe('lye');
+  });
+
+  it('doses clay from a 0.1% floor', () => {
+    const clay = catalogEntryById('clay');
+    expect(clay?.typicalLow).toBe(0.1);
+    expect(clay?.typicalHigh).toBe(2);
+  });
+
+  it('tags honey with the sugar overheat hazard', () => {
+    expect(catalogEntryById('honey')?.hazards).toContain('can tunnel/overheat');
+  });
+
+  it('does not offer jojoba as an additive (it belongs in the saponified oil blend)', () => {
+    expect(catalogEntryById('jojoba')).toBeUndefined();
+  });
+
+  it('splits sugar and sorbitol: sugar keeps its id at 0.5–2%, sorbitol is its own entry at 1–5%', () => {
+    // id stays 'sugar-sorbitol' so recipes saved before the split still resolve.
+    const sugar = catalogEntryById('sugar-sorbitol');
+    expect(sugar?.name).toBe('Sugar');
+    expect(sugar?.typicalLow).toBe(0.5);
+    expect(sugar?.typicalHigh).toBe(2);
+    expect(sugar?.defaultStage).toBe('trace');
+
+    const sorbitol = catalogEntryById('sorbitol');
+    expect(sorbitol?.name).toBe('Sorbitol');
+    expect(sorbitol?.typicalLow).toBe(1);
+    expect(sorbitol?.typicalHigh).toBe(5);
+    expect(sorbitol?.defaultStage).toBe('trace');
+    expect(sorbitol?.processes).toBeUndefined();
+    expect(sorbitol?.hazards).toContain('can tunnel/overheat');
   });
 });
 
