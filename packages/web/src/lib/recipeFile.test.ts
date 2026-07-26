@@ -45,6 +45,38 @@ describe('recipeFile', () => {
     expect(recipeAdditivesFromFile(parsed.data.additives)[0].name).toBe('Honey');
   });
 
+  it('clears a catalogId that no longer resolves on import (removed jojoba → custom row)', () => {
+    // A recipe file exported before jojoba was removed from the catalog must import as a
+    // custom row (name kept, catalogId cleared) — not a broken catalog pick with no
+    // matching <option>. Mirrors the localStorage-draft migration.
+    const [line] = recipeAdditivesFromFile([
+      {
+        catalogId: 'jojoba',
+        name: 'Jojoba oil',
+        amount: '5',
+        basis: 'oil',
+        unit: 'percent',
+        addAt: 'trace',
+      },
+    ]);
+    expect(line.catalogId).toBe('');
+    expect(line.name).toBe('Jojoba oil');
+  });
+
+  it('keeps a still-valid catalogId untouched on import', () => {
+    const [line] = recipeAdditivesFromFile([
+      {
+        catalogId: 'sugar-sorbitol',
+        name: 'Sugar',
+        amount: '1',
+        basis: 'oil',
+        unit: 'percent',
+        addAt: 'trace',
+      },
+    ]);
+    expect(line.catalogId).toBe('sugar-sorbitol');
+  });
+
   it('round-trips an after-cook additive (import accepts the new stage)', () => {
     const lines = createStarterLines();
     const additives = recipeAdditivesFromFile([
