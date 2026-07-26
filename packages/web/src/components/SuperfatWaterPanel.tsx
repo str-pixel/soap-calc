@@ -266,6 +266,7 @@ export function SuperfatWaterPanel({
             tea…), so it lives with the water controls. */}
         <SplitLiquidPanel
           rows={settings.splitLiquids}
+          process={process}
           resolvedRows={splitLiquidRows}
           totalOilGrams={totalOilGrams}
           lyeGrams={lyeGrams}
