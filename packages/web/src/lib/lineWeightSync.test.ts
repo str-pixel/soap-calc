@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   addRecipeLine,
+  solveOilTotalForBatchTarget,
   resyncFromWeights,
   syncBatchTotalEdit,
   syncPercentEdit,
   syncWeightEdit,
 } from './lineWeightSync';
+import { createStarterLines } from './recipe';
 import type { RecipeLine } from './recipe';
 
 const twoLines: RecipeLine[] = [
@@ -176,5 +178,30 @@ describe('addRecipeLine', () => {
     }, false);
     expect(result.batchOilGrams).toBe('300');
     expect(result.batchSetByUser).toBe(false);
+  });
+});
+
+describe('solveOilTotalForBatchTarget with fixed-gram extras (2000→1961 bug)', () => {
+  // A grams-mode split liquid (or gram-dosed additive) adds a constant to the batch.
+  // The proportional back-solve scales that constant along with the oils and lands the
+  // typed 2000 at ~1961. The solver must treat the batch as affine: proportional part
+  // plus the fixed grams.
+  it('lands a batch with a 200 g fixed extra on the typed target', () => {
+    const lines = createStarterLines();
+    const oil0 = 1000;
+    const proportional0 = 1469.58; // oils+lye+water for the starter recipe
+    const fixed = 200;
+    const batch0 = proportional0 + fixed;
+    const solved = solveOilTotalForBatchTarget(lines, 2000, oil0, batch0, fixed);
+    const scaled = syncBatchTotalEdit(resyncFromWeights(lines).lines, String(solved));
+    const realizedOil = scaled.reduce((s, l) => s + Number(l.weightGrams || 0), 0);
+    const realized = proportional0 * (realizedOil / oil0) + fixed;
+    expect(Math.abs(realized - 2000)).toBeLessThan(1);
+  });
+
+  it('stays exact for the no-extras case (default omitted)', () => {
+    const lines = createStarterLines();
+    const solved = solveOilTotalForBatchTarget(lines, 2000, 1000, 1469.58);
+    expect(solved).toBe(1361);
   });
 });

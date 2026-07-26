@@ -73,7 +73,11 @@ export type RecipeInputs = {
   handleBatchWeightChange: (displayValue: string) => void;
   commitBatchWeightInput: (
     displayValue: string,
-    context: { currentBatchGrams: number; currentOilTotalGrams: number },
+    context: {
+      currentBatchGrams: number;
+      currentOilTotalGrams: number;
+      fixedExtrasGrams?: number;
+    },
   ) => void;
   setWeightUnit: (nextUnit: WeightUnit) => void;
   addLine: () => void;
@@ -195,7 +199,11 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   // displayTotals-derived figures, never the panel's raw line-sum (basis consistency).
   function commitBatchWeightInput(
     displayValue: string,
-    context: { currentBatchGrams: number; currentOilTotalGrams: number },
+    context: {
+      currentBatchGrams: number;
+      currentOilTotalGrams: number;
+      fixedExtrasGrams?: number;
+    },
   ) {
     const hadDraft = shouldCommitDraft(drafts, batchWeightInputId);
     clearDraft(batchWeightInputId);
@@ -207,7 +215,13 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     if (!Number.isFinite(target) || target <= 0) return;
     if (!(currentBatchGrams > 0) || !(currentOilTotalGrams > 0)) return;
     applyOilTotal(
-      solveOilTotalForBatchTarget(linesRef.current, target, currentOilTotalGrams, currentBatchGrams),
+      solveOilTotalForBatchTarget(
+        linesRef.current,
+        target,
+        currentOilTotalGrams,
+        currentBatchGrams,
+        context.fixedExtrasGrams ?? 0,
+      ),
     );
   }
 

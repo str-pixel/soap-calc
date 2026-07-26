@@ -31,6 +31,7 @@ function Harness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) 
         } as never}
         batchWeightWithExtras={1204}
         recipeOilWeightGrams={1000}
+        fixedBatchExtrasGrams={0}
       />
       <output aria-label="superfat-echo">{settings.superfatPercent}</output>
     </>
@@ -73,6 +74,7 @@ const baseProps = {
   } as never,
   batchWeightWithExtras: 1204,
   recipeOilWeightGrams: 1000,
+  fixedBatchExtrasGrams: 0,
 };
 
 describe('SettingsPanel lye gating', () => {

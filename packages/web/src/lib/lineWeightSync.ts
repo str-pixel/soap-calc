@@ -203,8 +203,22 @@ export function solveOilTotalForBatchTarget(
   targetBatchGrams: number,
   currentOilTotalGrams: number,
   currentBatchGrams: number,
+  /** Grams in the batch that do NOT scale with the oils (grams-sized split liquids and
+   * their acid lye). The batch is affine in oil — proportional part plus these — so the
+   * back-solve must strip them before scaling, or a 200 g fixed liquid drags a typed
+   * 2000 down to ~1961 (scaled along with the oils). */
+  fixedExtrasGrams = 0,
 ): number {
-  const linear = currentOilTotalGrams * (targetBatchGrams / currentBatchGrams);
+  const fixed =
+    Number.isFinite(fixedExtrasGrams) && fixedExtrasGrams > 0 ? fixedExtrasGrams : 0;
+  const proportional0 = currentBatchGrams - fixed;
+  const targetProportional = targetBatchGrams - fixed;
+  // A target at or below the fixed grams (or a degenerate current batch) has no
+  // proportional solution; fall back to the raw ratio rather than dividing by ≤0.
+  const usable = proportional0 > 0 && targetProportional > 0;
+  const linear = usable
+    ? currentOilTotalGrams * (targetProportional / proportional0)
+    : currentOilTotalGrams * (targetBatchGrams / currentBatchGrams);
   const resynced = resyncFromWeights(lines).lines;
   // Percents store 0.1%-rounded, so the resynced sum can land off 100 (12 equal oils →
   // 8.3 each → 99.6). syncBatchTotalEdit realizes round(pctSum×total/100) grams, so
@@ -219,7 +233,9 @@ export function solveOilTotalForBatchTarget(
     if (candidate <= 0) continue;
     const scaled = syncBatchTotalEdit(resynced, String(candidate));
     const realizedOil = totalGrams(scaled);
-    const predictedBatch = currentBatchGrams * (realizedOil / currentOilTotalGrams);
+    const predictedBatch = usable
+      ? proportional0 * (realizedOil / currentOilTotalGrams) + fixed
+      : currentBatchGrams * (realizedOil / currentOilTotalGrams);
     const err = Math.abs(predictedBatch - targetBatchGrams);
     if (err < bestErr) {
       bestErr = err;

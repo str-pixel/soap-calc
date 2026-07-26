@@ -57,6 +57,7 @@ export type RecipeViewModel = {
   computedAdditives: ReturnType<typeof computeRecipeAdditives>;
   splitLiquidGrams: number | null;
   splitLiquidRows: ResolvedSplitLiquidRow[];
+  fixedBatchExtrasGrams: number;
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
   lyeWaterStatus: ReturnType<typeof lyeSolutionWaterStatus> | null;
@@ -282,6 +283,34 @@ export function useRecipeViewModel({
       kohGrams += extra.kohGrams;
     }
     return naohGrams > 0 || kohGrams > 0 ? { naohGrams, kohGrams } : null;
+  }, [
+    previewSettings.lyeType,
+    previewSettings.kohBlendPercent,
+    previewSettings.naohPurityPercent,
+    previewSettings.kohPurityPercent,
+    splitLiquidRows,
+  ]);
+  // Grams in the batch that do not scale with the oils: grams-sized liquid rows plus the
+  // acid lye they demand. The batch-target back-solve needs these to treat the batch as
+  // affine rather than proportional. (%-based rows, budget rows, and %-dosed additives all
+  // scale with the oils, so they stay out of this figure.)
+  const fixedBatchExtrasGrams = useMemo(() => {
+    let fixed = 0;
+    for (const { row, grams } of splitLiquidRows) {
+      if (row.sizeMode !== 'grams' || grams == null || grams <= 0) continue;
+      fixed += grams;
+      const preset = alternativeLiquidPreset(row.presetKey);
+      if (preset?.lyeNeutralization) {
+        const extra = extraLyeForAcidLiquid(preset, grams, {
+          lyeType: previewSettings.lyeType,
+          kohBlendPercent: Number(previewSettings.kohBlendPercent) || 0,
+          naohPurityPercent: Number(previewSettings.naohPurityPercent) || 100,
+          kohPurityPercent: Number(previewSettings.kohPurityPercent) || 100,
+        });
+        fixed += extra.naohGrams + extra.kohGrams;
+      }
+    }
+    return fixed;
   }, [
     previewSettings.lyeType,
     previewSettings.kohBlendPercent,
@@ -566,6 +595,7 @@ export function useRecipeViewModel({
     splitAllocation,
     acidExtraLye,
     splitLiquidRows,
+    fixedBatchExtrasGrams,
     properties,
     indexes,
     fattyAcids,

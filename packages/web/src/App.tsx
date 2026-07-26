@@ -370,6 +370,7 @@ export default function App() {
               inputs={inputs}
               batchWeightWithExtras={vm.batchWeightWithExtras}
               recipeOilWeightGrams={vm.displayTotals?.recipeOilWeightGrams ?? 0}
+              fixedBatchExtrasGrams={vm.fixedBatchExtrasGrams}
               moldSizerInput={moldSizerInput}
               onMoldSizerChange={setMoldSizerInput}
               liveOilBatchFraction={vm.liveOilBatchFraction}

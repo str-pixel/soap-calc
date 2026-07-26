@@ -29,6 +29,7 @@ function renderBasics(inputs: ReturnType<typeof makeInputs>) {
       inputs={inputs as never}
       batchWeightWithExtras={1469.58}
       recipeOilWeightGrams={1000}
+      fixedBatchExtrasGrams={0}
     />,
   );
 }
@@ -47,6 +48,7 @@ test('blurring Total batch commits with the displayTotals-based context', () => 
   expect(inputs.commitBatchWeightInput).toHaveBeenCalledWith('1500', {
     currentBatchGrams: 1469.58,
     currentOilTotalGrams: 1000,
+    fixedExtrasGrams: 0,
   });
 });
 
@@ -78,6 +80,7 @@ test('Total batch field is empty when the recipe has no resolvable batch weight'
       inputs={makeInputs() as never}
       batchWeightWithExtras={0}
       recipeOilWeightGrams={0}
+      fixedBatchExtrasGrams={0}
     />,
   );
   expect((screen.getByLabelText(/Total batch in g/) as HTMLInputElement).value).toBe('');
