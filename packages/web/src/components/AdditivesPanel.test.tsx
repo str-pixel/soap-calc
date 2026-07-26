@@ -344,6 +344,50 @@ describe('per-row accessible names (deep-review)', () => {
   });
 });
 
+describe('name field only for custom rows (duplicate-name fix)', () => {
+  it('hides the name input for a catalog row whose name matches the catalog entry', () => {
+    const line = makeLine({ catalogId: 'clay', name: 'Clay (bentonite, kaolin)' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByLabelText('Name for Clay (bentonite, kaolin)')).toBeNull();
+  });
+
+  it('shows the name input for a custom row', () => {
+    const line = makeLine({ catalogId: '', name: 'My custom blend' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText('Name for My custom blend')).toBeTruthy();
+  });
+
+  it('hides the name input for a catalog row even when its name differs (renaming is what Custom is for)', () => {
+    const line = makeLine({ catalogId: 'clay', name: 'Rose clay' });
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByLabelText('Name for Rose clay')).toBeNull();
+  });
+});
+
 describe('dose-unit reseeding (second wave)', () => {
   it('resets the unit to percent when switching from a ppt entry to a %-dosed entry', () => {
     const onChange = vi.fn();
