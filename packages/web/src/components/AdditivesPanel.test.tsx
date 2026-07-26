@@ -69,7 +69,7 @@ describe('AdditivesPanel catalog picker', () => {
     }
   });
 
-  it('excludes HP-scoped entries (stearic, lauric, yogurt) from the CP picker', () => {
+  it('excludes HP-scoped entries (finished-soap, yogurt) from the CP picker', () => {
     render(
       <AdditivesPanel
         additives={[makeLine()]}
@@ -81,12 +81,11 @@ describe('AdditivesPanel catalog picker', () => {
     );
     const select = screen.getByLabelText('Additive type');
     const renderedIds = optionValues(select).filter((v) => v !== '');
-    expect(renderedIds).not.toContain('stearic');
-    expect(renderedIds).not.toContain('lauric');
+    expect(renderedIds).not.toContain('finished-soap');
     expect(renderedIds).not.toContain('yogurt');
   });
 
-  it('includes HP-scoped entries (stearic, lauric, yogurt) in the HP picker', () => {
+  it('includes HP-scoped entries (finished-soap, yogurt) in the HP picker', () => {
     render(
       <AdditivesPanel
         additives={[makeLine()]}
@@ -98,8 +97,7 @@ describe('AdditivesPanel catalog picker', () => {
     );
     const select = screen.getByLabelText('Additive type');
     const renderedIds = optionValues(select).filter((v) => v !== '');
-    expect(renderedIds).toContain('stearic');
-    expect(renderedIds).toContain('lauric');
+    expect(renderedIds).toContain('finished-soap');
     expect(renderedIds).toContain('yogurt');
   });
 });
@@ -454,5 +452,50 @@ describe('dose-unit reseeding (second wave)', () => {
     const updated = onChange.mock.calls.at(-1)![0][0];
     expect(updated.catalogId).toBe('sugar-sorbitol');
     expect(updated.unit).toBe('percent');
+  });
+});
+
+describe('per-process dose resolution (HP audit)', () => {
+  it('shows the HP range and stage hint for sodium lactate under HP, the base under CP', () => {
+    const line = makeLine({ catalogId: 'sodium-lactate', name: 'Sodium lactate', amount: '1' });
+    const { unmount } = render(
+      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="hp" onChange={() => {}} />,
+    );
+    expect(screen.getByText(/Typical 3–4% of oil weight/)).toBeTruthy();
+    unmount();
+    render(
+      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="cp" onChange={() => {}} />,
+    );
+    expect(screen.getByText(/Typical 0.5–2% of oil weight/)).toBeTruthy();
+  });
+
+  it('picking sodium lactate under HP seeds the trace stage; under CP the lye stage', () => {
+    for (const [process, stage] of [['hp', 'trace'], ['cp', 'lye']] as const) {
+      let latest: AdditiveLine[] = [];
+      const line = makeLine({ name: '' });
+      const { unmount } = render(
+        <AdditivesPanel additives={[line]} computed={[]} weightUnit="g" process={process} onChange={(a) => { latest = a; }} />,
+      );
+      fireEvent.change(screen.getByLabelText(/^Additive type/), { target: { value: 'sodium-lactate' } });
+      expect(latest[0].addAt).toBe(stage);
+      unmount();
+    }
+  });
+});
+
+describe('free-fatty-acid guidance (HP audit)', () => {
+  it('tells HP users to dose stearic/lauric/myristic as oils; silent under CP and LS', () => {
+    const { unmount } = render(
+      <AdditivesPanel additives={[]} computed={[]} weightUnit="g" process="hp" onChange={() => {}} />,
+    );
+    expect(screen.getByText(/stearic, lauric, myristic/i).textContent).toMatch(/as oils|oils list/i);
+    unmount();
+    for (const process of ['cp', 'ls'] as const) {
+      const r = render(
+        <AdditivesPanel additives={[]} computed={[]} weightUnit="g" process={process} onChange={() => {}} />,
+      );
+      expect(screen.queryByText(/stearic, lauric, myristic/i)).toBeNull();
+      r.unmount();
+    }
   });
 });

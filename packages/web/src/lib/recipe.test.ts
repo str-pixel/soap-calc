@@ -154,6 +154,15 @@ describe('postCookSuperfat settings', () => {
     ]);
   });
 
+  it('a saved stearic additive line loads as a custom row, name preserved (entry removed)', () => {
+    const line = normalizeAdditiveLine({
+      key: 'k1', catalogId: 'stearic', name: 'Stearic acid', amount: '6', basis: 'oil', unit: 'percent', addAt: 'oils',
+    });
+    expect(line.catalogId).toBe('');
+    expect(line.name).toBe('Stearic acid');
+    expect(line.amount).toBe('6');
+  });
+
   it('migrates the legacy single-oil fields into a one-row list', () => {
     const s = normalizeSettings({
       postCookSuperfatPercent: '5',

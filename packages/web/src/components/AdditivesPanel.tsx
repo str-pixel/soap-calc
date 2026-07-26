@@ -2,8 +2,10 @@ import { memo } from 'react';
 import {
   catalogEntriesForProcess,
   catalogEntryById,
+  effectiveCatalogEntry,
   LATHER_SUPPORT_PACK,
   parseDoseAmount,
+  type AdditiveCatalogEntry,
   type AdditiveStage,
   type DoseBasis,
   type DoseUnit,
@@ -65,8 +67,15 @@ export const AdditivesPanel = memo(function AdditivesPanel({
     );
   }
 
+  // Ranges and default stages can differ per process (e.g. sodium lactate: 0.5–2% in the
+  // CP lye water vs 3–4% at trace under HP) — resolve every catalog read through the
+  // active process. Id/name are never overridden, so identity-based code (the
+  // mismatched-select guard, dedup) can keep using the raw entry.
+  const resolve = (e: AdditiveCatalogEntry | undefined) =>
+    e ? effectiveCatalogEntry(e, process) : undefined;
+
   function selectCatalog(key: string, catalogId: string) {
-    const entry = catalogEntryById(catalogId);
+    const entry = resolve(catalogEntryById(catalogId));
     if (!entry) {
       updateLine(key, { catalogId: '', name: '' });
       return;
@@ -154,6 +163,15 @@ export const AdditivesPanel = memo(function AdditivesPanel({
         </div>
       </div>
 
+      {process === 'hp' && (
+        // Deliberately NOT in the empty-state branch: it applies whether or not rows exist.
+        // The free fatty acids were removed from this catalog (they saponify — see
+        // ADDITIVE_CATALOG's finished-soap comment); this is where HP users find them now.
+        <p className="results-hint">
+          Free fatty acids (stearic, lauric, myristic) saponify — dose them as oils in the oils
+          list, typically 5–8% of oils for a fluid cook.
+        </p>
+      )}
       {additives.length === 0 ? (
         <p className="results-hint">
           Optional extras (fragrance, sugar, clay, etc.) dosed per additive — not included in lye
@@ -163,7 +181,11 @@ export const AdditivesPanel = memo(function AdditivesPanel({
         <ul className="additive-list" aria-label="Recipe additives">
           {additives.map((line, rowIndex) => {
             const row = computed.find((item) => item.key === line.key);
-            const entry = line.catalogId ? catalogEntryById(line.catalogId) : undefined;
+            // rawEntry for identity concerns (the catalog mismatched-select guard below);
+            // entry — resolved per process — for everything dose-shaped (range hint,
+            // doseUnit, hazards).
+            const rawEntry = line.catalogId ? catalogEntryById(line.catalogId) : undefined;
+            const entry = resolve(rawEntry);
             // An amount present but over its unit's ceiling (e.g. left at 500 after switching
             // from ppt to %) yields no grams — flag it so the dose doesn't just vanish silently.
             const amountInvalid =
@@ -188,8 +210,8 @@ export const AdditivesPanel = memo(function AdditivesPanel({
             const catalogOptions =
               line.catalogId === '' || catalogEntries.some((item) => item.id === line.catalogId)
                 ? catalogEntries
-                : entry
-                  ? [...catalogEntries, entry]
+                : rawEntry
+                  ? [...catalogEntries, rawEntry]
                   : catalogEntries;
 
             // Per-row accessible names, mirroring RecipeOilsPanel's per-oil labels: with
