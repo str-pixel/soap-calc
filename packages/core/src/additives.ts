@@ -21,7 +21,8 @@ export type AdditiveCatalogEntry = {
   doseUnit?: DoseUnit;
   /** Acid additives: grams of PURE alkali consumed per gram of additive — identical in
    * meaning to AlternativeLiquidPreset.lyeNeutralization. The calc compensates
-   * automatically (extraLyeForAcidAdditives) so the stated superfat survives. */
+   * automatically (extraLyeForAcid, applied per line by the web dose resolver) so the
+   * stated superfat survives. CP/HP only — LS deliberately never compensates. */
   lyeNeutralization?: { naohPerGram: number; kohPerGram: number };
 };
 

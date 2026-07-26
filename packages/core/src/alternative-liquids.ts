@@ -1,5 +1,3 @@
-import { catalogEntryById } from './additives.js';
-
 /** Advisory flags for alternative split liquids: what in the liquid interacts with the
  * lye reaction or the finished bar. 'acid' liquids consume lye and carry the neutralization
  * factors to compensate automatically. */
@@ -167,23 +165,4 @@ export function extraLyeForAcidLiquid(
   const factors = preset.lyeNeutralization;
   if (!factors) return { naohGrams: 0, kohGrams: 0 };
   return extraLyeForAcid(factors, liquidGrams, recipe);
-}
-
-/** Sum of acid compensation over additive lines whose catalog entry carries
- * lyeNeutralization (today: citric acid). `grams` is each line's RESOLVED dose weight,
- * so every dose basis (oil/batch/solution) and unit works unchanged. */
-export function extraLyeForAcidAdditives(
-  additives: Array<{ catalogId: string; grams: number }>,
-  recipe: AcidLyeRecipe,
-): ExtraLyeForAcid {
-  let naohGrams = 0;
-  let kohGrams = 0;
-  for (const line of additives) {
-    const factors = catalogEntryById(line.catalogId)?.lyeNeutralization;
-    if (!factors) continue;
-    const extra = extraLyeForAcid(factors, line.grams, recipe);
-    naohGrams += extra.naohGrams;
-    kohGrams += extra.kohGrams;
-  }
-  return { naohGrams, kohGrams };
 }

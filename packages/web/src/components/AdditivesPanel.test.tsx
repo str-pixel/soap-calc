@@ -257,6 +257,19 @@ describe('acid compensation line', () => {
   });
 });
 
+describe('empty-state copy is process-scoped', () => {
+  it('does not mention citric under LS, where citric is never offered', () => {
+    render(<AdditivesPanel additives={[]} computed={[]} weightUnit="g" process="ls" onChange={() => {}} />);
+    expect(screen.queryByText(/citric/i)).toBeNull();
+  });
+
+  it('mentions the citric auto-lye under CP', () => {
+    render(<AdditivesPanel additives={[]} computed={[]} weightUnit="g" process="cp" onChange={() => {}} />);
+    // getByText throws if the copy is absent — the assert is the retrieval itself.
+    expect(screen.getByText(/citric acid's compensation lye is added automatically/)).toBeTruthy();
+  });
+});
+
 function doseModeValues(select: HTMLElement): string[] {
   return within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
 }

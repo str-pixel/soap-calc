@@ -292,6 +292,40 @@ test('vinegar split liquid and citric additive stack; the split acid figure stay
   expect(both.result.naohWeightGrams - vinegarOnly.result.naohWeightGrams).toBeCloseTo(citricExtra, 1);
 });
 
+test('under LS a stray citric line is never compensated (LS doses citric uncompensated, post-cook)', () => {
+  // Citric is CP/HP-only in the catalog, but a hand-edited or imported LS recipe can still
+  // carry a line. Compensating it would add the lye straight back — the exact failure the
+  // catalog comment forbids. Gate mirrors the PCSF process gate below it.
+  let without: any;
+  let withCitric: any;
+  probe((vm) => { without = vm; }, { lyeType: 'koh' }, 'ls');
+  probe((vm) => { withCitric = vm; }, { lyeType: 'koh' }, 'ls', undefined, [CITRIC_LINE]);
+  const line = withCitric.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
+  // The line still resolves (dose math is process-blind) but carries no compensation…
+  expect(line.grams).toBeGreaterThan(0);
+  expect(line.extraLye).toBeUndefined();
+  // …and the lye result is untouched.
+  expect(withCitric.result.kohWeightGrams).toBeCloseTo(without.result.kohWeightGrams, 6);
+  expect(withCitric.result.naohWeightGrams).toBeCloseTo(without.result.naohWeightGrams, 6);
+});
+
+test('two citric lines each carry their share and the lye result sums both (per-line pin)', () => {
+  // Pins that the result-level compensation is the sum of the lines' own extraLye figures —
+  // one computation, panel and lye result provably agree.
+  let vm: any;
+  probe((v) => { vm = v; }, {}, 'cp', undefined, [
+    CITRIC_LINE,
+    { ...CITRIC_LINE, key: 'citric-2', amount: '1' },
+  ]);
+  let without: any;
+  probe((v) => { without = v; });
+  const oilGrams = vm.totalOilGrams;
+  const expectedTotal = (oilGrams * 0.03 * 0.6246) / 0.99;
+  expect(vm.result.naohWeightGrams - without.result.naohWeightGrams).toBeCloseTo(expectedTotal, 1);
+  const lineSum = vm.computedAdditives.reduce((s: number, a: any) => s + (a.extraLye?.naohGrams ?? 0), 0);
+  expect(lineSum).toBeCloseTo(expectedTotal, 1);
+});
+
 test('batch-basis citric resolves against the pre-compensation batch weight (one-pass pin)', () => {
   let vm: any;
   probe((v) => { vm = v; }, {}, 'cp', undefined, [{ ...CITRIC_LINE, basis: 'batch' }]);

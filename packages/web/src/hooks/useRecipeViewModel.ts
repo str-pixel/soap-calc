@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { addExtraLye, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidAdditives, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { addExtraLye, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
@@ -248,9 +248,15 @@ export function useRecipeViewModel({
           batchGrams: baseBatchGrams,
           solutionGrams,
         },
-        acidLyeRecipe,
+        // LS never compensates acid additives: the LS neutralization feature doses citric
+        // UNCOMPENSATED to consume a post-cook lye excess, and a hand-edited/imported LS
+        // recipe carrying a citric line must not get that lye added back. Withholding the
+        // recipe context here keeps every line's extraLye undefined, so the panel hint and
+        // the lye result stay consistent by construction. (Same rationale as the PCSF
+        // process gate below.)
+        process === 'ls' ? undefined : acidLyeRecipe,
       ),
-    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe],
+    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe, process],
   );
   const splitAllocation =
     splitOverride && result
@@ -294,10 +300,17 @@ export function useRecipeViewModel({
   }, [acidLyeRecipe, splitLiquidRows]);
   // Acid ADDITIVES (citric) get the same compensation as acid liquids, but through their
   // own memo: acidExtraLye is SplitLiquidPanel's display prop and must stay split-only.
+  // Summing the lines' own extraLye (not re-deriving from the catalog) keeps the panel's
+  // per-row figures and the lye result one computation — and inherits the LS gate above.
   const additiveAcidExtraLye = useMemo(() => {
-    const extra = extraLyeForAcidAdditives(computedAdditives, acidLyeRecipe);
-    return extra.naohGrams > 0 || extra.kohGrams > 0 ? extra : null;
-  }, [computedAdditives, acidLyeRecipe]);
+    let naohGrams = 0;
+    let kohGrams = 0;
+    for (const line of computedAdditives) {
+      naohGrams += line.extraLye?.naohGrams ?? 0;
+      kohGrams += line.extraLye?.kohGrams ?? 0;
+    }
+    return naohGrams > 0 || kohGrams > 0 ? { naohGrams, kohGrams } : null;
+  }, [computedAdditives]);
   // Grams in the batch that do not scale with the oils: grams-sized liquid rows plus the
   // acid lye they demand. The batch-target back-solve needs these to treat the batch as
   // affine rather than proportional. (%-based rows, budget rows, and %-dosed additives all
