@@ -1,5 +1,4 @@
 import {
-  ADDITIVE_STAGE_LABELS,
   ALTERNATIVE_LIQUID_GUIDE,
   alternativeLiquidPreset,
   type LyeSolutionWaterStatus,
@@ -7,63 +6,64 @@ import {
   type WaterMode,
 } from '@soap-calc/core';
 import { InfoTip } from './InfoTip';
-import type { SplitLiquidSettings } from '../lib/recipe';
+import type { SplitLiquidRow } from '../lib/recipe';
+import { newSplitLiquidKey } from '../lib/recipe';
 import { splitLiquidWaterFraction } from '../lib/calculateAdditives';
+import type { ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import { formatInputNumber } from '../lib/format';
 import { splitLiquidManualWaterHint } from '../lib/splitLiquidHint';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
 type SplitLiquidPanelProps = {
-  splitLiquid: SplitLiquidSettings;
+  rows: SplitLiquidRow[];
+  /** View-model-resolved grams per row (same order as `rows`). */
+  resolvedRows: ResolvedSplitLiquidRow[];
   totalOilGrams: number;
   lyeGrams: number;
   weightUnit: WeightUnit;
   waterMode: WaterMode;
   waterSuggestion: SplitLiquidWaterSuggestion | null;
-  /** Effective-water check for the lye solution; only meaningful when addAt is 'lye'. */
+  /** Effective-water check for the lye solution (in-lye rows or budget allocation). */
   lyeWaterStatus: LyeSolutionWaterStatus | null;
-  /** Resolved liquid grams for the current sizing mode (view-model owned). */
-  splitLiquidGrams: number | null;
-  /** Budget allocation (budget sizing modes only): the calc's lye water + the target. */
+  /** Budget allocation (budget sizing rows only): the calc's lye water + the target. */
   allocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
-  /** Auto-added lye compensating an acid liquid (view-model owned; null when none). */
+  /** Auto-added lye compensating acid rows (view-model owned; null when none). */
   acidExtraLye: { naohGrams: number; kohGrams: number } | null;
-  onChange: (splitLiquid: SplitLiquidSettings) => void;
+  onChange: (rows: SplitLiquidRow[]) => void;
   onApplySuggestedWater?: (waterPercentOfOils: string) => void;
 };
 
+const NEW_ROW = (): SplitLiquidRow => ({
+  key: newSplitLiquidKey(),
+  presetKey: '',
+  name: '',
+  customWaterPercent: '',
+  sizeMode: 'percent_of_oils',
+  amount: '',
+  addAt: 'trace',
+});
+
 export function SplitLiquidPanel({
-  splitLiquid,
+  rows,
+  resolvedRows,
   totalOilGrams,
   lyeGrams,
   weightUnit,
   waterMode,
   waterSuggestion,
   lyeWaterStatus,
-  splitLiquidGrams,
   allocation,
   acidExtraLye,
   onChange,
   onApplySuggestedWater,
 }: SplitLiquidPanelProps) {
-  const grams = splitLiquid.enabled ? splitLiquidGrams : null;
-
-  const preset = alternativeLiquidPreset(splitLiquid.presetKey);
   const budgetModesAvailable = waterMode === 'percent_of_oils';
-  const waterFraction = splitLiquidWaterFraction(splitLiquid);
-  // A thick liquid displaces real water from the budget; past ~5% of the total liquid the
-  // batter will move noticeably faster and thicker than the water figure suggests.
-  const displacedWaterGrams =
-    grams !== null && allocation !== null ? grams * (1 - waterFraction) : 0;
-  const showFluidityNote =
-    allocation !== null && displacedWaterGrams > allocation.targetLiquidGrams * 0.05;
-  const recommendTrace =
-    splitLiquid.addAt === 'lye' &&
-    (preset?.flags.includes('sugars') || preset?.flags.includes('alcohol'));
-  // The view model supplies a status only when the lye solution is actually at stake:
-  // an in-lye liquid, or a budget allocation that reduced the lye water.
-  const showShortfall = lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
+  const gramsByKey = new Map(resolvedRows.map(({ row, grams }) => [row.key, grams]));
+  const totalGrams = resolvedRows.reduce((sum, { grams }) => sum + (grams ?? 0), 0);
+
+  const updateRow = (key: string, patch: Partial<SplitLiquidRow>) =>
+    onChange(rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
 
   const canApplyWater =
     waterMode === 'percent_of_oils' &&
@@ -81,6 +81,16 @@ export function SplitLiquidPanel({
         })
       : null;
 
+  const showShortfall = lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
+  // The thick-liquid note aggregates every row's displaced water against the budget.
+  const displacedWaterGrams = resolvedRows.reduce(
+    (sum, { row, grams }) =>
+      grams != null ? sum + grams * (1 - splitLiquidWaterFraction(row)) : sum,
+    0,
+  );
+  const showFluidityNote =
+    allocation !== null && displacedWaterGrams > allocation.targetLiquidGrams * 0.05;
+
   return (
     <section className="panel panel--nested">
       <div className="panel__head">
@@ -94,147 +104,164 @@ export function SplitLiquidPanel({
             </InfoTip>
           </span>
           <p className="panel__subtitle">
-            Minimum water in lye; alternative liquid added separately
+            Minimum water in lye; alternative liquids added separately
           </p>
         </div>
-        <label className="field field--inline field--checkbox">
-          <input
-            type="checkbox"
-            checked={splitLiquid.enabled}
-            onChange={(e) => onChange({ ...splitLiquid, enabled: e.target.checked })}
-          />
-          <span>Enable</span>
-        </label>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={() => onChange([...rows, NEW_ROW()])}
+        >
+          + Add liquid
+        </button>
       </div>
 
-      {splitLiquid.enabled && (
-        <div className="settings-grid">
-          <label className="field">
-            <span>Liquid preset</span>
-            <select
-              className="input"
-              value={splitLiquid.presetKey}
-              onChange={(e) => {
-                const nextKey = e.target.value;
-                const nextPreset = alternativeLiquidPreset(nextKey);
-                onChange({
-                  ...splitLiquid,
-                  presetKey: nextPreset ? nextKey : '',
-                  // A preset names the liquid; back to custom keeps whatever was typed.
-                  name: nextPreset ? nextPreset.label : splitLiquid.name,
-                });
-              }}
-            >
-              <option value="">Custom…</option>
-              {ALTERNATIVE_LIQUID_GUIDE.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Liquid name</span>
-            <input
-              type="text"
-              className="input"
-              placeholder="e.g. goat milk, pumpkin puree"
-              value={splitLiquid.name}
-              onChange={(e) => onChange({ ...splitLiquid, name: e.target.value })}
-            />
-          </label>
-          {preset === null && (
-            <label className="field">
-              <span>% water (optional)</span>
-              <input
-                type="number"
-                className="input"
-                min={1}
-                max={100}
-                step={1}
-                placeholder="100"
-                value={splitLiquid.customWaterPercent}
-                onChange={(e) => onChange({ ...splitLiquid, customWaterPercent: e.target.value })}
-              />
-            </label>
-          )}
-          <label className="field">
-            <span>Sized by</span>
-            <select
-              className="input"
-              value={splitLiquid.sizeMode}
-              onChange={(e) =>
-                onChange({
-                  ...splitLiquid,
-                  sizeMode: e.target.value as SplitLiquidSettings['sizeMode'],
-                })
-              }
-            >
-              <option value="percent_of_oils">% of oil weight</option>
-              <option value="grams">Weight</option>
-              <option value="percent_of_liquid" disabled={!budgetModesAvailable}>
-                % of total liquid{budgetModesAvailable ? '' : ' (needs % of oils water)'}
-              </option>
-              <option value="rest" disabled={!budgetModesAvailable}>
-                All liquid above the lye minimum{budgetModesAvailable ? '' : ' (needs % of oils water)'}
-              </option>
-            </select>
-          </label>
-          {splitLiquid.sizeMode !== 'rest' && (
-            <label className="field">
-              <span>Amount</span>
-              <input
-                type="number"
-                className="input"
-                min={0}
-                step={0.1}
-                value={splitLiquid.amount}
-                onChange={(e) => onChange({ ...splitLiquid, amount: e.target.value })}
-              />
-            </label>
-          )}
-          <label className="field">
-            <span>
-              Add at
-              <InfoTip term="add at">
-                Where the alternative liquid joins the batch. At trace (after the oils and
-                lye are blended) is the safest default for milks and other sugary liquids;
-                in the lye water exposes them to the hottest step.
-              </InfoTip>
-            </span>
-            <select
-              className="input"
-              value={splitLiquid.addAt}
-              onChange={(e) =>
-                onChange({
-                  ...splitLiquid,
-                  addAt: e.target.value as SplitLiquidSettings['addAt'],
-                })
-              }
-            >
-              <option value="lye">In lye water</option>
-              <option value="oils">With oils</option>
-              <option value="trace">At trace</option>
-            </select>
-          </label>
-          {allocation && grams !== null && (
+      {rows.length > 0 && (
+        <div className="split-liquid-rows">
+          {rows.map((row) => {
+            const preset = alternativeLiquidPreset(row.presetKey);
+            const grams = gramsByKey.get(row.key) ?? null;
+            const otherHasRest = rows.some((r) => r.key !== row.key && r.sizeMode === 'rest');
+            const recommendTrace =
+              row.addAt === 'lye' &&
+              (preset?.flags.includes('sugars') || preset?.flags.includes('alcohol'));
+            return (
+              <div className="settings-grid split-liquid-row" key={row.key}>
+                <label className="field">
+                  <span>Liquid preset</span>
+                  <select
+                    className="input"
+                    value={row.presetKey}
+                    onChange={(e) => {
+                      const nextKey = e.target.value;
+                      const nextPreset = alternativeLiquidPreset(nextKey);
+                      updateRow(row.key, {
+                        presetKey: nextPreset ? nextKey : '',
+                        // A preset names the liquid; back to custom keeps what was typed.
+                        name: nextPreset ? nextPreset.label : row.name,
+                      });
+                    }}
+                  >
+                    <option value="">Custom…</option>
+                    {ALTERNATIVE_LIQUID_GUIDE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Liquid name</span>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="e.g. goat milk, pumpkin puree"
+                    value={row.name}
+                    onChange={(e) => updateRow(row.key, { name: e.target.value })}
+                  />
+                </label>
+                {preset === null && (
+                  <label className="field">
+                    <span>% water (optional)</span>
+                    <input
+                      type="number"
+                      className="input"
+                      min={1}
+                      max={100}
+                      step={1}
+                      placeholder="100"
+                      value={row.customWaterPercent}
+                      onChange={(e) => updateRow(row.key, { customWaterPercent: e.target.value })}
+                    />
+                  </label>
+                )}
+                <label className="field">
+                  <span>Sized by</span>
+                  <select
+                    className="input"
+                    value={row.sizeMode}
+                    onChange={(e) =>
+                      updateRow(row.key, { sizeMode: e.target.value as SplitLiquidRow['sizeMode'] })
+                    }
+                  >
+                    <option value="percent_of_oils">% of oil weight</option>
+                    <option value="grams">Weight</option>
+                    <option value="percent_of_liquid" disabled={!budgetModesAvailable}>
+                      % of total liquid{budgetModesAvailable ? '' : ' (needs % of oils water)'}
+                    </option>
+                    <option value="rest" disabled={!budgetModesAvailable || otherHasRest}>
+                      All liquid above the lye minimum
+                      {!budgetModesAvailable
+                        ? ' (needs % of oils water)'
+                        : otherHasRest
+                          ? ' (already used)'
+                          : ''}
+                    </option>
+                  </select>
+                </label>
+                {row.sizeMode !== 'rest' && (
+                  <label className="field">
+                    <span>Amount</span>
+                    <input
+                      type="number"
+                      className="input"
+                      min={0}
+                      step={0.1}
+                      value={row.amount}
+                      onChange={(e) => updateRow(row.key, { amount: e.target.value })}
+                    />
+                  </label>
+                )}
+                <label className="field">
+                  <span>
+                    Add at
+                    <InfoTip term="add at">
+                      Where the liquid joins the batch. At trace (after the oils and lye are
+                      blended) is the safest default for milks and other sugary liquids; in
+                      the lye water exposes them to the hottest step.
+                    </InfoTip>
+                  </span>
+                  <select
+                    className="input"
+                    value={row.addAt}
+                    onChange={(e) =>
+                      updateRow(row.key, { addAt: e.target.value as SplitLiquidRow['addAt'] })
+                    }
+                  >
+                    <option value="lye">In lye water</option>
+                    <option value="oils">With oils</option>
+                    <option value="trace">At trace</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="btn btn--ghost split-liquid-row__remove"
+                  aria-label="Remove liquid"
+                  onClick={() => onChange(rows.filter((r) => r.key !== row.key))}
+                >
+                  Remove
+                </button>
+                {grams !== null && grams > 0 && (
+                  <p className="split-liquid-preview">
+                    {row.name.trim() || 'Alternative liquid'}: {formatWeight(grams, weightUnit)}
+                  </p>
+                )}
+                {recommendTrace && (
+                  <p className="split-liquid-note">
+                    Recommended: at trace — sugars scorch in hot lye. If it must go in the
+                    lye, freeze the liquid and add the lye slowly.
+                  </p>
+                )}
+                {preset?.note && <p className="split-liquid-note">{preset.note}</p>}
+              </div>
+            );
+          })}
+
+          {allocation && totalGrams > 0 && (
             <p className="split-liquid-preview">
               {formatWeight(allocation.lyeWaterGrams, weightUnit)} lye water (1 : 1) +{' '}
-              {formatWeight(grams, weightUnit)}{' '}
-              {splitLiquid.name.trim() || 'alternative liquid'} ={' '}
+              {formatWeight(totalGrams, weightUnit)} alternative liquid ={' '}
               {formatWeight(allocation.targetLiquidGrams, weightUnit)} total liquid
-            </p>
-          )}
-          {recommendTrace && (
-            <p className="split-liquid-note">
-              Recommended: at trace — sugars scorch in hot lye. If it must go in the lye,
-              freeze the liquid and add the lye slowly.
-            </p>
-          )}
-          {showFluidityNote && (
-            <p className="split-liquid-note">
-              Thick liquid — about {Math.round((1 - waterFraction) * 100)}% of it isn&apos;t
-              water, so expect a thicker, faster trace than the water figure suggests.
             </p>
           )}
           {acidExtraLye && (acidExtraLye.naohGrams > 0 || acidExtraLye.kohGrams > 0) && (
@@ -251,24 +278,20 @@ export function SplitLiquidPanel({
                 .join(' and ')} added to offset the acid — already included in the lye figures.`}
             </p>
           )}
-          {preset?.note && <p className="split-liquid-note">{preset.note}</p>}
-          {showShortfall && (
-            <p className="split-liquid-warning" role="alert">
-              Not enough water to dissolve the lye:{' '}
-              {preset && preset.waterFraction < 1 && splitLiquid.addAt === 'lye'
-                ? `this liquid is only ${Math.round(preset.waterFraction * 100)}% water, leaving `
-                : 'the lye solution has less water than lye, with '}
-              {formatWeight(lyeWaterStatus!.effectiveWaterGrams, weightUnit)} of real water against
-              the {formatWeight(lyeWaterStatus!.floorGrams, weightUnit)} minimum — equal parts water
-              and lye — needed to dissolve it. Add at least{' '}
-              {formatWeight(lyeWaterStatus!.shortfallGrams, weightUnit)} more water, or add the
-              liquid at trace instead.
+          {showFluidityNote && (
+            <p className="split-liquid-note">
+              Thick liquids — a meaningful share of them isn&apos;t water, so expect a
+              thicker, faster trace than the water figure suggests.
             </p>
           )}
-          {grams !== null && (
-            <p className="split-liquid-preview">
-              {splitLiquid.name.trim() || 'Alternative liquid'}:{' '}
-              {formatWeight(grams, weightUnit)} ({ADDITIVE_STAGE_LABELS[splitLiquid.addAt]})
+          {showShortfall && (
+            <p className="split-liquid-warning" role="alert">
+              Not enough water to dissolve the lye: the solution has{' '}
+              {formatWeight(lyeWaterStatus!.effectiveWaterGrams, weightUnit)} of real water
+              against the {formatWeight(lyeWaterStatus!.floorGrams, weightUnit)} minimum —
+              equal parts water and lye — needed to dissolve it. Add at least{' '}
+              {formatWeight(lyeWaterStatus!.shortfallGrams, weightUnit)} more water, or move
+              liquids to trace instead.
             </p>
           )}
           {waterSuggestion && waterSuggestion.reductionGrams > 0 && (

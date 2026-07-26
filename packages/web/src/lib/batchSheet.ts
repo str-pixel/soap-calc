@@ -14,7 +14,7 @@ import type { RecipeFattyAcids } from './calculateFattyAcids';
 import type { RecipeDisplayTotals } from './calculateRecipe';
 import type { RecipeIndexResult } from './calculateRecipeIndexes';
 import type { ProcessId } from './process';
-import type { RecipeLine, RecipeSettings, SplitLiquidSettings, WeightUnit } from './recipe';
+import type { RecipeLine, RecipeSettings, SplitLiquidRow, WeightUnit } from './recipe';
 import { oilDisplayName } from './oilDisplay';
 import { formatGrams } from './format';
 import { formatWeight } from './weightUnits';
@@ -32,7 +32,7 @@ export type BatchSheetData = {
   result: LyeCalculationResult;
   displayTotals: RecipeDisplayTotals;
   additives: ComputedAdditive[];
-  splitLiquid: SplitLiquidSettings | undefined;
+  splitLiquidRows: Array<{ row: SplitLiquidRow; grams: number | null }>;
   splitLiquidGrams: number | null;
   postCookSuperfat: ComputedPostCookSuperfat | null;
   pcsfIsExtra: boolean;

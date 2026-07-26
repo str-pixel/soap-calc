@@ -33,7 +33,7 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
     result,
     displayTotals,
     additives: [],
-    splitLiquid: undefined,
+    splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat,
     pcsfIsExtra: true,
@@ -72,7 +72,7 @@ test('prints a "Modeled profile" note naming derived-profile oils', () => {
     result,
     displayTotals,
     additives: [],
-    splitLiquid: undefined,
+    splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
     pcsfIsExtra: false,
@@ -126,7 +126,7 @@ test('prints a total superfat (cook + post-cook) row', () => {
     result,
     displayTotals,
     additives: [],
-    splitLiquid: undefined,
+    splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat,
     pcsfIsExtra: true,
@@ -175,7 +175,7 @@ test('subtract + negative main superfat: prints no "reserved" note and no Total 
     result,
     displayTotals,
     additives: [],
-    splitLiquid: undefined,
+    splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat,
     // cookFactor guard: a lye excess (superfat -2%) forces cookFactor back to 1, so the
@@ -222,7 +222,7 @@ test('subtract + non-negative main superfat: prints "reserved" note and Total su
     result,
     displayTotals,
     additives: [],
-    splitLiquid: undefined,
+    splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat,
     // Non-negative superfat: the subtract reserve is actually applied, so the PCSF oil is
@@ -262,7 +262,7 @@ test('prints no post-cook-superfat line when absent', () => {
     result,
     displayTotals,
     additives: [],
-    splitLiquid: undefined,
+    splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
     pcsfIsExtra: true,
@@ -299,7 +299,7 @@ test('prints bar-property scores without a percent sign', () => {
     result,
     displayTotals,
     additives: [],
-    splitLiquid: undefined,
+    splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
     pcsfIsExtra: true,
@@ -328,18 +328,16 @@ test('prints bar-property scores without a percent sign', () => {
 
 test('prints the split-liquid advisory note and an explicit liquid step', () => {
   const lines = createStarterLines();
-  const settings = {
-    ...DEFAULT_SETTINGS,
-    splitLiquid: {
-      enabled: true,
-      presetKey: 'milk',
-      name: 'Milk (dairy or plant)',
-      customWaterPercent: '',
-      sizeMode: 'percent_of_oils' as const,
-      amount: '20',
-      addAt: 'trace' as const,
-    },
+  const milkRow = {
+    key: 'row-milk',
+    presetKey: 'milk',
+    name: 'Milk (dairy or plant)',
+    customWaterPercent: '',
+    sizeMode: 'percent_of_oils' as const,
+    amount: '20',
+    addAt: 'trace' as const,
   };
+  const settings = { ...DEFAULT_SETTINGS, splitLiquids: [milkRow] };
   const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
   if (!result || !displayTotals) throw new Error('expected a valid calculation');
   const splitLiquidGrams = displayTotals.recipeOilWeightGrams * 0.2;
@@ -355,7 +353,7 @@ test('prints the split-liquid advisory note and an explicit liquid step', () => 
     result,
     displayTotals,
     additives: [],
-    splitLiquid: settings.splitLiquid,
+    splitLiquidRows: [{ row: milkRow, grams: splitLiquidGrams }],
     splitLiquidGrams,
     postCookSuperfat: null,
     pcsfIsExtra: true,

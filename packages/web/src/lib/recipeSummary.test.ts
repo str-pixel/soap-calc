@@ -146,9 +146,9 @@ test('buildAddOrderSteps keeps the generic CP timing copy when estimates are una
 });
 
 const SPLIT = (
-  over: Partial<import('./recipe').SplitLiquidSettings> = {},
-): import('./recipe').SplitLiquidSettings => ({
-  enabled: true,
+  over: Partial<import('./recipe').SplitLiquidRow> = {},
+): import('./recipe').SplitLiquidRow => ({
+  key: 'row-1',
   presetKey: '',
   name: 'goat milk',
   customWaterPercent: '',
@@ -163,7 +163,7 @@ const CP_BASE = {
 };
 
 test('CP steps blend the alternative liquid in at trace, before fragrance', () => {
-  const steps = buildAddOrderSteps({ ...CP_BASE, splitLiquid: SPLIT(), splitLiquidGrams: 200 });
+  const steps = buildAddOrderSteps({ ...CP_BASE, splitLiquidRows: [{ row: SPLIT(), grams: 200 }] });
   const idx = steps.findIndex((s) => s.includes('goat milk'));
   expect(steps[idx]).toContain('200 g');
   expect(steps[idx].toLowerCase()).toContain('trace');
@@ -173,8 +173,7 @@ test('CP steps blend the alternative liquid in at trace, before fragrance', () =
 test('CP steps stir an in-lye liquid into the cooled lye solution, with a sugar caution for sugary presets', () => {
   const steps = buildAddOrderSteps({
     ...CP_BASE,
-    splitLiquid: SPLIT({ presetKey: 'milk', name: 'Milk (dairy or plant)', addAt: 'lye' }),
-    splitLiquidGrams: 200,
+    splitLiquidRows: [{ row: SPLIT({ presetKey: 'milk', name: 'Milk (dairy or plant)', addAt: 'lye' }), grams: 200 }],
   });
   const step = steps.find((s) => s.includes('Milk (dairy or plant)'))!;
   expect(step).toContain('cooled lye solution');
@@ -182,7 +181,7 @@ test('CP steps stir an in-lye liquid into the cooled lye solution, with a sugar 
 });
 
 test('CP steps blend a with-oils liquid into the oils before the lye goes in', () => {
-  const steps = buildAddOrderSteps({ ...CP_BASE, splitLiquid: SPLIT({ addAt: 'oils' }), splitLiquidGrams: 200 });
+  const steps = buildAddOrderSteps({ ...CP_BASE, splitLiquidRows: [{ row: SPLIT({ addAt: 'oils' }), grams: 200 }] });
   const idx = steps.findIndex((s) => s.includes('goat milk'));
   expect(steps[idx].toLowerCase()).toContain('oils');
   expect(idx).toBeLessThan(steps.findIndex((s) => s.includes('lye solution into the oils')));
@@ -190,7 +189,7 @@ test('CP steps blend a with-oils liquid into the oils before the lye goes in', (
 
 test('HP steps stir the liquid into the cooked paste, without repeating "after the cook"', () => {
   const steps = buildAddOrderSteps({
-    ...CP_BASE, process: 'hp', splitLiquid: SPLIT(), splitLiquidGrams: 200,
+    ...CP_BASE, process: 'hp', splitLiquidRows: [{ row: SPLIT(), grams: 200 }],
   });
   const idx = steps.findIndex((s) => s.includes('goat milk'));
   expect(steps[idx].toLowerCase()).toContain('cooked paste');
@@ -200,15 +199,31 @@ test('HP steps stir the liquid into the cooked paste, without repeating "after t
 
 test('LS steps add the liquid to the diluted soap', () => {
   const steps = buildAddOrderSteps({
-    ...CP_BASE, process: 'ls', splitLiquid: SPLIT(), splitLiquidGrams: 200,
+    ...CP_BASE, process: 'ls', splitLiquidRows: [{ row: SPLIT(), grams: 200 }],
   });
   const idx = steps.findIndex((s) => s.includes('goat milk'));
   expect(steps[idx].toLowerCase()).toContain('diluted soap');
   expect(idx).toBeGreaterThan(steps.findIndex((s) => s.includes('Dilute the paste')));
 });
 
-test('steps are unchanged when the split is disabled or empty', () => {
+test('steps are unchanged when there are no rows or only zero-gram rows', () => {
   const base = buildAddOrderSteps(CP_BASE);
-  expect(buildAddOrderSteps({ ...CP_BASE, splitLiquid: SPLIT({ enabled: false }), splitLiquidGrams: 200 })).toEqual(base);
-  expect(buildAddOrderSteps({ ...CP_BASE, splitLiquid: SPLIT(), splitLiquidGrams: 0 })).toEqual(base);
+  expect(buildAddOrderSteps({ ...CP_BASE, splitLiquidRows: [] })).toEqual(base);
+  expect(buildAddOrderSteps({ ...CP_BASE, splitLiquidRows: [{ row: SPLIT(), grams: 0 }] })).toEqual(base);
+});
+
+test('two rows at different stages both appear, each at its position', () => {
+  const steps = buildAddOrderSteps({
+    ...CP_BASE,
+    splitLiquidRows: [
+      { row: SPLIT({ name: 'aloe juice', addAt: 'oils', key: 'row-a' }), grams: 50 },
+      { row: SPLIT({ name: 'goat milk', addAt: 'trace', key: 'row-b' }), grams: 150 },
+    ],
+  });
+  const aloeIdx = steps.findIndex((s) => s.includes('aloe juice'));
+  const milkIdx = steps.findIndex((s) => s.includes('goat milk'));
+  expect(aloeIdx).toBeGreaterThan(-1);
+  expect(milkIdx).toBeGreaterThan(-1);
+  expect(aloeIdx).toBeLessThan(steps.findIndex((s) => s.includes('lye solution into the oils')));
+  expect(milkIdx).toBeGreaterThan(steps.findIndex((s) => s.includes('blend to light trace')));
 });

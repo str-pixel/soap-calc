@@ -67,8 +67,8 @@ export interface RecipePricingSource {
   computedAdditives: Array<{ key: string; catalogId: string; name: string; grams: number }>;
   lyeGrams: number;
   batchWeightWithExtras: number;
-  /** Enabled split liquid, if any — a real material the batch weight already includes. */
-  splitLiquid: { name: string; grams: number } | null;
+  /** Alternative liquids, if any — real materials the batch weight already includes. */
+  splitLiquids: Array<{ key: string; name: string; grams: number }>;
   /** Post-cook superfat oils; `isExtra` (append mode) means the grams are ADDED to the batch
    * and must be priced — subtract mode reserves oil already priced in `lines`. */
   postCookSuperfat: { oils: { oilId: string; grams: number }[]; isExtra: boolean } | null;
@@ -103,14 +103,15 @@ export function buildRecipePricingContext(src: RecipePricingSource): RecipePrici
     name: a.name,
     grams: a.grams,
   }));
-  if (src.splitLiquid && src.splitLiquid.grams > 0) {
+  for (const liquid of src.splitLiquids) {
+    if (liquid.grams <= 0) continue;
     additives.push({
-      key: 'split-liquid',
-      // Id-stable synthetic catalogId: keying by the user-editable name orphaned the
-      // stored price on every rename (and collided with a same-named custom additive).
-      catalogId: 'split-liquid',
-      name: src.splitLiquid.name.trim() || 'Alternative liquid',
-      grams: src.splitLiquid.grams,
+      key: `split-liquid-${liquid.key}`,
+      // Id-stable synthetic catalogId keyed by the ROW key: the user-editable name would
+      // orphan the stored price on every rename (and collide with same-named additives).
+      catalogId: `split-liquid-${liquid.key}`,
+      name: liquid.name.trim() || 'Alternative liquid',
+      grams: liquid.grams,
     });
   }
   return {

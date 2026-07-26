@@ -117,7 +117,9 @@ export function computePostCookSuperfat(
 /** Resolve the fraction of a split liquid that is actually water. Presets carry their own
  * value; custom liquids use the optional % water input, and fall back to pure water when
  * it is blank or out of range — the assumption is disclosed in the panel. */
-export function splitLiquidWaterFraction(splitLiquid: SplitLiquidSettings): number {
+export function splitLiquidWaterFraction(
+  splitLiquid: Pick<SplitLiquidSettings, 'presetKey' | 'customWaterPercent'>,
+): number {
   const preset = alternativeLiquidPreset(splitLiquid.presetKey);
   if (preset) return preset.waterFraction;
   const percent = Number(splitLiquid.customWaterPercent);

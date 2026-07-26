@@ -1,4 +1,4 @@
-import type { RecipeSettings, SplitLiquidSettings } from './recipe';
+import type { RecipeSettings, SplitLiquidRow } from './recipe';
 
 type SizingContext = {
   totalOilGrams: number;
@@ -7,28 +7,57 @@ type SizingContext = {
   lyeGrams: number;
 };
 
-/** Resolve the alternative liquid's grams for the chosen sizing mode, or null when the
- * amount is blank/invalid. 'rest' needs no amount: it is everything the liquid budget
- * holds above the 1:1 lye-water minimum. */
-export function resolveSplitLiquidGrams(
-  splitLiquid: SplitLiquidSettings,
+export type ResolvedSplitLiquidRow = { row: SplitLiquidRow; grams: number | null };
+
+export type ResolvedSplitLiquids = {
+  rows: ResolvedSplitLiquidRow[];
+  /** Sum of the resolved rows (nulls excluded). */
+  totalGrams: number;
+};
+
+function amountOf(row: SplitLiquidRow): number | null {
+  const amount = Number(row.amount);
+  if (row.amount.trim() === '' || !Number.isFinite(amount) || amount <= 0) return null;
+  return amount;
+}
+
+/**
+ * Resolve every alternative-liquid row to grams. Budget rows draw from the total-liquid
+ * target: percent_of_liquid takes its share, and the single 'rest' row (normalize enforces
+ * uniqueness) takes whatever the budget still holds above the 1:1 lye minimum after the
+ * other budget rows. Additive rows (percent_of_oils, grams) stack on top as before.
+ */
+export function resolveSplitLiquidRows(
+  rows: SplitLiquidRow[],
   ctx: SizingContext,
-): number | null {
-  if (splitLiquid.sizeMode === 'rest') {
-    return Math.max(0, ctx.targetLiquidGrams - ctx.lyeGrams);
-  }
-  const amount = Number(splitLiquid.amount);
-  if (splitLiquid.amount.trim() === '' || !Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-  switch (splitLiquid.sizeMode) {
-    case 'grams':
-      return amount;
-    case 'percent_of_liquid':
-      return (ctx.targetLiquidGrams * amount) / 100;
-    default:
-      return (ctx.totalOilGrams * amount) / 100;
-  }
+): ResolvedSplitLiquids {
+  const budgetDrawGrams = rows.reduce((sum, row) => {
+    if (row.sizeMode !== 'percent_of_liquid') return sum;
+    const amount = amountOf(row);
+    return amount === null ? sum : sum + (ctx.targetLiquidGrams * amount) / 100;
+  }, 0);
+
+  const resolved = rows.map((row): ResolvedSplitLiquidRow => {
+    if (row.sizeMode === 'rest') {
+      return {
+        row,
+        grams: Math.max(0, ctx.targetLiquidGrams - ctx.lyeGrams - budgetDrawGrams),
+      };
+    }
+    const amount = amountOf(row);
+    if (amount === null) return { row, grams: null };
+    switch (row.sizeMode) {
+      case 'grams':
+        return { row, grams: amount };
+      case 'percent_of_liquid':
+        return { row, grams: (ctx.targetLiquidGrams * amount) / 100 };
+      default:
+        return { row, grams: (ctx.totalOilGrams * amount) / 100 };
+    }
+  });
+
+  const totalGrams = resolved.reduce((sum, r) => sum + (r.grams ?? 0), 0);
+  return { rows: resolved, totalGrams };
 }
 
 export type SplitLiquidCalcOverride = {
@@ -39,36 +68,40 @@ export type SplitLiquidCalcOverride = {
 };
 
 /**
- * Budget allocation for the two budget sizing modes, under percent-of-oils water only —
- * there the water setting reads naturally as a total-liquid target. 'rest' pins the lye
- * water at the 1:1 floor; 'percent_of_liquid' gives the lye water the remainder of the
- * budget (never below 1:1 — the calc's own floor semantics still apply downstream).
- * Legacy sizing modes and explicit-strength water modes (lye concentration / ratio) are
- * left untouched: additive semantics with the existing suggestion flow.
+ * Budget allocation across the rows, under percent-of-oils water only — there the water
+ * setting reads naturally as a total-liquid target. Any 'rest' row pins the lye water at
+ * the 1:1 floor; otherwise percent_of_liquid rows reduce the water by their combined
+ * share. Additive rows and explicit-strength water modes are left untouched.
  */
 export function splitLiquidCalcOverride(
   settings: RecipeSettings,
   totalOilGrams: number,
 ): SplitLiquidCalcOverride | null {
-  const { splitLiquid, waterMode } = settings;
-  if (!splitLiquid.enabled || waterMode !== 'percent_of_oils' || totalOilGrams <= 0) return null;
-  if (splitLiquid.sizeMode !== 'rest' && splitLiquid.sizeMode !== 'percent_of_liquid') return null;
+  const rows = settings.splitLiquids;
+  if (rows.length === 0 || settings.waterMode !== 'percent_of_oils' || totalOilGrams <= 0) {
+    return null;
+  }
+  const hasRest = rows.some((row) => row.sizeMode === 'rest');
+  const percentOfLiquidShare = rows.reduce((sum, row) => {
+    if (row.sizeMode !== 'percent_of_liquid') return sum;
+    const amount = amountOf(row);
+    return amount === null ? sum : sum + amount;
+  }, 0);
+  if (!hasRest && percentOfLiquidShare <= 0) return null;
 
   const percent = Number(settings.waterPercentOfOils);
   if (!Number.isFinite(percent) || percent <= 0) return null;
   const targetLiquidGrams = (totalOilGrams * percent) / 100;
 
-  if (splitLiquid.sizeMode === 'rest') {
+  if (hasRest) {
     return {
       settingsForCalc: { ...settings, waterMode: 'lye_water_ratio', lyeWaterRatio: '1' },
       targetLiquidGrams,
     };
   }
 
-  const amount = Number(splitLiquid.amount);
-  if (splitLiquid.amount.trim() === '' || !Number.isFinite(amount) || amount <= 0) return null;
-  const altGrams = (targetLiquidGrams * amount) / 100;
-  const waterGrams = Math.max(0, targetLiquidGrams - altGrams);
+  const allocatedGrams = (targetLiquidGrams * percentOfLiquidShare) / 100;
+  const waterGrams = Math.max(0, targetLiquidGrams - allocatedGrams);
   const waterPercentOfOils = (waterGrams / totalOilGrams) * 100;
   return {
     settingsForCalc: {

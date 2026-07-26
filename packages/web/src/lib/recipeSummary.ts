@@ -1,6 +1,6 @@
 import { alternativeLiquidPreset } from '@soap-calc/core';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from './calculateAdditives';
-import type { SplitLiquidSettings, WeightUnit } from './recipe';
+import type { SplitLiquidRow, WeightUnit } from './recipe';
 import type { ProcessId } from './process';
 import { additiveStageLabel } from './additiveStageLabel';
 import { formatGrams } from './format';
@@ -23,8 +23,7 @@ type FullRecipeInput = {
   kohBlendPercent?: string;
   waterGrams: number;
   additives: ComputedAdditive[];
-  splitLiquid?: SplitLiquidSettings;
-  splitLiquidGrams?: number | null;
+  splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
   postCookSuperfat?: ComputedPostCookSuperfat | null;
   process: ProcessId;
 };
@@ -47,8 +46,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
     kohBlendPercent,
     waterGrams,
     additives,
-    splitLiquid,
-    splitLiquidGrams,
+    splitLiquidRows,
     postCookSuperfat,
     process,
   } = input;
@@ -84,10 +82,11 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
     detail: formatWeight(waterGrams, weightUnit),
   });
 
-  if (splitLiquid?.enabled && splitLiquidGrams != null && splitLiquidGrams > 0) {
+  for (const { row, grams } of splitLiquidRows ?? []) {
+    if (grams == null || grams <= 0) continue;
     items.push({
-      name: splitLiquid.name.trim() || 'Alternative liquid',
-      detail: `${formatWeight(splitLiquidGrams, weightUnit)} · ${additiveStageLabel(splitLiquid.addAt, process)}`,
+      name: row.name.trim() || 'Alternative liquid',
+      detail: `${formatWeight(grams, weightUnit)} · ${additiveStageLabel(row.addAt, process)}`,
     });
   }
 
@@ -117,10 +116,9 @@ type AddOrderInput = {
   lyeGrams: number;
   waterGrams: number;
   weightUnit: WeightUnit;
-  /** Split-liquid settings + resolved grams: when enabled, the procedure gains an explicit
-   * "add the {liquid}" step at the right point, so the printed sheet never omits it. */
-  splitLiquid?: SplitLiquidSettings;
-  splitLiquidGrams?: number | null;
+  /** Alternative-liquid rows + resolved grams: each gains an explicit "add the {liquid}"
+   * step at the right point, so the printed sheet never omits one. */
+  splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
   /** Preformatted unmold window from the workability estimate (e.g. "≈ 11–34 h"). When
    * present it replaces the generic CP timing so this list can never disagree with the
    * Workability rows above it. */
@@ -139,24 +137,24 @@ type AddOrderInput = {
  * split is off. In-lye liquids get a scorch caution when the preset carries a sugars flag —
  * the one advisory that must survive onto the printed sheet. */
 export function splitLiquidProcedureStep(input: {
-  splitLiquid?: SplitLiquidSettings;
-  splitLiquidGrams?: number | null;
+  row: SplitLiquidRow;
+  grams: number | null;
   weightUnit: WeightUnit;
   process: ProcessId;
-}): { step: string; addAt: SplitLiquidSettings['addAt'] } | null {
-  const { splitLiquid, splitLiquidGrams, weightUnit, process } = input;
-  if (!splitLiquid?.enabled || splitLiquidGrams == null || splitLiquidGrams <= 0) return null;
-  const amount = formatWeight(splitLiquidGrams, weightUnit);
-  const name = splitLiquid.name.trim() || 'the alternative liquid';
-  const sugary = alternativeLiquidPreset(splitLiquid.presetKey)?.flags.includes('sugars') ?? false;
+}): { step: string; addAt: SplitLiquidRow['addAt'] } | null {
+  const { row, grams, weightUnit, process } = input;
+  if (grams == null || grams <= 0) return null;
+  const amount = formatWeight(grams, weightUnit);
+  const name = row.name.trim() || 'the alternative liquid';
+  const sugary = alternativeLiquidPreset(row.presetKey)?.flags.includes('sugars') ?? false;
 
-  if (splitLiquid.addAt === 'lye') {
+  if (row.addAt === 'lye') {
     return {
       addAt: 'lye',
       step: `Stir ${amount} ${name} into the cooled lye solution${sugary ? ' — keep it cool; sugars scorch in hot lye' : ''}.`,
     };
   }
-  if (splitLiquid.addAt === 'oils') {
+  if (row.addAt === 'oils') {
     return { addAt: 'oils', step: `Blend ${amount} ${name} into the oils before the lye goes in.` };
   }
   const trace =
@@ -174,12 +172,17 @@ export function buildAddOrderSteps(input: AddOrderInput): string[] {
   const lye = formatWeight(lyeGrams, weightUnit);
   const water = formatWeight(waterGrams, weightUnit);
   const alkali = lyeType === 'dual' ? 'lye' : lyeType === 'koh' ? 'KOH' : 'NaOH';
-  const liquid = splitLiquidProcedureStep(input);
-  // Where the liquid step slots in, per process: after the oils step for 'oils', after the
-  // lye step for 'lye', and at the process's own late stage for 'trace'.
+  const liquids = (input.splitLiquidRows ?? [])
+    .map(({ row, grams }) => splitLiquidProcedureStep({ row, grams, weightUnit, process }))
+    .filter((step): step is NonNullable<typeof step> => step !== null);
+  // Where the liquid steps slot in, per process: after the oils step for 'oils', after the
+  // lye step for 'lye', and at the process's own late stage for 'trace'. Later insertions
+  // go first so earlier positions aren't shifted by the splice.
   const withLiquid = (steps: string[], positions: { lye: number; oils: number; trace: number }) => {
-    if (!liquid) return steps;
-    steps.splice(positions[liquid.addAt], 0, liquid.step);
+    const ordered = [...liquids].sort((a, b) => positions[b.addAt] - positions[a.addAt]);
+    for (const liquid of ordered) {
+      steps.splice(positions[liquid.addAt], 0, liquid.step);
+    }
     return steps;
   };
 

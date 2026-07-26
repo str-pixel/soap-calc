@@ -27,7 +27,7 @@ function renderPanel() {
       displayTotals={{ recipeOilWeightGrams: 1000 } as never}
       weightUnit="g"
       waterMode={'concentration' as never}
-      splitLiquid={undefined as never}
+      splitLiquidRows={[]}
       splitLiquidGrams={null}
       additives={[] as never}
       superfatPercent={'5'}
@@ -63,7 +63,7 @@ describe('single-sourced batch weight (deep-review)', () => {
         displayTotals={{ recipeOilWeightGrams: 1000 } as never}
         weightUnit="g"
         waterMode={'concentration' as never}
-        splitLiquid={undefined as never}
+        splitLiquidRows={[]}
         splitLiquidGrams={null}
         additives={[] as never}
         superfatPercent={'5'}

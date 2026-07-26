@@ -173,10 +173,9 @@ export default function App() {
         computedAdditives: vm.computedAdditives,
         lyeGrams,
         batchWeightWithExtras: vm.batchWeightWithExtras,
-        splitLiquid:
-          vm.previewSettings.splitLiquid?.enabled && vm.splitLiquidGrams
-            ? { name: vm.previewSettings.splitLiquid.name, grams: vm.splitLiquidGrams }
-            : null,
+        splitLiquids: vm.splitLiquidRows
+          .filter(({ grams }) => grams != null && grams > 0)
+          .map(({ row, grams }) => ({ key: row.key, name: row.name, grams: grams as number })),
         postCookSuperfat: vm.postCookSuperfat
           ? {
               oils: vm.postCookSuperfat.oils.map((o) => ({ oilId: o.oilId, grams: o.grams })),
@@ -189,7 +188,7 @@ export default function App() {
       vm.computedAdditives,
       lyeGrams,
       vm.batchWeightWithExtras,
-      vm.previewSettings.splitLiquid,
+      vm.splitLiquidRows,
       vm.splitLiquidGrams,
       vm.postCookSuperfat,
       vm.pcsfIsExtra,
@@ -210,7 +209,7 @@ export default function App() {
       displayTotals={vm.displayTotals}
       weightUnit={weightUnit}
       waterMode={vm.previewSettings.waterMode}
-      splitLiquid={vm.previewSettings.splitLiquid}
+      splitLiquidRows={vm.splitLiquidRows}
       splitLiquidGrams={vm.splitLiquidGrams}
       additives={vm.computedAdditives}
       superfatPercent={vm.previewSettings.superfatPercent}
@@ -384,7 +383,7 @@ export default function App() {
               weightUnit={weightUnit}
               waterSuggestion={vm.waterSuggestion}
               lyeWaterStatus={vm.lyeWaterStatus}
-              splitLiquidGrams={vm.splitLiquidGrams}
+              splitLiquidRows={vm.splitLiquidRows}
               splitAllocation={vm.splitAllocation}
               acidExtraLye={vm.acidExtraLye}
             />

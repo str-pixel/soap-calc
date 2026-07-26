@@ -132,7 +132,7 @@ describe('recipeFile', () => {
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.data.settings.splitLiquid).toEqual(settings.splitLiquid);
+    expect(parsed.data.settings.splitLiquids).toEqual(settings.splitLiquids);
   });
 
   it('round-trips post-cook superfat oils (multi-oil)', () => {
