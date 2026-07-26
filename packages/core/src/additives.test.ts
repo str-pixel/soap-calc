@@ -82,25 +82,14 @@ describe('additive catalog process scoping', () => {
     expect(cp.some((e) => e.id === 'sugar-sorbitol')).toBe(true);
   });
 
-  it('offers stearic, lauric, and yogurt only for HP', () => {
+  it('offers yogurt only for HP', () => {
     const hp = catalogEntriesForProcess('hp').map((e) => e.id);
-    expect(hp).toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
+    expect(hp).toEqual(expect.arrayContaining(['yogurt']));
 
     const cp = catalogEntriesForProcess('cp').map((e) => e.id);
-    expect(cp).not.toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
+    expect(cp).not.toEqual(expect.arrayContaining(['yogurt']));
     const ls = catalogEntriesForProcess('ls').map((e) => e.id);
-    expect(ls).not.toEqual(expect.arrayContaining(['stearic', 'lauric', 'yogurt']));
-  });
-
-  it('doses stearic and lauric as oils at 5–8%', () => {
-    const stearic = catalogEntryById('stearic');
-    const lauric = catalogEntryById('lauric');
-    for (const entry of [stearic, lauric]) {
-      expect(entry).toBeDefined();
-      expect(entry?.defaultStage).toBe('oils');
-      expect(entry?.typicalLow).toBe(5);
-      expect(entry?.typicalHigh).toBe(8);
-    }
+    expect(ls).not.toEqual(expect.arrayContaining(['yogurt']));
   });
 
   it('doses yogurt after cook at 2–5%', () => {
@@ -303,5 +292,23 @@ describe('per-process catalog overrides (HP audit 2026-07-26)', () => {
   it('returns the entry unchanged for a process with no override', () => {
     const honey = catalogEntryById('honey')!;
     expect(effectiveCatalogEntry(honey, 'hp')).toEqual(honey);
+  });
+});
+
+describe('free fatty acids are oils, not additives (HP audit 2026-07-26)', () => {
+  it('carries no stearic/lauric additive entries — they saponify and belong in the oils list', () => {
+    expect(catalogEntryById('stearic')).toBeUndefined();
+    expect(catalogEntryById('lauric')).toBeUndefined();
+  });
+
+  it('offers finished soap as the lye-neutral HP trace accelerant at 0.05–1% into the oils', () => {
+    const soap = catalogEntryById('finished-soap');
+    expect(soap?.name).toBe('Finished soap (grated or liquid)');
+    expect([soap?.typicalLow, soap?.typicalHigh]).toEqual([0.05, 1]);
+    expect(soap?.defaultStage).toBe('oils');
+    expect(soap?.processes).toEqual(['hp']);
+    expect(catalogEntriesForProcess('hp').some((e) => e.id === 'finished-soap')).toBe(true);
+    expect(catalogEntriesForProcess('cp').some((e) => e.id === 'finished-soap')).toBe(false);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'finished-soap')).toBe(false);
   });
 });

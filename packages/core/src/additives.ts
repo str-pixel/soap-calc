@@ -213,21 +213,21 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'oils',
   },
   {
-    // Stearic acid — added "as oils" to a fluid-HP cook to help build the thick, translucent
-    // trace phase. HP-only: a CP or LS bar/liquid has no equivalent use for this in the catalog.
-    id: 'stearic',
-    name: 'Stearic acid',
-    typicalLow: 5,
-    typicalHigh: 8,
-    defaultStage: 'oils',
-    processes: ['hp'],
-  },
-  {
-    // Lauric acid — added "as oils" alongside stearic in a fluid-HP cook, same rationale.
-    id: 'lauric',
-    name: 'Lauric acid',
-    typicalLow: 5,
-    typicalHigh: 8,
+    // Free fatty acids (stearic, lauric, myristic) are deliberately NOT in this catalog:
+    // they saponify, so dosing them outside the lye math builds hidden superfat (5-8% of
+    // oils is a typical fluid-HP stearic dose — that much unsaponified acid undercuts the
+    // hardening it was added for). They live in the oils database (stearic-acid,
+    // lauric-acid, myristic-acid) with SAP values. Legacy saved lines with catalogId
+    // 'stearic'/'lauric' load as custom rows (normalizeAdditiveLine clears unknown ids —
+    // same path as the removed 'jojoba' entry).
+    //
+    // Finished soap — the lye-neutral HP trace accelerant / emulsion stabilizer: grated
+    // bar or liquid soap melted into the hot oils. Already saponified, so unlike the free
+    // fatty acids it genuinely takes no lye.
+    id: 'finished-soap',
+    name: 'Finished soap (grated or liquid)',
+    typicalLow: 0.05,
+    typicalHigh: 1,
     defaultStage: 'oils',
     processes: ['hp'],
   },
