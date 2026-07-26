@@ -242,17 +242,25 @@ export function useRecipeViewModel({
     splitOverride && result
       ? { lyeWaterGrams: result.waterWeightGrams, targetLiquidGrams: splitOverride.targetLiquidGrams }
       : null;
-  const resolvedSplit =
-    previewSettings.splitLiquids.length > 0 && result
-      ? resolveSplitLiquidRows(previewSettings.splitLiquids, {
-          totalOilGrams,
-          // Budget rows size against the pre-allocation target; additive rows against
-          // the recipe's own water (its only sensible "total liquid").
-          targetLiquidGrams: splitOverride?.targetLiquidGrams ?? result.waterWeightGrams,
-          lyeGrams: result.lyeWeightGrams,
-        })
-      : null;
-  const splitLiquidRows: ResolvedSplitLiquidRow[] = resolvedSplit?.rows ?? [];
+  // Memoized: rows' identity feeds several memos below (acid, floor check, suggestion,
+  // insights, batch sheet) — an unstable array would silently disable all of them.
+  const resolvedSplit = useMemo(
+    () =>
+      previewSettings.splitLiquids.length > 0 && result
+        ? resolveSplitLiquidRows(previewSettings.splitLiquids, {
+            totalOilGrams,
+            // Budget rows size against the pre-allocation target; additive rows against
+            // the recipe's own water (its only sensible "total liquid").
+            targetLiquidGrams: splitOverride?.targetLiquidGrams ?? result.waterWeightGrams,
+            lyeGrams: result.lyeWeightGrams,
+          })
+        : null,
+    [previewSettings.splitLiquids, result, splitOverride, totalOilGrams],
+  );
+  const splitLiquidRows: ResolvedSplitLiquidRow[] = useMemo(
+    () => resolvedSplit?.rows ?? [],
+    [resolvedSplit],
+  );
   const splitLiquidGrams =
     resolvedSplit && resolvedSplit.totalGrams > 0 ? resolvedSplit.totalGrams : null;
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
@@ -533,6 +541,7 @@ export function useRecipeViewModel({
     result,
     settings.batchNotes,
     splitLiquidGrams,
+    splitLiquidRows,
     weightUnit,
   ]);
 
