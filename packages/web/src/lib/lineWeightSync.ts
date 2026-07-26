@@ -245,6 +245,64 @@ export function solveOilTotalForBatchTarget(
   return best;
 }
 
+/**
+ * Exact batch-target landing: the whole-gram solve gets within half a batch-step of the
+ * target (achievable batches are quantized by the batch-per-oil-gram slope); the residual
+ * is then converted to oil grams and carried as a single deci-gram correction on the
+ * largest line, so the realized batch matches the typed figure to the display's precision.
+ */
+export function solveOilLinesForBatchTarget(
+  lines: RecipeLine[],
+  targetBatchGrams: number,
+  currentOilTotalGrams: number,
+  currentBatchGrams: number,
+  fixedExtrasGrams = 0,
+): { lines: RecipeLine[]; batchOilGrams: string } {
+  const wholeTotal = solveOilTotalForBatchTarget(
+    lines,
+    targetBatchGrams,
+    currentOilTotalGrams,
+    currentBatchGrams,
+    fixedExtrasGrams,
+  );
+  const scaled = syncBatchTotalEdit(resyncFromWeights(lines).lines, String(wholeTotal));
+  const realizedOil = totalGrams(scaled);
+  const fixed =
+    Number.isFinite(fixedExtrasGrams) && fixedExtrasGrams > 0 ? fixedExtrasGrams : 0;
+  const proportional0 = currentBatchGrams - fixed;
+  if (!(proportional0 > 0) || !(currentOilTotalGrams > 0) || realizedOil <= 0) {
+    return { lines: scaled, batchOilGrams: String(wholeTotal) };
+  }
+  const slope = proportional0 / currentOilTotalGrams; // batch grams per oil gram
+  const residualBatch =
+    targetBatchGrams - (proportional0 * (realizedOil / currentOilTotalGrams) + fixed);
+  const deltaOil = Math.round((residualBatch / slope) * 10) / 10;
+  if (deltaOil === 0) {
+    return { lines: scaled, batchOilGrams: String(wholeTotal) };
+  }
+  // Carry the correction on the largest line: the relative distortion is smallest there,
+  // and a negative delta can never drive it below zero.
+  let largest = -1;
+  let largestGrams = 0;
+  scaled.forEach((line, i) => {
+    const grams = parseNum(line.weightGrams) ?? 0;
+    if (grams > largestGrams) {
+      largestGrams = grams;
+      largest = i;
+    }
+  });
+  if (largest < 0 || largestGrams + deltaOil <= 0) {
+    return { lines: scaled, batchOilGrams: String(wholeTotal) };
+  }
+  const corrected = scaled.map((line, i) =>
+    i === largest
+      ? { ...line, weightGrams: String(Math.round((largestGrams + deltaOil) * 10) / 10) }
+      : line,
+  );
+  const total = Math.round(totalGrams(corrected) * 10) / 10;
+  return { lines: corrected, batchOilGrams: String(total) };
+}
+
 export function addRecipeLine(
   lines: RecipeLine[],
   batchOilGrams: string,
