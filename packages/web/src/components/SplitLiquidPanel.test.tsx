@@ -162,3 +162,17 @@ test('warns about thicker trace when a thick liquid displaces meaningful water',
   });
   expect(screen.getByText(/thicker, faster trace/i)).toBeTruthy();
 });
+
+test('warns when budget allocation starves the lye water, blaming the allocation not the liquid', () => {
+  // percent_of_liquid at 90%: water 33 g vs 138 g lye — liquid is at trace, so the
+  // "only X% water" clause must not appear; the lye solution itself is short.
+  renderPanel({
+    splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)', sizeMode: 'percent_of_liquid', amount: '90', addAt: 'trace' },
+    splitLiquidGrams: 297,
+    allocation: { lyeWaterGrams: 33, targetLiquidGrams: 330 },
+    lyeWaterStatus: { effectiveWaterGrams: 33, floorGrams: 138, shortfallGrams: 105 },
+  });
+  const alert = screen.getByRole('alert').textContent ?? '';
+  expect(alert).toMatch(/not enough water/i);
+  expect(alert).not.toMatch(/% water/);
+});

@@ -269,7 +269,10 @@ export function useRecipeViewModel({
       !result ||
       !splitLiquidGrams ||
       !previewSettings.splitLiquid.enabled ||
-      previewSettings.splitLiquid.addAt !== 'trace'
+      previewSettings.splitLiquid.addAt !== 'trace' ||
+      // Budget modes already allocated the water in the calc — suggesting a further
+      // reduction here would double-count the liquid.
+      splitOverride !== null
     ) {
       return null;
     }
@@ -286,30 +289,36 @@ export function useRecipeViewModel({
     previewSettings.waterMode,
     result,
     splitLiquidGrams,
+    splitOverride,
     totalOilGrams,
   ]);
 
   // Effective-water floor check: only when the alternative liquid goes into the lye
   // solution. A custom liquid (no preset) is treated as pure water — no false alarms.
   const lyeWaterStatus = useMemo(() => {
+    const inLye = previewSettings.splitLiquid.addAt === 'lye';
     if (
       !result ||
       !splitLiquidGrams ||
       !previewSettings.splitLiquid.enabled ||
-      previewSettings.splitLiquid.addAt !== 'lye'
+      // The lye solution is at stake for an in-lye liquid, or when a budget allocation
+      // reduced the lye water (which can starve the 1:1 floor at high liquid shares).
+      (!inLye && splitOverride === null)
     ) {
       return null;
     }
     return lyeSolutionWaterStatus({
       waterGrams: result.waterWeightGrams,
       lyeGrams: result.lyeWeightGrams,
-      splitLiquidGrams,
+      // Only an in-lye liquid contributes its own water to the solution.
+      splitLiquidGrams: inLye ? splitLiquidGrams : 0,
       waterFraction: splitLiquidWaterFraction(previewSettings.splitLiquid),
     });
   }, [
     previewSettings.splitLiquid,
     result,
     splitLiquidGrams,
+    splitOverride,
   ]);
   // Vessel-size guard multiple (HP only): vessel volume ÷ the water-bearing base batter
   // volume — additives fold in off-heat after the cook, so they aren't part of what the

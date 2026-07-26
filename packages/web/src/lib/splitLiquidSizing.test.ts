@@ -85,3 +85,17 @@ describe('splitLiquidCalcOverride', () => {
     expect(splitLiquidCalcOverride(disabled, 1000)).toBeNull();
   });
 });
+
+describe('budget-mode interaction guards (self-review)', () => {
+  it('percent_of_liquid can allocate water below the 1:1 floor — override must report it', () => {
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      waterPercentOfOils: '33',
+      splitLiquid: SPLIT({ sizeMode: 'percent_of_liquid', amount: '90' }),
+    };
+    const o = splitLiquidCalcOverride(settings, 1000);
+    // 330 budget − 297 milk = 33 g water for ~138 g lye: far under 1:1.
+    expect(Number(o!.settingsForCalc.waterPercentOfOils)).toBeCloseTo(3.3, 1);
+    // The override itself can't know the lye; the view model must surface the shortfall.
+  });
+});

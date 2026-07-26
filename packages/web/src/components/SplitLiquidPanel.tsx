@@ -58,8 +58,9 @@ export function SplitLiquidPanel({
   const recommendTrace =
     splitLiquid.addAt === 'lye' &&
     (preset?.flags.includes('sugars') || preset?.flags.includes('alcohol'));
-  const showShortfall =
-    splitLiquid.addAt === 'lye' && lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
+  // The view model supplies a status only when the lye solution is actually at stake:
+  // an in-lye liquid, or a budget allocation that reduced the lye water.
+  const showShortfall = lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
 
   const canApplyWater =
     waterMode === 'percent_of_oils' &&
@@ -237,7 +238,7 @@ export function SplitLiquidPanel({
           {showShortfall && (
             <p className="split-liquid-warning" role="alert">
               Not enough water to dissolve the lye:{' '}
-              {preset && preset.waterFraction < 1
+              {preset && preset.waterFraction < 1 && splitLiquid.addAt === 'lye'
                 ? `this liquid is only ${Math.round(preset.waterFraction * 100)}% water, leaving `
                 : 'the lye solution has less water than lye, with '}
               {formatWeight(lyeWaterStatus!.effectiveWaterGrams, weightUnit)} of real water against
