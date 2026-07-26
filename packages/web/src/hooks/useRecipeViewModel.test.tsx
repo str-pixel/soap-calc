@@ -326,6 +326,21 @@ test('two citric lines each carry their share and the lye result sums both (per-
   expect(lineSum).toBeCloseTo(expectedTotal, 1);
 });
 
+test('the printed batch sheet carries the acid-adjusted lye, not the base result', () => {
+  // The sheet is what someone weighs from at the bench, so it must never disagree with the
+  // on-screen lye figure. buildBatchSheetData is a pass-through, so batchSheetData.result IS
+  // whatever the memo fed it — pin that it is the compensated result.
+  let vm: any;
+  let without: any;
+  probe((v) => { vm = v; }, {}, 'cp', undefined, [CITRIC_LINE]);
+  probe((v) => { without = v; });
+  expect(vm.batchSheetData).not.toBeNull();
+  expect(vm.batchSheetData.result.naohWeightGrams).toBe(vm.result.naohWeightGrams);
+  // …and that this is strictly more than the uncompensated figure, so the assertion above
+  // cannot be satisfied by both paths collapsing to the same number.
+  expect(vm.batchSheetData.result.naohWeightGrams).toBeGreaterThan(without.result.naohWeightGrams);
+});
+
 test('batch-basis citric resolves against the pre-compensation batch weight (one-pass pin)', () => {
   let vm: any;
   probe((v) => { vm = v; }, {}, 'cp', undefined, [{ ...CITRIC_LINE, basis: 'batch' }]);

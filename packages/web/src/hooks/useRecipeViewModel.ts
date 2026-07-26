@@ -342,11 +342,11 @@ export function useRecipeViewModel({
   // Post-cook superfat is an HP/LS-only concept. Gate on process so a CP recipe carrying a
   // stray non-zero postCookSuperfatPercent (hand-edited or imported — CP hides the field, so
   // the user has no way to clear it) can never silently change batch weight or render a PCSF
-  // line. Memoize (like computedAdditives) so this object reference is stable across unrelated
-  // renders and doesn't defeat the batchSheetData memo below.
-  // Serialize the oils list for a by-value memo key (an array ref alone would recompute
-  // whenever previewSettings is rebuilt), so the PCSF object identity stays stable across
-  // unrelated renders and doesn't defeat the batchSheetData memo below.
+  // line. Memoize on a serialized oils key rather than previewSettings (an array ref alone
+  // would recompute whenever previewSettings is rebuilt) so this object reference stays
+  // stable across unrelated renders and doesn't defeat the batchSheetData memo below. The
+  // narrowed deps are safe by type: computePostCookSuperfat takes
+  // Pick<RecipeSettings, 'postCookSuperfatOils'>, which pcsfOilsKey captures by value.
   const pcsfOilsKey = JSON.stringify(previewSettings.postCookSuperfatOils);
   const postCookSuperfat = useMemo(
     () => (process === 'cp' ? null : computePostCookSuperfat(previewSettings, totalOilGrams)),
@@ -584,6 +584,13 @@ export function useRecipeViewModel({
     process,
     properties,
     recipeName,
+    // finalResult is what the sheet actually prints; result stays listed because the memo
+    // falls back to it. Every finalResult input is already covered transitively (its own
+    // deps are result + totalAcidExtraLye, which reduce to previewSettings, splitLiquidRows
+    // and computedAdditives above), so this is convention-consistency with waterSuggestion /
+    // lyeWaterStatus rather than a live fix — but the project has no exhaustive-deps lint to
+    // catch it if that coverage ever regresses.
+    finalResult,
     result,
     settings.batchNotes,
     splitLiquidGrams,
