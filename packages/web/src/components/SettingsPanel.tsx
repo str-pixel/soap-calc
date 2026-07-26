@@ -52,6 +52,7 @@ type SettingsPanelProps = {
   inputs: RecipeInputs;
   batchWeightWithExtras: number;
   recipeOilWeightGrams: number;
+  fixedBatchExtrasGrams: number;
   setSettings: React.Dispatch<React.SetStateAction<RecipeSettings>>;
   weightUnit: WeightUnit;
   moldSizerInput: MoldSizerInput;
@@ -75,6 +76,7 @@ export function SettingsPanel({
   inputs,
   batchWeightWithExtras,
   recipeOilWeightGrams,
+  fixedBatchExtrasGrams,
   setSettings,
   weightUnit,
   moldSizerInput,
@@ -102,6 +104,7 @@ export function SettingsPanel({
         inputs={inputs}
         batchWeightWithExtras={batchWeightWithExtras}
         recipeOilWeightGrams={recipeOilWeightGrams}
+        fixedBatchExtrasGrams={fixedBatchExtrasGrams}
       />
       <div className="settings-grid">
         <label className="field">

@@ -14,6 +14,8 @@ type BatchBasicsProps = {
   inputs: RecipeInputs;
   batchWeightWithExtras: number;
   recipeOilWeightGrams: number;
+  /** Non-oil-scaling grams in the batch, for the affine batch-target solve. */
+  fixedBatchExtrasGrams: number;
 };
 
 /** The batch's basic figures — weight unit, total oil, live total batch — shown first in
@@ -25,6 +27,7 @@ export function BatchBasics({
   inputs,
   batchWeightWithExtras,
   recipeOilWeightGrams,
+  fixedBatchExtrasGrams,
 }: BatchBasicsProps) {
   const weightUnitConfig = WEIGHT_UNITS[weightUnit];
   return (
@@ -81,6 +84,7 @@ export function BatchBasics({
             inputs.commitBatchWeightInput(e.target.value, {
               currentBatchGrams: batchWeightWithExtras,
               currentOilTotalGrams: recipeOilWeightGrams,
+              fixedExtrasGrams: fixedBatchExtrasGrams,
             })
           }
           onKeyDown={commitOnEnter}
