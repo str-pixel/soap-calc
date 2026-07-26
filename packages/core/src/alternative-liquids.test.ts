@@ -3,6 +3,8 @@ import {
   ALTERNATIVE_LIQUID_GUIDE,
   alternativeLiquidPreset,
   extraLyeForAcidLiquid,
+  extraLyeForAcid,
+  extraLyeForAcidAdditives,
 } from './alternative-liquids.js';
 
 describe('ALTERNATIVE_LIQUID_GUIDE', () => {
@@ -102,5 +104,41 @@ describe('vinegar (acid) preset and extra-lye compensation', () => {
     });
     expect(extra.naohGrams).toBe(0);
     expect(extra.kohGrams).toBe(0);
+  });
+});
+
+describe('extraLyeForAcid (shared acid math)', () => {
+  const recipe = { lyeType: 'naoh' as const, kohBlendPercent: 0, naohPurityPercent: 100, kohPurityPercent: 100 };
+
+  it('extraLyeForAcidLiquid delegates: vinegar result is identical through both paths', () => {
+    const preset = alternativeLiquidPreset('vinegar')!;
+    const viaPreset = extraLyeForAcidLiquid(preset, 330, recipe);
+    const viaFactors = extraLyeForAcid(preset.lyeNeutralization!, 330, recipe);
+    expect(viaFactors).toEqual(viaPreset);
+  });
+
+  it('sums citric additive lines and ignores factor-less and invalid lines', () => {
+    // 20 g citric at 0.6246 g NaOH/g → 12.49 g; second line adds 10 g → +6.25 g.
+    const extra = extraLyeForAcidAdditives(
+      [
+        { catalogId: 'citric-acid', grams: 20 },
+        { catalogId: 'citric-acid', grams: 10 },
+        { catalogId: 'sugar-sorbitol', grams: 30 },
+        { catalogId: '', grams: 15 },
+        { catalogId: 'citric-acid', grams: 0 },
+      ],
+      recipe,
+    );
+    expect(extra.naohGrams).toBeCloseTo(30 * 0.6246, 2);
+    expect(extra.kohGrams).toBe(0);
+  });
+
+  it('splits dual lye by KOH blend share and grosses up by each purity', () => {
+    const extra = extraLyeForAcidAdditives(
+      [{ catalogId: 'citric-acid', grams: 10 }],
+      { lyeType: 'dual', kohBlendPercent: 40, naohPurityPercent: 97, kohPurityPercent: 90 },
+    );
+    expect(extra.naohGrams).toBeCloseTo((10 * 0.6 * 0.6246) / 0.97, 2);
+    expect(extra.kohGrams).toBeCloseTo((10 * 0.4 * 0.8761) / 0.9, 2);
   });
 });
