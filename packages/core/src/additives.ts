@@ -4,6 +4,14 @@ export type AdditiveStage = 'lye' | 'oils' | 'trace' | 'top' | 'after_cook';
  * owns no import from packages/web. Web's ProcessId is assignable to this type. */
 export type AdditiveProcess = 'cp' | 'hp' | 'ls';
 
+/** Per-process correction to an entry's typical range and/or default stage. Base fields
+ * hold the CP-audited values; an override carries only what differs for that process. */
+export type AdditiveProcessOverride = {
+  typicalLow?: number;
+  typicalHigh?: number;
+  defaultStage?: AdditiveStage;
+};
+
 export type AdditiveCatalogEntry = {
   id: string;
   name: string;
@@ -12,6 +20,10 @@ export type AdditiveCatalogEntry = {
   defaultStage: AdditiveStage;
   /** Processes this additive is offered for; absent = all processes. */
   processes?: AdditiveProcess[];
+  /** Per-process corrections (see AdditiveProcessOverride). Resolve with
+   * effectiveCatalogEntry — never read typicalLow/High/defaultStage directly when a
+   * process is in hand. */
+  processOverrides?: Partial<Record<AdditiveProcess, AdditiveProcessOverride>>;
   /** Short behavior-only hazard/caution tags shown next to the additive (e.g. "can seize").
    * No source or dose-specific claim — just the known failure mode. */
   hazards?: string[];
@@ -42,6 +54,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 2,
     defaultStage: 'trace',
     hazards: ['can tunnel/overheat'],
+    processOverrides: {
+      // An HP cook tolerates (and typically uses) more sugar than a CP mold; stage unchanged.
+      hp: { typicalLow: 1, typicalHigh: 5 },
+    },
   },
   {
     // Sorbitol — sugar alcohol with a stronger lather effect than sucrose, tolerating a
@@ -145,6 +161,11 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.5,
     typicalHigh: 2,
     defaultStage: 'lye',
+    processOverrides: {
+      // HP doses it harder and later: into the batter after a very thick trace (before the
+      // expansion phase), where it keeps the cook fluid and hardens the finished bar.
+      hp: { typicalLow: 3, typicalHigh: 4, defaultStage: 'trace' },
+    },
   },
   {
     // Hydrolyzed silk — dissolved into the lye water, reported to add slip/sheen to lather.
@@ -258,6 +279,16 @@ export const LATHER_SUPPORT_PACK = [
 
 export function catalogEntryById(id: string): AdditiveCatalogEntry | undefined {
   return ADDITIVE_CATALOG.find((entry) => entry.id === id);
+}
+
+/** The entry as it applies under `process`: override fields win, base fields fill the
+ * rest. Returns the entry object unchanged when the process has no override. */
+export function effectiveCatalogEntry(
+  entry: AdditiveCatalogEntry,
+  process: AdditiveProcess,
+): AdditiveCatalogEntry {
+  const override = entry.processOverrides?.[process];
+  return override ? { ...entry, ...override } : entry;
 }
 
 /** Grams from % of total oil weight. Returns null when percent is invalid.

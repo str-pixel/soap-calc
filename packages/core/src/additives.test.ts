@@ -4,6 +4,7 @@ import {
   ADDITIVE_STAGE_LABELS,
   catalogEntryById,
   catalogEntriesForProcess,
+  effectiveCatalogEntry,
   gramsFromDose,
   gramsFromPercentOfOil,
   LATHER_SUPPORT_PACK,
@@ -274,5 +275,33 @@ describe('citric acid additive (auto-lye)', () => {
     for (const entry of ADDITIVE_CATALOG) {
       if (entry.id !== 'citric-acid') expect(entry.lyeNeutralization).toBeUndefined();
     }
+  });
+});
+
+describe('per-process catalog overrides (HP audit 2026-07-26)', () => {
+  it('sodium lactate: CP/LS keep 0.5–2% in the lye water; HP overrides to 3–4% at trace', () => {
+    const base = catalogEntryById('sodium-lactate')!;
+    const cp = effectiveCatalogEntry(base, 'cp');
+    expect([cp.typicalLow, cp.typicalHigh, cp.defaultStage]).toEqual([0.5, 2, 'lye']);
+    // LS has no source coverage — it inherits the base values, never HP's.
+    const ls = effectiveCatalogEntry(base, 'ls');
+    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([0.5, 2, 'lye']);
+    const hp = effectiveCatalogEntry(base, 'hp');
+    expect([hp.typicalLow, hp.typicalHigh, hp.defaultStage]).toEqual([3, 4, 'trace']);
+    // Merge preserves everything the override does not name.
+    expect(hp.id).toBe('sodium-lactate');
+    expect(hp.name).toBe('Sodium lactate');
+  });
+
+  it('sugar: HP overrides the range to 1–5% but keeps the trace stage', () => {
+    const base = catalogEntryById('sugar-sorbitol')!;
+    const hp = effectiveCatalogEntry(base, 'hp');
+    expect([hp.typicalLow, hp.typicalHigh]).toEqual([1, 5]);
+    expect(hp.defaultStage).toBe('trace');
+  });
+
+  it('returns the entry unchanged for a process with no override', () => {
+    const honey = catalogEntryById('honey')!;
+    expect(effectiveCatalogEntry(honey, 'hp')).toEqual(honey);
   });
 });
