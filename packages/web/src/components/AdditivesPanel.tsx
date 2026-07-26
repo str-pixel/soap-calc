@@ -197,10 +197,9 @@ export const AdditivesPanel = memo(function AdditivesPanel({
             // in a screen-reader form list.
             const rowName = line.name.trim() || `additive ${rowIndex + 1}`;
             // A catalog pick copies the entry name into `line.name`, so showing the
-            // name input too reads as the same control rendered twice. Keep it only
-            // where it does work: custom rows, and catalog rows renamed elsewhere
-            // (e.g. a persisted recipe) — hiding those would orphan the custom name.
-            const showNameField = !entry || line.name !== entry.name;
+            // name input too reads as the same control rendered twice. Catalog rows
+            // never need it — renaming is what Custom… is for.
+            const showNameField = !entry;
             return (
               <li key={line.key} className="additive-list__row">
                 <div className="additive-list__names">

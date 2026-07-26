@@ -344,7 +344,7 @@ describe('per-row accessible names (deep-review)', () => {
   });
 });
 
-describe('name field only for custom or renamed rows (duplicate-name fix)', () => {
+describe('name field only for custom rows (duplicate-name fix)', () => {
   it('hides the name input for a catalog row whose name matches the catalog entry', () => {
     const line = makeLine({ catalogId: 'clay', name: 'Clay (bentonite, kaolin)' });
     render(
@@ -373,7 +373,7 @@ describe('name field only for custom or renamed rows (duplicate-name fix)', () =
     expect(screen.getByLabelText('Name for My custom blend')).toBeTruthy();
   });
 
-  it('keeps the name input for a catalog row that was renamed (persisted recipes)', () => {
+  it('hides the name input for a catalog row even when its name differs (renaming is what Custom is for)', () => {
     const line = makeLine({ catalogId: 'clay', name: 'Rose clay' });
     render(
       <AdditivesPanel
@@ -384,7 +384,7 @@ describe('name field only for custom or renamed rows (duplicate-name fix)', () =
         onChange={() => {}}
       />,
     );
-    expect(screen.getByLabelText('Name for Rose clay')).toBeTruthy();
+    expect(screen.queryByLabelText('Name for Rose clay')).toBeNull();
   });
 });
 
