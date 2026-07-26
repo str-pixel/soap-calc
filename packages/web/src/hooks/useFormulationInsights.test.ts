@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import {
   DEFAULT_SETTINGS,
-  DEFAULT_SPLIT_LIQUID,
   newAdditiveKey,
   newLineKey,
   type AdditiveLine,
@@ -23,28 +22,22 @@ import {
 describe('totalAdditivePercentForInsights', () => {
   it('excludes split liquid added in lye water', () => {
     expect(
-      totalAdditivePercentForInsights(
-        [{ grams: 50 }],
-        1000,
-        { ...DEFAULT_SPLIT_LIQUID, enabled: true, addAt: 'lye' },
-        80,
-      ),
+      totalAdditivePercentForInsights([{ grams: 50 }], 1000, [{ addAt: 'lye', grams: 80 }]),
     ).toBe(5);
   });
-  it('includes split liquid added at trace (grams folded back to % of oils)', () => {
+  it('includes split liquid rows joining the batter (grams folded back to % of oils)', () => {
     expect(
-      totalAdditivePercentForInsights(
-        [{ grams: 50 }],
-        1000,
-        { ...DEFAULT_SPLIT_LIQUID, enabled: true, addAt: 'trace' },
-        80,
-      ),
+      totalAdditivePercentForInsights([{ grams: 50 }], 1000, [
+        { addAt: 'trace', grams: 60 },
+        { addAt: 'oils', grams: 20 },
+        { addAt: 'lye', grams: 500 },
+      ]),
     ).toBe(13);
   });
   it('sums additive grams as oil-equivalent percent regardless of dose basis/unit', () => {
     // a batch/ppt line contributes grams/oil*100, not its raw amount
     expect(
-      totalAdditivePercentForInsights([{ grams: 30 }, { grams: 3 }], 1000, { ...DEFAULT_SPLIT_LIQUID }),
+      totalAdditivePercentForInsights([{ grams: 30 }, { grams: 3 }], 1000, []),
     ).toBeCloseTo(3.3); // (30+3)/1000*100
   });
 });

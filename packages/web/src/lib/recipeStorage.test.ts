@@ -75,7 +75,7 @@ describe('recipeStorage', () => {
     const draft = loadDraft('cp');
     expect(draft?.settings.waterMode).toBe('percent_of_oils');
     expect(draft?.settings.weightUnit).toBe('g');
-    expect(draft?.settings.splitLiquid.enabled).toBe(false);
+    expect(draft?.settings.splitLiquids).toEqual([]);
     expect(normalizeSettings({ superfatPercent: '8' }).lyeConcentrationPercent).toBe('33.33');
   });
 

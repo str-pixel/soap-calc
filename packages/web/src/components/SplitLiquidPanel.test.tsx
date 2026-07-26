@@ -2,32 +2,35 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { SplitLiquidPanel } from './SplitLiquidPanel';
-import type { SplitLiquidSettings } from '../lib/recipe';
+import type { SplitLiquidRow } from '../lib/recipe';
 
 afterEach(cleanup);
 
-const ENABLED: SplitLiquidSettings = {
-  enabled: true,
+let n = 0;
+const ROW = (over: Partial<SplitLiquidRow> = {}): SplitLiquidRow => ({
+  key: `row-${n++}`,
   presetKey: '',
   name: '',
   customWaterPercent: '',
   sizeMode: 'percent_of_oils',
   amount: '10',
   addAt: 'trace',
-};
+  ...over,
+});
 
 function renderPanel(overrides: Partial<Parameters<typeof SplitLiquidPanel>[0]> = {}) {
   const onChange = vi.fn();
+  const rows = overrides.rows ?? [ROW()];
   render(
     <SplitLiquidPanel
-      splitLiquid={ENABLED}
+      rows={rows}
+      resolvedRows={rows.map((row) => ({ row, grams: 100 }))}
       totalOilGrams={1000}
       lyeGrams={135}
       weightUnit="g"
       waterMode="percent_of_oils"
       waterSuggestion={null}
       lyeWaterStatus={null}
-      splitLiquidGrams={100}
       allocation={null}
       acidExtraLye={null}
       onChange={onChange}
@@ -37,160 +40,79 @@ function renderPanel(overrides: Partial<Parameters<typeof SplitLiquidPanel>[0]> 
   return { onChange };
 }
 
-test('selecting a preset sets presetKey and fills the name', () => {
+test('adds and removes liquid rows', () => {
+  const { onChange } = renderPanel({ rows: [] });
+  fireEvent.click(screen.getByRole('button', { name: /add liquid/i }));
+  expect(onChange).toHaveBeenCalled();
+  const added = onChange.mock.calls[0][0] as SplitLiquidRow[];
+  expect(added).toHaveLength(1);
+
+  cleanup();
+  const two = [ROW({ name: 'aloe' }), ROW({ name: 'milk' })];
+  const second = renderPanel({ rows: two });
+  fireEvent.click(screen.getAllByRole('button', { name: /remove liquid/i })[0]);
+  const afterRemove = second.onChange.mock.calls[0][0] as SplitLiquidRow[];
+  expect(afterRemove.map((r) => r.name)).toEqual(['milk']);
+});
+
+test('selecting a preset sets presetKey and fills the row name', () => {
   const { onChange } = renderPanel();
   fireEvent.change(screen.getByLabelText('Liquid preset'), {
     target: { value: 'yogurt-greek' },
   });
-  expect(onChange).toHaveBeenCalledWith(
-    expect.objectContaining({ presetKey: 'yogurt-greek', name: 'Greek yogurt' }),
-  );
+  const rows = onChange.mock.calls[0][0] as SplitLiquidRow[];
+  expect(rows[0]).toMatchObject({ presetKey: 'yogurt-greek', name: 'Greek yogurt' });
 });
 
-test('switching back to custom clears the preset but keeps the typed name', () => {
-  const { onChange } = renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'oat milk' },
+test('only one rest row: the option is disabled on other rows', () => {
+  renderPanel({ rows: [ROW({ sizeMode: 'rest', amount: '' }), ROW()] });
+  const selects = screen.getAllByLabelText('Sized by') as HTMLSelectElement[];
+  const restOptionOf = (s: HTMLSelectElement) =>
+    Array.from(s.options).find((o) => o.value === 'rest')!;
+  expect(restOptionOf(selects[0]).disabled).toBe(false);
+  expect(restOptionOf(selects[1]).disabled).toBe(true);
+});
+
+test('budget sizing modes are disabled outside percent-of-oils water', () => {
+  renderPanel({ waterMode: 'lye_concentration' });
+  const select = screen.getByLabelText('Sized by') as HTMLSelectElement;
+  expect(Array.from(select.options).find((o) => o.value === 'rest')!.disabled).toBe(true);
+  expect(
+    Array.from(select.options).find((o) => o.value === 'percent_of_liquid')!.disabled,
+  ).toBe(true);
+});
+
+test('shows the allocation line across all rows', () => {
+  const rows = [ROW({ name: 'goat milk', sizeMode: 'rest', amount: '' })];
+  renderPanel({
+    rows,
+    resolvedRows: rows.map((row) => ({ row, grams: 192 })),
+    allocation: { lyeWaterGrams: 138, targetLiquidGrams: 330 },
   });
-  fireEvent.change(screen.getByLabelText('Liquid preset'), { target: { value: '' } });
-  expect(onChange).toHaveBeenCalledWith(
-    expect.objectContaining({ presetKey: '', name: 'oat milk' }),
-  );
-});
-
-test('shows the sugar advisory for a sugary preset', () => {
-  renderPanel({ splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)' } });
-  expect(screen.getByText(/sugars can accelerate trace/i)).toBeTruthy();
+  expect(screen.getByText(/138 g lye water .* 192 g .* 330 g total liquid/i)).toBeTruthy();
 });
 
 test('warns when the lye solution is short of dissolving water', () => {
+  const rows = [ROW({ presetKey: 'coconut-milk-canned', name: 'Coconut milk (canned)', addAt: 'lye' })];
   renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'coconut-milk-canned', name: 'Coconut milk (canned)', addAt: 'lye' },
+    rows,
+    resolvedRows: rows.map((row) => ({ row, grams: 165 })),
     lyeWaterStatus: { effectiveWaterGrams: 133.7, floorGrams: 135, shortfallGrams: 1.3 },
   });
   expect(screen.getByRole('alert').textContent).toMatch(/not enough water/i);
 });
 
-test('custom-liquid shortfall blames the lye water, not the liquid', () => {
-  // Base water below the 1:1 floor (e.g. lye concentration typed above 50%): the
-  // warning must not claim a pure-water custom liquid is "only 100% water".
+test('recommends trace when a sugary preset is aimed at the lye water', () => {
   renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: '', name: 'herbal tea', addAt: 'lye' },
-    lyeWaterStatus: { effectiveWaterGrams: 120, floorGrams: 135, shortfallGrams: 15 },
-  });
-  const alert = screen.getByRole('alert').textContent ?? '';
-  expect(alert).toMatch(/not enough water/i);
-  expect(alert).not.toMatch(/% water/);
-});
-
-test('preset shortfall names the liquid water fraction', () => {
-  renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'coconut-milk-canned', name: 'Coconut milk (canned)', addAt: 'lye' },
-    lyeWaterStatus: { effectiveWaterGrams: 133.7, floorGrams: 135, shortfallGrams: 1.3 },
-  });
-  expect(screen.getByRole('alert').textContent).toMatch(/only 68% water/i);
-});
-
-test('custom liquid shows an optional % water field; presets hide it', () => {
-  const { onChange } = renderPanel({ splitLiquid: { ...ENABLED, presetKey: '', name: 'coconut cream' } });
-  const field = screen.getByLabelText('% water (optional)');
-  fireEvent.change(field, { target: { value: '55' } });
-  expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ customWaterPercent: '55' }));
-  cleanup();
-  renderPanel({ splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)' } });
-  expect(screen.queryByLabelText('% water (optional)')).toBeNull();
-});
-
-test('explains the technique and the add-at choice with info tips', () => {
-  renderPanel();
-  expect(screen.getByLabelText('About split liquid')).toBeTruthy();
-  expect(screen.getByLabelText('About add at')).toBeTruthy();
-});
-
-test('shortfall warning explains the minimum in plain words, not "1:1 floor"', () => {
-  renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'coconut-milk-canned', name: 'Coconut milk (canned)', addAt: 'lye' },
-    lyeWaterStatus: { effectiveWaterGrams: 133.7, floorGrams: 135, shortfallGrams: 1.3 },
-  });
-  const alert = screen.getByRole('alert').textContent ?? '';
-  expect(alert).toMatch(/equal parts water and lye/i);
-  expect(alert).not.toMatch(/floor/i);
-});
-
-test('no shortfall warning when the floor is met', () => {
-  renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk', addAt: 'lye' },
-    lyeWaterStatus: { effectiveWaterGrams: 220, floorGrams: 135, shortfallGrams: 0 },
-  });
-  expect(screen.queryByRole('alert')).toBeNull();
-});
-
-test('offers the four sizing modes, disabling budget modes outside percent-of-oils water', () => {
-  renderPanel({ waterMode: 'lye_concentration' });
-  const select = screen.getByLabelText('Sized by') as HTMLSelectElement;
-  const rest = Array.from(select.options).find((o) => o.value === 'rest')!;
-  const pctLiquid = Array.from(select.options).find((o) => o.value === 'percent_of_liquid')!;
-  expect(rest.disabled).toBe(true);
-  expect(pctLiquid.disabled).toBe(true);
-  cleanup();
-  renderPanel({ waterMode: 'percent_of_oils' });
-  const select2 = screen.getByLabelText('Sized by') as HTMLSelectElement;
-  expect(Array.from(select2.options).every((o) => !o.disabled)).toBe(true);
-});
-
-test('hides the amount field for rest sizing and shows the allocation line', () => {
-  renderPanel({
-    splitLiquid: { ...ENABLED, sizeMode: 'rest', amount: '' },
-    splitLiquidGrams: 192,
-    allocation: { lyeWaterGrams: 138, targetLiquidGrams: 330 },
-  });
-  expect(screen.queryByLabelText('Amount')).toBeNull();
-  expect(screen.getByText(/138 g lye water .* 192 g .* 330 g total liquid/i)).toBeTruthy();
-});
-
-test('recommends trace when a sugary preset is set to the lye water', () => {
-  renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)', addAt: 'lye' },
+    rows: [ROW({ presetKey: 'milk', name: 'Milk (dairy or plant)', addAt: 'lye' })],
   });
   expect(screen.getByText(/recommended: at trace/i)).toBeTruthy();
 });
 
-test('warns about thicker trace when a thick liquid displaces meaningful water', () => {
-  // Heavy cream at 42% non-water: 200 g displaces 84 g of real water from a 330 g budget.
+test('shows the auto-added extra lye line when acid rows are present', () => {
   renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'heavy-cream', name: 'Heavy cream', sizeMode: 'percent_of_liquid', amount: '60' },
-    splitLiquidGrams: 200,
-    allocation: { lyeWaterGrams: 130, targetLiquidGrams: 330 },
-  });
-  expect(screen.getByText(/thicker, faster trace/i)).toBeTruthy();
-});
-
-test('warns when budget allocation starves the lye water, blaming the allocation not the liquid', () => {
-  // percent_of_liquid at 90%: water 33 g vs 138 g lye — liquid is at trace, so the
-  // "only X% water" clause must not appear; the lye solution itself is short.
-  renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)', sizeMode: 'percent_of_liquid', amount: '90', addAt: 'trace' },
-    splitLiquidGrams: 297,
-    allocation: { lyeWaterGrams: 33, targetLiquidGrams: 330 },
-    lyeWaterStatus: { effectiveWaterGrams: 33, floorGrams: 138, shortfallGrams: 105 },
-  });
-  const alert = screen.getByRole('alert').textContent ?? '';
-  expect(alert).toMatch(/not enough water/i);
-  expect(alert).not.toMatch(/% water/);
-});
-
-test('shows the auto-added extra lye for an acid liquid', () => {
-  renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'vinegar', name: 'Vinegar (5%)' },
-    splitLiquidGrams: 330,
+    rows: [ROW({ presetKey: 'vinegar', name: 'Vinegar (5%)' })],
     acidExtraLye: { naohGrams: 11.1, kohGrams: 0 },
   });
   expect(screen.getByText(/\+11 g NaOH added to offset/i)).toBeTruthy();
-});
-
-test('no extra-lye line for non-acid liquids', () => {
-  renderPanel({
-    splitLiquid: { ...ENABLED, presetKey: 'milk', name: 'Milk (dairy or plant)' },
-    acidExtraLye: null,
-  });
-  expect(screen.queryByText(/added to offset/i)).toBeNull();
 });

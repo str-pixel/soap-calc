@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { addExtraLye, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
-import { resolveSplitLiquidGrams, splitLiquidCalcOverride } from '../lib/splitLiquidSizing';
+import { resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import {
   computeExtrasGrams,
   computePostCookSuperfat,
@@ -56,6 +56,7 @@ export type RecipeViewModel = {
   totalOilGrams: number;
   computedAdditives: ReturnType<typeof computeRecipeAdditives>;
   splitLiquidGrams: number | null;
+  splitLiquidRows: ResolvedSplitLiquidRow[];
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
   lyeWaterStatus: ReturnType<typeof lyeSolutionWaterStatus> | null;
@@ -241,43 +242,52 @@ export function useRecipeViewModel({
     splitOverride && result
       ? { lyeWaterGrams: result.waterWeightGrams, targetLiquidGrams: splitOverride.targetLiquidGrams }
       : null;
+  // Memoized: rows' identity feeds several memos below (acid, floor check, suggestion,
+  // insights, batch sheet) — an unstable array would silently disable all of them.
+  const resolvedSplit = useMemo(
+    () =>
+      previewSettings.splitLiquids.length > 0 && result
+        ? resolveSplitLiquidRows(previewSettings.splitLiquids, {
+            totalOilGrams,
+            // Budget rows size against the pre-allocation target; additive rows against
+            // the recipe's own water (its only sensible "total liquid").
+            targetLiquidGrams: splitOverride?.targetLiquidGrams ?? result.waterWeightGrams,
+            lyeGrams: result.lyeWeightGrams,
+          })
+        : null,
+    [previewSettings.splitLiquids, result, splitOverride, totalOilGrams],
+  );
+  const splitLiquidRows: ResolvedSplitLiquidRow[] = useMemo(
+    () => resolvedSplit?.rows ?? [],
+    [resolvedSplit],
+  );
   const splitLiquidGrams =
-    previewSettings.splitLiquid.enabled && result
-      ? resolveSplitLiquidGrams(previewSettings.splitLiquid, {
-          totalOilGrams,
-          // Budget modes size against the pre-allocation target; additive modes against
-          // the recipe's own water (its only sensible "total liquid").
-          targetLiquidGrams: splitOverride?.targetLiquidGrams ?? result.waterWeightGrams,
-          lyeGrams: result.lyeWeightGrams,
-        })
-      : null;
+    resolvedSplit && resolvedSplit.totalGrams > 0 ? resolvedSplit.totalGrams : null;
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
   // survives. Sized against the base (saponification) lye, then folded into the result so
   // every downstream surface — concentration, steps, sheet — quotes the adjusted figures.
   const acidExtraLye = useMemo(() => {
-    const preset = alternativeLiquidPreset(previewSettings.splitLiquid.presetKey);
-    if (
-      !preset?.lyeNeutralization ||
-      !previewSettings.splitLiquid.enabled ||
-      splitLiquidGrams == null ||
-      splitLiquidGrams <= 0
-    ) {
-      return null;
+    let naohGrams = 0;
+    let kohGrams = 0;
+    for (const { row, grams } of splitLiquidRows) {
+      const preset = alternativeLiquidPreset(row.presetKey);
+      if (!preset?.lyeNeutralization || grams == null || grams <= 0) continue;
+      const extra = extraLyeForAcidLiquid(preset, grams, {
+        lyeType: previewSettings.lyeType,
+        kohBlendPercent: Number(previewSettings.kohBlendPercent) || 0,
+        naohPurityPercent: Number(previewSettings.naohPurityPercent) || 100,
+        kohPurityPercent: Number(previewSettings.kohPurityPercent) || 100,
+      });
+      naohGrams += extra.naohGrams;
+      kohGrams += extra.kohGrams;
     }
-    return extraLyeForAcidLiquid(preset, splitLiquidGrams, {
-      lyeType: previewSettings.lyeType,
-      kohBlendPercent: Number(previewSettings.kohBlendPercent) || 0,
-      naohPurityPercent: Number(previewSettings.naohPurityPercent) || 100,
-      kohPurityPercent: Number(previewSettings.kohPurityPercent) || 100,
-    });
+    return naohGrams > 0 || kohGrams > 0 ? { naohGrams, kohGrams } : null;
   }, [
-    previewSettings.splitLiquid.presetKey,
-    previewSettings.splitLiquid.enabled,
     previewSettings.lyeType,
     previewSettings.kohBlendPercent,
     previewSettings.naohPurityPercent,
     previewSettings.kohPurityPercent,
-    splitLiquidGrams,
+    splitLiquidRows,
   ]);
   const finalResult = useMemo(
     () => (result && acidExtraLye ? addExtraLye(result, acidExtraLye) : result),
@@ -298,15 +308,14 @@ export function useRecipeViewModel({
     [process, pcsfOilsKey, totalOilGrams],
   );
   const waterSuggestion = useMemo(() => {
-    if (
-      !result ||
-      !splitLiquidGrams ||
-      !previewSettings.splitLiquid.enabled ||
-      previewSettings.splitLiquid.addAt !== 'trace' ||
-      // Budget modes already allocated the water in the calc — suggesting a further
-      // reduction here would double-count the liquid.
-      splitOverride !== null
-    ) {
+    // Budget rows already allocated their water in the calc; only additive rows added at
+    // trace still motivate a lye-water reduction, and never under an active override
+    // (that would double-count).
+    const traceGrams = splitLiquidRows.reduce(
+      (sum, { row, grams }) => (row.addAt === 'trace' && grams != null ? sum + grams : sum),
+      0,
+    );
+    if (!result || traceGrams <= 0 || splitOverride !== null) {
       return null;
     }
     const r = finalResult ?? result;
@@ -314,16 +323,14 @@ export function useRecipeViewModel({
       waterGrams: r.waterWeightGrams,
       lyeGrams: r.lyeWeightGrams,
       totalOilGrams: totalOilGrams,
-      splitLiquidGrams,
+      splitLiquidGrams: traceGrams,
       waterMode: previewSettings.waterMode,
     });
   }, [
-    previewSettings.splitLiquid.addAt,
-    previewSettings.splitLiquid.enabled,
     previewSettings.waterMode,
     finalResult,
     result,
-    splitLiquidGrams,
+    splitLiquidRows,
     splitOverride,
     totalOilGrams,
   ]);
@@ -331,30 +338,36 @@ export function useRecipeViewModel({
   // Effective-water floor check: only when the alternative liquid goes into the lye
   // solution. A custom liquid (no preset) is treated as pure water — no false alarms.
   const lyeWaterStatus = useMemo(() => {
-    const inLye = previewSettings.splitLiquid.addAt === 'lye';
+    // Effective water each in-lye row actually brings to the solution.
+    const inLyeWaterGrams = splitLiquidRows.reduce(
+      (sum, { row, grams }) =>
+        row.addAt === 'lye' && grams != null
+          ? sum + grams * splitLiquidWaterFraction(row)
+          : sum,
+      0,
+    );
+    const anyInLye = splitLiquidRows.some(({ row, grams }) => row.addAt === 'lye' && grams != null);
     if (
       !result ||
-      !splitLiquidGrams ||
-      !previewSettings.splitLiquid.enabled ||
+      splitLiquidRows.length === 0 ||
       // The lye solution is at stake for an in-lye liquid, or when a budget allocation
       // reduced the lye water (which can starve the 1:1 floor at high liquid shares).
-      (!inLye && splitOverride === null)
+      (!anyInLye && splitOverride === null)
     ) {
       return null;
     }
     const r = finalResult ?? result;
     return lyeSolutionWaterStatus({
-      waterGrams: r.waterWeightGrams,
+      waterGrams: r.waterWeightGrams + inLyeWaterGrams,
       lyeGrams: r.lyeWeightGrams,
-      // Only an in-lye liquid contributes its own water to the solution.
-      splitLiquidGrams: inLye ? splitLiquidGrams : 0,
-      waterFraction: splitLiquidWaterFraction(previewSettings.splitLiquid),
+      // The in-lye rows' effective water is already folded in above.
+      splitLiquidGrams: 0,
+      waterFraction: 1,
     });
   }, [
-    previewSettings.splitLiquid,
     finalResult,
     result,
-    splitLiquidGrams,
+    splitLiquidRows,
     splitOverride,
   ]);
   // Vessel-size guard multiple (HP only): vessel volume ÷ the water-bearing base batter
@@ -390,6 +403,7 @@ export function useRecipeViewModel({
     finalResult ?? result,
     {
       splitLiquidGrams,
+      splitLiquidRows: splitLiquidRows.map(({ row, grams }) => ({ addAt: row.addAt, grams })),
       suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
       splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
       additives: computedAdditives,
@@ -490,7 +504,7 @@ export function useRecipeViewModel({
       result: r,
       displayTotals,
       additives: computedAdditives,
-      splitLiquid: previewSettings.splitLiquid,
+      splitLiquidRows,
       splitLiquidGrams,
       postCookSuperfat,
       pcsfIsExtra,
@@ -527,6 +541,7 @@ export function useRecipeViewModel({
     result,
     settings.batchNotes,
     splitLiquidGrams,
+    splitLiquidRows,
     weightUnit,
   ]);
 
@@ -550,6 +565,7 @@ export function useRecipeViewModel({
     lyeWaterStatus,
     splitAllocation,
     acidExtraLye,
+    splitLiquidRows,
     properties,
     indexes,
     fattyAcids,

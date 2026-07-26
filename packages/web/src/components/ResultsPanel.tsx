@@ -9,7 +9,7 @@ import { formatDose } from '../lib/formatDose';
 import { oilById } from '../lib/oils';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
-import type { SplitLiquidSettings, WeightUnit } from '../lib/recipe';
+import type { SplitLiquidRow, WeightUnit } from '../lib/recipe';
 import { buildAddOrderSteps, buildFullRecipe } from '../lib/recipeSummary';
 import { formatWeight } from '../lib/weightUnits';
 import { formatWorkabilityRange } from '../lib/workabilityFormat';
@@ -26,7 +26,7 @@ type ResultsPanelProps = {
   displayTotals: RecipeDisplayTotals | null;
   weightUnit: WeightUnit;
   waterMode?: WaterMode;
-  splitLiquid?: SplitLiquidSettings;
+  splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
   splitLiquidGrams?: number | null;
   additives?: ComputedAdditive[];
   superfatPercent?: string;
@@ -84,7 +84,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   displayTotals,
   weightUnit,
   waterMode,
-  splitLiquid,
+  splitLiquidRows = [],
   splitLiquidGrams = null,
   additives = [],
   superfatPercent,
@@ -130,8 +130,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
   const displayedBatchWeight = batchWeightWithExtras;
   const waterNote = waterFootnote(waterMode, excludedOilWeightGrams);
-  const showTotalLiquid =
-    splitLiquid?.enabled && splitLiquidGrams !== null && splitLiquidGrams > 0;
+  const showTotalLiquid = splitLiquidGrams !== null && splitLiquidGrams > 0;
   const totalLiquidGrams = result.waterWeightGrams + (splitLiquidGrams ?? 0);
   const cookSuperfatPercent = Number(superfatPercent) || 0;
   const totalSuperfatPercent = cookSuperfatPercent + (postCookSuperfat?.percentOfOil ?? 0);
@@ -177,8 +176,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     kohBlendPercent,
     waterGrams: result.waterWeightGrams,
     additives,
-    splitLiquid,
-    splitLiquidGrams,
+    splitLiquidRows,
     postCookSuperfat,
     process,
   });
@@ -189,8 +187,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     lyeGrams: result.lyeWeightGrams,
     waterGrams: result.waterWeightGrams,
     weightUnit,
-    splitLiquid,
-    splitLiquidGrams,
+    splitLiquidRows,
     // Same formatted strings the Workability rows / cure milestones render, so the step
     // copy can never contradict the estimates shown two panels up.
     unmoldText: cureEstimate?.workability
@@ -300,17 +297,21 @@ export const ResultsPanel = memo(function ResultsPanel({
               </dd>
             </div>
           )}
-          {splitLiquid?.enabled && splitLiquidGrams !== null && splitLiquidGrams > 0 && (
-            <div className="results-grid__item">
-              <dt>{splitLiquid.name.trim() || 'Alternative liquid'}</dt>
-              <dd>
-                {formatWeight(splitLiquidGrams, weightUnit)}
-                <span className="results-excluded">
-                  {' '}
-                  ({additiveStageLabel(splitLiquid.addAt, process)})
-                </span>
-              </dd>
-            </div>
+          {splitLiquidRows.map(
+            ({ row, grams }) =>
+              grams !== null &&
+              grams > 0 && (
+                <div className="results-grid__item" key={row.key}>
+                  <dt>{row.name.trim() || 'Alternative liquid'}</dt>
+                  <dd>
+                    {formatWeight(grams, weightUnit)}
+                    <span className="results-excluded">
+                      {' '}
+                      ({additiveStageLabel(row.addAt, process)})
+                    </span>
+                  </dd>
+                </div>
+              ),
           )}
           {postCookSuperfat && (
             <div className="results-grid__item">

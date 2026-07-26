@@ -87,7 +87,7 @@ function makeBatchSheetInput(
     result: makeResult(),
     displayTotals,
     additives: [makeAfterCookAdditive()],
-    splitLiquid: undefined,
+    splitLiquidRows: [],
     splitLiquidGrams: null,
     properties: null,
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
@@ -158,7 +158,7 @@ describe('buildBatchSheetData dilution threading', () => {
     };
     const data = buildBatchSheetData({
       recipeName: 'LS', batchNotes: '', weightUnit: 'g', lyeLabel: 'KOH', settings: DEFAULT_SETTINGS,
-      lines, linePercents, result, displayTotals, additives: [], splitLiquid: undefined, splitLiquidGrams: null,
+      lines, linePercents, result, displayTotals, additives: [], splitLiquidRows: [], splitLiquidGrams: null,
       postCookSuperfat: null, pcsfIsExtra: true, extrasGrams: 0, dilution, neutralization: null, properties: null,
       indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
       batchWeightWithExtras: displayTotals.batchWeightGrams, waterModeLabel: '2:1',

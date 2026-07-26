@@ -64,7 +64,7 @@ export type RecipeSettings = {
   lyeWaterRatio: string;
   naohPurityPercent: string;
   kohPurityPercent: string;
-  splitLiquid: SplitLiquidSettings;
+  splitLiquids: SplitLiquidRow[];
   batchNotes: string;
   /** Total post-cook superfat budget as a % of oil weight — the ceiling the per-oil rows
    * are allocated within (their percents may sum to less, never more). UI/constraint value;
@@ -121,7 +121,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   // hidden superfat that separates after dilution, so 90% is the safe default.
   naohPurityPercent: '99',
   kohPurityPercent: '90',
-  splitLiquid: { ...DEFAULT_SPLIT_LIQUID },
+  splitLiquids: [],
   batchNotes: '',
   postCookSuperfatTotalPercent: '0',
   postCookSuperfatOils: [],
@@ -132,6 +132,56 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   processVariant: 'cp',
   gelMode: 'natural',
 };
+
+/** One alternative liquid in a recipe: the singleton settings minus the global enable,
+ * plus a stable row key. The list itself being non-empty is "enabled". */
+export type SplitLiquidRow = Omit<SplitLiquidSettings, 'enabled'> & { key: string };
+
+export function newSplitLiquidKey(): string {
+  return `liquid-${crypto.randomUUID()}`;
+}
+
+export function normalizeSplitLiquidRow(
+  partial: Partial<SplitLiquidRow> | null | undefined,
+): SplitLiquidRow {
+  const { enabled: _enabled, ...base } = normalizeSplitLiquid(partial ?? undefined);
+  return {
+    ...base,
+    key: typeof partial?.key === 'string' && partial.key !== '' ? partial.key : newSplitLiquidKey(),
+  };
+}
+
+/** Normalize the alternative-liquid rows, migrating the singleton `splitLiquid` shape
+ * (enabled → one row, disabled → none). A stored list wins over the legacy field. Only one
+ * 'rest' row can exist (it consumes the remainder); later ones demote to percent_of_oils. */
+export function normalizeSplitLiquids(
+  partial:
+    | (Partial<RecipeSettings> & { splitLiquids?: unknown; splitLiquid?: unknown })
+    | null
+    | undefined,
+): SplitLiquidRow[] {
+  const list = (partial as { splitLiquids?: unknown } | null | undefined)?.splitLiquids;
+  let rows: SplitLiquidRow[];
+  if (Array.isArray(list)) {
+    rows = list.filter(isRecord).map((row) => normalizeSplitLiquidRow(row as Partial<SplitLiquidRow>));
+  } else {
+    const legacy = (partial as { splitLiquid?: unknown } | null | undefined)?.splitLiquid;
+    if (isRecord(legacy) && legacy.enabled === true) {
+      rows = [normalizeSplitLiquidRow(legacy as Partial<SplitLiquidRow>)];
+    } else {
+      rows = [];
+    }
+  }
+  let restSeen = false;
+  return rows.map((row) => {
+    if (row.sizeMode !== 'rest') return row;
+    if (!restSeen) {
+      restSeen = true;
+      return row;
+    }
+    return { ...row, sizeMode: 'percent_of_oils' as const };
+  });
+}
 
 export function normalizeSplitLiquid(
   partial: Partial<SplitLiquidSettings> | null | undefined,
@@ -376,7 +426,7 @@ export function normalizeSettings(
     processVariant,
     gelMode: isGelMode(partial?.gelMode) ? partial.gelMode : DEFAULT_SETTINGS.gelMode,
     batchSetByUser: resolveBatchProvenance(partial),
-    splitLiquid: normalizeSplitLiquid(partial?.splitLiquid),
+    splitLiquids: normalizeSplitLiquids(partial),
     batchOilGrams: settingString(partial?.batchOilGrams, d.batchOilGrams),
     superfatPercent: settingString(partial?.superfatPercent, d.superfatPercent),
     kohBlendPercent: settingString(partial?.kohBlendPercent, d.kohBlendPercent),

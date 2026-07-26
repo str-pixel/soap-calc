@@ -20,18 +20,21 @@ import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/rec
 export function totalAdditivePercentForInsights(
   additives: Array<{ grams: number }>,
   oilGrams: number,
-  splitLiquid: Pick<SplitLiquidSettings, 'enabled' | 'addAt'>,
-  splitLiquidGrams?: number | null,
+  splitLiquidRows: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null }>,
 ): number {
   const additivePercent =
     oilGrams > 0 ? additives.reduce((sum, item) => sum + (item.grams / oilGrams) * 100, 0) : 0;
-  const splitLiquidCountsAsAdditive =
-    splitLiquid.enabled &&
-    (splitLiquid.addAt === 'trace' || splitLiquid.addAt === 'oils');
-  // Sized in grams by the view model (whatever the sizing mode), folded back to % of oils.
+  // Rows joining the batter (trace/oils) count toward additive load; in-lye rows are part
+  // of the lye solution instead. Sized in grams by the view model, folded back to % of oils.
   const splitLiquidPercent =
-    splitLiquidCountsAsAdditive && splitLiquidGrams != null && splitLiquidGrams > 0 && oilGrams > 0
-      ? (splitLiquidGrams / oilGrams) * 100
+    oilGrams > 0
+      ? splitLiquidRows.reduce(
+          (sum, row) =>
+            (row.addAt === 'trace' || row.addAt === 'oils') && row.grams != null && row.grams > 0
+              ? sum + (row.grams / oilGrams) * 100
+              : sum,
+          0,
+        )
       : 0;
   return additivePercent + splitLiquidPercent;
 }
@@ -100,6 +103,7 @@ export function sugarTotalPercentForInsights(
 
 type FormulationInsightOptions = {
   splitLiquidGrams?: number | null;
+  splitLiquidRows?: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null }>;
   suggestedLyeWaterGrams?: number | null;
   splitLiquidWaterReductionGrams?: number | null;
   additives?: ComputedAdditive[];
@@ -128,8 +132,7 @@ export function useFormulationInsights(
     const totalAdditivePercent = totalAdditivePercentForInsights(
       options.additives ?? [],
       lyeResult.totalOilWeightGrams,
-      settings.splitLiquid,
-      options.splitLiquidGrams,
+      options.splitLiquidRows ?? [],
     );
     const oilEntries = lines
       .filter((line) => Number(line.weightGrams) > 0 || Number(line.weightPercent) > 0)
@@ -179,9 +182,12 @@ export function useFormulationInsights(
       waterGrams: lyeResult.waterWeightGrams,
       lyeGrams: lyeResult.lyeWeightGrams,
       waterMode: settings.waterMode,
-      splitLiquidEnabled: settings.splitLiquid.enabled,
+      splitLiquidEnabled: settings.splitLiquids.length > 0,
       splitLiquidGrams: options.splitLiquidGrams ?? null,
-      splitLiquidAddAt: settings.splitLiquid.enabled ? settings.splitLiquid.addAt : undefined,
+      // Any in-lye row is the risk-relevant placement; otherwise the first row speaks.
+      splitLiquidAddAt: settings.splitLiquids.some((r) => r.addAt === 'lye')
+        ? ('lye' as const)
+        : settings.splitLiquids[0]?.addAt,
       suggestedLyeWaterGrams: options.suggestedLyeWaterGrams ?? null,
       splitLiquidWaterReductionGrams: options.splitLiquidWaterReductionGrams ?? null,
       totalAdditivePercent,
@@ -225,8 +231,8 @@ export function useFormulationInsights(
     options.splitLiquidWaterReductionGrams,
     options.postCookSuperfat,
     properties.properties,
-    settings.splitLiquid.addAt,
-    settings.splitLiquid.enabled,
+    settings.splitLiquids,
+    options.splitLiquidRows,
     settings.lyeType,
     settings.kohBlendPercent,
     settings.superfatPercent,

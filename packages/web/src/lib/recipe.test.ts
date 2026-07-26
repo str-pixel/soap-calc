@@ -7,6 +7,7 @@ import {
   normalizeAdditiveLine,
   normalizeSettings,
   normalizeSplitLiquid,
+  normalizeSplitLiquids,
   type AdditiveLine,
   type RecipeSettings,
 } from './recipe';
@@ -366,6 +367,47 @@ describe('gelMode', () => {
   it('coerces an invalid value back to natural', () => {
     // @ts-expect-error deliberately invalid
     expect(normalizeSettings({ gelMode: 'bogus' }).gelMode).toBe('natural');
+  });
+});
+
+describe('normalizeSplitLiquids (row list)', () => {
+  it('migrates a legacy enabled singleton into a one-row list', () => {
+    const rows = normalizeSplitLiquids({
+      splitLiquid: { enabled: true, presetKey: 'milk', name: 'goat milk', sizeMode: 'grams', amount: '200', addAt: 'trace' },
+    } as never);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].presetKey).toBe('milk');
+    expect(rows[0].amount).toBe('200');
+    expect(rows[0].key).toBeTruthy();
+  });
+
+  it('migrates a legacy disabled singleton into an empty list', () => {
+    const rows = normalizeSplitLiquids({
+      splitLiquid: { enabled: false, presetKey: 'milk', name: 'x', amount: '5', addAt: 'trace' },
+    } as never);
+    expect(rows).toHaveLength(0);
+  });
+
+  it('keeps a stored row list, dropping malformed rows', () => {
+    const rows = normalizeSplitLiquids({
+      splitLiquids: [
+        { key: 'a', presetKey: 'aloe-juice', name: 'Aloe juice', customWaterPercent: '', sizeMode: 'grams', amount: '50', addAt: 'oils' },
+        'garbage',
+        { key: 'b', presetKey: '', name: 'beer', customWaterPercent: '', sizeMode: 'percent_of_oils', amount: '10', addAt: 'trace' },
+      ],
+    } as never);
+    expect(rows.map((r) => r.name)).toEqual(['Aloe juice', 'beer']);
+  });
+
+  it('demotes every rest row after the first to percent_of_oils (one remainder only)', () => {
+    const rows = normalizeSplitLiquids({
+      splitLiquids: [
+        { key: 'a', presetKey: '', name: 'milk', customWaterPercent: '', sizeMode: 'rest', amount: '', addAt: 'trace' },
+        { key: 'b', presetKey: '', name: 'aloe', customWaterPercent: '', sizeMode: 'rest', amount: '', addAt: 'trace' },
+      ],
+    } as never);
+    expect(rows[0].sizeMode).toBe('rest');
+    expect(rows[1].sizeMode).toBe('percent_of_oils');
   });
 });
 

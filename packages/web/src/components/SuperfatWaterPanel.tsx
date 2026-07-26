@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { LyeSolutionWaterStatus, SplitLiquidWaterSuggestion, WaterMode } from '@soap-calc/core';
+import type { ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import { postCookSuperfatAllocated, type RecipeSettings, type WeightUnit } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
@@ -126,7 +127,7 @@ type SuperfatWaterPanelProps = {
   weightUnit: WeightUnit;
   waterSuggestion: SplitLiquidWaterSuggestion | null;
   lyeWaterStatus: LyeSolutionWaterStatus | null;
-  splitLiquidGrams: number | null;
+  splitLiquidRows: ResolvedSplitLiquidRow[];
   splitAllocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
   acidExtraLye: { naohGrams: number; kohGrams: number } | null;
 };
@@ -145,7 +146,7 @@ export function SuperfatWaterPanel({
   weightUnit,
   waterSuggestion,
   lyeWaterStatus,
-  splitLiquidGrams,
+  splitLiquidRows,
   splitAllocation,
   acidExtraLye,
 }: SuperfatWaterPanelProps) {
@@ -264,17 +265,17 @@ export function SuperfatWaterPanel({
         {/* Split liquid — replaces part of the water with an alternative liquid (milk, beer,
             tea…), so it lives with the water controls. */}
         <SplitLiquidPanel
-          splitLiquid={settings.splitLiquid}
+          rows={settings.splitLiquids}
+          resolvedRows={splitLiquidRows}
           totalOilGrams={totalOilGrams}
           lyeGrams={lyeGrams}
           weightUnit={weightUnit}
           waterMode={settings.waterMode}
           waterSuggestion={waterSuggestion}
           lyeWaterStatus={lyeWaterStatus}
-          splitLiquidGrams={splitLiquidGrams}
           allocation={splitAllocation}
           acidExtraLye={acidExtraLye}
-          onChange={(splitLiquid) => setSettings((s) => ({ ...s, splitLiquid }))}
+          onChange={(splitLiquids) => setSettings((s) => ({ ...s, splitLiquids }))}
           onApplySuggestedWater={(waterPercentOfOils) =>
             setSettings((s) => ({ ...s, waterMode: 'percent_of_oils', waterPercentOfOils }))
           }

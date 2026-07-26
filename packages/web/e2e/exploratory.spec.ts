@@ -626,10 +626,10 @@ test.describe('pricing & profit', () => {
 test('split liquid adds a named liquid and total-liquid row', async ({ page }) => {
   // Split liquid now lives in the always-visible Superfat & water panel — no Advanced click.
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Split liquid' }) }).first();
-  await section.getByText('Enable').click();
+  await section.getByRole('button', { name: /add liquid/i }).click();
   await section.getByPlaceholder(/goat milk/).fill('goat milk');
-  await section.getByLabel(/% of oil weight/).fill('20');
-  await section.getByLabel(/% of oil weight/).blur();
+  await section.getByLabel('Amount').fill('20');
+  await section.getByLabel('Amount').blur();
   await expect(
     page.locator('.panel--results .results-grid dt').filter({ hasText: /Total liquid/ }).first(),
   ).toBeVisible();

@@ -105,7 +105,7 @@ describe('buildRecipePricingContext (deep-review)', () => {
   it('includes only positive-weight oil lines', () => {
     const out = buildRecipePricingContext({
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1400,
-      splitLiquid: null, postCookSuperfat: null,
+      splitLiquids: [], postCookSuperfat: null,
     });
     expect(out.oilLines).toHaveLength(1);
     expect(out.oilLines[0].oilId).toBe('olive-oil');
@@ -114,7 +114,7 @@ describe('buildRecipePricingContext (deep-review)', () => {
   it('prices an append-mode post-cook superfat oil via its oil id', () => {
     const out = buildRecipePricingContext({
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1450,
-      splitLiquid: null,
+      splitLiquids: [],
       postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }], isExtra: true },
     });
     expect(out.oilLines.some((o) => o.oilId === 'jojoba-oil' && o.grams === 50)).toBe(true);
@@ -123,7 +123,7 @@ describe('buildRecipePricingContext (deep-review)', () => {
   it('leaves a subtract-mode (reserved) superfat out — those grams are already priced', () => {
     const out = buildRecipePricingContext({
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1400,
-      splitLiquid: null,
+      splitLiquids: [],
       postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }], isExtra: false },
     });
     expect(out.oilLines.some((o) => o.oilId === 'jojoba-oil')).toBe(false);
@@ -132,7 +132,7 @@ describe('buildRecipePricingContext (deep-review)', () => {
   it('exposes an enabled split liquid as a priceable material', () => {
     const out = buildRecipePricingContext({
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1700,
-      splitLiquid: { name: 'goat milk', grams: 300 }, postCookSuperfat: null,
+      splitLiquids: [{ key: 'row-1', name: 'goat milk', grams: 300 }], postCookSuperfat: null,
     });
     expect(out.additives.some((a) => a.name === 'goat milk' && a.grams === 300)).toBe(true);
     // and an unpriced split liquid must trip the incomplete gate
@@ -171,8 +171,8 @@ describe('second-wave hardening', () => {
       computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1700,
       postCookSuperfat: null,
     };
-    const a = buildRecipePricingContext({ ...base, splitLiquid: { name: 'goat milk', grams: 300 } });
-    const b = buildRecipePricingContext({ ...base, splitLiquid: { name: 'Goat milk 2%', grams: 300 } });
+    const a = buildRecipePricingContext({ ...base, splitLiquids: [{ key: 'row-1', name: 'goat milk', grams: 300 }] });
+    const b = buildRecipePricingContext({ ...base, splitLiquids: [{ key: 'row-1', name: 'Goat milk 2%', grams: 300 }] });
     const keyA = additivePriceKey(a.additives[0]);
     const keyB = additivePriceKey(b.additives[0]);
     expect(keyA).toBe(keyB);

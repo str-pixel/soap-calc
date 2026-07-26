@@ -947,6 +947,22 @@ a:hover {
   gap: 0.3rem;
 }
 
+.split-liquid-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.split-liquid-row {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.split-liquid-row__remove {
+  justify-self: start;
+  align-self: end;
+}
+
 .split-liquid-note {
   grid-column: 1 / -1;
   margin: 0;

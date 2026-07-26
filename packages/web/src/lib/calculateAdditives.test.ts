@@ -173,20 +173,20 @@ describe('computePostCookSuperfat', () => {
 describe('splitLiquidWaterFraction', () => {
   it('uses the preset fraction when a preset is selected', () => {
     expect(
-      splitLiquidWaterFraction({ enabled: true, presetKey: 'coconut-milk-canned', name: '', customWaterPercent: '', sizeMode: 'percent_of_oils' as const, amount: '10', addAt: 'lye' }),
+      splitLiquidWaterFraction({ presetKey: 'coconut-milk-canned', customWaterPercent: '' }),
     ).toBeCloseTo(0.68, 2);
   });
 
   it('uses the custom % water for custom liquids', () => {
     expect(
-      splitLiquidWaterFraction({ enabled: true, presetKey: '', name: 'coconut cream', customWaterPercent: '55', sizeMode: 'percent_of_oils' as const, amount: '10', addAt: 'lye' }),
+      splitLiquidWaterFraction({ presetKey: '', customWaterPercent: '55' }),
     ).toBeCloseTo(0.55, 2);
   });
 
   it('treats blank or invalid custom percents as pure water', () => {
     for (const customWaterPercent of ['', '0', '-5', '250', 'abc']) {
       expect(
-        splitLiquidWaterFraction({ enabled: true, presetKey: '', name: '', customWaterPercent, sizeMode: 'percent_of_oils' as const, amount: '10', addAt: 'lye' }),
+        splitLiquidWaterFraction({ presetKey: '', customWaterPercent }),
       ).toBe(1);
     }
   });

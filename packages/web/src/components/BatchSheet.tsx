@@ -60,7 +60,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     result,
     displayTotals,
     additives,
-    splitLiquid,
+    splitLiquidRows,
     splitLiquidGrams,
     postCookSuperfat,
     pcsfIsExtra,
@@ -234,32 +234,23 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         </section>
       )}
 
-      {(additives.length > 0 || (splitLiquid?.enabled && splitLiquidGrams) || postCookSuperfat) && (
+      {(additives.length > 0 || splitLiquidGrams || postCookSuperfat) && (
         <section className="batch-sheet__section">
           <h2>Additives &amp; liquids</h2>
           <ul className="batch-sheet__list">
-            {splitLiquid?.enabled && splitLiquidGrams !== null && splitLiquidGrams > 0 && (
-              <li>
-                {splitLiquid.name.trim() || 'Alternative liquid'} —{' '}
-                {formatWeight(splitLiquidGrams, weightUnit)} (
-                {additiveStageLabel(splitLiquid.addAt, process)})
-                {(() => {
-                  const step = splitLiquidProcedureStep({
-                    splitLiquid,
-                    splitLiquidGrams,
-                    weightUnit,
-                    process,
-                  });
-                  const note = alternativeLiquidPreset(splitLiquid.presetKey)?.note;
-                  return (
-                    <>
-                      {step && <div className="batch-sheet__note">{step.step}</div>}
-                      {note && <div className="batch-sheet__note">{note}</div>}
-                    </>
-                  );
-                })()}
-              </li>
-            )}
+            {splitLiquidRows.map(({ row, grams }) => {
+              if (grams === null || grams <= 0) return null;
+              const step = splitLiquidProcedureStep({ row, grams, weightUnit, process });
+              const note = alternativeLiquidPreset(row.presetKey)?.note;
+              return (
+                <li key={row.key}>
+                  {row.name.trim() || 'Alternative liquid'} —{' '}
+                  {formatWeight(grams, weightUnit)} ({additiveStageLabel(row.addAt, process)})
+                  {step && <div className="batch-sheet__note">{step.step}</div>}
+                  {note && <div className="batch-sheet__note">{note}</div>}
+                </li>
+              );
+            })}
             {postCookSuperfat?.oils.map((oil, i) => (
               <li key={`pcsf-${i}`}>
                 {batchSheetOilName(oil.oilId)} —{' '}
