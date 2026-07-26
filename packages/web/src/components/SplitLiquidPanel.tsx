@@ -189,9 +189,23 @@ export function SplitLiquidPanel({
                   </label>
                 )}
                 <label className="field">
-                  <span>Sized by</span>
+                  <span>
+                    Sized by
+                    <InfoTip term="sized by">
+                      How the liquid&apos;s amount is measured. &ldquo;% of oil weight&rdquo;
+                      is a share of the oils (20% of 1,000 g oils = 200 g), added on top of
+                      the lye water. &ldquo;Weight&rdquo; is exact grams, also on top.
+                      &ldquo;% of total liquid&rdquo; is a share of the recipe&apos;s
+                      total-liquid amount, carved out of that total — the lye water shrinks
+                      to match. &ldquo;All liquid above the lye minimum&rdquo; keeps the lye
+                      solution at equal parts water and lye and gives this liquid everything
+                      else. Liquids are never sized against the batch weight — that total
+                      is a result, not an ingredient.
+                    </InfoTip>
+                  </span>
                   <select
                     className="input"
+                    aria-label="Sized by"
                     value={row.sizeMode}
                     onChange={(e) =>
                       updateRow(row.key, { sizeMode: e.target.value as SplitLiquidRow['sizeMode'] })
@@ -236,6 +250,7 @@ export function SplitLiquidPanel({
                   </span>
                   <select
                     className="input"
+                    aria-label="Add at"
                     value={row.addAt}
                     onChange={(e) =>
                       updateRow(row.key, { addAt: e.target.value as SplitLiquidRow['addAt'] })

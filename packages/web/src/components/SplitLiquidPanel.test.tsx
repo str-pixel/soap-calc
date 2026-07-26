@@ -164,3 +164,12 @@ test('HP and LS default a new liquid to % of oil weight', () => {
     expect((onChange.mock.calls[0][0] as SplitLiquidRow[])[0].sizeMode).toBe('percent_of_oils');
   }
 });
+
+test('explains what each sizing basis means', () => {
+  renderPanel();
+  expect(screen.getByLabelText('About sized by')).toBeTruthy();
+  const tip = screen.getByText(/share of the oils/i).textContent ?? '';
+  expect(tip).toMatch(/on top of the lye water/i);
+  expect(tip).toMatch(/carved out of that total/i);
+  expect(tip).toMatch(/equal parts water and lye/i);
+});
