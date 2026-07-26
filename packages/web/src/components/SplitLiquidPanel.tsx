@@ -8,7 +8,7 @@ import {
 } from '@soap-calc/core';
 import { InfoTip } from './InfoTip';
 import type { SplitLiquidSettings } from '../lib/recipe';
-import { computeSplitLiquidGrams } from '../lib/calculateAdditives';
+import { splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { formatInputNumber } from '../lib/format';
 import { splitLiquidManualWaterHint } from '../lib/splitLiquidHint';
 import { formatWeight } from '../lib/weightUnits';
@@ -23,6 +23,10 @@ type SplitLiquidPanelProps = {
   waterSuggestion: SplitLiquidWaterSuggestion | null;
   /** Effective-water check for the lye solution; only meaningful when addAt is 'lye'. */
   lyeWaterStatus: LyeSolutionWaterStatus | null;
+  /** Resolved liquid grams for the current sizing mode (view-model owned). */
+  splitLiquidGrams: number | null;
+  /** Budget allocation (budget sizing modes only): the calc's lye water + the target. */
+  allocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
   onChange: (splitLiquid: SplitLiquidSettings) => void;
   onApplySuggestedWater?: (waterPercentOfOils: string) => void;
 };
@@ -35,16 +39,28 @@ export function SplitLiquidPanel({
   waterMode,
   waterSuggestion,
   lyeWaterStatus,
+  splitLiquidGrams,
+  allocation,
   onChange,
   onApplySuggestedWater,
 }: SplitLiquidPanelProps) {
-  const grams = splitLiquid.enabled
-    ? computeSplitLiquidGrams(splitLiquid.percentOfOil, totalOilGrams)
-    : null;
+  const grams = splitLiquid.enabled ? splitLiquidGrams : null;
 
   const preset = alternativeLiquidPreset(splitLiquid.presetKey);
-  const showShortfall =
-    splitLiquid.addAt === 'lye' && lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
+  const budgetModesAvailable = waterMode === 'percent_of_oils';
+  const waterFraction = splitLiquidWaterFraction(splitLiquid);
+  // A thick liquid displaces real water from the budget; past ~5% of the total liquid the
+  // batter will move noticeably faster and thicker than the water figure suggests.
+  const displacedWaterGrams =
+    grams !== null && allocation !== null ? grams * (1 - waterFraction) : 0;
+  const showFluidityNote =
+    allocation !== null && displacedWaterGrams > allocation.targetLiquidGrams * 0.05;
+  const recommendTrace =
+    splitLiquid.addAt === 'lye' &&
+    (preset?.flags.includes('sugars') || preset?.flags.includes('alcohol'));
+  // The view model supplies a status only when the lye solution is actually at stake:
+  // an in-lye liquid, or a budget allocation that reduced the lye water.
+  const showShortfall = lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
 
   const canApplyWater =
     waterMode === 'percent_of_oils' &&
@@ -140,17 +156,40 @@ export function SplitLiquidPanel({
             </label>
           )}
           <label className="field">
-            <span>% of oil weight</span>
-            <input
-              type="number"
+            <span>Sized by</span>
+            <select
               className="input"
-              min={0}
-              max={100}
-              step={0.1}
-              value={splitLiquid.percentOfOil}
-              onChange={(e) => onChange({ ...splitLiquid, percentOfOil: e.target.value })}
-            />
+              value={splitLiquid.sizeMode}
+              onChange={(e) =>
+                onChange({
+                  ...splitLiquid,
+                  sizeMode: e.target.value as SplitLiquidSettings['sizeMode'],
+                })
+              }
+            >
+              <option value="percent_of_oils">% of oil weight</option>
+              <option value="grams">Weight</option>
+              <option value="percent_of_liquid" disabled={!budgetModesAvailable}>
+                % of total liquid{budgetModesAvailable ? '' : ' (needs % of oils water)'}
+              </option>
+              <option value="rest" disabled={!budgetModesAvailable}>
+                All liquid above the lye minimum{budgetModesAvailable ? '' : ' (needs % of oils water)'}
+              </option>
+            </select>
           </label>
+          {splitLiquid.sizeMode !== 'rest' && (
+            <label className="field">
+              <span>Amount</span>
+              <input
+                type="number"
+                className="input"
+                min={0}
+                step={0.1}
+                value={splitLiquid.amount}
+                onChange={(e) => onChange({ ...splitLiquid, amount: e.target.value })}
+              />
+            </label>
+          )}
           <label className="field">
             <span>
               Add at
@@ -175,11 +214,31 @@ export function SplitLiquidPanel({
               <option value="trace">At trace</option>
             </select>
           </label>
+          {allocation && grams !== null && (
+            <p className="split-liquid-preview">
+              {formatWeight(allocation.lyeWaterGrams, weightUnit)} lye water (1 : 1) +{' '}
+              {formatWeight(grams, weightUnit)}{' '}
+              {splitLiquid.name.trim() || 'alternative liquid'} ={' '}
+              {formatWeight(allocation.targetLiquidGrams, weightUnit)} total liquid
+            </p>
+          )}
+          {recommendTrace && (
+            <p className="split-liquid-note">
+              Recommended: at trace — sugars scorch in hot lye. If it must go in the lye,
+              freeze the liquid and add the lye slowly.
+            </p>
+          )}
+          {showFluidityNote && (
+            <p className="split-liquid-note">
+              Thick liquid — about {Math.round((1 - waterFraction) * 100)}% of it isn&apos;t
+              water, so expect a thicker, faster trace than the water figure suggests.
+            </p>
+          )}
           {preset?.note && <p className="split-liquid-note">{preset.note}</p>}
           {showShortfall && (
             <p className="split-liquid-warning" role="alert">
               Not enough water to dissolve the lye:{' '}
-              {preset && preset.waterFraction < 1
+              {preset && preset.waterFraction < 1 && splitLiquid.addAt === 'lye'
                 ? `this liquid is only ${Math.round(preset.waterFraction * 100)}% water, leaving `
                 : 'the lye solution has less water than lye, with '}
               {formatWeight(lyeWaterStatus!.effectiveWaterGrams, weightUnit)} of real water against

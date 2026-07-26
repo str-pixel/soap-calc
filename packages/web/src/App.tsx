@@ -384,6 +384,8 @@ export default function App() {
               weightUnit={weightUnit}
               waterSuggestion={vm.waterSuggestion}
               lyeWaterStatus={vm.lyeWaterStatus}
+              splitLiquidGrams={vm.splitLiquidGrams}
+              splitAllocation={vm.splitAllocation}
             />
 
             <RecipeOilsPanel

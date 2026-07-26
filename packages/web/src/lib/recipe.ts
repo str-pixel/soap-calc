@@ -24,6 +24,8 @@ export type AdditiveLine = {
   addAt: AdditiveStage;
 };
 
+export type SplitLiquidSizeMode = 'percent_of_oils' | 'grams' | 'percent_of_liquid' | 'rest';
+
 export type SplitLiquidSettings = {
   enabled: boolean;
   /** Key into ALTERNATIVE_LIQUID_GUIDE, or '' for a custom (free-text) liquid. */
@@ -32,7 +34,11 @@ export type SplitLiquidSettings = {
   /** For custom liquids only: how much of the liquid is water, as a % (input string).
    * Blank means "treat as pure water". Presets carry their own water fraction. */
   customWaterPercent: string;
-  percentOfOil: string;
+  /** How the liquid is sized. The two budget modes (percent_of_liquid, rest) allocate the
+   * liquid OUT of the recipe's total-liquid target; the other two are additive (legacy). */
+  sizeMode: SplitLiquidSizeMode;
+  /** The size input for the chosen mode (unused for 'rest'). */
+  amount: string;
   addAt: 'lye' | 'oils' | 'trace';
 };
 
@@ -87,9 +93,17 @@ export const DEFAULT_SPLIT_LIQUID: SplitLiquidSettings = {
   presetKey: '',
   name: '',
   customWaterPercent: '',
-  percentOfOil: '',
+  sizeMode: 'percent_of_oils',
+  amount: '',
   addAt: 'trace',
 };
+
+const SPLIT_LIQUID_SIZE_MODES: readonly SplitLiquidSizeMode[] = [
+  'percent_of_oils',
+  'grams',
+  'percent_of_liquid',
+  'rest',
+];
 
 export const DEFAULT_SETTINGS: RecipeSettings = {
   weightUnit: 'g',
@@ -130,13 +144,25 @@ export function normalizeSplitLiquid(
     typeof partial?.presetKey === 'string' && alternativeLiquidPreset(partial.presetKey)
       ? partial.presetKey
       : '';
+  const sizeMode = SPLIT_LIQUID_SIZE_MODES.includes(partial?.sizeMode as SplitLiquidSizeMode)
+    ? (partial!.sizeMode as SplitLiquidSizeMode)
+    : 'percent_of_oils';
+  // Pre-sizeMode recipes carried the size in percentOfOil; migrate it into amount.
+  const legacyPercent = (partial as { percentOfOil?: unknown } | null | undefined)?.percentOfOil;
+  const amount =
+    typeof partial?.amount === 'string'
+      ? partial.amount
+      : typeof legacyPercent === 'string'
+        ? legacyPercent
+        : '';
   return {
     enabled: partial?.enabled === true,
     presetKey,
     name: typeof partial?.name === 'string' ? partial.name : '',
     customWaterPercent:
       typeof partial?.customWaterPercent === 'string' ? partial.customWaterPercent : '',
-    percentOfOil: typeof partial?.percentOfOil === 'string' ? partial.percentOfOil : '',
+    sizeMode,
+    amount,
     addAt,
   };
 }

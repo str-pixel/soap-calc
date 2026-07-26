@@ -384,10 +384,23 @@ describe('normalizeSplitLiquid presetKey', () => {
     ).toBe('');
   });
 
+  it('migrates legacy percentOfOil sizing into sizeMode + amount', () => {
+    const legacy = normalizeSplitLiquid({ enabled: true, percentOfOil: '15' } as never);
+    expect(legacy.sizeMode).toBe('percent_of_oils');
+    expect(legacy.amount).toBe('15');
+  });
+
+  it('keeps an explicit sizeMode and drops junk back to percent_of_oils', () => {
+    expect(normalizeSplitLiquid({ enabled: true, sizeMode: 'rest', amount: '' }).sizeMode).toBe('rest');
+    expect(
+      normalizeSplitLiquid({ enabled: true, sizeMode: 'firkins' as never, amount: '5' }).sizeMode,
+    ).toBe('percent_of_oils');
+  });
+
   it('loads legacy recipes (no presetKey) as custom with the name intact', () => {
-    const legacy = normalizeSplitLiquid({ enabled: true, name: 'goat milk', percentOfOil: '10', addAt: 'trace' });
+    const legacy = normalizeSplitLiquid({ enabled: true, name: 'goat milk', percentOfOil: '10', addAt: 'trace' } as never);
     expect(legacy.presetKey).toBe('');
     expect(legacy.name).toBe('goat milk');
-    expect(legacy.percentOfOil).toBe('10');
+    expect(legacy.amount).toBe('10');
   });
 });

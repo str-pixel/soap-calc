@@ -335,7 +335,8 @@ test('prints the split-liquid advisory note and an explicit liquid step', () => 
       presetKey: 'milk',
       name: 'Milk (dairy or plant)',
       customWaterPercent: '',
-      percentOfOil: '20',
+      sizeMode: 'percent_of_oils' as const,
+      amount: '20',
       addAt: 'trace' as const,
     },
   };

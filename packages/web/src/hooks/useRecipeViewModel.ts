@@ -2,11 +2,12 @@ import { useMemo } from 'react';
 import { calculateDilution, calculateNeutralization, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
+import { resolveSplitLiquidGrams, splitLiquidCalcOverride } from '../lib/splitLiquidSizing';
 import {
   computeExtrasGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
-  computeSplitLiquidGrams, splitLiquidWaterFraction } from '../lib/calculateAdditives';
+  splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
 import type { CureEstimate } from '../lib/cureEstimate';
 import { computeWorkability } from '../lib/workabilityInput';
@@ -58,6 +59,7 @@ export type RecipeViewModel = {
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
   lyeWaterStatus: ReturnType<typeof lyeSolutionWaterStatus> | null;
+  splitAllocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
   properties: ReturnType<typeof useRecipeProperties>['properties'];
   indexes: ReturnType<typeof useRecipeProperties>['indexes'];
   fattyAcids: ReturnType<typeof useRecipeProperties>['fattyAcids'];
@@ -130,9 +132,16 @@ export function useRecipeViewModel({
     batchGramsTarget > 0 &&
     lineTotals.totalWeightGrams > 0 &&
     Math.abs(lineTotals.totalWeightGrams - batchGramsTarget) > weightRoundingTolerance;
+  // Budget sizing modes allocate the liquid out of the total-liquid target, so the calc
+  // itself must see the allocated lye water (concentration, steps, and sheet then agree for
+  // free). Oil totals don't depend on water, so the pre-calc line total is a safe basis.
+  const splitOverride = useMemo(
+    () => splitLiquidCalcOverride(previewSettings, lineTotals.totalWeightGrams),
+    [previewSettings, lineTotals.totalWeightGrams],
+  );
   const { result: fullResult, inputErrors, displayTotals, linePercents } = useRecipeCalculation(
     previewState.lines,
-    previewSettings,
+    splitOverride?.settingsForCalc ?? previewSettings,
     process,
   );
   // Gate on parsePercentOfOil (caps each row at 100, matching computePostCookSuperfat) so the
@@ -227,9 +236,19 @@ export function useRecipeViewModel({
       }),
     [additives, totalOilGrams, baseBatchGrams, solutionGrams],
   );
+  const splitAllocation =
+    splitOverride && result
+      ? { lyeWaterGrams: result.waterWeightGrams, targetLiquidGrams: splitOverride.targetLiquidGrams }
+      : null;
   const splitLiquidGrams =
-    previewSettings.splitLiquid.enabled
-      ? computeSplitLiquidGrams(previewSettings.splitLiquid.percentOfOil, totalOilGrams)
+    previewSettings.splitLiquid.enabled && result
+      ? resolveSplitLiquidGrams(previewSettings.splitLiquid, {
+          totalOilGrams,
+          // Budget modes size against the pre-allocation target; additive modes against
+          // the recipe's own water (its only sensible "total liquid").
+          targetLiquidGrams: splitOverride?.targetLiquidGrams ?? result.waterWeightGrams,
+          lyeGrams: result.lyeWeightGrams,
+        })
       : null;
   // Post-cook superfat is an HP/LS-only concept. Gate on process so a CP recipe carrying a
   // stray non-zero postCookSuperfatPercent (hand-edited or imported — CP hides the field, so
@@ -250,7 +269,10 @@ export function useRecipeViewModel({
       !result ||
       !splitLiquidGrams ||
       !previewSettings.splitLiquid.enabled ||
-      previewSettings.splitLiquid.addAt !== 'trace'
+      previewSettings.splitLiquid.addAt !== 'trace' ||
+      // Budget modes already allocated the water in the calc — suggesting a further
+      // reduction here would double-count the liquid.
+      splitOverride !== null
     ) {
       return null;
     }
@@ -267,30 +289,36 @@ export function useRecipeViewModel({
     previewSettings.waterMode,
     result,
     splitLiquidGrams,
+    splitOverride,
     totalOilGrams,
   ]);
 
   // Effective-water floor check: only when the alternative liquid goes into the lye
   // solution. A custom liquid (no preset) is treated as pure water — no false alarms.
   const lyeWaterStatus = useMemo(() => {
+    const inLye = previewSettings.splitLiquid.addAt === 'lye';
     if (
       !result ||
       !splitLiquidGrams ||
       !previewSettings.splitLiquid.enabled ||
-      previewSettings.splitLiquid.addAt !== 'lye'
+      // The lye solution is at stake for an in-lye liquid, or when a budget allocation
+      // reduced the lye water (which can starve the 1:1 floor at high liquid shares).
+      (!inLye && splitOverride === null)
     ) {
       return null;
     }
     return lyeSolutionWaterStatus({
       waterGrams: result.waterWeightGrams,
       lyeGrams: result.lyeWeightGrams,
-      splitLiquidGrams,
+      // Only an in-lye liquid contributes its own water to the solution.
+      splitLiquidGrams: inLye ? splitLiquidGrams : 0,
       waterFraction: splitLiquidWaterFraction(previewSettings.splitLiquid),
     });
   }, [
     previewSettings.splitLiquid,
     result,
     splitLiquidGrams,
+    splitOverride,
   ]);
   // Vessel-size guard multiple (HP only): vessel volume ÷ the water-bearing base batter
   // volume — additives fold in off-heat after the cook, so they aren't part of what the
@@ -481,6 +509,7 @@ export function useRecipeViewModel({
     postCookSuperfat,
     waterSuggestion,
     lyeWaterStatus,
+    splitAllocation,
     properties,
     indexes,
     fattyAcids,
