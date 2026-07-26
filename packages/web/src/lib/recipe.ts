@@ -1,4 +1,4 @@
-import { alternativeLiquidPreset } from '@soap-calc/core';
+import { alternativeLiquidPreset, catalogEntryById } from '@soap-calc/core';
 import type { AdditiveStage, DoseBasis, DoseUnit, GelMode, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
 import { processForLyeType } from './process';
@@ -468,9 +468,14 @@ export function normalizeAdditiveLine(
       : typeof partial.percentOfOil === 'string'
         ? partial.percentOfOil
         : '';
+  // A catalogId that no longer resolves (e.g. the removed 'jojoba' entry in a saved recipe)
+  // becomes a custom row — the name is kept, so the line survives as free text rather than a
+  // broken catalog pick whose <select> has no matching <option>.
+  const rawCatalogId = typeof partial.catalogId === 'string' ? partial.catalogId : '';
+  const catalogId = rawCatalogId !== '' && catalogEntryById(rawCatalogId) ? rawCatalogId : '';
   return {
     key: partial.key,
-    catalogId: typeof partial.catalogId === 'string' ? partial.catalogId : '',
+    catalogId,
     name: typeof partial.name === 'string' ? partial.name : '',
     amount,
     basis,

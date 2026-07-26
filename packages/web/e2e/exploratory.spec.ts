@@ -443,7 +443,7 @@ test.describe('additives', () => {
   test('sugar at 3% of oil = 30 g on a 1000 g batch', async ({ page }) => {
     await page.getByRole('button', { name: '+ Add', exact: true }).click();
     const row = page.locator('ul[aria-label="Recipe additives"] li').first();
-    await row.getByLabel('Additive type').selectOption({ label: 'Sugar / sorbitol' });
+    await row.getByLabel('Additive type').selectOption({ label: 'Sugar' });
     await row.getByLabel(/^Amount( for .*)?$/).fill('3');
     await row.getByLabel('Dose mode').selectOption({ label: '% of oil' });
     await expect(row.locator('.additive-list__grams')).toHaveText(/^30(\.0)? g$/);

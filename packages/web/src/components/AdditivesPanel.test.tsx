@@ -311,7 +311,7 @@ test('a line already set to an LS-scoped catalogId (guar) under CP still offers 
 
 describe('per-row accessible names (deep-review)', () => {
   it('disambiguates every control by the additive name, like RecipeOilsPanel does for oils', () => {
-    const a = makeLine({ key: 'a1', catalogId: 'sugar-sorbitol', name: 'Sugar / sorbitol' });
+    const a = makeLine({ key: 'a1', catalogId: 'sugar-sorbitol', name: 'Sugar' });
     const b = makeLine({ key: 'b2', name: 'oat milk' });
     render(
       <AdditivesPanel
@@ -322,7 +322,7 @@ describe('per-row accessible names (deep-review)', () => {
         onChange={() => {}}
       />,
     );
-    expect(screen.getByLabelText('Amount for Sugar / sorbitol')).toBeTruthy();
+    expect(screen.getByLabelText('Amount for Sugar')).toBeTruthy();
     expect(screen.getByLabelText('Amount for oat milk')).toBeTruthy();
     expect(screen.getByLabelText('Dose mode for oat milk')).toBeTruthy();
     expect(screen.getByLabelText('Add at for oat milk')).toBeTruthy();

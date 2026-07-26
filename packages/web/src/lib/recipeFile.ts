@@ -4,6 +4,7 @@ import {
 } from '@soap-calc/core';
 import {
   createStarterLines,
+  normalizeAdditiveLine,
   normalizeSettings,
   newAdditiveKey,
   newLineKey,
@@ -275,15 +276,11 @@ export function recipeLinesFromFile(
 export function recipeAdditivesFromFile(
   additives: RecipeFilePayload['additives'],
 ): AdditiveLine[] {
-  return additives.map((line) => ({
-    key: newAdditiveKey(),
-    catalogId: line.catalogId,
-    name: line.name,
-    amount: line.amount,
-    basis: line.basis,
-    unit: line.unit,
-    addAt: line.addAt,
-  }));
+  // Route through normalizeAdditiveLine so an imported catalogId that no longer resolves
+  // (e.g. the removed 'jojoba' additive) is cleared to a custom row, mirroring the
+  // localStorage-draft path (additivesFromSaved). parseAdditiveLine has already validated
+  // the fields, so this is an idempotent pass that only adds the catalog-resolution guard.
+  return additives.map((line) => normalizeAdditiveLine({ key: newAdditiveKey(), ...line }));
 }
 
 export function recipeFileDownloadName(name: string): string {

@@ -73,8 +73,8 @@ export function hpYogurtPercentForInsights(
  * they all accelerate trace/heat retention similarly, so their doses are summed into one
  * total rather than tracked per-additive. Mirrors hpYogurtPercentForInsights' percent-of-oil
  * math; matches by catalog id or a custom-named line's keyword via additiveMatches. A line
- * is counted once even if its name matches more than one keyword (e.g. "Sugar / sorbitol"
- * matches both "sugar" and "sorbitol").
+ * is counted once even if its name matches more than one keyword (e.g. a custom line named
+ * "sugar / sorbitol blend" matches both "sugar" and "sorbitol").
  *
  * `excludeYogurt` drops 'yogurt' from the keyword list — pass true for HP recipes, where
  * hp_yogurt_water already covers yogurt's water-deduction concern on its own; counting the
