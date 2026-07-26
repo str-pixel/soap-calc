@@ -350,6 +350,29 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
 /** Present a lye result as if the oils were scaled by `factor` (0–1): scales the lye-side
  * quantities (lye/water are linear in oil weight), preserving oil weights, concentration,
  * and water:lye ratio. Used for the post-cook-superfat "subtract" method (reserve oil). */
+/** Add acid-compensation lye (e.g. for a vinegar split liquid) on top of a computed
+ * result: alkali totals, batch weight, and the solution figures shift; the per-oil lines
+ * stay saponification-only — the extra is recipe overhead, not any oil's demand. */
+export function addExtraLye(
+  result: LyeCalculationResult,
+  extra: { naohGrams: number; kohGrams: number },
+): LyeCalculationResult {
+  const naoh = Number.isFinite(extra.naohGrams) ? Math.max(0, extra.naohGrams) : 0;
+  const koh = Number.isFinite(extra.kohGrams) ? Math.max(0, extra.kohGrams) : 0;
+  if (naoh === 0 && koh === 0) return result;
+  const lyeWeightGrams = result.lyeWeightGrams + naoh + koh;
+  const lyePlusWater = lyeWeightGrams + result.waterWeightGrams;
+  return {
+    ...result,
+    naohWeightGrams: result.naohWeightGrams + naoh,
+    kohWeightGrams: result.kohWeightGrams + koh,
+    lyeWeightGrams,
+    totalBatchWeightGrams: result.totalBatchWeightGrams + naoh + koh,
+    lyeConcentrationPercent: lyePlusWater > 0 ? (lyeWeightGrams / lyePlusWater) * 100 : 0,
+    waterLyeRatio: lyeWeightGrams > 0 ? result.waterWeightGrams / lyeWeightGrams : 0,
+  };
+}
+
 export function scaleLyeResult(result: LyeCalculationResult, factor: number): LyeCalculationResult {
   // Math.min/max propagate NaN if either argument is non-finite, which would silently NaN
   // every scaled field below. Currently unreachable (callers only pass computed 0–1

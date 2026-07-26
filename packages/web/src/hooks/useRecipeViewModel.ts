@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calculateDilution, calculateNeutralization, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { addExtraLye, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { resolveSplitLiquidGrams, splitLiquidCalcOverride } from '../lib/splitLiquidSizing';
@@ -60,6 +60,7 @@ export type RecipeViewModel = {
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
   lyeWaterStatus: ReturnType<typeof lyeSolutionWaterStatus> | null;
   splitAllocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
+  acidExtraLye: { naohGrams: number; kohGrams: number } | null;
   properties: ReturnType<typeof useRecipeProperties>['properties'];
   indexes: ReturnType<typeof useRecipeProperties>['indexes'];
   fattyAcids: ReturnType<typeof useRecipeProperties>['fattyAcids'];
@@ -250,6 +251,38 @@ export function useRecipeViewModel({
           lyeGrams: result.lyeWeightGrams,
         })
       : null;
+  // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
+  // survives. Sized against the base (saponification) lye, then folded into the result so
+  // every downstream surface — concentration, steps, sheet — quotes the adjusted figures.
+  const acidExtraLye = useMemo(() => {
+    const preset = alternativeLiquidPreset(previewSettings.splitLiquid.presetKey);
+    if (
+      !preset?.lyeNeutralization ||
+      !previewSettings.splitLiquid.enabled ||
+      splitLiquidGrams == null ||
+      splitLiquidGrams <= 0
+    ) {
+      return null;
+    }
+    return extraLyeForAcidLiquid(preset, splitLiquidGrams, {
+      lyeType: previewSettings.lyeType,
+      kohBlendPercent: Number(previewSettings.kohBlendPercent) || 0,
+      naohPurityPercent: Number(previewSettings.naohPurityPercent) || 100,
+      kohPurityPercent: Number(previewSettings.kohPurityPercent) || 100,
+    });
+  }, [
+    previewSettings.splitLiquid.presetKey,
+    previewSettings.splitLiquid.enabled,
+    previewSettings.lyeType,
+    previewSettings.kohBlendPercent,
+    previewSettings.naohPurityPercent,
+    previewSettings.kohPurityPercent,
+    splitLiquidGrams,
+  ]);
+  const finalResult = useMemo(
+    () => (result && acidExtraLye ? addExtraLye(result, acidExtraLye) : result),
+    [result, acidExtraLye],
+  );
   // Post-cook superfat is an HP/LS-only concept. Gate on process so a CP recipe carrying a
   // stray non-zero postCookSuperfatPercent (hand-edited or imported — CP hides the field, so
   // the user has no way to clear it) can never silently change batch weight or render a PCSF
@@ -276,9 +309,10 @@ export function useRecipeViewModel({
     ) {
       return null;
     }
+    const r = finalResult ?? result;
     return suggestLyeWaterWithSplitLiquid({
-      waterGrams: result.waterWeightGrams,
-      lyeGrams: result.lyeWeightGrams,
+      waterGrams: r.waterWeightGrams,
+      lyeGrams: r.lyeWeightGrams,
       totalOilGrams: totalOilGrams,
       splitLiquidGrams,
       waterMode: previewSettings.waterMode,
@@ -287,6 +321,7 @@ export function useRecipeViewModel({
     previewSettings.splitLiquid.addAt,
     previewSettings.splitLiquid.enabled,
     previewSettings.waterMode,
+    finalResult,
     result,
     splitLiquidGrams,
     splitOverride,
@@ -307,15 +342,17 @@ export function useRecipeViewModel({
     ) {
       return null;
     }
+    const r = finalResult ?? result;
     return lyeSolutionWaterStatus({
-      waterGrams: result.waterWeightGrams,
-      lyeGrams: result.lyeWeightGrams,
+      waterGrams: r.waterWeightGrams,
+      lyeGrams: r.lyeWeightGrams,
       // Only an in-lye liquid contributes its own water to the solution.
       splitLiquidGrams: inLye ? splitLiquidGrams : 0,
       waterFraction: splitLiquidWaterFraction(previewSettings.splitLiquid),
     });
   }, [
     previewSettings.splitLiquid,
+    finalResult,
     result,
     splitLiquidGrams,
     splitOverride,
@@ -349,7 +386,8 @@ export function useRecipeViewModel({
     previewSettings,
     properties,
     fattyAcids,
-    result,
+    // Insights reason about the same figures the user sees — acid-adjusted when present.
+    finalResult ?? result,
     {
       splitLiquidGrams,
       suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
@@ -436,7 +474,8 @@ export function useRecipeViewModel({
     return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);
   }, [batchWeightWithExtras, displayTotals]);
   const batchSheetData = useMemo(() => {
-    if (!result || !displayTotals || !canPrintBatchSheet(result, displayTotals, inputErrors)) {
+    const r = finalResult ?? result;
+    if (!r || !displayTotals || !canPrintBatchSheet(r, displayTotals, inputErrors)) {
       return null;
     }
     return buildBatchSheetData({
@@ -448,7 +487,7 @@ export function useRecipeViewModel({
       settings: previewSettings,
       lines: previewState.lines,
       linePercents,
-      result,
+      result: r,
       displayTotals,
       additives: computedAdditives,
       splitLiquid: previewSettings.splitLiquid,
@@ -499,7 +538,7 @@ export function useRecipeViewModel({
     showRecipeTotals,
     percentTotalOff,
     weightTotalOff,
-    result,
+    result: finalResult ?? result,
     inputErrors,
     displayTotals,
     linePercents,
@@ -510,6 +549,7 @@ export function useRecipeViewModel({
     waterSuggestion,
     lyeWaterStatus,
     splitAllocation,
+    acidExtraLye,
     properties,
     indexes,
     fattyAcids,

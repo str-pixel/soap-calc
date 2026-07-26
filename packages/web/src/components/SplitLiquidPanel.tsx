@@ -27,6 +27,8 @@ type SplitLiquidPanelProps = {
   splitLiquidGrams: number | null;
   /** Budget allocation (budget sizing modes only): the calc's lye water + the target. */
   allocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
+  /** Auto-added lye compensating an acid liquid (view-model owned; null when none). */
+  acidExtraLye: { naohGrams: number; kohGrams: number } | null;
   onChange: (splitLiquid: SplitLiquidSettings) => void;
   onApplySuggestedWater?: (waterPercentOfOils: string) => void;
 };
@@ -41,6 +43,7 @@ export function SplitLiquidPanel({
   lyeWaterStatus,
   splitLiquidGrams,
   allocation,
+  acidExtraLye,
   onChange,
   onApplySuggestedWater,
 }: SplitLiquidPanelProps) {
@@ -232,6 +235,20 @@ export function SplitLiquidPanel({
             <p className="split-liquid-note">
               Thick liquid — about {Math.round((1 - waterFraction) * 100)}% of it isn&apos;t
               water, so expect a thicker, faster trace than the water figure suggests.
+            </p>
+          )}
+          {acidExtraLye && (acidExtraLye.naohGrams > 0 || acidExtraLye.kohGrams > 0) && (
+            <p className="split-liquid-note">
+              {`${[
+                acidExtraLye.naohGrams > 0
+                  ? `+${formatWeight(acidExtraLye.naohGrams, weightUnit)} NaOH`
+                  : null,
+                acidExtraLye.kohGrams > 0
+                  ? `+${formatWeight(acidExtraLye.kohGrams, weightUnit)} KOH`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' and ')} added to offset the acid — already included in the lye figures.`}
             </p>
           )}
           {preset?.note && <p className="split-liquid-note">{preset.note}</p>}
