@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { RecipeLine, RecipeSettings } from './recipe';
 import { previewRecipeState } from './commitDrafts';
 import type { SyncedRecipe } from './lineWeightSync';
-import { gramsStringToInputDisplay, type WeightUnit } from './weightUnits';
+import { gramsStringToLineDisplay, type WeightUnit } from './weightUnits';
 
 export function usePreviewRecipeState(
   lines: RecipeLine[],
@@ -39,7 +39,7 @@ export function previewWeightDisplay(
   previewLine: RecipeLine | undefined,
   weightUnit: WeightUnit,
 ): string {
-  return gramsStringToInputDisplay(previewLine?.weightGrams ?? line.weightGrams, weightUnit);
+  return gramsStringToLineDisplay(previewLine?.weightGrams ?? line.weightGrams, weightUnit);
 }
 
 export function previewPercentDisplay(

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addRecipeLine,
+  solveOilLinesForBatchTarget,
   solveOilTotalForBatchTarget,
   resyncFromWeights,
   syncBatchTotalEdit,
@@ -8,6 +9,7 @@ import {
   syncWeightEdit,
 } from './lineWeightSync';
 import { createStarterLines } from './recipe';
+import { gramsStringToLineDisplay } from './weightUnits';
 import type { RecipeLine } from './recipe';
 
 const twoLines: RecipeLine[] = [
@@ -203,5 +205,46 @@ describe('solveOilTotalForBatchTarget with fixed-gram extras (2000→1961 bug)',
     const lines = createStarterLines();
     const solved = solveOilTotalForBatchTarget(lines, 2000, 1000, 1469.58);
     expect(solved).toBe(1361);
+  });
+});
+
+describe('solveOilLinesForBatchTarget (exact landing via one fractional line)', () => {
+  const OIL0 = 1000;
+  const PROP0 = 1469.58; // starter recipe oils+lye+water
+
+  function realized(lines: RecipeLine[], fixed = 0) {
+    const oil = lines.reduce((s, l) => s + Number(l.weightGrams || 0), 0);
+    return PROP0 * (oil / OIL0) + fixed;
+  }
+
+  it('lands the typed 2000 exactly, carrying the residual on one line', () => {
+    const solved = solveOilLinesForBatchTarget(createStarterLines(), 2000, OIL0, PROP0, 0);
+    expect(Math.abs(realized(solved.lines) - 2000)).toBeLessThan(0.08);
+    const fractional = solved.lines.filter((l) => Number(l.weightGrams) % 1 !== 0);
+    expect(fractional.length).toBeLessThanOrEqual(1);
+    // The stored total matches the realized line sum (weightTotalOff invariant).
+    const sum = solved.lines.reduce((s, l) => s + Number(l.weightGrams || 0), 0);
+    expect(Number(solved.batchOilGrams)).toBeCloseTo(sum, 6);
+  });
+
+  it('lands exactly with fixed-gram extras in the batch', () => {
+    const fixed = 200;
+    const solved = solveOilLinesForBatchTarget(createStarterLines(), 2000, OIL0, PROP0 + fixed, fixed);
+    expect(Math.abs(realized(solved.lines, fixed) - 2000)).toBeLessThan(0.08);
+  });
+
+  it('keeps whole-gram lines when the whole solve already lands within a deci-gram', () => {
+    // Target chosen exactly on the staircase: realized batch for oil 1361 is 2000.086 —
+    // ask for that and no fractional correction should be applied.
+    const solved = solveOilLinesForBatchTarget(createStarterLines(), 2000.086, OIL0, PROP0, 0);
+    expect(solved.lines.every((l) => Number(l.weightGrams) % 1 === 0)).toBe(true);
+  });
+});
+
+describe('gramsStringToLineDisplay', () => {
+  it('shows whole grams bare and keeps a single decimal only when fractional', () => {
+    expect(gramsStringToLineDisplay('340', 'g')).toBe('340');
+    expect(gramsStringToLineDisplay('340.3', 'g')).toBe('340.3');
+    expect(gramsStringToLineDisplay('340.34', 'g')).toBe('340.3');
   });
 });

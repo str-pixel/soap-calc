@@ -115,12 +115,13 @@ test('commitBatchWeightInput ratio-scales the recipe through the shared apply pa
   inputs.commitBatchWeightInput('1500', { currentBatchGrams: 1469.58, currentOilTotalGrams: 1000 });
 
   expect(applySyncedUpdate).toHaveBeenCalledTimes(1);
-  // 1000 × 1500 / 1469.58 = 1020.7 → 1021
+  // 1000 × 1500 / 1469.58 = 1020.7 — the exact landing keeps the fractional total
+  // (deci-gram on the largest line) instead of rounding to 1021
   const synced = applySyncedUpdate.mock.calls[0][0](lines, '1000', true);
-  expect(synced.batchOilGrams).toBe('1021');
+  expect(synced.batchOilGrams).toBe('1020.7');
   expect(synced.batchSetByUser).toBe(true);
   const sum = synced.lines.reduce((s: number, l: { weightGrams: string }) => s + Number(l.weightGrams), 0);
-  expect(Math.abs(sum - 1021)).toBeLessThan(2);
+  expect(Math.abs(sum - 1020.7)).toBeLessThan(2);
 });
 
 test('commitBatchWeightInput without a draft never rescales (blur is not an edit)', () => {
@@ -172,10 +173,10 @@ test('commitBatchWeightInput lands from an off-100% mid-edit shape (stale percen
   });
   const synced = applySyncedUpdate.mock.calls[0][0](lines, '1200', true);
   expect(applySyncedUpdate).toHaveBeenCalledTimes(1);
-  // 1200 × 1500/1763.5 = 1020.7 → 1021; resyncFromWeights re-derives percents to 100 first
-  expect(synced.batchOilGrams).toBe('1021');
+  // 1200 × 1500/1763.5 = 1020.7 exact landing; resyncFromWeights re-derives percents to 100 first
+  expect(synced.batchOilGrams).toBe('1020.7');
   const sum = synced.lines.reduce((s: number, l: { weightGrams: string }) => s + Number(l.weightGrams), 0);
-  expect(Math.abs(sum - 1021)).toBeLessThan(2);
+  expect(Math.abs(sum - 1020.7)).toBeLessThan(2);
   // resyncFromWeights must re-derive percents from the WEIGHTS (700/1200 ≈ 58.3%), not
   // trust the stale stored 45% — without it the first line would land at ~459, not ~596.
   expect(Number(synced.lines[0].weightGrams)).toBeGreaterThan(580);

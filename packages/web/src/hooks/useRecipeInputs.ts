@@ -2,12 +2,10 @@ import { commitDrafts } from '../lib/commitDrafts';
 import {
   addRecipeLine,
   resyncFromWeights,
-  solveOilTotalForBatchTarget,
   syncBatchTotalEdit,
   syncPercentEdit,
   syncWeightEdit,
-  type SyncedRecipe,
-} from '../lib/lineWeightSync';
+  type SyncedRecipe, solveOilLinesForBatchTarget } from '../lib/lineWeightSync';
 import { isTarOil, oilById } from '../lib/oils';
 import { newLineKey, type RecipeLine, type RecipeSettings, type AdditiveLine, type WeightUnit } from '../lib/recipe';
 import { parseInputDisplayToGrams, parsePercentInput } from '../lib/weightUnits';
@@ -214,15 +212,19 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     const { currentBatchGrams, currentOilTotalGrams } = context;
     if (!Number.isFinite(target) || target <= 0) return;
     if (!(currentBatchGrams > 0) || !(currentOilTotalGrams > 0)) return;
-    applyOilTotal(
-      solveOilTotalForBatchTarget(
-        linesRef.current,
-        target,
-        currentOilTotalGrams,
-        currentBatchGrams,
-        context.fixedExtrasGrams ?? 0,
-      ),
+    const solved = solveOilLinesForBatchTarget(
+      linesRef.current,
+      target,
+      currentOilTotalGrams,
+      currentBatchGrams,
+      context.fixedExtrasGrams ?? 0,
     );
+    discardDrafts();
+    applySyncedUpdate(() => ({
+      lines: solved.lines,
+      batchOilGrams: solved.batchOilGrams,
+      batchSetByUser: true,
+    }));
   }
 
   function handleBatchWeightChange(displayValue: string) {

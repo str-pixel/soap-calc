@@ -46,6 +46,20 @@ export function gramsStringToInputDisplay(gramsStr: string, unit: WeightUnit): s
   return String(Math.round(converted * factor) / factor);
 }
 
+/** Line-field display: like gramsStringToInputDisplay, but keeps a single decimal in
+ * gram mode so a fractional line (from the exact batch-target landing) stays visible and
+ * round-trips instead of being silently re-rounded on the next edit. Whole values render
+ * bare. */
+export function gramsStringToLineDisplay(gramsStr: string, unit: WeightUnit): string {
+  if (gramsStr === '') return '';
+  const grams = Number(gramsStr);
+  if (!Number.isFinite(grams) || grams < 0) return '';
+  const converted = gramsToDisplayValue(grams, unit);
+  const digits = Math.max(WEIGHT_UNITS[unit].displayDigits, unit === 'g' ? 1 : 0);
+  const factor = 10 ** digits;
+  return String(Math.round(converted * factor) / factor);
+}
+
 /** Returns null when the display value cannot be committed (invalid or still being typed). */
 export function parseInputDisplayToGrams(
   displayStr: string,
