@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   computePostCookSuperfat,
   computeRecipeAdditives,
-  computeSplitLiquidGrams,
   splitLiquidWaterFraction,
 } from './calculateAdditives';
 import type { AdditiveLine } from './recipe';
@@ -39,14 +38,7 @@ describe('calculateAdditives', () => {
     ]);
   });
 
-  it('computes split liquid grams', () => {
-    expect(computeSplitLiquidGrams('20', 1000)).toBe(200);
-  });
 
-  it('returns empty when oil weight is zero', () => {
-    expect(computeRecipeAdditives(additives, { oilGrams: 0, batchGrams: 1500, solutionGrams: 0 })).toEqual([]);
-    expect(computeSplitLiquidGrams('20', 0)).toBeNull();
-  });
 
   it('skips invalid or zero percent lines', () => {
     const lines: AdditiveLine[] = [

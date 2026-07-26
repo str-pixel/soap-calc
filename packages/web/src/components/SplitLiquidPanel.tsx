@@ -1,4 +1,5 @@
 import {
+  ADDITIVE_STAGE_LABELS,
   ALTERNATIVE_LIQUID_GUIDE,
   alternativeLiquidPreset,
   type LyeSolutionWaterStatus,
@@ -243,7 +244,8 @@ export function SplitLiquidPanel({
                 </button>
                 {grams !== null && grams > 0 && (
                   <p className="split-liquid-preview">
-                    {row.name.trim() || 'Alternative liquid'}: {formatWeight(grams, weightUnit)}
+                    {row.name.trim() || 'Alternative liquid'}: {formatWeight(grams, weightUnit)}{' '}
+                    ({ADDITIVE_STAGE_LABELS[row.addAt]})
                   </p>
                 )}
                 {recommendTrace && (
@@ -259,7 +261,11 @@ export function SplitLiquidPanel({
 
           {allocation && totalGrams > 0 && (
             <p className="split-liquid-preview">
-              {formatWeight(allocation.lyeWaterGrams, weightUnit)} lye water (1 : 1) +{' '}
+              {formatWeight(allocation.lyeWaterGrams, weightUnit)} lye water (
+              {lyeGrams > 0 && Math.abs(allocation.lyeWaterGrams / lyeGrams - 1) > 0.005
+                ? `${(allocation.lyeWaterGrams / lyeGrams).toFixed(2)} : 1`
+                : '1 : 1'}
+              ) +{' '}
               {formatWeight(totalGrams, weightUnit)} alternative liquid ={' '}
               {formatWeight(allocation.targetLiquidGrams, weightUnit)} total liquid
             </p>
