@@ -365,6 +365,11 @@ export default function App() {
               settings={settings}
               setSettings={setSettings}
               weightUnit={weightUnit}
+              previewState={vm.previewState}
+              getDraft={getDraft}
+              inputs={inputs}
+              batchWeightWithExtras={vm.batchWeightWithExtras}
+              recipeOilWeightGrams={vm.displayTotals?.recipeOilWeightGrams ?? 0}
               moldSizerInput={moldSizerInput}
               onMoldSizerChange={setMoldSizerInput}
               liveOilBatchFraction={vm.liveOilBatchFraction}
@@ -390,13 +395,11 @@ export default function App() {
 
             <RecipeOilsPanel
               lines={lines} weightUnit={weightUnit}
-              previewState={vm.previewState} previewLineByKey={vm.previewLineByKey}
+              previewLineByKey={vm.previewLineByKey}
               lineTotals={vm.lineTotals} showRecipeTotals={vm.showRecipeTotals}
               percentTotalOff={vm.percentTotalOff} weightTotalOff={vm.weightTotalOff}
               getDraft={getDraft} setDraft={setDraft}
               inputs={inputs}
-              batchWeightWithExtras={vm.batchWeightWithExtras}
-              recipeOilWeightGrams={vm.displayTotals?.recipeOilWeightGrams ?? 0}
             />
 
             <AdditivesPanel

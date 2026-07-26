@@ -30,13 +30,11 @@ function renderPanel(inputs: ReturnType<typeof makeInputs>) {
   return render(
     <RecipeOilsPanel
       lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
       previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
       lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
-      batchWeightWithExtras={1469.58} recipeOilWeightGrams={1000}
     />,
   );
 }
@@ -69,13 +67,11 @@ test('Add oil button calls inputs.addLine', () => {
   render(
     <RecipeOilsPanel
       lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
       previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
       lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
-      batchWeightWithExtras={1469.58} recipeOilWeightGrams={1000}
     />
   );
   fireEvent.click(screen.getByRole('button', { name: '+ Add oil' }));
@@ -109,13 +105,11 @@ test('the oil picker falls back to the stable row label when the row has no reso
   render(
     <RecipeOilsPanel
       lines={lines as any} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '100' }}
       previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
       lineTotals={{ totalWeightGrams: 100, totalPercent: 100 }}
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
-      batchWeightWithExtras={146.958} recipeOilWeightGrams={100}
     />,
   );
 
@@ -132,13 +126,11 @@ test('totals-off cue is textual, not color-only, and absent when totals reconcil
   const { rerender } = render(
     <RecipeOilsPanel
       lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
       previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
       lineTotals={{ totalWeightGrams: 900, totalPercent: 90 }}
       showRecipeTotals percentTotalOff={true} weightTotalOff={true}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
-      batchWeightWithExtras={1322.62} recipeOilWeightGrams={900}
     />,
   );
   // The off-total cue names the gap (and is real text, not color-only): "Oils total 90% — aim for 100%".
@@ -147,73 +139,17 @@ test('totals-off cue is textual, not color-only, and absent when totals reconcil
   rerender(
     <RecipeOilsPanel
       lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
       previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
       lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
       showRecipeTotals percentTotalOff={false} weightTotalOff={false}
       getDraft={(_, c) => c} setDraft={vi.fn()}
       inputs={inputs as any}
-      batchWeightWithExtras={1469.58} recipeOilWeightGrams={1000}
     />,
   );
   expect(screen.queryByText(/aim for 100%/i)).toBeNull();
 });
 
-test('Total batch field shows the display-rounded live batch weight', () => {
-  renderPanel(makeInputs());
-  const field = screen.getByLabelText(/Total batch in g/) as HTMLInputElement;
-  // 1469.58 g display-rounded per the unit's digits (g has displayDigits: 0 — same helper
-  // as the oil field, via gramsStringToInputDisplay('1469.58', 'g'))
-  expect(field.value).toBe('1470');
-});
 
-test('blurring Total batch commits with the displayTotals-based context', () => {
-  const inputs = makeInputs();
-  renderPanel(inputs);
-  const field = screen.getByLabelText(/Total batch in g/) as HTMLInputElement;
-  fireEvent.change(field, { target: { value: '1500' } });
-  fireEvent.blur(field, { target: { value: '1500' } });
-  expect(inputs.handleBatchWeightChange).toHaveBeenCalledWith('1500');
-  expect(inputs.commitBatchWeightInput).toHaveBeenCalledWith('1500', {
-    currentBatchGrams: 1469.58,
-    currentOilTotalGrams: 1000,
-  });
-});
 
-test('pressing Enter commits the Total batch field (no click-away needed)', () => {
-  const inputs = makeInputs();
-  renderPanel(inputs);
-  const field = screen.getByLabelText(/Total batch in g/) as HTMLInputElement;
-  field.focus();
-  fireEvent.change(field, { target: { value: '1500' } });
-  fireEvent.keyDown(field, { key: 'Enter' });
-  expect(inputs.commitBatchWeightInput).toHaveBeenCalled();
-});
 
-test('pressing Enter commits the Total oil field too (consistent with Total batch)', () => {
-  const inputs = makeInputs();
-  renderPanel(inputs);
-  const field = screen.getByLabelText(/Total oil/) as HTMLInputElement;
-  field.focus();
-  fireEvent.change(field, { target: { value: '900' } });
-  fireEvent.keyDown(field, { key: 'Enter' });
-  expect(inputs.commitBatchInput).toHaveBeenCalled();
-});
 
-test('Total batch field is empty when the recipe has no resolvable batch weight', () => {
-  const inputs = makeInputs();
-  const lines = createStarterLines();
-  render(
-    <RecipeOilsPanel
-      lines={lines} weightUnit="g"
-      previewState={{ lines, batchOilGrams: '1000' }}
-      previewLineByKey={Object.fromEntries(lines.map((l) => [l.key, l]))}
-      lineTotals={{ totalWeightGrams: 1000, totalPercent: 100 }}
-      showRecipeTotals percentTotalOff={false} weightTotalOff={false}
-      getDraft={(_, c) => c} setDraft={vi.fn()}
-      inputs={inputs as any}
-      batchWeightWithExtras={0} recipeOilWeightGrams={0}
-    />,
-  );
-  expect((screen.getByLabelText(/Total batch in g/) as HTMLInputElement).value).toBe('');
-});
