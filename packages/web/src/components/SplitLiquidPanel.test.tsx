@@ -116,3 +116,22 @@ test('shows the auto-added extra lye line when acid rows are present', () => {
   });
   expect(screen.getByText(/\+11 g NaOH added to offset/i)).toBeTruthy();
 });
+
+test('per-row preview names the stage', () => {
+  renderPanel({ rows: [ROW({ name: 'goat milk', addAt: 'trace' })] });
+  expect(screen.getByText(/goat milk: 100 g \(At trace\)/i)).toBeTruthy();
+});
+
+test('allocation ratio label reflects acid-adjusted lye', () => {
+  const rows = [ROW({ name: 'milk', sizeMode: 'rest', amount: '' })];
+  renderPanel({
+    rows,
+    resolvedRows: rows.map((row) => ({ row, grams: 192 })),
+    lyeGrams: 133.2,
+    allocation: { lyeWaterGrams: 129.8, targetLiquidGrams: 330 },
+    acidExtraLye: { naohGrams: 3.4, kohGrams: 0 },
+  });
+  const line = screen.getByText(/0\.97 : 1/).textContent ?? '';
+  expect(line).toMatch(/lye water/i);
+  expect(line).not.toMatch(/\(1 : 1\)/);
+});
