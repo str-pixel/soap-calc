@@ -1,4 +1,6 @@
 import type { MoldSizerInput } from '../lib/moldSizer';
+import type { RecipeInputs } from '../hooks/useRecipeInputs';
+import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import type { RecipeSettings, WeightUnit } from '../lib/recipe';
 import { MAX_NOTES_LENGTH } from '../lib/recipe';
 import {
@@ -7,6 +9,7 @@ import {
   LYE_TYPE_LABELS,
 } from '../lib/settingsFields';
 import type { ProcessId } from '../lib/process';
+import { BatchBasics } from './BatchBasics';
 import { InfoTip } from './InfoTip';
 import { MoldSizerPanel } from './MoldSizerPanel';
 
@@ -43,6 +46,12 @@ function NumericSettingField({
 
 type SettingsPanelProps = {
   settings: RecipeSettings;
+  /** Batch basics (weight unit / total oil / total batch) — shown first. */
+  previewState: RecipeViewModel['previewState'];
+  getDraft: (id: string, canonicalDisplay: string) => string;
+  inputs: RecipeInputs;
+  batchWeightWithExtras: number;
+  recipeOilWeightGrams: number;
   setSettings: React.Dispatch<React.SetStateAction<RecipeSettings>>;
   weightUnit: WeightUnit;
   moldSizerInput: MoldSizerInput;
@@ -61,6 +70,11 @@ type SettingsPanelProps = {
 
 export function SettingsPanel({
   settings,
+  previewState,
+  getDraft,
+  inputs,
+  batchWeightWithExtras,
+  recipeOilWeightGrams,
   setSettings,
   weightUnit,
   moldSizerInput,
@@ -80,6 +94,15 @@ export function SettingsPanel({
       <p className="panel__subtitle">
         Superfat and the water ratio sit in the Superfat&nbsp;&amp;&nbsp;water panel below.
       </p>
+
+      <BatchBasics
+        weightUnit={weightUnit}
+        previewState={previewState}
+        getDraft={getDraft}
+        inputs={inputs}
+        batchWeightWithExtras={batchWeightWithExtras}
+        recipeOilWeightGrams={recipeOilWeightGrams}
+      />
       <div className="settings-grid">
         <label className="field">
           <span>Lye type</span>

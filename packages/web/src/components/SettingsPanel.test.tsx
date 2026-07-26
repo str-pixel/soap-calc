@@ -18,6 +18,19 @@ function Harness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) 
         settings={settings} setSettings={setSettings} weightUnit="g"
         moldSizerInput={DEFAULT_MOLD_SIZER_INPUT} onMoldSizerChange={() => {}}
         liveOilBatchFraction={null} onApplySuggestedOilGrams={() => {}}
+        previewState={{ lines: [], batchOilGrams: '1000' } as never}
+        getDraft={(_: string, c: string) => c}
+        inputs={{
+          batchInputId: 'batch-total',
+          batchWeightInputId: 'batch-weight-total',
+          setWeightUnit: () => {},
+          handleBatchChange: () => {},
+          commitBatchInput: () => {},
+          handleBatchWeightChange: () => {},
+          commitBatchWeightInput: () => {},
+        } as never}
+        batchWeightWithExtras={1204}
+        recipeOilWeightGrams={1000}
       />
       <output aria-label="superfat-echo">{settings.superfatPercent}</output>
     </>
@@ -47,6 +60,19 @@ const baseProps = {
   onMoldSizerChange: noop,
   liveOilBatchFraction: null,
   onApplySuggestedOilGrams: noop,
+  previewState: { lines: [], batchOilGrams: '1000' } as never,
+  getDraft: (_: string, c: string) => c,
+  inputs: {
+    batchInputId: 'batch-total',
+    batchWeightInputId: 'batch-weight-total',
+    setWeightUnit: () => {},
+    handleBatchChange: () => {},
+    commitBatchInput: () => {},
+    handleBatchWeightChange: () => {},
+    commitBatchWeightInput: () => {},
+  } as never,
+  batchWeightWithExtras: 1204,
+  recipeOilWeightGrams: 1000,
 };
 
 describe('SettingsPanel lye gating', () => {
@@ -133,4 +159,15 @@ test('process-notes textarea enforces the same cap normalizeSettings applies on 
 test('no longer hosts the Split liquid option (moved to the Superfat & water panel)', () => {
   render(<Harness />);
   expect(screen.queryByRole('heading', { name: 'Split liquid' })).toBeNull();
+});
+
+test('batch basics (weight unit, total oil, total batch) render first in Settings', () => {
+  render(<Harness />);
+  const panel = screen.getByRole('heading', { name: 'Settings' }).closest('section')!;
+  expect(screen.getByLabelText('Weight unit')).toBeTruthy();
+  expect(screen.getByLabelText(/Total oil \(g\)/)).toBeTruthy();
+  expect(screen.getByLabelText(/Total batch in g/)).toBeTruthy();
+  // First field group in the panel is the batch basics, ahead of every other setting.
+  const firstField = panel.querySelector('.field, .slider-field')!;
+  expect(firstField.textContent).toContain('Weight unit');
 });

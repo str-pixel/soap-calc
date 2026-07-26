@@ -6,9 +6,7 @@ import type { RecipeLine, WeightUnit } from '../lib/recipe';
 import { formatRecipePercentTotal, previewPercentDisplay, previewWeightDisplay } from '../lib/recipePreview';
 import {
   formatWeight,
-  gramsStringToInputDisplay,
   WEIGHT_UNITS,
-  WEIGHT_UNIT_OPTIONS,
 } from '../lib/weightUnits';
 import { OilPicker } from './OilPicker';
 
@@ -22,7 +20,6 @@ const commitOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
 type RecipeOilsPanelProps = {
   lines: RecipeLine[];
   weightUnit: WeightUnit;
-  previewState: RecipeViewModel['previewState'];
   previewLineByKey: RecipeViewModel['previewLineByKey'];
   lineTotals: RecipeViewModel['lineTotals'];
   showRecipeTotals: boolean;
@@ -31,18 +28,11 @@ type RecipeOilsPanelProps = {
   getDraft: (id: string, canonicalDisplay: string) => string;
   setDraft: (id: string, value: string) => void;
   inputs: RecipeInputs;
-  /** Live computed batch weight (view model batchWeightWithExtras) — the same figure
-   * Results prints as "Total batch". 0/absent means "no resolvable recipe". */
-  batchWeightWithExtras: number;
-  /** displayTotals.recipeOilWeightGrams — the oil basis the batch figure was computed
-   * from. NOT lineTotals.totalWeightGrams (raw line-sum), which can differ mid-edit. */
-  recipeOilWeightGrams: number;
 };
 
 export function RecipeOilsPanel({
   lines,
   weightUnit,
-  previewState,
   previewLineByKey,
   lineTotals,
   showRecipeTotals,
@@ -51,8 +41,6 @@ export function RecipeOilsPanel({
   getDraft,
   setDraft,
   inputs,
-  batchWeightWithExtras,
-  recipeOilWeightGrams,
 }: RecipeOilsPanelProps) {
   const weightUnitConfig = WEIGHT_UNITS[weightUnit];
 
@@ -119,64 +107,6 @@ export function RecipeOilsPanel({
         </div>
       </div>
 
-      <div className="recipe-entry-bar">
-        <label className="field field--inline">
-          <span>Weight unit</span>
-          <select
-            className="input"
-            value={weightUnit}
-            onChange={(e) => inputs.setWeightUnit(e.target.value as WeightUnit)}
-          >
-            {WEIGHT_UNIT_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label} ({option.short})
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field field--inline">
-          <span>Total oil ({weightUnitConfig.short})</span>
-          <input
-            type="number"
-            className="input input--number"
-            min={0}
-            step={weightUnitConfig.inputStep}
-            value={getDraft(
-              inputs.batchInputId,
-              gramsStringToInputDisplay(previewState.batchOilGrams, weightUnit),
-            )}
-            onChange={(e) => inputs.handleBatchChange(e.target.value)}
-            onBlur={(e) => inputs.commitBatchInput(e.target.value)}
-            onKeyDown={commitOnEnter}
-          />
-        </label>
-
-        <label className="field field--inline">
-          <span>Total batch ({weightUnitConfig.short})</span>
-          <input
-            type="number"
-            className="input input--number"
-            min={0}
-            step={weightUnitConfig.inputStep}
-            value={getDraft(
-              inputs.batchWeightInputId,
-              batchWeightWithExtras > 0
-                ? gramsStringToInputDisplay(String(batchWeightWithExtras), weightUnit)
-                : '',
-            )}
-            onChange={(e) => inputs.handleBatchWeightChange(e.target.value)}
-            onBlur={(e) =>
-              inputs.commitBatchWeightInput(e.target.value, {
-                currentBatchGrams: batchWeightWithExtras,
-                currentOilTotalGrams: recipeOilWeightGrams,
-              })
-            }
-            onKeyDown={commitOnEnter}
-            aria-label={`Total batch in ${weightUnitConfig.short}`}
-          />
-        </label>
-      </div>
 
       <div className="recipe-table">
         {lines.map((line, index) => {
