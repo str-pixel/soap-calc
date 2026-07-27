@@ -263,6 +263,11 @@ export function useFormulationInsights(
     options.isLiquidSoap,
     options.process,
     options.hpVesselMultiple,
+    // Transitively covered today (every settings edit rebuilds lyeResult, a listed dep),
+    // but that coverage is an unstated 2-hop argument and nothing lints exhaustive-deps
+    // here — list the direct inputs like every other options.* field above.
+    options.soapingTempF,
+    options.lsGlycerinSolvent,
   ]);
 
   return { insights };
