@@ -56,6 +56,13 @@ adding lye back is the documented failure) — that is a property of the *stage*
 - AdditivesPanel empty-state: the citric parenthetical shows for every process again
   (remove the LS ternary from #128 fix 3).
 - The `chelator` entry (pre-made citrate/gluconate, no lye consumption) stays at 1%.
+- **Dilution stays on the BASE result (documented decision, found in spec review):** the LS
+  dilution calc reads `result`, not `finalResult`, so a lye-stage citric line's compensation
+  KOH is excluded from `anhydrousGrams`/`kohGrams`. That is correct, not an oversight: the
+  compensation KOH is consumed by the citric to form potassium citrate — a dissolved
+  non-soap salt — so it contributes no soap solids to the concentration model and no
+  glycerin byproduct (0.55 g/g applies to saponified KOH only). Vinegar under LS behaves
+  identically today (acetate). Record the rationale as a comment on the dilution memo.
 
 ### 2 · Dose-basis seam
 
@@ -69,6 +76,12 @@ adding lye back is the documented failure) — that is a property of the *stage*
 - Data invariant (asserted in a test): entries/overrides with `doseBasis: 'solution'` are
   reachable only under LS (`processes: ['ls']` or an `ls` override), because solution dose
   modes are LS-only in the UI and `solutionGrams` is 0 outside LS.
+- **Zero-basis guard (found in spec review):** `soapConcentrationPercent` defaults to '30',
+  but a user can blank it — dilution goes null, `solutionGrams` falls back to 0, and
+  `gramsFromDose(0, amount, unit)` returns 0 (not null), so every solution-based row
+  silently renders 0 g. AdditivesPanel shows a per-row hint when `basis === 'solution'`,
+  the amount is > 0, and the computed grams are 0: set the soap concentration (dilution)
+  to size solution-based doses.
 
 ### 3 · Catalog data (LS overrides + new entries)
 
