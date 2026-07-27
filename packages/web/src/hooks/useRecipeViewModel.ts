@@ -187,6 +187,10 @@ export function useRecipeViewModel({
     : (displayTotals?.recipeOilWeightGrams ?? 0) +
       (result?.lyeWeightGrams ?? 0) +
       (result?.waterWeightGrams ?? 0);
+  // Deliberately reads the BASE result, not finalResult: acid-compensation alkali (vinegar,
+  // lye-stage citric) is consumed into a dissolved salt (acetate/citrate) — no soap solids
+  // for the concentration model, no glycerin byproduct (0.55 g/g applies to saponified KOH
+  // only). Do not "fix" this to finalResult.
   const dilution = useMemo(
     () =>
       process === 'ls' && result
@@ -248,15 +252,11 @@ export function useRecipeViewModel({
           batchGrams: baseBatchGrams,
           solutionGrams,
         },
-        // LS never compensates acid additives: the LS neutralization feature doses citric
-        // UNCOMPENSATED to consume a post-cook lye excess, and a hand-edited/imported LS
-        // recipe carrying a citric line must not get that lye added back. Withholding the
-        // recipe context here keeps every line's extraLye undefined, so the panel hint and
-        // the lye result stay consistent by construction. (Same rationale as the PCSF
-        // process gate below.)
-        process === 'ls' ? undefined : acidLyeRecipe,
+        // Compensation is stage-aware inside computeRecipeAdditives (after_cook acid is
+        // never compensated, any process) — so the recipe context flows unconditionally.
+        acidLyeRecipe,
       ),
-    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe, process],
+    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe],
   );
   const splitAllocation =
     splitOverride && result

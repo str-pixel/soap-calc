@@ -256,9 +256,9 @@ describe('acid compensation line', () => {
 });
 
 describe('empty-state copy is process-scoped', () => {
-  it('does not mention citric under LS, where citric is never offered', () => {
+  it('mentions the citric auto-lye under LS too (offered there since the LS audit)', () => {
     render(<AdditivesPanel additives={[]} computed={[]} weightUnit="g" process="ls" onChange={() => {}} />);
-    expect(screen.queryByText(/citric/i)).toBeNull();
+    expect(screen.getByText(/citric acid's compensation lye is added automatically/)).toBeTruthy();
   });
 
   it('mentions the citric auto-lye under CP', () => {

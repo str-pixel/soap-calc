@@ -40,7 +40,14 @@ export function computeRecipeAdditives(
     if (amount === null || amount === 0) continue;
     const grams = gramsFromDose(basisWeight, amount, line.unit);
     if (grams === null) continue;
-    const factors = acidLyeRecipe ? catalogEntryById(line.catalogId)?.lyeNeutralization : undefined;
+    // Acid compensation is a PRE-COOK concept: an acid dosed into the lye/oils/batter
+    // consumes alkali that the calc must replace. An after_cook acid neutralizes the
+    // finished soap's excess lye (the LS neutralization workflow) — compensating it would
+    // add that lye straight back, in any process. Stage decides, not process.
+    const factors =
+      acidLyeRecipe && line.addAt !== 'after_cook'
+        ? catalogEntryById(line.catalogId)?.lyeNeutralization
+        : undefined;
     const extraLye = factors ? extraLyeForAcid(factors, grams, acidLyeRecipe!) : undefined;
     result.push({
       key: line.key,

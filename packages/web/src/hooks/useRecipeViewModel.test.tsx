@@ -292,21 +292,27 @@ test('vinegar split liquid and citric additive stack; the split acid figure stay
   expect(both.result.naohWeightGrams - vinegarOnly.result.naohWeightGrams).toBeCloseTo(citricExtra, 1);
 });
 
-test('under LS a stray citric line is never compensated (LS doses citric uncompensated, post-cook)', () => {
-  // Citric is CP/HP-only in the catalog, but a hand-edited or imported LS recipe can still
-  // carry a line. Compensating it would add the lye straight back — the exact failure the
-  // catalog comment forbids. Gate mirrors the PCSF process gate below it.
+test('LS citric: the lye-stage chelator route compensates; the after-cook neutralization route never does', () => {
+  // The stage decides, not the process: lye-stage citric consumes alkali the calc must
+  // replace (potassium citrate chelator route); after-cook citric neutralizes a finished
+  // batch's lye excess and compensating it would add that lye straight back.
   let without: any;
-  let withCitric: any;
+  let lyeStage: any;
+  let afterCook: any;
   probe((vm) => { without = vm; }, { lyeType: 'koh' }, 'ls');
-  probe((vm) => { withCitric = vm; }, { lyeType: 'koh' }, 'ls', undefined, [CITRIC_LINE]);
-  const line = withCitric.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
-  // The line still resolves (dose math is process-blind) but carries no compensation…
-  expect(line.grams).toBeGreaterThan(0);
-  expect(line.extraLye).toBeUndefined();
-  // …and the lye result is untouched.
-  expect(withCitric.result.kohWeightGrams).toBeCloseTo(without.result.kohWeightGrams, 6);
-  expect(withCitric.result.naohWeightGrams).toBeCloseTo(without.result.naohWeightGrams, 6);
+  probe((vm) => { lyeStage = vm; }, { lyeType: 'koh' }, 'ls', undefined, [CITRIC_LINE]);
+  probe((vm) => { afterCook = vm; }, { lyeType: 'koh' }, 'ls', undefined, [{ ...CITRIC_LINE, addAt: 'after_cook' as const }]);
+  // Lye-stage: compensation lands in the KOH figure.
+  const line = lyeStage.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
+  expect(line.extraLye.kohGrams).toBeGreaterThan(0);
+  expect(line.extraLye.naohGrams).toBe(0);
+  expect(lyeStage.result.kohWeightGrams).toBeCloseTo(
+    without.result.kohWeightGrams + line.extraLye.kohGrams, 3);
+  // After-cook: inert — the #128 protection, now stage-scoped.
+  const acLine = afterCook.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
+  expect(acLine.grams).toBeGreaterThan(0);
+  expect(acLine.extraLye).toBeUndefined();
+  expect(afterCook.result.kohWeightGrams).toBeCloseTo(without.result.kohWeightGrams, 6);
 });
 
 test('two citric lines each carry their share and the lye result sums both (per-line pin)', () => {
