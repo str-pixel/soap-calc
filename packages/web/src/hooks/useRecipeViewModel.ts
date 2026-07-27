@@ -66,6 +66,9 @@ export type RecipeViewModel = {
   /** True when an in-lye liquid's water content is undeclared, so the 1:1 dissolution
    * floor cannot be checked either way. */
   lyeWaterUnverifiable: boolean;
+  /** The 1:1 shortfall holds even counting every undeclared in-lye gram as pure water, so
+   * the deficit is a fact rather than an artefact of excluding it. */
+  lyeWaterShortfallCertain: boolean;
   /** True when the paste is over the target concentration regardless of what the undeclared
    * liquid turns out to contain — the verdict is a fact, not an assumption. */
   overDilutionCertain: boolean;
@@ -476,9 +479,15 @@ export function useRecipeViewModel({
   // consumer needs a lower bound on real water, the opposite of the dilution deduction
   // above. It is not assumed to be zero water either (tea 99%, beer 92%, goat milk 88%
   // would all start false-alarming); the check reports itself unverifiable instead.
-  const lyeWaterUnverifiable = splitLiquidRows.some(
-    ({ row, grams }) =>
-      row.addAt === 'lye' && grams != null && grams > 0 && splitLiquidWaterFraction(row) === null,
+  // Grams of in-lye liquid whose water content nobody declared. Used as the UPPER bound on
+  // water it could be carrying, so the shortfall check can tell "certainly short" from
+  // "can't tell" instead of asserting a deficit built on an exclusion.
+  const undeclaredInLyeGrams = splitLiquidRows.reduce(
+    (sum, { row, grams }) =>
+      row.addAt === 'lye' && grams != null && grams > 0 && splitLiquidWaterFraction(row) === null
+        ? sum + grams
+        : sum,
+    0,
   );
   const lyeWaterStatus = useMemo(() => {
     // Effective water each in-lye row actually brings to the solution.
@@ -522,6 +531,20 @@ export function useRecipeViewModel({
     splitLiquidRows,
     splitOverride,
   ]);
+  // Excluding an undeclared liquid is what makes the shortfall arithmetic fire, so the
+  // verdict must be qualified by the same exclusion. Certain only when the solution is
+  // still short with every undeclared gram counted as pure water — the most generous case.
+  // Otherwise the deficit is an artefact of the exclusion, not a fact about the batch.
+  const lyeWaterShortfallCertain =
+    lyeWaterStatus !== null &&
+    lyeWaterStatus.shortfallGrams > 0 &&
+    lyeWaterStatus.effectiveWaterGrams + undeclaredInLyeGrams < lyeWaterStatus.floorGrams;
+  const lyeWaterUnverifiable =
+    lyeWaterStatus !== null &&
+    lyeWaterStatus.shortfallGrams > 0 &&
+    undeclaredInLyeGrams > 0 &&
+    !lyeWaterShortfallCertain;
+
   // Vessel-size guard multiple (HP only): vessel volume ÷ the water-bearing base batter
   // volume — additives fold in off-heat after the cook, so they aren't part of what the
   // vessel needs to hold while it expands. Optional: an unset/invalid vessel volume simply
@@ -760,6 +783,7 @@ export function useRecipeViewModel({
     splitLiquidPasteWater,
     unknownLiquidGrams,
     lyeWaterUnverifiable,
+    lyeWaterShortfallCertain,
     overDilutionCertain,
     fixedBatchExtrasGrams,
     properties,

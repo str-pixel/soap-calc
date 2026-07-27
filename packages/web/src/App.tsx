@@ -391,6 +391,7 @@ export default function App() {
               waterSuggestion={vm.waterSuggestion}
               lyeWaterStatus={vm.lyeWaterStatus}
               lyeWaterUnverifiable={vm.lyeWaterUnverifiable}
+              lyeWaterShortfallCertain={vm.lyeWaterShortfallCertain}
               splitLiquidRows={vm.splitLiquidRows}
               splitAllocation={vm.splitAllocation}
               acidExtraLye={vm.acidExtraLye}

@@ -39,6 +39,9 @@ type SplitLiquidPanelProps = {
   /** True when an in-lye liquid's water content is undeclared: the 1:1 dissolution floor
    * cannot be checked either way, which must be said rather than read as a pass. */
   lyeWaterUnverifiable?: boolean;
+  /** The shortfall survives counting every undeclared gram as water, so it is stated
+   * categorically; otherwise the deficit is an artefact of the exclusion. */
+  lyeWaterShortfallCertain?: boolean;
   /** Budget allocation (budget sizing rows only): the calc's lye water + the target. */
   allocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
   /** Auto-added lye compensating acid rows (view-model owned; null when none). */
@@ -68,6 +71,7 @@ export function SplitLiquidPanel({
   waterSuggestion,
   lyeWaterStatus,
   lyeWaterUnverifiable = false,
+  lyeWaterShortfallCertain = false,
   allocation,
   acidExtraLye,
   onChange,
@@ -105,7 +109,13 @@ export function SplitLiquidPanel({
         })
       : null;
 
-  const showShortfall = lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
+  // Only assert a deficit that survives the undeclared-liquid exclusion. Otherwise the
+  // panel printed "can't verify the lye will dissolve" and "add at least N g more water"
+  // side by side, both role="alert" — the second caused by the first.
+  const showShortfall =
+    lyeWaterStatus !== null &&
+    lyeWaterStatus.shortfallGrams > 0 &&
+    (!lyeWaterUnverifiable || lyeWaterShortfallCertain);
   // The thick-liquid note aggregates every row's displaced water against the budget.
   const displacedWaterGrams = resolvedRows.reduce((sum, { row, grams }) => {
     const fraction = grams != null ? splitLiquidWaterFraction(row) : null;
@@ -390,8 +400,10 @@ export function SplitLiquidPanel({
           {lyeWaterUnverifiable && (
             <p className="split-liquid-warning" role="alert">
               Can&apos;t verify the lye will dissolve — an alternative liquid in the lye
-              water has no declared water content, so it is left out of the check. Declare
-              its % water, or move it to trace.
+              water has no declared water content, so it is left out of the check. On plain
+              water alone the solution is{' '}
+              {formatWeight(lyeWaterStatus!.shortfallGrams, weightUnit)} under the equal-parts
+              minimum, which that liquid may or may not cover. Declare its % water to find out.
             </p>
           )}
           {showShortfall && (
@@ -400,8 +412,8 @@ export function SplitLiquidPanel({
               {formatWeight(lyeWaterStatus!.effectiveWaterGrams, weightUnit)} of real water
               against the {formatWeight(lyeWaterStatus!.floorGrams, weightUnit)} minimum —
               equal parts water and lye — needed to dissolve it. Add at least{' '}
-              {formatWeight(lyeWaterStatus!.shortfallGrams, weightUnit)} more water, or move
-              liquids to trace instead.
+              {formatWeight(lyeWaterStatus!.shortfallGrams, weightUnit)} more water, or switch
+              the water method to a water:lye ratio, which cannot fall below 1:1.
             </p>
           )}
           {waterSuggestion && waterSuggestion.reductionGrams > 0 && (

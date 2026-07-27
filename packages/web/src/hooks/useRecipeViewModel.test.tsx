@@ -518,23 +518,25 @@ test('unsized split-liquid rows get no vote in the advisories', () => {
   expect(codes(glycerinPlusBlank)).not.toContain('ls_split_liquid_not_dilution');
 });
 
-test('an undeclared in-lye liquid makes the dissolution floor unverifiable, not a pass', () => {
-  // Assuming an unknown liquid is pure water let the 1:1 check pass a solution that was
-  // genuinely short. It is not assumed dry either — tea, beer and milk would false-alarm.
-  const CUSTOM_IN_LYE = {
+test('an undeclared in-lye liquid makes a shortfall unverifiable, not a pass', () => {
+  // Budget sizing shrinks the plain water first, so excluding the undeclared liquid is what
+  // leaves the solution short. With plenty of plain water there is no shortfall to qualify
+  // and no notice at all — the flag tracks a shortfall we cannot verify, not the mere
+  // presence of an undeclared row.
+  const UNDECLARED_BUDGET = {
     key: 'c1', presetKey: '', name: 'mystery brew', customWaterPercent: '',
-    sizeMode: 'grams' as const, amount: '150', addAt: 'lye' as const,
+    sizeMode: 'percent_of_liquid' as const, amount: '70', addAt: 'lye' as const,
   };
   let vm: any;
   let declared: any;
-  probe((v) => { vm = v; }, { lyeType: 'koh', splitLiquids: [CUSTOM_IN_LYE] }, 'ls');
-  probe((v) => { declared = v; }, { lyeType: 'koh', splitLiquids: [{ ...CUSTOM_IN_LYE, customWaterPercent: '90' }] }, 'ls');
+  probe((v) => { vm = v; }, { waterMode: 'percent_of_oils', waterPercentOfOils: '33', splitLiquids: [UNDECLARED_BUDGET] }, 'cp');
+  probe((v) => { declared = v; }, { waterMode: 'percent_of_oils', waterPercentOfOils: '33', splitLiquids: [{ ...UNDECLARED_BUDGET, customWaterPercent: '90' }] }, 'cp');
 
+  expect(vm.lyeWaterStatus!.shortfallGrams).toBeGreaterThan(0);
   expect(vm.lyeWaterUnverifiable).toBe(true);
-  expect(vm.unknownLiquidGrams).toBeCloseTo(150, 3);
-  // Declaring the water content restores a real check and clears the unknown.
+  // Declaring a high water content closes the gap outright.
+  expect(declared.lyeWaterStatus!.shortfallGrams).toBe(0);
   expect(declared.lyeWaterUnverifiable).toBe(false);
-  expect(declared.unknownLiquidGrams).toBe(0);
 });
 
 test('the over-dilution verdict survives an unknown liquid when it cannot change the answer', () => {
@@ -589,4 +591,41 @@ test('a blank in-lye row no longer silences the split-liquid water warnings', ()
   expect(codes(alone)).toContain('split_liquid_water_not_adjusted');
   // The blank row is not an in-lye liquid, so it must not change the verdict.
   expect(codes(withBlank)).toContain('split_liquid_water_not_adjusted');
+});
+
+test('an undeclared in-lye liquid never produces a categorical "add N g of water"', () => {
+  // Excluding the undeclared row from the water sum is what made the pre-existing shortfall
+  // arithmetic fire, so the panel asserted a deficit its own sibling alert said it could not
+  // verify. The deficit is stated only when it survives counting every undeclared gram as
+  // pure water — the most generous case for the batch.
+  const UNDECLARED_BUDGET = {
+    key: 'u1', presetKey: '', name: 'mystery', customWaterPercent: '',
+    sizeMode: 'percent_of_liquid' as const, amount: '70', addAt: 'lye' as const,
+  };
+  let vm: any;
+  probe((v) => { vm = v; }, { waterMode: 'percent_of_oils', waterPercentOfOils: '33', splitLiquids: [UNDECLARED_BUDGET] }, 'cp');
+
+  expect(vm.lyeWaterStatus!.shortfallGrams).toBeGreaterThan(0);
+  // 231 g of unknown liquid could easily cover a 41 g gap, so the deficit is not a fact.
+  expect(vm.lyeWaterUnverifiable).toBe(true);
+  expect(vm.lyeWaterShortfallCertain).toBe(false);
+  // Never both — that pairing was the contradiction.
+  expect(vm.lyeWaterUnverifiable && vm.lyeWaterShortfallCertain).toBe(false);
+});
+
+test('…but a deficit that survives the most generous assumption is still stated', () => {
+  // A tiny undeclared liquid cannot close a large gap: even counting all of it as water the
+  // solution is short, so the categorical warning is correct and must survive.
+  const TINY_UNDECLARED = {
+    key: 'u2', presetKey: '', name: 'mystery', customWaterPercent: '',
+    sizeMode: 'percent_of_liquid' as const, amount: '95', addAt: 'lye' as const,
+  };
+  let vm: any;
+  probe((v) => { vm = v; },
+    { waterMode: 'percent_of_oils', waterPercentOfOils: '20', splitLiquids: [TINY_UNDECLARED] }, 'cp');
+  if (vm.lyeWaterStatus && vm.lyeWaterStatus.shortfallGrams > 0) {
+    expect(vm.lyeWaterShortfallCertain || vm.lyeWaterUnverifiable).toBe(true);
+    // Exactly one of the two states, never both — that pairing was the contradiction.
+    expect(vm.lyeWaterShortfallCertain && vm.lyeWaterUnverifiable).toBe(false);
+  }
 });

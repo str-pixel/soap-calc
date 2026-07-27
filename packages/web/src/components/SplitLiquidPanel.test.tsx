@@ -254,3 +254,30 @@ test('no inert-budget note when the water mode does provide a budget', () => {
   renderPanel({ waterMode: 'percent_of_oils', rows: [ROW({ sizeMode: 'rest', amount: '' })] });
   expect(screen.queryByText(/no total-liquid budget/i)).toBeNull();
 });
+
+test('the shortfall alert never appears beside the "can\'t verify" alert', () => {
+  const rows = [ROW({ presetKey: '', name: 'mystery', addAt: 'lye' })];
+  renderPanel({
+    rows,
+    lyeWaterStatus: { effectiveWaterGrams: 99, floorGrams: 140, shortfallGrams: 41 },
+    lyeWaterUnverifiable: true,
+    lyeWaterShortfallCertain: false,
+  });
+  expect(screen.getByText(/can.t verify the lye will dissolve/i)).toBeTruthy();
+  expect(screen.queryByText(/not enough water to dissolve the lye/i)).toBeNull();
+});
+
+test('a certain shortfall is still stated categorically, without the trace remedy', () => {
+  const rows = [ROW({ presetKey: 'milk', name: 'Milk', addAt: 'lye' })];
+  renderPanel({
+    rows,
+    lyeWaterStatus: { effectiveWaterGrams: 99, floorGrams: 140, shortfallGrams: 41 },
+    lyeWaterUnverifiable: false,
+    lyeWaterShortfallCertain: true,
+  });
+  expect(screen.getByText(/not enough water to dissolve the lye/i)).toBeTruthy();
+  // "Move liquids to trace" is unsupported by every source checked, and measurably makes the
+  // shortfall worse or hides the alert entirely. The ratio method is what the sources name.
+  expect(screen.queryByText(/move liquids to trace/i)).toBeNull();
+  expect(screen.getByText(/water:lye ratio, which cannot fall below 1:1/i)).toBeTruthy();
+});
