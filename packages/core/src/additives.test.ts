@@ -241,15 +241,18 @@ describe('dose units (deep-review)', () => {
 });
 
 describe('citric acid additive (auto-lye)', () => {
-  it('offers citric acid for CP/HP at 1–2% into the lye water, never for LS', () => {
-    const citric = catalogEntryById('citric-acid');
-    expect(citric?.name).toBe('Citric acid (anhydrous)');
-    expect(citric?.typicalLow).toBe(1);
-    expect(citric?.typicalHigh).toBe(2);
-    expect(citric?.defaultStage).toBe('lye');
-    expect(citric?.processes).toEqual(['cp', 'hp']);
-    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'citric-acid')).toBe(false);
-    expect(catalogEntriesForProcess('cp').some((e) => e.id === 'citric-acid')).toBe(true);
+  it('offers citric acid for every process at the lye stage; LS widens to the 1–3% chelator route', () => {
+    const citric = catalogEntryById('citric-acid')!;
+    expect(citric.name).toBe('Citric acid (anhydrous)');
+    expect(citric.defaultStage).toBe('lye');
+    expect(citric.processes).toBeUndefined();
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      expect(catalogEntriesForProcess(process).some((e) => e.id === 'citric-acid')).toBe(true);
+    }
+    const cp = effectiveCatalogEntry(citric, 'cp');
+    expect([cp.typicalLow, cp.typicalHigh]).toEqual([1, 2]);
+    const ls = effectiveCatalogEntry(citric, 'ls');
+    expect([ls.typicalLow, ls.typicalHigh]).toEqual([1, 3]);
   });
 
   it('carries stoichiometric neutralization factors (triprotic, anhydrous MW 192.123)', () => {

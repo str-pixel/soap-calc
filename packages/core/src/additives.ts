@@ -78,17 +78,22 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // Acid form of the citrate chelator: dissolved in the lye water it reacts with the
-    // alkali to form citrate in situ. Consumes lye — compensated automatically, which is
-    // the whole point of lyeNeutralization. CP/HP only: the LS neutralization feature
-    // deliberately doses UNCOMPENSATED citric acid to consume a post-cook lye excess,
-    // and compensating a logged line would add that lye straight back. Does not lower
-    // finished-soap pH; copy must never imply it does.
+    // alkali to form citrate in situ. Consumes lye — compensated automatically for any
+    // stage EXCEPT after_cook (see calculateAdditives): post-cook acid neutralizes
+    // existing soap/lye and must never be compensated. That stage rule is what keeps the
+    // LS lye-excess neutralization workflow (an after-cook citric dose) uncompensated
+    // while allowing the LS in-lye chelator route. Does not lower finished-soap pH; copy
+    // must never imply it does.
     id: 'citric-acid',
     name: 'Citric acid (anhydrous)',
     typicalLow: 1,
     typicalHigh: 2,
     defaultStage: 'lye',
-    processes: ['cp', 'hp'],
+    processOverrides: {
+      // LS chelator route: citric into the lye solution makes potassium citrate in situ,
+      // at a wider dose than the CP/HP water-conditioning dose.
+      ls: { typicalLow: 1, typicalHigh: 3 },
+    },
     lyeNeutralization: {
       naohPerGram: 3 * CITRIC_MOL_PER_GRAM * 39.997,
       kohPerGram: 3 * CITRIC_MOL_PER_GRAM * 56.105,
