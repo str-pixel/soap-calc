@@ -182,6 +182,13 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Table salt (NaCl) as a hardener, dissolved in the lye water. Kept low: past ~1%
     // of oil weight it starts to thicken/seize the batch rather than just harden it.
     // (id stays 'salt' so recipes saved before the rename/split still resolve.)
+    //
+    // ONE entry covers every usable salt on purpose: sea, pink Himalayan and black lava
+    // salt are all sodium chloride with trace minerals, so they need no separate entry
+    // and no different math — no salt consumes alkali or carries a SAP value, unlike an
+    // ACID that becomes a salt in the lye (citric → citrate; see lyeNeutralization).
+    // Magnesium-bearing salts are the exception and are deliberately absent: they wreck
+    // soap rather than harden it (magnesium_salt_scum insight warns on them by name).
     id: 'salt',
     name: 'Table salt (NaCl)',
     typicalLow: 0.05,
