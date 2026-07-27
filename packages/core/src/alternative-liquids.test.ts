@@ -12,7 +12,13 @@ describe('ALTERNATIVE_LIQUID_GUIDE', () => {
     const keys = ALTERNATIVE_LIQUID_GUIDE.map((p) => p.key);
     expect(new Set(keys).size).toBe(keys.length);
     for (const preset of ALTERNATIVE_LIQUID_GUIDE) {
-      expect(preset.waterFraction).toBeGreaterThan(0);
+      // Zero water is legal ONLY for solvent presets (glycerin dissolves lye hot but
+      // brings no water); every real liquid must carry a positive fraction.
+      if (preset.flags.includes('solvent')) {
+        expect(preset.waterFraction).toBeGreaterThanOrEqual(0);
+      } else {
+        expect(preset.waterFraction).toBeGreaterThan(0);
+      }
       expect(preset.waterFraction).toBeLessThanOrEqual(1);
       expect(preset.label.length).toBeGreaterThan(0);
     }
