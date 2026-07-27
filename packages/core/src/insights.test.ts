@@ -772,6 +772,23 @@ describe('LS quality remap + dual-lye recommender', () => {
   });
 });
 
+describe('soaping_temp_high overflow warning (2026-07-27)', () => {
+  it('fires above 160 °F under CP; exactly 160 is fine', () => {
+    expect(has({ ...base, process: 'cp', soapingTempF: 165 }, 'soaping_temp_high')).toBe(true);
+    expect(has({ ...base, process: 'cp', soapingTempF: 160 }, 'soaping_temp_high')).toBe(false);
+  });
+
+  it('never fires for the hot processes — 215 °F is correct HP/LS practice', () => {
+    for (const process of ['hp', 'ls'] as const) {
+      expect(has({ ...base, process, soapingTempF: 215 }, 'soaping_temp_high')).toBe(false);
+    }
+  });
+
+  it('silent when no temperature was provided', () => {
+    expect(has({ ...base, process: 'cp' }, 'soaping_temp_high')).toBe(false);
+  });
+});
+
 describe('magnesium-salt caution (salt review 2026-07-27)', () => {
   const withAdditive = (name: string, catalogId = '') =>
     analyzeFormulation({ ...base, additiveEntries: [{ catalogId, name }] }).map((i) => i.code);
@@ -809,3 +826,4 @@ describe('magnesium-salt caution (salt review 2026-07-27)', () => {
     }
   });
 });
+

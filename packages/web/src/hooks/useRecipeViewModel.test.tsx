@@ -375,3 +375,32 @@ test('an LS glycerin split row (2 of 3 parts) passes the lye floor and yields th
   // …and the advisory insight is present.
   expect(vm.insights.some((i: any) => i.code === 'glycerin_solvent_dilution')).toBe(true);
 });
+
+test('soaping temp: CP at 165 °F raises the overflow warning; the default 125 does not', () => {
+    let hot: any;
+    let normal: any;
+    probe((v) => { hot = v; }, { soapingTempF: '165' });
+    probe((v) => { normal = v; });
+  expect(hot.insights.some((i: any) => i.code === 'soaping_temp_high')).toBe(true);
+  expect(normal.insights.some((i: any) => i.code === 'soaping_temp_high')).toBe(false);
+});
+
+test('soaping temp: HP at its cook temperature never warns', () => {
+    let vm: any;
+    probe((v) => { vm = v; }, { processVariant: 'hp-hthp', soapingTempF: '215' }, 'hp');
+  expect(vm.insights.some((i: any) => i.code === 'soaping_temp_high')).toBe(false);
+});
+
+test('soaping temp: exposes the effective figure and carries it onto the batch sheet', () => {
+    let vm: any;
+    probe((v) => { vm = v; }, { soapingTempF: '150' });
+  expect(vm.soapingTempF).toBe(150);
+  expect(vm.batchSheetData.soapingTempF).toBe(150);
+});
+
+test('soaping temp: clamps a stale value into the variant range for everything downstream', () => {
+    let vm: any;
+    // 140 (an LTHP figure) viewed under HTHP: effective 205, no CP warning machinery.
+    probe((v) => { vm = v; }, { processVariant: 'hp-hthp', soapingTempF: '140' }, 'hp');
+  expect(vm.soapingTempF).toBe(205);
+});

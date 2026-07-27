@@ -13,7 +13,7 @@ import type { CureEstimate } from '../lib/cureEstimate';
 import { computeWorkability } from '../lib/workabilityInput';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
-import { isProcessVariantId, processProfileById } from '../lib/processProfile';
+import { defaultVariantFor, effectiveSoapingTempF, isProcessVariantId, processProfileById } from '../lib/processProfile';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import type { RecipeCalculation } from '../lib/calculateRecipe';
@@ -75,6 +75,8 @@ export type RecipeViewModel = {
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
+  /** Effective (clamped) soaping temperature, °F — see effectiveSoapingTempF. */
+  soapingTempF: number;
   cureEstimate: CureEstimate | null;
   labelWeight: number | null;
   /** Cook vessel volume ÷ batch volume, when a vessel volume was supplied for an HP recipe;
@@ -234,6 +236,14 @@ export function useRecipeViewModel({
     ],
   );
   const solutionGrams = dilution?.solutionGrams ?? 0;
+  // Effective soaping temperature: the stored setting clamped into the ACTIVE variant's
+  // slider range (clamp-at-read — the setting itself is never rewritten; see
+  // effectiveSoapingTempF). Everything downstream (insights, trace speed, batch sheet,
+  // panel readout) consumes this figure.
+  const soapingVariant = isProcessVariantId(previewSettings.processVariant)
+    ? previewSettings.processVariant
+    : defaultVariantFor(process);
+  const soapingTempF = effectiveSoapingTempF(previewSettings, soapingVariant);
   const acidLyeRecipe = useMemo(
     () => ({
       lyeType: previewSettings.lyeType,
@@ -477,6 +487,7 @@ export function useRecipeViewModel({
         splitLiquidRows.some(
           ({ row }) => alternativeLiquidPreset(row.presetKey)?.flags.includes('solvent') ?? false,
         ) || computedAdditives.some((a) => a.catalogId === 'glycerin'),
+      soapingTempF,
     },
   );
   const lyeLabel =
@@ -581,6 +592,7 @@ export function useRecipeViewModel({
       indexes,
       batchWeightWithExtras,
       waterModeLabel: waterModeLabel(previewSettings),
+      soapingTempF,
       fattyAcids,
       insights,
     });
@@ -613,6 +625,7 @@ export function useRecipeViewModel({
     finalResult,
     result,
     settings.batchNotes,
+    soapingTempF,
     splitLiquidGrams,
     splitLiquidRows,
     weightUnit,
@@ -652,6 +665,7 @@ export function useRecipeViewModel({
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,
+    soapingTempF,
     cureEstimate,
     labelWeight,
     hpVesselMultiple,

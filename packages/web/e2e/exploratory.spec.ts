@@ -639,6 +639,14 @@ test.describe('pricing & profit', () => {
 
 // ---------- 10. split liquid (now in the Superfat & water panel) & batch sizer ----------
 
+test('soaping-temperature slider: CP defaults to 125 °F; 165 raises the overflow warning', async ({ page }) => {
+  const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Soaping temperature' }) }).first();
+  await expect(section.getByLabel('Soaping temperature')).toHaveValue('125');
+  await expect(section).toContainText('52 °C (125 °F)');
+  await section.getByLabel('Soaping temperature').fill('165');
+  await expect(page.locator('.message-list--insights').filter({ hasText: /overheat and overflow/i })).toHaveCount(1);
+});
+
 test('split liquid adds a named liquid and total-liquid row', async ({ page }) => {
   // Split liquid now lives in the always-visible Superfat & water panel — no Advanced click.
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Split liquid' }) }).first();
