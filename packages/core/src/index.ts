@@ -17,6 +17,7 @@ export * from './gel-phase.js';
 export * from './soaping-temperature.js';
 export * from './split-liquid.js';
 export * from './dilution.js';
+export * from './ls-dilution-targets.js';
 export * from './neutralization.js';
 export * from './trace-speed.js';
 export * from './workability.js';
