@@ -66,7 +66,12 @@ export function SplitLiquidPanel({
   onChange,
   onApplySuggestedWater,
 }: SplitLiquidPanelProps) {
-  const budgetModesAvailable = waterMode === 'percent_of_oils';
+  // Budget modes need a water mode whose setting reads as a total-liquid target:
+  // percent-of-oils (target = % × oils) or lye_water_ratio (target = N × lye — the
+  // splitLiquidCalcOverride ratio branch; this is what makes the glycerin
+  // parts-of-the-lye-solution mode expressible under LS's native water mode).
+  const budgetModesAvailable =
+    waterMode === 'percent_of_oils' || waterMode === 'lye_water_ratio';
   const gramsByKey = new Map(resolvedRows.map(({ row, grams }) => [row.key, grams]));
   const totalGrams = resolvedRows.reduce((sum, { grams }) => sum + (grams ?? 0), 0);
 

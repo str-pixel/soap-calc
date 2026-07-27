@@ -644,6 +644,9 @@ test('split liquid adds a named liquid and total-liquid row', async ({ page }) =
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Split liquid' }) }).first();
   await section.getByRole('button', { name: /add liquid/i }).click();
   await section.getByPlaceholder(/goat milk/).fill('goat milk');
+  // A new CP row defaults to 'rest' sizing (all liquid above the lye minimum), which has
+  // no Amount field — switch to %-of-oils sizing to exercise the amount path.
+  await section.getByLabel('Sized by', { exact: true }).selectOption('percent_of_oils');
   await section.getByLabel('Amount').fill('20');
   await section.getByLabel('Amount').blur();
   await expect(
