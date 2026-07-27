@@ -376,3 +376,40 @@ test('prints the split-liquid advisory note and an explicit liquid step', () => 
   // …and the procedure names the liquid at its stage.
   expect(screen.getByText(/blend in .*milk \(dairy or plant\) at light trace/i)).toBeTruthy();
 });
+
+test('prints the soaping temperature in both units', () => {
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  const data = buildBatchSheetData({
+    recipeName: 'Temp sheet',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    pcsfIsExtra: false,
+    extrasGrams: 0,
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    insights: [],
+    process: 'cp',
+    soapingTempF: 125,
+  });
+  render(<BatchSheet data={data} />);
+  expect(screen.getByText('Soaping temperature')).toBeTruthy();
+  expect(screen.getByText('52 °C (125 °F)')).toBeTruthy();
+});

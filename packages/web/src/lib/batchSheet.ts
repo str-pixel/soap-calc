@@ -43,6 +43,8 @@ export type BatchSheetData = {
   indexes: RecipeIndexResult;
   batchWeightWithExtras: number;
   waterModeLabel: string;
+  /** Effective soaping temperature, °F; absent on data built before the field existed. */
+  soapingTempF?: number;
   /** Carries `modeledOilIds` (which oils' profiles are reconstructions) alongside the aggregate.
    *  Required, and not duplicated as a sibling field: the modeled note is a data-honesty signal,
    *  so a caller must not be able to omit it and silently print a reconstruction as measured. */

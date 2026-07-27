@@ -128,6 +128,11 @@ type FormulationInsightOptions = {
   /** Glycerin delivered as a lye-solution solvent (split row or LS additive) — drives the
    * glycerin_solvent_dilution advisory (core gates it to LS). */
   lsGlycerinSolvent?: boolean;
+  /** EFFECTIVE (clamped) soaping temperature, °F. Feeds the CP overflow guard, and the
+   * trace-speed temperature term for CP only — the term is calibrated against CP's
+   * 120–130 °F average band, and an HP cook temperature through it would double-count
+   * what the HP process already implies. */
+  soapingTempF?: number;
 };
 
 export function useFormulationInsights(
@@ -181,6 +186,8 @@ export function useFormulationInsights(
       ? estimateTraceSpeed({
           fattyAcids: fattyAcids.profile,
           hasAcceleratingAdditive,
+          // CP-only calibration — see the soapingTempF option doc above.
+          soapingTempF: options.process === 'cp' ? options.soapingTempF : undefined,
         })
       : null;
     return analyzeFormulation({
@@ -214,6 +221,7 @@ export function useFormulationInsights(
       isLiquidSoap: options.isLiquidSoap ?? false,
       process: options.process,
       lsGlycerinSolvent: options.lsGlycerinSolvent,
+      soapingTempF: options.soapingTempF,
       hpYogurtPercent:
         options.process === 'hp'
           ? hpYogurtPercentForInsights(options.additives ?? [], lyeResult.totalOilWeightGrams)

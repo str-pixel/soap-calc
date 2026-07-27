@@ -6,6 +6,7 @@ import {
   formatSoapPropertyPercent,
   LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
+  fToC,
 } from '@soap-calc/core';
 import type { BatchSheetData } from '../lib/batchSheet';
 import {
@@ -156,6 +157,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <dt>Water method</dt>
             <dd>{waterModeLabel}</dd>
           </div>
+          {data.soapingTempF !== undefined && (
+            <div>
+              <dt>Soaping temperature</dt>
+              <dd>{fToC(data.soapingTempF)} °C ({data.soapingTempF} °F)</dd>
+            </div>
+          )}
           <div>
             <dt>Superfat</dt>
             <dd>{settings.superfatPercent || '0'}%</dd>
