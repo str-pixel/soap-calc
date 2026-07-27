@@ -441,6 +441,7 @@ export default function App() {
                 onBottleSizeMlChange={setBottleSizeMl}
                 altLiquidWaterGrams={vm.splitLiquidPasteWater}
                 unknownLiquidGrams={vm.unknownLiquidGrams}
+                overDilutionCertain={vm.overDilutionCertain}
               />
             )}
 

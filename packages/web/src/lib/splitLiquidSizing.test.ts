@@ -176,3 +176,32 @@ describe('a blank water field means the default, not "no budget"', () => {
     expect(blank!.targetRatio).toBe(explicit!.targetRatio);
   });
 });
+
+describe('a near-total liquid share never kills the calculation', () => {
+  it('floors the reduced ratio instead of emitting an unparseable 0', () => {
+    // A 100%-of-total-liquid row means "no plain water at all". Ratio mode cannot express
+    // that, and '0' is rejected downstream — which collapsed the whole results panel to an
+    // error naming the (untouched) ratio field. Floor it instead: water is effectively zero
+    // and the 1:1 shortfall warning explains it, matching percent_of_oils on the same input.
+    const base = { ...DEFAULT_SETTINGS, waterMode: 'lye_water_ratio' as const, lyeWaterRatio: '2' };
+    for (const share of ['100', '99.99', '120']) {
+      const o = splitLiquidCalcOverride(
+        { ...base, splitLiquids: [ROW({ sizeMode: 'percent_of_liquid', amount: share })] },
+        1000,
+      );
+      expect(o).not.toBeNull();
+      expect(Number(o!.settingsForCalc.lyeWaterRatio)).toBeGreaterThan(0);
+    }
+  });
+
+  it('leaves ordinary shares exactly as they were', () => {
+    const o = splitLiquidCalcOverride(
+      {
+        ...DEFAULT_SETTINGS, waterMode: 'lye_water_ratio' as const, lyeWaterRatio: '2',
+        splitLiquids: [ROW({ sizeMode: 'percent_of_liquid', amount: '99' })],
+      },
+      1000,
+    );
+    expect(Number(o!.settingsForCalc.lyeWaterRatio)).toBeCloseTo(0.02, 5);
+  });
+});

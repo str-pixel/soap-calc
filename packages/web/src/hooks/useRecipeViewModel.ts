@@ -66,6 +66,9 @@ export type RecipeViewModel = {
   /** True when an in-lye liquid's water content is undeclared, so the 1:1 dissolution
    * floor cannot be checked either way. */
   lyeWaterUnverifiable: boolean;
+  /** True when the paste is over the target concentration regardless of what the undeclared
+   * liquid turns out to contain — the verdict is a fact, not an assumption. */
+  overDilutionCertain: boolean;
   fixedBatchExtrasGrams: number;
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
@@ -298,6 +301,17 @@ export function useRecipeViewModel({
       previewSettings.superfatPercent,
     ],
   );
+  // Is the "already more dilute than the target" verdict CERTAIN, or could declaring the
+  // unknown liquid's water content overturn it? Certain when the paste's water exceeds the
+  // target even if every undeclared gram brought NO water at all — the most favourable case
+  // for reaching the target. Suppressing the verdict on the mere presence of an unknown
+  // dropped a warning that was provably right across the whole 0-100% range.
+  const overDilutionCertain = useMemo(() => {
+    if (!dilution || !result || !dilution.targetExceedsPaste) return false;
+    const declaredCookWater =
+      result.waterWeightGrams + (splitLiquidPasteWater - unknownLiquidGrams);
+    return dilution.totalWaterGrams < declaredCookWater;
+  }, [dilution, result, splitLiquidPasteWater, unknownLiquidGrams]);
   const neutralization = useMemo(
     () =>
       process === 'ls' && result
@@ -746,6 +760,7 @@ export function useRecipeViewModel({
     splitLiquidPasteWater,
     unknownLiquidGrams,
     lyeWaterUnverifiable,
+    overDilutionCertain,
     fixedBatchExtrasGrams,
     properties,
     indexes,

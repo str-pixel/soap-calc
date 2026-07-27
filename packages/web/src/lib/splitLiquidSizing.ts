@@ -10,6 +10,10 @@ import type { RecipeSettings, SplitLiquidRow } from './recipe';
  * the picker knew, budget rows stayed selectable-by-history and kept sizing against a
  * fallback target, stacking a carved-out liquid on top of the full water instead of out of it.
  */
+/** Smallest ratio parseRecipeSettings still accepts once rounded to 3 dp. Below this the
+ * override would emit '0' and kill the calculation outright. */
+const MIN_LYE_WATER_RATIO = 0.001;
+
 export function budgetSizingAvailable(waterMode: WaterMode): boolean {
   return waterMode === 'percent_of_oils' || waterMode === 'lye_water_ratio';
 }
@@ -142,7 +146,18 @@ export function splitLiquidCalcOverride(
     // total liquid constant at N·lye (split, not discount). A share past the 1:1 floor
     // (ratio' < 1) is allowed through — the lyeWaterStatus shortfall warning covers it,
     // matching percent_of_oils behavior.
-    const reduced = ratio * (1 - Math.min(percentOfLiquidShare, 100) / 100);
+    //
+    // Floored at MIN_RATIO because a ~100% share rounds to '0', which parseRecipeSettings
+    // rejects — collapsing the whole page to "Water : lye ratio must be greater than 0",
+    // an error naming a field the user never touched, with nothing pointing at the row that
+    // caused it. percent_of_oils survives the same input (it emits '0', which parses) and
+    // lets the shortfall warning explain the missing water; ratio mode must not be the one
+    // budget mode that turns a legal input into a dead page. MIN_RATIO leaves water
+    // effectively zero (0.001 × lye), so the shortfall warning still fires.
+    const reduced = Math.max(
+      MIN_LYE_WATER_RATIO,
+      ratio * (1 - Math.min(percentOfLiquidShare, 100) / 100),
+    );
     return {
       settingsForCalc: { ...settings, lyeWaterRatio: String(Math.round(reduced * 1000) / 1000) },
       targetLiquidGrams: null,

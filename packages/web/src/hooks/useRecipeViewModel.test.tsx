@@ -536,3 +536,57 @@ test('an undeclared in-lye liquid makes the dissolution floor unverifiable, not 
   expect(declared.lyeWaterUnverifiable).toBe(false);
   expect(declared.unknownLiquidGrams).toBe(0);
 });
+
+test('the over-dilution verdict survives an unknown liquid when it cannot change the answer', () => {
+  // Suppressing on the mere PRESENCE of an undeclared liquid dropped a warning that was
+  // right across the whole 0–100% range the unknown could take. Only hedge when declaring
+  // the water content could actually overturn the verdict.
+  const BIG = {
+    key: 'u1', presetKey: '', name: 'mystery', customWaterPercent: '',
+    sizeMode: 'grams' as const, amount: '900', addAt: 'trace' as const,
+  };
+  // At an 85% target the lye water ALONE (330 g) already exceeds the target's total water
+  // (~215 g), so the verdict holds even if all 900 g of the unknown were solids.
+  let certain: any;
+  probe((vm) => { certain = vm; },
+    { lyeType: 'koh', soapConcentrationPercent: '85', splitLiquids: [BIG] }, 'ls');
+
+  expect(certain.dilution.targetExceedsPaste).toBe(true);
+  expect(certain.unknownLiquidGrams).toBeCloseTo(900, 3);
+  expect(certain.overDilutionCertain).toBe(true);
+});
+
+test('…and is hedged when the unknown genuinely could flip it', () => {
+  const SMALL = {
+    key: 'u2', presetKey: '', name: 'mystery', customWaterPercent: '',
+    sizeMode: 'grams' as const, amount: '40', addAt: 'trace' as const,
+  };
+  // At a 50% target the 900 g liquid tips the paste over ONLY because we assume it is all
+  // water; if it were dry the target would still be reachable. That is the hedge's purpose.
+  const BIG_AMBIGUOUS = { ...SMALL, amount: '900' };
+  let vm: any;
+  probe((v) => { vm = v; }, { lyeType: 'koh', soapConcentrationPercent: '50', splitLiquids: [BIG_AMBIGUOUS] }, 'ls');
+  expect(vm.dilution.targetExceedsPaste).toBe(true);
+  expect(vm.overDilutionCertain).toBe(false);
+});
+
+test('a blank in-lye row no longer silences the split-liquid water warnings', () => {
+  // splitLiquidAddAt was derived from RAW settings, so a second row with stage "In lye
+  // water" and no amount — the default state of a freshly added row — flipped the placement
+  // to 'lye' and made split_liquid_water_not_adjusted vanish with no liquid behind it.
+  const SIZED_TRACE = {
+    key: 't1', presetKey: 'milk', name: 'Milk', customWaterPercent: '',
+    sizeMode: 'percent_of_oils' as const, amount: '20', addAt: 'trace' as const,
+  };
+  const BLANK_IN_LYE = { ...SIZED_TRACE, key: 'l1', presetKey: '', name: '', amount: '', addAt: 'lye' as const };
+  const codes = (vm: any) => vm.insights.map((i: any) => i.code);
+
+  let alone: any;
+  let withBlank: any;
+  probe((vm) => { alone = vm; }, { splitLiquids: [SIZED_TRACE] }, 'cp');
+  probe((vm) => { withBlank = vm; }, { splitLiquids: [SIZED_TRACE, BLANK_IN_LYE] }, 'cp');
+
+  expect(codes(alone)).toContain('split_liquid_water_not_adjusted');
+  // The blank row is not an in-lye liquid, so it must not change the verdict.
+  expect(codes(withBlank)).toContain('split_liquid_water_not_adjusted');
+});

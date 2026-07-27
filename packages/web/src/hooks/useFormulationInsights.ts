@@ -212,10 +212,13 @@ export function useFormulationInsights(
       waterGrams: lyeResult.waterWeightGrams,
       lyeGrams: lyeResult.lyeWeightGrams,
       waterMode: settings.waterMode,
-      // Derived from RESOLVED rows, not raw settings: a zero-gram in-lye row used to flip
-      // splitLiquidAddAt to 'lye' and silence split_liquid_water_not_adjusted and
-      // split_liquid_high_trace_liquid entirely, with no liquid in the batch at all. Falls
-      // back to raw settings only for callers that pass no resolved rows (tests).
+      // Derived from RESOLVED rows, not raw settings. The load-bearing half is
+      // splitLiquidAddAt: a zero-gram in-lye row (the default state of a freshly added one)
+      // used to flip the placement to 'lye' and silence split_liquid_water_not_adjusted and
+      // split_liquid_high_trace_liquid with no liquid in the batch at all. splitLiquidEnabled
+      // is belt-and-braces — every core consumer additionally requires splitLiquidGrams > 0,
+      // which is already equivalent to sizedSplitRows.length > 0. Falls back to raw settings
+      // only for callers that pass no resolved rows (tests).
       splitLiquidEnabled: sizedSplitRows
         ? sizedSplitRows.length > 0
         : settings.splitLiquids.length > 0,

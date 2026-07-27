@@ -16,6 +16,9 @@ type DilutionPanelProps = {
   /** Grams of that liquid whose water content was never declared. Non-zero makes every
    * figure here a lower bound rather than a measurement. */
   unknownLiquidGrams?: number;
+  /** The over-dilution verdict holds whatever the undeclared liquid contains, so it is
+   * stated as fact rather than hedged. */
+  overDilutionCertain?: boolean;
 };
 
 export function DilutionPanel({
@@ -27,6 +30,7 @@ export function DilutionPanel({
   onBottleSizeMlChange,
   altLiquidWaterGrams = 0,
   unknownLiquidGrams = 0,
+  overDilutionCertain = false,
 }: DilutionPanelProps) {
   const bottleMl = Number(bottleSizeMl);
   const bottleCount =
@@ -96,13 +100,13 @@ export function DilutionPanel({
               </div>
             )}
           </dl>
-          {dilution.targetExceedsPaste && unknownLiquidGrams === 0 && (
+          {dilution.targetExceedsPaste && (unknownLiquidGrams === 0 || overDilutionCertain) && (
             <p className="results-hint" role="alert">
               The paste is already more dilute than {dilution.soapConcentrationPercent}% — adding water
               only lowers the concentration further.
             </p>
           )}
-          {dilution.targetExceedsPaste && unknownLiquidGrams > 0 && (
+          {dilution.targetExceedsPaste && unknownLiquidGrams > 0 && !overDilutionCertain && (
             // Suppressed, not reworded: targetExceedsPaste is a factual claim about the
             // paste, and it was derived from an ASSUMED water content. Asserting it can tell
             // the user a batch is finished when it still needs hundreds of grams of water.
