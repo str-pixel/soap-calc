@@ -1,5 +1,5 @@
 import { memo, type Dispatch, type SetStateAction } from 'react';
-import { fToC, soapingTempBand } from '@soap-calc/core';
+import { estimateGelPhase, fToC, soapingTempBand } from '@soap-calc/core';
 import {
   effectiveSoapingTempF,
   defaultVariantFor,
@@ -16,6 +16,9 @@ type SoapingTemperaturePanelProps = {
   settings: RecipeSettings;
   setSettings: Dispatch<SetStateAction<RecipeSettings>>;
   process: ProcessId;
+  /** The calculated lye-solution water:lye ratio — the gel readout's second axis. Null
+   * before a result exists, which hides the readout rather than guessing. */
+  waterLyeRatio: number | null;
 };
 
 // Same verified set as ProcessGuidePanel: only the LTHP/HTHP cook temps are source-verified;
@@ -38,6 +41,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
   settings,
   setSettings,
   process,
+  waterLyeRatio,
 }: SoapingTemperaturePanelProps) {
   const variant = isProcessVariantId(settings.processVariant)
     ? settings.processVariant
@@ -48,6 +52,10 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
   const effectiveF = effectiveSoapingTempF(settings, variant);
   const profile = processProfileById(variant);
   const band = process === 'cp' ? soapingTempBand(effectiveF) : null;
+  const gel =
+    band && waterLyeRatio !== null
+      ? estimateGelPhase({ soapingTempF: effectiveF, waterLyeRatio })
+      : null;
   const fillPct =
     range.maxF > range.minF
       ? Math.max(0, Math.min(100, ((effectiveF - range.minF) / (range.maxF - range.minF)) * 100))
@@ -111,7 +119,23 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
         />
       </div>
       {band ? (
-        <p className="results-hint">{band.note}</p>
+        <>
+          <p className="results-hint">{band.note}</p>
+          {waterLyeRatio !== null && (
+            // Gel needs heat AND water, so the readout lives with the temperature control
+            // but reads the calculated solution ratio too. CP-only by placement: an HP
+            // cook drives through gel deliberately and liquid soap has no gel stage.
+            <>
+              <p className="results-hint">
+                Gel phase: {gel!.likelihood.replace('_', ' ')} — {gel!.note}
+              </p>
+              <p className="results-hint">
+                Cooler or less water avoids gel; warmer or more water encourages it — both are
+                valid choices, but a half-gelled batch shows a ring.
+              </p>
+            </>
+          )}
+        </>
       ) : profile.temp === null ? (
         // CPLS — the only non-CP ambient variant: no external heat, so the CP bar bands
         // (gel phase, molds) don't apply.
