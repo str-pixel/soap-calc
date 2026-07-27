@@ -374,6 +374,18 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
     expect(g?.doseBasis).toBeUndefined(); // % of oil weight
   });
 
+  it('glycerin is never offered for CP or HP — the pickers, not just the scoping field', () => {
+    // Behavioural pin, not structural: what matters is that a CP/HP user cannot reach it.
+    // CP and HP make their own glycerin (0.77 g per g NaOH); adding more softens the bar
+    // and makes it dissolve faster, and neither process source doses it. The real added-
+    // glycerin percentages belong to TRANSPARENT / melt-and-pour soap, which this app does
+    // not model — so an HP entry would advertise an LS dose for a different craft.
+    for (const process of ['cp', 'hp'] as const) {
+      expect(catalogEntriesForProcess(process).some((e) => e.id === 'glycerin')).toBe(false);
+    }
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'glycerin')).toBe(true);
+  });
+
   it('pearlizer and water-dispersible shea: LS-only, solution-based, after cook', () => {
     const p = catalogEntryById('pearlizer');
     expect([p?.typicalLow, p?.typicalHigh, p?.defaultStage, p?.doseBasis, p?.processes])

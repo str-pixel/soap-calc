@@ -78,6 +78,16 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // high_total_additives sum (a 20%+ solvent dose is deliberate, not an extras load).
     // Solvent effect: expect less dilution water — glycerin_solvent_dilution advises; no
     // numeric model exists.
+    //
+    // LS-ONLY IS DELIBERATE (researched 2026-07-27; pinned by test). Bar soap already
+    // makes its own glycerin — 0.77 g per g NaOH, ~7–12% of the finished bar — and adding
+    // more gives a soft, sticky bar that dissolves faster in use. Neither the CP nor the HP
+    // source doses it: CP never treats it as an additive at all, and HP names it once as a
+    // "soap solvent" but doses only sugar, then elsewhere recommends AGAINST glycerin for
+    // hot process. The substantial added-glycerin percentages found in the wild (~15–20%,
+    // or Failor's 50–60% soap : 40–50% solvent) belong to TRANSPARENT / melt-and-pour soap
+    // — a process this app does not model (no alcohol, no sucrose solution). Adding a
+    // CP/HP entry would advertise an LS dose for a different craft.
     id: 'glycerin',
     name: 'Glycerin',
     typicalLow: 20,
