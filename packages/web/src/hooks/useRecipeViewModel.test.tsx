@@ -474,3 +474,65 @@ test('a vinegar row is inert under LS: offered in CP/HP, no compensation in LS',
   // The liquid itself is NOT dropped — its water still counts toward the paste.
   expect(ls.splitLiquidRows[0].grams).toBeCloseTo(200, 3);
 });
+
+test('a rest row goes inert under lye-concentration water instead of inflating total liquid', () => {
+  // Budget sizing carves a liquid OUT of a total-liquid figure. lye_concentration sets the
+  // lye solution's strength and implies no total, so the row used to size against a
+  // fallback (the recipe's full water) and stack on top of it — measured at +50.8% total
+  // liquid on a 1,000 g CP recipe.
+  const REST = {
+    key: 'r1', presetKey: '', name: 'goat milk', customWaterPercent: '',
+    sizeMode: 'rest' as const, amount: '', addAt: 'trace' as const,
+  };
+  let budgeted: any;
+  let noBudget: any;
+  probe((vm) => { budgeted = vm; }, { waterMode: 'percent_of_oils', waterPercentOfOils: '33', splitLiquids: [REST] }, 'cp');
+  probe((vm) => { noBudget = vm; }, { waterMode: 'lye_concentration', lyeConcentrationPercent: '33', splitLiquids: [REST] }, 'cp');
+
+  // With a real budget the row carves out the remainder above the 1:1 lye floor…
+  expect(budgeted.splitLiquidGrams).toBeGreaterThan(0);
+  // …with no budget it is inert, and total liquid is just the lye water.
+  expect(noBudget.splitLiquidGrams).toBeNull();
+  expect(noBudget.splitLiquidRows[0].grams).toBeNull();
+});
+
+test('unsized split-liquid rows get no vote in the advisories', () => {
+  // A freshly added row is unsized by default, so counting it meant clicking "+ Add liquid"
+  // changed the advice with no ingredient behind it.
+  const GLYCERIN = {
+    key: 'g1', presetKey: 'glycerin', name: 'Glycerin', customWaterPercent: '',
+    sizeMode: 'grams' as const, amount: '200', addAt: 'lye' as const,
+  };
+  const BLANK = { ...GLYCERIN, key: 'b1', presetKey: '', name: '', amount: '' };
+  const codes = (vm: any) => vm.insights.map((i: any) => i.code);
+
+  let blankOnly: any;
+  let glycerinPlusBlank: any;
+  probe((vm) => { blankOnly = vm; }, { lyeType: 'koh', splitLiquids: [{ ...BLANK, presetKey: 'glycerin', name: 'Glycerin' }] }, 'ls');
+  probe((vm) => { glycerinPlusBlank = vm; }, { lyeType: 'koh', splitLiquids: [GLYCERIN, BLANK] }, 'ls');
+
+  // An unsized glycerin row is not a solvent in the batch.
+  expect(codes(blankOnly)).not.toContain('glycerin_solvent_dilution');
+  // A sized glycerin row keeps the solvent-only exemption even beside an unsized placeholder.
+  expect(codes(glycerinPlusBlank)).toContain('glycerin_solvent_dilution');
+  expect(codes(glycerinPlusBlank)).not.toContain('ls_split_liquid_not_dilution');
+});
+
+test('an undeclared in-lye liquid makes the dissolution floor unverifiable, not a pass', () => {
+  // Assuming an unknown liquid is pure water let the 1:1 check pass a solution that was
+  // genuinely short. It is not assumed dry either — tea, beer and milk would false-alarm.
+  const CUSTOM_IN_LYE = {
+    key: 'c1', presetKey: '', name: 'mystery brew', customWaterPercent: '',
+    sizeMode: 'grams' as const, amount: '150', addAt: 'lye' as const,
+  };
+  let vm: any;
+  let declared: any;
+  probe((v) => { vm = v; }, { lyeType: 'koh', splitLiquids: [CUSTOM_IN_LYE] }, 'ls');
+  probe((v) => { declared = v; }, { lyeType: 'koh', splitLiquids: [{ ...CUSTOM_IN_LYE, customWaterPercent: '90' }] }, 'ls');
+
+  expect(vm.lyeWaterUnverifiable).toBe(true);
+  expect(vm.unknownLiquidGrams).toBeCloseTo(150, 3);
+  // Declaring the water content restores a real check and clears the unknown.
+  expect(declared.lyeWaterUnverifiable).toBe(false);
+  expect(declared.unknownLiquidGrams).toBe(0);
+});

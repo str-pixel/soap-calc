@@ -151,6 +151,11 @@ export function useFormulationInsights(
   options: FormulationInsightOptions = {},
 ) {
   const insights = useMemo(() => {
+    // Split-liquid rows that actually resolved to grams (undefined when the caller passes
+    // none, so the raw-settings fallback above still applies).
+    const sizedSplitRows = options.splitLiquidRows
+      ? options.splitLiquidRows.filter((r) => r.grams != null && r.grams > 0)
+      : undefined;
     if (!lyeResult) return [];
     const totalAdditivePercent = totalAdditivePercentForInsights(
       options.additives ?? [],
@@ -207,12 +212,18 @@ export function useFormulationInsights(
       waterGrams: lyeResult.waterWeightGrams,
       lyeGrams: lyeResult.lyeWeightGrams,
       waterMode: settings.waterMode,
-      splitLiquidEnabled: settings.splitLiquids.length > 0,
+      // Derived from RESOLVED rows, not raw settings: a zero-gram in-lye row used to flip
+      // splitLiquidAddAt to 'lye' and silence split_liquid_water_not_adjusted and
+      // split_liquid_high_trace_liquid entirely, with no liquid in the batch at all. Falls
+      // back to raw settings only for callers that pass no resolved rows (tests).
+      splitLiquidEnabled: sizedSplitRows
+        ? sizedSplitRows.length > 0
+        : settings.splitLiquids.length > 0,
       splitLiquidGrams: options.splitLiquidGrams ?? null,
       // Any in-lye row is the risk-relevant placement; otherwise the first row speaks.
-      splitLiquidAddAt: settings.splitLiquids.some((r) => r.addAt === 'lye')
+      splitLiquidAddAt: (sizedSplitRows ?? settings.splitLiquids).some((r) => r.addAt === 'lye')
         ? ('lye' as const)
-        : settings.splitLiquids[0]?.addAt,
+        : (sizedSplitRows ?? settings.splitLiquids)[0]?.addAt,
       suggestedLyeWaterGrams: options.suggestedLyeWaterGrams ?? null,
       splitLiquidWaterReductionGrams: options.splitLiquidWaterReductionGrams ?? null,
       totalAdditivePercent,

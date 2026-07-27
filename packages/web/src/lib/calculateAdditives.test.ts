@@ -3,6 +3,7 @@ import {
   computePostCookSuperfat,
   computeRecipeAdditives,
   splitLiquidWaterFraction,
+  splitLiquidWaterInputState,
 } from './calculateAdditives';
 import type { AdditiveLine } from './recipe';
 
@@ -175,11 +176,25 @@ describe('splitLiquidWaterFraction', () => {
     ).toBeCloseTo(0.55, 2);
   });
 
-  it('treats blank or invalid custom percents as pure water', () => {
+  it('reports blank or invalid custom percents as UNKNOWN, not as pure water', () => {
+    // Deliberate reversal of the previous contract ("treats blank or invalid custom
+    // percents as pure water"). One shared default cannot serve the three consumers: the
+    // dilution deduction wants an upper bound on water, the 1:1 lye floor wants a lower
+    // bound, and the thick-liquid note cannot fire at all when the fraction is 1. Null
+    // makes the unknown explicit so each consumer picks its own safe direction.
     for (const customWaterPercent of ['', '0', '-5', '250', 'abc']) {
       expect(
         splitLiquidWaterFraction({ presetKey: '', customWaterPercent }),
-      ).toBe(1);
+      ).toBeNull();
+    }
+  });
+
+  it('separates a blank field from a mistyped one', () => {
+    expect(splitLiquidWaterInputState({ presetKey: 'milk', customWaterPercent: '' })).toBe('preset');
+    expect(splitLiquidWaterInputState({ presetKey: '', customWaterPercent: '55' })).toBe('declared');
+    expect(splitLiquidWaterInputState({ presetKey: '', customWaterPercent: '' })).toBe('unknown');
+    for (const bad of ['0', '-5', '250', '680', 'abc']) {
+      expect(splitLiquidWaterInputState({ presetKey: '', customWaterPercent: bad })).toBe('invalid');
     }
   });
 });

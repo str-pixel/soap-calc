@@ -240,3 +240,17 @@ test('the stray option is not offered to rows that have not chosen it', () => {
   const sel = screen.getByRole('combobox', { name: /liquid preset/i }) as HTMLSelectElement;
   expect(Array.from(sel.options).map((o) => o.value)).not.toContain('vinegar');
 });
+
+test('a budget row under lye-concentration water says it is not being added', () => {
+  const rows = [ROW({ sizeMode: 'rest', amount: '' })];
+  renderPanel({ waterMode: 'lye_concentration', rows, resolvedRows: [{ row: rows[0], grams: null }] });
+  expect(screen.getByText(/no total-liquid budget to carve this out of/i)).toBeTruthy();
+  // …and the row's own sizing option stays present (mismatched-select rule).
+  const sized = screen.getByRole('combobox', { name: /sized by/i }) as HTMLSelectElement;
+  expect(sized.value).toBe('rest');
+});
+
+test('no inert-budget note when the water mode does provide a budget', () => {
+  renderPanel({ waterMode: 'percent_of_oils', rows: [ROW({ sizeMode: 'rest', amount: '' })] });
+  expect(screen.queryByText(/no total-liquid budget/i)).toBeNull();
+});

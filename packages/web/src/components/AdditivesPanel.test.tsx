@@ -529,22 +529,28 @@ describe('dose-basis seeding and display (LS audit)', () => {
     // CP recipe can carry one. Telling a CP user to "set the soap concentration" is a dead
     // end — CP has no such field. Same spirit as the panel's mismatched-select guards:
     // stray process-scoped state renders inertly but honestly.
+    //
+    // computed={[]} is the REAL pipeline state: computeRecipeAdditives drops a
+    // solution-basis line when there is no solution weight, so no row is emitted at all.
+    // The previous version of this test hand-built {…makeComputed(line), grams: 0}, a row
+    // the pipeline cannot produce, which is why the hint it pinned had never rendered.
     const line = makeLine({ catalogId: '', name: 'Pearlizer', amount: '5', basis: 'solution' });
-    const zeroRow = { ...makeComputed(line), grams: 0, basis: 'solution' as const };
     render(
-      <AdditivesPanel additives={[line]} computed={[zeroRow]} weightUnit="g" process="cp" onChange={() => {}} />,
+      <AdditivesPanel additives={[line]} computed={[]} weightUnit="g" process="cp" onChange={() => {}} />,
     );
     expect(screen.queryByText(/soap concentration/i)).toBeNull();
     expect(screen.getByText(/only liquid soap has/i)).toBeTruthy();
   });
 
-  it('a solution-based row with no dilution shows the set-concentration hint instead of silent 0 g', () => {
+  it('leaves the LS no-dilution case to the Dilution panel rather than duplicating it here', () => {
+    // Under LS the DilutionPanel renders on the same screen and already asks for a
+    // concentration; a second copy inside the additive row said the same thing twice and
+    // misfired when the recipe had no oils (dilution is null even at a valid 30%).
     const line = makeLine({ catalogId: 'pearlizer', name: 'Pearlizer (glycol stearate)', amount: '5', basis: 'solution' });
-    const zeroRow = { ...makeComputed(line), grams: 0, basis: 'solution' as const };
     render(
-      <AdditivesPanel additives={[line]} computed={[zeroRow]} weightUnit="g" process="ls" onChange={() => {}} />,
+      <AdditivesPanel additives={[line]} computed={[]} weightUnit="g" process="ls" onChange={() => {}} />,
     );
-    expect(screen.getByText(/soap concentration/i)).toBeTruthy();
+    expect(screen.queryByText(/only liquid soap has/i)).toBeNull();
   });
 
   it('salt shows the salt-curve hazard under LS and the crumble hazard under CP', () => {

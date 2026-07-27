@@ -125,9 +125,32 @@ export function computePostCookSuperfat(
 /** Resolve the fraction of a split liquid that is actually water. Presets carry their own
  * value; custom liquids use the optional % water input, and fall back to pure water when
  * it is blank or out of range — the assumption is disclosed in the panel. */
+/** How a split-liquid row's water content is known. Distinguishing 'unknown' from
+ * 'invalid' lets the panel say "declare it" vs "that value is being ignored". */
+export type SplitLiquidWaterInputState = 'preset' | 'declared' | 'unknown' | 'invalid';
+
+export function splitLiquidWaterInputState(
+  splitLiquid: Pick<SplitLiquidSettings, 'presetKey' | 'customWaterPercent'>,
+): SplitLiquidWaterInputState {
+  if (alternativeLiquidPreset(splitLiquid.presetKey)) return 'preset';
+  if (splitLiquid.customWaterPercent.trim() === '') return 'unknown';
+  const percent = Number(splitLiquid.customWaterPercent);
+  return Number.isFinite(percent) && percent > 0 && percent <= 100 ? 'declared' : 'invalid';
+}
+
+/**
+ * The fraction of a split liquid that is water, or NULL when it is genuinely unknown.
+ *
+ * Null rather than a silent 1. The old default was safe for the 1:1 lye-dissolution floor
+ * (assuming plenty of water avoids false shortfall alarms) and unsafe for the dilution
+ * deduction added later (assuming plenty of water deducts the maximum, under-diluting the
+ * soap) — the same fallback with opposite risk polarity per consumer. Making the unknown
+ * explicit forces each consumer to pick its own safe direction, and forces the next one to
+ * think about it. Consumers must handle null; there is no correct shared default.
+ */
 export function splitLiquidWaterFraction(
   splitLiquid: Pick<SplitLiquidSettings, 'presetKey' | 'customWaterPercent'>,
-): number {
+): number | null {
   const preset = alternativeLiquidPreset(splitLiquid.presetKey);
   if (preset) return preset.waterFraction;
   const percent = Number(splitLiquid.customWaterPercent);
@@ -139,5 +162,5 @@ export function splitLiquidWaterFraction(
   ) {
     return percent / 100;
   }
-  return 1;
+  return null;
 }

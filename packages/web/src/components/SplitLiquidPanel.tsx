@@ -12,7 +12,8 @@ import { InfoTip } from './InfoTip';
 import type { ProcessId } from '../lib/process';
 import type { SplitLiquidRow } from '../lib/recipe';
 import { newSplitLiquidKey } from '../lib/recipe';
-import { splitLiquidWaterFraction } from '../lib/calculateAdditives';
+import { splitLiquidWaterFraction, splitLiquidWaterInputState } from '../lib/calculateAdditives';
+import { budgetSizingAvailable } from '../lib/splitLiquidSizing';
 import type { ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import { formatInputNumber } from '../lib/format';
 import { splitLiquidManualWaterHint } from '../lib/splitLiquidHint';
@@ -35,6 +36,9 @@ type SplitLiquidPanelProps = {
   waterSuggestion: SplitLiquidWaterSuggestion | null;
   /** Effective-water check for the lye solution (in-lye rows or budget allocation). */
   lyeWaterStatus: LyeSolutionWaterStatus | null;
+  /** True when an in-lye liquid's water content is undeclared: the 1:1 dissolution floor
+   * cannot be checked either way, which must be said rather than read as a pass. */
+  lyeWaterUnverifiable?: boolean;
   /** Budget allocation (budget sizing rows only): the calc's lye water + the target. */
   allocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
   /** Auto-added lye compensating acid rows (view-model owned; null when none). */
@@ -63,6 +67,7 @@ export function SplitLiquidPanel({
   waterMode,
   waterSuggestion,
   lyeWaterStatus,
+  lyeWaterUnverifiable = false,
   allocation,
   acidExtraLye,
   onChange,
@@ -72,8 +77,7 @@ export function SplitLiquidPanel({
   // percent-of-oils (target = % × oils) or lye_water_ratio (target = N × lye — the
   // splitLiquidCalcOverride ratio branch; this is what makes the glycerin
   // parts-of-the-lye-solution mode expressible under LS's native water mode).
-  const budgetModesAvailable =
-    waterMode === 'percent_of_oils' || waterMode === 'lye_water_ratio';
+  const budgetModesAvailable = budgetSizingAvailable(waterMode);
   // A liquid withheld from this process must not be offered here. Presets already chosen
   // still resolve by key (alternativeLiquidPreset is unfiltered), so a recipe saved under
   // CP keeps showing its vinegar row after a switch to LS rather than silently losing it.
@@ -103,11 +107,12 @@ export function SplitLiquidPanel({
 
   const showShortfall = lyeWaterStatus !== null && lyeWaterStatus.shortfallGrams > 0;
   // The thick-liquid note aggregates every row's displaced water against the budget.
-  const displacedWaterGrams = resolvedRows.reduce(
-    (sum, { row, grams }) =>
-      grams != null ? sum + grams * (1 - splitLiquidWaterFraction(row)) : sum,
-    0,
-  );
+  const displacedWaterGrams = resolvedRows.reduce((sum, { row, grams }) => {
+    const fraction = grams != null ? splitLiquidWaterFraction(row) : null;
+    // Skip undeclared rows: (1 - 1) made them contribute exactly 0, so the note could never
+    // fire for the one row type whose thickness nobody has stated. They get their own note.
+    return fraction === null ? sum : sum + grams! * (1 - fraction);
+  }, 0);
   const showFluidityNote =
     allocation !== null && displacedWaterGrams > allocation.targetLiquidGrams * 0.05;
 
@@ -159,6 +164,12 @@ export function SplitLiquidPanel({
             // otherwise the controlled <select> shows the first option instead ("Custom…")
             // and misrepresents which liquid the recipe actually carries.
             const isStray = preset !== null && !isAlternativeLiquidOfferedFor(preset, process);
+            // A budget row under a water mode with no total-liquid budget is inert: it
+            // resolves to no grams rather than silently sizing against the full lye water.
+            const waterState = splitLiquidWaterInputState(row);
+            const isInertBudgetRow =
+              !budgetModesAvailable &&
+              (row.sizeMode === 'rest' || row.sizeMode === 'percent_of_liquid');
             const options = isStray ? [...presetsForProcess, preset] : presetsForProcess;
             const otherHasRest = rows.some((r) => r.key !== row.key && r.sizeMode === 'rest');
             const recommendTrace =
@@ -209,6 +220,7 @@ export function SplitLiquidPanel({
                       max={100}
                       step={1}
                       placeholder="100"
+                      aria-invalid={waterState === 'invalid' || undefined}
                       value={row.customWaterPercent}
                       onChange={(e) => updateRow(row.key, { customWaterPercent: e.target.value })}
                     />
@@ -309,6 +321,27 @@ export function SplitLiquidPanel({
                     lye, freeze the liquid and add the lye slowly.
                   </p>
                 )}
+                {waterState === 'invalid' && (
+                  <p className="split-liquid-warning" role="alert">
+                    Enter 1–100 for % water — this value is being ignored, and the liquid is
+                    treated as having no declared water content.
+                  </p>
+                )}
+                {waterState === 'unknown' && grams !== null && grams > 0 && (
+                  <p className="split-liquid-note">
+                    No % water declared: this liquid is counted as all water where that
+                    errs safe, and left out where it doesn&apos;t. Declaring it sharpens the
+                    dilution and lye-water figures.
+                  </p>
+                )}
+                {isInertBudgetRow && (
+                  <p className="split-liquid-warning" role="alert">
+                    This sizing needs &ldquo;% of oils&rdquo; water or a water:lye ratio —
+                    lye-concentration water sets the lye solution&apos;s strength, so there
+                    is no total-liquid budget to carve this out of. This liquid is not being
+                    added. Switch the water method, or size it by % of oil weight or Weight.
+                  </p>
+                )}
                 {isStray && (
                   <p className="split-liquid-warning" role="alert">
                     {preset!.label} is not used in liquid soap — this row still counts as
@@ -352,6 +385,13 @@ export function SplitLiquidPanel({
             <p className="split-liquid-note">
               Thick liquids — a meaningful share of them isn&apos;t water, so expect a
               thicker, faster trace than the water figure suggests.
+            </p>
+          )}
+          {lyeWaterUnverifiable && (
+            <p className="split-liquid-warning" role="alert">
+              Can&apos;t verify the lye will dissolve — an alternative liquid in the lye
+              water has no declared water content, so it is left out of the check. Declare
+              its % water, or move it to trace.
             </p>
           )}
           {showShortfall && (

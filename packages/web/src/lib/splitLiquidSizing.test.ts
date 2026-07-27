@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveSplitLiquidRows, splitLiquidCalcOverride } from './splitLiquidSizing';
+import { budgetSizingAvailable, resolveSplitLiquidRows, splitLiquidCalcOverride } from './splitLiquidSizing';
 import type { SplitLiquidRow } from './recipe';
 import { DEFAULT_SETTINGS } from './recipe';
 
@@ -15,7 +15,7 @@ const ROW = (over: Partial<SplitLiquidRow>): SplitLiquidRow => ({
   ...over,
 });
 
-const CTX = { totalOilGrams: 1000, targetLiquidGrams: 330, lyeGrams: 138 };
+const CTX = { totalOilGrams: 1000, targetLiquidGrams: 330, lyeGrams: 138, budgetSizingAvailable: true };
 
 describe('resolveSplitLiquidRows', () => {
   it('resolves each sizing mode and totals the rows', () => {
@@ -124,5 +124,55 @@ describe('lye_water_ratio budget allocation (LS audit 2026-07-27)', () => {
     );
     expect(o!.targetLiquidGrams).toBe(380);
     expect(o!.targetRatio).toBeUndefined();
+  });
+});
+
+describe('budget sizing with no budget', () => {
+  it('resolves rest and % of total liquid to null when the water mode has no total', () => {
+    // lye_concentration fixes the SOLUTION strength; there is no total-liquid figure to
+    // carve out of, so a budget row must go inert rather than size against a stand-in.
+    const noBudget = { ...CTX, targetLiquidGrams: null, budgetSizingAvailable: false };
+    const rows = [
+      ROW({ sizeMode: 'rest', amount: '' }),
+      ROW({ sizeMode: 'percent_of_liquid', amount: '25' }),
+    ];
+    const resolved = resolveSplitLiquidRows(rows, noBudget);
+    expect(resolved.rows.map((r) => r.grams)).toEqual([null, null]);
+    expect(resolved.totalGrams).toBe(0);
+  });
+
+  it('leaves additive rows untouched without a budget — they never read the target', () => {
+    const noBudget = { ...CTX, targetLiquidGrams: null, budgetSizingAvailable: false };
+    const rows = [
+      ROW({ sizeMode: 'percent_of_oils', amount: '20' }),
+      ROW({ sizeMode: 'grams', amount: '50' }),
+    ];
+    expect(resolveSplitLiquidRows(rows, noBudget).rows.map((r) => r.grams)).toEqual([200, 50]);
+  });
+
+  it('budgetSizingAvailable answers for each water mode', () => {
+    expect(budgetSizingAvailable('percent_of_oils')).toBe(true);
+    expect(budgetSizingAvailable('lye_water_ratio')).toBe(true);
+    expect(budgetSizingAvailable('lye_concentration')).toBe(false);
+  });
+});
+
+describe('a blank water field means the default, not "no budget"', () => {
+  const restRow = [ROW({ sizeMode: 'rest', amount: '' })];
+
+  it('blank % of oils gives the same override as the default 33', () => {
+    const base = { ...DEFAULT_SETTINGS, waterMode: 'percent_of_oils' as const, splitLiquids: restRow };
+    const blank = splitLiquidCalcOverride({ ...base, waterPercentOfOils: '' }, 1000);
+    const explicit = splitLiquidCalcOverride({ ...base, waterPercentOfOils: '33' }, 1000);
+    expect(blank).not.toBeNull();
+    expect(blank!.targetLiquidGrams).toBe(explicit!.targetLiquidGrams);
+  });
+
+  it('blank water:lye ratio gives the same override as the default 2', () => {
+    const base = { ...DEFAULT_SETTINGS, waterMode: 'lye_water_ratio' as const, splitLiquids: restRow };
+    const blank = splitLiquidCalcOverride({ ...base, lyeWaterRatio: '' }, 1000);
+    const explicit = splitLiquidCalcOverride({ ...base, lyeWaterRatio: '2' }, 1000);
+    expect(blank).not.toBeNull();
+    expect(blank!.targetRatio).toBe(explicit!.targetRatio);
   });
 });
