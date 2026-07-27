@@ -690,7 +690,9 @@ test.describe('advanced settings', () => {
   test('batch sizer bar mode suggests and applies oil weight', async ({ page }) => {
     await page.getByText('Bar count', { exact: true }).click();
     await page.getByLabel(/Number of bars/).fill('10');
-    await page.getByLabel(/Finished bar weight/).fill('100');
+    // Renamed from "Finished bar weight": the field asks for the weight AFTER cure, and
+    // bars mode now sizes the WET batch that cures to it.
+    await page.getByLabel(/Bar weight after cure/).fill('100');
     await page.getByLabel(/Shrinkage \/ waste %/).fill('5');
     await page.getByLabel(/Shrinkage \/ waste %/).blur();
     await expect(page.getByText(/Suggested oil weight/)).toBeVisible();
