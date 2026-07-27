@@ -7,6 +7,7 @@ import { DEFAULT_KOH_BLEND_PERCENT, type LyeType, type WaterMode } from './lye.j
 import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
 import {
   additiveMatches,
+  additiveNameMatches,
   recipeOilMatches,
   type NamedCatalogEntry,
   type NamedOilEntry,
@@ -363,6 +364,26 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   }
 
   const additiveEntries = input.additiveEntries;
+  // Magnesium-bearing salts (Epsom = magnesium sulfate, Dead Sea salt) are the one salt
+  // family that damages soap rather than hardening it: magnesium displaces the alkali
+  // cation to form insoluble magnesium soap — the same soap scum hard water makes, but
+  // built into the bar. Not a lye-math concern (no salt consumes alkali), so this is a
+  // warning, not a calculation. Deliberately keyword-only: there is no catalog entry to
+  // match on, because these should not be offered in the first place. Fires in every
+  // process — the reaction is with soap, not with a process step.
+  if (
+    ['epsom', 'magnesium', 'dead sea'].some((keyword) =>
+      additiveNameMatches(additiveEntries, keyword),
+    )
+  ) {
+    insights.push({
+      level: 'warning',
+      code: 'magnesium_salt_scum',
+      message:
+        'Magnesium-bearing salts (Epsom, Dead Sea) react with soap to form an insoluble magnesium soap — the same scum hard water leaves, but built into the bar: weaker lather, slimy residue, and a higher rancidity risk. For a harder bar use table, sea, Himalayan or black lava salt, which are all sodium chloride and behave identically.',
+    });
+  }
+
   if (additiveMatches(additiveEntries, 'oatmeal', 'oatmeal')) {
     insights.push({
       level: 'info',
