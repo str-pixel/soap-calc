@@ -74,6 +74,10 @@ export type FormulationAnalysisInput = {
    * sugarTotalPercentForInsights divides by total oil weight — so LS isn't penalized for
    * its different dosing basis. */
   sugarTotalPercent?: number;
+  /** True when the recipe delivers glycerin as a lye-solution solvent (split-liquid row
+   * or the LS glycerin additive). Advisory only: the source material gives no numeric
+   * model for how much less dilution water a glycerin recipe needs. */
+  lsGlycerinSolvent?: boolean;
   /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
   waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
   /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
@@ -334,6 +338,18 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         input.process === 'hp'
           ? 'Combined sugar-family additives (sugar/sorbitol, honey) exceed ~5% of oil weight — the cook can scorch or volcano. Consider reducing the total dose.'
           : `Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~${sugarCeiling}% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.`,
+    });
+  }
+
+  // Glycerin-as-solvent advisory (LS): the paste dissolves faster and the finished soap
+  // reaches its target feel with less dilution water than the water-only figure suggests.
+  // No numeric model exists — advise increments, never adjust the dilution math.
+  if (input.process === 'ls' && input.lsGlycerinSolvent) {
+    insights.push({
+      level: 'info',
+      code: 'glycerin_solvent_dilution',
+      message:
+        'Glycerin acts as a solvent: the paste dissolves faster and needs less dilution water than the water-only figure — dilute in increments and stop at the target consistency.',
     });
   }
 

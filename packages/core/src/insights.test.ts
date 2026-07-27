@@ -521,6 +521,12 @@ describe('sugar_total_high warning (total sugar-family additives, verified ceili
     }
   });
 
+  it('advises on dilution when an LS recipe runs glycerin as solvent', () => {
+    expect(has({ ...base, process: 'ls', lsGlycerinSolvent: true }, 'glycerin_solvent_dilution')).toBe(true);
+    expect(has({ ...base, process: 'ls' }, 'glycerin_solvent_dilution')).toBe(false);
+    expect(has({ ...base, process: 'cp', lsGlycerinSolvent: true }, 'glycerin_solvent_dilution')).toBe(false);
+  });
+
   it('LS copy carries the ~5% figure and still names yogurt (only HP excludes it upstream)', () => {
     const hit = analyzeFormulation({ ...base, process: 'ls', sugarTotalPercent: 5.5 }).find(
       (i) => i.code === 'sugar_total_high',

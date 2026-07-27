@@ -129,3 +129,12 @@ describe('extraLyeForAcid (shared acid math)', () => {
     expect(extra.kohGrams).toBeCloseTo((10 * 0.4 * 0.8761) / 0.9, 2);
   });
 });
+
+describe('glycerin preset (LS audit 2026-07-27)', () => {
+  it('is a zero-water solvent: full grams dissolve lye (hot), none count as water', () => {
+    const g = alternativeLiquidPreset('glycerin');
+    expect(g?.waterFraction).toBe(0);
+    expect(g?.flags).toEqual(['solvent']);
+    expect(g?.lyeNeutralization).toBeUndefined();
+  });
+});
