@@ -61,3 +61,10 @@ export const CP_OVERFLOW_RISK_F = 160;
 export function fToC(tempF: number): number {
   return Math.round(((tempF - 32) * 5) / 9);
 }
+
+/** °C → rounded °F. The stored setting and every source constant here are °F; the UI
+ * edits in °C and converts at that boundary. Round-trips stably at 1 °C steps
+ * (52 °C → 126 °F → 52 °C), which is what keeps the input from fighting the user. */
+export function cToF(tempC: number): number {
+  return Math.round((tempC * 9) / 5 + 32);
+}

@@ -641,12 +641,13 @@ test.describe('pricing & profit', () => {
 
 test('soaping-temperature slider: CP defaults to 125 °F; 165 raises the overflow warning', async ({ page }) => {
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Soaping temperature' }) }).first();
-  await expect(section.getByLabel('Soaping temperature')).toHaveValue('125');
+  // The control edits in °C (the setting still stores °F).
+  await expect(section.getByLabel('Soaping temperature')).toHaveValue('52');
   await expect(section).toContainText('52 °C (125 °F)');
   // The starter recipe's 33%-of-oils water is ~2.4:1 at the default 125 °F — the source's
   // "gel/partial gel likely at higher water" case.
   await expect(section).toContainText(/Gel phase: likely/i);
-  await section.getByLabel('Soaping temperature').fill('165');
+  await section.getByLabel('Soaping temperature').fill('74'); // 74 °C = 165 °F, past the 160 °F line
   await expect(page.locator('.message-list--insights').filter({ hasText: /overheat and overflow/i })).toHaveCount(1);
 });
 

@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import type { GelMode } from '@soap-calc/core';
 import { ppoOzToPercentOfOil, tspToPercentOfOil } from '../lib/doseConverters';
 
+// The gel-phase control moved to the Soaping temperature panel, where it sits beside the
+// gel PREDICTION and the two inputs (temperature, water) that actually decide gel.
 type CpExtrasPanelProps = {
   /** Current recipe's total oil weight in grams, for the tsp→% converter. */
   totalOilGrams: number;
-  gelMode: GelMode;
-  onGelModeChange: (mode: GelMode) => void;
 };
 
 function formatPercent(value: number | null): string {
@@ -14,7 +13,7 @@ function formatPercent(value: number | null): string {
   return `${value.toFixed(2)}%`;
 }
 
-export function CpExtrasPanel({ totalOilGrams, gelMode, onGelModeChange }: CpExtrasPanelProps) {
+export function CpExtrasPanel({ totalOilGrams }: CpExtrasPanelProps) {
   const [tsp, setTsp] = useState('');
   const [ppoOz, setPpoOz] = useState('');
 
@@ -29,24 +28,6 @@ export function CpExtrasPanel({ totalOilGrams, gelMode, onGelModeChange }: CpExt
           <p className="panel__subtitle">Dose converters and a few cold-process notes</p>
         </div>
       </div>
-
-      <label className="field">
-        <span>Gel phase</span>
-        <select
-          className="input"
-          value={gelMode}
-          onChange={(e) => onGelModeChange(e.target.value as GelMode)}
-          aria-label="Gel phase"
-        >
-          <option value="none">None (prevented — e.g. refrigerated)</option>
-          <option value="natural">Natural (uninsulated loaf)</option>
-          <option value="forced">Forced (insulated / CPOP)</option>
-        </select>
-      </label>
-      <p className="results-hint">
-        Gel doesn&rsquo;t change safety, but it changes how fast the bar firms and unmolds —
-        forcing it reaches the fast, same-day end; preventing it runs slower.
-      </p>
 
       <label className="field">
         <span>Teaspoons of additive (whole recipe)</span>

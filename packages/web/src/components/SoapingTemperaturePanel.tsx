@@ -1,5 +1,5 @@
-import { memo, type Dispatch, type SetStateAction } from 'react';
-import { estimateGelPhase, fToC, soapingTempBand } from '@soap-calc/core';
+import { memo, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { cToF, estimateGelPhase, fToC, soapingTempBand, type GelMode } from '@soap-calc/core';
 import {
   effectiveSoapingTempF,
   defaultVariantFor,
@@ -61,7 +61,30 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
       ? Math.max(0, Math.min(100, ((effectiveF - range.minF) / (range.maxF - range.minF)) * 100))
       : 0;
 
-  const onValue = (value: string) => setSettings((s) => ({ ...s, soapingTempF: value }));
+  // The setting stores °F (core's bands and the 160 °F overflow constant are °F, and it
+  // keeps saved recipes migration-free), but the control edits in °C. A local draft holds
+  // what the user is typing so a half-entered "5" isn't instantly rewritten by the
+  // round-trip; it re-syncs whenever the effective value changes from elsewhere.
+  const effectiveC = fToC(effectiveF);
+  const [draftC, setDraftC] = useState(String(effectiveC));
+  useEffect(() => {
+    setDraftC(String(effectiveC));
+  }, [effectiveC]);
+
+  // The hint must catch BOTH paths: a value the user is typing right now, and a stored
+  // value that arrived out of range (imported recipe, or a variant switch that moved the
+  // floor). Seeding the draft from the effective figure would otherwise hide the latter.
+  const storedF = Number(settings.soapingTempF);
+  const showClampHint =
+    (settings.soapingTempF.trim() !== '' && Number.isFinite(storedF) && storedF !== effectiveF) ||
+    (draftC.trim() !== '' && Number.isFinite(Number(draftC)) && Number(draftC) !== effectiveC);
+
+  const onCelsius = (value: string) => {
+    setDraftC(value);
+    const c = Number(value);
+    if (value.trim() === '' || !Number.isFinite(c)) return;
+    setSettings((s) => ({ ...s, soapingTempF: String(cToF(c)) }));
+  };
 
   return (
     <section className="panel">
@@ -77,13 +100,12 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           {fToC(effectiveF)} °C ({effectiveF} °F)
         </p>
       </div>
-      {Number.isFinite(Number(settings.soapingTempF)) &&
-        settings.soapingTempF.trim() !== '' &&
-        Number(settings.soapingTempF) !== effectiveF && (
+      {showClampHint && (
           // The typed value stays in the input untouched (clamp-at-read never rewrites);
           // this line says which figure the calc actually uses and why.
           <p className="results-hint">
-            Outside this process&apos;s range ({range.minF}–{range.maxF} °F) — using {effectiveF} °F.
+            Outside this process&apos;s range ({fToC(range.minF)}–{fToC(range.maxF)} °C) — using{' '}
+            {effectiveC} °C.
           </p>
         )}
       <div className="slider-field">
@@ -94,13 +116,13 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
               className="slider-field__value"
               type="number"
               aria-label="Soaping temperature"
-              min={range.minF}
-              max={range.maxF}
+              min={fToC(range.minF)}
+              max={fToC(range.maxF)}
               step={1}
-              value={settings.soapingTempF}
-              onChange={(e) => onValue(e.target.value)}
+              value={draftC}
+              onChange={(e) => onCelsius(e.target.value)}
             />
-            <span className="slider-field__unit">°F</span>
+            <span className="slider-field__unit">°C</span>
           </span>
         </div>
         <input
@@ -108,11 +130,11 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           type="range"
           aria-hidden="true"
           tabIndex={-1}
-          min={range.minF}
-          max={range.maxF}
+          min={fToC(range.minF)}
+          max={fToC(range.maxF)}
           step={1}
-          value={effectiveF}
-          onChange={(e) => onValue(e.target.value)}
+          value={effectiveC}
+          onChange={(e) => onCelsius(e.target.value)}
           style={{
             background: `linear-gradient(to right, var(--accent) ${fillPct}%, var(--hairline) ${fillPct}%)`,
           }}
@@ -132,6 +154,29 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
               <p className="results-hint">
                 Cooler or less water avoids gel; warmer or more water encourages it — both are
                 valid choices, but a half-gelled batch shows a ring.
+              </p>
+              {/* The PLAN sits with the PREDICTION: the readout above says what these
+                  settings tend toward, this says what you intend to do about it (and it
+                  drives the unmold/cut timeline). Moved here from CP extras, where it sat
+                  far from the two inputs that decide gel. */}
+              <label className="field">
+                <span>Gel phase plan</span>
+                <select
+                  className="input"
+                  value={settings.gelMode}
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, gelMode: e.target.value as GelMode }))
+                  }
+                  aria-label="Gel phase"
+                >
+                  <option value="none">None (prevented — e.g. refrigerated)</option>
+                  <option value="natural">Natural (uninsulated loaf)</option>
+                  <option value="forced">Forced (insulated / CPOP)</option>
+                </select>
+              </label>
+              <p className="results-hint">
+                Gel doesn&rsquo;t change safety, but it changes how fast the bar firms and
+                unmolds — forcing it reaches the fast, same-day end; preventing it runs slower.
               </p>
             </>
           )}

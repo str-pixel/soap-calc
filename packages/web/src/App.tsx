@@ -420,11 +420,7 @@ export default function App() {
             />
 
             {process === 'cp' && (
-              <CpExtrasPanel
-                totalOilGrams={vm.totalOilGrams}
-                gelMode={settings.gelMode}
-                onGelModeChange={(gelMode) => setSettings({ ...settings, gelMode })}
-              />
+              <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />
             )}
           </div>
 
