@@ -512,10 +512,21 @@ describe('sugar_total_high warning (total sugar-family additives, verified ceili
     expect(has({ ...base, sugarTotalPercent: 3 }, 'sugar_total_high')).toBe(false);
   });
 
-  it('is process-aware: 4.5% warns under CP and LS but not under HP (HP audit 2026-07-26)', () => {
-    for (const [process, fires] of [['cp', true], ['ls', true], ['hp', false]] as const) {
+  it('is process-aware: 4.5% warns under CP only; HP and LS tolerate up to 5%', () => {
+    for (const [process, fires] of [['cp', true], ['ls', false], ['hp', false]] as const) {
       expect(has({ ...base, process, sugarTotalPercent: 4.5 }, 'sugar_total_high')).toBe(fires);
     }
+    for (const process of ['ls', 'hp'] as const) {
+      expect(has({ ...base, process, sugarTotalPercent: 5.5 }, 'sugar_total_high')).toBe(true);
+    }
+  });
+
+  it('LS copy carries the ~5% figure and still names yogurt (only HP excludes it upstream)', () => {
+    const hit = analyzeFormulation({ ...base, process: 'ls', sugarTotalPercent: 5.5 }).find(
+      (i) => i.code === 'sugar_total_high',
+    );
+    expect(hit!.message).toContain('~5%');
+    expect(hit!.message.toLowerCase()).toContain('yogurt');
   });
 
   it('5.5% warns under HP too, and the HP copy does not name yogurt (excluded from the HP sum)', () => {

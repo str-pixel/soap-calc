@@ -64,9 +64,10 @@ export type FormulationAnalysisInput = {
   hpYogurtPercent?: number;
   /** Combined percent of oil weight across sugar-family additives (sugar/sorbitol, honey,
    * yogurt outside HP) — computed by the caller since {@link additiveEntries} carries no
-   * percentages. The ceiling is process-aware: 4% under CP/LS, 5% under HP (an open,
-   * watched cook tolerates the HP-typical 1–5% sugar range; an insulated mold does not).
-   * Under HP the caller already excludes yogurt from this sum (hp_yogurt_water covers it).
+   * percentages. The ceiling is process-aware: 4% under CP, 5% under HP and LS (an open
+   * cook or high-temp paste tolerates the 1–5% sugar range; an insulated CP mold does
+   * not). Under HP the caller already excludes yogurt from this sum (hp_yogurt_water
+   * covers it).
    *
    * The figure is always oil-relative regardless of dosing basis: computeRecipeAdditives
    * resolves oil/batch/solution bases to actual grams upstream, before
@@ -318,13 +319,13 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   // Sugar-family additives all accelerate trace and heat retention similarly; a single
   // message on the combined total, not per-additive, since it's the total dose that
   // tunnels/overheats the batch. The MECHANISM (sugar mass relative to oil mass) is
-  // process-independent, but the TOLERANCE is not: an insulated CP/LS mold or paste traps
-  // the heat (ceiling 4), while an HP cook typically runs sugars up to ~5 in an open,
-  // watched pot (ceiling 5). Under HP the sum upstream already excludes yogurt
-  // (hp_yogurt_water covers it), so the HP copy names only the counted sources. See
-  // sugarTotalPercent's doc above for how a solution-dosed LS additive still resolves to
-  // its true %-of-oil here.
-  const sugarCeiling = input.process === 'hp' ? 5 : 4;
+  // process-independent, but the TOLERANCE is not: an insulated CP mold traps the heat
+  // (ceiling 4), while an HP open cook and an LS high-temp paste both run sugars to ~5
+  // (LS sources endorse 1–5% of oils). Under HP the sum upstream already excludes yogurt
+  // (hp_yogurt_water covers it), so the HP copy names only the counted sources; CP/LS
+  // keep yogurt in the sum and the copy. See sugarTotalPercent's doc above for how a
+  // solution-dosed LS additive still resolves to its true %-of-oil here.
+  const sugarCeiling = input.process === 'hp' || input.process === 'ls' ? 5 : 4;
   if (input.sugarTotalPercent !== undefined && input.sugarTotalPercent > sugarCeiling) {
     insights.push({
       level: 'warning',
@@ -332,7 +333,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       message:
         input.process === 'hp'
           ? 'Combined sugar-family additives (sugar/sorbitol, honey) exceed ~5% of oil weight — the cook can scorch or volcano. Consider reducing the total dose.'
-          : 'Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~4% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.',
+          : `Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~${sugarCeiling}% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.`,
     });
   }
 
