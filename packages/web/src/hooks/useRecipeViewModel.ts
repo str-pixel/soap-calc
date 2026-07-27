@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
+import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
@@ -328,12 +328,17 @@ export function useRecipeViewModel({
     for (const { row, grams } of splitLiquidRows) {
       const preset = alternativeLiquidPreset(row.presetKey);
       if (!preset?.lyeNeutralization || grams == null || grams <= 0) continue;
+      // Scoping the offer must scope the behaviour. A liquid this process doesn't offer
+      // (vinegar under LS, from a recipe saved under CP) is inert: it keeps its grams and
+      // its water, but earns no compensating alkali. Filtering only the picker left the
+      // calculation path compensating for a liquid the app no longer offers here.
+      if (!isAlternativeLiquidOfferedFor(preset, process)) continue;
       const extra = extraLyeForAcidLiquid(preset, grams, acidLyeRecipe);
       naohGrams += extra.naohGrams;
       kohGrams += extra.kohGrams;
     }
     return naohGrams > 0 || kohGrams > 0 ? { naohGrams, kohGrams } : null;
-  }, [acidLyeRecipe, splitLiquidRows]);
+  }, [acidLyeRecipe, process, splitLiquidRows]);
   // Acid ADDITIVES (citric) get the same compensation as acid liquids, but through their
   // own memo: acidExtraLye is SplitLiquidPanel's display prop and must stay split-only.
   // Summing the lines' own extraLye (not re-deriving from the catalog) keeps the panel's
@@ -357,13 +362,15 @@ export function useRecipeViewModel({
       if (row.sizeMode !== 'grams' || grams == null || grams <= 0) continue;
       fixed += grams;
       const preset = alternativeLiquidPreset(row.presetKey);
-      if (preset?.lyeNeutralization) {
+      // Same guard as acidExtraLye — the batch back-solve and the lye result must agree on
+      // how much alkali a stray liquid earns (none).
+      if (preset?.lyeNeutralization && isAlternativeLiquidOfferedFor(preset, process)) {
         const extra = extraLyeForAcidLiquid(preset, grams, acidLyeRecipe);
         fixed += extra.naohGrams + extra.kohGrams;
       }
     }
     return fixed;
-  }, [acidLyeRecipe, splitLiquidRows]);
+  }, [acidLyeRecipe, process, splitLiquidRows]);
   const totalAcidExtraLye = useMemo(() => {
     if (!acidExtraLye && !additiveAcidExtraLye) return null;
     return {

@@ -180,13 +180,13 @@ export const ALTERNATIVE_LIQUID_GUIDE: readonly AlternativeLiquidPreset[] = [
     label: 'Vinegar (5%)',
     waterFraction: 0.95,
     flags: ['acid'],
-    // Bar processes only. The point of vinegar in soap is sodium acetate, a BAR hardener;
+    // Bar processes only. The point of vinegar in soap is the acetate salt, a BAR hardener;
     // a liquid soap has no bar to harden, so all it does there is eat alkali. Liquid soap's
     // own acid workflow (citric, after dilution) neutralises a lye excess and is deliberately
     // uncompensated — the opposite of the compensation this preset triggers.
     processes: ['cp', 'hp'],
     note:
-      'Acetic acid consumes lye (forming sodium acetate, a bar hardener) — the extra lye is added to the recipe automatically.',
+      'Acetic acid consumes lye (forming an acetate salt, a bar hardener) — the extra lye is added to the recipe automatically.',
     lyeNeutralization: {
       naohPerGram: ACETIC_MOL_PER_GRAM_VINEGAR * 39.997,
       kohPerGram: ACETIC_MOL_PER_GRAM_VINEGAR * 56.105,
@@ -202,11 +202,21 @@ export function alternativeLiquidPreset(key: string): AlternativeLiquidPreset | 
  * ALTERNATIVE_LIQUID_GUIDE directly — a preset withheld from a process (vinegar in LS)
  * must not be selectable there. Lookup by key stays unfiltered on purpose, so a recipe
  * saved under one process still resolves its liquid after a process switch. */
+/** Whether this liquid is offered under `process`. The SINGLE source of truth for
+ * offered-ness: the picker list, the compensation guard, and the stray-row warning all
+ * read it, so a liquid can never be offered in one place and treated as stray in another. */
+export function isAlternativeLiquidOfferedFor(
+  preset: AlternativeLiquidPreset,
+  process: AdditiveProcess,
+): boolean {
+  return preset.processes === undefined || preset.processes.includes(process);
+}
+
 export function alternativeLiquidsForProcess(
   process: AdditiveProcess,
 ): readonly AlternativeLiquidPreset[] {
-  return ALTERNATIVE_LIQUID_GUIDE.filter(
-    (preset) => preset.processes === undefined || preset.processes.includes(process),
+  return ALTERNATIVE_LIQUID_GUIDE.filter((preset) =>
+    isAlternativeLiquidOfferedFor(preset, process),
   );
 }
 
