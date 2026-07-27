@@ -14,6 +14,7 @@ import { TroubleshootingPanel } from './components/TroubleshootingPanel';
 import { ProcessTabs } from './components/ProcessTabs';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { RecipeOilsPanel } from './components/RecipeOilsPanel';
+import { SoapingTemperaturePanel } from './components/SoapingTemperaturePanel';
 import { ResultsPanel } from './components/ResultsPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SuperfatWaterPanel } from './components/SuperfatWaterPanel';
@@ -401,6 +402,12 @@ export default function App() {
               percentTotalOff={vm.percentTotalOff} weightTotalOff={vm.weightTotalOff}
               getDraft={getDraft} setDraft={setDraft}
               inputs={inputs}
+            />
+
+            <SoapingTemperaturePanel
+              settings={settings}
+              setSettings={setSettings}
+              process={process}
             />
 
             <AdditivesPanel
