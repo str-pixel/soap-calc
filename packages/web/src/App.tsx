@@ -390,6 +390,8 @@ export default function App() {
               weightUnit={weightUnit}
               waterSuggestion={vm.waterSuggestion}
               lyeWaterStatus={vm.lyeWaterStatus}
+              lyeWaterUnverifiable={vm.lyeWaterUnverifiable}
+              lyeWaterShortfallCertain={vm.lyeWaterShortfallCertain}
               splitLiquidRows={vm.splitLiquidRows}
               splitAllocation={vm.splitAllocation}
               acidExtraLye={vm.acidExtraLye}
@@ -439,6 +441,8 @@ export default function App() {
                 bottleSizeMl={bottleSizeMl}
                 onBottleSizeMlChange={setBottleSizeMl}
                 altLiquidWaterGrams={vm.splitLiquidPasteWater}
+                unknownLiquidGrams={vm.unknownLiquidGrams}
+                overDilutionCertain={vm.overDilutionCertain}
               />
             )}
 

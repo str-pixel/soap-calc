@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
-import { resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
+import { budgetSizingAvailable, resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import {
   computeExtrasGrams,
   computePostCookSuperfat,
@@ -60,6 +60,18 @@ export type RecipeViewModel = {
   /** Water the alternative liquids carry into the paste. Already deducted from the LS
    * dilution figure; surfaced so the Dilution panel can explain the deduction. */
   splitLiquidPasteWater: number;
+  /** Grams of split liquid with undeclared water content. Non-zero means the dilution
+   * figures are a lower bound, not a measurement — the UI must say so. */
+  unknownLiquidGrams: number;
+  /** True when an in-lye liquid's water content is undeclared, so the 1:1 dissolution
+   * floor cannot be checked either way. */
+  lyeWaterUnverifiable: boolean;
+  /** The 1:1 shortfall holds even counting every undeclared in-lye gram as pure water, so
+   * the deficit is a fact rather than an artefact of excluding it. */
+  lyeWaterShortfallCertain: boolean;
+  /** True when the paste is over the target concentration regardless of what the undeclared
+   * liquid turns out to contain — the verdict is a fact, not an assumption. */
+  overDilutionCertain: boolean;
   fixedBatchExtrasGrams: number;
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
@@ -208,13 +220,16 @@ export function useRecipeViewModel({
       previewSettings.splitLiquids.length > 0 && result
         ? resolveSplitLiquidRows(previewSettings.splitLiquids, {
             totalOilGrams,
-            // Budget rows size against the pre-allocation target; additive rows against
-            // the recipe's own water (its only sensible "total liquid").
-            targetLiquidGrams: overrideTargetGrams(result) ?? result.waterWeightGrams,
+            // No `?? result.waterWeightGrams` fallback: only budget rows read this, and
+            // sizing a carve-out against the recipe's FULL water stacked the liquid on top
+            // of the water instead of out of it. Additive rows (percent_of_oils, grams)
+            // never read it — they size off `amount` and `totalOilGrams`.
+            targetLiquidGrams: overrideTargetGrams(result),
             lyeGrams: result.lyeWeightGrams,
+            budgetSizingAvailable: budgetSizingAvailable(previewSettings.waterMode),
           })
         : null,
-    [previewSettings.splitLiquids, result, splitOverride, totalOilGrams],
+    [previewSettings.splitLiquids, previewSettings.waterMode, result, splitOverride, totalOilGrams],
   );
   const splitLiquidRows: ResolvedSplitLiquidRow[] = useMemo(
     () => resolvedSplit?.rows ?? [],
@@ -227,8 +242,32 @@ export function useRecipeViewModel({
       splitLiquidPasteWaterGrams(
         splitLiquidRows.map(({ row, grams }) => ({
           grams,
-          waterFraction: splitLiquidWaterFraction(row),
+          // Unknown water content counts as ALL water here. That maximises the deduction,
+          // which makes the printed dilution figure a LOWER BOUND — the least water the
+          // batch can need — rather than a guess that could send the user over target.
+          // unknownLiquidGrams below is what lets the UI label it as a bound.
+          waterFraction: splitLiquidWaterFraction(row) ?? 1,
         })),
+      ),
+    [splitLiquidRows],
+  );
+  // Rows that actually made it into the batch. Aggregate predicates must read THIS, not the
+  // raw rows: an unsized placeholder is not a liquid, and letting it vote flipped advisories
+  // on and off with no ingredient behind them.
+  const sizedSplitRows = useMemo(
+    () => splitLiquidRows.filter(({ grams }) => grams != null && grams > 0),
+    [splitLiquidRows],
+  );
+  // Grams of split liquid whose water content is undeclared. Non-zero means every
+  // water-derived dilution figure is an assumption, not a measurement.
+  const unknownLiquidGrams = useMemo(
+    () =>
+      splitLiquidRows.reduce(
+        (sum, { row, grams }) =>
+          grams != null && grams > 0 && splitLiquidWaterFraction(row) === null
+            ? sum + grams
+            : sum,
+        0,
       ),
     [splitLiquidRows],
   );
@@ -265,6 +304,17 @@ export function useRecipeViewModel({
       previewSettings.superfatPercent,
     ],
   );
+  // Is the "already more dilute than the target" verdict CERTAIN, or could declaring the
+  // unknown liquid's water content overturn it? Certain when the paste's water exceeds the
+  // target even if every undeclared gram brought NO water at all — the most favourable case
+  // for reaching the target. Suppressing the verdict on the mere presence of an unknown
+  // dropped a warning that was provably right across the whole 0-100% range.
+  const overDilutionCertain = useMemo(() => {
+    if (!dilution || !result || !dilution.targetExceedsPaste) return false;
+    const declaredCookWater =
+      result.waterWeightGrams + (splitLiquidPasteWater - unknownLiquidGrams);
+    return dilution.totalWaterGrams < declaredCookWater;
+  }, [dilution, result, splitLiquidPasteWater, unknownLiquidGrams]);
   const neutralization = useMemo(
     () =>
       process === 'ls' && result
@@ -425,14 +475,27 @@ export function useRecipeViewModel({
   ]);
 
   // Effective-water floor check: only when the alternative liquid goes into the lye
-  // solution. A custom liquid (no preset) is treated as pure water — no false alarms.
+  // solution. An undeclared liquid is EXCLUDED rather than assumed to be water — this
+  // consumer needs a lower bound on real water, the opposite of the dilution deduction
+  // above. It is not assumed to be zero water either (tea 99%, beer 92%, goat milk 88%
+  // would all start false-alarming); the check reports itself unverifiable instead.
+  // Grams of in-lye liquid whose water content nobody declared. Used as the UPPER bound on
+  // water it could be carrying, so the shortfall check can tell "certainly short" from
+  // "can't tell" instead of asserting a deficit built on an exclusion.
+  const undeclaredInLyeGrams = splitLiquidRows.reduce(
+    (sum, { row, grams }) =>
+      row.addAt === 'lye' && grams != null && grams > 0 && splitLiquidWaterFraction(row) === null
+        ? sum + grams
+        : sum,
+    0,
+  );
   const lyeWaterStatus = useMemo(() => {
     // Effective water each in-lye row actually brings to the solution.
     const inLyeWaterGrams = splitLiquidRows.reduce(
-      (sum, { row, grams }) =>
-        row.addAt === 'lye' && grams != null
-          ? sum + grams * splitLiquidWaterFraction(row)
-          : sum,
+      (sum, { row, grams }) => {
+        const fraction = row.addAt === 'lye' && grams != null ? splitLiquidWaterFraction(row) : null;
+        return fraction === null ? sum : sum + grams! * fraction;
+      },
       0,
     );
     // A 'solvent' liquid (glycerin) contributes no water anywhere else (waterFraction 0)
@@ -468,6 +531,20 @@ export function useRecipeViewModel({
     splitLiquidRows,
     splitOverride,
   ]);
+  // Excluding an undeclared liquid is what makes the shortfall arithmetic fire, so the
+  // verdict must be qualified by the same exclusion. Certain only when the solution is
+  // still short with every undeclared gram counted as pure water — the most generous case.
+  // Otherwise the deficit is an artefact of the exclusion, not a fact about the batch.
+  const lyeWaterShortfallCertain =
+    lyeWaterStatus !== null &&
+    lyeWaterStatus.shortfallGrams > 0 &&
+    lyeWaterStatus.effectiveWaterGrams + undeclaredInLyeGrams < lyeWaterStatus.floorGrams;
+  const lyeWaterUnverifiable =
+    lyeWaterStatus !== null &&
+    lyeWaterStatus.shortfallGrams > 0 &&
+    undeclaredInLyeGrams > 0 &&
+    !lyeWaterShortfallCertain;
+
   // Vessel-size guard multiple (HP only): vessel volume ÷ the water-bearing base batter
   // volume — additives fold in off-heat after the cook, so they aren't part of what the
   // vessel needs to hold while it expands. Optional: an unset/invalid vessel volume simply
@@ -511,10 +588,18 @@ export function useRecipeViewModel({
       hpVesselMultiple,
       // Glycerin as lye-solution solvent (split row) or LS additive — drives the
       // glycerin_solvent_dilution advisory (core gates it to LS).
+      // Only rows that actually resolve to grams get a vote. An unsized row is the DEFAULT
+      // state of a freshly added one, so counting it fired the solvent advisory the moment
+      // someone clicked "+ Add liquid". `grams > 0` is load-bearing beyond the null check:
+      // a 'rest' row against an exhausted budget resolves to 0, not null.
       lsGlycerinSolvent:
-        splitLiquidRows.some(
-          ({ row }) => alternativeLiquidPreset(row.presetKey)?.flags.includes('solvent') ?? false,
-        ) || computedAdditives.some((a) => a.catalogId === 'glycerin'),
+        sizedSplitRows.some(({ row }) => {
+          const preset = alternativeLiquidPreset(row.presetKey);
+          return (
+            (preset?.flags.includes('solvent') ?? false) &&
+            isAlternativeLiquidOfferedFor(preset!, process)
+          );
+        }) || computedAdditives.some((a) => a.catalogId === 'glycerin'),
       // Fat the alternative liquids bring in, as superfat points on top of the stated
       // figure. LS-gated in core: only liquid soap separates over the fat a milk adds.
       lsSplitLiquidFatShiftPercent: superfatShiftFromLiquidFat(
@@ -526,8 +611,8 @@ export function useRecipeViewModel({
       // Glycerin is the one alternative liquid that may go in the dilution water, so a
       // glycerin-only recipe skips the dilute-with-plain-water advisory.
       lsSplitLiquidIsSolventOnly:
-        splitLiquidRows.length > 0 &&
-        splitLiquidRows.every(
+        sizedSplitRows.length > 0 &&
+        sizedSplitRows.every(
           ({ row }) => alternativeLiquidPreset(row.presetKey)?.flags.includes('solvent') ?? false,
         ),
       soapingTempF,
@@ -696,6 +781,10 @@ export function useRecipeViewModel({
     acidExtraLye,
     splitLiquidRows,
     splitLiquidPasteWater,
+    unknownLiquidGrams,
+    lyeWaterUnverifiable,
+    lyeWaterShortfallCertain,
+    overDilutionCertain,
     fixedBatchExtrasGrams,
     properties,
     indexes,

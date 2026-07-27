@@ -338,18 +338,21 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     {entry.doseBasis === 'solution' ? 'diluted solution' : 'oil weight'}
                   </p>
                 )}
-                {row && row.grams === 0 && line.basis === 'solution' && line.amount !== '' &&
-                  parseDoseAmount(line.amount, line.unit) !== null && (
-                  // gramsFromDose returns 0 (not null) against a zero basis, so the row would
-                  // otherwise sit at 0 g with no explanation. Under LS that means the dilution
-                  // is unset; outside LS the finished solution doesn't exist at all, so a
-                  // stray imported line must be pointed at its dose mode rather than at a
-                  // concentration field the process has no field for — same
-                  // render-inertly-but-honestly rule as the mismatched-select guards above.
+                {!row && process !== 'ls' && line.basis === 'solution' && line.amount !== '' &&
+                  (parseDoseAmount(line.amount, line.unit) ?? 0) > 0 && (
+                  // Driven off the LINE, not a computed row: computeRecipeAdditives DROPS
+                  // the line when the basis weight is 0, so the old `row.grams === 0` gate
+                  // was unreachable for any realistic recipe and this hint never rendered.
+                  //
+                  // CP/HP only. Under LS the DilutionPanel already tells the user to set a
+                  // concentration, on the same screen. Outside LS there IS no finished
+                  // solution and no panel to explain its absence, so an imported line must be
+                  // pointed at its dose mode rather than at a field the process doesn't have
+                  // — the same render-inertly-but-honestly rule as the mismatched-select
+                  // guards above.
                   <p className="additive-list__hint" role="alert">
-                    {process === 'ls'
-                      ? 'Set the soap concentration (dilution) to size solution-based doses'
-                      : 'Dosed against the finished solution, which only liquid soap has — switch this line to % of oil weight'}
+                    Dosed against the finished solution, which only liquid soap has — switch
+                    this line to % of oil weight
                   </p>
                 )}
                 {row?.extraLye && (row.extraLye.naohGrams > 0 || row.extraLye.kohGrams > 0) && (

@@ -55,3 +55,26 @@ describe('isWeightUnit hardening', () => {
     for (const u of ['g', 'kg', 'oz', 'lb']) expect(isWeightUnit(u)).toBe(true);
   });
 });
+
+describe('formatWeight keeps sub-gram doses visible', () => {
+  it('never renders a positive dose as "0 g"', () => {
+    // displayDigits is 0 in gram mode — right for a batch, catastrophic for a dose.
+    expect(formatWeight(0.3, 'g')).toBe('0.3 g');
+    expect(formatWeight(0.05, 'g')).toBe('0.1 g');
+    expect(formatWeight(0.49, 'g')).toBe('0.5 g');
+    // 0.5 g is salt at its own 0.05% typical low on the default 1,000 g recipe: it used to
+    // render "1 g", a 100% overstatement.
+    expect(formatWeight(0.5, 'g')).toBe('0.5 g');
+  });
+
+  it('still renders a true zero as zero', () => {
+    expect(formatWeight(0, 'g')).toBe('0 g');
+  });
+
+  it('leaves batch-scale figures byte-identical', () => {
+    expect(formatWeight(12.49, 'g')).toBe('12 g');
+    expect(formatWeight(5, 'g')).toBe('5 g');
+    expect(formatWeight(2270, 'g')).toBe('2,270 g');
+    expect(formatWeight(453.59237, 'lb')).toBe('1 lb');
+  });
+});

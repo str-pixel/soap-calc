@@ -13,6 +13,12 @@ type DilutionPanelProps = {
   /** Water the recipe's alternative liquids already put in the paste. Deducted from the
    * dilution figure upstream; passed here only so the readout can say so. */
   altLiquidWaterGrams?: number;
+  /** Grams of that liquid whose water content was never declared. Non-zero makes every
+   * figure here a lower bound rather than a measurement. */
+  unknownLiquidGrams?: number;
+  /** The over-dilution verdict holds whatever the undeclared liquid contains, so it is
+   * stated as fact rather than hedged. */
+  overDilutionCertain?: boolean;
 };
 
 export function DilutionPanel({
@@ -23,6 +29,8 @@ export function DilutionPanel({
   bottleSizeMl,
   onBottleSizeMlChange,
   altLiquidWaterGrams = 0,
+  unknownLiquidGrams = 0,
+  overDilutionCertain = false,
 }: DilutionPanelProps) {
   const bottleMl = Number(bottleSizeMl);
   const bottleCount =
@@ -92,17 +100,35 @@ export function DilutionPanel({
               </div>
             )}
           </dl>
-          {dilution.targetExceedsPaste && (
+          {dilution.targetExceedsPaste && (unknownLiquidGrams === 0 || overDilutionCertain) && (
             <p className="results-hint" role="alert">
               The paste is already more dilute than {dilution.soapConcentrationPercent}% — adding water
               only lowers the concentration further.
             </p>
           )}
-          {altLiquidWaterGrams > 0 && (
+          {dilution.targetExceedsPaste && unknownLiquidGrams > 0 && !overDilutionCertain && (
+            // Suppressed, not reworded: targetExceedsPaste is a factual claim about the
+            // paste, and it was derived from an ASSUMED water content. Asserting it can tell
+            // the user a batch is finished when it still needs hundreds of grams of water.
+            <p className="results-hint">
+              Can&apos;t tell whether {dilution.soapConcentrationPercent}% is reachable —{' '}
+              {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
+              declared water content. Declare its % water in Split liquid.
+            </p>
+          )}
+          {altLiquidWaterGrams > 0 && unknownLiquidGrams === 0 && (
             <p className="results-hint">
               Already {formatWeight(altLiquidWaterGrams, weightUnit)} lighter: that much
               water came in with the alternative liquid and is counted as part of the paste.
               Top up with plain distilled water only.
+            </p>
+          )}
+          {altLiquidWaterGrams > 0 && unknownLiquidGrams > 0 && (
+            <p className="results-hint">
+              {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
+              declared water content — it is counted as all water, so{' '}
+              {formatWeight(dilution.dilutionWaterGrams, weightUnit)} is the LEAST you will
+              need. Declare its % water, or dilute in increments and check by weight.
             </p>
           )}
           <p className="results-hint">Typical: coconut ≤40% · castile ~25% · blends 25–35%.</p>
