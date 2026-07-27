@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  cToF,
   CP_OVERFLOW_RISK_F,
   CP_SOAPING_TEMP_BANDS,
   fToC,
@@ -35,5 +36,13 @@ describe('CP soaping-temperature bands', () => {
     expect(fToC(215)).toBe(102);
     expect(fToC(32)).toBe(0);
     expect(fToC(160)).toBe(71);
+  });
+
+  it('converts °C to °F and round-trips stably at 1 °C steps', () => {
+    expect(cToF(52)).toBe(126);
+    expect(cToF(0)).toBe(32);
+    expect(cToF(102)).toBe(216);
+    // Round-trip stability is what lets the UI edit in °C over °F storage.
+    for (let c = 10; c <= 120; c++) expect(fToC(cToF(c))).toBe(c);
   });
 });

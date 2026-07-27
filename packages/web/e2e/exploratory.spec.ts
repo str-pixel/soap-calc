@@ -641,12 +641,25 @@ test.describe('pricing & profit', () => {
 
 test('soaping-temperature slider: CP defaults to 125 °F; 165 raises the overflow warning', async ({ page }) => {
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Soaping temperature' }) }).first();
-  await expect(section.getByLabel('Soaping temperature')).toHaveValue('125');
+  // The control edits in °C (the setting still stores °F).
+  await expect(section.getByLabel('Soaping temperature')).toHaveValue('52');
   await expect(section).toContainText('52 °C (125 °F)');
+  // Typing must survive keystroke by keystroke: an earlier draft-plus-effect version
+  // clamped each transient value and rewrote the field ("5" became "16"), which a
+  // fireEvent.change unit test cannot catch because it sets the whole value at once.
+  const tempInput = section.getByLabel('Soaping temperature');
+  await tempInput.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.type('5');
+  await expect(tempInput).toHaveValue('5');
+  await page.keyboard.type('2');
+  await expect(tempInput).toHaveValue('52');
+
   // The starter recipe's 33%-of-oils water is ~2.4:1 at the default 125 °F — the source's
   // "gel/partial gel likely at higher water" case.
   await expect(section).toContainText(/Gel phase: likely/i);
-  await section.getByLabel('Soaping temperature').fill('165');
+  await section.getByLabel('Soaping temperature').fill('74'); // 74 °C = 165 °F, past the 160 °F line
   await expect(page.locator('.message-list--insights').filter({ hasText: /overheat and overflow/i })).toHaveCount(1);
 });
 
