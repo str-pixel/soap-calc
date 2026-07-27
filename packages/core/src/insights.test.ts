@@ -51,15 +51,22 @@ describe('no-superfat-margin caustic guard (NaOH bar soap)', () => {
   });
 });
 
-describe('bar-soap lye-concentration warnings are exempt for liquid soap', () => {
-  it('warns on a high concentration for a bar recipe', () => {
-    expect(has({ ...base, lyeConcentrationPercent: 45 }, 'lye_conc_high')).toBe(true);
+describe('lye-concentration band warnings were removed as unsourced', () => {
+  it('does not warn on a high or low concentration for any process', () => {
+    // Removed deliberately: no source states either threshold, and the high one fired across
+    // part of the CP source's own recommended water-discount band and on low-water formulas a
+    // science source tested and cleared up to 50%. Reinstating either needs a source first.
+    for (const isLiquidSoap of [false, true]) {
+      expect(has({ ...base, lyeConcentrationPercent: 45, isLiquidSoap }, 'lye_conc_high')).toBe(false);
+      expect(has({ ...base, lyeConcentrationPercent: 15, isLiquidSoap }, 'lye_conc_low')).toBe(false);
+    }
   });
 
-  it('does not warn on the same concentration for liquid soap', () => {
-    expect(has({ ...base, lyeConcentrationPercent: 45, isLiquidSoap: true }, 'lye_conc_high')).toBe(
-      false,
-    );
+  it('still warns at the one boundary the sources DO state — water below lye', () => {
+    // 50% concentration (1:1) is the stated floor; below that water the alkali cannot
+    // dissolve. water_below_lye carries that with the correct reason.
+    expect(has({ ...base, waterGrams: 100, lyeGrams: 140 }, 'water_below_lye')).toBe(true);
+    expect(has({ ...base, waterGrams: 300, lyeGrams: 140 }, 'water_below_lye')).toBe(false);
   });
 });
 

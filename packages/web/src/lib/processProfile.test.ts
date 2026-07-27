@@ -159,3 +159,23 @@ describe('soaping-temperature ranges and clamp (2026-07-27)', () => {
     expect(effectiveSoapingTempF({ soapingTempF: 'abc' }, 'hp-hthp')).toBe(215);
   });
 });
+
+describe('HP water band matches the source', () => {
+  it('uses the printed discount and high-water bands, not an interpolation', () => {
+    // Source: a water discount is 25-30% in hot process; a high water concentration is
+    // 32-40%; 40%+ is where the defects start. The old [28,32]/[34,40] split contradicted
+    // all three and left 32-34% — inside the source's HIGH tier — in the inter-tier gap.
+    for (const variant of ['hp-lthp', 'hp-hthp', 'hp-fluid'] as const) {
+      const band = processProfileById(variant)!.waterBand!;
+      expect(band.lowTier).toEqual([25, 30]);
+      expect(band.highTier).toEqual([32, 40]);
+      expect(band.riversAbove).toBe(40);
+    }
+  });
+
+  it('leaves no gap between the tiers that the source treats as high water', () => {
+    const band = processProfileById('hp-lthp')!.waterBand!;
+    // 32% is the first high-tier value in the source and must be inside the high tier.
+    expect(band.highTier[0]).toBeLessThanOrEqual(32);
+  });
+});

@@ -406,13 +406,14 @@ describe('analyzeFormulation', () => {
     expect(excess!.message).toContain('9–10.5');
   });
 
-  it('suppresses the bar-soap lye-concentration warnings for LS', () => {
-    const cpHigh = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent: 40, isLiquidSoap: false });
-    expect(cpHigh.some((i) => i.code === 'lye_conc_high')).toBe(true);
-    const lsHigh = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent: 40, isLiquidSoap: true });
-    expect(lsHigh.some((i) => i.code === 'lye_conc_high')).toBe(false);
-    const lsLow = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent: 15, isLiquidSoap: true });
-    expect(lsLow.some((i) => i.code === 'lye_conc_low')).toBe(false);
+  it('emits no lye-concentration band warnings at all, for any process', () => {
+    // Both thresholds were removed as unsourced; the sourced boundary is 1:1 (water_below_lye).
+    for (const isLiquidSoap of [false, true]) {
+      for (const lyeConcentrationPercent of [15, 40, 45]) {
+        const out = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent, isLiquidSoap });
+        expect(out.some((i) => i.code === 'lye_conc_high' || i.code === 'lye_conc_low')).toBe(false);
+      }
+    }
   });
 
   it('suppresses high_cleansing_low_superfat for LS but still fires for CP/HP', () => {
