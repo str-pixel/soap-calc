@@ -4,6 +4,7 @@ import {
   type FattyAcidProfile,
 } from './fatty-acids.js';
 import { DEFAULT_KOH_BLEND_PERCENT, type LyeType, type WaterMode } from './lye.js';
+import { CP_OVERFLOW_RISK_F } from './soaping-temperature.js';
 import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
 import {
   additiveMatches,
@@ -90,6 +91,9 @@ export type FormulationAnalysisInput = {
   /** Cook vessel volume ÷ batch volume, computed by the caller (HP only). Gates
    * hp_vessel_too_small; undefined omits the check entirely (the guard input is optional). */
   hpVesselMultiple?: number;
+  /** EFFECTIVE (clamped) soaping temperature in °F. Only the CP overflow guard reads it —
+   * HP/LS callers may pass their cook temperature, the gate ignores them by process. */
+  soapingTempF?: number;
 };
 
 export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
@@ -338,6 +342,22 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         input.process === 'hp'
           ? 'Combined sugar-family additives (sugar/sorbitol, honey) exceed ~5% of oil weight — the cook can scorch or volcano. Consider reducing the total dose.'
           : `Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~${sugarCeiling}% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.`,
+    });
+  }
+
+  // CP overflow guard: a starting temperature past 160 °F sharply raises volcano risk
+  // (verified constant; see CP_OVERFLOW_RISK_F for the °F/°C typo note). CP-gated on
+  // purpose — HP and LS run their cooks at 215 °F by design.
+  if (
+    input.process === 'cp' &&
+    input.soapingTempF !== undefined &&
+    input.soapingTempF > CP_OVERFLOW_RISK_F
+  ) {
+    insights.push({
+      level: 'warning',
+      code: 'soaping_temp_high',
+      message:
+        'Starting temperature above 160 °F (71 °C) — the batch can overheat and overflow the mold. Let the oils and lye cool below 160 °F before combining.',
     });
   }
 
