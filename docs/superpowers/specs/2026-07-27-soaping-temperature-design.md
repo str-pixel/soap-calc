@@ -22,9 +22,10 @@ four-band table with distinct effects, plus three hard relationships — none of
 | 80–100 | 27–37.7 | Slowed | Higher water, sugars/purées, high castor |
 | 64.4–86 | 18–30 | Slowed (most) | High water, low palmitic/stearic, high sugar/sorbitol, milks |
 
-Bands overlap by design (86–100 sits in two) — the source presents them as overlapping
-examples, not a partition. Resolution rule: pick the **highest** band whose low bound the
-temperature meets, so 100 °F reads as "80–100 slowed", 130 °F as "120–130 average".
+Bands overlap by design (86–100 sits in two) and the bottom band is open-ended ("or
+lower"). Resolution is therefore **threshold-based and total**: ≥140 accelerated, ≥120
+average, ≥80 slowed, below that slowed-most — no temperature resolves to nothing. The
+printed ranges are display copy only.
 
 **Hard relationships:**
 - Starting temperature **over 160 °F** significantly increases mold-overflow risk. (The
@@ -62,11 +63,12 @@ export type SoapingTempBand = {
   note: string;
 };
 
-/** CP starting-temperature bands, highest-first (the resolution rule above). */
+/** CP starting-temperature bands, highest-first (threshold resolution, total). */
 export const CP_SOAPING_TEMP_BANDS: readonly SoapingTempBand[];
 
-/** Band whose range contains tempF, highest-first; null when below every band. */
-export function soapingTempBand(tempF: number): SoapingTempBand | null;
+/** The band tempF falls in — total: every finite temperature resolves to a band
+ * (thresholds ≥140 / ≥120 / ≥80 / below). */
+export function soapingTempBand(tempF: number): SoapingTempBand;
 
 /** Above this CP starting temperature, mold-overflow risk rises sharply. */
 export const CP_OVERFLOW_RISK_F = 160;
@@ -76,7 +78,9 @@ export function fToC(tempF: number): number;
 
 ### 2 · Core — trace speed gains temperature
 
-`estimateTraceSpeed` takes `soapingTempF?: number`. Relative to the "average" 120–130 band:
+`estimateTraceSpeed` takes `soapingTempF?: number`. **The web passes it only for CP** —
+the deltas are calibrated against CP's "average" 120–130 band; feeding HP's 215 °F cook
+temperature through a CP calibration would double-count what HP's process already implies. Relative to the "average" 120–130 band:
 `>=140 → +15`, `120–139 → 0`, `100–119 → −7`, `80–99 → −15`, `<80 → −20`; driver strings
 `'warm soaping temperature'` / `'cool soaping temperature'`. Omitting the arg keeps today's
 behavior exactly (pinned by a regression test). These weights are heuristic and tunable in
@@ -95,12 +99,18 @@ warn on correct HP practice. New input field `soapingTempF?: number`.
 `normalizeSettings` coerces via the existing `settingString` pattern; `DEFAULT_SETTINGS`
 carries the CP default `'125'` (mid of the most-recommended band).
 
-**Per-process default + clamp** — `coerceSettingsForProcess` currently only fixes `lyeType`
-and `processVariant`. It gains: when the current `soapingTempF` falls outside the target
-process's slider range, reset it to that process's default. This is the same
-stale-value-after-switch class it already guards (an HTHP 215 °F carried into CP is not a
-CP soaping temperature). Serialization: `recipeFile` + draft storage inherit it through the
-existing settings paths; an absent value in an old saved recipe falls back to the default.
+**Staleness guard: clamp at read, never rewrite (review amendment).** The app keeps
+independent per-process drafts, so cross-process staleness is rare — the real path is a
+VARIANT switch inside a process (LTHP 140 °F → HTHP, floor 205). Rather than extending
+`coerceSettingsForProcess` (which never sees variant switches), a single
+`effectiveSoapingTempF(settings, variant)` clamps the stored value into the variant's
+slider range at READ time; the panel, insights, trace speed and batch sheet all consume
+the effective value. The stored setting changes only when the user moves the slider — a
+tab/variant detour loses nothing. Per-process seeding: each process's `defaultSettings`
+partial carries its own default (CP '125', HP/LS their variant defaults), so new drafts
+start right rather than relying on the clamp. Serialization: `recipeFile` + draft storage
+inherit the field through the existing settings paths; an absent value in an old saved
+recipe falls back to the default and, failing that, the clamp.
 
 ### 5 · Web — slider range per process
 
@@ -117,9 +127,10 @@ user's "after the oils section".
 
 - Range input, step 1 °F, `aria-label="Soaping temperature"`, value read/written as °F.
 - Readout: `52 °C (125 °F)`.
-- Under it: the resolved band's effect + note for CP; for HP/LS the variant's cook-temp
-  target from the profile (with the existing verified/estimate hedging — unverified variants
-  keep their "≈" treatment).
+- Under it: the resolved band's effect + note — **CP only** (the bands are bar-soap copy:
+  gel phase, molds). Every other variant, including CPLS, shows its profile-based target
+  (or, for CPLS, a neutral no-external-heat note) with the existing verified/estimate
+  hedging — unverified variants keep their "≈" treatment.
 - The overflow warning surfaces through the existing insights list, not as panel-local copy
   (one source of truth for warnings).
 
@@ -141,13 +152,14 @@ be the notable gap.
 
 ## Test plan
 
-Core: band resolution incl. the overlap rule (100 °F → slowed band; 130 °F → average) and
-below-range null; `CP_OVERFLOW_RISK_F` pinned at 160; `fToC` spot values; trace speed
+Core: band resolution incl. the overlap rule (100 °F → slowed band; 130 °F → average),
+totality at the edges (165 °F → accelerated; 55 °F → slowed-most); `CP_OVERFLOW_RISK_F` pinned at 160; `fToC` spot values; trace speed
 unchanged without the arg (regression), faster at 150 vs 125, slower at 70 vs 125, driver
 strings; `soaping_temp_high` fires >160 under CP only, silent at exactly 160, silent for
 HP/LS at 215.
 Web: default 125 for CP; slider writes the setting; readout shows both units; band text
-switches with temperature; HP shows the variant target instead of CP bands; switching
-CP→HP→CP resets an out-of-range value; a saved recipe without the field loads at the
-default; batch sheet carries the figure.
+switches with temperature; HP shows the variant target instead of CP bands; effectiveSoapingTempF clamps an
+out-of-range stored value into the variant range without rewriting the setting (LTHP 140
+viewed under HTHP reads 205; back under LTHP reads 140 again); a saved recipe without the
+field loads at the default; batch sheet carries the effective figure.
 Full suite + `tsc --noEmit` + build + e2e.
