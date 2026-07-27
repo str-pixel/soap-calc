@@ -827,3 +827,74 @@ describe('magnesium-salt caution (salt review 2026-07-27)', () => {
   });
 });
 
+
+describe('LS split-liquid advisories (LS audit 2026-07-27)', () => {
+  const ls = {
+    ...base,
+    superfatPercent: 2,
+    isLiquidSoap: true,
+    process: 'ls' as const,
+    splitLiquidEnabled: true,
+    splitLiquidGrams: 200,
+  };
+
+  describe('ls_split_liquid_fat_superfat', () => {
+    it('warns that the liquid fat rides on top of the stated superfat', () => {
+      // 200 g canned coconut milk = 42 g fat on 1,000 g oils = 4.2 points over the stated 2%.
+      const insight = analyzeFormulation({ ...ls, lsSplitLiquidFatShiftPercent: 4.2 }).find(
+        (i) => i.code === 'ls_split_liquid_fat_superfat',
+      );
+      expect(insight?.level).toBe('warning');
+      // Both figures must appear: what was added, and where superfat actually lands.
+      expect(insight?.message).toContain('4.2');
+      expect(insight?.message).toContain('6.2');
+    });
+
+    it('stays quiet below half a point — lean liquids are not worth a warning', () => {
+      expect(has({ ...ls, lsSplitLiquidFatShiftPercent: 0.3 }, 'ls_split_liquid_fat_superfat')).toBe(
+        false,
+      );
+      expect(has({ ...ls, lsSplitLiquidFatShiftPercent: 0 }, 'ls_split_liquid_fat_superfat')).toBe(
+        false,
+      );
+      expect(has(ls, 'ls_split_liquid_fat_superfat')).toBe(false);
+    });
+
+    it('is LS-only: a bar shrugs off the same fat', () => {
+      for (const process of ['cp', 'hp'] as const) {
+        expect(
+          has(
+            { ...ls, process, isLiquidSoap: false, lsSplitLiquidFatShiftPercent: 4.2 },
+            'ls_split_liquid_fat_superfat',
+          ),
+        ).toBe(false);
+      }
+    });
+  });
+
+  describe('ls_split_liquid_not_dilution', () => {
+    it('tells an LS recipe with a split liquid to dilute with plain water', () => {
+      const insight = analyzeFormulation(ls).find(
+        (i) => i.code === 'ls_split_liquid_not_dilution',
+      );
+      expect(insight?.level).toBe('info');
+      expect(insight?.message).toMatch(/distilled water/i);
+      expect(insight?.message).toMatch(/preservative/i);
+    });
+
+    it('does not fire without a split liquid, or outside LS', () => {
+      expect(has({ ...ls, splitLiquidEnabled: false, splitLiquidGrams: null }, 'ls_split_liquid_not_dilution')).toBe(false);
+      expect(
+        has({ ...ls, process: 'cp', isLiquidSoap: false }, 'ls_split_liquid_not_dilution'),
+      ).toBe(false);
+    });
+
+    it('does not fire for glycerin alone — it is welcome in the dilution water', () => {
+      // The solvent preset brings no water and carries no microbial load; the caller
+      // reports zero paste water and zero non-solvent liquid for a glycerin-only recipe.
+      expect(
+        has({ ...ls, lsSplitLiquidIsSolventOnly: true }, 'ls_split_liquid_not_dilution'),
+      ).toBe(false);
+    });
+  });
+});

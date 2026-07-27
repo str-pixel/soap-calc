@@ -185,3 +185,38 @@ test('explains what each sizing basis means', () => {
   expect(tip).toMatch(/carved out of that total/i);
   expect(tip).toMatch(/equal parts water and lye/i);
 });
+
+test('the preset picker only offers liquids the process allows', () => {
+  renderPanel({ process: 'cp' });
+  const cpOptions = Array.from(
+    screen.getByRole('combobox', { name: /liquid preset/i }).querySelectorAll('option'),
+  ).map((o) => o.textContent);
+  expect(cpOptions).toContain('Vinegar (5%)');
+  cleanup();
+
+  // Vinegar's product is a bar hardener; liquid soap has no bar, so it is withheld there.
+  renderPanel({ process: 'ls' });
+  const lsOptions = Array.from(
+    screen.getByRole('combobox', { name: /liquid preset/i }).querySelectorAll('option'),
+  ).map((o) => o.textContent);
+  expect(lsOptions).not.toContain('Vinegar (5%)');
+  expect(lsOptions).toContain('Milk (dairy or plant)');
+  expect(lsOptions).toContain('Glycerin');
+});
+
+test('LS explains the dilution stage these rows never touch; CP says nothing about it', () => {
+  renderPanel({ process: 'ls' });
+  expect(screen.getByText(/dilute with plain distilled\s+water only/i)).toBeTruthy();
+  cleanup();
+  renderPanel({ process: 'cp' });
+  expect(screen.queryByText(/dilute with plain distilled/i)).toBeNull();
+});
+
+test('a preset note gains its LS-specific half only under LS', () => {
+  const rows = [ROW({ presetKey: 'coconut-milk-canned', name: 'Coconut milk (canned)' })];
+  renderPanel({ process: 'cp', rows });
+  expect(screen.queryByText(/lands as extra superfat/i)).toBeNull();
+  cleanup();
+  renderPanel({ process: 'ls', rows });
+  expect(screen.getByText(/lands as extra superfat/i)).toBeTruthy();
+});

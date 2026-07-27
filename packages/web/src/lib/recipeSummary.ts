@@ -170,7 +170,10 @@ export function splitLiquidProcedureStep(input: {
     process === 'hp'
       ? `Stir ${amount} ${name} into the cooked paste.`
       : process === 'ls'
-        ? `Add ${amount} ${name} to the diluted soap.`
+        ? // Before the cook, never into the diluted soap: the cook is what sterilises a
+          // sugary or proteinaceous liquid, and a liquid soap sits at room temperature for
+          // months afterwards. The dilution stage is plain distilled water only.
+          `Blend in ${amount} ${name} at trace, before the cook — never into the diluted soap.`
         : `Blend in ${amount} ${name} at light trace.`;
   return { addAt: 'trace', step: trace };
 }
@@ -200,11 +203,15 @@ export function buildAddOrderSteps(input: AddOrderInput): string[] {
       [
         `Weigh the oils — ${oil} total — and heat to melt.`,
         `Weigh ${lye} KOH and ${water} water; add the KOH to the water and stir until clear.`,
-        `Combine the lye solution with the oils and cook to a thick, translucent paste.`,
+        `Combine the lye solution with the oils and blend to trace.`,
+        `Cook to a thick, translucent paste.`,
         `Dilute the paste with hot water, then blend in fragrance and additives.`,
         `Bottle and rest 1–2 weeks before use.`,
       ],
-      { oils: 1, lye: 2, trace: 4 },
+      // trace: 3 — between blending to trace and the cook. Splitting the old combined
+      // "combine and cook" step is what gives an at-trace liquid an honest home; slotting
+      // it at the end would have put it in the diluted soap, which the process forbids.
+      { oils: 1, lye: 2, trace: 3 },
     );
   }
 

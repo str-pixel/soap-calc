@@ -1,7 +1,8 @@
 import {
   ADDITIVE_STAGE_LABELS,
-  ALTERNATIVE_LIQUID_GUIDE,
+  alternativeLiquidNoteFor,
   alternativeLiquidPreset,
+  alternativeLiquidsForProcess,
   type LyeSolutionWaterStatus,
   type SplitLiquidWaterSuggestion,
   type WaterMode,
@@ -72,6 +73,11 @@ export function SplitLiquidPanel({
   // parts-of-the-lye-solution mode expressible under LS's native water mode).
   const budgetModesAvailable =
     waterMode === 'percent_of_oils' || waterMode === 'lye_water_ratio';
+  // A liquid withheld from this process must not be offered here. Presets already chosen
+  // still resolve by key (alternativeLiquidPreset is unfiltered), so a recipe saved under
+  // CP keeps showing its vinegar row after a switch to LS rather than silently losing it.
+  const presetsForProcess = alternativeLiquidsForProcess(process);
+  const isLiquidSoap = process === 'ls';
   const gramsByKey = new Map(resolvedRows.map(({ row, grams }) => [row.key, grams]));
   const totalGrams = resolvedRows.reduce((sum, { grams }) => sum + (grams ?? 0), 0);
 
@@ -119,6 +125,14 @@ export function SplitLiquidPanel({
           <p className="panel__subtitle">
             Minimum water in lye; alternative liquids added separately
           </p>
+          {isLiquidSoap && (
+            <p className="split-liquid-note">
+              Liquid soap has a third liquid stage these rows never touch: the dilution
+              water. Everything sized here joins the paste before the cook, and its water
+              is already counted against the dilution figure — dilute with plain distilled
+              water only.
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -161,7 +175,7 @@ export function SplitLiquidPanel({
                     }}
                   >
                     <option value="">Custom…</option>
-                    {ALTERNATIVE_LIQUID_GUIDE.map((p) => (
+                    {presetsForProcess.map((p) => (
                       <option key={p.key} value={p.key}>
                         {p.label}
                       </option>
@@ -250,7 +264,9 @@ export function SplitLiquidPanel({
                     <InfoTip term="add at">
                       Where the liquid joins the batch. At trace (after the oils and lye are
                       blended) is the safest default for milks and other sugary liquids; in
-                      the lye water exposes them to the hottest step.
+                      the lye water exposes them to the hottest step. All three stages come
+                      before a liquid-soap cook — dilution is deliberately not offered, since
+                      anything added after the cook is never sterilised by it.
                     </InfoTip>
                   </span>
                   <select
@@ -286,7 +302,9 @@ export function SplitLiquidPanel({
                     lye, freeze the liquid and add the lye slowly.
                   </p>
                 )}
-                {preset?.note && <p className="split-liquid-note">{preset.note}</p>}
+                {preset && alternativeLiquidNoteFor(preset, process) && (
+                  <p className="split-liquid-note">{alternativeLiquidNoteFor(preset, process)}</p>
+                )}
               </div>
             );
           })}

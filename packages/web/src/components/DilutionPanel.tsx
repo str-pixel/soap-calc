@@ -10,6 +10,9 @@ type DilutionPanelProps = {
   /** Bottle size in ml for the "bottles filled" readout below. */
   bottleSizeMl: string;
   onBottleSizeMlChange: (value: string) => void;
+  /** Water the recipe's alternative liquids already put in the paste. Deducted from the
+   * dilution figure upstream; passed here only so the readout can say so. */
+  altLiquidWaterGrams?: number;
 };
 
 export function DilutionPanel({
@@ -19,6 +22,7 @@ export function DilutionPanel({
   weightUnit,
   bottleSizeMl,
   onBottleSizeMlChange,
+  altLiquidWaterGrams = 0,
 }: DilutionPanelProps) {
   const bottleMl = Number(bottleSizeMl);
   const bottleCount =
@@ -92,6 +96,13 @@ export function DilutionPanel({
             <p className="results-hint" role="alert">
               The paste is already more dilute than {dilution.soapConcentrationPercent}% — adding water
               only lowers the concentration further.
+            </p>
+          )}
+          {altLiquidWaterGrams > 0 && (
+            <p className="results-hint">
+              Already {formatWeight(altLiquidWaterGrams, weightUnit)} lighter: that much
+              water came in with the alternative liquid and is counted as part of the paste.
+              Top up with plain distilled water only.
             </p>
           )}
           <p className="results-hint">Typical: coconut ≤40% · castile ~25% · blends 25–35%.</p>

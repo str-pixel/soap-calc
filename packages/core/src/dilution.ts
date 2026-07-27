@@ -2,7 +2,11 @@ import { DEFAULT_KOH_PURITY, DEFAULT_NAOH_PURITY } from './lye.js';
 
 export type DilutionInput = {
   anhydrousGrams: number; // oils + lye (water-free soap solids)
-  cookWaterGrams: number; // water already in the paste (the lye water)
+  /** Water already in the paste when dilution starts: the lye water PLUS the water any
+   * alternative liquid brought in at the lye/oils/trace stages (splitLiquidPasteWaterGrams).
+   * Under-reporting it makes the calc prescribe dilution water that is already there, and
+   * the finished soap lands below its target concentration. */
+  cookWaterGrams: number;
   kohGrams: number; // as-weighed
   naohGrams: number; // as-weighed
   soapConcentrationPercent: number;

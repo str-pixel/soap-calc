@@ -128,6 +128,11 @@ type FormulationInsightOptions = {
   /** Glycerin delivered as a lye-solution solvent (split row or LS additive) — drives the
    * glycerin_solvent_dilution advisory (core gates it to LS). */
   lsGlycerinSolvent?: boolean;
+  /** Superfat points the split liquids' own fat adds on top of the stated superfat
+   * (core gates the warning to LS, where it decides whether the soap separates). */
+  lsSplitLiquidFatShiftPercent?: number;
+  /** Every split liquid is glycerin — suppresses the dilute-with-plain-water advisory. */
+  lsSplitLiquidIsSolventOnly?: boolean;
   /** EFFECTIVE (clamped) soaping temperature, °F. Feeds the CP overflow guard, and the
    * trace-speed temperature term for CP only — the term is calibrated against CP's
    * 120–130 °F average band, and an HP cook temperature through it would double-count
@@ -221,6 +226,8 @@ export function useFormulationInsights(
       isLiquidSoap: options.isLiquidSoap ?? false,
       process: options.process,
       lsGlycerinSolvent: options.lsGlycerinSolvent,
+      lsSplitLiquidFatShiftPercent: options.lsSplitLiquidFatShiftPercent,
+      lsSplitLiquidIsSolventOnly: options.lsSplitLiquidIsSolventOnly,
       soapingTempF: options.soapingTempF,
       hpYogurtPercent:
         options.process === 'hp'
@@ -268,6 +275,8 @@ export function useFormulationInsights(
     // here — list the direct inputs like every other options.* field above.
     options.soapingTempF,
     options.lsGlycerinSolvent,
+    options.lsSplitLiquidFatShiftPercent,
+    options.lsSplitLiquidIsSolventOnly,
   ]);
 
   return { insights };

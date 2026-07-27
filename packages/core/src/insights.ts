@@ -80,6 +80,15 @@ export type FormulationAnalysisInput = {
    * or the LS glycerin additive). Advisory only: the source material gives no numeric
    * model for how much less dilution water a glycerin recipe needs. */
   lsGlycerinSolvent?: boolean;
+  /** Percentage points of superfat the split liquids' own fat adds on top of the stated
+   * superfat (superfatShiftFromLiquidFat). LS only: no lye is calculated against a milk's
+   * or cream's fat, and liquid soap separates past ~3% superfat where a bar would not
+   * care. Advisory, never a lye adjustment — the caller has fat fractions, not SAP values. */
+  lsSplitLiquidFatShiftPercent?: number;
+  /** True when every split liquid is a solvent (glycerin). Suppresses the
+   * dilute-with-plain-water advisory: glycerin carries no microbial load and is the one
+   * alternative liquid that IS welcome in the dilution water. */
+  lsSplitLiquidIsSolventOnly?: boolean;
   /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
   waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
   /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
@@ -477,6 +486,45 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
       level: 'info',
       code: 'trace_speed',
       message: `Predicted trace speed: ${input.traceSpeedLabel}. ${tip}${driversClause}`,
+    });
+  }
+
+  // Fat riding in on an alternative liquid (milk, cream, canned coconut milk). A bar recipe
+  // ignores it — the classic advice is that milk fat is too small to matter. Liquid soap
+  // cannot: it separates past ~3% superfat, and a fatty liquid can push a compliant 2%
+  // recipe well past that on its own. Advisory, not a lye correction: fat fractions are
+  // composition data, not SAP values, so the fix (lower the superfat, or run a lye excess)
+  // stays the user's call.
+  const fatShift = input.lsSplitLiquidFatShiftPercent ?? 0;
+  if (input.process === 'ls' && Number.isFinite(fatShift) && fatShift >= 0.5) {
+    const effective = input.superfatPercent + fatShift;
+    insights.push({
+      level: 'warning',
+      code: 'ls_split_liquid_fat_superfat',
+      message:
+        `The alternative liquid's own fat gets no lye, adding about ${fatShift.toFixed(1)} points of ` +
+        `superfat on top of the ${input.superfatPercent.toFixed(1)}% you set — an effective ` +
+        `${effective.toFixed(1)}%. Liquid soap clouds and separates past ~3%: lower the superfat ` +
+        `(or run a small lye excess) to absorb it.`,
+    });
+  }
+
+  // Where the liquid may NOT go. The split-liquid stages are all pre-cook, so the app never
+  // offers a dilution stage — this says why, since dilution is the step an LS maker is most
+  // tempted to pour milk or beer into. Glycerin-only recipes are exempt (see the flag).
+  if (
+    input.process === 'ls' &&
+    input.splitLiquidEnabled &&
+    input.splitLiquidGrams !== null &&
+    input.splitLiquidGrams !== undefined &&
+    input.splitLiquidGrams > 0 &&
+    !input.lsSplitLiquidIsSolventOnly
+  ) {
+    insights.push({
+      level: 'info',
+      code: 'ls_split_liquid_not_dilution',
+      message:
+        'Alternative liquids belong in the lye solution or at trace, where the cook sterilises them — never in the dilution water. Dilute with plain distilled water, add a preservative, and filter any sediment after the soap settles.',
     });
   }
 
