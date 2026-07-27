@@ -788,3 +788,42 @@ describe('soaping_temp_high overflow warning (2026-07-27)', () => {
     expect(has({ ...base, process: 'cp' }, 'soaping_temp_high')).toBe(false);
   });
 });
+
+describe('magnesium-salt caution (salt review 2026-07-27)', () => {
+  const withAdditive = (name: string, catalogId = '') =>
+    analyzeFormulation({ ...base, additiveEntries: [{ catalogId, name }] }).map((i) => i.code);
+
+  it('warns on magnesium-bearing salts typed as custom lines', () => {
+    for (const name of ['Epsom salt', 'Dead Sea salt', 'Magnesium sulfate', 'epsom salts']) {
+      expect(withAdditive(name)).toContain('magnesium_salt_scum');
+    }
+  });
+
+  it('stays silent for the salts that behave (table, sea, Himalayan, black lava)', () => {
+    for (const [name, id] of [
+      ['Table salt (NaCl)', 'salt'],
+      ['Sea salt', ''],
+      ['Pink Himalayan salt', ''],
+      ['Black lava salt', ''],
+      ['Sodium lactate', 'sodium-lactate'],
+    ] as const) {
+      expect(withAdditive(name, id)).not.toContain('magnesium_salt_scum');
+    }
+  });
+
+  it('does not fire on a fragrance that merely mentions the words', () => {
+    expect(withAdditive('Dead Sea Breeze fragrance oil')).not.toContain('magnesium_salt_scum');
+  });
+
+  it('fires in every process — magnesium wrecks lather in bar and liquid soap alike', () => {
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      const codes = analyzeFormulation({
+        ...base,
+        process,
+        additiveEntries: [{ catalogId: '', name: 'Epsom salt' }],
+      }).map((i) => i.code);
+      expect(codes).toContain('magnesium_salt_scum');
+    }
+  });
+});
+

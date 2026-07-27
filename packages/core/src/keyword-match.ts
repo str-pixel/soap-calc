@@ -13,6 +13,20 @@ function isLikelyFragranceName(name: string): boolean {
 
 export type NamedCatalogEntry = { catalogId: string; name: string };
 
+/** Name-only keyword match across additive lines, with the same fragrance guard
+ * additiveMatches uses. For substances that have no catalog entry (and shouldn't — e.g.
+ * magnesium salts, which are advised against), where matching on catalogId is meaningless:
+ * passing '' as a catalogId to additiveMatches would match EVERY custom line. */
+export function additiveNameMatches(
+  entries: NamedCatalogEntry[] | undefined,
+  nameKeyword: string,
+): boolean {
+  if (!entries?.length) return false;
+  return entries.some(
+    (entry) => !isLikelyFragranceName(entry.name) && wordBoundaryMatch(entry.name, nameKeyword),
+  );
+}
+
 export function additiveMatches(
   entries: NamedCatalogEntry[] | undefined,
   catalogId: string,
