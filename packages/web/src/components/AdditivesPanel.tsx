@@ -340,8 +340,16 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                 )}
                 {row && row.grams === 0 && line.basis === 'solution' && line.amount !== '' &&
                   parseDoseAmount(line.amount, line.unit) !== null && (
+                  // gramsFromDose returns 0 (not null) against a zero basis, so the row would
+                  // otherwise sit at 0 g with no explanation. Under LS that means the dilution
+                  // is unset; outside LS the finished solution doesn't exist at all, so a
+                  // stray imported line must be pointed at its dose mode rather than at a
+                  // concentration field the process has no field for — same
+                  // render-inertly-but-honestly rule as the mismatched-select guards above.
                   <p className="additive-list__hint" role="alert">
-                    Set the soap concentration (dilution) to size solution-based doses
+                    {process === 'ls'
+                      ? 'Set the soap concentration (dilution) to size solution-based doses'
+                      : 'Dosed against the finished solution, which only liquid soap has — switch this line to % of oil weight'}
                   </p>
                 )}
                 {row?.extraLye && (row.extraLye.naohGrams > 0 || row.extraLye.kohGrams > 0) && (

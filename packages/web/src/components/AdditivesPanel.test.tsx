@@ -524,6 +524,20 @@ describe('dose-basis seeding and display (LS audit)', () => {
     expect(screen.getByText(/Typical 2–6% of oil weight/)).toBeTruthy();
   });
 
+  it('a stray solution row under CP points at the dose mode, not a dilution field CP lacks', () => {
+    // Import preserves basis 'solution' regardless of process (normalizeAdditiveLine), so a
+    // CP recipe can carry one. Telling a CP user to "set the soap concentration" is a dead
+    // end — CP has no such field. Same spirit as the panel's mismatched-select guards:
+    // stray process-scoped state renders inertly but honestly.
+    const line = makeLine({ catalogId: '', name: 'Pearlizer', amount: '5', basis: 'solution' });
+    const zeroRow = { ...makeComputed(line), grams: 0, basis: 'solution' as const };
+    render(
+      <AdditivesPanel additives={[line]} computed={[zeroRow]} weightUnit="g" process="cp" onChange={() => {}} />,
+    );
+    expect(screen.queryByText(/soap concentration/i)).toBeNull();
+    expect(screen.getByText(/only liquid soap has/i)).toBeTruthy();
+  });
+
   it('a solution-based row with no dilution shows the set-concentration hint instead of silent 0 g', () => {
     const line = makeLine({ catalogId: 'pearlizer', name: 'Pearlizer (glycol stearate)', amount: '5', basis: 'solution' });
     const zeroRow = { ...makeComputed(line), grams: 0, basis: 'solution' as const };
