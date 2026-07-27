@@ -643,6 +643,9 @@ test('soaping-temperature slider: CP defaults to 125 °F; 165 raises the overflo
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Soaping temperature' }) }).first();
   await expect(section.getByLabel('Soaping temperature')).toHaveValue('125');
   await expect(section).toContainText('52 °C (125 °F)');
+  // The starter recipe's 33%-of-oils water is ~2.4:1 at the default 125 °F — the source's
+  // "gel/partial gel likely at higher water" case.
+  await expect(section).toContainText(/Gel phase: likely/i);
   await section.getByLabel('Soaping temperature').fill('165');
   await expect(page.locator('.message-list--insights').filter({ hasText: /overheat and overflow/i })).toHaveCount(1);
 });
