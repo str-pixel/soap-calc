@@ -2369,3 +2369,25 @@ a:hover {
     padding: 0;
   }
 }
+
+/* Dilution: intended-use targets. Collapsed by default — it is reference, not a control. */
+.dilution-uses > summary {
+  cursor: pointer;
+}
+.dilution-uses__list {
+  margin: 0.5rem 0 0;
+}
+.dilution-uses__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.15rem 0;
+}
+.dilution-uses__row dt,
+.dilution-uses__row dd {
+  margin: 0;
+}
+.dilution-uses__row--match dt,
+.dilution-uses__row--match dd {
+  font-weight: 600;
+}

@@ -1,4 +1,10 @@
-import { lsBottleCount, type DilutionResult } from '@soap-calc/core';
+import {
+  LS_DILUTION_TARGETS,
+  lsBottleCount,
+  lsConcentrationAboveAllMinimums,
+  lsDilutionUsesFor,
+  type DilutionResult,
+} from '@soap-calc/core';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
@@ -33,6 +39,9 @@ export function DilutionPanel({
   overDilutionCertain = false,
 }: DilutionPanelProps) {
   const bottleMl = Number(bottleSizeMl);
+  // Which intended uses the current target suits — the dilution figure is the one number
+  // with no chemistry to pin it, so the guidance is by product, not by recipe.
+  const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
   const bottleCount =
     dilution && Number.isFinite(bottleMl) && bottleMl > 0
       ? lsBottleCount(dilution.solutionGrams, bottleMl)
@@ -131,7 +140,45 @@ export function DilutionPanel({
               need. Declare its % water, or dilute in increments and check by weight.
             </p>
           )}
-          <p className="results-hint">Typical: coconut ≤40% · castile ~25% · blends 25–35%.</p>
+          <p className="results-hint">
+            Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
+            hold up to ~40% soap, most blends 25–35%, castile ~25%. Past that the soap thickens
+            or sets.
+            {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent))
+              ? ' This target is above what even a coconut-heavy recipe holds as a liquid.'
+              : ''}
+          </p>
+          <details className="results-hint dilution-uses">
+            <summary>
+              {suitedUses.length > 0
+                ? `At ${dilution.soapConcentrationPercent}% this suits ${suitedUses
+                    .map((u) => u.label.toLowerCase())
+                    .join(', ')}`
+                : `No common use calls for ${dilution.soapConcentrationPercent}% — see the usual targets`}
+            </summary>
+            <dl className="dilution-uses__list">
+              {LS_DILUTION_TARGETS.map((t) => (
+                <div
+                  key={t.key}
+                  className={
+                    suitedUses.some((u) => u.key === t.key)
+                      ? 'dilution-uses__row dilution-uses__row--match'
+                      : 'dilution-uses__row'
+                  }
+                >
+                  <dt>{t.label}</dt>
+                  <dd>
+                    {t.low === t.high ? `${t.low}%` : `${t.low}–${t.high}%`} soap
+                    {t.note ? <span className="results-excluded"> {t.note}</span> : null}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p>
+              Diluting further and thickening with salt is the cheaper way to a thick soap —
+              water costs a fraction of what the oils did. Not recommended for hair.
+            </p>
+          </details>
         </>
       ) : (
         <p className="results-hint">Enter oils and a target concentration (1–99%) to compute dilution.</p>
