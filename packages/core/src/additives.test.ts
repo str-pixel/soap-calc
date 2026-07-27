@@ -156,8 +156,10 @@ describe('additive catalog book audit (2026-07-26)', () => {
     expect(catalogEntryById('jojoba')).toBeUndefined();
   });
 
-  it('splits sugar and sorbitol: sugar keeps its id at 0.5–2%, sorbitol is its own entry at 1–5%', () => {
+  it('splits sugar and sorbitol: separate entries, both 0.5–2% base (CP-audited)', () => {
     // id stays 'sugar-sorbitol' so recipes saved before the split still resolve.
+    // (Sorbitol's base was 1–5 until the 2026-07-27 sorbitol-vs-ceiling investigation
+    // found that figure belongs to HP/LS; CP is "same as sugar" — see the entry comment.)
     const sugar = catalogEntryById('sugar-sorbitol');
     expect(sugar?.name).toBe('Sugar');
     expect(sugar?.typicalLow).toBe(0.5);
@@ -166,8 +168,8 @@ describe('additive catalog book audit (2026-07-26)', () => {
 
     const sorbitol = catalogEntryById('sorbitol');
     expect(sorbitol?.name).toBe('Sorbitol');
-    expect(sorbitol?.typicalLow).toBe(1);
-    expect(sorbitol?.typicalHigh).toBe(5);
+    expect(sorbitol?.typicalLow).toBe(0.5);
+    expect(sorbitol?.typicalHigh).toBe(2);
     expect(sorbitol?.defaultStage).toBe('trace');
     expect(sorbitol?.processes).toBeUndefined();
     expect(sorbitol?.hazards).toContain('can tunnel/overheat');
@@ -384,5 +386,24 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
   it('finished soap extends to LS', () => {
     expect(catalogEntryById('finished-soap')?.processes).toEqual(['hp', 'ls']);
     expect(catalogEntriesForProcess('ls').some((e) => e.id === 'finished-soap')).toBe(true);
+  });
+});
+
+describe('sorbitol mirrors sugar per process (CP source: "same suggested usage rates as sugar")', () => {
+  it('CP 0.5–2 (tested to 4 lives in the ceiling, not the range); HP/LS 1–5', () => {
+    const base = catalogEntryById('sorbitol')!;
+    const cp = effectiveCatalogEntry(base, 'cp');
+    expect([cp.typicalLow, cp.typicalHigh]).toEqual([0.5, 2]);
+    for (const process of ['hp', 'ls'] as const) {
+      const eff = effectiveCatalogEntry(base, process);
+      expect([eff.typicalLow, eff.typicalHigh]).toEqual([1, 5]);
+    }
+    // Structural mirror of the sugar entry — the source's own claim.
+    const sugar = catalogEntryById('sugar-sorbitol')!;
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      const s = effectiveCatalogEntry(sugar, process);
+      const so = effectiveCatalogEntry(base, process);
+      expect([so.typicalLow, so.typicalHigh]).toEqual([s.typicalLow, s.typicalHigh]);
+    }
   });
 });

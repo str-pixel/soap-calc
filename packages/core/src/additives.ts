@@ -86,14 +86,22 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     processes: ['ls'],
   },
   {
-    // Sorbitol — sugar alcohol with a stronger lather effect than sucrose, tolerating a
-    // higher dose; same overheat behavior as other sugars.
+    // Sorbitol — sugar alcohol with a stronger lather effect than sucrose; same overheat
+    // behavior as other sugars. The CP usage-rates passage is explicit that sorbitol takes
+    // "the same suggested usage rates as sugar" (author-tested at 4% CP — the family
+    // ceiling, not the typical range), so this entry mirrors the sugar entry per process.
+    // A general-chapter 1–5% figure was previously mistaken for the CP range — it belongs
+    // to HP/LS, whose sources both give 1–5.
     id: 'sorbitol',
     name: 'Sorbitol',
-    typicalLow: 1,
-    typicalHigh: 5,
+    typicalLow: 0.5,
+    typicalHigh: 2,
     defaultStage: 'trace',
     hazards: ['can tunnel/overheat'],
+    processOverrides: {
+      hp: { typicalLow: 1, typicalHigh: 5 },
+      ls: { typicalLow: 1, typicalHigh: 5 },
+    },
   },
   {
     id: 'chelator',
