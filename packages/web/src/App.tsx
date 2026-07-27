@@ -442,6 +442,7 @@ export default function App() {
                 weightUnit={weightUnit}
                 bottleSizeMl={bottleSizeMl}
                 onBottleSizeMlChange={setBottleSizeMl}
+                altLiquidWaterGrams={vm.splitLiquidPasteWater}
               />
             )}
 

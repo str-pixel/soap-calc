@@ -97,7 +97,10 @@ test('buildAddOrderSteps switches copy for liquid soap and hot process', () => {
     process: 'ls', lyeType: 'koh', totalOilGrams: 400, lyeGrams: 90, waterGrams: 270, weightUnit: 'g',
   });
   expect(ls[1]).toContain('KOH');
-  expect(ls[4]).toContain('Bottle and rest 1–2 weeks');
+  // Pinned to the END rather than an index — LS gained a step when "combine and cook" split
+  // into blend-to-trace + cook, so an at-trace liquid has somewhere to go before the cook.
+  expect(ls[ls.length - 1]).toContain('Bottle and rest 1–2 weeks');
+  expect(ls.join(' ')).toContain('blend to trace');
 
   const hp = buildAddOrderSteps({
     process: 'hp', lyeType: 'naoh', totalOilGrams: 400, lyeGrams: 56, waterGrams: 130, weightUnit: 'g',
@@ -207,13 +210,17 @@ test('HP steps stir the liquid into the cooked paste, without repeating "after t
   expect(idx).toBeGreaterThan(steps.findIndex((s) => s.includes('cook to a thick')));
 });
 
-test('LS steps add the liquid to the diluted soap', () => {
+test('LS steps add the liquid at trace, before the cook — never to the diluted soap', () => {
+  // The cook is what sterilises a sugary liquid, and the dilution stage is plain distilled
+  // water only; an at-trace liquid that landed after dilution would contradict both the
+  // panel guidance and the dilution math (which counts its water as already in the paste).
   const steps = buildAddOrderSteps({
     ...CP_BASE, process: 'ls', splitLiquidRows: [{ row: SPLIT(), grams: 200 }],
   });
   const idx = steps.findIndex((s) => s.includes('goat milk'));
-  expect(steps[idx].toLowerCase()).toContain('diluted soap');
-  expect(idx).toBeGreaterThan(steps.findIndex((s) => s.includes('Dilute the paste')));
+  expect(steps[idx].toLowerCase()).toContain('at trace');
+  expect(idx).toBeLessThan(steps.findIndex((s) => s.includes('Cook to a thick')));
+  expect(idx).toBeLessThan(steps.findIndex((s) => s.includes('Dilute the paste')));
 });
 
 test('steps are unchanged when there are no rows or only zero-gram rows', () => {

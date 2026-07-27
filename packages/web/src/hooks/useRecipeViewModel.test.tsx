@@ -404,3 +404,48 @@ test('soaping temp: clamps a stale value into the variant range for everything d
     probe((v) => { vm = v; }, { processVariant: 'hp-hthp', soapingTempF: '140' }, 'hp');
   expect(vm.soapingTempF).toBe(205);
 });
+
+test("LS dilution counts the alternative liquid's water as water already in the paste", () => {
+  // 200 g of canned coconut milk at trace is 136 g of water (68%) plus 42 g of fat. Every
+  // split-liquid stage is pre-cook, so that water is in the pot before dilution starts —
+  // prescribing the full water-only dilution figure on top of it would land the finished
+  // soap below its target concentration.
+  const MILK_ROW = {
+    key: 'm1', presetKey: 'coconut-milk-canned', name: 'Coconut milk (canned)',
+    customWaterPercent: '', sizeMode: 'grams' as const, amount: '200', addAt: 'trace' as const,
+  };
+  let plain: any;
+  let withMilk: any;
+  probe((vm) => { plain = vm; }, { lyeType: 'koh', soapConcentrationPercent: '30' }, 'ls');
+  probe(
+    (vm) => { withMilk = vm; },
+    { lyeType: 'koh', soapConcentrationPercent: '30', splitLiquids: [MILK_ROW] },
+    'ls',
+  );
+
+  // The target solution is unchanged (the milk is not soap solids)…
+  expect(withMilk.dilution.solutionGrams).toBeCloseTo(plain.dilution.solutionGrams, 3);
+  // …so the prescribed dilution water drops by exactly the milk's own water.
+  expect(plain.dilution.dilutionWaterGrams - withMilk.dilution.dilutionWaterGrams).toBeCloseTo(
+    200 * 0.68,
+    3,
+  );
+});
+
+test('LS split liquid raises the fat/superfat warning and the dilute-with-plain-water advisory', () => {
+  const MILK_ROW = {
+    key: 'm1', presetKey: 'coconut-milk-canned', name: 'Coconut milk (canned)',
+    customWaterPercent: '', sizeMode: 'grams' as const, amount: '200', addAt: 'trace' as const,
+  };
+  let ls: any;
+  let cp: any;
+  probe((vm) => { ls = vm; }, { lyeType: 'koh', superfatPercent: '2', splitLiquids: [MILK_ROW] }, 'ls');
+  probe((vm) => { cp = vm; }, { superfatPercent: '2', splitLiquids: [MILK_ROW] }, 'cp');
+
+  const codes = (vm: any) => vm.insights.map((i: any) => i.code);
+  expect(codes(ls)).toContain('ls_split_liquid_fat_superfat');
+  expect(codes(ls)).toContain('ls_split_liquid_not_dilution');
+  // A bar carries the same 42 g of milk fat without complaint.
+  expect(codes(cp)).not.toContain('ls_split_liquid_fat_superfat');
+  expect(codes(cp)).not.toContain('ls_split_liquid_not_dilution');
+});

@@ -56,6 +56,29 @@ export function lyeSolutionWaterStatus(input: {
   return { effectiveWaterGrams, floorGrams, shortfallGrams };
 }
 
+/**
+ * Water the alternative liquids carry into the paste, across every split-liquid stage.
+ *
+ * Only liquid soap has a use for this. A bar recipe's split liquid IS the batch's water,
+ * and nothing further is added; but LS cooks a paste and then dilutes it to a target soap
+ * concentration, so every gram of water already in that paste is a gram of dilution water
+ * that must NOT be added again. All three split-liquid stages (lye, oils, trace) happen
+ * before the cook, so all three count — the stage changes when the water arrives, not
+ * whether it is there at dilution time. Glycerin (waterFraction 0) correctly adds nothing:
+ * it reduces the dilution water through its solvent action, which has no numeric model.
+ */
+export function splitLiquidPasteWaterGrams(
+  rows: readonly { grams: number | null; waterFraction: number }[],
+): number {
+  let waterGrams = 0;
+  for (const { grams, waterFraction } of rows) {
+    if (grams === null || !Number.isFinite(grams) || grams <= 0) continue;
+    if (!Number.isFinite(waterFraction) || waterFraction <= 0) continue;
+    waterGrams += grams * waterFraction;
+  }
+  return waterGrams;
+}
+
 export function suggestLyeWaterWithSplitLiquid(input: {
   waterGrams: number;
   lyeGrams: number;

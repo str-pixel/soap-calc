@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { addExtraLye, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, suggestLyeWaterWithSplitLiquid } from '@soap-calc/core';
+import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
 import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
@@ -57,6 +57,9 @@ export type RecipeViewModel = {
   computedAdditives: ReturnType<typeof computeRecipeAdditives>;
   splitLiquidGrams: number | null;
   splitLiquidRows: ResolvedSplitLiquidRow[];
+  /** Water the alternative liquids carry into the paste. Already deducted from the LS
+   * dilution figure; surfaced so the Dilution panel can explain the deduction. */
+  splitLiquidPasteWater: number;
   fixedBatchExtrasGrams: number;
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
@@ -189,6 +192,46 @@ export function useRecipeViewModel({
     : (displayTotals?.recipeOilWeightGrams ?? 0) +
       (result?.lyeWeightGrams ?? 0) +
       (result?.waterWeightGrams ?? 0);
+  // Ratio-mode overrides only know the total-liquid target post-calc: N × lye grams.
+  const overrideTargetGrams = (r: { lyeWeightGrams: number }) =>
+    splitOverride
+      ? splitOverride.targetLiquidGrams ?? splitOverride.targetRatio! * r.lyeWeightGrams
+      : null;
+  const splitAllocation =
+    splitOverride && result
+      ? { lyeWaterGrams: result.waterWeightGrams, targetLiquidGrams: overrideTargetGrams(result)! }
+      : null;
+  // Memoized: rows' identity feeds several memos below (acid, floor check, suggestion,
+  // insights, batch sheet) — an unstable array would silently disable all of them.
+  const resolvedSplit = useMemo(
+    () =>
+      previewSettings.splitLiquids.length > 0 && result
+        ? resolveSplitLiquidRows(previewSettings.splitLiquids, {
+            totalOilGrams,
+            // Budget rows size against the pre-allocation target; additive rows against
+            // the recipe's own water (its only sensible "total liquid").
+            targetLiquidGrams: overrideTargetGrams(result) ?? result.waterWeightGrams,
+            lyeGrams: result.lyeWeightGrams,
+          })
+        : null,
+    [previewSettings.splitLiquids, result, splitOverride, totalOilGrams],
+  );
+  const splitLiquidRows: ResolvedSplitLiquidRow[] = useMemo(
+    () => resolvedSplit?.rows ?? [],
+    [resolvedSplit],
+  );
+  // Water the alternative liquids put in the paste before the cook. Deducted from the LS
+  // dilution figure below, and reported so the Dilution panel can explain the deduction.
+  const splitLiquidPasteWater = useMemo(
+    () =>
+      splitLiquidPasteWaterGrams(
+        splitLiquidRows.map(({ row, grams }) => ({
+          grams,
+          waterFraction: splitLiquidWaterFraction(row),
+        })),
+      ),
+    [splitLiquidRows],
+  );
   // Deliberately reads the BASE result, not finalResult: acid-compensation alkali (vinegar,
   // lye-stage citric) is consumed into a dissolved salt (acetate/citrate) — no soap solids
   // for the concentration model, no glycerin byproduct (0.55 g/g applies to saponified KOH
@@ -198,7 +241,12 @@ export function useRecipeViewModel({
       process === 'ls' && result
         ? calculateDilution({
             anhydrousGrams: result.totalOilWeightGrams + result.lyeWeightGrams,
-            cookWaterGrams: result.waterWeightGrams,
+            // The paste's water is the lye water PLUS whatever water the alternative
+            // liquids carried in — every split-liquid stage is pre-cook, so that water is
+            // already in the pot when dilution starts. Counting only the lye water would
+            // prescribe dilution water that is largely there already and land the finished
+            // soap below its target concentration.
+            cookWaterGrams: result.waterWeightGrams + splitLiquidPasteWater,
             kohGrams: result.kohWeightGrams,
             naohGrams: result.naohWeightGrams,
             soapConcentrationPercent: Number(previewSettings.soapConcentrationPercent),
@@ -210,6 +258,7 @@ export function useRecipeViewModel({
     [
       process,
       result,
+      splitLiquidPasteWater,
       previewSettings.soapConcentrationPercent,
       previewSettings.kohPurityPercent,
       previewSettings.naohPurityPercent,
@@ -267,34 +316,6 @@ export function useRecipeViewModel({
         acidLyeRecipe,
       ),
     [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe],
-  );
-  // Ratio-mode overrides only know the total-liquid target post-calc: N × lye grams.
-  const overrideTargetGrams = (r: { lyeWeightGrams: number }) =>
-    splitOverride
-      ? splitOverride.targetLiquidGrams ?? splitOverride.targetRatio! * r.lyeWeightGrams
-      : null;
-  const splitAllocation =
-    splitOverride && result
-      ? { lyeWaterGrams: result.waterWeightGrams, targetLiquidGrams: overrideTargetGrams(result)! }
-      : null;
-  // Memoized: rows' identity feeds several memos below (acid, floor check, suggestion,
-  // insights, batch sheet) — an unstable array would silently disable all of them.
-  const resolvedSplit = useMemo(
-    () =>
-      previewSettings.splitLiquids.length > 0 && result
-        ? resolveSplitLiquidRows(previewSettings.splitLiquids, {
-            totalOilGrams,
-            // Budget rows size against the pre-allocation target; additive rows against
-            // the recipe's own water (its only sensible "total liquid").
-            targetLiquidGrams: overrideTargetGrams(result) ?? result.waterWeightGrams,
-            lyeGrams: result.lyeWeightGrams,
-          })
-        : null,
-    [previewSettings.splitLiquids, result, splitOverride, totalOilGrams],
-  );
-  const splitLiquidRows: ResolvedSplitLiquidRow[] = useMemo(
-    () => resolvedSplit?.rows ?? [],
-    [resolvedSplit],
   );
   const splitLiquidGrams =
     resolvedSplit && resolvedSplit.totalGrams > 0 ? resolvedSplit.totalGrams : null;
@@ -487,6 +508,21 @@ export function useRecipeViewModel({
         splitLiquidRows.some(
           ({ row }) => alternativeLiquidPreset(row.presetKey)?.flags.includes('solvent') ?? false,
         ) || computedAdditives.some((a) => a.catalogId === 'glycerin'),
+      // Fat the alternative liquids bring in, as superfat points on top of the stated
+      // figure. LS-gated in core: only liquid soap separates over the fat a milk adds.
+      lsSplitLiquidFatShiftPercent: superfatShiftFromLiquidFat(
+        alternativeLiquidFatGrams(
+          splitLiquidRows.map(({ row, grams }) => ({ presetKey: row.presetKey, grams })),
+        ),
+        totalOilGrams,
+      ),
+      // Glycerin is the one alternative liquid that may go in the dilution water, so a
+      // glycerin-only recipe skips the dilute-with-plain-water advisory.
+      lsSplitLiquidIsSolventOnly:
+        splitLiquidRows.length > 0 &&
+        splitLiquidRows.every(
+          ({ row }) => alternativeLiquidPreset(row.presetKey)?.flags.includes('solvent') ?? false,
+        ),
       soapingTempF,
     },
   );
@@ -652,6 +688,7 @@ export function useRecipeViewModel({
     splitAllocation,
     acidExtraLye,
     splitLiquidRows,
+    splitLiquidPasteWater,
     fixedBatchExtrasGrams,
     properties,
     indexes,

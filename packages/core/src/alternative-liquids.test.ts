@@ -4,6 +4,10 @@ import {
   alternativeLiquidPreset,
   extraLyeForAcidLiquid,
   extraLyeForAcid,
+  alternativeLiquidsForProcess,
+  alternativeLiquidNoteFor,
+  alternativeLiquidFatGrams,
+  superfatShiftFromLiquidFat,
 } from './alternative-liquids.js';
 import { catalogEntryById } from './additives.js';
 
@@ -142,5 +146,94 @@ describe('glycerin preset (LS audit 2026-07-27)', () => {
     expect(g?.waterFraction).toBe(0);
     expect(g?.flags).toEqual(['solvent']);
     expect(g?.lyeNeutralization).toBeUndefined();
+  });
+});
+
+describe('per-process availability (LS audit 2026-07-27)', () => {
+  it('offers every preset under CP', () => {
+    expect(alternativeLiquidsForProcess('cp')).toHaveLength(ALTERNATIVE_LIQUID_GUIDE.length);
+  });
+
+  it('withholds vinegar from LS — acetate hardens a bar, and LS has no bar', () => {
+    const lsKeys = alternativeLiquidsForProcess('ls').map((p) => p.key);
+    expect(lsKeys).not.toContain('vinegar');
+    expect(alternativeLiquidsForProcess('cp').map((p) => p.key)).toContain('vinegar');
+    expect(alternativeLiquidsForProcess('hp').map((p) => p.key)).toContain('vinegar');
+  });
+
+  it('keeps glycerin and the sugary liquids available in LS', () => {
+    const lsKeys = alternativeLiquidsForProcess('ls').map((p) => p.key);
+    for (const key of ['glycerin', 'milk', 'coconut-milk-canned', 'beer', 'coffee-tea']) {
+      expect(lsKeys).toContain(key);
+    }
+  });
+
+  it('appends the process note to the base note, and never duplicates it', () => {
+    const milk = alternativeLiquidPreset('milk')!;
+    const cp = alternativeLiquidNoteFor(milk, 'cp');
+    const ls = alternativeLiquidNoteFor(milk, 'ls');
+    expect(cp).toBe(milk.note);
+    expect(ls).toContain(milk.note!);
+    expect(ls!.length).toBeGreaterThan(cp!.length);
+    // The LS-specific half must name the two LS-only consequences.
+    expect(ls).toMatch(/dilut/i);
+  });
+
+  it('leaves presets without a process note untouched', () => {
+    // Vinegar carries a base note and no per-process ones — it must read identically
+    // everywhere it is offered.
+    const vinegar = alternativeLiquidPreset('vinegar')!;
+    expect(alternativeLiquidNoteFor(vinegar, 'cp')).toBe(vinegar.note);
+    expect(alternativeLiquidNoteFor(vinegar, 'hp')).toBe(vinegar.note);
+  });
+
+  it('returns null for a preset with no note at all under any process', () => {
+    const bare: Parameters<typeof alternativeLiquidNoteFor>[0] = {
+      key: 'bare',
+      label: 'Bare',
+      waterFraction: 1,
+      flags: [],
+    };
+    expect(alternativeLiquidNoteFor(bare, 'ls')).toBeNull();
+  });
+});
+
+describe('fat fraction and the LS superfat shift', () => {
+  it('carries fat fractions for the fatty liquids, and none for the lean ones', () => {
+    expect(alternativeLiquidPreset('heavy-cream')?.fatFraction).toBeCloseTo(0.37, 2);
+    expect(alternativeLiquidPreset('coconut-milk-canned')?.fatFraction).toBeCloseTo(0.21, 2);
+    expect(alternativeLiquidPreset('milk')?.fatFraction).toBeCloseTo(0.03, 2);
+    expect(alternativeLiquidPreset('aloe-juice')?.fatFraction ?? 0).toBe(0);
+    expect(alternativeLiquidPreset('glycerin')?.fatFraction ?? 0).toBe(0);
+  });
+
+  it('water and fat fractions never exceed the whole liquid', () => {
+    for (const preset of ALTERNATIVE_LIQUID_GUIDE) {
+      expect(preset.waterFraction + (preset.fatFraction ?? 0)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('sums the unsaponified fat an alternative liquid brings to the batch', () => {
+    // 200 g canned coconut milk at 21% fat = 42 g of fat no lye was calculated for.
+    expect(
+      alternativeLiquidFatGrams([{ presetKey: 'coconut-milk-canned', grams: 200 }]),
+    ).toBeCloseTo(42, 3);
+  });
+
+  it('ignores rows with no preset, no grams, or a fat-free liquid', () => {
+    expect(
+      alternativeLiquidFatGrams([
+        { presetKey: '', grams: 500 },
+        { presetKey: 'milk', grams: null },
+        { presetKey: 'aloe-juice', grams: 300 },
+      ]),
+    ).toBe(0);
+  });
+
+  it('expresses the fat as the superfat percentage points it silently adds', () => {
+    // 42 g of fat against 1,000 g of oils = 4.2 points on top of the stated superfat.
+    expect(superfatShiftFromLiquidFat(42, 1000)).toBeCloseTo(4.2, 3);
+    expect(superfatShiftFromLiquidFat(42, 0)).toBe(0);
+    expect(superfatShiftFromLiquidFat(0, 1000)).toBe(0);
   });
 });

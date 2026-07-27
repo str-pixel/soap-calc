@@ -3,6 +3,7 @@ import {
   lyeConcentrationPercent,
   lyeSolutionWaterStatus,
   suggestLyeWaterWithSplitLiquid,
+  splitLiquidPasteWaterGrams,
 } from './split-liquid.js';
 
 describe('lyeConcentrationPercent', () => {
@@ -109,5 +110,44 @@ describe('lyeConcentrationPercent input guards (deep-review)', () => {
   it('rejects negative water instead of reporting impossible concentrations', () => {
     expect(lyeConcentrationPercent(135, -35)).toBeNull();
     expect(lyeConcentrationPercent(135, 0)).not.toBeNull();
+  });
+});
+
+describe('splitLiquidPasteWaterGrams (LS dilution basis)', () => {
+  it('counts the water each alternative liquid carries into the paste', () => {
+    // 300 g milk at 87% water = 261 g of water that is already in the paste before dilution.
+    expect(
+      splitLiquidPasteWaterGrams([{ grams: 300, waterFraction: 0.87 }]),
+    ).toBeCloseTo(261, 3);
+  });
+
+  it('adds up across rows regardless of the stage they join at', () => {
+    // Every split-liquid stage (lye, oils, trace) is pre-dilution, so all of them count.
+    expect(
+      splitLiquidPasteWaterGrams([
+        { grams: 100, waterFraction: 1 },
+        { grams: 200, waterFraction: 0.5 },
+      ]),
+    ).toBeCloseTo(200, 3);
+  });
+
+  it('contributes nothing for glycerin — a zero-water solvent', () => {
+    expect(splitLiquidPasteWaterGrams([{ grams: 250, waterFraction: 0 }])).toBe(0);
+  });
+
+  it('skips unsized and invalid rows instead of poisoning the sum', () => {
+    expect(
+      splitLiquidPasteWaterGrams([
+        { grams: null, waterFraction: 0.9 },
+        { grams: -50, waterFraction: 0.9 },
+        { grams: Number.NaN, waterFraction: 0.9 },
+        { grams: 100, waterFraction: Number.NaN },
+        { grams: 100, waterFraction: 0.9 },
+      ]),
+    ).toBeCloseTo(90, 3);
+  });
+
+  it('is zero for an empty recipe', () => {
+    expect(splitLiquidPasteWaterGrams([])).toBe(0);
   });
 });
