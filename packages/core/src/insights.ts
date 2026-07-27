@@ -148,23 +148,18 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  if (input.lyeConcentrationPercent > 0 && !input.isLiquidSoap) {
-    if (input.lyeConcentrationPercent < 20) {
-      insights.push({
-        level: 'warning',
-        code: 'lye_conc_low',
-        message:
-          'Lye concentration below ~20% — outside the typical bar-soap range; trace and cure may be very slow.',
-      });
-    } else if (input.lyeConcentrationPercent > 38) {
-      insights.push({
-        level: 'warning',
-        code: 'lye_conc_high',
-        message:
-          'Lye concentration above ~38% — may trace quickly, resist gel, or warp in the mold.',
-      });
-    }
-  }
+  // The lye-concentration band warnings (below ~20%, above ~38%) are GONE. A four-source
+  // review of the water literature found no support for either threshold, and the high one
+  // misfired on published practice: it fires from ~21% water of oils downward, i.e. across
+  // part of the very water-discount band the CP source recommends, and on the low-water
+  // formulas a science source tested and explicitly cleared ("you can safely experiment with
+  // low-water soaps up to and including lye concentrations of 50%").
+  //
+  // The only concentration boundary any source states is 50% — the 1:1 dissolution floor —
+  // and water_below_lye above already covers it with the correct reason (the alkali cannot
+  // dissolve), rather than the workability guesses these carried. Excess water is covered by
+  // the per-process water band below, in % of oils, which is the unit the sources actually
+  // publish. Do not reintroduce a concentration threshold without a source for the number.
 
   if (
     input.waterBand &&
@@ -184,7 +179,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         level: 'warning',
         code: 'water_band_rivers',
         message:
-          'Water is above the typical range for this process — the batter may glycerin-river or take a long time to firm up. Consider a lower water amount.',
+          'Water is above the typical range for this process — the batter may take a long time to firm up, and can glycerin-river if it also goes through gel. Consider a lower water amount.',
       });
     } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
       insights.push({

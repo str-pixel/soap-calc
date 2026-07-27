@@ -33,10 +33,12 @@ export type ProcessProfile = {
 };
 
 // A shared two-tier water band for HP's three variants. The overall 28–40% range comes
-// from the verified LTHP water-band constant; the specific low/high split point (32/34)
-// and the rivers threshold (40) are an interpolation, not independently verified.
-// unverified
-const HP_WATER_BAND: WaterBand = { lowTier: [28, 32], highTier: [34, 40], riversAbove: 40 };
+// Verified against the HP source's own printed bands: a water discount is 25-30% in hot
+// process, a high water concentration is 32-40%, and 40%+ is where the defects start. The
+// previous [28,32]/[34,40] split was an interpolation and contradicted all three figures —
+// it pushed the source's reduced-HTHP band (20-30%) and its swirl compromise (29-31%) below
+// the low tier, and left 32-34% (inside the source's HIGH tier) in the inter-tier gap.
+const HP_WATER_BAND: WaterBand = { lowTier: [25, 30], highTier: [32, 40], riversAbove: 40 };
 
 // A shared two-tier water band for LS's four variants. The overall 25–60% range comes
 // from the verified LS cook-water constant; the low/high split points (35/40) and the
@@ -71,7 +73,7 @@ const PROFILES: Record<ProcessVariantId, ProcessProfile> = {
     variant: 'hp-lthp',
     process: 'hp',
     label: 'Low-temp HP (LTHP)',
-    waterBand: HP_WATER_BAND, // unverified (see HP_WATER_BAND)
+    waterBand: HP_WATER_BAND, // verified (see HP_WATER_BAND)
     temp: { lowF: 120, highF: 160 }, // verified
     finish: { minWeeks: 3, maxWeeks: 8 }, // unverified: no LTHP cure window in the roadmap table
     finishKind: 'cure',
@@ -81,7 +83,7 @@ const PROFILES: Record<ProcessVariantId, ProcessProfile> = {
     variant: 'hp-hthp',
     process: 'hp',
     label: 'High-temp HP (HTHP)',
-    waterBand: HP_WATER_BAND, // unverified (see HP_WATER_BAND)
+    waterBand: HP_WATER_BAND, // verified (see HP_WATER_BAND)
     temp: { lowF: 215, highF: 215, ceilingF: 240 }, // verified
     finish: { minWeeks: 3, maxWeeks: 4 }, // verified
     finishKind: 'cure',
@@ -91,7 +93,7 @@ const PROFILES: Record<ProcessVariantId, ProcessProfile> = {
     variant: 'hp-fluid',
     process: 'hp',
     label: 'Fluid HP',
-    waterBand: HP_WATER_BAND, // unverified (see HP_WATER_BAND)
+    waterBand: HP_WATER_BAND, // verified (see HP_WATER_BAND)
     temp: { lowF: 160, highF: 215 }, // unverified: no fluid HP temp range in the roadmap table
     finish: { minWeeks: 6 }, // verified (~6 wk cure)
     finishKind: 'cure',
