@@ -449,3 +449,28 @@ test('LS split liquid raises the fat/superfat warning and the dilute-with-plain-
   expect(codes(cp)).not.toContain('ls_split_liquid_fat_superfat');
   expect(codes(cp)).not.toContain('ls_split_liquid_not_dilution');
 });
+
+test('a vinegar row is inert under LS: offered in CP/HP, no compensation in LS', () => {
+  // Scoping the offer must scope the BEHAVIOUR too. #138 filtered the picker, which left a
+  // CP-saved recipe switched to LS still resolving vinegar and still adding compensating
+  // KOH for a liquid the app no longer offers there.
+  const VINEGAR = {
+    key: 'v1', presetKey: 'vinegar', name: 'Vinegar (5%)', customWaterPercent: '',
+    sizeMode: 'grams' as const, amount: '200', addAt: 'lye' as const,
+  };
+  let cp: any;
+  let ls: any;
+  probe((vm) => { cp = vm; }, { splitLiquids: [VINEGAR] }, 'cp');
+  probe((vm) => { ls = vm; }, { lyeType: 'koh', splitLiquids: [VINEGAR] }, 'ls');
+
+  expect(cp.acidExtraLye.naohGrams).toBeGreaterThan(0);
+  expect(ls.acidExtraLye).toBeNull();
+
+  // The batch back-solve reads the same guard, or the batch weight and the lye result
+  // would quote different amounts of alkali for the same recipe.
+  expect(ls.fixedBatchExtrasGrams).toBeCloseTo(200, 3);
+  expect(cp.fixedBatchExtrasGrams).toBeGreaterThan(200);
+
+  // The liquid itself is NOT dropped — its water still counts toward the paste.
+  expect(ls.splitLiquidRows[0].grams).toBeCloseTo(200, 3);
+});

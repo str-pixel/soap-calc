@@ -220,3 +220,23 @@ test('a preset note gains its LS-specific half only under LS', () => {
   renderPanel({ process: 'ls', rows });
   expect(screen.getByText(/lands as extra superfat/i)).toBeTruthy();
 });
+
+test('a stray preset renders as itself, not as "Custom…", and says it is inert', () => {
+  // Mismatched-select guard, mirroring AdditivesPanel: a controlled <select> whose value has
+  // no matching <option> silently displays the first one, so a CP-saved vinegar row viewed
+  // under LS claimed to be "Custom…" while the recipe still carried vinegar.
+  const rows = [ROW({ presetKey: 'vinegar', name: 'Vinegar (5%)' })];
+  renderPanel({ process: 'ls', rows });
+  const sel = screen.getByRole('combobox', { name: /liquid preset/i }) as HTMLSelectElement;
+  expect(sel.value).toBe('vinegar');
+  expect(sel.options[sel.selectedIndex].textContent).toMatch(/vinegar/i);
+  expect(screen.getByText(/not used in liquid soap/i)).toBeTruthy();
+  // …and its base note must NOT still promise the compensation the guard just withheld.
+  expect(screen.queryByText(/extra lye is added to the recipe automatically/i)).toBeNull();
+});
+
+test('the stray option is not offered to rows that have not chosen it', () => {
+  renderPanel({ process: 'ls', rows: [ROW({ presetKey: 'milk', name: 'Milk' })] });
+  const sel = screen.getByRole('combobox', { name: /liquid preset/i }) as HTMLSelectElement;
+  expect(Array.from(sel.options).map((o) => o.value)).not.toContain('vinegar');
+});

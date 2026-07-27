@@ -8,6 +8,7 @@ import {
   alternativeLiquidNoteFor,
   alternativeLiquidFatGrams,
   superfatShiftFromLiquidFat,
+  isAlternativeLiquidOfferedFor,
 } from './alternative-liquids.js';
 import { catalogEntryById } from './additives.js';
 
@@ -235,5 +236,39 @@ describe('fat fraction and the LS superfat shift', () => {
     expect(superfatShiftFromLiquidFat(42, 1000)).toBeCloseTo(4.2, 3);
     expect(superfatShiftFromLiquidFat(42, 0)).toBe(0);
     expect(superfatShiftFromLiquidFat(0, 1000)).toBe(0);
+  });
+});
+
+describe('isAlternativeLiquidOfferedFor (stray-row guard)', () => {
+  it('is the single predicate behind the picker list', () => {
+    // alternativeLiquidsForProcess must be exactly "the presets this says yes to" — if the
+    // two ever disagree, a liquid is offered but treated as stray, or vice versa.
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      expect(alternativeLiquidsForProcess(process)).toEqual(
+        ALTERNATIVE_LIQUID_GUIDE.filter((p) => isAlternativeLiquidOfferedFor(p, process)),
+      );
+    }
+  });
+
+  it('says no to vinegar under LS and yes everywhere it is offered', () => {
+    const vinegar = alternativeLiquidPreset('vinegar')!;
+    expect(isAlternativeLiquidOfferedFor(vinegar, 'ls')).toBe(false);
+    expect(isAlternativeLiquidOfferedFor(vinegar, 'cp')).toBe(true);
+    expect(isAlternativeLiquidOfferedFor(vinegar, 'hp')).toBe(true);
+  });
+
+  it('says yes to an unrestricted preset under every process', () => {
+    const milk = alternativeLiquidPreset('milk')!;
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      expect(isAlternativeLiquidOfferedFor(milk, process)).toBe(true);
+    }
+  });
+});
+
+describe('vinegar note names no specific salt', () => {
+  it('does not claim sodium acetate — KOH and dual-lye recipes make potassium acetate too', () => {
+    const note = alternativeLiquidPreset('vinegar')!.note!;
+    expect(note).not.toMatch(/sodium acetate/i);
+    expect(note).toMatch(/acetate/i);
   });
 });

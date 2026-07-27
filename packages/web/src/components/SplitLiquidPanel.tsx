@@ -3,6 +3,7 @@ import {
   alternativeLiquidNoteFor,
   alternativeLiquidPreset,
   alternativeLiquidsForProcess,
+  isAlternativeLiquidOfferedFor,
   type LyeSolutionWaterStatus,
   type SplitLiquidWaterSuggestion,
   type WaterMode,
@@ -153,6 +154,12 @@ export function SplitLiquidPanel({
           {rows.map((row) => {
             const preset = alternativeLiquidPreset(row.presetKey);
             const grams = gramsByKey.get(row.key) ?? null;
+            // Mismatched-select guard, mirroring AdditivesPanel: a row's chosen preset must
+            // always be among its options, even when this process doesn't offer it —
+            // otherwise the controlled <select> shows the first option instead ("Custom…")
+            // and misrepresents which liquid the recipe actually carries.
+            const isStray = preset !== null && !isAlternativeLiquidOfferedFor(preset, process);
+            const options = isStray ? [...presetsForProcess, preset] : presetsForProcess;
             const otherHasRest = rows.some((r) => r.key !== row.key && r.sizeMode === 'rest');
             const recommendTrace =
               row.addAt === 'lye' &&
@@ -175,7 +182,7 @@ export function SplitLiquidPanel({
                     }}
                   >
                     <option value="">Custom…</option>
-                    {presetsForProcess.map((p) => (
+                    {options.map((p) => (
                       <option key={p.key} value={p.key}>
                         {p.label}
                       </option>
@@ -302,7 +309,14 @@ export function SplitLiquidPanel({
                     lye, freeze the liquid and add the lye slowly.
                   </p>
                 )}
-                {preset && alternativeLiquidNoteFor(preset, process) && (
+                {isStray && (
+                  <p className="split-liquid-warning" role="alert">
+                    {preset!.label} is not used in liquid soap — this row still counts as
+                    liquid, but earns no lye adjustment here. Remove it, or switch the
+                    recipe back to a bar process.
+                  </p>
+                )}
+                {!isStray && preset && alternativeLiquidNoteFor(preset, process) && (
                   <p className="split-liquid-note">{alternativeLiquidNoteFor(preset, process)}</p>
                 )}
               </div>
