@@ -88,6 +88,10 @@ export const AdditivesPanel = memo(function AdditivesPanel({
       // '%' invites a 10x overdose, and a lingering 'ppt' after switching to a
       // %-dosed entry inverts it (hint says % while the amount computes as ppt).
       unit: entry.doseUnit ?? 'percent',
+      // Seed the basis the same way: LS solution-dosed entries (pearlizer, wd-shea, LS
+      // fragrance) mean % of the finished solution — leaving 'oil' silently under-doses
+      // them several-fold (1% of oils ≈ 0.3% of solution at 35% concentration).
+      basis: entry.doseBasis ?? 'oil',
     });
   }
 
@@ -163,19 +167,21 @@ export const AdditivesPanel = memo(function AdditivesPanel({
         </div>
       </div>
 
-      {process === 'hp' && (
+      {(process === 'hp' || process === 'ls') && (
         // Deliberately NOT in the empty-state branch: it applies whether or not rows exist.
         // The free fatty acids were removed from this catalog (they saponify — see
-        // ADDITIVE_CATALOG's finished-soap comment); this is where HP users find them now.
+        // ADDITIVE_CATALOG's finished-soap comment); this is where HP/LS users find them
+        // now. The typical dose differs per process (fluid HP vs no-paste LS cook).
         <p className="results-hint">
           Free fatty acids (stearic, lauric, myristic) saponify — dose them as oils in the oils
-          list, typically 5–8% of oils for a fluid cook.
+          list, typically {process === 'hp' ? '5–8%' : '5–10%'} of oils for a fluid
+          {process === 'hp' ? ' cook' : ' no-paste cook'}.
         </p>
       )}
       {additives.length === 0 ? (
         <p className="results-hint">
           Optional extras (fragrance, sugar, clay, etc.) dosed per additive — not included in lye
-          math{process === 'ls' ? '' : " (citric acid's compensation lye is added automatically)"}.
+          math (citric acid's compensation lye is added automatically).
         </p>
       ) : (
         <ul className="additive-list" aria-label="Recipe additives">
@@ -328,7 +334,14 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                   <p className="additive-list__hint">
                     Typical {entry.typicalLow}
                     {entry.typicalHigh !== entry.typicalLow ? `–${entry.typicalHigh}` : ''}
-                    {entry.doseUnit === 'ppt' ? ' ppt' : '%'} of oil weight
+                    {entry.doseUnit === 'ppt' ? ' ppt' : '%'} of{' '}
+                    {entry.doseBasis === 'solution' ? 'diluted solution' : 'oil weight'}
+                  </p>
+                )}
+                {row && row.grams === 0 && line.basis === 'solution' && line.amount !== '' &&
+                  parseDoseAmount(line.amount, line.unit) !== null && (
+                  <p className="additive-list__hint" role="alert">
+                    Set the soap concentration (dilution) to size solution-based doses
                   </p>
                 )}
                 {row?.extraLye && (row.extraLye.naohGrams > 0 || row.extraLye.kohGrams > 0) && (

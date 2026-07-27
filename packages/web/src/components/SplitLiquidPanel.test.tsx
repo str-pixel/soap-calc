@@ -74,13 +74,25 @@ test('only one rest row: the option is disabled on other rows', () => {
   expect(restOptionOf(selects[1]).disabled).toBe(true);
 });
 
-test('budget sizing modes are disabled outside percent-of-oils water', () => {
+test('budget sizing modes are disabled under lye-concentration water only', () => {
   renderPanel({ waterMode: 'lye_concentration' });
   const select = screen.getByLabelText('Sized by') as HTMLSelectElement;
   expect(Array.from(select.options).find((o) => o.value === 'rest')!.disabled).toBe(true);
   expect(
     Array.from(select.options).find((o) => o.value === 'percent_of_liquid')!.disabled,
   ).toBe(true);
+});
+
+test('budget sizing modes are available under lye_water_ratio (the glycerin parts mode)', () => {
+  // The ratio-mode allocation is pure ratio arithmetic (splitLiquidCalcOverride), so the
+  // book's "1–2 parts of the lye solution as glycerin" is expressible under LS's native
+  // water mode — the gate must not block it.
+  renderPanel({ waterMode: 'lye_water_ratio' });
+  const select = screen.getByLabelText('Sized by') as HTMLSelectElement;
+  expect(
+    Array.from(select.options).find((o) => o.value === 'percent_of_liquid')!.disabled,
+  ).toBe(false);
+  expect(Array.from(select.options).find((o) => o.value === 'rest')!.disabled).toBe(false);
 });
 
 test('shows the allocation line across all rows', () => {

@@ -1,7 +1,7 @@
 /** Advisory flags for alternative split liquids: what in the liquid interacts with the
  * lye reaction or the finished bar. 'acid' liquids consume lye and carry the neutralization
  * factors to compensate automatically. */
-export type AlternativeLiquidFlag = 'sugars' | 'alcohol' | 'acid';
+export type AlternativeLiquidFlag = 'sugars' | 'alcohol' | 'acid' | 'solvent';
 
 export type AlternativeLiquidPreset = {
   key: string;
@@ -30,6 +30,16 @@ const ALCOHOL_NOTE = 'Simmer off the alcohol before use, then treat like a sugar
 export const ALTERNATIVE_LIQUID_GUIDE: readonly AlternativeLiquidPreset[] = [
   { key: 'aloe-juice', label: 'Aloe juice', waterFraction: 0.99, flags: [] },
   { key: 'coffee-tea', label: 'Coffee or tea (brewed)', waterFraction: 0.99, flags: [] },
+  {
+    key: 'glycerin',
+    label: 'Glycerin',
+    // Zero water — but a 'solvent' liquid still dissolves the lye when hot (the whole
+    // premise of glycerin-method liquid soap), so the 1:1 dissolution floor counts its
+    // FULL grams (see the web lyeWaterStatus wiring) while every water-fraction consumer
+    // correctly sees 0. Not flagged 'sugars': the method deliberately heats it.
+    waterFraction: 0,
+    flags: ['solvent'],
+  },
   {
     key: 'coconut-water',
     label: 'Coconut water',

@@ -20,6 +20,18 @@ import {
 } from './useFormulationInsights';
 
 describe('totalAdditivePercentForInsights', () => {
+  it('excludes glycerin from the total (deliberate solvent dose, not extras)', () => {
+    const total = totalAdditivePercentForInsights(
+      [
+        { catalogId: 'glycerin', grams: 220 },
+        { catalogId: 'clay', grams: 10 },
+      ],
+      1000,
+      [],
+    );
+    expect(total).toBeCloseTo(1, 5);
+  });
+
   it('excludes split liquid added in lye water', () => {
     expect(
       totalAdditivePercentForInsights([{ grams: 50 }], 1000, [{ addAt: 'lye', grams: 80 }]),

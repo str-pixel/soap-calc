@@ -187,6 +187,10 @@ export function useRecipeViewModel({
     : (displayTotals?.recipeOilWeightGrams ?? 0) +
       (result?.lyeWeightGrams ?? 0) +
       (result?.waterWeightGrams ?? 0);
+  // Deliberately reads the BASE result, not finalResult: acid-compensation alkali (vinegar,
+  // lye-stage citric) is consumed into a dissolved salt (acetate/citrate) — no soap solids
+  // for the concentration model, no glycerin byproduct (0.55 g/g applies to saponified KOH
+  // only). Do not "fix" this to finalResult.
   const dilution = useMemo(
     () =>
       process === 'ls' && result
@@ -248,19 +252,20 @@ export function useRecipeViewModel({
           batchGrams: baseBatchGrams,
           solutionGrams,
         },
-        // LS never compensates acid additives: the LS neutralization feature doses citric
-        // UNCOMPENSATED to consume a post-cook lye excess, and a hand-edited/imported LS
-        // recipe carrying a citric line must not get that lye added back. Withholding the
-        // recipe context here keeps every line's extraLye undefined, so the panel hint and
-        // the lye result stay consistent by construction. (Same rationale as the PCSF
-        // process gate below.)
-        process === 'ls' ? undefined : acidLyeRecipe,
+        // Compensation is stage-aware inside computeRecipeAdditives (after_cook acid is
+        // never compensated, any process) — so the recipe context flows unconditionally.
+        acidLyeRecipe,
       ),
-    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe, process],
+    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe],
   );
+  // Ratio-mode overrides only know the total-liquid target post-calc: N × lye grams.
+  const overrideTargetGrams = (r: { lyeWeightGrams: number }) =>
+    splitOverride
+      ? splitOverride.targetLiquidGrams ?? splitOverride.targetRatio! * r.lyeWeightGrams
+      : null;
   const splitAllocation =
     splitOverride && result
-      ? { lyeWaterGrams: result.waterWeightGrams, targetLiquidGrams: splitOverride.targetLiquidGrams }
+      ? { lyeWaterGrams: result.waterWeightGrams, targetLiquidGrams: overrideTargetGrams(result)! }
       : null;
   // Memoized: rows' identity feeds several memos below (acid, floor check, suggestion,
   // insights, batch sheet) — an unstable array would silently disable all of them.
@@ -271,7 +276,7 @@ export function useRecipeViewModel({
             totalOilGrams,
             // Budget rows size against the pre-allocation target; additive rows against
             // the recipe's own water (its only sensible "total liquid").
-            targetLiquidGrams: splitOverride?.targetLiquidGrams ?? result.waterWeightGrams,
+            targetLiquidGrams: overrideTargetGrams(result) ?? result.waterWeightGrams,
             lyeGrams: result.lyeWeightGrams,
           })
         : null,
@@ -392,6 +397,15 @@ export function useRecipeViewModel({
           : sum,
       0,
     );
+    // A 'solvent' liquid (glycerin) contributes no water anywhere else (waterFraction 0)
+    // but DOES dissolve lye when hot — the glycerin-method premise — so the 1:1
+    // dissolution floor counts its full grams.
+    const solventGrams = splitLiquidRows.reduce((sum, { row, grams }) => {
+      const preset = alternativeLiquidPreset(row.presetKey);
+      return row.addAt === 'lye' && grams != null && preset?.flags.includes('solvent')
+        ? sum + grams
+        : sum;
+    }, 0);
     const anyInLye = splitLiquidRows.some(({ row, grams }) => row.addAt === 'lye' && grams != null);
     if (
       !result ||
@@ -404,7 +418,7 @@ export function useRecipeViewModel({
     }
     const r = finalResult ?? result;
     return lyeSolutionWaterStatus({
-      waterGrams: r.waterWeightGrams + inLyeWaterGrams,
+      waterGrams: r.waterWeightGrams + inLyeWaterGrams + solventGrams,
       lyeGrams: r.lyeWeightGrams,
       // The in-lye rows' effective water is already folded in above.
       splitLiquidGrams: 0,
@@ -457,6 +471,12 @@ export function useRecipeViewModel({
       isLiquidSoap: process === 'ls',
       process,
       hpVesselMultiple,
+      // Glycerin as lye-solution solvent (split row) or LS additive — drives the
+      // glycerin_solvent_dilution advisory (core gates it to LS).
+      lsGlycerinSolvent:
+        splitLiquidRows.some(
+          ({ row }) => alternativeLiquidPreset(row.presetKey)?.flags.includes('solvent') ?? false,
+        ) || computedAdditives.some((a) => a.catalogId === 'glycerin'),
     },
   );
   const lyeLabel =

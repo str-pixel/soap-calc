@@ -198,6 +198,15 @@ describe('per-line acid extra lye', () => {
     expect(line.extraLye?.kohGrams).toBe(0);
   });
 
+  it('never attaches extraLye to an after_cook citric line (post-cook acid is never compensated)', () => {
+    const [line] = computeRecipeAdditives(
+      [{ key: 'c', catalogId: 'citric-acid', name: 'Citric', amount: '2', basis: 'oil', unit: 'percent', addAt: 'after_cook' }],
+      { oilGrams: 1000, batchGrams: 1500, solutionGrams: 0 },
+      NAOH_RECIPE,
+    );
+    expect(line.extraLye).toBeUndefined();
+  });
+
   it('attaches no extraLye without the context or for factor-less entries', () => {
     const noContext = computeRecipeAdditives(
       [{ key: 'c', catalogId: 'citric-acid', name: 'Citric', amount: '2', basis: 'oil', unit: 'percent', addAt: 'lye' }],

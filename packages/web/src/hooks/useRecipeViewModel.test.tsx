@@ -292,21 +292,27 @@ test('vinegar split liquid and citric additive stack; the split acid figure stay
   expect(both.result.naohWeightGrams - vinegarOnly.result.naohWeightGrams).toBeCloseTo(citricExtra, 1);
 });
 
-test('under LS a stray citric line is never compensated (LS doses citric uncompensated, post-cook)', () => {
-  // Citric is CP/HP-only in the catalog, but a hand-edited or imported LS recipe can still
-  // carry a line. Compensating it would add the lye straight back — the exact failure the
-  // catalog comment forbids. Gate mirrors the PCSF process gate below it.
+test('LS citric: the lye-stage chelator route compensates; the after-cook neutralization route never does', () => {
+  // The stage decides, not the process: lye-stage citric consumes alkali the calc must
+  // replace (potassium citrate chelator route); after-cook citric neutralizes a finished
+  // batch's lye excess and compensating it would add that lye straight back.
   let without: any;
-  let withCitric: any;
+  let lyeStage: any;
+  let afterCook: any;
   probe((vm) => { without = vm; }, { lyeType: 'koh' }, 'ls');
-  probe((vm) => { withCitric = vm; }, { lyeType: 'koh' }, 'ls', undefined, [CITRIC_LINE]);
-  const line = withCitric.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
-  // The line still resolves (dose math is process-blind) but carries no compensation…
-  expect(line.grams).toBeGreaterThan(0);
-  expect(line.extraLye).toBeUndefined();
-  // …and the lye result is untouched.
-  expect(withCitric.result.kohWeightGrams).toBeCloseTo(without.result.kohWeightGrams, 6);
-  expect(withCitric.result.naohWeightGrams).toBeCloseTo(without.result.naohWeightGrams, 6);
+  probe((vm) => { lyeStage = vm; }, { lyeType: 'koh' }, 'ls', undefined, [CITRIC_LINE]);
+  probe((vm) => { afterCook = vm; }, { lyeType: 'koh' }, 'ls', undefined, [{ ...CITRIC_LINE, addAt: 'after_cook' as const }]);
+  // Lye-stage: compensation lands in the KOH figure.
+  const line = lyeStage.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
+  expect(line.extraLye.kohGrams).toBeGreaterThan(0);
+  expect(line.extraLye.naohGrams).toBe(0);
+  expect(lyeStage.result.kohWeightGrams).toBeCloseTo(
+    without.result.kohWeightGrams + line.extraLye.kohGrams, 3);
+  // After-cook: inert — the #128 protection, now stage-scoped.
+  const acLine = afterCook.computedAdditives.find((a: any) => a.catalogId === 'citric-acid');
+  expect(acLine.grams).toBeGreaterThan(0);
+  expect(acLine.extraLye).toBeUndefined();
+  expect(afterCook.result.kohWeightGrams).toBeCloseTo(without.result.kohWeightGrams, 6);
 });
 
 test('two citric lines each carry their share and the lye result sums both (per-line pin)', () => {
@@ -335,4 +341,22 @@ test('batch-basis citric resolves against the pre-compensation batch weight (one
   // refactor ever feeds the compensated result back into dose resolution, grams inflate
   // and this fails.
   expect(line.grams).toBeCloseTo(0.02 * (vm.result.totalBatchWeightGrams - line.extraLye.naohGrams), 1);
+});
+
+test('an LS glycerin split row (2 of 3 parts) passes the lye floor and yields the dilution advisory', () => {
+  const GLYCERIN_ROW = {
+    key: 'g1', presetKey: 'glycerin', name: 'Glycerin', customWaterPercent: '',
+    sizeMode: 'percent_of_liquid' as const, amount: '66.7', addAt: 'lye' as const,
+  };
+  let vm: any;
+  probe((v) => { vm = v; }, { lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '3', splitLiquids: [GLYCERIN_ROW] }, 'ls');
+  // Water dropped to ~1 part per part of lye…
+  expect(vm.result.waterWeightGrams).toBeCloseTo(vm.result.lyeWeightGrams * 3 * (1 - 0.667), 0);
+  // …the glycerin grams resolved post-calc against targetRatio × lye…
+  const row = vm.splitLiquidRows.find((r: any) => r.row.presetKey === 'glycerin');
+  expect(row.grams).toBeCloseTo(vm.result.lyeWeightGrams * 3 * 0.667, 0);
+  // …the floor counts the solvent grams (glycerin dissolves lye hot), so no shortfall…
+  expect(vm.lyeWaterStatus?.shortfallGrams ?? 0).toBe(0);
+  // …and the advisory insight is present.
+  expect(vm.insights.some((i: any) => i.code === 'glycerin_solvent_dilution')).toBe(true);
 });
