@@ -1,5 +1,5 @@
 import { alternativeLiquidPreset } from '@soap-calc/core';
-import { catalogEntryById } from '@soap-calc/core';
+import { catalogEntryById, isAdditiveOfferedFor, type AdditiveProcess } from '@soap-calc/core';
 import { extraLyeForAcid } from '@soap-calc/core';
 import {
   gramsFromDose,
@@ -30,9 +30,20 @@ export function computeRecipeAdditives(
   additives: AdditiveLine[],
   { oilGrams, batchGrams, solutionGrams }: { oilGrams: number; batchGrams: number; solutionGrams: number },
   acidLyeRecipe?: AcidLyeRecipe,
+  /** The recipe's process. A line whose catalog entry is not offered here is INERT: no
+   * grams, no batch weight, no dose advice. Optional so core-less callers and tests keep
+   * working; when omitted, nothing is withheld. */
+  process?: AdditiveProcess,
 ): ComputedAdditive[] {
   const result: ComputedAdditive[] = [];
   for (const line of additives) {
+    // Scoping the offer must scope the behaviour. Filtering only the picker left an
+    // imported or pre-gate line (glycerin under CP, say) still resolving grams and still
+    // adding batch weight for an additive the app declines to offer there.
+    if (process && line.catalogId) {
+      const entry = catalogEntryById(line.catalogId);
+      if (entry && !isAdditiveOfferedFor(entry, process)) continue;
+    }
     const basisWeight =
       line.basis === 'batch' ? batchGrams : line.basis === 'solution' ? solutionGrams : oilGrams;
     if (basisWeight <= 0) continue;

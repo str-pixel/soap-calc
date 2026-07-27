@@ -363,10 +363,22 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
 
 /** Entries offered for a given process: unscoped entries (no `processes`) apply to all
  * processes; scoped entries apply only when `process` is in their `processes` list. */
+/** Whether this additive is offered under `process`. The SINGLE source of truth for
+ * offered-ness — the picker, the dose computation and the stray-line notice all read it.
+ * When only the picker knew, a line for a withheld additive kept resolving grams and adding
+ * batch weight under a process that does not offer it. Mirrors
+ * isAlternativeLiquidOfferedFor. */
+export function isAdditiveOfferedFor(
+  entry: AdditiveCatalogEntry,
+  process: AdditiveProcess,
+): boolean {
+  return !entry.processes || entry.processes.includes(process);
+}
+
 export function catalogEntriesForProcess(
   process: AdditiveProcess,
 ): readonly AdditiveCatalogEntry[] {
-  return ADDITIVE_CATALOG.filter((entry) => !entry.processes || entry.processes.includes(process));
+  return ADDITIVE_CATALOG.filter((entry) => isAdditiveOfferedFor(entry, process));
 }
 
 export const LATHER_SUPPORT_PACK = [

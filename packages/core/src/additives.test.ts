@@ -4,6 +4,7 @@ import {
   ADDITIVE_STAGE_LABELS,
   catalogEntryById,
   catalogEntriesForProcess,
+  isAdditiveOfferedFor,
   effectiveCatalogEntry,
   type AdditiveCatalogEntry,
   gramsFromDose,
@@ -417,5 +418,22 @@ describe('sorbitol mirrors sugar per process (CP source: "same suggested usage r
       const so = effectiveCatalogEntry(base, process);
       expect([so.typicalLow, so.typicalHigh]).toEqual([s.typicalLow, s.typicalHigh]);
     }
+  });
+});
+
+describe('isAdditiveOfferedFor (single source of truth)', () => {
+  it('agrees with the picker list for every process', () => {
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      expect(catalogEntriesForProcess(process)).toEqual(
+        ADDITIVE_CATALOG.filter((e) => isAdditiveOfferedFor(e, process)),
+      );
+    }
+  });
+
+  it('says no to glycerin under CP and HP, yes under LS', () => {
+    const g = catalogEntryById('glycerin')!;
+    expect(isAdditiveOfferedFor(g, 'cp')).toBe(false);
+    expect(isAdditiveOfferedFor(g, 'hp')).toBe(false);
+    expect(isAdditiveOfferedFor(g, 'ls')).toBe(true);
   });
 });

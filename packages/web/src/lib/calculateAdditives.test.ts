@@ -236,3 +236,37 @@ describe('per-line acid extra lye', () => {
     expect(sugar[0].extraLye).toBeUndefined();
   });
 });
+
+describe('process scoping reaches the computation, not just the picker', () => {
+  const line = (catalogId: string) => ({
+    key: catalogId, catalogId, name: catalogId, amount: '10',
+    unit: 'percent' as const, basis: 'oil' as const, stage: 'lye' as const, addAt: 'lye' as const,
+  });
+  const basis = { oilGrams: 1000, batchGrams: 1500, solutionGrams: 3000 };
+
+  it('withholds a line whose additive the process does not offer', () => {
+    // Glycerin is LS-only. Before this, a CP recipe carrying the line (imported, or saved
+    // before the gate) still resolved 100 g and still added it to the batch — the picker
+    // filter never reached the dose computation.
+    expect(computeRecipeAdditives([line('glycerin')], basis, undefined, 'cp')).toEqual([]);
+    expect(computeRecipeAdditives([line('glycerin')], basis, undefined, 'hp')).toEqual([]);
+  });
+
+  it('still computes it for the process that does offer it', () => {
+    const rows = computeRecipeAdditives([line('glycerin')], basis, undefined, 'ls');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].grams).toBeCloseTo(100, 3);
+  });
+
+  it('withholds every additive CP does not offer, not just glycerin', () => {
+    for (const id of ['glycerin', 'yogurt', 'guar', 'hec', 'pearlizer', 'wd-shea', 'finished-soap']) {
+      expect(computeRecipeAdditives([line(id)], basis, undefined, 'cp')).toEqual([]);
+    }
+  });
+
+  it('leaves unscoped additives alone, and withholds nothing when no process is given', () => {
+    expect(computeRecipeAdditives([line('sugar-sorbitol')], basis, undefined, 'cp')).toHaveLength(1);
+    // Omitting the process keeps every existing caller working unchanged.
+    expect(computeRecipeAdditives([line('glycerin')], basis)).toHaveLength(1);
+  });
+});

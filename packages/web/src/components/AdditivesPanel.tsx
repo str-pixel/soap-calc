@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import {
   catalogEntriesForProcess,
+  isAdditiveOfferedFor,
   catalogEntryById,
   effectiveCatalogEntry,
   LATHER_SUPPORT_PACK,
@@ -36,6 +37,12 @@ const DOSE_MODES: { value: string; basis: DoseBasis; unit: DoseUnit; label: stri
 ];
 
 // The finished solution only exists for LS, so its dose modes are LS-only.
+const PROCESS_LABELS: Record<ProcessId, string> = {
+  cp: 'cold process',
+  hp: 'hot process',
+  ls: 'liquid soap',
+};
+
 function offeredDoseModesForProcess(process: ProcessId): typeof DOSE_MODES {
   return process === 'ls' ? DOSE_MODES : DOSE_MODES.filter((m) => m.basis !== 'solution');
 }
@@ -192,6 +199,9 @@ export const AdditivesPanel = memo(function AdditivesPanel({
             // doseUnit, hazards).
             const rawEntry = line.catalogId ? catalogEntryById(line.catalogId) : undefined;
             const entry = resolve(rawEntry);
+            // A line the process doesn't offer is inert (computeRecipeAdditives withholds
+            // its grams). Say so on the row, or it just reads as a dose that vanished.
+            const isStrayEntry = rawEntry !== undefined && !isAdditiveOfferedFor(rawEntry, process);
             // An amount present but over its unit's ceiling (e.g. left at 500 after switching
             // from ppt to %) yields no grams — flag it so the dose doesn't just vanish silently.
             const amountInvalid =
@@ -330,7 +340,14 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     Max {line.unit === 'ppt' ? '1000 ppt' : '100%'} — reduce the amount
                   </p>
                 )}
-                {entry && (
+                {isStrayEntry && (
+                  <p className="additive-list__hint" role="alert">
+                    {rawEntry!.name} is not used in {PROCESS_LABELS[process]} — this line is
+                    not being added, and its dose range belongs to a different process. Remove
+                    it, or switch the recipe&apos;s process.
+                  </p>
+                )}
+                {entry && !isStrayEntry && (
                   <p className="additive-list__hint">
                     Typical {entry.typicalLow}
                     {entry.typicalHigh !== entry.typicalLow ? `–${entry.typicalHigh}` : ''}

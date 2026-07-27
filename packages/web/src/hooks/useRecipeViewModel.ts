@@ -364,8 +364,10 @@ export function useRecipeViewModel({
         // Compensation is stage-aware inside computeRecipeAdditives (after_cook acid is
         // never compensated, any process) — so the recipe context flows unconditionally.
         acidLyeRecipe,
+        // …but process scoping IS withheld: a line the process doesn't offer is inert.
+        process,
       ),
-    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe],
+    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe, process],
   );
   const splitLiquidGrams =
     resolvedSplit && resolvedSplit.totalGrams > 0 ? resolvedSplit.totalGrams : null;
