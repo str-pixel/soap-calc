@@ -1,4 +1,4 @@
-import { memo, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { memo, type Dispatch, type SetStateAction } from 'react';
 import { cToF, estimateGelPhase, fToC, soapingTempBand, type GelMode } from '@soap-calc/core';
 import {
   effectiveSoapingTempF,
@@ -62,28 +62,21 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
       : 0;
 
   // The setting stores °F (core's bands and the 160 °F overflow constant are °F, and it
-  // keeps saved recipes migration-free), but the control edits in °C. A local draft holds
-  // what the user is typing so a half-entered "5" isn't instantly rewritten by the
-  // round-trip; it re-syncs whenever the effective value changes from elsewhere.
+  // keeps saved recipes migration-free); the control edits in °C and converts at that
+  // boundary. The displayed °C is derived STRAIGHT FROM STORAGE, never from the clamped
+  // effective value — cToF/fToC round-trip exactly at 1 °C steps, so what you type is what
+  // you see. (An earlier draft-plus-effect version clamped mid-keystroke and rewrote the
+  // field: typing "5" became "16". Clamping belongs to the calculation, not the input.)
   const effectiveC = fToC(effectiveF);
-  const [draftC, setDraftC] = useState(String(effectiveC));
-  useEffect(() => {
-    setDraftC(String(effectiveC));
-  }, [effectiveC]);
-
-  // The hint must catch BOTH paths: a value the user is typing right now, and a stored
-  // value that arrived out of range (imported recipe, or a variant switch that moved the
-  // floor). Seeding the draft from the effective figure would otherwise hide the latter.
   const storedF = Number(settings.soapingTempF);
-  const showClampHint =
-    (settings.soapingTempF.trim() !== '' && Number.isFinite(storedF) && storedF !== effectiveF) ||
-    (draftC.trim() !== '' && Number.isFinite(Number(draftC)) && Number(draftC) !== effectiveC);
+  const storedIsNumeric = settings.soapingTempF.trim() !== '' && Number.isFinite(storedF);
+  const displayC = storedIsNumeric ? String(fToC(storedF)) : '';
+  const showClampHint = storedIsNumeric && storedF !== effectiveF;
 
   const onCelsius = (value: string) => {
-    setDraftC(value);
     const c = Number(value);
-    if (value.trim() === '' || !Number.isFinite(c)) return;
-    setSettings((s) => ({ ...s, soapingTempF: String(cToF(c)) }));
+    const next = value.trim() === '' || !Number.isFinite(c) ? '' : String(cToF(c));
+    setSettings((s) => ({ ...s, soapingTempF: next }));
   };
 
   return (
@@ -119,7 +112,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
               min={fToC(range.minF)}
               max={fToC(range.maxF)}
               step={1}
-              value={draftC}
+              value={displayC}
               onChange={(e) => onCelsius(e.target.value)}
             />
             <span className="slider-field__unit">°C</span>

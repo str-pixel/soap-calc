@@ -68,10 +68,14 @@ test('CPLS gets the neutral no-external-heat note, not CP bar-band copy', () => 
   expect(screen.getByText(/no external heat/i)).toBeTruthy();
 });
 
-test('a stale stored value displays clamped (LTHP 140 under HTHP reads 205 °F / 96 °C)', () => {
+test('a stale stored value keeps its own figure in the field, clamped only for the calc', () => {
+  // Clamp-at-read means the STORED value is never rewritten: the input still shows the
+  // 140 °F (60 °C) that was saved, while the readout and the hint show the 205 °F (96 °C)
+  // the calculation actually uses under HTHP. Switching back to LTHP restores 140 intact.
   renderPanel({ processVariant: 'hp-hthp', soapingTempF: '140' }, 'hp');
+  expect((screen.getByLabelText('Soaping temperature') as HTMLInputElement).value).toBe('60');
   expect(screen.getByText(/96 °C \(205 °F\)/)).toBeTruthy();
-  expect((screen.getByLabelText('Soaping temperature') as HTMLInputElement).value).toBe('96');
+  expect(screen.getByText(/Outside this process/i).textContent).toContain('96 °C');
 });
 
 test('an out-of-range stored value shows the clamp hint in °C; an in-range one does not', () => {
