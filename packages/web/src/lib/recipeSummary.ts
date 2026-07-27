@@ -146,12 +146,21 @@ export function splitLiquidProcedureStep(input: {
   if (grams == null || grams <= 0) return null;
   const amount = formatWeight(grams, weightUnit);
   const name = row.name.trim() || 'the alternative liquid';
-  const sugary = alternativeLiquidPreset(row.presetKey)?.flags.includes('sugars') ?? false;
+  const flags = alternativeLiquidPreset(row.presetKey)?.flags ?? [];
+  const sugary = flags.includes('sugars');
+  const solvent = flags.includes('solvent');
 
   if (row.addAt === 'lye') {
+    // Solvent liquids (glycerin) are the opposite of sugary ones: they NEED heat to take
+    // the lye up, and there is nothing in them to scorch.
+    const note = solvent
+      ? ' — heat gently until the lye fully dissolves; it takes longer than water'
+      : sugary
+        ? ' — keep it cool; sugars scorch in hot lye'
+        : '';
     return {
       addAt: 'lye',
-      step: `Stir ${amount} ${name} into the cooled lye solution${sugary ? ' — keep it cool; sugars scorch in hot lye' : ''}.`,
+      step: `Stir ${amount} ${name} into the ${solvent ? 'lye solution' : 'cooled lye solution'}${note}.`,
     };
   }
   if (row.addAt === 'oils') {

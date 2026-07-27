@@ -180,6 +180,16 @@ test('CP steps stir an in-lye liquid into the cooled lye solution, with a sugar 
   expect(step.toLowerCase()).toContain('scorch');
 });
 
+test('an in-lye solvent row (glycerin) gets the heat-to-dissolve note, not the scorch caution', () => {
+  const steps = buildAddOrderSteps({
+    ...CP_BASE,
+    splitLiquidRows: [{ row: SPLIT({ presetKey: 'glycerin', name: 'Glycerin', addAt: 'lye' }), grams: 200 }],
+  });
+  const step = steps.find((s) => s.includes('Glycerin'))!;
+  expect(step.toLowerCase()).toContain('heat');
+  expect(step.toLowerCase()).not.toContain('scorch');
+});
+
 test('CP steps blend a with-oils liquid into the oils before the lye goes in', () => {
   const steps = buildAddOrderSteps({ ...CP_BASE, splitLiquidRows: [{ row: SPLIT({ addAt: 'oils' }), grams: 200 }] });
   const idx = steps.findIndex((s) => s.includes('goat milk'));

@@ -63,22 +63,34 @@ export function resolveSplitLiquidRows(
 export type SplitLiquidCalcOverride = {
   /** Settings to feed the lye calc so the lye water reflects the allocation. */
   settingsForCalc: RecipeSettings;
-  /** The pre-allocation total-liquid target the budget was computed from. */
-  targetLiquidGrams: number;
+  /** The pre-allocation total-liquid target the budget was computed from — null for
+   * ratio-mode overrides, where the target is only known post-calc (see targetRatio). */
+  targetLiquidGrams: number | null;
+  /** Ratio-mode overrides only: total liquid = targetRatio × the calc's lye grams. The
+   * caller resolves rows against that figure once the result exists (pure ratio
+   * arithmetic pre-calc, exact grams post-calc). */
+  targetRatio?: number;
 };
 
 /**
- * Budget allocation across the rows, under percent-of-oils water only — there the water
- * setting reads naturally as a total-liquid target. Any 'rest' row pins the lye water at
- * the 1:1 floor; otherwise percent_of_liquid rows reduce the water by their combined
- * share. Additive rows and explicit-strength water modes are left untouched.
+ * Budget allocation across the rows, under the two water modes where the setting reads
+ * naturally as a total-liquid target: percent-of-oils (target = % × oils, known pre-calc)
+ * and lye_water_ratio (target = N × lye grams, known only post-calc — the override
+ * carries `targetRatio` and adjusts the ratio itself, which is pure arithmetic). Any
+ * 'rest' row pins the lye water at the 1:1 floor; otherwise percent_of_liquid rows reduce
+ * the water by their combined share. Additive rows and lye_concentration mode are left
+ * untouched.
  */
 export function splitLiquidCalcOverride(
   settings: RecipeSettings,
   totalOilGrams: number,
 ): SplitLiquidCalcOverride | null {
   const rows = settings.splitLiquids;
-  if (rows.length === 0 || settings.waterMode !== 'percent_of_oils' || totalOilGrams <= 0) {
+  if (
+    rows.length === 0 ||
+    (settings.waterMode !== 'percent_of_oils' && settings.waterMode !== 'lye_water_ratio') ||
+    totalOilGrams <= 0
+  ) {
     return null;
   }
   const hasRest = rows.some((row) => row.sizeMode === 'rest');
@@ -88,6 +100,28 @@ export function splitLiquidCalcOverride(
     return amount === null ? sum : sum + amount;
   }, 0);
   if (!hasRest && percentOfLiquidShare <= 0) return null;
+
+  if (settings.waterMode === 'lye_water_ratio') {
+    const ratio = Number(settings.lyeWaterRatio);
+    if (!Number.isFinite(ratio) || ratio <= 0) return null;
+    if (hasRest) {
+      return {
+        settingsForCalc: { ...settings, lyeWaterRatio: '1' },
+        targetLiquidGrams: null,
+        targetRatio: ratio,
+      };
+    }
+    // Pure ratio arithmetic — no lye grams needed pre-calc: water' = N(1−p)·lye keeps the
+    // total liquid constant at N·lye (split, not discount). A share past the 1:1 floor
+    // (ratio' < 1) is allowed through — the lyeWaterStatus shortfall warning covers it,
+    // matching percent_of_oils behavior.
+    const reduced = ratio * (1 - Math.min(percentOfLiquidShare, 100) / 100);
+    return {
+      settingsForCalc: { ...settings, lyeWaterRatio: String(Math.round(reduced * 1000) / 1000) },
+      targetLiquidGrams: null,
+      targetRatio: ratio,
+    };
+  }
 
   const percent = Number(settings.waterPercentOfOils);
   if (!Number.isFinite(percent) || percent <= 0) return null;

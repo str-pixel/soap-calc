@@ -342,3 +342,21 @@ test('batch-basis citric resolves against the pre-compensation batch weight (one
   // and this fails.
   expect(line.grams).toBeCloseTo(0.02 * (vm.result.totalBatchWeightGrams - line.extraLye.naohGrams), 1);
 });
+
+test('an LS glycerin split row (2 of 3 parts) passes the lye floor and yields the dilution advisory', () => {
+  const GLYCERIN_ROW = {
+    key: 'g1', presetKey: 'glycerin', name: 'Glycerin', customWaterPercent: '',
+    sizeMode: 'percent_of_liquid' as const, amount: '66.7', addAt: 'lye' as const,
+  };
+  let vm: any;
+  probe((v) => { vm = v; }, { lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '3', splitLiquids: [GLYCERIN_ROW] }, 'ls');
+  // Water dropped to ~1 part per part of lye…
+  expect(vm.result.waterWeightGrams).toBeCloseTo(vm.result.lyeWeightGrams * 3 * (1 - 0.667), 0);
+  // …the glycerin grams resolved post-calc against targetRatio × lye…
+  const row = vm.splitLiquidRows.find((r: any) => r.row.presetKey === 'glycerin');
+  expect(row.grams).toBeCloseTo(vm.result.lyeWeightGrams * 3 * 0.667, 0);
+  // …the floor counts the solvent grams (glycerin dissolves lye hot), so no shortfall…
+  expect(vm.lyeWaterStatus?.shortfallGrams ?? 0).toBe(0);
+  // …and the advisory insight is present.
+  expect(vm.insights.some((i: any) => i.code === 'glycerin_solvent_dilution')).toBe(true);
+});

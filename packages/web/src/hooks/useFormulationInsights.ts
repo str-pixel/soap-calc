@@ -125,6 +125,9 @@ type FormulationInsightOptions = {
   /** Cook vessel volume ÷ batch volume (HP only), computed by the caller from an optional
    * vessel-size input. Undefined skips the hp_vessel_too_small guard entirely. */
   hpVesselMultiple?: number;
+  /** Glycerin delivered as a lye-solution solvent (split row or LS additive) — drives the
+   * glycerin_solvent_dilution advisory (core gates it to LS). */
+  lsGlycerinSolvent?: boolean;
 };
 
 export function useFormulationInsights(
@@ -210,6 +213,7 @@ export function useFormulationInsights(
         : undefined,
       isLiquidSoap: options.isLiquidSoap ?? false,
       process: options.process,
+      lsGlycerinSolvent: options.lsGlycerinSolvent,
       hpYogurtPercent:
         options.process === 'hp'
           ? hpYogurtPercentForInsights(options.additives ?? [], lyeResult.totalOilWeightGrams)

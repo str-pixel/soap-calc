@@ -94,3 +94,35 @@ describe('splitLiquidCalcOverride', () => {
     expect(splitLiquidCalcOverride(settingsWith([]), 1000)).toBeNull();
   });
 });
+
+describe('lye_water_ratio budget allocation (LS audit 2026-07-27)', () => {
+  const ratioSettings = (rows: SplitLiquidRow[]) =>
+    ({ ...DEFAULT_SETTINGS, waterMode: 'lye_water_ratio' as const, lyeWaterRatio: '3', splitLiquids: rows });
+
+  it('a 66.7% glycerin share reduces the effective ratio to 3×(1−0.667)≈1 and reports targetRatio 3', () => {
+    const rows = [ROW({ presetKey: 'glycerin', name: 'Glycerin', sizeMode: 'percent_of_liquid', amount: '66.7', addAt: 'lye' })];
+    const o = splitLiquidCalcOverride(ratioSettings(rows), 1000);
+    expect(o).not.toBeNull();
+    expect(Number(o!.settingsForCalc.lyeWaterRatio)).toBeCloseTo(3 * (1 - 0.667), 3);
+    expect(o!.targetRatio).toBe(3);
+    expect(o!.targetLiquidGrams).toBeNull();
+  });
+
+  it('a rest row under ratio mode pins the water at the 1:1 floor', () => {
+    const rows = [ROW({ sizeMode: 'rest', amount: '', addAt: 'trace' })];
+    const o = splitLiquidCalcOverride(ratioSettings(rows), 1000);
+    expect(o!.settingsForCalc.waterMode).toBe('lye_water_ratio');
+    expect(o!.settingsForCalc.lyeWaterRatio).toBe('1');
+    expect(o!.targetRatio).toBe(3);
+  });
+
+  it('percent_of_oils behavior is unchanged (regression)', () => {
+    const rows = [ROW({ presetKey: 'milk', name: 'Milk', sizeMode: 'percent_of_liquid', amount: '50', addAt: 'lye' })];
+    const o = splitLiquidCalcOverride(
+      { ...DEFAULT_SETTINGS, waterMode: 'percent_of_oils' as const, waterPercentOfOils: '38', splitLiquids: rows },
+      1000,
+    );
+    expect(o!.targetLiquidGrams).toBe(380);
+    expect(o!.targetRatio).toBeUndefined();
+  });
+});
