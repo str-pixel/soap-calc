@@ -471,3 +471,10 @@ describe('normalizeSplitLiquid presetKey', () => {
     expect(legacy.amount).toBe('10');
   });
 });
+
+describe('soapingTempF setting (2026-07-27)', () => {
+  it('defaults to 125 and round-trips an explicit value', () => {
+    expect(normalizeSettings(undefined).soapingTempF).toBe('125');
+    expect(normalizeSettings({ soapingTempF: '150' } as any).soapingTempF).toBe('150');
+  });
+});

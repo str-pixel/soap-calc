@@ -76,6 +76,9 @@ export type RecipeSettings = {
   postCookSuperfatOils: PostCookSuperfatOil[];
   postCookSuperfatMethod: 'append' | 'subtract';
   soapConcentrationPercent: string;
+  /** Starting temperature for oils + lye, °F (one figure — the sources pair them).
+   * Stored raw; consumers clamp per variant via effectiveSoapingTempF. */
+  soapingTempF: string;
   processVariant: ProcessVariantId;
   gelMode: GelMode;
 };
@@ -129,6 +132,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   // lye), keeping the batch at exactly the target oil weight and yielding a true superfat %.
   postCookSuperfatMethod: 'subtract',
   soapConcentrationPercent: '30',
+  soapingTempF: '125', // CP default — mid of the most-recommended 120–130 °F band
   processVariant: 'cp',
   gelMode: 'natural',
 };
@@ -442,6 +446,7 @@ export function normalizeSettings(
     ),
     postCookSuperfatOils: normalizePostCookSuperfatOils(partial ?? {}),
     soapConcentrationPercent: settingString(partial?.soapConcentrationPercent, d.soapConcentrationPercent),
+    soapingTempF: settingString(partial?.soapingTempF, d.soapingTempF),
   };
 }
 

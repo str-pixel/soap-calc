@@ -37,6 +37,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       superfatPercent: '5',
       waterMode: 'percent_of_oils',
       waterPercentOfOils: '33',
+      soapingTempF: '125', // soapingTempRangeFor('cp').defaultF
       processVariant: defaultVariantFor('cp'),
     },
     lyeChoices: ['naoh', 'dual'],
@@ -53,6 +54,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       superfatPercent: '3',
       waterMode: 'percent_of_oils',
       waterPercentOfOils: '38',
+      soapingTempF: '140', // soapingTempRangeFor('hp-lthp').defaultF — HP's default variant
       postCookSuperfatTotalPercent: '5',
       postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }],
       processVariant: defaultVariantFor('hp'),
@@ -71,6 +73,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       superfatPercent: '2',
       waterMode: 'lye_water_ratio',
       lyeWaterRatio: '2',
+      soapingTempF: '95', // soapingTempRangeFor('ls-cpls').defaultF — LS's default variant
       postCookSuperfatTotalPercent: '2',
       postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }],
       processVariant: defaultVariantFor('ls'),

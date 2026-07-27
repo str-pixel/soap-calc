@@ -5,6 +5,8 @@ import {
   defaultVariantFor,
   isProcessVariantId,
   allProcessVariantIds,
+  soapingTempRangeFor,
+  effectiveSoapingTempF,
 } from './processProfile';
 import { PROCESS_DEFINITIONS } from './process';
 
@@ -131,5 +133,29 @@ describe('isProcessVariantId', () => {
     expect(isProcessVariantId(undefined)).toBe(false);
     expect(isProcessVariantId(null)).toBe(false);
     expect(isProcessVariantId(42)).toBe(false);
+  });
+});
+
+describe('soaping-temperature ranges and clamp (2026-07-27)', () => {
+  it('CP spans the source bands with warning headroom; HTHP spans its cook target to the ceiling', () => {
+    expect(soapingTempRangeFor('cp')).toEqual({ minF: 60, maxF: 170, defaultF: 125 });
+    expect(soapingTempRangeFor('hp-hthp')).toEqual({ minF: 205, maxF: 240, defaultF: 215 });
+    expect(soapingTempRangeFor('hp-lthp')).toEqual({ minF: 110, maxF: 160, defaultF: 140 });
+    // CPLS: ambient process — seeded below the CP gel-free line, not at CP's 125.
+    expect(soapingTempRangeFor('ls-cpls')).toEqual({ minF: 60, maxF: 170, defaultF: 95 });
+  });
+
+  it('effectiveSoapingTempF clamps at read without touching the stored setting', () => {
+    const settings = { soapingTempF: '140' };
+    // An LTHP value viewed under HTHP clamps up to the floor…
+    expect(effectiveSoapingTempF(settings, 'hp-hthp')).toBe(205);
+    // …and reads back unchanged under its own variant (nothing was rewritten).
+    expect(settings.soapingTempF).toBe('140');
+    expect(effectiveSoapingTempF(settings, 'hp-lthp')).toBe(140);
+  });
+
+  it('falls back to the variant default on blank or junk', () => {
+    expect(effectiveSoapingTempF({ soapingTempF: '' }, 'cp')).toBe(125);
+    expect(effectiveSoapingTempF({ soapingTempF: 'abc' }, 'hp-hthp')).toBe(215);
   });
 });

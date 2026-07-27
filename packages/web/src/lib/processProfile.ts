@@ -153,6 +153,41 @@ export function processProfileById(variant: ProcessVariantId): ProcessProfile {
   return PROFILES[variant];
 }
 
+export type SoapingTempRange = { minF: number; maxF: number; defaultF: number };
+
+/** Slider range + default per variant. Ambient variants (temp: null — CP, CPLS) span the
+ * CP source bands (64–160 °F) with headroom on both sides; the 170 top deliberately lets
+ * a user cross the 160 °F overflow line and see the warning fire. Heated variants derive
+ * from their cook target: 10 °F of low-side headroom, ceiling (when one exists) as max.
+ * CPLS seeds at 95 °F — an ambient no-external-heat process, below the CP gel-free line —
+ * rather than CP's 125 (behavior-only choice; the source gives CPLS no starting figure). */
+export function soapingTempRangeFor(variant: ProcessVariantId): SoapingTempRange {
+  const profile = processProfileById(variant);
+  if (profile.temp === null) {
+    return { minF: 60, maxF: 170, defaultF: variant === 'ls-cpls' ? 95 : 125 };
+  }
+  const { lowF, highF, ceilingF } = profile.temp;
+  return {
+    minF: lowF - 10,
+    maxF: ceilingF ?? highF,
+    defaultF: lowF === highF ? lowF : Math.round((lowF + highF) / 2),
+  };
+}
+
+/** The soaping temperature consumers act on: the stored setting clamped into the
+ * variant's slider range, never rewritten. Staleness (an LTHP 140 viewed under HTHP's
+ * 205 floor) clamps at read and un-clamps the moment the variant fits again — a
+ * tab/variant detour loses nothing. Blank/junk falls back to the variant default. */
+export function effectiveSoapingTempF(
+  settings: { soapingTempF: string },
+  variant: ProcessVariantId,
+): number {
+  const range = soapingTempRangeFor(variant);
+  const raw = Number(settings.soapingTempF);
+  if (settings.soapingTempF.trim() === '' || !Number.isFinite(raw)) return range.defaultF;
+  return Math.min(range.maxF, Math.max(range.minF, raw));
+}
+
 export function defaultVariantFor(process: ProcessId): ProcessVariantId {
   return ORDER[process][0];
 }
