@@ -81,6 +81,12 @@ export function suggestOilGramsFromMoldSizer(
   input: MoldSizerInput,
   oilBatchFractionOverride?: number | null,
   weightUnit: WeightUnit = 'g',
+  /** Fraction of the water-bearing batter lost over cure, for the ACTIVE process
+   * (ProcessProfile.waterLossPercent). The bars mode asks for a weight AFTER cure, but
+   * oilBatchFraction is oil ÷ WET batch, so without this the suggestion sizes the wet batch
+   * to the cured target and every bar cures light — 15% under cold process. Omitted or 0
+   * reproduces the old behaviour. */
+  waterLossPercent = 0,
 ): number | null {
   const fraction = oilBatchFractionOverride ?? DEFAULT_OIL_BATCH_FRACTION;
   const wastePercent = parseNonNegative(input.wasteFactorPercent) ?? 0;
@@ -92,7 +98,16 @@ export function suggestOilGramsFromMoldSizer(
     const barWeightDisplay = parsePositive(input.barWeight);
     if (barCount === null || barWeightDisplay === null) return null;
     const barWeightGrams = displayValueToGrams(barWeightDisplay, weightUnit);
-    baseGrams = oilGramsFromBarCount(barCount, barWeightGrams, fraction);
+    // The field asks for the weight AFTER cure, so size the WET batch that cures to it.
+    // Slight over-correction when the recipe carries after-cook extras (fragrance, PCSF
+    // oil, additives), which do not evaporate: ~0.4 g per bar at 30 g of extras, against
+    // the ~15 g per bar this fixes. The sizer cannot see extras, so it errs on the useful
+    // side rather than reproducing a 15% shortfall.
+    const cureLoss =
+      Number.isFinite(waterLossPercent) && waterLossPercent > 0 && waterLossPercent < 1
+        ? waterLossPercent
+        : 0;
+    baseGrams = oilGramsFromBarCount(barCount, barWeightGrams / (1 - cureLoss), fraction);
   } else if (input.moldShape === 'cylinder') {
     const radius = parsePositive(input.radius);
     const height = parsePositive(input.height);

@@ -13,6 +13,9 @@ type MoldSizerPanelProps = {
   input: MoldSizerInput;
   weightUnit: WeightUnit;
   oilBatchFraction: number | null;
+  /** Cure water loss for the active process — bars mode sizes the wet batch that cures to
+   * the requested bar weight. */
+  waterLossPercent?: number;
   onChange: (input: MoldSizerInput) => void;
   onApply: (oilGrams: number) => void;
 };
@@ -21,12 +24,13 @@ export function MoldSizerPanel({
   input,
   weightUnit,
   oilBatchFraction,
+  waterLossPercent = 0,
   onChange,
   onApply,
 }: MoldSizerPanelProps) {
   const suggestedGrams = useMemo(
-    () => suggestOilGramsFromMoldSizer(input, oilBatchFraction, weightUnit),
-    [input, oilBatchFraction, weightUnit],
+    () => suggestOilGramsFromMoldSizer(input, oilBatchFraction, weightUnit, waterLossPercent),
+    [input, oilBatchFraction, weightUnit, waterLossPercent],
   );
   const applicableOilGrams =
     suggestedGrams !== null ? Math.round(suggestedGrams) : null;
@@ -189,7 +193,7 @@ export function MoldSizerPanel({
             />
           </label>
           <label className="field">
-            <span>Finished bar weight ({weightUnit})</span>
+            <span>Bar weight after cure ({weightUnit})</span>
             <input
               type="number"
               className="input"

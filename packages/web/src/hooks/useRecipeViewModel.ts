@@ -94,6 +94,7 @@ export type RecipeViewModel = {
   soapingTempF: number;
   cureEstimate: CureEstimate | null;
   labelWeight: number | null;
+  cureWaterLossPercent: number;
   /** Cook vessel volume ÷ batch volume, when a vessel volume was supplied for an HP recipe;
    * undefined otherwise. Mirrors what was fed into analyzeFormulation's hp_vessel_too_small
    * guard, so callers can render the same ratio without recomputing it. */
@@ -803,6 +804,9 @@ export function useRecipeViewModel({
     soapingTempF,
     cureEstimate,
     labelWeight,
+    /** Cure water loss for the active variant. The mold sizer's bars mode needs it to size
+     * a WET batch that cures to the requested bar weight. */
+    cureWaterLossPercent: profile?.waterLossPercent ?? 0,
     hpVesselMultiple,
   };
 }
