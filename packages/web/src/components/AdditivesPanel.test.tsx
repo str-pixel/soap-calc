@@ -483,19 +483,66 @@ describe('per-process dose resolution (HP audit)', () => {
   });
 });
 
-describe('free-fatty-acid guidance (HP audit)', () => {
-  it('tells HP users to dose stearic/lauric/myristic as oils; silent under CP and LS', () => {
-    const { unmount } = render(
-      <AdditivesPanel additives={[]} computed={[]} weightUnit="g" process="hp" onChange={() => {}} />,
-    );
-    expect(screen.getByText(/stearic, lauric, myristic/i).textContent).toMatch(/as oils|oils list/i);
-    unmount();
-    for (const process of ['cp', 'ls'] as const) {
+describe('free-fatty-acid guidance (HP + LS audits)', () => {
+  it('tells HP (5–8%) and LS (5–10%) users to dose free fatty acids as oils; silent under CP', () => {
+    for (const [process, range] of [['hp', '5–8%'], ['ls', '5–10%']] as const) {
       const r = render(
         <AdditivesPanel additives={[]} computed={[]} weightUnit="g" process={process} onChange={() => {}} />,
       );
-      expect(screen.queryByText(/stearic, lauric, myristic/i)).toBeNull();
+      expect(screen.getByText(/stearic, lauric, myristic/i).textContent).toContain(range);
       r.unmount();
     }
+    render(<AdditivesPanel additives={[]} computed={[]} weightUnit="g" process="cp" onChange={() => {}} />);
+    expect(screen.queryByText(/stearic, lauric, myristic/i)).toBeNull();
+  });
+});
+
+describe('dose-basis seeding and display (LS audit)', () => {
+  it('picking pearlizer under LS seeds the solution basis; sodium lactate stays oil-based', () => {
+    for (const [id, basis] of [['pearlizer', 'solution'], ['sodium-lactate', 'oil']] as const) {
+      let latest: AdditiveLine[] = [];
+      const line = makeLine({ name: '' });
+      const { unmount } = render(
+        <AdditivesPanel additives={[line]} computed={[]} weightUnit="g" process="ls" onChange={(a) => { latest = a; }} />,
+      );
+      fireEvent.change(screen.getByLabelText(/^Additive type/), { target: { value: id } });
+      expect(latest[0].basis).toBe(basis);
+      unmount();
+    }
+  });
+
+  it('the typical-range hint names the basis: solution under LS fragrance, oils under CP', () => {
+    const line = makeLine({ catalogId: 'fragrance', name: 'Fragrance / essential oil', amount: '1' });
+    const { unmount } = render(
+      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="ls" onChange={() => {}} />,
+    );
+    expect(screen.getByText(/Typical 0.5–3% of diluted solution/)).toBeTruthy();
+    unmount();
+    render(
+      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="cp" onChange={() => {}} />,
+    );
+    expect(screen.getByText(/Typical 2–6% of oil weight/)).toBeTruthy();
+  });
+
+  it('a solution-based row with no dilution shows the set-concentration hint instead of silent 0 g', () => {
+    const line = makeLine({ catalogId: 'pearlizer', name: 'Pearlizer (glycol stearate)', amount: '5', basis: 'solution' });
+    const zeroRow = { ...makeComputed(line), grams: 0, basis: 'solution' as const };
+    render(
+      <AdditivesPanel additives={[line]} computed={[zeroRow]} weightUnit="g" process="ls" onChange={() => {}} />,
+    );
+    expect(screen.getByText(/soap concentration/i)).toBeTruthy();
+  });
+
+  it('salt shows the salt-curve hazard under LS and the crumble hazard under CP', () => {
+    const line = makeLine({ catalogId: 'salt', name: 'Table salt (NaCl)', amount: '4' });
+    const { unmount } = render(
+      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="ls" onChange={() => {}} />,
+    );
+    expect(screen.getByText(/salt curve/)).toBeTruthy();
+    unmount();
+    render(
+      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="cp" onChange={() => {}} />,
+    );
+    expect(screen.getByText(/crumbly/)).toBeTruthy();
   });
 });

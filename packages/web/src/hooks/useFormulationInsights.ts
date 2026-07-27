@@ -18,12 +18,22 @@ import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculat
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
 export function totalAdditivePercentForInsights(
-  additives: Array<{ grams: number }>,
+  additives: Array<{ catalogId?: string; grams: number }>,
   oilGrams: number,
   splitLiquidRows: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null }>,
 ): number {
   const additivePercent =
-    oilGrams > 0 ? additives.reduce((sum, item) => sum + (item.grams / oilGrams) * 100, 0) : 0;
+    oilGrams > 0
+      ? additives.reduce(
+          // Glycerin is excluded: its LS dose (20–25% of oils) is a deliberate solvent
+          // load, not "extras" — counting it would make the ~10% high_total_additives
+          // warning permanent for every glycerin-method recipe. Same shape as the
+          // excludeYogurt dedup on the sugar sum.
+          (sum, item) =>
+            item.catalogId === 'glycerin' ? sum : sum + (item.grams / oilGrams) * 100,
+          0,
+        )
+      : 0;
   // Rows joining the batter (trace/oils) count toward additive load; in-lye rows are part
   // of the lye solution instead. Sized in grams by the view model, folded back to % of oils.
   const splitLiquidPercent =
