@@ -5,6 +5,7 @@ import {
   catalogEntryById,
   catalogEntriesForProcess,
   effectiveCatalogEntry,
+  type AdditiveCatalogEntry,
   gramsFromDose,
   gramsFromPercentOfOil,
   LATHER_SUPPORT_PACK,
@@ -313,5 +314,31 @@ describe('free fatty acids are oils, not additives (HP audit 2026-07-26)', () =>
     expect(catalogEntriesForProcess('hp').some((e) => e.id === 'finished-soap')).toBe(true);
     expect(catalogEntriesForProcess('cp').some((e) => e.id === 'finished-soap')).toBe(false);
     expect(catalogEntriesForProcess('ls').some((e) => e.id === 'finished-soap')).toBe(false);
+  });
+});
+
+describe('doseBasis / hazards on the override seam (LS audit 2026-07-27)', () => {
+  it('merges doseBasis and hazards from an override; base entries default to no doseBasis', () => {
+    const probe: AdditiveCatalogEntry = {
+      id: 'probe', name: 'Probe', typicalLow: 1, typicalHigh: 2, defaultStage: 'trace',
+      hazards: ['base hazard'],
+      processOverrides: { ls: { doseBasis: 'solution', hazards: ['ls hazard'] } },
+    };
+    const ls = effectiveCatalogEntry(probe, 'ls');
+    expect(ls.doseBasis).toBe('solution');
+    expect(ls.hazards).toEqual(['ls hazard']); // replaces, not appends
+    const cp = effectiveCatalogEntry(probe, 'cp');
+    expect(cp.doseBasis).toBeUndefined();
+    expect(cp.hazards).toEqual(['base hazard']);
+  });
+
+  it('solution-based dosing is reachable only under LS (data invariant)', () => {
+    for (const entry of ADDITIVE_CATALOG) {
+      for (const process of ['cp', 'hp'] as const) {
+        // Skip entries never offered for this process — unreachable is fine.
+        if (entry.processes && !entry.processes.includes(process)) continue;
+        expect(effectiveCatalogEntry(entry, process).doseBasis ?? 'oil').not.toBe('solution');
+      }
+    }
   });
 });

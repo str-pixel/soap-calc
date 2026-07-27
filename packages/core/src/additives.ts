@@ -10,6 +10,12 @@ export type AdditiveProcessOverride = {
   typicalLow?: number;
   typicalHigh?: number;
   defaultStage?: AdditiveStage;
+  /** Overrides the entry's dose basis for this process (e.g. LS doses fragrance and
+   * pearlizer as % of the finished solution). REPLACES the base value. */
+  doseBasis?: DoseBasis;
+  /** Replaces (not appends to) the base hazards for this process — e.g. salt's
+   * "crumbly bar" tag is meaningless in LS, where the risk is the salt curve. */
+  hazards?: string[];
 };
 
 export type AdditiveCatalogEntry = {
@@ -31,6 +37,9 @@ export type AdditiveCatalogEntry = {
    * parts-per-thousand MUST say so, or the UI renders a ppt range with a % sign —
    * a 10× dose overstatement. */
   doseUnit?: DoseUnit;
+  /** Default dose basis a catalog pick seeds (absent = 'oil'). 'solution' is LS-only by
+   * data invariant — the finished solution exists only for LS. */
+  doseBasis?: DoseBasis;
   /** Acid additives: grams of PURE alkali consumed per gram of additive — identical in
    * meaning to AlternativeLiquidPreset.lyeNeutralization. The calc compensates
    * automatically (extraLyeForAcid, applied per line by the web dose resolver) so the
