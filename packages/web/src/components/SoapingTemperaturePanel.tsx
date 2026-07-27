@@ -69,6 +69,15 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           {fToC(effectiveF)} °C ({effectiveF} °F)
         </p>
       </div>
+      {Number.isFinite(Number(settings.soapingTempF)) &&
+        settings.soapingTempF.trim() !== '' &&
+        Number(settings.soapingTempF) !== effectiveF && (
+          // The typed value stays in the input untouched (clamp-at-read never rewrites);
+          // this line says which figure the calc actually uses and why.
+          <p className="results-hint">
+            Outside this process&apos;s range ({range.minF}–{range.maxF} °F) — using {effectiveF} °F.
+          </p>
+        )}
       <div className="slider-field">
         <div className="slider-field__head">
           <span className="slider-field__label">Starting temperature</span>

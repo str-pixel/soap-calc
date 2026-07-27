@@ -62,3 +62,11 @@ test('a stale stored value displays clamped (LTHP 140 under HTHP reads 205)', ()
   renderPanel({ processVariant: 'hp-hthp', soapingTempF: '140' }, 'hp');
   expect(screen.getByText(/96 °C \(205 °F\)/)).toBeTruthy();
 });
+
+test('an out-of-range typed value shows the clamp hint; an in-range one does not', () => {
+  const { unmount } = renderPanel({ soapingTempF: '300' });
+  expect(screen.getByText(/using 170 °F/i).textContent).toMatch(/range/i);
+  unmount();
+  renderPanel({ soapingTempF: '125' });
+  expect(screen.queryByText(/using .* °F/i)).toBeNull();
+});
