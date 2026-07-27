@@ -272,13 +272,12 @@ describe('citric acid additive (auto-lye)', () => {
 });
 
 describe('per-process catalog overrides (HP audit 2026-07-26)', () => {
-  it('sodium lactate: CP/LS keep 0.5–2% in the lye water; HP overrides to 3–4% at trace', () => {
+  it('sodium lactate: CP keeps 0.5–2% in the lye water; HP overrides to 3–4% at trace', () => {
     const base = catalogEntryById('sodium-lactate')!;
     const cp = effectiveCatalogEntry(base, 'cp');
     expect([cp.typicalLow, cp.typicalHigh, cp.defaultStage]).toEqual([0.5, 2, 'lye']);
-    // LS has no source coverage — it inherits the base values, never HP's.
-    const ls = effectiveCatalogEntry(base, 'ls');
-    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([0.5, 2, 'lye']);
+    // (LS gained its own source-backed override in the 2026-07-27 LS audit — pinned in
+    // the LS describe below, superseding the earlier LS-inherits-base premise.)
     const hp = effectiveCatalogEntry(base, 'hp');
     expect([hp.typicalLow, hp.typicalHigh, hp.defaultStage]).toEqual([3, 4, 'trace']);
     // Merge preserves everything the override does not name.
@@ -310,10 +309,9 @@ describe('free fatty acids are oils, not additives (HP audit 2026-07-26)', () =>
     expect(soap?.name).toBe('Finished soap (grated or liquid)');
     expect([soap?.typicalLow, soap?.typicalHigh]).toEqual([0.05, 1]);
     expect(soap?.defaultStage).toBe('oils');
-    expect(soap?.processes).toEqual(['hp']);
+    expect(soap?.processes).toEqual(['hp', 'ls']);
     expect(catalogEntriesForProcess('hp').some((e) => e.id === 'finished-soap')).toBe(true);
     expect(catalogEntriesForProcess('cp').some((e) => e.id === 'finished-soap')).toBe(false);
-    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'finished-soap')).toBe(false);
   });
 });
 
@@ -340,5 +338,51 @@ describe('doseBasis / hazards on the override seam (LS audit 2026-07-27)', () =>
         expect(effectiveCatalogEntry(entry, process).doseBasis ?? 'oil').not.toBe('solution');
       }
     }
+  });
+});
+
+describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
+  it('sodium lactate LS: 3–5% into the oils (envelope 1–10 documented, not encoded)', () => {
+    const ls = effectiveCatalogEntry(catalogEntryById('sodium-lactate')!, 'ls');
+    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([3, 5, 'oils']);
+  });
+
+  it('sugar LS: 1–5% into the oils (less browning than the lye water)', () => {
+    const ls = effectiveCatalogEntry(catalogEntryById('sugar-sorbitol')!, 'ls');
+    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([1, 5, 'oils']);
+  });
+
+  it('salt LS: 3–8% at the lye stage, with the salt-curve hazard replacing the bar tag', () => {
+    const ls = effectiveCatalogEntry(catalogEntryById('salt')!, 'ls');
+    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([3, 8, 'lye']);
+    expect(ls.hazards).toEqual(['past the salt curve more salt thins, not thickens']);
+    const cp = effectiveCatalogEntry(catalogEntryById('salt')!, 'cp');
+    expect(cp.hazards).toEqual(['can make the bar crumbly']);
+  });
+
+  it('fragrance LS: 0.5–3% of the finished solution (3% max)', () => {
+    const ls = effectiveCatalogEntry(catalogEntryById('fragrance')!, 'ls');
+    expect([ls.typicalLow, ls.typicalHigh, ls.doseBasis]).toEqual([0.5, 3, 'solution']);
+    expect(effectiveCatalogEntry(catalogEntryById('fragrance')!, 'cp').doseBasis).toBeUndefined();
+  });
+
+  it('glycerin: LS-only, 20–25% of oils into the lye solution', () => {
+    const g = catalogEntryById('glycerin');
+    expect([g?.typicalLow, g?.typicalHigh, g?.defaultStage, g?.processes]).toEqual([20, 25, 'lye', ['ls']]);
+    expect(g?.doseBasis).toBeUndefined(); // % of oil weight
+  });
+
+  it('pearlizer and water-dispersible shea: LS-only, solution-based, after cook', () => {
+    const p = catalogEntryById('pearlizer');
+    expect([p?.typicalLow, p?.typicalHigh, p?.defaultStage, p?.doseBasis, p?.processes])
+      .toEqual([2, 10, 'after_cook', 'solution', ['ls']]);
+    const sh = catalogEntryById('wd-shea');
+    expect([sh?.typicalLow, sh?.typicalHigh, sh?.defaultStage, sh?.doseBasis, sh?.processes])
+      .toEqual([1, 25, 'after_cook', 'solution', ['ls']]);
+  });
+
+  it('finished soap extends to LS', () => {
+    expect(catalogEntryById('finished-soap')?.processes).toEqual(['hp', 'ls']);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'finished-soap')).toBe(true);
   });
 });

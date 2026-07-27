@@ -66,7 +66,24 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     processOverrides: {
       // An HP cook tolerates (and typically uses) more sugar than a CP mold; stage unchanged.
       hp: { typicalLow: 1, typicalHigh: 5 },
+      // LS doses sugar like HP but prefers the oils over the lye water (less browning).
+      ls: { typicalLow: 1, typicalHigh: 5, defaultStage: 'oils' },
     },
+  },
+  {
+    // Glycerin — LS solvent and saponification/dilution accelerant, dosed into the lye
+    // solution as % of oils (source envelope 1–25%; 20–25% is the typical high-temp
+    // no-paste dose). The other mode — swapping 1–2 parts of the lye-solution water for
+    // glycerin — is the 'glycerin' split-liquid preset, not this entry. Excluded from the
+    // high_total_additives sum (a 20%+ solvent dose is deliberate, not an extras load).
+    // Solvent effect: expect less dilution water — glycerin_solvent_dilution advises; no
+    // numeric model exists.
+    id: 'glycerin',
+    name: 'Glycerin',
+    typicalLow: 20,
+    typicalHigh: 25,
+    defaultStage: 'lye',
+    processes: ['ls'],
   },
   {
     // Sorbitol — sugar alcohol with a stronger lather effect than sucrose, tolerating a
@@ -144,6 +161,11 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 2,
     typicalHigh: 6,
     defaultStage: 'trace',
+    processOverrides: {
+      // LS doses fragrance as a concentration in the finished solution, 3% max — well
+      // below bar-soap oil-weight percentages.
+      ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution' },
+    },
   },
   {
     // Jojoba is deliberately NOT in this catalog: it belongs in the saponified oil blend
@@ -166,6 +188,16 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 1,
     defaultStage: 'lye',
     hazards: ['can make the bar crumbly'],
+    processOverrides: {
+      // The LS start-of-cook dose (3–8% of oils ≈ 0.5–3% of the final solution at ~35%
+      // concentration) suppresses the paste phase; past the salt curve more salt THINS.
+      // The bar-crumble tag is meaningless in LS, so the hazard is replaced per-process.
+      ls: {
+        typicalLow: 3,
+        typicalHigh: 8,
+        hazards: ['past the salt curve more salt thins, not thickens'],
+      },
+    },
   },
   {
     // Sodium lactate — humectant + hardener, water-soluble, added to the lye water.
@@ -179,6 +211,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // HP doses it harder and later: into the batter after a very thick trace (before the
       // expansion phase), where it keeps the cook fluid and hardens the finished bar.
       hp: { typicalLow: 3, typicalHigh: 4, defaultStage: 'trace' },
+      // LS runs it harder still, typically into the oils before the lye goes in; the
+      // source envelope is 1–10% of oils (liquid form, ~60–70% solution).
+      ls: { typicalLow: 3, typicalHigh: 5, defaultStage: 'oils' },
     },
   },
   {
@@ -235,15 +270,17 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // 'stearic'/'lauric' load as custom rows (normalizeAdditiveLine clears unknown ids —
     // same path as the removed 'jojoba' entry).
     //
-    // Finished soap — the lye-neutral HP trace accelerant / emulsion stabilizer: grated
-    // bar or liquid soap melted into the hot oils. Already saponified, so unlike the free
-    // fatty acids it genuinely takes no lye.
+    // Finished soap — the lye-neutral HP/LS trace accelerant / emulsion stabilizer:
+    // grated bar or liquid soap melted into the hot oils. Already saponified, so unlike
+    // the free fatty acids it genuinely takes no lye. LS uses it identically (into the
+    // hot oils); the LS source doses it in absolute ounces — the % range carries over
+    // from the HP use of the same technique.
     id: 'finished-soap',
     name: 'Finished soap (grated or liquid)',
     typicalLow: 0.05,
     typicalHigh: 1,
     defaultStage: 'oils',
-    processes: ['hp'],
+    processes: ['hp', 'ls'],
   },
   {
     // Yogurt — stirred in after cook/dilution in fluid HP; its water content deducts from
@@ -273,6 +310,28 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.5,
     typicalHigh: 1,
     defaultStage: 'after_cook',
+    processes: ['ls'],
+  },
+  {
+    // Pearlizer (glycol stearate/distearate) — melted flakes, dosed as % of the finished
+    // solution; some products go in at trace, most after cook/dilution.
+    id: 'pearlizer',
+    name: 'Pearlizer (glycol stearate)',
+    typicalLow: 2,
+    typicalHigh: 10,
+    defaultStage: 'after_cook',
+    doseBasis: 'solution',
+    processes: ['ls'],
+  },
+  {
+    // Water-dispersible shea — self-emulsifying emollient/opacifier, % of the finished
+    // solution, after dilution.
+    id: 'wd-shea',
+    name: 'Water-dispersible shea',
+    typicalLow: 1,
+    typicalHigh: 25,
+    defaultStage: 'after_cook',
+    doseBasis: 'solution',
     processes: ['ls'],
   },
 ] as const;
