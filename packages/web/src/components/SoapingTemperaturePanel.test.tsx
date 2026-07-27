@@ -7,13 +7,22 @@ import type { ProcessId } from '../lib/process';
 
 afterEach(cleanup);
 
-function renderPanel(over: Partial<RecipeSettings> = {}, process: ProcessId = 'cp') {
+function renderPanel(
+  over: Partial<RecipeSettings> = {},
+  process: ProcessId = 'cp',
+  waterLyeRatio: number | null = 2.4,
+) {
   const state = { settings: { ...DEFAULT_SETTINGS, ...over } };
   const setSettings = (updater: RecipeSettings | ((s: RecipeSettings) => RecipeSettings)) => {
     state.settings = typeof updater === 'function' ? updater(state.settings) : updater;
   };
   const utils = render(
-    <SoapingTemperaturePanel settings={state.settings} setSettings={setSettings} process={process} />,
+    <SoapingTemperaturePanel
+      settings={state.settings}
+      setSettings={setSettings}
+      process={process}
+      waterLyeRatio={waterLyeRatio}
+    />,
   );
   return { state, ...utils };
 }
@@ -69,4 +78,32 @@ test('an out-of-range typed value shows the clamp hint; an in-range one does not
   unmount();
   renderPanel({ soapingTempF: '125' });
   expect(screen.queryByText(/using .* °F/i)).toBeNull();
+});
+
+test('gel readout: likely at 125 °F with high water, unlikely at 2:1', () => {
+  const { unmount } = renderPanel({ soapingTempF: '125' }, 'cp', 2.4);
+  expect(screen.getByText(/Gel phase: likely/i)).toBeTruthy();
+  unmount();
+  renderPanel({ soapingTempF: '125' }, 'cp', 2.0);
+  expect(screen.getByText(/Gel phase: unlikely/i)).toBeTruthy();
+});
+
+test('gel readout names the partial-gel ring in the 100–119 °F zone at high water', () => {
+  renderPanel({ soapingTempF: '110' }, 'cp', 2.5);
+  const line = screen.getByText(/Gel phase: possible/i);
+  expect(line.textContent?.toLowerCase()).toContain('ring');
+});
+
+test('the steer line points both ways under CP', () => {
+  renderPanel();
+  const steer = screen.getByText(/avoids gel/i);
+  expect(steer.textContent).toMatch(/encourages/i);
+});
+
+test('no gel line without a calculated water:lye ratio, and never outside CP', () => {
+  const { unmount } = renderPanel({ soapingTempF: '125' }, 'cp', null);
+  expect(screen.queryByText(/Gel phase:/i)).toBeNull();
+  unmount();
+  renderPanel({ processVariant: 'hp-hthp', soapingTempF: '215' }, 'hp', 2.4);
+  expect(screen.queryByText(/Gel phase:/i)).toBeNull();
 });

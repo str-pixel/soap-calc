@@ -408,6 +408,7 @@ export default function App() {
               settings={settings}
               setSettings={setSettings}
               process={process}
+              waterLyeRatio={vm.result?.waterLyeRatio ?? null}
             />
 
             <AdditivesPanel
