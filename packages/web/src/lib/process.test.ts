@@ -5,6 +5,7 @@ import {
   isProcessId,
   defaultsForProcess,
   coerceSettingsForProcess,
+  importRoutingSuffix,
 } from './process';
 import { DEFAULT_SETTINGS } from './recipe';
 import type { ProcessVariantId } from './processProfile';
@@ -87,5 +88,14 @@ describe('process sub-variant defaults', () => {
   it('coerceSettingsForProcess falls back safely on a garbage processVariant string', () => {
     const garbage = { ...DEFAULT_SETTINGS, processVariant: 'nonsense' as ProcessVariantId };
     expect(coerceSettingsForProcess(garbage, 'cp').processVariant).toBe('cp');
+  });
+});
+
+describe('importRoutingSuffix', () => {
+  it('importRoutingSuffix announces inference and stays silent for declared files', () => {
+    expect(importRoutingSuffix('inferred', 'cp')).toBe(
+      ' as cold process — this file predates process tags',
+    );
+    expect(importRoutingSuffix('declared', 'hp')).toBe('');
   });
 });

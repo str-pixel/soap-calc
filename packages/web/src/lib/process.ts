@@ -121,3 +121,15 @@ export function coerceSettingsForProcess(
     processVariant: variantOk ? settings.processVariant : defaultVariantFor(process),
   };
 }
+
+/** Suffix for the import flash. Inference is the one silent-guess path left, so it is
+ * always announced — it is wrong for legacy NaOH hot-process files, and the announcement
+ * is what makes that survivable (spec 2026-07-30). */
+export function importRoutingSuffix(
+  source: 'declared' | 'inferred',
+  process: ProcessId,
+): string {
+  return source === 'inferred'
+    ? ` as ${PROCESS_DEFINITIONS[process].label.toLowerCase()} — this file predates process tags`
+    : '';
+}

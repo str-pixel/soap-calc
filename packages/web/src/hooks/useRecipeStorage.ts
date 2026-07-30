@@ -19,6 +19,7 @@ import {
 import {
   coerceSettingsForProcess,
   defaultsForProcess,
+  importRoutingSuffix,
   type ProcessId,
 } from '../lib/process';
 import {
@@ -193,10 +194,11 @@ export function useRecipeStorage() {
         );
         // Fold any write failure into the final message so it isn't overwritten by the
         // success flash — storage full means neither the previous nor imported recipe persisted.
+        const routing = importRoutingSuffix(parsed.data.processSource, nextProcess);
         flashSaveMessage(
           flushedOutgoing && savedImported
-            ? `Imported “${parsed.data.name}”`
-            : `Imported “${parsed.data.name}” — but storage is full, so changes may not persist. Export to keep a copy.`,
+            ? `Imported “${parsed.data.name}”${routing}`
+            : `Imported “${parsed.data.name}”${routing} — but storage is full, so changes may not persist. Export to keep a copy.`,
         );
       })
       .catch(() => {
