@@ -505,6 +505,38 @@ describe('recipe file process', () => {
     const parsed = parseRecipeFile(raw);
     expect(parsed.ok && parsed.data.process).toBe('cp');
   });
+
+  it('a declared process routes as declared', () => {
+    const payload = serializeRecipeFile('Declared', createStarterLines(), DEFAULT_SETTINGS, [], 'hp');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.data.process).toBe('hp');
+      expect(parsed.data.processSource).toBe('declared');
+    }
+  });
+
+  it('an absent process is inferred from the alkali and marked inferred', () => {
+    const payload = serializeRecipeFile('Legacy', createStarterLines(), {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+    });
+    delete (payload as { process?: unknown }).process; // legacy file: field absent entirely
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.data.process).toBe('ls');
+      expect(parsed.data.processSource).toBe('inferred');
+    }
+  });
+
+  it('a present-but-invalid process refuses instead of guessing', () => {
+    const payload = serializeRecipeFile('Garbage', createStarterLines(), DEFAULT_SETTINGS);
+    (payload as { process?: unknown }).process = 'melt-and-pour';
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) expect(parsed.error).toMatch(/process/i);
+  });
 });
 
 describe('recipe file processVariant', () => {
