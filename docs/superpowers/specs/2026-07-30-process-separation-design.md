@@ -40,6 +40,13 @@ process gates go, which is how these bugs are born one at a time.
 
 ## Architecture
 
+**Layering rule.** Core stays definition-agnostic: it declares per-process data on its
+own entities (catalog `processes` fields, `processOverrides`) and takes everything else
+as parameters. The composed `ProcessDefinition` lives in `packages/web` and is the only
+thing that reads those declarations together. Core never imports a definition; a
+definition never reaches into core internals. Violating this is how the coupling this
+design removes would grow back.
+
 **One engine, three declarations.** The chemistry (SAP, lye, purity, superfat, dilution
 arithmetic) stays in `@soap-calc/core`, shared and unforked — it is identical across
 processes and forking it creates drift where none exists. Everything process-*specific*
@@ -107,8 +114,11 @@ with the row-level notice pattern from #141/#145. This is unchanged and remains 
   (existing pattern), never dropped, never acting.
 - An import for another process while a different tab is active: routed to the right
   workspace with a visible confirmation, never merged into the active one.
-- A garbage/unknown process on a file: refuse with the legacy-inference offer, never
-  guess silently.
+- Import process field, three distinct cases: **declared** → route to that workspace;
+  **absent** (legacy file) → infer via `processForLyeType` once, stating the routing to
+  the user; **present but invalid** (garbage) → refuse, offering the legacy inference as
+  an explicit choice. Never guess silently; the absent case is the only inference and it
+  is always announced.
 
 ## Testing
 
@@ -117,6 +127,13 @@ with the row-level notice pattern from #141/#145. This is unchanged and remains 
 - New e2e: import-routing (file declares HP while LS tab active), and one
   cross-process-leak canary per process pair (a definition-driven loop, not hand cases).
 - Mutation check on new tests (a test must fail when its gate is removed).
+
+## Migration
+
+None. No slice changes the shape of saved drafts, recipe files, or pricing storage —
+the per-process workspaces already exist and their payloads are untouched. The only
+behavioural change a user can notice is import routing (slice 1), which is announced
+in the UI when it happens.
 
 ## Non-goals
 
