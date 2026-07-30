@@ -88,8 +88,13 @@ describe('bars mode sizes the WET batch that cures to the requested weight', () 
     expect(at(0)).toBeCloseTo(780, 3); // LS: no cure loss, no gross-up
   });
 
-  it('a suggested batch really does cure to the requested bar weight', () => {
-    // Round-trip through the app's own cure model: wet batch -> cured weight -> per bar.
+  it('round-trips through the cure model for a recipe with no after-cook extras', () => {
+    // Scope, stated honestly: this reconstructs the batch from the sizer's own output, so it
+    // pins the gross-up and the fraction's USE, not the fraction's MEANING. If
+    // oilBatchFraction ever changed from oil/batch-with-extras to oil/base-batch this would
+    // still pass — the sibling test above holds the independent expectation (780 / 0.85).
+    // Extras are excluded deliberately: they do not evaporate, so a real recipe carrying
+    // them lands extras*loss/barCount high (0.375 g at 30 g extras, 12 bars).
     const loss = 0.15;
     const oil = suggestOilGramsFromMoldSizer(barsInput('12', '100'), 0.65, 'g', loss)!;
     const wetBatch = oil / 0.65;
