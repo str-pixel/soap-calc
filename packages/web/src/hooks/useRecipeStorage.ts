@@ -17,7 +17,7 @@ import {
   saveDraft,
 } from '../lib/recipeStorage';
 import {
-  coerceSettingsForProcess,
+  normalizeSettingsWithinProcess,
   defaultsForProcess,
   importRoutingSuffix,
   type ProcessId,
@@ -57,7 +57,7 @@ function loadWorkspace(process: ProcessId) {
   const settings = draft
     ? // Saved drafts carry their own provenance (see normalizeSettings for how a legacy
       // draft with no provenance field is resolved).
-      coerceSettingsForProcess(normalizeSettings(draft.settings), process)
+      normalizeSettingsWithinProcess(normalizeSettings(draft.settings), process)
     : starterSettings(process);
   return {
     name: draft?.name ?? 'Starter recipe',
@@ -164,7 +164,7 @@ export function useRecipeStorage() {
           return;
         }
         const nextProcess = parsed.data.process;
-        const importedSettings = coerceSettingsForProcess(
+        const importedSettings = normalizeSettingsWithinProcess(
           normalizeSettings(parsed.data.settings),
           nextProcess,
         );

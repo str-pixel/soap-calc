@@ -199,7 +199,7 @@ export function migrateLegacyDraft(): void {
     const legacy = localStorage.getItem(LEGACY_DRAFT_KEY);
     if (legacy === null) return;
     // Route by the legacy recipe's alkali: a KOH (liquid soap) recipe lands on LS,
-    // everything else on CP. Otherwise coerceSettingsForProcess would silently flip a
+    // everything else on CP. Otherwise normalizeSettingsWithinProcess would silently flip a
     // KOH recipe to NaOH when it loads under CP (different SAP → wrong lye weight).
     let parsed: { lines?: unknown; settings?: { lyeType?: unknown } } | undefined;
     try {

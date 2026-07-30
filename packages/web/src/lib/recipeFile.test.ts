@@ -482,7 +482,7 @@ describe('recipe file process', () => {
 
   it('routes a legacy/process-less KOH (liquid soap) file to ls, not cp — no silent alkali flip', () => {
     // A file exported before the process field existed (version 2, no `process`) can
-    // still carry a KOH recipe. Defaulting it to cp would let coerceSettingsForProcess
+    // still carry a KOH recipe. Defaulting it to cp would let normalizeSettingsWithinProcess
     // silently flip lyeType koh→naoh on import.
     const raw = JSON.stringify({
       version: 2,

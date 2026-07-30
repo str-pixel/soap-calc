@@ -99,7 +99,15 @@ export function defaultsForProcess(process: ProcessId): Partial<RecipeSettings> 
   return PROCESS_DEFINITIONS[process].defaultSettings;
 }
 
-export function coerceSettingsForProcess(
+/**
+ * Normalize a record WITHIN its own process: reset a stale/foreign variant to the
+ * process's default, clamp a lye type the process no longer offers (legacy drafts from
+ * before a gate existed). Callers must already have established that `settings` belongs
+ * to `process` — per-process workspaces guarantee it for drafts, and import routing
+ * (recipeFile: declared/inferred/refused) guarantees it for imports. This is NOT a
+ * cross-process converter; there is deliberately no bridge (spec 2026-07-30).
+ */
+export function normalizeSettingsWithinProcess(
   settings: RecipeSettings,
   process: ProcessId,
 ): RecipeSettings {

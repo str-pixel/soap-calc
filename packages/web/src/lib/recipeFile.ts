@@ -259,7 +259,7 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
     data: {
       version: RECIPE_FILE_VERSION,
       // A file with no `process` predates this feature and may contain a KOH (liquid
-      // soap) recipe. Route it by alkali so coerceSettingsForProcess doesn't silently
+      // soap) recipe. Route it by alkali so normalizeSettingsWithinProcess doesn't silently
       // flip lyeType koh→naoh on import — an explicit valid process still wins.
       process: isProcessId(parsed.process)
         ? parsed.process
