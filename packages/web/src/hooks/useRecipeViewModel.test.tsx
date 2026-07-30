@@ -75,7 +75,7 @@ test('postCookSuperfat is null when off, and its grams fold into batchWeightWith
 test('a stray post-cook superfat never applies under CP (no field exists to clear it)', () => {
   // The same settings that compute a PCSF under HP must be inert under CP: no PCSF object,
   // and the batch weight identical to a clean CP recipe. Guards the "CP is bit-identical"
-  // invariant against hand-edited / imported drafts (coerceSettingsForProcess only coerces
+  // invariant against hand-edited / imported drafts (normalizeSettingsWithinProcess only coerces
   // lyeType, so a stray postCookSuperfatPercent would otherwise leak through).
   let strayCp: any;
   let cleanCp: any;

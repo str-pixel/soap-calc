@@ -99,7 +99,15 @@ export function defaultsForProcess(process: ProcessId): Partial<RecipeSettings> 
   return PROCESS_DEFINITIONS[process].defaultSettings;
 }
 
-export function coerceSettingsForProcess(
+/**
+ * Normalize a record WITHIN its own process: reset a stale/foreign variant to the
+ * process's default, clamp a lye type the process no longer offers (legacy drafts from
+ * before a gate existed). Callers must already have established that `settings` belongs
+ * to `process` — per-process workspaces guarantee it for drafts, and import routing
+ * (recipeFile: declared/inferred/refused) guarantees it for imports. This is NOT a
+ * cross-process converter; there is deliberately no bridge (spec 2026-07-30).
+ */
+export function normalizeSettingsWithinProcess(
   settings: RecipeSettings,
   process: ProcessId,
 ): RecipeSettings {
@@ -120,4 +128,16 @@ export function coerceSettingsForProcess(
     lyeType: lyeOk ? settings.lyeType : (def.defaultSettings.lyeType ?? def.lyeChoices[0]),
     processVariant: variantOk ? settings.processVariant : defaultVariantFor(process),
   };
+}
+
+/** Suffix for the import flash. Inference is the one silent-guess path left, so it is
+ * always announced — it is wrong for legacy NaOH hot-process files, and the announcement
+ * is what makes that survivable (spec 2026-07-30). */
+export function importRoutingSuffix(
+  source: 'declared' | 'inferred',
+  process: ProcessId,
+): string {
+  return source === 'inferred'
+    ? ` as ${PROCESS_DEFINITIONS[process].label.toLowerCase()} — this file predates process tags`
+    : '';
 }

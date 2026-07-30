@@ -17,8 +17,9 @@ import {
   saveDraft,
 } from '../lib/recipeStorage';
 import {
-  coerceSettingsForProcess,
+  normalizeSettingsWithinProcess,
   defaultsForProcess,
+  importRoutingSuffix,
   type ProcessId,
 } from '../lib/process';
 import {
@@ -56,7 +57,7 @@ function loadWorkspace(process: ProcessId) {
   const settings = draft
     ? // Saved drafts carry their own provenance (see normalizeSettings for how a legacy
       // draft with no provenance field is resolved).
-      coerceSettingsForProcess(normalizeSettings(draft.settings), process)
+      normalizeSettingsWithinProcess(normalizeSettings(draft.settings), process)
     : starterSettings(process);
   return {
     name: draft?.name ?? 'Starter recipe',
@@ -163,7 +164,7 @@ export function useRecipeStorage() {
           return;
         }
         const nextProcess = parsed.data.process;
-        const importedSettings = coerceSettingsForProcess(
+        const importedSettings = normalizeSettingsWithinProcess(
           normalizeSettings(parsed.data.settings),
           nextProcess,
         );
@@ -193,10 +194,11 @@ export function useRecipeStorage() {
         );
         // Fold any write failure into the final message so it isn't overwritten by the
         // success flash — storage full means neither the previous nor imported recipe persisted.
+        const routing = importRoutingSuffix(parsed.data.processSource, nextProcess);
         flashSaveMessage(
           flushedOutgoing && savedImported
-            ? `Imported “${parsed.data.name}”`
-            : `Imported “${parsed.data.name}” — but storage is full, so changes may not persist. Export to keep a copy.`,
+            ? `Imported “${parsed.data.name}”${routing}`
+            : `Imported “${parsed.data.name}”${routing} — but storage is full, so changes may not persist. Export to keep a copy.`,
         );
       })
       .catch(() => {

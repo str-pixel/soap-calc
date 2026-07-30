@@ -635,7 +635,7 @@ export function useRecipeViewModel({
   );
   const batchWeightWithExtras = baseBatchGrams + extrasGrams;
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
-  // see coerceSettingsForProcess) before resolving the profile.
+  // see normalizeSettingsWithinProcess) before resolving the profile.
   const profile = isProcessVariantId(settings.processVariant)
     ? processProfileById(settings.processVariant)
     : null;

@@ -482,7 +482,7 @@ describe('recipe file process', () => {
 
   it('routes a legacy/process-less KOH (liquid soap) file to ls, not cp — no silent alkali flip', () => {
     // A file exported before the process field existed (version 2, no `process`) can
-    // still carry a KOH recipe. Defaulting it to cp would let coerceSettingsForProcess
+    // still carry a KOH recipe. Defaulting it to cp would let normalizeSettingsWithinProcess
     // silently flip lyeType koh→naoh on import.
     const raw = JSON.stringify({
       version: 2,
@@ -504,6 +504,38 @@ describe('recipe file process', () => {
     });
     const parsed = parseRecipeFile(raw);
     expect(parsed.ok && parsed.data.process).toBe('cp');
+  });
+
+  it('a declared process routes as declared', () => {
+    const payload = serializeRecipeFile('Declared', createStarterLines(), DEFAULT_SETTINGS, [], 'hp');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.data.process).toBe('hp');
+      expect(parsed.data.processSource).toBe('declared');
+    }
+  });
+
+  it('an absent process is inferred from the alkali and marked inferred', () => {
+    const payload = serializeRecipeFile('Legacy', createStarterLines(), {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+    });
+    delete (payload as { process?: unknown }).process; // legacy file: field absent entirely
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.data.process).toBe('ls');
+      expect(parsed.data.processSource).toBe('inferred');
+    }
+  });
+
+  it('a present-but-invalid process refuses instead of guessing', () => {
+    const payload = serializeRecipeFile('Garbage', createStarterLines(), DEFAULT_SETTINGS);
+    (payload as { process?: unknown }).process = 'melt-and-pour';
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) expect(parsed.error).toMatch(/process/i);
   });
 });
 

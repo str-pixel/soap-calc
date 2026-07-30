@@ -412,7 +412,7 @@ export function normalizeSettings(
   // dual-lye liquid-soap recipe with no saved variant lands here as a CP variant even
   // though its true process may be LS. A stale-but-structurally-valid variant string is
   // also trusted as-is and not cross-checked against the recipe's process. Any caller that
-  // needs an authoritative variant MUST run the result through `coerceSettingsForProcess`
+  // needs an authoritative variant MUST run the result through `normalizeSettingsWithinProcess`
   // with the recipe's actual (known) process — that is what reconciles variant vs. process
   // everywhere in the app (loadWorkspace uses the draft's own process key; import uses the
   // file's process). Do not read `processVariant` off a freshly normalized recipe as

@@ -39,6 +39,10 @@ export type RecipeFileAdditive = Omit<AdditiveLine, 'key'>;
 export type RecipeFilePayload = {
   version: typeof RECIPE_FILE_VERSION;
   process: ProcessId;
+  /** Whether the file named its process, or we inferred it from the alkali (legacy files
+   * predate the process tag). Inference must be announced to the user at import — it is
+   * the only silent-guess path left, and it is wrong for legacy NaOH hot-process files. */
+  processSource: 'declared' | 'inferred';
   name: string;
   lines: Array<{
     oilId: string;
@@ -155,6 +159,9 @@ export function serializeRecipeFile(
   return {
     version: RECIPE_FILE_VERSION,
     process,
+    // A freshly-serialized file always states its process explicitly (the `process`
+    // param defaults to 'cp' rather than being omitted) — never the inferred path.
+    processSource: 'declared',
     name: name.trim() || 'Untitled recipe',
     lines: lines.map(({ oilId, weightGrams, weightPercent, tarLyeTreatment }) => ({
       oilId,
@@ -236,16 +243,28 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
     }
   }
 
+  // Three cases, spec 2026-07-30: declared → use it; absent (legacy file) → infer
+  // from the alkali, marked so the import can announce it; present-but-invalid →
+  // refuse. Guessing over a garbage value is how a cross-process record sneaks in.
+  if (parsed.process !== undefined && !isProcessId(parsed.process)) {
+    return {
+      ok: false,
+      error:
+        'This file names an unknown process. Fix its "process" field to cp, hp or ls — or remove the field to import by alkali type.',
+    };
+  }
+
   return {
     ok: true,
     data: {
       version: RECIPE_FILE_VERSION,
-      // A file with no/invalid `process` predates this feature and may contain a KOH
-      // (liquid soap) recipe. Route it by alkali so coerceSettingsForProcess doesn't
-      // silently flip lyeType koh→naoh on import — an explicit valid process still wins.
+      // A file with no `process` predates this feature and may contain a KOH (liquid
+      // soap) recipe. Route it by alkali so normalizeSettingsWithinProcess doesn't silently
+      // flip lyeType koh→naoh on import — an explicit valid process still wins.
       process: isProcessId(parsed.process)
         ? parsed.process
         : processForLyeType((parsed.settings as { lyeType?: unknown } | undefined)?.lyeType),
+      processSource: isProcessId(parsed.process) ? 'declared' : 'inferred',
       name: parsed.name.slice(0, MAX_FIELD_LENGTH),
       lines,
       additives,
