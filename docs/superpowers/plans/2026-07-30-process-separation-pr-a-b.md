@@ -135,46 +135,42 @@ git commit -m "fix(web): dilution unknown-liquid hints no longer repeat or print
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `packages/web/src/components/BatchSheet.test.tsx`, following the file's existing fixture pattern (copy the smallest existing render fixture in that file that sets `dilution` to a non-null object; if none exists, extend one `dilution: null` fixture):
+There is NO shared fixture in `BatchSheet.test.tsx` — each test builds a full real
+`buildBatchSheetData({...})` from `calculateRecipe(createStarterLines(), settings)` (see
+the first test in the file, ~line 13). Write ONE local helper at the bottom of the file
+and two tests:
 
 ```tsx
+function lsSheetData(extra: { unknownLiquidGrams?: number; lyeWaterUnverifiable?: boolean }) {
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  // Copy the remaining required fields of the buildBatchSheetData literal from the FIRST
+  // test in this file verbatim (recipeName/batchNotes/weightUnit/lyeLabel/settings/
+  // additives/splitLiquidRows/…), then set:
+  //   process: 'ls',
+  //   dilution: { anhydrousGrams: 1218, solutionGrams: 4059, totalWaterGrams: 2841,
+  //     dilutionWaterGrams: 2000, glycerinGrams: 107, soapConcentrationPercent: 30,
+  //     targetExceedsPaste: false },
+  //   ...extra,
+}
+
 test('printed dilution carries the unknown-liquid caveat when water content is undeclared', () => {
-  render(
-    <BatchSheet
-      data={{
-        ...BASE_DATA, // the file's existing minimal fixture object
-        process: 'ls',
-        dilution: {
-          anhydrousGrams: 1218, solutionGrams: 4059, totalWaterGrams: 2841,
-          dilutionWaterGrams: 2000, glycerinGrams: 107, soapConcentrationPercent: 30,
-          targetExceedsPaste: false,
-        },
-        unknownLiquidGrams: 300,
-        lyeWaterUnverifiable: false,
-      }}
-      weightUnit="g"
-    />,
-  );
+  render(<BatchSheet data={lsSheetData({ unknownLiquidGrams: 300 })} weightUnit="g" />);
   expect(screen.getByText(/at least/i)).toBeTruthy();
   expect(screen.getByText(/no declared water content/i)).toBeTruthy();
 });
 
 test('no caveat rows when everything is declared', () => {
-  render(
-    <BatchSheet
-      data={{ ...BASE_DATA, process: 'ls', dilution: {
-        anhydrousGrams: 1218, solutionGrams: 4059, totalWaterGrams: 2841,
-        dilutionWaterGrams: 2000, glycerinGrams: 107, soapConcentrationPercent: 30,
-        targetExceedsPaste: false,
-      } }}
-      weightUnit="g"
-    />,
-  );
+  render(<BatchSheet data={lsSheetData({})} weightUnit="g" />);
   expect(screen.queryByText(/no declared water content/i)).toBeNull();
 });
 ```
 
-(Adapt `BASE_DATA` to whatever the file's fixture is actually named; every existing test constructs one — reuse it verbatim.)
+(The helper body's field list comes from the file's own first test — it is the complete
+required-field set for `buildBatchSheetData`, and copying it inside THIS file keeps the
+test self-contained without inventing a second fixture convention.)
 
 - [ ] **Step 2: Run to verify it fails**
 
@@ -272,9 +268,12 @@ Do not merge until the adversarial pass (workflow, per the verification discipli
 
 - [ ] **Step 1: Write the failing tests**
 
+The file's tests build payloads with `serializeRecipeFile(name, lines, settings, additives?, process?)` then `parseRecipeFile(JSON.stringify(payload))` (see its existing tests at lines ~16 and ~92). Follow that exactly:
+
 ```ts
 test('a declared process routes as declared', () => {
-  const parsed = parseRecipeFile(fileWith({ process: 'hp', settings: { lyeType: 'naoh' } }));
+  const payload = serializeRecipeFile('Declared', createStarterLines(), DEFAULT_SETTINGS, [], 'hp');
+  const parsed = parseRecipeFile(JSON.stringify(payload));
   expect(parsed.ok).toBe(true);
   if (parsed.ok) {
     expect(parsed.data.process).toBe('hp');
@@ -283,7 +282,12 @@ test('a declared process routes as declared', () => {
 });
 
 test('an absent process is inferred from the alkali and marked inferred', () => {
-  const parsed = parseRecipeFile(fileWith({ settings: { lyeType: 'koh' } })); // no process field
+  const payload = serializeRecipeFile('Legacy', createStarterLines(), {
+    ...DEFAULT_SETTINGS,
+    lyeType: 'koh' as const,
+  });
+  delete (payload as { process?: unknown }).process; // legacy file: field absent entirely
+  const parsed = parseRecipeFile(JSON.stringify(payload));
   expect(parsed.ok).toBe(true);
   if (parsed.ok) {
     expect(parsed.data.process).toBe('ls');
@@ -292,13 +296,15 @@ test('an absent process is inferred from the alkali and marked inferred', () => 
 });
 
 test('a present-but-invalid process refuses instead of guessing', () => {
-  const parsed = parseRecipeFile(fileWith({ process: 'melt-and-pour', settings: { lyeType: 'naoh' } }));
+  const payload = serializeRecipeFile('Garbage', createStarterLines(), DEFAULT_SETTINGS);
+  (payload as { process?: unknown }).process = 'melt-and-pour';
+  const parsed = parseRecipeFile(JSON.stringify(payload));
   expect(parsed.ok).toBe(false);
   if (!parsed.ok) expect(parsed.error).toMatch(/process/i);
 });
 ```
 
-(`fileWith` = the file's existing helper for building a JSON payload string; if it's named differently, use that name. If no helper exists, build the minimal valid payload the other tests in the file use and spread the overrides in.)
+(Imports `serializeRecipeFile`, `createStarterLines`, `DEFAULT_SETTINGS` are already used by this test file. NOTE: check what `serializeRecipeFile` writes when the process argument is omitted — if it always writes a process, the absent-case `delete` above is the correct simulation of a legacy file either way.)
 
 - [ ] **Step 2: Run to verify they fail**
 
@@ -504,7 +510,8 @@ test('each process keeps its own workspace through a full tab cycle', async ({ p
 });
 ```
 
-(If the recipe-name field's accessible name differs, take it from `e2e/recipe-ui.spec.ts`, which edits it.)
+(Verified: the recipe-name input's accessible name IS "Recipe name" — App.tsx wraps it in
+a label with an `sr-only` span (App.tsx:310-314), so `getByLabel(/Recipe name/i)` resolves.)
 
 - [ ] **Step 2: Run it** — `cd packages/web && npx playwright test e2e/process-isolation.spec.ts`. Expected: PASS on today's code (workspaces already isolate). This canary exists to fail if slices 2–4 ever break isolation.
 
