@@ -108,3 +108,48 @@ describe('intended-use dilution targets', () => {
     expect(screen.getByText(/not recommended for hair/i)).toBeTruthy();
   });
 });
+
+test('unknown-liquid hints never repeat "declare its % water" on one screen', () => {
+  // targetExceedsPaste + unknown + not-certain: the can't-tell hint covers the message,
+  // and dilutionWaterGrams is 0 — so the floor hint would be vacuous AND a verbatim repeat.
+  render(
+    <DilutionPanel
+      dilution={{
+        anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
+        dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 50,
+        targetExceedsPaste: true,
+      }}
+      soapConcentrationPercent="50"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      bottleSizeMl="250"
+      onBottleSizeMlChange={() => {}}
+      altLiquidWaterGrams={900}
+      unknownLiquidGrams={900}
+      overDilutionCertain={false}
+    />,
+  );
+  expect(screen.getAllByText(/declare its % water/i)).toHaveLength(1);
+  expect(screen.queryByText(/0 g is the LEAST/i)).toBeNull();
+});
+
+test('the floor hint still renders when the floor is real', () => {
+  render(
+    <DilutionPanel
+      dilution={{
+        anhydrousGrams: 1218, solutionGrams: 4059, totalWaterGrams: 2841,
+        dilutionWaterGrams: 2000, glycerinGrams: 107, soapConcentrationPercent: 30,
+        targetExceedsPaste: false,
+      }}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      bottleSizeMl="250"
+      onBottleSizeMlChange={() => {}}
+      altLiquidWaterGrams={300}
+      unknownLiquidGrams={300}
+      overDilutionCertain={false}
+    />,
+  );
+  expect(screen.getByText(/is the LEAST you will need/i)).toBeTruthy();
+});

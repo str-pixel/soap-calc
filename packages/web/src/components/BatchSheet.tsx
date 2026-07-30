@@ -199,6 +199,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             </dd>
           </div>
         </dl>
+        {data.lyeWaterUnverifiable ? (
+          <p className="batch-sheet__note">
+            The 1:1 lye-dissolution check could not run — an in-lye liquid has no
+            declared water content.
+          </p>
+        ) : null}
       </section>
 
       {includedLines.length > 0 && (
@@ -282,10 +288,31 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           <dl className="batch-sheet__dl">
             <div><dt>Paste (anhydrous)</dt><dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd></div>
             <div><dt>Target concentration</dt><dd>{formatGrams(dilution.soapConcentrationPercent, 0)}%</dd></div>
-            <div><dt>Dilution water to add</dt><dd>{formatWeight(dilution.dilutionWaterGrams, weightUnit)}</dd></div>
+            <div><dt>Dilution water to add</dt><dd>
+              {formatWeight(dilution.dilutionWaterGrams, weightUnit)}
+              {data.unknownLiquidGrams && !dilution.targetExceedsPaste ? ' (at least)' : ''}
+            </dd></div>
             <div><dt>Finished solution</dt><dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd></div>
             <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
           </dl>
+          {/* targetExceedsPaste is a factual claim about the paste, but it was derived from
+              an ASSUMED water content — asserting it here could tell the maker a batch is
+              already dilute enough when it still needs hundreds of grams of water. Mirrors
+              DilutionPanel's can't-tell branch instead of the floor caveat below. */}
+          {data.unknownLiquidGrams && dilution.targetExceedsPaste ? (
+            <p className="batch-sheet__note">
+              Can&apos;t tell whether {formatGrams(dilution.soapConcentrationPercent, 0)}% is
+              reachable — {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative
+              liquid has no declared water content. Declare its % water in Split liquid.
+            </p>
+          ) : null}
+          {data.unknownLiquidGrams && !dilution.targetExceedsPaste ? (
+            <p className="batch-sheet__note">
+              {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative liquid has
+              no declared water content — it is counted as all water, so the dilution
+              figure is the least you will need. Dilute in increments and check by weight.
+            </p>
+          ) : null}
         </section>
       )}
 

@@ -413,3 +413,121 @@ test('prints the soaping temperature in both units', () => {
   expect(screen.getByText('Soaping temperature')).toBeTruthy();
   expect(screen.getByText('52 °C (125 °F)')).toBeTruthy();
 });
+
+// LS process (koh) with a real dilution block, so the printed sheet's caveat rows can be
+// exercised without inventing a second buildBatchSheetData fixture convention — the
+// required-field list below is copied verbatim from this file's first test.
+function lsSheetData(extra: {
+  unknownLiquidGrams?: number;
+  lyeWaterUnverifiable?: boolean;
+  targetExceedsPaste?: boolean;
+}) {
+  const { targetExceedsPaste, ...rest } = extra;
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+
+  return buildBatchSheetData({
+    recipeName: 'LS dilution batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'KOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    pcsfIsExtra: true,
+    extrasGrams: 0,
+    dilution: {
+      anhydrousGrams: 1218,
+      solutionGrams: 4059,
+      totalWaterGrams: 2841,
+      dilutionWaterGrams: 2000,
+      glycerinGrams: 107,
+      soapConcentrationPercent: 30,
+      targetExceedsPaste: targetExceedsPaste ?? false,
+    },
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    insights: [],
+    process: 'ls',
+    ...rest,
+  });
+}
+
+// CP fixture: no lyeType override (plain NaOH, DEFAULT_SETTINGS), no dilution — the
+// lyeWaterUnverifiable note is documented to apply to every process, not only LS.
+function cpSheetData(extra: { lyeWaterUnverifiable?: boolean }) {
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+
+  return buildBatchSheetData({
+    recipeName: 'CP batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    pcsfIsExtra: true,
+    extrasGrams: 0,
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    insights: [],
+    process: 'cp',
+    ...extra,
+  });
+}
+
+test('printed dilution carries the unknown-liquid caveat when water content is undeclared', () => {
+  render(<BatchSheet data={lsSheetData({ unknownLiquidGrams: 300 })} />);
+  expect(screen.getByText(/at least/i)).toBeTruthy();
+  expect(screen.getByText(/no declared water content/i)).toBeTruthy();
+});
+
+test('no caveat rows when everything is declared', () => {
+  render(<BatchSheet data={lsSheetData({})} />);
+  expect(screen.queryByText(/no declared water content/i)).toBeNull();
+});
+
+test('printed dilution shows the can\'t-tell wording (not a false floor) when the target already exceeds an undeclared paste', () => {
+  render(<BatchSheet data={lsSheetData({ unknownLiquidGrams: 300, targetExceedsPaste: true })} />);
+  // No vacuous floor claim: the "(at least)" suffix and "least you will need" caveat are
+  // both suppressed, matching the on-screen panel's post-#142 behavior.
+  expect(screen.queryByText(/at least/i)).toBeNull();
+  expect(screen.queryByText(/least you will need/i)).toBeNull();
+  expect(screen.getByText(/Can't tell whether 30% is reachable/i)).toBeTruthy();
+});
+
+test('lye-dissolution caveat prints for a CP recipe (no dilution block) when the flag is set', () => {
+  render(<BatchSheet data={cpSheetData({ lyeWaterUnverifiable: true })} />);
+  expect(screen.getByText(/1:1 lye-dissolution check could not run/i)).toBeTruthy();
+});
+
+test('lye-dissolution caveat is absent from a CP sheet when the flag is unset', () => {
+  render(<BatchSheet data={cpSheetData({})} />);
+  expect(screen.queryByText(/1:1 lye-dissolution check could not run/i)).toBeNull();
+});

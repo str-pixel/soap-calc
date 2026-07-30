@@ -718,6 +718,8 @@ export function useRecipeViewModel({
       pcsfIsExtra,
       extrasGrams,
       dilution,
+      unknownLiquidGrams,
+      lyeWaterUnverifiable,
       neutralization,
       properties,
       indexes,
@@ -737,6 +739,7 @@ export function useRecipeViewModel({
     inputErrors,
     linePercents,
     lyeLabel,
+    lyeWaterUnverifiable,
     fattyAcids,
     insights,
     neutralization,
@@ -759,6 +762,7 @@ export function useRecipeViewModel({
     soapingTempF,
     splitLiquidGrams,
     splitLiquidRows,
+    unknownLiquidGrams,
     weightUnit,
   ]);
 

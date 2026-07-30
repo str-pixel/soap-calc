@@ -132,7 +132,11 @@ export function DilutionPanel({
               Top up with plain distilled water only.
             </p>
           )}
-          {altLiquidWaterGrams > 0 && unknownLiquidGrams > 0 && (
+          {/* Floor hint only when a positive floor exists. When the target already exceeds the
+              paste, the can't-tell / certain-alert branches above own the message — rendering
+              this too repeated "declare its % water" verbatim and printed a vacuous
+              "0 g is the LEAST you will need". */}
+          {altLiquidWaterGrams > 0 && unknownLiquidGrams > 0 && !dilution.targetExceedsPaste && (
             <p className="results-hint">
               {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
               declared water content — it is counted as all water, so{' '}

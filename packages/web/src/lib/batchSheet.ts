@@ -38,6 +38,17 @@ export type BatchSheetData = {
   pcsfIsExtra: boolean;
   extrasGrams: number;
   dilution: DilutionResult | null;
+  /** Grams of split liquid with undeclared water content. Non-zero makes the printed
+   * dilution figure a lower bound, and the sheet must say so — the bench copy is the one
+   * surface with no sibling panel to explain it. Optional: data built before the field
+   * existed prints no caveat (same convention as soapingTempF). */
+  unknownLiquidGrams?: number;
+  /** The 1:1 lye-dissolution check could not run (an in-lye liquid's water content is
+   * undeclared) — printed beside the lye figures for the same reason. Independent of
+   * `dilution`: unlike the two fields above, this applies to every process (CP/HP included),
+   * so it must render in the always-present Lye solution section, not inside the
+   * LS-only Dilution block. */
+  lyeWaterUnverifiable?: boolean;
   neutralization: NeutralizationResult | null;
   properties: RecipePropertiesResult | null;
   indexes: RecipeIndexResult;
