@@ -690,14 +690,22 @@ test.describe('advanced settings', () => {
   test('batch sizer bar mode suggests and applies oil weight', async ({ page }) => {
     await page.getByText('Bar count', { exact: true }).click();
     await page.getByLabel(/Number of bars/).fill('10');
-    await page.getByLabel(/Finished bar weight/).fill('100');
+    // Renamed from "Finished bar weight": the field asks for the weight AFTER cure, and
+    // bars mode now sizes the WET batch that cures to it.
+    await page.getByLabel(/Bar weight after cure/).fill('100');
     await page.getByLabel(/Shrinkage \/ waste %/).fill('5');
     await page.getByLabel(/Shrinkage \/ waste %/).blur();
     await expect(page.getByText(/Suggested oil weight/)).toBeVisible();
     await page.getByRole('button', { name: 'Apply to batch' }).click();
     const total = parseFloat(await totalOilInput(page).inputValue());
-    expect(total).toBeGreaterThan(500);
-    expect(total).toBeLessThan(1100);
+    // Pin the VALUE, not a range. 10 bars x 100 g is a 1,000 g CURED target; CP loses 15% over
+    // cure, so the wet batch must be 1000/0.85 and the oils its ~68% share, +5% waste:
+    // (1000 / 0.85) * 0.68 * 1.05 ~= 840 g. The old loose 500-1100 bound admitted BOTH the
+    // correct 840 and the un-grossed-up 714 — verified by cutting the App -> SettingsPanel ->
+    // MoldSizerPanel wiring, after which the whole suite including this test stayed green.
+    // This is the only assertion anywhere that exercises all three prop hops.
+    expect(total).toBeGreaterThan(800);
+    expect(total).toBeLessThan(880);
   });
 
   test('batch sizer mold mode with zero dimensions shows no apply', async ({ page }) => {

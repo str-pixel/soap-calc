@@ -363,6 +363,7 @@ export default function App() {
           <div className="col col--formula">
             <SettingsPanel
               process={process}
+              moldSizerWaterLossPercent={vm.cureWaterLossPercent}
               settings={settings}
               setSettings={setSettings}
               weightUnit={weightUnit}

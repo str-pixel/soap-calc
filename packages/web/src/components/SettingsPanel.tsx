@@ -60,6 +60,9 @@ type SettingsPanelProps = {
   liveOilBatchFraction: number | null;
   onApplySuggestedOilGrams: (oilGrams: number) => void;
   process?: ProcessId;
+  /** Cure water loss for the active process variant — bars mode sizes the wet batch that
+   * cures to the requested bar weight. */
+  moldSizerWaterLossPercent?: number;
   /** Cook vessel volume in liters, for the HP vessel-size guard (hp_vessel_too_small).
    * Optional UI-only helper input — HP-only, not part of the saved recipe. */
   vesselVolumeLiters?: string;
@@ -84,6 +87,7 @@ export function SettingsPanel({
   liveOilBatchFraction,
   onApplySuggestedOilGrams,
   process = 'cp',
+  moldSizerWaterLossPercent = 0,
   vesselVolumeLiters = '',
   onVesselVolumeLitersChange = () => {},
   hpVesselMultiple,
@@ -187,6 +191,7 @@ export function SettingsPanel({
           input={moldSizerInput}
           weightUnit={weightUnit}
           oilBatchFraction={liveOilBatchFraction}
+          waterLossPercent={moldSizerWaterLossPercent}
           onChange={onMoldSizerChange}
           onApply={onApplySuggestedOilGrams}
         />
