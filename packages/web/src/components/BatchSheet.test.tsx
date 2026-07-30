@@ -413,3 +413,60 @@ test('prints the soaping temperature in both units', () => {
   expect(screen.getByText('Soaping temperature')).toBeTruthy();
   expect(screen.getByText('52 °C (125 °F)')).toBeTruthy();
 });
+
+// LS process (koh) with a real dilution block, so the printed sheet's caveat rows can be
+// exercised without inventing a second buildBatchSheetData fixture convention — the
+// required-field list below is copied verbatim from this file's first test.
+function lsSheetData(extra: { unknownLiquidGrams?: number; lyeWaterUnverifiable?: boolean }) {
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+
+  return buildBatchSheetData({
+    recipeName: 'LS dilution batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'KOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    pcsfIsExtra: true,
+    extrasGrams: 0,
+    dilution: {
+      anhydrousGrams: 1218,
+      solutionGrams: 4059,
+      totalWaterGrams: 2841,
+      dilutionWaterGrams: 2000,
+      glycerinGrams: 107,
+      soapConcentrationPercent: 30,
+      targetExceedsPaste: false,
+    },
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    insights: [],
+    process: 'ls',
+    ...extra,
+  });
+}
+
+test('printed dilution carries the unknown-liquid caveat when water content is undeclared', () => {
+  render(<BatchSheet data={lsSheetData({ unknownLiquidGrams: 300 })} />);
+  expect(screen.getByText(/at least/i)).toBeTruthy();
+  expect(screen.getByText(/no declared water content/i)).toBeTruthy();
+});
+
+test('no caveat rows when everything is declared', () => {
+  render(<BatchSheet data={lsSheetData({})} />);
+  expect(screen.queryByText(/no declared water content/i)).toBeNull();
+});

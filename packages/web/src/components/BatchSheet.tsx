@@ -282,10 +282,26 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           <dl className="batch-sheet__dl">
             <div><dt>Paste (anhydrous)</dt><dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd></div>
             <div><dt>Target concentration</dt><dd>{formatGrams(dilution.soapConcentrationPercent, 0)}%</dd></div>
-            <div><dt>Dilution water to add</dt><dd>{formatWeight(dilution.dilutionWaterGrams, weightUnit)}</dd></div>
+            <div><dt>Dilution water to add</dt><dd>
+              {formatWeight(dilution.dilutionWaterGrams, weightUnit)}
+              {data.unknownLiquidGrams ? ' (at least)' : ''}
+            </dd></div>
             <div><dt>Finished solution</dt><dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd></div>
             <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
           </dl>
+          {data.unknownLiquidGrams ? (
+            <p className="batch-sheet__note">
+              {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative liquid has
+              no declared water content — it is counted as all water, so the dilution
+              figure is the least you will need. Dilute in increments and check by weight.
+            </p>
+          ) : null}
+          {data.lyeWaterUnverifiable ? (
+            <p className="batch-sheet__note">
+              The 1:1 lye-dissolution check could not run — an in-lye liquid has no
+              declared water content.
+            </p>
+          ) : null}
         </section>
       )}
 
