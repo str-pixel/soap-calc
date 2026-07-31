@@ -586,7 +586,6 @@ export function useRecipeViewModel({
       splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
       additives: computedAdditives,
       postCookSuperfat,
-      isLiquidSoap: process === 'ls',
       process,
       hpVesselMultiple,
       // Glycerin as lye-solution solvent (split row) or LS additive — drives the

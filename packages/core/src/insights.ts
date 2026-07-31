@@ -54,13 +54,10 @@ export type FormulationAnalysisInput = {
   kohBlendPercent?: number;
   /** PUFA (linoleic + linolenic) % of the chosen post-cook superfat oil, when PCSF is active. */
   postCookSuperfatPufaPercent?: number;
-  /** True for liquid-soap (KOH) recipes; gates LS-specific insights and exempts LS from the
-   * bar-soap lye-concentration warnings. */
-  isLiquidSoap?: boolean;
-  /** The recipe's process. Unlike {@link isLiquidSoap} (which only distinguishes LS from
-   * everything else), this discriminates CP from HP too — HP-only insights must gate on
-   * `process === 'hp'`, since `!isLiquidSoap` is also true for CP and would wrongly include it. */
-  process?: 'cp' | 'hp' | 'ls';
+  /** The recipe's process — the ONLY discriminator. Gates LS-specific insights and exempts
+   * LS from the bar-soap lye-concentration warnings via `process === 'ls'` /
+   * `process !== 'ls'`; HP-only insights must gate on `process === 'hp'` specifically. */
+  process: 'cp' | 'hp' | 'ls';
   /** Yogurt additive line's percent of oil weight (grams / totalOilGrams × 100); HP only —
    * its water content deducts from the recipe's lye water when stirred in after cook. */
   hpYogurtPercent?: number;
@@ -137,7 +134,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   // Liquid soap (KOH) is exempt: it legitimately runs at/below 0% and is neutralized
   // after cook. Behavior-only copy; no fixed "minimum safe %" is asserted (only the
   // no-buffer case is a clear, grounded hazard).
-  if (input.lyeGrams > 0 && !input.isLiquidSoap && input.superfatPercent <= 0) {
+  if (input.lyeGrams > 0 && input.process !== 'ls' && input.superfatPercent <= 0) {
     insights.push({
       level: 'warning',
       code: 'no_superfat_margin',
@@ -163,7 +160,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
 
   if (
     input.waterBand &&
-    !input.isLiquidSoap &&
+    input.process !== 'ls' &&
     input.totalOilGrams > 0 &&
     input.waterGrams > 0
   ) {
@@ -215,7 +212,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     // Bar-soap framing ("bar may feel... and wear quickly") — LS has its own lather/salt
     // coaching (ls_salt_thickening, ls_dual_lye_recommendation) for a coconut-heavy profile,
     // so this stays CP/HP-only, mirroring eutectic_lather_sources' LS gate above.
-    if (lauricMyristic > 35 && palmiticStearic < 15 && !input.isLiquidSoap) {
+    if (lauricMyristic > 35 && palmiticStearic < 15 && input.process !== 'ls') {
       insights.push({
         level: 'info',
         code: 'high_short_chain_low_long_chain',
@@ -237,7 +234,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     const lauric = input.fattyAcids.lauric ?? 0;
     // Bar-lather claim — liquid soap's lather framing is different (see ls_castor_no_lather
     // and the LS salt/dual-lye advisories below), so this stays a CP/HP-only insight.
-    if (lauric >= 5 && oleic >= 20 && !input.isLiquidSoap) {
+    if (lauric >= 5 && oleic >= 20 && input.process !== 'ls') {
       insights.push({
         level: 'info',
         code: 'eutectic_lather_sources',
@@ -253,7 +250,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   ) {
     const cleansing = input.properties.cleansing;
     const superfat = input.superfatPercent;
-    if (cleansing > 22 && superfat < 6 && !input.isLiquidSoap) {
+    if (cleansing > 22 && superfat < 6 && input.process !== 'ls') {
       insights.push({
         level: 'info',
         code: 'high_cleansing_low_superfat',
@@ -268,7 +265,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     // this block is already inside.
     const oleic = input.fattyAcids?.oleic ?? 0;
     if (
-      !input.isLiquidSoap &&
+      input.process !== 'ls' &&
       cleansing < 12 &&
       oleic >= 50 &&
       (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
@@ -441,7 +438,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  if (!input.isLiquidSoap) {
+  if (input.process !== 'ls') {
     if (input.superfatPercent < 3 || input.superfatPercent > 30) {
       insights.push({
         level: 'info',
@@ -466,7 +463,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     }
   }
 
-  if (input.traceSpeedLabel && !input.isLiquidSoap) {
+  if (input.traceSpeedLabel && input.process !== 'ls') {
     const tip =
       input.traceSpeedLabel === 'fast'
         ? 'Expect a quick trace — soap cool, blend in short bursts, and add fragrance last.'
@@ -523,7 +520,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  if (input.isLiquidSoap && input.superfatPercent > 3) {
+  if (input.process === 'ls' && input.superfatPercent > 3) {
     insights.push({
       level: 'warning',
       code: 'ls_superfat_high',
@@ -546,7 +543,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     oilIds: ['castor-oil'],
     nameKeyword: 'castor',
   });
-  if (input.isLiquidSoap && (hasCastorByFattyAcid || hasCastorByIdentity)) {
+  if (input.process === 'ls' && (hasCastorByFattyAcid || hasCastorByIdentity)) {
     insights.push({
       level: 'info',
       code: 'ls_castor_no_lather',
@@ -560,7 +557,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   // independently (LS + fatty-acid data present + coverage above the low-coverage floor),
   // so hoisting it here changes no insight's firing condition.
   const lsFattyAcidCoverageOk =
-    input.isLiquidSoap &&
+    input.process === 'ls' &&
     !!input.fattyAcids &&
     (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
   const lauricMyristicForCoconutHeavy = lsFattyAcidCoverageOk
@@ -602,7 +599,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   // Salt-thickening is a qualitative advisory, not a numeric viscosity model — no calibrated
   // curve exists for how much salt thickens diluted LS by process/oil mix, so this ships
   // behavior-only guidance (thickens then thins past a point) and never a number.
-  if (input.isLiquidSoap && additiveMatches(additiveEntries, 'salt', 'salt')) {
+  if (input.process === 'ls' && additiveMatches(additiveEntries, 'salt', 'salt')) {
     let message =
       'Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go.';
 
@@ -618,9 +615,9 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
     });
   }
 
-  // HP-only insights. Gated on the explicit process discriminator, never on !isLiquidSoap —
-  // isLiquidSoap only distinguishes LS from "everything else" and is also false for CP, so
-  // a !isLiquidSoap gate would wrongly include CP bars here.
+  // HP-only insights. Gated on the explicit process discriminator (process === 'hp'),
+  // since process === 'ls' / !== 'ls' only distinguishes LS from "everything else" and is
+  // also false for CP, so it would wrongly include CP bars here.
   if (input.process === 'hp') {
     if (
       additiveMatches(additiveEntries, 'salt', 'salt') ||

@@ -10,20 +10,21 @@ const base: FormulationAnalysisInput = {
   waterLyeRatio: 2,
   waterGrams: 300,
   lyeGrams: 140,
+  process: 'cp',
 };
 
 const has = (input: FormulationAnalysisInput, code: string) =>
   analyzeFormulation(input).some((i) => i.code === code);
 
 describe('lye-excess warning (negative superfat)', () => {
-  it('fires for a negative superfat even when the recipe is not flagged as liquid soap', () => {
+  it('fires for a negative superfat even under CP, not just LS', () => {
     // A caustic recipe from any caller must still surface the neutralization guidance,
     // not only the LS UI path.
-    expect(has({ ...base, superfatPercent: -2, isLiquidSoap: false }, 'ls_lye_excess')).toBe(true);
+    expect(has({ ...base, superfatPercent: -2, process: 'cp' }, 'ls_lye_excess')).toBe(true);
   });
 
   it('fires for a negative-superfat liquid soap', () => {
-    expect(has({ ...base, superfatPercent: -2, isLiquidSoap: true }, 'ls_lye_excess')).toBe(true);
+    expect(has({ ...base, superfatPercent: -2, process: 'ls' }, 'ls_lye_excess')).toBe(true);
   });
 
   it('does not fire at zero or positive superfat', () => {
@@ -34,20 +35,20 @@ describe('lye-excess warning (negative superfat)', () => {
 
 describe('no-superfat-margin caustic guard (NaOH bar soap)', () => {
   it('warns a 0% superfat bar (no unsaponified-oil buffer)', () => {
-    expect(has({ ...base, superfatPercent: 0, isLiquidSoap: false }, 'no_superfat_margin')).toBe(true);
+    expect(has({ ...base, superfatPercent: 0, process: 'cp' }, 'no_superfat_margin')).toBe(true);
   });
 
   it('does not fire once the bar carries any positive superfat', () => {
-    expect(has({ ...base, superfatPercent: 5, isLiquidSoap: false }, 'no_superfat_margin')).toBe(false);
-    expect(has({ ...base, superfatPercent: 1, isLiquidSoap: false }, 'no_superfat_margin')).toBe(false);
+    expect(has({ ...base, superfatPercent: 5, process: 'cp' }, 'no_superfat_margin')).toBe(false);
+    expect(has({ ...base, superfatPercent: 1, process: 'cp' }, 'no_superfat_margin')).toBe(false);
   });
 
   it('exempts liquid soap (KOH runs at/below 0% and is neutralized after cook)', () => {
-    expect(has({ ...base, superfatPercent: 0, isLiquidSoap: true }, 'no_superfat_margin')).toBe(false);
+    expect(has({ ...base, superfatPercent: 0, process: 'ls' }, 'no_superfat_margin')).toBe(false);
   });
 
   it('does not fire without an active recipe (no lye)', () => {
-    expect(has({ ...base, superfatPercent: 0, lyeGrams: 0, isLiquidSoap: false }, 'no_superfat_margin')).toBe(false);
+    expect(has({ ...base, superfatPercent: 0, lyeGrams: 0, process: 'cp' }, 'no_superfat_margin')).toBe(false);
   });
 });
 
@@ -56,9 +57,9 @@ describe('lye-concentration band warnings were removed as unsourced', () => {
     // Removed deliberately: no source states either threshold, and the high one fired across
     // part of the CP source's own recommended water-discount band and on low-water formulas a
     // science source tested and cleared up to 50%. Reinstating either needs a source first.
-    for (const isLiquidSoap of [false, true]) {
-      expect(has({ ...base, lyeConcentrationPercent: 45, isLiquidSoap }, 'lye_conc_high')).toBe(false);
-      expect(has({ ...base, lyeConcentrationPercent: 15, isLiquidSoap }, 'lye_conc_low')).toBe(false);
+    for (const process of ['cp', 'ls'] as const) {
+      expect(has({ ...base, lyeConcentrationPercent: 45, process }, 'lye_conc_high')).toBe(false);
+      expect(has({ ...base, lyeConcentrationPercent: 15, process }, 'lye_conc_low')).toBe(false);
     }
   });
 
@@ -72,7 +73,11 @@ describe('lye-concentration band warnings were removed as unsourced', () => {
 
 const CP_BAND = { lowTier: [20, 28] as [number, number], highTier: [32, 40] as [number, number], riversAbove: 38 };
 
-function waterInput(waterGrams: number, totalOilGrams = 1000, extra = {}) {
+function waterInput(
+  waterGrams: number,
+  totalOilGrams = 1000,
+  extra: Partial<FormulationAnalysisInput> = {},
+): FormulationAnalysisInput {
   return {
     properties: null,
     fattyAcids: null,
@@ -82,7 +87,7 @@ function waterInput(waterGrams: number, totalOilGrams = 1000, extra = {}) {
     waterLyeRatio: 0,
     waterGrams,
     lyeGrams: 140,
-    isLiquidSoap: false,
+    process: 'cp',
     waterBand: CP_BAND,
     ...extra,
   };
@@ -113,7 +118,7 @@ describe('two-tier water coaching', () => {
   });
 
   it('emits no water-band insight for liquid soap even if a band is supplied', () => {
-    const codes = analyzeFormulation(waterInput(420, 1000, { isLiquidSoap: true })).map((i) => i.code);
+    const codes = analyzeFormulation(waterInput(420, 1000, { process: 'ls' })).map((i) => i.code);
     expect(codes).not.toContain('water_band_rivers');
   });
 });
@@ -121,7 +126,7 @@ describe('two-tier water coaching', () => {
 describe('superfat + PUFA cap bands (CP)', () => {
   const base = {
     properties: null, totalOilGrams: 1000, lyeConcentrationPercent: 0,
-    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, isLiquidSoap: false,
+    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, process: 'cp' as const,
     fattyAcidCoveragePercent: 100,
   };
   it('warns when PUFA is above the cap and superfat exceeds 5%', () => {
@@ -150,7 +155,7 @@ describe('superfat + PUFA cap bands (CP)', () => {
   });
   it('does not fire either CP superfat band for liquid soap', () => {
     const codes = analyzeFormulation({
-      ...base, isLiquidSoap: true, superfatPercent: 35, fattyAcids: { linoleic: 25, oleic: 40 },
+      ...base, process: 'ls', superfatPercent: 35, fattyAcids: { linoleic: 25, oleic: 40 },
     }).map((i) => i.code);
     expect(codes).not.toContain('superfat_out_of_band');
     expect(codes).not.toContain('pufa_cap_superfat');
@@ -182,7 +187,7 @@ describe('superfat + PUFA cap bands (CP)', () => {
 describe('property-score exceptions', () => {
   const base = {
     fattyAcids: null, totalOilGrams: 1000, lyeConcentrationPercent: 0,
-    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, isLiquidSoap: false,
+    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, process: 'cp' as const,
     propertyCoveragePercent: 100, fattyAcidCoveragePercent: 100,
   };
   const props = (over: Partial<Record<string, number>>) => ({
@@ -209,7 +214,7 @@ describe('property-score exceptions', () => {
 
   it('suppresses the low-cleansing note for liquid soap (cleansing means solubility there)', () => {
     const codes = analyzeFormulation({
-      ...base, isLiquidSoap: true, superfatPercent: 2,
+      ...base, process: 'ls', superfatPercent: 2,
       properties: props({ cleansing: 1 }),
       fattyAcids: { oleic: 72 },
     }).map((i) => i.code);
@@ -257,7 +262,7 @@ describe('trace-speed insight', () => {
   it('is suppressed for liquid soap even when a label is supplied', () => {
     const codes = analyzeFormulation({
       ...base,
-      isLiquidSoap: true,
+      process: 'ls',
       traceSpeedLabel: 'fast',
     }).map((i) => i.code);
     expect(codes).not.toContain('trace_speed');
@@ -308,13 +313,12 @@ describe('HP-gated insights (process discriminator)', () => {
   });
 
   it('does NOT fire hp_thick_phase_suppressant for a CP recipe carrying salt (gating regression)', () => {
-    // This is the exact gap the process discriminator exists to close: !isLiquidSoap
-    // would wrongly include CP here. CP recipes never pass isLiquidSoap, so a check
-    // gated only on !isLiquidSoap would fire for CP too — process:'cp' must suppress it.
+    // This is the exact gap the process discriminator exists to close: gating on
+    // `process !== 'ls'` would still wrongly include CP here, since CP is also not LS —
+    // only the explicit `process === 'hp'` check correctly excludes it.
     const codes = analyzeFormulation({
       ...base,
       process: 'cp',
-      isLiquidSoap: false,
       additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
     }).map((i) => i.code);
     expect(codes).not.toContain('hp_thick_phase_suppressant');
@@ -390,7 +394,6 @@ describe('HP-gated insights (process discriminator)', () => {
     const lsCodes = analyzeFormulation({
       ...base,
       process: 'ls',
-      isLiquidSoap: true,
       hpYogurtPercent: 8,
       fattyAcids: { ricinoleic: 15 },
       fattyAcidCoveragePercent: 90,
@@ -567,7 +570,6 @@ describe('ls_salt_thickening advisory (qualitative, LS-only)', () => {
   const lsBase: FormulationAnalysisInput = {
     ...base,
     process: 'ls',
-    isLiquidSoap: true,
     fattyAcidCoveragePercent: 100,
     additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
   };
@@ -618,7 +620,6 @@ describe('ls_salt_thickening advisory (qualitative, LS-only)', () => {
       analyzeFormulation({
         ...lsBase,
         process: 'cp',
-        isLiquidSoap: false,
         fattyAcids: { oleic: 60 },
       }).some((i) => i.code === 'ls_salt_thickening'),
     ).toBe(false);
@@ -636,7 +637,6 @@ describe('ls_salt_thickening advisory (qualitative, LS-only)', () => {
 describe('LS quality remap + dual-lye recommender', () => {
   const ls: FormulationAnalysisInput = {
     ...base,
-    isLiquidSoap: true,
     process: 'ls',
     fattyAcidCoveragePercent: 100,
   };
@@ -650,7 +650,7 @@ describe('LS quality remap + dual-lye recommender', () => {
       analyzeFormulation({ ...ls, fattyAcids: coconutHeavy }).map((i) => i.code),
     ).not.toContain('high_short_chain_low_long_chain');
     expect(
-      analyzeFormulation({ ...ls, isLiquidSoap: false, fattyAcids: coconutHeavy }).map(
+      analyzeFormulation({ ...ls, process: 'cp', fattyAcids: coconutHeavy }).map(
         (i) => i.code,
       ),
     ).toContain('high_short_chain_low_long_chain');
@@ -663,7 +663,7 @@ describe('LS quality remap + dual-lye recommender', () => {
     expect(codes).not.toContain('eutectic_lather_sources');
     // still fires for CP:
     expect(
-      analyzeFormulation({ ...ls, isLiquidSoap: false, fattyAcids: { lauric: 10, oleic: 40 } }).map(
+      analyzeFormulation({ ...ls, process: 'cp', fattyAcids: { lauric: 10, oleic: 40 } }).map(
         (i) => i.code,
       ),
     ).toContain('eutectic_lather_sources');
@@ -706,7 +706,7 @@ describe('LS quality remap + dual-lye recommender', () => {
       expect(
         analyzeFormulation({
           ...ls,
-          isLiquidSoap: false,
+          process: 'cp',
           fattyAcids: { ricinoleic: 6, oleic: 50 },
         }).map((i) => i.code),
       ).not.toContain('ls_castor_no_lather');
@@ -762,7 +762,7 @@ describe('LS quality remap + dual-lye recommender', () => {
     it('does not fire for CP even with a coconut-heavy profile', () => {
       const codes = analyzeFormulation({
         ...ls,
-        isLiquidSoap: false,
+        process: 'cp',
         fattyAcids: { lauric: 45, myristic: 12 },
       }).map((i) => i.code);
       expect(codes).not.toContain('ls_dual_lye_recommendation');
@@ -839,7 +839,6 @@ describe('LS split-liquid advisories (LS audit 2026-07-27)', () => {
   const ls = {
     ...base,
     superfatPercent: 2,
-    isLiquidSoap: true,
     process: 'ls' as const,
     splitLiquidEnabled: true,
     splitLiquidGrams: 200,
@@ -871,7 +870,7 @@ describe('LS split-liquid advisories (LS audit 2026-07-27)', () => {
       for (const process of ['cp', 'hp'] as const) {
         expect(
           has(
-            { ...ls, process, isLiquidSoap: false, lsSplitLiquidFatShiftPercent: 4.2 },
+            { ...ls, process, lsSplitLiquidFatShiftPercent: 4.2 },
             'ls_split_liquid_fat_superfat',
           ),
         ).toBe(false);
@@ -892,7 +891,7 @@ describe('LS split-liquid advisories (LS audit 2026-07-27)', () => {
     it('does not fire without a split liquid, or outside LS', () => {
       expect(has({ ...ls, splitLiquidEnabled: false, splitLiquidGrams: null }, 'ls_split_liquid_not_dilution')).toBe(false);
       expect(
-        has({ ...ls, process: 'cp', isLiquidSoap: false }, 'ls_split_liquid_not_dilution'),
+        has({ ...ls, process: 'cp' }, 'ls_split_liquid_not_dilution'),
       ).toBe(false);
     });
 

@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import type { RecipePropertiesResult, SoapPropertyName } from '@soap-calc/core';
+import type { ProcessId } from '../lib/process';
 import {
   FORMULATION_PREFERENCE_GUIDE,
   formatPropertyScore,
@@ -56,9 +57,9 @@ type PropertiesPanelProps = {
   /** Recipe oils whose fatty-acid profile is a modeled reconstruction, not a measured composition.
    *  Required: a data-honesty signal must not be omittable into silence. Pass [] when there are none. */
   modeledOilIds: string[];
-  /** True for liquid-soap (KOH) recipes. Appends an LS-specific note to the cleansing row's
-   *  guidance, since "cleansing" reads as solubility/dilution there, not bar harshness. */
-  isLiquidSoap?: boolean;
+  /** The recipe's process. Appends an LS-specific note to the cleansing row's guidance,
+   *  since "cleansing" reads as solubility/dilution there, not bar harshness. */
+  process: ProcessId;
 };
 
 // memo: props are stable view-model memo outputs, so unrelated keystrokes
@@ -67,7 +68,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   result,
   indexes,
   modeledOilIds,
-  isLiquidSoap,
+  process,
 }: PropertiesPanelProps) {
   const [view, setView] = useState<'bars' | 'radar'>('bars');
   const modeled = modeledOilIds;
@@ -87,10 +88,10 @@ export const PropertiesPanel = memo(function PropertiesPanel({
     <section className="panel">
       <h2 className="panel__title">
         <span className="panel__num" aria-hidden="true">03</span>
-        {isLiquidSoap ? 'Soap properties' : 'Bar properties'}
+        {process === 'ls' ? 'Soap properties' : 'Bar properties'}
       </h2>
       <p className="panel__subtitle">
-        {isLiquidSoap
+        {process === 'ls'
           ? 'Fatty-acid based scores, 0–100 scale — suggested ranges reflect bar-soap conventions'
           : 'Fatty-acid based scores, 0–100 scale'}
       </p>
@@ -255,7 +256,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 // Append, don't mutate PROPERTY_GUIDANCE: cleansing reads as solubility/dilution
                 // in liquid soap, not bar harshness, so LS recipes get an extra clause here.
                 const guidance =
-                  key === 'cleansing' && isLiquidSoap
+                  key === 'cleansing' && process === 'ls'
                     ? `${PROPERTY_GUIDANCE[key]} In liquid soap this tracks solubility/how well it dilutes, not harshness.`
                     : PROPERTY_GUIDANCE[key];
                 return (

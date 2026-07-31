@@ -23,6 +23,7 @@ test('flags modeled (derived-profile) oils, and stays silent without them', () =
       result={FULL.properties}
       indexes={FULL.indexes}
       modeledOilIds={['soybean-27-5-hydrogenated']}
+      process="cp"
     />,
   );
   expect(screen.getByText('Modeled')).toBeTruthy();
@@ -30,12 +31,12 @@ test('flags modeled (derived-profile) oils, and stays silent without them', () =
   expect(screen.getByText(/Soybean, 27\.5% hydrogenated/)).toBeTruthy();
 
   // A measured-only recipe must not show the note at all.
-  rerender(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  rerender(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   expect(screen.queryByText('Modeled')).toBeNull();
 });
 
 test('renders scores as unitless numbers (no % on property rows)', () => {
-  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   const hardness = screen.getByRole('meter', { name: /Hardness/i });
   expect(within(hardness).queryByText(/%/)).toBeNull();
   expect(screen.getByText('41')).toBeTruthy();
@@ -52,7 +53,7 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
     indexes: FULL.indexes,
   };
   const { rerender, container } = render(
-    <PropertiesPanel result={outOfRange.properties} indexes={outOfRange.indexes} modeledOilIds={[]} />,
+    <PropertiesPanel result={outOfRange.properties} indexes={outOfRange.indexes} modeledOilIds={[]} process="cp" />,
   );
   expect(container.querySelectorAll('.property-bars__value--outside').length).toBeGreaterThan(0);
 
@@ -61,6 +62,7 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
       result={{ ...outOfRange.properties, coveragePercent: 60 }}
       indexes={{ ...outOfRange.indexes, coveragePercent: 60 }}
       modeledOilIds={[]}
+      process="cp"
     />,
   );
   expect(container.querySelectorAll('.property-bars__value--outside').length).toBe(0);
@@ -68,12 +70,12 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
 
 test('titles the panel per process: bar soap by default, soap for LS', () => {
   const { rerender } = render(
-    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
   expect(screen.getByRole('heading', { name: 'Bar properties' })).toBeTruthy();
 
   rerender(
-    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} isLiquidSoap />,
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="ls" />,
   );
   expect(screen.getByRole('heading', { name: 'Soap properties' })).toBeTruthy();
   expect(screen.queryByRole('heading', { name: 'Bar properties' })).toBeNull();
@@ -82,7 +84,7 @@ test('titles the panel per process: bar soap by default, soap for LS', () => {
 });
 
 test('gives every property bar a guidance tooltip', () => {
-  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   // Derive the terms from the labels so a rename in core keeps this test honest.
   for (const term of Object.values(SOAP_PROPERTY_LABELS)) {
     expect(screen.getByRole('button', { name: `About ${term}` })).toBeTruthy();
@@ -90,19 +92,19 @@ test('gives every property bar a guidance tooltip', () => {
 });
 
 test('notes that all soap cleans, via the cleansing row InfoTip guidance', () => {
-  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   expect(
     screen.getByText(/All soap cleans — a low cleansing score means gentler, not ineffective\./),
   ).toBeTruthy();
 });
 
-test('appends the LS solubility note to the cleansing guidance when isLiquidSoap', () => {
+test('appends the LS solubility note to the cleansing guidance for LS process', () => {
   render(
     <PropertiesPanel
       result={FULL.properties}
       indexes={FULL.indexes}
       modeledOilIds={[]}
-      isLiquidSoap
+      process="ls"
     />,
   );
   expect(
@@ -111,7 +113,7 @@ test('appends the LS solubility note to the cleansing guidance when isLiquidSoap
 });
 
 test('omits the LS solubility note for a bar-soap (CP/HP) recipe', () => {
-  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   expect(
     screen.queryByText(/In liquid soap this tracks solubility/),
   ).toBeNull();
@@ -123,7 +125,7 @@ test('renders no radar and a hint when there is no property data', () => {
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] } as RecipeIndexResult,
   };
   const { container } = render(
-    <PropertiesPanel result={empty.properties} indexes={empty.indexes} modeledOilIds={[]} />,
+    <PropertiesPanel result={empty.properties} indexes={empty.indexes} modeledOilIds={[]} process="cp" />,
   );
   expect(container.querySelector('.property-radar')).toBeNull();
   expect(screen.getByText(/Add triglyceride oils/i)).toBeTruthy();
@@ -131,7 +133,7 @@ test('renders no radar and a hint when there is no property data', () => {
 
 test('defaults to the Bars view — meters visible, radar hidden', () => {
   const { container } = render(
-    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
   expect(container.querySelector('.property-bars')).not.toBeNull();
   expect(container.querySelector('.property-radar')).toBeNull();
@@ -139,7 +141,7 @@ test('defaults to the Bars view — meters visible, radar hidden', () => {
 });
 
 test('wires the toggle tabs to the tabpanel via aria-controls / aria-labelledby', () => {
-  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   const panel = screen.getByRole('tabpanel');
   const barsTab = screen.getByRole('tab', { name: 'Bars' });
   const radarTab = screen.getByRole('tab', { name: 'Radar' });
@@ -154,7 +156,7 @@ test('wires the toggle tabs to the tabpanel via aria-controls / aria-labelledby'
 
 test('switching to Radar shows the chart and keeps the property readings for AT', () => {
   const { container } = render(
-    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
   expect(container.querySelector('.property-radar')).not.toBeNull();
@@ -165,7 +167,7 @@ test('switching to Radar shows the chart and keeps the property readings for AT'
 
 test('gives the active view-toggle tab tabIndex=0 and the other -1', () => {
   const { container } = render(
-    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />,
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
   // Default view is Bars.
   expect(screen.getByRole('tab', { name: 'Bars' }).getAttribute('tabindex')).toBe('0');
@@ -174,7 +176,7 @@ test('gives the active view-toggle tab tabIndex=0 and the other -1', () => {
 });
 
 test('ArrowLeft on the Bars tab moves the roving tabindex to Radar and switches the view', async () => {
-  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   const bars = screen.getByRole('tab', { name: 'Bars' });
   bars.focus();
   await userEvent.keyboard('{ArrowLeft}');
@@ -185,7 +187,7 @@ test('ArrowLeft on the Bars tab moves the roving tabindex to Radar and switches 
 });
 
 test('ArrowRight on the Radar tab wraps the roving tabindex back to Bars and switches the view', async () => {
-  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} />);
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
   const radar = screen.getByRole('tab', { name: 'Radar' });
   radar.focus();

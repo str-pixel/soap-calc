@@ -85,6 +85,7 @@ describe('analyzeFormulation', () => {
       waterLyeRatio: 0.8,
       waterGrams: 80,
       lyeGrams: 100,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'water_below_lye')).toBe(true);
   });
@@ -99,6 +100,7 @@ describe('analyzeFormulation', () => {
       waterLyeRatio: 2,
       waterGrams: 200,
       lyeGrams: 100,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'large_test_batch')).toBe(true);
   });
@@ -114,6 +116,7 @@ describe('analyzeFormulation', () => {
       waterLyeRatio: 2,
       waterGrams: 200,
       lyeGrams: 100,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'high_poly_high_superfat')).toBe(true);
     expect(sumFattyAcids(profile, ['linoleic', 'linolenic'])).toBe(30);
@@ -130,6 +133,7 @@ describe('analyzeFormulation', () => {
       waterLyeRatio: 2,
       waterGrams: 200,
       lyeGrams: 100,
+      process: 'cp' as const,
     };
     const covered = analyzeFormulation({ ...base, fattyAcidCoveragePercent: 100 });
     const lowCoverage = analyzeFormulation({ ...base, fattyAcidCoveragePercent: 10 });
@@ -152,6 +156,7 @@ describe('analyzeFormulation', () => {
       splitLiquidGrams: 200,
       splitLiquidAddAt: 'trace',
       suggestedLyeWaterGrams: 135,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(true);
   });
@@ -170,6 +175,7 @@ describe('analyzeFormulation', () => {
       splitLiquidGrams: 200,
       splitLiquidAddAt: 'trace',
       suggestedLyeWaterGrams: 135,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(false);
   });
@@ -188,6 +194,7 @@ describe('analyzeFormulation', () => {
       splitLiquidGrams: 200,
       splitLiquidAddAt: 'lye',
       suggestedLyeWaterGrams: 135,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(false);
   });
@@ -203,6 +210,7 @@ describe('analyzeFormulation', () => {
       waterGrams: 200,
       lyeGrams: 100,
       totalAdditivePercent: 12,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'high_total_additives')).toBe(true);
   });
@@ -218,6 +226,7 @@ describe('analyzeFormulation', () => {
       waterGrams: 330,
       lyeGrams: 100,
       totalAdditivePercent: 5,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'high_total_additives')).toBe(false);
   });
@@ -237,6 +246,7 @@ describe('analyzeFormulation', () => {
       splitLiquidAddAt: 'trace',
       suggestedLyeWaterGrams: 100,
       splitLiquidWaterReductionGrams: 0,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'split_liquid_high_trace_liquid')).toBe(true);
     expect(insights.some((i) => i.code === 'split_liquid_water_not_adjusted')).toBe(false);
@@ -254,6 +264,7 @@ describe('analyzeFormulation', () => {
       lyeGrams: 100,
       lyeType: 'dual',
       kohBlendPercent: 5,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'dual_lye_advanced')).toBe(true);
   });
@@ -270,6 +281,7 @@ describe('analyzeFormulation', () => {
       lyeGrams: 100,
       lyeType: 'dual',
       kohBlendPercent: 0,
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'dual_lye_advanced')).toBe(false);
   });
@@ -285,6 +297,7 @@ describe('analyzeFormulation', () => {
       waterGrams: 200,
       lyeGrams: 100,
       lyeType: 'naoh',
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'dual_lye_advanced')).toBe(false);
   });
@@ -300,6 +313,7 @@ describe('analyzeFormulation', () => {
       waterGrams: 200,
       lyeGrams: 100,
       additiveEntries: [{ catalogId: 'jojoba', name: 'Wax ester' }],
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'jojoba_superfat_note')).toBe(true);
   });
@@ -315,6 +329,7 @@ describe('analyzeFormulation', () => {
       waterGrams: 200,
       lyeGrams: 100,
       additiveEntries: [{ catalogId: '', name: 'Golden jojoba oil' }],
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'jojoba_superfat_note')).toBe(true);
   });
@@ -330,6 +345,7 @@ describe('analyzeFormulation', () => {
       waterGrams: 200,
       lyeGrams: 100,
       additiveEntries: [{ catalogId: '', name: 'Colloidal oatmeal' }],
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'oatmeal_false_trace')).toBe(true);
   });
@@ -345,6 +361,7 @@ describe('analyzeFormulation', () => {
       waterGrams: 200,
       lyeGrams: 100,
       oilEntries: [{ oilId: 'jojoba-oil', name: 'Jojoba Oil' }],
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'jojoba_superfat_note')).toBe(true);
   });
@@ -360,6 +377,7 @@ describe('analyzeFormulation', () => {
       waterGrams: 200,
       lyeGrams: 100,
       additiveEntries: [{ catalogId: '', name: 'Oatmeal stout fragrance' }],
+      process: 'cp',
     });
     expect(insights.some((i) => i.code === 'oatmeal_false_trace')).toBe(false);
   });
@@ -368,6 +386,7 @@ describe('analyzeFormulation', () => {
     const base = {
       properties: null, fattyAcids: null, totalOilGrams: 1000, superfatPercent: 3,
       lyeConcentrationPercent: 33, waterLyeRatio: 2, waterGrams: 80, lyeGrams: 100,
+      process: 'cp' as const,
     };
     it('fires when the PCSF oil PUFA exceeds 30', () => {
       const insights = analyzeFormulation({ ...base, postCookSuperfatPufaPercent: 65 });
@@ -390,16 +409,16 @@ describe('analyzeFormulation', () => {
   };
 
   it('warns when LS superfat exceeds ~3%', () => {
-    const hot = analyzeFormulation({ ...lsBase, superfatPercent: 4, isLiquidSoap: true });
+    const hot = analyzeFormulation({ ...lsBase, superfatPercent: 4, process: 'ls' });
     expect(hot.some((i) => i.code === 'ls_superfat_high')).toBe(true);
-    const ok = analyzeFormulation({ ...lsBase, superfatPercent: 2, isLiquidSoap: true });
+    const ok = analyzeFormulation({ ...lsBase, superfatPercent: 2, process: 'ls' });
     expect(ok.some((i) => i.code === 'ls_superfat_high')).toBe(false);
-    const cp = analyzeFormulation({ ...lsBase, superfatPercent: 4, isLiquidSoap: false });
+    const cp = analyzeFormulation({ ...lsBase, superfatPercent: 4, process: 'cp' });
     expect(cp.some((i) => i.code === 'ls_superfat_high')).toBe(false);
   });
 
   it('flags an LS lye excess (negative superfat) for neutralization', () => {
-    const insights = analyzeFormulation({ ...lsBase, superfatPercent: -2, isLiquidSoap: true });
+    const insights = analyzeFormulation({ ...lsBase, superfatPercent: -2, process: 'ls' });
     const excess = insights.find((i) => i.code === 'ls_lye_excess');
     expect(excess).toBeTruthy();
     expect(excess!.level).toBe('info');
@@ -408,9 +427,9 @@ describe('analyzeFormulation', () => {
 
   it('emits no lye-concentration band warnings at all, for any process', () => {
     // Both thresholds were removed as unsourced; the sourced boundary is 1:1 (water_below_lye).
-    for (const isLiquidSoap of [false, true]) {
+    for (const process of ['cp', 'ls'] as const) {
       for (const lyeConcentrationPercent of [15, 40, 45]) {
-        const out = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent, isLiquidSoap });
+        const out = analyzeFormulation({ ...lsBase, superfatPercent: 2, lyeConcentrationPercent, process });
         expect(out.some((i) => i.code === 'lye_conc_high' || i.code === 'lye_conc_low')).toBe(false);
       }
     }
@@ -429,7 +448,7 @@ describe('analyzeFormulation', () => {
       ...lsBase,
       properties: highCleansingProperties,
       superfatPercent: -2,
-      isLiquidSoap: true,
+      process: 'ls',
     });
     expect(ls.some((i) => i.code === 'high_cleansing_low_superfat')).toBe(false);
 
@@ -437,7 +456,7 @@ describe('analyzeFormulation', () => {
       ...lsBase,
       properties: highCleansingProperties,
       superfatPercent: -2,
-      isLiquidSoap: false,
+      process: 'cp',
     });
     expect(cp.some((i) => i.code === 'high_cleansing_low_superfat')).toBe(true);
   });
