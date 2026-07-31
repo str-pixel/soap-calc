@@ -55,7 +55,7 @@ export type FormulationAnalysisInput = {
   /** PUFA (linoleic + linolenic) % of the chosen post-cook superfat oil, when PCSF is active. */
   postCookSuperfatPufaPercent?: number;
   /** The recipe's process — the ONLY discriminator. Gates LS-specific insights and exempts
-   * LS from the bar-soap lye-concentration warnings via `process === 'ls'` /
+   * LS from the bar-soap water-band warnings (% of oils) via `process === 'ls'` /
    * `process !== 'ls'`; HP-only insights must gate on `process === 'hp'` specifically. */
   process: 'cp' | 'hp' | 'ls';
   /** Yogurt additive line's percent of oil weight (grams / totalOilGrams × 100); HP only —
@@ -103,48 +103,82 @@ export type FormulationAnalysisInput = {
   soapingTempF?: number;
 };
 
-export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
-  const insights: FormulationInsight[] = [];
+export type InsightRuleParams = Record<string, number | string>;
 
-  if (input.totalOilGrams > 500) {
-    insights.push({
-      level: 'info',
-      code: 'large_test_batch',
-      message:
-        'Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong.',
-    });
-  }
+export type InsightRule = {
+  code: string;
+  /** Processes this insight applies to; absent = all. Mirrors AdditiveCatalogEntry. */
+  processes?: readonly ('cp' | 'hp' | 'ls')[];
+  /** Base parameters; per-process overrides REPLACE individual keys (additive-catalog
+   * semantics). Rules without process-varying values omit both. */
+  params?: InsightRuleParams;
+  processOverrides?: Partial<Record<'cp' | 'hp' | 'ls', InsightRuleParams>>;
+  /** The insight's own condition + message, unchanged from the inline block. Returns
+   * null when the insight does not fire. Reads PROCESS-INVARIANT logic from input;
+   * everything the process changes must come from params. */
+  check: (input: FormulationAnalysisInput, params: InsightRuleParams) => FormulationInsight | null;
+};
 
-  if (
-    input.lyeGrams > 0 &&
-    input.waterGrams > 0 &&
-    input.waterGrams < input.lyeGrams
-  ) {
-    insights.push({
-      level: 'warning',
-      code: 'water_below_lye',
-      message:
-        'Water is less than lye by weight — use at least a 1:1 water:lye ratio so alkali can dissolve safely.',
-    });
-  }
+export function resolveInsightParams(rule: InsightRule, process: 'cp' | 'hp' | 'ls'): InsightRuleParams {
+  return { ...(rule.params ?? {}), ...(rule.processOverrides?.[process] ?? {}) };
+}
 
-  // Caustic-bar guard (NaOH bar soap only). At 0% superfat the lye is set to exactly
-  // match the oils, leaving no unsaponified-oil buffer, so real variation in an oil's
-  // SAP value or a small scale error goes straight into free lye — a harsh/caustic bar.
-  // Liquid soap (KOH) is exempt: it legitimately runs at/below 0% and is neutralized
-  // after cook. Behavior-only copy; no fixed "minimum safe %" is asserted (only the
-  // no-buffer case is a clear, grounded hazard).
-  if (input.lyeGrams > 0 && input.process !== 'ls' && input.superfatPercent <= 0) {
-    insights.push({
-      level: 'warning',
-      code: 'no_superfat_margin',
-      message:
-        '0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — ' +
-        'normal variation in oil SAP values or a small scale error then leaves free lye, which can ' +
-        'make the bar harsh or caustic. Most bar recipes keep a few percent superfat.',
-    });
-  }
-
+const INSIGHT_RULES: InsightRule[] = [
+  {
+    code: 'large_test_batch',
+    check: (input) => {
+      if (input.totalOilGrams > 500) {
+        return {
+          level: 'info',
+          code: 'large_test_batch',
+          message:
+            'Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'water_below_lye',
+    check: (input) => {
+      if (
+        input.lyeGrams > 0 &&
+        input.waterGrams > 0 &&
+        input.waterGrams < input.lyeGrams
+      ) {
+        return {
+          level: 'warning',
+          code: 'water_below_lye',
+          message:
+            'Water is less than lye by weight — use at least a 1:1 water:lye ratio so alkali can dissolve safely.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'no_superfat_margin',
+    processes: ['cp', 'hp'],
+    // Caustic-bar guard (NaOH bar soap only). At 0% superfat the lye is set to exactly
+    // match the oils, leaving no unsaponified-oil buffer, so real variation in an oil's
+    // SAP value or a small scale error goes straight into free lye — a harsh/caustic bar.
+    // Liquid soap (KOH) is exempt: it legitimately runs at/below 0% and is neutralized
+    // after cook. Behavior-only copy; no fixed "minimum safe %" is asserted (only the
+    // no-buffer case is a clear, grounded hazard).
+    check: (input) => {
+      if (input.lyeGrams > 0 && input.superfatPercent <= 0) {
+        return {
+          level: 'warning',
+          code: 'no_superfat_margin',
+          message:
+            '0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — ' +
+            'normal variation in oil SAP values or a small scale error then leaves free lye, which can ' +
+            'make the bar harsh or caustic. Most bar recipes keep a few percent superfat.',
+        };
+      }
+      return null;
+    },
+  },
   // The lye-concentration band warnings (below ~20%, above ~38%) are GONE. A four-source
   // review of the water literature found no support for either threshold, and the high one
   // misfired on published practice: it fires from ~21% water of oils downward, i.e. across
@@ -157,231 +191,357 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   // dissolve), rather than the workability guesses these carried. Excess water is covered by
   // the per-process water band below, in % of oils, which is the unit the sources actually
   // publish. Do not reintroduce a concentration threshold without a source for the number.
-
-  if (
-    input.waterBand &&
-    input.process !== 'ls' &&
-    input.totalOilGrams > 0 &&
-    input.waterGrams > 0
-  ) {
-    const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
-    const { lowTier, highTier, riversAbove } = input.waterBand;
-    // CP's band has highTier[1]=40 extending past riversAbove=38 by design — both are
-    // verified source constants (see processProfile.ts). This rivers check runs first, so
-    // 38–40% (nominally the top of the high tier) always resolves to water_band_rivers,
-    // never water_band_between_tiers/below_low — the rivers warning correctly wins the
-    // overlap.
-    if (waterPercentOfOils > riversAbove) {
-      insights.push({
-        level: 'warning',
-        code: 'water_band_rivers',
-        message:
-          'Water is above the typical range for this process — the batter may take a long time to firm up, and can glycerin-river if it also goes through gel. Consider a lower water amount.',
-      });
-    } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
-      insights.push({
-        level: 'info',
-        code: 'water_band_between_tiers',
-        message:
-          'Water sits between the low-water and full-water working ranges — fine, but nudging into either range gives more predictable trace and cure.',
-      });
-    } else if (waterPercentOfOils < lowTier[0]) {
-      insights.push({
-        level: 'info',
-        code: 'water_band_below_low',
-        message:
-          'Very low water for this process — trace comes fast and the batter can be stiff; work quickly and keep temperatures modest.',
-      });
-    }
-  }
-
-  if (
-    input.fattyAcids &&
-    (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
-  ) {
-    const lauricMyristic = sumFattyAcids(
-      input.fattyAcids,
-      FATTY_ACID_GROUP_KEYS.lauricMyristic,
-    );
-    const palmiticStearic = sumFattyAcids(
-      input.fattyAcids,
-      FATTY_ACID_GROUP_KEYS.palmiticStearic,
-    );
-    const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
-
+  {
+    code: 'water_band_rivers',
+    processes: ['cp', 'hp'],
+    check: (input) => {
+      if (input.waterBand && input.totalOilGrams > 0 && input.waterGrams > 0) {
+        const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
+        const { lowTier, highTier, riversAbove } = input.waterBand;
+        // CP's band has highTier[1]=40 extending past riversAbove=38 by design — both are
+        // verified source constants (see processProfile.ts). This rivers check runs first, so
+        // 38–40% (nominally the top of the high tier) always resolves to water_band_rivers,
+        // never water_band_between_tiers/below_low — the rivers warning correctly wins the
+        // overlap.
+        if (waterPercentOfOils > riversAbove) {
+          return {
+            level: 'warning',
+            code: 'water_band_rivers',
+            message:
+              'Water is above the typical range for this process — the batter may take a long time to firm up, and can glycerin-river if it also goes through gel. Consider a lower water amount.',
+          };
+        } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
+          return null;
+        } else if (waterPercentOfOils < lowTier[0]) {
+          return null;
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'water_band_between_tiers',
+    processes: ['cp', 'hp'],
+    check: (input) => {
+      if (input.waterBand && input.totalOilGrams > 0 && input.waterGrams > 0) {
+        const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
+        const { lowTier, highTier, riversAbove } = input.waterBand;
+        if (waterPercentOfOils > riversAbove) {
+          return null;
+        } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
+          return {
+            level: 'info',
+            code: 'water_band_between_tiers',
+            message:
+              'Water sits between the low-water and full-water working ranges — fine, but nudging into either range gives more predictable trace and cure.',
+          };
+        } else if (waterPercentOfOils < lowTier[0]) {
+          return null;
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'water_band_below_low',
+    processes: ['cp', 'hp'],
+    check: (input) => {
+      if (input.waterBand && input.totalOilGrams > 0 && input.waterGrams > 0) {
+        const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
+        const { lowTier, highTier, riversAbove } = input.waterBand;
+        if (waterPercentOfOils > riversAbove) {
+          return null;
+        } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
+          return null;
+        } else if (waterPercentOfOils < lowTier[0]) {
+          return {
+            level: 'info',
+            code: 'water_band_below_low',
+            message:
+              'Very low water for this process — trace comes fast and the batter can be stiff; work quickly and keep temperatures modest.',
+          };
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'high_short_chain_low_long_chain',
+    processes: ['cp', 'hp'],
     // Bar-soap framing ("bar may feel... and wear quickly") — LS has its own lather/salt
     // coaching (ls_salt_thickening, ls_dual_lye_recommendation) for a coconut-heavy profile,
     // so this stays CP/HP-only, mirroring eutectic_lather_sources' LS gate above.
-    if (lauricMyristic > 35 && palmiticStearic < 15 && input.process !== 'ls') {
-      insights.push({
-        level: 'info',
-        code: 'high_short_chain_low_long_chain',
-        message:
-          'High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous.',
-      });
-    }
-
-    if (poly > 28 && input.superfatPercent >= 8) {
-      insights.push({
-        level: 'warning',
-        code: 'high_poly_high_superfat',
-        message:
-          'High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months.',
-      });
-    }
-
-    const oleic = input.fattyAcids.oleic ?? 0;
-    const lauric = input.fattyAcids.lauric ?? 0;
+    check: (input) => {
+      if (
+        input.fattyAcids &&
+        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+      ) {
+        const lauricMyristic = sumFattyAcids(
+          input.fattyAcids,
+          FATTY_ACID_GROUP_KEYS.lauricMyristic,
+        );
+        const palmiticStearic = sumFattyAcids(
+          input.fattyAcids,
+          FATTY_ACID_GROUP_KEYS.palmiticStearic,
+        );
+        if (lauricMyristic > 35 && palmiticStearic < 15) {
+          return {
+            level: 'info',
+            code: 'high_short_chain_low_long_chain',
+            message:
+              'High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous.',
+          };
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'high_poly_high_superfat',
+    check: (input) => {
+      if (
+        input.fattyAcids &&
+        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+      ) {
+        const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+        if (poly > 28 && input.superfatPercent >= 8) {
+          return {
+            level: 'warning',
+            code: 'high_poly_high_superfat',
+            message:
+              'High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months.',
+          };
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'eutectic_lather_sources',
+    processes: ['cp', 'hp'],
     // Bar-lather claim — liquid soap's lather framing is different (see ls_castor_no_lather
     // and the LS salt/dual-lye advisories below), so this stays a CP/HP-only insight.
-    if (lauric >= 5 && oleic >= 20 && input.process !== 'ls') {
-      insights.push({
-        level: 'info',
-        code: 'eutectic_lather_sources',
-        message:
-          'Both lauric and oleic sources present — supports a balanced fluffy and stable lather.',
-      });
-    }
-  }
-
-  if (
-    input.properties &&
-    (input.propertyCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
-  ) {
-    const cleansing = input.properties.cleansing;
-    const superfat = input.superfatPercent;
-    if (cleansing > 22 && superfat < 6 && input.process !== 'ls') {
-      insights.push({
-        level: 'info',
-        code: 'high_cleansing_low_superfat',
-        message:
-          'Cleansing score above the usual range with modest superfat — bar may feel stripping; consider more superfat or softer oils.',
-      });
-    }
-
+    check: (input) => {
+      if (
+        input.fattyAcids &&
+        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+      ) {
+        const oleic = input.fattyAcids.oleic ?? 0;
+        const lauric = input.fattyAcids.lauric ?? 0;
+        if (lauric >= 5 && oleic >= 20) {
+          return {
+            level: 'info',
+            code: 'eutectic_lather_sources',
+            message:
+              'Both lauric and oleic sources present — supports a balanced fluffy and stable lather.',
+          };
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'high_cleansing_low_superfat',
+    processes: ['cp', 'hp'],
+    check: (input) => {
+      if (
+        input.properties &&
+        (input.propertyCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+      ) {
+        const cleansing = input.properties.cleansing;
+        const superfat = input.superfatPercent;
+        if (cleansing > 22 && superfat < 6) {
+          return {
+            level: 'info',
+            code: 'high_cleansing_low_superfat',
+            message:
+              'Cleansing score above the usual range with modest superfat — bar may feel stripping; consider more superfat or softer oils.',
+          };
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'low_cleansing_expected',
+    processes: ['cp', 'hp'],
     // Castile / olive-dominant bars read near-zero cleansing but cure into fine, mild bars.
     // Surface it as reassurance, not a defect: all soap cleans. oleic is a fatty-acid
     // reading, so it needs the fatty-acid coverage gate too, not just the property gate
     // this block is already inside.
-    const oleic = input.fattyAcids?.oleic ?? 0;
-    if (
-      input.process !== 'ls' &&
-      cleansing < 12 &&
-      oleic >= 50 &&
-      (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
-    ) {
-      insights.push({
-        level: 'info',
-        code: 'low_cleansing_expected',
-        message:
-          'A near-zero cleansing score is normal for olive/high-oleic bars — all soap cleans; this cures into a gentle, low-stripping bar.',
-      });
-    }
-  }
+    check: (input) => {
+      if (
+        input.properties &&
+        (input.propertyCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+      ) {
+        const cleansing = input.properties.cleansing;
+        const oleic = input.fattyAcids?.oleic ?? 0;
+        if (
+          cleansing < 12 &&
+          oleic >= 50 &&
+          (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+        ) {
+          return {
+            level: 'info',
+            code: 'low_cleansing_expected',
+            message:
+              'A near-zero cleansing score is normal for olive/high-oleic bars — all soap cleans; this cures into a gentle, low-stripping bar.',
+          };
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'split_liquid_water_not_adjusted',
+    check: (input) => {
+      if (
+        input.splitLiquidEnabled &&
+        input.splitLiquidAddAt === 'trace' &&
+        input.splitLiquidGrams !== null &&
+        input.splitLiquidGrams !== undefined &&
+        input.splitLiquidGrams > 0 &&
+        input.suggestedLyeWaterGrams !== null &&
+        input.suggestedLyeWaterGrams !== undefined &&
+        input.waterGrams > input.suggestedLyeWaterGrams + 0.5
+      ) {
+        return {
+          level: 'warning',
+          code: 'split_liquid_water_not_adjusted',
+          message:
+            'Alternative liquid is listed separately — water is not reduced automatically. Use the suggested lye water in Split liquid or lower your water %.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'split_liquid_high_trace_liquid',
+    check: (input) => {
+      if (
+        input.splitLiquidEnabled &&
+        input.splitLiquidAddAt === 'trace' &&
+        input.splitLiquidGrams !== null &&
+        input.splitLiquidGrams !== undefined &&
+        input.splitLiquidGrams > 0 &&
+        input.totalOilGrams > 0 &&
+        input.splitLiquidWaterReductionGrams !== null &&
+        input.splitLiquidWaterReductionGrams !== undefined &&
+        input.splitLiquidWaterReductionGrams <= 0 &&
+        (input.splitLiquidGrams / input.totalOilGrams) * 100 > 5
+      ) {
+        return {
+          level: 'warning',
+          code: 'split_liquid_high_trace_liquid',
+          message:
+            'Water is already at the 1:1 lye minimum — alternative liquid at trace adds extra total liquid. Expect faster trace, softer bars, or a wetter batter.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'high_total_additives',
+    check: (input) => {
+      if (input.totalAdditivePercent !== undefined && input.totalAdditivePercent > 10) {
+        return {
+          level: 'warning',
+          code: 'high_total_additives',
+          message:
+            'Total additives exceed ~10% of oil weight — may affect trace, texture, or shelf life; verify with a small test batch.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'sugar_total_high',
+    // Sugar-family additives all accelerate trace and heat retention similarly; a single
+    // message on the combined total, not per-additive, since it's the total dose that
+    // tunnels/overheats the batch. The MECHANISM (sugar mass relative to oil mass) is
+    // process-independent, but the TOLERANCE is not: an insulated CP mold traps the heat
+    // (ceiling 4), while an HP open cook and an LS high-temp paste both run sugars to ~5
+    // (LS sources endorse 1–5% of oils). Under HP the sum upstream already excludes yogurt
+    // (hp_yogurt_water covers it), so the HP copy names only the counted sources; CP/LS
+    // keep yogurt in the sum and the copy. See sugarTotalPercent's doc above for how a
+    // solution-dosed LS additive still resolves to its true %-of-oil here.
+    check: (input) => {
+      const sugarCeiling = input.process === 'hp' || input.process === 'ls' ? 5 : 4;
+      if (input.sugarTotalPercent !== undefined && input.sugarTotalPercent > sugarCeiling) {
+        return {
+          level: 'warning',
+          code: 'sugar_total_high',
+          message:
+            input.process === 'hp'
+              ? 'Combined sugar-family additives (sugar/sorbitol, honey) exceed ~5% of oil weight — the cook can scorch or volcano. Consider reducing the total dose.'
+              : `Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~${sugarCeiling}% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.`,
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'soaping_temp_high',
+    processes: ['cp'],
+    // CP overflow guard: a starting temperature past 160 °F sharply raises volcano risk
+    // (verified constant; see CP_OVERFLOW_RISK_F for the °F/°C typo note). CP-gated on
+    // purpose — HP and LS run their cooks at 215 °F by design.
+    check: (input) => {
+      if (input.soapingTempF !== undefined && input.soapingTempF > CP_OVERFLOW_RISK_F) {
+        return {
+          level: 'warning',
+          code: 'soaping_temp_high',
+          message:
+            'Starting temperature above 160 °F (71 °C) — the batch can overheat and overflow the mold. Let the oils and lye cool below 160 °F before combining.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'glycerin_solvent_dilution',
+    processes: ['ls'],
+    // Glycerin-as-solvent advisory (LS): the paste dissolves faster and the finished soap
+    // reaches its target feel with less dilution water than the water-only figure suggests.
+    // No numeric model exists — advise increments, never adjust the dilution math.
+    check: (input) => {
+      if (input.lsGlycerinSolvent) {
+        return {
+          level: 'info',
+          code: 'glycerin_solvent_dilution',
+          message:
+            'Glycerin acts as a solvent: the paste dissolves faster and needs less dilution water than the water-only figure — dilute in increments and stop at the target consistency.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'dual_lye_advanced',
+    check: (input) => {
+      if (input.lyeType === 'dual' && (input.kohBlendPercent ?? DEFAULT_KOH_BLEND_PERCENT) > 0) {
+        return {
+          level: 'info',
+          code: 'dual_lye_advanced',
+          message:
+            'Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up.',
+        };
+      }
+      return null;
+    },
+  },
+];
 
-  if (
-    input.splitLiquidEnabled &&
-    input.splitLiquidAddAt === 'trace' &&
-    input.splitLiquidGrams !== null &&
-    input.splitLiquidGrams !== undefined &&
-    input.splitLiquidGrams > 0 &&
-    input.suggestedLyeWaterGrams !== null &&
-    input.suggestedLyeWaterGrams !== undefined &&
-    input.waterGrams > input.suggestedLyeWaterGrams + 0.5
-  ) {
-    insights.push({
-      level: 'warning',
-      code: 'split_liquid_water_not_adjusted',
-      message:
-        'Alternative liquid is listed separately — water is not reduced automatically. Use the suggested lye water in Split liquid or lower your water %.',
-    });
-  }
+export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
+  const insights: FormulationInsight[] = [];
 
-  if (
-    input.splitLiquidEnabled &&
-    input.splitLiquidAddAt === 'trace' &&
-    input.splitLiquidGrams !== null &&
-    input.splitLiquidGrams !== undefined &&
-    input.splitLiquidGrams > 0 &&
-    input.totalOilGrams > 0 &&
-    input.splitLiquidWaterReductionGrams !== null &&
-    input.splitLiquidWaterReductionGrams !== undefined &&
-    input.splitLiquidWaterReductionGrams <= 0 &&
-    (input.splitLiquidGrams / input.totalOilGrams) * 100 > 5
-  ) {
-    insights.push({
-      level: 'warning',
-      code: 'split_liquid_high_trace_liquid',
-      message:
-        'Water is already at the 1:1 lye minimum — alternative liquid at trace adds extra total liquid. Expect faster trace, softer bars, or a wetter batter.',
-    });
-  }
-
-  if (input.totalAdditivePercent !== undefined && input.totalAdditivePercent > 10) {
-    insights.push({
-      level: 'warning',
-      code: 'high_total_additives',
-      message:
-        'Total additives exceed ~10% of oil weight — may affect trace, texture, or shelf life; verify with a small test batch.',
-    });
-  }
-
-  // Sugar-family additives all accelerate trace and heat retention similarly; a single
-  // message on the combined total, not per-additive, since it's the total dose that
-  // tunnels/overheats the batch. The MECHANISM (sugar mass relative to oil mass) is
-  // process-independent, but the TOLERANCE is not: an insulated CP mold traps the heat
-  // (ceiling 4), while an HP open cook and an LS high-temp paste both run sugars to ~5
-  // (LS sources endorse 1–5% of oils). Under HP the sum upstream already excludes yogurt
-  // (hp_yogurt_water covers it), so the HP copy names only the counted sources; CP/LS
-  // keep yogurt in the sum and the copy. See sugarTotalPercent's doc above for how a
-  // solution-dosed LS additive still resolves to its true %-of-oil here.
-  const sugarCeiling = input.process === 'hp' || input.process === 'ls' ? 5 : 4;
-  if (input.sugarTotalPercent !== undefined && input.sugarTotalPercent > sugarCeiling) {
-    insights.push({
-      level: 'warning',
-      code: 'sugar_total_high',
-      message:
-        input.process === 'hp'
-          ? 'Combined sugar-family additives (sugar/sorbitol, honey) exceed ~5% of oil weight — the cook can scorch or volcano. Consider reducing the total dose.'
-          : `Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~${sugarCeiling}% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.`,
-    });
-  }
-
-  // CP overflow guard: a starting temperature past 160 °F sharply raises volcano risk
-  // (verified constant; see CP_OVERFLOW_RISK_F for the °F/°C typo note). CP-gated on
-  // purpose — HP and LS run their cooks at 215 °F by design.
-  if (
-    input.process === 'cp' &&
-    input.soapingTempF !== undefined &&
-    input.soapingTempF > CP_OVERFLOW_RISK_F
-  ) {
-    insights.push({
-      level: 'warning',
-      code: 'soaping_temp_high',
-      message:
-        'Starting temperature above 160 °F (71 °C) — the batch can overheat and overflow the mold. Let the oils and lye cool below 160 °F before combining.',
-    });
-  }
-
-  // Glycerin-as-solvent advisory (LS): the paste dissolves faster and the finished soap
-  // reaches its target feel with less dilution water than the water-only figure suggests.
-  // No numeric model exists — advise increments, never adjust the dilution math.
-  if (input.process === 'ls' && input.lsGlycerinSolvent) {
-    insights.push({
-      level: 'info',
-      code: 'glycerin_solvent_dilution',
-      message:
-        'Glycerin acts as a solvent: the paste dissolves faster and needs less dilution water than the water-only figure — dilute in increments and stop at the target consistency.',
-    });
-  }
-
-  if (input.lyeType === 'dual' && (input.kohBlendPercent ?? DEFAULT_KOH_BLEND_PERCENT) > 0) {
-    insights.push({
-      level: 'info',
-      code: 'dual_lye_advanced',
-      message:
-        'Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up.',
-    });
+  // The two generic paths that replaced 25 bespoke gates (spec slice 3): process
+  // filtering and parameter resolution. Everything else an insight does lives in its
+  // own check().
+  for (const rule of INSIGHT_RULES) {
+    if (rule.processes && !rule.processes.includes(input.process)) continue;
+    const insight = rule.check(input, resolveInsightParams(rule, input.process));
+    if (insight) insights.push(insight);
   }
 
   const additiveEntries = input.additiveEntries;
@@ -616,8 +776,8 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
   }
 
   // HP-only insights. Gated on the explicit process discriminator (process === 'hp'),
-  // since process === 'ls' / !== 'ls' only distinguishes LS from "everything else" and is
-  // also false for CP, so it would wrongly include CP bars here.
+  // since a gate written `process !== 'ls'` is also true for CP, so it would wrongly
+  // include CP bars here.
   if (input.process === 'hp') {
     if (
       additiveMatches(additiveEntries, 'salt', 'salt') ||
