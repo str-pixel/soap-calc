@@ -33,6 +33,11 @@ test('each process keeps its own workspace through a full tab cycle', async ({ p
     await row.getByLabel(/^Amount( for .*)?$/).fill(amount);
     await row.getByLabel(/^Amount( for .*)?$/).blur();
   }
+  // Flush the last autosave before reload by switching tabs.
+  await processTab(page, /Cold process/).click();
+  // A leak in the PERSISTENCE layer (workspace saved under the wrong storage key) survives
+  // in-memory checks — only a reload forces every workspace back through storage.
+  await page.reload();
   // Second cycle: every tab must still hold its own name, weight, and additive.
   for (const [tab, name, grams, amount, superfat] of TABS) {
     await processTab(page, tab).click();
