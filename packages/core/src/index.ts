@@ -5,7 +5,14 @@ export * from './property-display.js';
 export * from './formulation-guide.js';
 export * from './fatty-acids.js';
 export * from './fatty-acid-chemistry.js';
-export * from './insights.js';
+// Named, not `export *`: INSIGHT_RULES / resolveInsightParams are exported by the module
+// for its consistency test only (see their doc comments) and are not package API.
+export { analyzeFormulation } from './insights.js';
+export type {
+  FormulationAnalysisInput,
+  FormulationInsight,
+  FormulationInsightLevel,
+} from './insights.js';
 export * from './additives.js';
 export * from './mold-sizer.js';
 export * from './ls-yield.js';
