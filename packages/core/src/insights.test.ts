@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeFormulation, type FormulationAnalysisInput } from './insights.js';
+import {
+  analyzeFormulation,
+  INSIGHT_RULES,
+  resolveInsightParams,
+  type FormulationAnalysisInput,
+} from './insights.js';
 
 const base: FormulationAnalysisInput = {
   properties: null,
@@ -902,5 +907,166 @@ describe('LS split-liquid advisories (LS audit 2026-07-27)', () => {
         has({ ...ls, lsSplitLiquidIsSolventOnly: true }, 'ls_split_liquid_not_dilution'),
       ).toBe(false);
     });
+  });
+});
+
+describe('rule registry consistency', () => {
+  // Carried finding from Task 4's review: InsightRule.code is never read at runtime — the
+  // emitted code comes from whatever check() returns — so a copy-paste that updates one and
+  // not the other would ship a mislabeled insight past the golden. This suite guards that.
+
+  it('every rule that fires emits its own declared code', () => {
+    // Drive analyzeFormulation across a spread of inputs; any emitted code must belong to
+    // the declared set, and INSIGHT_RULES must declare 36 unique codes.
+    const declared = INSIGHT_RULES.map((r) => r.code);
+    expect(new Set(declared).size).toBe(36);
+  });
+
+  const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
+    bubbly: 10,
+    cleansing: 0,
+    condition: 65,
+    hardness: 30,
+    longevity: 30,
+    creamy: 30,
+    ...over,
+  });
+
+  /** One known-firing probe input per declared code (36 total), reused from this file's and
+   * insights.golden.test.ts's own fixtures. Stronger per-rule check: call each rule's own
+   * check() directly against its probe and assert the returned insight's code equals the
+   * rule's declared code — the exact copy-paste-mislabel scenario the carried finding warns
+   * about (update rule A's code, leave its check() returning rule B's old code). */
+  const PROBES: Record<string, Partial<FormulationAnalysisInput>> = {
+    large_test_batch: { totalOilGrams: 600 },
+    water_below_lye: { waterGrams: 100, lyeGrams: 140 },
+    no_superfat_margin: { superfatPercent: 0, lyeGrams: 140, process: 'cp' },
+    water_band_rivers: {
+      waterBand: { lowTier: [20, 28], highTier: [32, 40], riversAbove: 38 },
+      waterGrams: 420,
+      totalOilGrams: 1000,
+    },
+    water_band_between_tiers: {
+      waterBand: { lowTier: [20, 28], highTier: [32, 40], riversAbove: 38 },
+      waterGrams: 300,
+      totalOilGrams: 1000,
+    },
+    water_band_below_low: {
+      waterBand: { lowTier: [25, 30], highTier: [32, 40], riversAbove: 40 },
+      waterGrams: 200,
+      totalOilGrams: 1000,
+    },
+    high_short_chain_low_long_chain: {
+      fattyAcids: { lauric: 40, myristic: 10, palmitic: 5, stearic: 5 },
+      fattyAcidCoveragePercent: 100,
+    },
+    high_poly_high_superfat: {
+      fattyAcids: { linoleic: 30, linolenic: 5 },
+      fattyAcidCoveragePercent: 100,
+      superfatPercent: 10,
+    },
+    eutectic_lather_sources: {
+      fattyAcids: { lauric: 10, oleic: 40 },
+      fattyAcidCoveragePercent: 100,
+    },
+    high_cleansing_low_superfat: {
+      properties: cleansingProps({ cleansing: 30 }),
+      superfatPercent: 2,
+      propertyCoveragePercent: 100,
+    },
+    low_cleansing_expected: {
+      properties: cleansingProps({ cleansing: 2 }),
+      fattyAcids: { oleic: 72 },
+      superfatPercent: 5,
+      propertyCoveragePercent: 100,
+      fattyAcidCoveragePercent: 100,
+    },
+    split_liquid_water_not_adjusted: {
+      splitLiquidEnabled: true,
+      splitLiquidAddAt: 'trace',
+      splitLiquidGrams: 200,
+      suggestedLyeWaterGrams: 235,
+      waterGrams: 435,
+    },
+    split_liquid_high_trace_liquid: {
+      splitLiquidEnabled: true,
+      splitLiquidAddAt: 'trace',
+      splitLiquidGrams: 200,
+      splitLiquidWaterReductionGrams: 0,
+      totalOilGrams: 1000,
+    },
+    high_total_additives: { totalAdditivePercent: 12 },
+    sugar_total_high: { sugarTotalPercent: 5.5, process: 'cp' },
+    soaping_temp_high: { soapingTempF: 165, process: 'cp' },
+    glycerin_solvent_dilution: { lsGlycerinSolvent: true, process: 'ls' },
+    dual_lye_advanced: { lyeType: 'dual', kohBlendPercent: 10 },
+    magnesium_salt_scum: { additiveEntries: [{ catalogId: '', name: 'Epsom salt' }] },
+    oatmeal_false_trace: { additiveEntries: [{ catalogId: '', name: 'Colloidal oatmeal' }] },
+    jojoba_superfat_note: { additiveEntries: [{ catalogId: 'jojoba', name: 'Wax ester' }] },
+    high_pufa_post_cook_superfat: { postCookSuperfatPufaPercent: 40 },
+    superfat_out_of_band: { superfatPercent: 40, process: 'cp' },
+    pufa_cap_superfat: {
+      fattyAcids: { linoleic: 30, linolenic: 5 },
+      fattyAcidCoveragePercent: 100,
+      superfatPercent: 10,
+      process: 'cp',
+    },
+    trace_speed: {
+      traceSpeedLabel: 'fast',
+      traceSpeedDrivers: ['high saturated fats'],
+      process: 'cp',
+    },
+    ls_split_liquid_fat_superfat: {
+      lsSplitLiquidFatShiftPercent: 4.2,
+      superfatPercent: 2,
+      process: 'ls',
+    },
+    ls_split_liquid_not_dilution: {
+      splitLiquidEnabled: true,
+      splitLiquidGrams: 200,
+      process: 'ls',
+    },
+    ls_superfat_high: { superfatPercent: 5, process: 'ls' },
+    ls_castor_no_lather: {
+      fattyAcids: { ricinoleic: 6 },
+      fattyAcidCoveragePercent: 100,
+      process: 'ls',
+    },
+    ls_dual_lye_recommendation: {
+      lyeType: 'koh',
+      fattyAcids: { lauric: 45, myristic: 12 },
+      fattyAcidCoveragePercent: 100,
+      process: 'ls',
+    },
+    ls_salt_thickening: {
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+      process: 'ls',
+    },
+    hp_thick_phase_suppressant: {
+      additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }],
+      process: 'hp',
+    },
+    hp_yogurt_water: { hpYogurtPercent: 8, process: 'hp' },
+    hp_relaxed_caps: {
+      fattyAcids: { ricinoleic: 12 },
+      fattyAcidCoveragePercent: 90,
+      process: 'hp',
+    },
+    hp_vessel_too_small: { hpVesselMultiple: 1.2, process: 'hp' },
+    ls_lye_excess: { superfatPercent: -2 },
+  };
+
+  it('every declared rule has a probe, and each rule emits its own code on its probe', () => {
+    const missingProbes = INSIGHT_RULES.map((r) => r.code).filter((code) => !(code in PROBES));
+    expect(missingProbes).toEqual([]);
+
+    for (const rule of INSIGHT_RULES) {
+      const probe = PROBES[rule.code];
+      const input: FormulationAnalysisInput = { ...base, ...probe, process: probe.process ?? 'cp' };
+      const params = resolveInsightParams(rule, input.process);
+      const insight = rule.check(input, params);
+      expect(insight, `rule "${rule.code}" did not fire on its probe`).not.toBeNull();
+      expect(insight?.code).toBe(rule.code);
+    }
   });
 });

@@ -148,7 +148,25 @@ function waterBandBranch(
   return null;
 }
 
-const INSIGHT_RULES: InsightRule[] = [
+// Coconut-heavy LS proxy shared by the dual-lye recommender and the salt-thickening
+// advisory rules below. Both rules are `processes: ['ls']`-gated in the registry, so this
+// helper assumes it is only ever called under that gate and does not re-check process.
+function isCoconutHeavyLS(input: FormulationAnalysisInput): boolean {
+  if (!input.fattyAcids || (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT) {
+    return false;
+  }
+  return (
+    sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.lauricMyristic) >=
+    COCONUT_HEAVY_LAURIC_MYRISTIC
+  );
+}
+
+/** Exported FOR THE CONSISTENCY TEST ONLY (insights.test.ts's rule-registry-consistency
+ * suite), not as public API for callers outside this module: `InsightRule.code` is never
+ * read at runtime — analyzeFormulation's loop only pushes whatever `check()` returns — so a
+ * copy-paste that updates one and not the other would ship a mislabeled insight past the
+ * golden. The test cross-checks the two. */
+export const INSIGHT_RULES: InsightRule[] = [
   {
     code: 'large_test_batch',
     check: (input) => {
@@ -461,16 +479,27 @@ const INSIGHT_RULES: InsightRule[] = [
     // (hp_yogurt_water covers it), so the HP copy names only the counted sources; CP/LS
     // keep yogurt in the sum and the copy. See sugarTotalPercent's doc above for how a
     // solution-dosed LS additive still resolves to its true %-of-oil here.
-    check: (input) => {
-      const sugarCeiling = input.process === 'hp' || input.process === 'ls' ? 5 : 4;
-      if (input.sugarTotalPercent !== undefined && input.sugarTotalPercent > sugarCeiling) {
+    params: { ceilingPercent: 4, family: 'sugar/sorbitol, honey, yogurt' },
+    processOverrides: {
+      hp: { ceilingPercent: 5, family: 'sugar/sorbitol, honey' },
+      ls: { ceilingPercent: 5 },
+    },
+    // The ceiling and additive-family wording are parameterized above; the sentence SHAPE
+    // still differs by process (HP's cook can "scorch or volcano", CP/LS's batch can
+    // "tunnel or overheat, especially when insulated") — that is a genuine process-varying
+    // message, not a leftover threshold, so this is one of the accepted `input.process`
+    // reads left in the file (see the spec-fidelity gate note above INSIGHT_RULES's export).
+    check: (input, params) => {
+      const ceilingPercent = params.ceilingPercent as number;
+      const family = params.family as string;
+      if (input.sugarTotalPercent !== undefined && input.sugarTotalPercent > ceilingPercent) {
         return {
           level: 'warning',
           code: 'sugar_total_high',
           message:
             input.process === 'hp'
-              ? 'Combined sugar-family additives (sugar/sorbitol, honey) exceed ~5% of oil weight — the cook can scorch or volcano. Consider reducing the total dose.'
-              : `Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~${sugarCeiling}% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.`,
+              ? `Combined sugar-family additives (${family}) exceed ~${ceilingPercent}% of oil weight — the cook can scorch or volcano. Consider reducing the total dose.`
+              : `Combined sugar-family additives (${family}) exceed ~${ceilingPercent}% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose.`,
         };
       }
       return null;
@@ -526,302 +555,370 @@ const INSIGHT_RULES: InsightRule[] = [
       return null;
     },
   },
-];
-
-export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
-  const insights: FormulationInsight[] = [];
-
-  // The two generic paths that replaced 25 bespoke gates (spec slice 3): process
-  // filtering and parameter resolution. Everything else an insight does lives in its
-  // own check().
-  for (const rule of INSIGHT_RULES) {
-    if (rule.processes && !rule.processes.includes(input.process)) continue;
-    const insight = rule.check(input, resolveInsightParams(rule, input.process));
-    if (insight) insights.push(insight);
-  }
-
-  const additiveEntries = input.additiveEntries;
-  // Magnesium-bearing salts (Epsom = magnesium sulfate, Dead Sea salt) are the one salt
-  // family that damages soap rather than hardening it: magnesium displaces the alkali
-  // cation to form insoluble magnesium soap — the same soap scum hard water makes, but
-  // built into the bar. Not a lye-math concern (no salt consumes alkali), so this is a
-  // warning, not a calculation. Deliberately keyword-only: there is no catalog entry to
-  // match on, because these should not be offered in the first place. Fires in every
-  // process — the reaction is with soap, not with a process step.
-  if (
-    ['epsom', 'magnesium', 'dead sea'].some((keyword) =>
-      additiveNameMatches(additiveEntries, keyword),
-    )
-  ) {
-    insights.push({
-      level: 'warning',
-      code: 'magnesium_salt_scum',
-      message:
-        'Magnesium-bearing salts (Epsom, Dead Sea) react with soap to form an insoluble magnesium soap — the same scum hard water leaves, but built into the bar: weaker lather, slimy residue, and a higher rancidity risk. For a harder bar use table, sea, Himalayan or black lava salt, which are all sodium chloride and behave identically.',
-    });
-  }
-
-  if (additiveMatches(additiveEntries, 'oatmeal', 'oatmeal')) {
-    insights.push({
-      level: 'info',
-      code: 'oatmeal_false_trace',
-      message:
-        'Oatmeal can cause false trace — do not rely on viscosity alone; confirm with a pH strip or zap test.',
-    });
-  }
-
-  if (
-    additiveMatches(additiveEntries, 'jojoba', 'jojoba') ||
-    recipeOilMatches(input.oilEntries, {
-      oilIds: ['jojoba-oil', 'jojoba-oil-a-liquid-wax-ester'],
-      nameKeyword: 'jojoba',
-    })
-  ) {
-    insights.push({
-      level: 'info',
-      code: 'jojoba_superfat_note',
-      message:
-        'Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils.',
-    });
-  }
-
-  if (input.postCookSuperfatPufaPercent !== undefined && input.postCookSuperfatPufaPercent > 30) {
-    insights.push({
-      level: 'warning',
-      code: 'high_pufa_post_cook_superfat',
-      message:
-        'Post-cook superfat oil is high in linoleic + linolenic — left unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool.',
-    });
-  }
-
-  if (input.process !== 'ls') {
-    if (input.superfatPercent < 3 || input.superfatPercent > 30) {
-      insights.push({
-        level: 'info',
-        code: 'superfat_out_of_band',
-        message:
-          'Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate.',
-      });
-    }
-    if (
-      input.fattyAcids &&
-      (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
-    ) {
-      const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
-      if (poly > 18 && input.superfatPercent > 5) {
-        insights.push({
+  {
+    code: 'magnesium_salt_scum',
+    // Magnesium-bearing salts (Epsom = magnesium sulfate, Dead Sea salt) are the one salt
+    // family that damages soap rather than hardening it: magnesium displaces the alkali
+    // cation to form insoluble magnesium soap — the same soap scum hard water makes, but
+    // built into the bar. Not a lye-math concern (no salt consumes alkali), so this is a
+    // warning, not a calculation. Deliberately keyword-only: there is no catalog entry to
+    // match on, because these should not be offered in the first place. Fires in every
+    // process — the reaction is with soap, not with a process step.
+    check: (input) => {
+      if (
+        ['epsom', 'magnesium', 'dead sea'].some((keyword) =>
+          additiveNameMatches(input.additiveEntries, keyword),
+        )
+      ) {
+        return {
           level: 'warning',
-          code: 'pufa_cap_superfat',
+          code: 'magnesium_salt_scum',
           message:
-            'High linoleic + linolenic oils with an elevated superfat — the unsaponified oil is prone to going rancid. For high-PUFA recipes keep superfat nearer 3–5%.',
-        });
+            'Magnesium-bearing salts (Epsom, Dead Sea) react with soap to form an insoluble magnesium soap — the same scum hard water leaves, but built into the bar: weaker lather, slimy residue, and a higher rancidity risk. For a harder bar use table, sea, Himalayan or black lava salt, which are all sodium chloride and behave identically.',
+        };
       }
-    }
-  }
-
-  if (input.traceSpeedLabel && input.process !== 'ls') {
-    const tip =
-      input.traceSpeedLabel === 'fast'
-        ? 'Expect a quick trace — soap cool, blend in short bursts, and add fragrance last.'
-        : input.traceSpeedLabel === 'slow'
-          ? 'Expect a slow trace — this batter stays fluid, giving time for swirls and intricate pours.'
-          : 'A moderate trace — comfortable working time for most techniques.';
-    const driversClause =
-      input.traceSpeedDrivers && input.traceSpeedDrivers.length > 0
-        ? ` Driven by: ${input.traceSpeedDrivers.join(', ')}.`
-        : '';
-    insights.push({
-      level: 'info',
-      code: 'trace_speed',
-      message: `Predicted trace speed: ${input.traceSpeedLabel}. ${tip}${driversClause}`,
-    });
-  }
-
-  // Fat riding in on an alternative liquid (milk, cream, canned coconut milk). A bar recipe
-  // ignores it — the classic advice is that milk fat is too small to matter. Liquid soap
-  // cannot: it separates past ~3% superfat, and a fatty liquid can push a compliant 2%
-  // recipe well past that on its own. Advisory, not a lye correction: fat fractions are
-  // composition data, not SAP values, so the fix (lower the superfat, or run a lye excess)
-  // stays the user's call.
-  const fatShift = input.lsSplitLiquidFatShiftPercent ?? 0;
-  if (input.process === 'ls' && Number.isFinite(fatShift) && fatShift >= 0.5) {
-    const effective = input.superfatPercent + fatShift;
-    insights.push({
-      level: 'warning',
-      code: 'ls_split_liquid_fat_superfat',
-      message:
-        `The alternative liquid's own fat gets no lye, adding about ${fatShift.toFixed(1)} points of ` +
-        `superfat on top of the ${input.superfatPercent.toFixed(1)}% you set — an effective ` +
-        `${effective.toFixed(1)}%. Liquid soap clouds and separates past ~3%: lower the superfat ` +
-        `(or run a small lye excess) to absorb it.`,
-    });
-  }
-
-  // Where the liquid may NOT go. The split-liquid stages are all pre-cook, so the app never
-  // offers a dilution stage — this says why, since dilution is the step an LS maker is most
-  // tempted to pour milk or beer into. Glycerin-only recipes are exempt (see the flag).
-  if (
-    input.process === 'ls' &&
-    input.splitLiquidEnabled &&
-    input.splitLiquidGrams !== null &&
-    input.splitLiquidGrams !== undefined &&
-    input.splitLiquidGrams > 0 &&
-    !input.lsSplitLiquidIsSolventOnly
-  ) {
-    insights.push({
-      level: 'info',
-      code: 'ls_split_liquid_not_dilution',
-      message:
-        'Alternative liquids belong in the lye solution or at trace, where the cook sterilises them — never in the dilution water. Dilute with plain distilled water, add a preservative, and filter any sediment after the soap settles.',
-    });
-  }
-
-  if (input.process === 'ls' && input.superfatPercent > 3) {
-    insights.push({
-      level: 'warning',
-      code: 'ls_superfat_high',
-      message:
-        'Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%.',
-    });
-  }
-
-  // The bar-soap eutectic-lather framing (lauric + oleic → fluffy/stable lather) doesn't
-  // carry over to liquid soap; castor's role there is solubility/clarity, not lather. Detect
-  // castor via the ricinoleic fatty-acid reading (a documented proxy — castor is essentially
-  // the only common soaping oil with meaningful ricinoleic) gated by fatty-acid coverage, OR
-  // via oil identity, which needs no coverage gate (same pattern as the jojoba oil-identity
-  // check above).
-  const ricinoleicForCastor = input.fattyAcids?.ricinoleic ?? 0;
-  const hasCastorByFattyAcid =
-    ricinoleicForCastor >= 4 &&
-    (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
-  const hasCastorByIdentity = recipeOilMatches(input.oilEntries, {
-    oilIds: ['castor-oil'],
-    nameKeyword: 'castor',
-  });
-  if (input.process === 'ls' && (hasCastorByFattyAcid || hasCastorByIdentity)) {
-    insights.push({
-      level: 'info',
-      code: 'ls_castor_no_lather',
-      message:
-        'Castor adds little lather in liquid soap — its main contribution here is solubility and clarity, not lather.',
-    });
-  }
-
-  // Coconut-heavy LS proxy, computed once and reused by the dual-lye recommender and the
-  // salt-thickening advisory below. Gate mirrors what both blocks already required
-  // independently (LS + fatty-acid data present + coverage above the low-coverage floor),
-  // so hoisting it here changes no insight's firing condition.
-  const lsFattyAcidCoverageOk =
-    input.process === 'ls' &&
-    !!input.fattyAcids &&
-    (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
-  const lauricMyristicForCoconutHeavy = lsFattyAcidCoverageOk
-    ? sumFattyAcids(input.fattyAcids!, FATTY_ACID_GROUP_KEYS.lauricMyristic)
-    : undefined;
-  const isCoconutHeavyLS =
-    lauricMyristicForCoconutHeavy !== undefined &&
-    lauricMyristicForCoconutHeavy >= COCONUT_HEAVY_LAURIC_MYRISTIC;
-
-  // Dual-lye NaOH-share recommender (verified constants, roadmap LS 86): coconut-heavy LS
-  // benefits from a ~30% NaOH share regardless of current lye type (worth switching to dual
-  // lye for), while a low-palmitic+stearic blend that is already dual-lye benefits from a
-  // smaller ~0–20% NaOH share. Deliberately silent for a pure-KOH, low-P+S recipe with no
-  // coconut — nothing actionable to recommend without nagging the user into dual lye.
-  if (lsFattyAcidCoverageOk) {
-    const palmiticStearicForDualLye = sumFattyAcids(
-      input.fattyAcids!,
-      FATTY_ACID_GROUP_KEYS.palmiticStearic,
-    );
-
-    let dualLyeMessage: string | null = null;
-    if (isCoconutHeavyLS) {
-      dualLyeMessage =
-        'High-coconut liquid soap firms and thickens with a ~30% NaOH share in a dual-lye blend.';
-    } else if (palmiticStearicForDualLye <= 15 && input.lyeType === 'dual') {
-      dualLyeMessage =
-        'Low in palmitic + stearic — a small NaOH share (~0–20%) in your blend gives a firmer, thicker soap.';
-    }
-
-    if (dualLyeMessage) {
-      insights.push({
+      return null;
+    },
+  },
+  {
+    code: 'oatmeal_false_trace',
+    check: (input) => {
+      if (additiveMatches(input.additiveEntries, 'oatmeal', 'oatmeal')) {
+        return {
+          level: 'info',
+          code: 'oatmeal_false_trace',
+          message:
+            'Oatmeal can cause false trace — do not rely on viscosity alone; confirm with a pH strip or zap test.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'jojoba_superfat_note',
+    check: (input) => {
+      if (
+        additiveMatches(input.additiveEntries, 'jojoba', 'jojoba') ||
+        recipeOilMatches(input.oilEntries, {
+          oilIds: ['jojoba-oil', 'jojoba-oil-a-liquid-wax-ester'],
+          nameKeyword: 'jojoba',
+        })
+      ) {
+        return {
+          level: 'info',
+          code: 'jojoba_superfat_note',
+          message:
+            'Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'high_pufa_post_cook_superfat',
+    check: (input) => {
+      if (
+        input.postCookSuperfatPufaPercent !== undefined &&
+        input.postCookSuperfatPufaPercent > 30
+      ) {
+        return {
+          level: 'warning',
+          code: 'high_pufa_post_cook_superfat',
+          message:
+            'Post-cook superfat oil is high in linoleic + linolenic — left unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'superfat_out_of_band',
+    processes: ['cp', 'hp'],
+    check: (input) => {
+      if (input.superfatPercent < 3 || input.superfatPercent > 30) {
+        return {
+          level: 'info',
+          code: 'superfat_out_of_band',
+          message:
+            'Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'pufa_cap_superfat',
+    processes: ['cp', 'hp'],
+    check: (input) => {
+      if (
+        input.fattyAcids &&
+        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+      ) {
+        const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+        if (poly > 18 && input.superfatPercent > 5) {
+          return {
+            level: 'warning',
+            code: 'pufa_cap_superfat',
+            message:
+              'High linoleic + linolenic oils with an elevated superfat — the unsaponified oil is prone to going rancid. For high-PUFA recipes keep superfat nearer 3–5%.',
+          };
+        }
+      }
+      return null;
+    },
+  },
+  {
+    code: 'trace_speed',
+    processes: ['cp', 'hp'],
+    check: (input) => {
+      if (!input.traceSpeedLabel) return null;
+      const tip =
+        input.traceSpeedLabel === 'fast'
+          ? 'Expect a quick trace — soap cool, blend in short bursts, and add fragrance last.'
+          : input.traceSpeedLabel === 'slow'
+            ? 'Expect a slow trace — this batter stays fluid, giving time for swirls and intricate pours.'
+            : 'A moderate trace — comfortable working time for most techniques.';
+      const driversClause =
+        input.traceSpeedDrivers && input.traceSpeedDrivers.length > 0
+          ? ` Driven by: ${input.traceSpeedDrivers.join(', ')}.`
+          : '';
+      return {
         level: 'info',
-        code: 'ls_dual_lye_recommendation',
-        message: dualLyeMessage,
+        code: 'trace_speed',
+        message: `Predicted trace speed: ${input.traceSpeedLabel}. ${tip}${driversClause}`,
+      };
+    },
+  },
+  {
+    code: 'ls_split_liquid_fat_superfat',
+    processes: ['ls'],
+    // Fat riding in on an alternative liquid (milk, cream, canned coconut milk). A bar
+    // recipe ignores it — the classic advice is that milk fat is too small to matter.
+    // Liquid soap cannot: it separates past ~3% superfat, and a fatty liquid can push a
+    // compliant 2% recipe well past that on its own. Advisory, not a lye correction: fat
+    // fractions are composition data, not SAP values, so the fix (lower the superfat, or
+    // run a lye excess) stays the user's call.
+    check: (input) => {
+      const fatShift = input.lsSplitLiquidFatShiftPercent ?? 0;
+      if (Number.isFinite(fatShift) && fatShift >= 0.5) {
+        const effective = input.superfatPercent + fatShift;
+        return {
+          level: 'warning',
+          code: 'ls_split_liquid_fat_superfat',
+          message:
+            `The alternative liquid's own fat gets no lye, adding about ${fatShift.toFixed(1)} points of ` +
+            `superfat on top of the ${input.superfatPercent.toFixed(1)}% you set — an effective ` +
+            `${effective.toFixed(1)}%. Liquid soap clouds and separates past ~3%: lower the superfat ` +
+            `(or run a small lye excess) to absorb it.`,
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'ls_split_liquid_not_dilution',
+    processes: ['ls'],
+    // Where the liquid may NOT go. The split-liquid stages are all pre-cook, so the app
+    // never offers a dilution stage — this says why, since dilution is the step an LS
+    // maker is most tempted to pour milk or beer into. Glycerin-only recipes are exempt
+    // (see the flag).
+    check: (input) => {
+      if (
+        input.splitLiquidEnabled &&
+        input.splitLiquidGrams !== null &&
+        input.splitLiquidGrams !== undefined &&
+        input.splitLiquidGrams > 0 &&
+        !input.lsSplitLiquidIsSolventOnly
+      ) {
+        return {
+          level: 'info',
+          code: 'ls_split_liquid_not_dilution',
+          message:
+            'Alternative liquids belong in the lye solution or at trace, where the cook sterilises them — never in the dilution water. Dilute with plain distilled water, add a preservative, and filter any sediment after the soap settles.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'ls_superfat_high',
+    processes: ['ls'],
+    check: (input) => {
+      if (input.superfatPercent > 3) {
+        return {
+          level: 'warning',
+          code: 'ls_superfat_high',
+          message:
+            'Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'ls_castor_no_lather',
+    processes: ['ls'],
+    // The bar-soap eutectic-lather framing (lauric + oleic → fluffy/stable lather) doesn't
+    // carry over to liquid soap; castor's role there is solubility/clarity, not lather.
+    // Detect castor via the ricinoleic fatty-acid reading (a documented proxy — castor is
+    // essentially the only common soaping oil with meaningful ricinoleic) gated by
+    // fatty-acid coverage, OR via oil identity, which needs no coverage gate (same pattern
+    // as the jojoba oil-identity check above).
+    check: (input) => {
+      const ricinoleicForCastor = input.fattyAcids?.ricinoleic ?? 0;
+      const hasCastorByFattyAcid =
+        ricinoleicForCastor >= 4 &&
+        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+      const hasCastorByIdentity = recipeOilMatches(input.oilEntries, {
+        oilIds: ['castor-oil'],
+        nameKeyword: 'castor',
       });
-    }
-  }
+      if (hasCastorByFattyAcid || hasCastorByIdentity) {
+        return {
+          level: 'info',
+          code: 'ls_castor_no_lather',
+          message:
+            'Castor adds little lather in liquid soap — its main contribution here is solubility and clarity, not lather.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'ls_dual_lye_recommendation',
+    processes: ['ls'],
+    // Dual-lye NaOH-share recommender (verified constants, roadmap LS 86): coconut-heavy
+    // LS benefits from a ~30% NaOH share regardless of current lye type (worth switching to
+    // dual lye for), while a low-palmitic+stearic blend that is already dual-lye benefits
+    // from a smaller ~0–20% NaOH share. Deliberately silent for a pure-KOH, low-P+S recipe
+    // with no coconut — nothing actionable to recommend without nagging the user into dual
+    // lye.
+    check: (input) => {
+      if (
+        !input.fattyAcids ||
+        (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT
+      ) {
+        return null;
+      }
+      const palmiticStearicForDualLye = sumFattyAcids(
+        input.fattyAcids,
+        FATTY_ACID_GROUP_KEYS.palmiticStearic,
+      );
 
-  // Salt-thickening is a qualitative advisory, not a numeric viscosity model — no calibrated
-  // curve exists for how much salt thickens diluted LS by process/oil mix, so this ships
-  // behavior-only guidance (thickens then thins past a point) and never a number.
-  if (input.process === 'ls' && additiveMatches(additiveEntries, 'salt', 'salt')) {
-    let message =
-      'Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go.';
+      let dualLyeMessage: string | null = null;
+      if (isCoconutHeavyLS(input)) {
+        dualLyeMessage =
+          'High-coconut liquid soap firms and thickens with a ~30% NaOH share in a dual-lye blend.';
+      } else if (palmiticStearicForDualLye <= 15 && input.lyeType === 'dual') {
+        dualLyeMessage =
+          'Low in palmitic + stearic — a small NaOH share (~0–20%) in your blend gives a firmer, thicker soap.';
+      }
 
-    if (isCoconutHeavyLS) {
-      message +=
-        ' High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body.';
-    }
+      if (dualLyeMessage) {
+        return {
+          level: 'info',
+          code: 'ls_dual_lye_recommendation',
+          message: dualLyeMessage,
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'ls_salt_thickening',
+    processes: ['ls'],
+    // Salt-thickening is a qualitative advisory, not a numeric viscosity model — no
+    // calibrated curve exists for how much salt thickens diluted LS by process/oil mix, so
+    // this ships behavior-only guidance (thickens then thins past a point) and never a
+    // number.
+    check: (input) => {
+      if (additiveMatches(input.additiveEntries, 'salt', 'salt')) {
+        let message =
+          'Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go.';
 
-    insights.push({
-      level: 'info',
-      code: 'ls_salt_thickening',
-      message,
-    });
-  }
+        if (isCoconutHeavyLS(input)) {
+          message +=
+            ' High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body.';
+        }
 
-  // HP-only insights. Gated on the explicit process discriminator (process === 'hp'),
-  // since a gate written `process !== 'ls'` is also true for CP, so it would wrongly
-  // include CP bars here.
-  if (input.process === 'hp') {
-    if (
-      additiveMatches(additiveEntries, 'salt', 'salt') ||
-      additiveMatches(additiveEntries, 'sodium-lactate', 'sodium lactate')
-    ) {
-      insights.push({
-        level: 'info',
-        code: 'hp_thick_phase_suppressant',
-        message:
-          'Salt or sodium lactate suppresses the thick, translucent "mashed potato" middle phase of a hot-process cook — expect a smoother, faster transition through cook.',
-      });
-    }
-
-    if (input.hpYogurtPercent !== undefined && input.hpYogurtPercent > 5) {
-      insights.push({
-        level: 'warning',
-        code: 'hp_yogurt_water',
-        message:
-          'Yogurt above ~5% of oil weight deducts meaningfully from the lye water — check the cooked soap stays fluid enough to fold in additives and pour.',
-      });
-    }
-
+        return {
+          level: 'info',
+          code: 'ls_salt_thickening',
+          message,
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'hp_thick_phase_suppressant',
+    processes: ['hp'],
+    check: (input) => {
+      if (
+        additiveMatches(input.additiveEntries, 'salt', 'salt') ||
+        additiveMatches(input.additiveEntries, 'sodium-lactate', 'sodium lactate')
+      ) {
+        return {
+          level: 'info',
+          code: 'hp_thick_phase_suppressant',
+          message:
+            'Salt or sodium lactate suppresses the thick, translucent "mashed potato" middle phase of a hot-process cook — expect a smoother, faster transition through cook.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'hp_yogurt_water',
+    processes: ['hp'],
+    check: (input) => {
+      if (input.hpYogurtPercent !== undefined && input.hpYogurtPercent > 5) {
+        return {
+          level: 'warning',
+          code: 'hp_yogurt_water',
+          message:
+            'Yogurt above ~5% of oil weight deducts meaningfully from the lye water — check the cooked soap stays fluid enough to fold in additives and pour.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'hp_relaxed_caps',
+    processes: ['hp'],
     // Ricinoleic is a fatty-acid reading, so it needs the same low-coverage gate the other
     // FA-derived insights use above. Shea is an oil-identity check (recipeOilMatches), not
     // an FA reading, so it fires independent of fatty-acid coverage — same pattern as the
     // jojoba oil-identity insight elsewhere in this file.
-    const ricinoleic = input.fattyAcids?.ricinoleic ?? 0;
-    const hasElevatedCastor =
-      ricinoleic >= 10 && (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
-    const hasShea = recipeOilMatches(input.oilEntries, {
-      oilIds: ['shea-butter', 'shea-oil-fractionated'],
-      nameKeyword: 'shea',
-    });
-    if (hasElevatedCastor || hasShea) {
-      insights.push({
-        level: 'info',
-        code: 'hp_relaxed_caps',
-        message:
-          'Fluid HP tolerates higher castor (about 10–15%) and shea (about 30–40%) than a typical CP bar — the hot cook and post-cook additions give more working room before trace or texture become unworkable.',
+    check: (input) => {
+      const ricinoleic = input.fattyAcids?.ricinoleic ?? 0;
+      const hasElevatedCastor =
+        ricinoleic >= 10 && (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+      const hasShea = recipeOilMatches(input.oilEntries, {
+        oilIds: ['shea-butter', 'shea-oil-fractionated'],
+        nameKeyword: 'shea',
       });
-    }
-
+      if (hasElevatedCastor || hasShea) {
+        return {
+          level: 'info',
+          code: 'hp_relaxed_caps',
+          message:
+            'Fluid HP tolerates higher castor (about 10–15%) and shea (about 30–40%) than a typical CP bar — the hot cook and post-cook additions give more working room before trace or texture become unworkable.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'hp_vessel_too_small',
+    processes: ['hp'],
     // Vessel-size guard: the cooking batter expands (gel/mashed-potato phase) and can
     // overflow a too-small pot. Required multiple is the same coconut-heavy proxy used
-    // above (lauric+myristic >= COCONUT_HEAVY_LAURIC_MYRISTIC), coverage-gated so a
-    // sparse fatty-acid read doesn't wrongly demand the higher 3x minimum. hpVesselMultiple
-    // is caller-computed and optional — undefined skips the check entirely.
-    if (input.hpVesselMultiple !== undefined) {
+    // above (lauric+myristic >= COCONUT_HEAVY_LAURIC_MYRISTIC), coverage-gated so a sparse
+    // fatty-acid read doesn't wrongly demand the higher 3x minimum. hpVesselMultiple is
+    // caller-computed and optional — undefined skips the check entirely.
+    check: (input) => {
+      if (input.hpVesselMultiple === undefined) return null;
       const hpLauricMyristicCoverageOk =
         !!input.fattyAcids && (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
       const hpLauricMyristic = hpLauricMyristicCoverageOk
@@ -831,27 +928,47 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
         hpLauricMyristic !== undefined && hpLauricMyristic >= COCONUT_HEAVY_LAURIC_MYRISTIC;
       const requiredVesselMultiple = isCoconutHeavyHP ? 3 : 2;
       if (input.hpVesselMultiple < requiredVesselMultiple) {
-        insights.push({
+        return {
           level: 'warning',
           code: 'hp_vessel_too_small',
           message: isCoconutHeavyHP
             ? "Use a cook vessel at least ~3× the batch volume so the expanding cook doesn't overflow."
             : "Use a cook vessel at least ~2× the batch volume (~3× for coconut-heavy) so the expanding cook doesn't overflow.",
-        });
+        };
       }
-    }
-  }
+      return null;
+    },
+  },
+  {
+    code: 'ls_lye_excess',
+    // Any negative superfat leaves free alkali in the finished soap, whatever the process
+    // or lye type — warn on the actual excess, not just the LS flag, so a caustic recipe
+    // from any caller (not only the LS UI path) still gets the neutralization guidance.
+    check: (input) => {
+      if (input.superfatPercent < 0) {
+        return {
+          level: 'info',
+          code: 'ls_lye_excess',
+          message:
+            'Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target.',
+        };
+      }
+      return null;
+    },
+  },
+];
 
-  // Any negative superfat leaves free alkali in the finished soap, whatever the process or
-  // lye type — warn on the actual excess, not just the LS flag, so a caustic recipe from any
-  // caller (not only the LS UI path) still gets the neutralization guidance.
-  if (input.superfatPercent < 0) {
-    insights.push({
-      level: 'info',
-      code: 'ls_lye_excess',
-      message:
-        'Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target.',
-    });
+export function analyzeFormulation(input: FormulationAnalysisInput): FormulationInsight[] {
+  const insights: FormulationInsight[] = [];
+
+  // The two generic paths that replaced 25 bespoke gates (spec slice 3): process
+  // filtering and parameter resolution. Everything else an insight does lives in its
+  // own check(). This loop is now the entire catalog — all 36 rules live in
+  // INSIGHT_RULES; there is no inline region left below it.
+  for (const rule of INSIGHT_RULES) {
+    if (rule.processes && !rule.processes.includes(input.process)) continue;
+    const insight = rule.check(input, resolveInsightParams(rule, input.process));
+    if (insight) insights.push(insight);
   }
 
   return insights;
