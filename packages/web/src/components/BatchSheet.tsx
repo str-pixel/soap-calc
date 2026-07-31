@@ -299,7 +299,16 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               an ASSUMED water content — asserting it here could tell the maker a batch is
               already dilute enough when it still needs hundreds of grams of water. Mirrors
               DilutionPanel's can't-tell branch instead of the floor caveat below. */}
-          {data.unknownLiquidGrams && dilution.targetExceedsPaste ? (
+          {dilution.targetExceedsPaste && data.overDilutionCertain ? (
+            // Certain across the unknown's whole 0-100% range — state the fact, exactly as
+            // the panel does; hedging here made the two surfaces disagree for one recipe.
+            <p className="batch-sheet__note">
+              The paste is already more dilute than{' '}
+              {formatGrams(dilution.soapConcentrationPercent, 0)}% — adding water only
+              lowers the concentration further.
+            </p>
+          ) : null}
+          {data.unknownLiquidGrams && dilution.targetExceedsPaste && !data.overDilutionCertain ? (
             <p className="batch-sheet__note">
               Can&apos;t tell whether {formatGrams(dilution.soapConcentrationPercent, 0)}% is
               reachable — {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative

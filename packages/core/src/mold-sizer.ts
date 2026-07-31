@@ -1,4 +1,8 @@
-/** Typical poured-soap density proxy (olive oil), g/cm³ */
+/** Poured-soap fill-density proxy (olive-oil based), g/cm³ — a VERIFIED constant from the
+ * CP source's mold-sizing material (roadmap: Confirmed, CP 433/560; ls-yield.ts cites it
+ * as the verified sibling of its own estimated solution density). Used for volume↔mass
+ * conversions by mold sizing and by the HP vessel guard; the vessel guard's call site
+ * carries its own direction-of-error analysis, since raw cook batter runs denser (~1.0). */
 export const SOAP_FILL_DENSITY_G_PER_CM3 = 0.92;
 
 /** Default oil share of batch weight when sizing without a live recipe */

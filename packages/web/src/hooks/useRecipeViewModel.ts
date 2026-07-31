@@ -562,7 +562,8 @@ export function useRecipeViewModel({
   // vessel needs to hold while it expands. Optional: an unset/invalid vessel volume simply
   // omits hpVesselMultiple, which skips the guard entirely (see analyzeFormulation).
   //
-  // SOAP_FILL_DENSITY_G_PER_CM3 (0.92) is the cured-bar fill-density proxy, not a
+  // SOAP_FILL_DENSITY_G_PER_CM3 (0.92) is the poured-soap mold-fill proxy (see
+  // mold-sizer.ts for its verified provenance), not a
   // raw-batter density — the water-bearing cook batter this divides is closer to ~1.0
   // g/ml before water loss. Dividing by the lower cured density over-estimates
   // batchVolumeCm3, which under-estimates the resulting multiple: the guard fires
@@ -728,6 +729,7 @@ export function useRecipeViewModel({
       dilution,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
+      overDilutionCertain,
       neutralization,
       properties,
       indexes,
@@ -772,6 +774,7 @@ export function useRecipeViewModel({
     splitLiquidRows,
     unknownLiquidGrams,
     weightUnit,
+    overDilutionCertain,
   ]);
 
   return {

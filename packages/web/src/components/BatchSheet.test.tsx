@@ -421,8 +421,10 @@ function lsSheetData(extra: {
   unknownLiquidGrams?: number;
   lyeWaterUnverifiable?: boolean;
   targetExceedsPaste?: boolean;
+  overDilutionCertain?: boolean;
+  dilutionOverride?: import('@soap-calc/core').DilutionResult;
 }) {
-  const { targetExceedsPaste, ...rest } = extra;
+  const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
   const lines = createStarterLines();
   const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const };
   const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
@@ -444,7 +446,7 @@ function lsSheetData(extra: {
     postCookSuperfat: null,
     pcsfIsExtra: true,
     extrasGrams: 0,
-    dilution: {
+    dilution: dilutionOverride ?? {
       anhydrousGrams: 1218,
       solutionGrams: 4059,
       totalWaterGrams: 2841,
@@ -530,4 +532,42 @@ test('lye-dissolution caveat prints for a CP recipe (no dilution block) when the
 test('lye-dissolution caveat is absent from a CP sheet when the flag is unset', () => {
   render(<BatchSheet data={cpSheetData({})} />);
   expect(screen.queryByText(/1:1 lye-dissolution check could not run/i)).toBeNull();
+});
+
+test('when over-dilution is certain despite an unknown liquid, the sheet states it as fact', () => {
+  // The panel asserts the verdict when it holds across the unknown's whole 0-100% range;
+  // the sheet used to keep hedging ("can't tell") in that same state — conservative but
+  // imprecise, and a cross-surface disagreement for the same recipe.
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        unknownLiquidGrams: 300,
+        overDilutionCertain: true,
+        dilutionOverride: {
+          anhydrousGrams: 1218, solutionGrams: 1433, totalWaterGrams: 215,
+          dilutionWaterGrams: 0, glycerinGrams: 107, soapConcentrationPercent: 85,
+          targetExceedsPaste: true,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByText(/already more dilute than 85%/i)).toBeTruthy();
+  expect(screen.queryByText(/can.t tell whether/i)).toBeNull();
+});
+
+test('without certainty the sheet still hedges', () => {
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        unknownLiquidGrams: 900,
+        dilutionOverride: {
+          anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
+          dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 50,
+          targetExceedsPaste: true,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByText(/can.t tell whether 50%/i)).toBeTruthy();
+  expect(screen.queryByText(/already more dilute/i)).toBeNull();
 });

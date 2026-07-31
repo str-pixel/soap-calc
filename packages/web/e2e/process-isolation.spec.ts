@@ -106,3 +106,23 @@ test('import routes to its declared process and never merges into the active wor
   await processTab(page, /Liquid soap/).click();
   await expect(page.getByLabel(/Recipe name/i)).toHaveValue('ls-before-import');
 });
+
+test('a refused import does not cost in-progress edits', async ({ page }) => {
+  // discardDrafts used to run BEFORE parsing, so a refused file still wiped uncommitted
+  // field edits. Now drafts are discarded only when the file is accepted.
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  // Mid-type an oil weight and deliberately do NOT blur — commit happens on blur, so this
+  // value lives only in the drafts record, exactly what discardDrafts wipes.
+  const weight = page.locator('input[aria-label^="Weight in"]').first();
+  await weight.fill('787');
+
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'garbage.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ version: 99, name: 'nope' })),
+  });
+  await page.getByRole('status').filter({ hasText: /version/i }).waitFor();
+  await expect(weight).toHaveValue('787');
+});
