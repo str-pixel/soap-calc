@@ -37,6 +37,13 @@ test('each process keeps its own workspace through a full tab cycle', async ({ p
   for (const [tab, name, grams] of TABS) {
     await processTab(page, tab).click();
     await expect(page.getByLabel(/Recipe name/i)).toHaveValue(name);
+    // Row-count guards: this test never adds or removes an oil line (the starter recipe's
+    // 3 lines are untouched — only the first line's weight is edited) and adds exactly one
+    // additive per tab. A refactor that APPENDS a leaked row from another tab (leaving this
+    // tab's own row at index 0 untouched) would still pass a `.first()`-only assertion — the
+    // count catches that shape.
+    await expect(page.locator('input[aria-label^="Weight in"]')).toHaveCount(3);
+    await expect(page.locator('ul[aria-label="Recipe additives"] li')).toHaveCount(1);
     await expect(page.locator('input[aria-label^="Weight in"]').first()).toHaveValue(grams);
     await expect(
       page.locator('ul[aria-label="Recipe additives"] li').first().getByLabel(/^Name( for .*)?$/),
