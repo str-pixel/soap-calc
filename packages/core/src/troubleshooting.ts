@@ -52,8 +52,9 @@ export const TROUBLESHOOTING: Record<'cp' | 'hp' | 'ls', readonly Troubleshootin
     },
     {
       symptom: 'Diluted soap turns stringy or sets up like gelatin instead of staying liquid',
-      cause: 'The paste was over-diluted, or the paste itself was under-cooked before dilution.',
-      fix: 'Cook the paste longer before diluting, and use less water when you dilute it.',
+      cause:
+        'Not enough dilution water — the soap is still above the concentration this recipe can hold as a liquid, and high-oleic recipes gel until well below coconut-heavy levels.',
+      fix: 'Stir in more hot water in small increments until it thins and stays liquid; expect a high-oleic recipe to need much more water than a coconut-heavy one.',
     },
     {
       symptom: 'A separate oily layer floats on top of the paste or the diluted soap',

@@ -524,6 +524,24 @@ test('printed dilution shows the can\'t-tell wording (not a false floor) when th
   expect(screen.getByText(/Can't tell whether 30% is reachable/i)).toBeTruthy();
 });
 
+test('printed dilution target keeps the fractional value the water was computed for', () => {
+  // The water grams beside it are computed from the unrounded target; printing "23%" next
+  // to water for 22.5% makes the sheet disagree with the on-screen panel and with itself.
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        dilutionOverride: {
+          anhydrousGrams: 1218, solutionGrams: 5413, totalWaterGrams: 4195,
+          dilutionWaterGrams: 3354, glycerinGrams: 107, soapConcentrationPercent: 22.5,
+          targetExceedsPaste: false,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByText(/22\.5%/)).toBeTruthy();
+  expect(screen.queryByText(/^23%$/)).toBeNull();
+});
+
 test('lye-dissolution caveat prints for a CP recipe (no dilution block) when the flag is set', () => {
   render(<BatchSheet data={cpSheetData({ lyeWaterUnverifiable: true })} />);
   expect(screen.getByText(/1:1 lye-dissolution check could not run/i)).toBeTruthy();

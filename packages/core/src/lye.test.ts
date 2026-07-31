@@ -304,8 +304,12 @@ describe('calculateLye', () => {
       kohPurityPercent: 100,
     };
     const molesNeeded = calculateLye({ ...base, lyeType: 'naoh' }).lyeWeightGrams / NAOH_MM;
-    for (const kohBlendPercent of [0, 5, 25, 50]) {
+    // KOH-primary blends (80 = the LS 80/20 KOH/NaOH ratio, 100 = degenerate all-KOH) are
+    // as chemistry-valid as the NaOH-primary bar blends; process-appropriate limits are a
+    // UI concern, not a stoichiometry one.
+    for (const kohBlendPercent of [0, 5, 25, 50, 80, 100]) {
       const r = calculateLye({ ...base, lyeType: 'dual', kohBlendPercent });
+      expect(r.errors).toEqual([]);
       const molesProvided = r.naohWeightGrams / NAOH_MM + r.kohWeightGrams / KOH_MM;
       expect(molesProvided).toBeCloseTo(molesNeeded, 6);
       expect((r.kohWeightGrams / r.lyeWeightGrams) * 100).toBeCloseTo(kohBlendPercent, 4);
@@ -326,16 +330,17 @@ describe('calculateLye', () => {
     expect(dual0.kohWeightGrams).toBeCloseTo(0, 6);
   });
 
-  it('rejects invalid koh blend percent for dual lye', () => {
-    const result = calculateLye({
-      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
-      oilLookup: { 'olive-oil': OLIVE },
-      superfatPercent: 5,
-      lyeType: 'dual',
-      kohBlendPercent: 60,
-    });
-
-    expect(result.errors.some((e) => e.includes('kohBlendPercent'))).toBe(true);
+  it('rejects a koh blend percent outside 0–100 for dual lye', () => {
+    for (const kohBlendPercent of [-1, 101]) {
+      const result = calculateLye({
+        oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+        oilLookup: { 'olive-oil': OLIVE },
+        superfatPercent: 5,
+        lyeType: 'dual',
+        kohBlendPercent,
+      });
+      expect(result.errors.some((e) => e.includes('kohBlendPercent'))).toBe(true);
+    }
   });
 
   it('calculates dual lye for a multi-oil recipe', () => {

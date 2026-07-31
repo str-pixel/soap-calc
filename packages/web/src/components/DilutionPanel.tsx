@@ -25,6 +25,10 @@ type DilutionPanelProps = {
   /** The over-dilution verdict holds whatever the undeclared liquid contains, so it is
    * stated as fact rather than hedged. */
   overDilutionCertain?: boolean;
+  /** Grams bottled with the solution but outside the anhydrous+water figure: additives
+   * (solution-dosed and otherwise), append-mode post-cook oil, split-liquid solids.
+   * Counted into the bottle estimate only — the dilution figures stay chemistry-only. */
+  finishedExtrasGrams?: number;
 };
 
 export function DilutionPanel({
@@ -37,6 +41,7 @@ export function DilutionPanel({
   altLiquidWaterGrams = 0,
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
+  finishedExtrasGrams = 0,
 }: DilutionPanelProps) {
   const bottleMl = Number(bottleSizeMl);
   // Which intended uses the current target suits — the dilution figure is the one number
@@ -44,7 +49,7 @@ export function DilutionPanel({
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
   const bottleCount =
     dilution && Number.isFinite(bottleMl) && bottleMl > 0
-      ? lsBottleCount(dilution.solutionGrams, bottleMl)
+      ? lsBottleCount(dilution.solutionGrams + finishedExtrasGrams, bottleMl)
       : null;
   return (
     <section className="panel panel--nested">

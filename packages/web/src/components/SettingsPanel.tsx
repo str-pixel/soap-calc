@@ -8,7 +8,7 @@ import {
   lyeChoicesFor,
   LYE_TYPE_LABELS,
 } from '../lib/settingsFields';
-import { processOffers } from '../lib/process';
+import { kohBlendRangeFor, processOffers } from '../lib/process';
 import type { ProcessId } from '../lib/process';
 import { BatchBasics } from './BatchBasics';
 import { InfoTip } from './InfoTip';
@@ -137,8 +137,8 @@ export function SettingsPanel({
             <input
               type="number"
               className="input"
-              min={0}
-              max={50}
+              min={kohBlendRangeFor(process)[0]}
+              max={kohBlendRangeFor(process)[1]}
               step={0.5}
               value={settings.kohBlendPercent}
               onChange={(e) =>

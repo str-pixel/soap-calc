@@ -43,6 +43,23 @@ test('shows bottles filled from the finished solution weight and bottle size, he
   expect(screen.getByText('15')).toBeTruthy();
 });
 
+test('bottle count includes the finished-product extras that join after the chemistry solution', () => {
+  // Solution-dosed additives (fragrance, pearlizer) and after-cook thickeners are bottled
+  // too. 4000 g solution + 515 g extras = 4515 g / 1.03 ≈ 4383 ml → floor(4383/250) = 17
+  // bottles, vs 15 from the bare solution.
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      finishedExtrasGrams={515}
+      {...BOTTLE_PROPS}
+    />,
+  );
+  expect(screen.getByText('17')).toBeTruthy();
+});
+
 test('editing the bottle size calls onBottleSizeMlChange', () => {
   const onChange = vi.fn();
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" bottleSizeMl="250" onBottleSizeMlChange={onChange} />);

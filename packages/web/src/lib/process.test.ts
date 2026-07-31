@@ -9,6 +9,7 @@ import {
   processProfilesFor,
   allProcessVariantIds,
   processOffers,
+  kohBlendRangeFor,
   type ProcessVariantId,
 } from './process';
 import { DEFAULT_SETTINGS } from './recipe';
@@ -54,6 +55,46 @@ describe('process definitions', () => {
       processVariant: 'ls-cpls' as const,
     };
     expect(normalizeSettingsWithinProcess(dualInLs, 'ls')).toBe(dualInLs);
+  });
+
+  it('bounds the dual-lye KOH blend per process: bar NaOH-primary, LS KOH-primary', () => {
+    // Grounded ratios (multi-process-roadmap.md, "Dual-lye ratios", confirmed): bar soap
+    // runs KOH as a minor additive (95/5 NaOH/KOH), while LS dual is KOH-primary
+    // (80/20 KOH/NaOH). A single 0–50 cap made every documented LS blend unenterable.
+    expect(kohBlendRangeFor('cp')).toEqual([0, 50]);
+    expect(kohBlendRangeFor('hp')).toEqual([0, 50]);
+    expect(kohBlendRangeFor('ls')).toEqual([50, 100]);
+  });
+
+  it('seeds the LS dual-lye blend at the documented 80/20 KOH/NaOH ratio', () => {
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.kohBlendPercent).toBe('80');
+    // CP/HP inherit the bar default (DEFAULT_SETTINGS '5') — no per-process override.
+    expect(PROCESS_DEFINITIONS.cp.defaultSettings.kohBlendPercent).toBeUndefined();
+    expect(PROCESS_DEFINITIONS.hp.defaultSettings.kohBlendPercent).toBeUndefined();
+  });
+
+  it('every process seeds its dual-lye blend default inside its own blend range', () => {
+    for (const p of PROCESS_IDS) {
+      const [min, max] = kohBlendRangeFor(p);
+      const seeded = Number(
+        PROCESS_DEFINITIONS[p].defaultSettings.kohBlendPercent ?? DEFAULT_SETTINGS.kohBlendPercent,
+      );
+      expect(seeded).toBeGreaterThanOrEqual(min);
+      expect(seeded).toBeLessThanOrEqual(max);
+    }
+  });
+
+  it('LS defaults deliver a combined superfat inside the 1–3% band (main 0% + post-cook 2%)', () => {
+    // The LS cloud/separation ceiling is ~3% total. Main and post-cook superfat compound
+    // (subtract method), so the defaults must budget them together — 2% + 2% lands at
+    // ~3.96%, above the app's own threshold, which is why main superfat seeds at 0.
+    const ls = PROCESS_DEFINITIONS.ls.defaultSettings;
+    const main = Number(ls.superfatPercent);
+    const pcsf = Number(ls.postCookSuperfatTotalPercent);
+    const combined = 100 * (1 - (1 - main / 100) * (1 - pcsf / 100));
+    expect(combined).toBeGreaterThanOrEqual(1);
+    expect(combined).toBeLessThanOrEqual(3);
+    expect(main).toBe(0);
   });
 
   it('seeds HP 5% / LS 2% post-cook superfat defaults (single olive-oil row)', () => {

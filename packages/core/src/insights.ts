@@ -83,6 +83,11 @@ export type FormulationAnalysisInput = {
    * or cream's fat, and liquid soap separates past ~3% superfat where a bar would not
    * care. Advisory, never a lye adjustment — the caller has fat fractions, not SAP values. */
   lsSplitLiquidFatShiftPercent?: number;
+  /** Post-cook superfat total (% of oils) the recipe delivers after the cook
+   * (ComputedPostCookSuperfat.percentOfOil). Counted into the LS cloud-threshold
+   * insights via lsEffectiveSuperfatPercent — without it a 2% + 2% recipe sits at ~4%
+   * effective superfat while both guards read only the main 2%. */
+  postCookSuperfatPercent?: number;
   /** True when every split liquid is a solvent (glycerin). Suppresses the
    * dilute-with-plain-water advisory: glycerin carries no microbial load and is the one
    * alternative liquid that IS welcome in the dilution water. */
@@ -152,6 +157,19 @@ function waterBandBranch(
     }
   }
   return null;
+}
+
+// The superfat the finished liquid soap actually carries: main superfat compounded with
+// the post-cook superfat share. Subtract-method composition — the reserve scales the lye
+// AFTER the main superfat is applied — so shares compound rather than add: 2% + 2% →
+// 100 × (1 − 0.98 × 0.98) = 3.96%. (Append mode adds the oil on top of the batch instead;
+// the compounded figure understates that case by under 0.1 points at LS doses, well inside
+// the ~3% threshold's own precision.)
+function lsEffectiveSuperfatPercent(input: FormulationAnalysisInput): number {
+  const s = input.superfatPercent;
+  const p = input.postCookSuperfatPercent;
+  if (p === undefined || !Number.isFinite(p) || p <= 0) return s;
+  return 100 * (1 - (1 - s / 100) * (1 - p / 100));
 }
 
 // Coconut-heavy proxy shared by the dual-lye recommender, the salt-thickening advisory, and
@@ -707,13 +725,18 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       const fatShift = input.lsSplitLiquidFatShiftPercent ?? 0;
       if (Number.isFinite(fatShift) && fatShift >= 0.5) {
-        const effective = input.superfatPercent + fatShift;
+        const recipeSuperfat = lsEffectiveSuperfatPercent(input);
+        const effective = recipeSuperfat + fatShift;
+        const recipeClause =
+          recipeSuperfat !== input.superfatPercent
+            ? `the ${recipeSuperfat.toFixed(1)}% the recipe already delivers (superfat + post-cook oil)`
+            : `the ${input.superfatPercent.toFixed(1)}% you set`;
         return {
           level: 'warning',
           code: 'ls_split_liquid_fat_superfat',
           message:
             `The alternative liquid's own fat gets no lye, adding about ${fatShift.toFixed(1)} points of ` +
-            `superfat on top of the ${input.superfatPercent.toFixed(1)}% you set — an effective ` +
+            `superfat on top of ${recipeClause} — an effective ` +
             `${effective.toFixed(1)}%. Liquid soap clouds and separates past ~3%: lower the superfat ` +
             `(or run a small lye excess) to absorb it.`,
         };
@@ -749,13 +772,20 @@ export const INSIGHT_RULES: InsightRule[] = [
   {
     code: 'ls_superfat_high',
     processes: ['ls'],
+    // Threshold reads the EFFECTIVE superfat (main compounded with post-cook), not just the
+    // stated figure — a 2% + 2% recipe lands at ~4%, over the same ceiling.
     check: (input) => {
-      if (input.superfatPercent > 3) {
+      const effective = lsEffectiveSuperfatPercent(input);
+      if (effective > 3) {
+        const breakdown =
+          effective !== input.superfatPercent
+            ? `Superfat ${input.superfatPercent.toFixed(1)}% plus the post-cook oil lands at ~${effective.toFixed(1)}% total. `
+            : '';
         return {
           level: 'warning',
           code: 'ls_superfat_high',
           message:
-            'Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%.',
+            `${breakdown}Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%.`,
         };
       }
       return null;

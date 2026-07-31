@@ -1,9 +1,14 @@
 import { DEFAULT_KOH_PURITY, DEFAULT_NAOH_PURITY } from './lye.js';
+import {
+  CITRIC_ACID_MOLAR_MASS,
+  KOH_MOLAR_MASS,
+  NAOH_MOLAR_MASS,
+} from './molar-masses.js';
 
-// Anhydrous citric acid (triprotic) neutralizes 3 OH⁻. Molar masses in g/mol.
-const CITRIC_ACID_MW = 192.124;
-const KOH_MW = 56.1056;
-const NAOH_MW = 39.997;
+// Anhydrous citric acid (triprotic) neutralizes 3 OH⁻. Molar masses from molar-masses.ts.
+const CITRIC_ACID_MW = CITRIC_ACID_MOLAR_MASS;
+const KOH_MW = KOH_MOLAR_MASS;
+const NAOH_MW = NAOH_MOLAR_MASS;
 const CITRIC_WATER_DILUTION = 4; // citric acid dissolved 1:4 in hot water
 const TARGET_PH_LOW = 9;
 const TARGET_PH_HIGH = 10.5;

@@ -287,7 +287,9 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           <h2>Dilution</h2>
           <dl className="batch-sheet__dl">
             <div><dt>Paste (anhydrous)</dt><dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd></div>
-            <div><dt>Target concentration</dt><dd>{formatGrams(dilution.soapConcentrationPercent, 0)}%</dd></div>
+            {/* Raw value, never rounded: the water grams beside it were computed from the
+                unrounded target, and DilutionPanel prints the same raw figure. */}
+            <div><dt>Target concentration</dt><dd>{dilution.soapConcentrationPercent}%</dd></div>
             <div><dt>Dilution water to add</dt><dd>
               {formatWeight(dilution.dilutionWaterGrams, weightUnit)}
               {data.unknownLiquidGrams && !dilution.targetExceedsPaste ? ' (at least)' : ''}
@@ -304,7 +306,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             // the panel does; hedging here made the two surfaces disagree for one recipe.
             <p className="batch-sheet__note">
               The paste is already more dilute than{' '}
-              {formatGrams(dilution.soapConcentrationPercent, 0)}% — adding water only
+              {dilution.soapConcentrationPercent}% — adding water only
               lowers the concentration further.
             </p>
           ) : null}

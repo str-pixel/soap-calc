@@ -97,7 +97,12 @@ function waterInput(
 
 export function parseRecipeSettings(
   settings: RecipeSettings,
-  opts: { allowNegativeSuperfat?: boolean } = {},
+  opts: {
+    allowNegativeSuperfat?: boolean;
+    /** Accepted dual-lye KOH share (kohBlendRangeFor); defaults to the bar-soap 0–50 —
+     * the pre-existing contract for the legacy callers that pass no process. */
+    kohBlendRange?: readonly [number, number];
+  } = {},
 ): ParseSettingsResult {
   const errors: string[] = [];
   const minSuperfat = opts.allowNegativeSuperfat ? NEG_SUPERFAT_FLOOR : 0;
@@ -114,9 +119,12 @@ export function parseRecipeSettings(
   if (settings.lyeType === 'dual') {
     if (naohPurity.error) errors.push(naohPurity.error);
     if (kohPurity.error) errors.push(kohPurity.error);
+    const [blendMin, blendMax] = opts.kohBlendRange ?? [0, 50];
     blend = parseNonNegative(settings.kohBlendPercent, 'KOH blend %');
     if (blend.error) errors.push(blend.error);
-    else if (blend.n! > 50) errors.push('KOH blend % must be between 0 and 50');
+    else if (blend.n! < blendMin || blend.n! > blendMax) {
+      errors.push(`KOH blend % must be between ${blendMin} and ${blendMax}`);
+    }
   }
 
   const waterParams = waterInput(settings, errors);

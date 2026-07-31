@@ -417,6 +417,46 @@ describe('analyzeFormulation', () => {
     expect(cp.some((i) => i.code === 'ls_superfat_high')).toBe(false);
   });
 
+  it('counts post-cook superfat toward the LS ~3% cloud threshold (2% + 2% ≈ 4%)', () => {
+    // Subtract-method shares compound: 100 × (1 − 0.98 × 0.98) = 3.96% — over the ceiling
+    // even though neither number alone is. This is the app's own default LS recipe shape.
+    const stacked = analyzeFormulation({
+      ...lsBase,
+      superfatPercent: 2,
+      postCookSuperfatPercent: 2,
+      process: 'ls',
+    });
+    const insight = stacked.find((i) => i.code === 'ls_superfat_high');
+    expect(insight?.level).toBe('warning');
+    expect(insight?.message).toContain('4.0');
+    expect(insight?.message).toMatch(/post-cook/i);
+  });
+
+  it('stays quiet when the combined superfat is within the LS band (0% + 2%)', () => {
+    const ok = analyzeFormulation({
+      ...lsBase,
+      superfatPercent: 0,
+      postCookSuperfatPercent: 2,
+      process: 'ls',
+    });
+    expect(ok.some((i) => i.code === 'ls_superfat_high')).toBe(false);
+  });
+
+  it('includes post-cook superfat in the split-liquid fat effective total', () => {
+    // Base 2% + 2% post-cook = 3.96%; +1.5 points of milk fat ≈ 5.5% effective.
+    const insight = analyzeFormulation({
+      ...lsBase,
+      superfatPercent: 2,
+      postCookSuperfatPercent: 2,
+      process: 'ls',
+      splitLiquidEnabled: true,
+      splitLiquidGrams: 200,
+      lsSplitLiquidFatShiftPercent: 1.5,
+    }).find((i) => i.code === 'ls_split_liquid_fat_superfat');
+    expect(insight?.message).toContain('5.5');
+    expect(insight?.message).toMatch(/post-cook/i);
+  });
+
   it('flags an LS lye excess (negative superfat) for neutralization', () => {
     const insights = analyzeFormulation({ ...lsBase, superfatPercent: -2, process: 'ls' });
     const excess = insights.find((i) => i.code === 'ls_lye_excess');

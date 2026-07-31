@@ -217,9 +217,12 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
   } else {
     validatePurityPercent(input.naohPurityPercent, DEFAULT_NAOH_PURITY, 'naohPurityPercent', errors);
     validatePurityPercent(input.kohPurityPercent, DEFAULT_KOH_PURITY, 'kohPurityPercent', errors);
+    // Full 0–100: the blend algebra is valid for any split. NaOH-primary (bar, ~5% KOH)
+    // and KOH-primary (LS, ~80% KOH) are both real practice; the process-appropriate
+    // subrange is the web layer's per-process concern (kohBlendRangeFor), not core's.
     const blend = input.kohBlendPercent ?? DEFAULT_KOH_BLEND_PERCENT;
-    if (!Number.isFinite(blend) || blend < 0 || blend > 50) {
-      errors.push('kohBlendPercent must be a finite number between 0 and 50');
+    if (!Number.isFinite(blend) || blend < 0 || blend > 100) {
+      errors.push('kohBlendPercent must be a finite number between 0 and 100');
     }
   }
 
