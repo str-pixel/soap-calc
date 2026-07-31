@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createStarterLines, DEFAULT_SETTINGS } from './recipe';
+import { createStarterLines, DEFAULT_SETTINGS, type RecipeSettings } from './recipe';
 import {
   MAX_FIELD_LENGTH,
   MAX_RECIPE_FILE_BYTES,
@@ -125,7 +125,9 @@ describe('recipeFile', () => {
     const additives = recipeAdditivesFromFile([
       { catalogId: '', name: 'Preservative', amount: '1', basis: 'solution', unit: 'percent', addAt: 'trace' },
     ]);
-    const payload = serializeRecipeFile('LS preserve', createStarterLines(), DEFAULT_SETTINGS, additives, 'ls');
+    // koh, because an app-exported LS file always carries an LS lye choice — the parser
+    // now refuses process/lye combinations the app itself cannot produce.
+    const payload = serializeRecipeFile('LS preserve', createStarterLines(), { ...DEFAULT_SETTINGS, lyeType: 'koh' as const }, additives, 'ls');
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
@@ -468,7 +470,7 @@ describe('recipeFile', () => {
 
 describe('recipe file process', () => {
   it('serializes the process and round-trips it', () => {
-    const payload = serializeRecipeFile('R', createStarterLines(), DEFAULT_SETTINGS, [], 'ls');
+    const payload = serializeRecipeFile('R', createStarterLines(), { ...DEFAULT_SETTINGS, lyeType: 'koh' as const }, [], 'ls');
     expect(payload.process).toBe('ls');
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok && parsed.data.process).toBe('ls');
@@ -494,7 +496,11 @@ describe('recipe file process', () => {
     expect(parsed.ok && parsed.data.process).toBe('ls');
   });
 
-  it('an explicit valid process in the file wins even with koh settings', () => {
+  it('a declared process contradicting its lye type is refused, not silently flipped', () => {
+    // Deliberate reversal (user ruling 2026-07-31) of the old "explicit process wins even
+    // with koh settings" contract: winning meant silently flipping koh to naoh — a
+    // different SAP and lye mass with no announcement. The app never exports cp+koh, so
+    // the file is hand-edited; refuse it with both repair paths named.
     const raw = JSON.stringify({
       version: 2,
       process: 'cp',
@@ -503,7 +509,8 @@ describe('recipe file process', () => {
       settings: { ...DEFAULT_SETTINGS, lyeType: 'koh' },
     });
     const parsed = parseRecipeFile(raw);
-    expect(parsed.ok && parsed.data.process).toBe('cp');
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) expect(parsed.error).toMatch(/lye type/i);
   });
 
   it('a declared process routes as declared', () => {
@@ -608,5 +615,49 @@ describe('import hardening (deep-review)', () => {
     if (!parsed.ok) throw new Error('expected parse success');
     expect(Object.prototype.hasOwnProperty.call(parsed.data.settings, '0')).toBe(false);
     expect(parsed.data.settings.superfatPercent).toBe(DEFAULT_SETTINGS.superfatPercent);
+  });
+});
+
+describe('imports are app recipes only: declared process must match its lye choices', () => {
+  const withLye = (process: string, lyeType: string) => {
+    const payload = serializeRecipeFile('X', createStarterLines(), {
+      ...DEFAULT_SETTINGS,
+      lyeType: lyeType as RecipeSettings['lyeType'],
+    });
+    (payload as { process?: unknown }).process = process;
+    return parseRecipeFile(JSON.stringify(payload));
+  };
+
+  it('refuses a lye type the declared process never exports', () => {
+    // This app cannot produce an hp+koh or cp+koh file — such a file was hand-edited, and
+    // silently flipping the alkali changes the lye mass without a word.
+    for (const [process, lye] of [['hp', 'koh'], ['cp', 'koh'], ['ls', 'naoh']] as const) {
+      const parsed = withLye(process, lye);
+      expect(parsed.ok).toBe(false);
+      if (!parsed.ok) expect(parsed.error).toMatch(/lye/i);
+    }
+  });
+
+  it('accepts dual lye under every process — hybrid recipes are first-class', () => {
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      expect(withLye(process, 'dual').ok).toBe(true);
+    }
+  });
+
+  it('accepts each process with its own native alkali', () => {
+    expect(withLye('cp', 'naoh').ok).toBe(true);
+    expect(withLye('hp', 'naoh').ok).toBe(true);
+    expect(withLye('ls', 'koh').ok).toBe(true);
+  });
+
+  it('never refuses an inferred file — its process comes from the alkali', () => {
+    const payload = serializeRecipeFile('Legacy', createStarterLines(), {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+    });
+    delete (payload as { process?: unknown }).process;
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.data.process).toBe('ls');
   });
 });
