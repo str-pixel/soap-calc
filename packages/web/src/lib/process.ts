@@ -42,7 +42,10 @@ export type ProcessProfile = {
   variant: ProcessVariantId;
   process: ProcessId;
   label: string;
-  waterBand: WaterBand;
+  /** Two-tier water coaching band — null where no sourced band exists (LS: the research
+   * sweep found tier splits for it in no source; carrying unsourced dead constants was
+   * worse than declaring the absence). */
+  waterBand: WaterBand | null;
   temp: TempTarget | null; // null for CP (ambient) and CPLS
   finish: FinishDuration;
   finishKind: 'cure' | 'sequester';
@@ -56,14 +59,6 @@ export type ProcessProfile = {
 // it pushed the source's reduced-HTHP band (20-30%) and its swirl compromise (29-31%) below
 // the low tier, and left 32-34% (inside the source's HIGH tier) in the inter-tier gap.
 const HP_WATER_BAND: WaterBand = { lowTier: [25, 30], highTier: [32, 40], riversAbove: 40 };
-
-// A shared two-tier water band for LS's four variants. The overall 25–60% range comes
-// from the verified LS cook-water constant; the low/high split points (35/40) and the
-// rivers threshold (60) are an interpolation, not independently verified. The gap between
-// the tiers (35–40) is chosen so the LS default cook water (38%) falls in the neutral gap
-// rather than on a tier boundary, mirroring CP's design (see WaterBand's "gap between").
-// unverified
-const LS_WATER_BAND: WaterBand = { lowTier: [25, 35], highTier: [40, 60], riversAbove: 60 };
 
 // LS sequester duration: the roadmap gives a single "1–4 wk" range for liquid soap as a
 // whole, not broken out per sub-variant. Applying that same window to each of the four LS
@@ -200,7 +195,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         variant: 'ls-cpls',
         process: 'ls',
         label: 'Cold-process LS (CPLS)',
-        waterBand: LS_WATER_BAND, // unverified (see LS_WATER_BAND)
+        waterBand: null, // no sourced LS band exists — see the WaterBand field doc
         temp: null,
         finish: LS_SEQUESTER, // unverified (see LS_SEQUESTER)
         finishKind: 'sequester',
@@ -210,7 +205,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         variant: 'ls-lowtemp',
         process: 'ls',
         label: 'Low-temp LS',
-        waterBand: LS_WATER_BAND, // unverified (see LS_WATER_BAND)
+        waterBand: null, // no sourced LS band exists — see the WaterBand field doc
         temp: { lowF: 160, highF: 180 }, // unverified: no per-variant LS temp range in the roadmap table
         finish: LS_SEQUESTER, // unverified (see LS_SEQUESTER)
         finishKind: 'sequester',
@@ -220,7 +215,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         variant: 'ls-hightemp',
         process: 'ls',
         label: 'High-temp LS',
-        waterBand: LS_WATER_BAND, // unverified (see LS_WATER_BAND)
+        waterBand: null, // no sourced LS band exists — see the WaterBand field doc
         temp: { lowF: 180, highF: 215 }, // unverified: no per-variant LS temp range in the roadmap table
         finish: LS_SEQUESTER, // unverified (see LS_SEQUESTER)
         finishKind: 'sequester',
@@ -230,7 +225,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         variant: 'ls-30min',
         process: 'ls',
         label: '30-minute LS',
-        waterBand: LS_WATER_BAND, // unverified (see LS_WATER_BAND)
+        waterBand: null, // no sourced LS band exists — see the WaterBand field doc
         temp: { lowF: 180, highF: 215 }, // unverified: no per-variant LS temp range in the roadmap table
         finish: LS_SEQUESTER, // unverified (see LS_SEQUESTER)
         finishKind: 'sequester',
