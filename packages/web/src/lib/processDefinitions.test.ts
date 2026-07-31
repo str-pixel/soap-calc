@@ -168,16 +168,20 @@ describe('soaping-temperature ranges and clamp (2026-07-27)', () => {
 });
 
 describe('HP water band matches the source', () => {
-  it('uses the printed discount and high-water bands, not an interpolation', () => {
-    // Source: a water discount is 25-30% in hot process; a high water concentration is
-    // 32-40%; 40%+ is where the defects start. The old [28,32]/[34,40] split contradicted
-    // all three and left 32-34% — inside the source's HIGH tier — in the inter-tier gap.
-    for (const variant of ['hp-lthp', 'hp-hthp', 'hp-fluid'] as const) {
-      const band = processProfileById(variant)!.waterBand!;
-      expect(band.lowTier).toEqual([25, 30]);
-      expect(band.highTier).toEqual([32, 40]);
-      expect(band.riversAbove).toBe(40);
-    }
+  it('uses the printed per-variant bands, not an interpolation', () => {
+    // Deliberate supersession of the #143-era shared-band pin. That fix put the printed
+    // GENERAL bands (discount 25-30, high 32-40, defects 40+) on all three variants; the
+    // source additionally attaches figures to specific variants, adopted after an
+    // executable evaluation over source-endorsed points (0 mis-coachings vs the shared
+    // band's 3 — see hpWaterBands.test.ts, which holds the endorsed-point contract):
+    //   hp-hthp lowTier [20,30] — "average reduced water concentration ... 20-30%" in the
+    //     HTHP tips; the shared discount floor mis-coached 20-24% as "very low".
+    //   hp-fluid [29,31]/[36,40] — the swirl compromise and HTFHP's "36-40% for the best
+    //     fluid results, I prefer 38%".
+    // LTHP keeps the general bands: the source gives it no distinct figure.
+    expect(processProfileById('hp-lthp')!.waterBand).toEqual({ lowTier: [25, 30], highTier: [32, 40], riversAbove: 40 });
+    expect(processProfileById('hp-hthp')!.waterBand).toEqual({ lowTier: [20, 30], highTier: [32, 40], riversAbove: 40 });
+    expect(processProfileById('hp-fluid')!.waterBand).toEqual({ lowTier: [29, 31], highTier: [36, 40], riversAbove: 40 });
   });
 
   it('leaves no gap between the tiers that the source treats as high water', () => {
