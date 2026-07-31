@@ -123,6 +123,31 @@ export function resolveInsightParams(rule: InsightRule, process: 'cp' | 'hp' | '
   return { ...(rule.params ?? {}), ...(rule.processOverrides?.[process] ?? {}) };
 }
 
+// Shared by the three water_band_* rules below: they are mutually exclusive readings of
+// the same water-percent-of-oils figure, so the branch decision lives in one place rather
+// than three duplicated copies of the same threshold chain.
+//
+// CP's band has highTier[1]=40 extending past riversAbove=38 by design — both are verified
+// source constants (see processProfile.ts). This rivers check runs first, so 38–40%
+// (nominally the top of the high tier) always resolves to 'rivers', never
+// 'between_tiers'/'below_low' — the rivers warning correctly wins the overlap.
+function waterBandBranch(
+  input: FormulationAnalysisInput,
+): 'rivers' | 'between_tiers' | 'below_low' | null {
+  if (input.waterBand && input.totalOilGrams > 0 && input.waterGrams > 0) {
+    const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
+    const { lowTier, highTier, riversAbove } = input.waterBand;
+    if (waterPercentOfOils > riversAbove) {
+      return 'rivers';
+    } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
+      return 'between_tiers';
+    } else if (waterPercentOfOils < lowTier[0]) {
+      return 'below_low';
+    }
+  }
+  return null;
+}
+
 const INSIGHT_RULES: InsightRule[] = [
   {
     code: 'large_test_batch',
@@ -195,26 +220,13 @@ const INSIGHT_RULES: InsightRule[] = [
     code: 'water_band_rivers',
     processes: ['cp', 'hp'],
     check: (input) => {
-      if (input.waterBand && input.totalOilGrams > 0 && input.waterGrams > 0) {
-        const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
-        const { lowTier, highTier, riversAbove } = input.waterBand;
-        // CP's band has highTier[1]=40 extending past riversAbove=38 by design — both are
-        // verified source constants (see processProfile.ts). This rivers check runs first, so
-        // 38–40% (nominally the top of the high tier) always resolves to water_band_rivers,
-        // never water_band_between_tiers/below_low — the rivers warning correctly wins the
-        // overlap.
-        if (waterPercentOfOils > riversAbove) {
-          return {
-            level: 'warning',
-            code: 'water_band_rivers',
-            message:
-              'Water is above the typical range for this process — the batter may take a long time to firm up, and can glycerin-river if it also goes through gel. Consider a lower water amount.',
-          };
-        } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
-          return null;
-        } else if (waterPercentOfOils < lowTier[0]) {
-          return null;
-        }
+      if (waterBandBranch(input) === 'rivers') {
+        return {
+          level: 'warning',
+          code: 'water_band_rivers',
+          message:
+            'Water is above the typical range for this process — the batter may take a long time to firm up, and can glycerin-river if it also goes through gel. Consider a lower water amount.',
+        };
       }
       return null;
     },
@@ -223,21 +235,13 @@ const INSIGHT_RULES: InsightRule[] = [
     code: 'water_band_between_tiers',
     processes: ['cp', 'hp'],
     check: (input) => {
-      if (input.waterBand && input.totalOilGrams > 0 && input.waterGrams > 0) {
-        const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
-        const { lowTier, highTier, riversAbove } = input.waterBand;
-        if (waterPercentOfOils > riversAbove) {
-          return null;
-        } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
-          return {
-            level: 'info',
-            code: 'water_band_between_tiers',
-            message:
-              'Water sits between the low-water and full-water working ranges — fine, but nudging into either range gives more predictable trace and cure.',
-          };
-        } else if (waterPercentOfOils < lowTier[0]) {
-          return null;
-        }
+      if (waterBandBranch(input) === 'between_tiers') {
+        return {
+          level: 'info',
+          code: 'water_band_between_tiers',
+          message:
+            'Water sits between the low-water and full-water working ranges — fine, but nudging into either range gives more predictable trace and cure.',
+        };
       }
       return null;
     },
@@ -246,21 +250,13 @@ const INSIGHT_RULES: InsightRule[] = [
     code: 'water_band_below_low',
     processes: ['cp', 'hp'],
     check: (input) => {
-      if (input.waterBand && input.totalOilGrams > 0 && input.waterGrams > 0) {
-        const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
-        const { lowTier, highTier, riversAbove } = input.waterBand;
-        if (waterPercentOfOils > riversAbove) {
-          return null;
-        } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
-          return null;
-        } else if (waterPercentOfOils < lowTier[0]) {
-          return {
-            level: 'info',
-            code: 'water_band_below_low',
-            message:
-              'Very low water for this process — trace comes fast and the batter can be stiff; work quickly and keep temperatures modest.',
-          };
-        }
+      if (waterBandBranch(input) === 'below_low') {
+        return {
+          level: 'info',
+          code: 'water_band_below_low',
+          message:
+            'Very low water for this process — trace comes fast and the batter can be stiff; work quickly and keep temperatures modest.',
+        };
       }
       return null;
     },
