@@ -6,9 +6,11 @@ import {
   defaultsForProcess,
   normalizeSettingsWithinProcess,
   importRoutingSuffix,
+  processProfilesFor,
+  allProcessVariantIds,
+  type ProcessVariantId,
 } from './process';
 import { DEFAULT_SETTINGS } from './recipe';
-import type { ProcessVariantId } from './processProfile';
 
 describe('process definitions', () => {
   it('defines exactly cp, hp, ls', () => {
@@ -109,4 +111,31 @@ it('every import announces which kind of recipe it is', () => {
     ' as liquid soap — this file predates process tags',
   );
 });
+});
+
+describe('definitions own their variants (slice 2)', () => {
+  it('every variant belongs to the definition that lists it', () => {
+    for (const p of ['cp', 'hp', 'ls'] as const) {
+      for (const v of PROCESS_DEFINITIONS[p].variants) {
+        expect(v.process).toBe(p);
+      }
+    }
+  });
+
+  it('the pinned default variant literal matches variants[0]', () => {
+    // defaultSettings.processVariant is written literally (it participates in the record
+    // that defines variants[0]); this is the drift guard for that pin.
+    for (const p of ['cp', 'hp', 'ls'] as const) {
+      expect(PROCESS_DEFINITIONS[p].defaultSettings.processVariant).toBe(
+        PROCESS_DEFINITIONS[p].variants[0].variant,
+      );
+    }
+  });
+
+  it('the lookup layer reads the definitions, not a second record', () => {
+    for (const p of ['cp', 'hp', 'ls'] as const) {
+      expect(processProfilesFor(p)).toEqual([...PROCESS_DEFINITIONS[p].variants]);
+    }
+    expect(allProcessVariantIds().length).toBe(8);
+  });
 });
