@@ -7,10 +7,10 @@ import { test, expect, type Page } from '@playwright/test';
  */
 
 const processTab = (page: Page, name: RegExp) => page.getByRole('tab', { name });
-const TABS: Array<[RegExp, string]> = [
-  [/Cold process/, 'canary-cp'],
-  [/Hot process/, 'canary-hp'],
-  [/Liquid soap/, 'canary-ls'],
+const TABS: Array<[RegExp, string, string]> = [
+  [/Cold process/, 'canary-cp', '311'],
+  [/Hot process/, 'canary-hp', '322'],
+  [/Liquid soap/, 'canary-ls', '333'],
 ];
 
 test('each process keeps its own workspace through a full tab cycle', async ({ page }) => {
@@ -18,15 +18,29 @@ test('each process keeps its own workspace through a full tab cycle', async ({ p
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 
-  for (const [tab, name] of TABS) {
+  for (const [tab, name, grams] of TABS) {
     await processTab(page, tab).click();
     await page.getByLabel(/Recipe name/i).fill(name);
     await page.getByLabel(/Recipe name/i).blur();
+    const weight = page.locator('input[aria-label^="Weight in"]').first();
+    await weight.fill(grams);
+    await weight.blur();
+    await page.getByRole('button', { name: '+ Add', exact: true }).click();
+    // Each tab's workspace holds exactly one additive in this test, so .first() is stable.
+    // Row scoping verified against exploratory.spec.ts:459 and AdditivesPanel.tsx:194.
+    const row = page.locator('ul[aria-label="Recipe additives"] li').first();
+    await row.getByLabel(/^Name( for .*)?$/).fill(`${name}-add`);
+    await row.getByLabel(/^Amount( for .*)?$/).fill('2');
+    await row.getByLabel(/^Amount( for .*)?$/).blur();
   }
-  // Second cycle: every tab must still hold its own name and its own lye default.
-  for (const [tab, name] of TABS) {
+  // Second cycle: every tab must still hold its own name, weight, and additive.
+  for (const [tab, name, grams] of TABS) {
     await processTab(page, tab).click();
     await expect(page.getByLabel(/Recipe name/i)).toHaveValue(name);
+    await expect(page.locator('input[aria-label^="Weight in"]').first()).toHaveValue(grams);
+    await expect(
+      page.locator('ul[aria-label="Recipe additives"] li').first().getByLabel(/^Name( for .*)?$/),
+    ).toHaveValue(`${name}-add`);
   }
   await processTab(page, /Liquid soap/).click();
   await expect(page.locator('.panel--results')).toContainText(/KOH/);
