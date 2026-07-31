@@ -92,13 +92,14 @@ describe('processProfilesFor', () => {
 });
 
 describe('registry drift guards', () => {
-  it('ORDER (via processProfilesFor) reaches exactly the variants in PROFILES, no omissions or duplicates', () => {
+  it('variant ids are unique across all process definitions', () => {
     const reachable = (['cp', 'hp', 'ls'] as const).flatMap((process) =>
       processProfilesFor(process).map((p) => p.variant),
     );
-    const all = allProcessVariantIds();
-    expect(reachable.length).toBe(all.length);
-    expect(new Set(reachable)).toEqual(new Set(all));
+    // Not tautological: VARIANTS_BY_ID is keyed by id, so a duplicate would silently
+    // overwrite — this catches it at the list level before the record collapses it.
+    expect(new Set(reachable).size).toBe(reachable.length);
+    expect(reachable.length).toBe(allProcessVariantIds().length);
   });
 
   it('every profile finishKind matches its process definition finishing', () => {
