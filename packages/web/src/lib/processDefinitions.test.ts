@@ -79,9 +79,15 @@ describe('processProfilesFor', () => {
     expect(processProfileById('hp-fluid').finish).toEqual({ minWeeks: 6 });
   });
 
-  it('every water band has a genuine gap between its tiers, and well-formed tiers', () => {
+  it('every DECLARED water band is well-formed; LS declares none (no sourced band exists)', () => {
     for (const process of ['cp', 'hp', 'ls'] as const) {
       for (const profile of processProfilesFor(process)) {
+        if (profile.waterBand === null) {
+          // Only LS may decline a band — its tier splits existed in no source, and dead
+          // unsourced constants are worse than a declared absence.
+          expect(process).toBe('ls');
+          continue;
+        }
         const { lowTier, highTier } = profile.waterBand;
         expect(lowTier[0]).toBeLessThanOrEqual(lowTier[1]);
         expect(highTier[0]).toBeLessThanOrEqual(highTier[1]);

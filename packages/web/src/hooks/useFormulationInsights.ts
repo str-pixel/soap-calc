@@ -171,8 +171,9 @@ export function useFormulationInsights(
     const profile = isProcessVariantId(settings.processVariant)
       ? processProfileById(settings.processVariant)
       : null;
-    const waterBand =
-      profile && options.process !== 'ls' && profile.process !== 'ls' ? profile.waterBand : undefined;
+    // Null where no sourced band exists (all LS variants) — the declaration now carries
+    // what two process literals used to encode here.
+    const waterBand = profile?.waterBand ?? undefined;
     const additiveEntries = (options.additives ?? []).map((item) => ({
       catalogId: item.catalogId,
       name: item.name,

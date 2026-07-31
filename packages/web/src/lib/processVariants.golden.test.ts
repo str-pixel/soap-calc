@@ -10,7 +10,175 @@ import {
 // Machine-captured from the live implementation (2026-07-31), immediately before the
 // Slice 2 re-homing. If this test ever needs editing to pass, the re-homing changed
 // observable behaviour — which is the one thing it must not do.
-const GOLDEN_PROFILES = {"cp":{"variant":"cp","process":"cp","label":"Cold process","waterBand":{"lowTier":[20,28],"highTier":[32,40],"riversAbove":38},"temp":null,"finish":{"minWeeks":4},"finishKind":"cure","waterLossPercent":0.15},"hp-lthp":{"variant":"hp-lthp","process":"hp","label":"Low-temp HP (LTHP)","waterBand":{"lowTier":[25,30],"highTier":[32,40],"riversAbove":40},"temp":{"lowF":120,"highF":160},"finish":{"minWeeks":3,"maxWeeks":8},"finishKind":"cure","waterLossPercent":0.09},"hp-hthp":{"variant":"hp-hthp","process":"hp","label":"High-temp HP (HTHP)","waterBand":{"lowTier":[25,30],"highTier":[32,40],"riversAbove":40},"temp":{"lowF":215,"highF":215,"ceilingF":240},"finish":{"minWeeks":3,"maxWeeks":4},"finishKind":"cure","waterLossPercent":0.06},"hp-fluid":{"variant":"hp-fluid","process":"hp","label":"Fluid HP","waterBand":{"lowTier":[25,30],"highTier":[32,40],"riversAbove":40},"temp":{"lowF":160,"highF":215},"finish":{"minWeeks":6},"finishKind":"cure","waterLossPercent":0.09},"ls-cpls":{"variant":"ls-cpls","process":"ls","label":"Cold-process LS (CPLS)","waterBand":{"lowTier":[25,35],"highTier":[40,60],"riversAbove":60},"temp":null,"finish":{"minWeeks":1,"maxWeeks":4},"finishKind":"sequester","waterLossPercent":0},"ls-lowtemp":{"variant":"ls-lowtemp","process":"ls","label":"Low-temp LS","waterBand":{"lowTier":[25,35],"highTier":[40,60],"riversAbove":60},"temp":{"lowF":160,"highF":180},"finish":{"minWeeks":1,"maxWeeks":4},"finishKind":"sequester","waterLossPercent":0},"ls-hightemp":{"variant":"ls-hightemp","process":"ls","label":"High-temp LS","waterBand":{"lowTier":[25,35],"highTier":[40,60],"riversAbove":60},"temp":{"lowF":180,"highF":215},"finish":{"minWeeks":1,"maxWeeks":4},"finishKind":"sequester","waterLossPercent":0},"ls-30min":{"variant":"ls-30min","process":"ls","label":"30-minute LS","waterBand":{"lowTier":[25,35],"highTier":[40,60],"riversAbove":60},"temp":{"lowF":180,"highF":215},"finish":{"minWeeks":1,"maxWeeks":4},"finishKind":"sequester","waterLossPercent":0}} as const;
+//
+// PERMITTED EDIT LOG (each a deliberate, reviewed change — never edit to make a refactor pass):
+// 1. Slice 4: import repointed './processProfile' -> './process' (facade retirement).
+// 2. LS water-band deletion: the four ls variants' waterBand re-captured as null — a DATA
+//    change removing unsourced dead constants (tier splits existed in no source), not a
+//    refactor. The band was already excluded from LS insights at every read site.
+const GOLDEN_PROFILES = {
+ "cp": {
+  "variant": "cp",
+  "process": "cp",
+  "label": "Cold process",
+  "waterBand": {
+   "lowTier": [
+    20,
+    28
+   ],
+   "highTier": [
+    32,
+    40
+   ],
+   "riversAbove": 38
+  },
+  "temp": null,
+  "finish": {
+   "minWeeks": 4
+  },
+  "finishKind": "cure",
+  "waterLossPercent": 0.15
+ },
+ "hp-lthp": {
+  "variant": "hp-lthp",
+  "process": "hp",
+  "label": "Low-temp HP (LTHP)",
+  "waterBand": {
+   "lowTier": [
+    25,
+    30
+   ],
+   "highTier": [
+    32,
+    40
+   ],
+   "riversAbove": 40
+  },
+  "temp": {
+   "lowF": 120,
+   "highF": 160
+  },
+  "finish": {
+   "minWeeks": 3,
+   "maxWeeks": 8
+  },
+  "finishKind": "cure",
+  "waterLossPercent": 0.09
+ },
+ "hp-hthp": {
+  "variant": "hp-hthp",
+  "process": "hp",
+  "label": "High-temp HP (HTHP)",
+  "waterBand": {
+   "lowTier": [
+    25,
+    30
+   ],
+   "highTier": [
+    32,
+    40
+   ],
+   "riversAbove": 40
+  },
+  "temp": {
+   "lowF": 215,
+   "highF": 215,
+   "ceilingF": 240
+  },
+  "finish": {
+   "minWeeks": 3,
+   "maxWeeks": 4
+  },
+  "finishKind": "cure",
+  "waterLossPercent": 0.06
+ },
+ "hp-fluid": {
+  "variant": "hp-fluid",
+  "process": "hp",
+  "label": "Fluid HP",
+  "waterBand": {
+   "lowTier": [
+    25,
+    30
+   ],
+   "highTier": [
+    32,
+    40
+   ],
+   "riversAbove": 40
+  },
+  "temp": {
+   "lowF": 160,
+   "highF": 215
+  },
+  "finish": {
+   "minWeeks": 6
+  },
+  "finishKind": "cure",
+  "waterLossPercent": 0.09
+ },
+ "ls-cpls": {
+  "variant": "ls-cpls",
+  "process": "ls",
+  "label": "Cold-process LS (CPLS)",
+  "waterBand": null,
+  "temp": null,
+  "finish": {
+   "minWeeks": 1,
+   "maxWeeks": 4
+  },
+  "finishKind": "sequester",
+  "waterLossPercent": 0
+ },
+ "ls-lowtemp": {
+  "variant": "ls-lowtemp",
+  "process": "ls",
+  "label": "Low-temp LS",
+  "waterBand": null,
+  "temp": {
+   "lowF": 160,
+   "highF": 180
+  },
+  "finish": {
+   "minWeeks": 1,
+   "maxWeeks": 4
+  },
+  "finishKind": "sequester",
+  "waterLossPercent": 0
+ },
+ "ls-hightemp": {
+  "variant": "ls-hightemp",
+  "process": "ls",
+  "label": "High-temp LS",
+  "waterBand": null,
+  "temp": {
+   "lowF": 180,
+   "highF": 215
+  },
+  "finish": {
+   "minWeeks": 1,
+   "maxWeeks": 4
+  },
+  "finishKind": "sequester",
+  "waterLossPercent": 0
+ },
+ "ls-30min": {
+  "variant": "ls-30min",
+  "process": "ls",
+  "label": "30-minute LS",
+  "waterBand": null,
+  "temp": {
+   "lowF": 180,
+   "highF": 215
+  },
+  "finish": {
+   "minWeeks": 1,
+   "maxWeeks": 4
+  },
+  "finishKind": "sequester",
+  "waterLossPercent": 0
+ }
+} as const;
 
 const GOLDEN_ORDER = {"cp":["cp"],"hp":["hp-lthp","hp-hthp","hp-fluid"],"ls":["ls-cpls","ls-lowtemp","ls-hightemp","ls-30min"]} as const;
 
