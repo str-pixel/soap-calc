@@ -29,7 +29,7 @@ import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 import type { PricingProfile } from './lib/pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
-import { processOffersPanel } from './lib/process';
+import { processOffers } from './lib/process';
 import { buildRecipePricingContext } from './lib/recipePricing';
 
 const VIEW_STORAGE_KEY = 'soap-calc:view';
@@ -424,7 +424,7 @@ export default function App() {
               onChange={setAdditives}
             />
 
-            {processOffersPanel(process, 'cpExtras') && (
+            {processOffers(process, 'cpExtras') && (
               <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />
             )}
           </div>
@@ -433,7 +433,7 @@ export default function App() {
           <div className="col col--numbers">
             {resultsPanel}
 
-            {processOffersPanel(process, 'dilution') && (
+            {processOffers(process, 'dilution') && (
               <DilutionPanel
                 dilution={vm.dilution}
                 soapConcentrationPercent={settings.soapConcentrationPercent}
@@ -449,11 +449,11 @@ export default function App() {
               />
             )}
 
-            {processOffersPanel(process, 'neutralize') && vm.neutralization && (
+            {processOffers(process, 'neutralize') && vm.neutralization && (
               <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
             )}
 
-            {processOffersPanel(process, 'preserve') && <PreservePanel />}
+            {processOffers(process, 'preserve') && <PreservePanel />}
           </div>
 
           {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}

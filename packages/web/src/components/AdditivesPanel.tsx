@@ -12,7 +12,7 @@ import {
   type DoseUnit,
 } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
-import type { ProcessId } from '../lib/process';
+import { processOffers, type ProcessId } from '../lib/process';
 import type { AdditiveLine } from '../lib/recipe';
 import { newAdditiveKey } from '../lib/recipe';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
@@ -44,7 +44,9 @@ const PROCESS_LABELS: Record<ProcessId, string> = {
 };
 
 function offeredDoseModesForProcess(process: ProcessId): typeof DOSE_MODES {
-  return process === 'ls' ? DOSE_MODES : DOSE_MODES.filter((m) => m.basis !== 'solution');
+  return processOffers(process, 'solutionDosing')
+    ? DOSE_MODES
+    : DOSE_MODES.filter((m) => m.basis !== 'solution');
 }
 
 const BASE_STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
@@ -52,7 +54,9 @@ const BASE_STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
 /** Stages offered in the per-line dropdown. CP has no cook/dilution step, so only
  * HP/LS offer the contextual after-cook stage. */
 function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
-  return process === 'cp' ? BASE_STAGE_OPTIONS : [...BASE_STAGE_OPTIONS, 'after_cook'];
+  return processOffers(process, 'afterCookStage')
+    ? [...BASE_STAGE_OPTIONS, 'after_cook']
+    : BASE_STAGE_OPTIONS;
 }
 
 // memo: `computed` is a stable view-model memo output and `onChange` is a stable
@@ -355,7 +359,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     {entry.doseBasis === 'solution' ? 'diluted solution' : 'oil weight'}
                   </p>
                 )}
-                {!row && process !== 'ls' && line.basis === 'solution' && line.amount !== '' &&
+                {!row && !processOffers(process, 'solutionDosing') && line.basis === 'solution' && line.amount !== '' &&
                   (parseDoseAmount(line.amount, line.unit) ?? 0) > 0 && (
                   // Driven off the LINE, not a computed row: computeRecipeAdditives DROPS
                   // the line when the basis weight is 0, so the old `row.grams === 0` gate
