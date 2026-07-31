@@ -320,3 +320,13 @@ describe('unparseable-draft backup (second wave)', () => {
     expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe('{truncated mid-wri');
   });
 });
+
+describe('flashDurationMs', () => {
+  it('keeps the old floor for short confirmations and scales for long copy', async () => {
+    const { flashDurationMs } = await import('../hooks/useRecipeStorage');
+    expect(flashDurationMs('Recipe exported')).toBe(2000);
+    // The import-refusal copy (~150 chars) must get the cap, not vanish at 2s.
+    expect(flashDurationMs('x'.repeat(150))).toBe(6000);
+    expect(flashDurationMs('x'.repeat(80))).toBe(4000);
+  });
+});

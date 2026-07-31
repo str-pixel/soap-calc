@@ -728,6 +728,7 @@ export function useRecipeViewModel({
       dilution,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
+      overDilutionCertain,
       neutralization,
       properties,
       indexes,
@@ -772,6 +773,7 @@ export function useRecipeViewModel({
     splitLiquidRows,
     unknownLiquidGrams,
     weightUnit,
+    overDilutionCertain,
   ]);
 
   return {

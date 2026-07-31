@@ -67,6 +67,13 @@ function loadWorkspace(process: ProcessId) {
   };
 }
 
+/** Flash display time scaled to reading length. The old flat 2000 ms erased the 25-word
+ * import-refusal copy before anyone could read it; ~50 ms/char tracks reading speed with
+ * the old floor kept for short confirmations. Exported for tests. */
+export function flashDurationMs(message: string): number {
+  return Math.max(2000, Math.min(6000, message.length * 50));
+}
+
 export function useRecipeStorage() {
   const initial = useRef<{ process: ProcessId; ws: ReturnType<typeof loadWorkspace> } | null>(
     null,
@@ -109,7 +116,7 @@ export function useRecipeStorage() {
   function flashSaveMessage(message: string) {
     if (messageTimer.current) clearTimeout(messageTimer.current);
     setSaveMessage(message);
-    messageTimer.current = setTimeout(() => setSaveMessage(null), 2000);
+    messageTimer.current = setTimeout(() => setSaveMessage(null), flashDurationMs(message));
   }
 
   function setProcess(next: ProcessId) {
@@ -149,7 +156,9 @@ export function useRecipeStorage() {
     flashSaveMessage('Recipe exported');
   }
 
-  function handleImportFile(file: File) {
+  /** onAccepted fires only after the file PARSES — a refused import must not cost the
+   * user their uncommitted field drafts (the caller discards them in this callback). */
+  function handleImportFile(file: File, onAccepted?: () => void) {
     const token = ++importTokenRef.current;
     file
       .text()
@@ -163,6 +172,7 @@ export function useRecipeStorage() {
           flashSaveMessage(parsed.error);
           return;
         }
+        onAccepted?.();
         const nextProcess = parsed.data.process;
         const importedSettings = normalizeSettingsWithinProcess(
           normalizeSettings(parsed.data.settings),

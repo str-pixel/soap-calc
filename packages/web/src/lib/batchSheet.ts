@@ -43,6 +43,9 @@ export type BatchSheetData = {
    * surface with no sibling panel to explain it. Optional: data built before the field
    * existed prints no caveat (same convention as soapingTempF). */
   unknownLiquidGrams?: number;
+  /** The over-dilution verdict holds even if every undeclared gram were solids — the
+   * printed sheet may state it as fact instead of hedging (mirrors DilutionPanel). */
+  overDilutionCertain?: boolean;
   /** The 1:1 lye-dissolution check could not run (an in-lye liquid's water content is
    * undeclared) — printed beside the lye figures for the same reason. Independent of
    * `dilution`: unlike the two fields above, this applies to every process (CP/HP included),

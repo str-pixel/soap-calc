@@ -336,8 +336,9 @@ export default function App() {
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
-                inputs.discardDrafts();
-                handleImportFile(file);
+                // Drafts are discarded only if the file parses — a refused import must
+                // not cost in-progress typed edits (verified live at #148's review).
+                handleImportFile(file, inputs.discardDrafts);
               }
               e.target.value = '';
             }}
