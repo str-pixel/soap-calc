@@ -14,9 +14,10 @@ import {
   type NamedOilEntry,
 } from './keyword-match.js';
 
-// Coconut-heavy LS proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" — a
-// documented estimate, not a cited source constant. Shared by the dual-lye recommender and
-// the salt-thickening advisory below so the proxy (and this doc) lives in one place.
+// Coconut-heavy proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" — a
+// documented estimate, not a cited source constant. Process-invariant (isCoconutHeavy):
+// shared by the dual-lye recommender, the salt-thickening advisory, and hp_vessel_too_small
+// below, so the proxy (and this doc) lives in one place.
 const COCONUT_HEAVY_LAURIC_MYRISTIC = 55;
 
 export type FormulationInsightLevel = 'info' | 'warning';
@@ -148,10 +149,10 @@ function waterBandBranch(
   return null;
 }
 
-// Coconut-heavy LS proxy shared by the dual-lye recommender and the salt-thickening
-// advisory rules below. Both rules are `processes: ['ls']`-gated in the registry, so this
-// helper assumes it is only ever called under that gate and does not re-check process.
-function isCoconutHeavyLS(input: FormulationAnalysisInput): boolean {
+// Coconut-heavy proxy shared by the dual-lye recommender, the salt-thickening advisory, and
+// the HP vessel-size guard below.
+// Process-invariant: callers gate by their own processes: declaration.
+function isCoconutHeavy(input: FormulationAnalysisInput): boolean {
   if (!input.fattyAcids || (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT) {
     return false;
   }
@@ -806,7 +807,7 @@ export const INSIGHT_RULES: InsightRule[] = [
       );
 
       let dualLyeMessage: string | null = null;
-      if (isCoconutHeavyLS(input)) {
+      if (isCoconutHeavy(input)) {
         dualLyeMessage =
           'High-coconut liquid soap firms and thickens with a ~30% NaOH share in a dual-lye blend.';
       } else if (palmiticStearicForDualLye <= 15 && input.lyeType === 'dual') {
@@ -836,7 +837,7 @@ export const INSIGHT_RULES: InsightRule[] = [
         let message =
           'Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go.';
 
-        if (isCoconutHeavyLS(input)) {
+        if (isCoconutHeavy(input)) {
           message +=
             ' High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body.';
         }
@@ -919,13 +920,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     // caller-computed and optional — undefined skips the check entirely.
     check: (input) => {
       if (input.hpVesselMultiple === undefined) return null;
-      const hpLauricMyristicCoverageOk =
-        !!input.fattyAcids && (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
-      const hpLauricMyristic = hpLauricMyristicCoverageOk
-        ? sumFattyAcids(input.fattyAcids!, FATTY_ACID_GROUP_KEYS.lauricMyristic)
-        : undefined;
-      const isCoconutHeavyHP =
-        hpLauricMyristic !== undefined && hpLauricMyristic >= COCONUT_HEAVY_LAURIC_MYRISTIC;
+      const isCoconutHeavyHP = isCoconutHeavy(input);
       const requiredVesselMultiple = isCoconutHeavyHP ? 3 : 2;
       if (input.hpVesselMultiple < requiredVesselMultiple) {
         return {

@@ -12,8 +12,7 @@ import {
   type RecipePropertiesResult,
 } from '@soap-calc/core';
 import { oilById } from '../lib/oils';
-import { processProfileById, isProcessVariantId } from '../lib/processProfile';
-import type { ProcessId } from '../lib/process';
+import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 

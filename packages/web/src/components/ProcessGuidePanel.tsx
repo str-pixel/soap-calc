@@ -1,11 +1,11 @@
 import { HP_COOK_STAGES } from '@soap-calc/core';
-import type { ProcessId } from '../lib/process';
 import {
   isProcessVariantId,
   processProfileById,
+  type ProcessId,
   type ProcessVariantId,
   type TempTarget,
-} from '../lib/processProfile';
+} from '../lib/process';
 
 type ProcessGuidePanelProps = {
   process: ProcessId;

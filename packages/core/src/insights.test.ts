@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   analyzeFormulation,
   INSIGHT_RULES,
-  resolveInsightParams,
   type FormulationAnalysisInput,
 } from './insights.js';
 
@@ -915,10 +914,9 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('every rule that fires emits its own declared code', () => {
-    // Drive analyzeFormulation across a spread of inputs; any emitted code must belong to
-    // the declared set, and INSIGHT_RULES must declare 36 unique codes.
+  it('declares 36 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
+    expect(declared).toHaveLength(36);
     expect(new Set(declared).size).toBe(36);
   });
 
@@ -933,10 +931,10 @@ describe('rule registry consistency', () => {
   });
 
   /** One known-firing probe input per declared code (36 total), reused from this file's and
-   * insights.golden.test.ts's own fixtures. Stronger per-rule check: call each rule's own
-   * check() directly against its probe and assert the returned insight's code equals the
-   * rule's declared code — the exact copy-paste-mislabel scenario the carried finding warns
-   * about (update rule A's code, leave its check() returning rule B's old code). */
+   * insights.golden.test.ts's own fixtures. Routed through analyzeFormulation (not a direct
+   * rule.check() call) so the probe also exercises the `processes:` gate — a rule whose gate
+   * excludes its own probe's process fails here, the exact blind spot a direct check() call
+   * would miss. */
   const PROBES: Record<string, Partial<FormulationAnalysisInput>> = {
     large_test_batch: { totalOilGrams: 600 },
     water_below_lye: { waterGrams: 100, lyeGrams: 140 },
@@ -1063,10 +1061,10 @@ describe('rule registry consistency', () => {
     for (const rule of INSIGHT_RULES) {
       const probe = PROBES[rule.code];
       const input: FormulationAnalysisInput = { ...base, ...probe, process: probe.process ?? 'cp' };
-      const params = resolveInsightParams(rule, input.process);
-      const insight = rule.check(input, params);
-      expect(insight, `rule "${rule.code}" did not fire on its probe`).not.toBeNull();
-      expect(insight?.code).toBe(rule.code);
+      expect(
+        analyzeFormulation(input).some((i) => i.code === rule.code),
+        `rule "${rule.code}" did not fire on its probe`,
+      ).toBe(true);
     }
   });
 });

@@ -5,7 +5,13 @@ export type ProcessId = 'cp' | 'hp' | 'ls';
 
 export const PROCESS_IDS: readonly ProcessId[] = ['cp', 'hp', 'ls'];
 
-export type PanelKey = 'moldCure' | 'postCook' | 'dilution' | 'preserve';
+export type PanelKey =
+  | 'postCook'
+  | 'dilution'
+  | 'neutralize'
+  | 'preserve'
+  | 'cpExtras'
+  | 'hpVessel';
 
 export type ProcessVariantId =
   | 'cp' // cold process (single)
@@ -96,7 +102,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     },
     lyeChoices: ['naoh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
-    panels: ['moldCure'],
+    panels: ['cpExtras'],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
     variants: [
@@ -131,7 +137,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     },
     lyeChoices: ['naoh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
-    panels: ['moldCure', 'postCook'],
+    panels: ['postCook', 'hpVessel'],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
     variants: [
@@ -182,7 +188,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     },
     lyeChoices: ['koh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
-    panels: ['dilution', 'preserve'],
+    panels: ['postCook', 'dilution', 'neutralize', 'preserve'],
     finishing: 'sequester',
     terms: { finishingLabel: 'Sequester' },
     variants: [
@@ -290,6 +296,13 @@ export function effectiveSoapingTempF(
 
 export function isProcessId(value: unknown): value is ProcessId {
   return value === 'cp' || value === 'hp' || value === 'ls';
+}
+
+/** The single gate for process-conditional mounting/computation of a declared panel
+ * capability. Readers use this instead of `process === 'x'` so the offer (the definition)
+ * and the behaviour (mount/memo) cannot diverge — the arc's founding invariant. */
+export function processOffersPanel(process: ProcessId, panel: PanelKey): boolean {
+  return PROCESS_DEFINITIONS[process].panels.includes(panel);
 }
 
 /** The process a legacy / process-less recipe belongs to, inferred from its alkali. */

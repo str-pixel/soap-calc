@@ -7,8 +7,8 @@ import {
   allProcessVariantIds,
   soapingTempRangeFor,
   effectiveSoapingTempF,
-} from './processProfile';
-import { PROCESS_DEFINITIONS } from './process';
+  PROCESS_DEFINITIONS,
+} from './process';
 
 describe('processProfilesFor', () => {
   it('returns three HP variants with the verified temperature targets', () => {

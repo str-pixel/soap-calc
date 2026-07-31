@@ -8,6 +8,7 @@ import {
   lyeChoicesFor,
   LYE_TYPE_LABELS,
 } from '../lib/settingsFields';
+import { processOffersPanel } from '../lib/process';
 import type { ProcessId } from '../lib/process';
 import { BatchBasics } from './BatchBasics';
 import { InfoTip } from './InfoTip';
@@ -156,7 +157,7 @@ export function SettingsPanel({
           />
         ))}
 
-        {process === 'hp' && (
+        {processOffersPanel(process, 'hpVessel') && (
           <label className="field">
             <span>
               Cook vessel volume (L)
