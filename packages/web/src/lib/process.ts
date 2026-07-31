@@ -130,14 +130,14 @@ export function normalizeSettingsWithinProcess(
   };
 }
 
-/** Suffix for the import flash. Inference is the one silent-guess path left, so it is
- * always announced — it is wrong for legacy NaOH hot-process files, and the announcement
- * is what makes that survivable (spec 2026-07-30). */
+/** Suffix for the import flash. Every import names which kind of recipe it is (cp / hp /
+ * ls — user ruling 2026-07-31); an inferred one additionally explains why the app had to
+ * guess, since inference is the one guess path left and it is wrong for legacy NaOH
+ * hot-process files. */
 export function importRoutingSuffix(
   source: 'declared' | 'inferred',
   process: ProcessId,
 ): string {
-  return source === 'inferred'
-    ? ` as ${PROCESS_DEFINITIONS[process].label.toLowerCase()} — this file predates process tags`
-    : '';
+  const kind = ` as ${PROCESS_DEFINITIONS[process].label.toLowerCase()}`;
+  return source === 'inferred' ? `${kind} — this file predates process tags` : kind;
 }

@@ -92,10 +92,21 @@ describe('process sub-variant defaults', () => {
 });
 
 describe('importRoutingSuffix', () => {
-  it('importRoutingSuffix announces inference and stays silent for declared files', () => {
-    expect(importRoutingSuffix('inferred', 'cp')).toBe(
-      ' as cold process — this file predates process tags',
-    );
-    expect(importRoutingSuffix('declared', 'hp')).toBe('');
-  });
+  // Deliberate contract change (user ruling 2026-07-31): declared files are no longer
+// silent — every import names its kind. The inference clause is unchanged.
+it('importRoutingSuffix keeps the inference explanation', () => {
+  expect(importRoutingSuffix('inferred', 'cp')).toBe(
+    ' as cold process — this file predates process tags',
+  );
+});
+
+it('every import announces which kind of recipe it is', () => {
+  // "write that it is cp, hp or ls recipe" — a declared file states its kind plainly;
+  // an inferred one additionally explains why the app had to guess.
+  expect(importRoutingSuffix('declared', 'hp')).toBe(' as hot process');
+  expect(importRoutingSuffix('declared', 'cp')).toBe(' as cold process');
+  expect(importRoutingSuffix('inferred', 'ls')).toBe(
+    ' as liquid soap — this file predates process tags',
+  );
+});
 });

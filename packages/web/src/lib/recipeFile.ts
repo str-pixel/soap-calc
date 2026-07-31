@@ -12,7 +12,7 @@ import {
   type RecipeLine,
   type RecipeSettings,
 } from './recipe';
-import { isProcessId, processForLyeType, type ProcessId } from './process';
+import { isProcessId, PROCESS_DEFINITIONS, processForLyeType, type ProcessId } from './process';
 import { ppoOzToPercentOfOil as ppoOzToPercentOfOilCore } from './doseConverters';
 
 export const RECIPE_FILE_VERSION = 2 as const;
@@ -252,6 +252,24 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
       error:
         'This file names an unknown process. Fix its "process" field to cp, hp or ls — or remove the field to import by alkali type.',
     };
+  }
+
+  // Imports are app recipes only (user ruling 2026-07-31): this app never exports a
+  // declared process with a lye type outside that process's own choices (hp+koh, ls+naoh),
+  // so such a file is hand-edited — refuse rather than silently flip the alkali, which
+  // changes the lye mass without a word. Dual lye passes everywhere (hybrid recipes are
+  // first-class), and an INFERRED process cannot contradict: it came from the alkali.
+  if (isProcessId(parsed.process)) {
+    const rawLye = (parsed.settings as { lyeType?: unknown } | undefined)?.lyeType;
+    if (
+      (rawLye === 'naoh' || rawLye === 'koh' || rawLye === 'dual') &&
+      !PROCESS_DEFINITIONS[parsed.process].lyeChoices.includes(rawLye)
+    ) {
+      return {
+        ok: false,
+        error: `This file says ${PROCESS_DEFINITIONS[parsed.process].label.toLowerCase()} but carries a lye type that process never uses — not a file this app exports. Fix the "process" or the lye type.`,
+      };
+    }
   }
 
   return {
