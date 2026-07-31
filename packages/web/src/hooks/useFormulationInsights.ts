@@ -119,8 +119,10 @@ type FormulationInsightOptions = {
   additives?: ComputedAdditive[];
   postCookSuperfat?: ComputedPostCookSuperfat | null;
   /** The recipe's process — the only discriminator; threaded into analyzeFormulation so
-   * HP-only insights can gate on process === 'hp' specifically. */
-  process?: ProcessId;
+   * HP-only insights can gate on process === 'hp' specifically. REQUIRED: analyzeFormulation's
+   * own `process` is non-optional, and a silent CP fallback here would resurrect the retired
+   * isLiquidSoap trap (LS recipe, CP gating, no type error). */
+  process: ProcessId;
   /** Cook vessel volume ÷ batch volume (HP only), computed by the caller from an optional
    * vessel-size input. Undefined skips the hp_vessel_too_small guard entirely. */
   hpVesselMultiple?: number;
@@ -147,7 +149,7 @@ export function useFormulationInsights(
   // run twice per lines change.
   fattyAcids: RecipeFattyAcidResult,
   lyeResult: LyeCalculationResult | null,
-  options: FormulationInsightOptions = {},
+  options: FormulationInsightOptions,
 ) {
   const insights = useMemo(() => {
     // Split-liquid rows that actually resolved to grams (undefined when the caller passes
@@ -236,7 +238,7 @@ export function useFormulationInsights(
       postCookSuperfatPufaPercent: options.postCookSuperfat
         ? postCookSuperfatPufaPercent(options.postCookSuperfat.oils)
         : undefined,
-      process: options.process ?? 'cp',
+      process: options.process,
       lsGlycerinSolvent: options.lsGlycerinSolvent,
       lsSplitLiquidFatShiftPercent: options.lsSplitLiquidFatShiftPercent,
       lsSplitLiquidIsSolventOnly: options.lsSplitLiquidIsSolventOnly,
