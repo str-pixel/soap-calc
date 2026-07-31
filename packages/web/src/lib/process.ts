@@ -6,7 +6,6 @@ export type ProcessId = 'cp' | 'hp' | 'ls';
 export const PROCESS_IDS: readonly ProcessId[] = ['cp', 'hp', 'ls'];
 
 export type PanelKey =
-  | 'moldCure'
   | 'postCook'
   | 'dilution'
   | 'neutralize'
@@ -103,7 +102,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     },
     lyeChoices: ['naoh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
-    panels: ['moldCure', 'cpExtras'],
+    panels: ['cpExtras'],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
     variants: [
@@ -138,7 +137,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     },
     lyeChoices: ['naoh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
-    panels: ['moldCure', 'postCook', 'hpVessel'],
+    panels: ['postCook', 'hpVessel'],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
     variants: [

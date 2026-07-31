@@ -14,9 +14,10 @@ import {
   type NamedOilEntry,
 } from './keyword-match.js';
 
-// Coconut-heavy LS proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" — a
-// documented estimate, not a cited source constant. Shared by the dual-lye recommender and
-// the salt-thickening advisory below so the proxy (and this doc) lives in one place.
+// Coconut-heavy proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" — a
+// documented estimate, not a cited source constant. Process-invariant (isCoconutHeavy):
+// shared by the dual-lye recommender, the salt-thickening advisory, and hp_vessel_too_small
+// below, so the proxy (and this doc) lives in one place.
 const COCONUT_HEAVY_LAURIC_MYRISTIC = 55;
 
 export type FormulationInsightLevel = 'info' | 'warning';
