@@ -9,8 +9,7 @@ import {
   type AdditiveLine,
   type RecipeSettings,
 } from '../lib/recipe';
-import type { ProcessId } from '../lib/process';
-import { processProfileById } from '../lib/processProfile';
+import { processProfileById, type ProcessId } from '../lib/process';
 
 afterEach(cleanup);
 

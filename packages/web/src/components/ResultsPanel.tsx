@@ -52,7 +52,7 @@ type ResultsPanelProps = {
 };
 
 // The cure/sequester window is behavior-only guidance built from several unverified
-// per-variant durations (see processProfile.ts) — hedge it as an estimate rather than
+// per-variant durations (see process.ts) — hedge it as an estimate rather than
 // let it read as a guaranteed figure.
 function cureWindowLabel(estimate: CureEstimate): string {
   const window = estimate.maxWeeks

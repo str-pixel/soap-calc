@@ -4,8 +4,7 @@ import {
   type FattyAcidProfile,
   type WorkabilityEstimate,
 } from '@soap-calc/core';
-import type { ProcessProfile } from './processProfile';
-import { PROCESS_DEFINITIONS, type ProcessId } from './process';
+import { PROCESS_DEFINITIONS, type ProcessId, type ProcessProfile } from './process';
 
 export type CureEstimate = {
   minWeeks: number;

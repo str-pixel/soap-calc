@@ -11,7 +11,7 @@ import {
   type AdditiveLine,
   type RecipeSettings,
 } from './recipe';
-import type { ProcessVariantId } from './processProfile';
+import type { ProcessVariantId } from './process';
 
 describe('normalizeSettings enum sanitization', () => {
   it('falls back to the default waterMode when an imported value is invalid', () => {

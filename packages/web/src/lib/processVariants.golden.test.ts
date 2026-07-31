@@ -5,7 +5,7 @@ import {
   processProfileById,
   processProfilesFor,
   soapingTempRangeFor,
-} from './processProfile';
+} from './process';
 
 // Machine-captured from the live implementation (2026-07-31), immediately before the
 // Slice 2 re-homing. If this test ever needs editing to pass, the re-homing changed

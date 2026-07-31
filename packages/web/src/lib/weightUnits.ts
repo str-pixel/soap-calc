@@ -18,7 +18,7 @@ export const WEIGHT_UNIT_OPTIONS = (Object.keys(WEIGHT_UNITS) as WeightUnit[]).m
 
 export function isWeightUnit(value: unknown): value is WeightUnit {
   // Own-key check: `in` walks the prototype chain, so 'toString' etc. would pass
-  // and turn every weight into NaN downstream (see processProfile.isProcessVariantId).
+  // and turn every weight into NaN downstream (see process.isProcessVariantId).
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(WEIGHT_UNITS, value);
 }
 

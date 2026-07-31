@@ -1,5 +1,4 @@
-import { PROCESS_DEFINITIONS, PROCESS_IDS, type ProcessId } from '../lib/process';
-import { processProfilesFor, type ProcessVariantId } from '../lib/processProfile';
+import { PROCESS_DEFINITIONS, PROCESS_IDS, processProfilesFor, type ProcessId, type ProcessVariantId } from '../lib/process';
 import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
 
 export function ProcessTabs({

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkabilityEstimate } from '@soap-calc/core';
 import { estimateCure, labelWeightGrams, computeCureModel } from './cureEstimate';
-import { processProfileById } from './processProfile';
+import { processProfileById } from './process';
 
 describe('estimateCure', () => {
   it('CP cures at least 4 weeks and is not usable at unmold, labeled "Cure"', () => {

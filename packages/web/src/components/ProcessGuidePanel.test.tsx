@@ -40,7 +40,7 @@ test('an invalid processVariant renders nothing instead of throwing', () => {
     render(
       <ProcessGuidePanel
         process="cp"
-        processVariant={'bogus-variant' as unknown as import('../lib/processProfile').ProcessVariantId}
+        processVariant={'bogus-variant' as unknown as import('../lib/process').ProcessVariantId}
       />,
     ),
   ).not.toThrow();

@@ -13,10 +13,15 @@ import type { CureEstimate } from '../lib/cureEstimate';
 import { computeWorkability } from '../lib/workabilityInput';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
-import { defaultVariantFor, effectiveSoapingTempF, isProcessVariantId, processProfileById } from '../lib/processProfile';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
-import { processOffersPanel } from '../lib/process';
-import type { ProcessId } from '../lib/process';
+import {
+  defaultVariantFor,
+  effectiveSoapingTempF,
+  isProcessVariantId,
+  processOffersPanel,
+  processProfileById,
+  type ProcessId,
+} from '../lib/process';
 import type { RecipeCalculation } from '../lib/calculateRecipe';
 import {
   computeRecipeLineTotals,

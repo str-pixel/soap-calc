@@ -6,10 +6,10 @@ import {
   isProcessVariantId,
   processProfileById,
   soapingTempRangeFor,
+  type ProcessId,
   type ProcessVariantId,
   type TempTarget,
-} from '../lib/processProfile';
-import type { ProcessId } from '../lib/process';
+} from '../lib/process';
 import type { RecipeSettings } from '../lib/recipe';
 
 type SoapingTemperaturePanelProps = {
@@ -48,7 +48,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
     : defaultVariantFor(process);
   const range = soapingTempRangeFor(variant);
   // Display and guidance run on the EFFECTIVE (clamped) figure; the stored setting is
-  // untouched until the user moves the control (clamp-at-read — processProfile.ts).
+  // untouched until the user moves the control (clamp-at-read — process.ts).
   const effectiveF = effectiveSoapingTempF(settings, variant);
   const profile = processProfileById(variant);
   const band = process === 'cp' ? soapingTempBand(effectiveF) : null;

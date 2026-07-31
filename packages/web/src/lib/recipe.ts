@@ -1,8 +1,7 @@
 import { alternativeLiquidPreset, catalogEntryById } from '@soap-calc/core';
 import type { AdditiveStage, DoseBasis, DoseUnit, GelMode, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
-import { processForLyeType } from './process';
-import { defaultVariantFor, isProcessVariantId, type ProcessVariantId } from './processProfile';
+import { defaultVariantFor, isProcessVariantId, processForLyeType, type ProcessVariantId } from './process';
 
 export type { WeightUnit };
 
