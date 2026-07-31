@@ -1,7 +1,8 @@
-/** Fill-density proxy (g/cm³) for volume↔mass conversions — mold sizing (wet pour) and
- * the HP vessel guard both divide by it. A single working constant, not a measured value
- * for either state: raw batter runs closer to ~1.0 and cured bars differ again, so each
- * consumer documents its own direction of error at its call site. */
+/** Poured-soap fill-density proxy (olive-oil based), g/cm³ — a VERIFIED constant from the
+ * CP source's mold-sizing material (roadmap: Confirmed, CP 433/560; ls-yield.ts cites it
+ * as the verified sibling of its own estimated solution density). Used for volume↔mass
+ * conversions by mold sizing and by the HP vessel guard; the vessel guard's call site
+ * carries its own direction-of-error analysis, since raw cook batter runs denser (~1.0). */
 export const SOAP_FILL_DENSITY_G_PER_CM3 = 0.92;
 
 /** Default oil share of batch weight when sizing without a live recipe */
