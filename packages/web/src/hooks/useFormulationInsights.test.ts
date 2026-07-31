@@ -208,11 +208,11 @@ function makeLine(oilId: string, weightGrams: string): RecipeLine {
 // Composes the same hooks useRecipeViewModel wires together (properties + fatty acids +
 // lye calc feed useFormulationInsights), so this exercises the real trace-speed wiring
 // end to end rather than hand-building a FormulationAnalysisInput.
-function useTraceSpeedTestHarness(lines: RecipeLine[], isLiquidSoap = false) {
+function useTraceSpeedTestHarness(lines: RecipeLine[], process: 'cp' | 'ls' = 'cp') {
   const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
   const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
   return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
-    isLiquidSoap,
+    process,
   });
 }
 
@@ -250,7 +250,7 @@ describe('useFormulationInsights trace-speed wiring', () => {
   });
 
   it('omits the trace-speed insight for liquid soap, even with the same fast-trace oils', () => {
-    const { result } = renderHook(() => useTraceSpeedTestHarness(hardLines, true));
+    const { result } = renderHook(() => useTraceSpeedTestHarness(hardLines, 'ls'));
     const codes = result.current.insights.map((i) => i.code);
     expect(codes).not.toContain('trace_speed');
   });
@@ -343,7 +343,6 @@ function useProcessWiringHarness(
   return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
     additives,
     process,
-    isLiquidSoap: process === 'ls',
   });
 }
 
@@ -357,8 +356,9 @@ describe('useFormulationInsights HP process wiring (Step 0 + Step 5)', () => {
   });
 
   it('does NOT fire hp_thick_phase_suppressant for the same salt line on a CP recipe (gating regression)', () => {
-    // This is the exact bug the process discriminator prevents: CP is also
-    // !isLiquidSoap, so a gate written as !isLiquidSoap would wrongly fire here too.
+    // This is the exact bug the process discriminator prevents: CP is also not LS, so a
+    // gate written as `process !== 'ls'` would wrongly fire here too — only the explicit
+    // `process === 'hp'` check correctly excludes it.
     const { result } = renderHook(() => useProcessWiringHarness(lines, 'cp', [saltLine()]));
     const codes = result.current.insights.map((i) => i.code);
     expect(codes).not.toContain('hp_thick_phase_suppressant');

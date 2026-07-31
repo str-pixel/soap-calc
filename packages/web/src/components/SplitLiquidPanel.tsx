@@ -86,7 +86,6 @@ export function SplitLiquidPanel({
   // still resolve by key (alternativeLiquidPreset is unfiltered), so a recipe saved under
   // CP keeps showing its vinegar row after a switch to LS rather than silently losing it.
   const presetsForProcess = alternativeLiquidsForProcess(process);
-  const isLiquidSoap = process === 'ls';
   const gramsByKey = new Map(resolvedRows.map(({ row, grams }) => [row.key, grams]));
   const totalGrams = resolvedRows.reduce((sum, { grams }) => sum + (grams ?? 0), 0);
 
@@ -141,7 +140,7 @@ export function SplitLiquidPanel({
           <p className="panel__subtitle">
             Minimum water in lye; alternative liquids added separately
           </p>
-          {isLiquidSoap && (
+          {process === 'ls' && (
             <p className="split-liquid-note">
               Liquid soap has a third liquid stage these rows never touch: the dilution
               water. Everything sized here joins the paste before the cook, and its water

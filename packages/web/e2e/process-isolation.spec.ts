@@ -7,10 +7,10 @@ import { test, expect, type Page } from '@playwright/test';
  */
 
 const processTab = (page: Page, name: RegExp) => page.getByRole('tab', { name });
-const TABS: Array<[RegExp, string, string]> = [
-  [/Cold process/, 'canary-cp', '311'],
-  [/Hot process/, 'canary-hp', '322'],
-  [/Liquid soap/, 'canary-ls', '333'],
+const TABS: Array<[RegExp, string, string, string, string]> = [
+  [/Cold process/, 'canary-cp', '311', '2', '5'],
+  [/Hot process/, 'canary-hp', '322', '3', '3'],
+  [/Liquid soap/, 'canary-ls', '333', '4', '2'],
 ];
 
 test('each process keeps its own workspace through a full tab cycle', async ({ page }) => {
@@ -18,7 +18,7 @@ test('each process keeps its own workspace through a full tab cycle', async ({ p
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 
-  for (const [tab, name, grams] of TABS) {
+  for (const [tab, name, grams, amount] of TABS) {
     await processTab(page, tab).click();
     await page.getByLabel(/Recipe name/i).fill(name);
     await page.getByLabel(/Recipe name/i).blur();
@@ -30,11 +30,11 @@ test('each process keeps its own workspace through a full tab cycle', async ({ p
     // Row scoping verified against exploratory.spec.ts:459 and AdditivesPanel.tsx:194.
     const row = page.locator('ul[aria-label="Recipe additives"] li').first();
     await row.getByLabel(/^Name( for .*)?$/).fill(`${name}-add`);
-    await row.getByLabel(/^Amount( for .*)?$/).fill('2');
+    await row.getByLabel(/^Amount( for .*)?$/).fill(amount);
     await row.getByLabel(/^Amount( for .*)?$/).blur();
   }
   // Second cycle: every tab must still hold its own name, weight, and additive.
-  for (const [tab, name, grams] of TABS) {
+  for (const [tab, name, grams, amount, superfat] of TABS) {
     await processTab(page, tab).click();
     await expect(page.getByLabel(/Recipe name/i)).toHaveValue(name);
     // Row-count guards: this test never adds or removes an oil line (the starter recipe's
@@ -48,6 +48,8 @@ test('each process keeps its own workspace through a full tab cycle', async ({ p
     await expect(
       page.locator('ul[aria-label="Recipe additives"] li').first().getByLabel(/^Name( for .*)?$/),
     ).toHaveValue(`${name}-add`);
+    await expect(page.locator('ul[aria-label="Recipe additives"] li').first().getByLabel(/^Amount( for .*)?$/)).toHaveValue(amount);
+    await expect(page.getByLabel('Superfat %', { exact: true })).toHaveValue(superfat);
   }
   await processTab(page, /Liquid soap/).click();
   await expect(page.locator('.panel--results')).toContainText(/KOH/);

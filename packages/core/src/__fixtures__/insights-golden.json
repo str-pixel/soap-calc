@@ -1,0 +1,1980 @@
+[
+ {
+  "cell": "0:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "0:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "0:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "1:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "no_superfat_margin",
+    "message": "0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — normal variation in oil SAP values or a small scale error then leaves free lye, which can make the bar harsh or caustic. Most bar recipes keep a few percent superfat."
+   },
+   {
+    "level": "info",
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+   },
+   {
+    "level": "info",
+    "code": "ls_lye_excess",
+    "message": "Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target."
+   }
+  ]
+ },
+ {
+  "cell": "1:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "no_superfat_margin",
+    "message": "0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — normal variation in oil SAP values or a small scale error then leaves free lye, which can make the bar harsh or caustic. Most bar recipes keep a few percent superfat."
+   },
+   {
+    "level": "info",
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+   },
+   {
+    "level": "info",
+    "code": "ls_lye_excess",
+    "message": "Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target."
+   }
+  ]
+ },
+ {
+  "cell": "1:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "ls_lye_excess",
+    "message": "Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target."
+   }
+  ]
+ },
+ {
+  "cell": "2:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "no_superfat_margin",
+    "message": "0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — normal variation in oil SAP values or a small scale error then leaves free lye, which can make the bar harsh or caustic. Most bar recipes keep a few percent superfat."
+   },
+   {
+    "level": "info",
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+   }
+  ]
+ },
+ {
+  "cell": "2:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "no_superfat_margin",
+    "message": "0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — normal variation in oil SAP values or a small scale error then leaves free lye, which can make the bar harsh or caustic. Most bar recipes keep a few percent superfat."
+   },
+   {
+    "level": "info",
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+   }
+  ]
+ },
+ {
+  "cell": "2:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "3:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "3:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "3:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "4:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "4:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "4:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "5:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "water_below_lye",
+    "message": "Water is less than lye by weight — use at least a 1:1 water:lye ratio so alkali can dissolve safely."
+   }
+  ]
+ },
+ {
+  "cell": "5:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "water_below_lye",
+    "message": "Water is less than lye by weight — use at least a 1:1 water:lye ratio so alkali can dissolve safely."
+   }
+  ]
+ },
+ {
+  "cell": "5:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "water_below_lye",
+    "message": "Water is less than lye by weight — use at least a 1:1 water:lye ratio so alkali can dissolve safely."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "6:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "6:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "6:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "7:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "water_band_rivers",
+    "message": "Water is above the typical range for this process — the batter may take a long time to firm up, and can glycerin-river if it also goes through gel. Consider a lower water amount."
+   }
+  ]
+ },
+ {
+  "cell": "7:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "water_band_rivers",
+    "message": "Water is above the typical range for this process — the batter may take a long time to firm up, and can glycerin-river if it also goes through gel. Consider a lower water amount."
+   }
+  ]
+ },
+ {
+  "cell": "7:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "8:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "water_band_below_low",
+    "message": "Very low water for this process — trace comes fast and the batter can be stiff; work quickly and keep temperatures modest."
+   }
+  ]
+ },
+ {
+  "cell": "8:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "water_band_below_low",
+    "message": "Very low water for this process — trace comes fast and the batter can be stiff; work quickly and keep temperatures modest."
+   }
+  ]
+ },
+ {
+  "cell": "8:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "9:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "sugar_total_high",
+    "message": "Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~4% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose."
+   }
+  ]
+ },
+ {
+  "cell": "9:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "9:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "10:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "sugar_total_high",
+    "message": "Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~4% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose."
+   }
+  ]
+ },
+ {
+  "cell": "10:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "sugar_total_high",
+    "message": "Combined sugar-family additives (sugar/sorbitol, honey) exceed ~5% of oil weight — the cook can scorch or volcano. Consider reducing the total dose."
+   }
+  ]
+ },
+ {
+  "cell": "10:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "sugar_total_high",
+    "message": "Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~5% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "11:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "soaping_temp_high",
+    "message": "Starting temperature above 160 °F (71 °C) — the batch can overheat and overflow the mold. Let the oils and lye cool below 160 °F before combining."
+   }
+  ]
+ },
+ {
+  "cell": "11:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "11:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "12:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "12:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "12:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "glycerin_solvent_dilution",
+    "message": "Glycerin acts as a solvent: the paste dissolves faster and needs less dilution water than the water-only figure — dilute in increments and stop at the target consistency."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "13:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+   }
+  ]
+ },
+ {
+  "cell": "13:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+   }
+  ]
+ },
+ {
+  "cell": "13:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_split_liquid_fat_superfat",
+    "message": "The alternative liquid's own fat gets no lye, adding about 4.2 points of superfat on top of the 2.0% you set — an effective 6.2%. Liquid soap clouds and separates past ~3%: lower the superfat (or run a small lye excess) to absorb it."
+   }
+  ]
+ },
+ {
+  "cell": "14:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "split_liquid_water_not_adjusted",
+    "message": "Alternative liquid is listed separately — water is not reduced automatically. Use the suggested lye water in Split liquid or lower your water %."
+   }
+  ]
+ },
+ {
+  "cell": "14:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "split_liquid_water_not_adjusted",
+    "message": "Alternative liquid is listed separately — water is not reduced automatically. Use the suggested lye water in Split liquid or lower your water %."
+   }
+  ]
+ },
+ {
+  "cell": "14:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "split_liquid_water_not_adjusted",
+    "message": "Alternative liquid is listed separately — water is not reduced automatically. Use the suggested lye water in Split liquid or lower your water %."
+   },
+   {
+    "level": "info",
+    "code": "ls_split_liquid_not_dilution",
+    "message": "Alternative liquids belong in the lye solution or at trace, where the cook sterilises them — never in the dilution water. Dilute with plain distilled water, add a preservative, and filter any sediment after the soap settles."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "15:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "split_liquid_high_trace_liquid",
+    "message": "Water is already at the 1:1 lye minimum — alternative liquid at trace adds extra total liquid. Expect faster trace, softer bars, or a wetter batter."
+   }
+  ]
+ },
+ {
+  "cell": "15:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "split_liquid_high_trace_liquid",
+    "message": "Water is already at the 1:1 lye minimum — alternative liquid at trace adds extra total liquid. Expect faster trace, softer bars, or a wetter batter."
+   }
+  ]
+ },
+ {
+  "cell": "15:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "split_liquid_high_trace_liquid",
+    "message": "Water is already at the 1:1 lye minimum — alternative liquid at trace adds extra total liquid. Expect faster trace, softer bars, or a wetter batter."
+   },
+   {
+    "level": "info",
+    "code": "ls_split_liquid_not_dilution",
+    "message": "Alternative liquids belong in the lye solution or at trace, where the cook sterilises them — never in the dilution water. Dilute with plain distilled water, add a preservative, and filter any sediment after the soap settles."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "16:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_total_additives",
+    "message": "Total additives exceed ~10% of oil weight — may affect trace, texture, or shelf life; verify with a small test batch."
+   }
+  ]
+ },
+ {
+  "cell": "16:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_total_additives",
+    "message": "Total additives exceed ~10% of oil weight — may affect trace, texture, or shelf life; verify with a small test batch."
+   }
+  ]
+ },
+ {
+  "cell": "16:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_total_additives",
+    "message": "Total additives exceed ~10% of oil weight — may affect trace, texture, or shelf life; verify with a small test batch."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "17:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "dual_lye_advanced",
+    "message": "Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up."
+   }
+  ]
+ },
+ {
+  "cell": "17:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "dual_lye_advanced",
+    "message": "Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up."
+   }
+  ]
+ },
+ {
+  "cell": "17:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "dual_lye_advanced",
+    "message": "Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "18:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "18:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "hp_vessel_too_small",
+    "message": "Use a cook vessel at least ~2× the batch volume (~3× for coconut-heavy) so the expanding cook doesn't overflow."
+   }
+  ]
+ },
+ {
+  "cell": "18:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "19:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "19:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "hp_yogurt_water",
+    "message": "Yogurt above ~5% of oil weight deducts meaningfully from the lye water — check the cooked soap stays fluid enough to fold in additives and pour."
+   }
+  ]
+ },
+ {
+  "cell": "19:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "20:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "trace_speed",
+    "message": "Predicted trace speed: fast. Expect a quick trace — soap cool, blend in short bursts, and add fragrance last. Driven by: high saturated fats."
+   }
+  ]
+ },
+ {
+  "cell": "20:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "trace_speed",
+    "message": "Predicted trace speed: fast. Expect a quick trace — soap cool, blend in short bursts, and add fragrance last. Driven by: high saturated fats."
+   }
+  ]
+ },
+ {
+  "cell": "20:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "21:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_pufa_post_cook_superfat",
+    "message": "Post-cook superfat oil is high in linoleic + linolenic — left unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool."
+   }
+  ]
+ },
+ {
+  "cell": "21:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_pufa_post_cook_superfat",
+    "message": "Post-cook superfat oil is high in linoleic + linolenic — left unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool."
+   }
+  ]
+ },
+ {
+  "cell": "21:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_pufa_post_cook_superfat",
+    "message": "Post-cook superfat oil is high in linoleic + linolenic — left unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "22:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "high_short_chain_low_long_chain",
+    "message": "High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous."
+   }
+  ]
+ },
+ {
+  "cell": "22:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "high_short_chain_low_long_chain",
+    "message": "High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous."
+   }
+  ]
+ },
+ {
+  "cell": "22:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "23:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "eutectic_lather_sources",
+    "message": "Both lauric and oleic sources present — supports a balanced fluffy and stable lather."
+   }
+  ]
+ },
+ {
+  "cell": "23:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "eutectic_lather_sources",
+    "message": "Both lauric and oleic sources present — supports a balanced fluffy and stable lather."
+   }
+  ]
+ },
+ {
+  "cell": "23:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "24:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_poly_high_superfat",
+    "message": "High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months."
+   },
+   {
+    "level": "warning",
+    "code": "pufa_cap_superfat",
+    "message": "High linoleic + linolenic oils with an elevated superfat — the unsaponified oil is prone to going rancid. For high-PUFA recipes keep superfat nearer 3–5%."
+   }
+  ]
+ },
+ {
+  "cell": "24:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_poly_high_superfat",
+    "message": "High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months."
+   },
+   {
+    "level": "warning",
+    "code": "pufa_cap_superfat",
+    "message": "High linoleic + linolenic oils with an elevated superfat — the unsaponified oil is prone to going rancid. For high-PUFA recipes keep superfat nearer 3–5%."
+   }
+  ]
+ },
+ {
+  "cell": "24:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "high_poly_high_superfat",
+    "message": "High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "25:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "high_cleansing_low_superfat",
+    "message": "Cleansing score above the usual range with modest superfat — bar may feel stripping; consider more superfat or softer oils."
+   },
+   {
+    "level": "info",
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+   }
+  ]
+ },
+ {
+  "cell": "25:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "high_cleansing_low_superfat",
+    "message": "Cleansing score above the usual range with modest superfat — bar may feel stripping; consider more superfat or softer oils."
+   },
+   {
+    "level": "info",
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+   }
+  ]
+ },
+ {
+  "cell": "25:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "26:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "low_cleansing_expected",
+    "message": "A near-zero cleansing score is normal for olive/high-oleic bars — all soap cleans; this cures into a gentle, low-stripping bar."
+   }
+  ]
+ },
+ {
+  "cell": "26:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "low_cleansing_expected",
+    "message": "A near-zero cleansing score is normal for olive/high-oleic bars — all soap cleans; this cures into a gentle, low-stripping bar."
+   }
+  ]
+ },
+ {
+  "cell": "26:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "27:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "27:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "27:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   },
+   {
+    "level": "info",
+    "code": "ls_castor_no_lather",
+    "message": "Castor adds little lather in liquid soap — its main contribution here is solubility and clarity, not lather."
+   }
+  ]
+ },
+ {
+  "cell": "28:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "28:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "28:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   },
+   {
+    "level": "info",
+    "code": "ls_castor_no_lather",
+    "message": "Castor adds little lather in liquid soap — its main contribution here is solubility and clarity, not lather."
+   }
+  ]
+ },
+ {
+  "cell": "29:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "29:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "hp_relaxed_caps",
+    "message": "Fluid HP tolerates higher castor (about 10–15%) and shea (about 30–40%) than a typical CP bar — the hot cook and post-cook additions give more working room before trace or texture become unworkable."
+   }
+  ]
+ },
+ {
+  "cell": "29:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   },
+   {
+    "level": "info",
+    "code": "ls_castor_no_lather",
+    "message": "Castor adds little lather in liquid soap — its main contribution here is solubility and clarity, not lather."
+   }
+  ]
+ },
+ {
+  "cell": "30:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "30:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "hp_relaxed_caps",
+    "message": "Fluid HP tolerates higher castor (about 10–15%) and shea (about 30–40%) than a typical CP bar — the hot cook and post-cook additions give more working room before trace or texture become unworkable."
+   }
+  ]
+ },
+ {
+  "cell": "30:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "31:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   }
+  ]
+ },
+ {
+  "cell": "31:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   }
+  ]
+ },
+ {
+  "cell": "31:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "32:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   }
+  ]
+ },
+ {
+  "cell": "32:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   }
+  ]
+ },
+ {
+  "cell": "32:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "33:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   }
+  ]
+ },
+ {
+  "cell": "33:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   }
+  ]
+ },
+ {
+  "cell": "33:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "jojoba_superfat_note",
+    "message": "Jojoba is mostly unsaponifiable — treat it as a superfatting oil and keep total jojoba near typical 5–10% of oils."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "34:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "oatmeal_false_trace",
+    "message": "Oatmeal can cause false trace — do not rely on viscosity alone; confirm with a pH strip or zap test."
+   }
+  ]
+ },
+ {
+  "cell": "34:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "oatmeal_false_trace",
+    "message": "Oatmeal can cause false trace — do not rely on viscosity alone; confirm with a pH strip or zap test."
+   }
+  ]
+ },
+ {
+  "cell": "34:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "oatmeal_false_trace",
+    "message": "Oatmeal can cause false trace — do not rely on viscosity alone; confirm with a pH strip or zap test."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "35:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "magnesium_salt_scum",
+    "message": "Magnesium-bearing salts (Epsom, Dead Sea) react with soap to form an insoluble magnesium soap — the same scum hard water leaves, but built into the bar: weaker lather, slimy residue, and a higher rancidity risk. For a harder bar use table, sea, Himalayan or black lava salt, which are all sodium chloride and behave identically."
+   }
+  ]
+ },
+ {
+  "cell": "35:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "magnesium_salt_scum",
+    "message": "Magnesium-bearing salts (Epsom, Dead Sea) react with soap to form an insoluble magnesium soap — the same scum hard water leaves, but built into the bar: weaker lather, slimy residue, and a higher rancidity risk. For a harder bar use table, sea, Himalayan or black lava salt, which are all sodium chloride and behave identically."
+   },
+   {
+    "level": "info",
+    "code": "hp_thick_phase_suppressant",
+    "message": "Salt or sodium lactate suppresses the thick, translucent \"mashed potato\" middle phase of a hot-process cook — expect a smoother, faster transition through cook."
+   }
+  ]
+ },
+ {
+  "cell": "35:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "magnesium_salt_scum",
+    "message": "Magnesium-bearing salts (Epsom, Dead Sea) react with soap to form an insoluble magnesium soap — the same scum hard water leaves, but built into the bar: weaker lather, slimy residue, and a higher rancidity risk. For a harder bar use table, sea, Himalayan or black lava salt, which are all sodium chloride and behave identically."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   },
+   {
+    "level": "info",
+    "code": "ls_salt_thickening",
+    "message": "Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go."
+   }
+  ]
+ },
+ {
+  "cell": "36:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "36:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "hp_thick_phase_suppressant",
+    "message": "Salt or sodium lactate suppresses the thick, translucent \"mashed potato\" middle phase of a hot-process cook — expect a smoother, faster transition through cook."
+   }
+  ]
+ },
+ {
+  "cell": "36:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   },
+   {
+    "level": "info",
+    "code": "ls_salt_thickening",
+    "message": "Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go."
+   }
+  ]
+ },
+ {
+  "cell": "37:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   }
+  ]
+ },
+ {
+  "cell": "37:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "hp_thick_phase_suppressant",
+    "message": "Salt or sodium lactate suppresses the thick, translucent \"mashed potato\" middle phase of a hot-process cook — expect a smoother, faster transition through cook."
+   }
+  ]
+ },
+ {
+  "cell": "37:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "38:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "high_short_chain_low_long_chain",
+    "message": "High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous."
+   }
+  ]
+ },
+ {
+  "cell": "38:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "high_short_chain_low_long_chain",
+    "message": "High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous."
+   }
+  ]
+ },
+ {
+  "cell": "38:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   },
+   {
+    "level": "info",
+    "code": "ls_dual_lye_recommendation",
+    "message": "High-coconut liquid soap firms and thickens with a ~30% NaOH share in a dual-lye blend."
+   }
+  ]
+ },
+ {
+  "cell": "39:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "dual_lye_advanced",
+    "message": "Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up."
+   }
+  ]
+ },
+ {
+  "cell": "39:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "dual_lye_advanced",
+    "message": "Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up."
+   }
+  ]
+ },
+ {
+  "cell": "39:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "dual_lye_advanced",
+    "message": "Dual NaOH + KOH is an advanced technique — weigh each alkali separately and verify the batch with a small test pour before scaling up."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   },
+   {
+    "level": "info",
+    "code": "ls_dual_lye_recommendation",
+    "message": "Low in palmitic + stearic — a small NaOH share (~0–20%) in your blend gives a firmer, thicker soap."
+   }
+  ]
+ },
+ {
+  "cell": "40:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "high_short_chain_low_long_chain",
+    "message": "High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous."
+   }
+  ]
+ },
+ {
+  "cell": "40:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "high_short_chain_low_long_chain",
+    "message": "High lauric + myristic with low palmitic + stearic — bar may feel very cleansing and wear quickly unless superfat is generous."
+   },
+   {
+    "level": "info",
+    "code": "hp_thick_phase_suppressant",
+    "message": "Salt or sodium lactate suppresses the thick, translucent \"mashed potato\" middle phase of a hot-process cook — expect a smoother, faster transition through cook."
+   }
+  ]
+ },
+ {
+  "cell": "40:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   },
+   {
+    "level": "info",
+    "code": "ls_dual_lye_recommendation",
+    "message": "High-coconut liquid soap firms and thickens with a ~30% NaOH share in a dual-lye blend."
+   },
+   {
+    "level": "info",
+    "code": "ls_salt_thickening",
+    "message": "Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go. High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body."
+   }
+  ]
+ },
+ {
+  "cell": "41:cp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "water_band_between_tiers",
+    "message": "Water sits between the low-water and full-water working ranges — fine, but nudging into either range gives more predictable trace and cure."
+   }
+  ]
+ },
+ {
+  "cell": "41:hp",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "info",
+    "code": "water_band_between_tiers",
+    "message": "Water sits between the low-water and full-water working ranges — fine, but nudging into either range gives more predictable trace and cure."
+   }
+  ]
+ },
+ {
+  "cell": "41:ls",
+  "insights": [
+   {
+    "level": "info",
+    "code": "large_test_batch",
+    "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ },
+ {
+  "cell": "42:cp",
+  "insights": []
+ },
+ {
+  "cell": "42:hp",
+  "insights": []
+ },
+ {
+  "cell": "42:ls",
+  "insights": [
+   {
+    "level": "warning",
+    "code": "ls_superfat_high",
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+   }
+  ]
+ }
+]

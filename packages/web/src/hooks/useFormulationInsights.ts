@@ -118,10 +118,11 @@ type FormulationInsightOptions = {
   splitLiquidWaterReductionGrams?: number | null;
   additives?: ComputedAdditive[];
   postCookSuperfat?: ComputedPostCookSuperfat | null;
-  isLiquidSoap?: boolean;
-  /** The recipe's process; threaded into analyzeFormulation so HP-only insights can gate on
-   * process === 'hp' rather than !isLiquidSoap (which is also true for CP). */
-  process?: ProcessId;
+  /** The recipe's process — the only discriminator; threaded into analyzeFormulation so
+   * HP-only insights can gate on process === 'hp' specifically. REQUIRED: analyzeFormulation's
+   * own `process` is non-optional, and a silent CP fallback here would resurrect the retired
+   * isLiquidSoap trap (LS recipe, CP gating, no type error). */
+  process: ProcessId;
   /** Cook vessel volume ÷ batch volume (HP only), computed by the caller from an optional
    * vessel-size input. Undefined skips the hp_vessel_too_small guard entirely. */
   hpVesselMultiple?: number;
@@ -148,7 +149,7 @@ export function useFormulationInsights(
   // run twice per lines change.
   fattyAcids: RecipeFattyAcidResult,
   lyeResult: LyeCalculationResult | null,
-  options: FormulationInsightOptions = {},
+  options: FormulationInsightOptions,
 ) {
   const insights = useMemo(() => {
     // Split-liquid rows that actually resolved to grams (undefined when the caller passes
@@ -172,7 +173,7 @@ export function useFormulationInsights(
       ? processProfileById(settings.processVariant)
       : null;
     const waterBand =
-      profile && !options.isLiquidSoap && profile.process !== 'ls' ? profile.waterBand : undefined;
+      profile && options.process !== 'ls' && profile.process !== 'ls' ? profile.waterBand : undefined;
     const additiveEntries = (options.additives ?? []).map((item) => ({
       catalogId: item.catalogId,
       name: item.name,
@@ -182,7 +183,7 @@ export function useFormulationInsights(
     // feeds it) for liquid soap or under low fatty-acid coverage is pure waste, since the
     // result is always discarded in that case (#5).
     const traceSpeedApplicable =
-      !options.isLiquidSoap && fattyAcids.coveragePercent >= LOW_COVERAGE_PERCENT;
+      options.process !== 'ls' && fattyAcids.coveragePercent >= LOW_COVERAGE_PERCENT;
     // Sugar-family accelerators speed up trace; keyword-match (not just today's catalog
     // ids) so a later wave adding sorbitol/yogurt as their own catalog entries is caught
     // without touching this hook again.
@@ -237,7 +238,6 @@ export function useFormulationInsights(
       postCookSuperfatPufaPercent: options.postCookSuperfat
         ? postCookSuperfatPufaPercent(options.postCookSuperfat.oils)
         : undefined,
-      isLiquidSoap: options.isLiquidSoap ?? false,
       process: options.process,
       lsGlycerinSolvent: options.lsGlycerinSolvent,
       lsSplitLiquidFatShiftPercent: options.lsSplitLiquidFatShiftPercent,
@@ -281,7 +281,6 @@ export function useFormulationInsights(
     settings.superfatPercent,
     settings.waterMode,
     settings.processVariant,
-    options.isLiquidSoap,
     options.process,
     options.hpVesselMultiple,
     // Transitively covered today (every settings edit rebuilds lyeResult, a listed dep),
