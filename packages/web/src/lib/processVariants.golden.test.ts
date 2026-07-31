@@ -16,6 +16,10 @@ import {
 // 2. LS water-band deletion: the four ls variants' waterBand re-captured as null — a DATA
 //    change removing unsourced dead constants (tier splits existed in no source), not a
 //    refactor. The band was already excluded from LS insights at every read site.
+// 3. HP per-variant bands: hp-hthp lowTier -> [20,30] (HP:9165-9168) and hp-fluid ->
+//    [29,31]/[36,40] (HP:9081-9086, 9174-9178) — sourced DATA differentiating the shared
+//    band, chosen by an executable evaluation over source-endorsed points (0 mis-coachings
+//    vs 3); see hpWaterBands.test.ts for the permanent contract.
 const GOLDEN_PROFILES = {
  "cp": {
   "variant": "cp",
@@ -71,7 +75,7 @@ const GOLDEN_PROFILES = {
   "label": "High-temp HP (HTHP)",
   "waterBand": {
    "lowTier": [
-    25,
+    20,
     30
    ],
    "highTier": [
@@ -98,11 +102,11 @@ const GOLDEN_PROFILES = {
   "label": "Fluid HP",
   "waterBand": {
    "lowTier": [
-    25,
-    30
+    29,
+    31
    ],
    "highTier": [
-    32,
+    36,
     40
    ],
    "riversAbove": 40

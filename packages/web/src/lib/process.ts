@@ -154,7 +154,10 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         variant: 'hp-hthp',
         process: 'hp',
         label: 'High-temp HP (HTHP)',
-        waterBand: HP_WATER_BAND, // verified (see HP_WATER_BAND)
+        // HTHP's own low tier: the source's HTHP tips endorse an "average reduced water
+        // concentration ... 20-30%" (HP:9165-9168) below the general 25-30 discount; the
+        // shared band mis-coached 20-24% as "very low". High tier + rivers stay general.
+        waterBand: { lowTier: [20, 30], highTier: [32, 40], riversAbove: 40 }, // verified
         temp: { lowF: 215, highF: 215, ceilingF: 240 }, // verified
         finish: { minWeeks: 3, maxWeeks: 4 }, // verified
         finishKind: 'cure',
@@ -164,7 +167,10 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         variant: 'hp-fluid',
         process: 'hp',
         label: 'Fluid HP',
-        waterBand: HP_WATER_BAND, // verified (see HP_WATER_BAND)
+        // Fluid HP's own band, both tiers variant-attached in the source: the swirl compromise
+        // 29-31% ("thick custard ... spoon poured", HP:9081-9086) and HTFHP's "36-40% for
+        // the best fluid results, I prefer 38%" (HP:9174-9178; recipe guide HP:9635).
+        waterBand: { lowTier: [29, 31], highTier: [36, 40], riversAbove: 40 }, // verified
         temp: { lowF: 160, highF: 215 }, // unverified: no fluid HP temp range in the roadmap table
         finish: { minWeeks: 6 }, // verified (~6 wk cure)
         finishKind: 'cure',

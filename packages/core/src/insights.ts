@@ -138,11 +138,16 @@ function waterBandBranch(
   if (input.waterBand && input.totalOilGrams > 0 && input.waterGrams > 0) {
     const waterPercentOfOils = (input.waterGrams / input.totalOilGrams) * 100;
     const { lowTier, highTier, riversAbove } = input.waterBand;
-    if (waterPercentOfOils > riversAbove) {
+  // Band boundaries are author-facing integers, but waterGrams/totalOilGrams*100 lands a
+  // half-ulp off for non-representable fractions (290/1000*100 = 28.999999999999996), so a
+  // user at exactly 29% would be mis-coached by strict comparison. EPS absorbs float error
+  // only — far below the 0.1 resolution any band figure carries.
+  const EPS = 1e-9;
+    if (waterPercentOfOils > riversAbove + EPS) {
       return 'rivers';
-    } else if (waterPercentOfOils > lowTier[1] && waterPercentOfOils < highTier[0]) {
+    } else if (waterPercentOfOils > lowTier[1] + EPS && waterPercentOfOils < highTier[0] - EPS) {
       return 'between_tiers';
-    } else if (waterPercentOfOils < lowTier[0]) {
+    } else if (waterPercentOfOils < lowTier[0] - EPS) {
       return 'below_low';
     }
   }
