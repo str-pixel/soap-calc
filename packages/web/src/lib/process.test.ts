@@ -8,6 +8,7 @@ import {
   importRoutingSuffix,
   processProfilesFor,
   allProcessVariantIds,
+  processOffers,
   type ProcessVariantId,
 } from './process';
 import { DEFAULT_SETTINGS } from './recipe';
@@ -113,16 +114,36 @@ it('every import announces which kind of recipe it is', () => {
 });
 });
 
-describe('panel capability declarations (slice 4)', () => {
-  it('declares exactly what each process mounts', () => {
-    expect(PROCESS_DEFINITIONS.cp.panels).toEqual(['cpExtras']);
-    expect(PROCESS_DEFINITIONS.hp.panels).toEqual(['postCook', 'hpVessel']);
+describe('capability declarations (slice 4 + capability-keys follow-up)', () => {
+  it('declares exactly what each process offers', () => {
+    expect(PROCESS_DEFINITIONS.cp.capabilities).toEqual(['cpExtras']);
+    expect(PROCESS_DEFINITIONS.hp.capabilities).toEqual(['postCook', 'hpVessel', 'afterCookStage']);
     // 'postCook' also belongs to ls: SuperfatWaterPanel's post-cook-superfat slider is an
-    // "HP/LS-only knob" (its own comment) gated by processOffersPanel(process, 'postCook'),
+    // "HP/LS-only knob" (its own comment) gated by processOffers(process, 'postCook'),
     // and useRecipeViewModel's cookFactor/postCookSuperfat memos compute for hp AND ls, null
-    // only for cp — declaring ls without 'postCook' would make processOffersPanel diverge
-    // from that real behaviour.
-    expect(PROCESS_DEFINITIONS.ls.panels).toEqual(['postCook', 'dilution', 'neutralize', 'preserve']);
+    // only for cp — declaring ls without 'postCook' would make processOffers diverge
+    // from that real behaviour. negativeSuperfat/solutionDosing are the LS-only rules the
+    // last raw literals encoded (slider+parser floor; solution dose basis); afterCookStage
+    // is the hp+ls stage offer.
+    expect(PROCESS_DEFINITIONS.ls.capabilities).toEqual([
+      'postCook', 'dilution', 'neutralize', 'preserve',
+      'negativeSuperfat', 'solutionDosing', 'afterCookStage',
+    ]);
+  });
+
+  it('offer and behaviour read the same declaration for the converted pairs', () => {
+    // negativeSuperfat: the slider floor (SuperfatWaterPanel) and the parser rule
+    // (calculateRecipe -> parseRecipeSettings) both read this key — the pair that used to
+    // live as raw literals in two different files.
+    expect(processOffers('ls', 'negativeSuperfat')).toBe(true);
+    expect(processOffers('cp', 'negativeSuperfat')).toBe(false);
+    expect(processOffers('hp', 'negativeSuperfat')).toBe(false);
+    expect(processOffers('cp', 'afterCookStage')).toBe(false);
+    expect(processOffers('hp', 'afterCookStage')).toBe(true);
+    expect(processOffers('ls', 'afterCookStage')).toBe(true);
+    expect(processOffers('ls', 'solutionDosing')).toBe(true);
+    expect(processOffers('cp', 'solutionDosing')).toBe(false);
+    expect(processOffers('hp', 'solutionDosing')).toBe(false);
   });
 });
 

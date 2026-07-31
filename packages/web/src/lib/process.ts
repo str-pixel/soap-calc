@@ -5,13 +5,17 @@ export type ProcessId = 'cp' | 'hp' | 'ls';
 
 export const PROCESS_IDS: readonly ProcessId[] = ['cp', 'hp', 'ls'];
 
-export type PanelKey =
+export type CapabilityKey =
   | 'postCook'
   | 'dilution'
   | 'neutralize'
   | 'preserve'
   | 'cpExtras'
-  | 'hpVessel';
+  | 'hpVessel'
+  // Not panels: declared process capabilities read by computation and offer gates alike.
+  | 'negativeSuperfat'
+  | 'solutionDosing'
+  | 'afterCookStage';
 
 export type ProcessVariantId =
   | 'cp' // cold process (single)
@@ -73,7 +77,7 @@ export type ProcessDefinition = {
   defaultSettings: Partial<RecipeSettings>;
   lyeChoices: LyeType[];
   waterModeChoices: WaterMode[];
-  panels: PanelKey[];
+  capabilities: CapabilityKey[];
   finishing: 'cure' | 'sequester';
   terms: { finishingLabel: string };
   variants: readonly ProcessProfile[];
@@ -102,7 +106,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     },
     lyeChoices: ['naoh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
-    panels: ['cpExtras'],
+    capabilities: ['cpExtras'],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
     variants: [
@@ -137,7 +141,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     },
     lyeChoices: ['naoh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
-    panels: ['postCook', 'hpVessel'],
+    capabilities: ['postCook', 'hpVessel', 'afterCookStage'],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
     variants: [
@@ -188,7 +192,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     },
     lyeChoices: ['koh', 'dual'],
     waterModeChoices: ALL_WATER_MODES,
-    panels: ['postCook', 'dilution', 'neutralize', 'preserve'],
+    capabilities: ['postCook', 'dilution', 'neutralize', 'preserve', 'negativeSuperfat', 'solutionDosing', 'afterCookStage'],
     finishing: 'sequester',
     terms: { finishingLabel: 'Sequester' },
     variants: [
@@ -298,12 +302,17 @@ export function isProcessId(value: unknown): value is ProcessId {
   return value === 'cp' || value === 'hp' || value === 'ls';
 }
 
-/** The single gate for process-conditional mounting/computation of a declared panel
+/** The single gate for process-conditional mounting, computation and OFFERS of a declared
  * capability. Readers use this instead of `process === 'x'` so the offer (the definition)
  * and the behaviour (mount/memo) cannot diverge — the arc's founding invariant. */
-export function processOffersPanel(process: ProcessId, panel: PanelKey): boolean {
-  return PROCESS_DEFINITIONS[process].panels.includes(panel);
+export function processOffers(process: ProcessId, capability: CapabilityKey): boolean {
+  return PROCESS_DEFINITIONS[process].capabilities.includes(capability);
 }
+
+/** @deprecated renamed — capabilities outgrew "panels" ('negativeSuperfat' is a slider
+ * floor + parser rule, 'afterCookStage' a dropdown option). Alias kept one release so any
+ * in-flight branch keeps compiling; new code uses processOffers. */
+export const processOffersPanel = processOffers;
 
 /** The process a legacy / process-less recipe belongs to, inferred from its alkali. */
 export function processForLyeType(lyeType: unknown): ProcessId {

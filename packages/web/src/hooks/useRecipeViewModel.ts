@@ -18,7 +18,7 @@ import {
   defaultVariantFor,
   effectiveSoapingTempF,
   isProcessVariantId,
-  processOffersPanel,
+  processOffers,
   processProfileById,
   type ProcessId,
 } from '../lib/process';
@@ -185,7 +185,7 @@ export function useRecipeViewModel({
     ),
   );
   const cookFactor =
-    processOffersPanel(process, 'postCook') &&
+    processOffers(process, 'postCook') &&
     previewSettings.postCookSuperfatMethod === 'subtract' &&
     pcsfSubtractPercent > 0 &&
     Number(previewSettings.superfatPercent) >= 0
@@ -284,7 +284,7 @@ export function useRecipeViewModel({
   // only). Do not "fix" this to finalResult.
   const dilution = useMemo(
     () =>
-      processOffersPanel(process, 'dilution') && result
+      processOffers(process, 'dilution') && result
         ? calculateDilution({
             anhydrousGrams: result.totalOilWeightGrams + result.lyeWeightGrams,
             // The paste's water is the lye water PLUS whatever water the alternative
@@ -324,7 +324,7 @@ export function useRecipeViewModel({
   }, [dilution, result, splitLiquidPasteWater, unknownLiquidGrams]);
   const neutralization = useMemo(
     () =>
-      processOffersPanel(process, 'neutralize') && result
+      processOffers(process, 'neutralize') && result
         ? calculateNeutralization({
             kohGrams: result.kohWeightGrams,
             naohGrams: result.naohWeightGrams,
@@ -452,7 +452,7 @@ export function useRecipeViewModel({
   const pcsfOilsKey = JSON.stringify(previewSettings.postCookSuperfatOils);
   const postCookSuperfat = useMemo(
     () =>
-      processOffersPanel(process, 'postCook')
+      processOffers(process, 'postCook')
         ? computePostCookSuperfat(previewSettings, totalOilGrams)
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -571,7 +571,7 @@ export function useRecipeViewModel({
   // direction (conservative under-estimate), so it's left as-is rather than introducing
   // a separate raw-batter density constant.
   const hpVesselMultiple = useMemo(() => {
-    if (!processOffersPanel(process, 'hpVessel')) return undefined;
+    if (!processOffers(process, 'hpVessel')) return undefined;
     if (!Number.isFinite(vesselVolumeCm3) || (vesselVolumeCm3 ?? 0) <= 0) return undefined;
     if (baseBatchGrams <= 0) return undefined;
     const batchVolumeCm3 = baseBatchGrams / SOAP_FILL_DENSITY_G_PER_CM3;

@@ -4,7 +4,7 @@ import type { RecipeLine, RecipeSettings } from './recipe';
 import { OIL_LOOKUP, oilById } from './oils';
 import { resolveLineWeights } from './resolveLineWeights';
 import { parseRecipeSettings } from './parseRecipeSettings';
-import type { ProcessId } from './process';
+import { processOffers, type ProcessId } from './process';
 
 export type RecipeDisplayTotals = {
   recipeOilWeightGrams: number;
@@ -24,7 +24,14 @@ export function calculateRecipe(
   settings: RecipeSettings,
   process?: ProcessId,
 ): RecipeCalculation {
-  const parsed = parseRecipeSettings(settings, { allowNegativeSuperfat: process === 'ls' });
+  // The parser half of the negative-superfat capability — the slider floor in
+  // SuperfatWaterPanel reads the same key, so the offer and the accepted range can't drift.
+  // `process` is optional for legacy test callers only; absent means bar-soap parsing (the
+  // pre-existing contract — the one production caller, useRecipeCalculation, always passes
+  // it). Requiring it is a ~51-call-site sweep recorded in the arc backlog.
+  const parsed = parseRecipeSettings(settings, {
+    allowNegativeSuperfat: process !== undefined && processOffers(process, 'negativeSuperfat'),
+  });
   const inputErrors: string[] = parsed.ok ? [] : [...parsed.errors];
 
   const resolved = resolveLineWeights(lines, settings);

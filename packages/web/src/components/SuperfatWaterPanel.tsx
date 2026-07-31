@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import type { LyeSolutionWaterStatus, SplitLiquidWaterSuggestion, WaterMode } from '@soap-calc/core';
 import type { ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import { postCookSuperfatAllocated, type RecipeSettings, type WeightUnit } from '../lib/recipe';
-import { processOffersPanel, type ProcessId } from '../lib/process';
+import { processOffers, type ProcessId } from '../lib/process';
 import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
 import { WATER_FIELDS, WATER_MODE_LABELS, waterModeChoicesFor } from '../lib/settingsFields';
 import { InfoTip } from './InfoTip';
@@ -225,7 +225,7 @@ export function SuperfatWaterPanel({
           unit="%"
           term="Superfat"
           help="The share of oils left unsaponified for a gentler, more moisturizing bar. Around 5% is common."
-          min={process === 'ls' ? NEG_SUPERFAT_FLOOR : 0}
+          min={processOffers(process, 'negativeSuperfat') ? NEG_SUPERFAT_FLOOR : 0}
           max={50}
           step={0.5}
           sliderMax={20}
@@ -291,7 +291,7 @@ export function SuperfatWaterPanel({
         {/* Post-cook superfat — an HP/LS-only knob (oils held back from the cook and folded
             in after saponification). One TOTAL budget slider; the oil rows allocate within
             it (their percents sum to at most the total). Hidden for CP, no cook stage. */}
-        {processOffersPanel(process, 'postCook') && (
+        {processOffers(process, 'postCook') && (
           <div className="pcsf">
             <SliderField
               label="Post-cook superfat"
