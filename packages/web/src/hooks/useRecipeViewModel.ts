@@ -15,6 +15,7 @@ import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
 import { defaultVariantFor, effectiveSoapingTempF, isProcessVariantId, processProfileById } from '../lib/processProfile';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
+import { processOffersPanel } from '../lib/process';
 import type { ProcessId } from '../lib/process';
 import type { RecipeCalculation } from '../lib/calculateRecipe';
 import {
@@ -179,7 +180,7 @@ export function useRecipeViewModel({
     ),
   );
   const cookFactor =
-    process !== 'cp' &&
+    processOffersPanel(process, 'postCook') &&
     previewSettings.postCookSuperfatMethod === 'subtract' &&
     pcsfSubtractPercent > 0 &&
     Number(previewSettings.superfatPercent) >= 0
@@ -278,7 +279,7 @@ export function useRecipeViewModel({
   // only). Do not "fix" this to finalResult.
   const dilution = useMemo(
     () =>
-      process === 'ls' && result
+      processOffersPanel(process, 'dilution') && result
         ? calculateDilution({
             anhydrousGrams: result.totalOilWeightGrams + result.lyeWeightGrams,
             // The paste's water is the lye water PLUS whatever water the alternative
@@ -318,7 +319,7 @@ export function useRecipeViewModel({
   }, [dilution, result, splitLiquidPasteWater, unknownLiquidGrams]);
   const neutralization = useMemo(
     () =>
-      process === 'ls' && result
+      processOffersPanel(process, 'neutralize') && result
         ? calculateNeutralization({
             kohGrams: result.kohWeightGrams,
             naohGrams: result.naohWeightGrams,
@@ -445,7 +446,10 @@ export function useRecipeViewModel({
   // Pick<RecipeSettings, 'postCookSuperfatOils'>, which pcsfOilsKey captures by value.
   const pcsfOilsKey = JSON.stringify(previewSettings.postCookSuperfatOils);
   const postCookSuperfat = useMemo(
-    () => (process === 'cp' ? null : computePostCookSuperfat(previewSettings, totalOilGrams)),
+    () =>
+      processOffersPanel(process, 'postCook')
+        ? computePostCookSuperfat(previewSettings, totalOilGrams)
+        : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [process, pcsfOilsKey, totalOilGrams],
   );
@@ -561,7 +565,7 @@ export function useRecipeViewModel({
   // direction (conservative under-estimate), so it's left as-is rather than introducing
   // a separate raw-batter density constant.
   const hpVesselMultiple = useMemo(() => {
-    if (process !== 'hp') return undefined;
+    if (!processOffersPanel(process, 'hpVessel')) return undefined;
     if (!Number.isFinite(vesselVolumeCm3) || (vesselVolumeCm3 ?? 0) <= 0) return undefined;
     if (baseBatchGrams <= 0) return undefined;
     const batchVolumeCm3 = baseBatchGrams / SOAP_FILL_DENSITY_G_PER_CM3;

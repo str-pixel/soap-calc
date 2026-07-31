@@ -29,6 +29,7 @@ import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 import type { PricingProfile } from './lib/pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
+import { processOffersPanel } from './lib/process';
 import { buildRecipePricingContext } from './lib/recipePricing';
 
 const VIEW_STORAGE_KEY = 'soap-calc:view';
@@ -422,7 +423,7 @@ export default function App() {
               onChange={setAdditives}
             />
 
-            {process === 'cp' && (
+            {processOffersPanel(process, 'cpExtras') && (
               <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />
             )}
           </div>
@@ -431,7 +432,7 @@ export default function App() {
           <div className="col col--numbers">
             {resultsPanel}
 
-            {process === 'ls' && (
+            {processOffersPanel(process, 'dilution') && (
               <DilutionPanel
                 dilution={vm.dilution}
                 soapConcentrationPercent={settings.soapConcentrationPercent}
@@ -447,11 +448,11 @@ export default function App() {
               />
             )}
 
-            {process === 'ls' && vm.neutralization && (
+            {processOffersPanel(process, 'neutralize') && vm.neutralization && (
               <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
             )}
 
-            {process === 'ls' && <PreservePanel />}
+            {processOffersPanel(process, 'preserve') && <PreservePanel />}
           </div>
 
           {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}

@@ -113,6 +113,19 @@ it('every import announces which kind of recipe it is', () => {
 });
 });
 
+describe('panel capability declarations (slice 4)', () => {
+  it('declares exactly what each process mounts', () => {
+    expect(PROCESS_DEFINITIONS.cp.panels).toEqual(['moldCure', 'cpExtras']);
+    expect(PROCESS_DEFINITIONS.hp.panels).toEqual(['moldCure', 'postCook', 'hpVessel']);
+    // 'postCook' also belongs to ls: SuperfatWaterPanel's post-cook-superfat slider is an
+    // "HP/LS-only knob" (its own comment, gated `process !== 'cp'`), and
+    // useRecipeViewModel's cookFactor/postCookSuperfat memos compute for hp AND ls, null
+    // only for cp — declaring ls without 'postCook' would make processOffersPanel diverge
+    // from that real behaviour.
+    expect(PROCESS_DEFINITIONS.ls.panels).toEqual(['postCook', 'dilution', 'neutralize', 'preserve']);
+  });
+});
+
 describe('definitions own their variants (slice 2)', () => {
   it('every variant belongs to the definition that lists it', () => {
     for (const p of ['cp', 'hp', 'ls'] as const) {
