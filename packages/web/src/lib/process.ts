@@ -310,10 +310,6 @@ export function processOffers(process: ProcessId, capability: CapabilityKey): bo
   return PROCESS_DEFINITIONS[process].capabilities.includes(capability);
 }
 
-/** @deprecated renamed — capabilities outgrew "panels" ('negativeSuperfat' is a slider
- * floor + parser rule, 'afterCookStage' a dropdown option). Alias kept one release so any
- * in-flight branch keeps compiling; new code uses processOffers. */
-export const processOffersPanel = processOffers;
 
 /** The process a legacy / process-less recipe belongs to, inferred from its alkali. */
 export function processForLyeType(lyeType: unknown): ProcessId {
