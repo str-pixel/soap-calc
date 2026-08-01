@@ -1,5 +1,15 @@
 import { memo, type Dispatch, type SetStateAction } from 'react';
-import { cToF, estimateGelPhase, fToC, soapingTempBand, type GelMode } from '@soap-calc/core';
+import {
+  cToF,
+  estimateGelPhase,
+  fToC,
+  lsMethodForTemp,
+  LS_ZONES,
+  LS_TEMP_MIN_F,
+  LS_TEMP_MAX_F,
+  soapingTempBand,
+  type GelMode,
+} from '@soap-calc/core';
 import {
   effectiveSoapingTempF,
   defaultVariantFor,
@@ -21,8 +31,10 @@ type SoapingTemperaturePanelProps = {
   waterLyeRatio: number | null;
 };
 
-// Same verified set as ProcessGuidePanel: only the LTHP/HTHP cook temps are source-verified;
-// fluid HP and the heated LS variants are estimates and must keep the ≈ hedge.
+// Same verified set as ProcessGuidePanel: only the LTHP/HTHP cook temps are source-verified.
+// LS no longer belongs here — its zones (LS_ZONES) are source-verified and its method/hint
+// is derived per-temperature by lsMethodForTemp, not read off this set. Fluid HP is still an
+// estimate and must keep the ≈ hedge.
 const VERIFIED_TEMP_VARIANTS = new Set<ProcessVariantId>(['hp-lthp', 'hp-hthp']);
 
 function targetLabel(temp: TempTarget): string {
@@ -79,6 +91,15 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
     setSettings((s) => ({ ...s, soapingTempF: next }));
   };
 
+  // Liquid soap only: the method (and its gap honesty) is derived purely from the hold
+  // temperature — one function owns the zones, labels and gap notes (core's ls-method.ts).
+  // Cheap and pure, so it's fine to compute unconditionally rather than gate on `process`.
+  const method = lsMethodForTemp(effectiveF);
+  // Zone strip geometry: percentages of the 60–220 °F slider span, computed straight off
+  // LS_ZONES so the strip and lsMethodForTemp can never drift apart.
+  const lsSpanF = LS_TEMP_MAX_F - LS_TEMP_MIN_F;
+  const lsPct = (f: number) => ((f - LS_TEMP_MIN_F) / lsSpanF) * 100;
+
   return (
     <section className="panel">
       <div className="panel__head">
@@ -88,9 +109,18 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
               set the unnumbered precedent. */}
           <h2 className="panel__title">Soaping temperature</h2>
           <p className="panel__subtitle">One starting temperature for oils and lye</p>
+          {process === 'ls' && (
+            // CPLS's melt step happens off this slider entirely; this line says so before
+            // anyone assumes the slider is a melt temperature.
+            <p className="panel__subtitle">
+              CPLS melts oils at 120–130 °F first; heated methods melt on the way up. This
+              slider is the hold temperature.
+            </p>
+          )}
         </div>
         <p className="panel__subtitle">
           {fToC(effectiveF)} °C ({effectiveF} °F)
+          {process === 'ls' && <> — {method.label}</>}
         </p>
       </div>
       {showClampHint && (
@@ -133,6 +163,55 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           }}
         />
       </div>
+      {process === 'ls' && (
+        // The strip is positioned straight off °F (LS_ZONES / LS_TEMP_MIN_F–MAX_F), never
+        // off the °C display value — the slider's real span is 60–220 °F and °C rounding
+        // would drift the edges off their sourced figures.
+        <div className="temp-zones">
+          <div className="temp-zones__track">
+            <span
+              className={`temp-zones__zone${
+                method.method === 'cold' ? ' temp-zones__zone--active' : ''
+              }`}
+              style={{ left: '0%', width: `${lsPct(LS_ZONES.coldMaxF)}%` }}
+            />
+            <span
+              className={`temp-zones__zone${
+                method.method === 'lowtemp' ? ' temp-zones__zone--active' : ''
+              }`}
+              style={{
+                left: `${lsPct(LS_ZONES.lowMinF)}%`,
+                width: `${lsPct(LS_ZONES.lowMaxF) - lsPct(LS_ZONES.lowMinF)}%`,
+              }}
+            />
+            {/* Recommended sub-band overlays the top of the low-temp zone in a stronger
+                shade — it doesn't get its own --active state; the low-temp zone above it
+                already carries that. */}
+            <span
+              className="temp-zones__zone temp-zones__zone--recommended"
+              style={{
+                left: `${lsPct(LS_ZONES.lowRecommendedMinF)}%`,
+                width: `${lsPct(LS_ZONES.lowMaxF) - lsPct(LS_ZONES.lowRecommendedMinF)}%`,
+              }}
+            />
+            <span
+              className={`temp-zones__zone${
+                method.method === 'hightemp' ? ' temp-zones__zone--active' : ''
+              }`}
+              style={{
+                left: `${lsPct(LS_ZONES.highMinF)}%`,
+                width: `${100 - lsPct(LS_ZONES.highMinF)}%`,
+              }}
+            />
+          </div>
+          <div className="temp-zones__labels">
+            <span>cold process</span>
+            <span>low temp</span>
+            <span>high temp</span>
+          </div>
+        </div>
+      )}
+      {process === 'ls' && method.note && <p className="results-hint">{method.note}</p>}
       {band ? (
         <>
           <p className="results-hint">{band.note}</p>
@@ -175,12 +254,27 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           )}
         </>
       ) : profile.temp === null ? (
-        // CPLS — the only non-CP ambient variant: no external heat, so the CP bar bands
-        // (gel phase, molds) don't apply.
-        <p className="results-hint">
-          Cold-process liquid soap uses no external heat — combine at a comfortable working
-          temperature and let the paste saponify on its own schedule.
-        </p>
+        // LS — the only variant with no fixed cook temp: the CP bar bands (gel phase,
+        // molds) don't apply, and which sentence renders comes from the derived method,
+        // not from the raw temperature.
+        method.method === 'cold' ? (
+          <p className="results-hint">
+            Cold-process liquid soap uses no external heat — combine at a comfortable working
+            temperature and let the paste saponify on its own schedule.
+          </p>
+        ) : method.method === 'lowtemp' ? (
+          <p className="results-hint">
+            Hold {fToC(LS_ZONES.lowMinF)}–{fToC(LS_ZONES.lowMaxF)} °C ({LS_ZONES.lowMinF}–
+            {LS_ZONES.lowMaxF} °F) — {fToC(LS_ZONES.lowRecommendedMinF)}–{fToC(LS_ZONES.lowMaxF)}{' '}
+            °C ({LS_ZONES.lowRecommendedMinF}–{LS_ZONES.lowMaxF} °F) recommended — through cook
+            and dilution.
+          </p>
+        ) : (
+          <p className="results-hint">
+            Hold {fToC(LS_ZONES.highMinF)} °C ({LS_ZONES.highMinF} °F) through cook and
+            dilution — do not exceed {fToC(LS_TEMP_MAX_F)} °C ({LS_TEMP_MAX_F} °F).
+          </p>
+        )
       ) : (
         <p className="results-hint">
           Cook target:{' '}

@@ -62,10 +62,35 @@ test('HTHP shows its verified cook target instead of CP band copy', () => {
 // hold temperature — see core's ls-method.test.ts, which owns that ground (2026-08-01 LS
 // temperature-method redesign, task 3).
 
-test('LS gets the neutral no-external-heat note, not CP bar-band copy', () => {
-  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+test('LS cold-process zone (below 100 °F) gets the neutral no-external-heat note, not CP bar-band copy', () => {
+  // 150 °F now resolves to the low-temp method (see the derived-method tests above); the
+  // ambient no-heat sentence belongs to the cold-process zone only (< 100 °F).
+  renderPanel({ processVariant: 'ls', soapingTempF: '90' }, 'ls');
   expect(screen.queryByText(/most commonly recommended/i)).toBeNull();
   expect(screen.getByText(/no external heat/i)).toBeTruthy();
+});
+
+test('LS: names the derived method beside the temperature', () => {
+  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  expect(screen.getByText(/Low-temp LS/)).toBeTruthy();
+});
+
+test('LS: shows the honest gap note at 180 °F', () => {
+  renderPanel({ processVariant: 'ls', soapingTempF: '180' }, 'ls');
+  expect(screen.getByText(/below its 215/)).toBeTruthy();
+  expect(screen.getByText(/High-temp LS/)).toBeTruthy();
+});
+
+test('LS: draws all three zone markers with the low-temp recommended sub-band', () => {
+  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  expect(screen.getByText('cold process')).toBeTruthy();
+  expect(screen.getByText('low temp')).toBeTruthy();
+  expect(screen.getByText('high temp')).toBeTruthy();
+});
+
+test('CP: unchanged — no zone markers', () => {
+  renderPanel({ soapingTempF: '125' }, 'cp');
+  expect(screen.queryByText('low temp')).toBeNull();
 });
 
 test('a stale stored value keeps its own figure in the field, clamped only for the calc', () => {

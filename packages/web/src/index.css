@@ -775,6 +775,48 @@ a:hover {
   outline-offset: 4px;
 }
 
+/* LS-only zone strip under the temperature slider: flat shaded bands over the same 60–220 °F
+   span as the slider, echoing .slider-field's ink/hairline/accent look rather than
+   introducing a new palette. */
+.temp-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+
+.temp-zones__track {
+  position: relative;
+  height: 6px;
+  background: var(--hairline);
+}
+
+.temp-zones__zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.temp-zones__zone--recommended {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.temp-zones__zone--active {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.temp-zones__labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
 .panel--compact {
   padding: 0;
 }
