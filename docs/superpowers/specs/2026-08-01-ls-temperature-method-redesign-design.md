@@ -92,7 +92,9 @@ Per-method, single source of truth:
 Mechanics: delete `LS_SEQUESTER`; `ProcessProfile.finish` becomes `FinishDuration | null` (null for
 the single LS profile — same nullable pattern as its `temp` and `waterBand`); `estimateCure` accepts
 an override window, and `useRecipeViewModel` passes `lsMethodForTemp(effectiveTemp).sequester` for
-LS. `ResultsPanel` already renders `maxWeeks`-less durations ("1+ weeks"), so the open-ended low-temp
+LS. Precedence: an override wins over `finish`; `finish: null` with no override returns no estimate
+(the same "declare the absence" posture as null `temp`/`waterBand`) — only LS can hit it, and only
+if a caller forgets the override, which the web test for the LS estimate pins against. `ResultsPanel` already renders `maxWeeks`-less durations ("1+ weeks"), so the open-ended low-temp
 window needs no new rendering.
 
 ## Process guide
