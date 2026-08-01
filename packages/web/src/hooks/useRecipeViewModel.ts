@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
-import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
+import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lsMethodForTemp, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
+import type { DilutionResult, LsMethodInfo, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { budgetSizingAvailable, resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import {
@@ -11,6 +11,7 @@ import {
   splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
 import type { CureEstimate } from '../lib/cureEstimate';
+import { ls30MinPackagePresent } from '../lib/ls30Min';
 import { computeWorkability } from '../lib/workabilityInput';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
@@ -103,6 +104,12 @@ export type RecipeViewModel = {
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
   /** Effective (clamped) soaping temperature, °F — see effectiveSoapingTempF. */
   soapingTempF: number;
+  /** LS's temperature-derived method (cold/lowtemp/hightemp), with its label, gap status,
+   * and sourced sequester window — see lsMethodForTemp. Null outside LS. */
+  lsMethod: LsMethodInfo | null;
+  /** True when the recipe carries the 30-minute no-paste package (glycerin + salt-or-
+   * sodium-lactate) under the derived high-temp method — see ls30MinPackagePresent. */
+  ls30Min: boolean;
   cureEstimate: CureEstimate | null;
   labelWeight: number | null;
   cureWaterLossPercent: number;
@@ -355,6 +362,13 @@ export function useRecipeViewModel({
     ? previewSettings.processVariant
     : defaultVariantFor(process);
   const soapingTempF = effectiveSoapingTempF(previewSettings, soapingVariant);
+  // LS's method (and its sourced sequester window) is derived from the hold temperature —
+  // it is the method selector, not a display-only readout. Null for CP/HP, which keep
+  // their own fixed finish.
+  const lsMethod = useMemo(
+    () => (process === 'ls' ? lsMethodForTemp(soapingTempF) : null),
+    [process, soapingTempF],
+  );
   const acidLyeRecipe = useMemo(
     () => ({
       lyeType: previewSettings.lyeType,
@@ -587,6 +601,25 @@ export function useRecipeViewModel({
     previewState.lines,
     previewSettings,
   );
+  // Glycerin as lye-solution solvent (split row) or LS additive — drives both the
+  // glycerin_solvent_dilution advisory below and the 30-min-package predicate (LS only).
+  // Only rows that actually resolve to grams get a vote. An unsized row is the DEFAULT
+  // state of a freshly added one, so counting it fired the solvent advisory the moment
+  // someone clicked "+ Add liquid". `grams > 0` is load-bearing beyond the null check:
+  // a 'rest' row against an exhausted budget resolves to 0, not null.
+  const lsGlycerinPresent =
+    sizedSplitRows.some(({ row }) => {
+      const preset = alternativeLiquidPreset(row.presetKey);
+      return (
+        (preset?.flags.includes('solvent') ?? false) &&
+        isAlternativeLiquidOfferedFor(preset!, process)
+      );
+    }) || computedAdditives.some((a) => a.catalogId === 'glycerin');
+  // 30-min no-paste package: derived-method gate (high temp only) + the glycerin/salt
+  // union above — see ls30MinPackagePresent.
+  const ls30Min =
+    lsMethod?.method === 'hightemp' &&
+    ls30MinPackagePresent({ lsGlycerinPresent, additives: computedAdditives });
   const { insights } = useFormulationInsights(
     previewState.lines,
     previewSettings,
@@ -603,20 +636,7 @@ export function useRecipeViewModel({
       postCookSuperfat,
       process,
       hpVesselMultiple,
-      // Glycerin as lye-solution solvent (split row) or LS additive — drives the
-      // glycerin_solvent_dilution advisory (core gates it to LS).
-      // Only rows that actually resolve to grams get a vote. An unsized row is the DEFAULT
-      // state of a freshly added one, so counting it fired the solvent advisory the moment
-      // someone clicked "+ Add liquid". `grams > 0` is load-bearing beyond the null check:
-      // a 'rest' row against an exhausted budget resolves to 0, not null.
-      lsGlycerinSolvent:
-        sizedSplitRows.some(({ row }) => {
-          const preset = alternativeLiquidPreset(row.presetKey);
-          return (
-            (preset?.flags.includes('solvent') ?? false) &&
-            isAlternativeLiquidOfferedFor(preset!, process)
-          );
-        }) || computedAdditives.some((a) => a.catalogId === 'glycerin'),
+      lsGlycerinSolvent: lsGlycerinPresent,
       // Fat the alternative liquids bring in, as superfat points on top of the stated
       // figure. LS-gated in core: only liquid soap separates over the fat a milk adds.
       lsSplitLiquidFatShiftPercent: superfatShiftFromLiquidFat(
@@ -703,10 +723,17 @@ export function useRecipeViewModel({
       }),
     [fattyAcids, properties, result, process],
   );
-  const cureEstimate = useMemo(
-    () => (profile ? estimateCure(profile, workability, cureModel) : null),
-    [profile, workability, cureModel],
-  );
+  const cureEstimate = useMemo(() => {
+    const base = profile
+      ? estimateCure(profile, workability, cureModel, lsMethod?.sequester ?? null)
+      : null;
+    return base && ls30Min
+      ? {
+          ...base,
+          note: 'Sequester is recommended, not required for the 30-minute no-paste method — the soap is usable as soon as it cools.',
+        }
+      : base;
+  }, [profile, workability, cureModel, lsMethod, ls30Min]);
   // Only the water-bearing base batter evaporates over cure — after-cook extras (fragrance,
   // PCSF oil, additives) don't lose water, so the loss is computed off baseBatchGrams and
   // subtracted from the full batch weight (#6).
@@ -835,6 +862,8 @@ export function useRecipeViewModel({
     liveOilBatchFraction,
     batchSheetData,
     soapingTempF,
+    lsMethod,
+    ls30Min,
     cureEstimate,
     labelWeight,
     /** Cure water loss for the active variant. The mold sizer's bars mode needs it to size

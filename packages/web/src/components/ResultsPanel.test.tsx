@@ -3,7 +3,15 @@ import { afterEach, expect, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { ResultsPanel } from './ResultsPanel';
 import { calculateRecipe } from '../lib/calculateRecipe';
-import { createStarterLines, DEFAULT_SETTINGS } from '../lib/recipe';
+import {
+  createEmptyAdditives,
+  createStarterLines,
+  DEFAULT_SETTINGS,
+  type AdditiveLine,
+  type RecipeSettings,
+} from '../lib/recipe';
+import { defaultsForProcess } from '../lib/process';
+import { useRecipeViewModel } from '../hooks/useRecipeViewModel';
 import { formatWeight } from '../lib/weightUnits';
 
 afterEach(cleanup);
@@ -265,6 +273,69 @@ test('LS with zero water loss shows the sequester window but no separate label-w
   );
   expect(screen.getByText(/≈ 1–4 weeks/)).toBeTruthy();
   expect(screen.queryByText(/Label weight/i)).toBeNull();
+});
+
+// vm-level pins: the real useRecipeViewModel → cureEstimate pipeline (lsMethodForTemp's
+// sequester window, and the 30-min-package note), rendered through ResultsPanel exactly
+// as the app wires it — not a hand-typed cureEstimate prop like the tests above.
+const SALT_LINE: AdditiveLine = {
+  key: 'salt-1', catalogId: 'salt', name: 'Table salt (NaCl)',
+  amount: '4', basis: 'oil', unit: 'percent', addAt: 'lye',
+};
+const GLYCERIN_ROW = {
+  key: 'g1', presetKey: 'glycerin', name: 'Glycerin', customWaterPercent: '',
+  sizeMode: 'percent_of_liquid' as const, amount: '66.7', addAt: 'lye' as const,
+};
+
+function LsPanelProbe({
+  settingsOverride = {},
+  additivesOverride,
+}: {
+  settingsOverride?: Partial<RecipeSettings>;
+  additivesOverride?: AdditiveLine[];
+}) {
+  const vm = useRecipeViewModel({
+    recipeName: 'Test',
+    lines: createStarterLines(),
+    settings: { ...DEFAULT_SETTINGS, ...defaultsForProcess('ls'), ...settingsOverride },
+    additives: additivesOverride ?? createEmptyAdditives(),
+    drafts: {},
+    weightUnit: 'g',
+    process: 'ls',
+  });
+  return (
+    <ResultsPanel
+      result={vm.result}
+      inputErrors={vm.inputErrors}
+      lyeLabel="KOH"
+      process="ls"
+      lyeType="koh"
+      displayTotals={vm.displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={vm.batchWeightWithExtras}
+      cureEstimate={vm.cureEstimate}
+    />
+  );
+}
+
+test('LS at the process default temperature (150 °F, low temp) shows "1+ weeks"', () => {
+  render(<LsPanelProbe />);
+  expect(screen.getByText(/≈ 1\+ weeks/)).toBeTruthy();
+});
+
+test('LS at 215 °F (high temp) shows "1–2 weeks"', () => {
+  render(<LsPanelProbe settingsOverride={{ soapingTempF: '215' }} />);
+  expect(screen.getByText(/≈ 1–2 weeks/)).toBeTruthy();
+});
+
+test('LS at 215 °F with a glycerin split row and salt shows the usable-once-cooled note', () => {
+  render(
+    <LsPanelProbe
+      settingsOverride={{ soapingTempF: '215', splitLiquids: [GLYCERIN_ROW] }}
+      additivesOverride={[SALT_LINE]}
+    />,
+  );
+  expect(screen.getByText(/usable as soon as it cools/)).toBeTruthy();
 });
 
 const workability = {

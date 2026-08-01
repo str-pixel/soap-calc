@@ -23,6 +23,9 @@ export type CureEstimate = {
   /** Recipe-derived two-milestone model; null falls back to the fixed per-process window
    * above (LS sequester, mid-edit recipes, unresolvable FA data). */
   model?: CureModelEstimate | null;
+  /** Optional caller-supplied caveat rendered alongside the window (e.g. LS's 30-minute
+   * no-paste package: sequester recommended, not required). Absent everywhere else. */
+  note?: string;
 };
 
 /** Cure/sequester window for a process; hot process is usable straight from the mold.

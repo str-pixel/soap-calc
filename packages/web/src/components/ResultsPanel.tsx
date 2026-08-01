@@ -344,6 +344,7 @@ export const ResultsPanel = memo(function ResultsPanel({
               <dt>{finishingLabel} (est.)</dt>
               <dd>
                 {cureWindowLabel(cureEstimate)}
+                {cureEstimate.note && <p className="results-hint">{cureEstimate.note}</p>}
                 {cureEstimate.usableAtUnmold && (
                   <span className="results-excluded"> · usable at unmold</span>
                 )}
