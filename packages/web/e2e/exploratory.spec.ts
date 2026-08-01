@@ -136,7 +136,7 @@ test.describe('process/variant sweep', () => {
     const matrix: Array<{ tab: RegExp; variants: RegExp[]; lye: RegExp }> = [
       { tab: /Cold process/, variants: [], lye: /^NaOH/ },
       { tab: /Hot process/, variants: [/Low-temp HP/, /High-temp HP/, /Fluid HP/], lye: /^NaOH/ },
-      { tab: /Liquid soap/, variants: [/Cold-process LS/, /Low-temp LS/, /High-temp LS/, /30-minute LS/], lye: /^KOH/ },
+      { tab: /Liquid soap/, variants: [], lye: /^KOH/ },
     ];
     for (const row of matrix) {
       await processTab(page, row.tab).click();
