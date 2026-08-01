@@ -214,7 +214,10 @@ export function migrateLegacyDraft(): void {
     if (parsed === undefined || typeof parsed !== 'object' || !Array.isArray(parsed.lines)) {
       return;
     }
-    const target = processForLyeType(parsed?.settings?.lyeType);
+    const target = processForLyeType(
+      parsed?.settings?.lyeType,
+      (parsed?.settings as { kohBlendPercent?: unknown } | undefined)?.kohBlendPercent,
+    );
     // Only migrate — and only clear the legacy key — when the target slot is empty. A
     // concurrent old+new tab may have already written a per-process draft there; if so,
     // leave both the existing draft and the still-unmigrated legacy payload alone rather

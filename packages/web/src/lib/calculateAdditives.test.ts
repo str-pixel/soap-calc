@@ -1,11 +1,58 @@
 import { describe, expect, it } from 'vitest';
 import {
+  computeBottledSolutionGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
   splitLiquidWaterFraction,
   splitLiquidWaterInputState,
 } from './calculateAdditives';
 import type { AdditiveLine } from './recipe';
+
+describe('computeBottledSolutionGrams', () => {
+  // Lives beside computeExtrasGrams so "what rides through to the bottle" and "what counts
+  // as an extra" stay one tested rule set (code-review 2026-08-01) — the hook previously
+  // reconstructed it inline by subtracting mismatched aggregates.
+  const dilution = { solutionGrams: 4000, anhydrousGrams: 1200, targetExceedsPaste: false };
+
+  it('bottled = solution + extras solids (the split liquids WATER is already in the solution)', () => {
+    expect(
+      computeBottledSolutionGrams({
+        dilution,
+        cookWaterGrams: 900,
+        extrasGrams: 500,
+        splitLiquidPasteWaterGrams: 100,
+      }),
+    ).toBeCloseTo(4400);
+  });
+
+  it('when the target exceeds the paste, the base is the REAL paste, not the target-derived solution', () => {
+    // Core computes solutionGrams purely from the target (anhydrous / soap%) and never
+    // reads cookWaterGrams — when totalWater < cook, none of the paste water can be
+    // removed, so the bottled base is anhydrous + cook water, which is LARGER. The old
+    // subtraction shape understated the bottle count twice over here (its comment claimed
+    // the split water "is already inside the solution figure", false in this branch).
+    const thick = { solutionGrams: 1500, anhydrousGrams: 1200, targetExceedsPaste: true };
+    expect(
+      computeBottledSolutionGrams({
+        dilution: thick,
+        cookWaterGrams: 835, // lye water 400 + 435 g of goat-milk water
+        extrasGrams: 500, // the 500 g of milk itself
+        splitLiquidPasteWaterGrams: 435,
+      }),
+    ).toBeCloseTo(1200 + 835 + (500 - 435));
+  });
+
+  it('clamps the extras solids at zero', () => {
+    expect(
+      computeBottledSolutionGrams({
+        dilution,
+        cookWaterGrams: 900,
+        extrasGrams: 80,
+        splitLiquidPasteWaterGrams: 100,
+      }),
+    ).toBeCloseTo(4000);
+  });
+});
 
 function line(over: Partial<AdditiveLine>): AdditiveLine {
   return { key: 'k', catalogId: '', name: 'X', amount: '', basis: 'oil', unit: 'percent', addAt: 'trace', ...over };

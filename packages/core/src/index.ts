@@ -1,4 +1,5 @@
 export * from './sap.js';
+export * from './molar-masses.js';
 export * from './lye.js';
 export * from './properties.js';
 export * from './property-display.js';

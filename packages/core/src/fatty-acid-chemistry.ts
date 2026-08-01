@@ -8,9 +8,12 @@
  * `mappedPercent`. See docs/superpowers/specs/2026-07-12-oil-data-quality-architecture-design.md
  */
 
-const KOH_MOLAR_MASS = 56.1056; // g/mol
-/** glycerol (92.094) − 3×H₂O (18.015): the triglyceride backbone mass beyond 3 fatty acids. */
-const GLYCERYL_ADJUSTMENT = 38.049;
+import { GLYCEROL_MOLAR_MASS, KOH_MOLAR_MASS, WATER_MOLAR_MASS } from './molar-masses.js';
+
+/** Glycerol − 3×H₂O: the triglyceride backbone mass beyond 3 fatty acids (≈38.049).
+ * Derived from the shared molar masses so this oracle can never disagree with the lye
+ * math about the alkali it validates against. */
+const GLYCERYL_ADJUSTMENT = GLYCEROL_MOLAR_MASS - 3 * WATER_MOLAR_MASS;
 /** mass of 2 iodine atoms (g/mol) — one I₂ adds across each C=C double bond (Wijs). */
 const DIIODINE_MASS = 253.809;
 

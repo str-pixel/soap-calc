@@ -217,9 +217,12 @@ export function calculateLye(input: LyeRecipeInput): LyeCalculationResult {
   } else {
     validatePurityPercent(input.naohPurityPercent, DEFAULT_NAOH_PURITY, 'naohPurityPercent', errors);
     validatePurityPercent(input.kohPurityPercent, DEFAULT_KOH_PURITY, 'kohPurityPercent', errors);
+    // Full 0–100: the blend algebra is valid for any split. NaOH-primary (bar, ~5% KOH)
+    // and KOH-primary (LS, ~80% KOH) are both real practice; the process-appropriate
+    // subrange is the web layer's per-process concern (kohBlendRangeFor), not core's.
     const blend = input.kohBlendPercent ?? DEFAULT_KOH_BLEND_PERCENT;
-    if (!Number.isFinite(blend) || blend < 0 || blend > 50) {
-      errors.push('kohBlendPercent must be a finite number between 0 and 50');
+    if (!Number.isFinite(blend) || blend < 0 || blend > 100) {
+      errors.push('kohBlendPercent must be a finite number between 0 and 100');
     }
   }
 
@@ -371,6 +374,26 @@ export function addExtraLye(
     lyeConcentrationPercent: lyePlusWater > 0 ? (lyeWeightGrams / lyePlusWater) * 100 : 0,
     waterLyeRatio: lyeWeightGrams > 0 ? result.waterWeightGrams / lyeWeightGrams : 0,
   };
+}
+
+/** The superfat a recipe actually delivers when a post-cook reserve rides on top of the
+ * main figure — THE shared definition (insights, ResultsPanel, BatchSheet, and the
+ * process-default tests all read it; previously four re-derivations, two of which ADDED).
+ *
+ * Subtract-method composition: the reserve scales the lye via scaleLyeResult(1 − p/100)
+ * AFTER the main superfat factor (1 − s/100), so the unsaponified shares compound —
+ * 2% + 2% → 100 × (1 − 0.98 × 0.98) = 3.96%. Append mode adds the oil on top of the
+ * batch instead; the compounded figure understates that case by under 0.1 points at
+ * typical doses, inside the display's own rounding. A missing/invalid/zero post-cook
+ * share passes the main figure through unchanged; a negative main share (lye excess)
+ * composes the same way. */
+export function effectiveSuperfatPercent(
+  mainPercent: number,
+  postCookPercent: number | undefined,
+): number {
+  const p = postCookPercent;
+  if (p === undefined || !Number.isFinite(p) || p <= 0) return mainPercent;
+  return 100 * (1 - (1 - mainPercent / 100) * (1 - p / 100));
 }
 
 export function scaleLyeResult(result: LyeCalculationResult, factor: number): LyeCalculationResult {

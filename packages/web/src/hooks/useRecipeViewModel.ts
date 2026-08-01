@@ -4,6 +4,7 @@ import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { budgetSizingAvailable, resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import {
+  computeBottledSolutionGrams,
   computeExtrasGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
@@ -93,6 +94,10 @@ export type RecipeViewModel = {
   neutralization: NeutralizationResult | null;
   pcsfIsExtra: boolean;
   extrasGrams: number;
+  /** The mass the LS batch actually bottles: solution base (real paste when the target
+   * exceeds it) plus additives, append-mode PCSF oil, and split-liquid solids. Null
+   * outside LS / before a dilution exists. See computeBottledSolutionGrams. */
+  bottledSolutionGrams: number | null;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
@@ -643,6 +648,18 @@ export function useRecipeViewModel({
     pcsfIsExtra,
   );
   const batchWeightWithExtras = baseBatchGrams + extrasGrams;
+  // The mass the LS batch actually bottles — solution base plus the extras that ride
+  // through (see computeBottledSolutionGrams for the full accounting, including why a
+  // target that exceeds the paste switches the base to anhydrous + cook water).
+  const bottledSolutionGrams =
+    dilution && result
+      ? computeBottledSolutionGrams({
+          dilution,
+          cookWaterGrams: result.waterWeightGrams + splitLiquidPasteWater,
+          extrasGrams,
+          splitLiquidPasteWaterGrams: splitLiquidPasteWater,
+        })
+      : null;
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
   // see normalizeSettingsWithinProcess) before resolving the profile.
   const profile = isProcessVariantId(settings.processVariant)
@@ -813,6 +830,7 @@ export function useRecipeViewModel({
     neutralization,
     pcsfIsExtra,
     extrasGrams,
+    bottledSolutionGrams,
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,

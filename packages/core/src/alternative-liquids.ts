@@ -1,4 +1,9 @@
 import type { AdditiveProcess } from './additives.js';
+import {
+  ACETIC_ACID_MOLAR_MASS,
+  KOH_MOLAR_MASS,
+  NAOH_MOLAR_MASS,
+} from './molar-masses.js';
 
 /** Advisory flags for alternative split liquids: what in the liquid interacts with the
  * lye reaction or the finished bar. 'acid' liquids consume lye and carry the neutralization
@@ -47,7 +52,7 @@ const LS_FAT_NOTE =
   'Its fat gets no lye, so it lands as extra superfat — liquid soap clouds and separates past ~3%.';
 
 /** Commercial vinegar is a 5% acetic-acid solution; moles of acid per gram of vinegar. */
-const ACETIC_MOL_PER_GRAM_VINEGAR = 0.05 / 60.052;
+const ACETIC_MOL_PER_GRAM_VINEGAR = 0.05 / ACETIC_ACID_MOLAR_MASS;
 
 /** Common alternative liquids for split-liquid recipes. Water fractions are typical
  * composition values, not brand-specific; treat them as planning numbers. */
@@ -188,8 +193,8 @@ export const ALTERNATIVE_LIQUID_GUIDE: readonly AlternativeLiquidPreset[] = [
     note:
       'Acetic acid consumes lye (forming an acetate salt, a bar hardener) — the extra lye is added to the recipe automatically.',
     lyeNeutralization: {
-      naohPerGram: ACETIC_MOL_PER_GRAM_VINEGAR * 39.997,
-      kohPerGram: ACETIC_MOL_PER_GRAM_VINEGAR * 56.105,
+      naohPerGram: ACETIC_MOL_PER_GRAM_VINEGAR * NAOH_MOLAR_MASS,
+      kohPerGram: ACETIC_MOL_PER_GRAM_VINEGAR * KOH_MOLAR_MASS,
     },
   },
 ];

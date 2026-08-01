@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { KOH_MOLAR_MASS } from '@soap-calc/core';
 import type { CanonicalOilDatabase } from './schema.js';
 
 const dataPath = join(dirname(fileURLToPath(import.meta.url)), '../data/canonical-oils.json');
@@ -9,11 +10,13 @@ const db = JSON.parse(readFileSync(dataPath, 'utf8')) as CanonicalOilDatabase;
 
 /**
  * A pure free fatty acid neutralizes alkali 1:1 with no glycerol released, so its SAP is
- * *exactly* computable — `56.1056 / MW` (KOH coefficient), arithmetic, not a measurement. This
- * guards the free_acid rows against silently drifting back to a charted approximation (palmitic
- * and oleic were ~1.7% off before the Codex-audit fix). Molecular weights are physical constants.
+ * *exactly* computable — `KOH molar mass / MW` (KOH coefficient), arithmetic, not a
+ * measurement. This guards the free_acid rows against silently drifting back to a charted
+ * approximation (palmitic and oleic were ~1.7% off before the Codex-audit fix). The alkali
+ * mass is the SHARED core constant, so the data and the lye math that consumes it can
+ * never validate against different values of "KOH". FFA molecular weights are physical
+ * constants local to this guard.
  */
-const KOH_MOLAR_MASS = 56.1056;
 const FFA_MOLECULAR_WEIGHT: Record<string, number> = {
   'lauric-acid': 200.32,
   'myristic-acid': 228.37,

@@ -91,7 +91,7 @@ export function hpYogurtPercentForInsights(
  * callers (no hp_yogurt_water insight) omit the flag so yogurt still counts here.
  *
  * The result feeds the core `sugar_total_high` insight, whose ceiling is process-aware
- * (4% under CP/LS, 5% under HP) — this helper only computes the oil-relative total; the
+ * (4% under CP, 5% under HP and LS) — this helper only computes the oil-relative total; the
  * threshold choice lives in @soap-calc/core/insights.ts. `additives[].grams` already reflects
  * each line's resolved dose regardless of dosing basis (oil/batch/solution — resolved
  * upstream by computeRecipeAdditives), so a solution-dosed LS sugar additive contributes its
@@ -238,6 +238,9 @@ export function useFormulationInsights(
       postCookSuperfatPufaPercent: options.postCookSuperfat
         ? postCookSuperfatPufaPercent(options.postCookSuperfat.oils)
         : undefined,
+      // Total post-cook superfat % of oils — core compounds it with the main superfat for
+      // the LS cloud-threshold insights (a 2% + 2% recipe is ~4% effective, not 2%).
+      postCookSuperfatPercent: options.postCookSuperfat?.percentOfOil,
       process: options.process,
       lsGlycerinSolvent: options.lsGlycerinSolvent,
       lsSplitLiquidFatShiftPercent: options.lsSplitLiquidFatShiftPercent,

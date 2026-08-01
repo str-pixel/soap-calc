@@ -30,7 +30,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -146,6 +146,11 @@
     "level": "info",
     "code": "large_test_batch",
     "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_no_superfat_buffer",
+    "message": "Effective superfat is below 1% — the lye nearly matches the oils exactly, so normal SAP variation or a small scale error can leave free alkali in the finished soap. Keep the combined LS superfat around 1–3%, or run a deliberate small lye excess and neutralize after the cook."
    }
   ]
  },
@@ -180,7 +185,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -215,7 +220,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -265,7 +270,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -300,7 +305,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -345,7 +350,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -390,7 +395,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -430,7 +435,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -480,7 +485,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -520,7 +525,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -560,7 +565,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -660,7 +665,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -715,7 +720,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -765,7 +770,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -815,7 +820,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -855,7 +860,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -895,7 +900,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -940,7 +945,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -990,7 +995,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1035,7 +1040,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1080,7 +1085,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1140,7 +1145,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1235,7 +1240,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1270,7 +1275,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    },
    {
     "level": "info",
@@ -1310,7 +1315,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    },
    {
     "level": "info",
@@ -1355,7 +1360,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    },
    {
     "level": "info",
@@ -1400,7 +1405,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1450,7 +1455,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1500,7 +1505,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1550,7 +1555,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1600,7 +1605,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1655,7 +1660,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    },
    {
     "level": "info",
@@ -1700,7 +1705,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    },
    {
     "level": "info",
@@ -1745,7 +1750,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1790,7 +1795,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    },
    {
     "level": "info",
@@ -1845,7 +1850,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    },
    {
     "level": "info",
@@ -1900,7 +1905,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    },
    {
     "level": "info",
@@ -1955,7 +1960,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  },
@@ -1973,7 +1978,7 @@
    {
     "level": "warning",
     "code": "ls_superfat_high",
-    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep LS superfat around 1–3%."
+    "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
    }
   ]
  }

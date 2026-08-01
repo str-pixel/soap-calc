@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addExtraLye,
   calculateLye,
+  effectiveSuperfatPercent,
   lyeForOilLine,
   scaleLyeResult,
   sapCoefficientForLye,
@@ -304,8 +305,12 @@ describe('calculateLye', () => {
       kohPurityPercent: 100,
     };
     const molesNeeded = calculateLye({ ...base, lyeType: 'naoh' }).lyeWeightGrams / NAOH_MM;
-    for (const kohBlendPercent of [0, 5, 25, 50]) {
+    // KOH-primary blends (80 = the LS 80/20 KOH/NaOH ratio, 100 = degenerate all-KOH) are
+    // as chemistry-valid as the NaOH-primary bar blends; process-appropriate limits are a
+    // UI concern, not a stoichiometry one.
+    for (const kohBlendPercent of [0, 5, 25, 50, 80, 100]) {
       const r = calculateLye({ ...base, lyeType: 'dual', kohBlendPercent });
+      expect(r.errors).toEqual([]);
       const molesProvided = r.naohWeightGrams / NAOH_MM + r.kohWeightGrams / KOH_MM;
       expect(molesProvided).toBeCloseTo(molesNeeded, 6);
       expect((r.kohWeightGrams / r.lyeWeightGrams) * 100).toBeCloseTo(kohBlendPercent, 4);
@@ -326,16 +331,17 @@ describe('calculateLye', () => {
     expect(dual0.kohWeightGrams).toBeCloseTo(0, 6);
   });
 
-  it('rejects invalid koh blend percent for dual lye', () => {
-    const result = calculateLye({
-      oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
-      oilLookup: { 'olive-oil': OLIVE },
-      superfatPercent: 5,
-      lyeType: 'dual',
-      kohBlendPercent: 60,
-    });
-
-    expect(result.errors.some((e) => e.includes('kohBlendPercent'))).toBe(true);
+  it('rejects a koh blend percent outside 0–100 for dual lye', () => {
+    for (const kohBlendPercent of [-1, 101]) {
+      const result = calculateLye({
+        oils: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+        oilLookup: { 'olive-oil': OLIVE },
+        superfatPercent: 5,
+        lyeType: 'dual',
+        kohBlendPercent,
+      });
+      expect(result.errors.some((e) => e.includes('kohBlendPercent'))).toBe(true);
+    }
   });
 
   it('calculates dual lye for a multi-oil recipe', () => {
@@ -422,6 +428,32 @@ describe('scaleLyeResult', () => {
       expect(Number.isFinite(line.naohGrams)).toBe(true);
       expect(Number.isFinite(line.kohGrams)).toBe(true);
     }
+  });
+});
+
+describe('effectiveSuperfatPercent', () => {
+  // THE definition of the superfat a subtract-method recipe delivers, exported next to
+  // scaleLyeResult (the code that implements the compounding) so insights, ResultsPanel,
+  // BatchSheet and the process-default tests all share one formula instead of four
+  // (code-review 2026-08-01: two of the four ADDED instead of compounding).
+  it('compounds the main and post-cook shares — the reserve scales lye AFTER the main superfat', () => {
+    expect(effectiveSuperfatPercent(2, 2)).toBeCloseTo(3.96, 10);
+    expect(effectiveSuperfatPercent(2, 5)).toBeCloseTo(6.9, 10);
+    // Linearity cross-check against the real lye math: superfat s then scale by
+    // (1 − p/100) equals a single superfat at the compounded figure.
+    const s = 2, p = 5;
+    const combined = effectiveSuperfatPercent(s, p);
+    expect((1 - s / 100) * (1 - p / 100)).toBeCloseTo(1 - combined / 100, 12);
+  });
+
+  it('passes the main share through when no post-cook applies', () => {
+    expect(effectiveSuperfatPercent(5, undefined)).toBe(5);
+    expect(effectiveSuperfatPercent(5, 0)).toBe(5);
+    expect(effectiveSuperfatPercent(5, Number.NaN)).toBe(5);
+  });
+
+  it('composes a lye excess the same way', () => {
+    expect(effectiveSuperfatPercent(-5, 2)).toBeCloseTo(100 * (1 - 1.05 * 0.98), 10);
   });
 });
 

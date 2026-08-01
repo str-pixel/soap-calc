@@ -1,3 +1,9 @@
+import {
+  CITRIC_ACID_MOLAR_MASS,
+  KOH_MOLAR_MASS,
+  NAOH_MOLAR_MASS,
+} from './molar-masses.js';
+
 export type AdditiveStage = 'lye' | 'oils' | 'trace' | 'top' | 'after_cook';
 
 /** Structurally identical to web's ProcessId ('cp' | 'hp' | 'ls'), defined locally so core
@@ -47,10 +53,9 @@ export type AdditiveCatalogEntry = {
   lyeNeutralization?: { naohPerGram: number; kohPerGram: number };
 };
 
-/** Citric acid (anhydrous) C6H8O7 — triprotic, MW 192.123; moles of acid per gram.
- * (neutralization.ts carries 192.124/56.1056 for the LS after-cook path — different
- * atomic-mass rounding, numerically irrelevant.) */
-const CITRIC_MOL_PER_GRAM = 1 / 192.123;
+/** Citric acid (anhydrous) — triprotic; moles of acid per gram. Shares molar-masses.ts
+ * with neutralization.ts (the LS after-cook path), so the two can no longer drift. */
+const CITRIC_MOL_PER_GRAM = 1 / CITRIC_ACID_MOLAR_MASS;
 
 export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
@@ -139,8 +144,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       ls: { typicalLow: 1, typicalHigh: 3 },
     },
     lyeNeutralization: {
-      naohPerGram: 3 * CITRIC_MOL_PER_GRAM * 39.997,
-      kohPerGram: 3 * CITRIC_MOL_PER_GRAM * 56.105,
+      naohPerGram: 3 * CITRIC_MOL_PER_GRAM * NAOH_MOLAR_MASS,
+      kohPerGram: 3 * CITRIC_MOL_PER_GRAM * KOH_MOLAR_MASS,
     },
   },
   {

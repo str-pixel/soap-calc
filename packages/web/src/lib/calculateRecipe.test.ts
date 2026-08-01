@@ -16,6 +16,40 @@ describe('calculateRecipe', () => {
     expect(displayTotals!.excludedFromLyeOilWeightGrams).toBe(0);
   });
 
+  it('accepts the LS KOH-primary dual blend (80/20) under the ls process', () => {
+    const { result, inputErrors } = calculateRecipe(
+      STARTER_LINES,
+      { ...DEFAULT_SETTINGS, lyeType: 'dual', kohBlendPercent: '80' },
+      'ls',
+    );
+    expect(inputErrors).toHaveLength(0);
+    expect(result).not.toBeNull();
+    expect((result!.kohWeightGrams / result!.lyeWeightGrams) * 100).toBeCloseTo(80, 4);
+  });
+
+  it('legacy LS dual draft (blend ≤ 50, saved under the old cap) errors with the LS bounds — no silent clamp', () => {
+    // Deliberate no-migration policy (see kohBlendRange in process.ts): a pre-range LS
+    // dual draft necessarily holds blend ≤ 50. Clamping 5 → 50 would silently multiply
+    // the KOH share tenfold, so it surfaces as a draft-safe refusal instead: null result,
+    // the LS bounds named in the error, and the settings object untouched for the user
+    // to correct.
+    const legacySettings = { ...DEFAULT_SETTINGS, lyeType: 'dual' as const, kohBlendPercent: '5' };
+    const { result, inputErrors } = calculateRecipe(STARTER_LINES, legacySettings, 'ls');
+    expect(result).toBeNull();
+    expect(inputErrors).toContain('KOH blend % must be between 50 and 100');
+    expect(legacySettings.kohBlendPercent).toBe('5');
+  });
+
+  it('keeps rejecting a KOH-primary dual blend under bar processes', () => {
+    const { result, inputErrors } = calculateRecipe(
+      STARTER_LINES,
+      { ...DEFAULT_SETTINGS, lyeType: 'dual', kohBlendPercent: '80' },
+      'cp',
+    );
+    expect(result).toBeNull();
+    expect(inputErrors).toContain('KOH blend % must be between 0 and 50');
+  });
+
   it('reports unknown oil as line error but still calculates valid oils', () => {
     const lines = [
       { key: 'a', oilId: 'not-real', weightGrams: '200' },

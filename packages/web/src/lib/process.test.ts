@@ -9,8 +9,11 @@ import {
   processProfilesFor,
   allProcessVariantIds,
   processOffers,
+  kohBlendRangeFor,
   type ProcessVariantId,
 } from './process';
+import { effectiveSuperfatPercent } from '@soap-calc/core';
+import { processForLyeType } from './process';
 import { DEFAULT_SETTINGS } from './recipe';
 
 describe('process definitions', () => {
@@ -54,6 +57,109 @@ describe('process definitions', () => {
       processVariant: 'ls-cpls' as const,
     };
     expect(normalizeSettingsWithinProcess(dualInLs, 'ls')).toBe(dualInLs);
+  });
+
+  it('bounds the dual-lye KOH blend per process: bar NaOH-primary, LS KOH-primary', () => {
+    // Grounded ratios (multi-process-roadmap.md, "Dual-lye ratios", confirmed): bar soap
+    // runs KOH as a minor additive (95/5 NaOH/KOH), while LS dual is KOH-primary
+    // (80/20 KOH/NaOH). A single 0–50 cap made every documented LS blend unenterable.
+    expect(kohBlendRangeFor('cp')).toEqual([0, 50]);
+    expect(kohBlendRangeFor('hp')).toEqual([0, 50]);
+    expect(kohBlendRangeFor('ls')).toEqual([50, 100]);
+  });
+
+  it('seeds every process dual-lye blend at its documented ratio (LS 80/20, bar 95/5)', () => {
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.kohBlendPercent).toBe('80');
+    // CP/HP declare the bar ratio explicitly so normalizeSettingsWithinProcess can reseed
+    // a dormant out-of-range blend without reaching back into DEFAULT_SETTINGS (cycle).
+    expect(PROCESS_DEFINITIONS.cp.defaultSettings.kohBlendPercent).toBe('5');
+    expect(PROCESS_DEFINITIONS.hp.defaultSettings.kohBlendPercent).toBe('5');
+  });
+
+  it('reseeds a DORMANT out-of-range KOH blend to the process default on normalize', () => {
+    // Every pre-range LS draft carries the bar filler '5' the user never chose (it was
+    // seeded by DEFAULT_SETTINGS and invisible under lyeType 'koh'). Left alone, the
+    // first switch to dual lye would blank the recipe with a bounds error. Dormant filler
+    // is not a recipe decision, so it reseeds; the symmetric CP case (an '80' arriving
+    // via import routing) reseeds to the bar '5' the same way.
+    const legacyLs = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+      kohBlendPercent: '5',
+      processVariant: 'ls-cpls' as const,
+    };
+    expect(normalizeSettingsWithinProcess(legacyLs, 'ls').kohBlendPercent).toBe('80');
+    const strayCp = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'naoh' as const,
+      kohBlendPercent: '80',
+      processVariant: 'cp' as const,
+    };
+    expect(normalizeSettingsWithinProcess(strayCp, 'cp').kohBlendPercent).toBe('5');
+  });
+
+  it('leaves an ACTIVE dual-lye blend untouched, even out of range — the error policy owns it', () => {
+    // A legacy LS draft saved AS dual encoded a real NaOH-primary alkali choice; rewriting
+    // it silently would change the recipe. It keeps its value and the parser refuses with
+    // the LS bounds (see kohBlendRange doc + calculateRecipe.test.ts legacy-draft pin).
+    const legacyDual = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'dual' as const,
+      kohBlendPercent: '25',
+      processVariant: 'ls-cpls' as const,
+    };
+    expect(normalizeSettingsWithinProcess(legacyDual, 'ls').kohBlendPercent).toBe('25');
+  });
+
+  it('keeps the same-ref fast path when the dormant blend is already in range', () => {
+    const fine = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+      kohBlendPercent: '80',
+      processVariant: 'ls-cpls' as const,
+    };
+    expect(normalizeSettingsWithinProcess(fine, 'ls')).toBe(fine);
+  });
+
+  it('every process seeds its dual-lye blend default inside its own blend range', () => {
+    for (const p of PROCESS_IDS) {
+      const [min, max] = kohBlendRangeFor(p);
+      const seeded = Number(
+        PROCESS_DEFINITIONS[p].defaultSettings.kohBlendPercent ?? DEFAULT_SETTINGS.kohBlendPercent,
+      );
+      expect(seeded).toBeGreaterThanOrEqual(min);
+      expect(seeded).toBeLessThanOrEqual(max);
+    }
+  });
+
+  it('LS defaults deliver a combined superfat inside the 1–3% band (main 0% + post-cook 2%)', () => {
+    // The LS cloud/separation ceiling is ~3% total. Main and post-cook superfat compound
+    // (subtract method), so the defaults must budget them together — 2% + 2% lands at
+    // ~3.96%, above the app's own threshold, which is why main superfat seeds at 0.
+    // Asserted through core's OWN definition (effectiveSuperfatPercent), not a re-typed
+    // formula — a re-derivation here would keep passing if core's model changed.
+    const ls = PROCESS_DEFINITIONS.ls.defaultSettings;
+    const main = Number(ls.superfatPercent);
+    const combined = effectiveSuperfatPercent(main, Number(ls.postCookSuperfatTotalPercent));
+    expect(combined).toBeGreaterThanOrEqual(1);
+    expect(combined).toBeLessThanOrEqual(3);
+    expect(main).toBe(0);
+  });
+
+  it('processForLyeType infers ls for a KOH-primary dual blend', () => {
+    // 'dual' alone is ambiguous, but the blend disambiguates: above 50% KOH the alkali is
+    // KOH-primary, which only LS accepts ([50,100]); at or below 50 (including the shave
+    // 50/50 edge, absent blends, and junk) the bar route stays, where those blends are
+    // valid. Prevents a new-format LS dual file (blend 80) from being parked in the CP
+    // tab, whose [0,50] range would refuse the blend with no way to fix it there.
+    expect(processForLyeType('dual', '80')).toBe('ls');
+    expect(processForLyeType('dual', 80)).toBe('ls');
+    expect(processForLyeType('dual', '25')).toBe('cp');
+    expect(processForLyeType('dual', '50')).toBe('cp');
+    expect(processForLyeType('dual', undefined)).toBe('cp');
+    expect(processForLyeType('dual', 'junk')).toBe('cp');
+    expect(processForLyeType('koh', '5')).toBe('ls');
+    expect(processForLyeType('naoh', '80')).toBe('cp');
   });
 
   it('seeds HP 5% / LS 2% post-cook superfat defaults (single olive-oil row)', () => {

@@ -108,6 +108,32 @@ export function computeExtrasGrams(
   return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams;
 }
 
+/** The mass an LS batch actually bottles, for the volume/bottle estimate. Lives beside
+ * computeExtrasGrams so "what counts as an extra" and "what rides through to the bottle"
+ * are one tested rule set.
+ *
+ * Base: normally the dilution solution (anhydrous + target water — the split liquids'
+ * water is inside it via cookWaterGrams). But when the target EXCEEDS the paste, core
+ * derives solutionGrams from the target alone and never reads the cook water; none of the
+ * paste's water can be removed, so the real bottled base is anhydrous + cook water.
+ * Extras: everything in extrasGrams except the split liquids' water (counted via the
+ * base either way) — additives at every stage, append-mode PCSF oil, split-liquid solids.
+ * Acid-compensation alkali is DELIBERATELY excluded, mirroring the dilution calc's
+ * base-result read: its acetate/citrate mass is small, and folding it in here without
+ * also touching solutionGrams would be easy to mistake for a double count. */
+export function computeBottledSolutionGrams(input: {
+  dilution: { solutionGrams: number; anhydrousGrams: number; targetExceedsPaste: boolean };
+  cookWaterGrams: number;
+  extrasGrams: number;
+  splitLiquidPasteWaterGrams: number;
+}): number {
+  const { dilution, cookWaterGrams, extrasGrams, splitLiquidPasteWaterGrams } = input;
+  const base = dilution.targetExceedsPaste
+    ? dilution.anhydrousGrams + cookWaterGrams
+    : dilution.solutionGrams;
+  return base + Math.max(0, extrasGrams - splitLiquidPasteWaterGrams);
+}
+
 /** The post-cook superfat: one or more oils added after cook/dilution with no lye effect.
  * Each row is a % of recipe oil weight (same basis as additives/split-liquid); the aggregate
  * `percentOfOil`/`grams` sum the contributing rows. `null` when no row has a valid, non-zero

@@ -1,4 +1,5 @@
 import { DEFAULT_KOH_PURITY, DEFAULT_NAOH_PURITY } from './lye.js';
+import { GLYCEROL_MOLAR_MASS, KOH_MOLAR_MASS, NAOH_MOLAR_MASS } from './molar-masses.js';
 
 export type DilutionInput = {
   anhydrousGrams: number; // oils + lye (water-free soap solids)
@@ -20,9 +21,8 @@ export type DilutionInput = {
 };
 
 // Glycerol released per gram of ACTIVE alkali: glycerol MW / (3 × alkali MW).
-const GLYCEROL_MW = 92.094;
-const GLYCERIN_PER_ACTIVE_KOH = GLYCEROL_MW / (3 * 56.1056);
-const GLYCERIN_PER_ACTIVE_NAOH = GLYCEROL_MW / (3 * 39.997);
+const GLYCERIN_PER_ACTIVE_KOH = GLYCEROL_MOLAR_MASS / (3 * KOH_MOLAR_MASS);
+const GLYCERIN_PER_ACTIVE_NAOH = GLYCEROL_MOLAR_MASS / (3 * NAOH_MOLAR_MASS);
 
 function purityFraction(purityPercent: number | undefined, defaultPercent: number): number {
   const p =

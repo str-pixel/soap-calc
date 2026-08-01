@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { batchWeightBreakdown } from '@soap-calc/core';
+import { batchWeightBreakdown, effectiveSuperfatPercent } from '@soap-calc/core';
 import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import type { CureEstimate } from '../lib/cureEstimate';
@@ -133,7 +133,12 @@ export const ResultsPanel = memo(function ResultsPanel({
   const showTotalLiquid = splitLiquidGrams !== null && splitLiquidGrams > 0;
   const totalLiquidGrams = result.waterWeightGrams + (splitLiquidGrams ?? 0);
   const cookSuperfatPercent = Number(superfatPercent) || 0;
-  const totalSuperfatPercent = cookSuperfatPercent + (postCookSuperfat?.percentOfOil ?? 0);
+  // Shares COMPOUND (core effectiveSuperfatPercent) — plain addition printed a total the
+  // superfat insights contradicted about the same recipe.
+  const totalSuperfatPercent = effectiveSuperfatPercent(
+    cookSuperfatPercent,
+    postCookSuperfat?.percentOfOil,
+  );
   // Single-sourced from cureEstimate (itself derived from the view model's resolved
   // process-variant profile), not the `process` prop — the cure window / usableAtUnmold
   // already come from that profile, so under a transient variant/process mismatch the

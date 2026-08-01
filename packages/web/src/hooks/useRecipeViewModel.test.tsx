@@ -216,10 +216,61 @@ test('label weight loses water only from the water-bearing base batch, not after
   expect(withPcsf.labelWeight).toBeGreaterThan(oldWrongFormula);
 });
 
+test('bottledSolutionGrams counts additive grams on top of the dilution solution', () => {
+  // A 1%-of-oils after-cook thickener on the 1000 g starter batch = 10 g that is bottled
+  // with the solution but absent from the anhydrous+water dilution figure.
+  let vm: any;
+  probe(
+    (v) => { vm = v; },
+    { lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' },
+    'ls',
+    undefined,
+    [{ key: 'g1', catalogId: 'guar', name: 'Guar gum', amount: '1', unit: 'percent', basis: 'oil', addAt: 'after_cook' } as any],
+  );
+  expect(vm.dilution).not.toBeNull();
+  expect(vm.bottledSolutionGrams).toBeCloseTo(vm.dilution.solutionGrams + 10);
+});
+
 test('LS superfat above 3% raises the ls_superfat_high insight', () => {
   let vm: any;
   probe((v) => { vm = v; }, { superfatPercent: '5', lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
   expect(vm.insights.some((i: any) => i.code === 'ls_superfat_high')).toBe(true);
+});
+
+test('LS main + post-cook superfat stacking past 3% raises ls_superfat_high (2% + 2% ≈ 4%)', () => {
+  let vm: any;
+  probe(
+    (v) => { vm = v; },
+    {
+      superfatPercent: '2',
+      lyeType: 'koh',
+      waterMode: 'lye_water_ratio',
+      lyeWaterRatio: '2',
+      postCookSuperfatTotalPercent: '2',
+      postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }],
+      postCookSuperfatMethod: 'subtract',
+    },
+    'ls',
+  );
+  expect(vm.insights.some((i: any) => i.code === 'ls_superfat_high')).toBe(true);
+});
+
+test('LS 0% main + 2% post-cook superfat stays inside the band — no warning', () => {
+  let vm: any;
+  probe(
+    (v) => { vm = v; },
+    {
+      superfatPercent: '0',
+      lyeType: 'koh',
+      waterMode: 'lye_water_ratio',
+      lyeWaterRatio: '2',
+      postCookSuperfatTotalPercent: '2',
+      postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }],
+      postCookSuperfatMethod: 'subtract',
+    },
+    'ls',
+  );
+  expect(vm.insights.some((i: any) => i.code === 'ls_superfat_high')).toBe(false);
 });
 
 test('hpVesselMultiple is undefined without a vessel volume, even for HP', () => {

@@ -870,6 +870,32 @@ describe('LS split-liquid advisories (LS audit 2026-07-27)', () => {
       expect(has(ls, 'ls_split_liquid_fat_superfat')).toBe(false);
     });
 
+    it('stays quiet while the combined total is still inside the ~3% ceiling', () => {
+      // 1.5 points of milk fat on a 0% recipe is 1.5% effective — under the very ceiling
+      // the warning cites. "Lower the superfat" there contradicts the number in the same
+      // sentence (code-review 2026-08-01); the rule now gates on the combined total.
+      expect(
+        has(
+          { ...ls, superfatPercent: 0, lsSplitLiquidFatShiftPercent: 1.5 },
+          'ls_split_liquid_fat_superfat',
+        ),
+      ).toBe(false);
+      // A deliberate lye excess absorbs the fat — nothing to warn about either.
+      expect(
+        has(
+          { ...ls, superfatPercent: -5, lsSplitLiquidFatShiftPercent: 2 },
+          'ls_split_liquid_fat_superfat',
+        ),
+      ).toBe(false);
+    });
+
+    it('warns once the fat pushes the combined total past ~3%', () => {
+      // 2% main + 1.5 points of fat = 3.5% — over the ceiling, warn.
+      expect(
+        has({ ...ls, lsSplitLiquidFatShiftPercent: 1.5 }, 'ls_split_liquid_fat_superfat'),
+      ).toBe(true);
+    });
+
     it('is LS-only: a bar shrugs off the same fat', () => {
       for (const process of ['cp', 'hp'] as const) {
         expect(
@@ -879,6 +905,37 @@ describe('LS split-liquid advisories (LS audit 2026-07-27)', () => {
           ),
         ).toBe(false);
       }
+    });
+  });
+
+  describe('ls_no_superfat_buffer', () => {
+    // The LS default seeds main superfat 0% + post-cook 2%; deleting the optional
+    // post-cook row leaves lye computed to exactly saponify 100% of the oils — a state
+    // no LS rule covered (no_superfat_margin is CP/HP-gated, ls_lye_excess needs < 0,
+    // ls_superfat_high needs > 3). Below the 1–3% working band's floor, warn.
+    it('warns when the effective superfat carries no real buffer', () => {
+      const insight = analyzeFormulation({ ...base, process: 'ls', superfatPercent: 0 }).find(
+        (i) => i.code === 'ls_no_superfat_buffer',
+      );
+      expect(insight?.level).toBe('warning');
+      expect(insight?.message).toMatch(/lye excess/i);
+      expect(insight?.message).toMatch(/1–3%/);
+    });
+
+    it('stays quiet from 1% effective upward — post-cook oil counts toward the buffer', () => {
+      expect(
+        has({ ...base, process: 'ls', superfatPercent: 0, postCookSuperfatPercent: 2 }, 'ls_no_superfat_buffer'),
+      ).toBe(false);
+      expect(has({ ...base, process: 'ls', superfatPercent: 1 }, 'ls_no_superfat_buffer')).toBe(false);
+    });
+
+    it('yields to the deliberate lye-excess workflow (negative superfat)', () => {
+      expect(has({ ...base, process: 'ls', superfatPercent: -2 }, 'ls_no_superfat_buffer')).toBe(false);
+    });
+
+    it('is LS-only — bar soap already has no_superfat_margin', () => {
+      expect(has({ ...base, process: 'cp', superfatPercent: 0 }, 'ls_no_superfat_buffer')).toBe(false);
+      expect(has({ ...base, process: 'hp', superfatPercent: 0 }, 'ls_no_superfat_buffer')).toBe(false);
     });
   });
 
@@ -914,10 +971,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 36 unique codes', () => {
+  it('declares 37 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(36);
-    expect(new Set(declared).size).toBe(36);
+    expect(declared).toHaveLength(37);
+    expect(new Set(declared).size).toBe(37);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1025,6 +1082,7 @@ describe('rule registry consistency', () => {
       process: 'ls',
     },
     ls_superfat_high: { superfatPercent: 5, process: 'ls' },
+    ls_no_superfat_buffer: { superfatPercent: 0, process: 'ls' },
     ls_castor_no_lather: {
       fattyAcids: { ricinoleic: 6 },
       fattyAcidCoveragePercent: 100,

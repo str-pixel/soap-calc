@@ -4,7 +4,7 @@ import type { RecipeLine, RecipeSettings } from './recipe';
 import { OIL_LOOKUP, oilById } from './oils';
 import { resolveLineWeights } from './resolveLineWeights';
 import { parseRecipeSettings } from './parseRecipeSettings';
-import { processOffers, type ProcessId } from './process';
+import { kohBlendRangeFor, processOffers, type ProcessId } from './process';
 
 export type RecipeDisplayTotals = {
   recipeOilWeightGrams: number;
@@ -31,6 +31,7 @@ export function calculateRecipe(
   // it). Requiring it is a ~51-call-site sweep recorded in the arc backlog.
   const parsed = parseRecipeSettings(settings, {
     allowNegativeSuperfat: process !== undefined && processOffers(process, 'negativeSuperfat'),
+    kohBlendRange: process !== undefined ? kohBlendRangeFor(process) : undefined,
   });
   const inputErrors: string[] = parsed.ok ? [] : [...parsed.errors];
 

@@ -8,7 +8,7 @@ import {
   lyeChoicesFor,
   LYE_TYPE_LABELS,
 } from '../lib/settingsFields';
-import { processOffers } from '../lib/process';
+import { kohBlendRangeFor, processOffers } from '../lib/process';
 import type { ProcessId } from '../lib/process';
 import { BatchBasics } from './BatchBasics';
 import { InfoTip } from './InfoTip';
@@ -95,6 +95,9 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const updateField = (key: FieldSpec['key'], value: string) =>
     setSettings((s) => ({ ...s, [key]: value }));
+  // Destructured once (same shape as SoapingTemperaturePanel's range) — positional [0]/[1]
+  // at two call sites is how a min/max swap slips through review.
+  const [blendMin, blendMax] = kohBlendRangeFor(process);
   return (
     <section className="panel">
       <h2 className="panel__title">Settings</h2>
@@ -137,8 +140,8 @@ export function SettingsPanel({
             <input
               type="number"
               className="input"
-              min={0}
-              max={50}
+              min={blendMin}
+              max={blendMax}
               step={0.5}
               value={settings.kohBlendPercent}
               onChange={(e) =>

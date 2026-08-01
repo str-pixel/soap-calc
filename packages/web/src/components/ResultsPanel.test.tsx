@@ -79,8 +79,9 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
   // Shea Butter now appears in both the post-cook-superfat line and the Full recipe list.
   expect(screen.getAllByText(/Shea Butter/).length).toBeGreaterThan(0);
   expect(screen.getByText('30 g')).toBeTruthy();
-  // cook (5% default) + post-cook (3%) = 8%
-  expect(screen.getByText('8%')).toBeTruthy();
+  // cook (5% default) compounded with post-cook (3%): 100×(1−0.95×0.97) = 7.85 → "7.9%"
+  // (the reserve scales lye AFTER the main superfat; plain addition printed 8%).
+  expect(screen.getByText('7.9%')).toBeTruthy();
 });
 
 test('a post-cook-superfat-only batch does not claim "additives" in the batch-weight note', () => {
@@ -152,6 +153,10 @@ test('subtract + non-negative main superfat: "reserved" label and Total superfat
   );
   expect(screen.getByText(/reserved/i)).toBeTruthy();
   expect(screen.getByText('Total superfat')).toBeTruthy();
+  // The total COMPOUNDS (core effectiveSuperfatPercent): 2% then a 5% reserve is
+  // 100×(1−0.98×0.95) = 6.9%, not the 7.0% plain addition printed before — the insight
+  // text and this row used to disagree about the same recipe (code-review 2026-08-01).
+  expect(screen.getByText('6.9%')).toBeTruthy();
 });
 
 test('with no postCookSuperfat, no PCSF line or total-superfat line renders', () => {

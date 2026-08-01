@@ -273,13 +273,35 @@ describe('parseRecipeSettings', () => {
       if (result.ok) expect(result.values.kohBlendPercent).toBe(50);
     });
 
-    it('dual: blend percent above 50 is an error', () => {
+    it('dual: blend percent above 50 is an error (default bar-soap range)', () => {
       const result = parseRecipeSettings(
         settings({ lyeType: 'dual', kohBlendPercent: '51' }),
       );
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.errors).toEqual(['KOH blend % must be between 0 and 50']);
+      }
+    });
+
+    it('dual: a KOH-primary range accepts the LS 80/20 blend and its bounds', () => {
+      for (const value of ['50', '80', '100']) {
+        const result = parseRecipeSettings(
+          settings({ lyeType: 'dual', kohBlendPercent: value }),
+          { kohBlendRange: [50, 100] },
+        );
+        expect(result.ok).toBe(true);
+        if (result.ok) expect(result.values.kohBlendPercent).toBe(Number(value));
+      }
+    });
+
+    it('dual: a KOH-primary range rejects a bar-soap blend with its own bounds in the message', () => {
+      const result = parseRecipeSettings(
+        settings({ lyeType: 'dual', kohBlendPercent: '30' }),
+        { kohBlendRange: [50, 100] },
+      );
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.errors).toEqual(['KOH blend % must be between 50 and 100']);
       }
     });
   });

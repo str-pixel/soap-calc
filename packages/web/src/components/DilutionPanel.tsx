@@ -5,6 +5,7 @@ import {
   lsDilutionUsesFor,
   type DilutionResult,
 } from '@soap-calc/core';
+import { formatConcentrationPercent } from '../lib/format';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
@@ -25,6 +26,11 @@ type DilutionPanelProps = {
   /** The over-dilution verdict holds whatever the undeclared liquid contains, so it is
    * stated as fact rather than hedged. */
   overDilutionCertain?: boolean;
+  /** The mass actually bottled (solution base + additives, append-mode post-cook oil,
+   * split-liquid solids — see computeBottledSolutionGrams). Drives the bottle estimate
+   * AND is shown as its own row when it differs from the solution, so the count and the
+   * masses on screen reconcile. The dilution figures stay chemistry-only. */
+  bottledSolutionGrams?: number | null;
 };
 
 export function DilutionPanel({
@@ -37,15 +43,22 @@ export function DilutionPanel({
   altLiquidWaterGrams = 0,
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
+  bottledSolutionGrams = null,
 }: DilutionPanelProps) {
   const bottleMl = Number(bottleSizeMl);
   // Which intended uses the current target suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
+  const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   const bottleCount =
-    dilution && Number.isFinite(bottleMl) && bottleMl > 0
-      ? lsBottleCount(dilution.solutionGrams, bottleMl)
+    bottledGrams !== null && Number.isFinite(bottleMl) && bottleMl > 0
+      ? lsBottleCount(bottledGrams, bottleMl)
       : null;
+  // Show the mass the count is computed from whenever it differs from the solution row —
+  // otherwise "Finished solution 4,000 g" above "17 bottles" leaves the user's own
+  // arithmetic (15) contradicting the panel.
+  const showBottledRow =
+    dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
   return (
     <section className="panel panel--nested">
       <div className="panel__head">
@@ -102,6 +115,12 @@ export function DilutionPanel({
               <dt>Glycerin (retained)</dt>
               <dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd>
             </div>
+            {showBottledRow && bottledGrams !== null && (
+              <div className="results-grid__item">
+                <dt>≈ Bottled product</dt>
+                <dd>{formatWeight(bottledGrams, weightUnit)}</dd>
+              </div>
+            )}
             {bottleCount !== null && (
               <div className="results-grid__item">
                 <dt>≈ Bottles filled ({bottleSizeMl} ml)</dt>
@@ -111,7 +130,7 @@ export function DilutionPanel({
           </dl>
           {dilution.targetExceedsPaste && (unknownLiquidGrams === 0 || overDilutionCertain) && (
             <p className="results-hint" role="alert">
-              The paste is already more dilute than {dilution.soapConcentrationPercent}% — adding water
+              The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
               only lowers the concentration further.
             </p>
           )}
@@ -120,7 +139,7 @@ export function DilutionPanel({
             // paste, and it was derived from an ASSUMED water content. Asserting it can tell
             // the user a batch is finished when it still needs hundreds of grams of water.
             <p className="results-hint">
-              Can&apos;t tell whether {dilution.soapConcentrationPercent}% is reachable —{' '}
+              Can&apos;t tell whether {formatConcentrationPercent(dilution.soapConcentrationPercent)}% is reachable —{' '}
               {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
               declared water content. Declare its % water in Split liquid.
             </p>
@@ -155,10 +174,10 @@ export function DilutionPanel({
           <details className="results-hint dilution-uses">
             <summary>
               {suitedUses.length > 0
-                ? `At ${dilution.soapConcentrationPercent}% this suits ${suitedUses
+                ? `At ${formatConcentrationPercent(dilution.soapConcentrationPercent)}% this suits ${suitedUses
                     .map((u) => u.label.toLowerCase())
                     .join(', ')}`
-                : `No common use calls for ${dilution.soapConcentrationPercent}% — see the usual targets`}
+                : `No common use calls for ${formatConcentrationPercent(dilution.soapConcentrationPercent)}% — see the usual targets`}
             </summary>
             <dl className="dilution-uses__list">
               {LS_DILUTION_TARGETS.map((t) => (

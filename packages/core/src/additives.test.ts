@@ -259,7 +259,7 @@ describe('citric acid additive (auto-lye)', () => {
     expect([ls.typicalLow, ls.typicalHigh]).toEqual([1, 3]);
   });
 
-  it('carries stoichiometric neutralization factors (triprotic, anhydrous MW 192.123)', () => {
+  it('carries stoichiometric neutralization factors (triprotic, anhydrous MW 192.124)', () => {
     const factors = catalogEntryById('citric-acid')?.lyeNeutralization;
     // digits: 3 — the exact values are 0.6245530/0.8760794; a 4-digit pin on the rounded
     // figures would sit within 5e-5 of the tolerance edge.

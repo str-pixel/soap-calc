@@ -1,4 +1,5 @@
 import { NEG_SUPERFAT_FLOOR, type LyeType, type WaterMode } from '@soap-calc/core';
+import { kohBlendRangeFor } from './process';
 import type { RecipeSettings } from './recipe';
 
 // Re-exported so SettingsPanel bounds the slider from the same constant the core validates.
@@ -97,7 +98,12 @@ function waterInput(
 
 export function parseRecipeSettings(
   settings: RecipeSettings,
-  opts: { allowNegativeSuperfat?: boolean } = {},
+  opts: {
+    allowNegativeSuperfat?: boolean;
+    /** Accepted dual-lye KOH share (kohBlendRangeFor); defaults to the bar-soap 0–50 —
+     * the pre-existing contract for the legacy callers that pass no process. */
+    kohBlendRange?: readonly [number, number];
+  } = {},
 ): ParseSettingsResult {
   const errors: string[] = [];
   const minSuperfat = opts.allowNegativeSuperfat ? NEG_SUPERFAT_FLOOR : 0;
@@ -114,9 +120,16 @@ export function parseRecipeSettings(
   if (settings.lyeType === 'dual') {
     if (naohPurity.error) errors.push(naohPurity.error);
     if (kohPurity.error) errors.push(kohPurity.error);
+    // Default from the process registry, not a literal copy of the bar range — a
+    // process-less caller (tests; legacy imports route through processForLyeType → 'cp')
+    // must validate against the same [0,50] the CP definition owns, or narrowing the bar
+    // range would silently leave stragglers on a stale copy.
+    const [blendMin, blendMax] = opts.kohBlendRange ?? kohBlendRangeFor('cp');
     blend = parseNonNegative(settings.kohBlendPercent, 'KOH blend %');
     if (blend.error) errors.push(blend.error);
-    else if (blend.n! > 50) errors.push('KOH blend % must be between 0 and 50');
+    else if (blend.n! < blendMin || blend.n! > blendMax) {
+      errors.push(`KOH blend % must be between ${blendMin} and ${blendMax}`);
+    }
   }
 
   const waterParams = waterInput(settings, errors);

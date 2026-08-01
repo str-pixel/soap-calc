@@ -71,6 +71,26 @@ export type ProcessDefinition = {
   label: string;
   defaultSettings: Partial<RecipeSettings>;
   lyeChoices: LyeType[];
+  /** Accepted dual-lye KOH share of total alkali, [min, max] % by weight. Core accepts the
+   * chemistry-valid 0–100; this narrows it to the process's practice (roadmap "Dual-lye
+   * ratios", confirmed): bar soap runs KOH as a minor additive (95/5 NaOH/KOH, so 0–50),
+   * LS dual is KOH-primary (80/20 KOH/NaOH, so 50–100). Parser and blend input both read
+   * it via kohBlendRangeFor so the accepted range and the UI bound cannot drift.
+   *
+   * Legacy-draft policy — the line runs between DORMANT and ACTIVE blends:
+   * - DORMANT (lyeType is not 'dual'): the stored blend is filler the user never chose
+   *   (DEFAULT_SETTINGS seeded '5' invisibly under every pre-range LS draft). Left alone
+   *   it would blank the recipe with a bounds error on the first switch to dual, so
+   *   normalizeSettingsWithinProcess reseeds an out-of-range dormant blend to the
+   *   process default on load. No recipe information is lost — the value never fed math.
+   * - ACTIVE (lyeType IS 'dual'): the blend encoded a real alkali choice. No migration:
+   *   it surfaces the validation error with the settings preserved, the same
+   *   draft-safe-refusal shape as every other invalid setting. Silently clamping 5 → 50
+   *   would multiply the recipe's KOH share tenfold behind the user's back. Pinned by the
+   *   legacy-draft test in calculateRecipe.test.ts. (Process-less imports route by
+   *   processForLyeType, which reads the blend: KOH-primary dual infers ls, else cp —
+   *   either way the blend lands in a process whose range accepts it or errors honestly.) */
+  kohBlendRange: readonly [number, number];
   waterModeChoices: WaterMode[];
   capabilities: CapabilityKey[];
   finishing: 'cure' | 'sequester';
@@ -97,9 +117,15 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       waterMode: 'percent_of_oils',
       waterPercentOfOils: '33',
       soapingTempF: '125', // soapingTempRangeFor('cp').defaultF
+      // The bar 95/5 NaOH/KOH ratio (roadmap "Dual-lye ratios", confirmed). Declared
+      // per-process (not left to DEFAULT_SETTINGS) so the dormant-blend reseed in
+      // normalizeSettingsWithinProcess has a same-module source — recipe.ts imports this
+      // module, so reaching back for DEFAULT_SETTINGS would be a cycle.
+      kohBlendPercent: '5',
       processVariant: 'cp', // = variants[0].variant; pinned literally because defaultSettings is part of the record that defines variants[0]
     },
     lyeChoices: ['naoh', 'dual'],
+    kohBlendRange: [0, 50],
     waterModeChoices: ALL_WATER_MODES,
     capabilities: ['cpExtras'],
     finishing: 'cure',
@@ -132,9 +158,11 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       soapingTempF: '140', // soapingTempRangeFor('hp-lthp').defaultF — HP's default variant
       postCookSuperfatTotalPercent: '5',
       postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }],
+      kohBlendPercent: '5', // bar 95/5 NaOH/KOH — see the CP comment
       processVariant: 'hp-lthp', // = variants[0].variant; pinned literally because defaultSettings is part of the record that defines variants[0]
     },
     lyeChoices: ['naoh', 'dual'],
+    kohBlendRange: [0, 50],
     waterModeChoices: ALL_WATER_MODES,
     capabilities: ['postCook', 'hpVessel', 'afterCookStage'],
     finishing: 'cure',
@@ -183,7 +211,13 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     label: 'Liquid soap',
     defaultSettings: {
       lyeType: 'koh',
-      superfatPercent: '2',
+      // 0% in-cook: the whole 1–3% LS superfat budget is delivered post-cook (the 2%
+      // olive reserve below). Main and post-cook superfat COMPOUND — seeding 2% + 2%
+      // lands at ~3.96%, past the ~3% cloud/separation ceiling the app itself warns at.
+      superfatPercent: '0',
+      // Seeds a switch to dual lye at the documented LS ratio (80/20 KOH/NaOH) instead of
+      // the bar default '5', which sits outside LS's kohBlendRange.
+      kohBlendPercent: '80',
       waterMode: 'lye_water_ratio',
       lyeWaterRatio: '2',
       soapingTempF: '95', // soapingTempRangeFor('ls-cpls').defaultF — LS's default variant
@@ -192,6 +226,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       processVariant: 'ls-cpls', // = variants[0].variant; pinned literally because defaultSettings is part of the record that defines variants[0]
     },
     lyeChoices: ['koh', 'dual'],
+    kohBlendRange: [50, 100],
     waterModeChoices: ALL_WATER_MODES,
     capabilities: ['postCook', 'dilution', 'neutralize', 'preserve', 'negativeSuperfat', 'solutionDosing', 'afterCookStage'],
     finishing: 'sequester',
@@ -311,13 +346,29 @@ export function processOffers(process: ProcessId, capability: CapabilityKey): bo
 }
 
 
-/** The process a legacy / process-less recipe belongs to, inferred from its alkali. */
-export function processForLyeType(lyeType: unknown): ProcessId {
-  return lyeType === 'koh' ? 'ls' : 'cp';
+/** The process a legacy / process-less recipe belongs to, inferred from its alkali.
+ * KOH → ls. Dual is ambiguous, so the blend disambiguates: a KOH-primary blend (> 50%)
+ * only fits LS's [50,100] range and infers ls; at/below 50 — including the shave 50/50
+ * edge, absent blends, and junk — the bar route stays, where those blends are valid.
+ * Without this, a new-format LS dual file (blend 80) with a missing/foreign process tag
+ * would park in the CP tab, whose [0,50] range refuses the blend with no fix possible. */
+export function processForLyeType(lyeType: unknown, kohBlendPercent?: unknown): ProcessId {
+  if (lyeType === 'koh') return 'ls';
+  if (lyeType === 'dual') {
+    const blend = Number(kohBlendPercent);
+    if (Number.isFinite(blend) && blend > 50) return 'ls';
+  }
+  return 'cp';
 }
 
 export function defaultsForProcess(process: ProcessId): Partial<RecipeSettings> {
   return PROCESS_DEFINITIONS[process].defaultSettings;
+}
+
+/** The process's accepted dual-lye KOH share, [min, max] % of total alkali by weight.
+ * See ProcessDefinition.kohBlendRange for the grounding. */
+export function kohBlendRangeFor(process: ProcessId): readonly [number, number] {
+  return PROCESS_DEFINITIONS[process].kohBlendRange;
 }
 
 /**
@@ -340,14 +391,28 @@ export function normalizeSettingsWithinProcess(
   const variantOk =
     isProcessVariantId(settings.processVariant) &&
     processProfileById(settings.processVariant).process === process;
-  if (lyeOk && variantOk) return settings;
+  // `?? def.lyeChoices[0]` is unreachable today (every process sets an explicit
+  // defaultSettings.lyeType) but defaultSettings is a Partial, so a future process that
+  // omits it would otherwise fall through to `undefined`. Kept as a defensive default.
+  const lyeType = lyeOk ? settings.lyeType : (def.defaultSettings.lyeType ?? def.lyeChoices[0]);
+  // DORMANT blend repair (see kohBlendRange's legacy-draft policy): when the RESOLVED lye
+  // type is not 'dual', the stored blend is filler that never fed math — an out-of-range
+  // value (the pre-range '5' under every legacy LS draft) reseeds to the process default
+  // so the first switch to dual starts legal instead of blanking the recipe. An ACTIVE
+  // dual blend is a recipe decision and is never rewritten here; the parser owns it.
+  const [blendMin, blendMax] = def.kohBlendRange;
+  const blendNum = Number(settings.kohBlendPercent);
+  const blendOk =
+    lyeType === 'dual' ||
+    (Number.isFinite(blendNum) && blendNum >= blendMin && blendNum <= blendMax);
+  if (lyeOk && variantOk && blendOk) return settings;
   return {
     ...settings,
-    // `?? def.lyeChoices[0]` is unreachable today (every process sets an explicit
-    // defaultSettings.lyeType) but defaultSettings is a Partial, so a future process that
-    // omits it would otherwise fall through to `undefined`. Kept as a defensive default.
-    lyeType: lyeOk ? settings.lyeType : (def.defaultSettings.lyeType ?? def.lyeChoices[0]),
+    lyeType,
     processVariant: variantOk ? settings.processVariant : defaultVariantFor(process),
+    kohBlendPercent: blendOk
+      ? settings.kohBlendPercent
+      : (def.defaultSettings.kohBlendPercent ?? settings.kohBlendPercent),
   };
 }
 
