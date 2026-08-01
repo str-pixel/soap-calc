@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
+import { lsMethodForTemp } from '@soap-calc/core';
 import { ProcessGuidePanel } from './ProcessGuidePanel';
 
 afterEach(cleanup);
@@ -37,6 +38,43 @@ test('LS shows the ambient no-cook note, like CP', () => {
   render(<ProcessGuidePanel process="ls" processVariant="ls" />);
   expect(screen.getByText(/comfortable working temperature/)).toBeTruthy();
   expect(screen.queryByText('trace')).toBeNull();
+});
+
+test('LS: renders the derived method steps (high temp at 215) with the vessel mandate', () => {
+  render(
+    <ProcessGuidePanel
+      process="ls"
+      processVariant="ls"
+      lsMethod={lsMethodForTemp(215)}
+      ls30Min={false}
+    />,
+  );
+  expect(screen.getByText(/2× the total recipe volume/)).toBeTruthy();
+  expect(screen.getByText(/High-temp LS/)).toBeTruthy();
+});
+
+test('LS: 30-minute note only when the package is present on high temp', () => {
+  render(
+    <ProcessGuidePanel
+      process="ls"
+      processVariant="ls"
+      lsMethod={lsMethodForTemp(215)}
+      ls30Min={true}
+    />,
+  );
+  expect(screen.getByText(/30-minute no-paste/i)).toBeTruthy();
+});
+
+test('LS: cold method renders CPLS steps and no cook-stage list', () => {
+  render(
+    <ProcessGuidePanel
+      process="ls"
+      processVariant="ls"
+      lsMethod={lsMethodForTemp(80)}
+      ls30Min={false}
+    />,
+  );
+  expect(screen.getByText(/12–48 hours/)).toBeTruthy();
 });
 
 test('an invalid processVariant renders nothing instead of throwing', () => {

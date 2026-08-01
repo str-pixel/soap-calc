@@ -467,7 +467,12 @@ export default function App() {
             />
             <FattyAcidPanel result={vm.fattyAcids} />
             <FormulationInsightsPanel insights={vm.insights} />
-            <ProcessGuidePanel process={process} processVariant={settings.processVariant} />
+            <ProcessGuidePanel
+              process={process}
+              processVariant={settings.processVariant}
+              lsMethod={vm.lsMethod}
+              ls30Min={vm.ls30Min}
+            />
             <TroubleshootingPanel process={process} />
           </div>
         </main>
