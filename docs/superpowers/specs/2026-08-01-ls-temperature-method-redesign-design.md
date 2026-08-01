@@ -45,7 +45,7 @@ Slider range **60–220 °F**. 220 is the sourced ceiling ("not advisable to use
 | 100–120 | gap → owned by **low temp** | Below the sourced band; copy says so. |
 | 120–160 | **Low temp**, recommended sub-band 140–160 | LS:705, LS:2415; recommended 140–160 (LS:2255). |
 | 160–215 | gap → owned by **high temp** | Everything the source does here is high-temp-family work: coconut-reduced HTLS 150–175 (LS:3542), 30-HTLS dilution 170–180 (LS:2859). Copy: "running the high-temp method below its 215 start — expect slower stage progression." |
-| 215–220 | **High temp** | Start 215–220 (LS:2422, LS:2363, LS:2464). |
+| 215–220 | **High temp** (220 inclusive) | Start 215–220 (LS:2422, LS:2363, LS:2464). |
 
 Gap ownership is an explicit table — there is **no** nearest-zone rule (a nearest rule puts 180 °F
 in low temp, which contradicts the source). The 160–215 gap is a quarter of the slider and is the
@@ -112,8 +112,9 @@ effects (guide note, sequester clause) are appended in web. Trigger: recipe cont
 split-liquid glycerin rows and the glycerin additive (`lsGlycerinSolvent` wiring) — **and** (salt
 **or** sodium lactate). Sugar strengthens the match but never gates it. Verified against all twelve
 30-HTLS recipes in the source (pages 488–511): every one carries glycerin + salt-or-sodium-lactate;
-sugar varies (LS:3275 gives the definitional pair; LS:2551 says the additives are individually not
-mandatory). When detected, the high-temp guide shows the 30-min note and the sequester line adds the
+sugar varies (LS:3271 gives the definitional glycerin+salt pair; LS:2723's formulating guide gives
+the salt-**or**-sodium-lactate alternative the predicate encodes; LS:2551 says the additives are
+individually not mandatory). When detected, the high-temp guide shows the 30-min note and the sequester line adds the
 usable-once-cooled clause.
 
 ## Coconut-heavy insight
@@ -136,7 +137,7 @@ volume is the stricter reading and the one marked mandatory).
   processes, so the tab removal is free.
 - Saved recipes holding `ls-*` variant ids normalize silently to `'ls'` through the existing
   unknown-variant path; `soapingTempF` is a separate field and is preserved. All historically
-  storable LS temps (95–215) fit 60–220, so no clamp hints appear. No further migration (user decision).
+  storable LS temps (60–215) fit 60–220, so no clamp hints appear. No further migration (user decision).
 
 ## UI rendering
 
