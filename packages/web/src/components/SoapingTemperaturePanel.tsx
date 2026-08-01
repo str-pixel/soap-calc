@@ -168,7 +168,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
         // off the °C display value — the slider's real span is 60–220 °F and °C rounding
         // would drift the edges off their sourced figures.
         <div className="temp-zones">
-          <div className="temp-zones__track">
+          <div className="temp-zones__track" aria-hidden="true">
             <span
               className={`temp-zones__zone${
                 method.method === 'cold' ? ' temp-zones__zone--active' : ''
@@ -262,7 +262,8 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
             Cold-process liquid soap uses no external heat — combine at a comfortable working
             temperature and let the paste saponify on its own schedule.
           </p>
-        ) : method.method === 'lowtemp' ? (
+        ) : // Dual-unit per the panel's convention; figures and clauses per the redesign spec.
+        method.method === 'lowtemp' ? (
           <p className="results-hint">
             Hold {fToC(LS_ZONES.lowMinF)}–{fToC(LS_ZONES.lowMaxF)} °C ({LS_ZONES.lowMinF}–
             {LS_ZONES.lowMaxF} °F) — {fToC(LS_ZONES.lowRecommendedMinF)}–{fToC(LS_ZONES.lowMaxF)}{' '}

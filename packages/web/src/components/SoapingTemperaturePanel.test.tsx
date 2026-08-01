@@ -88,6 +88,43 @@ test('LS: draws all three zone markers with the low-temp recommended sub-band', 
   expect(screen.getByText('high temp')).toBeTruthy();
 });
 
+test('LS: at 150 °F the low-temp zone carries --active and the high zone does not', () => {
+  const { container } = renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  // Render order in SoapingTemperaturePanel.tsx: cold, low, recommended (a sub-band of
+  // low, not a fifth top-level zone), high — .temp-zones__zone is the shared base class,
+  // so this is the only way to address a specific zone; none carries a --cold/--low/--high
+  // class of its own.
+  const zones = container.querySelectorAll('.temp-zones__zone');
+  expect(zones).toHaveLength(4);
+  const [cold, low, recommended, high] = Array.from(zones);
+  expect(cold.classList.contains('temp-zones__zone--active')).toBe(false);
+  expect(low.classList.contains('temp-zones__zone--active')).toBe(true);
+  expect(recommended.classList.contains('temp-zones__zone--active')).toBe(false);
+  expect(high.classList.contains('temp-zones__zone--active')).toBe(false);
+});
+
+test('LS: at 215 °F the high-temp zone carries --active', () => {
+  const { container } = renderPanel({ processVariant: 'ls', soapingTempF: '215' }, 'ls');
+  const zones = container.querySelectorAll('.temp-zones__zone');
+  const [cold, low, , high] = Array.from(zones);
+  expect(high.classList.contains('temp-zones__zone--active')).toBe(true);
+  expect(cold.classList.contains('temp-zones__zone--active')).toBe(false);
+  expect(low.classList.contains('temp-zones__zone--active')).toBe(false);
+});
+
+test('LS: the recommended sub-band renders inside the strip', () => {
+  const { container } = renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  expect(container.querySelector('.temp-zones__zone--recommended')).toBeTruthy();
+});
+
+test('LS: the low-temp zone is positioned at the sourced 120–160 °F edges (37.5%–62.5% of 60–220 °F)', () => {
+  const { container } = renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  const zones = container.querySelectorAll('.temp-zones__zone');
+  const low = zones[1] as HTMLElement;
+  expect(low.style.left).toBe('37.5%');
+  expect(low.style.width).toBe('25%');
+});
+
 test('CP: unchanged — no zone markers', () => {
   renderPanel({ soapingTempF: '125' }, 'cp');
   expect(screen.queryByText('low temp')).toBeNull();
