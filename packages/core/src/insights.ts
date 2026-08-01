@@ -917,6 +917,27 @@ export const INSIGHT_RULES: InsightRule[] = [
     },
   },
   {
+    code: 'ls_coconut_hot_cook',
+    processes: ['ls'],
+    // Coconut-heavy LS expands hard in a hot cook (sourced; see the redesign spec). Fires
+    // from 150 °F REGARDLESS of zone: the compliant reduced range 150–175 dips into the
+    // low-temp band on purpose, and an insight keyed to the high zone would vanish the
+    // moment the user follows it. isCoconutHeavy carries its own FA-coverage gate.
+    check: (input) => {
+      if (!isCoconutHeavy(input)) return null;
+      if (input.soapingTempF === undefined || input.soapingTempF < 150) return null;
+      return {
+        level: 'warning',
+        code: 'ls_coconut_hot_cook',
+        message:
+          'Coconut-heavy liquid soap expands hard in a hot cook. If running the high-temp method, ' +
+          'reduce the hold to 150–175 °F (that range dips into the low-temp band on purpose) and ' +
+          'use a vessel at least 3× the total recipe volume; pure-coconut no-paste recipes should ' +
+          'not start above 180 °F.',
+      };
+    },
+  },
+  {
     code: 'hp_thick_phase_suppressant',
     processes: ['hp'],
     check: (input) => {

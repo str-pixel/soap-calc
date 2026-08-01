@@ -638,6 +638,38 @@ describe('ls_salt_thickening advisory (qualitative, LS-only)', () => {
   });
 });
 
+describe('ls_coconut_hot_cook', () => {
+  const coco = {
+    ...base,
+    process: 'ls' as const,
+    fattyAcids: { lauric: 45, myristic: 12 },
+    fattyAcidCoveragePercent: 100,
+  };
+  it('warns a coconut-heavy LS recipe holding ≥150 °F, regardless of zone', () => {
+    const insight = analyzeFormulation({ ...coco, soapingTempF: 215 }).find(
+      (i) => i.code === 'ls_coconut_hot_cook',
+    );
+    expect(insight?.level).toBe('warning');
+    expect(insight?.message).toMatch(/150–175 °F/);
+    expect(insight?.message).toMatch(/3× the total recipe volume/);
+    expect(insight?.message).toMatch(/180 °F/);
+    // Fires across the zone boundary so complying (215 → 165) can't silence it.
+    expect(has({ ...coco, soapingTempF: 165 }, 'ls_coconut_hot_cook')).toBe(true);
+    expect(has({ ...coco, soapingTempF: 150 }, 'ls_coconut_hot_cook')).toBe(true);
+  });
+  it('stays quiet below 150 °F, for non-coconut recipes, at low FA coverage, and outside LS', () => {
+    expect(has({ ...coco, soapingTempF: 149 }, 'ls_coconut_hot_cook')).toBe(false);
+    expect(has({ ...coco, soapingTempF: undefined }, 'ls_coconut_hot_cook')).toBe(false);
+    expect(
+      has({ ...coco, fattyAcids: { oleic: 70 }, soapingTempF: 215 }, 'ls_coconut_hot_cook'),
+    ).toBe(false);
+    expect(
+      has({ ...coco, fattyAcidCoveragePercent: 40, soapingTempF: 215 }, 'ls_coconut_hot_cook'),
+    ).toBe(false);
+    expect(has({ ...coco, process: 'hp', soapingTempF: 215 }, 'ls_coconut_hot_cook')).toBe(false);
+  });
+});
+
 describe('LS quality remap + dual-lye recommender', () => {
   const ls: FormulationAnalysisInput = {
     ...base,
@@ -982,10 +1014,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 37 unique codes', () => {
+  it('declares 38 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(37);
-    expect(new Set(declared).size).toBe(37);
+    expect(declared).toHaveLength(38);
+    expect(new Set(declared).size).toBe(38);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1097,6 +1129,12 @@ describe('rule registry consistency', () => {
     ls_castor_no_lather: {
       fattyAcids: { ricinoleic: 6 },
       fattyAcidCoveragePercent: 100,
+      process: 'ls',
+    },
+    ls_coconut_hot_cook: {
+      fattyAcids: { lauric: 45, myristic: 12 },
+      fattyAcidCoveragePercent: 100,
+      soapingTempF: 215,
       process: 'ls',
     },
     ls_dual_lye_recommendation: {

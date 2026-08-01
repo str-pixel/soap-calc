@@ -12,7 +12,7 @@ const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
   bubbly: 10, cleansing: 0, condition: 65, hardness: 30, longevity: 30, creamy: 30, ...over,
 });
 
-/** The 37 insight codes analyzeFormulation can emit today, transcribed from insights.ts.
+/** The 38 insight codes analyzeFormulation can emit today, transcribed from insights.ts.
  * Slice 3's rule-catalog conversion must keep every one of these reachable. */
 const ALL_CODES = [
   'dual_lye_advanced',
@@ -31,6 +31,7 @@ const ALL_CODES = [
   'large_test_batch',
   'low_cleansing_expected',
   'ls_castor_no_lather',
+  'ls_coconut_hot_cook',
   'ls_dual_lye_recommendation',
   'ls_lye_excess',
   'ls_no_superfat_buffer',
