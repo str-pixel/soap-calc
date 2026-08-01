@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { catalogEntryById, effectiveCatalogEntry } from './additives.js';
 import { troubleshootingFor } from './troubleshooting.js';
 
 describe('troubleshootingFor', () => {
@@ -34,6 +35,35 @@ describe('troubleshootingFor', () => {
     expect(gel!.fix).toMatch(/salt/i);
     expect(gel!.cause).not.toMatch(/over-?dilut/i);
     expect(gel!.fix).not.toMatch(/less water/i);
+  });
+
+  it('runs the salt curve in the same direction as the rest of the app — the gel is the PEAK', () => {
+    // The salt curve climbs to a peak and then declines: past the peak, MORE salt thins the
+    // soap again. So a salt-caused gel means the recipe is sitting at the peak, and the
+    // reference's remedy is to carry on ALONG the curve (accepting the reduced lather,
+    // opacity and tacky feel a high-salt soap carries), not to back off it.
+    //
+    // A previous revision had this exactly inverted — it blamed the gel on being "past the
+    // peak" and told the user to work "back down" the curve, which under its own cause
+    // clause meant moving toward the peak, i.e. thicker. It also contradicted the two other
+    // places the app states this same curve, which is what this test now ties together.
+    const gel = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom))!;
+    expect(gel.cause).toMatch(/peak of the salt curve/i);
+    expect(gel.cause).not.toMatch(/past the peak/i);
+    expect(gel.fix).not.toMatch(/back down|back off/i);
+    // The catalog's statement of the same curve, pinned in agreement.
+    const saltHazards = effectiveCatalogEntry(catalogEntryById('salt')!, 'ls').hazards ?? [];
+    expect(saltHazards.join(' ')).toMatch(/more salt thins/i);
+  });
+
+  it('keeps the unfinished-paste cause on the oily-layer entry, where the reference puts it', () => {
+    // Diluting before saponification finishes leaves unsaponified fat that floats as an oil
+    // layer (and can read as a lye excess). Moving it off the gel entry was right; dropping
+    // it from the app altogether was not — the clarity test before diluting is the
+    // reference's named remedy and appears in the steps of every LS method.
+    const oily = troubleshootingFor('ls').find((e) => /oily layer|floats/i.test(e.symptom))!;
+    expect(oily.cause).toMatch(/dilut/i);
+    expect(oily.fix).toMatch(/clarity test/i);
   });
 
   it('is process-gated — HP content differs from CP and LS content', () => {
