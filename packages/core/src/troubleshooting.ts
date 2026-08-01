@@ -53,8 +53,8 @@ export const TROUBLESHOOTING: Record<'cp' | 'hp' | 'ls', readonly Troubleshootin
     {
       symptom: 'Diluted soap turns stringy or sets up like gelatin instead of staying liquid',
       cause:
-        'Not enough dilution water — the soap is still above the concentration this recipe can hold as a liquid, and high-oleic recipes gel until well below coconut-heavy levels. A paste pulled off the cook before saponification finished dilutes stringy too.',
-      fix: 'Stir in more hot water in small increments until it thins and stays liquid — a high-oleic recipe needs much more than a coconut-heavy one. If it stays stringy however much you add, return the paste to the cook and finish saponification first.',
+        'Usually the alkali blend, not the water: too large a NaOH share in a recipe already high in stearic and palmitic sets those sodium soaps to a semi-solid gel as the soap sits. Too much salt or thickener does the same once past the peak of the salt curve. Recipes low in lauric and myristic are the most prone to both.',
+      fix: 'Cut the NaOH share next batch and check the fatty-acid profile against it; if salt or a gum was the cause, work back down the salt curve to thin it. Extra water can loosen a gelled dual-lye soap but rarely clears it completely — the soap still cleans, so it is usable as it is.',
     },
     {
       symptom: 'A separate oily layer floats on top of the paste or the diluted soap',

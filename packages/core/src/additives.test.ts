@@ -396,6 +396,18 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
       .toEqual([1, 25, 'after_cook', 'solution', ['ls']]);
   });
 
+  it('guar and HEC: thickeners dosed on the finished solution, like their after-cook siblings', () => {
+    // Both are dispersed into the DILUTED, COOLED soap at a 0.5–1% concentration — the same
+    // after-dilution timing, and the same basis, as pearlizer and wd-shea above. On the oil
+    // basis the dose silently shrinks with dilution: 1% of 1,000 g of oils is 10 g, where 1%
+    // of the ~3,000 g of solution the gum is actually thickening is 30 g.
+    for (const id of ['guar', 'hec']) {
+      const e = catalogEntryById(id);
+      expect([e?.typicalLow, e?.typicalHigh, e?.defaultStage, e?.doseBasis, e?.processes])
+        .toEqual([0.5, 1, 'after_cook', 'solution', ['ls']]);
+    }
+  });
+
   it('finished soap extends to LS', () => {
     expect(catalogEntryById('finished-soap')?.processes).toEqual(['hp', 'ls']);
     expect(catalogEntriesForProcess('ls').some((e) => e.id === 'finished-soap')).toBe(true);

@@ -14,26 +14,26 @@ describe('troubleshootingFor', () => {
     }
   });
 
-  it('coaches MORE water for LS soap that gels/turns stringy — never less', () => {
-    // Grounded direction: soap held above its recipe's max concentration thickens or sets
-    // solid (LS_MINIMUM_DILUTION_GUIDE), and high-oleic recipes form a stringy gel until
-    // the concentration drops below their ~25% ceiling. The fix is always to ADD water.
-    const gelEntry = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom));
-    expect(gelEntry).toBeDefined();
-    expect(gelEntry!.cause).not.toMatch(/over-?dilut/i);
-    expect(gelEntry!.cause).toMatch(/not enough|too little|above/i);
-    expect(gelEntry!.fix).toMatch(/more (hot )?water/i);
-    expect(gelEntry!.fix).not.toMatch(/less water/i);
-  });
-
-  it('keeps the under-cooked paste as a secondary cause of a stringy dilution', () => {
-    // The inversion fix must not over-correct into a single cause: a paste pulled off the
-    // cook before saponification finishes also dilutes stringy, and its remedy (finish
-    // the cook) is different from the water one. Both directions must be present, without
-    // reintroducing the banned less-water advice (guarded above).
-    const gelEntry = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom));
-    expect(gelEntry!.cause).toMatch(/cook/i);
-    expect(gelEntry!.fix).toMatch(/cook/i);
+  it('blames a gelled/stringy LS dilution on sodium soaps or over-thickening — not on the dilution water', () => {
+    // The two causes the reference actually gives: too high a NaOH share in a recipe heavy
+    // in stearic/palmitic (those sodium soaps set to a semi-solid gel as the soap sits), and
+    // salt or another thickener pushed past the peak of the salt curve. Low lauric/myristic
+    // recipes are the most prone.
+    //
+    // Two earlier revisions of this entry both diagnosed the dilution water and disagreed
+    // only about the direction — "over-diluted, use less", then "not enough water, add
+    // more". Neither is what makes a soap gel. Diluting a paste before saponification
+    // finishes IS a real fault, but it shows up as the oily layer in the next entry, not as
+    // a gel, so it must not be smuggled back in here either.
+    const gel = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom));
+    expect(gel).toBeDefined();
+    expect(gel!.cause).toMatch(/naoh|sodium/i);
+    expect(gel!.cause).toMatch(/stearic|palmitic/i);
+    expect(gel!.cause).toMatch(/salt|thicken/i);
+    expect(gel!.fix).toMatch(/naoh|sodium/i);
+    expect(gel!.fix).toMatch(/salt/i);
+    expect(gel!.cause).not.toMatch(/over-?dilut/i);
+    expect(gel!.fix).not.toMatch(/less water/i);
   });
 
   it('is process-gated — HP content differs from CP and LS content', () => {

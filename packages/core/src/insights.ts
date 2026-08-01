@@ -791,23 +791,31 @@ export const INSIGHT_RULES: InsightRule[] = [
   {
     code: 'ls_no_superfat_buffer',
     processes: ['ls'],
-    // The floor of the LS 1–3% working band. Reachable from the defaults: LS seeds main
-    // superfat 0% + post-cook 2%, so deleting the optional post-cook row leaves the lye
-    // set to exactly saponify the oils — a state no other rule covered (no_superfat_margin
-    // is CP/HP-gated, ls_lye_excess needs superfat < 0, ls_superfat_high needs > 3).
+    // Exact lye: the combined superfat is 0, so the alkali is set to saponify every gram of
+    // oil. Reachable from the defaults — LS seeds main superfat 0% + post-cook 2%, so
+    // deleting the optional post-cook row lands here — and no other rule covers it
+    // (no_superfat_margin is CP/HP-gated, ls_lye_excess needs superfat < 0,
+    // ls_superfat_high needs > 3).
+    //
+    // INFO, and only at exactly 0. Exact-lye liquid soap is a documented configuration, and
+    // the no-paste high-temp method publishes a 0–3% superfat range — so warning here would
+    // call a published practice a defect. The trade-off is still worth stating once, because
+    // absorbing SAP variation is the whole reason a superfat exists. Anything above 0 keeps
+    // some buffer and is inside that range, so it says nothing.
+    //
     // A NEGATIVE superfat is exempt: that is the deliberate lye-excess workflow, and
     // ls_lye_excess already carries its neutralization guidance.
     check: (input) => {
       const effective = lsEffectiveSuperfatPercent(input);
-      if (input.superfatPercent >= 0 && effective < 1) {
+      if (input.superfatPercent >= 0 && effective <= 0) {
         return {
-          level: 'warning',
+          level: 'info',
           code: 'ls_no_superfat_buffer',
           message:
-            'Effective superfat is below 1% — the lye nearly matches the oils exactly, so normal ' +
-            'SAP variation or a small scale error can leave free alkali in the finished soap. Keep ' +
-            'the combined LS superfat around 1–3%, or run a deliberate small lye excess and ' +
-            'neutralize after the cook.',
+            'Exact lye — no superfat buffer. That is a deliberate choice in some liquid-soap ' +
+            'methods, but nothing is left to absorb normal SAP variation or a small scale error, ' +
+            'so either can leave free alkali in the finished soap. Most liquid soap keeps a ' +
+            'combined 1–3% superfat, or runs a small lye excess and neutralizes after the cook.',
         };
       }
       return null;

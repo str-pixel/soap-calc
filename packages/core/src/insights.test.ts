@@ -912,21 +912,32 @@ describe('LS split-liquid advisories (LS audit 2026-07-27)', () => {
     // The LS default seeds main superfat 0% + post-cook 2%; deleting the optional
     // post-cook row leaves lye computed to exactly saponify 100% of the oils — a state
     // no LS rule covered (no_superfat_margin is CP/HP-gated, ls_lye_excess needs < 0,
-    // ls_superfat_high needs > 3). Below the 1–3% working band's floor, warn.
-    it('warns when the effective superfat carries no real buffer', () => {
+    // ls_superfat_high needs > 3).
+    //
+    // INFO, not warning, and only at exact lye. Exact-lye liquid soap is a documented
+    // configuration, and the no-paste high-temp method publishes a 0–3% superfat range, so
+    // flagging 0% as a fault would contradict the practice the app is modelling. What is
+    // worth saying is the trade-off: nothing absorbs SAP variation. A partial buffer (0.5%)
+    // is inside that published range and gets no note at all.
+    it('notes exact lye at info level, naming the trade-off and both remedies', () => {
       const insight = analyzeFormulation({ ...base, process: 'ls', superfatPercent: 0 }).find(
         (i) => i.code === 'ls_no_superfat_buffer',
       );
-      expect(insight?.level).toBe('warning');
+      expect(insight?.level).toBe('info');
       expect(insight?.message).toMatch(/lye excess/i);
       expect(insight?.message).toMatch(/1–3%/);
+      expect(insight?.message).toMatch(/SAP/i);
     });
 
-    it('stays quiet from 1% effective upward — post-cook oil counts toward the buffer', () => {
+    it('stays quiet once any buffer exists, including a partial one inside the 0–3% band', () => {
       expect(
         has({ ...base, process: 'ls', superfatPercent: 0, postCookSuperfatPercent: 2 }, 'ls_no_superfat_buffer'),
       ).toBe(false);
       expect(has({ ...base, process: 'ls', superfatPercent: 1 }, 'ls_no_superfat_buffer')).toBe(false);
+      expect(has({ ...base, process: 'ls', superfatPercent: 0.5 }, 'ls_no_superfat_buffer')).toBe(false);
+      expect(
+        has({ ...base, process: 'ls', superfatPercent: 0, postCookSuperfatPercent: 0.5 }, 'ls_no_superfat_buffer'),
+      ).toBe(false);
     });
 
     it('yields to the deliberate lye-excess workflow (negative superfat)', () => {
