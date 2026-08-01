@@ -32,4 +32,5 @@ export * from './workability.js';
 export * from './workability-calibration.js';
 export * from './cure.js';
 export * from './cook-stages.js';
+export * from './ls-method.js';
 export * from './troubleshooting.js';
