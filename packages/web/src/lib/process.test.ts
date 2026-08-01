@@ -10,6 +10,7 @@ import {
   allProcessVariantIds,
   processOffers,
   kohBlendRangeFor,
+  soapingTempRangeFor,
   type ProcessVariantId,
 } from './process';
 import { effectiveSuperfatPercent } from '@soap-calc/core';
@@ -54,7 +55,7 @@ describe('process definitions', () => {
     const dualInLs = {
       ...DEFAULT_SETTINGS,
       lyeType: 'dual' as const,
-      processVariant: 'ls-cpls' as const,
+      processVariant: 'ls' as const,
     };
     expect(normalizeSettingsWithinProcess(dualInLs, 'ls')).toBe(dualInLs);
   });
@@ -86,7 +87,7 @@ describe('process definitions', () => {
       ...DEFAULT_SETTINGS,
       lyeType: 'koh' as const,
       kohBlendPercent: '5',
-      processVariant: 'ls-cpls' as const,
+      processVariant: 'ls' as const,
     };
     expect(normalizeSettingsWithinProcess(legacyLs, 'ls').kohBlendPercent).toBe('80');
     const strayCp = {
@@ -106,7 +107,7 @@ describe('process definitions', () => {
       ...DEFAULT_SETTINGS,
       lyeType: 'dual' as const,
       kohBlendPercent: '25',
-      processVariant: 'ls-cpls' as const,
+      processVariant: 'ls' as const,
     };
     expect(normalizeSettingsWithinProcess(legacyDual, 'ls').kohBlendPercent).toBe('25');
   });
@@ -116,7 +117,7 @@ describe('process definitions', () => {
       ...DEFAULT_SETTINGS,
       lyeType: 'koh' as const,
       kohBlendPercent: '80',
-      processVariant: 'ls-cpls' as const,
+      processVariant: 'ls' as const,
     };
     expect(normalizeSettingsWithinProcess(fine, 'ls')).toBe(fine);
   });
@@ -176,7 +177,7 @@ describe('process sub-variant defaults', () => {
   it('seeds each process defaultSettings.processVariant to that process default variant', () => {
     expect(PROCESS_DEFINITIONS.cp.defaultSettings.processVariant).toBe('cp');
     expect(PROCESS_DEFINITIONS.hp.defaultSettings.processVariant).toBe('hp-lthp');
-    expect(PROCESS_DEFINITIONS.ls.defaultSettings.processVariant).toBe('ls-cpls');
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.processVariant).toBe('ls');
   });
 
   it('normalizeSettingsWithinProcess resets processVariant when its process no longer matches (HP→CP)', () => {
@@ -186,7 +187,7 @@ describe('process sub-variant defaults', () => {
 
   it('normalizeSettingsWithinProcess resets processVariant when switching CP→LS', () => {
     const cpSettings = { ...DEFAULT_SETTINGS, processVariant: 'cp' as const };
-    expect(normalizeSettingsWithinProcess(cpSettings, 'ls').processVariant).toBe('ls-cpls');
+    expect(normalizeSettingsWithinProcess(cpSettings, 'ls').processVariant).toBe('ls');
   });
 
   it('normalizeSettingsWithinProcess leaves a same-process variant untouched (LTHP stays LTHP within HP)', () => {
@@ -276,6 +277,16 @@ describe('definitions own their variants (slice 2)', () => {
     for (const p of ['cp', 'hp', 'ls'] as const) {
       expect(processProfilesFor(p)).toEqual([...PROCESS_DEFINITIONS[p].variants]);
     }
-    expect(allProcessVariantIds().length).toBe(8);
+    expect(allProcessVariantIds().length).toBe(5);
+  });
+
+  it('LS is a single variant: full slider 60–220, default 150, nullable finish', () => {
+    expect(PROCESS_DEFINITIONS.ls.variants.map((v) => v.variant)).toEqual(['ls']);
+    expect(soapingTempRangeFor('ls')).toEqual({ minF: 60, maxF: 220, defaultF: 150 });
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.soapingTempF).toBe('150');
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.processVariant).toBe('ls');
+    const ls = PROCESS_DEFINITIONS.ls.variants[0];
+    expect(ls.finish).toBeNull();
+    expect(ls.temp).toBeNull();
   });
 });

@@ -570,7 +570,7 @@ describe('recipe file processVariant', () => {
     const parsed = parseRecipeFile(raw);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.data.settings.processVariant).toBe('ls-cpls');
+    expect(parsed.data.settings.processVariant).toBe('ls');
   });
 
   it('rejects an invalid processVariant string on import to the lye-inferred default', () => {

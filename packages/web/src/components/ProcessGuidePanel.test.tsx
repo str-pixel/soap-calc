@@ -29,9 +29,13 @@ test('CP shows the soaping-temp note and no cook stages', () => {
   expect(screen.queryByText(/stop mixing once the batter reaches neat/)).toBeNull();
 });
 
-test('an LS variant shows a hedged temp and no cook stages', () => {
-  render(<ProcessGuidePanel process="ls" processVariant="ls-lowtemp" />);
-  expect(screen.getByText(/≈.*°F.*\(estimated\)/)).toBeTruthy();
+// The per-variant hedged-temp case (a heated LS variant with an unverified in-cook target)
+// no longer exists: LS collapsed to a single ambient variant (temp: null) whose method is
+// now derived from the hold temperature — see core's ls-method.test.ts, which owns that
+// ground (2026-08-01 LS temperature-method redesign, task 3).
+test('LS shows the ambient no-cook note, like CP', () => {
+  render(<ProcessGuidePanel process="ls" processVariant="ls" />);
+  expect(screen.getByText(/comfortable working temperature/)).toBeTruthy();
   expect(screen.queryByText('trace')).toBeNull();
 });
 

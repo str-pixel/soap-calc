@@ -1,4 +1,10 @@
-import type { LyeType, WaterMode } from '@soap-calc/core';
+import {
+  LS_TEMP_DEFAULT_F,
+  LS_TEMP_MAX_F,
+  LS_TEMP_MIN_F,
+  type LyeType,
+  type WaterMode,
+} from '@soap-calc/core';
 import type { RecipeSettings } from './recipe';
 
 export type ProcessId = 'cp' | 'hp' | 'ls';
@@ -22,10 +28,7 @@ export type ProcessVariantId =
   | 'hp-lthp'
   | 'hp-hthp'
   | 'hp-fluid' // hot-process variants
-  | 'ls-cpls'
-  | 'ls-lowtemp'
-  | 'ls-hightemp'
-  | 'ls-30min'; // liquid-soap variants
+  | 'ls'; // liquid soap (single — the method is derived from the hold temperature)
 
 // Two-tier by design (roadmap item 12): a low tier and a high tier with a gap between,
 // plus the rivers threshold. A flat {low,high} cannot express the 28–32 gap or drive
@@ -46,8 +49,11 @@ export type ProcessProfile = {
    * sweep found tier splits for it in no source; carrying unsourced dead constants was
    * worse than declaring the absence). */
   waterBand: WaterBand | null;
-  temp: TempTarget | null; // null for CP (ambient) and CPLS
-  finish: FinishDuration;
+  temp: TempTarget | null; // null for CP (ambient) and LS (hold temp IS the method selector)
+  /** null = no fixed window; the LS window is temperature-derived (lsMethodForTemp) and
+   * passed to estimateCure as an override — same "declare the absence" posture as
+   * temp/waterBand. */
+  finish: FinishDuration | null;
   finishKind: 'cure' | 'sequester';
   waterLossPercent: number; // fraction lost over cure/sequester, for label weight
 };
@@ -59,12 +65,6 @@ export type ProcessProfile = {
 // it pushed the source's reduced-HTHP band (20-30%) and its swirl compromise (29-31%) below
 // the low tier, and left 32-34% (inside the source's HIGH tier) in the inter-tier gap.
 const HP_WATER_BAND: WaterBand = { lowTier: [25, 30], highTier: [32, 40], riversAbove: 40 };
-
-// LS sequester duration: the roadmap gives a single "1–4 wk" range for liquid soap as a
-// whole, not broken out per sub-variant. Applying that same window to each of the four LS
-// variants individually is an interpolation, not a per-variant verified value.
-// unverified
-const LS_SEQUESTER: FinishDuration = { minWeeks: 1, maxWeeks: 4 };
 
 export type ProcessDefinition = {
   id: ProcessId;
@@ -220,10 +220,10 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
       kohBlendPercent: '80',
       waterMode: 'lye_water_ratio',
       lyeWaterRatio: '2',
-      soapingTempF: '95', // soapingTempRangeFor('ls-cpls').defaultF — LS's default variant
+      soapingTempF: '150', // lsMethodForTemp default — low temp's recommended band
       postCookSuperfatTotalPercent: '2',
       postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }],
-      processVariant: 'ls-cpls', // = variants[0].variant; pinned literally because defaultSettings is part of the record that defines variants[0]
+      processVariant: 'ls', // = variants[0].variant; pinned literally because defaultSettings is part of the record that defines variants[0]
     },
     lyeChoices: ['koh', 'dual'],
     kohBlendRange: [50, 100],
@@ -233,42 +233,12 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     terms: { finishingLabel: 'Sequester' },
     variants: [
       {
-        variant: 'ls-cpls',
+        variant: 'ls',
         process: 'ls',
-        label: 'Cold-process LS (CPLS)',
+        label: 'Liquid soap',
         waterBand: null, // no sourced LS band exists — see the WaterBand field doc
-        temp: null,
-        finish: LS_SEQUESTER, // unverified (see LS_SEQUESTER)
-        finishKind: 'sequester',
-        waterLossPercent: 0, // unverified: no LS water-loss constant in the roadmap table
-      },
-      {
-        variant: 'ls-lowtemp',
-        process: 'ls',
-        label: 'Low-temp LS',
-        waterBand: null, // no sourced LS band exists — see the WaterBand field doc
-        temp: { lowF: 160, highF: 180 }, // unverified: no per-variant LS temp range in the roadmap table
-        finish: LS_SEQUESTER, // unverified (see LS_SEQUESTER)
-        finishKind: 'sequester',
-        waterLossPercent: 0, // unverified: no LS water-loss constant in the roadmap table
-      },
-      {
-        variant: 'ls-hightemp',
-        process: 'ls',
-        label: 'High-temp LS',
-        waterBand: null, // no sourced LS band exists — see the WaterBand field doc
-        temp: { lowF: 180, highF: 215 }, // unverified: no per-variant LS temp range in the roadmap table
-        finish: LS_SEQUESTER, // unverified (see LS_SEQUESTER)
-        finishKind: 'sequester',
-        waterLossPercent: 0, // unverified: no LS water-loss constant in the roadmap table
-      },
-      {
-        variant: 'ls-30min',
-        process: 'ls',
-        label: '30-minute LS',
-        waterBand: null, // no sourced LS band exists — see the WaterBand field doc
-        temp: { lowF: 180, highF: 215 }, // unverified: no per-variant LS temp range in the roadmap table
-        finish: LS_SEQUESTER, // unverified (see LS_SEQUESTER)
+        temp: null, // the hold temperature IS the method selector — see soapingTempRangeFor
+        finish: null, // temperature-derived via lsMethodForTemp; estimateCure override
         finishKind: 'sequester',
         waterLossPercent: 0, // unverified: no LS water-loss constant in the roadmap table
       },
@@ -301,16 +271,20 @@ export function allProcessVariantIds(): ProcessVariantId[] {
 
 export type SoapingTempRange = { minF: number; maxF: number; defaultF: number };
 
-/** Slider range + default per variant. Ambient variants (temp: null — CP, CPLS) span the
+/** Slider range + default per variant. Ambient variants (temp: null — CP) span the
  * CP source bands (64–160 °F) with headroom on both sides; the 170 top deliberately lets
  * a user cross the 160 °F overflow line and see the warning fire. Heated variants derive
  * from their cook target: 10 °F of low-side headroom, ceiling (when one exists) as max.
- * CPLS seeds at 95 °F — an ambient no-external-heat process, below the CP gel-free line —
- * rather than CP's 125 (behavior-only choice; the source gives CPLS no starting figure). */
+ * LS spans 60–220 °F, default 150 — zones and method derivation live in core's
+ * lsMethodForTemp. */
 export function soapingTempRangeFor(variant: ProcessVariantId): SoapingTempRange {
   const profile = processProfileById(variant);
   if (profile.temp === null) {
-    return { minF: 60, maxF: 170, defaultF: variant === 'ls-cpls' ? 95 : 125 };
+    // LS: the full hold-temperature range — the slider doubles as the method map
+    // (lsMethodForTemp). CP keeps its source-band span with overflow headroom.
+    return profile.process === 'ls'
+      ? { minF: LS_TEMP_MIN_F, maxF: LS_TEMP_MAX_F, defaultF: LS_TEMP_DEFAULT_F }
+      : { minF: 60, maxF: 170, defaultF: 125 };
   }
   const { lowF, highF, ceilingF } = profile.temp;
   return {

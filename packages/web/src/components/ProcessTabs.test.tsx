@@ -78,18 +78,16 @@ describe('ProcessTabs', () => {
     expect(onVariantChange).toHaveBeenCalledWith('hp-hthp');
   });
 
-  it('shows four variant chips for LS, defaulting the active one to CPLS', () => {
+  it('does not show a variant selector for LS (only one variant, like CP)', () => {
     render(
       <ProcessTabs
         process="ls"
         onChange={() => {}}
-        processVariant="ls-cpls"
+        processVariant="ls"
         onVariantChange={() => {}}
       />,
     );
-    const variantTabs = within(screen.getByRole('tablist', { name: /process variant/i }));
-    expect(variantTabs.getAllByRole('tab')).toHaveLength(4);
-    expect(variantTabs.getByRole('tab', { name: /cold-process ls/i }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('tablist', { name: /process variant/i })).toBeNull();
   });
 
   it('gives the active tab tabIndex=0 and the rest tabIndex=-1, on both tablists', () => {

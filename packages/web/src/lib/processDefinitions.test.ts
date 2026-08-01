@@ -25,9 +25,9 @@ describe('processProfilesFor', () => {
     expect(cp.waterLossPercent).toBeCloseTo(0.15);
   });
 
-  it('defaults HP to LTHP and LS to CPLS', () => {
+  it('defaults HP to LTHP and LS to its single variant', () => {
     expect(defaultVariantFor('hp')).toBe('hp-lthp');
-    expect(defaultVariantFor('ls')).toBe('ls-cpls');
+    expect(defaultVariantFor('ls')).toBe('ls');
     expect(defaultVariantFor('cp')).toBe('cp');
   });
 
@@ -35,14 +35,8 @@ describe('processProfilesFor', () => {
     expect(processProfilesFor('cp').map((p) => p.variant)).toEqual(['cp']);
   });
 
-  it('returns four LS variants, in order, defaulting to CPLS', () => {
-    const ls = processProfilesFor('ls');
-    expect(ls.map((p) => p.variant)).toEqual([
-      'ls-cpls',
-      'ls-lowtemp',
-      'ls-hightemp',
-      'ls-30min',
-    ]);
+  it('returns the single LS variant', () => {
+    expect(processProfilesFor('ls').map((p) => p.variant)).toEqual(['ls']);
   });
 
   it('every profile carries a process consistent with its own registry list', () => {
@@ -53,10 +47,10 @@ describe('processProfilesFor', () => {
     }
   });
 
-  it('CPLS has no temperature target and sequesters rather than cures', () => {
-    const cpls = processProfileById('ls-cpls');
-    expect(cpls.temp).toBeNull();
-    expect(cpls.finishKind).toBe('sequester');
+  it('LS has no temperature target (the hold temp is the method selector) and sequesters rather than cures', () => {
+    const ls = processProfileById('ls');
+    expect(ls.temp).toBeNull();
+    expect(ls.finishKind).toBe('sequester');
   });
 
   it('CP has no temperature target (ambient) and cures', () => {
@@ -117,16 +111,7 @@ describe('registry drift guards', () => {
 });
 
 describe('isProcessVariantId', () => {
-  const allVariants = [
-    'cp',
-    'hp-lthp',
-    'hp-hthp',
-    'hp-fluid',
-    'ls-cpls',
-    'ls-lowtemp',
-    'ls-hightemp',
-    'ls-30min',
-  ] as const;
+  const allVariants = ['cp', 'hp-lthp', 'hp-hthp', 'hp-fluid', 'ls'] as const;
 
   it('accepts every known variant id', () => {
     for (const id of allVariants) {
@@ -148,8 +133,9 @@ describe('soaping-temperature ranges and clamp (2026-07-27)', () => {
     expect(soapingTempRangeFor('cp')).toEqual({ minF: 60, maxF: 170, defaultF: 125 });
     expect(soapingTempRangeFor('hp-hthp')).toEqual({ minF: 205, maxF: 240, defaultF: 215 });
     expect(soapingTempRangeFor('hp-lthp')).toEqual({ minF: 110, maxF: 160, defaultF: 140 });
-    // CPLS: ambient process — seeded below the CP gel-free line, not at CP's 125.
-    expect(soapingTempRangeFor('ls-cpls')).toEqual({ minF: 60, maxF: 170, defaultF: 95 });
+    // LS: the full hold-temperature range — the slider doubles as the method map
+    // (core's lsMethodForTemp owns the zone/default ground; see ls-method.test.ts).
+    expect(soapingTempRangeFor('ls')).toEqual({ minF: 60, maxF: 220, defaultF: 150 });
   });
 
   it('effectiveSoapingTempF clamps at read without touching the stored setting', () => {

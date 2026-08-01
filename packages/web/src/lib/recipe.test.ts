@@ -73,7 +73,7 @@ describe('processVariant setting', () => {
     expect(normalizeSettings(legacyNaoh).processVariant).toBe('cp');
 
     const legacyKoh = { lyeType: 'koh' } as Partial<RecipeSettings>;
-    expect(normalizeSettings(legacyKoh).processVariant).toBe('ls-cpls');
+    expect(normalizeSettings(legacyKoh).processVariant).toBe('ls');
   });
 
   it('rejects an invalid processVariant string to the lye-inferred default', () => {
@@ -81,7 +81,7 @@ describe('processVariant setting', () => {
       lyeType: 'koh',
       processVariant: 'not-a-real-variant' as ProcessVariantId,
     } as Partial<RecipeSettings>;
-    expect(normalizeSettings(bogus).processVariant).toBe('ls-cpls');
+    expect(normalizeSettings(bogus).processVariant).toBe('ls');
   });
 
   it('defaults to cp when given no settings at all', () => {

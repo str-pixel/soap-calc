@@ -57,13 +57,13 @@ test('HTHP shows its verified cook target instead of CP band copy', () => {
   expect(hint.textContent).not.toContain('≈');
 });
 
-test('an unverified variant hedges its target with ≈', () => {
-  renderPanel({ processVariant: 'ls-lowtemp', soapingTempF: '170' }, 'ls');
-  expect(screen.getByText(/≈/)).toBeTruthy();
-});
+// The heated-variant hedged-target case ("≈...°F (estimated)") no longer exists: LS
+// collapsed to a single ambient variant (temp: null) whose method is now derived from the
+// hold temperature — see core's ls-method.test.ts, which owns that ground (2026-08-01 LS
+// temperature-method redesign, task 3).
 
-test('CPLS gets the neutral no-external-heat note, not CP bar-band copy', () => {
-  renderPanel({ processVariant: 'ls-cpls', soapingTempF: '95' }, 'ls');
+test('LS gets the neutral no-external-heat note, not CP bar-band copy', () => {
+  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
   expect(screen.queryByText(/most commonly recommended/i)).toBeNull();
   expect(screen.getByText(/no external heat/i)).toBeTruthy();
 });

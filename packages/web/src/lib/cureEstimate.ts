@@ -4,7 +4,12 @@ import {
   type FattyAcidProfile,
   type WorkabilityEstimate,
 } from '@soap-calc/core';
-import { PROCESS_DEFINITIONS, type ProcessId, type ProcessProfile } from './process';
+import {
+  PROCESS_DEFINITIONS,
+  type FinishDuration,
+  type ProcessId,
+  type ProcessProfile,
+} from './process';
 
 export type CureEstimate = {
   minWeeks: number;
@@ -20,15 +25,22 @@ export type CureEstimate = {
   model?: CureModelEstimate | null;
 };
 
-/** Cure/sequester window for a process; hot process is usable straight from the mold. */
+/** Cure/sequester window for a process; hot process is usable straight from the mold.
+ * Precedence: an explicit override (LS's temperature-derived window) wins over the
+ * profile's fixed finish; null finish with no override returns null — "declare the
+ * absence", same as null temp/waterBand. Only LS can hit that, and only if a caller
+ * forgets the override (pinned by cureEstimate.test.ts). */
 export function estimateCure(
   profile: ProcessProfile,
   workability: WorkabilityEstimate | null = null,
   model: CureModelEstimate | null = null,
-): CureEstimate {
+  sequesterOverride: FinishDuration | null = null,
+): CureEstimate | null {
+  const finish = sequesterOverride ?? profile.finish;
+  if (!finish) return null;
   return {
-    minWeeks: profile.finish.minWeeks,
-    maxWeeks: profile.finish.maxWeeks,
+    minWeeks: finish.minWeeks,
+    maxWeeks: finish.maxWeeks,
     usableAtUnmold: profile.process === 'hp',
     finishingLabel: PROCESS_DEFINITIONS[profile.process].terms.finishingLabel,
     workability,

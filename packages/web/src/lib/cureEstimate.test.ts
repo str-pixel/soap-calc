@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkabilityEstimate } from '@soap-calc/core';
 import { estimateCure, labelWeightGrams, computeCureModel } from './cureEstimate';
-import { processProfileById } from './process';
+import { PROCESS_DEFINITIONS, processProfileById } from './process';
 
 describe('estimateCure', () => {
   it('CP cures at least 4 weeks and is not usable at unmold, labeled "Cure"', () => {
-    const e = estimateCure(processProfileById('cp'));
+    const e = estimateCure(processProfileById('cp'))!;
     expect(e.minWeeks).toBe(4);
     expect(e.usableAtUnmold).toBe(false);
     expect(e.finishingLabel).toBe('Cure');
@@ -14,20 +14,25 @@ describe('estimateCure', () => {
     const e = estimateCure(processProfileById('hp-hthp'));
     expect(e).toMatchObject({ minWeeks: 3, maxWeeks: 4, usableAtUnmold: true, finishingLabel: 'Cure' });
   });
-  it('an LS variant is labeled "Sequester"', () => {
-    const e = estimateCure(processProfileById('ls-cpls'));
-    expect(e.finishingLabel).toBe('Sequester');
-  });
   it('includes a passed workability estimate; usableAtUnmold unchanged', () => {
     const wk = { unmold: { minHours: 12, maxHours: 36 } } as unknown as WorkabilityEstimate;
     const cpProfile = processProfileById('cp');
-    const e = estimateCure(cpProfile, wk);
+    const e = estimateCure(cpProfile, wk)!;
     expect(e.workability).toBe(wk);
     expect(e.usableAtUnmold).toBe(false); // CP still not usable at unmold (D5)
   });
   it('defaults workability to null when omitted', () => {
     const cpProfile = processProfileById('cp');
-    expect(estimateCure(cpProfile).workability ?? null).toBeNull();
+    expect(estimateCure(cpProfile)!.workability ?? null).toBeNull();
+  });
+  it('sequester override wins; null finish with no override yields no estimate', () => {
+    const lsProfile = PROCESS_DEFINITIONS.ls.variants[0];
+    expect(estimateCure(lsProfile)).toBeNull();
+    const est = estimateCure(lsProfile, null, null, { minWeeks: 1, maxWeeks: 2 });
+    expect(est).toMatchObject({ minWeeks: 1, maxWeeks: 2, finishingLabel: 'Sequester' });
+    // Override also beats a present finish (CP profile + override).
+    const cp = PROCESS_DEFINITIONS.cp.variants[0];
+    expect(estimateCure(cp, null, null, { minWeeks: 9 })?.minWeeks).toBe(9);
   });
 });
 
@@ -69,11 +74,11 @@ describe('computeCureModel', () => {
     const model = computeCureModel({
       faProfile: OLIVE, coveragePercent: 100, lyeConcentrationPercent: 33, process: 'cp',
     });
-    const e = estimateCure(cpProfile, null, model);
+    const e = estimateCure(cpProfile, null, model)!;
     expect(e.model).toBe(model);
-    expect(e.minWeeks).toBe(cpProfile.finish.minWeeks); // fallback data still present
+    expect(e.minWeeks).toBe(cpProfile.finish!.minWeeks); // fallback data still present
   });
   it('estimateCure defaults model to null when omitted (existing callers unaffected)', () => {
-    expect(estimateCure(processProfileById('cp')).model ?? null).toBeNull();
+    expect(estimateCure(processProfileById('cp'))!.model ?? null).toBeNull();
   });
 });
