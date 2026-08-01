@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { formatGrams } from './format';
+import { formatConcentrationPercent, formatGrams } from './format';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -15,5 +15,20 @@ describe('formatGrams', () => {
     const spy = vi.spyOn(Number.prototype, 'toLocaleString');
     formatGrams(1234.5);
     expect(spy).toHaveBeenCalledWith('en-US', expect.anything());
+  });
+});
+
+describe('formatConcentrationPercent', () => {
+  // The dilution target's ONE display rule, shared by DilutionPanel and BatchSheet —
+  // previously each surface interpolated the raw number independently, held consistent
+  // only by comments (code-review 2026-08-01).
+  it('keeps a fractional target', () => {
+    expect(formatConcentrationPercent(22.5)).toBe('22.5');
+  });
+  it('prints whole targets without a decimal', () => {
+    expect(formatConcentrationPercent(30)).toBe('30');
+  });
+  it('absorbs float noise instead of printing full precision', () => {
+    expect(formatConcentrationPercent(22.499999999999996)).toBe('22.5');
   });
 });

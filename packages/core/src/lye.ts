@@ -376,6 +376,26 @@ export function addExtraLye(
   };
 }
 
+/** The superfat a recipe actually delivers when a post-cook reserve rides on top of the
+ * main figure — THE shared definition (insights, ResultsPanel, BatchSheet, and the
+ * process-default tests all read it; previously four re-derivations, two of which ADDED).
+ *
+ * Subtract-method composition: the reserve scales the lye via scaleLyeResult(1 − p/100)
+ * AFTER the main superfat factor (1 − s/100), so the unsaponified shares compound —
+ * 2% + 2% → 100 × (1 − 0.98 × 0.98) = 3.96%. Append mode adds the oil on top of the
+ * batch instead; the compounded figure understates that case by under 0.1 points at
+ * typical doses, inside the display's own rounding. A missing/invalid/zero post-cook
+ * share passes the main figure through unchanged; a negative main share (lye excess)
+ * composes the same way. */
+export function effectiveSuperfatPercent(
+  mainPercent: number,
+  postCookPercent: number | undefined,
+): number {
+  const p = postCookPercent;
+  if (p === undefined || !Number.isFinite(p) || p <= 0) return mainPercent;
+  return 100 * (1 - (1 - mainPercent / 100) * (1 - p / 100));
+}
+
 export function scaleLyeResult(result: LyeCalculationResult, factor: number): LyeCalculationResult {
   // Math.min/max propagate NaN if either argument is non-finite, which would silently NaN
   // every scaled field below. Currently unreachable (callers only pass computed 0–1

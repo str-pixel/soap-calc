@@ -26,6 +26,16 @@ describe('troubleshootingFor', () => {
     expect(gelEntry!.fix).not.toMatch(/less water/i);
   });
 
+  it('keeps the under-cooked paste as a secondary cause of a stringy dilution', () => {
+    // The inversion fix must not over-correct into a single cause: a paste pulled off the
+    // cook before saponification finishes also dilutes stringy, and its remedy (finish
+    // the cook) is different from the water one. Both directions must be present, without
+    // reintroducing the banned less-water advice (guarded above).
+    const gelEntry = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom));
+    expect(gelEntry!.cause).toMatch(/cook/i);
+    expect(gelEntry!.fix).toMatch(/cook/i);
+  });
+
   it('is process-gated — HP content differs from CP and LS content', () => {
     const hp = troubleshootingFor('hp');
     const cp = troubleshootingFor('cp');

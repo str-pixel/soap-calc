@@ -1,4 +1,5 @@
 import { NEG_SUPERFAT_FLOOR, type LyeType, type WaterMode } from '@soap-calc/core';
+import { kohBlendRangeFor } from './process';
 import type { RecipeSettings } from './recipe';
 
 // Re-exported so SettingsPanel bounds the slider from the same constant the core validates.
@@ -119,7 +120,11 @@ export function parseRecipeSettings(
   if (settings.lyeType === 'dual') {
     if (naohPurity.error) errors.push(naohPurity.error);
     if (kohPurity.error) errors.push(kohPurity.error);
-    const [blendMin, blendMax] = opts.kohBlendRange ?? [0, 50];
+    // Default from the process registry, not a literal copy of the bar range — a
+    // process-less caller (tests; legacy imports route through processForLyeType → 'cp')
+    // must validate against the same [0,50] the CP definition owns, or narrowing the bar
+    // range would silently leave stragglers on a stale copy.
+    const [blendMin, blendMax] = opts.kohBlendRange ?? kohBlendRangeFor('cp');
     blend = parseNonNegative(settings.kohBlendPercent, 'KOH blend %');
     if (blend.error) errors.push(blend.error);
     else if (blend.n! < blendMin || blend.n! > blendMax) {

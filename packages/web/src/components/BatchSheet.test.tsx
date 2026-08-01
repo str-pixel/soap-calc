@@ -144,10 +144,11 @@ test('prints a total superfat (cook + post-cook) row', () => {
 
   render(<BatchSheet data={data} />);
 
-  // Cook 5% + post-cook 3% = 8% — the printed sheet must show the combined total the
-  // on-screen results emphasize, not just the cook superfat.
+  // Cook 5% compounded with post-cook 3% (core effectiveSuperfatPercent):
+  // 100×(1−0.95×0.97) = 7.85 → "7.9%". The sheet and the on-screen results share the
+  // definition, so neither can print the plain-addition 8% the insights contradict.
   expect(screen.getByText('Total superfat')).toBeTruthy();
-  expect(screen.getByText('8%')).toBeTruthy();
+  expect(screen.getByText('7.9%')).toBeTruthy();
 });
 
 test('subtract + negative main superfat: prints no "reserved" note and no Total superfat row (cookFactor guard leaves lye untouched, so both would be false)', () => {
@@ -540,6 +541,26 @@ test('printed dilution target keeps the fractional value the water was computed 
   );
   expect(screen.getByText(/22\.5%/)).toBeTruthy();
   expect(screen.queryByText(/^23%$/)).toBeNull();
+});
+
+test("the can't-tell hedge prints the same fractional target as the dilution row", () => {
+  // The THIRD print site: this branch still ran formatGrams(x, 0), reproducing the
+  // 22.5-vs-23 self-disagreement inside one sheet (code-review 2026-08-01). All three
+  // sites now share formatConcentrationPercent.
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        unknownLiquidGrams: 900,
+        dilutionOverride: {
+          anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
+          dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 47.5,
+          targetExceedsPaste: true,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByText(/can.t tell whether 47\.5%/i)).toBeTruthy();
+  expect(screen.queryByText(/whether 48%/i)).toBeNull();
 });
 
 test('lye-dissolution caveat prints for a CP recipe (no dilution block) when the flag is set', () => {

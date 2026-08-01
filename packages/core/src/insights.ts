@@ -3,7 +3,7 @@ import {
   sumFattyAcids,
   type FattyAcidProfile,
 } from './fatty-acids.js';
-import { DEFAULT_KOH_BLEND_PERCENT, type LyeType, type WaterMode } from './lye.js';
+import { DEFAULT_KOH_BLEND_PERCENT, effectiveSuperfatPercent, type LyeType, type WaterMode } from './lye.js';
 import { CP_OVERFLOW_RISK_F } from './soaping-temperature.js';
 import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
 import {
@@ -160,16 +160,10 @@ function waterBandBranch(
 }
 
 // The superfat the finished liquid soap actually carries: main superfat compounded with
-// the post-cook superfat share. Subtract-method composition — the reserve scales the lye
-// AFTER the main superfat is applied — so shares compound rather than add: 2% + 2% →
-// 100 × (1 − 0.98 × 0.98) = 3.96%. (Append mode adds the oil on top of the batch instead;
-// the compounded figure understates that case by under 0.1 points at LS doses, well inside
-// the ~3% threshold's own precision.)
+// the post-cook superfat share — thin input adapter over the shared core definition
+// (effectiveSuperfatPercent in lye.ts, beside the scaleLyeResult math it describes).
 function lsEffectiveSuperfatPercent(input: FormulationAnalysisInput): number {
-  const s = input.superfatPercent;
-  const p = input.postCookSuperfatPercent;
-  if (p === undefined || !Number.isFinite(p) || p <= 0) return s;
-  return 100 * (1 - (1 - s / 100) * (1 - p / 100));
+  return effectiveSuperfatPercent(input.superfatPercent, input.postCookSuperfatPercent);
 }
 
 // Coconut-heavy proxy shared by the dual-lye recommender, the salt-thickening advisory, and
@@ -724,13 +718,16 @@ export const INSIGHT_RULES: InsightRule[] = [
     // run a lye excess) stays the user's call.
     check: (input) => {
       const fatShift = input.lsSplitLiquidFatShiftPercent ?? 0;
-      if (Number.isFinite(fatShift) && fatShift >= 0.5) {
-        const recipeSuperfat = lsEffectiveSuperfatPercent(input);
-        const effective = recipeSuperfat + fatShift;
-        const recipeClause =
-          recipeSuperfat !== input.superfatPercent
-            ? `the ${recipeSuperfat.toFixed(1)}% the recipe already delivers (superfat + post-cook oil)`
-            : `the ${input.superfatPercent.toFixed(1)}% you set`;
+      const recipeSuperfat = lsEffectiveSuperfatPercent(input);
+      const effective = recipeSuperfat + fatShift;
+      // Gate on the COMBINED total, not the fat alone: below the ~3% ceiling the fat is
+      // absorbed and "lower the superfat" would contradict the number in the same
+      // sentence; a deliberate lye excess (negative total) absorbs it too.
+      if (Number.isFinite(fatShift) && fatShift >= 0.5 && effective > 3) {
+        const hasPostCook = (input.postCookSuperfatPercent ?? 0) > 0;
+        const recipeClause = hasPostCook
+          ? `the ${recipeSuperfat.toFixed(1)}% the recipe already delivers (superfat + post-cook oil)`
+          : `the ${input.superfatPercent.toFixed(1)}% you set`;
         return {
           level: 'warning',
           code: 'ls_split_liquid_fat_superfat',
@@ -777,15 +774,40 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       const effective = lsEffectiveSuperfatPercent(input);
       if (effective > 3) {
-        const breakdown =
-          effective !== input.superfatPercent
-            ? `Superfat ${input.superfatPercent.toFixed(1)}% plus the post-cook oil lands at ~${effective.toFixed(1)}% total. `
-            : '';
+        const hasPostCook = (input.postCookSuperfatPercent ?? 0) > 0;
+        const breakdown = hasPostCook
+          ? `Superfat ${input.superfatPercent.toFixed(1)}% plus the post-cook oil lands at ~${effective.toFixed(1)}% total. `
+          : '';
         return {
           level: 'warning',
           code: 'ls_superfat_high',
           message:
             `${breakdown}Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%.`,
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'ls_no_superfat_buffer',
+    processes: ['ls'],
+    // The floor of the LS 1–3% working band. Reachable from the defaults: LS seeds main
+    // superfat 0% + post-cook 2%, so deleting the optional post-cook row leaves the lye
+    // set to exactly saponify the oils — a state no other rule covered (no_superfat_margin
+    // is CP/HP-gated, ls_lye_excess needs superfat < 0, ls_superfat_high needs > 3).
+    // A NEGATIVE superfat is exempt: that is the deliberate lye-excess workflow, and
+    // ls_lye_excess already carries its neutralization guidance.
+    check: (input) => {
+      const effective = lsEffectiveSuperfatPercent(input);
+      if (input.superfatPercent >= 0 && effective < 1) {
+        return {
+          level: 'warning',
+          code: 'ls_no_superfat_buffer',
+          message:
+            'Effective superfat is below 1% — the lye nearly matches the oils exactly, so normal ' +
+            'SAP variation or a small scale error can leave free alkali in the finished soap. Keep ' +
+            'the combined LS superfat around 1–3%, or run a deliberate small lye excess and ' +
+            'neutralize after the cook.',
         };
       }
       return null;

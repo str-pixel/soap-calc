@@ -4,6 +4,7 @@ import type { DilutionResult, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { budgetSizingAvailable, resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import {
+  computeBottledSolutionGrams,
   computeExtrasGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
@@ -93,9 +94,10 @@ export type RecipeViewModel = {
   neutralization: NeutralizationResult | null;
   pcsfIsExtra: boolean;
   extrasGrams: number;
-  /** Grams bottled with the finished LS solution but outside the anhydrous+water figure:
-   * additives, append-mode PCSF oil, split-liquid solids. Feeds the bottle estimate. */
-  finishedExtrasGrams: number;
+  /** The mass the LS batch actually bottles: solution base (real paste when the target
+   * exceeds it) plus additives, append-mode PCSF oil, and split-liquid solids. Null
+   * outside LS / before a dilution exists. See computeBottledSolutionGrams. */
+  bottledSolutionGrams: number | null;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
@@ -646,16 +648,18 @@ export function useRecipeViewModel({
     pcsfIsExtra,
   );
   const batchWeightWithExtras = baseBatchGrams + extrasGrams;
-  // Extras that end up IN the bottled liquid soap but outside the anhydrous+water
-  // dilution figure: additive grams (every stage rides through to the bottle), the
-  // append-mode PCSF oil, and the split liquids' non-water solids. The liquids' WATER
-  // is already inside the solution figure (cookWaterGrams counts it), so it comes off
-  // here; undeclared rows are counted as all water upstream and so contribute nothing,
-  // keeping this a lower bound like the rest of the unknown-liquid handling.
-  // Acid-compensation alkali (vinegar/citric) is DELIBERATELY excluded, mirroring the
-  // dilution calc's base-result read: its acetate/citrate mass is small and folding it in
-  // here without also touching solutionGrams would be easy to mistake for a double count.
-  const finishedExtrasGrams = Math.max(0, extrasGrams - splitLiquidPasteWater);
+  // The mass the LS batch actually bottles — solution base plus the extras that ride
+  // through (see computeBottledSolutionGrams for the full accounting, including why a
+  // target that exceeds the paste switches the base to anhydrous + cook water).
+  const bottledSolutionGrams =
+    dilution && result
+      ? computeBottledSolutionGrams({
+          dilution,
+          cookWaterGrams: result.waterWeightGrams + splitLiquidPasteWater,
+          extrasGrams,
+          splitLiquidPasteWaterGrams: splitLiquidPasteWater,
+        })
+      : null;
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
   // see normalizeSettingsWithinProcess) before resolving the profile.
   const profile = isProcessVariantId(settings.processVariant)
@@ -826,7 +830,7 @@ export function useRecipeViewModel({
     neutralization,
     pcsfIsExtra,
     extrasGrams,
-    finishedExtrasGrams,
+    bottledSolutionGrams,
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,

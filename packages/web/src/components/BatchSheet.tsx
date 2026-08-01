@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   alternativeLiquidPreset,
+  effectiveSuperfatPercent,
   formatPropertyScore,
   formatSoapPropertyPercent,
   LOW_COVERAGE_PERCENT,
@@ -15,7 +16,7 @@ import {
   formatBatchSheetProperty,
   formatBatchWeight,
 } from '../lib/batchSheet';
-import { formatGrams } from '../lib/format';
+import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
@@ -172,7 +173,10 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               <dt>Total superfat</dt>
               <dd>
                 {formatGrams(
-                  (Number(settings.superfatPercent) || 0) + postCookSuperfat.percentOfOil,
+                  effectiveSuperfatPercent(
+                    Number(settings.superfatPercent) || 0,
+                    postCookSuperfat.percentOfOil,
+                  ),
                   1,
                 )}
                 %
@@ -287,9 +291,9 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           <h2>Dilution</h2>
           <dl className="batch-sheet__dl">
             <div><dt>Paste (anhydrous)</dt><dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd></div>
-            {/* Raw value, never rounded: the water grams beside it were computed from the
-                unrounded target, and DilutionPanel prints the same raw figure. */}
-            <div><dt>Target concentration</dt><dd>{dilution.soapConcentrationPercent}%</dd></div>
+            {/* formatConcentrationPercent everywhere the target prints (here and in
+                DilutionPanel) — one shared rule, so sheet and panel cannot disagree. */}
+            <div><dt>Target concentration</dt><dd>{formatConcentrationPercent(dilution.soapConcentrationPercent)}%</dd></div>
             <div><dt>Dilution water to add</dt><dd>
               {formatWeight(dilution.dilutionWaterGrams, weightUnit)}
               {data.unknownLiquidGrams && !dilution.targetExceedsPaste ? ' (at least)' : ''}
@@ -306,13 +310,13 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             // the panel does; hedging here made the two surfaces disagree for one recipe.
             <p className="batch-sheet__note">
               The paste is already more dilute than{' '}
-              {dilution.soapConcentrationPercent}% — adding water only
+              {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water only
               lowers the concentration further.
             </p>
           ) : null}
           {data.unknownLiquidGrams && dilution.targetExceedsPaste && !data.overDilutionCertain ? (
             <p className="batch-sheet__note">
-              Can&apos;t tell whether {formatGrams(dilution.soapConcentrationPercent, 0)}% is
+              Can&apos;t tell whether {formatConcentrationPercent(dilution.soapConcentrationPercent)}% is
               reachable — {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative
               liquid has no declared water content. Declare its % water in Split liquid.
             </p>

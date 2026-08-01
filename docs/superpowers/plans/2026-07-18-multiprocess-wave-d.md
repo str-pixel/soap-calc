@@ -167,7 +167,7 @@ export function troubleshootingFor(process: 'cp' | 'hp' | 'ls'): readonly Troubl
 **Content (behavior-only, no source):**
 - CP: soda ash (ashy top — cover/gel or steam off); gel line (partial gel — insulate evenly or force full gel); volcano (overheated — cooler soaping temp, less sugar); DOS (orange spots — fresh oils, antioxidant, cool dry storage).
 - HP: won't gel/stiff cook (switch to LTHP / add heat); crumbly bar (over-mixed past neat — work faster, more water); lye-heavy (pH > 11 / zap — recheck lye, rebatch).
-- LS: cloud on cooling (chill-haze — reheat/stir or add a solubilizer); snot/jello dilution (over-diluted or under-cooked paste — cook longer / less water); anhydrous top layer (excess unsaponified oil — reduce superfat, skim).
+- LS: cloud on cooling (chill-haze — reheat/stir or add a solubilizer); snot/jello dilution (over-diluted or under-cooked paste — cook longer / less water). **[SUPERSEDED 2026-08-01: the water direction here was inverted — a stringy/jello dilution means too LITTLE water (soap above the concentration its fatty acids hold as a liquid; high-oleic recipes gel until well below coconut-heavy levels). The shipped entry in `packages/core/src/troubleshooting.ts` coaches ADDING hot water in increments, with the under-cooked paste kept as the secondary cause; troubleshooting.test.ts pins the direction. Do not re-derive copy from this line.]**; anhydrous top layer (excess unsaponified oil — reduce superfat, skim).
 
 - [ ] **Step 1: failing test — content module (core)**
 

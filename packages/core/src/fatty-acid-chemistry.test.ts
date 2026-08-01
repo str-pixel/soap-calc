@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { deriveChemistryFromProfile } from './fatty-acid-chemistry.js';
+import { GLYCEROL_MOLAR_MASS, KOH_MOLAR_MASS, WATER_MOLAR_MASS } from './molar-masses.js';
+
+describe('shared-constant drift guard', () => {
+  it('derives SAP from the SHARED alkali mass — a correction to molar-masses.ts moves this oracle too', () => {
+    // Pure tristearin from first principles, computed HERE from the shared constants:
+    // if fatty-acid-chemistry ever regrows a private KOH copy, a molar-mass correction
+    // desynchronizes the two and this cross-check fails (code-review 2026-08-01 — the
+    // oracle previously held its own 56.1056 that molar-masses.test.ts could not see).
+    const stearicMw = 284.48;
+    const backbone = GLYCEROL_MOLAR_MASS - 3 * WATER_MOLAR_MASS;
+    const expected = (3 * KOH_MOLAR_MASS) / (3 * stearicMw + backbone);
+    const derived = deriveChemistryFromProfile({ stearic: 100 });
+    expect(derived).not.toBeNull();
+    expect(derived!.sapKoh).toBeCloseTo(expected, 12);
+  });
+});
 
 // Complete, representative profiles (fatty-acid % of oil).
 const OLIVE = { oleic: 71, palmitic: 13, linoleic: 10, stearic: 3, linolenic: 1 }; // 98%

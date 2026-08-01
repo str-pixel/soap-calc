@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addExtraLye,
   calculateLye,
+  effectiveSuperfatPercent,
   lyeForOilLine,
   scaleLyeResult,
   sapCoefficientForLye,
@@ -427,6 +428,32 @@ describe('scaleLyeResult', () => {
       expect(Number.isFinite(line.naohGrams)).toBe(true);
       expect(Number.isFinite(line.kohGrams)).toBe(true);
     }
+  });
+});
+
+describe('effectiveSuperfatPercent', () => {
+  // THE definition of the superfat a subtract-method recipe delivers, exported next to
+  // scaleLyeResult (the code that implements the compounding) so insights, ResultsPanel,
+  // BatchSheet and the process-default tests all share one formula instead of four
+  // (code-review 2026-08-01: two of the four ADDED instead of compounding).
+  it('compounds the main and post-cook shares — the reserve scales lye AFTER the main superfat', () => {
+    expect(effectiveSuperfatPercent(2, 2)).toBeCloseTo(3.96, 10);
+    expect(effectiveSuperfatPercent(2, 5)).toBeCloseTo(6.9, 10);
+    // Linearity cross-check against the real lye math: superfat s then scale by
+    // (1 − p/100) equals a single superfat at the compounded figure.
+    const s = 2, p = 5;
+    const combined = effectiveSuperfatPercent(s, p);
+    expect((1 - s / 100) * (1 - p / 100)).toBeCloseTo(1 - combined / 100, 12);
+  });
+
+  it('passes the main share through when no post-cook applies', () => {
+    expect(effectiveSuperfatPercent(5, undefined)).toBe(5);
+    expect(effectiveSuperfatPercent(5, 0)).toBe(5);
+    expect(effectiveSuperfatPercent(5, Number.NaN)).toBe(5);
+  });
+
+  it('composes a lye excess the same way', () => {
+    expect(effectiveSuperfatPercent(-5, 2)).toBeCloseTo(100 * (1 - 1.05 * 0.98), 10);
   });
 });
 

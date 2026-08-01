@@ -95,6 +95,9 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const updateField = (key: FieldSpec['key'], value: string) =>
     setSettings((s) => ({ ...s, [key]: value }));
+  // Destructured once (same shape as SoapingTemperaturePanel's range) — positional [0]/[1]
+  // at two call sites is how a min/max swap slips through review.
+  const [blendMin, blendMax] = kohBlendRangeFor(process);
   return (
     <section className="panel">
       <h2 className="panel__title">Settings</h2>
@@ -137,8 +140,8 @@ export function SettingsPanel({
             <input
               type="number"
               className="input"
-              min={kohBlendRangeFor(process)[0]}
-              max={kohBlendRangeFor(process)[1]}
+              min={blendMin}
+              max={blendMax}
               step={0.5}
               value={settings.kohBlendPercent}
               onChange={(e) =>

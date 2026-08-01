@@ -146,6 +146,11 @@
     "level": "info",
     "code": "large_test_batch",
     "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
+   },
+   {
+    "level": "warning",
+    "code": "ls_no_superfat_buffer",
+    "message": "Effective superfat is below 1% — the lye nearly matches the oils exactly, so normal SAP variation or a small scale error can leave free alkali in the finished soap. Keep the combined LS superfat around 1–3%, or run a deliberate small lye excess and neutralize after the cook."
    }
   ]
  },

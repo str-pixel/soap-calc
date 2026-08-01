@@ -446,7 +446,7 @@ export default function App() {
                 altLiquidWaterGrams={vm.splitLiquidPasteWater}
                 unknownLiquidGrams={vm.unknownLiquidGrams}
                 overDilutionCertain={vm.overDilutionCertain}
-                finishedExtrasGrams={vm.finishedExtrasGrams}
+                bottledSolutionGrams={vm.bottledSolutionGrams}
               />
             )}
 

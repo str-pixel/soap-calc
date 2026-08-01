@@ -216,7 +216,7 @@ test('label weight loses water only from the water-bearing base batch, not after
   expect(withPcsf.labelWeight).toBeGreaterThan(oldWrongFormula);
 });
 
-test('finishedExtrasGrams counts additive grams toward the bottled LS product', () => {
+test('bottledSolutionGrams counts additive grams on top of the dilution solution', () => {
   // A 1%-of-oils after-cook thickener on the 1000 g starter batch = 10 g that is bottled
   // with the solution but absent from the anhydrous+water dilution figure.
   let vm: any;
@@ -227,7 +227,8 @@ test('finishedExtrasGrams counts additive grams toward the bottled LS product', 
     undefined,
     [{ key: 'g1', catalogId: 'guar', name: 'Guar gum', amount: '1', unit: 'percent', basis: 'oil', addAt: 'after_cook' } as any],
   );
-  expect(vm.finishedExtrasGrams).toBeCloseTo(10);
+  expect(vm.dilution).not.toBeNull();
+  expect(vm.bottledSolutionGrams).toBeCloseTo(vm.dilution.solutionGrams + 10);
 });
 
 test('LS superfat above 3% raises the ls_superfat_high insight', () => {

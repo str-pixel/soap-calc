@@ -1,3 +1,9 @@
+import {
+  CITRIC_ACID_MOLAR_MASS,
+  KOH_MOLAR_MASS,
+  NAOH_MOLAR_MASS,
+} from './molar-masses.js';
+
 export type AdditiveStage = 'lye' | 'oils' | 'trace' | 'top' | 'after_cook';
 
 /** Structurally identical to web's ProcessId ('cp' | 'hp' | 'ls'), defined locally so core
@@ -46,12 +52,6 @@ export type AdditiveCatalogEntry = {
    * stated superfat survives. CP/HP only — LS deliberately never compensates. */
   lyeNeutralization?: { naohPerGram: number; kohPerGram: number };
 };
-
-import {
-  CITRIC_ACID_MOLAR_MASS,
-  KOH_MOLAR_MASS,
-  NAOH_MOLAR_MASS,
-} from './molar-masses.js';
 
 /** Citric acid (anhydrous) — triprotic; moles of acid per gram. Shares molar-masses.ts
  * with neutralization.ts (the LS after-cook path), so the two can no longer drift. */

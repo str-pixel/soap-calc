@@ -281,7 +281,10 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
       // flip lyeType koh→naoh on import — an explicit valid process still wins.
       process: isProcessId(parsed.process)
         ? parsed.process
-        : processForLyeType((parsed.settings as { lyeType?: unknown } | undefined)?.lyeType),
+        : processForLyeType(
+            (parsed.settings as { lyeType?: unknown } | undefined)?.lyeType,
+            (parsed.settings as { kohBlendPercent?: unknown } | undefined)?.kohBlendPercent,
+          ),
       processSource: isProcessId(parsed.process) ? 'declared' : 'inferred',
       name: parsed.name.slice(0, MAX_FIELD_LENGTH),
       lines,

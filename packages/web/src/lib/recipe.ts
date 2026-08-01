@@ -407,8 +407,9 @@ export function normalizeSettings(
   // not a fixed constant — so a legacy liquid-soap recipe doesn't silently normalize to CP.
   //
   // This fallback is a best-effort PRE-COERCE default, not an authoritative process/variant
-  // pairing: `processForLyeType` collapses dual-lye (`lyeType: 'dual'`) to 'cp', so a
-  // dual-lye liquid-soap recipe with no saved variant lands here as a CP variant even
+  // pairing: `processForLyeType` routes dual-lye by its KOH blend (KOH-primary → ls, else
+  // 'cp'), so a dual-lye liquid-soap recipe with no saved variant and no legible blend
+  // lands here as a CP variant even
   // though its true process may be LS. A stale-but-structurally-valid variant string is
   // also trusted as-is and not cross-checked against the recipe's process. Any caller that
   // needs an authoritative variant MUST run the result through `normalizeSettingsWithinProcess`

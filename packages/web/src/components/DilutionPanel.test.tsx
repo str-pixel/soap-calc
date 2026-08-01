@@ -43,21 +43,39 @@ test('shows bottles filled from the finished solution weight and bottle size, he
   expect(screen.getByText('15')).toBeTruthy();
 });
 
-test('bottle count includes the finished-product extras that join after the chemistry solution', () => {
+test('bottle count derives from the bottled-product mass, which is shown so the numbers reconcile', () => {
   // Solution-dosed additives (fragrance, pearlizer) and after-cook thickeners are bottled
   // too. 4000 g solution + 515 g extras = 4515 g / 1.03 ≈ 4383 ml → floor(4383/250) = 17
-  // bottles, vs 15 from the bare solution.
+  // bottles, vs 15 from the bare solution. The 4,515 g figure the count is computed from
+  // must be ON SCREEN — printing "Finished solution 4,000 g" above "17 bottles" left the
+  // user's own arithmetic (15) contradicting the panel (code-review 2026-08-01).
   render(
     <DilutionPanel
       dilution={RESULT}
       soapConcentrationPercent="30"
       onSoapConcentrationChange={() => {}}
       weightUnit="g"
-      finishedExtrasGrams={515}
+      bottledSolutionGrams={4515}
       {...BOTTLE_PROPS}
     />,
   );
   expect(screen.getByText('17')).toBeTruthy();
+  expect(screen.getByText(/Bottled product/)).toBeTruthy();
+  expect(screen.getByText('4,515 g')).toBeTruthy();
+});
+
+test('without a bottled mass the count falls back to the solution and no reconciliation row shows', () => {
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      {...BOTTLE_PROPS}
+    />,
+  );
+  expect(screen.getByText('15')).toBeTruthy();
+  expect(screen.queryByText(/Bottled product/)).toBeNull();
 });
 
 test('editing the bottle size calls onBottleSizeMlChange', () => {
