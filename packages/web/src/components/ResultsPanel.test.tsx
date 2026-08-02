@@ -288,9 +288,12 @@ const GLYCERIN_ROW = {
 };
 // Additive-line glycerin (catalogId 'glycerin'), not a split-liquid row — exercises the
 // other arm of the vm's glycerin union (see useRecipeViewModel's lsGlycerinPresent).
+// 25% of oils (not a token 10%) — the 30-min gate now needs solvent-scale glycerin
+// (>= 1x lye weight; see ls30Min.ts), and 25% of this fixture's 1,000 g oil batch clears
+// the ~222 g lye weight comfortably.
 const GLYCERIN_ADDITIVE_LINE: AdditiveLine = {
   key: 'g-additive-1', catalogId: 'glycerin', name: 'Glycerin',
-  amount: '10', basis: 'oil', unit: 'percent', addAt: 'lye',
+  amount: '25', basis: 'oil', unit: 'percent', addAt: 'lye',
 };
 
 function LsPanelProbe({
@@ -352,6 +355,16 @@ test('LS at 215 °F with a glycerin additive line and salt shows the usable-once
     />,
   );
   expect(screen.getByText(/usable as soon as it cools/)).toBeTruthy();
+});
+
+test('LS at 180 °F (the high-temp GAP, not in-zone) with the full package shows NO usable-once-cooled note', () => {
+  render(
+    <LsPanelProbe
+      settingsOverride={{ soapingTempF: '180', splitLiquids: [GLYCERIN_ROW] }}
+      additivesOverride={[SALT_LINE]}
+    />,
+  );
+  expect(screen.queryByText(/usable as soon as it cools/)).toBeNull();
 });
 
 const workability = {

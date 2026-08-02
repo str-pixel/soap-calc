@@ -615,11 +615,29 @@ export function useRecipeViewModel({
         isAlternativeLiquidOfferedFor(preset!, process)
       );
     }) || computedAdditives.some((a) => a.catalogId === 'glycerin');
-  // 30-min no-paste package: derived-method gate (high temp only) + the glycerin/salt
-  // union above — see ls30MinPackagePresent.
+  // Glycerin grams for the 30-min solvent-scale gate (sourced floor: >= 1x lye weight) —
+  // sized split-liquid glycerin rows plus the glycerin additive line, summed rather than
+  // unioned to a boolean since the source doses it by weight, not by presence.
+  const lsGlycerinGrams =
+    sizedSplitRows.reduce(
+      (sum, { row, grams }) => (row.presetKey === 'glycerin' ? sum + (grams ?? 0) : sum),
+      0,
+    ) +
+    computedAdditives.reduce(
+      (sum, a) => (a.catalogId === 'glycerin' ? sum + a.grams : sum),
+      0,
+    );
+  // 30-min no-paste package: the IN-ZONE high-temp method only (never the gap — the
+  // usable-once-cooled clause is sourced only for the full 215 °F workflow) + the
+  // solvent-scale glycerin / sodium-salt package — see ls30MinPackagePresent.
   const ls30Min =
     lsMethod?.method === 'hightemp' &&
-    ls30MinPackagePresent({ lsGlycerinPresent, additives: computedAdditives });
+    !lsMethod.inGap &&
+    ls30MinPackagePresent({
+      glycerinGrams: lsGlycerinGrams,
+      lyeGrams: result?.lyeWeightGrams ?? 0,
+      additives: computedAdditives,
+    });
   const { insights } = useFormulationInsights(
     previewState.lines,
     previewSettings,
