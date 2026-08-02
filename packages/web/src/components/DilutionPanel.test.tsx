@@ -16,7 +16,8 @@ const BOTTLE_PROPS = { bottleSizeMl: '250', onBottleSizeMlChange: () => {} };
 test('renders the dilution figures', () => {
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
   expect(screen.getByText('Dilution water to add')).toBeTruthy();
-  expect(screen.getByText('2,400 g')).toBeTruthy();
+  // The pour figure carries the other scale units so it reads on any kitchen scale.
+  expect(screen.getByText('2,400 g (84.7 oz / 5.29 lb)')).toBeTruthy();
 });
 
 test('shows the target-exceeds-paste warning', () => {

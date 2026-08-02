@@ -23,7 +23,9 @@ const dilutionPanel = (page: Page) =>
     .first();
 
 /** Grams from a formatted weight like "2,270 g". */
-const grams = (text: string) => Number(text.replace(/[^0-9.]/g, ''));
+/** Leading grams figure from a formatted weight — "2,400 g (84.7 oz / 5.29 lb)" → 2400.
+ * Anchored to the start so the oz/lb alternates never concatenate into the number. */
+const grams = (text: string) => Number((text.match(/^[\d,.]+/)?.[0] ?? '').replace(/,/g, ''));
 
 async function freshLiquidSoap(page: Page) {
   await page.goto('/');
@@ -45,8 +47,11 @@ async function addLiquid(page: Page, presetKey: string, weightGrams: string) {
 
 test('the liquid\'s own water is deducted from the dilution water', async ({ page }) => {
   await freshLiquidSoap(page);
+  // The pour figure renders with oz/lb alternates — "2,400 g (84.7 oz / 5.29 lb)" —
+  // so the locator anchors on the leading grams, and grams() reads that leading figure.
+  const waterFigure = /^[\d,.]+\s*g \(/;
   const before = grams(
-    await dilutionPanel(page).getByText(/^[\d,.]+\s*g$/).first().innerText(),
+    await dilutionPanel(page).getByText(waterFigure).first().innerText(),
   );
 
   await addLiquid(page, 'coconut-milk-canned', '200');
@@ -54,7 +59,7 @@ test('the liquid\'s own water is deducted from the dilution water', async ({ pag
   // 200 g of canned coconut milk is 68% water — 136 g already in the paste before dilution
   // starts, so the prescribed dilution water must drop by exactly that.
   const after = grams(
-    await dilutionPanel(page).getByText(/^[\d,.]+\s*g$/).first().innerText(),
+    await dilutionPanel(page).getByText(waterFigure).first().innerText(),
   );
   expect(Math.round(before - after)).toBe(136);
   await expect(dilutionPanel(page)).toContainText(/136 g lighter/i);

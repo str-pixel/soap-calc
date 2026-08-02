@@ -6,7 +6,7 @@ import {
   type DilutionResult,
 } from '@soap-calc/core';
 import { formatConcentrationPercent } from '../lib/format';
-import { formatWeight } from '../lib/weightUnits';
+import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
 type DilutionPanelProps = {
@@ -97,7 +97,7 @@ export function DilutionPanel({
           <dl className="results-grid">
             <div className="results-grid__item results-grid__item--primary">
               <dt>Dilution water to add</dt>
-              <dd>{formatWeight(dilution.dilutionWaterGrams, weightUnit)}</dd>
+              <dd>{formatWeightWithAlternates(dilution.dilutionWaterGrams, weightUnit)}</dd>
             </div>
             <div className="results-grid__item">
               <dt>Paste (anhydrous)</dt>

@@ -86,6 +86,17 @@ export function parsePercentInput(value: string): string | null {
   return value;
 }
 
+/** Pour-figure formatting: the selected unit first, then the OTHER kitchen-scale units
+ * (g / oz / lb, minus the primary) in parentheses — "2,400 g (84.7 oz / 5.29 lb)" — so
+ * the one figure a maker weighs out reads on any scale without switching the app unit.
+ * kg is never an alternate (no kitchen scale defaults to it); a kg-mode user gets all
+ * three others. */
+export function formatWeightWithAlternates(grams: number, unit: WeightUnit): string {
+  const alternates = (['g', 'oz', 'lb'] as const).filter((u) => u !== unit);
+  const alt = alternates.map((u) => formatWeight(grams, u)).join(' / ');
+  return `${formatWeight(grams, unit)} (${alt})`;
+}
+
 export function formatWeight(grams: number, unit: WeightUnit, digits?: number): string {
   const config = WEIGHT_UNITS[unit];
   const value = gramsToDisplayValue(grams, unit);

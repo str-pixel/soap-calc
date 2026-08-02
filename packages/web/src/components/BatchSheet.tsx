@@ -19,7 +19,7 @@ import {
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
-import { formatWeight } from '../lib/weightUnits';
+import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
 
 type BatchSheetProps = {
   data: BatchSheetData | null;
@@ -295,7 +295,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 DilutionPanel) — one shared rule, so sheet and panel cannot disagree. */}
             <div><dt>Target concentration</dt><dd>{formatConcentrationPercent(dilution.soapConcentrationPercent)}%</dd></div>
             <div><dt>Dilution water to add</dt><dd>
-              {formatWeight(dilution.dilutionWaterGrams, weightUnit)}
+              {formatWeightWithAlternates(dilution.dilutionWaterGrams, weightUnit)}
               {data.unknownLiquidGrams && !dilution.targetExceedsPaste ? ' (at least)' : ''}
             </dd></div>
             <div><dt>Finished solution</dt><dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd></div>

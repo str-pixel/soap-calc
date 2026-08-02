@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatWeight,
+  formatWeightWithAlternates,
   isWeightUnit,
   gramsStringToInputDisplay,
   isCompleteNumericInput,
@@ -76,5 +77,15 @@ describe('formatWeight keeps sub-gram doses visible', () => {
     expect(formatWeight(5, 'g')).toBe('5 g');
     expect(formatWeight(2270, 'g')).toBe('2,270 g');
     expect(formatWeight(453.59237, 'lb')).toBe('1 lb');
+  });
+
+  it('formatWeightWithAlternates appends the other scale units in parentheses', () => {
+    // Primary in the selected unit; alternates are the remaining kitchen-scale units
+    // (g / oz / lb minus the primary), so the figure reads on any scale.
+    expect(formatWeightWithAlternates(2400, 'g')).toBe('2,400 g (84.7 oz / 5.29 lb)');
+    expect(formatWeightWithAlternates(2400, 'oz')).toBe('84.7 oz (2,400 g / 5.29 lb)');
+    expect(formatWeightWithAlternates(2400, 'lb')).toBe('5.29 lb (2,400 g / 84.7 oz)');
+    // kg is not an alternate target — a kg-mode user still sees all three others.
+    expect(formatWeightWithAlternates(2400, 'kg')).toBe('2.4 kg (2,400 g / 84.7 oz / 5.29 lb)');
   });
 });
