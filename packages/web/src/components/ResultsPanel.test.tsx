@@ -286,6 +286,12 @@ const GLYCERIN_ROW = {
   key: 'g1', presetKey: 'glycerin', name: 'Glycerin', customWaterPercent: '',
   sizeMode: 'percent_of_liquid' as const, amount: '66.7', addAt: 'lye' as const,
 };
+// Additive-line glycerin (catalogId 'glycerin'), not a split-liquid row — exercises the
+// other arm of the vm's glycerin union (see useRecipeViewModel's lsGlycerinPresent).
+const GLYCERIN_ADDITIVE_LINE: AdditiveLine = {
+  key: 'g-additive-1', catalogId: 'glycerin', name: 'Glycerin',
+  amount: '10', basis: 'oil', unit: 'percent', addAt: 'lye',
+};
 
 function LsPanelProbe({
   settingsOverride = {},
@@ -333,6 +339,16 @@ test('LS at 215 °F with a glycerin split row and salt shows the usable-once-coo
     <LsPanelProbe
       settingsOverride={{ soapingTempF: '215', splitLiquids: [GLYCERIN_ROW] }}
       additivesOverride={[SALT_LINE]}
+    />,
+  );
+  expect(screen.getByText(/usable as soon as it cools/)).toBeTruthy();
+});
+
+test('LS at 215 °F with a glycerin additive line and salt shows the usable-once-cooled note', () => {
+  render(
+    <LsPanelProbe
+      settingsOverride={{ soapingTempF: '215' }}
+      additivesOverride={[GLYCERIN_ADDITIVE_LINE, SALT_LINE]}
     />,
   );
   expect(screen.getByText(/usable as soon as it cools/)).toBeTruthy();

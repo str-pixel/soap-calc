@@ -77,9 +77,10 @@ describe('processVariant setting', () => {
   });
 
   it('rejects an invalid processVariant string to the lye-inferred default', () => {
+    // 'ls-cpls': retired 2026-08-01 (single-variant LS); pins that legacy drafts land on 'ls'.
     const bogus = {
       lyeType: 'koh',
-      processVariant: 'not-a-real-variant' as ProcessVariantId,
+      processVariant: 'ls-cpls' as ProcessVariantId,
     } as Partial<RecipeSettings>;
     expect(normalizeSettings(bogus).processVariant).toBe('ls');
   });

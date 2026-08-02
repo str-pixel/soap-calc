@@ -67,6 +67,8 @@
 
 ## Task 1: Extend the process/defaults engine with sub-variants, temperatures, cure/sequester durations, and water bands
 
+> Superseded 2026-08-01: LS variants collapsed to a single temperature-derived method — see specs/2026-08-01-ls-temperature-method-redesign-design.md.
+
 **Why first:** Items 6 (cure estimate), 12 (water coaching), 13 (yield), 14 (temperature model), and the sub-variant selector all read these numbers. Today `ProcessDefinition` carries only lye/superfat/water defaults and a finishing *label* string (`process.ts:10-19`) — no temps, no durations, no bands, no sub-variants.
 
 **Files:**
