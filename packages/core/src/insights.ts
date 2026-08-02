@@ -939,9 +939,9 @@ export const INSIGHT_RULES: InsightRule[] = [
         code: 'ls_coconut_hot_cook',
         message:
           'Coconut-heavy liquid soap expands hard in a hot cook. If running the high-temp method, ' +
-          'reduce the hold to 150–175 °F (that range dips into the low-temp band on purpose) and ' +
+          'reduce the hold to 66–79 °C (150–175 °F) (that range dips into the low-temp band on purpose) and ' +
           'use a vessel at least 3× the total recipe volume; pure-coconut no-paste recipes should ' +
-          'not start above 180 °F.',
+          'not start above 82 °C (180 °F).',
       };
     },
   },

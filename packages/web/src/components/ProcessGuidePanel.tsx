@@ -67,7 +67,7 @@ export function ProcessGuidePanel({
           {ls30Min && (
             <p className="results-hint">
               30-minute no-paste package detected (solvent-scale glycerin + salt/sodium
-              lactate) — at the 215 °F hold the cook runs continuously into dilution with
+              lactate) — at the 102 °C (215 °F) hold the cook runs continuously into dilution with
               little or no distinct paste stage; the paste steps above compress accordingly.
             </p>
           )}

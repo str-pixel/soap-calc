@@ -109,7 +109,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
             // CPLS's melt step happens off this slider entirely; this line says so before
             // anyone assumes the slider is a melt temperature.
             <p className="panel__subtitle">
-              CPLS melts oils at 120–130 °F first; heated methods melt on the way up. This
+              CPLS melts oils at 49–54 °C (120–130 °F) first; heated methods melt on the way up. This
               slider is the hold temperature.
             </p>
           )}

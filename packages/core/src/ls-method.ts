@@ -5,6 +5,8 @@
  * sequester windows and guide stages all live here and nowhere else.
  * Spec: docs/superpowers/specs/2026-08-01-ls-temperature-method-redesign-design.md.
  */
+import { fToC } from './soaping-temperature.js';
+
 export type LsMethod = 'cold' | 'lowtemp' | 'hightemp';
 
 export type LsSequesterWindow = { minWeeks: number; maxWeeks?: number };
@@ -57,12 +59,19 @@ const SEQUESTER: Record<LsMethod, LsSequesterWindow> = {
   hightemp: { minWeeks: 1, maxWeeks: 2 },
 };
 
+/** Temperatures in user-facing copy render °C-first with the stored °F in parentheses
+ * ("102 °C (215 °F)"), matching the temperature panel's readout convention — the panel
+ * edits in °C, and single-unit °F copy made users convert by hand. */
+const dual = (f: number) => `${fToC(f)} °C (${f} °F)`;
+const dualRange = (lowF: number, highF: number) =>
+  `${fToC(lowF)}–${fToC(highF)} °C (${lowF}–${highF} °F)`;
+
 /** Behavior-only method steps, rendered by the process guide. The ≥2× vessel line on high
  * temp is mandatory in the source; coconut-heavy recipes get the stricter 3× via the
  * ls_coconut_hot_cook insight. */
 export const LS_METHOD_STAGES: Record<LsMethod, readonly string[]> = {
   cold: [
-    'Melt the oils at 120–130 °F and let the lye solution cool — no sustained heat after this.',
+    `Melt the oils at ${dualRange(120, 130)} and let the lye solution cool — no sustained heat after this.`,
     'Blend oils and lye to a thick trace.',
     'Cover and let the paste saponify on its own heat, 12–48 hours (slow recipes take longer).',
     'Run the clarity test: stir a little paste into hot water — clear means ready, milky means wait.',
@@ -71,21 +80,21 @@ export const LS_METHOD_STAGES: Record<LsMethod, readonly string[]> = {
   lowtemp: [
     'Melt the oils in the cook vessel at the hold temperature.',
     'Add the lye solution and blend to trace.',
-    `Hold ${LS_ZONES.lowMinF}–${LS_ZONES.lowMaxF} °F, stirring now and then, until the paste passes the clarity test.`,
+    `Hold ${dualRange(LS_ZONES.lowMinF, LS_ZONES.lowMaxF)}, stirring now and then, until the paste passes the clarity test.`,
     'Dilute with hot distilled water, keeping the low heat on until fully dissolved.',
   ],
   hightemp: [
     'Use a cook vessel at least 2× the total recipe volume — the hot cook expands.',
-    `Heat the oils to the ${LS_ZONES.highMinF} °F hold and add the hot lye solution.`,
+    `Heat the oils to the ${dual(LS_ZONES.highMinF)} hold and add the hot lye solution.`,
     'Blend continuously through the cook stages until the paste passes the clarity test.',
     'Dilute with hot water at heat, or portion off as paste for later dilution.',
   ],
 };
 
 const GAP_LOW_NOTE =
-  `Below the low-temp band — bring the hold up to ${LS_ZONES.lowMinF}–${LS_ZONES.lowMaxF} °F (${LS_ZONES.lowRecommendedMinF}–${LS_ZONES.lowMaxF} recommended), or drop the heat entirely for cold-process LS.`;
+  `Below the low-temp band — bring the hold up to ${dualRange(LS_ZONES.lowMinF, LS_ZONES.lowMaxF)} — ${dualRange(LS_ZONES.lowRecommendedMinF, LS_ZONES.lowMaxF)} recommended — or drop the heat entirely for cold-process LS.`;
 const GAP_HIGH_NOTE =
-  `Running the high-temp method below its ${LS_ZONES.highMinF} °F start — the cook still works, but expect slower stage progression than at ${LS_ZONES.highMinF} °F.`;
+  `Running the high-temp method below its ${dual(LS_ZONES.highMinF)} start — the cook still works, but expect slower stage progression than at ${dual(LS_ZONES.highMinF)}.`;
 
 const LOWTEMP_HOLD: LsMethodHold = {
   lowF: LS_ZONES.lowMinF,

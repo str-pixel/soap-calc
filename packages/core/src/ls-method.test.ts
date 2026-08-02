@@ -39,7 +39,7 @@ describe('lsMethodForTemp', () => {
     expect(lsMethodForTemp(110).note).toMatch(/below the low-temp band/i);
     // The 160–215 gap copy is first-class: names the method and the 215 start.
     expect(lsMethodForTemp(180).label).toBe('High-temp LS');
-    expect(lsMethodForTemp(180).note).toMatch(/below its 215/);
+    expect(lsMethodForTemp(180).note).toMatch(/below its 102 °C \(215 °F\) start/);
     expect(lsMethodForTemp(180).note).toMatch(/slower/i);
   });
 

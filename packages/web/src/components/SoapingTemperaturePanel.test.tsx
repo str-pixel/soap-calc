@@ -80,7 +80,7 @@ test('LS: names the derived method beside the temperature', () => {
 
 test('LS: shows the honest gap note at 180 °F, and no contradicting hold hint', () => {
   renderPanel({ processVariant: 'ls', soapingTempF: '180' }, 'ls', 2.4, lsMethodForTemp(180));
-  expect(screen.getByText(/below its 215/)).toBeTruthy();
+  expect(screen.getByText(/below its 102 °C \(215 °F\) start/)).toBeTruthy();
   expect(screen.getByText(/High-temp LS/)).toBeTruthy();
   // The hold hint must not render in the gap — it would contradict the gap note above it.
   expect(screen.queryByText(/through cook and dilution/)).toBeNull();
