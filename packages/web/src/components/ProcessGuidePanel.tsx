@@ -2,6 +2,7 @@ import { HP_COOK_STAGES, LS_METHOD_STAGES, type LsMethodInfo } from '@soap-calc/
 import {
   isProcessVariantId,
   processProfileById,
+  VERIFIED_TEMP_VARIANTS,
   type ProcessId,
   type ProcessVariantId,
   type TempTarget,
@@ -13,12 +14,6 @@ type ProcessGuidePanelProps = {
   lsMethod?: LsMethodInfo | null;
   ls30Min?: boolean;
 };
-
-// Only LTHP and HTHP cook temps are verified against the roadmap source (item 21, HP row 326).
-// Fluid-HP's temp is a Wave A `// unverified` interpolation and must render hedged
-// ("≈ ... (estimated)"), never presented as authoritative. LS zones are now source-verified
-// (see core's ls-method.ts) and rendered via the derived method, not this hedge path.
-const VERIFIED_TEMP_VARIANTS = new Set<ProcessVariantId>(['hp-lthp', 'hp-hthp']);
 
 function formatTempRange(temp: TempTarget): string {
   const range = temp.lowF === temp.highF ? `${temp.lowF} °F` : `${temp.lowF}–${temp.highF} °F`;
@@ -71,8 +66,9 @@ export function ProcessGuidePanel({
           {lsMethod.inGap && <p className="results-hint">{lsMethod.note}</p>}
           {ls30Min && (
             <p className="results-hint">
-              30-minute no-paste package detected (glycerin + salt/sodium lactate) — dilute
-              immediately after the cook; no paste stage.
+              30-minute no-paste package detected (solvent-scale glycerin + salt/sodium
+              lactate) — at the 215 °F hold the cook runs continuously into dilution with
+              little or no distinct paste stage; the paste steps above compress accordingly.
             </p>
           )}
         </>

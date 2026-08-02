@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { lsMethodForTemp, type LsMethodInfo } from '@soap-calc/core';
 import { SoapingTemperaturePanel } from './SoapingTemperaturePanel';
 import { DEFAULT_SETTINGS, type RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
@@ -11,6 +12,7 @@ function renderPanel(
   over: Partial<RecipeSettings> = {},
   process: ProcessId = 'cp',
   waterLyeRatio: number | null = 2.4,
+  lsMethod: LsMethodInfo | null = null,
 ) {
   const state = { settings: { ...DEFAULT_SETTINGS, ...over } };
   const setSettings = (updater: RecipeSettings | ((s: RecipeSettings) => RecipeSettings)) => {
@@ -22,6 +24,7 @@ function renderPanel(
       setSettings={setSettings}
       process={process}
       waterLyeRatio={waterLyeRatio}
+      lsMethod={lsMethod}
     />,
   );
   return { state, ...utils };
@@ -65,31 +68,44 @@ test('HTHP shows its verified cook target instead of CP band copy', () => {
 test('LS cold-process zone (below 100 °F) gets the neutral no-external-heat note, not CP bar-band copy', () => {
   // 150 °F now resolves to the low-temp method (see the derived-method tests above); the
   // ambient no-heat sentence belongs to the cold-process zone only (< 100 °F).
-  renderPanel({ processVariant: 'ls', soapingTempF: '90' }, 'ls');
+  renderPanel({ processVariant: 'ls', soapingTempF: '90' }, 'ls', 2.4, lsMethodForTemp(90));
   expect(screen.queryByText(/most commonly recommended/i)).toBeNull();
   expect(screen.getByText(/no external heat/i)).toBeTruthy();
 });
 
 test('LS: names the derived method beside the temperature', () => {
-  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls', 2.4, lsMethodForTemp(150));
   expect(screen.getByText(/Low-temp LS/)).toBeTruthy();
 });
 
-test('LS: shows the honest gap note at 180 °F', () => {
-  renderPanel({ processVariant: 'ls', soapingTempF: '180' }, 'ls');
+test('LS: shows the honest gap note at 180 °F, and no contradicting hold hint', () => {
+  renderPanel({ processVariant: 'ls', soapingTempF: '180' }, 'ls', 2.4, lsMethodForTemp(180));
   expect(screen.getByText(/below its 215/)).toBeTruthy();
   expect(screen.getByText(/High-temp LS/)).toBeTruthy();
+  // The hold hint must not render in the gap — it would contradict the gap note above it.
+  expect(screen.queryByText(/through cook and dilution/)).toBeNull();
+});
+
+test('LS: at 150 °F (in-zone) shows the hold hint, not the gap note', () => {
+  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls', 2.4, lsMethodForTemp(150));
+  expect(screen.getByText(/through cook and dilution/)).toBeTruthy();
+  expect(screen.queryByText(/below the low-temp band/)).toBeNull();
 });
 
 test('LS: draws all three zone markers with the low-temp recommended sub-band', () => {
-  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls', 2.4, lsMethodForTemp(150));
   expect(screen.getByText('cold process')).toBeTruthy();
   expect(screen.getByText('low temp')).toBeTruthy();
   expect(screen.getByText('high temp')).toBeTruthy();
 });
 
 test('LS: at 150 °F the low-temp zone carries --active and the high zone does not', () => {
-  const { container } = renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  const { container } = renderPanel(
+    { processVariant: 'ls', soapingTempF: '150' },
+    'ls',
+    2.4,
+    lsMethodForTemp(150),
+  );
   // Render order in SoapingTemperaturePanel.tsx: cold, low, recommended (a sub-band of
   // low, not a fifth top-level zone), high — .temp-zones__zone is the shared base class,
   // so this is the only way to address a specific zone; none carries a --cold/--low/--high
@@ -104,7 +120,12 @@ test('LS: at 150 °F the low-temp zone carries --active and the high zone does n
 });
 
 test('LS: at 215 °F the high-temp zone carries --active', () => {
-  const { container } = renderPanel({ processVariant: 'ls', soapingTempF: '215' }, 'ls');
+  const { container } = renderPanel(
+    { processVariant: 'ls', soapingTempF: '215' },
+    'ls',
+    2.4,
+    lsMethodForTemp(215),
+  );
   const zones = container.querySelectorAll('.temp-zones__zone');
   const [cold, low, , high] = Array.from(zones);
   expect(high.classList.contains('temp-zones__zone--active')).toBe(true);
@@ -113,12 +134,22 @@ test('LS: at 215 °F the high-temp zone carries --active', () => {
 });
 
 test('LS: the recommended sub-band renders inside the strip', () => {
-  const { container } = renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  const { container } = renderPanel(
+    { processVariant: 'ls', soapingTempF: '150' },
+    'ls',
+    2.4,
+    lsMethodForTemp(150),
+  );
   expect(container.querySelector('.temp-zones__zone--recommended')).toBeTruthy();
 });
 
 test('LS: the low-temp zone is positioned at the sourced 120–160 °F edges (37.5%–62.5% of 60–220 °F)', () => {
-  const { container } = renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls');
+  const { container } = renderPanel(
+    { processVariant: 'ls', soapingTempF: '150' },
+    'ls',
+    2.4,
+    lsMethodForTemp(150),
+  );
   const zones = container.querySelectorAll('.temp-zones__zone');
   const low = zones[1] as HTMLElement;
   expect(low.style.left).toBe('37.5%');

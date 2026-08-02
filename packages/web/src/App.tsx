@@ -414,6 +414,7 @@ export default function App() {
               setSettings={setSettings}
               process={process}
               waterLyeRatio={vm.result?.waterLyeRatio ?? null}
+              lsMethod={vm.lsMethod}
             />
 
             <AdditivesPanel

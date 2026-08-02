@@ -253,6 +253,17 @@ const VARIANTS_BY_ID: Record<ProcessVariantId, ProcessProfile> = Object.fromEntr
   (['cp', 'hp', 'ls'] as const).flatMap((p) => PROCESS_DEFINITIONS[p].variants.map((v) => [v.variant, v])),
 ) as Record<ProcessVariantId, ProcessProfile>;
 
+/** Only LTHP and HTHP cook temps are verified against the roadmap source (item 21, HP row
+ * 326) — Fluid HP's temp is a Wave A `// unverified` interpolation and must render hedged
+ * ("≈ ... (estimated)"), never presented as authoritative. LS no longer belongs here: its
+ * zones (LS_ZONES) are source-verified and its method/hint is derived per-temperature by
+ * lsMethodForTemp, not read off this set. Shared by SoapingTemperaturePanel and
+ * ProcessGuidePanel so the two panels' verified/estimated hedging can never drift apart. */
+export const VERIFIED_TEMP_VARIANTS: ReadonlySet<ProcessVariantId> = new Set([
+  'hp-lthp',
+  'hp-hthp',
+]);
+
 export function processProfilesFor(process: ProcessId): ProcessProfile[] {
   return [...PROCESS_DEFINITIONS[process].variants];
 }

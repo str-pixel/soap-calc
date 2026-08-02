@@ -3,12 +3,10 @@ import {
   cToF,
   estimateGelPhase,
   fToC,
-  lsMethodForTemp,
   LS_ZONES,
-  LS_TEMP_MIN_F,
-  LS_TEMP_MAX_F,
   soapingTempBand,
   type GelMode,
+  type LsMethodInfo,
 } from '@soap-calc/core';
 import {
   effectiveSoapingTempF,
@@ -16,8 +14,8 @@ import {
   isProcessVariantId,
   processProfileById,
   soapingTempRangeFor,
+  VERIFIED_TEMP_VARIANTS,
   type ProcessId,
-  type ProcessVariantId,
   type TempTarget,
 } from '../lib/process';
 import type { RecipeSettings } from '../lib/recipe';
@@ -29,13 +27,10 @@ type SoapingTemperaturePanelProps = {
   /** The calculated lye-solution water:lye ratio — the gel readout's second axis. Null
    * before a result exists, which hides the readout rather than guessing. */
   waterLyeRatio: number | null;
+  /** LS's temperature-derived method (see core's lsMethodForTemp), passed by the caller —
+   * the vm is the single derivation site. Null for CP/HP. */
+  lsMethod: LsMethodInfo | null;
 };
-
-// Same verified set as ProcessGuidePanel: only the LTHP/HTHP cook temps are source-verified.
-// LS no longer belongs here — its zones (LS_ZONES) are source-verified and its method/hint
-// is derived per-temperature by lsMethodForTemp, not read off this set. Fluid HP is still an
-// estimate and must keep the ≈ hedge.
-const VERIFIED_TEMP_VARIANTS = new Set<ProcessVariantId>(['hp-lthp', 'hp-hthp']);
 
 function targetLabel(temp: TempTarget): string {
   const range =
@@ -54,6 +49,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
   setSettings,
   process,
   waterLyeRatio,
+  lsMethod,
 }: SoapingTemperaturePanelProps) {
   const variant = isProcessVariantId(settings.processVariant)
     ? settings.processVariant
@@ -92,13 +88,13 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
   };
 
   // Liquid soap only: the method (and its gap honesty) is derived purely from the hold
-  // temperature — one function owns the zones, labels and gap notes (core's ls-method.ts).
-  // Cheap and pure, so it's fine to compute unconditionally rather than gate on `process`.
-  const method = lsMethodForTemp(effectiveF);
-  // Zone strip geometry: percentages of the 60–220 °F slider span, computed straight off
-  // LS_ZONES so the strip and lsMethodForTemp can never drift apart.
-  const lsSpanF = LS_TEMP_MAX_F - LS_TEMP_MIN_F;
-  const lsPct = (f: number) => ((f - LS_TEMP_MIN_F) / lsSpanF) * 100;
+  // temperature by the vm — one function owns the zones, labels and gap notes (core's
+  // ls-method.ts), and the vm is its single derivation site; this panel just renders it.
+  // Zone strip geometry: percentages of the in-scope slider range, so the strip can never
+  // misalign with the slider track (range = 60–220 °F for LS today, same figures LS_ZONES
+  // itself uses — geometry is unchanged, just sourced from the range in scope).
+  const lsSpanF = range.maxF - range.minF;
+  const lsPct = (f: number) => ((f - range.minF) / lsSpanF) * 100;
 
   return (
     <section className="panel">
@@ -120,7 +116,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
         </div>
         <p className="panel__subtitle">
           {fToC(effectiveF)} °C ({effectiveF} °F)
-          {process === 'ls' && <> — {method.label}</>}
+          {process === 'ls' && lsMethod && <> — {lsMethod.label}</>}
         </p>
       </div>
       {showClampHint && (
@@ -163,21 +159,21 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           }}
         />
       </div>
-      {process === 'ls' && (
-        // The strip is positioned straight off °F (LS_ZONES / LS_TEMP_MIN_F–MAX_F), never
+      {process === 'ls' && lsMethod && (
+        // The strip is positioned straight off °F (LS_ZONES via the in-scope range), never
         // off the °C display value — the slider's real span is 60–220 °F and °C rounding
         // would drift the edges off their sourced figures.
         <div className="temp-zones">
           <div className="temp-zones__track" aria-hidden="true">
             <span
               className={`temp-zones__zone${
-                method.method === 'cold' ? ' temp-zones__zone--active' : ''
+                lsMethod.method === 'cold' ? ' temp-zones__zone--active' : ''
               }`}
               style={{ left: '0%', width: `${lsPct(LS_ZONES.coldMaxF)}%` }}
             />
             <span
               className={`temp-zones__zone${
-                method.method === 'lowtemp' ? ' temp-zones__zone--active' : ''
+                lsMethod.method === 'lowtemp' ? ' temp-zones__zone--active' : ''
               }`}
               style={{
                 left: `${lsPct(LS_ZONES.lowMinF)}%`,
@@ -196,7 +192,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
             />
             <span
               className={`temp-zones__zone${
-                method.method === 'hightemp' ? ' temp-zones__zone--active' : ''
+                lsMethod.method === 'hightemp' ? ' temp-zones__zone--active' : ''
               }`}
               style={{
                 left: `${lsPct(LS_ZONES.highMinF)}%`,
@@ -211,7 +207,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           </div>
         </div>
       )}
-      {process === 'ls' && method.note && <p className="results-hint">{method.note}</p>}
+      {process === 'ls' && lsMethod?.note && <p className="results-hint">{lsMethod.note}</p>}
       {band ? (
         <>
           <p className="results-hint">{band.note}</p>
@@ -256,26 +252,32 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
       ) : profile.temp === null ? (
         // LS — the only variant with no fixed cook temp: the CP bar bands (gel phase,
         // molds) don't apply, and which sentence renders comes from the derived method,
-        // not from the raw temperature.
-        method.method === 'cold' ? (
+        // not from the raw temperature. The hold hint (below) renders ONLY outside the
+        // gap — the gap note above already said we're not at the sourced hold, so a
+        // 215-hold instruction alongside it would contradict what was just said. Cold has
+        // no hold (hold === null) and keeps its existing ambient sentence, unconditionally.
+        lsMethod?.hold === null ? (
           <p className="results-hint">
             Cold-process liquid soap uses no external heat — combine at a comfortable working
             temperature and let the paste saponify on its own schedule.
           </p>
-        ) : // Dual-unit per the panel's convention; figures and clauses per the redesign spec.
-        method.method === 'lowtemp' ? (
-          <p className="results-hint">
-            Hold {fToC(LS_ZONES.lowMinF)}–{fToC(LS_ZONES.lowMaxF)} °C ({LS_ZONES.lowMinF}–
-            {LS_ZONES.lowMaxF} °F) — {fToC(LS_ZONES.lowRecommendedMinF)}–{fToC(LS_ZONES.lowMaxF)}{' '}
-            °C ({LS_ZONES.lowRecommendedMinF}–{LS_ZONES.lowMaxF} °F) recommended — through cook
-            and dilution.
-          </p>
-        ) : (
-          <p className="results-hint">
-            Hold {fToC(LS_ZONES.highMinF)} °C ({LS_ZONES.highMinF} °F) through cook and
-            dilution — do not exceed {fToC(LS_TEMP_MAX_F)} °C ({LS_TEMP_MAX_F} °F).
-          </p>
-        )
+        ) : lsMethod && !lsMethod.inGap ? (
+          // Dual-unit per the panel's convention; figures and clauses per the redesign spec.
+          lsMethod.hold.recommendedLowF !== undefined ? (
+            <p className="results-hint">
+              Hold {fToC(lsMethod.hold.lowF)}–{fToC(lsMethod.hold.highF)} °C (
+              {lsMethod.hold.lowF}–{lsMethod.hold.highF} °F) — {fToC(lsMethod.hold.recommendedLowF)}
+              –{fToC(lsMethod.hold.highF)} °C ({lsMethod.hold.recommendedLowF}–
+              {lsMethod.hold.highF} °F) recommended — through cook and dilution.
+            </p>
+          ) : (
+            <p className="results-hint">
+              Hold {fToC(lsMethod.hold.lowF)} °C ({lsMethod.hold.lowF} °F) through cook and
+              dilution — do not exceed {fToC(lsMethod.hold.ceilingF!)} °C (
+              {lsMethod.hold.ceilingF} °F).
+            </p>
+          )
+        ) : null
       ) : (
         <p className="results-hint">
           Cook target:{' '}
