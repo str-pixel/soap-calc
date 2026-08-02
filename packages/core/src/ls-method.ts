@@ -73,7 +73,7 @@ export const LS_METHOD_STAGES: Record<LsMethod, readonly string[]> = {
   cold: [
     `Melt the oils at ${dualRange(120, 130)} and let the lye solution cool — no sustained heat after this.`,
     'Blend oils and lye to a thick trace.',
-    'Cover and let the paste saponify on its own heat, 12–48 hours (slow recipes take longer).',
+    'Cover and insulate, and let the paste saponify on its own heat, 12–48 hours (slow recipes take longer).',
     'Run the clarity test: stir a little paste into hot water — clear means ready, milky means wait.',
     'Dilute with room-temperature or warm distilled water to the target soap concentration — no external heat here either.',
   ],

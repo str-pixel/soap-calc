@@ -70,6 +70,9 @@ describe('lsMethodForTemp', () => {
     // wrongly carried it into the cold steps.
     const coldText = LS_METHOD_STAGES.cold.join(' ');
     expect(coldText).toMatch(/room-temperature or warm/i);
+    // The sourced CPLS rest step: cover AND insulate — insulation is how the paste
+    // keeps its own reaction heat with no external source.
+    expect(coldText).toMatch(/insulate/i);
     expect(coldText).not.toMatch(/hot distilled water/i);
     // The heated methods keep their sourced hot-water dilution.
     expect(LS_METHOD_STAGES.lowtemp.join(' ')).toMatch(/hot distilled water/i);
