@@ -712,6 +712,15 @@ describe('ls_pcsf_emulsifier (post-cook superfat needs polysorbate 80)', () => {
     ).toBe(false);
   });
 
+  it('stays quiet when a custom-named "Tween 80" line is present (the common trade name)', () => {
+    expect(
+      has(
+        { ...pcsf, additiveEntries: [{ catalogId: '', name: 'Tween 80' }] },
+        'ls_pcsf_emulsifier',
+      ),
+    ).toBe(false);
+  });
+
   it('does not fire outside LS', () => {
     expect(has({ ...base, process: 'hp', postCookSuperfatPercent: 2 }, 'ls_pcsf_emulsifier')).toBe(
       false,
