@@ -63,4 +63,36 @@ describe('lsMethodForTemp', () => {
     expect(LS_METHOD_STAGES.cold.join(' ')).toMatch(/clarity test/i);
     expect(LS_METHOD_STAGES.hightemp.join(' ')).toMatch(/2× the total recipe volume/);
   });
+
+  it('returns an identity-stable result across calls within the same zone (React memo safety)', () => {
+    // Only 5 possible outputs (cold, low-gap, low, high-gap, high) — frozen module-level
+    // constants so a consumer's React.memo/useMemo keyed on this object never bursts just
+    // because the user nudged the slider within a zone.
+    expect(lsMethodForTemp(150)).toBe(lsMethodForTemp(155));
+    expect(lsMethodForTemp(216)).toBe(lsMethodForTemp(220));
+  });
+
+  it('exposes a structured hold field for the panels to format themselves', () => {
+    expect(lsMethodForTemp(80).hold).toBeNull();
+    expect(lsMethodForTemp(150).hold).toEqual({
+      lowF: LS_ZONES.lowMinF,
+      highF: LS_ZONES.lowMaxF,
+      recommendedLowF: LS_ZONES.lowRecommendedMinF,
+    });
+    expect(lsMethodForTemp(110).hold).toEqual({
+      lowF: LS_ZONES.lowMinF,
+      highF: LS_ZONES.lowMaxF,
+      recommendedLowF: LS_ZONES.lowRecommendedMinF,
+    });
+    expect(lsMethodForTemp(215).hold).toEqual({
+      lowF: LS_ZONES.highMinF,
+      highF: LS_ZONES.highMinF,
+      ceilingF: LS_TEMP_MAX_F,
+    });
+    expect(lsMethodForTemp(180).hold).toEqual({
+      lowF: LS_ZONES.highMinF,
+      highF: LS_ZONES.highMinF,
+      ceilingF: LS_TEMP_MAX_F,
+    });
+  });
 });

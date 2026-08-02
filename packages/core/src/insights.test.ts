@@ -645,7 +645,7 @@ describe('ls_coconut_hot_cook', () => {
     fattyAcids: { lauric: 45, myristic: 12 },
     fattyAcidCoveragePercent: 100,
   };
-  it('warns a coconut-heavy LS recipe holding ≥150 °F, regardless of zone', () => {
+  it('warns a coconut-heavy LS recipe holding ≥160 °F (the high-temp-owned region), regardless of zone', () => {
     const insight = analyzeFormulation({ ...coco, soapingTempF: 215 }).find(
       (i) => i.code === 'ls_coconut_hot_cook',
     );
@@ -655,11 +655,13 @@ describe('ls_coconut_hot_cook', () => {
     expect(insight?.message).toMatch(/180 °F/);
     // Fires across the zone boundary so complying (215 → 165) can't silence it.
     expect(has({ ...coco, soapingTempF: 165 }, 'ls_coconut_hot_cook')).toBe(true);
-    expect(has({ ...coco, soapingTempF: 150 }, 'ls_coconut_hot_cook')).toBe(true);
+    expect(has({ ...coco, soapingTempF: 160 }, 'ls_coconut_hot_cook')).toBe(true);
   });
-  it('stays quiet below 150 °F, for non-coconut recipes, at low FA coverage, and outside LS', () => {
-    expect(has({ ...coco, soapingTempF: 149 }, 'ls_coconut_hot_cook')).toBe(false);
+  it('stays quiet below 160 °F (including the 150 °F default), for non-coconut recipes, at low FA coverage, NaN, and outside LS', () => {
+    expect(has({ ...coco, soapingTempF: 159 }, 'ls_coconut_hot_cook')).toBe(false);
+    expect(has({ ...coco, soapingTempF: 150 }, 'ls_coconut_hot_cook')).toBe(false);
     expect(has({ ...coco, soapingTempF: undefined }, 'ls_coconut_hot_cook')).toBe(false);
+    expect(has({ ...coco, soapingTempF: Number.NaN }, 'ls_coconut_hot_cook')).toBe(false);
     expect(
       has({ ...coco, fattyAcids: { oleic: 70 }, soapingTempF: 215 }, 'ls_coconut_hot_cook'),
     ).toBe(false);
@@ -718,6 +720,17 @@ describe('ls_pcsf_emulsifier (post-cook superfat needs polysorbate 80)', () => {
         { ...pcsf, additiveEntries: [{ catalogId: '', name: 'Tween 80' }] },
         'ls_pcsf_emulsifier',
       ),
+    ).toBe(false);
+  });
+
+  it('stays quiet for the no-word-boundary spellings "Tween80" and "Poly-80"', () => {
+    // 'Tween80' and 'Poly-80' have no word boundary before the digits, so the existing
+    // \btween\b / \bpoly 80\b keywords miss them without an explicit no-space check.
+    expect(
+      has({ ...pcsf, additiveEntries: [{ catalogId: '', name: 'Tween80' }] }, 'ls_pcsf_emulsifier'),
+    ).toBe(false);
+    expect(
+      has({ ...pcsf, additiveEntries: [{ catalogId: '', name: 'Poly-80' }] }, 'ls_pcsf_emulsifier'),
     ).toBe(false);
   });
 

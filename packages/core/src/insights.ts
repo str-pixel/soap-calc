@@ -13,6 +13,7 @@ import {
   type NamedCatalogEntry,
   type NamedOilEntry,
 } from './keyword-match.js';
+import { LS_ZONES } from './ls-method.js';
 
 // Coconut-heavy proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" — a
 // documented estimate, not a cited source constant. Process-invariant (isCoconutHeavy):
@@ -920,12 +921,19 @@ export const INSIGHT_RULES: InsightRule[] = [
     code: 'ls_coconut_hot_cook',
     processes: ['ls'],
     // Coconut-heavy LS expands hard in a hot cook (sourced; see the redesign spec). Fires
-    // from 150 °F REGARDLESS of zone: the compliant reduced range 150–175 dips into the
-    // low-temp band on purpose, and an insight keyed to the high zone would vanish the
-    // moment the user follows it. isCoconutHeavy carries its own FA-coverage gate.
+    // across the high-temp-owned region (>=160, i.e. LS_ZONES.lowMaxF — the gap from 160
+    // is owned by high temp, see ls-method.ts) REGARDLESS of zone: the compliant reduced
+    // range 150–175 dips into the low-temp band on purpose, and an insight keyed only to
+    // the high zone would vanish the moment the user follows it. 160 (not 150) is the
+    // threshold because below it the user has already left the hot cook — the app's own
+    // fresh-recipe default (150 °F) must not warn. isCoconutHeavy carries its own
+    // FA-coverage gate; Number.isFinite also closes the NaN hole (NaN < anything is false,
+    // which used to silently pass the old `< 150` guard).
     check: (input) => {
       if (!isCoconutHeavy(input)) return null;
-      if (input.soapingTempF === undefined || input.soapingTempF < 150) return null;
+      if (!Number.isFinite(input.soapingTempF) || input.soapingTempF! < LS_ZONES.lowMaxF) {
+        return null;
+      }
       return {
         level: 'warning',
         code: 'ls_coconut_hot_cook',
@@ -942,16 +950,20 @@ export const INSIGHT_RULES: InsightRule[] = [
     processes: ['ls'],
     // A post-cook superfat needs an emulsifier in liquid soap: the added oil is never
     // saponified, and without one it floats off instead of staying suspended. Fires only
-    // while no polysorbate line is in the recipe; three keyword checks cover the common
-    // custom-name spellings (polysorbate / poly 80 / tween) since wordBoundaryMatch is a
-    // literal \b<keyword>\b match and no single keyword covers all of them.
+    // while no polysorbate line is in the recipe; five keyword checks cover the common
+    // custom-name spellings (polysorbate / poly 80 / tween / tween80 / poly-80) since
+    // wordBoundaryMatch is a literal \b<keyword>\b match and no single keyword covers all
+    // of them — 'Tween80' and 'Poly-80' in particular have no word boundary before the
+    // digits, so the space-delimited keywords above miss them.
     check: (input) => {
       const pcsf = input.postCookSuperfatPercent ?? 0;
       if (!Number.isFinite(pcsf) || pcsf < 0.5) return null;
       if (
         additiveMatches(input.additiveEntries, 'polysorbate-80', 'polysorbate') ||
         additiveNameMatches(input.additiveEntries, 'poly 80') ||
-        additiveNameMatches(input.additiveEntries, 'tween')
+        additiveNameMatches(input.additiveEntries, 'tween') ||
+        additiveNameMatches(input.additiveEntries, 'tween80') ||
+        additiveNameMatches(input.additiveEntries, 'poly-80')
       ) {
         return null;
       }
