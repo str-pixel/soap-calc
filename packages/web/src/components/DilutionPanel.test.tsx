@@ -20,6 +20,16 @@ test('renders the dilution figures', () => {
   expect(screen.getByText('2,400 g (84.7 oz / 5.29 lb)')).toBeTruthy();
 });
 
+test('shows the finished volume the bottle count derives from, and names the density', () => {
+  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
+  // 4,000 g ÷ 1.03 g/ml = 3,883 ml — the ONLY bridge between the panel's masses and its
+  // bottle count. Without it a maker checking 4,000 ÷ 250 expects 16 bottles and sees 15.
+  expect(screen.getByText('≈ Finished volume')).toBeTruthy();
+  expect(screen.getByText('3,883 ml')).toBeTruthy();
+  // The density is a planning proxy, not a measured value — the panel must say so.
+  expect(screen.getByText(/1\.03 g\/ml/)).toBeTruthy();
+});
+
 test('shows the target-exceeds-paste warning', () => {
   render(<DilutionPanel dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }} soapConcentrationPercent="90" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
   expect(screen.getByRole('alert').textContent).toContain('more dilute');

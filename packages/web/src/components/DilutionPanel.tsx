@@ -1,8 +1,10 @@
 import {
   LS_DILUTION_TARGETS,
+  LS_SOLUTION_DENSITY_G_PER_ML,
   lsBottleCount,
   lsConcentrationAboveAllMinimums,
   lsDilutionUsesFor,
+  lsFinishedVolumeMl,
   type DilutionResult,
 } from '@soap-calc/core';
 import { formatConcentrationPercent } from '../lib/format';
@@ -50,6 +52,10 @@ export function DilutionPanel({
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
+  // Every other figure here is mass; the bottle count is volume. The density is the only
+  // bridge between them, so show the volume it produces — otherwise a maker dividing the
+  // bottled grams by the bottle size lands one bottle off the count and cannot see why.
+  const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
   const bottleCount =
     bottledGrams !== null && Number.isFinite(bottleMl) && bottleMl > 0
       ? lsBottleCount(bottledGrams, bottleMl)
@@ -121,6 +127,12 @@ export function DilutionPanel({
                 <dd>{formatWeight(bottledGrams, weightUnit)}</dd>
               </div>
             )}
+            {finishedVolumeMl !== null && (
+              <div className="results-grid__item">
+                <dt>≈ Finished volume</dt>
+                <dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd>
+              </div>
+            )}
             {bottleCount !== null && (
               <div className="results-grid__item">
                 <dt>≈ Bottles filled ({bottleSizeMl} ml)</dt>
@@ -128,6 +140,13 @@ export function DilutionPanel({
               </div>
             )}
           </dl>
+          {finishedVolumeMl !== null && (
+            <p className="results-hint">
+              Volume and bottle count assume ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a
+              planning figure, not a measured density. Weigh a known volume of your own
+              solution if the count has to be exact.
+            </p>
+          )}
           {dilution.targetExceedsPaste && (unknownLiquidGrams === 0 || overDilutionCertain) && (
             <p className="results-hint" role="alert">
               The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
