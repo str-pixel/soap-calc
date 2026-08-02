@@ -53,8 +53,8 @@ export const TROUBLESHOOTING: Record<'cp' | 'hp' | 'ls', readonly Troubleshootin
     {
       symptom: 'Diluted soap turns stringy or sets up like gelatin instead of staying liquid',
       cause:
-        'Usually the alkali blend, not the water: too large a NaOH share in a recipe already high in stearic and palmitic sets those sodium soaps to a semi-solid gel as the soap sits. Too much salt or thickener does the same by parking the soap at the peak of the salt curve, where viscosity is highest. Recipes low in lauric and myristic are the most prone to both.',
-      fix: 'Cut the NaOH share next batch and check the fatty-acid profile against it. For a salt gel, carry on along the salt curve — past the peak more salt thins it again, at the cost of lather, clarity and a tacky feel — or add water and use less salt next time. Extra water can loosen a gelled dual-lye soap but rarely clears it completely; the soap still cleans, so it is usable as it is.',
+        'Usually the alkali blend: too large a NaOH share in a recipe already high in stearic and palmitic sets those sodium soaps to a semi-solid gel as the soap sits. Too much salt or thickener does the same by parking the soap at the peak of the salt curve, where viscosity is highest. And a soap held above its recipe\'s own maximum concentration sets too — high-oleic recipes have the lowest ceilings. Recipes low in lauric and myristic are the most prone to all three.',
+      fix: 'Cut the NaOH share next batch and check the fatty-acid profile against it. For a salt gel, carry on along the salt curve — past the peak more salt thins it again, at the cost of lather, clarity and a tacky feel — or add water and use less salt next time. If the recipe is over its concentration ceiling (no NaOH or salt in play), add water until it drops below the ceiling — the dilution panel shows the recipe\'s maximum. Extra water rarely fully clears an alkali-blend gel, but the soap still cleans and is usable as it is.',
     },
     {
       symptom: 'A separate oily layer floats on top of the paste or the diluted soap',

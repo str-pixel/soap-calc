@@ -37,6 +37,19 @@ describe('troubleshootingFor', () => {
     expect(gel!.fix).not.toMatch(/less water/i);
   });
 
+  it('also names the over-concentration cause the app’s own dilution guide asserts', () => {
+    // LS_MINIMUM_DILUTION_GUIDE says a soap held above its recipe's own maximum
+    // concentration thickens or sets solid — the gel entry denied that path entirely by
+    // opening "not the water", when a too-concentrated dilution IS a water-side cause. The
+    // NaOH/stearic-palmitic cause stays the LEAD cause; this is additive, not a replacement.
+    const gel = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom))!;
+    expect(gel.cause).toMatch(/maximum concentration|ceiling/i);
+    expect(gel.fix).toMatch(/add water/i);
+    // Still must not reintroduce the inverted "add water / less water" fix as the ONLY
+    // remedy, and must not smuggle back the flatly wrong "not the water" denial.
+    expect(gel.fix).not.toMatch(/less water/i);
+  });
+
   it('runs the salt curve in the same direction as the rest of the app — the gel is the PEAK', () => {
     // The salt curve climbs to a peak and then declines: past the peak, MORE salt thins the
     // soap again. So a salt-caused gel means the recipe is sitting at the peak, and the
