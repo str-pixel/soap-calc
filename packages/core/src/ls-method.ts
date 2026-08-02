@@ -75,7 +75,7 @@ export const LS_METHOD_STAGES: Record<LsMethod, readonly string[]> = {
     'Blend oils and lye to a thick trace.',
     'Cover and let the paste saponify on its own heat, 12–48 hours (slow recipes take longer).',
     'Run the clarity test: stir a little paste into hot water — clear means ready, milky means wait.',
-    'Dilute with hot distilled water to the target soap concentration.',
+    'Dilute with room-temperature or warm distilled water to the target soap concentration — no external heat here either.',
   ],
   lowtemp: [
     'Melt the oils in the cook vessel at the hold temperature.',

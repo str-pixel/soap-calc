@@ -92,6 +92,15 @@ test('LS: at 150 °F (in-zone) shows the hold hint, not the gap note', () => {
   expect(screen.queryByText(/below the low-temp band/)).toBeNull();
 });
 
+test('LS: at 215 °F the hold is scoped to the cook, with the sourced dilution-water range', () => {
+  // The source holds 215 °F for the cook but dilutes with 160–200 °F water (heat
+  // maintained, never boiling) — a "215 through dilution" claim overstated it.
+  renderPanel({ processVariant: 'ls', soapingTempF: '215' }, 'ls', 2.4, lsMethodForTemp(215));
+  expect(screen.getByText(/for the cook/)).toBeTruthy();
+  expect(screen.getByText(/71–93 °C \(160–200 °F\)/)).toBeTruthy();
+  expect(screen.queryByText(/215 °F\) through cook and dilution/)).toBeNull();
+});
+
 test('LS: draws all three zone markers with the low-temp recommended sub-band', () => {
   renderPanel({ processVariant: 'ls', soapingTempF: '150' }, 'ls', 2.4, lsMethodForTemp(150));
   expect(screen.getByText('cold process')).toBeTruthy();

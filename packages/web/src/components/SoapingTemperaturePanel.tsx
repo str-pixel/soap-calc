@@ -271,10 +271,13 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
               {lsMethod.hold.highF} °F) recommended — through cook and dilution.
             </p>
           ) : (
+            // The 215 °F hold is the COOK figure; dilution runs on hot water at the
+            // sourced 160–200 °F with the heat maintained — asserting 215 through
+            // dilution would overstate the source and sit against its do-not-boil line.
             <p className="results-hint">
-              Hold {fToC(lsMethod.hold.lowF)} °C ({lsMethod.hold.lowF} °F) through cook and
-              dilution — do not exceed {fToC(lsMethod.hold.ceilingF!)} °C (
-              {lsMethod.hold.ceilingF} °F).
+              Hold {fToC(lsMethod.hold.lowF)} °C ({lsMethod.hold.lowF} °F) for the cook, then
+              dilute with hot water at {fToC(160)}–{fToC(200)} °C (160–200 °F) with the heat
+              on — do not exceed {fToC(lsMethod.hold.ceilingF!)} °C ({lsMethod.hold.ceilingF} °F).
             </p>
           )
         ) : null

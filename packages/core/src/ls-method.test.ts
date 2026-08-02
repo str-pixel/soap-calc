@@ -64,6 +64,17 @@ describe('lsMethodForTemp', () => {
     expect(LS_METHOD_STAGES.hightemp.join(' ')).toMatch(/2× the total recipe volume/);
   });
 
+  it('cold dilutes without external heat — room-temperature or warm water, never hot', () => {
+    // The source's CPLS dilution step is explicit: room temperature or warm water, no
+    // additional external heat. "Hot" is the LTLS/HTLS instruction; a prior revision
+    // wrongly carried it into the cold steps.
+    const coldText = LS_METHOD_STAGES.cold.join(' ');
+    expect(coldText).toMatch(/room-temperature or warm/i);
+    expect(coldText).not.toMatch(/hot distilled water/i);
+    // The heated methods keep their sourced hot-water dilution.
+    expect(LS_METHOD_STAGES.lowtemp.join(' ')).toMatch(/hot distilled water/i);
+  });
+
   it('returns an identity-stable result across calls within the same zone (React memo safety)', () => {
     // Only 5 possible outputs (cold, low-gap, low, high-gap, high) — frozen module-level
     // constants so a consumer's React.memo/useMemo keyed on this object never bursts just
