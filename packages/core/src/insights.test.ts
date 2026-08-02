@@ -670,6 +670,46 @@ describe('ls_coconut_hot_cook', () => {
   });
 });
 
+describe('ls_pcsf_emulsifier (post-cook superfat needs polysorbate 80)', () => {
+  const pcsf = { ...base, process: 'ls' as const, postCookSuperfatPercent: 2 };
+
+  it('fires for an LS recipe with a post-cook superfat and no emulsifier line', () => {
+    const insight = analyzeFormulation(pcsf).find((i) => i.code === 'ls_pcsf_emulsifier');
+    expect(insight?.level).toBe('info');
+    expect(insight?.message).toMatch(/polysorbate/i);
+  });
+
+  it('stays quiet below the 0.5% post-cook-superfat floor', () => {
+    expect(has({ ...pcsf, postCookSuperfatPercent: 0.4 }, 'ls_pcsf_emulsifier')).toBe(false);
+    expect(has({ ...pcsf, postCookSuperfatPercent: 0 }, 'ls_pcsf_emulsifier')).toBe(false);
+    expect(has({ ...base, process: 'ls' }, 'ls_pcsf_emulsifier')).toBe(false);
+  });
+
+  it('stays quiet when a polysorbate-80 catalog line is present', () => {
+    expect(
+      has(
+        { ...pcsf, additiveEntries: [{ catalogId: 'polysorbate-80', name: 'Polysorbate 80' }] },
+        'ls_pcsf_emulsifier',
+      ),
+    ).toBe(false);
+  });
+
+  it('stays quiet when a custom-named "poly 80 blend" line is present (keyword match)', () => {
+    expect(
+      has(
+        { ...pcsf, additiveEntries: [{ catalogId: '', name: 'poly 80 blend' }] },
+        'ls_pcsf_emulsifier',
+      ),
+    ).toBe(false);
+  });
+
+  it('does not fire outside LS', () => {
+    expect(has({ ...base, process: 'hp', postCookSuperfatPercent: 2 }, 'ls_pcsf_emulsifier')).toBe(
+      false,
+    );
+  });
+});
+
 describe('LS quality remap + dual-lye recommender', () => {
   const ls: FormulationAnalysisInput = {
     ...base,
@@ -1014,10 +1054,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 38 unique codes', () => {
+  it('declares 39 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(38);
-    expect(new Set(declared).size).toBe(38);
+    expect(declared).toHaveLength(39);
+    expect(new Set(declared).size).toBe(39);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1126,6 +1166,7 @@ describe('rule registry consistency', () => {
     },
     ls_superfat_high: { superfatPercent: 5, process: 'ls' },
     ls_no_superfat_buffer: { superfatPercent: 0, process: 'ls' },
+    ls_pcsf_emulsifier: { postCookSuperfatPercent: 2, process: 'ls' },
     ls_castor_no_lather: {
       fattyAcids: { ricinoleic: 6 },
       fattyAcidCoveragePercent: 100,

@@ -371,6 +371,17 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     doseBasis: 'solution',
     processes: ['ls'],
   },
+  {
+    // Polysorbate 80 — the LS post-cook-superfat emulsifier: warmed and premixed 1:1 with
+    // the PCSF oil so the oil stays suspended instead of separating. Dosed as % of oils to
+    // mirror the PCSF percent it pairs with (1:1), typically 1–3%.
+    id: 'polysorbate-80',
+    name: 'Polysorbate 80',
+    typicalLow: 1,
+    typicalHigh: 3,
+    defaultStage: 'after_cook',
+    processes: ['ls'],
+  },
 ] as const;
 
 /** Entries offered for a given process: unscoped entries (no `processes`) apply to all

@@ -938,6 +938,27 @@ export const INSIGHT_RULES: InsightRule[] = [
     },
   },
   {
+    code: 'ls_pcsf_emulsifier',
+    processes: ['ls'],
+    // A post-cook superfat needs an emulsifier in liquid soap: the added oil is never
+    // saponified, and without one it floats off instead of staying suspended. Fires only
+    // while no polysorbate line is in the recipe; keyword-matched so a custom-named line
+    // ("poly 80") also counts as compliance.
+    check: (input) => {
+      const pcsf = input.postCookSuperfatPercent ?? 0;
+      if (!Number.isFinite(pcsf) || pcsf < 0.5) return null;
+      if (additiveMatches(input.additiveEntries, 'polysorbate-80', 'poly 80')) return null;
+      return {
+        level: 'info',
+        code: 'ls_pcsf_emulsifier',
+        message:
+          'Post-cook superfat oil needs an emulsifier in liquid soap — warm polysorbate 80 ' +
+          '1:1 with the oil and premix before adding, or the oil separates instead of staying ' +
+          'suspended. An antioxidant alongside helps the unsaponified oil keep.',
+      };
+    },
+  },
+  {
     code: 'hp_thick_phase_suppressant',
     processes: ['hp'],
     check: (input) => {

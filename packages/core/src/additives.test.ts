@@ -433,6 +433,21 @@ describe('sorbitol mirrors sugar per process (CP source: "same suggested usage r
   });
 });
 
+describe('polysorbate-80 (LS post-cook-superfat emulsifier)', () => {
+  it('is LS-only, 1–3% of oils, dosed after cook', () => {
+    const p = catalogEntryById('polysorbate-80');
+    expect(p).toBeDefined();
+    expect(p?.name).toBe('Polysorbate 80');
+    expect(p?.typicalLow).toBe(1);
+    expect(p?.typicalHigh).toBe(3);
+    expect(p?.defaultStage).toBe('after_cook');
+    expect(p?.processes).toEqual(['ls']);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === 'polysorbate-80')).toBe(true);
+    expect(catalogEntriesForProcess('cp').some((e) => e.id === 'polysorbate-80')).toBe(false);
+    expect(catalogEntriesForProcess('hp').some((e) => e.id === 'polysorbate-80')).toBe(false);
+  });
+});
+
 describe('isAdditiveOfferedFor (single source of truth)', () => {
   it('agrees with the picker list for every process', () => {
     for (const process of ['cp', 'hp', 'ls'] as const) {
