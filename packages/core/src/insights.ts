@@ -942,12 +942,18 @@ export const INSIGHT_RULES: InsightRule[] = [
     processes: ['ls'],
     // A post-cook superfat needs an emulsifier in liquid soap: the added oil is never
     // saponified, and without one it floats off instead of staying suspended. Fires only
-    // while no polysorbate line is in the recipe; keyword-matched so a custom-named line
-    // ("poly 80") also counts as compliance.
+    // while no polysorbate line is in the recipe; two keyword checks cover both common
+    // custom-name spellings ("Polysorbate 80" and "poly 80 blend") since wordBoundaryMatch
+    // is a literal \b<keyword>\b match and neither single keyword covers both shapes.
     check: (input) => {
       const pcsf = input.postCookSuperfatPercent ?? 0;
       if (!Number.isFinite(pcsf) || pcsf < 0.5) return null;
-      if (additiveMatches(input.additiveEntries, 'polysorbate-80', 'poly 80')) return null;
+      if (
+        additiveMatches(input.additiveEntries, 'polysorbate-80', 'polysorbate') ||
+        additiveNameMatches(input.additiveEntries, 'poly 80')
+      ) {
+        return null;
+      }
       return {
         level: 'info',
         code: 'ls_pcsf_emulsifier',

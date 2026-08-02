@@ -703,6 +703,15 @@ describe('ls_pcsf_emulsifier (post-cook superfat needs polysorbate 80)', () => {
     ).toBe(false);
   });
 
+  it('stays quiet when a custom-named "Polysorbate 80" line is present (the other common spelling)', () => {
+    expect(
+      has(
+        { ...pcsf, additiveEntries: [{ catalogId: '', name: 'Polysorbate 80' }] },
+        'ls_pcsf_emulsifier',
+      ),
+    ).toBe(false);
+  });
+
   it('does not fire outside LS', () => {
     expect(has({ ...base, process: 'hp', postCookSuperfatPercent: 2 }, 'ls_pcsf_emulsifier')).toBe(
       false,
