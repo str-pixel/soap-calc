@@ -1,7 +1,6 @@
 import {
   LS_DILUTION_TARGETS,
   LS_SOLUTION_DENSITY_G_PER_ML,
-  lsBottleCount,
   lsConcentrationAboveAllMinimums,
   lsDilutionUsesFor,
   lsFinishedVolumeMl,
@@ -16,9 +15,6 @@ type DilutionPanelProps = {
   soapConcentrationPercent: string;
   onSoapConcentrationChange: (value: string) => void;
   weightUnit: WeightUnit;
-  /** Bottle size in ml for the "bottles filled" readout below. */
-  bottleSizeMl: string;
-  onBottleSizeMlChange: (value: string) => void;
   /** Water the recipe's alternative liquids already put in the paste. Deducted from the
    * dilution figure upstream; passed here only so the readout can say so. */
   altLiquidWaterGrams?: number;
@@ -28,10 +24,10 @@ type DilutionPanelProps = {
   /** The over-dilution verdict holds whatever the undeclared liquid contains, so it is
    * stated as fact rather than hedged. */
   overDilutionCertain?: boolean;
-  /** The mass actually bottled (solution base + additives, append-mode post-cook oil,
-   * split-liquid solids — see computeBottledSolutionGrams). Drives the bottle estimate
-   * AND is shown as its own row when it differs from the solution, so the count and the
-   * masses on screen reconcile. The dilution figures stay chemistry-only. */
+  /** The mass of finished product (solution base + additives, append-mode post-cook oil,
+   * split-liquid solids — see computeBottledSolutionGrams). Shown as its own row when it
+   * differs from the solution, and it is what the finished VOLUME is derived from. The
+   * dilution figures themselves stay chemistry-only. */
   bottledSolutionGrams?: number | null;
 };
 
@@ -40,29 +36,21 @@ export function DilutionPanel({
   soapConcentrationPercent,
   onSoapConcentrationChange,
   weightUnit,
-  bottleSizeMl,
-  onBottleSizeMlChange,
   altLiquidWaterGrams = 0,
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
   bottledSolutionGrams = null,
 }: DilutionPanelProps) {
-  const bottleMl = Number(bottleSizeMl);
   // Which intended uses the current target suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
-  // Every other figure here is mass; the bottle count is volume. The density is the only
-  // bridge between them, so show the volume it produces — otherwise a maker dividing the
-  // bottled grams by the bottle size lands one bottle off the count and cannot see why.
+  // Every other figure here is mass. Volume is what tells a maker whether their dilution
+  // vessel and packaging are big enough, and it is what the separate bottle count works
+  // from — so the density bridge is shown here rather than left implicit.
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
-  const bottleCount =
-    bottledGrams !== null && Number.isFinite(bottleMl) && bottleMl > 0
-      ? lsBottleCount(bottledGrams, bottleMl)
-      : null;
-  // Show the mass the count is computed from whenever it differs from the solution row —
-  // otherwise "Finished solution 4,000 g" above "17 bottles" leaves the user's own
-  // arithmetic (15) contradicting the panel.
+  // Show the product mass whenever it differs from the solution row, so the finished
+  // VOLUME below (derived from it, not from the solution) reconciles with what is above it.
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
   return (
@@ -84,18 +72,6 @@ export function DilutionPanel({
           value={soapConcentrationPercent}
           onChange={(e) => onSoapConcentrationChange(e.target.value)}
           aria-label="Target soap concentration percent"
-        />
-      </label>
-      <label className="field">
-        <span>Bottle size (ml)</span>
-        <input
-          type="number"
-          className="input input--number"
-          min={1}
-          step={1}
-          value={bottleSizeMl}
-          onChange={(e) => onBottleSizeMlChange(e.target.value)}
-          aria-label="Bottle size (ml)"
         />
       </label>
       {dilution ? (
@@ -123,7 +99,7 @@ export function DilutionPanel({
             </div>
             {showBottledRow && bottledGrams !== null && (
               <div className="results-grid__item">
-                <dt>≈ Bottled product</dt>
+                <dt>≈ Finished product</dt>
                 <dd>{formatWeight(bottledGrams, weightUnit)}</dd>
               </div>
             )}
@@ -133,18 +109,12 @@ export function DilutionPanel({
                 <dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd>
               </div>
             )}
-            {bottleCount !== null && (
-              <div className="results-grid__item">
-                <dt>≈ Bottles filled ({bottleSizeMl} ml)</dt>
-                <dd>{bottleCount}</dd>
-              </div>
-            )}
           </dl>
           {finishedVolumeMl !== null && (
             <p className="results-hint">
-              Volume and bottle count assume ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a
-              planning figure, not a measured density. Weigh a known volume of your own
-              solution if the count has to be exact.
+              Volume assumes ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a planning figure, not
+              a measured density. Weigh a known volume of your own solution if it has to be
+              exact.
             </p>
           )}
           {dilution.targetExceedsPaste && (unknownLiquidGrams === 0 || overDilutionCertain) && (

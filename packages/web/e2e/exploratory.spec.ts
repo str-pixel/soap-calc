@@ -351,8 +351,6 @@ test.describe('liquid soap', () => {
     const target = page.getByLabel('Target soap concentration percent');
     await target.fill('25');
     await target.blur();
-    await page.getByLabel('Bottle size (ml)').fill('250');
-    await page.getByLabel('Bottle size (ml)').blur();
     const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
     for (const label of [/Dilution water to add/, /Paste \(anhydrous\)/, /Finished solution/, /Total water/]) {
       const dd = section.locator('dt').filter({ hasText: label }).first().locator('xpath=following-sibling::dd[1]');
@@ -361,6 +359,17 @@ test.describe('liquid soap', () => {
     await target.fill('99');
     await target.blur();
     await expect(section.getByRole('alert')).toContainText(/already more dilute/);
+  });
+
+  test('bottle count is a separate snippet, collapsed until opened', async ({ page }) => {
+    // Bottling is a step after the batch dilution, so its field and count live outside the
+    // dilution figures and stay closed until wanted.
+    const bottles = page.locator('details').filter({ hasText: 'Bottle count' }).first();
+    await expect(page.getByLabel('Bottle size (ml)')).toBeHidden();
+    await bottles.locator('summary').click();
+    await page.getByLabel('Bottle size (ml)').fill('500');
+    await page.getByLabel('Bottle size (ml)').blur();
+    await expect(bottles).toContainText(/Bottles filled \(500 ml\)/);
   });
 
   test('negative superfat triggers Neutralize panel with citric estimate', async ({ page }, testInfo) => {

@@ -3,6 +3,7 @@ import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
+import { BottleCalculator } from './components/BottleCalculator';
 import { DilutionPanel } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
@@ -442,12 +443,18 @@ export default function App() {
                   setSettings({ ...settings, soapConcentrationPercent: value })
                 }
                 weightUnit={weightUnit}
-                bottleSizeMl={bottleSizeMl}
-                onBottleSizeMlChange={setBottleSizeMl}
                 altLiquidWaterGrams={vm.splitLiquidPasteWater}
                 unknownLiquidGrams={vm.unknownLiquidGrams}
                 overDilutionCertain={vm.overDilutionCertain}
                 bottledSolutionGrams={vm.bottledSolutionGrams}
+              />
+            )}
+            {processOffers(process, 'dilution') && (
+              // Packaging is its own step after the batch dilution — see BottleCalculator.
+              <BottleCalculator
+                finishedGrams={vm.bottledSolutionGrams ?? vm.dilution?.solutionGrams ?? null}
+                bottleSizeMl={bottleSizeMl}
+                onBottleSizeMlChange={setBottleSizeMl}
               />
             )}
 

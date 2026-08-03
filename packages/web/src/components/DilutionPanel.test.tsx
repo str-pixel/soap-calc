@@ -11,19 +11,17 @@ const RESULT: DilutionResult = {
   dilutionWaterGrams: 2400, glycerinGrams: 110, soapConcentrationPercent: 30, targetExceedsPaste: false,
 };
 
-const BOTTLE_PROPS = { bottleSizeMl: '250', onBottleSizeMlChange: () => {} };
-
 test('renders the dilution figures', () => {
-  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
+  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   expect(screen.getByText('Dilution water to add')).toBeTruthy();
   // The pour figure carries the other scale units so it reads on any kitchen scale.
   expect(screen.getByText('2,400 g (84.7 oz / 5.29 lb)')).toBeTruthy();
 });
 
 test('shows the finished volume the bottle count derives from, and names the density', () => {
-  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
-  // 4,000 g ÷ 1.03 g/ml = 3,883 ml — the ONLY bridge between the panel's masses and its
-  // bottle count. Without it a maker checking 4,000 ÷ 250 expects 16 bottles and sees 15.
+  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
+  // 4,000 g ÷ 1.03 g/ml = 3,883 ml. Volume is what sizes the dilution vessel and the
+  // packaging, and it is what the separate bottle count works from.
   expect(screen.getByText('≈ Finished volume')).toBeTruthy();
   expect(screen.getByText('3,883 ml')).toBeTruthy();
   // The density is a planning proxy, not a measured value — the panel must say so.
@@ -31,35 +29,27 @@ test('shows the finished volume the bottle count derives from, and names the den
 });
 
 test('shows the target-exceeds-paste warning', () => {
-  render(<DilutionPanel dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }} soapConcentrationPercent="90" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
+  render(<DilutionPanel dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }} soapConcentrationPercent="90" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   expect(screen.getByRole('alert').textContent).toContain('more dilute');
 });
 
 test('shows a hint when dilution is null', () => {
-  render(<DilutionPanel dilution={null} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
+  render(<DilutionPanel dilution={null} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   expect(screen.getByText(/Enter oils and a target/)).toBeTruthy();
 });
 
 test('editing the concentration calls onSoapConcentrationChange', () => {
   const onChange = vi.fn();
-  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={onChange} weightUnit="g" {...BOTTLE_PROPS} />);
+  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={onChange} weightUnit="g" />);
   fireEvent.change(screen.getByLabelText('Target soap concentration percent'), { target: { value: '25' } });
   expect(onChange).toHaveBeenCalledWith('25');
 });
 
-test('shows bottles filled from the finished solution weight and bottle size, hedged as approximate', () => {
-  // 4000 g solution / 1.03 g/ml ≈ 3883 ml; 3883 / 250 = floor(15.5) = 15 bottles.
-  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
-  expect(screen.getByText(/≈\s*Bottles filled/)).toBeTruthy();
-  expect(screen.getByText('15')).toBeTruthy();
-});
-
-test('bottle count derives from the bottled-product mass, which is shown so the numbers reconcile', () => {
-  // Solution-dosed additives (fragrance, pearlizer) and after-cook thickeners are bottled
-  // too. 4000 g solution + 515 g extras = 4515 g / 1.03 ≈ 4383 ml → floor(4383/250) = 17
-  // bottles, vs 15 from the bare solution. The 4,515 g figure the count is computed from
-  // must be ON SCREEN — printing "Finished solution 4,000 g" above "17 bottles" left the
-  // user's own arithmetic (15) contradicting the panel (code-review 2026-08-01).
+test('shows the finished-product mass when extras make it exceed the solution', () => {
+  // Solution-dosed additives (fragrance, pearlizer) and after-cook thickeners end up in the
+  // product too: 4,000 g solution + 515 g extras. That mass is what the finished VOLUME is
+  // derived from, so it must be on screen or the volume cannot be reconciled with the rows
+  // above it (code-review 2026-08-01).
   render(
     <DilutionPanel
       dilution={RESULT}
@@ -67,43 +57,24 @@ test('bottle count derives from the bottled-product mass, which is shown so the 
       onSoapConcentrationChange={() => {}}
       weightUnit="g"
       bottledSolutionGrams={4515}
-      {...BOTTLE_PROPS}
     />,
   );
-  expect(screen.getByText('17')).toBeTruthy();
-  expect(screen.getByText(/Bottled product/)).toBeTruthy();
+  expect(screen.getByText(/Finished product/)).toBeTruthy();
   expect(screen.getByText('4,515 g')).toBeTruthy();
+  // 4,515 g ÷ 1.03 = 4,383 ml — the volume follows the product mass, not the solution.
+  expect(screen.getByText('4,383 ml')).toBeTruthy();
 });
 
-test('without a bottled mass the count falls back to the solution and no reconciliation row shows', () => {
+test('omits the finished-product row when it matches the solution', () => {
   render(
     <DilutionPanel
       dilution={RESULT}
       soapConcentrationPercent="30"
       onSoapConcentrationChange={() => {}}
       weightUnit="g"
-      {...BOTTLE_PROPS}
     />,
   );
-  expect(screen.getByText('15')).toBeTruthy();
-  expect(screen.queryByText(/Bottled product/)).toBeNull();
-});
-
-test('editing the bottle size calls onBottleSizeMlChange', () => {
-  const onChange = vi.fn();
-  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" bottleSizeMl="250" onBottleSizeMlChange={onChange} />);
-  fireEvent.change(screen.getByLabelText('Bottle size (ml)'), { target: { value: '500' } });
-  expect(onChange).toHaveBeenCalledWith('500');
-});
-
-test('omits the bottle readout when dilution is null', () => {
-  render(<DilutionPanel dilution={null} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" {...BOTTLE_PROPS} />);
-  expect(screen.queryByText(/Bottles filled/)).toBeNull();
-});
-
-test('omits the bottle readout when the bottle size is invalid', () => {
-  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" bottleSizeMl="0" onBottleSizeMlChange={() => {}} />);
-  expect(screen.queryByText(/Bottles filled/)).toBeNull();
+  expect(screen.queryByText(/Finished product/)).toBeNull();
 });
 
 describe('intended-use dilution targets', () => {
@@ -119,8 +90,6 @@ describe('intended-use dilution targets', () => {
         soapConcentrationPercent={percent}
         onSoapConcentrationChange={() => {}}
         weightUnit="g"
-        bottleSizeMl="250"
-        onBottleSizeMlChange={() => {}}
       />,
     );
 
@@ -168,8 +137,6 @@ test('unknown-liquid hints never repeat "declare its % water" on one screen', ()
       soapConcentrationPercent="50"
       onSoapConcentrationChange={() => {}}
       weightUnit="g"
-      bottleSizeMl="250"
-      onBottleSizeMlChange={() => {}}
       altLiquidWaterGrams={900}
       unknownLiquidGrams={900}
       overDilutionCertain={false}
@@ -190,12 +157,18 @@ test('the floor hint still renders when the floor is real', () => {
       soapConcentrationPercent="30"
       onSoapConcentrationChange={() => {}}
       weightUnit="g"
-      bottleSizeMl="250"
-      onBottleSizeMlChange={() => {}}
       altLiquidWaterGrams={300}
       unknownLiquidGrams={300}
       overDilutionCertain={false}
     />,
   );
   expect(screen.getByText(/is the LEAST you will need/i)).toBeTruthy();
+});
+
+test('leaves bottling to the separate bottle count — no size field, no count here', () => {
+  // Makers dilute one large batch and package it later, often into several sizes, so the
+  // dilution figures stay about the batch (see BottleCalculator).
+  render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
+  expect(screen.queryByLabelText('Bottle size (ml)')).toBeNull();
+  expect(screen.queryByText(/Bottles filled/)).toBeNull();
 });
