@@ -61,7 +61,11 @@ export function CpExtrasPanel({ totalOilGrams }: CpExtrasPanelProps) {
         Vanillin/vanilla darkens soap to tan/brown over weeks — expected, not a defect.
       </p>
       <p className="results-hint">
-        For shelf life, antioxidants like Vitamin E, ROE, or 0.1% BHT + 0.1% sodium citrate slow
+        {/* Vitamin E is deliberately absent: the same DOS experiment this branch sources
+            elsewhere (SCI:3234) found it "showed no prophylactic effect" when used alone —
+            recommending it here would contradict that finding. ROE and the BHT + sodium
+            citrate pair are the tested effective options; keep them. */}
+        For shelf life, antioxidants like ROE or 0.1% BHT + 0.1% sodium citrate slow
         rancidity/DOS.
       </p>
       <ul className="message-list message-list--insights">

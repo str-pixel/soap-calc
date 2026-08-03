@@ -30,4 +30,15 @@ test('renders the vanillin, antioxidant, and myth-buster notes', () => {
   expect(screen.getByText(/gel is just cosmetic/i)).toBeTruthy();
 });
 
+test('does not recommend vitamin E as an anti-DOS antioxidant — the source found it ineffective alone', () => {
+  // SciSoapmaking (SCI:3234): "grapefruit seed extract, vitamin C, vitamin E, and sodium
+  // citrate ... showed no prophylactic effect in our tests" when used alone. ROE and the
+  // BHT + sodium citrate pair ARE effective and must stay recommended.
+  render(<CpExtrasPanel totalOilGrams={1000} />);
+  const antioxidantNote = screen.getByText(/slow\s+rancidity\/DOS/i);
+  expect(antioxidantNote.textContent).not.toMatch(/vitamin e/i);
+  expect(antioxidantNote.textContent).toMatch(/ROE/);
+  expect(antioxidantNote.textContent).toMatch(/0\.1% BHT \+ 0\.1% sodium citrate/);
+});
+
 
