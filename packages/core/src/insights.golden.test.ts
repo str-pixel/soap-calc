@@ -12,7 +12,7 @@ const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
   bubbly: 10, cleansing: 0, condition: 65, hardness: 30, longevity: 30, creamy: 30, ...over,
 });
 
-/** The 40 insight codes analyzeFormulation can emit today, transcribed from insights.ts.
+/** The 41 insight codes analyzeFormulation can emit today, transcribed from insights.ts.
  * Slice 3's rule-catalog conversion must keep every one of these reachable. */
 const ALL_CODES = [
   'dos_risk_no_antioxidant',
@@ -41,6 +41,7 @@ const ALL_CODES = [
   'ls_split_liquid_fat_superfat',
   'ls_split_liquid_not_dilution',
   'ls_superfat_high',
+  'ls_water_outside_envelope',
   'magnesium_salt_scum',
   'no_superfat_margin',
   'oatmeal_false_trace',
@@ -207,7 +208,7 @@ describe('analyzeFormulation golden matrix (slice 3 conversion guard)', () => {
     expect(actual).toEqual(GOLDEN);
   });
 
-  it('the matrix exercises at least 30 of the 40 insight codes', () => {
+  it('the matrix exercises at least 30 of the 41 insight codes', () => {
     const seen = new Set(
       (GOLDEN as Array<{ insights: Array<{ code: string }> }>).flatMap((c) =>
         c.insights.map((x) => x.code),

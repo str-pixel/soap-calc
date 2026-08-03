@@ -25,6 +25,11 @@ import {
 //    selects the method (core's lsMethodForTemp) instead of a fixed per-variant pick;
 //    estimateCure takes the resulting window as an override. A DATA/shape change, not a
 //    refactor — the four-variant ground is retired, not re-homed.
+// 5. 2026-08-03 LS backlog task 3: new ProcessProfile field `waterEnvelope` (single
+//    [min,max] % of oils) added to every variant — [25,60] for LS (LS:1505), null for
+//    every CP/HP variant (they publish the two-tier waterBand instead, which this cannot
+//    reuse — see the field's own doc). A DATA-SHAPE ADDITION forced through this golden by
+//    the deep-equal, not a refactor being smuggled in.
 const GOLDEN_PROFILES = {
  "cp": {
   "variant": "cp",
@@ -41,6 +46,7 @@ const GOLDEN_PROFILES = {
    ],
    "riversAbove": 38
   },
+  "waterEnvelope": null,
   "temp": null,
   "finish": {
    "minWeeks": 4
@@ -63,6 +69,7 @@ const GOLDEN_PROFILES = {
    ],
    "riversAbove": 40
   },
+  "waterEnvelope": null,
   "temp": {
    "lowF": 120,
    "highF": 160
@@ -89,6 +96,7 @@ const GOLDEN_PROFILES = {
    ],
    "riversAbove": 40
   },
+  "waterEnvelope": null,
   "temp": {
    "lowF": 215,
    "highF": 215,
@@ -116,6 +124,7 @@ const GOLDEN_PROFILES = {
    ],
    "riversAbove": 40
   },
+  "waterEnvelope": null,
   "temp": {
    "lowF": 160,
    "highF": 215
@@ -131,6 +140,10 @@ const GOLDEN_PROFILES = {
   "process": "ls",
   "label": "Liquid soap",
   "waterBand": null,
+  "waterEnvelope": [
+   25,
+   60
+  ],
   "temp": null,
   "finish": null,
   "finishKind": "sequester",

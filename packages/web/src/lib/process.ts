@@ -49,6 +49,9 @@ export type ProcessProfile = {
    * sweep found tier splits for it in no source; carrying unsourced dead constants was
    * worse than declaring the absence). */
   waterBand: WaterBand | null;
+  /** Single acceptable water range as % of oils. LS only: the reference gives one envelope
+   * rather than the two tiers CP/HP publish, so this cannot reuse WaterBand. */
+  waterEnvelope: [number, number] | null;
   temp: TempTarget | null; // null for CP (ambient) and LS (hold temp IS the method selector)
   /** null = no fixed window; the LS window is temperature-derived (lsMethodForTemp) and
    * passed to estimateCure as an override — same "declare the absence" posture as
@@ -140,6 +143,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         // rivers warning first: insights.ts checks water_band_rivers before the tier bands, so
         // the rivers coaching correctly takes precedence over "high tier" in that 38–40 overlap.
         waterBand: { lowTier: [20, 28], highTier: [32, 40], riversAbove: 38 }, // verified
+        waterEnvelope: null, // no sourced LS-style single envelope for CP — the two-tier band applies
         temp: null,
         finish: { minWeeks: 4 }, // verified
         finishKind: 'cure',
@@ -173,6 +177,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         process: 'hp',
         label: 'Low-temp HP (LTHP)',
         waterBand: HP_WATER_BAND, // verified (see HP_WATER_BAND)
+        waterEnvelope: null, // no sourced LS-style single envelope for HP — the two-tier band applies
         temp: { lowF: 120, highF: 160 }, // verified
         finish: { minWeeks: 3, maxWeeks: 8 }, // unverified: no LTHP cure window in the roadmap table
         finishKind: 'cure',
@@ -186,6 +191,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         // concentration ... 20-30%" (HP:9165-9168) below the general 25-30 discount; the
         // shared band mis-coached 20-24% as "very low". High tier + rivers stay general.
         waterBand: { lowTier: [20, 30], highTier: [32, 40], riversAbove: 40 }, // verified
+        waterEnvelope: null, // no sourced LS-style single envelope for HP — the two-tier band applies
         temp: { lowF: 215, highF: 215, ceilingF: 240 }, // verified
         finish: { minWeeks: 3, maxWeeks: 4 }, // verified
         finishKind: 'cure',
@@ -199,6 +205,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         // 29-31% ("thick custard ... spoon poured", HP:9081-9086) and HTFHP's "36-40% for
         // the best fluid results, I prefer 38%" (HP:9174-9178; recipe guide HP:9635).
         waterBand: { lowTier: [29, 31], highTier: [36, 40], riversAbove: 40 }, // verified
+        waterEnvelope: null, // no sourced LS-style single envelope for HP — the two-tier band applies
         temp: { lowF: 160, highF: 215 }, // unverified: no fluid HP temp range in the roadmap table
         finish: { minWeeks: 6 }, // verified (~6 wk cure)
         finishKind: 'cure',
@@ -237,6 +244,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
         process: 'ls',
         label: 'Liquid soap',
         waterBand: null, // no sourced LS band exists — see the WaterBand field doc
+        waterEnvelope: [25, 60], // LS:1505 — "25-60% water concentration", % of oils (LS:1491-1493)
         temp: null, // the hold temperature IS the method selector — see soapingTempRangeFor
         finish: null, // temperature-derived via lsMethodForTemp; estimateCure override
         finishKind: 'sequester',

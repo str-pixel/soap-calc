@@ -289,6 +289,12 @@ describe('definitions own their variants (slice 2)', () => {
     expect(ls.finish).toBeNull();
     expect(ls.temp).toBeNull();
   });
+
+  it('LS carries a single sourced water envelope, not a two-tier band', () => {
+    const ls = PROCESS_DEFINITIONS.ls.variants[0];
+    expect(ls.waterEnvelope).toEqual([25, 60]);
+    expect(ls.waterBand).toBeNull(); // the two-tier shape has no LS source
+  });
 });
 
 describe('post-cook superfat is HP/LS only', () => {

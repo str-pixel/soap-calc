@@ -174,6 +174,9 @@ export function useFormulationInsights(
     // Null where no sourced band exists (all LS variants) — the declaration now carries
     // what two process literals used to encode here.
     const waterBand = profile?.waterBand ?? undefined;
+    // LS's single sourced envelope (25-60% of oils) — null for CP/HP, whose profiles carry
+    // the two-tier waterBand instead. Same "declare the absence" threading as waterBand.
+    const waterEnvelope = profile?.waterEnvelope ?? undefined;
     const additiveEntries = (options.additives ?? []).map((item) => ({
       catalogId: item.catalogId,
       name: item.name,
@@ -256,6 +259,7 @@ export function useFormulationInsights(
         options.process === 'hp',
       ),
       waterBand,
+      waterEnvelope,
       // At partial fatty-acid coverage the renormalized profile (and thus the predicted
       // trace speed derived from it) is unrepresentative — withhold the label rather than
       // let analyzeFormulation surface it as a confident reading. traceSpeed is already

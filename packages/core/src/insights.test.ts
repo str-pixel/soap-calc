@@ -1085,10 +1085,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 40 unique codes', () => {
+  it('declares 41 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(40);
-    expect(new Set(declared).size).toBe(40);
+    expect(declared).toHaveLength(41);
+    expect(new Set(declared).size).toBe(41);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1235,6 +1235,7 @@ describe('rule registry consistency', () => {
     },
     hp_vessel_too_small: { hpVesselMultiple: 1.2, process: 'hp' },
     ls_lye_excess: { superfatPercent: -2 },
+    ls_water_outside_envelope: { waterEnvelope: [25, 60], waterGrams: 200, process: 'ls' },
   };
 
   it('every declared rule has a probe, and each rule emits its own code on its probe', () => {
@@ -1304,5 +1305,18 @@ describe('dos_risk_no_antioxidant', () => {
     expect(
       has({ ...softOils, fattyAcids: { linoleic: 21, linolenic: 5, oleic: 40 } }, 'dos_risk_no_antioxidant'),
     ).toBe(true); // 26
+  });
+});
+
+describe('ls_water_outside_envelope', () => {
+  const lsBase = { ...base, process: 'ls' as const, waterEnvelope: [25, 60] as [number, number] };
+  it('flags water below and above the sourced envelope', () => {
+    // 200 g water on 1,000 g oils = 20%; 700 g = 70%.
+    expect(has({ ...lsBase, waterGrams: 200 }, 'ls_water_outside_envelope')).toBe(true);
+    expect(has({ ...lsBase, waterGrams: 700 }, 'ls_water_outside_envelope')).toBe(true);
+  });
+  it('is quiet inside it, and never fires for CP or HP', () => {
+    expect(has({ ...lsBase, waterGrams: 380 }, 'ls_water_outside_envelope')).toBe(false);
+    expect(has({ ...base, process: 'cp', waterGrams: 200 }, 'ls_water_outside_envelope')).toBe(false);
   });
 });

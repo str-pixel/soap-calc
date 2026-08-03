@@ -95,6 +95,9 @@ export type FormulationAnalysisInput = {
   lsSplitLiquidIsSolventOnly?: boolean;
   /** Two-tier water band (% of oils) for the recipe's process; CP/HP only. Absent for LS. */
   waterBand?: { lowTier: [number, number]; highTier: [number, number]; riversAbove: number };
+  /** Single acceptable water range (% of oils) for liquid soap — LS:1505's "25-60% water
+   * concentration". LS only; CP/HP publish the two-tier waterBand instead. */
+  waterEnvelope?: [number, number];
   /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
    * callers pass undefined for liquid soap. */
   traceSpeedLabel?: 'slow' | 'moderate' | 'fast';
@@ -296,6 +299,29 @@ export const INSIGHT_RULES: InsightRule[] = [
         };
       }
       return null;
+    },
+  },
+  {
+    code: 'ls_water_outside_envelope',
+    processes: ['ls'],
+    // The one water figure the LS reference publishes: 25–60% of oil weight (equivalently
+    // about 1:1 to 5:1 water:lye). Outside it the recipe still works, so this is info —
+    // low water makes a stiffer paste that takes longer to dilute, high water a softer one
+    // that can weep. The 1:1 dissolution floor is a separate, harder rule (water_below_lye).
+    check: (input) => {
+      const [lo, hi] = (input.waterEnvelope ?? []) as [number, number];
+      if (lo === undefined || input.totalOilGrams <= 0 || input.waterGrams <= 0) return null;
+      const pct = (input.waterGrams / input.totalOilGrams) * 100;
+      const EPS = 1e-9;
+      if (pct >= lo - EPS && pct <= hi + EPS) return null;
+      return {
+        level: 'info',
+        code: 'ls_water_outside_envelope',
+        message:
+          pct < lo
+            ? `Water is ${pct.toFixed(0)}% of oils, below the usual ${lo}–${hi}% for liquid soap — the paste will be stiffer and slower to dilute. Workable, but check it stays mixable.`
+            : `Water is ${pct.toFixed(0)}% of oils, above the usual ${lo}–${hi}% for liquid soap — a softer paste that can weep in storage. Fine if you are diluting straight away.`,
+      };
     },
   },
   {
@@ -1129,7 +1155,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
 
   // The two generic paths that replaced 25 bespoke gates (spec slice 3): process
   // filtering and parameter resolution. Everything else an insight does lives in its
-  // own check(). This loop is now the entire catalog — all 40 rules live in
+  // own check(). This loop is now the entire catalog — all 41 rules live in
   // INSIGHT_RULES; there is no inline region left below it.
   for (const rule of INSIGHT_RULES) {
     if (rule.processes && !rule.processes.includes(input.process)) continue;
