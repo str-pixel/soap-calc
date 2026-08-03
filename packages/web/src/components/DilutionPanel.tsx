@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   LS_DILUTION_TARGETS,
   LS_SOLUTION_DENSITY_G_PER_ML,
@@ -9,6 +10,8 @@ import {
 import { formatConcentrationPercent } from '../lib/format';
 import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
+
+export type DilutionMode = 'concentration' | 'ratio';
 
 type DilutionPanelProps = {
   dilution: DilutionResult | null;
@@ -29,6 +32,19 @@ type DilutionPanelProps = {
    * differs from the solution, and it is what the finished VOLUME is derived from. The
    * dilution figures themselves stay chemistry-only. */
   bottledSolutionGrams?: number | null;
+  /** The paste's true water (lye water + split-liquid water) — see useRecipeViewModel's
+   * cookWaterGrams. Ratio mode needs the real paste mass (anhydrousGrams + this), not
+   * dilution.totalWaterGrams - dilutionWaterGrams, which the targetExceedsPaste clamp can
+   * zero out. */
+  cookWaterGrams?: number;
+  /** Which way the maker is choosing the dilution: a target concentration (the default,
+   * and what the reference calls out at LS:1536), or a water:paste ratio by weight
+   * (LS:1534 — 1:1 / 2:1 / 3:1). Session-local UI state, not a recipe setting. */
+  dilutionMode?: DilutionMode;
+  onDilutionModeChange?: (mode: DilutionMode) => void;
+  /** Water:paste ratio by weight, as typed (e.g. "2" for 2:1). */
+  waterPasteRatio?: string;
+  onWaterPasteRatioChange?: (value: string) => void;
 };
 
 export function DilutionPanel({
@@ -40,10 +56,42 @@ export function DilutionPanel({
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
   bottledSolutionGrams = null,
+  cookWaterGrams = 0,
+  dilutionMode = 'concentration',
+  onDilutionModeChange,
+  waterPasteRatio = '',
+  onWaterPasteRatioChange,
 }: DilutionPanelProps) {
   // Which intended uses the current target suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
+  // Ratio mode (LS:1534): weigh the paste, then add water at 1:1 / 2:1 / 3:1 by weight.
+  // pasteGrams is anhydrousGrams + the paste's TRUE water — not dilution.totalWaterGrams -
+  // dilutionWaterGrams, which the targetExceedsPaste clamp on dilutionWaterGrams can zero
+  // out (see DilutionPanelProps.cookWaterGrams and PartialDilution's identical trap).
+  const ratioNum = Number(waterPasteRatio);
+  const ratioValid = Number.isFinite(ratioNum) && ratioNum > 0;
+  const pasteGrams = dilution ? dilution.anhydrousGrams + cookWaterGrams : null;
+  const ratioWaterGrams =
+    dilution && pasteGrams !== null && ratioValid ? pasteGrams * ratioNum : null;
+  const ratioSolutionGrams =
+    pasteGrams !== null && ratioWaterGrams !== null ? pasteGrams + ratioWaterGrams : null;
+  const ratioConcentrationPercent =
+    dilution && ratioSolutionGrams !== null && ratioSolutionGrams > 0
+      ? (dilution.anhydrousGrams / ratioSolutionGrams) * 100
+      : null;
+  // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
+  // vm.dilution, PartialDilution, BottleCalculator and the printed BatchSheet all read the
+  // persisted concentration, so without this write-back the app would show the ratio's own
+  // water figure here beside a different figure everywhere else. Effect deps deliberately
+  // exclude soapConcentrationPercent (what this writes) and onSoapConcentrationChange (a
+  // fresh function every render) — only the ratio-mode inputs should retrigger it.
+  useEffect(() => {
+    if (dilutionMode === 'ratio' && ratioConcentrationPercent !== null) {
+      onSoapConcentrationChange(String(Math.round(ratioConcentrationPercent * 10) / 10));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dilutionMode, ratioConcentrationPercent]);
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough, and it is what the separate bottle count works
@@ -61,19 +109,73 @@ export function DilutionPanel({
           <p className="panel__subtitle">Water to add to reach a target soap concentration</p>
         </div>
       </div>
-      <label className="field">
-        <span>Target soap concentration (%)</span>
-        <input
-          type="number"
-          className="input input--number"
-          min={1}
-          max={99}
-          step={1}
-          value={soapConcentrationPercent}
-          onChange={(e) => onSoapConcentrationChange(e.target.value)}
-          aria-label="Target soap concentration percent"
-        />
-      </label>
+      {/* Two ways to choose the same number (LS:1534 ratio vs. LS:1536 concentration) —
+          concentration is the default, and switching never clears the other mode's input,
+          since each is its own bit of App state. */}
+      <div className="dilution-mode-toggle" role="radiogroup" aria-label="Dilution input mode">
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="dilutionMode"
+            checked={dilutionMode === 'concentration'}
+            onChange={() => onDilutionModeChange?.('concentration')}
+          />
+          <span>Target concentration</span>
+        </label>
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="dilutionMode"
+            checked={dilutionMode === 'ratio'}
+            onChange={() => onDilutionModeChange?.('ratio')}
+          />
+          <span>Water : paste ratio</span>
+        </label>
+      </div>
+      {dilutionMode === 'ratio' ? (
+        <label className="field">
+          <span>Water : paste ratio (by weight)</span>
+          <input
+            type="number"
+            className="input input--number"
+            min={0.5}
+            step={0.5}
+            value={waterPasteRatio}
+            onChange={(e) => onWaterPasteRatioChange?.(e.target.value)}
+            aria-label="Water to paste ratio"
+          />
+        </label>
+      ) : (
+        <label className="field">
+          <span>Target soap concentration (%)</span>
+          <input
+            type="number"
+            className="input input--number"
+            min={1}
+            max={99}
+            step={1}
+            value={soapConcentrationPercent}
+            onChange={(e) => onSoapConcentrationChange(e.target.value)}
+            aria-label="Target soap concentration percent"
+          />
+        </label>
+      )}
+      {dilutionMode === 'ratio' && ratioConcentrationPercent !== null && ratioWaterGrams !== null && (
+        <dl className="results-grid">
+          <div className="results-grid__item results-grid__item--primary">
+            <dt>Water to add at this ratio</dt>
+            <dd>{formatWeightWithAlternates(ratioWaterGrams, weightUnit)}</dd>
+          </div>
+        </dl>
+      )}
+      {dilutionMode === 'ratio' && ratioConcentrationPercent !== null && (
+        <p className="results-hint">
+          <strong>
+            {waterPasteRatio}:1 water:paste lands at{' '}
+            {formatConcentrationPercent(ratioConcentrationPercent)}% soap.
+          </strong>
+        </p>
+      )}
       {dilution ? (
         <>
           <dl className="results-grid">
@@ -110,6 +212,13 @@ export function DilutionPanel({
               </div>
             )}
           </dl>
+          {/* LS:1531 — shown regardless of which figure (concentration or ratio) the maker
+              started from, since the swelling and absorbing it describes happens either way. */}
+          <p className="results-hint">
+            Whichever figure you start from, add the water in stages: enough to cover the paste,
+            then more in small amounts, and give it time between — the paste swells and keeps
+            absorbing. Recording where you stopped makes the next batch of the same recipe exact.
+          </p>
           {finishedVolumeMl !== null && (
             <p className="results-hint">
               Volume assumes ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a planning figure, not

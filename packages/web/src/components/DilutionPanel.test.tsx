@@ -165,6 +165,26 @@ test('the floor hint still renders when the floor is real', () => {
   expect(screen.getByText(/is the LEAST you will need/i)).toBeTruthy();
 });
 
+test('ratio mode derives the concentration a water:paste ratio lands on', () => {
+  // Paste 1,600 g (1,200 anhydrous + 400 cook water) at 2:1 → 3,200 g water added,
+  // solution 4,800 g, so anhydrous is 1,200/4,800 = 25% soap.
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      cookWaterGrams={400}
+      dilutionMode="ratio"
+      waterPasteRatio="2"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(screen.getByText(/lands at 25% soap/i)).toBeTruthy();
+  expect(screen.getByText(/^3,200 g/)).toBeTruthy();
+});
+
 test('leaves bottling to the separate bottle count — no size field, no count here', () => {
   // Makers dilute one large batch and package it later, often into several sizes, so the
   // dilution figures stay about the batch (see BottleCalculator).

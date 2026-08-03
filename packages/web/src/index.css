@@ -2412,6 +2412,14 @@ a:hover {
   }
 }
 
+/* Dilution: choose by target concentration or by water:paste ratio. */
+.dilution-mode-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 /* Dilution: intended-use targets. Collapsed by default — it is reference, not a control. */
 .dilution-uses > summary {
   cursor: pointer;

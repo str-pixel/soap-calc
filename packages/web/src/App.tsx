@@ -92,6 +92,14 @@ export default function App() {
   // process switches within a session, matching the bottle size beside them.
   const [portionTargetMl, setPortionTargetMl] = useState('');
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
+  // Which way the maker is choosing the dilution target: a soap concentration (the
+  // default — LS:1536, and what the persisted settings.soapConcentrationPercent already
+  // is) or a water:paste ratio by weight (LS:1534). Session-local like the portion inputs
+  // above, not a recipe setting — the persisted concentration is still the one figure every
+  // downstream consumer (vm.dilution, PartialDilution, BottleCalculator, BatchSheet) reads;
+  // ratio mode only ever writes into it via DilutionPanel's onSoapConcentrationChange.
+  const [dilutionMode, setDilutionMode] = useState<'concentration' | 'ratio'>('concentration');
+  const [waterPasteRatio, setWaterPasteRatio] = useState('2');
   useEffect(() => {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
@@ -454,6 +462,11 @@ export default function App() {
                 unknownLiquidGrams={vm.unknownLiquidGrams}
                 overDilutionCertain={vm.overDilutionCertain}
                 bottledSolutionGrams={vm.bottledSolutionGrams}
+                cookWaterGrams={vm.cookWaterGrams}
+                dilutionMode={dilutionMode}
+                onDilutionModeChange={setDilutionMode}
+                waterPasteRatio={waterPasteRatio}
+                onWaterPasteRatioChange={setWaterPasteRatio}
               />
             )}
             {processOffers(process, 'dilution') && (

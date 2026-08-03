@@ -71,6 +71,10 @@ export type RecipeViewModel = {
   /** Grams of split liquid with undeclared water content. Non-zero means the dilution
    * figures are a lower bound, not a measurement — the UI must say so. */
   unknownLiquidGrams: number;
+  /** The paste's true water (lye water + split-liquid water), independent of the
+   * targetExceedsPaste clamp on dilutionWaterGrams. Feeds the Dilution panel's ratio-input
+   * mode: pasteGrams = anhydrousGrams + cookWaterGrams. */
+  cookWaterGrams: number;
   /** True when an in-lye liquid's water content is undeclared, so the 1:1 dissolution
    * floor cannot be checked either way. */
   lyeWaterUnverifiable: boolean;
@@ -290,6 +294,17 @@ export function useRecipeViewModel({
       ),
     [splitLiquidRows],
   );
+  // The paste's true water: the lye water plus whatever the alternative liquids carried
+  // in (every split-liquid stage is pre-cook, so that water is already in the pot when
+  // dilution starts). Deliberately NOT derived as totalWaterGrams - dilutionWaterGrams:
+  // calculateDilution clamps dilutionWaterGrams to 0 when targetExceedsPaste, which would
+  // erase this. Exposed on the return object — the Dilution panel's ratio-input mode needs
+  // it (pasteGrams = anhydrousGrams + cookWaterGrams) and cannot reconstruct it from
+  // finalResult, since this deliberately reads the base result (see dilution below).
+  const cookWaterGrams = useMemo(
+    () => (result ? result.waterWeightGrams + splitLiquidPasteWater : 0),
+    [result, splitLiquidPasteWater],
+  );
   // Deliberately reads the BASE result, not finalResult: acid-compensation alkali (vinegar,
   // lye-stage citric) is consumed into a dissolved salt (acetate/citrate) — no soap solids
   // for the concentration model, no glycerin byproduct (0.55 g/g applies to saponified KOH
@@ -304,7 +319,7 @@ export function useRecipeViewModel({
             // already in the pot when dilution starts. Counting only the lye water would
             // prescribe dilution water that is largely there already and land the finished
             // soap below its target concentration.
-            cookWaterGrams: result.waterWeightGrams + splitLiquidPasteWater,
+            cookWaterGrams,
             kohGrams: result.kohWeightGrams,
             naohGrams: result.naohWeightGrams,
             soapConcentrationPercent: Number(previewSettings.soapConcentrationPercent),
@@ -316,7 +331,7 @@ export function useRecipeViewModel({
     [
       process,
       result,
-      splitLiquidPasteWater,
+      cookWaterGrams,
       previewSettings.soapConcentrationPercent,
       previewSettings.kohPurityPercent,
       previewSettings.naohPurityPercent,
@@ -693,7 +708,7 @@ export function useRecipeViewModel({
     dilution && result
       ? computeBottledSolutionGrams({
           dilution,
-          cookWaterGrams: result.waterWeightGrams + splitLiquidPasteWater,
+          cookWaterGrams,
           extrasGrams,
           splitLiquidPasteWaterGrams: splitLiquidPasteWater,
         })
@@ -862,6 +877,7 @@ export function useRecipeViewModel({
     splitLiquidRows,
     splitLiquidPasteWater,
     unknownLiquidGrams,
+    cookWaterGrams,
     lyeWaterUnverifiable,
     lyeWaterShortfallCertain,
     overDilutionCertain,
