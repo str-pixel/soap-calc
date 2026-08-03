@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { PartialDilution } from './PartialDilution';
 import type { DilutionResult } from '@soap-calc/core';
 
@@ -13,11 +13,17 @@ const RESULT: DilutionResult = {
   dilutionWaterGrams: 2400, glycerinGrams: 110, soapConcentrationPercent: 30, targetExceedsPaste: false,
 };
 
-const PROPS = { dilution: RESULT, weightUnit: 'g' as const };
+const PROPS = {
+  dilution: RESULT,
+  weightUnit: 'g' as const,
+  targetMl: '',
+  onTargetMlChange: () => {},
+  measuredPasteGrams: '',
+  onMeasuredPasteGramsChange: () => {},
+};
 
 test('scales paste and water to the amount asked for', () => {
-  render(<PartialDilution {...PROPS} />);
-  fireEvent.change(screen.getByLabelText('Amount to make (ml)'), { target: { value: '1000' } });
+  render(<PartialDilution {...PROPS} targetMl="1000" />);
   // 1,000 of 3,883 ml ≈ 25.8% of the batch: 412 g paste, 618 g water.
   expect(screen.getByText('412 g')).toBeTruthy();
   expect(screen.getByText(/^618 g/)).toBeTruthy();
@@ -25,14 +31,12 @@ test('scales paste and water to the amount asked for', () => {
 });
 
 test('the water figure carries the other scale units, like the batch pour figure', () => {
-  render(<PartialDilution {...PROPS} />);
-  fireEvent.change(screen.getByLabelText('Amount to make (ml)'), { target: { value: '1000' } });
+  render(<PartialDilution {...PROPS} targetMl="1000" />);
   expect(screen.getByText(/618 g \(21\.8 oz \/ 1\.36 lb\)/)).toBeTruthy();
 });
 
 test('says so when more is asked for than the batch holds', () => {
-  render(<PartialDilution {...PROPS} />);
-  fireEvent.change(screen.getByLabelText('Amount to make (ml)'), { target: { value: '9000' } });
+  render(<PartialDilution {...PROPS} targetMl="9000" />);
   expect(screen.getByText(/whole batch/i)).toBeTruthy();
   expect(screen.getByText('1,600 g')).toBeTruthy(); // all the paste
 });
@@ -43,7 +47,7 @@ test('shows no figures until an amount is entered', () => {
 });
 
 test('renders nothing without a dilution', () => {
-  const { container } = render(<PartialDilution dilution={null} weightUnit="g" />);
+  const { container } = render(<PartialDilution {...PROPS} dilution={null} />);
   expect(container.innerHTML).toBe('');
 });
 
@@ -54,10 +58,40 @@ test('refuses to size a portion when the paste is already more dilute than the t
   // be wrong (measured: 39% shown where the truth was 18.4%). Say so instead of computing.
   render(
     <PartialDilution
+      {...PROPS}
       dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }}
-      weightUnit="g"
     />,
   );
   expect(screen.queryByLabelText('Amount to make (ml)')).toBeNull();
   expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+});
+
+test('a measured paste replaces the computed one and moves the water to match', () => {
+  // Predicted paste is 1,600 g. Measured 1,480 g (the cook evaporated 120 g), so the
+  // water must rise by the same 120 g to still reach the recipe's solution weight.
+  render(
+    <PartialDilution
+      {...PROPS}
+     
+      measuredPasteGrams="1480"
+      targetMl="3883"
+    />,
+  );
+  expect(screen.getByText('1,480 g')).toBeTruthy();
+  expect(screen.getByText(/^2,520 g/)).toBeTruthy();
+});
+
+test('shows the water:paste ratio the reference dilutes by', () => {
+  render(<PartialDilution {...PROPS} measuredPasteGrams="1600" targetMl="1942" />);
+  expect(screen.getByText(/1\.5 : 1/)).toBeTruthy();
+});
+
+test('flags how far the measured paste drifted from the predicted one', () => {
+  render(<PartialDilution {...PROPS} measuredPasteGrams="1480" targetMl="1000" />);
+  expect(screen.getByText(/120 g lighter than predicted/)).toBeTruthy();
+});
+
+test('without a measurement the computed paste carries the evaporation caveat', () => {
+  render(<PartialDilution {...PROPS} targetMl="1000" />);
+  expect(screen.getByText(/evaporat/i)).toBeTruthy();
 });

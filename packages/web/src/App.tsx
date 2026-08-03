@@ -86,6 +86,12 @@ export default function App() {
   // the LS bottle-size readout input.
   const [vesselVolumeLiters, setVesselVolumeLiters] = useState('');
   const [bottleSizeMl, setBottleSizeMl] = useState('250');
+  // Both live here rather than in the recipe: "how much am I making right now" and "what
+  // did my paste weigh" are bench decisions, not properties of the formula, so they must
+  // not dirty a saved or exported recipe. App state keeps them across panel collapse and
+  // process switches within a session, matching the bottle size beside them.
+  const [portionTargetMl, setPortionTargetMl] = useState('');
+  const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
   useEffect(() => {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
@@ -452,7 +458,14 @@ export default function App() {
             )}
             {processOffers(process, 'dilution') && (
               // Diluting a portion is its own step — see PartialDilution.
-              <PartialDilution dilution={vm.dilution} weightUnit={weightUnit} />
+              <PartialDilution
+                dilution={vm.dilution}
+                weightUnit={weightUnit}
+                targetMl={portionTargetMl}
+                onTargetMlChange={setPortionTargetMl}
+                measuredPasteGrams={measuredPasteGrams}
+                onMeasuredPasteGramsChange={setMeasuredPasteGrams}
+              />
             )}
             {processOffers(process, 'dilution') && (
               // Packaging is its own step after the batch dilution — see BottleCalculator.

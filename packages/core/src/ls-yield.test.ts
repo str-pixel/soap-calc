@@ -66,3 +66,47 @@ describe('lsPartialDilution', () => {
     expect(lsPartialDilution({ ...BATCH, solutionGrams: 0 }, 500)).toBeNull();
   });
 });
+
+describe('lsPartialDilution with a measured paste weight', () => {
+  // Same batch: 1,200 anhydrous + 400 cook water = 1,600 g predicted paste,
+  // 2,400 g dilution water, 4,000 g solution = 3,883 ml.
+  const BATCH = {
+    anhydrousGrams: 1200, totalWaterGrams: 2800, dilutionWaterGrams: 2400, solutionGrams: 4000,
+  };
+
+  it('uses the measured paste and compensates the water for it', () => {
+    // Measured 1,480 g — 120 g lighter than predicted, the cook evaporated it. The
+    // solution target is fixed by the recipe (anhydrous / concentration), so the missing
+    // 120 g must come from the dilution water instead: 4,000 − 1,480 = 2,520 g.
+    const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1480 }, 3883.5);
+    expect(r).not.toBeNull();
+    if (!r) return;
+    expect(r.fraction).toBeCloseTo(1, 3);
+    expect(r.pasteGrams).toBeCloseTo(1480, 0);
+    expect(r.waterGrams).toBeCloseTo(2520, 0);
+    expect(r.pasteMeasured).toBe(true);
+  });
+
+  it('reports the water:paste ratio the reference dilutes by', () => {
+    const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1600 }, 1941.7);
+    expect(r?.waterPasteRatio).toBeCloseTo(1.5, 2); // 2,400 water : 1,600 paste
+    // Halving the portion cannot change the ratio — both sides scale together.
+    expect(lsPartialDilution({ ...BATCH, measuredPasteGrams: 1600 }, 3883.5)?.waterPasteRatio)
+      .toBeCloseTo(1.5, 2);
+  });
+
+  it('falls back to the computed paste, flagged as unmeasured', () => {
+    const r = lsPartialDilution(BATCH, 1941.7);
+    expect(r?.pasteMeasured).toBe(false);
+    expect(r?.pasteGrams).toBeCloseTo(800, 0); // half of the computed 1,600 g
+    expect(r?.waterGrams).toBeCloseTo(1200, 0);
+  });
+
+  it('refuses a measured paste already at or past the target concentration', () => {
+    // 4,100 g of paste cannot be diluted to a 4,000 g solution — it is already thinner.
+    expect(lsPartialDilution({ ...BATCH, measuredPasteGrams: 4100 }, 1000)).toBeNull();
+    // Junk measurements fall back rather than poisoning the figures.
+    expect(lsPartialDilution({ ...BATCH, measuredPasteGrams: 0 }, 1941.7)?.pasteMeasured).toBe(false);
+    expect(lsPartialDilution({ ...BATCH, measuredPasteGrams: Number.NaN }, 1941.7)?.pasteMeasured).toBe(false);
+  });
+});

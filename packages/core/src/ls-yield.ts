@@ -27,6 +27,11 @@ export type LsPartialDilution = {
   /** What the portion makes, by mass and by volume. */
   solutionGrams: number;
   volumeMl: number;
+  /** Parts of dilution water per 1 part paste — the reference's own ratio-dilution unit
+   * (1:1, 2:1, 3:1). Portion-invariant: both sides scale together. */
+  waterPasteRatio: number;
+  /** True when the paste figure came from the maker's scale rather than the recipe. */
+  pasteMeasured: boolean;
   /** True when more was asked for than the batch holds, so the figures are the whole batch. */
   clamped: boolean;
 };
@@ -44,6 +49,12 @@ export function lsPartialDilution(
     totalWaterGrams: number;
     dilutionWaterGrams: number;
     solutionGrams: number;
+    /** The maker's own scale reading for the WHOLE batch's paste. Preferred over the
+     * computed figure whenever it is available, because a computed paste cannot be right:
+     * the cook evaporates water the recipe still counts, and an alternative liquid's
+     * non-water solids are mass the recipe never counted. The reference weighs the paste
+     * for exactly this reason. Ignored when non-finite or ≤ 0. */
+    measuredPasteGrams?: number;
   },
   targetVolumeMl: number,
   densityGPerMl: number = LS_SOLUTION_DENSITY_G_PER_ML,
@@ -51,18 +62,31 @@ export function lsPartialDilution(
   if (!Number.isFinite(targetVolumeMl) || targetVolumeMl <= 0) return null;
   const fullVolumeMl = lsFinishedVolumeMl(batch.solutionGrams, densityGPerMl);
   if (fullVolumeMl === null) return null;
+  // Paste is what sits in the pot before dilution water. Computed, that is the anhydrous
+  // soap plus the water the lye and any alternative liquid brought in; measured, it is
+  // simply what the scale says.
+  const m = batch.measuredPasteGrams;
+  const pasteMeasured = m !== undefined && Number.isFinite(m) && m > 0;
+  const pasteGrams = pasteMeasured
+    ? (m as number)
+    : batch.anhydrousGrams + Math.max(0, batch.totalWaterGrams - batch.dilutionWaterGrams);
+  // The solution is fixed by the recipe (anhydrous ÷ target concentration), so the water
+  // to add is whatever the paste does NOT already supply. Without a measurement this is
+  // identical to the recipe's own dilutionWaterGrams; with one it absorbs the difference,
+  // which is what makes a measured paste self-correcting.
+  const batchWaterGrams = batch.solutionGrams - pasteGrams;
+  if (batchWaterGrams < 0) return null; // paste is already thinner than the target
   const clamped = targetVolumeMl > fullVolumeMl;
   const fraction = clamped ? 1 : targetVolumeMl / fullVolumeMl;
-  // Paste is what is in the pot before dilution water: the anhydrous soap plus the water
-  // that came with the lye and any alternative liquid.
-  const cookWaterGrams = Math.max(0, batch.totalWaterGrams - batch.dilutionWaterGrams);
   const solutionGrams = batch.solutionGrams * fraction;
   return {
     fraction,
-    pasteGrams: (batch.anhydrousGrams + cookWaterGrams) * fraction,
-    waterGrams: batch.dilutionWaterGrams * fraction,
+    pasteGrams: pasteGrams * fraction,
+    waterGrams: batchWaterGrams * fraction,
     solutionGrams,
     volumeMl: solutionGrams / densityGPerMl,
+    waterPasteRatio: pasteGrams > 0 ? batchWaterGrams / pasteGrams : 0,
+    pasteMeasured,
     clamped,
   };
 }
