@@ -385,8 +385,8 @@ test.describe('liquid soap', () => {
     // No measurement yet: the computed paste must carry the evaporation caveat.
     await expect(partial).toContainText(/evaporat/i);
     // Weighing the paste replaces the computed figure and moves the water to match.
-    await page.getByLabel('Measured paste weight (g)').fill('1400');
-    await page.getByLabel('Measured paste weight (g)').blur();
+    await page.getByLabel('Measured paste weight — whole batch (g)').fill('1400');
+    await page.getByLabel('Measured paste weight — whole batch (g)').blur();
     await expect(partial).toContainText(/than predicted/);
     await expect(partial).toContainText(/ : 1/);
   });

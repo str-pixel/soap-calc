@@ -72,7 +72,7 @@ Build once; CP, HP, and LS all depend on these. Highest leverage.
 - **Troubleshooting panels (per process)** · `New` · CP HP LS — CP: soda ash, gel, volcano, DOS. HP: won't-gel → switch to LTHP, crumbly (over-mix), lye-heavy (pH >11 — stated outright in HP). LS: cloud-on-cooling, snot/jello, anhydrous top layer.
 - **Temperature model + cook stages** · `New` · CP HP LS — CP soaping temp; HP LTHP 120–160 °F, HTHP 215 °F, ceiling 240 °F; cook stages trace→applesauce→expansion→mashed→gel/neat; don't mix past neat / >5 min.
 - **Yield outputs** · `Refine` · CP HP LS — Mold sizer + cured weight (CP/HP; add cylinder πr²h); finished volume + "bottles filled" (LS). HTHP vessel-size guard ≥2× (≥3× coconut-heavy).
-- **CP extras** · `New` · CP — PPO/tsp→%TOW converter (4.1 g/tsp, 453.592 g/lb); vanillin field → browning prediction; antioxidants (Vit E, ROE, 1% BHT + 1% sodium citrate); myth-busters.
+- **CP extras** · `New` · CP — PPO/tsp→%TOW converter (4.1 g/tsp, 453.592 g/lb); vanillin field → browning prediction; antioxidants (Vit E, ROE, 0.1% BHT + 0.1% sodium citrate); myth-busters.
 
 ---
 
@@ -100,7 +100,7 @@ not the prose — when writing code. `Src` cites the process + page where each w
 | KOH ↔ NaOH weight | × 1.40 (56.1 / 40) | Confirmed | LS 177 |
 | Dual-lye ratios | LS 80/20 KOH/NaOH · bar 95/5 NaOH/KOH · shave 50/50 | Confirmed | LS 86 |
 | Quality ranges (all 3) | H 30–60 · Cl 8–20 · Co 44–69 · Bu 14–46 · Cr 16–48 | Confirmed | CP 404 · HP 133 |
-| Anti-DOS combo | 1% BHT + 1% sodium citrate | Confirmed | CP 163 |
+| Anti-DOS combo | 0.1% BHT + 0.1% sodium citrate (1 ppt each) | Corrected 2026-08-03 | CP 163 prints 1%, but the study it cites tested 1 ppt |
 
 ### Cold process
 

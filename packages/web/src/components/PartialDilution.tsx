@@ -40,13 +40,28 @@ export function PartialDilution({
   // See the DilutionPanel note: targetExceedsPaste clamps the dilution water to 0, which
   // erases the real cook water and makes the batch's own mass unrecoverable.
   const pasteAlreadyThinner = dilution.targetExceedsPaste;
+  const hasMeasurement = measuredPasteGrams.trim() !== '';
   const measured = Number(measuredPasteGrams);
-  const portion = pasteAlreadyThinner
-    ? null
-    : lsPartialDilution(
-        { ...dilution, measuredPasteGrams: measuredPasteGrams.trim() === '' ? undefined : measured },
-        Number(targetMl),
-      );
+  // A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate —
+  // so a reading below that is not a whole-batch paste. It is a mis-tare (the crock left
+  // on the scale) or a PORTION weight, and the reference's own ratio method does weigh the
+  // portion, which makes the mistake an easy one. Left unguarded the app answered with
+  // confident nonsense: a 900 g reading on a 1,200 g-soap batch reported "lighter than
+  // predicted — water lost to the cook", which cannot be true of water that was never there.
+  const measurementBelowSolids =
+    hasMeasurement && Number.isFinite(measured) && measured > 0 && measured < dilution.anhydrousGrams;
+  // Likewise, a paste heavier than the whole target solution cannot be diluted INTO that
+  // solution. Core returns null for it; saying so beats the figures silently vanishing.
+  const measurementExceedsSolution =
+    hasMeasurement && Number.isFinite(measured) && measured > dilution.solutionGrams;
+  const measurementRejected = measurementBelowSolids || measurementExceedsSolution;
+  const portion =
+    pasteAlreadyThinner || measurementRejected
+      ? null
+      : lsPartialDilution(
+          { ...dilution, measuredPasteGrams: hasMeasurement ? measured : undefined },
+          Number(targetMl),
+        );
   // What the recipe predicted, for the drift readout: anhydrous + the water already in it.
   const predictedPasteGrams =
     dilution.anhydrousGrams + Math.max(0, dilution.totalWaterGrams - dilution.dilutionWaterGrams);
@@ -67,8 +82,11 @@ export function PartialDilution({
         <>
           <label className="field">
             {/* Grams regardless of the display unit: this is a scale reading the maker
-                takes at the pot, and the core figures it feeds are all gram-based. */}
-            <span>Measured paste weight (g, optional)</span>
+                takes at the pot, and the core figures it feeds are all gram-based.
+                "Whole batch" is load-bearing — the subtitle above talks about portions,
+                and the reference's ratio method weighs the portion, so an unqualified
+                label invites a portion weight and silently over-dilutes. */}
+            <span>Measured paste weight — whole batch (g, optional)</span>
             <input
               type="number"
               className="input input--number"
@@ -76,7 +94,7 @@ export function PartialDilution({
               step={10}
               value={measuredPasteGrams}
               onChange={(e) => onMeasuredPasteGramsChange(e.target.value)}
-              aria-label="Measured paste weight (g)"
+              aria-label="Measured paste weight — whole batch (g)"
             />
           </label>
           <label className="field">
@@ -91,6 +109,21 @@ export function PartialDilution({
               aria-label="Amount to make (ml)"
             />
           </label>
+          {measurementBelowSolids && (
+            <p className="results-hint" role="alert">
+              That is less than the {formatWeight(dilution.anhydrousGrams, weightUnit)} of soap
+              this batch makes, so it cannot be the whole batch&apos;s paste — check the scale
+              was tared, and enter the whole batch rather than the portion you are diluting.
+            </p>
+          )}
+          {measurementExceedsSolution && (
+            <p className="results-hint" role="alert">
+              Your paste already weighs more than the{' '}
+              {formatWeight(dilution.solutionGrams, weightUnit)} this target dilutes to, so
+              there is no water to add — raise the target concentration above, or check the
+              measurement.
+            </p>
+          )}
           {portion && (
             <>
               <dl className="results-grid">

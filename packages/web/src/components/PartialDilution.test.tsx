@@ -37,7 +37,7 @@ test('the water figure carries the other scale units, like the batch pour figure
 
 test('says so when more is asked for than the batch holds', () => {
   render(<PartialDilution {...PROPS} targetMl="9000" />);
-  expect(screen.getByText(/whole batch/i)).toBeTruthy();
+  expect(screen.getByText(/figures above are the whole batch/i)).toBeTruthy();
   expect(screen.getByText('1,600 g')).toBeTruthy(); // all the paste
 });
 
@@ -94,4 +94,27 @@ test('flags how far the measured paste drifted from the predicted one', () => {
 test('without a measurement the computed paste carries the evaporation caveat', () => {
   render(<PartialDilution {...PROPS} targetMl="1000" />);
   expect(screen.getByText(/evaporat/i)).toBeTruthy();
+});
+
+test('labels the measurement as the WHOLE batch, not the portion', () => {
+  // The subtitle primes "weigh out a portion", and the reference's own ratio method
+  // weighs the portion — so an unqualified "measured paste weight" invites entering a
+  // portion weight, which would silently over-dilute (a 500 g portion of a 1,600 g batch
+  // reads as 7:1 water:paste instead of 1.5:1).
+  render(<PartialDilution {...PROPS} targetMl="1000" />);
+  expect(screen.getByLabelText(/whole batch/i)).toBeTruthy();
+});
+
+test('refuses a measurement below the anhydrous soap weight — not physically a paste', () => {
+  // The paste always contains all the anhydrous soap (1,200 g here); solids do not
+  // evaporate. A smaller reading is a mis-tare or a portion weight, and treating it as a
+  // batch produced confident nonsense ("1,599 g lighter — water lost to the cook").
+  render(<PartialDilution {...PROPS} targetMl="1000" measuredPasteGrams="900" />);
+  expect(screen.getByText(/less than the .*soap this batch makes|below the/i)).toBeTruthy();
+  expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+});
+
+test('explains rather than vanishing when the measured paste exceeds the target solution', () => {
+  render(<PartialDilution {...PROPS} targetMl="1000" measuredPasteGrams="4100" />);
+  expect(screen.getByText(/already weighs more than/i)).toBeTruthy();
 });

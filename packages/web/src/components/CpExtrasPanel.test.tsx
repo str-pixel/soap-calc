@@ -23,7 +23,9 @@ test('computes PPO→% of oil from a live input', () => {
 test('renders the vanillin, antioxidant, and myth-buster notes', () => {
   render(<CpExtrasPanel totalOilGrams={1000} />);
   expect(screen.getByText(/darkens soap to tan\/brown/)).toBeTruthy();
-  expect(screen.getByText(/BHT \+ 1% sodium citrate/)).toBeTruthy();
+  // The tested dose is 0.1% each (1 ppt), not the 1% three craft books print — see the
+  // insights.ts comment on high_pufa_post_cook_superfat. CP and LS must not disagree.
+  expect(screen.getByText(/0\.1% BHT \+ 0\.1% sodium citrate/)).toBeTruthy();
   expect(screen.getByText(/no free lye left/)).toBeTruthy();
   expect(screen.getByText(/gel is just cosmetic/i)).toBeTruthy();
 });
