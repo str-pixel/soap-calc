@@ -111,9 +111,24 @@ export default function App() {
   const oilsSignature = lines
     .map((l) => `${l.oilId}:${l.weightGrams}:${l.tarLyeTreatment ?? ''}`)
     .join('|');
+  // A plain `[oilsSignature]` dependency (the earlier fix) still over-clears: switching
+  // process ALSO changes oilsSignature whenever the two processes' oils genuinely differ
+  // (not just an identity change), so returning to an untouched Liquid soap recipe found
+  // its own measurement gone even though LS's oils never changed — contradicting the
+  // comment above. The measurement must only clear when the signature changes WITHIN the
+  // same process (a real edit to the oils that batch was measured from), never when a
+  // process switch happens to carry a different oils signature along with it. Tracking the
+  // previous {process, oilsSignature} pair in a ref (rather than keying a single string) is
+  // what lets the effect tell those two cases apart: both fields move together on a process
+  // switch, but only oilsSignature moves on an in-process oils edit.
+  const prevProcessOilsRef = useRef({ process, oilsSignature });
   useEffect(() => {
-    setMeasuredPasteGrams('');
-  }, [oilsSignature]);
+    const prev = prevProcessOilsRef.current;
+    if (prev.process === process && prev.oilsSignature !== oilsSignature) {
+      setMeasuredPasteGrams('');
+    }
+    prevProcessOilsRef.current = { process, oilsSignature };
+  }, [process, oilsSignature]);
   // Which way the maker is choosing the dilution target: a soap concentration (the
   // default — LS:1536, and what the persisted settings.soapConcentrationPercent already
   // is) or a water:paste ratio by weight (LS:1534). Session-local like the portion inputs
