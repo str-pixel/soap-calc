@@ -424,6 +424,7 @@ function lsSheetData(extra: {
   targetExceedsPaste?: boolean;
   overDilutionCertain?: boolean;
   dilutionOverride?: import('@soap-calc/core').DilutionResult;
+  neutralization?: import('@soap-calc/core').NeutralizationResult | null;
 }) {
   const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
   const lines = createStarterLines();
@@ -609,4 +610,26 @@ test('without certainty the sheet still hedges', () => {
   );
   expect(screen.getByText(/can.t tell whether 50%/i)).toBeTruthy();
   expect(screen.queryByText(/already more dilute/i)).toBeNull();
+});
+
+test('printed Neutralize section shows the stearic-acid alternative and its cannot-overdose note', () => {
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        neutralization: {
+          lyeExcessPercent: 2,
+          excessKohGrams: 4,
+          excessNaohGrams: 0,
+          citricAcidGrams: 5,
+          stearicAcidGrams: 22,
+          dilutionWaterGrams: 20,
+          targetPhLow: 9,
+          targetPhHigh: 10.5,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByText('Or stearic acid')).toBeTruthy();
+  expect(screen.getByText('22 g')).toBeTruthy();
+  expect(screen.getByText(/cannot be overdosed/i)).toBeTruthy();
 });

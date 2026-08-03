@@ -3,7 +3,7 @@ import {
   CITRIC_ACID_MOLAR_MASS,
   KOH_MOLAR_MASS,
   NAOH_MOLAR_MASS,
-  STEARIC_ACID_MW,
+  STEARIC_ACID_MOLAR_MASS,
 } from './molar-masses.js';
 
 // Anhydrous citric acid (triprotic) neutralizes 3 OH⁻. Molar masses from molar-masses.ts.
@@ -65,7 +65,7 @@ export function calculateNeutralization(input: NeutralizationInput): Neutralizat
   // Stearic acid is monoprotic (1 mol per mol OH⁻, vs citric's 3), so it takes ~4.4x the weight
   // of citric for the same excess. Unlike citric it cannot be overdosed: any surplus stearic
   // cools, floats, and is filtered off rather than driving pH past the target.
-  const stearicAcidGrams = molOH * STEARIC_ACID_MW;
+  const stearicAcidGrams = molOH * STEARIC_ACID_MOLAR_MASS;
 
   return {
     lyeExcessPercent: -superfatPercent,

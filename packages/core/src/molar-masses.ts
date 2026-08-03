@@ -12,4 +12,4 @@ export const CITRIC_ACID_MOLAR_MASS = 192.124;
 /** Acetic acid, CH3COOH (monoprotic). */
 export const ACETIC_ACID_MOLAR_MASS = 60.052;
 /** Stearic acid, C18H36O2 (monoprotic — 1 mol OH⁻ per mol). */
-export const STEARIC_ACID_MW = 284.484;
+export const STEARIC_ACID_MOLAR_MASS = 284.484;
