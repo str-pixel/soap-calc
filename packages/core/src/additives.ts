@@ -256,11 +256,47 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // EDTA — synthetic chelator, added to the lye water alongside/instead of citrate.
+    // This range doses for hard-water chelation/scum control, not the DOS-preventing
+    // minimum: a craft source's "0.5% of the total CURED soap weight" converts to about
+    // 0.62% of oil (cured soap outweighs the oils it came from — oils + lye, less cure
+    // evaporation, run roughly 1.25x the oil weight), landing just above this range's top
+    // end, so the figure here is not overstated against that source. The same oxidation
+    // experiment behind the bht/roe entries above rated EDTA its single most potent
+    // anti-DOS preservative, effective down to 0.3 ppt (0.03% of oil) and recommending
+    // 0.5 ppt (0.05% of oil) on its own — an order of magnitude below this range. Both
+    // figures are legitimate: chelating out hard-water metals (this entry's job) wants
+    // noticeably more EDTA than the minimum dose that, alone, stops orange spots.
     id: 'edta',
     name: 'EDTA',
     typicalLow: 0.1,
     typicalHigh: 0.5,
     defaultStage: 'lye',
+  },
+  {
+    // BHT — antioxidant, NOT a preservative: it slows the oxidation of unsaponified oil
+    // (rancidity / DOS), which is a fat problem, not a microbial one. Bar soap needs it
+    // as much as liquid soap does; the study behind this dose was run on CP bars.
+    // Dose is the experiment's own recommendation: 1 ppt of oil weight = 0.1%. It was
+    // still effective at 0.7 ppt. Three craft books print "1%" — 10x this, above typical
+    // cosmetic use — which is why the figure here is the tested one. (The experiment's
+    // 0.7 ppt "still effective" figure was measured with BHT added to the LYE, not the
+    // oil, so it is not a lower bound for this oil-stage entry.)
+    id: 'bht',
+    name: 'BHT (antioxidant)',
+    typicalLow: 0.1,
+    typicalHigh: 0.1,
+    defaultStage: 'oils',
+  },
+  {
+    // Rosemary oleoresin extract — the natural-route antioxidant. Rosmarinic acid is the
+    // active fraction, so the effective dose depends on the extract's strength: the
+    // experiment found 1.2 ppt of rosmarinic acid needed to push the induction period
+    // past its 300-hour limit, and recommends 1–2 ppt of a HIGH-rosmarinic ROE by weight.
+    id: 'roe',
+    name: 'ROE (rosemary oleoresin)',
+    typicalLow: 0.1,
+    typicalHigh: 0.2,
+    defaultStage: 'oils',
   },
   {
     // Titanium dioxide — mineral whitener, dispersed into the oils before mixing.

@@ -464,3 +464,22 @@ describe('isAdditiveOfferedFor (single source of truth)', () => {
     expect(isAdditiveOfferedFor(g, 'ls')).toBe(true);
   });
 });
+
+describe('anti-DOS antioxidants', () => {
+  it('ships BHT and ROE at the experimentally recommended doses', () => {
+    const bht = catalogEntryById('bht')!;
+    expect([bht.typicalLow, bht.typicalHigh]).toEqual([0.1, 0.1]); // 1 ppt of oil
+    expect(bht.defaultStage).toBe('oils');
+    const roe = catalogEntryById('roe')!;
+    expect([roe.typicalLow, roe.typicalHigh]).toEqual([0.1, 0.2]); // 1–2 ppt of oil
+    expect(roe.defaultStage).toBe('oils');
+  });
+
+  it('does not ship the additives the experiment found ineffective alone', () => {
+    // Grapefruit seed extract, vitamin C and vitamin E showed no prophylactic effect
+    // against DOS; offering them as anti-DOS doses would advertise a null result.
+    for (const id of ['gse', 'vitamin-c', 'vitamin-e']) {
+      expect(catalogEntryById(id)).toBeUndefined();
+    }
+  });
+});
