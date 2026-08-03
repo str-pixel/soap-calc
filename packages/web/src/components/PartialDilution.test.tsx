@@ -46,3 +46,18 @@ test('renders nothing without a dilution', () => {
   const { container } = render(<PartialDilution dilution={null} weightUnit="g" />);
   expect(container.innerHTML).toBe('');
 });
+
+test('refuses to size a portion when the paste is already more dilute than the target', () => {
+  // targetExceedsPaste clamps dilutionWaterGrams to 0, which erases the real cook water:
+  // the batch's true mass and volume can no longer be recovered from the result, so the
+  // portion %, the clamp threshold and the "more than the batch holds" message would all
+  // be wrong (measured: 39% shown where the truth was 18.4%). Say so instead of computing.
+  render(
+    <PartialDilution
+      dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }}
+      weightUnit="g"
+    />,
+  );
+  expect(screen.queryByLabelText('Amount to make (ml)')).toBeNull();
+  expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+});

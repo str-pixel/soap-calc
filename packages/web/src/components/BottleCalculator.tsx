@@ -27,7 +27,9 @@ export function BottleCalculator({
       ? lsBottleCount(finishedGrams, bottleMl)
       : null;
   // The floor hides a part-bottle; naming it keeps the count reconcilable with the volume.
-  const leftoverMl = count !== null ? Math.round(volumeMl - count * bottleMl) : null;
+  // FLOOR, not round: a 499.5 ml remainder shown as "500 ml" beside "Bottles filled
+  // (500 ml)" reads as an uncounted extra bottle.
+  const leftoverMl = count !== null ? Math.floor(volumeMl - count * bottleMl) : null;
 
   return (
     <details className="panel panel--nested">

@@ -36,3 +36,11 @@ test('omits the count when the bottle size is blank or zero', () => {
   render(<BottleCalculator finishedGrams={4805} bottleSizeMl="" onBottleSizeMlChange={() => {}} />);
   expect(screen.queryByText(/Bottles filled/)).toBeNull();
 });
+
+test('never shows a remainder as large as a whole bottle', () => {
+  // 1,544.5 g → 1,499.5 ml → 2 bottles and 499.5 ml over. Rounding that to "500 ml"
+  // beside "Bottles filled (500 ml)" reads as an uncounted third bottle.
+  render(<BottleCalculator finishedGrams={1544.5} {...PROPS} />);
+  expect(screen.getByText('2')).toBeTruthy();
+  expect(screen.getByText('499 ml')).toBeTruthy();
+});
