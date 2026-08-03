@@ -29,7 +29,7 @@
 **Interfaces:**
 - Produces: catalog ids `bht`, `roe`. Both `doseUnit: 'percent'`, basis oil (default), `defaultStage: 'oils'`, all processes (DOS is not process-specific — the experiments were on CP bars, and HP/LS carry the same unsaponified oil).
 
-**Grounding (verify each before writing):** SCI:3234 tested every preservative at "0.1 grams of each per 100.0 of oil, i.e., 1 ppt of the oil weight". SCI:3244 gives the author's own recommendations: **1 ppt cosmetic-grade BHT to the oil** (= 0.1%), **1–2 ppt high-rosmarinic ROE to the oil** (= 0.1–0.2%), **0.5 ppt cosmetic-grade EDTA to the lye or water** (= 0.05%). SCI:3239: BHT still effective at 0.7 ppt; EDTA "most potent", effective at 0.3 ppt. SCI:3234 also found **grapefruit seed extract, vitamin C, vitamin E and sodium citrate showed no prophylactic effect alone** — do NOT add those as anti-DOS entries.
+**Grounding (verify each before writing):** SCI:3234 tested every preservative at "0.1 grams of each per 100.0 of oil, i.e., 1 ppt of the oil weight". SCI:3238 identifies rosmarinic acid as ROE's active fraction (1.2 ppt of it was needed to pass the 300-hour limit). SCI:3244 gives the author's own recommendations: **1 ppt cosmetic-grade BHT to the oil** (= 0.1%), **1–2 ppt high-rosmarinic ROE to the oil** (= 0.1–0.2%), **0.5 ppt cosmetic-grade EDTA to the lye or water** (= 0.05%). SCI:3239: BHT still effective at 0.7 ppt; EDTA "most potent", effective at 0.3 ppt. SCI:3234 also found **grapefruit seed extract, vitamin C, vitamin E and sodium citrate showed no prophylactic effect alone** — do NOT add those as anti-DOS entries.
 
 - [ ] **Step 1: Write the failing test** — append to `additives.test.ts`:
 
@@ -65,7 +65,9 @@ describe('anti-DOS antioxidants', () => {
     // as much as liquid soap does; the study behind this dose was run on CP bars.
     // Dose is the experiment's own recommendation: 1 ppt of oil weight = 0.1%. It was
     // still effective at 0.7 ppt. Three craft books print "1%" — 10x this, above typical
-    // cosmetic use and above the EU cap — which is why the figure here is the tested one.
+    // cosmetic use — which is why the figure here is the tested one. (The experiment's
+    // 0.7 ppt "still effective" figure was measured with BHT added to the LYE, not the
+    // oil, so it is not a lower bound for this oil-stage entry.)
     id: 'bht',
     name: 'BHT (antioxidant)',
     typicalLow: 0.1,
@@ -89,7 +91,8 @@ describe('anti-DOS antioxidants', () => {
 
 - [ ] **Step 5: Audit the chelator doses (verification, may or may not change code).** Three figures are in play and they do not agree:
   - app `edta`: 0.1–0.5% of **oil** weight; app `chelator` (citrate/gluconate): 1% of oil weight;
-  - craft CP book: *"The usage rate for EDTA is commonly 0.5% of the total **cured soap** weight"* — a different basis (cured soap ≈ oils + lye − water loss, so ~0.38% of oil weight);
+  - craft CP book (CP:2375): *"The usage rate for EDTA is commonly 0.5% of the total **cured soap** weight"* — a different basis. Convert in the right direction: cured soap OUTWEIGHS the oils (oils + lye, less cure evaporation ≈ **1.25×** oils by the app's own `waterLossPercent` model), so 0.5% of cured soap ≈ **0.62% of oil weight**, i.e. ABOVE the app's 0.5% top end, not below it;
+  - the same CP passage then simplifies its own advice: *"we will simply calculate these ingredients based on the total oil weight and calculate both sodium citrate and sodium gluconate at **1% of the total oil weight** and add to the lye solution"* — so the app's `chelator` entry (1% of oils, lye stage) is DIRECTLY SOURCED and needs no change. Only `edta` is genuinely open;
   - science reference: **0.5 ppt = 0.05% of oil** recommended, effective at 0.3 ppt.
 
   Read all three in situ, then decide and record. If you conclude the app's figure is another ppt→% slip, correct it and comment both figures as the BHT entry does. If the craft basis is defensible for hard-water chelation (a different purpose from DOS prevention), leave the numbers and add a comment stating that the anti-DOS dose is an order of magnitude lower and why both exist. **Do not change a number without writing down which source won and why.**
@@ -155,6 +158,9 @@ describe('dos_risk_no_antioxidant', () => {
         return null;
       }
       const pufa = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+      // 25% PUFA is an UNSOURCED proxy for "soft enough to spot" — the experiment gives
+      // no threshold, only that soft oils shortened the induction period. Same posture as
+      // COCONUT_HEAVY_LAURIC_MYRISTIC: a documented estimate, not a cited constant.
       if (pufa <= 25) return null;
       const protected_ =
         additiveMatches(input.additiveEntries, 'bht', 'bht') ||
@@ -175,7 +181,7 @@ describe('dos_risk_no_antioxidant', () => {
   },
 ```
 
-- [ ] **Step 4: Bookkeeping** — add `'dos_risk_no_antioxidant'` to `ALL_CODES` in `insights.golden.test.ts` (alphabetical, after `dual_lye_advanced`), bump the count comments, and add a `PROBES` entry in `insights.test.ts`. Then check the golden fixture: if any matrix cell has PUFA > 25 with coverage ≥ threshold it will now emit this code — regenerate by replacing only the affected `insights` arrays and confirm with `git diff` that no other cell changed. Report how many cells moved.
+- [ ] **Step 4: Bookkeeping** — add `'dos_risk_no_antioxidant'` to `ALL_CODES` in `insights.golden.test.ts` (alphabetical — `dos_…` sorts BEFORE `dual_…`, so it goes at the head of the list), bump the count comments, and add a `PROBES` entry in `insights.test.ts`. Then regenerate the golden fixture: exactly one MATRIX row carries PUFA > 25 at full coverage (`{ superfatPercent: 10, fattyAcids: { linoleic: 30, linolenic: 5, oleic: 20 } }`), so **3 cells (cp/hp/ls) should gain this code and nothing else should change**. Replace only those `insights` arrays and confirm the count with `git diff`; a different number means something unintended moved.
 
 - [ ] **Step 5: Verify** — `npm run test -w @soap-calc/core` green.
 
@@ -190,8 +196,9 @@ describe('dos_risk_no_antioxidant', () => {
 - Modify: `packages/core/src/insights.ts` (one rule), `insights.test.ts`, `insights.golden.test.ts`
 - Modify: `packages/web/src/hooks/useFormulationInsights.ts` (pass the envelope)
 - Modify: `packages/web/src/lib/process.test.ts`
+- Modify: `packages/web/src/lib/processVariants.golden.test.ts` — it deep-equals every profile against inline `GOLDEN_PROFILES`, so a new `ProcessProfile` field fails it for all five variants. Update the golden AND append an entry to its PERMITTED EDIT LOG saying this is a data-shape addition, not a refactor being forced through.
 
-**Grounding:** LS:1487 — *"You can use anything from a 25-60% water concentration or anywhere from a one to five ratio."* The 30-minute method narrows to 30–40% (LS:2723). This is a single envelope, NOT the two-tier `WaterBand` CP/HP use — which is why LS's `waterBand` is null and must stay null.
+**Grounding:** LS:1505 — *"You can use anything from a 25-60% water concentration or anywhere from a one to five ratio."* The 30-minute method narrows to 30–40% (LS:2723). "Water concentration" is defined as a % of the OILS at LS:1491–1493 (`16 × 0.38 = 6.08 oz`), which is the reading this task implements; the "one to five" alternative is water:lye. This is a single envelope, NOT the two-tier `WaterBand` CP/HP use — which is why LS's `waterBand` is null and must stay null.
 
 **Interfaces:**
 - Produces: `ProcessProfile.waterEnvelope: [number, number] | null`; `FormulationAnalysisInput.waterEnvelope?: [number, number]`; insight code `ls_water_outside_envelope`.
@@ -268,7 +275,8 @@ describe('ls_water_outside_envelope', () => {
 **Grounding:** LS:1531 gradual — *add enough water to cover, then small increments to the consistency wanted*. LS:1534 ratio — *weigh the paste, then add 1:1 / 2:1 / 3:1 water:paste by weight*. LS:1536 concentration — what the app already implements. The app has the ratio as a READOUT (Task: `waterPasteRatio` in `PartialDilution`) but never as an INPUT.
 
 **Interfaces:**
-- Produces: `dilutionMode: 'concentration' | 'ratio'` App state; when `ratio`, the panel takes a water:paste ratio and derives the concentration rather than the reverse.
+- Produces: `dilutionMode: 'concentration' | 'ratio'` App state; when `ratio`, the panel takes a water:paste ratio and derives the concentration rather than the reverse. Every new prop is OPTIONAL — Task 5's and Task 8's tests render `DilutionPanel` without them.
+- Consumes: a new `cookWaterGrams: number` prop from the view model. **Do not derive the paste as `totalWater − dilutionWater`**: `calculateDilution` clamps `dilutionWaterGrams` to 0 when `targetExceedsPaste`, which erases the real cook water (the same trap documented in `PartialDilution.tsx`). The view model already computes the true `cookWaterGrams` to feed `calculateDilution`, so pass that down and use `pasteGrams = anhydrousGrams + cookWaterGrams`.
 
 - [ ] **Step 1: Failing test** — in `DilutionPanel.test.tsx`:
 
@@ -295,7 +303,7 @@ test('ratio mode derives the concentration a water:paste ratio lands on', () => 
 
 - [ ] **Step 2: Verify RED.**
 
-- [ ] **Step 3: Implement.** Add a mode selector (`Target concentration` / `Water : paste ratio`) above the concentration field. In ratio mode, replace the concentration input with a ratio input (`step={0.5}`, min 0.5) and compute: `pasteGrams = anhydrous + cookWater` (or the measured paste from Task 5 when present), `waterGrams = pasteGrams × ratio`, `solution = pasteGrams + waterGrams`, `concentration = anhydrous / solution × 100`. Render the derived concentration prominently (`lands at N% soap`) so the two modes stay reconcilable, and keep every existing row rendering off the same figures.
+- [ ] **Step 3: Implement.** Add a mode selector (`Target concentration` / `Water : paste ratio`) above the concentration field. In ratio mode, replace the concentration input with a ratio input (`step={0.5}`, min 0.5) and compute: `waterGrams = pasteGrams × ratio`, `solution = pasteGrams + waterGrams`, `concentration = anhydrous / solution × 100`. Render the derived concentration prominently (`lands at N% soap`) so the two modes stay reconcilable, and keep every existing row rendering off the same figures.
 
 - [ ] **Step 4: Add the gradual-dilution note** — one `results-hint` below the figures, shown in both modes:
 
@@ -339,7 +347,7 @@ test('a measured paste corrects the batch dilution water', () => {
 });
 ```
 
-- [ ] **Step 2: Verify RED.** **Step 3: Implement** — accept optional `measuredPasteGrams?: string`; when present and valid (finite, > `anhydrousGrams`, ≤ `solutionGrams` — the same guards `PartialDilution` uses), render `solutionGrams − measured` as the dilution water instead of `dilution.dilutionWaterGrams`, and add a hint naming that the figure came from the measurement. Leave `DilutionResult` itself untouched: this is a display-level correction, and pushing it into `calculateDilution` would require threading the measurement through the whole view model.
+- [ ] **Step 2: Verify RED.** **Step 3: Implement** — accept optional `measuredPasteGrams?: string`; when present and valid — reuse `PartialDilution`'s own predicates rather than paraphrasing them (`measurementBelowSolids`: reject `measured < anhydrousGrams`; `measurementExceedsSolution`: reject `measured > solutionGrams`; both accept the boundary), extracting them to a shared helper if that is cleaner, render `solutionGrams − measured` as the dilution water instead of `dilution.dilutionWaterGrams`, and add a hint naming that the figure came from the measurement. Leave `DilutionResult` itself untouched: this is a display-level correction, and pushing it into `calculateDilution` would require threading the measurement through the whole view model.
 
 - [ ] **Step 4: Verify + commit** — `git add -A && git commit -m "feat(ls): measured paste corrects the batch dilution water too"`
 
@@ -351,7 +359,7 @@ test('a measured paste corrects the batch dilution water', () => {
 - Modify: `packages/core/src/neutralization.ts`, `neutralization.test.ts`
 - Modify: `packages/web/src/components/NeutralizePanel.tsx` + its test
 
-**Grounding:** LS:1234–1240. Stearic acid reacts with the excess alkali to form a water-soluble soap; any surplus cools, floats and is filtered off — so unlike citric it **cannot be overdosed** (*"you can't use 'too much' like you can with citric acid"*), which makes it the beginner-safe route. Stoichiometry is 1 mol stearic per 1 mol OH⁻; stearic acid C₁₈H₃₆O₂, MW **284.484** g/mol (verify: 18×12.011 + 36×1.008 + 2×15.999).
+**Grounding:** LS:1234–1244. Stearic acid reacts with the excess alkali to form a water-soluble soap; any surplus cools, floats and is filtered off — so unlike citric it **cannot be overdosed** (LS:1244, *"you can't use 'too much' like you can with citric acid"*), which makes it the beginner-safe route. Stoichiometry is 1 mol stearic per 1 mol OH⁻; stearic acid C₁₈H₃₆O₂, MW **284.484** g/mol (verify: 18×12.011 + 36×1.008 + 2×15.999).
 
 - [ ] **Step 1: Failing test** — in `neutralization.test.ts`:
 
