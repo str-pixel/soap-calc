@@ -9,6 +9,7 @@ import {
 } from '@soap-calc/core';
 import { formatConcentrationPercent } from '../lib/format';
 import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
+import { measurementBelowSolids, measurementExceedsSolution } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
 export type DilutionMode = 'concentration' | 'ratio';
@@ -45,6 +46,12 @@ type DilutionPanelProps = {
   /** Water:paste ratio by weight, as typed (e.g. "2" for 2:1). */
   waterPasteRatio?: string;
   onWaterPasteRatioChange?: (value: string) => void;
+  /** The maker's scale reading for the whole batch's paste, in grams (same App state
+   * PartialDilution reads — see its doc comment). The reference weighs the paste precisely
+   * because a computed figure cannot account for cook evaporation or an alternative
+   * liquid's uncounted solids, so when this is present and passes PartialDilution's own
+   * guards, it corrects the BATCH dilution water here too, not just the portion below. */
+  measuredPasteGrams?: string;
 };
 
 export function DilutionPanel({
@@ -61,17 +68,38 @@ export function DilutionPanel({
   onDilutionModeChange,
   waterPasteRatio = '',
   onWaterPasteRatioChange,
+  measuredPasteGrams,
 }: DilutionPanelProps) {
   // Which intended uses the current target suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
+  // Same guards PartialDilution applies to the identical measurement: below the anhydrous
+  // soap it cannot be a whole-batch paste, above the target solution there is no water left
+  // to add. Both accept the boundary. A measured paste that survives these WINS over the
+  // computed figures below — see the "measured paste" hint on the batch row, and the ratio
+  // pasteGrams override just below.
+  const hasMeasuredPaste = measuredPasteGrams !== undefined && measuredPasteGrams.trim() !== '';
+  const measuredPasteNum = Number(measuredPasteGrams);
+  const measuredPasteValid =
+    dilution !== null &&
+    hasMeasuredPaste &&
+    Number.isFinite(measuredPasteNum) &&
+    measuredPasteNum > 0 &&
+    !measurementBelowSolids(measuredPasteNum, dilution) &&
+    !measurementExceedsSolution(measuredPasteNum, dilution);
   // Ratio mode (LS:1534): weigh the paste, then add water at 1:1 / 2:1 / 3:1 by weight.
-  // pasteGrams is anhydrousGrams + the paste's TRUE water — not dilution.totalWaterGrams -
-  // dilutionWaterGrams, which the targetExceedsPaste clamp on dilutionWaterGrams can zero
-  // out (see DilutionPanelProps.cookWaterGrams and PartialDilution's identical trap).
+  // Prefer a valid MEASURED paste — the reference's ratio method is applied to a weighed
+  // paste. Otherwise pasteGrams is anhydrousGrams + the paste's TRUE water — not
+  // dilution.totalWaterGrams - dilutionWaterGrams, which the targetExceedsPaste clamp on
+  // dilutionWaterGrams can zero out (see DilutionPanelProps.cookWaterGrams and
+  // PartialDilution's identical trap).
   const ratioNum = Number(waterPasteRatio);
   const ratioValid = Number.isFinite(ratioNum) && ratioNum > 0;
-  const pasteGrams = dilution ? dilution.anhydrousGrams + cookWaterGrams : null;
+  const pasteGrams = dilution
+    ? measuredPasteValid
+      ? measuredPasteNum
+      : dilution.anhydrousGrams + cookWaterGrams
+    : null;
   const ratioWaterGrams =
     dilution && pasteGrams !== null && ratioValid ? pasteGrams * ratioNum : null;
   const ratioSolutionGrams =
@@ -109,6 +137,13 @@ export function DilutionPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dilutionMode, clampedRatioConcentrationPercent]);
+  // The measurement corrects the BATCH figure the same way it already corrects the portion
+  // in PartialDilution: solutionGrams is fixed by the target concentration, so whatever the
+  // paste actually weighed, solutionGrams - measured is the water still needed to get there.
+  const batchDilutionWaterGrams =
+    dilution && measuredPasteValid
+      ? dilution.solutionGrams - measuredPasteNum
+      : (dilution?.dilutionWaterGrams ?? 0);
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough, and it is what the separate bottle count works
@@ -218,7 +253,7 @@ export function DilutionPanel({
           <dl className="results-grid">
             <div className="results-grid__item results-grid__item--primary">
               <dt>Dilution water to add</dt>
-              <dd>{formatWeightWithAlternates(dilution.dilutionWaterGrams, weightUnit)}</dd>
+              <dd>{formatWeightWithAlternates(batchDilutionWaterGrams, weightUnit)}</dd>
             </div>
             <div className="results-grid__item">
               <dt>Paste (anhydrous)</dt>
@@ -249,6 +284,14 @@ export function DilutionPanel({
               </div>
             )}
           </dl>
+          {measuredPasteValid && (
+            <p className="results-hint">
+              Dilution water above uses your measured paste ({formatWeight(measuredPasteNum, weightUnit)}
+              ), not the recipe&apos;s computed paste — the cook evaporates water the recipe still
+              counts, and an alternative liquid&apos;s solids are mass it never counted, so the
+              measurement is more accurate.
+            </p>
+          )}
           {/* LS:1531 — shown regardless of which figure (concentration or ratio) the maker
               started from, since the swelling and absorbing it describes happens either way. */}
           <p className="results-hint">

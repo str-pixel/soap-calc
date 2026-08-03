@@ -1,5 +1,6 @@
 import { lsPartialDilution, type DilutionResult } from '@soap-calc/core';
 import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
+import { measurementBelowSolids, measurementExceedsSolution } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
 type PartialDilutionProps = {
@@ -48,13 +49,16 @@ export function PartialDilution({
   // portion, which makes the mistake an easy one. Left unguarded the app answered with
   // confident nonsense: a 900 g reading on a 1,200 g-soap batch reported "lighter than
   // predicted — water lost to the cook", which cannot be true of water that was never there.
-  const measurementBelowSolids =
-    hasMeasurement && Number.isFinite(measured) && measured > 0 && measured < dilution.anhydrousGrams;
+  const pasteBelowSolids =
+    hasMeasurement &&
+    Number.isFinite(measured) &&
+    measured > 0 &&
+    measurementBelowSolids(measured, dilution);
   // Likewise, a paste heavier than the whole target solution cannot be diluted INTO that
   // solution. Core returns null for it; saying so beats the figures silently vanishing.
-  const measurementExceedsSolution =
-    hasMeasurement && Number.isFinite(measured) && measured > dilution.solutionGrams;
-  const measurementRejected = measurementBelowSolids || measurementExceedsSolution;
+  const pasteExceedsSolution =
+    hasMeasurement && Number.isFinite(measured) && measurementExceedsSolution(measured, dilution);
+  const measurementRejected = pasteBelowSolids || pasteExceedsSolution;
   const portion =
     pasteAlreadyThinner || measurementRejected
       ? null
@@ -109,14 +113,14 @@ export function PartialDilution({
               aria-label="Amount to make (ml)"
             />
           </label>
-          {measurementBelowSolids && (
+          {pasteBelowSolids && (
             <p className="results-hint" role="alert">
               That is less than the {formatWeight(dilution.anhydrousGrams, weightUnit)} of soap
               this batch makes, so it cannot be the whole batch&apos;s paste — check the scale
               was tared, and enter the whole batch rather than the portion you are diluting.
             </p>
           )}
-          {measurementExceedsSolution && (
+          {pasteExceedsSolution && (
             <p className="results-hint" role="alert">
               Your paste already weighs more than the{' '}
               {formatWeight(dilution.solutionGrams, weightUnit)} this target dilutes to, so

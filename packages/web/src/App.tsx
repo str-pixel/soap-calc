@@ -467,6 +467,7 @@ export default function App() {
                 onDilutionModeChange={setDilutionMode}
                 waterPasteRatio={waterPasteRatio}
                 onWaterPasteRatioChange={setWaterPasteRatio}
+                measuredPasteGrams={measuredPasteGrams}
               />
             )}
             {processOffers(process, 'dilution') && (

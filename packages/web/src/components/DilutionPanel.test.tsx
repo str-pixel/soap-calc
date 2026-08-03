@@ -282,6 +282,46 @@ test('invalid ratio explains why the ratio results vanished instead of just vani
   expect(screen.queryByText(/lands at/i)).toBeNull();
 });
 
+test('a measured paste corrects the batch dilution water', () => {
+  // Predicted paste 1,600 g. Measured 1,480 g — 120 g evaporated — so reaching the same
+  // 4,000 g solution needs 120 g more water: 2,520 g rather than 2,400 g.
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      measuredPasteGrams="1480"
+    />,
+  );
+  expect(screen.getByText(/^2,520 g/)).toBeTruthy();
+  expect(screen.getByText(/measured paste/i)).toBeTruthy();
+});
+
+test('ratio mode: a valid measured paste wins over the computed anhydrous + cook water', () => {
+  // Computed paste would be 1,200 + 400 = 1,600 g. Measured 1,480 g (valid: between the
+  // 1,200 g anhydrous floor and the 4,000 g solution ceiling) must be used instead, since
+  // the reference's ratio method is applied to a weighed paste. At 2:1: 1,480 * 2 = 2,960 g
+  // water, solution 4,440 g, so anhydrous is 1,200 / 4,440 = 27.0% soap — not the 25.0%
+  // (1,200 / 4,800) the computed paste would have produced (see the earlier ratio test).
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      cookWaterGrams={400}
+      measuredPasteGrams="1480"
+      dilutionMode="ratio"
+      waterPasteRatio="2"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(screen.getByText(/^2,960 g/)).toBeTruthy();
+  expect(screen.getByText(/lands at 27% soap/i)).toBeTruthy();
+});
+
 test('leaves bottling to the separate bottle count — no size field, no count here', () => {
   // Makers dilute one large batch and package it later, often into several sizes, so the
   // dilution figures stay about the batch (see BottleCalculator).
