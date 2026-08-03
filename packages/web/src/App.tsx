@@ -97,11 +97,23 @@ export default function App() {
   // that no longer belongs to the oils being diluted. There is no single handler that
   // mutates `lines` — the recipe editor's apply functions, import, new-recipe, and
   // undo/redo all do, independently — so a single-handler reset isn't available here. A
-  // useEffect keyed on `lines`' identity is the prescription (not a fallback): it is the
-  // one place that necessarily sees every path that changes the recipe.
+  // useEffect is the prescription (not a fallback): it is the one place that necessarily
+  // sees every path that changes the recipe.
+  //
+  // Keyed on the oils' CONTENT, not `lines`' array identity: switching process tabs
+  // reloads the OTHER process's own draft via loadWorkspace → loadDraft → JSON.parse,
+  // and JSON.parse allocates a fresh array every time even when the bytes are identical.
+  // A round trip back to an unchanged Liquid soap recipe would then present a new `lines`
+  // reference for byte-identical oils and wipe the measurement for no real edit — silently
+  // contradicting "App state keeps them across ... process switches" above. The signature
+  // below is stable across that reload and only changes when an oil, its weight, or its
+  // tar-lye treatment actually changes.
+  const oilsSignature = lines
+    .map((l) => `${l.oilId}:${l.weightGrams}:${l.tarLyeTreatment ?? ''}`)
+    .join('|');
   useEffect(() => {
     setMeasuredPasteGrams('');
-  }, [lines]);
+  }, [oilsSignature]);
   // Which way the maker is choosing the dilution target: a soap concentration (the
   // default — LS:1536, and what the persisted settings.soapConcentrationPercent already
   // is) or a water:paste ratio by weight (LS:1534). Session-local like the portion inputs

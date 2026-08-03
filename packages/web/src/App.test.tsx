@@ -75,4 +75,23 @@ describe('App process switch', () => {
 
     expect((measuredInput as HTMLInputElement).value).toBe('');
   });
+
+  it('preserves the measured paste across a process-tab round trip with unchanged oils', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    await userEvent.click(screen.getByText(/Dilute part of the batch/i));
+    let measuredInput = screen.getByLabelText(/Measured paste weight — whole batch/i);
+    await userEvent.type(measuredInput, '1500');
+    expect((measuredInput as HTMLInputElement).value).toBe('1500');
+
+    // Switching away and back reloads the Liquid Soap workspace's own draft via
+    // loadWorkspace → loadDraft → JSON.parse, which allocates a brand-new `lines` array
+    // even though the oils themselves never changed. That must not read as an oils edit.
+    await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    await userEvent.click(screen.getByText(/Dilute part of the batch/i));
+
+    measuredInput = screen.getByLabelText(/Measured paste weight — whole batch/i);
+    expect((measuredInput as HTMLInputElement).value).toBe('1500');
+  });
 });
