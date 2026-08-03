@@ -134,6 +134,10 @@ describe('dos_risk_no_antioxidant', () => {
       expect(has({ ...softOils, additiveEntries: [entry] }, 'dos_risk_no_antioxidant')).toBe(false);
     }
   });
+  it('is NOT silenced by citrate alone — the experiment found it ineffective by itself', () => {
+    const citrateOnly = [{ catalogId: 'chelator', name: 'Chelator (citrate, gluconate)' }];
+    expect(has({ ...softOils, additiveEntries: citrateOnly }, 'dos_risk_no_antioxidant')).toBe(true);
+  });
   it('stays quiet for low-PUFA recipes and at low coverage', () => {
     expect(has({ ...softOils, fattyAcids: { oleic: 70 } }, 'dos_risk_no_antioxidant')).toBe(false);
     expect(has({ ...softOils, fattyAcidCoveragePercent: 40 }, 'dos_risk_no_antioxidant')).toBe(false);
@@ -162,11 +166,14 @@ describe('dos_risk_no_antioxidant', () => {
       // no threshold, only that soft oils shortened the induction period. Same posture as
       // COCONUT_HEAVY_LAURIC_MYRISTIC: a documented estimate, not a cited constant.
       if (pufa <= 25) return null;
+      // Citrate does NOT silence this insight: the experiment found sodium citrate alone
+      // "showed no prophylactic effect" (and roe + citrate performed WORSE than roe
+      // alone) — its DOS value is only ever as a partner to an antioxidant. EDTA alone
+      // WAS effective, so it counts. Same follow-the-experiment rule as the doses.
       const protected_ =
         additiveMatches(input.additiveEntries, 'bht', 'bht') ||
         additiveMatches(input.additiveEntries, 'roe', 'rosemary') ||
-        additiveMatches(input.additiveEntries, 'edta', 'edta') ||
-        additiveMatches(input.additiveEntries, 'chelator', 'citrate');
+        additiveMatches(input.additiveEntries, 'edta', 'edta');
       if (protected_) return null;
       return {
         level: 'info',
@@ -181,7 +188,7 @@ describe('dos_risk_no_antioxidant', () => {
   },
 ```
 
-- [ ] **Step 4: Bookkeeping** — add `'dos_risk_no_antioxidant'` to `ALL_CODES` in `insights.golden.test.ts` (alphabetical — `dos_…` sorts BEFORE `dual_…`, so it goes at the head of the list), bump the count comments, and add a `PROBES` entry in `insights.test.ts`. Then regenerate the golden fixture: exactly one MATRIX row carries PUFA > 25 at full coverage (`{ superfatPercent: 10, fattyAcids: { linoleic: 30, linolenic: 5, oleic: 20 } }`), so **3 cells (cp/hp/ls) should gain this code and nothing else should change**. Replace only those `insights` arrays and confirm the count with `git diff`; a different number means something unintended moved.
+- [ ] **Step 4: Bookkeeping** — add `'dos_risk_no_antioxidant'` to `ALL_CODES` in `insights.golden.test.ts` (alphabetical — `dos_…` sorts BEFORE `dual_…`, so it goes at the head of the list), bump the count comments — BOTH of them: the file says "39 insight codes" near the top and a stale "36" further down; fix the pre-existing mismatch rather than propagating it — and add a `PROBES` entry in `insights.test.ts`. Then regenerate the golden fixture: exactly one MATRIX row carries PUFA > 25 at full coverage (`{ superfatPercent: 10, fattyAcids: { linoleic: 30, linolenic: 5, oleic: 20 } }`), so **3 cells (cp/hp/ls) should gain this code and nothing else should change**. Replace only those `insights` arrays and confirm the count with `git diff`; a different number means something unintended moved.
 
 - [ ] **Step 5: Verify** — `npm run test -w @soap-calc/core` green.
 
@@ -270,12 +277,13 @@ describe('ls_water_outside_envelope', () => {
 
 **Files:**
 - Modify: `packages/web/src/components/DilutionPanel.tsx`, `DilutionPanel.test.tsx`
-- Modify: `packages/web/src/App.tsx` (one piece of state)
+- Modify: `packages/web/src/hooks/useRecipeViewModel.ts` — expose `cookWaterGrams` on the vm return (it is already computed inline at ~307 as `result.waterWeightGrams + splitLiquidPasteWater` to feed `calculateDilution`; App cannot reconstruct it because the vm returns `finalResult` while the dilution deliberately reads the base result)
+- Modify: `packages/web/src/App.tsx` (two pieces of state: `dilutionMode`, `waterPasteRatio` — both session-local like the portion inputs, NOT recipe settings; concentration stays the persisted figure)
 
 **Grounding:** LS:1531 gradual — *add enough water to cover, then small increments to the consistency wanted*. LS:1534 ratio — *weigh the paste, then add 1:1 / 2:1 / 3:1 water:paste by weight*. LS:1536 concentration — what the app already implements. The app has the ratio as a READOUT (Task: `waterPasteRatio` in `PartialDilution`) but never as an INPUT.
 
 **Interfaces:**
-- Produces: `dilutionMode: 'concentration' | 'ratio'` App state; when `ratio`, the panel takes a water:paste ratio and derives the concentration rather than the reverse. Every new prop is OPTIONAL — Task 5's and Task 8's tests render `DilutionPanel` without them.
+- Produces: `dilutionMode: 'concentration' | 'ratio'` App state; when `ratio`, the panel takes a water:paste ratio and derives the concentration rather than the reverse. Every new prop is OPTIONAL — Task 5's test renders `DilutionPanel` without them (Task 8 renders other components, but the same rule keeps existing DilutionPanel tests compiling).
 - Consumes: a new `cookWaterGrams: number` prop from the view model. **Do not derive the paste as `totalWater − dilutionWater`**: `calculateDilution` clamps `dilutionWaterGrams` to 0 when `targetExceedsPaste`, which erases the real cook water (the same trap documented in `PartialDilution.tsx`). The view model already computes the true `cookWaterGrams` to feed `calculateDilution`, so pass that down and use `pasteGrams = anhydrousGrams + cookWaterGrams`.
 
 - [ ] **Step 1: Failing test** — in `DilutionPanel.test.tsx`:
@@ -290,6 +298,7 @@ test('ratio mode derives the concentration a water:paste ratio lands on', () => 
       soapConcentrationPercent="30"
       onSoapConcentrationChange={() => {}}
       weightUnit="g"
+      cookWaterGrams={400}
       dilutionMode="ratio"
       waterPasteRatio="2"
       onDilutionModeChange={() => {}}
@@ -303,7 +312,11 @@ test('ratio mode derives the concentration a water:paste ratio lands on', () => 
 
 - [ ] **Step 2: Verify RED.**
 
-- [ ] **Step 3: Implement.** Add a mode selector (`Target concentration` / `Water : paste ratio`) above the concentration field. In ratio mode, replace the concentration input with a ratio input (`step={0.5}`, min 0.5) and compute: `waterGrams = pasteGrams × ratio`, `solution = pasteGrams + waterGrams`, `concentration = anhydrous / solution × 100`. Render the derived concentration prominently (`lands at N% soap`) so the two modes stay reconcilable, and keep every existing row rendering off the same figures.
+- [ ] **Step 3: Implement.** Add a mode selector (`Target concentration` / `Water : paste ratio`) above the concentration field. In ratio mode, replace the concentration input with a ratio input (`step={0.5}`, min 0.5) and compute: `waterGrams = pasteGrams × ratio`, `solution = pasteGrams + waterGrams`, `concentration = anhydrous / solution × 100`. Render the derived concentration prominently (`lands at N% soap`).
+
+  **Downstream coherence — the load-bearing decision:** ratio mode WRITES THE DERIVED CONCENTRATION BACK through `onSoapConcentrationChange` (rounded to 0.1). The ratio is an alternative way to *choose* the concentration, not a parallel result: `vm.dilution`, PartialDilution, BottleCalculator and the BatchSheet all read the persisted concentration, so without write-back the app would show 3,200 g water in this panel beside 2,400 g on the printed sheet. With write-back every downstream consumer reconciles for free and the panel's own rows keep rendering off `dilution` unchanged. `concentration` is the DEFAULT mode (which is also what keeps the existing e2e assertions green); switching modes never clears the other mode's input.
+
+  **Measured paste wins in ratio mode** (add in this task if Task 5 is already merged, else note it there): the reference's ratio method is applied to a *weighed* paste (LS:1533), so when `measuredPasteGrams` is present and valid, `pasteGrams` is the measurement, not `anhydrous + cookWaterGrams`.
 
 - [ ] **Step 4: Add the gradual-dilution note** — one `results-hint` below the figures, shown in both modes:
 
@@ -452,7 +465,8 @@ test('the water:paste ratio never renders as 0.0 beside a real water figure', ()
 ```
 
 ```tsx
-// App-level: the measurement must not outlive the recipe it describes
+// packages/web/src/App.test.tsx (existing userEvent harness) — the measurement must not
+// outlive the recipe it describes
 test('clears the measured paste when the recipe oils change', () => { /* drive the App
    harness: set a measurement, change an oil weight, assert the field is empty */ });
 ```
