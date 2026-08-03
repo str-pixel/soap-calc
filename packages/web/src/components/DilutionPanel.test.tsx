@@ -185,6 +185,103 @@ test('ratio mode derives the concentration a water:paste ratio lands on', () => 
   expect(screen.getByText(/^3,200 g/)).toBeTruthy();
 });
 
+test('ratio mode uses cookWaterGrams for paste, not totalWater minus dilutionWater (the targetExceedsPaste clamp trap)', () => {
+  // totalWaterGrams - dilutionWaterGrams would give the WRONG paste here: dilutionWaterGrams
+  // is clamped to 0 when targetExceedsPaste (see the DilutionPanel cookWaterGrams prop doc
+  // and PartialDilution's identical trap), so the forbidden derivation would compute paste
+  // as 1,200 + (133 - 0) = 1,333 g. The correct paste — from cookWaterGrams — is
+  // 1,200 + 1,600 = 2,800 g. At a 1:1 ratio that is 2,800 g water to add and 21.4% soap
+  // (1,200 / 5,600), not the 1,333 g / different percentage the forbidden formula implies.
+  render(
+    <DilutionPanel
+      dilution={{
+        anhydrousGrams: 1200,
+        solutionGrams: 5000,
+        totalWaterGrams: 133,
+        dilutionWaterGrams: 0,
+        glycerinGrams: 100,
+        soapConcentrationPercent: 90,
+        targetExceedsPaste: true,
+      }}
+      soapConcentrationPercent="90"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      cookWaterGrams={1600}
+      dilutionMode="ratio"
+      waterPasteRatio="1"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(screen.getByText(/^2,800 g/)).toBeTruthy();
+  expect(screen.queryByText(/^1,333 g/)).toBeNull();
+  expect(screen.getByText(/lands at 21.4% soap/i)).toBeTruthy();
+});
+
+test('ratio mode writes the derived concentration back so downstream consumers reconcile', () => {
+  // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
+  // without this write-back, vm.dilution / PartialDilution / BottleCalculator / BatchSheet
+  // would all keep showing the old persisted concentration's figures beside this panel's.
+  const onSoapConcentrationChange = vi.fn();
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={onSoapConcentrationChange}
+      weightUnit="g"
+      cookWaterGrams={400}
+      dilutionMode="ratio"
+      waterPasteRatio="2"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+});
+
+test('extreme ratio clamps the written-back concentration so the ratio panel cannot vanish', () => {
+  // At a 100,000:1 ratio the true derived concentration rounds to 0.0%. calculateDilution
+  // only accepts (0, 100) exclusive, so writing 0 back would null out `dilution` upstream —
+  // and since this whole ratio UI is gated on `dilution`, it would silently vanish with no
+  // way back except switching modes. The write-back must clamp into range, and the panel
+  // must say so rather than just silently substituting a different number.
+  const onSoapConcentrationChange = vi.fn();
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={onSoapConcentrationChange}
+      weightUnit="g"
+      cookWaterGrams={400}
+      dilutionMode="ratio"
+      waterPasteRatio="100000"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(onSoapConcentrationChange).toHaveBeenCalledWith('1');
+  expect(onSoapConcentrationChange).not.toHaveBeenCalledWith('0');
+  expect(screen.getByText(/outside the 1.99% range/i)).toBeTruthy();
+});
+
+test('invalid ratio explains why the ratio results vanished instead of just vanishing', () => {
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      cookWaterGrams={400}
+      dilutionMode="ratio"
+      waterPasteRatio="0"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(screen.getByText(/ratio greater than zero/i)).toBeTruthy();
+  expect(screen.queryByText(/lands at/i)).toBeNull();
+});
+
 test('leaves bottling to the separate bottle count — no size field, no count here', () => {
   // Makers dilute one large batch and package it later, often into several sizes, so the
   // dilution figures stay about the batch (see BottleCalculator).

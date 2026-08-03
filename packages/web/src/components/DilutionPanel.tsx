@@ -76,10 +76,27 @@ export function DilutionPanel({
     dilution && pasteGrams !== null && ratioValid ? pasteGrams * ratioNum : null;
   const ratioSolutionGrams =
     pasteGrams !== null && ratioWaterGrams !== null ? pasteGrams + ratioWaterGrams : null;
+  // The true derived concentration — shown as-is in the "lands at" readout below, however
+  // extreme, so the panel never lies about what the ratio implies.
   const ratioConcentrationPercent =
     dilution && ratioSolutionGrams !== null && ratioSolutionGrams > 0
       ? (dilution.anhydrousGrams / ratioSolutionGrams) * 100
       : null;
+  const roundedRatioConcentrationPercent =
+    ratioConcentrationPercent !== null ? Math.round(ratioConcentrationPercent * 10) / 10 : null;
+  // calculateDilution only accepts (0, 100) exclusive (see the concentration field's own
+  // min={1} max={99}). An extreme ratio can round the true value to 0.0 or 100.0 — writing
+  // THAT back would send `dilution` upstream to null, which vanishes this entire ratio UI
+  // (it is gated on `dilution`) with no way to recover except switching modes. Clamping
+  // what gets WRITTEN — never the readout above, which keeps telling the truth — keeps a
+  // legal concentration flowing at all times.
+  const clampedRatioConcentrationPercent =
+    roundedRatioConcentrationPercent !== null
+      ? Math.min(99, Math.max(1, roundedRatioConcentrationPercent))
+      : null;
+  const ratioWriteBackClamped =
+    roundedRatioConcentrationPercent !== null &&
+    clampedRatioConcentrationPercent !== roundedRatioConcentrationPercent;
   // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
   // vm.dilution, PartialDilution, BottleCalculator and the printed BatchSheet all read the
   // persisted concentration, so without this write-back the app would show the ratio's own
@@ -87,11 +104,11 @@ export function DilutionPanel({
   // exclude soapConcentrationPercent (what this writes) and onSoapConcentrationChange (a
   // fresh function every render) — only the ratio-mode inputs should retrigger it.
   useEffect(() => {
-    if (dilutionMode === 'ratio' && ratioConcentrationPercent !== null) {
-      onSoapConcentrationChange(String(Math.round(ratioConcentrationPercent * 10) / 10));
+    if (dilutionMode === 'ratio' && clampedRatioConcentrationPercent !== null) {
+      onSoapConcentrationChange(String(clampedRatioConcentrationPercent));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dilutionMode, ratioConcentrationPercent]);
+  }, [dilutionMode, clampedRatioConcentrationPercent]);
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough, and it is what the separate bottle count works
@@ -160,6 +177,12 @@ export function DilutionPanel({
           />
         </label>
       )}
+      {dilutionMode === 'ratio' && !ratioValid && (
+        <p className="results-hint">
+          Enter a water:paste ratio greater than zero (e.g. 2 for 2:1) to see the water this
+          adds.
+        </p>
+      )}
       {dilutionMode === 'ratio' && ratioConcentrationPercent !== null && ratioWaterGrams !== null && (
         <dl className="results-grid">
           <div className="results-grid__item results-grid__item--primary">
@@ -176,6 +199,20 @@ export function DilutionPanel({
           </strong>
         </p>
       )}
+      {dilutionMode === 'ratio' &&
+        ratioWriteBackClamped &&
+        roundedRatioConcentrationPercent !== null &&
+        clampedRatioConcentrationPercent !== null && (
+          <p className="results-hint" role="alert">
+            At {waterPasteRatio}:1 this ratio implies{' '}
+            {formatConcentrationPercent(roundedRatioConcentrationPercent)}% soap — outside the
+            1–99% range the calculator can target, so{' '}
+            {formatConcentrationPercent(clampedRatioConcentrationPercent)}% is used instead.{' '}
+            {roundedRatioConcentrationPercent < 1
+              ? 'Lower the ratio (less water) to land inside that range directly.'
+              : 'Raise the ratio (more water) to land inside that range directly.'}
+          </p>
+        )}
       {dilution ? (
         <>
           <dl className="results-grid">
