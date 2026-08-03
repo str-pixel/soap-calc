@@ -86,6 +86,14 @@ test('shows the water:paste ratio the reference dilutes by', () => {
   expect(screen.getByText(/1\.5 : 1/)).toBeTruthy();
 });
 
+test('the water:paste ratio never renders as 0.0 beside a real water figure', () => {
+  // Measured paste 3,900 g against a 4,000 g solution leaves only 100 g of water — a real,
+  // nonzero figure — but a ratio of 100/3900 ≈ 0.0256 rounds to "0.0" at one decimal place,
+  // which reads as "no water" beside a water-to-add figure that is not zero.
+  render(<PartialDilution {...PROPS} targetMl="1000" measuredPasteGrams="3900" />);
+  expect(screen.queryByText(/^0\.0 : 1/)).toBeNull();
+});
+
 test('flags how far the measured paste drifted from the predicted one', () => {
   render(<PartialDilution {...PROPS} measuredPasteGrams="1480" targetMl="1000" />);
   expect(screen.getByText(/120 g lighter than predicted/)).toBeTruthy();

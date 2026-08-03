@@ -55,4 +55,24 @@ describe('App process switch', () => {
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
     expect(screen.queryByText('CP extras')).toBeNull();
   });
+
+  it('clears the measured paste when the recipe oils change', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    // "Dilute part of the batch" is a collapsed <details>; open it so its fields are
+    // interactive.
+    await userEvent.click(screen.getByText(/Dilute part of the batch/i));
+    const measuredInput = screen.getByLabelText(/Measured paste weight — whole batch/i);
+    await userEvent.type(measuredInput, '1500');
+    expect((measuredInput as HTMLInputElement).value).toBe('1500');
+
+    // A measurement describes the batch as it was; changing an oil's weight changes the
+    // batch, so a stale measurement must not silently keep driving the dilution figures.
+    const [firstOilWeight] = screen.getAllByLabelText(/^Weight in/);
+    await userEvent.clear(firstOilWeight);
+    await userEvent.type(firstOilWeight, '500');
+    await userEvent.tab();
+
+    expect((measuredInput as HTMLInputElement).value).toBe('');
+  });
 });

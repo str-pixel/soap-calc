@@ -92,6 +92,16 @@ export default function App() {
   // process switches within a session, matching the bottle size beside them.
   const [portionTargetMl, setPortionTargetMl] = useState('');
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
+  // A measurement describes one specific batch's paste; it must not survive an edit to the
+  // recipe that batch was measured from, or the dilution figures keep using a paste weight
+  // that no longer belongs to the oils being diluted. There is no single handler that
+  // mutates `lines` — the recipe editor's apply functions, import, new-recipe, and
+  // undo/redo all do, independently — so a single-handler reset isn't available here. A
+  // useEffect keyed on `lines`' identity is the prescription (not a fallback): it is the
+  // one place that necessarily sees every path that changes the recipe.
+  useEffect(() => {
+    setMeasuredPasteGrams('');
+  }, [lines]);
   // Which way the maker is choosing the dilution target: a soap concentration (the
   // default — LS:1536, and what the persisted settings.soapConcentrationPercent already
   // is) or a water:paste ratio by weight (LS:1534). Session-local like the portion inputs

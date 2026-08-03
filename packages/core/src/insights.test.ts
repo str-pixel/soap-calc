@@ -1319,4 +1319,11 @@ describe('ls_water_outside_envelope', () => {
     expect(has({ ...lsBase, waterGrams: 380 }, 'ls_water_outside_envelope')).toBe(false);
     expect(has({ ...base, process: 'cp', waterGrams: 200 }, 'ls_water_outside_envelope')).toBe(false);
   });
+  it('pins the envelope boundaries: exactly 25% and 60% are inside, 24.9% and 60.1% are not', () => {
+    // 1,000 g oils: 25% = 250 g, 60% = 600 g, 24.9% = 249 g, 60.1% = 601 g.
+    expect(has({ ...lsBase, waterGrams: 250 }, 'ls_water_outside_envelope')).toBe(false);
+    expect(has({ ...lsBase, waterGrams: 600 }, 'ls_water_outside_envelope')).toBe(false);
+    expect(has({ ...lsBase, waterGrams: 249 }, 'ls_water_outside_envelope')).toBe(true);
+    expect(has({ ...lsBase, waterGrams: 601 }, 'ls_water_outside_envelope')).toBe(true);
+  });
 });

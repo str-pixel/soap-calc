@@ -291,7 +291,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Rosemary oleoresin extract — the natural-route antioxidant. Rosmarinic acid is the
     // active fraction, so the effective dose depends on the extract's strength: the
     // experiment found 1.2 ppt of rosmarinic acid needed to push the induction period
-    // past its 300-hour limit, and recommends 1–2 ppt of a HIGH-rosmarinic ROE by weight.
+    // past its 300-hour limit (1 ppt of oil weight = 0.1%, so 1.2 ppt = 0.12%), and
+    // recommends 1–2 ppt of a HIGH-rosmarinic ROE by weight (= 0.1–0.2% of oil weight).
     id: 'roe',
     name: 'ROE (rosemary oleoresin)',
     typicalLow: 0.1,

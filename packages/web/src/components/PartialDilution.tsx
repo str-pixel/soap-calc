@@ -67,9 +67,9 @@ export function PartialDilution({
           Number(targetMl),
         );
   // What the recipe predicted, for the drift readout: anhydrous + the water already in it.
-  const predictedPasteGrams =
-    dilution.anhydrousGrams + Math.max(0, dilution.totalWaterGrams - dilution.dilutionWaterGrams);
-  const driftGrams = portion?.pasteMeasured ? measured - predictedPasteGrams : 0;
+  // Core already computes this internally (it's `pasteGrams`'s unmeasured branch), so it
+  // is consumed from `portion` rather than re-derived here.
+  const driftGrams = portion?.pasteMeasured ? measured - portion.predictedPasteGrams : 0;
 
   return (
     <details className="panel panel--nested">
@@ -149,7 +149,15 @@ export function PartialDilution({
                 </div>
                 <div className="results-grid__item">
                   <dt>Water : paste</dt>
-                  <dd>{portion.waterPasteRatio.toFixed(1)} : 1</dd>
+                  {/* Below 0.1 a single decimal rounds a real water figure down to "0.0",
+                      which reads as no water beside a nonzero water-to-add amount above.
+                      A second decimal keeps that case legible; above 0.1 one decimal
+                      already matches the reference's own ratio notation (1:1, 2:1, 3:1). */}
+                  <dd>
+                    {portion.waterPasteRatio < 0.1
+                      ? portion.waterPasteRatio.toFixed(2)
+                      : portion.waterPasteRatio.toFixed(1)} : 1
+                  </dd>
                 </div>
               </dl>
               {portion.clamped && (

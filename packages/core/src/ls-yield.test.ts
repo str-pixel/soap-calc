@@ -109,4 +109,15 @@ describe('lsPartialDilution with a measured paste weight', () => {
     expect(lsPartialDilution({ ...BATCH, measuredPasteGrams: 0 }, 1941.7)?.pasteMeasured).toBe(false);
     expect(lsPartialDilution({ ...BATCH, measuredPasteGrams: Number.NaN }, 1941.7)?.pasteMeasured).toBe(false);
   });
+
+  it('returns the predicted paste weight so callers need not recompute it', () => {
+    // Predicted (unmeasured) paste is anhydrous + cook water = 1,200 + 400 = 1,600 g,
+    // scaled by the portion's fraction (1,000 ml of 3,883 ml full volume here).
+    const r = lsPartialDilution(
+      { anhydrousGrams: 1200, totalWaterGrams: 2800, dilutionWaterGrams: 2400, solutionGrams: 4000,
+        measuredPasteGrams: 1480 },
+      1000,
+    )!;
+    expect(r.predictedPasteGrams).toBeCloseTo(1600, 0);
+  });
 });

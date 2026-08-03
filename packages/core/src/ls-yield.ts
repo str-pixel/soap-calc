@@ -32,6 +32,11 @@ export type LsPartialDilution = {
   waterPasteRatio: number;
   /** True when the paste figure came from the maker's scale rather than the recipe. */
   pasteMeasured: boolean;
+  /** What the recipe predicts the WHOLE batch's paste to weigh (anhydrous soap + the water
+   * already in it), unscaled by the portion's fraction. Present whether or not a
+   * measurement was given, so callers can diff it against a measurement (drift) without
+   * recomputing the same expression this function already evaluates internally. */
+  predictedPasteGrams: number;
   /** True when more was asked for than the batch holds, so the figures are the whole batch. */
   clamped: boolean;
 };
@@ -67,9 +72,9 @@ export function lsPartialDilution(
   // simply what the scale says.
   const m = batch.measuredPasteGrams;
   const pasteMeasured = m !== undefined && Number.isFinite(m) && m > 0;
-  const pasteGrams = pasteMeasured
-    ? (m as number)
-    : batch.anhydrousGrams + Math.max(0, batch.totalWaterGrams - batch.dilutionWaterGrams);
+  const predictedPasteGrams =
+    batch.anhydrousGrams + Math.max(0, batch.totalWaterGrams - batch.dilutionWaterGrams);
+  const pasteGrams = pasteMeasured ? (m as number) : predictedPasteGrams;
   // The solution is fixed by the recipe (anhydrous ÷ target concentration), so the water
   // to add is whatever the paste does NOT already supply. Without a measurement this is
   // identical to the recipe's own dilutionWaterGrams; with one it absorbs the difference,
@@ -87,6 +92,7 @@ export function lsPartialDilution(
     volumeMl: solutionGrams / densityGPerMl,
     waterPasteRatio: pasteGrams > 0 ? batchWaterGrams / pasteGrams : 0,
     pasteMeasured,
+    predictedPasteGrams,
     clamped,
   };
 }
