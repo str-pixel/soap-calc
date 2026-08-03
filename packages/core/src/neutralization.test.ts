@@ -46,6 +46,18 @@ describe('calculateNeutralization', () => {
     }
   });
 
+  it('offers a stearic-acid alternative sized to the same excess alkali', () => {
+    const r = calculateNeutralization({
+      kohGrams: 206, naohGrams: 0, superfatPercent: -3,
+      kohPurityPercent: 90, naohPurityPercent: 100,
+    })!;
+    // Same molOH the citric figure is built from, at 1 mol stearic per mol OH.
+    const molOH = (206 * (3 / 103) * 0.9) / 56.1056;
+    expect(r.stearicAcidGrams).toBeCloseTo(molOH * 284.484, 1);
+    // Citric is triprotic, stearic monoprotic, so stearic is ~4.4x the citric weight.
+    expect(r.stearicAcidGrams / r.citricAcidGrams).toBeGreaterThan(4);
+  });
+
   it('returns null when superfat is >= 0 or there is no alkali', () => {
     expect(calculateNeutralization({ ...BASE, superfatPercent: 0 })).toBeNull();
     expect(calculateNeutralization({ ...BASE, superfatPercent: 3 })).toBeNull();

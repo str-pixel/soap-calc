@@ -14,6 +14,7 @@ export function NeutralizePanel({ neutralization, weightUnit }: NeutralizePanelP
     excessKohGrams,
     excessNaohGrams,
     citricAcidGrams,
+    stearicAcidGrams,
     dilutionWaterGrams,
     targetPhLow,
     targetPhHigh,
@@ -53,10 +54,18 @@ export function NeutralizePanel({ neutralization, weightUnit }: NeutralizePanelP
             <dd>{formatWeight(excessNaohGrams, weightUnit)}</dd>
           </div>
         )}
+        <div className="results-grid__item">
+          <dt>Or stearic acid</dt>
+          <dd>{formatWeight(stearicAcidGrams, weightUnit)}</dd>
+        </div>
       </dl>
       <p className="results-hint" role="alert">
         Add the citric solution gradually and confirm pH {targetPhLow}–{targetPhHigh} with a test —
         never acidify a soap that is already on target.
+      </p>
+      <p className="results-hint">
+        Melt it into the warm soap. It cannot be overdosed — any surplus cools into a white layer
+        you filter off — which makes it the safer first attempt.
       </p>
     </section>
   );

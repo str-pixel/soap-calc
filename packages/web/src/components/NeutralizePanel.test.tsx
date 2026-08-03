@@ -11,6 +11,7 @@ const RESULT: NeutralizationResult = {
   excessKohGrams: 4,
   excessNaohGrams: 0,
   citricAcidGrams: 5,
+  stearicAcidGrams: 22,
   dilutionWaterGrams: 20,
   targetPhLow: 9,
   targetPhHigh: 10.5,
@@ -26,4 +27,11 @@ test('renders the citric estimate, 1:4 water, and the caution', () => {
 test('shows the NaOH excess line only for dual lye', () => {
   render(<NeutralizePanel neutralization={{ ...RESULT, excessNaohGrams: 1 }} weightUnit="g" />);
   expect(screen.getByText('Excess NaOH')).toBeTruthy();
+});
+
+test('shows the stearic-acid alternative and its cannot-overdose note', () => {
+  render(<NeutralizePanel neutralization={RESULT} weightUnit="g" />);
+  expect(screen.getByText('Or stearic acid')).toBeTruthy();
+  expect(screen.getByText('22 g')).toBeTruthy();
+  expect(screen.getByText(/cannot be overdosed/)).toBeTruthy();
 });
