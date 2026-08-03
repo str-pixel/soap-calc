@@ -1283,6 +1283,8 @@ describe('dos_risk_no_antioxidant', () => {
       { catalogId: 'bht', name: 'BHT (antioxidant)' },
       { catalogId: 'roe', name: 'ROE (rosemary oleoresin)' },
       { catalogId: '', name: 'Rosemary oleoresin extract' },
+      { catalogId: 'edta', name: 'EDTA' },
+      { catalogId: '', name: 'Tetrasodium EDTA' },
     ]) {
       expect(has({ ...softOils, additiveEntries: [entry] }, 'dos_risk_no_antioxidant')).toBe(false);
     }
@@ -1294,5 +1296,13 @@ describe('dos_risk_no_antioxidant', () => {
   it('stays quiet for low-PUFA recipes and at low coverage', () => {
     expect(has({ ...softOils, fattyAcids: { oleic: 70 } }, 'dos_risk_no_antioxidant')).toBe(false);
     expect(has({ ...softOils, fattyAcidCoveragePercent: 40 }, 'dos_risk_no_antioxidant')).toBe(false);
+  });
+  it('pins the PUFA > 25 threshold: exactly 25 does not fire, 26 does', () => {
+    expect(
+      has({ ...softOils, fattyAcids: { linoleic: 20, linolenic: 5, oleic: 40 } }, 'dos_risk_no_antioxidant'),
+    ).toBe(false); // 25
+    expect(
+      has({ ...softOils, fattyAcids: { linoleic: 21, linolenic: 5, oleic: 40 } }, 'dos_risk_no_antioxidant'),
+    ).toBe(true); // 26
   });
 });

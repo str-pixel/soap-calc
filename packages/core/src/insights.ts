@@ -663,8 +663,9 @@ export const INSIGHT_RULES: InsightRule[] = [
     // PUFA-heavy recipes are the ones that develop DOS: the experiment's induction period
     // shortened with soft oils and with catalytic metals. Two independent routes work —
     // an antioxidant against atmospheric oxygen (BHT, ROE) and a chelator against metal
-    // ions (EDTA, citrate) — so this only fires when NEITHER kind is present. Info, not
-    // warning: DOS is a shelf-life risk, not a safety one, and plenty of makers accept it.
+    // ions (EDTA — citrate alone does not qualify, see below) — so this only fires when
+    // NEITHER kind is present. Info, not warning: DOS is a shelf-life risk, not a safety
+    // one, and plenty of makers accept it.
     check: (input) => {
       if (!input.fattyAcids || (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT) {
         return null;
