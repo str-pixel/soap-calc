@@ -352,6 +352,43 @@ test('a valid measured paste outranks the computed over-dilution flag: shows the
   expect(screen.queryByRole('alert')).toBeNull();
 });
 
+test('ratio mode does not show a competing "Dilution water to add" figure from the main grid', () => {
+  // In ratio mode the ratio block already owns the water-to-add figure ("Water to add at
+  // this ratio"). The main grid's own "Dilution water to add" row reflects whatever
+  // concentration is currently PERSISTED — which the write-back narrows toward the ratio's
+  // figure but rarely closes exactly (0.1% rounding), and under the 1-99% clamp can differ
+  // by orders of magnitude — so showing both bare figures at once misleads about which
+  // number to actually pour. The main grid must not render that row in ratio mode.
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      cookWaterGrams={400}
+      dilutionMode="ratio"
+      waterPasteRatio="2"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(screen.getByText('Water to add at this ratio')).toBeTruthy();
+  expect(screen.queryByText('Dilution water to add')).toBeNull();
+});
+
+test('concentration mode still shows "Dilution water to add" in the main grid', () => {
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      dilutionMode="concentration"
+    />,
+  );
+  expect(screen.getByText('Dilution water to add')).toBeTruthy();
+});
+
 test('leaves bottling to the separate bottle count — no size field, no count here', () => {
   // Makers dilute one large batch and package it later, often into several sizes, so the
   // dilution figures stay about the batch (see BottleCalculator).

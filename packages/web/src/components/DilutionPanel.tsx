@@ -251,10 +251,21 @@ export function DilutionPanel({
       {dilution ? (
         <>
           <dl className="results-grid">
-            <div className="results-grid__item results-grid__item--primary">
-              <dt>Dilution water to add</dt>
-              <dd>{formatWeightWithAlternates(batchDilutionWaterGrams, weightUnit)}</dd>
-            </div>
+            {/* Ratio mode's own block above already owns the water-to-add figure ("Water to
+                add at this ratio"). This row reads whatever concentration is currently
+                PERSISTED — the write-back only narrows toward the ratio's figure, closing to
+                within 0.1% at best, and can diverge by orders of magnitude once the 1-99%
+                clamp kicks in — so showing both bare water figures at once would leave the
+                maker guessing which one to actually pour. Suppress this row in ratio mode and
+                let the ratio block be the sole source for that number; every other row here
+                (paste, solution, total water, glycerin, volume) still reflects the applied
+                concentration and carries no such competing figure. */}
+            {dilutionMode !== 'ratio' && (
+              <div className="results-grid__item results-grid__item--primary">
+                <dt>Dilution water to add</dt>
+                <dd>{formatWeightWithAlternates(batchDilutionWaterGrams, weightUnit)}</dd>
+              </div>
+            )}
             <div className="results-grid__item">
               <dt>Paste (anhydrous)</dt>
               <dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd>
