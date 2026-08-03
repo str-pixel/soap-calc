@@ -644,7 +644,15 @@ export const INSIGHT_RULES: InsightRule[] = [
           level: 'warning',
           code: 'high_pufa_post_cook_superfat',
           message:
-            'Post-cook superfat oil is high in linoleic + linolenic — left unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (e.g. 1% BHT + 1% sodium citrate); store cool.',
+            // Dose follows the EXPERIMENT, not the craft books. The DOS study tested every
+            // preservative at 1 ppt — "0.1 grams of each per 100.0 of oil" — and that series
+            // produced the best result of all: BHT with sodium citrate held the soap at
+            // fresh colour past its 300-hour limit (BHT alone was still effective at
+            // 0.7 ppt). Three craft books print "1%", 10x that, which also sits above
+            // typical cosmetic use (0.01–0.1%) and above the EU's 0.8% cap for BHT. The
+            // books cite an unnamed study whose winning pair matches this one exactly, so
+            // a ppt→% slip is the likely origin — either way, 0.1% is the tested figure.
+            'Post-cook superfat oil is high in linoleic + linolenic — left unsaponified, it is prone to DOS/rancidity. Prefer a stable superfat oil (coconut, olive, almond, cocoa, shea) and/or an antioxidant (0.1% BHT + 0.1% sodium citrate is the best-performing tested pair); store cool.',
         };
       }
       return null;

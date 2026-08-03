@@ -1247,3 +1247,18 @@ describe('rule registry consistency', () => {
     }
   });
 });
+
+describe('antioxidant dose in the DOS insight', () => {
+  it('recommends the experimentally tested 0.1% dose, not the craft books 1%', () => {
+    // The primary source ran the experiment at 1 ppt — "0.1 grams of each per 100.0 of
+    // oil" — and that series produced the winning BHT + sodium citrate pair. Three craft
+    // books print "1%", which is 10x that, above typical cosmetic use (0.01–0.1%) and
+    // above the EU's 0.8% cap for BHT in general cosmetics. Follow the experiment.
+    const msg = analyzeFormulation({ ...base, postCookSuperfatPufaPercent: 40 }).find(
+      (i) => i.code === 'high_pufa_post_cook_superfat',
+    )?.message;
+    expect(msg).toMatch(/0\.1% BHT/);
+    expect(msg).toMatch(/0\.1% sodium citrate/);
+    expect(msg).not.toContain(" 1% BHT"); // the craft books dose
+  });
+});

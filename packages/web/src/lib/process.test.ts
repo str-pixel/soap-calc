@@ -290,3 +290,18 @@ describe('definitions own their variants (slice 2)', () => {
     expect(ls.temp).toBeNull();
   });
 });
+
+describe('post-cook superfat is HP/LS only', () => {
+  it('is never offered for cold process — the superfatting hypothesis fails there', () => {
+    // Adding an oil at trace does NOT make it the oil that stays unsaponified. The
+    // science reference tested this directly (three oil pairs, NMR on the ether-extracted
+    // unsaponified fraction) and refuted it every time: composition did not depend on the
+    // order oils were added, because the slowest-reacting oil concentrates in the
+    // unsaponified fraction regardless. CP therefore gets no "choose your superfat oil"
+    // feature. HP and LS are a different case — their reserve oil goes in AFTER the cook
+    // has consumed the alkali, so it genuinely cannot saponify.
+    expect(processOffers('cp', 'postCook')).toBe(false);
+    expect(processOffers('hp', 'postCook')).toBe(true);
+    expect(processOffers('ls', 'postCook')).toBe(true);
+  });
+});
