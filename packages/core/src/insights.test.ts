@@ -1306,6 +1306,18 @@ describe('dos_risk_no_antioxidant', () => {
       has({ ...softOils, fattyAcids: { linoleic: 21, linolenic: 5, oleic: 40 } }, 'dos_risk_no_antioxidant'),
     ).toBe(true); // 26
   });
+  it('stands down when high_pufa_post_cook_superfat would fire — that rule already names the antioxidant remedy for the same underlying risk', () => {
+    const withHighPcsf = { ...softOils, postCookSuperfatPufaPercent: 40 };
+    const codes = analyzeFormulation(withHighPcsf).map((i) => i.code);
+    expect(codes).toContain('high_pufa_post_cook_superfat');
+    expect(codes).not.toContain('dos_risk_no_antioxidant');
+  });
+  it('still fires on DOS-only conditions — no post-cook superfat oil in the picture', () => {
+    expect(has(softOils, 'dos_risk_no_antioxidant')).toBe(true);
+    expect(
+      has({ ...softOils, postCookSuperfatPufaPercent: 30 }, 'dos_risk_no_antioxidant'),
+    ).toBe(true); // exactly 30 does not meet high_pufa_post_cook_superfat's own > 30 gate
+  });
 });
 
 describe('ls_water_outside_envelope', () => {
@@ -1325,5 +1337,18 @@ describe('ls_water_outside_envelope', () => {
     expect(has({ ...lsBase, waterGrams: 600 }, 'ls_water_outside_envelope')).toBe(false);
     expect(has({ ...lsBase, waterGrams: 249 }, 'ls_water_outside_envelope')).toBe(true);
     expect(has({ ...lsBase, waterGrams: 601 }, 'ls_water_outside_envelope')).toBe(true);
+  });
+  it('prints one decimal so the stated figure can never equal the boundary it claims to be outside', () => {
+    // 249 g / 1,000 g = 24.9% — toFixed(0) would round this to "25%", contradicting the
+    // message's own claim of being below the 25% floor. One decimal keeps that impossible.
+    const msg = analyzeFormulation({ ...lsBase, waterGrams: 249 }).find(
+      (i) => i.code === 'ls_water_outside_envelope',
+    )?.message;
+    expect(msg).toContain('24.9%');
+    expect(msg).not.toContain('25% of oils');
+    const highMsg = analyzeFormulation({ ...lsBase, waterGrams: 601 }).find(
+      (i) => i.code === 'ls_water_outside_envelope',
+    )?.message;
+    expect(highMsg).toContain('60.1%');
   });
 });

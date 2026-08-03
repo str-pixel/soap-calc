@@ -314,13 +314,18 @@ export const INSIGHT_RULES: InsightRule[] = [
       const pct = (input.waterGrams / input.totalOilGrams) * 100;
       const EPS = 1e-9;
       if (pct >= lo - EPS && pct <= hi + EPS) return null;
+      // One decimal, not zero: the comparison above runs on the unrounded percent, so a
+      // value like 24.9% is genuinely outside the 25–60% envelope, but toFixed(0) rounded
+      // it to the same "25%" the message claims to be below — the stated figure could equal
+      // the boundary it was outside of. A decimal keeps the two numbers from ever colliding.
+      const pctText = pct.toFixed(1);
       return {
         level: 'info',
         code: 'ls_water_outside_envelope',
         message:
           pct < lo
-            ? `Water is ${pct.toFixed(0)}% of oils, below the usual ${lo}–${hi}% for liquid soap — the paste will be stiffer and slower to dilute. Workable, but check it stays mixable.`
-            : `Water is ${pct.toFixed(0)}% of oils, above the usual ${lo}–${hi}% for liquid soap — a softer paste that can weep in storage. Fine if you are diluting straight away.`,
+            ? `Water is ${pctText}% of oils, below the usual ${lo}–${hi}% for liquid soap — the paste will be stiffer and slower to dilute. Workable, but check it stays mixable.`
+            : `Water is ${pctText}% of oils, above the usual ${lo}–${hi}% for liquid soap — a softer paste that can weep in storage. Fine if you are diluting straight away.`,
       };
     },
   },
@@ -693,6 +698,18 @@ export const INSIGHT_RULES: InsightRule[] = [
     // NEITHER kind is present. Info, not warning: DOS is a shelf-life risk, not a safety
     // one, and plenty of makers accept it.
     check: (input) => {
+      // Stand down when high_pufa_post_cook_superfat would also fire (same > 30 gate on
+      // postCookSuperfatPufaPercent, checked here verbatim): that rule already names the
+      // antioxidant remedy (0.1% BHT + 0.1% sodium citrate) for the identical underlying
+      // risk — an unsaponified PUFA-heavy oil going rancid. Without this, a high-PUFA
+      // recipe with elevated post-cook superfat fired both insights together, two
+      // differently-worded antioxidant doses stacked on the same shelf-life panel.
+      if (
+        input.postCookSuperfatPufaPercent !== undefined &&
+        input.postCookSuperfatPufaPercent > 30
+      ) {
+        return null;
+      }
       if (!input.fattyAcids || (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT) {
         return null;
       }
