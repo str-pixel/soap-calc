@@ -408,6 +408,19 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     processes: ['ls'],
   },
   {
+    // Sulfonated castor oil — the one oil that disperses in water, so it conditions a
+    // finished liquid soap without the separation an ordinary oil would cause. Added
+    // after dilution, as % of the finished solution. It carries a light red-orange colour
+    // and a faint own odour; both show at the top of the range.
+    id: 'turkey-red-castor',
+    name: 'Turkey red castor oil',
+    typicalLow: 1,
+    typicalHigh: 5,
+    defaultStage: 'after_cook',
+    doseBasis: 'solution',
+    processes: ['ls'],
+  },
+  {
     // Polysorbate 80 — the LS post-cook-superfat emulsifier: warmed and premixed 1:1 with
     // the PCSF oil so the oil stays suspended instead of separating. Dosed as % of oils to
     // mirror the PCSF percent it pairs with (1:1), typically 1–3%.

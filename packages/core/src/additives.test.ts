@@ -412,6 +412,14 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
     expect(catalogEntryById('finished-soap')?.processes).toEqual(['hp', 'ls']);
     expect(catalogEntriesForProcess('ls').some((e) => e.id === 'finished-soap')).toBe(true);
   });
+
+  it('ships turkey red castor oil as an LS solution-dosed conditioner', () => {
+    const e = catalogEntryById('turkey-red-castor')!;
+    expect([e.typicalLow, e.typicalHigh]).toEqual([1, 5]);
+    expect(e.doseBasis).toBe('solution');
+    expect(e.defaultStage).toBe('after_cook');
+    expect(e.processes).toEqual(['ls']);
+  });
 });
 
 describe('sorbitol mirrors sugar per process (CP source: "same suggested usage rates as sugar")', () => {
