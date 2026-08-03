@@ -306,12 +306,19 @@ export function DilutionPanel({
               exact.
             </p>
           )}
-          {dilution.targetExceedsPaste && (unknownLiquidGrams === 0 || overDilutionCertain) && (
-            <p className="results-hint" role="alert">
-              The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
-              only lowers the concentration further.
-            </p>
-          )}
+          {/* targetExceedsPaste is computed from the recipe's ASSUMED cook water — exactly
+              the assumption a measured paste is evidence against (that's the whole reason
+              the reference weighs the paste: the computed figure can't see evaporation). A
+              valid measurement outranks the flag, so suppress this alert rather than assert
+              "already more dilute" beside a water figure the measurement just produced. */}
+          {dilution.targetExceedsPaste &&
+            !measuredPasteValid &&
+            (unknownLiquidGrams === 0 || overDilutionCertain) && (
+              <p className="results-hint" role="alert">
+                The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
+                only lowers the concentration further.
+              </p>
+            )}
           {dilution.targetExceedsPaste && unknownLiquidGrams > 0 && !overDilutionCertain && (
             // Suppressed, not reworded: targetExceedsPaste is a factual claim about the
             // paste, and it was derived from an ASSUMED water content. Asserting it can tell

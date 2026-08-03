@@ -322,6 +322,36 @@ test('ratio mode: a valid measured paste wins over the computed anhydrous + cook
   expect(screen.getByText(/lands at 27% soap/i)).toBeTruthy();
 });
 
+test('a valid measured paste outranks the computed over-dilution flag: shows the water, drops the alert', () => {
+  // anhydrous 1,000 g, declared cook water 2,000 g → computed paste 3,000 g exceeds the
+  // 2,500 g solution for a 40% target, so core sets targetExceedsPaste. But the measured
+  // paste is only 2,200 g — much less than the computed 3,000 g, i.e. more evaporation
+  // happened than the recipe assumed — and it is valid (between the 1,000 g anhydrous
+  // floor and the 2,500 g solution ceiling). That measurement is evidence AGAINST
+  // targetExceedsPaste, and implies 2,500 - 2,200 = 300 g of water is still needed, the
+  // opposite of "already more dilute". The alert must not render beside that figure.
+  render(
+    <DilutionPanel
+      dilution={{
+        anhydrousGrams: 1000,
+        solutionGrams: 2500,
+        totalWaterGrams: 2000,
+        dilutionWaterGrams: 0,
+        glycerinGrams: 90,
+        soapConcentrationPercent: 40,
+        targetExceedsPaste: true,
+      }}
+      soapConcentrationPercent="40"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      measuredPasteGrams="2200"
+    />,
+  );
+  expect(screen.getByText(/^300 g/)).toBeTruthy();
+  expect(screen.queryByText(/already more dilute/i)).toBeNull();
+  expect(screen.queryByRole('alert')).toBeNull();
+});
+
 test('leaves bottling to the separate bottle count — no size field, no count here', () => {
   // Makers dilute one large batch and package it later, often into several sizes, so the
   // dilution figures stay about the batch (see BottleCalculator).
