@@ -659,6 +659,42 @@ export const INSIGHT_RULES: InsightRule[] = [
     },
   },
   {
+    code: 'dos_risk_no_antioxidant',
+    // PUFA-heavy recipes are the ones that develop DOS: the experiment's induction period
+    // shortened with soft oils and with catalytic metals. Two independent routes work —
+    // an antioxidant against atmospheric oxygen (BHT, ROE) and a chelator against metal
+    // ions (EDTA, citrate) — so this only fires when NEITHER kind is present. Info, not
+    // warning: DOS is a shelf-life risk, not a safety one, and plenty of makers accept it.
+    check: (input) => {
+      if (!input.fattyAcids || (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT) {
+        return null;
+      }
+      const pufa = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+      // 25% PUFA is an UNSOURCED proxy for "soft enough to spot" — the experiment gives
+      // no threshold, only that soft oils shortened the induction period. Same posture as
+      // COCONUT_HEAVY_LAURIC_MYRISTIC: a documented estimate, not a cited constant.
+      if (pufa <= 25) return null;
+      // Citrate does NOT silence this insight: the experiment found sodium citrate alone
+      // "showed no prophylactic effect" (and roe + citrate performed WORSE than roe
+      // alone) — its DOS value is only ever as a partner to an antioxidant. EDTA alone
+      // WAS effective, so it counts. Same follow-the-experiment rule as the doses.
+      const protected_ =
+        additiveMatches(input.additiveEntries, 'bht', 'bht') ||
+        additiveMatches(input.additiveEntries, 'roe', 'rosemary') ||
+        additiveMatches(input.additiveEntries, 'edta', 'edta');
+      if (protected_) return null;
+      return {
+        level: 'info',
+        code: 'dos_risk_no_antioxidant',
+        message:
+          'High linoleic + linolenic with no antioxidant or chelator — this is the profile ' +
+          'that develops rancid orange spots first. 0.1% BHT or 0.1–0.2% ROE into the oils ' +
+          'protects against oxygen; a chelator binds the metal ions that catalyse it. ' +
+          'Distilled water and cool, dark storage do the same job for free.',
+      };
+    },
+  },
+  {
     code: 'superfat_out_of_band',
     processes: ['cp', 'hp'],
     check: (input) => {
@@ -1092,7 +1128,7 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
 
   // The two generic paths that replaced 25 bespoke gates (spec slice 3): process
   // filtering and parameter resolution. Everything else an insight does lives in its
-  // own check(). This loop is now the entire catalog — all 36 rules live in
+  // own check(). This loop is now the entire catalog — all 40 rules live in
   // INSIGHT_RULES; there is no inline region left below it.
   for (const rule of INSIGHT_RULES) {
     if (rule.processes && !rule.processes.includes(input.process)) continue;

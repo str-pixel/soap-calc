@@ -1103,6 +1103,11 @@
     "message": "High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months."
    },
    {
+    "level": "info",
+    "code": "dos_risk_no_antioxidant",
+    "message": "High linoleic + linolenic with no antioxidant or chelator — this is the profile that develops rancid orange spots first. 0.1% BHT or 0.1–0.2% ROE into the oils protects against oxygen; a chelator binds the metal ions that catalyse it. Distilled water and cool, dark storage do the same job for free."
+   },
+   {
     "level": "warning",
     "code": "pufa_cap_superfat",
     "message": "High linoleic + linolenic oils with an elevated superfat — the unsaponified oil is prone to going rancid. For high-PUFA recipes keep superfat nearer 3–5%."
@@ -1123,6 +1128,11 @@
     "message": "High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months."
    },
    {
+    "level": "info",
+    "code": "dos_risk_no_antioxidant",
+    "message": "High linoleic + linolenic with no antioxidant or chelator — this is the profile that develops rancid orange spots first. 0.1% BHT or 0.1–0.2% ROE into the oils protects against oxygen; a chelator binds the metal ions that catalyse it. Distilled water and cool, dark storage do the same job for free."
+   },
+   {
     "level": "warning",
     "code": "pufa_cap_superfat",
     "message": "High linoleic + linolenic oils with an elevated superfat — the unsaponified oil is prone to going rancid. For high-PUFA recipes keep superfat nearer 3–5%."
@@ -1141,6 +1151,11 @@
     "level": "warning",
     "code": "high_poly_high_superfat",
     "message": "High linoleic + linolenic with elevated superfat — watch shelf life; store cool and use within a few months."
+   },
+   {
+    "level": "info",
+    "code": "dos_risk_no_antioxidant",
+    "message": "High linoleic + linolenic with no antioxidant or chelator — this is the profile that develops rancid orange spots first. 0.1% BHT or 0.1–0.2% ROE into the oils protects against oxygen; a chelator binds the metal ions that catalyse it. Distilled water and cool, dark storage do the same job for free."
    },
    {
     "level": "warning",

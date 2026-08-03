@@ -1085,10 +1085,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 39 unique codes', () => {
+  it('declares 40 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(39);
-    expect(new Set(declared).size).toBe(39);
+    expect(declared).toHaveLength(40);
+    expect(new Set(declared).size).toBe(40);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1101,7 +1101,7 @@ describe('rule registry consistency', () => {
     ...over,
   });
 
-  /** One known-firing probe input per declared code (36 total), reused from this file's and
+  /** One known-firing probe input per declared code (40 total), reused from this file's and
    * insights.golden.test.ts's own fixtures. Routed through analyzeFormulation (not a direct
    * rule.check() call) so the probe also exercises the `processes:` gate — a rule whose gate
    * excludes its own probe's process fails here, the exact blind spot a direct check() call
@@ -1173,6 +1173,10 @@ describe('rule registry consistency', () => {
     oatmeal_false_trace: { additiveEntries: [{ catalogId: '', name: 'Colloidal oatmeal' }] },
     jojoba_superfat_note: { additiveEntries: [{ catalogId: 'jojoba', name: 'Wax ester' }] },
     high_pufa_post_cook_superfat: { postCookSuperfatPufaPercent: 40 },
+    dos_risk_no_antioxidant: {
+      fattyAcids: { linoleic: 30, linolenic: 6, oleic: 40 },
+      fattyAcidCoveragePercent: 100,
+    },
     superfat_out_of_band: { superfatPercent: 40, process: 'cp' },
     pufa_cap_superfat: {
       fattyAcids: { linoleic: 30, linolenic: 5 },
@@ -1260,5 +1264,35 @@ describe('antioxidant dose in the DOS insight', () => {
     expect(msg).toMatch(/0\.1% BHT/);
     expect(msg).toMatch(/0\.1% sodium citrate/);
     expect(msg).not.toContain(" 1% BHT"); // the craft books dose
+  });
+});
+
+describe('dos_risk_no_antioxidant', () => {
+  const softOils = {
+    ...base,
+    fattyAcids: { linoleic: 30, linolenic: 6, oleic: 40 },
+    fattyAcidCoveragePercent: 100,
+  };
+  it('suggests an antioxidant for a high-PUFA recipe carrying none', () => {
+    const insight = analyzeFormulation(softOils).find((i) => i.code === 'dos_risk_no_antioxidant');
+    expect(insight?.level).toBe('info');
+    expect(insight?.message).toMatch(/0\.1% BHT|ROE/);
+  });
+  it('goes quiet once an antioxidant is in the recipe', () => {
+    for (const entry of [
+      { catalogId: 'bht', name: 'BHT (antioxidant)' },
+      { catalogId: 'roe', name: 'ROE (rosemary oleoresin)' },
+      { catalogId: '', name: 'Rosemary oleoresin extract' },
+    ]) {
+      expect(has({ ...softOils, additiveEntries: [entry] }, 'dos_risk_no_antioxidant')).toBe(false);
+    }
+  });
+  it('is NOT silenced by citrate alone — the experiment found it ineffective by itself', () => {
+    const citrateOnly = [{ catalogId: 'chelator', name: 'Chelator (citrate, gluconate)' }];
+    expect(has({ ...softOils, additiveEntries: citrateOnly }, 'dos_risk_no_antioxidant')).toBe(true);
+  });
+  it('stays quiet for low-PUFA recipes and at low coverage', () => {
+    expect(has({ ...softOils, fattyAcids: { oleic: 70 } }, 'dos_risk_no_antioxidant')).toBe(false);
+    expect(has({ ...softOils, fattyAcidCoveragePercent: 40 }, 'dos_risk_no_antioxidant')).toBe(false);
   });
 });
