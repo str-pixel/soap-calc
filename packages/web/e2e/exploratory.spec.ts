@@ -372,6 +372,18 @@ test.describe('liquid soap', () => {
     await expect(bottles).toContainText(/Bottles filled \(500 ml\)/);
   });
 
+  test('partial dilution is a separate snippet that scales paste and water', async ({ page }) => {
+    // Paste stores better than diluted soap, so making only part of the batch now is its
+    // own optional step, collapsed like the bottle count.
+    const partial = page.locator('details').filter({ hasText: 'Dilute part of the batch' }).first();
+    await expect(page.getByLabel('Amount to make (ml)')).toBeHidden();
+    await partial.locator('summary').click();
+    await page.getByLabel('Amount to make (ml)').fill('1000');
+    await page.getByLabel('Amount to make (ml)').blur();
+    await expect(partial).toContainText(/Paste to weigh out/);
+    await expect(partial).toContainText(/% of the batch/);
+  });
+
   test('negative superfat triggers Neutralize panel with citric estimate', async ({ page }, testInfo) => {
     await page.getByLabel('Superfat %', { exact: true }).fill('-3');
     await page.getByLabel('Superfat %', { exact: true }).blur();

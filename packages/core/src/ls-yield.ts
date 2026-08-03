@@ -16,6 +16,57 @@ export function lsFinishedVolumeMl(
   return solutionGrams / densityGPerMl;
 }
 
+/** What diluting only PART of a paste batch takes and makes. */
+export type LsPartialDilution = {
+  /** Share of the whole batch this portion represents, 0–1. */
+  fraction: number;
+  /** Paste to weigh out (anhydrous soap + the water already in it). */
+  pasteGrams: number;
+  /** Dilution water to add to that portion. */
+  waterGrams: number;
+  /** What the portion makes, by mass and by volume. */
+  solutionGrams: number;
+  volumeMl: number;
+  /** True when more was asked for than the batch holds, so the figures are the whole batch. */
+  clamped: boolean;
+};
+
+/**
+ * Dilute a portion of the paste rather than the whole batch — the common workflow when a
+ * paste is stored and drawn down over time, since paste keeps far better than diluted soap.
+ * Everything scales linearly with the share of the batch taken, so the target volume simply
+ * sets the fraction. Note the volume→fraction step carries the density estimate; the
+ * resulting paste and water are exact masses for that fraction.
+ */
+export function lsPartialDilution(
+  batch: {
+    anhydrousGrams: number;
+    totalWaterGrams: number;
+    dilutionWaterGrams: number;
+    solutionGrams: number;
+  },
+  targetVolumeMl: number,
+  densityGPerMl: number = LS_SOLUTION_DENSITY_G_PER_ML,
+): LsPartialDilution | null {
+  if (!Number.isFinite(targetVolumeMl) || targetVolumeMl <= 0) return null;
+  const fullVolumeMl = lsFinishedVolumeMl(batch.solutionGrams, densityGPerMl);
+  if (fullVolumeMl === null) return null;
+  const clamped = targetVolumeMl > fullVolumeMl;
+  const fraction = clamped ? 1 : targetVolumeMl / fullVolumeMl;
+  // Paste is what is in the pot before dilution water: the anhydrous soap plus the water
+  // that came with the lye and any alternative liquid.
+  const cookWaterGrams = Math.max(0, batch.totalWaterGrams - batch.dilutionWaterGrams);
+  const solutionGrams = batch.solutionGrams * fraction;
+  return {
+    fraction,
+    pasteGrams: (batch.anhydrousGrams + cookWaterGrams) * fraction,
+    waterGrams: batch.dilutionWaterGrams * fraction,
+    solutionGrams,
+    volumeMl: solutionGrams / densityGPerMl,
+    clamped,
+  };
+}
+
 /** Whole bottles a diluted solution fills at a given bottle size (floored — no partial bottles). */
 export function lsBottleCount(
   solutionGrams: number,

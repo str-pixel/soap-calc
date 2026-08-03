@@ -5,6 +5,7 @@ import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
 import { BottleCalculator } from './components/BottleCalculator';
 import { DilutionPanel } from './components/DilutionPanel';
+import { PartialDilution } from './components/PartialDilution';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
@@ -448,6 +449,10 @@ export default function App() {
                 overDilutionCertain={vm.overDilutionCertain}
                 bottledSolutionGrams={vm.bottledSolutionGrams}
               />
+            )}
+            {processOffers(process, 'dilution') && (
+              // Diluting a portion is its own step — see PartialDilution.
+              <PartialDilution dilution={vm.dilution} weightUnit={weightUnit} />
             )}
             {processOffers(process, 'dilution') && (
               // Packaging is its own step after the batch dilution — see BottleCalculator.
