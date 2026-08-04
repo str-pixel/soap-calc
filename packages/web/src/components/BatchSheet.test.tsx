@@ -615,6 +615,12 @@ test('without certainty the sheet still hedges', () => {
   expect(screen.queryByText(/already more dilute/i)).toBeNull();
 });
 
+it('prints the dilution water in one unit only', () => {
+  render(<BatchSheet data={lsSheetData({})} />);
+  const row = screen.getByText(/Dilution water/i).closest('div')!;
+  expect(row.textContent).not.toMatch(/\(.*oz.*\/.*lb.*\)/);
+});
+
 test('printed dilution water reflects a measured paste, matching the on-screen figure', () => {
   // The screen (DilutionPanel) already corrects its "Dilution water to add" row from a
   // valid measured paste; the printed sheet used to keep showing the recipe's own

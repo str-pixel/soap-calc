@@ -29,9 +29,9 @@ test('scales paste and water to the amount asked for', () => {
   expect(screen.getByText(/26% of the batch/)).toBeTruthy();
 });
 
-test('the water figure carries the other scale units, like the batch pour figure', () => {
+test('the water figure shows a single unit, switchable from DilutionPanel above rather than shown all at once', () => {
   render(<PortionDilutionResults {...PROPS} targetMl="1000" />);
-  expect(screen.getByText(/618 g \(21\.8 oz \/ 1\.36 lb\)/)).toBeTruthy();
+  expect(screen.getByText('618 g')).toBeTruthy();
 });
 
 test('says so when more is asked for than the batch holds', () => {

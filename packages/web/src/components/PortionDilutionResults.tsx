@@ -1,5 +1,5 @@
 import { lsPartialDilution, type DilutionResult } from '@soap-calc/core';
-import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
+import { formatWeight } from '../lib/weightUnits';
 import { measurementBelowSolids, measurementExceedsSolution } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
@@ -187,7 +187,7 @@ export function PortionDilutionResults({
           <dl className="results-grid">
             <div className="results-grid__item results-grid__item--primary">
               <dt>Water to add</dt>
-              <dd>{formatWeightWithAlternates(portion.waterGrams, weightUnit)}</dd>
+              <dd>{formatWeight(portion.waterGrams, weightUnit)}</dd>
             </div>
             <div className="results-grid__item">
               <dt>Paste to weigh out</dt>

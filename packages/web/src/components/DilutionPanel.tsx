@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   LS_DILUTION_TARGETS,
   LS_SOLUTION_DENSITY_G_PER_ML,
@@ -8,7 +8,7 @@ import {
   type DilutionResult,
 } from '@soap-calc/core';
 import { formatConcentrationPercent } from '../lib/format';
-import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
+import { DILUTION_UNIT_OPTIONS, formatWeight } from '../lib/weightUnits';
 import {
   correctedDilutionWaterGrams,
   measuredPasteIsValidFor,
@@ -219,12 +219,38 @@ export function DilutionPanel({
   // VOLUME below (derived from it, not from the solution) reconciles with what is above it.
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
+  // A reading aid, not a setting: the maker flips this to match whatever scale is on the
+  // bench without disturbing the app-wide unit every other panel uses. Seeded from that
+  // unit so the panel opens consistent with the rest of the app, and re-seeded when it
+  // changes — same prevRef pattern App already uses for the mold-sizer bar weight, which
+  // would otherwise strand this switch on a unit the maker has since moved away from.
+  const seedUnit = (u: WeightUnit): WeightUnit => (u === 'kg' ? 'g' : u);
+  const [displayUnit, setDisplayUnit] = useState<WeightUnit>(() => seedUnit(weightUnit));
+  const prevWeightUnitRef = useRef(weightUnit);
+  useEffect(() => {
+    if (prevWeightUnitRef.current === weightUnit) return;
+    prevWeightUnitRef.current = weightUnit;
+    setDisplayUnit(seedUnit(weightUnit));
+  }, [weightUnit]);
   return (
     <section className="panel panel--nested">
       <div className="panel__head">
         <div>
           <h2 className="panel__title">Dilution</h2>
           <p className="panel__subtitle">Water to add to reach a target soap concentration</p>
+        </div>
+        <div className="dilution-mode-toggle" role="radiogroup" aria-label="Dilution display unit">
+          {DILUTION_UNIT_OPTIONS.map((option) => (
+            <label className="field field--inline" key={option.id}>
+              <input
+                type="radio"
+                name="dilutionDisplayUnit"
+                checked={displayUnit === option.id}
+                onChange={() => setDisplayUnit(option.id)}
+              />
+              <span>{option.short}</span>
+            </label>
+          ))}
         </div>
       </div>
       {/* Two ways to choose the same number (LS:1534 ratio vs. LS:1536 concentration) —
@@ -371,7 +397,7 @@ export function DilutionPanel({
         <dl className="results-grid">
           <div className="results-grid__item results-grid__item--primary">
             <dt>Water to add at this ratio</dt>
-            <dd>{formatWeightWithAlternates(ratioWaterGrams, weightUnit)}</dd>
+            <dd>{formatWeight(ratioWaterGrams, displayUnit)}</dd>
           </div>
         </dl>
       )}
@@ -414,29 +440,29 @@ export function DilutionPanel({
                 {dilutionMode !== 'ratio' && (
                   <div className="results-grid__item results-grid__item--primary">
                     <dt>Dilution water to add</dt>
-                    <dd>{formatWeightWithAlternates(batchDilutionWaterGrams, weightUnit)}</dd>
+                    <dd>{formatWeight(batchDilutionWaterGrams, displayUnit)}</dd>
                   </div>
                 )}
                 <div className="results-grid__item">
                   <dt>Paste (anhydrous)</dt>
-                  <dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd>
+                  <dd>{formatWeight(dilution.anhydrousGrams, displayUnit)}</dd>
                 </div>
                 <div className="results-grid__item">
                   <dt>Finished solution</dt>
-                  <dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd>
+                  <dd>{formatWeight(dilution.solutionGrams, displayUnit)}</dd>
                 </div>
                 <div className="results-grid__item">
                   <dt>Total water</dt>
-                  <dd>{formatWeight(dilution.totalWaterGrams, weightUnit)}</dd>
+                  <dd>{formatWeight(dilution.totalWaterGrams, displayUnit)}</dd>
                 </div>
                 <div className="results-grid__item">
                   <dt>Glycerin (retained)</dt>
-                  <dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd>
+                  <dd>{formatWeight(dilution.glycerinGrams, displayUnit)}</dd>
                 </div>
                 {showBottledRow && bottledGrams !== null && (
                   <div className="results-grid__item">
                     <dt>≈ Finished product</dt>
-                    <dd>{formatWeight(bottledGrams, weightUnit)}</dd>
+                    <dd>{formatWeight(bottledGrams, displayUnit)}</dd>
                   </div>
                 )}
                 {finishedVolumeMl !== null && (
@@ -454,7 +480,7 @@ export function DilutionPanel({
                       measurement-corrected. Ratio mode's own water figure IS corrected (its
                       pasteGrams already prefers a valid measurement), so name that row there. */}
                   {dilutionMode === 'ratio' ? 'Water to add at this ratio' : 'Dilution water'} above
-                  uses your measured paste ({formatWeight(measuredPasteNum, weightUnit)}
+                  uses your measured paste ({formatWeight(measuredPasteNum, displayUnit)}
                   ), not the recipe&apos;s computed paste — the cook evaporates water the recipe still
                   counts, and an alternative liquid&apos;s solids are mass it never counted, so the
                   measurement is more accurate.
@@ -464,7 +490,7 @@ export function DilutionPanel({
           ) : (
             <PortionDilutionResults
               dilution={dilution}
-              weightUnit={weightUnit}
+              weightUnit={displayUnit}
               targetMl={targetMl}
               measuredPasteGrams={measuredPasteGrams ?? ''}
               measuredPasteIsRemaining={measuredPasteIsRemaining}
@@ -506,13 +532,13 @@ export function DilutionPanel({
                 // the user a batch is finished when it still needs hundreds of grams of water.
                 <p className="results-hint">
                   Can&apos;t tell whether {formatConcentrationPercent(dilution.soapConcentrationPercent)}% is reachable —{' '}
-                  {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
+                  {formatWeight(unknownLiquidGrams, displayUnit)} of alternative liquid has no
                   declared water content. Declare its % water in Split liquid.
                 </p>
               )}
               {altLiquidWaterGrams > 0 && unknownLiquidGrams === 0 && (
                 <p className="results-hint">
-                  Already {formatWeight(altLiquidWaterGrams, weightUnit)} lighter: that much
+                  Already {formatWeight(altLiquidWaterGrams, displayUnit)} lighter: that much
                   water came in with the alternative liquid and is counted as part of the paste.
                   Top up with plain distilled water only.
                 </p>
@@ -523,9 +549,9 @@ export function DilutionPanel({
                   "0 g is the LEAST you will need". */}
               {altLiquidWaterGrams > 0 && unknownLiquidGrams > 0 && !dilution.targetExceedsPaste && (
                 <p className="results-hint">
-                  {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
+                  {formatWeight(unknownLiquidGrams, displayUnit)} of alternative liquid has no
                   declared water content — it is counted as all water, so{' '}
-                  {formatWeight(dilution.dilutionWaterGrams, weightUnit)} is the LEAST you will
+                  {formatWeight(dilution.dilutionWaterGrams, displayUnit)} is the LEAST you will
                   need. Declare its % water, or dilute in increments and check by weight.
                 </p>
               )}

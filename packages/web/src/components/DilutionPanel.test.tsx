@@ -29,8 +29,8 @@ const BASE = {
 test('renders the dilution figures', () => {
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   expect(screen.getByText('Dilution water to add')).toBeTruthy();
-  // The pour figure carries the other scale units so it reads on any kitchen scale.
-  expect(screen.getByText('2,400 g (84.7 oz / 5.29 lb)')).toBeTruthy();
+  // The pour figure shows a single unit at a time, switchable beside the heading.
+  expect(screen.getByText('2,400 g')).toBeTruthy();
 });
 
 test('shows the finished volume and names the density', () => {
@@ -748,5 +748,28 @@ describe('portion scope: the measured-paste input and declaration that used to l
     const declaredLabel = declarationRadio.closest('label')?.textContent?.trim();
     expect(declaredLabel).toBeTruthy();
     expect(screen.getByRole('alert').textContent).toContain(declaredLabel);
+  });
+});
+
+describe('the g/oz/lb display-unit switch', () => {
+  it('shows one unit at a time and switches the dilution figures', () => {
+    render(<DilutionPanel {...BASE} dilutionScope="batch" weightUnit="g" targetMl="" />);
+    const water = screen.getByText('Dilution water to add').closest('div')!;
+    expect(water.textContent).toContain(' g');
+    expect(water.textContent).not.toContain('oz');
+
+    fireEvent.click(screen.getByRole('radio', { name: 'oz' }));
+    expect(water.textContent).toContain('oz');
+    expect(water.textContent).not.toContain(' g');
+  });
+
+  it('starts on the app-wide unit, falling back to grams for kg', () => {
+    const checked = (name: string) =>
+      (screen.getByRole('radio', { name }) as HTMLInputElement).checked;
+    const { unmount } = render(<DilutionPanel {...BASE} weightUnit="lb" dilutionScope="batch" targetMl="" />);
+    expect(checked('lb')).toBe(true);
+    unmount();
+    render(<DilutionPanel {...BASE} weightUnit="kg" dilutionScope="batch" targetMl="" />);
+    expect(checked('g')).toBe(true);
   });
 });

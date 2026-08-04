@@ -22,10 +22,16 @@ const dilutionPanel = (page: Page) =>
     .filter({ has: page.getByRole('heading', { name: 'Dilution' }) })
     .first();
 
-/** Grams from a formatted weight like "2,270 g". */
-/** Leading grams figure from a formatted weight — "2,400 g (84.7 oz / 5.29 lb)" → 2400.
- * Anchored to the start so the oz/lb alternates never concatenate into the number. */
+/** Leading grams figure from a formatted weight like "2,270 g". */
 const grams = (text: string) => Number((text.match(/^[\d,.]+/)?.[0] ?? '').replace(/,/g, ''));
+
+/** The primary "Dilution water to add" figure. Every weight row in the panel now renders as
+ * a plain "NNN g" string (the g/oz/lb switch shows one unit at a time, not three side by
+ * side), so a leading-number pattern alone would match whichever row comes first in the DOM
+ * rather than this one specifically — the dedicated --primary class is what actually singles
+ * it out. */
+const dilutionWaterDd = (page: Page) =>
+  dilutionPanel(page).locator('.results-grid__item--primary dd').first();
 
 async function freshLiquidSoap(page: Page) {
   await page.goto('/');
@@ -47,20 +53,13 @@ async function addLiquid(page: Page, presetKey: string, weightGrams: string) {
 
 test('the liquid\'s own water is deducted from the dilution water', async ({ page }) => {
   await freshLiquidSoap(page);
-  // The pour figure renders with oz/lb alternates — "2,400 g (84.7 oz / 5.29 lb)" —
-  // so the locator anchors on the leading grams, and grams() reads that leading figure.
-  const waterFigure = /^[\d,.]+\s*g \(/;
-  const before = grams(
-    await dilutionPanel(page).getByText(waterFigure).first().innerText(),
-  );
+  const before = grams(await dilutionWaterDd(page).innerText());
 
   await addLiquid(page, 'coconut-milk-canned', '200');
 
   // 200 g of canned coconut milk is 68% water — 136 g already in the paste before dilution
   // starts, so the prescribed dilution water must drop by exactly that.
-  const after = grams(
-    await dilutionPanel(page).getByText(waterFigure).first().innerText(),
-  );
+  const after = grams(await dilutionWaterDd(page).innerText());
   expect(Math.round(before - after)).toBe(136);
   await expect(dilutionPanel(page)).toContainText(/136 g lighter/i);
 });
