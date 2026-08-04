@@ -1306,11 +1306,17 @@ describe('dos_risk_no_antioxidant', () => {
       has({ ...softOils, fattyAcids: { linoleic: 21, linolenic: 5, oleic: 40 } }, 'dos_risk_no_antioxidant'),
     ).toBe(true); // 26
   });
-  it('stands down when high_pufa_post_cook_superfat would fire — that rule already names the antioxidant remedy for the same underlying risk', () => {
+  it('still fires alongside high_pufa_post_cook_superfat when the BASE is independently high-PUFA — the two rules read disjoint oil pools (whole batch vs. post-cook oil only), so a high post-cook PUFA number must never silence the batch-level warning', () => {
+    // Regression case: softOils' own batch PUFA is 36% (linoleic 30 + linolenic 6), above
+    // this rule's own 25% threshold — independently high-PUFA regardless of any post-cook
+    // addition (grapeseed post-cook superfat is a realistic trigger for the other rule).
+    // The old stand-down silenced this base warning on the false premise that the two
+    // rules gave duplicate advice; they do not, since high_pufa_post_cook_superfat only
+    // ever measures the post-cook oil.
     const withHighPcsf = { ...softOils, postCookSuperfatPufaPercent: 40 };
     const codes = analyzeFormulation(withHighPcsf).map((i) => i.code);
     expect(codes).toContain('high_pufa_post_cook_superfat');
-    expect(codes).not.toContain('dos_risk_no_antioxidant');
+    expect(codes).toContain('dos_risk_no_antioxidant');
   });
   it('still fires on DOS-only conditions — no post-cook superfat oil in the picture', () => {
     expect(has(softOils, 'dos_risk_no_antioxidant')).toBe(true);
@@ -1350,5 +1356,17 @@ describe('ls_water_outside_envelope', () => {
       (i) => i.code === 'ls_water_outside_envelope',
     )?.message;
     expect(highMsg).toContain('60.1%');
+  });
+  it("uses the paste's real water (pasteWaterGrams: lye water + split-liquid water) over lye-only waterGrams when both are provided — a split-liquid recipe can be inside the envelope only when its liquid's water is counted", () => {
+    // waterGrams (lye water only) is 200 g on 1,000 g oils = 20% — below the envelope on
+    // its own. A pre-cook alternative liquid carries another 100 g of water into the paste
+    // (useRecipeViewModel's cookWaterGrams), so the paste's real water is 300 g = 30%,
+    // inside 25-60%. The insight must read the paste figure, not the lye-only one.
+    expect(
+      has({ ...lsBase, waterGrams: 200, pasteWaterGrams: 300 }, 'ls_water_outside_envelope'),
+    ).toBe(false);
+    // With no pasteWaterGrams supplied (CP/HP, or an LS recipe with no split liquid) it
+    // falls back to waterGrams exactly as before.
+    expect(has({ ...lsBase, waterGrams: 200 }, 'ls_water_outside_envelope')).toBe(true);
   });
 });

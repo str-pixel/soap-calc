@@ -21,6 +21,12 @@ import { LS_ZONES } from './ls-method.js';
 // below, so the proxy (and this doc) lives in one place.
 const COCONUT_HEAVY_LAURIC_MYRISTIC = 55;
 
+// The post-cook superfat oil's own PUFA % above which it is DOS-prone — shared by
+// high_pufa_post_cook_superfat's own gate and (historically) dos_risk_no_antioxidant's
+// stand-down. Named like LOW_COVERAGE_PERCENT so the "30" isn't a silent magic number at
+// its call site.
+const POST_COOK_SUPERFAT_HIGH_PUFA_PERCENT = 30;
+
 export type FormulationInsightLevel = 'info' | 'warning';
 
 export type FormulationInsight = {
@@ -98,6 +104,14 @@ export type FormulationAnalysisInput = {
   /** Single acceptable water range (% of oils) for liquid soap — LS:1505's "25-60% water
    * concentration". LS only; CP/HP publish the two-tier waterBand instead. */
   waterEnvelope?: [number, number];
+  /** The paste's REAL water — lye water plus any pre-cook alternative liquid's water
+   * (useRecipeViewModel's cookWaterGrams) — for ls_water_outside_envelope ONLY. waterGrams
+   * above is lye water alone, so a split-liquid LS recipe whose alternative liquid carries
+   * real water would otherwise be scored against too little water and false-flag as below
+   * the envelope. Falls back to waterGrams when absent (CP/HP never set this; an LS recipe
+   * with no split liquid has cookWaterGrams === waterGrams anyway). Deliberately scoped to
+   * this one rule — every other water-percent rule keeps reading waterGrams unchanged. */
+  pasteWaterGrams?: number;
   /** Predicted trace speed from {@link estimateTraceSpeed}; CP/HP soaping concern only —
    * callers pass undefined for liquid soap. */
   traceSpeedLabel?: 'slow' | 'moderate' | 'fast';
@@ -309,9 +323,14 @@ export const INSIGHT_RULES: InsightRule[] = [
     // low water makes a stiffer paste that takes longer to dilute, high water a softer one
     // that can weep. The 1:1 dissolution floor is a separate, harder rule (water_below_lye).
     check: (input) => {
-      const [lo, hi] = (input.waterEnvelope ?? []) as [number, number];
-      if (lo === undefined || input.totalOilGrams <= 0 || input.waterGrams <= 0) return null;
-      const pct = (input.waterGrams / input.totalOilGrams) * 100;
+      if (!input.waterEnvelope) return null;
+      const [lo, hi] = input.waterEnvelope;
+      // The paste's real water when available (lye + pre-cook alternative liquid) —
+      // waterGrams alone is lye water only and undercounts a split-liquid recipe. See
+      // pasteWaterGrams's own doc above.
+      const waterGrams = input.pasteWaterGrams ?? input.waterGrams;
+      if (input.totalOilGrams <= 0 || waterGrams <= 0) return null;
+      const pct = (waterGrams / input.totalOilGrams) * 100;
       const EPS = 1e-9;
       if (pct >= lo - EPS && pct <= hi + EPS) return null;
       // One decimal, not zero: the comparison above runs on the unrounded percent, so a
@@ -669,7 +688,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       if (
         input.postCookSuperfatPufaPercent !== undefined &&
-        input.postCookSuperfatPufaPercent > 30
+        input.postCookSuperfatPufaPercent > POST_COOK_SUPERFAT_HIGH_PUFA_PERCENT
       ) {
         return {
           level: 'warning',
@@ -698,18 +717,14 @@ export const INSIGHT_RULES: InsightRule[] = [
     // NEITHER kind is present. Info, not warning: DOS is a shelf-life risk, not a safety
     // one, and plenty of makers accept it.
     check: (input) => {
-      // Stand down when high_pufa_post_cook_superfat would also fire (same > 30 gate on
-      // postCookSuperfatPufaPercent, checked here verbatim): that rule already names the
-      // antioxidant remedy (0.1% BHT + 0.1% sodium citrate) for the identical underlying
-      // risk — an unsaponified PUFA-heavy oil going rancid. Without this, a high-PUFA
-      // recipe with elevated post-cook superfat fired both insights together, two
-      // differently-worded antioxidant doses stacked on the same shelf-life panel.
-      if (
-        input.postCookSuperfatPufaPercent !== undefined &&
-        input.postCookSuperfatPufaPercent > 30
-      ) {
-        return null;
-      }
+      // postCookSuperfatPufaPercent does NOT stand this rule down, even when
+      // high_pufa_post_cook_superfat also fires on it. An earlier version stood down here
+      // reasoning the two rules gave duplicate advice — a false premise:
+      // high_pufa_post_cook_superfat measures only the POST-COOK superfat oil, this rule
+      // measures the WHOLE BATCH's fatty-acid profile — disjoint oil pools. A recipe can
+      // carry an independently high-PUFA base (this rule's own pufa > 25 gate below) AND a
+      // high-PUFA post-cook addition at once (grapeseed post-cook superfat is realistic),
+      // and the base warning must not go quiet just because the addition has its own.
       if (!input.fattyAcids || (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT) {
         return null;
       }

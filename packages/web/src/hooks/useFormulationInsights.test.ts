@@ -383,6 +383,40 @@ describe('useFormulationInsights HP process wiring (Step 0 + Step 5)', () => {
   });
 });
 
+describe('useFormulationInsights LS water-envelope pasteWaterGrams wiring (Task 3a)', () => {
+  // 700 g olive + 300 g coconut = 1,000 g oils; 20% of oils water mode → 200 g lye water,
+  // below the 25-60% LS envelope on its own.
+  const lsLines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+  const lsSettings = {
+    ...DEFAULT_SETTINGS,
+    processVariant: 'ls' as const,
+    waterMode: 'percent_of_oils' as const,
+    waterPercentOfOils: '20',
+  };
+  function useLsEnvelopeHarness(cookWaterGrams?: number) {
+    const { properties, fattyAcids } = useRecipeProperties(lsLines, lsSettings);
+    const { result } = useRecipeCalculation(lsLines, lsSettings, 'ls');
+    return useFormulationInsights(lsLines, lsSettings, properties, fattyAcids, result, {
+      process: 'ls',
+      cookWaterGrams,
+    });
+  }
+
+  it('false-flags below the envelope on lye-only water when no cookWaterGrams is threaded', () => {
+    const { result } = renderHook(() => useLsEnvelopeHarness());
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).toContain('ls_water_outside_envelope');
+  });
+
+  it("reads cookWaterGrams (lye + split-liquid water) so a split-liquid recipe's real paste water lands inside the envelope", () => {
+    // A pre-cook alternative liquid adding 100 g of water brings the paste's real water to
+    // 300 g = 30% of oils, inside 25-60% — the false flag above must clear.
+    const { result } = renderHook(() => useLsEnvelopeHarness(300));
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes).not.toContain('ls_water_outside_envelope');
+  });
+});
+
 describe('useFormulationInsights sugar aggregator (Step 3b)', () => {
   const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
 

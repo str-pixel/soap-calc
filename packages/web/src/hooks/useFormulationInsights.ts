@@ -138,6 +138,12 @@ type FormulationInsightOptions = {
    * 120–130 °F average band, and an HP cook temperature through it would double-count
    * what the HP process already implies. */
   soapingTempF?: number;
+  /** The paste's real water — lye water plus any pre-cook alternative liquid's water
+   * (useRecipeViewModel's cookWaterGrams). Threaded into analyzeFormulation's
+   * pasteWaterGrams, which only ls_water_outside_envelope reads — a split-liquid LS
+   * recipe's lye-only waterGrams undercounts the paste and can false-flag it as below the
+   * envelope. Same threading pattern as waterEnvelope below. */
+  cookWaterGrams?: number;
 };
 
 export function useFormulationInsights(
@@ -260,6 +266,7 @@ export function useFormulationInsights(
       ),
       waterBand,
       waterEnvelope,
+      pasteWaterGrams: options.cookWaterGrams,
       // At partial fatty-acid coverage the renormalized profile (and thus the predicted
       // trace speed derived from it) is unrepresentative — withhold the label rather than
       // let analyzeFormulation surface it as a confident reading. traceSpeed is already
@@ -297,6 +304,7 @@ export function useFormulationInsights(
     options.lsGlycerinSolvent,
     options.lsSplitLiquidFatShiftPercent,
     options.lsSplitLiquidIsSolventOnly,
+    options.cookWaterGrams,
   ]);
 
   return { insights };

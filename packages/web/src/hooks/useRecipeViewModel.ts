@@ -663,6 +663,7 @@ export function useRecipeViewModel({
     {
       splitLiquidGrams,
       splitLiquidRows: splitLiquidRows.map(({ row, grams }) => ({ addAt: row.addAt, grams })),
+      cookWaterGrams,
       suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
       splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
       additives: computedAdditives,
