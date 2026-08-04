@@ -362,6 +362,67 @@ describe('ratio mode does not silently rewrite the saved target on mode entry al
     fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '3' } });
     expect(onSoapConcentrationChange).toHaveBeenCalled();
   });
+
+  test('an earlier touch does not survive a mode change: leaving ratio mode and returning without a fresh edit does not revert an intervening concentration edit', () => {
+    // Review round 2, finding 1: reproduced sequence — edit the ratio once (writes back,
+    // touched=true forever); switch to concentration mode and type an exact target
+    // directly (40%); switch BACK to ratio mode without touching the ratio field again.
+    // The old code's `ratioTouched && dilutionMode === 'ratio'` guard was still satisfied
+    // by the EARLIER touch, so it fired on re-entry alone and silently reverted the
+    // typed 40% back to the ratio's own 25% — no visual difference, no undo. touched must
+    // reset on every mode change so each entry into ratio mode needs its own edit.
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel
+        dilution={RESULT}
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+        weightUnit="g"
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    // Edit the ratio once — writes back (25%).
+    fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '2.5' } });
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+    onSoapConcentrationChange.mockClear();
+
+    // Switch to concentration mode and type an exact target directly (40%, simulated as
+    // App would re-render this panel after the edit lands in settings).
+    rerender(
+      <DilutionPanel
+        dilution={RESULT}
+        soapConcentrationPercent="40"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+        weightUnit="g"
+        cookWaterGrams={400}
+        dilutionMode="concentration"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+
+    // Switch back to ratio mode WITHOUT touching the ratio field.
+    rerender(
+      <DilutionPanel
+        dilution={RESULT}
+        soapConcentrationPercent="40"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+        weightUnit="g"
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
 });
 
 test('extreme ratio clamps the written-back concentration so the ratio panel cannot vanish', () => {

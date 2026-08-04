@@ -87,6 +87,12 @@ export function lsPartialDilution(
   const predictedPasteGrams =
     batch.anhydrousGrams + Math.max(0, batch.totalWaterGrams - batch.dilutionWaterGrams);
   const isRemaining = pasteMeasured && batch.measuredPasteIsRemaining === true;
+  // A remainder cannot weigh more than the whole batch's own paste ever did — solids and
+  // the water already in the paste don't appear from nowhere. Left unguarded, a bogus
+  // "remaining" reading heavier than predictedPasteGrams scaled to a pot anhydrous bigger
+  // than the entire batch's own anhydrous soap: physically impossible input, confidently
+  // wrong output. Reject before any arithmetic runs on it.
+  if (isRemaining && (m as number) > predictedPasteGrams) return null;
   const pasteGrams = pasteMeasured ? (m as number) : predictedPasteGrams;
   // Whole-batch (default): the pot holds all the recipe's anhydrous soap, and the target
   // solution is the recipe's own fixed solutionGrams. Remaining: the paste is homogeneous,

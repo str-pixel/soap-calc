@@ -50,6 +50,12 @@ export function PartialDilution({
   if (dilution === null) return null;
   const hasMeasurement = measuredPasteGrams.trim() !== '';
   const measured = Number(measuredPasteGrams);
+  // Mirrors core's own predictedPasteGrams (anhydrous + the water already in the paste) —
+  // computed here too so the UI can refuse a physically impossible remaining reading
+  // BEFORE calling lsPartialDilution, the same way pasteBelowSolids/pasteExceedsSolution
+  // already do for their own guards.
+  const predictedPasteGrams =
+    dilution.anhydrousGrams + Math.max(0, dilution.totalWaterGrams - dilution.dilutionWaterGrams);
   // A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate —
   // so a WHOLE-BATCH reading below that is not physically possible. It is a mis-tare (the
   // crock left on the scale) or a PORTION weight, and the reference's own ratio method does
@@ -68,9 +74,24 @@ export function PartialDilution({
     measurementBelowSolids(measured, dilution);
   // Likewise, a paste heavier than the whole target solution cannot be diluted INTO that
   // solution. Core returns null for it; saying so beats the figures silently vanishing.
+  // Kept as-is for whole-batch mode — unaffected by the remaining-only ceiling below.
   const pasteExceedsSolution =
     hasMeasurement && Number.isFinite(measured) && measurementExceedsSolution(measured, dilution);
-  const measurementRejected = pasteBelowSolids || pasteExceedsSolution;
+  // Review round 2, finding 2: a REMAINING reading cannot weigh more than the whole
+  // batch's own predicted paste ever did — solids and the water already in the paste
+  // don't appear from nowhere. Left unguarded, a bogus reading (e.g. 3,000 g against a
+  // 1,600 g predicted paste) scaled to a pot anhydrous bigger than the entire batch's own
+  // anhydrous soap: physically impossible input, confidently wrong output. Core rejects
+  // this too (returns null), so the bad value can never reach the arithmetic either way —
+  // this mirrors that guard at the UI layer so the maker sees why, not just a vanished
+  // result.
+  const pasteExceedsRemainingCeiling =
+    measuredPasteIsRemaining &&
+    hasMeasurement &&
+    Number.isFinite(measured) &&
+    measured > 0 &&
+    measured > predictedPasteGrams;
+  const measurementRejected = pasteBelowSolids || pasteExceedsSolution || pasteExceedsRemainingCeiling;
   const hasValidMeasurement =
     hasMeasurement && Number.isFinite(measured) && measured > 0 && !measurementRejected;
   // targetExceedsPaste is computed from the recipe's ASSUMED cook water — exactly the
@@ -179,6 +200,14 @@ export function PartialDilution({
           measurement.
         </p>
       )}
+      {pasteExceedsRemainingCeiling && (
+        <p className="results-hint" role="alert">
+          That is more than the {formatWeight(predictedPasteGrams, weightUnit)} the whole
+          batch&apos;s paste ever weighed, so it cannot be what is left of it — check the
+          scale, or switch the declaration above to &quot;the whole batch, before any
+          dilution&quot; if that is what you weighed.
+        </p>
+      )}
       {pasteAlreadyThinner && (
         <p className="results-hint">
           The paste is already more dilute than the target above, so there is no dilution
@@ -220,7 +249,9 @@ export function PartialDilution({
           </dl>
           {portion.clamped && (
             <p className="results-hint">
-              That is more than the batch holds — the figures above are the whole batch.
+              {measuredPasteIsRemaining
+                ? "That is more than the remaining paste holds — the figures above use all of it."
+                : 'That is more than the batch holds — the figures above are the whole batch.'}
             </p>
           )}
           {portion.pasteMeasured ? (

@@ -211,4 +211,19 @@ describe('lsPartialDilution with a remaining (already-drawn-down) paste measurem
     const withoutFlag = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1437 }, 1200);
     expect(withFlagFalse).toEqual(withoutFlag);
   });
+
+  it('rejects a remaining reading heavier than the whole batch\'s own predicted paste — a remainder cannot exceed the whole', () => {
+    // Review round 2, finding 2: predicted whole-batch paste here is 1,600 g
+    // (anhydrousGrams 1,000 + cookWaterGrams 600). A "remaining" reading of 3,000 g would
+    // otherwise be accepted and scale to a pot anhydrous of 3,000 × (1,000/1,600) =
+    // 1,875 g — MORE soap than the entire batch ever contained. Physically impossible
+    // input must not reach the arithmetic at all.
+    const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: 3000, measuredPasteIsRemaining: true }, 1200);
+    expect(r).toBeNull();
+  });
+
+  it('accepts a remaining reading exactly at the predicted whole-batch paste (the boundary)', () => {
+    const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: predictedPasteGrams, measuredPasteIsRemaining: true }, 1200);
+    expect(r).not.toBeNull();
+  });
 });

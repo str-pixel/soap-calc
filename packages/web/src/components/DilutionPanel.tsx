@@ -85,6 +85,18 @@ export function DilutionPanel({
   // write-back effect further down can require a real edit before touching the saved
   // target. See that effect's comment for the bug this guards against.
   const [ratioTouched, setRatioTouched] = useState(false);
+  // Review round 2, finding 1: a touch from an EARLIER visit to ratio mode must not carry
+  // forward — otherwise: edit the ratio once (writes back, say 25%); switch to
+  // concentration mode and type an exact target directly (say 40%); switch back to ratio
+  // mode WITHOUT touching the ratio field again — the write-back effect's
+  // `ratioTouched && dilutionMode === 'ratio'` guard was still satisfied by the earlier
+  // touch, so it fired on re-entry alone and silently reverted the typed 40% back to 25%,
+  // with no visual difference and no undo. Resetting on every mode change means each entry
+  // into ratio mode needs its own explicit edit before anything is written again.
+  useEffect(() => {
+    setRatioTouched(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dilutionMode]);
   // Which intended uses the current target suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));

@@ -246,4 +246,66 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
     );
     expect(screen.queryByText(/batch figures above use your measurement too/i)).toBeNull();
   });
+
+  test('rejects a remaining reading heavier than the whole batch\'s own predicted paste — a remainder cannot exceed the whole', () => {
+    // Review round 2, finding 2: RESULT's predicted whole-batch paste is 1,600 g
+    // (1,200 g anhydrous + 400 g cook water). A 2,000 g "remaining" reading would
+    // otherwise be accepted and scale to more soap than the entire batch ever contained —
+    // physically impossible input must be refused, not silently computed.
+    render(
+      <PartialDilution
+        {...PROPS}
+        targetMl="1000"
+        measuredPasteGrams="2000"
+        measuredPasteIsRemaining
+      />,
+    );
+    expect(screen.getByText(/more than the 1,600 g/i)).toBeTruthy();
+    expect(screen.getByText(/ever weighed/i)).toBeTruthy();
+    expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+  });
+
+  test('accepts a remaining reading exactly at the predicted whole-batch paste (the boundary)', () => {
+    render(
+      <PartialDilution
+        {...PROPS}
+        targetMl="1000"
+        measuredPasteGrams="1600"
+        measuredPasteIsRemaining
+      />,
+    );
+    expect(screen.queryByText(/ever weighed/i)).toBeNull();
+    expect(screen.getByText(/Paste to weigh out/)).toBeTruthy();
+  });
+
+  test('the clamp message is mode-aware: remaining mode names the remaining paste, not the whole original batch', () => {
+    // A remaining-mode clamped message reading "the figures above are the whole batch"
+    // reads as the whole ORIGINAL batch, and sits right beside the "Treated as what's
+    // left after earlier dilutions" hint just below it — the two disagreed in wording.
+    const anhydrousGrams = 1000;
+    const cookWaterGrams = 600;
+    const targetConcentration = 0.33;
+    const predictedPasteGrams = anhydrousGrams + cookWaterGrams;
+    const solutionGrams = anhydrousGrams / targetConcentration;
+    const dilutionWaterGrams = solutionGrams - predictedPasteGrams;
+    const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
+    const dilution = {
+      anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams,
+      glycerinGrams: 0, soapConcentrationPercent: 33, targetExceedsPaste: false,
+    };
+    // 2,800 ml exceeds what 1,437 g of remaining paste can ever make (≈2,642 ml) — see
+    // the equivalent core test — so this clamps in remaining mode specifically.
+    render(
+      <PartialDilution
+        {...PROPS}
+        dilution={dilution}
+        targetMl="2800"
+        measuredPasteGrams="1437"
+        measuredPasteIsRemaining
+      />,
+    );
+    expect(screen.getByText(/more than the remaining paste holds/i)).toBeTruthy();
+    expect(screen.getByText(/figures above use all of it/i)).toBeTruthy();
+    expect(screen.queryByText(/figures above are the whole batch/i)).toBeNull();
+  });
 });
