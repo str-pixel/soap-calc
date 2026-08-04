@@ -618,7 +618,12 @@ test('without certainty the sheet still hedges', () => {
 it('prints the dilution water in one unit only', () => {
   render(<BatchSheet data={lsSheetData({})} />);
   const row = screen.getByText(/Dilution water/i).closest('div')!;
+  // The negative alone would pass for almost any format change — including printing
+  // nothing at all — so pin the string the row is actually expected to carry. The sheet
+  // is built at weightUnit 'g' and the fixture's dilutionWaterGrams is 2,000.
+  expect(row.textContent).toContain('2,000 g');
   expect(row.textContent).not.toMatch(/\(.*oz.*\/.*lb.*\)/);
+  expect(row.textContent).not.toMatch(/oz|lb/);
 });
 
 test('printed dilution water reflects a measured paste, matching the on-screen figure', () => {

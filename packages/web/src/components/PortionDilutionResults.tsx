@@ -26,29 +26,37 @@ type PortionDilutionResultsProps = {
    * recipe-computed figure when absent (a recipe with no split liquid, or data built
    * before this field existed). */
   wholeBatchPasteGrams?: number | null;
+  /** Grams of alternative liquid whose water content was never declared. Forwarded from
+   * DilutionPanel (which gets it from App) for one reason only: targetExceedsPaste is
+   * derived from the recipe's ASSUMED water content, so above zero the over-dilution
+   * verdict is not knowable and must not be stated as fact — the shell and the printed
+   * sheet already gate the identical sentence this way. */
+  unknownLiquidGrams?: number;
+  /** True when the over-dilution verdict holds across the undeclared liquid's whole
+   * 0–100% water range, so it can be stated as fact after all. */
+  overDilutionCertain?: boolean;
 };
 
 /**
- * Dilute only part of the batch. Paste keeps far better than diluted soap — it stores
- * sealed, refrigerates and freezes — so the common workflow is to cook one batch of paste
- * and draw it down over time. Whole batch scope answers "dilute it all"; this answers
- * "make just this much now".
- *
- * The paste weight can be measured rather than computed, and should be: the reference
- * weighs it, noting its own tables are estimates "due to possible water evaporation during
- * the process". A computed paste is wrong in two directions at once — the cook boils off
- * water the recipe still counts, and an alternative liquid's non-water solids are mass the
- * recipe never counted. Given a measurement, the water figure absorbs the whole difference
- * and every portion below is exact arithmetic.
+ * The portion this component would render — null when either of the two verdicts below
+ * suppresses it — resolved once, here, so DilutionPanel's shell can ask the same question
+ * without re-deriving it. The shell needs the answer for its density caveat: that caveat explains a
+ * gram→millilitre bridge, so it must not print unless a millilitre figure really is on
+ * screen, and "an amount was asked for" is not the same question as "a portion rendered"
+ * (a rejected measurement, or a paste already thinner than the target, suppresses the
+ * portion with the amount still filled in). Same shape as measuredPasteRejectionFor, and
+ * for the same reason: two surfaces reading one verdict can never contradict each other.
  */
-export function PortionDilutionResults({
+export function portionDilutionFor({
   dilution,
-  weightUnit,
   targetMl,
   measuredPasteGrams,
   measuredPasteIsRemaining,
   wholeBatchPasteGrams,
-}: PortionDilutionResultsProps) {
+}: Pick<
+  PortionDilutionResultsProps,
+  'dilution' | 'targetMl' | 'measuredPasteGrams' | 'measuredPasteIsRemaining' | 'wholeBatchPasteGrams'
+>) {
   // The three physical-impossibility rules — below the anhydrous solids, heavier than the
   // target solution, a remainder heavier than the whole batch ever was — live in
   // lib/measuredPaste, together with the long record of the bug each one closed. The
@@ -88,6 +96,39 @@ export function PortionDilutionResults({
           },
           Number(targetMl),
         );
+  return { measured, pasteAlreadyThinner, portion };
+}
+
+/**
+ * Dilute only part of the batch. Paste keeps far better than diluted soap — it stores
+ * sealed, refrigerates and freezes — so the common workflow is to cook one batch of paste
+ * and draw it down over time. Whole batch scope answers "dilute it all"; this answers
+ * "make just this much now".
+ *
+ * The paste weight can be measured rather than computed, and should be: the reference
+ * weighs it, noting its own tables are estimates "due to possible water evaporation during
+ * the process". A computed paste is wrong in two directions at once — the cook boils off
+ * water the recipe still counts, and an alternative liquid's non-water solids are mass the
+ * recipe never counted. Given a measurement, the water figure absorbs the whole difference
+ * and every portion below is exact arithmetic.
+ */
+export function PortionDilutionResults({
+  dilution,
+  weightUnit,
+  targetMl,
+  measuredPasteGrams,
+  measuredPasteIsRemaining,
+  wholeBatchPasteGrams,
+  unknownLiquidGrams = 0,
+  overDilutionCertain = false,
+}: PortionDilutionResultsProps) {
+  const { measured, pasteAlreadyThinner, portion } = portionDilutionFor({
+    dilution,
+    targetMl,
+    measuredPasteGrams,
+    measuredPasteIsRemaining,
+    wholeBatchPasteGrams,
+  });
   // What the recipe predicted, for the drift readout. NOT portion.predictedPasteGrams:
   // that figure is anhydrous + max(0, totalWater - dilutionWater), and dilutionWater is
   // ZEROED by the targetExceedsPaste clamp — so predictedPasteGrams silently loses the
@@ -101,15 +142,33 @@ export function PortionDilutionResults({
   // recipe is unaffected.
   const driftGrams = portion?.pasteMeasured ? measured - portion.wholeBatchPasteGrams : 0;
 
+  // Whether the paste really is thinner than the target is a claim about the recipe's
+  // ASSUMED water content, so an alternative liquid with no declared % water makes it
+  // unknowable — the same certainty test the shell's own over-dilution alert uses, and the
+  // printed sheet with it. Without this, Custom amount scope stated the verdict flat while
+  // the shell two paragraphs below said it could not be told: one panel, one state, two
+  // opposite answers. Only the WORDING turns on this; pasteAlreadyThinner still suppresses
+  // the portion either way, because the clamped figures it would be computed from are
+  // unusable regardless of what the liquid turns out to contain.
+  const overDilutionKnowable = unknownLiquidGrams === 0 || overDilutionCertain;
   return (
     <>
-      {pasteAlreadyThinner && (
-        <p className="results-hint">
-          The paste is already more dilute than the target above, so there is no dilution
-          water to divide up. Set a target the paste can actually reach, or weigh the whole
-          batch&apos;s paste above to size a portion from your measurement instead.
-        </p>
-      )}
+      {pasteAlreadyThinner &&
+        (overDilutionKnowable ? (
+          <p className="results-hint">
+            The paste is already more dilute than the target above, so there is no dilution
+            water to divide up. Set a target the paste can actually reach, or weigh the whole
+            batch&apos;s paste above to size a portion from your measurement instead.
+          </p>
+        ) : (
+          <p className="results-hint">
+            No portion can be sized yet: {formatWeight(unknownLiquidGrams, weightUnit)} of
+            alternative liquid has no declared water content, so how much dilution water
+            there is to divide up — if any — is unknown. Declare its % water in Split liquid,
+            or weigh the whole batch&apos;s paste above and size the portion from your
+            measurement instead.
+          </p>
+        ))}
       {portion && (
         <>
           <dl className="results-grid">

@@ -1,21 +1,30 @@
 import type { DilutionResult } from '@soap-calc/core';
 
 /**
- * A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate — so
- * a reading below that is not a whole-batch paste. It is a mis-tare (the crock left on the
- * scale) or a PORTION weight. Shared by PortionDilutionResults and DilutionPanel so a
- * measured paste is validated against the same rule everywhere it corrects a figure. The boundary
- * (measured === anhydrousGrams) is accepted.
+ * INTERNAL to this module — deliberately not exported. A batch's paste always contains ALL
+ * of its anhydrous soap — solids do not evaporate — so a reading below that is not a
+ * whole-batch paste. It is a mis-tare (the crock left on the scale) or a PORTION weight.
+ * The boundary (measured === anhydrousGrams) is accepted.
+ *
+ * The shared entry point every surface must go through is {@link measuredPasteRejectionFor}
+ * (or {@link measuredPasteIsValidFor} for the yes/no form). This predicate answers only one
+ * of the three rules and carries none of the conditions the callers need — it says nothing
+ * about blank/unparseable input, and nothing about the `isRemaining` declaration that
+ * disables this floor entirely. Its doc used to claim it was "shared by
+ * PortionDilutionResults and DilutionPanel", which is how the rejection alerts came to be
+ * rendered from one surface only and vanished from the default dilution scope.
  */
-export function measurementBelowSolids(measuredGrams: number, dilution: DilutionResult): boolean {
+function measurementBelowSolids(measuredGrams: number, dilution: DilutionResult): boolean {
   return measuredGrams < dilution.anhydrousGrams;
 }
 
 /**
- * A paste heavier than the whole target solution cannot be diluted INTO that solution.
- * The boundary (measured === solutionGrams) is accepted.
+ * INTERNAL to this module — deliberately not exported; see measurementBelowSolids above for
+ * why, and go through {@link measuredPasteRejectionFor} instead. A paste heavier than the
+ * whole target solution cannot be diluted INTO that solution. The boundary
+ * (measured === solutionGrams) is accepted.
  */
-export function measurementExceedsSolution(measuredGrams: number, dilution: DilutionResult): boolean {
+function measurementExceedsSolution(measuredGrams: number, dilution: DilutionResult): boolean {
   return measuredGrams > dilution.solutionGrams;
 }
 

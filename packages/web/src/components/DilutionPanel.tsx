@@ -16,7 +16,7 @@ import {
   parseMeasuredPasteGrams,
 } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
-import { PortionDilutionResults } from './PortionDilutionResults';
+import { PortionDilutionResults, portionDilutionFor } from './PortionDilutionResults';
 
 export type DilutionMode = 'concentration' | 'ratio';
 
@@ -198,6 +198,23 @@ export function DilutionPanel({
   const ratioWriteBackClamped =
     roundedRatioConcentrationPercent !== null &&
     clampedRatioConcentrationPercent !== roundedRatioConcentrationPercent;
+  // The write-back below waits for a real edit to the ratio (ratioTouched — see its own
+  // comment), so entering ratio mode leaves the saved target in force. That is deliberate
+  // and must stay: entering and leaving the mode used to rewrite a typed target with no
+  // undo. What it left unsaid is the split it creates — the ratio block above answers for
+  // the ratio while every row below, and the printed sheet, still answer for the saved
+  // target. Three disagreeing figures on one screen (3,200 g at the ratio, a 4,000 g
+  // solution at the saved 30%, 2,400 g on the sheet) and nothing saying they are answers to
+  // different questions. Naming the split is the fix; writing back on entry is not.
+  const persistedTargetPercent = Number(soapConcentrationPercent);
+  const ratioNotAppliedYet =
+    dilutionMode === 'ratio' &&
+    !ratioTouched &&
+    clampedRatioConcentrationPercent !== null &&
+    Number.isFinite(persistedTargetPercent) &&
+    // The write-back rounds to 0.1 before writing, so anything closer than half of that is
+    // the same target and there is no split to report.
+    Math.abs(clampedRatioConcentrationPercent - persistedTargetPercent) >= 0.05;
   // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
   // vm.dilution, PortionDilutionResults and the printed BatchSheet all read the
   // persisted concentration, so without this write-back the app would show the ratio's own
@@ -234,6 +251,20 @@ export function DilutionPanel({
   const batchDilutionWaterGrams = dilution
     ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
     : 0;
+  // Whether a portion is actually on screen — asked of the same helper PortionDilutionResults
+  // itself renders from, so the shell cannot believe a portion is showing when it is not.
+  // Only the density caveat below consumes this; the portion figures are still the child's
+  // to render.
+  const portionOnScreen =
+    dilution !== null &&
+    dilutionScope === 'portion' &&
+    portionDilutionFor({
+      dilution,
+      targetMl,
+      measuredPasteGrams: measuredPasteGrams ?? '',
+      measuredPasteIsRemaining,
+      wholeBatchPasteGrams,
+    }).portion !== null;
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough — so the density bridge is shown here rather than
@@ -381,12 +412,18 @@ export function DilutionPanel({
       {/* The reading is rejected in BOTH scopes, so its explanation renders in both — beside
           the input it describes, and above the figures that fall back to the recipe's own
           computed paste because of it. Every remedy names a control that is above this
-          point and visible in the current mode. */}
+          point and visible in the current mode.
+
+          The three thresholds below are quoted in GRAMS, not displayUnit — alone in this
+          panel. Every other figure here is a bench readout and belongs on whatever unit the
+          maker's scale is set to; these are bounds on the number they just typed into a
+          grams-only field, so quoting "less than the 2.65 lb of soap this batch makes" beside
+          a typed 900 made them convert before they could check the claim. */}
       {dilution && measurementRejection && (
         <>
           {measurementRejection.belowSolids && (
             <p className="results-hint" role="alert">
-              That is less than the {formatWeight(dilution.anhydrousGrams, displayUnit)} of
+              That is less than the {formatWeight(dilution.anhydrousGrams, 'g')} of
               soap this batch makes, and solids do not evaporate — so it cannot be all of the
               paste. Check the scale was tared, or switch the declaration above to
               &quot;what&apos;s left after earlier dilutions&quot; if part of the batch is
@@ -396,7 +433,7 @@ export function DilutionPanel({
           {measurementRejection.exceedsSolution && (
             <p className="results-hint" role="alert">
               Your paste already weighs more than the{' '}
-              {formatWeight(dilution.solutionGrams, displayUnit)} this target dilutes to, so
+              {formatWeight(dilution.solutionGrams, 'g')} this target dilutes to, so
               it cannot be diluted to{' '}
               {formatConcentrationPercent(dilution.soapConcentrationPercent)}% at all —{' '}
               {/* The remedy names whichever control is actually on screen, and points the
@@ -411,7 +448,7 @@ export function DilutionPanel({
           {measurementRejection.exceedsRemainingCeiling && (
             <p className="results-hint" role="alert">
               That is more than the{' '}
-              {formatWeight(measurementRejection.wholeBatchPasteBasis, displayUnit)} the whole
+              {formatWeight(measurementRejection.wholeBatchPasteBasis, 'g')} the whole
               batch&apos;s paste ever weighed, so it cannot be what is left of it — check the
               scale, or switch the declaration above to &quot;all of it&quot; if that is what
               you weighed.
@@ -502,6 +539,13 @@ export function DilutionPanel({
               : 'Raise the ratio (more water) to land inside that range directly.'}
           </p>
         )}
+      {ratioNotAppliedYet && clampedRatioConcentrationPercent !== null && (
+        <p className="results-hint">
+          Not applied yet: every figure below — and the printed batch sheet — still uses your
+          saved {formatConcentrationPercent(persistedTargetPercent)}% target. Edit the ratio
+          above to move them to {formatConcentrationPercent(clampedRatioConcentrationPercent)}%.
+        </p>
+      )}
       {dilution ? (
         <>
           {dilutionScope === 'batch' ? (
@@ -575,6 +619,10 @@ export function DilutionPanel({
               )}
             </>
           ) : (
+            /* unknownLiquidGrams/overDilutionCertain are forwarded for one reason: the
+               over-dilution verdict is only assertable when the undeclared liquid cannot
+               change it — the same test this shell's own alert below applies — so the two
+               can never print opposite verdicts on one screen. */
             <PortionDilutionResults
               dilution={dilution}
               weightUnit={displayUnit}
@@ -582,6 +630,8 @@ export function DilutionPanel({
               measuredPasteGrams={measuredPasteGrams ?? ''}
               measuredPasteIsRemaining={measuredPasteIsRemaining}
               wholeBatchPasteGrams={wholeBatchPasteGrams}
+              unknownLiquidGrams={unknownLiquidGrams}
+              overDilutionCertain={overDilutionCertain}
             />
           )}
           {/* LS:1531 — shown regardless of which figure (concentration or ratio) the maker
@@ -593,16 +643,18 @@ export function DilutionPanel({
           </p>
           {/* The density bridge explains a gram→millilitre conversion, so it needs a volume
               on screen to explain. Whole batch always shows one ("≈ Finished volume");
-              Custom amount only once an amount has been asked for — without that gate the
-              caveat printed beside no volume at all. */}
-          {finishedVolumeMl !== null &&
-            (dilutionScope === 'batch' || Number(targetMl) > 0) && (
-              <p className="results-hint">
-                Volume assumes ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a planning figure, not
-                a measured density. Weigh a known volume of your own solution if it has to be
-                exact.
-              </p>
-            )}
+              Custom amount only when a portion actually renders its "Makes" figure. An
+              amount being asked for is NOT that question — a rejected measurement, or a
+              paste already thinner than the target, suppresses the portion with the amount
+              still typed in, and the caveat printed beside no millilitre figure at all:
+              exactly the case the earlier Number(targetMl) > 0 gate was written to prevent. */}
+          {finishedVolumeMl !== null && (dilutionScope === 'batch' || portionOnScreen) && (
+            <p className="results-hint">
+              Volume assumes ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a planning figure, not a
+              measured density. Weigh a known volume of your own solution if it has to be
+              exact.
+            </p>
+          )}
           {dilutionScope === 'batch' && (
             <>
               {/* targetExceedsPaste is computed from the recipe's ASSUMED cook water — exactly

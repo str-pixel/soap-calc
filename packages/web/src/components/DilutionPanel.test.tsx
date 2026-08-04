@@ -440,6 +440,81 @@ describe('ratio mode does not silently rewrite the saved target on mode entry al
   });
 });
 
+describe('ratio mode says so while the ratio has not been applied to anything below it', () => {
+  // The write-back deliberately waits for a real edit (see the describe above), so simply
+  // selecting ratio mode leaves the panel telling two stories at once: "Water to add at
+  // this ratio 3,200 g" and "2:1 lands at 25% soap" above, but a grid still computed at
+  // the saved 30% (4,000 g solution, 2,800 g total water) below — and a printed sheet
+  // saying 2,400 g. Three numbers, no statement anywhere that they answer different
+  // questions. The line must NOT be a write-back: entering the mode must still change
+  // nothing.
+  const ratioProps = {
+    ...BASE,
+    dilutionScope: 'batch' as const,
+    targetMl: '',
+    cookWaterGrams: 400,
+    dilutionMode: 'ratio' as const,
+    waterPasteRatio: '2',
+    onDilutionModeChange: () => {},
+    onWaterPasteRatioChange: () => {},
+  };
+
+  it('names both the saved target and the ratio\'s own concentration, and keeps the ratio block visible', () => {
+    render(<DilutionPanel {...ratioProps} />);
+    const note = screen.getByText(/not applied yet/i);
+    expect(note.textContent).toMatch(/30%/);
+    expect(note.textContent).toMatch(/25%/);
+    // The ratio block is what the maker came to ratio mode for — it stays.
+    expect(screen.getByText('Water to add at this ratio')).toBeTruthy();
+    expect(screen.getByText(/^3,200 g/)).toBeTruthy();
+    // ...and the rows below still answer at the saved 30%, which is the split being named.
+    expect(screen.getByText(/^4,000 g/)).toBeTruthy();
+  });
+
+  it('says nothing once the ratio has actually been edited — that write-back reconciles them', () => {
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel {...ratioProps} onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    // A different value than the current one, or React dedupes the change and no edit is
+    // registered at all. waterPasteRatio is App-owned and the handler here is a no-op, so
+    // the prop stays at 2 and the write-back still derives that ratio's own 25%.
+    fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '3' } });
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+    expect(screen.queryByText(/not applied yet/i)).toBeNull();
+  });
+
+  it('says nothing when the ratio already lands on the saved target', () => {
+    render(
+      <DilutionPanel
+        {...ratioProps}
+        soapConcentrationPercent="25"
+        dilution={{ ...RESULT, soapConcentrationPercent: 25 }}
+      />,
+    );
+    expect(screen.queryByText(/not applied yet/i)).toBeNull();
+  });
+
+  it('is not a write-back: rendering it leaves the saved target untouched', () => {
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel {...ratioProps} onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(screen.getByText(/not applied yet/i)).toBeTruthy();
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
+  it('carries into Custom amount scope, where the portion figures use the saved target too', () => {
+    render(<DilutionPanel {...ratioProps} dilutionScope="portion" targetMl="1000" />);
+    expect(screen.getByText(/not applied yet/i)).toBeTruthy();
+  });
+
+  it('says nothing in concentration mode', () => {
+    render(<DilutionPanel {...ratioProps} dilutionMode="concentration" />);
+    expect(screen.queryByText(/not applied yet/i)).toBeNull();
+  });
+});
+
 test('extreme ratio clamps the written-back concentration so the ratio panel cannot vanish', () => {
   // At a 100,000:1 ratio the true derived concentration rounds to 0.0%. calculateDilution
   // only accepts (0, 100) exclusive, so writing 0 back would null out `dilution` upstream —
@@ -1033,4 +1108,136 @@ describe('the g/oz/lb display-unit switch', () => {
     render(<DilutionPanel {...BASE} weightUnit="kg" dilutionScope="batch" targetMl="" />);
     expect(checked('g')).toBe(true);
   });
+
+  it('quotes the measured-paste thresholds in grams, the unit that field is typed in', () => {
+    // The input is grams-only ("Measured paste weight (g, optional)"), so a threshold
+    // quoted in the display unit made the maker convert to check a claim about the number
+    // they had just typed: "less than the 2.65 lb of soap this batch makes" against a
+    // typed 900. Every OTHER figure in the panel is a bench readout and stays on the
+    // display unit — these three are the exception because they are about the input.
+    const alertText = () => screen.getByRole('alert').textContent ?? '';
+
+    render(<DilutionPanel {...BASE} weightUnit="lb" dilutionScope="batch" targetMl="" measuredPasteGrams="900" />);
+    expect(alertText()).toMatch(/1,200 g/);
+    expect(alertText()).not.toMatch(/2\.65 lb/);
+    cleanup();
+
+    render(<DilutionPanel {...BASE} weightUnit="lb" dilutionScope="batch" targetMl="" measuredPasteGrams="4500" />);
+    expect(alertText()).toMatch(/4,000 g/);
+    expect(alertText()).not.toMatch(/8\.82 lb/);
+    cleanup();
+
+    // Remaining-mode ceiling: 1,200 g anhydrous + 400 g cook water = a 1,600 g basis.
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="lb"
+        dilutionScope="batch"
+        targetMl=""
+        measuredPasteGrams="1700"
+        measuredPasteIsRemaining
+      />,
+    );
+    expect(alertText()).toMatch(/1,600 g/);
+    expect(alertText()).not.toMatch(/3\.53 lb/);
+  });
+});
+
+describe('copy that a previous round rewrote, pinned so it cannot drift back', () => {
+  it('points the exceeds-solution remedy toward MORE water in concentration mode', () => {
+    // solutionGrams is anhydrous ÷ concentration, so a paste already heavier than the
+    // solution needs a LOWER target — "raise the target concentration" (the pre-fix
+    // wording) shrinks the solution further and makes the rejection worse.
+    render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" measuredPasteGrams="4500" />);
+    const alert = screen.getByRole('alert').textContent ?? '';
+    expect(alert).toMatch(/cannot be diluted to/i);
+    expect(alert).toMatch(/lower the target concentration/i);
+    expect(alert).not.toMatch(/raise the target concentration/i);
+  });
+
+  it('points it toward MORE water in ratio mode too, naming the control actually on screen', () => {
+    // The concentration field is not rendered in ratio mode, so the remedy names the
+    // ratio — and a WIDER ratio is the one that makes room for the paste already weighed.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="batch"
+        targetMl=""
+        measuredPasteGrams="4500"
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    const alert = screen
+      .getAllByRole('alert')
+      .map((a) => a.textContent ?? '')
+      .find((t) => /cannot be diluted to/i.test(t)) ?? '';
+    expect(alert).toMatch(/raise the water:paste ratio/i);
+    expect(alert).not.toMatch(/lower the water:paste ratio/i);
+    expect(alert).not.toMatch(/target concentration/i);
+  });
+});
+
+describe('the density caveat needs a millilitre figure to explain', () => {
+  // Gating on Number(targetMl) > 0 alone was satisfied while the portion itself was
+  // suppressed — a rejected measurement, or a target the paste is already thinner than —
+  // so the caveat printed with no volume anywhere on screen: the exact case its own
+  // comment says the gate prevents.
+  it('is absent in Custom amount scope when a rejected measurement suppressed the portion', () => {
+    render(
+      <DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" measuredPasteGrams="4500" />,
+    );
+    expect(screen.queryByText('Makes')).toBeNull();
+    expect(screen.queryByText(/1\.03 g\/ml/)).toBeNull();
+  });
+
+  it('is absent in Custom amount scope when the paste is already thinner than the target', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }}
+        dilutionScope="portion"
+        targetMl="1000"
+      />,
+    );
+    expect(screen.queryByText('Makes')).toBeNull();
+    expect(screen.queryByText(/1\.03 g\/ml/)).toBeNull();
+  });
+
+  it('is present as soon as a portion really renders one', () => {
+    render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" />);
+    expect(screen.getByText('Makes')).toBeTruthy();
+    expect(screen.getByText(/1\.03 g\/ml/)).toBeTruthy();
+  });
+
+  it('is unaffected in Whole batch scope, which always shows a finished volume', () => {
+    render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" />);
+    expect(screen.getByText(/1\.03 g\/ml/)).toBeTruthy();
+  });
+});
+
+it('never prints the over-dilution verdict and its own hedge on one screen', () => {
+  // Custom amount scope used to assert "the paste is already more dilute than the target"
+  // two paragraphs above this shell's own "can't tell whether 50% is reachable" — same
+  // panel, same state, opposite verdicts.
+  render(
+    <DilutionPanel
+      {...BASE}
+      dilution={{
+        anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
+        dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 50,
+        targetExceedsPaste: true,
+      }}
+      dilutionScope="portion"
+      targetMl="1000"
+      altLiquidWaterGrams={900}
+      unknownLiquidGrams={900}
+      overDilutionCertain={false}
+    />,
+  );
+  expect(screen.getByText(/can.t tell whether/i)).toBeTruthy();
+  expect(screen.queryByText(/already more dilute/i)).toBeNull();
 });

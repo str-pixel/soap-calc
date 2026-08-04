@@ -60,6 +60,53 @@ test('says the paste is already more dilute than the target rather than computin
   expect(screen.getByText(/already more dilute/i)).toBeTruthy();
 });
 
+describe('an undeclared alternative liquid makes "already more dilute" unknowable, here as much as in the shell', () => {
+  // targetExceedsPaste is derived from the recipe's ASSUMED water content, so with an
+  // alternative liquid whose % water was never declared the claim is not knowable —
+  // DilutionPanel gates the identical sentence on (unknownLiquidGrams === 0 ||
+  // overDilutionCertain) and hedges instead, and so does the printed sheet. Asserting it
+  // here printed a flat "already more dilute" two paragraphs above the shell's own
+  // "can't tell whether N% is reachable": same panel, same state, opposite verdicts.
+  const OVER = {
+    ...RESULT,
+    dilutionWaterGrams: 0,
+    soapConcentrationPercent: 90,
+    targetExceedsPaste: true,
+  };
+
+  test('hedges instead of asserting when the liquid\'s water content is undeclared', () => {
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={OVER}
+        unknownLiquidGrams={900}
+        overDilutionCertain={false}
+      />,
+    );
+    expect(screen.queryByText(/already more dilute/i)).toBeNull();
+    expect(screen.getByText(/declared/i)).toBeTruthy();
+    // Still no portion: the guard's computation is unchanged, only what it says.
+    expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+  });
+
+  test('still asserts it when the verdict holds across the undeclared liquid\'s whole range', () => {
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={OVER}
+        unknownLiquidGrams={900}
+        overDilutionCertain
+      />,
+    );
+    expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+  });
+
+  test('asserts it when there is no undeclared liquid at all', () => {
+    render(<PortionDilutionResults {...PROPS} dilution={OVER} unknownLiquidGrams={0} />);
+    expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+  });
+});
+
 test('a valid measured paste sizes a portion even when targetExceedsPaste is set — the measurement outranks the computed flag (Task 5)', () => {
   // targetExceedsPaste was derived from the recipe's ASSUMED cook water (dilutionWaterGrams
   // clamped to 0 here). The measured paste (1,500 g) is direct evidence against that
