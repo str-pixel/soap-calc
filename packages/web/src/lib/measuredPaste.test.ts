@@ -117,8 +117,11 @@ describe('measuredPasteRejectionFor', () => {
     expect(rejection.accepted).toBe(true);
   });
 
-  it('reports no measurement — and so no rejection — for a blank or unusable field', () => {
-    for (const value of ['', '   ', undefined, 'abc', '0']) {
+  it('reports no measurement — and so no rejection — for a blank or unparseable field', () => {
+    // '0' is deliberately NOT in this list: it is a value the maker typed, and it is
+    // rejected. See the nonPositive describe below for why, and for the distinction from
+    // the blank field, where Number('') is also 0.
+    for (const value of ['', '   ', undefined, 'abc']) {
       const rejection = measuredPasteRejectionFor(value, DILUTION, false);
       expect(rejection.rejected).toBe(false);
       expect(rejection.accepted).toBe(false);
@@ -130,6 +133,58 @@ describe('measuredPasteRejectionFor', () => {
     const rejection = measuredPasteRejectionFor('1480', DILUTION, false);
     expect(rejection.accepted).toBe(true);
     expect(rejection.measuredGrams).toBe(1480);
+  });
+});
+
+describe('a reading that is not a weight at all', () => {
+  // belowSolids and exceedsRemainingCeiling both self-disabled via `measured > 0`, and
+  // `accepted` requires it too, so a typed -500 produced {rejected: false, accepted: false}
+  // — no alert anywhere, and the batch row quietly falling back to the recipe's computed
+  // figure with a physically impossible number still on screen above it. min={1} on a
+  // type="number" input is only enforced on submit, and this form has no submit, so it is
+  // typeable. Those `> 0` guards were written to exempt the BLANK field (Number('') === 0),
+  // which hasMeasurement already covers.
+  it('rejects zero and negative readings under either declaration', () => {
+    for (const isRemaining of [false, true]) {
+      for (const value of ['0', '-500', '-0.5']) {
+        const rejection = measuredPasteRejectionFor(value, DILUTION, isRemaining);
+        expect(rejection.nonPositive).toBe(true);
+        expect(rejection.rejected).toBe(true);
+        expect(rejection.accepted).toBe(false);
+      }
+    }
+  });
+
+  it('does not fire on a blank field, where Number() is also 0', () => {
+    for (const value of ['', '   ', undefined]) {
+      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      expect(rejection.nonPositive).toBe(false);
+      expect(rejection.rejected).toBe(false);
+    }
+  });
+
+  it('does not fire on an unparseable field', () => {
+    const rejection = measuredPasteRejectionFor('abc', DILUTION, false);
+    expect(rejection.nonPositive).toBe(false);
+    expect(rejection.rejected).toBe(false);
+  });
+
+  it('owns the verdict alone, so only one alert can be on screen for it', () => {
+    // A negative reading is trivially below the anhydrous floor too; without the existing
+    // `> 0` guard on belowSolids they would both fire and the shell would render two
+    // paragraphs for one reading.
+    const rejection = measuredPasteRejectionFor('-500', DILUTION, false);
+    expect(rejection.belowSolids).toBe(false);
+    expect(rejection.exceedsSolution).toBe(false);
+    expect(rejection.exceedsRemainingCeiling).toBe(false);
+  });
+
+  it('leaves every positive reading exactly as it was', () => {
+    expect(measuredPasteRejectionFor('1480', DILUTION, false).nonPositive).toBe(false);
+    expect(measuredPasteRejectionFor('1480', DILUTION, false).accepted).toBe(true);
+    expect(measuredPasteRejectionFor('900', DILUTION, false).belowSolids).toBe(true);
+    expect(measuredPasteRejectionFor('4100', DILUTION, false).exceedsSolution).toBe(true);
+    expect(measuredPasteRejectionFor('2000', DILUTION, true).exceedsRemainingCeiling).toBe(true);
   });
 });
 

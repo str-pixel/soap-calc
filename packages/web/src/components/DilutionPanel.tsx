@@ -168,11 +168,25 @@ export function DilutionPanel({
   // PortionDilutionResults' identical trap).
   const ratioNum = Number(waterPasteRatio);
   const ratioValid = Number.isFinite(ratioNum) && ratioNum > 0;
-  const pasteGrams = dilution
-    ? measuredPasteValid
-      ? measuredPasteNum
-      : dilution.anhydrousGrams + cookWaterGrams
-    : null;
+  // The corrected whole-batch paste when the view model has one — the SAME figure the
+  // remaining-mode ceiling alert above quotes ("the N g the whole batch's paste ever
+  // weighed"), and the same one forwarded to PortionDilutionResults. anhydrousGrams +
+  // cookWaterGrams counts only the WATER fraction of an alternative liquid, so on a
+  // split-liquid recipe it undercounts the pot by that liquid's solids: 300 g anhydrous +
+  // 100 g cook water against a true 470 g pot printed 800 g of water for 2:1 where the pot
+  // needs 940 g — a 140 g under-dose, computed from a basis this component was already
+  // holding the correction for. Falls back to the water-only figure when there is no
+  // corrected one (no split liquid, or a caller predating the prop), which is byte-identical
+  // to before for those recipes.
+  const bestKnownPasteGrams = !dilution
+    ? null
+    : wholeBatchPasteGrams !== undefined &&
+        wholeBatchPasteGrams !== null &&
+        Number.isFinite(wholeBatchPasteGrams) &&
+        wholeBatchPasteGrams > 0
+      ? wholeBatchPasteGrams
+      : dilution.anhydrousGrams + cookWaterGrams;
+  const pasteGrams = dilution ? (measuredPasteValid ? measuredPasteNum : bestKnownPasteGrams) : null;
   const ratioWaterGrams =
     dilution && pasteGrams !== null && ratioValid ? pasteGrams * ratioNum : null;
   const ratioSolutionGrams =
@@ -251,20 +265,34 @@ export function DilutionPanel({
   const batchDilutionWaterGrams = dilution
     ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
     : 0;
-  // Whether a portion is actually on screen — asked of the same helper PortionDilutionResults
-  // itself renders from, so the shell cannot believe a portion is showing when it is not.
-  // Only the density caveat below consumes this; the portion figures are still the child's
-  // to render.
-  const portionOnScreen =
-    dilution !== null &&
-    dilutionScope === 'portion' &&
-    portionDilutionFor({
-      dilution,
-      targetMl,
-      measuredPasteGrams: measuredPasteGrams ?? '',
-      measuredPasteIsRemaining,
-      wholeBatchPasteGrams,
-    }).portion !== null;
+  // Asked of the same helper PortionDilutionResults itself renders from, so the shell can
+  // never believe something about Custom amount that Custom amount does not show. The
+  // portion figures are still the child's to render; the shell reads this verdict for two
+  // things only — the density caveat below (which needs a millilitre figure to explain)
+  // and the batch row's own pointer at Custom amount, which must not send the maker to a
+  // scope that has nothing to size.
+  const portionState = dilution
+    ? portionDilutionFor({
+        dilution,
+        targetMl,
+        measuredPasteGrams: measuredPasteGrams ?? '',
+        measuredPasteIsRemaining,
+        wholeBatchPasteGrams,
+      })
+    : null;
+  const portionOnScreen = dilutionScope === 'portion' && portionState?.portion != null;
+  // PortionDilutionResults says the same thing in its own words when it suppresses the
+  // portion for this exact state — same condition (targetExceedsPaste + undeclared liquid +
+  // not certain), same figure, same "Declare its % water in Split liquid" remedy — so on
+  // one Custom amount screen the maker read the identical remedy twice, separated only by
+  // unrelated copy. Of the two the child's is the one that ALSO explains the missing
+  // figures ("No portion can be sized yet"), so it owns the message wherever it renders.
+  // Narrow on purpose: only pasteAlreadyThinner makes the child print it, so Custom amount
+  // with a valid measurement — where the child sizes a portion and hedges nothing — keeps
+  // the shell's caveat exactly as before. Same duplication the sibling floor hint below
+  // already avoids inside this shell; this is that rule applied across the scope seam.
+  const portionOwnsUndeclaredLiquidHedge =
+    dilutionScope === 'portion' && (portionState?.pasteAlreadyThinner ?? false);
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough — so the density bridge is shown here rather than
@@ -295,6 +323,11 @@ export function DilutionPanel({
           <p className="panel__subtitle">Water to add to reach a target soap concentration</p>
         </div>
         <div className="dilution-mode-toggle" role="radiogroup" aria-label="Dilution display unit">
+          {/* Same visible antecedent the declaration radios below carry, for the same
+              reason: "g oz lb" beside a heading is three bare radios with nothing on
+              screen saying what they switch. The name was in aria-label only, which
+              sighted makers never see. */}
+          <span className="dilution-toggle__legend">Show weights in:</span>
           {DILUTION_UNIT_OPTIONS.map((option) => (
             <label className="field field--inline" key={option.id}>
               <input
@@ -421,6 +454,14 @@ export function DilutionPanel({
           a typed 900 made them convert before they could check the claim. */}
       {dilution && measurementRejection && (
         <>
+          {measurementRejection.nonPositive && (
+            <p className="results-hint" role="alert">
+              {/* Declaration-neutral: neither radio makes a non-positive number a weight,
+                  so this remedy names the field itself rather than either of them. */}
+              A paste weight has to be more than zero — enter what the scale reads, or clear
+              the field to go back to the recipe&apos;s own computed paste.
+            </p>
+          )}
           {measurementRejection.belowSolids && (
             <p className="results-hint" role="alert">
               That is less than the {formatWeight(dilution.anhydrousGrams, 'g')} of
@@ -614,9 +655,15 @@ export function DilutionPanel({
                       own "Dilution water to add" row is suppressed (see just above), so
                       "above" would land on Total water/Glycerin instead — neither of which is
                       measurement-corrected. Ratio mode's own water figure IS corrected (its
-                      pasteGrams already prefers a valid measurement), so name that row there. */}
+                      pasteGrams already prefers a valid measurement), so name that row there.
+
+                      The reading itself is quoted in GRAMS, like the three rejection
+                      thresholds above and for the same reason: it is the number the maker
+                      typed into a grams-only field, not a bench readout. On lb this echoed
+                      a typed 1480 back as "3.26 lb" — their own entry, in a unit they never
+                      used. */}
                   {dilutionMode === 'ratio' ? 'Water to add at this ratio' : 'Dilution water'} above
-                  uses your measured paste ({formatWeight(measuredPasteNum, displayUnit)}
+                  uses your measured paste ({formatWeight(measuredPasteNum, 'g')}
                   ), not the recipe&apos;s computed paste — the cook evaporates water the recipe still
                   counts, and an alternative liquid&apos;s solids are mass it never counted, so the
                   measurement is more accurate.
@@ -626,8 +673,16 @@ export function DilutionPanel({
                 <p className="results-hint">
                   These are the recipe&apos;s whole batch, so a reading of what&apos;s left
                   after earlier dilutions does not correct them — the pot no longer holds the
-                  batch these figures describe. Switch to Custom amount to size what you are
-                  making from that reading instead.
+                  batch these figures describe.{' '}
+                  {/* Custom amount is the right place for this reading only when it can
+                      actually size something from it. When the pot is already past the
+                      target, Custom amount answers with an explanation and no figures (see
+                      PortionDilutionResults' measuredPasteAlreadyThinner) — so sending the
+                      maker there unconditionally handed them a second refusal instead of
+                      the remedy. Asked of the child's own helper, so the two always agree. */}
+                  {portionState?.measuredPasteAlreadyThinner
+                    ? 'Custom amount cannot size anything from that reading either: what is left is already more dilute than the target above, so there is no dilution water to divide up. Set a target the pot can reach first.'
+                    : 'Switch to Custom amount to size what you are making from that reading instead.'}
                 </p>
               )}
             </>
@@ -674,29 +729,49 @@ export function DilutionPanel({
                   the assumption a measured paste is evidence against (that's the whole reason
                   the reference weighs the paste: the computed figure can't see evaporation). A
                   valid measurement outranks the flag, so suppress this alert rather than assert
-                  "already more dilute" beside a water figure the measurement just produced. */}
+                  "already more dilute" beside a water figure the measurement just produced.
+
+                  A REJECTED measurement is excluded for the same reason and gets its own
+                  alert above instead — the exclusion PortionDilutionResults' matching
+                  branch already applied while this one did not, so a mis-tared reading
+                  stacked two role="alert" paragraphs here and one there, and the second
+                  asserted a verdict derived from the very assumed cook water the rejected
+                  reading was contesting. Both scopes answer this state the same way now. */}
               {dilution.targetExceedsPaste &&
                 !measuredPasteValid &&
+                !(measurementRejection?.rejected ?? false) &&
                 (unknownLiquidGrams === 0 || overDilutionCertain) && (
                   <p className="results-hint" role="alert">
                     The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
                     only lowers the concentration further.
                   </p>
                 )}
-              {altLiquidWaterGrams > 0 && unknownLiquidGrams === 0 && (
-                <p className="results-hint">
-                  Already {formatWeight(altLiquidWaterGrams, displayUnit)} lighter: that much
-                  water came in with the alternative liquid and is counted as part of the paste.
-                  Top up with plain distilled water only.
-                </p>
-              )}
             </>
           )}
-          {/* Undeclared alternative liquid is a property of the RECIPE, not of how much of it
-              you are making, so these two caveats follow into both scopes: a portion's water
-              figure is a lower bound for exactly the same reason the batch's is, and Custom
-              amount used to print it bare. Only the batch figure they quote is scope-bound. */}
-          {dilution.targetExceedsPaste && unknownLiquidGrams > 0 && !overDilutionCertain && (
+          {/* An alternative liquid is a property of the RECIPE, not of how much of it you
+              are making, so these three caveats follow into both scopes: a portion's water
+              figure is net of that liquid's water, and a lower bound when its water is
+              undeclared, for exactly the same reasons the batch's figure is — and Custom
+              amount used to print them bare. Only the batch FIGURES they quote are
+              scope-bound, so each drops or replaces its own. */}
+          {altLiquidWaterGrams > 0 && unknownLiquidGrams === 0 && (
+            <p className="results-hint">
+              {/* The last sentence is the load-bearing one: it is the only place telling
+                  the maker not to top up with more milk or juice, and it is as true of a
+                  portion as of the batch. Only the head start is a whole-batch figure —
+                  quoting it in Custom amount would put the batch's 300 g beside a much
+                  smaller portion water figure with nothing to say which is which. */}
+              {dilutionScope === 'batch'
+                ? `Already ${formatWeight(altLiquidWaterGrams, displayUnit)} lighter: that much water`
+                : 'Part of the water is already there: it'}{' '}
+              came in with the alternative liquid and is counted as part of the paste. Top up
+              with plain distilled water only.
+            </p>
+          )}
+          {dilution.targetExceedsPaste &&
+            unknownLiquidGrams > 0 &&
+            !overDilutionCertain &&
+            !portionOwnsUndeclaredLiquidHedge && (
             // Suppressed, not reworded: targetExceedsPaste is a factual claim about the
             // paste, and it was derived from an ASSUMED water content. Asserting it can tell
             // the user a batch is finished when it still needs hundreds of grams of water.
@@ -710,7 +785,15 @@ export function DilutionPanel({
               paste, the can't-tell / certain-alert branches above own the message — rendering
               this too repeated "declare its % water" verbatim and printed a vacuous
               "0 g is the LEAST you will need". */}
-          {altLiquidWaterGrams > 0 && unknownLiquidGrams > 0 && !dilution.targetExceedsPaste && (
+          {/* …and, in Custom amount, only once a portion really rendered. The portion-scope
+              wording points AT figures ("the water figures here are the LEAST you will
+              need"), so with the amount field blank or a measurement rejected it bounded
+              nothing that was on screen — the same trap the density caveat above is gated
+              against, with the same gate. */}
+          {altLiquidWaterGrams > 0 &&
+            unknownLiquidGrams > 0 &&
+            !dilution.targetExceedsPaste &&
+            (dilutionScope === 'batch' || portionOnScreen) && (
             <p className="results-hint">
               {formatWeight(unknownLiquidGrams, displayUnit)} of alternative liquid has no
               declared water content — it is counted as all water, so{' '}

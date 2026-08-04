@@ -257,6 +257,26 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
     expect(screen.getByText(/^650 g/)).toBeTruthy();
   });
 
+  test('echoes the remaining reading in grams, not in the panel display unit', () => {
+    // The measured-paste field is grams-only and lives in DilutionPanel's shell, whose own
+    // rejection alerts already hardcode grams for the same reason. Quoting the reading back
+    // as "scaled down from your 3.26 lb reading" makes the maker convert to recognise the
+    // 1480 they just typed.
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        weightUnit="lb"
+        targetMl="1000"
+        measuredPasteGrams="1480"
+        measuredPasteIsRemaining
+      />,
+    );
+    const hint = screen.getByText(/scaled down from your/i);
+    // Contiguous, so a stray JSX comment cannot silently swallow the spacing around it.
+    expect(hint.textContent).toMatch(/from your 1,480 g reading/);
+    expect(hint.textContent).not.toMatch(/3\.26 lb/);
+  });
+
   test('the drift note does not claim the batch figures use a remaining-paste measurement', () => {
     // The whole-batch drift note ("battch figures above use your measurement too") is
     // false once the measurement is declared remaining — DilutionPanel's batch row does
@@ -387,6 +407,110 @@ describe('the whole-batch drift note and the remaining-mode ceiling quote the sa
     );
     expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('a portion core refuses is explained, never left blank', () => {
+  // The three rejection rules bound the READING against whole-batch figures, while
+  // lsPartialDilution's own feasibility test depends on the RECIPE: it returns null
+  // whenever the pot's paste already weighs more than the solution that pot's own soap
+  // makes at the target (ls-yield's `potSolutionGrams - pasteGrams < 0`). A reading all
+  // three rules accept can still land there — and `pasteAlreadyThinner` cannot explain it,
+  // because that flag requires there to be NO valid measurement. Both render branches were
+  // false and this component emitted an empty fragment: no figures, no alert, no reason.
+
+  // 1,000 g anhydrous at a 33% target → a 3,030 g solution and 2,030 g of total water;
+  // 1,900 g of cook water still leaves 130 g of dilution water, so targetExceedsPaste is
+  // FALSE. But a split liquid's 200 g of non-water solids make the TRUE whole-batch paste
+  // 3,100 g — heavier than the 3,030 g solution — so the batch really is already thinner
+  // than 33%, which the recipe's own flag structurally cannot see. A 2,000 g "what's left"
+  // reading is inside every bound: under the 3,030 g solution ceiling, under the 3,100 g
+  // whole-batch ceiling, and the solids floor does not apply to a remaining reading.
+  const anhydrousGrams = 1000;
+  const cookWaterGrams = 1900;
+  const solutionGrams = anhydrousGrams / 0.33;
+  const totalWaterGrams = solutionGrams - anhydrousGrams;
+  const dilutionWaterGrams = Math.max(0, totalWaterGrams - cookWaterGrams);
+  const dilution: DilutionResult = {
+    anhydrousGrams, solutionGrams, totalWaterGrams, dilutionWaterGrams,
+    glycerinGrams: 0, soapConcentrationPercent: 33, targetExceedsPaste: false,
+  };
+  const wholeBatchPasteGrams = anhydrousGrams + cookWaterGrams + 200;
+
+  test('says why an accepted reading still sizes no portion, instead of rendering nothing at all', () => {
+    const { container } = render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        measuredPasteGrams="2000"
+        measuredPasteIsRemaining
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    expect(screen.queryByText('Paste to weigh out')).toBeNull();
+    expect(container.textContent?.trim()).not.toBe('');
+    expect(screen.getByText(/no dilution water to divide up/i)).toBeTruthy();
+    expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+  });
+
+  test('explains the same blank when targetExceedsPaste is set and the remaining reading is valid', () => {
+    // 1,200 g anhydrous at a 90% target → a 1,333 g solution, 133 g of total water against
+    // 1,600 g of cook water, so targetExceedsPaste IS set and dilutionWaterGrams clamps to
+    // 0. A 1,000 g "what's left" reading clears every rule (under the 1,333 g solution
+    // ceiling, under the 2,800 g whole-batch ceiling), which turns pasteAlreadyThinner off
+    // — and core still refuses, because 1,000 g of this paste makes only ~476 g of
+    // solution at 90%.
+    const overDilution: DilutionResult = {
+      anhydrousGrams: 1200,
+      solutionGrams: 1200 / 0.9,
+      totalWaterGrams: 1200 / 0.9 - 1200,
+      dilutionWaterGrams: 0,
+      glycerinGrams: 0,
+      soapConcentrationPercent: 90,
+      targetExceedsPaste: true,
+    };
+    const { container } = render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={overDilution}
+        targetMl="1000"
+        measuredPasteGrams="1000"
+        measuredPasteIsRemaining
+        wholeBatchPasteGrams={2800}
+      />,
+    );
+    expect(screen.queryByText('Paste to weigh out')).toBeNull();
+    expect(container.textContent?.trim()).not.toBe('');
+    expect(screen.getByText(/no dilution water to divide up/i)).toBeTruthy();
+  });
+
+  test('stays silent when the portion really does compute', () => {
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        measuredPasteGrams="1500"
+        measuredPasteIsRemaining
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    // 1,500 g of this paste holds 484 g of soap → a 1,466 g solution, which is LESS than
+    // the 1,500 g of paste... so this too is refused. Use the whole-batch declaration
+    // instead, where the pot's solution is the recipe's own 3,030 g.
+    cleanup();
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        measuredPasteGrams="2000"
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+    expect(screen.queryByText(/no dilution water to divide up/i)).toBeNull();
   });
 });
 

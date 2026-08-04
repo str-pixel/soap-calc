@@ -74,6 +74,9 @@ export function measuredPasteIsValidFor(
  * paste mass the remaining-mode ceiling was checked against.
  */
 export type MeasuredPasteRejection = {
+  /** The field holds a number that is not a weight at all — zero or negative. Applies under
+   * either declaration, and is exclusive of the three rules below. */
+  nonPositive: boolean;
   /** The reading is lighter than the batch's own anhydrous soap (whole-batch mode only). */
   belowSolids: boolean;
   /** The reading is heavier than the whole solution the target dilutes to. */
@@ -138,6 +141,20 @@ export function measuredPasteRejectionFor(
     wholeBatchPasteGrams > 0
       ? wholeBatchPasteGrams
       : predictedPasteGrams;
+  // Review round 4, finding 8: a scale reading of zero or less is not a paste weight under
+  // EITHER declaration — it is below the anhydrous floor trivially, and a remainder of
+  // nothing has nothing left to dilute. The `measured > 0` guards on belowSolids and
+  // exceedsRemainingCeiling below, and on `accepted` at the bottom, were written to exempt
+  // the BLANK field (Number('') === 0) — but hasMeasurement already covers that case, so
+  // what those guards actually did was let a typed -500 through as
+  // {rejected: false, accepted: false}: no alert anywhere, and the batch row silently
+  // falling back to the recipe's computed figure with the impossible number still on
+  // screen above it. min={1} on a type="number" input is only enforced on submit, and this
+  // form has none, so it is typeable. This owns the verdict alone rather than folding into
+  // belowSolids: that rule's remedy ("switch the declaration to what's left after earlier
+  // dilutions") is no help for a negative number, and it is disabled in remaining mode,
+  // which would have left that declaration silent all over again.
+  const nonPositive = hasMeasurement && Number.isFinite(measured) && measured <= 0;
   // A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate —
   // so a WHOLE-BATCH reading below that is not physically possible. It is a mis-tare (the
   // crock left on the scale) or a PORTION weight, and the reference's own ratio method does
@@ -157,8 +174,14 @@ export function measuredPasteRejectionFor(
   // Likewise, a paste heavier than the whole target solution cannot be diluted INTO that
   // solution. Core returns null for it; saying so beats the figures silently vanishing.
   // Kept as-is for whole-batch mode — unaffected by the remaining-only ceiling below.
+  // `!nonPositive` rather than `measured > 0`: a negative reading is never above the
+  // solution, so this is only belt-and-braces, but it keeps all three rules uniformly
+  // exclusive of the new one so the shell can never render two paragraphs for one reading.
   const exceedsSolution =
-    hasMeasurement && Number.isFinite(measured) && measurementExceedsSolution(measured, dilution);
+    hasMeasurement &&
+    Number.isFinite(measured) &&
+    !nonPositive &&
+    measurementExceedsSolution(measured, dilution);
   // Review round 2, finding 2: a REMAINING reading cannot weigh more than the whole
   // batch's own paste ever did — solids and the water already in the paste don't appear
   // from nowhere. Left unguarded, a bogus reading (e.g. 3,000 g against a 1,700 g true
@@ -176,8 +199,9 @@ export function measuredPasteRejectionFor(
     Number.isFinite(measured) &&
     measured > 0 &&
     measured > wholeBatchPasteBasis;
-  const rejected = belowSolids || exceedsSolution || exceedsRemainingCeiling;
+  const rejected = nonPositive || belowSolids || exceedsSolution || exceedsRemainingCeiling;
   return {
+    nonPositive,
     belowSolids,
     exceedsSolution,
     exceedsRemainingCeiling,
