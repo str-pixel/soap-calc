@@ -462,8 +462,17 @@ describe('ratio mode says so while the ratio has not been applied to anything be
   it('names both the saved target and the ratio\'s own concentration, and keeps the ratio block visible', () => {
     render(<DilutionPanel {...ratioProps} />);
     const note = screen.getByText(/not applied yet/i);
-    expect(note.textContent).toMatch(/30%/);
-    expect(note.textContent).toMatch(/25%/);
+    // Pinned to their ROLES, not merely to their presence somewhere in the sentence. Asserting
+    // only /30%/ and /25%/ let a swapped pair — "your saved 25% target … not the 30% above",
+    // exactly backwards — pass the whole suite; same failure mode the exceeds-solution remedy
+    // copy closed earlier. The saved target is the one still in force; the ratio's figure is
+    // the one nothing below is using yet.
+    expect(note.textContent).toMatch(/saved 30% target/);
+    expect(note.textContent).toMatch(/not the 25% above/);
+    // No promise about where a single edit lands: from this untouched 2:1 / saved-30% state,
+    // the one edit the ratio input's own step offers (2 → 2.5) sets the target to 21.4%, not
+    // 25% — 25% needs a round trip (2 → 2.5 → 2), because the write-back waits for a touch.
+    expect(note.textContent).not.toMatch(/move them to/);
     // The ratio block is what the maker came to ratio mode for — it stays.
     expect(screen.getByText('Water to add at this ratio')).toBeTruthy();
     expect(screen.getByText(/^3,200 g/)).toBeTruthy();
@@ -495,6 +504,25 @@ describe('ratio mode says so while the ratio has not been applied to anything be
     expect(screen.queryByText(/not applied yet/i)).toBeNull();
   });
 
+  it('says nothing when the ratio lands near enough to the saved target to print the same figure twice', () => {
+    // The 0.05 tolerance is load-bearing, and it is reachable: the concentration field accepts
+    // 25.02, and 2:1 on this paste (1,200 g anhydrous + 400 g cook water → 4,800 g solution)
+    // lands at exactly 25.0. The two differ by 0.02 — a real difference, but smaller than the
+    // 0.1 the write-back rounds to, so there is no split to report. Without the tolerance the
+    // note renders and reads "your saved 25% target, not the 25% above": the same number
+    // twice, since formatConcentrationPercent rounds both to one decimal.
+    render(
+      <DilutionPanel
+        {...ratioProps}
+        soapConcentrationPercent="25.02"
+        dilution={{ ...RESULT, soapConcentrationPercent: 25.02 }}
+      />,
+    );
+    expect(screen.queryByText(/not applied yet/i)).toBeNull();
+    // The ratio's own readout is still there — this is a suppressed SPLIT, not a suppressed mode.
+    expect(screen.getByText(/lands at 25% soap/i)).toBeTruthy();
+  });
+
   it('is not a write-back: rendering it leaves the saved target untouched', () => {
     const onSoapConcentrationChange = vi.fn();
     render(
@@ -511,6 +539,30 @@ describe('ratio mode says so while the ratio has not been applied to anything be
 
   it('says nothing in concentration mode', () => {
     render(<DilutionPanel {...ratioProps} dilutionMode="concentration" />);
+    expect(screen.queryByText(/not applied yet/i)).toBeNull();
+  });
+
+  it('does not let the 1–99% clamp alert claim the clamped value is in use while this note says it is not', () => {
+    // Both paragraphs render together for an untouched extreme ratio, and they contradicted
+    // each other: the clamp alert said 1% "is used instead" while this note said the saved 30%
+    // is still what everything below runs on. Nothing has been written back in the untouched
+    // state, so the clamp alert's tense must be conditional — what WOULD be used.
+    render(<DilutionPanel {...ratioProps} waterPasteRatio="100000" />);
+    const clamp = screen.getByText(/outside the 1.99% range/i);
+    expect(clamp.textContent).toMatch(/1% would be used instead/);
+    expect(clamp.textContent).not.toMatch(/1% is used instead/);
+    // The pair really is on screen together — that is what made the contradiction visible.
+    expect(screen.getByText(/not applied yet/i).textContent).toMatch(/saved 30% target/);
+  });
+
+  it('lets the clamp alert speak in the present tense once the ratio has been applied', () => {
+    // The mirror of the case above: after a real edit the write-back has fired, so the clamped
+    // value genuinely IS the target every figure below is using, and the not-applied note is gone.
+    render(<DilutionPanel {...ratioProps} waterPasteRatio="100000" />);
+    fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '100001' } });
+    const clamp = screen.getByText(/outside the 1.99% range/i);
+    expect(clamp.textContent).toMatch(/1% is used instead/);
+    expect(clamp.textContent).not.toMatch(/would be used/);
     expect(screen.queryByText(/not applied yet/i)).toBeNull();
   });
 });

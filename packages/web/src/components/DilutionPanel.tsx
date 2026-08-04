@@ -533,17 +533,30 @@ export function DilutionPanel({
             At {waterPasteRatio}:1 this ratio implies{' '}
             {formatConcentrationPercent(roundedRatioConcentrationPercent)}% soap — outside the
             1–99% range the calculator can target, so{' '}
-            {formatConcentrationPercent(clampedRatioConcentrationPercent)}% is used instead.{' '}
+            {formatConcentrationPercent(clampedRatioConcentrationPercent)}%{' '}
+            {/* The tense follows the WRITE-BACK, not the clamp. Untouched, nothing has been
+                written — the saved target is still what every figure below runs on, which is
+                exactly what the not-applied note underneath says — so "is used instead" put a
+                flat contradiction two paragraphs apart on one screen. Only the wording is
+                conditional; the clamp itself is unchanged and still bounds every write. */}
+            {ratioTouched ? 'is' : 'would be'} used instead.{' '}
             {roundedRatioConcentrationPercent < 1
               ? 'Lower the ratio (less water) to land inside that range directly.'
               : 'Raise the ratio (more water) to land inside that range directly.'}
           </p>
         )}
+      {/* The second sentence names the action WITHOUT promising a destination, because the
+          obvious single edit does not reach the figure quoted here: from an untouched 2:1 at a
+          saved 30%, taking the ratio input's own step to 2.5 applies 21.4% — landing on this
+          25% needs a round trip (2 → 2.5 → 2), since the write-back only fires once the field
+          has been touched. The first sentence is the durable part and stays: the rows below
+          and the printed sheet answer at the saved target, whatever the ratio says. */}
       {ratioNotAppliedYet && clampedRatioConcentrationPercent !== null && (
         <p className="results-hint">
           Not applied yet: every figure below — and the printed batch sheet — still uses your
-          saved {formatConcentrationPercent(persistedTargetPercent)}% target. Edit the ratio
-          above to move them to {formatConcentrationPercent(clampedRatioConcentrationPercent)}%.
+          saved {formatConcentrationPercent(persistedTargetPercent)}% target, not the{' '}
+          {formatConcentrationPercent(clampedRatioConcentrationPercent)}% above. Editing the
+          ratio applies whatever it then lands at.
         </p>
       )}
       {dilution ? (
