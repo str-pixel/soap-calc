@@ -9,7 +9,8 @@ import {
   type DoseBasis,
   type DoseUnit,
 } from '@soap-calc/core';
-import type { AcidLyeRecipe } from '@soap-calc/core';
+import type { AcidLyeRecipe, DilutionResult } from '@soap-calc/core';
+import { correctedDilutionWaterGrams, measuredPasteIsValidFor, parseMeasuredPasteGrams } from './measuredPaste';
 import type { AdditiveLine, RecipeSettings, SplitLiquidSettings } from './recipe';
 
 export type ComputedAdditive = {
@@ -112,25 +113,43 @@ export function computeExtrasGrams(
  * computeExtrasGrams so "what counts as an extra" and "what rides through to the bottle"
  * are one tested rule set.
  *
- * Base: normally the dilution solution (anhydrous + target water — the split liquids'
- * water is inside it via cookWaterGrams). But when the target EXCEEDS the paste, core
- * derives solutionGrams from the target alone and never reads the cook water; none of the
- * paste's water can be removed, so the real bottled base is anhydrous + cook water.
+ * Base: the pot's real paste — a valid whole-batch measurement when there is one, else the
+ * recipe's own anhydrous + cook water — plus whatever water is still needed to reach the
+ * target. That water figure is `correctedDilutionWaterGrams`, the SAME measurement-aware
+ * function the Dilution panel's own water row already uses (Task 5: a measurement outranks
+ * the targetExceedsPaste clamp), so this and that row never disagree about what actually
+ * gets bottled. With no measurement this reduces exactly to the old formula: unmeasured
+ * paste + dilution.dilutionWaterGrams, which is dilution.solutionGrams when the clamp never
+ * fired, or anhydrous + cook water when it did (dilutionWaterGrams pinned to 0 in that
+ * branch, so the water term drops out and the paste term is all that's left).
  * Extras: everything in extrasGrams except the split liquids' water (counted via the
  * base either way) — additives at every stage, append-mode PCSF oil, split-liquid solids.
  * Acid-compensation alkali is DELIBERATELY excluded, mirroring the dilution calc's
  * base-result read: its acetate/citrate mass is small, and folding it in here without
  * also touching solutionGrams would be easy to mistake for a double count. */
 export function computeBottledSolutionGrams(input: {
-  dilution: { solutionGrams: number; anhydrousGrams: number; targetExceedsPaste: boolean };
+  dilution: DilutionResult;
   cookWaterGrams: number;
   extrasGrams: number;
   splitLiquidPasteWaterGrams: number;
+  /** The maker's scale reading for the WHOLE batch's paste — same App/view-model state
+   * DilutionPanel and PartialDilution read. Optional so callers/tests with no measurement
+   * are unaffected. */
+  measuredPasteGrams?: string;
+  /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions, not the whole
+   * batch. A remaining reading describes a smaller pot, never the batch this function
+   * prices, so it must not feed the bottled base — same isRemaining gate
+   * `correctedDilutionWaterGrams` and DilutionPanel's batch row already apply. */
+  measuredPasteIsRemaining?: boolean;
 }): number {
-  const { dilution, cookWaterGrams, extrasGrams, splitLiquidPasteWaterGrams } = input;
-  const base = dilution.targetExceedsPaste
-    ? dilution.anhydrousGrams + cookWaterGrams
-    : dilution.solutionGrams;
+  const { dilution, cookWaterGrams, extrasGrams, splitLiquidPasteWaterGrams, measuredPasteGrams, measuredPasteIsRemaining } =
+    input;
+  const measuredPaste = measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining)
+    ? (parseMeasuredPasteGrams(measuredPasteGrams) as number)
+    : undefined;
+  const base =
+    (measuredPaste ?? dilution.anhydrousGrams + cookWaterGrams) +
+    correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining);
   return base + Math.max(0, extrasGrams - splitLiquidPasteWaterGrams);
 }
 

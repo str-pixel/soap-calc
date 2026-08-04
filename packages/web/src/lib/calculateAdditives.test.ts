@@ -7,14 +7,28 @@ import {
   splitLiquidWaterInputState,
 } from './calculateAdditives';
 import type { AdditiveLine } from './recipe';
+import type { DilutionResult } from '@soap-calc/core';
 
 describe('computeBottledSolutionGrams', () => {
   // Lives beside computeExtrasGrams so "what rides through to the bottle" and "what counts
   // as an extra" stay one tested rule set (code-review 2026-08-01) — the hook previously
   // reconstructed it inline by subtracting mismatched aggregates.
-  const dilution = { solutionGrams: 4000, anhydrousGrams: 1200, targetExceedsPaste: false };
+  //
+  // dilutionWaterGrams (1,900) is real core arithmetic, not a stand-in: with no
+  // measurement the whole point is base === dilution.solutionGrams (4,000 = 1,200
+  // anhydrous + 900 cook water + 1,900 dilution water), so this must reduce to the old
+  // formula exactly.
+  const dilution: DilutionResult = {
+    solutionGrams: 4000,
+    anhydrousGrams: 1200,
+    totalWaterGrams: 2800,
+    dilutionWaterGrams: 1900,
+    glycerinGrams: 0,
+    soapConcentrationPercent: 30,
+    targetExceedsPaste: false,
+  };
 
-  it('bottled = solution + extras solids (the split liquids WATER is already in the solution)', () => {
+  it('bottled = solution + extras solids (the split liquids WATER is already in the solution) — no measurement, byte-identical to before', () => {
     expect(
       computeBottledSolutionGrams({
         dilution,
@@ -25,13 +39,22 @@ describe('computeBottledSolutionGrams', () => {
     ).toBeCloseTo(4400);
   });
 
-  it('when the target exceeds the paste, the base is the REAL paste, not the target-derived solution', () => {
+  it('when the target exceeds the paste, the base is the REAL paste, not the target-derived solution — no measurement, byte-identical to before', () => {
     // Core computes solutionGrams purely from the target (anhydrous / soap%) and never
     // reads cookWaterGrams — when totalWater < cook, none of the paste water can be
-    // removed, so the bottled base is anhydrous + cook water, which is LARGER. The old
-    // subtraction shape understated the bottle count twice over here (its comment claimed
-    // the split water "is already inside the solution figure", false in this branch).
-    const thick = { solutionGrams: 1500, anhydrousGrams: 1200, targetExceedsPaste: true };
+    // removed, so dilutionWaterGrams is clamped to 0 and the bottled base is anhydrous +
+    // cook water, which is LARGER than solutionGrams. The old subtraction shape understated
+    // the bottle count twice over here (its comment claimed the split water "is already
+    // inside the solution figure", false in this branch).
+    const thick: DilutionResult = {
+      solutionGrams: 1500,
+      anhydrousGrams: 1200,
+      totalWaterGrams: 700, // < cook (835), which is what clamps dilutionWaterGrams below
+      dilutionWaterGrams: 0,
+      glycerinGrams: 0,
+      soapConcentrationPercent: 55,
+      targetExceedsPaste: true,
+    };
     expect(
       computeBottledSolutionGrams({
         dilution: thick,
@@ -42,7 +65,7 @@ describe('computeBottledSolutionGrams', () => {
     ).toBeCloseTo(1200 + 835 + (500 - 435));
   });
 
-  it('clamps the extras solids at zero', () => {
+  it('clamps the extras solids at zero — no measurement, byte-identical to before', () => {
     expect(
       computeBottledSolutionGrams({
         dilution,
@@ -51,6 +74,61 @@ describe('computeBottledSolutionGrams', () => {
         splitLiquidPasteWaterGrams: 100,
       }),
     ).toBeCloseTo(4000);
+  });
+
+  it('a valid whole-batch measurement replaces the stale target-exceeds-paste base with the true pot mass (verified trace)', () => {
+    // anhydrous 1,000 g, cook water 2,200 g, target 33% soap: solutionGrams =
+    // 1,000/0.33 = 3,030.3 g, totalWaterGrams (2,030.3 g) < cook, so targetExceedsPaste
+    // clamps dilutionWaterGrams to 0 and the OLD base (anhydrous + cook water) was
+    // 3,200 g — stale by 170 g against a genuine 3,000 g measurement. A valid measurement
+    // corrects the water needed to 3,030.3 − 3,000 = 30.3 g (correctedDilutionWaterGrams),
+    // so the true pot is 3,000 + 30.3 ≈ 3,030 g.
+    const anhydrousGrams = 1000;
+    const cookWaterGrams = 2200;
+    const solutionGrams = anhydrousGrams / 0.33;
+    const targetExceeds: DilutionResult = {
+      anhydrousGrams,
+      solutionGrams,
+      totalWaterGrams: solutionGrams - anhydrousGrams,
+      dilutionWaterGrams: 0,
+      glycerinGrams: 0,
+      soapConcentrationPercent: 33,
+      targetExceedsPaste: true,
+    };
+    expect(
+      computeBottledSolutionGrams({
+        dilution: targetExceeds,
+        cookWaterGrams,
+        extrasGrams: 0,
+        splitLiquidPasteWaterGrams: 0,
+        measuredPasteGrams: '3000',
+      }),
+    ).toBeCloseTo(3030.3, 0);
+  });
+
+  it('a REMAINING-declared measurement does not feed the bottled base — a remainder is not the batch', () => {
+    const anhydrousGrams = 1000;
+    const cookWaterGrams = 2200;
+    const solutionGrams = anhydrousGrams / 0.33;
+    const targetExceeds: DilutionResult = {
+      anhydrousGrams,
+      solutionGrams,
+      totalWaterGrams: solutionGrams - anhydrousGrams,
+      dilutionWaterGrams: 0,
+      glycerinGrams: 0,
+      soapConcentrationPercent: 33,
+      targetExceedsPaste: true,
+    };
+    expect(
+      computeBottledSolutionGrams({
+        dilution: targetExceeds,
+        cookWaterGrams,
+        extrasGrams: 0,
+        splitLiquidPasteWaterGrams: 0,
+        measuredPasteGrams: '3000',
+        measuredPasteIsRemaining: true,
+      }),
+    ).toBeCloseTo(anhydrousGrams + cookWaterGrams, 0); // 3,200 g, the recipe's own figure
   });
 });
 

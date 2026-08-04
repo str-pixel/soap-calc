@@ -44,3 +44,12 @@ test('never shows a remainder as large as a whole bottle', () => {
   expect(screen.getByText('2')).toBeTruthy();
   expect(screen.getByText('499 ml')).toBeTruthy();
 });
+
+test('names itself as the whole batch, so it cannot be misread as the portion just sized in "Dilute part of the batch"', () => {
+  // Commit 3: this panel always reads the WHOLE batch's finishedGrams, never the smaller
+  // amount PartialDilution sizes directly above it. Unqualified, a maker who just sized a
+  // 1,200 ml portion there and opens "Bottle count" right below it has nothing telling them
+  // this count is NOT about that portion.
+  render(<BottleCalculator finishedGrams={4805} {...PROPS} />);
+  expect(screen.getByText(/whole batch/i)).toBeTruthy();
+});

@@ -145,10 +145,18 @@ export function PartialDilution({
           },
           Number(targetMl),
         );
-  // What the recipe predicted, for the drift readout: anhydrous + the water already in it.
-  // Core already computes this internally (it's `pasteGrams`'s unmeasured branch), so it
-  // is consumed from `portion` rather than re-derived here.
-  const driftGrams = portion?.pasteMeasured ? measured - portion.predictedPasteGrams : 0;
+  // What the recipe predicted, for the drift readout. NOT portion.predictedPasteGrams:
+  // that figure is anhydrous + max(0, totalWater - dilutionWater), and dilutionWater is
+  // ZEROED by the targetExceedsPaste clamp — so predictedPasteGrams silently loses the
+  // real cook water in that branch and understates the whole batch's paste (round 2's bug:
+  // 100 g anhydrous + 150 g cook water reads as a 200 g predicted paste, not 250 g).
+  // portion.wholeBatchPasteGrams is core's own clamp-free resolution of the SAME basis the
+  // remaining-mode ceiling above already checks against (wholeBatchPasteBasis) — using it
+  // here means the drift note and the ceiling can never quote two different "whole batch's
+  // paste" figures for the same reading. Falls back to predictedPasteGrams itself when no
+  // corrected basis was supplied (core's own fallback), so a no-split-liquid, non-clamped
+  // recipe is unaffected.
+  const driftGrams = portion?.pasteMeasured ? measured - portion.wholeBatchPasteGrams : 0;
 
   return (
     <details className="panel panel--nested">

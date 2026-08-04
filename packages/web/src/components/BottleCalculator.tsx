@@ -33,9 +33,15 @@ export function BottleCalculator({
 
   return (
     <details className="panel panel--nested">
-      <summary className="panel__title">Bottle count</summary>
+      {/* "— whole batch" is load-bearing, not decorative: this panel always reads
+          `finishedGrams` for the ENTIRE batch, never a smaller amount sized in "Dilute
+          part of the batch" just above it. Without the qualifier, a maker who just sized a
+          1,200 ml portion there and opens this panel right below it can misread its count
+          as being about that portion — the subtitle repeats the point for the same reason. */}
+      <summary className="panel__title">Bottle count — whole batch</summary>
       <p className="panel__subtitle">
-        Whole bottles the finished batch fills, from its {Math.round(volumeMl).toLocaleString('en-US')} ml.
+        Whole bottles the ENTIRE batch fills, from its {Math.round(volumeMl).toLocaleString('en-US')} ml
+        — not a smaller amount sized above, if you used one.
       </p>
       <label className="field">
         <span>Bottle size (ml)</span>
