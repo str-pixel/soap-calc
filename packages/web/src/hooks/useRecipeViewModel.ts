@@ -749,6 +749,8 @@ export function useRecipeViewModel({
           cookWaterGrams,
           extrasGrams,
           splitLiquidPasteWaterGrams: splitLiquidPasteWater,
+          measuredPasteGrams,
+          measuredPasteIsRemaining,
         })
       : null;
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
