@@ -57,6 +57,10 @@ export type UseRecipeViewModelArgs = {
    * remaining-paste reading never corrects the printed BATCH row, matching DilutionPanel's
    * on-screen guard. */
   measuredPasteIsRemaining?: boolean;
+  /** The maker's own bottle-size input, in ml — the same App state BottleCalculator reads.
+   * Threaded into batchSheetData so the printed sheet can carry a bottle count alongside
+   * the on-screen one, computed from the same lsBottleCount core helper. */
+  bottleSizeMl?: string;
 };
 
 export type RecipeViewModel = {
@@ -144,6 +148,7 @@ export function useRecipeViewModel({
   vesselVolumeCm3 = null,
   measuredPasteGrams,
   measuredPasteIsRemaining,
+  bottleSizeMl,
 }: UseRecipeViewModelArgs): RecipeViewModel {
   const previewState = usePreviewRecipeState(
     lines,
@@ -819,6 +824,8 @@ export function useRecipeViewModel({
       dilution,
       measuredPasteGrams,
       measuredPasteIsRemaining,
+      bottledSolutionGrams,
+      bottleSizeMl,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
       overDilutionCertain,
@@ -837,6 +844,8 @@ export function useRecipeViewModel({
     dilution,
     measuredPasteGrams,
     measuredPasteIsRemaining,
+    bottledSolutionGrams,
+    bottleSizeMl,
     displayTotals,
     extrasGrams,
     indexes,

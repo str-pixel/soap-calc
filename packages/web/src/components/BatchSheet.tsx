@@ -5,6 +5,8 @@ import {
   effectiveSuperfatPercent,
   formatPropertyScore,
   formatSoapPropertyPercent,
+  lsBottleCount,
+  lsFinishedVolumeMl,
   LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
   fToC,
@@ -75,6 +77,8 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     dilution,
     measuredPasteGrams,
     measuredPasteIsRemaining,
+    bottledSolutionGrams,
+    bottleSizeMl,
     neutralization,
     properties,
     indexes,
@@ -112,6 +116,25 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   const dilutionWaterGramsPrinted = dilution
     ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
     : 0;
+  // The sheet is the page taken to the bench, so it must carry what actually gets
+  // bottled, not only the chemistry-only solution above: bottledSolutionGrams adds in
+  // additives, append-mode post-cook oil, and split-liquid solids, and is bigger than
+  // dilution.solutionGrams whenever any of those are present (mirrors DilutionPanel's
+  // own bottledGrams/showBottledRow). lsFinishedVolumeMl is the same core helper the
+  // on-screen panel and BottleCalculator use — never recomputed here.
+  const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
+  const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
+  const showBottledRow =
+    dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
+  const bottleMl = Number(bottleSizeMl);
+  const bottleCount =
+    bottleSizeMl !== undefined &&
+    bottleSizeMl.trim() !== '' &&
+    Number.isFinite(bottleMl) &&
+    bottleMl > 0 &&
+    bottledGrams !== null
+      ? lsBottleCount(bottledGrams, bottleMl)
+      : null;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -320,6 +343,15 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             </dd></div>
             <div><dt>Finished solution</dt><dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd></div>
             <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
+            {showBottledRow && bottledGrams !== null && (
+              <div><dt>≈ Bottled (with extras)</dt><dd>{formatWeight(bottledGrams, weightUnit)}</dd></div>
+            )}
+            {finishedVolumeMl !== null && (
+              <div><dt>≈ Finished volume</dt><dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd></div>
+            )}
+            {bottleCount !== null && (
+              <div><dt>≈ Bottles filled ({bottleSizeMl} ml)</dt><dd>{bottleCount}</dd></div>
+            )}
           </dl>
           {measuredPasteValid && (
             <p className="batch-sheet__note">

@@ -427,6 +427,8 @@ function lsSheetData(extra: {
   neutralization?: import('@soap-calc/core').NeutralizationResult | null;
   measuredPasteGrams?: string;
   measuredPasteIsRemaining?: boolean;
+  bottledSolutionGrams?: number | null;
+  bottleSizeMl?: string;
 }) {
   const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
   const lines = createStarterLines();
@@ -639,6 +641,36 @@ test('a measurement declared as what is left after earlier dilutions does not co
   expect(screen.getByText(/^2,000 g/)).toBeTruthy();
   expect(screen.queryByText(/^2,459 g/)).toBeNull();
   expect(screen.queryByText(/measured paste/i)).toBeNull();
+});
+
+test('prints the bottled mass and finished volume — not just the chemistry-only solution — when extras make the bottled mass bigger', () => {
+  // The sheet is the page taken to the bench: the dilution.solutionGrams row is
+  // chemistry-only and is SMALLER than what actually gets bottled whenever there is
+  // append-mode post-cook oil or split-liquid solids (see bottledSolutionGrams on the view
+  // model). 4,515 g bottled ÷ 1.03 g/ml = 4,383 ml, computed via the same core helper the
+  // on-screen panel uses (lsFinishedVolumeMl), not recomputed here.
+  render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515 })} />);
+  expect(screen.getByText('4,515 g')).toBeTruthy();
+  expect(screen.getByText('4,383 ml')).toBeTruthy();
+});
+
+test('omits the bottled-mass row when it matches the chemistry-only solution (nothing to add)', () => {
+  render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4059 })} />);
+  // 4,059 g is exactly lsSheetData's own dilution.solutionGrams — no extras, so the
+  // bottled row would be a bare duplicate of "Finished solution" and is skipped.
+  expect(screen.queryByText('4,059 g (with extras)')).toBeNull();
+});
+
+test('prints the bottle count reachable from the same bottle size the on-screen BottleCalculator uses', () => {
+  render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515, bottleSizeMl: '500' })} />);
+  // 4,383 ml / 500 ml, floored = 8 bottles.
+  expect(screen.getByText(/Bottles filled \(500 ml\)/)).toBeTruthy();
+  expect(screen.getByText('8')).toBeTruthy();
+});
+
+test('omits the bottle count when no bottle size is reachable', () => {
+  render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515 })} />);
+  expect(screen.queryByText(/Bottles filled/)).toBeNull();
 });
 
 test('a measured paste that outranks targetExceedsPaste also suppresses the printed "already more dilute" alert', () => {

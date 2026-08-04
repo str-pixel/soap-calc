@@ -212,6 +212,7 @@ export default function App() {
     vesselVolumeCm3,
     measuredPasteGrams,
     measuredPasteIsRemaining,
+    bottleSizeMl,
   });
   useRecipeAutosave(process, recipeName, lines, settings, additives, () =>
     flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
