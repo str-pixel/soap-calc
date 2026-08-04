@@ -37,6 +37,12 @@ export type LsPartialDilution = {
    * measurement was given, so callers can diff it against a measurement (drift) without
    * recomputing the same expression this function already evaluates internally. */
   predictedPasteGrams: number;
+  /** The basis actually used for the remaining-mode composition ratio and its ceiling:
+   * `batch.wholeBatchPasteGrams` when the caller supplied one (corrects predictedPasteGrams
+   * for an alternative liquid's non-water solids), else predictedPasteGrams unchanged. So
+   * callers can show what the measurement was actually checked/derived against without
+   * recomputing the same fallback this function already resolves internally. */
+  wholeBatchPasteGrams: number;
   /** True when more was asked for than the batch holds, so the figures are the whole batch. */
   clamped: boolean;
 };
@@ -72,6 +78,18 @@ export function lsPartialDilution(
      * anhydrous floor to enforce: any positive remainder is legitimate. Ignored without a
      * measurement. */
     measuredPasteIsRemaining?: boolean;
+    /** The best-known WHOLE-BATCH paste mass, when available — corrects
+     * predictedPasteGrams for mass it structurally misses. predictedPasteGrams counts only
+     * the WATER fraction of an alternative liquid (anhydrousGrams + cookWaterGrams); the
+     * liquid's non-water solids are real mass sitting in the pot the recipe never counts,
+     * so for a split-liquid recipe the TRUE whole-batch paste is heavier than
+     * predictedPasteGrams. Used for BOTH the remaining-mode composition ratio and its
+     * ceiling — a too-light basis both rejects legitimate remaining readings above it AND
+     * (via that same basis feeding the composition ratio) overstates the pot's soap
+     * fraction. Falls back to predictedPasteGrams when omitted, non-finite, or ≤ 0, so
+     * every caller that doesn't know about split-liquid solids is unaffected. Only
+     * consumed in remaining mode. */
+    wholeBatchPasteGrams?: number;
   },
   targetVolumeMl: number,
   densityGPerMl: number = LS_SOLUTION_DENSITY_G_PER_ML,
@@ -86,20 +104,33 @@ export function lsPartialDilution(
   const pasteMeasured = m !== undefined && Number.isFinite(m) && m > 0;
   const predictedPasteGrams =
     batch.anhydrousGrams + Math.max(0, batch.totalWaterGrams - batch.dilutionWaterGrams);
+  const wb = batch.wholeBatchPasteGrams;
+  // The corrected basis when the caller has one (accounts for split-liquid solids
+  // predictedPasteGrams misses), else predictedPasteGrams exactly as before — every
+  // existing caller that never supplies wholeBatchPasteGrams is byte-identical to round 2.
+  const wholeBatchPasteGrams =
+    wb !== undefined && Number.isFinite(wb) && wb > 0 ? wb : predictedPasteGrams;
   const isRemaining = pasteMeasured && batch.measuredPasteIsRemaining === true;
   // A remainder cannot weigh more than the whole batch's own paste ever did — solids and
   // the water already in the paste don't appear from nowhere. Left unguarded, a bogus
-  // "remaining" reading heavier than predictedPasteGrams scaled to a pot anhydrous bigger
-  // than the entire batch's own anhydrous soap: physically impossible input, confidently
-  // wrong output. Reject before any arithmetic runs on it.
-  if (isRemaining && (m as number) > predictedPasteGrams) return null;
+  // "remaining" reading heavier than the true whole-batch paste scaled to a pot anhydrous
+  // bigger than the entire batch's own anhydrous soap: physically impossible input,
+  // confidently wrong output. Reject before any arithmetic runs on it. Checked against
+  // wholeBatchPasteGrams (the corrected basis), not the raw predictedPasteGrams — round
+  // 2's version of this guard rejected legitimate remaining readings above
+  // predictedPasteGrams whenever the recipe used a split liquid, since predictedPasteGrams
+  // structurally undercounts the liquid's own solids.
+  if (isRemaining && (m as number) > wholeBatchPasteGrams) return null;
   const pasteGrams = pasteMeasured ? (m as number) : predictedPasteGrams;
   // Whole-batch (default): the pot holds all the recipe's anhydrous soap, and the target
   // solution is the recipe's own fixed solutionGrams. Remaining: the paste is homogeneous,
   // so the pot's own anhydrous soap — and therefore its own target solution — is a
   // proportional share of the measurement rather than the recipe's whole-batch figures.
+  // Scaled against wholeBatchPasteGrams (not predictedPasteGrams) for the same reason as
+  // the ceiling above: using the water-only figure here understates the pot's true paste
+  // mass and so overstates its soap fraction whenever the recipe has a split liquid.
   const potAnhydrousGrams = isRemaining
-    ? (m as number) * (batch.anhydrousGrams / predictedPasteGrams)
+    ? (m as number) * (batch.anhydrousGrams / wholeBatchPasteGrams)
     : batch.anhydrousGrams;
   const potSolutionGrams = isRemaining
     ? potAnhydrousGrams * (batch.solutionGrams / batch.anhydrousGrams)
@@ -133,6 +164,7 @@ export function lsPartialDilution(
     waterPasteRatio: pasteGrams > 0 ? batchWaterGrams / pasteGrams : 0,
     pasteMeasured,
     predictedPasteGrams,
+    wholeBatchPasteGrams,
     clamped,
   };
 }

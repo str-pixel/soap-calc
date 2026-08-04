@@ -117,6 +117,10 @@ export type RecipeViewModel = {
    * exceeds it) plus additives, append-mode PCSF oil, and split-liquid solids. Null
    * outside LS / before a dilution exists. See computeBottledSolutionGrams. */
   bottledSolutionGrams: number | null;
+  /** The best-known WHOLE-BATCH paste mass — anhydrousGrams + cookWaterGrams, corrected
+   * for an alternative liquid's non-water solids. Feeds PartialDilution's remaining-mode
+   * ceiling/composition basis. Null before a dilution exists. */
+  wholeBatchPasteGrams: number | null;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
@@ -429,6 +433,22 @@ export function useRecipeViewModel({
   );
   const splitLiquidGrams =
     resolvedSplit && resolvedSplit.totalGrams > 0 ? resolvedSplit.totalGrams : null;
+  // The best-known WHOLE-BATCH paste mass — corrects the recipe's own water-only figure
+  // (anhydrousGrams + cookWaterGrams, the same expression DilutionPanel's ratio mode
+  // already uses) for an alternative liquid's non-water solids: real mass sitting in the
+  // pot that a water-only figure structurally misses (splitLiquidPasteWater is only the
+  // liquid's WATER fraction; splitLiquidGrams is its total mass, so the difference is its
+  // solids). Feeds PartialDilution's remaining-mode ceiling/composition basis (see
+  // lsPartialDilution's wholeBatchPasteGrams param) — without this, a legitimate remaining
+  // reading above the water-only figure was falsely rejected on any split-liquid recipe,
+  // and the composition it derived understated the pot's true paste mass. Null before a
+  // dilution exists; equals the water-only figure exactly (no correction) when there is no
+  // split liquid, so a no-split-liquid recipe's behaviour is unchanged.
+  const wholeBatchPasteGrams = useMemo(() => {
+    if (!dilution) return null;
+    const splitLiquidSolidsGrams = Math.max(0, (splitLiquidGrams ?? 0) - splitLiquidPasteWater);
+    return dilution.anhydrousGrams + cookWaterGrams + splitLiquidSolidsGrams;
+  }, [dilution, cookWaterGrams, splitLiquidGrams, splitLiquidPasteWater]);
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
   // survives. Sized against the base (saponification) lye, then folded into the result so
   // every downstream surface — concentration, steps, sheet — quotes the adjusted figures.
@@ -918,6 +938,7 @@ export function useRecipeViewModel({
     pcsfIsExtra,
     extrasGrams,
     bottledSolutionGrams,
+    wholeBatchPasteGrams,
     batchWeightWithExtras,
     liveOilBatchFraction,
     batchSheetData,

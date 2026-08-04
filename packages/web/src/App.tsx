@@ -529,6 +529,7 @@ export default function App() {
                 onMeasuredPasteGramsChange={setMeasuredPasteGrams}
                 measuredPasteIsRemaining={measuredPasteIsRemaining}
                 onMeasuredPasteIsRemainingChange={setMeasuredPasteIsRemaining}
+                wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
               />
             )}
             {processOffers(process, 'dilution') && (

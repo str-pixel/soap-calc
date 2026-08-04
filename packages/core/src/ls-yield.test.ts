@@ -227,3 +227,73 @@ describe('lsPartialDilution with a remaining (already-drawn-down) paste measurem
     expect(r).not.toBeNull();
   });
 });
+
+describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid solids)', () => {
+  // Review round 3: predictedPasteGrams (anhydrousGrams + cookWaterGrams) counts only the
+  // WATER fraction of an alternative liquid — its non-water solids are real mass sitting
+  // in the pot the recipe never counts (see ls-yield.ts, DilutionPanel.tsx,
+  // PartialDilution.tsx, all verbatim on this point). So for a split-liquid recipe the
+  // TRUE whole-batch paste is structurally heavier than predictedPasteGrams, and round 2's
+  // ceiling (which used predictedPasteGrams) both rejected legitimate remaining readings
+  // above it AND (via the same basis feeding the composition ratio) understated the pot's
+  // true paste mass, overstating its soap fraction.
+  //
+  // Fixture: 1,000 g anhydrous, 500 g lye water, 200 g split liquid at 50% water
+  // (100 g water, 100 g solids). cookWaterGrams = 500 + 100 = 600, so
+  // predictedPasteGrams = 1,000 + 600 = 1,600 — but the TRUE whole-batch paste is
+  // 1,600 + 100 (the liquid's solids) = 1,700 g. Target 33% soap.
+  const anhydrousGrams = 1000;
+  const lyeWaterGrams = 500;
+  const splitLiquidWaterGrams = 100; // 200 g split liquid @ 0.5 water fraction
+  const splitLiquidSolidsGrams = 100;
+  const cookWaterGrams = lyeWaterGrams + splitLiquidWaterGrams; // 600
+  const predictedPasteGrams = anhydrousGrams + cookWaterGrams; // 1,600
+  const wholeBatchPasteGrams = predictedPasteGrams + splitLiquidSolidsGrams; // 1,700
+  const targetConcentration = 0.33;
+  const solutionGrams = anhydrousGrams / targetConcentration;
+  const dilutionWaterGrams = solutionGrams - predictedPasteGrams;
+  const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
+  const BATCH = { anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams };
+
+  it('accepts an honest remaining reading (1,620 g) that the uncorrected 1,600 g ceiling would have falsely rejected', () => {
+    const r = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1620, measuredPasteIsRemaining: true, wholeBatchPasteGrams },
+      1000,
+    );
+    expect(r).not.toBeNull();
+  });
+
+  it('derives the composition from the TRUE basis (~1,700 g), not the water-only 1,600 g — a lower soap fraction', () => {
+    // waterPasteRatio is portion-invariant (scales with fraction), so it isolates the
+    // composition basis from the requested-volume arithmetic. The corrected (1,700 g)
+    // basis gives ~0.783:1; the uncorrected (1,600 g) basis would give ~0.894:1 — using
+    // the wrong basis overstates the pot's soap fraction.
+    const r = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1620, measuredPasteIsRemaining: true, wholeBatchPasteGrams },
+      1000,
+    );
+    expect(r).not.toBeNull();
+    if (!r) return;
+    expect(r.waterPasteRatio).toBeCloseTo(0.783, 2);
+    expect(r.waterPasteRatio).not.toBeCloseTo(0.894, 2);
+    expect(r.wholeBatchPasteGrams).toBe(1700);
+  });
+
+  it('still rejects a reading above the TRUE whole-batch paste — the ceiling follows the corrected basis, not just loosens', () => {
+    const r = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 3000, measuredPasteIsRemaining: true, wholeBatchPasteGrams },
+      1000,
+    );
+    expect(r).toBeNull();
+  });
+
+  it('falls back to predictedPasteGrams (byte-identical to round 2) when wholeBatchPasteGrams is omitted — a no-split-liquid recipe', () => {
+    const withoutBasis = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1620, measuredPasteIsRemaining: true }, 1000);
+    // 1,620 g exceeds the uncorrected 1,600 g predicted paste, so without the corrected
+    // basis this is (correctly, for a NO-split-liquid recipe) still rejected.
+    expect(withoutBasis).toBeNull();
+    const atPredicted = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1600, measuredPasteIsRemaining: true }, 1000);
+    expect(atPredicted).not.toBeNull();
+    expect(atPredicted?.wholeBatchPasteGrams).toBe(predictedPasteGrams);
+  });
+});

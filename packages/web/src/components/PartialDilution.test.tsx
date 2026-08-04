@@ -309,3 +309,72 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
     expect(screen.queryByText(/figures above are the whole batch/i)).toBeNull();
   });
 });
+
+describe('the remaining-mode ceiling uses the TRUE whole-batch paste, not just the water-only predicted figure (round 3)', () => {
+  // Review round 3: predictedPasteGrams (anhydrousGrams + cookWaterGrams) counts only the
+  // WATER fraction of an alternative liquid — its non-water solids are real mass sitting
+  // in the pot the recipe never counts. Round 2's ceiling used predictedPasteGrams and so
+  // FALSELY rejected legitimate remaining readings above it whenever the recipe used a
+  // split liquid. Same fixture as the equivalent core test: 1,000 g anhydrous, 500 g lye
+  // water, 200 g split liquid at 50% water (100 g water, 100 g solids) — predicted
+  // (water-only) paste 1,600 g, TRUE whole-batch paste 1,700 g. Target 33% soap.
+  const anhydrousGrams = 1000;
+  const cookWaterGrams = 600; // 500 g lye water + 100 g split-liquid water
+  const targetConcentration = 0.33;
+  const predictedPasteGrams = anhydrousGrams + cookWaterGrams; // 1,600
+  const wholeBatchPasteGrams = predictedPasteGrams + 100; // 1,700 (100 g split-liquid solids)
+  const solutionGrams = anhydrousGrams / targetConcentration;
+  const dilutionWaterGrams = solutionGrams - predictedPasteGrams;
+  const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
+  const dilution = {
+    anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams,
+    glycerinGrams: 0, soapConcentrationPercent: 33, targetExceedsPaste: false,
+  };
+
+  test('accepts an honest 1,620 g remaining reading that the water-only 1,600 g ceiling would have falsely rejected', () => {
+    render(
+      <PartialDilution
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        measuredPasteGrams="1620"
+        measuredPasteIsRemaining
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    expect(screen.queryByText(/ever weighed/i)).toBeNull();
+    expect(screen.getByText(/Paste to weigh out/)).toBeTruthy();
+  });
+
+  test('still rejects a reading above the TRUE whole-batch paste, and names the corrected 1,700 g basis, not the uncorrected 1,600 g', () => {
+    render(
+      <PartialDilution
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        measuredPasteGrams="3000"
+        measuredPasteIsRemaining
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    expect(screen.getByText(/more than the 1,700 g/i)).toBeTruthy();
+    expect(screen.queryByText(/more than the 1,600 g/i)).toBeNull();
+    expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+  });
+
+  test('without a supplied wholeBatchPasteGrams, falls back to the water-only predicted figure (no-split-liquid recipe, byte-identical to round 2)', () => {
+    render(
+      <PartialDilution
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        measuredPasteGrams="1620"
+        measuredPasteIsRemaining
+      />,
+    );
+    // 1,620 g exceeds the uncorrected 1,600 g predicted paste, so without a corrected
+    // basis this is (correctly, for a recipe with no split liquid) still rejected.
+    expect(screen.getByText(/more than the 1,600 g/i)).toBeTruthy();
+    expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+  });
+});
