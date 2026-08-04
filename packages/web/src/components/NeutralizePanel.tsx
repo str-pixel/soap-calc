@@ -64,8 +64,8 @@ export function NeutralizePanel({ neutralization, weightUnit }: NeutralizePanelP
         never acidify a soap that is already on target.
       </p>
       <p className="results-hint">
-        Melt it into the warm soap. It cannot be overdosed — any surplus cools into a white layer
-        you filter off — which makes it the safer first attempt.
+        Stearic acid melts into the warm soap and cannot be overdosed — any surplus cools into
+        a white layer you filter off — which makes it the safer first attempt.
       </p>
     </section>
   );

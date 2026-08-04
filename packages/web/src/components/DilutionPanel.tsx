@@ -127,15 +127,24 @@ export function DilutionPanel({
   // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
   // vm.dilution, PartialDilution, BottleCalculator and the printed BatchSheet all read the
   // persisted concentration, so without this write-back the app would show the ratio's own
-  // water figure here beside a different figure everywhere else. Effect deps deliberately
-  // exclude soapConcentrationPercent (what this writes) and onSoapConcentrationChange (a
-  // fresh function every render) — only the ratio-mode inputs should retrigger it.
+  // water figure here beside a different figure everywhere else. soapConcentrationPercent IS
+  // a dep (despite being what this writes) so an EXTERNAL change to it — opening a recipe
+  // file while ratio mode is active, which can replace the target without touching
+  // dilutionMode/waterPasteRatio/cookWaterGrams — still re-syncs: otherwise the imported
+  // value would sit on screen while this panel's own "lands at X% soap" readout kept
+  // speaking of the old ratio-derived number. This does NOT reintroduce a write loop:
+  // clampedRatioConcentrationPercent is computed from the ratio inputs and dilution alone,
+  // never from soapConcentrationPercent, so re-running this effect after ITS OWN write
+  // always recomputes the identical string and calls onSoapConcentrationChange with a
+  // no-op value — React bails out of re-rendering on an unchanged state value, so the
+  // dependency does not cycle. onSoapConcentrationChange itself stays excluded (a fresh
+  // function every render, unrelated to the derived value).
   useEffect(() => {
     if (dilutionMode === 'ratio' && clampedRatioConcentrationPercent !== null) {
       onSoapConcentrationChange(String(clampedRatioConcentrationPercent));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dilutionMode, clampedRatioConcentrationPercent]);
+  }, [dilutionMode, clampedRatioConcentrationPercent, soapConcentrationPercent]);
   // The measurement corrects the BATCH figure the same way it already corrects the portion
   // in PartialDilution — shared with the printed BatchSheet so both surfaces always agree.
   const batchDilutionWaterGrams = dilution

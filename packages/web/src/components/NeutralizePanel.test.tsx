@@ -35,3 +35,9 @@ test('shows the stearic-acid alternative and its cannot-overdose note', () => {
   expect(screen.getByText('22 g')).toBeTruthy();
   expect(screen.getByText(/cannot be overdosed/)).toBeTruthy();
 });
+
+test('the cannot-overdose note names stearic acid explicitly, not just "it" — it sits right after the citric-acid alert and must not read as licensing an unmetered citric dose', () => {
+  render(<NeutralizePanel neutralization={RESULT} weightUnit="g" />);
+  const note = screen.getByText(/cannot be overdosed/);
+  expect(note.textContent).toMatch(/^Stearic acid/);
+});

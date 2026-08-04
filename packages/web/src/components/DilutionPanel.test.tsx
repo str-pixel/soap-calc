@@ -239,6 +239,45 @@ test('ratio mode writes the derived concentration back so downstream consumers r
   expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
 });
 
+test('re-syncs the ratio write-back when soapConcentrationPercent changes externally (e.g. opening a recipe file) with the ratio inputs unmoved', () => {
+  // Opening a recipe file (or any external change) can replace soapConcentrationPercent
+  // without touching dilutionMode, waterPasteRatio, or cookWaterGrams — the effect's old
+  // deps (dilutionMode, clampedRatioConcentrationPercent only) would then never re-fire,
+  // since the derived ratio value is unchanged, leaving the newly-imported target on
+  // screen while the ratio's own readout ("lands at 25% soap") still speaks of the OLD
+  // ratio-derived number. soapConcentrationPercent must be a dep so the effect re-syncs.
+  const onSoapConcentrationChange = vi.fn();
+  const { rerender } = render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={onSoapConcentrationChange}
+      weightUnit="g"
+      cookWaterGrams={400}
+      dilutionMode="ratio"
+      waterPasteRatio="2"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+  onSoapConcentrationChange.mockClear();
+  rerender(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="35"
+      onSoapConcentrationChange={onSoapConcentrationChange}
+      weightUnit="g"
+      cookWaterGrams={400}
+      dilutionMode="ratio"
+      waterPasteRatio="2"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+});
+
 test('extreme ratio clamps the written-back concentration so the ratio panel cannot vanish', () => {
   // At a 100,000:1 ratio the true derived concentration rounds to 0.0%. calculateDilution
   // only accepts (0, 100) exclusive, so writing 0 back would null out `dilution` upstream —
