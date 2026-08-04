@@ -177,15 +177,24 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
       />,
     );
     expect(screen.queryByText(/less than the .*soap this batch makes|below the/i)).toBeNull();
-    expect(screen.getByText('116 g')).toBeTruthy(); // paste to weigh out for the portion
-    expect(screen.getByText(/^174 g/)).toBeTruthy(); // water to add for that portion
+    // Fraction is taken against the POT's own achievable volume (900 g remaining → 2,250 g
+    // pot solution → 2,184 ml achievable), not the recipe's — see the worked-example test
+    // below for why. 500/2,184 ≈ 0.229: 206 g paste, 309 g water.
+    expect(screen.getByText('206 g')).toBeTruthy(); // paste to weigh out for the portion
+    expect(screen.getByText(/^309 g/)).toBeTruthy(); // water to add for that portion
   });
 
-  test('the worked-example fix: a remaining reading produces 524 g, not the whole-batch formula\'s 650 g', () => {
+  test('the worked-example fix: "Amount to make" makes that amount — a remaining reading scales to the POT\'s own volume, not the recipe\'s', () => {
     // 1,000 g anhydrous, 600 g cook water (1,600 g predicted whole-batch paste), 33%
-    // target. 1,437 g is what is left in the pot after an earlier partial dilution;
-    // asking for 1,200 ml more must add 524 g of water — not 650 g, which is what the
-    // same reading produces when (mis-)declared as the whole batch.
+    // target. 1,437 g is what is left in the pot after an earlier partial dilution.
+    //
+    // An earlier version of this test expected 524 g of water — that came from scaling
+    // the requested 1,200 ml against the ORIGINAL RECIPE's full volume (≈2,942 ml), the
+    // same fraction whole-batch mode uses. That is wrong: 524 g of water only reaches
+    // ~1,078 ml, not the 1,200 ml asked for. The pot no longer holds the whole recipe, so
+    // its own achievable volume is smaller (≈2,642 ml); scaling against THAT gives 653 g
+    // paste and 583 g water — 1,236 g total, exactly 1,200 ml at 1.03 g/ml. Do not
+    // restore 524 here.
     const anhydrousGrams = 1000;
     const cookWaterGrams = 600;
     const targetConcentration = 0.33;
@@ -206,7 +215,9 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
         measuredPasteIsRemaining
       />,
     );
-    expect(screen.getByText(/^524 g/)).toBeTruthy();
+    expect(screen.getByText(/^583 g/)).toBeTruthy(); // water to add
+    expect(screen.getByText('653 g')).toBeTruthy(); // paste to weigh out
+    expect(screen.getByText('1,200 ml')).toBeTruthy(); // Makes — the amount actually asked for
     rerender(
       <PartialDilution
         {...PROPS}
@@ -216,6 +227,8 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
         measuredPasteIsRemaining={false}
       />,
     );
+    // Whole-batch mode is unaffected by this fix — the pot IS the batch there, so the
+    // same reading (mis-declared as the whole batch) still produces the old 650 g figure.
     expect(screen.getByText(/^650 g/)).toBeTruthy();
   });
 

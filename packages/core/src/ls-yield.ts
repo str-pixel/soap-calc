@@ -104,11 +104,19 @@ export function lsPartialDilution(
   // makes a measured paste self-correcting.
   const batchWaterGrams = potSolutionGrams - pasteGrams;
   if (batchWaterGrams < 0) return null; // paste is already thinner than the target
-  // The requested volume is still a share of the RECIPE's own full output (fullVolumeMl,
-  // unchanged by mode) — everything else above just changes which paste/water/solution
-  // figures that share is taken from.
-  const clamped = targetVolumeMl > fullVolumeMl;
-  const fraction = clamped ? 1 : targetVolumeMl / fullVolumeMl;
+  // "Amount to make" must make that amount: the requested volume is a share of what THIS
+  // POT can achieve, not the recipe's original output. In whole-batch mode the pot IS the
+  // batch, so this is fullVolumeMl unchanged (byte-identical to before). In remaining mode
+  // the pot is smaller than the original recipe (part of it was already diluted away), so
+  // its own achievable volume is smaller too — using the recipe's fullVolumeMl here (an
+  // earlier, incorrect version of this fix) understated the achievable fraction and made
+  // "Makes" print less than what was actually asked for (1,200 ml asked, ~1,078 ml shown).
+  const potFullVolumeMl = isRemaining
+    ? lsFinishedVolumeMl(potSolutionGrams, densityGPerMl)
+    : fullVolumeMl;
+  if (potFullVolumeMl === null) return null; // degenerate pot (potSolutionGrams <= 0)
+  const clamped = targetVolumeMl > potFullVolumeMl;
+  const fraction = clamped ? 1 : targetVolumeMl / potFullVolumeMl;
   const solutionGrams = potSolutionGrams * fraction;
   return {
     fraction,

@@ -126,8 +126,16 @@ describe('lsPartialDilution with a remaining (already-drawn-down) paste measurem
   // Worked example from the user-flow review: 1,000 g anhydrous, 600 g cook water (1,600 g
   // predicted whole-batch paste), target 33% soap. 300 ml was already drawn and diluted
   // away earlier, leaving 1,437 g of paste in the pot — still the SAME composition, just
-  // less of it. Asking for 1,200 ml now must add 524 g of water, not the 650 g the
-  // whole-batch formula (wrongly assuming 1,437 g is the WHOLE batch) would produce.
+  // less of it.
+  //
+  // CORRECTION: an earlier version of this test expected 524 g of water here. That figure
+  // came from scaling the requested volume against the ORIGINAL RECIPE's full achievable
+  // volume (fullVolumeMl ≈ 2,942 ml) — the same fraction whole-batch mode uses. It is
+  // wrong: "Amount to make (ml)" must make that amount, and 524 g of water only reaches
+  // ~1,078 ml, not the 1,200 ml asked for. The pot no longer holds the whole recipe (part
+  // of it was already diluted away), so its OWN achievable volume is smaller
+  // (≈2,642 ml) — the fraction must be taken against THAT, not the original recipe's.
+  // Do not restore 524/650 as the expectation here.
   const anhydrousGrams = 1000;
   const cookWaterGrams = 600;
   const targetConcentration = 0.33;
@@ -138,13 +146,46 @@ describe('lsPartialDilution with a remaining (already-drawn-down) paste measurem
   const BATCH = { anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams };
 
   it('scales the pot from the measurement itself, not the recipe anhydrous, when the paste is what is left', () => {
+    // pot anhydrous = 1,437 × (1,000/1,600) = 898 g; pot solution at 33% = 898/0.33 =
+    // 2,722 g → 2,643 ml achievable. Asking for 1,200 ml of that: fraction = 1,200/2,643 =
+    // 0.454 → 653 g paste, 583 g water (653 + 583 = 1,236 g → 1,200 ml; 408/1,236 = 33.0%).
     const r = lsPartialDilution(
       { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
       1200,
     );
     expect(r).not.toBeNull();
     if (!r) return;
-    expect(r.waterGrams).toBeCloseTo(524, 0);
+    expect(r.pasteGrams).toBeCloseTo(653, 0);
+    expect(r.waterGrams).toBeCloseTo(583, 0);
+  });
+
+  it('"Makes" equals the amount actually asked for, once unclamped — the whole point of "Amount to make"', () => {
+    const r = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
+      1200,
+    );
+    expect(r).not.toBeNull();
+    if (!r) return;
+    expect(r.volumeMl).toBeCloseTo(1200, 0);
+    expect(r.clamped).toBe(false);
+  });
+
+  it('clamps on the REMAINING paste\'s own achievable volume (~2,642 ml), not the original recipe\'s (~2,942 ml)', () => {
+    // 2,800 ml exceeds what 1,437 g of remaining paste can ever make (≈2,642 ml) but is
+    // still less than what the ORIGINAL, undrawn batch could have made (≈2,942 ml) — a
+    // fraction taken against the wrong (recipe) volume would wrongly report this as
+    // unclamped. The clamped figures must be the whole remaining pot: all 1,437 g of
+    // paste, and the water needed to dilute exactly that (2,722 − 1,437 ≈ 1,285 g).
+    const r = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
+      2800,
+    );
+    expect(r).not.toBeNull();
+    if (!r) return;
+    expect(r.clamped).toBe(true);
+    expect(r.fraction).toBe(1);
+    expect(r.pasteGrams).toBeCloseTo(1437, 0);
+    expect(r.waterGrams).toBeCloseTo(1285, 0);
   });
 
   it('the same reading produces the wrong (whole-batch) figure when NOT declared remaining — the bug this guards against', () => {
