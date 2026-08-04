@@ -51,19 +51,40 @@ test('renders nothing without a dilution', () => {
   expect(container.innerHTML).toBe('');
 });
 
-test('refuses to size a portion when the paste is already more dilute than the target', () => {
+test('refuses to size a portion when the paste is already more dilute than the target — but keeps the inputs visible so a measurement can be entered to escape the refusal', () => {
   // targetExceedsPaste clamps dilutionWaterGrams to 0, which erases the real cook water:
   // the batch's true mass and volume can no longer be recovered from the result, so the
   // portion %, the clamp threshold and the "more than the batch holds" message would all
-  // be wrong (measured: 39% shown where the truth was 18.4%). Say so instead of computing.
+  // be wrong (measured: 39% shown where the truth was 18.4%). Say so instead of computing —
+  // but DilutionPanel uses the same measurement to override this exact flag (Task 5), so
+  // the inputs must stay visible and editable: hiding them would leave no way to recover.
   render(
     <PartialDilution
       {...PROPS}
       dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }}
     />,
   );
-  expect(screen.queryByLabelText('Amount to make (ml)')).toBeNull();
+  expect(screen.getByLabelText('Amount to make (ml)')).toBeTruthy();
+  expect(screen.getByLabelText(/whole batch/i)).toBeTruthy();
   expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+});
+
+test('a valid measured paste sizes a portion even when targetExceedsPaste is set — the measurement outranks the computed flag (Task 5)', () => {
+  // targetExceedsPaste was derived from the recipe's ASSUMED cook water (dilutionWaterGrams
+  // clamped to 0 here). The measured paste (1,500 g) is direct evidence against that
+  // assumption and is valid — between the 1,200 g anhydrous floor and the 4,000 g solution
+  // ceiling — so the portion must compute from it instead of refusing.
+  render(
+    <PartialDilution
+      {...PROPS}
+      dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }}
+      measuredPasteGrams="1500"
+      targetMl="1000"
+    />,
+  );
+  expect(screen.queryByText(/already more dilute/i)).toBeNull();
+  expect(screen.getByText('386 g')).toBeTruthy(); // paste to weigh out for a 1,000 ml portion
+  expect(screen.getByText(/^644 g/)).toBeTruthy(); // water to add for that portion
 });
 
 test('a measured paste replaces the computed one and moves the water to match', () => {
@@ -97,6 +118,10 @@ test('the water:paste ratio never renders as 0.0 beside a real water figure', ()
 test('flags how far the measured paste drifted from the predicted one', () => {
   render(<PartialDilution {...PROPS} measuredPasteGrams="1480" targetMl="1000" />);
   expect(screen.getByText(/120 g lighter than predicted/)).toBeTruthy();
+  // DilutionPanel's batch row now uses the measurement too (see its own
+  // batchDilutionWaterGrams), so this drift note must not claim otherwise.
+  expect(screen.queryByText(/still use the predicted weight/i)).toBeNull();
+  expect(screen.getByText(/batch figures above use your measurement too/i)).toBeTruthy();
 });
 
 test('without a measurement the computed paste carries the evaporation caveat', () => {

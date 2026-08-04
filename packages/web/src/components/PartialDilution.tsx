@@ -38,9 +38,6 @@ export function PartialDilution({
   onMeasuredPasteGramsChange,
 }: PartialDilutionProps) {
   if (dilution === null) return null;
-  // See the DilutionPanel note: targetExceedsPaste clamps the dilution water to 0, which
-  // erases the real cook water and makes the batch's own mass unrecoverable.
-  const pasteAlreadyThinner = dilution.targetExceedsPaste;
   const hasMeasurement = measuredPasteGrams.trim() !== '';
   const measured = Number(measuredPasteGrams);
   // A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate —
@@ -59,11 +56,21 @@ export function PartialDilution({
   const pasteExceedsSolution =
     hasMeasurement && Number.isFinite(measured) && measurementExceedsSolution(measured, dilution);
   const measurementRejected = pasteBelowSolids || pasteExceedsSolution;
+  const hasValidMeasurement =
+    hasMeasurement && Number.isFinite(measured) && measured > 0 && !measurementRejected;
+  // targetExceedsPaste is computed from the recipe's ASSUMED cook water — exactly the
+  // assumption a measured paste is evidence against (Task 5: a valid measurement outranks
+  // the flag). With one, the paste IS recoverable — that's the whole point of weighing it —
+  // so only refuse when there is NO valid measurement to fall back on. A rejected
+  // measurement (below solids / exceeds solution) gets its own alert above instead of this
+  // one, so it is excluded here too.
+  const pasteAlreadyThinner =
+    dilution.targetExceedsPaste && !hasValidMeasurement && !measurementRejected;
   const portion =
     pasteAlreadyThinner || measurementRejected
       ? null
       : lsPartialDilution(
-          { ...dilution, measuredPasteGrams: hasMeasurement ? measured : undefined },
+          { ...dilution, measuredPasteGrams: hasValidMeasurement ? measured : undefined },
           Number(targetMl),
         );
   // What the recipe predicted, for the drift readout: anhydrous + the water already in it.
@@ -77,112 +84,113 @@ export function PartialDilution({
       <p className="panel__subtitle">
         Paste stores better than diluted soap — weigh out a portion and dilute just that.
       </p>
-      {pasteAlreadyThinner ? (
+      <label className="field">
+        {/* Grams regardless of the display unit: this is a scale reading the maker
+            takes at the pot, and the core figures it feeds are all gram-based.
+            "Whole batch" is load-bearing — the subtitle above talks about portions,
+            and the reference's ratio method weighs the portion, so an unqualified
+            label invites a portion weight and silently over-dilutes. Always shown,
+            even when the target exceeds the recipe's ASSUMED cook water below: a
+            measurement is exactly what can override that assumption (Task 5), so
+            hiding the input would remove the only way out of the refusal. */}
+        <span>Measured paste weight — whole batch (g, optional)</span>
+        <input
+          type="number"
+          className="input input--number"
+          min={1}
+          step={10}
+          value={measuredPasteGrams}
+          onChange={(e) => onMeasuredPasteGramsChange(e.target.value)}
+          aria-label="Measured paste weight — whole batch (g)"
+        />
+      </label>
+      <label className="field">
+        <span>Amount to make (ml)</span>
+        <input
+          type="number"
+          className="input input--number"
+          min={1}
+          step={10}
+          value={targetMl}
+          onChange={(e) => onTargetMlChange(e.target.value)}
+          aria-label="Amount to make (ml)"
+        />
+      </label>
+      {pasteBelowSolids && (
+        <p className="results-hint" role="alert">
+          That is less than the {formatWeight(dilution.anhydrousGrams, weightUnit)} of soap
+          this batch makes, so it cannot be the whole batch&apos;s paste — check the scale
+          was tared, and enter the whole batch rather than the portion you are diluting.
+        </p>
+      )}
+      {pasteExceedsSolution && (
+        <p className="results-hint" role="alert">
+          Your paste already weighs more than the{' '}
+          {formatWeight(dilution.solutionGrams, weightUnit)} this target dilutes to, so
+          there is no water to add — raise the target concentration above, or check the
+          measurement.
+        </p>
+      )}
+      {pasteAlreadyThinner && (
         <p className="results-hint">
           The paste is already more dilute than the target above, so there is no dilution
-          water to divide up. Set a target the paste can actually reach to size a portion.
+          water to divide up. Set a target the paste can actually reach, or weigh the whole
+          batch&apos;s paste above to size a portion from your measurement instead.
         </p>
-      ) : (
+      )}
+      {portion && (
         <>
-          <label className="field">
-            {/* Grams regardless of the display unit: this is a scale reading the maker
-                takes at the pot, and the core figures it feeds are all gram-based.
-                "Whole batch" is load-bearing — the subtitle above talks about portions,
-                and the reference's ratio method weighs the portion, so an unqualified
-                label invites a portion weight and silently over-dilutes. */}
-            <span>Measured paste weight — whole batch (g, optional)</span>
-            <input
-              type="number"
-              className="input input--number"
-              min={1}
-              step={10}
-              value={measuredPasteGrams}
-              onChange={(e) => onMeasuredPasteGramsChange(e.target.value)}
-              aria-label="Measured paste weight — whole batch (g)"
-            />
-          </label>
-          <label className="field">
-            <span>Amount to make (ml)</span>
-            <input
-              type="number"
-              className="input input--number"
-              min={1}
-              step={10}
-              value={targetMl}
-              onChange={(e) => onTargetMlChange(e.target.value)}
-              aria-label="Amount to make (ml)"
-            />
-          </label>
-          {pasteBelowSolids && (
-            <p className="results-hint" role="alert">
-              That is less than the {formatWeight(dilution.anhydrousGrams, weightUnit)} of soap
-              this batch makes, so it cannot be the whole batch&apos;s paste — check the scale
-              was tared, and enter the whole batch rather than the portion you are diluting.
+          <dl className="results-grid">
+            <div className="results-grid__item results-grid__item--primary">
+              <dt>Water to add</dt>
+              <dd>{formatWeightWithAlternates(portion.waterGrams, weightUnit)}</dd>
+            </div>
+            <div className="results-grid__item">
+              <dt>Paste to weigh out</dt>
+              <dd>{formatWeight(portion.pasteGrams, weightUnit)}</dd>
+            </div>
+            <div className="results-grid__item">
+              <dt>Makes</dt>
+              <dd>{Math.round(portion.volumeMl).toLocaleString('en-US')} ml</dd>
+            </div>
+            <div className="results-grid__item">
+              <dt>Portion</dt>
+              <dd>{Math.round(portion.fraction * 100)}% of the batch</dd>
+            </div>
+            <div className="results-grid__item">
+              <dt>Water : paste</dt>
+              {/* Below 0.1 a single decimal rounds a real water figure down to "0.0",
+                  which reads as no water beside a nonzero water-to-add amount above.
+                  A second decimal keeps that case legible; above 0.1 one decimal
+                  already matches the reference's own ratio notation (1:1, 2:1, 3:1). */}
+              <dd>
+                {portion.waterPasteRatio < 0.1
+                  ? portion.waterPasteRatio.toFixed(2)
+                  : portion.waterPasteRatio.toFixed(1)} : 1
+              </dd>
+            </div>
+          </dl>
+          {portion.clamped && (
+            <p className="results-hint">
+              That is more than the batch holds — the figures above are the whole batch.
             </p>
           )}
-          {pasteExceedsSolution && (
-            <p className="results-hint" role="alert">
-              Your paste already weighs more than the{' '}
-              {formatWeight(dilution.solutionGrams, weightUnit)} this target dilutes to, so
-              there is no water to add — raise the target concentration above, or check the
-              measurement.
+          {portion.pasteMeasured ? (
+            Math.abs(driftGrams) >= 1 && (
+              <p className="results-hint">
+                Your paste is {formatWeight(Math.abs(driftGrams), weightUnit)}{' '}
+                {driftGrams < 0 ? 'lighter' : 'heavier'} than predicted
+                {driftGrams < 0 ? ' — water lost to the cook' : ''}. The batch figures above
+                use your measurement too, not just these figures.
+              </p>
+            )
+          ) : (
+            <p className="results-hint">
+              Paste weight here is computed from the recipe, so treat it as an estimate:
+              the cook evaporates water the recipe still counts, and an alternative
+              liquid&apos;s solids are mass it never counted. Weigh your paste and enter
+              it above for exact figures.
             </p>
-          )}
-          {portion && (
-            <>
-              <dl className="results-grid">
-                <div className="results-grid__item results-grid__item--primary">
-                  <dt>Water to add</dt>
-                  <dd>{formatWeightWithAlternates(portion.waterGrams, weightUnit)}</dd>
-                </div>
-                <div className="results-grid__item">
-                  <dt>Paste to weigh out</dt>
-                  <dd>{formatWeight(portion.pasteGrams, weightUnit)}</dd>
-                </div>
-                <div className="results-grid__item">
-                  <dt>Makes</dt>
-                  <dd>{Math.round(portion.volumeMl).toLocaleString('en-US')} ml</dd>
-                </div>
-                <div className="results-grid__item">
-                  <dt>Portion</dt>
-                  <dd>{Math.round(portion.fraction * 100)}% of the batch</dd>
-                </div>
-                <div className="results-grid__item">
-                  <dt>Water : paste</dt>
-                  {/* Below 0.1 a single decimal rounds a real water figure down to "0.0",
-                      which reads as no water beside a nonzero water-to-add amount above.
-                      A second decimal keeps that case legible; above 0.1 one decimal
-                      already matches the reference's own ratio notation (1:1, 2:1, 3:1). */}
-                  <dd>
-                    {portion.waterPasteRatio < 0.1
-                      ? portion.waterPasteRatio.toFixed(2)
-                      : portion.waterPasteRatio.toFixed(1)} : 1
-                  </dd>
-                </div>
-              </dl>
-              {portion.clamped && (
-                <p className="results-hint">
-                  That is more than the batch holds — the figures above are the whole batch.
-                </p>
-              )}
-              {portion.pasteMeasured ? (
-                Math.abs(driftGrams) >= 1 && (
-                  <p className="results-hint">
-                    Your paste is {formatWeight(Math.abs(driftGrams), weightUnit)}{' '}
-                    {driftGrams < 0 ? 'lighter' : 'heavier'} than predicted
-                    {driftGrams < 0 ? ' — water lost to the cook' : ''}. These figures use
-                    your measurement; the batch rows above still use the predicted weight.
-                  </p>
-                )
-              ) : (
-                <p className="results-hint">
-                  Paste weight here is computed from the recipe, so treat it as an estimate:
-                  the cook evaporates water the recipe still counts, and an alternative
-                  liquid&apos;s solids are mass it never counted. Weigh your paste and enter
-                  it above for exact figures.
-                </p>
-              )}
-            </>
           )}
         </>
       )}

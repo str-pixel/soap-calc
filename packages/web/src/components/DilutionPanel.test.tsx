@@ -298,6 +298,46 @@ test('a measured paste corrects the batch dilution water', () => {
   expect(screen.getByText(/measured paste/i)).toBeTruthy();
 });
 
+test('the measured-paste hint names "Dilution water" explicitly in concentration mode', () => {
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      measuredPasteGrams="1480"
+      dilutionMode="concentration"
+    />,
+  );
+  expect(screen.getByText(/Dilution water above uses your measured paste/i)).toBeTruthy();
+});
+
+test('ratio mode + a measured paste: the hint names the ratio figure, not the suppressed "Dilution water" row', () => {
+  // In ratio mode the main grid's "Dilution water to add" row is suppressed (see the
+  // "does not show a competing" test below), so a hint that still said "Dilution water
+  // above" would land positionally on Total water/Glycerin — neither of which is
+  // measurement-corrected. The hint must name the actual corrected figure instead: "Water
+  // to add at this ratio" (ratio mode's own pasteGrams already prefers a valid measurement).
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      cookWaterGrams={400}
+      measuredPasteGrams="1480"
+      dilutionMode="ratio"
+      waterPasteRatio="2"
+      onDilutionModeChange={() => {}}
+      onWaterPasteRatioChange={() => {}}
+    />,
+  );
+  expect(screen.queryByText(/^Dilution water above uses your measured paste/i)).toBeNull();
+  expect(
+    screen.getByText(/Water to add at this ratio above uses your measured paste/i),
+  ).toBeTruthy();
+});
+
 test('ratio mode: a valid measured paste wins over the computed anhydrous + cook water', () => {
   // Computed paste would be 1,200 + 400 = 1,600 g. Measured 1,480 g (valid: between the
   // 1,200 g anhydrous floor and the 4,000 g solution ceiling) must be used instead, since

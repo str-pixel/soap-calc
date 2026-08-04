@@ -297,7 +297,13 @@ export function DilutionPanel({
           </dl>
           {measuredPasteValid && (
             <p className="results-hint">
-              Dilution water above uses your measured paste ({formatWeight(measuredPasteNum, weightUnit)}
+              {/* Named explicitly rather than positionally: in ratio mode the main grid's
+                  own "Dilution water to add" row is suppressed (see just above), so
+                  "above" would land on Total water/Glycerin instead — neither of which is
+                  measurement-corrected. Ratio mode's own water figure IS corrected (its
+                  pasteGrams already prefers a valid measurement), so name that row there. */}
+              {dilutionMode === 'ratio' ? 'Water to add at this ratio' : 'Dilution water'} above
+              uses your measured paste ({formatWeight(measuredPasteNum, weightUnit)}
               ), not the recipe&apos;s computed paste — the cook evaporates water the recipe still
               counts, and an alternative liquid&apos;s solids are mass it never counted, so the
               measurement is more accurate.
