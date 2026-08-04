@@ -3,7 +3,6 @@ import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
-import { BottleCalculator } from './components/BottleCalculator';
 import { DilutionPanel } from './components/DilutionPanel';
 import { PartialDilution } from './components/PartialDilution';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
@@ -81,15 +80,13 @@ export default function App() {
     }
   }, [view]);
   const [moldSizerInput, setMoldSizerInput] = useState(loadMoldSizerInput);
-  // UI-only helper inputs (not part of the saved recipe), mirroring how moldSizerInput's
-  // fields are batch-sizing aids rather than recipe data: the HP cook-vessel guard input and
-  // the LS bottle-size readout input.
+  // UI-only helper input (not part of the saved recipe), mirroring how moldSizerInput's
+  // fields are batch-sizing aids rather than recipe data: the HP cook-vessel guard input.
   const [vesselVolumeLiters, setVesselVolumeLiters] = useState('');
-  const [bottleSizeMl, setBottleSizeMl] = useState('250');
   // Both live here rather than in the recipe: "how much am I making right now" and "what
   // did my paste weigh" are bench decisions, not properties of the formula, so they must
   // not dirty a saved or exported recipe. App state keeps them across panel collapse and
-  // process switches within a session, matching the bottle size beside them.
+  // process switches within a session.
   const [portionTargetMl, setPortionTargetMl] = useState('');
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
   // What the measured paste weight above represents: the whole batch before any dilution
@@ -140,7 +137,7 @@ export default function App() {
   // default — LS:1536, and what the persisted settings.soapConcentrationPercent already
   // is) or a water:paste ratio by weight (LS:1534). Session-local like the portion inputs
   // above, not a recipe setting — the persisted concentration is still the one figure every
-  // downstream consumer (vm.dilution, PartialDilution, BottleCalculator, BatchSheet) reads;
+  // downstream consumer (vm.dilution, PartialDilution, BatchSheet) reads;
   // ratio mode only ever writes into it via DilutionPanel's onSoapConcentrationChange.
   const [dilutionMode, setDilutionMode] = useState<'concentration' | 'ratio'>('concentration');
   const [waterPasteRatio, setWaterPasteRatio] = useState('2');
@@ -212,7 +209,6 @@ export default function App() {
     vesselVolumeCm3,
     measuredPasteGrams,
     measuredPasteIsRemaining,
-    bottleSizeMl,
   });
   useRecipeAutosave(process, recipeName, lines, settings, additives, () =>
     flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
@@ -532,15 +528,6 @@ export default function App() {
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
               />
             )}
-            {processOffers(process, 'dilution') && (
-              // Packaging is its own step after the batch dilution — see BottleCalculator.
-              <BottleCalculator
-                finishedGrams={vm.bottledSolutionGrams ?? vm.dilution?.solutionGrams ?? null}
-                bottleSizeMl={bottleSizeMl}
-                onBottleSizeMlChange={setBottleSizeMl}
-              />
-            )}
-
             {processOffers(process, 'neutralize') && vm.neutralization && (
               <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
             )}

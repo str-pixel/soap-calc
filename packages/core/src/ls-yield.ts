@@ -176,15 +176,3 @@ export function lsPartialDilution(
     clamped,
   };
 }
-
-/** Whole bottles a diluted solution fills at a given bottle size (floored — no partial bottles). */
-export function lsBottleCount(
-  solutionGrams: number,
-  bottleMl: number,
-  densityGPerMl: number = LS_SOLUTION_DENSITY_G_PER_ML,
-): number | null {
-  if (!Number.isFinite(bottleMl) || bottleMl <= 0) return null;
-  const volumeMl = lsFinishedVolumeMl(solutionGrams, densityGPerMl);
-  if (volumeMl === null) return null;
-  return Math.floor(volumeMl / bottleMl);
-}

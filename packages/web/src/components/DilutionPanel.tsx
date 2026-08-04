@@ -149,7 +149,7 @@ export function DilutionPanel({
     roundedRatioConcentrationPercent !== null &&
     clampedRatioConcentrationPercent !== roundedRatioConcentrationPercent;
   // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
-  // vm.dilution, PartialDilution, BottleCalculator and the printed BatchSheet all read the
+  // vm.dilution, PartialDilution and the printed BatchSheet all read the
   // persisted concentration, so without this write-back the app would show the ratio's own
   // water figure here beside a different figure everywhere else. soapConcentrationPercent IS
   // a dep (despite being what this writes) so an EXTERNAL change to it — opening a recipe
@@ -186,8 +186,8 @@ export function DilutionPanel({
     : 0;
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
-  // vessel and packaging are big enough, and it is what the separate bottle count works
-  // from — so the density bridge is shown here rather than left implicit.
+  // vessel and packaging are big enough — so the density bridge is shown here rather than
+  // left implicit.
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
   // Show the product mass whenever it differs from the solution row, so the finished
   // VOLUME below (derived from it, not from the solution) reconciles with what is above it.

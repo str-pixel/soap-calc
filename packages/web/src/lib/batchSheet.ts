@@ -55,11 +55,6 @@ export type BatchSheetData = {
    * sheet is the page taken to the bench and that is what actually gets bottled. Null/
    * undefined falls back to `dilution.solutionGrams` (no separate row needed). */
   bottledSolutionGrams?: number | null;
-  /** The maker's own bottle-size input, in ml (same App state BottleCalculator reads).
-   * Present so the printed sheet can carry a bottle count too — App-local, so absent on
-   * data built before this field existed (no count printed, matching other optional
-   * fields' convention). */
-  bottleSizeMl?: string;
   /** Grams of split liquid with undeclared water content. Non-zero makes the printed
    * dilution figure a lower bound, and the sheet must say so — the bench copy is the one
    * surface with no sibling panel to explain it. Optional: data built before the field

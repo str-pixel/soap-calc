@@ -18,10 +18,10 @@ test('renders the dilution figures', () => {
   expect(screen.getByText('2,400 g (84.7 oz / 5.29 lb)')).toBeTruthy();
 });
 
-test('shows the finished volume the bottle count derives from, and names the density', () => {
+test('shows the finished volume and names the density', () => {
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   // 4,000 g ÷ 1.03 g/ml = 3,883 ml. Volume is what sizes the dilution vessel and the
-  // packaging, and it is what the separate bottle count works from.
+  // packaging.
   expect(screen.getByText('≈ Finished volume')).toBeTruthy();
   expect(screen.getByText('3,883 ml')).toBeTruthy();
   // The density is a planning proxy, not a measured value — the panel must say so.
@@ -220,7 +220,7 @@ test('ratio mode uses cookWaterGrams for paste, not totalWater minus dilutionWat
 
 test('ratio mode writes the derived concentration back once the ratio is actually edited, so downstream consumers reconcile', () => {
   // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
-  // without this write-back, vm.dilution / PartialDilution / BottleCalculator / BatchSheet
+  // without this write-back, vm.dilution / PartialDilution / BatchSheet
   // would all keep showing the old persisted concentration's figures beside this panel's.
   // But the write-back must not fire on mode entry alone (see the dedicated describe
   // block below) — this test touches the ratio input first, as a real edit would. The
@@ -635,9 +635,9 @@ test('concentration mode still shows "Dilution water to add" in the main grid', 
   expect(screen.getByText('Dilution water to add')).toBeTruthy();
 });
 
-test('leaves bottling to the separate bottle count — no size field, no count here', () => {
+test('does not render a bottle size field or bottle count', () => {
   // Makers dilute one large batch and package it later, often into several sizes, so the
-  // dilution figures stay about the batch (see BottleCalculator).
+  // dilution figures stay about the batch, not about packaging.
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   expect(screen.queryByLabelText('Bottle size (ml)')).toBeNull();
   expect(screen.queryByText(/Bottles filled/)).toBeNull();

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, it, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { BatchSheet } from './BatchSheet';
 import { buildBatchSheetData } from '../lib/batchSheet';
@@ -428,7 +428,6 @@ function lsSheetData(extra: {
   measuredPasteGrams?: string;
   measuredPasteIsRemaining?: boolean;
   bottledSolutionGrams?: number | null;
-  bottleSizeMl?: string;
 }) {
   const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
   const lines = createStarterLines();
@@ -661,16 +660,10 @@ test('omits the bottled-mass row when it matches the chemistry-only solution (no
   expect(screen.queryByText('4,059 g (with extras)')).toBeNull();
 });
 
-test('prints the bottle count reachable from the same bottle size the on-screen BottleCalculator uses', () => {
-  render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515, bottleSizeMl: '500' })} />);
-  // 4,383 ml / 500 ml, floored = 8 bottles.
-  expect(screen.getByText(/Bottles filled \(500 ml\)/)).toBeTruthy();
-  expect(screen.getByText('8')).toBeTruthy();
-});
-
-test('omits the bottle count when no bottle size is reachable', () => {
-  render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515 })} />);
-  expect(screen.queryByText(/Bottles filled/)).toBeNull();
+it('prints no bottle count, but keeps the finished product and volume', () => {
+  render(<BatchSheet data={lsSheetData({})} />);
+  expect(screen.queryByText(/Bottles filled/i)).toBeNull();
+  expect(screen.getByText(/Finished volume/i)).toBeTruthy();
 });
 
 test('a measured paste that outranks targetExceedsPaste also suppresses the printed "already more dilute" alert', () => {

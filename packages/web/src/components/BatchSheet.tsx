@@ -5,7 +5,6 @@ import {
   effectiveSuperfatPercent,
   formatPropertyScore,
   formatSoapPropertyPercent,
-  lsBottleCount,
   lsFinishedVolumeMl,
   LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
@@ -78,7 +77,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     measuredPasteGrams,
     measuredPasteIsRemaining,
     bottledSolutionGrams,
-    bottleSizeMl,
     neutralization,
     properties,
     indexes,
@@ -121,20 +119,11 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // additives, append-mode post-cook oil, and split-liquid solids, and is bigger than
   // dilution.solutionGrams whenever any of those are present (mirrors DilutionPanel's
   // own bottledGrams/showBottledRow). lsFinishedVolumeMl is the same core helper the
-  // on-screen panel and BottleCalculator use — never recomputed here.
+  // on-screen panel uses — never recomputed here.
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
-  const bottleMl = Number(bottleSizeMl);
-  const bottleCount =
-    bottleSizeMl !== undefined &&
-    bottleSizeMl.trim() !== '' &&
-    Number.isFinite(bottleMl) &&
-    bottleMl > 0 &&
-    bottledGrams !== null
-      ? lsBottleCount(bottledGrams, bottleMl)
-      : null;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -348,9 +337,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             )}
             {finishedVolumeMl !== null && (
               <div><dt>≈ Finished volume</dt><dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd></div>
-            )}
-            {bottleCount !== null && (
-              <div><dt>≈ Bottles filled ({bottleSizeMl} ml)</dt><dd>{bottleCount}</dd></div>
             )}
           </dl>
           {measuredPasteValid && (

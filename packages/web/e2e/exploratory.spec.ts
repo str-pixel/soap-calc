@@ -361,20 +361,9 @@ test.describe('liquid soap', () => {
     await expect(section.getByRole('alert')).toContainText(/already more dilute/);
   });
 
-  test('bottle count is a separate snippet, collapsed until opened', async ({ page }) => {
-    // Bottling is a step after the batch dilution, so its field and count live outside the
-    // dilution figures and stay closed until wanted.
-    const bottles = page.locator('details').filter({ hasText: 'Bottle count' }).first();
-    await expect(page.getByLabel('Bottle size (ml)')).toBeHidden();
-    await bottles.locator('summary').click();
-    await page.getByLabel('Bottle size (ml)').fill('500');
-    await page.getByLabel('Bottle size (ml)').blur();
-    await expect(bottles).toContainText(/Bottles filled \(500 ml\)/);
-  });
-
   test('partial dilution is a separate snippet that scales paste and water', async ({ page }) => {
     // Paste stores better than diluted soap, so making only part of the batch now is its
-    // own optional step, collapsed like the bottle count.
+    // own optional step, collapsed like the other dilution add-ons.
     const partial = page.locator('details').filter({ hasText: 'Dilute part of the batch' }).first();
     await expect(page.getByLabel('Amount to make (ml)')).toBeHidden();
     await partial.locator('summary').click();
