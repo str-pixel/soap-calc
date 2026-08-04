@@ -1487,6 +1487,188 @@ describe('the g/oz/lb display-unit switch', () => {
     expect(water.textContent).not.toContain(' g');
   });
 
+  it('switches the portion figures in Custom amount scope, not only the batch row', () => {
+    // The switch is a panel-wide reading aid, and Custom amount is where the figures a
+    // maker actually weighs out live. Regressing the one prop that carries it into
+    // PortionDilutionResults leaves a maker on a lb scale flipping to "g", watching the
+    // Whole-batch row obey, and then weighing out a portion still quoted in lb — with the
+    // radio saying grams. 1,000 ml of RESULT is 412 g of paste and 618 g of water.
+    render(<DilutionPanel {...BASE} weightUnit="g" dilutionScope="portion" targetMl="1000" />);
+    const paste = () => screen.getByText('Paste to weigh out').closest('div')!;
+    const water = () => screen.getByText('Water to add').closest('div')!;
+    expect(paste().textContent).toContain('412 g');
+    expect(water().textContent).toContain('618 g');
+
+    fireEvent.click(screen.getByRole('radio', { name: 'lb' }));
+    expect(paste().textContent).toContain('0.91 lb');
+    expect(paste().textContent).not.toContain(' g');
+    expect(water().textContent).toContain('1.36 lb');
+    expect(water().textContent).not.toContain(' g');
+    // The ratio pour figure inside the portion grid is a ratio, not a weight — it must not
+    // acquire a unit from the switch.
+    expect(screen.getByText('Water : paste').closest('div')!.textContent).toMatch(/1\.5 : 1/);
+  });
+
+  it('switches the ratio pour figure, the one number ratio mode exists to produce', () => {
+    // Ratio mode suppresses the main grid's own "Dilution water to add" row, so this row is
+    // the ONLY water figure on screen in that mode — the single most consequential place for
+    // the switch to be ignored. 1,200 g anhydrous + 400 g cook water at 2:1 = 3,200 g.
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="g"
+        dilutionScope="batch"
+        targetMl=""
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    const row = () => screen.getByText('Water to add at this ratio').closest('div')!;
+    expect(row().textContent).toContain('3,200 g');
+    fireEvent.click(screen.getByRole('radio', { name: 'oz' }));
+    expect(row().textContent).toContain('112.9 oz');
+    expect(row().textContent).not.toContain(' g');
+  });
+
+  it('switches every weight row of the whole-batch grid together', () => {
+    // One row obeying while the rest do not is worse than none obeying: the grid reads as a
+    // single set of figures for one batch, so a mixed-unit grid invites adding 2.65 lb of
+    // paste to 2,800 g of water.
+    render(
+      <DilutionPanel {...BASE} weightUnit="g" dilutionScope="batch" targetMl="" bottledSolutionGrams={4515} />,
+    );
+    fireEvent.click(screen.getByRole('radio', { name: 'lb' }));
+    const expected: [string, string][] = [
+      ['Dilution water to add', '5.29 lb'],
+      ['Paste (anhydrous)', '2.65 lb'],
+      ['Finished solution', '8.82 lb'],
+      ['Total water', '6.17 lb'],
+      ['Glycerin (retained)', '0.24 lb'],
+      ['≈ Finished product', '9.95 lb'],
+    ];
+    for (const [label, value] of expected) {
+      const row = screen.getByText(label).closest('div')!;
+      expect(row.textContent).toContain(value);
+      expect(row.textContent).not.toContain(' g');
+    }
+    // Volume is millilitres in every unit — the switch is about weights only.
+    expect(screen.getByText('≈ Finished volume').closest('div')!.textContent).toContain('4,383 ml');
+  });
+
+  it('switches the figures quoted inside the alternative-liquid caveats too', () => {
+    // These are prose, not grid rows, and were the easiest sites to leave behind: a caveat
+    // reading "Already 300 g lighter" beside a grid in ounces is the same mixed-unit trap in
+    // sentence form. 300 g → 10.6 oz; the batch's own 2,000 g floor → 70.5 oz. The two hints
+    // are mutually exclusive (the head-start line needs a DECLARED liquid, the floor line an
+    // undeclared one), so each gets its own render.
+    const dilution = {
+      anhydrousGrams: 1218, solutionGrams: 4059, totalWaterGrams: 2841,
+      dilutionWaterGrams: 2000, glycerinGrams: 107, soapConcentrationPercent: 30,
+      targetExceedsPaste: false,
+    };
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="g"
+        dilution={dilution}
+        dilutionScope="batch"
+        targetMl=""
+        altLiquidWaterGrams={300}
+        unknownLiquidGrams={0}
+      />,
+    );
+    fireEvent.click(screen.getByRole('radio', { name: 'oz' }));
+    expect(screen.getByText(/plain distilled water only/i).textContent).toMatch(/Already 10\.6 oz lighter/);
+    cleanup();
+
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="g"
+        dilution={dilution}
+        dilutionScope="batch"
+        targetMl=""
+        altLiquidWaterGrams={300}
+        unknownLiquidGrams={300}
+      />,
+    );
+    fireEvent.click(screen.getByRole('radio', { name: 'oz' }));
+    const floor = screen.getByText(/the LEAST you will need/i).textContent ?? '';
+    expect(floor).toMatch(/10\.6 oz of alternative liquid/);
+    expect(floor).toMatch(/70\.5 oz is/);
+    expect(floor).not.toMatch(/2,000 g/);
+  });
+
+  it('switches the undeclared-liquid figure in the can\'t-tell hedge', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="g"
+        dilution={{
+          anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
+          dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 50,
+          targetExceedsPaste: true,
+        }}
+        dilutionScope="batch"
+        targetMl=""
+        altLiquidWaterGrams={900}
+        unknownLiquidGrams={900}
+        overDilutionCertain={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('radio', { name: 'oz' }));
+    expect(screen.getByText(/can.t tell whether/i).textContent).toMatch(/31\.7 oz of alternative liquid/);
+  });
+
+  it('leaves the grams-only figures in grams when the switch moves', () => {
+    // The exception to everything above, pinned against the SWITCH rather than against the
+    // app-wide unit (the two agree on mount, so seeding alone cannot tell them apart). The
+    // measured-paste field is grams-only, so the bounds on what was typed into it, and the
+    // echo of the reading itself, stay in grams however the maker sets this switch.
+    const REJECTIONS: [Record<string, unknown>, RegExp, RegExp][] = [
+      [{ measuredPasteGrams: '900' }, /1,200 g/, /2\.65 lb/],
+      [{ measuredPasteGrams: '4500' }, /4,000 g/, /8\.82 lb/],
+      [{ measuredPasteGrams: '1700', measuredPasteIsRemaining: true }, /1,600 g/, /3\.53 lb/],
+    ];
+    for (const [props, grams, converted] of REJECTIONS) {
+      render(<DilutionPanel {...BASE} weightUnit="g" dilutionScope="batch" targetMl="" {...props} />);
+      fireEvent.click(screen.getByRole('radio', { name: 'lb' }));
+      const alert = screen.getByRole('alert').textContent ?? '';
+      expect(alert).toMatch(grams);
+      expect(alert).not.toMatch(converted);
+      cleanup();
+    }
+
+    // The shell's echo of an accepted reading…
+    render(<DilutionPanel {...BASE} weightUnit="g" dilutionScope="batch" targetMl="" measuredPasteGrams="1480" />);
+    fireEvent.click(screen.getByRole('radio', { name: 'lb' }));
+    const shellEcho = screen.getByText(/uses your measured paste/i).textContent ?? '';
+    expect(shellEcho).toMatch(/1,480 g/);
+    expect(shellEcho).not.toMatch(/3\.26 lb/);
+    // …and PortionDilutionResults' echo of a remaining one, which the switch reaches through
+    // the very prop this describe block pins.
+    cleanup();
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="g"
+        dilutionScope="portion"
+        targetMl="1000"
+        measuredPasteGrams="1480"
+        measuredPasteIsRemaining
+      />,
+    );
+    fireEvent.click(screen.getByRole('radio', { name: 'lb' }));
+    const portionEcho = screen.getByText(/scaled down from your/i).textContent ?? '';
+    expect(portionEcho).toMatch(/from your 1,480 g reading/);
+    expect(portionEcho).not.toMatch(/3\.26 lb/);
+    // The bench figures beside it did follow the switch — otherwise this pins nothing.
+    expect(screen.getByText('Paste to weigh out').closest('div')!.textContent).toContain('lb');
+  });
+
   it('starts on the app-wide unit, falling back to grams for kg', () => {
     const checked = (name: string) =>
       (screen.getByRole('radio', { name }) as HTMLInputElement).checked;
@@ -1495,6 +1677,51 @@ describe('the g/oz/lb display-unit switch', () => {
     unmount();
     render(<DilutionPanel {...BASE} weightUnit="kg" dilutionScope="batch" targetMl="" />);
     expect(checked('g')).toBe(true);
+  });
+
+  it('re-seeds when the app-wide unit changes underneath it', () => {
+    // The test above unmounts between renders, so it only ever exercises the useState
+    // initializer — the whole re-seed effect could be deleted and it would still pass. The
+    // bug the effect exists to prevent is a LIVE panel: change the app-wide unit in the
+    // toolbar above and this switch stays on the unit the maker has since moved away from,
+    // silently quoting the dilution in a unit no other panel is using.
+    const checked = (name: string) =>
+      (screen.getByRole('radio', { name }) as HTMLInputElement).checked;
+    const { rerender } = render(
+      <DilutionPanel {...BASE} weightUnit="g" dilutionScope="batch" targetMl="" />,
+    );
+    expect(checked('g')).toBe(true);
+    rerender(<DilutionPanel {...BASE} weightUnit="lb" dilutionScope="batch" targetMl="" />);
+    expect(checked('lb')).toBe(true);
+    expect(screen.getByText('Dilution water to add').closest('div')!.textContent).toContain('5.29 lb');
+    // kg has no radio of its own, so the fallback has to hold on a change too, not just on
+    // mount — otherwise switching the app to kg strands this panel on lb.
+    rerender(<DilutionPanel {...BASE} weightUnit="kg" dilutionScope="batch" targetMl="" />);
+    expect(checked('g')).toBe(true);
+  });
+
+  it('does not undo the maker\'s own choice on an unrelated re-render', () => {
+    // The other half of the effect: it re-seeds only when weightUnit ITSELF changed
+    // (prevWeightUnitRef). Without that guard every re-render — typing in the target field,
+    // a recalculated dilution — would snap the switch back to the app-wide unit mid-session.
+    const checked = (name: string) =>
+      (screen.getByRole('radio', { name }) as HTMLInputElement).checked;
+    const { rerender } = render(
+      <DilutionPanel {...BASE} weightUnit="g" dilutionScope="batch" targetMl="" />,
+    );
+    fireEvent.click(screen.getByRole('radio', { name: 'lb' }));
+    expect(checked('lb')).toBe(true);
+    rerender(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="g"
+        dilutionScope="batch"
+        targetMl=""
+        soapConcentrationPercent="28"
+        dilution={{ ...RESULT, soapConcentrationPercent: 28 }}
+      />,
+    );
+    expect(checked('lb')).toBe(true);
   });
 
   it('echoes the measured paste itself in grams too — it is the number the maker typed', () => {

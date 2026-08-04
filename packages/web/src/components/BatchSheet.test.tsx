@@ -428,6 +428,8 @@ function lsSheetData(extra: {
   measuredPasteGrams?: string;
   measuredPasteIsRemaining?: boolean;
   bottledSolutionGrams?: number | null;
+  /** Overrides the fixture's own 'g' below — it is spread after it. */
+  weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
 }) {
   const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
   const lines = createStarterLines();
@@ -635,6 +637,21 @@ test('printed dilution water reflects a measured paste, matching the on-screen f
   expect(screen.getByText(/^2,459 g/)).toBeTruthy();
   expect(screen.queryByText(/^2,000 g/)).toBeNull();
   expect(screen.getByText(/measured paste/i)).toBeTruthy();
+});
+
+test('echoes the measured paste in grams on the printed sheet, whatever the print unit', () => {
+  // The field it comes from is grams-only, so quoting it back converted makes the maker
+  // convert to recognise their own entry. The two on-screen echoes (DilutionPanel's "uses
+  // your measured paste" hint and PortionDilutionResults' "scaled down from your N g
+  // reading") were fixed for this; the printed sheet was the leftover — and it is the one
+  // surface that is read away from the app, where the typed number cannot be checked.
+  render(<BatchSheet data={lsSheetData({ measuredPasteGrams: '1600', weightUnit: 'lb' })} />);
+  const note = screen.getByText(/measured paste weight/i);
+  expect(note.textContent).toMatch(/1,600 g/);
+  expect(note.textContent).not.toMatch(/3\.53 lb/);
+  // The corrected water figure beside it is a bench readout and DOES print in lb — without
+  // this the assertion above would also pass for a sheet that ignored weightUnit entirely.
+  expect(screen.getByText('Dilution water to add').closest('div')!.textContent).toContain('5.42 lb');
 });
 
 test('prints the recipe-computed dilution water, with no measurement note, when no measurement is given', () => {

@@ -130,12 +130,13 @@ export function portionDilutionFor({
  * and draw it down over time. Whole batch scope answers "dilute it all"; this answers
  * "make just this much now".
  *
- * The paste weight can be measured rather than computed, and should be: the reference
- * weighs it, noting its own tables are estimates "due to possible water evaporation during
- * the process". A computed paste is wrong in two directions at once — the cook boils off
- * water the recipe still counts, and an alternative liquid's non-water solids are mass the
- * recipe never counted. Given a measurement, the water figure absorbs the whole difference
- * and every portion below is exact arithmetic.
+ * The paste weight can be measured rather than computed, and should be: the reference has
+ * the maker weigh the paste before picking a water:paste ratio, and marks its own dilution
+ * table as estimates for that reason — no printed figure can know how much water a
+ * particular cook drove off (LS:2172). A computed paste is wrong in two directions at once
+ * — the cook boils off water the recipe still counts, and an alternative liquid's non-water
+ * solids are mass the recipe never counted. Given a measurement, the water figure absorbs
+ * the whole difference and every portion below is exact arithmetic.
  */
 export function PortionDilutionResults({
   dilution,
