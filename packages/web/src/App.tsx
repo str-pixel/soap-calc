@@ -92,6 +92,12 @@ export default function App() {
   // process switches within a session, matching the bottle size beside them.
   const [portionTargetMl, setPortionTargetMl] = useState('');
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
+  // What the measured paste weight above represents: the whole batch before any dilution
+  // (the default — matches all existing sessions), or what's left after earlier dilutions.
+  // "Lighter than predicted" has two indistinguishable explanations — cook evaporation
+  // (same soap, less water) or part of the batch already diluted away (composition
+  // unchanged, just less of it) — so the maker must say which; see PartialDilution.
+  const [measuredPasteIsRemaining, setMeasuredPasteIsRemaining] = useState(false);
   // A measurement describes one specific batch's paste; it must not survive an edit to the
   // recipe that batch was measured from, or the dilution figures keep using a paste weight
   // that no longer belongs to the oils being diluted. There is no single handler that
@@ -126,6 +132,7 @@ export default function App() {
     const prev = prevProcessOilsRef.current;
     if (prev.process === process && prev.oilsSignature !== oilsSignature) {
       setMeasuredPasteGrams('');
+      setMeasuredPasteIsRemaining(false);
     }
     prevProcessOilsRef.current = { process, oilsSignature };
   }, [process, oilsSignature]);
@@ -204,6 +211,7 @@ export default function App() {
     process,
     vesselVolumeCm3,
     measuredPasteGrams,
+    measuredPasteIsRemaining,
   });
   useRecipeAutosave(process, recipeName, lines, settings, additives, () =>
     flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
@@ -506,6 +514,7 @@ export default function App() {
                 waterPasteRatio={waterPasteRatio}
                 onWaterPasteRatioChange={setWaterPasteRatio}
                 measuredPasteGrams={measuredPasteGrams}
+                measuredPasteIsRemaining={measuredPasteIsRemaining}
               />
             )}
             {processOffers(process, 'dilution') && (
@@ -517,6 +526,8 @@ export default function App() {
                 onTargetMlChange={setPortionTargetMl}
                 measuredPasteGrams={measuredPasteGrams}
                 onMeasuredPasteGramsChange={setMeasuredPasteGrams}
+                measuredPasteIsRemaining={measuredPasteIsRemaining}
+                onMeasuredPasteIsRemainingChange={setMeasuredPasteIsRemaining}
               />
             )}
             {processOffers(process, 'dilution') && (

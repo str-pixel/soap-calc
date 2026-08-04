@@ -50,12 +50,18 @@ type DilutionPanelProps = {
   /** Water:paste ratio by weight, as typed (e.g. "2" for 2:1). */
   waterPasteRatio?: string;
   onWaterPasteRatioChange?: (value: string) => void;
-  /** The maker's scale reading for the whole batch's paste, in grams (same App state
-   * PartialDilution reads — see its doc comment). The reference weighs the paste precisely
-   * because a computed figure cannot account for cook evaporation or an alternative
-   * liquid's uncounted solids, so when this is present and passes PartialDilution's own
-   * guards, it corrects the BATCH dilution water here too, not just the portion below. */
+  /** The maker's scale reading for the paste, in grams (same App state PartialDilution
+   * reads — see its doc comment). The reference weighs the paste precisely because a
+   * computed figure cannot account for cook evaporation or an alternative liquid's
+   * uncounted solids, so when this is present, declared as the WHOLE batch, and passes
+   * PartialDilution's own guards, it corrects the BATCH dilution water here too, not just
+   * the portion below. */
   measuredPasteGrams?: string;
+  /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
+   * whole batch (see PartialDilution's declaration). A remaining-paste reading describes a
+   * smaller pot, not the batch — it must never correct this BATCH row, only the portion in
+   * PartialDilution. */
+  measuredPasteIsRemaining?: boolean;
 };
 
 export function DilutionPanel({
@@ -73,6 +79,7 @@ export function DilutionPanel({
   waterPasteRatio = '',
   onWaterPasteRatioChange,
   measuredPasteGrams,
+  measuredPasteIsRemaining = false,
 }: DilutionPanelProps) {
   // Which intended uses the current target suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
@@ -81,9 +88,10 @@ export function DilutionPanel({
   // soap it cannot be a whole-batch paste, above the target solution there is no water left
   // to add. Both accept the boundary. A measured paste that survives these WINS over the
   // computed figures below — see the "measured paste" hint on the batch row, and the ratio
-  // pasteGrams override just below.
+  // pasteGrams override just below. measuredPasteIsRemaining forces this false regardless
+  // of the measurement's own value: a remaining-paste reading is not the batch.
   const measuredPasteValid =
-    dilution !== null && measuredPasteIsValidFor(measuredPasteGrams, dilution);
+    dilution !== null && measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining);
   // Only meaningful when measuredPasteValid — parseMeasuredPasteGrams then always succeeds.
   const measuredPasteNum = parseMeasuredPasteGrams(measuredPasteGrams) ?? NaN;
   // Ratio mode (LS:1534): weigh the paste, then add water at 1:1 / 2:1 / 3:1 by weight.
@@ -148,7 +156,7 @@ export function DilutionPanel({
   // The measurement corrects the BATCH figure the same way it already corrects the portion
   // in PartialDilution — shared with the printed BatchSheet so both surfaces always agree.
   const batchDilutionWaterGrams = dilution
-    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams)
+    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
     : 0;
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution

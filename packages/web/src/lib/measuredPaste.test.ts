@@ -56,3 +56,28 @@ describe('correctedDilutionWaterGrams', () => {
     expect(correctedDilutionWaterGrams(DILUTION, '1480')).toBe(2520);
   });
 });
+
+describe('measuredPasteIsValidFor with a remaining-paste declaration', () => {
+  it('is never valid FOR THE BATCH ROW when the measurement is what is left, not the whole batch', () => {
+    // 1,480 g is otherwise a perfectly valid whole-batch reading (between the 1,200 g
+    // floor and the 4,000 g ceiling) — but a remaining-paste reading is not the batch,
+    // and this helper backs the BATCH row (DilutionPanel, BatchSheet), not the portion.
+    expect(measuredPasteIsValidFor('1480', DILUTION, true)).toBe(false);
+  });
+
+  it('is unaffected — still whatever it was before — when isRemaining is omitted or false', () => {
+    expect(measuredPasteIsValidFor('1480', DILUTION)).toBe(true);
+    expect(measuredPasteIsValidFor('1480', DILUTION, false)).toBe(true);
+  });
+});
+
+describe('correctedDilutionWaterGrams with a remaining-paste declaration', () => {
+  it('falls back to the recipe-computed figure — a remaining-paste reading must not correct the BATCH row', () => {
+    expect(correctedDilutionWaterGrams(DILUTION, '1480', true)).toBe(2400);
+  });
+
+  it('is unaffected — still corrects — when isRemaining is omitted or false', () => {
+    expect(correctedDilutionWaterGrams(DILUTION, '1480')).toBe(2520);
+    expect(correctedDilutionWaterGrams(DILUTION, '1480', false)).toBe(2520);
+  });
+});

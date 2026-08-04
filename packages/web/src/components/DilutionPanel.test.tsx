@@ -337,6 +337,24 @@ test('a measured paste corrects the batch dilution water', () => {
   expect(screen.getByText(/measured paste/i)).toBeTruthy();
 });
 
+test('a measurement declared as what is left after earlier dilutions does NOT correct the batch row — it is not the batch', () => {
+  // Same 1,480 g reading as above, but declared "remaining" — the batch row must keep
+  // showing the recipe's own computed 2,400 g, not a figure derived from a partial pot.
+  render(
+    <DilutionPanel
+      dilution={RESULT}
+      soapConcentrationPercent="30"
+      onSoapConcentrationChange={() => {}}
+      weightUnit="g"
+      measuredPasteGrams="1480"
+      measuredPasteIsRemaining
+    />,
+  );
+  expect(screen.getByText(/^2,400 g/)).toBeTruthy();
+  expect(screen.queryByText(/^2,520 g/)).toBeNull();
+  expect(screen.queryByText(/measured paste/i)).toBeNull();
+});
+
 test('the measured-paste hint names "Dilution water" explicitly in concentration mode', () => {
   render(
     <DilutionPanel

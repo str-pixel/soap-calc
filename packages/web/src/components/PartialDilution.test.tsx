@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { PartialDilution } from './PartialDilution';
 import type { DilutionResult } from '@soap-calc/core';
@@ -65,7 +65,7 @@ test('refuses to size a portion when the paste is already more dilute than the t
     />,
   );
   expect(screen.getByLabelText('Amount to make (ml)')).toBeTruthy();
-  expect(screen.getByLabelText(/whole batch/i)).toBeTruthy();
+  expect(screen.getByLabelText('Measured paste weight — whole batch (g)')).toBeTruthy();
   expect(screen.getByText(/already more dilute/i)).toBeTruthy();
 });
 
@@ -135,7 +135,7 @@ test('labels the measurement as the WHOLE batch, not the portion', () => {
   // portion weight, which would silently over-dilute (a 500 g portion of a 1,600 g batch
   // reads as 7:1 water:paste instead of 1.5:1).
   render(<PartialDilution {...PROPS} targetMl="1000" />);
-  expect(screen.getByLabelText(/whole batch/i)).toBeTruthy();
+  expect(screen.getByLabelText('Measured paste weight — whole batch (g)')).toBeTruthy();
 });
 
 test('refuses a measurement below the anhydrous soap weight — not physically a paste', () => {
@@ -150,4 +150,87 @@ test('refuses a measurement below the anhydrous soap weight — not physically a
 test('explains rather than vanishing when the measured paste exceeds the target solution', () => {
   render(<PartialDilution {...PROPS} targetMl="1000" measuredPasteGrams="4100" />);
   expect(screen.getByText(/already weighs more than/i)).toBeTruthy();
+});
+
+describe('the measured-paste declaration (whole batch vs. what is left)', () => {
+  test('defaults to the whole-batch declaration', () => {
+    render(<PartialDilution {...PROPS} targetMl="1000" measuredPasteGrams="1480" />);
+    expect(
+      screen.getByRole('radio', { name: /the whole batch, before any dilution/i }),
+    ).toHaveProperty('checked', true);
+    expect(
+      screen.getByRole('radio', { name: /what.s left after earlier dilutions/i }),
+    ).toHaveProperty('checked', false);
+  });
+
+  test('a reading below the anhydrous floor is ACCEPTED once declared as what is left after earlier dilutions', () => {
+    // 900 g is below the 1,200 g anhydrous floor and is refused in whole-batch mode
+    // (see the test above) — but declared "remaining", it is not the whole batch, so
+    // there is no floor to violate: the pot's own anhydrous soap is scaled down from the
+    // measurement instead of assumed to be the recipe's full 1,200 g.
+    render(
+      <PartialDilution
+        {...PROPS}
+        targetMl="500"
+        measuredPasteGrams="900"
+        measuredPasteIsRemaining
+      />,
+    );
+    expect(screen.queryByText(/less than the .*soap this batch makes|below the/i)).toBeNull();
+    expect(screen.getByText('116 g')).toBeTruthy(); // paste to weigh out for the portion
+    expect(screen.getByText(/^174 g/)).toBeTruthy(); // water to add for that portion
+  });
+
+  test('the worked-example fix: a remaining reading produces 524 g, not the whole-batch formula\'s 650 g', () => {
+    // 1,000 g anhydrous, 600 g cook water (1,600 g predicted whole-batch paste), 33%
+    // target. 1,437 g is what is left in the pot after an earlier partial dilution;
+    // asking for 1,200 ml more must add 524 g of water — not 650 g, which is what the
+    // same reading produces when (mis-)declared as the whole batch.
+    const anhydrousGrams = 1000;
+    const cookWaterGrams = 600;
+    const targetConcentration = 0.33;
+    const predictedPasteGrams = anhydrousGrams + cookWaterGrams;
+    const solutionGrams = anhydrousGrams / targetConcentration;
+    const dilutionWaterGrams = solutionGrams - predictedPasteGrams;
+    const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
+    const dilution = {
+      anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams,
+      glycerinGrams: 0, soapConcentrationPercent: 33, targetExceedsPaste: false,
+    };
+    const { rerender } = render(
+      <PartialDilution
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1200"
+        measuredPasteGrams="1437"
+        measuredPasteIsRemaining
+      />,
+    );
+    expect(screen.getByText(/^524 g/)).toBeTruthy();
+    rerender(
+      <PartialDilution
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1200"
+        measuredPasteGrams="1437"
+        measuredPasteIsRemaining={false}
+      />,
+    );
+    expect(screen.getByText(/^650 g/)).toBeTruthy();
+  });
+
+  test('the drift note does not claim the batch figures use a remaining-paste measurement', () => {
+    // The whole-batch drift note ("battch figures above use your measurement too") is
+    // false once the measurement is declared remaining — DilutionPanel's batch row does
+    // not apply it (Commit 1's other guard). Must not repeat that claim here.
+    render(
+      <PartialDilution
+        {...PROPS}
+        targetMl="1000"
+        measuredPasteGrams="1480"
+        measuredPasteIsRemaining
+      />,
+    );
+    expect(screen.queryByText(/batch figures above use your measurement too/i)).toBeNull();
+  });
 });

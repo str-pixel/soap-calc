@@ -52,6 +52,11 @@ export type UseRecipeViewModelArgs = {
    * measurement corrects the printed dilution water the same way it corrects the screen
    * (lib/measuredPaste's correctedDilutionWaterGrams, shared by both). */
   measuredPasteGrams?: string;
+  /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
+   * whole batch (see PartialDilution's declaration). Threaded into batchSheetData so a
+   * remaining-paste reading never corrects the printed BATCH row, matching DilutionPanel's
+   * on-screen guard. */
+  measuredPasteIsRemaining?: boolean;
 };
 
 export type RecipeViewModel = {
@@ -138,6 +143,7 @@ export function useRecipeViewModel({
   process,
   vesselVolumeCm3 = null,
   measuredPasteGrams,
+  measuredPasteIsRemaining,
 }: UseRecipeViewModelArgs): RecipeViewModel {
   const previewState = usePreviewRecipeState(
     lines,
@@ -812,6 +818,7 @@ export function useRecipeViewModel({
       extrasGrams,
       dilution,
       measuredPasteGrams,
+      measuredPasteIsRemaining,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
       overDilutionCertain,
@@ -829,6 +836,7 @@ export function useRecipeViewModel({
     computedAdditives,
     dilution,
     measuredPasteGrams,
+    measuredPasteIsRemaining,
     displayTotals,
     extrasGrams,
     indexes,

@@ -11,9 +11,17 @@ type PartialDilutionProps = {
    * making right now" decisions, not properties of the formula. */
   targetMl: string;
   onTargetMlChange: (value: string) => void;
-  /** The maker's scale reading for the whole batch's paste, in grams. */
+  /** The maker's scale reading for the paste, in grams — the whole batch by default, or
+   * what's left after earlier dilutions when `measuredPasteIsRemaining` is set. */
   measuredPasteGrams: string;
   onMeasuredPasteGramsChange: (value: string) => void;
+  /** True when `measuredPasteGrams` is what's LEFT after part of the batch was already
+   * diluted away, not the whole batch. "Lighter than predicted" has two indistinguishable
+   * explanations — evaporation during the cook (same soap, less water) or part of the
+   * batch already gone (composition unchanged, just less of it) — so the maker must say
+   * which. Defaults to whole-batch so existing sessions are unaffected. */
+  measuredPasteIsRemaining?: boolean;
+  onMeasuredPasteIsRemainingChange?: (value: boolean) => void;
 };
 
 /**
@@ -36,17 +44,24 @@ export function PartialDilution({
   onTargetMlChange,
   measuredPasteGrams,
   onMeasuredPasteGramsChange,
+  measuredPasteIsRemaining = false,
+  onMeasuredPasteIsRemainingChange,
 }: PartialDilutionProps) {
   if (dilution === null) return null;
   const hasMeasurement = measuredPasteGrams.trim() !== '';
   const measured = Number(measuredPasteGrams);
   // A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate —
-  // so a reading below that is not a whole-batch paste. It is a mis-tare (the crock left
-  // on the scale) or a PORTION weight, and the reference's own ratio method does weigh the
-  // portion, which makes the mistake an easy one. Left unguarded the app answered with
-  // confident nonsense: a 900 g reading on a 1,200 g-soap batch reported "lighter than
+  // so a WHOLE-BATCH reading below that is not physically possible. It is a mis-tare (the
+  // crock left on the scale) or a PORTION weight, and the reference's own ratio method does
+  // weigh the portion, which makes the mistake an easy one. Left unguarded the app answered
+  // with confident nonsense: a 900 g reading on a 1,200 g-soap batch reported "lighter than
   // predicted — water lost to the cook", which cannot be true of water that was never there.
+  // The floor does not apply once the reading is declared REMAINING: what's left after an
+  // earlier dilution can legitimately be less than the recipe's whole anhydrous soap — that
+  // is the entire point of the declaration, and rejecting it left no way to enter an honest
+  // measurement (the batch no longer exists at full weight to "enter instead").
   const pasteBelowSolids =
+    !measuredPasteIsRemaining &&
     hasMeasurement &&
     Number.isFinite(measured) &&
     measured > 0 &&
@@ -70,7 +85,11 @@ export function PartialDilution({
     pasteAlreadyThinner || measurementRejected
       ? null
       : lsPartialDilution(
-          { ...dilution, measuredPasteGrams: hasValidMeasurement ? measured : undefined },
+          {
+            ...dilution,
+            measuredPasteGrams: hasValidMeasurement ? measured : undefined,
+            measuredPasteIsRemaining: hasValidMeasurement ? measuredPasteIsRemaining : undefined,
+          },
           Number(targetMl),
         );
   // What the recipe predicted, for the drift readout: anhydrous + the water already in it.
@@ -104,6 +123,35 @@ export function PartialDilution({
           aria-label="Measured paste weight — whole batch (g)"
         />
       </label>
+      {/* "Lighter than predicted" has two indistinguishable explanations — evaporation
+          during the cook (same soap, less water: MORE concentrated) or part of the batch
+          already diluted away (composition unchanged, just less of it) — one number
+          cannot tell them apart, so the maker must say which. Defaults to whole batch so
+          existing behaviour (and existing sessions) are unchanged unless this is touched. */}
+      <div
+        className="dilution-mode-toggle"
+        role="radiogroup"
+        aria-label="What the measured paste weight represents"
+      >
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="measuredPasteScope"
+            checked={!measuredPasteIsRemaining}
+            onChange={() => onMeasuredPasteIsRemainingChange?.(false)}
+          />
+          <span>the whole batch, before any dilution</span>
+        </label>
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="measuredPasteScope"
+            checked={measuredPasteIsRemaining}
+            onChange={() => onMeasuredPasteIsRemainingChange?.(true)}
+          />
+          <span>what&apos;s left after earlier dilutions</span>
+        </label>
+      </div>
       <label className="field">
         <span>Amount to make (ml)</span>
         <input
@@ -176,13 +224,24 @@ export function PartialDilution({
             </p>
           )}
           {portion.pasteMeasured ? (
-            Math.abs(driftGrams) >= 1 && (
+            measuredPasteIsRemaining ? (
               <p className="results-hint">
-                Your paste is {formatWeight(Math.abs(driftGrams), weightUnit)}{' '}
-                {driftGrams < 0 ? 'lighter' : 'heavier'} than predicted
-                {driftGrams < 0 ? ' — water lost to the cook' : ''}. The batch figures above
-                use your measurement too, not just these figures.
+                Treated as what&apos;s left after earlier dilutions: this portion&apos;s
+                anhydrous soap is scaled down from your{' '}
+                {formatWeight(measured, weightUnit)} reading, assuming the paste&apos;s
+                composition hasn&apos;t changed — not from the recipe&apos;s whole-batch
+                figure. The batch row above still shows the recipe&apos;s own computed
+                figures; a remaining-paste reading is not the batch.
               </p>
+            ) : (
+              Math.abs(driftGrams) >= 1 && (
+                <p className="results-hint">
+                  Your paste is {formatWeight(Math.abs(driftGrams), weightUnit)}{' '}
+                  {driftGrams < 0 ? 'lighter' : 'heavier'} than predicted
+                  {driftGrams < 0 ? ' — water lost to the cook' : ''}. The batch figures above
+                  use your measurement too, not just these figures.
+                </p>
+              )
             )
           ) : (
             <p className="results-hint">

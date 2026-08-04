@@ -74,6 +74,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     extrasGrams,
     dilution,
     measuredPasteGrams,
+    measuredPasteIsRemaining,
     neutralization,
     properties,
     indexes,
@@ -105,9 +106,11 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // show the same number) — and, per Task 5, OUTRANKS targetExceedsPaste below, since that
   // flag is derived from the recipe's ASSUMED cook water and the measurement is direct
   // evidence against it.
-  const measuredPasteValid = dilution ? measuredPasteIsValidFor(measuredPasteGrams, dilution) : false;
+  const measuredPasteValid = dilution
+    ? measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining)
+    : false;
   const dilutionWaterGramsPrinted = dilution
-    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams)
+    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
     : 0;
 
   return (

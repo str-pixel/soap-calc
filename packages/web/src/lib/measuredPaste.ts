@@ -38,11 +38,19 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * anhydrous solids floor (measurementBelowSolids) and not above the target solution
  * ceiling (measurementExceedsSolution) — the shared bar every caller that lets a
  * measurement override a computed figure must clear first.
+ *
+ * `isRemaining` gates this for the BATCH row specifically: a reading declared as what's
+ * LEFT after earlier dilutions describes a smaller pot, not the whole batch, so it can
+ * never be valid for a caller (DilutionPanel's batch row, the printed BatchSheet) that
+ * corrects a BATCH-level figure with it — PartialDilution's own portion arithmetic
+ * doesn't go through this gate, since a remaining reading is exactly what it wants.
  */
 export function measuredPasteIsValidFor(
   measuredPasteGrams: string | undefined,
   dilution: DilutionResult,
+  isRemaining = false,
 ): boolean {
+  if (isRemaining) return false;
   const measured = parseMeasuredPasteGrams(measuredPasteGrams);
   return (
     measured !== undefined &&
@@ -64,8 +72,9 @@ export function measuredPasteIsValidFor(
 export function correctedDilutionWaterGrams(
   dilution: DilutionResult,
   measuredPasteGrams: string | undefined,
+  isRemaining = false,
 ): number {
-  if (measuredPasteIsValidFor(measuredPasteGrams, dilution)) {
+  if (measuredPasteIsValidFor(measuredPasteGrams, dilution, isRemaining)) {
     return dilution.solutionGrams - (parseMeasuredPasteGrams(measuredPasteGrams) as number);
   }
   return dilution.dilutionWaterGrams;

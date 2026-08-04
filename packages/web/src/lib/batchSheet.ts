@@ -44,6 +44,10 @@ export type BatchSheetData = {
    * (lib/measuredPaste), so the sheet a maker carries to the bench matches the screen.
    * Optional: data built before the field existed prints the recipe's own computed figure. */
   measuredPasteGrams?: string;
+  /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
+   * whole batch (see PartialDilution's declaration). A remaining-paste reading describes a
+   * smaller pot, not the batch — it must never correct this printed batch row. */
+  measuredPasteIsRemaining?: boolean;
   /** Grams of split liquid with undeclared water content. Non-zero makes the printed
    * dilution figure a lower bound, and the sheet must say so — the bench copy is the one
    * surface with no sibling panel to explain it. Optional: data built before the field

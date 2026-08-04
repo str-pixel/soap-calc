@@ -426,6 +426,7 @@ function lsSheetData(extra: {
   dilutionOverride?: import('@soap-calc/core').DilutionResult;
   neutralization?: import('@soap-calc/core').NeutralizationResult | null;
   measuredPasteGrams?: string;
+  measuredPasteIsRemaining?: boolean;
 }) {
   const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
   const lines = createStarterLines();
@@ -627,6 +628,16 @@ test('printed dilution water reflects a measured paste, matching the on-screen f
 test('prints the recipe-computed dilution water, with no measurement note, when no measurement is given', () => {
   render(<BatchSheet data={lsSheetData({})} />);
   expect(screen.getByText(/^2,000 g/)).toBeTruthy();
+  expect(screen.queryByText(/measured paste/i)).toBeNull();
+});
+
+test('a measurement declared as what is left after earlier dilutions does not correct the printed batch water — it is not the batch', () => {
+  // Same 1,600 g reading as the "matching the on-screen figure" test above, but declared
+  // remaining: the printed sheet must keep the recipe's own 2,000 g, since a partial-pot
+  // reading does not describe the whole batch this row is about.
+  render(<BatchSheet data={lsSheetData({ measuredPasteGrams: '1600', measuredPasteIsRemaining: true })} />);
+  expect(screen.getByText(/^2,000 g/)).toBeTruthy();
+  expect(screen.queryByText(/^2,459 g/)).toBeNull();
   expect(screen.queryByText(/measured paste/i)).toBeNull();
 });
 

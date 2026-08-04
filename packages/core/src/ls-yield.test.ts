@@ -121,3 +121,53 @@ describe('lsPartialDilution with a measured paste weight', () => {
     expect(r.predictedPasteGrams).toBeCloseTo(1600, 0);
   });
 });
+
+describe('lsPartialDilution with a remaining (already-drawn-down) paste measurement', () => {
+  // Worked example from the user-flow review: 1,000 g anhydrous, 600 g cook water (1,600 g
+  // predicted whole-batch paste), target 33% soap. 300 ml was already drawn and diluted
+  // away earlier, leaving 1,437 g of paste in the pot — still the SAME composition, just
+  // less of it. Asking for 1,200 ml now must add 524 g of water, not the 650 g the
+  // whole-batch formula (wrongly assuming 1,437 g is the WHOLE batch) would produce.
+  const anhydrousGrams = 1000;
+  const cookWaterGrams = 600;
+  const targetConcentration = 0.33;
+  const predictedPasteGrams = anhydrousGrams + cookWaterGrams; // 1,600
+  const solutionGrams = anhydrousGrams / targetConcentration; // 3,030.303...
+  const dilutionWaterGrams = solutionGrams - predictedPasteGrams;
+  const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
+  const BATCH = { anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams };
+
+  it('scales the pot from the measurement itself, not the recipe anhydrous, when the paste is what is left', () => {
+    const r = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
+      1200,
+    );
+    expect(r).not.toBeNull();
+    if (!r) return;
+    expect(r.waterGrams).toBeCloseTo(524, 0);
+  });
+
+  it('the same reading produces the wrong (whole-batch) figure when NOT declared remaining — the bug this guards against', () => {
+    const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1437 }, 1200);
+    expect(r).not.toBeNull();
+    if (!r) return;
+    expect(r.waterGrams).toBeCloseTo(650, 0);
+  });
+
+  it('accepts a remaining measurement below the recipe anhydrous floor — the remainder no longer holds the whole batch', () => {
+    // 1,437 g is itself below the FULL anhydrous+cook-water paste of a bigger batch in
+    // this case anhydrousGrams (1,000) is still below 1,437, so use a reading that is
+    // below anhydrousGrams directly to prove there is no floor in remaining mode.
+    const r = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 500, measuredPasteIsRemaining: true },
+      200,
+    );
+    expect(r).not.toBeNull();
+  });
+
+  it('is byte-identical to whole-batch mode when measuredPasteIsRemaining is omitted or false', () => {
+    const withFlagFalse = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: false }, 1200);
+    const withoutFlag = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1437 }, 1200);
+    expect(withFlagFalse).toEqual(withoutFlag);
+  });
+});
