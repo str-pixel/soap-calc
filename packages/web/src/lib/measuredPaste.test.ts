@@ -3,6 +3,7 @@ import type { DilutionResult } from '@soap-calc/core';
 import {
   correctedDilutionWaterGrams,
   measuredPasteIsValidFor,
+  measuredPasteRejectionFor,
   parseMeasuredPasteGrams,
 } from './measuredPaste';
 
@@ -68,6 +69,67 @@ describe('measuredPasteIsValidFor with a remaining-paste declaration', () => {
   it('is unaffected — still whatever it was before — when isRemaining is omitted or false', () => {
     expect(measuredPasteIsValidFor('1480', DILUTION)).toBe(true);
     expect(measuredPasteIsValidFor('1480', DILUTION, false)).toBe(true);
+  });
+});
+
+describe('measuredPasteRejectionFor', () => {
+  // One source for the three rejection rules, so the shell that owns the INPUT and the
+  // portion results that consume the reading can never disagree about whether it is usable.
+  it('rejects a whole-batch reading below the anhydrous solids floor, naming which rule fired', () => {
+    const rejection = measuredPasteRejectionFor('900', DILUTION, false);
+    expect(rejection.belowSolids).toBe(true);
+    expect(rejection.exceedsSolution).toBe(false);
+    expect(rejection.exceedsRemainingCeiling).toBe(false);
+    expect(rejection.rejected).toBe(true);
+    expect(rejection.accepted).toBe(false);
+  });
+
+  it('does not apply the solids floor to a reading declared as what is left', () => {
+    // The whole point of the declaration: what remains after an earlier dilution can
+    // legitimately weigh less than the recipe's whole anhydrous soap.
+    const rejection = measuredPasteRejectionFor('900', DILUTION, true);
+    expect(rejection.belowSolids).toBe(false);
+    expect(rejection.rejected).toBe(false);
+    expect(rejection.accepted).toBe(true);
+  });
+
+  it('rejects a reading heavier than the target solution under either declaration', () => {
+    expect(measuredPasteRejectionFor('4100', DILUTION, false).exceedsSolution).toBe(true);
+    expect(measuredPasteRejectionFor('4100', DILUTION, true).exceedsSolution).toBe(true);
+  });
+
+  it('rejects a remaining reading above the whole-batch ceiling and reports the basis it used', () => {
+    // Predicted whole-batch paste: 1,200 anhydrous + (2,800 − 2,400) water already in the
+    // paste = 1,600 g.
+    const rejection = measuredPasteRejectionFor('2000', DILUTION, true);
+    expect(rejection.exceedsRemainingCeiling).toBe(true);
+    expect(rejection.wholeBatchPasteBasis).toBe(1600);
+    // The boundary is accepted.
+    expect(measuredPasteRejectionFor('1600', DILUTION, true).exceedsRemainingCeiling).toBe(false);
+  });
+
+  it('prefers a supplied corrected whole-batch basis over the water-only predicted figure', () => {
+    // An alternative liquid's non-water solids are real mass the recipe never counts, so a
+    // 1,650 g remainder is honest on a recipe whose true paste weighed 1,700 g.
+    const rejection = measuredPasteRejectionFor('1650', DILUTION, true, 1700);
+    expect(rejection.wholeBatchPasteBasis).toBe(1700);
+    expect(rejection.exceedsRemainingCeiling).toBe(false);
+    expect(rejection.accepted).toBe(true);
+  });
+
+  it('reports no measurement — and so no rejection — for a blank or unusable field', () => {
+    for (const value of ['', '   ', undefined, 'abc', '0']) {
+      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      expect(rejection.rejected).toBe(false);
+      expect(rejection.accepted).toBe(false);
+    }
+    expect(measuredPasteRejectionFor('', DILUTION, false).hasMeasurement).toBe(false);
+  });
+
+  it('accepts a usable whole-batch reading and hands back the parsed grams', () => {
+    const rejection = measuredPasteRejectionFor('1480', DILUTION, false);
+    expect(rejection.accepted).toBe(true);
+    expect(rejection.measuredGrams).toBe(1480);
   });
 });
 

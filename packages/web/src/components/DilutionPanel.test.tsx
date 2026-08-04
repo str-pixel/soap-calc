@@ -751,6 +751,267 @@ describe('portion scope: the measured-paste input and declaration that used to l
   });
 });
 
+describe('the measurement feedback follows the measured-paste input, not the scope toggle', () => {
+  // The consolidation moved the measured-paste INPUT into this shell, where it is visible in
+  // both scopes, but left its rejection alerts behind in PortionDilutionResults — which
+  // renders only in Custom amount scope. So in the DEFAULT scope a physically impossible
+  // reading sat directly above a dilution figure that silently ignored it, with nothing on
+  // screen to say why. Feedback belongs with the input: both scopes, one copy each.
+  const REJECTIONS = [
+    {
+      what: 'lighter than the soap the batch makes',
+      props: { measuredPasteGrams: '900' },
+      match: /cannot be all of the paste/i,
+    },
+    {
+      what: 'heavier than the target solution',
+      props: { measuredPasteGrams: '4500' },
+      match: /already weighs more than/i,
+    },
+    {
+      what: 'a remainder heavier than the whole batch ever was',
+      props: { measuredPasteGrams: '2000', measuredPasteIsRemaining: true },
+      match: /ever weighed/i,
+    },
+  ];
+
+  for (const { what, props, match } of REJECTIONS) {
+    it(`explains a reading ${what} in Whole batch scope`, () => {
+      render(<DilutionPanel {...BASE} {...props} dilutionScope="batch" targetMl="" />);
+      expect(screen.getByRole('alert').textContent).toMatch(match);
+    });
+
+    it(`explains a reading ${what} in Custom amount scope, exactly once`, () => {
+      render(<DilutionPanel {...BASE} {...props} dilutionScope="portion" targetMl="1000" />);
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0].textContent).toMatch(match);
+      // A rejected reading still suppresses the portion figures it would have driven.
+      expect(screen.queryByText('Paste to weigh out')).toBeNull();
+    });
+  }
+
+  it('quotes the corrected whole-batch basis in the remaining-mode ceiling alert, not the water-only predicted figure', () => {
+    // Moved here with the alert itself (it used to be pinned in PortionDilutionResults):
+    // 1,000 g anhydrous + 600 g cook water = 1,600 g water-only predicted paste, but a
+    // split liquid's 100 g of non-water solids make the TRUE whole-batch paste 1,700 g.
+    const anhydrousGrams = 1000;
+    const solutionGrams = anhydrousGrams / 0.33;
+    const dilutionWaterGrams = solutionGrams - 1600;
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams,
+          solutionGrams,
+          dilutionWaterGrams,
+          totalWaterGrams: 600 + dilutionWaterGrams,
+          glycerinGrams: 0,
+          soapConcentrationPercent: 33,
+          targetExceedsPaste: false,
+        }}
+        wholeBatchPasteGrams={1700}
+        measuredPasteGrams="3000"
+        measuredPasteIsRemaining
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    expect(screen.getByRole('alert').textContent).toMatch(/more than the 1,700 g/i);
+    expect(screen.getByRole('alert').textContent).not.toMatch(/more than the 1,600 g/i);
+  });
+
+  it('names the clamp-free whole-batch basis, so the ceiling and the drift note never quote two different figures', () => {
+    // Also moved here with the alert. 100 g anhydrous + 150 g cook water at a 50% target:
+    // targetExceedsPaste clamps dilutionWaterGrams to 0, which understates core's own
+    // predicted paste at 200 g; the view model's clamp-free figure is the true 250 g, and
+    // PortionDilutionResults' drift note quotes that same 250 g.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 100,
+          solutionGrams: 200,
+          totalWaterGrams: 100,
+          dilutionWaterGrams: 0,
+          glycerinGrams: 0,
+          soapConcentrationPercent: 50,
+          targetExceedsPaste: true,
+        }}
+        wholeBatchPasteGrams={250}
+        measuredPasteGrams="300"
+        measuredPasteIsRemaining
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    // 300 g breaks both the solution ceiling and the whole-batch ceiling, so both alerts
+    // fire — pick the whole-batch one by its own wording, since the solution alert quotes
+    // the 200 g solution and would satisfy a looser match by accident.
+    const ceiling = screen
+      .getAllByRole('alert')
+      .find((a) => /ever weighed/i.test(a.textContent ?? ''));
+    expect(ceiling?.textContent).toMatch(/more than the 250 g/i);
+    expect(ceiling?.textContent).not.toMatch(/200 g/);
+  });
+
+  it('the below-solids alert points at the declaration radio by its actual rendered label, not at the scope toggle', () => {
+    // The old copy ended "enter the whole batch rather than the portion you are diluting",
+    // and the only on-screen control now reading "Whole batch" is the SCOPE toggle — the
+    // wrong control, and the wrong remedy for a batch that has already been drawn down.
+    // Same dynamic style as the remaining-ceiling pin above: read the label off the radio
+    // so a rename cannot silently strand the alert.
+    render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" measuredPasteGrams="900" />);
+    const remainingRadio = screen.getByRole('radio', { name: /what.s left after earlier dilutions/i });
+    const declaredLabel = remainingRadio.closest('label')?.textContent?.trim();
+    expect(declaredLabel).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toContain(declaredLabel);
+    // And it must not send the maker to the scope toggle instead.
+    expect(screen.getByRole('alert').textContent).not.toMatch(/whole batch rather than the portion/i);
+  });
+
+  it('says why a "what\'s left" reading leaves the Whole batch row alone', () => {
+    // Enter 800 g, declare it as what's left, stay on the default scope: the row answers
+    // with the recipe's original 2,400 g and used to say nothing about the declaration it
+    // had just ignored.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="batch"
+        targetMl=""
+        measuredPasteGrams="800"
+        measuredPasteIsRemaining
+      />,
+    );
+    expect(screen.getByText(/^2,400 g/)).toBeTruthy();
+    expect(screen.getByText(/recipe.s whole batch/i)).toBeTruthy();
+  });
+
+  it('drops that explanation once the reading is declared as all of it', () => {
+    render(
+      <DilutionPanel {...BASE} dilutionScope="batch" targetMl="" measuredPasteGrams="1480" />,
+    );
+    expect(screen.queryByText(/recipe.s whole batch/i)).toBeNull();
+    expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
+  });
+
+  it('gives the declaration radios a visible caption, not just an aria-label', () => {
+    // "( ) all of it   ( ) what's left after earlier dilutions" sitting above a second
+    // unlabelled radio row leaves "all of WHAT?" unanswerable on screen.
+    render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" />);
+    expect(screen.getByText('That weight is:')).toBeTruthy();
+  });
+});
+
+describe('figures that belong to one scope stay in that scope; caveats that describe the recipe do not', () => {
+  it('does not print the whole-batch ratio pour figure in Custom amount scope', () => {
+    // 1,200 g anhydrous + 400 g cook water = 1,600 g paste; at 2:1 that is 3,200 g of water
+    // for the WHOLE batch — printed in the same primary emphasis as the portion's own much
+    // smaller water figure, with nothing to say which one to pour.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="portion"
+        targetMl="1000"
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText('Water to add at this ratio')).toBeNull();
+    expect(screen.queryByText('3,200 g')).toBeNull();
+    // The target-describing copy is not an amount, so it stays in both scopes.
+    expect(screen.getByText(/lands at 25% soap/i)).toBeTruthy();
+  });
+
+  it('keeps the 1–99% clamp alert in Custom amount scope — it describes the target, not the amount', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="portion"
+        targetMl="1000"
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="100000"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(/outside the 1.99% range/i)).toBeTruthy();
+  });
+
+  it('still prints the ratio pour figure in Whole batch scope', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="batch"
+        targetMl=""
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(screen.getByText('Water to add at this ratio')).toBeTruthy();
+    expect(screen.getByText(/^3,200 g/)).toBeTruthy();
+  });
+
+  it('carries the undeclared-alt-liquid lower bound into Custom amount scope, without quoting the batch figure there', () => {
+    // The portion water figure is a lower bound for exactly the same reason the batch one
+    // is — undeclared liquid is counted as all water — so the caveat must follow.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1218, solutionGrams: 4059, totalWaterGrams: 2841,
+          dilutionWaterGrams: 2000, glycerinGrams: 107, soapConcentrationPercent: 30,
+          targetExceedsPaste: false,
+        }}
+        dilutionScope="portion"
+        targetMl="1000"
+        altLiquidWaterGrams={300}
+        unknownLiquidGrams={300}
+      />,
+    );
+    expect(screen.getByText(/the LEAST you will need/i)).toBeTruthy();
+    // 2,000 g is the WHOLE batch's dilution water — finding 1's mistake, not to be repeated,
+    // so the portion-scope wording carries the caveat without carrying that figure.
+    expect(screen.queryByText(/2,000 g is the LEAST/i)).toBeNull();
+  });
+
+  it('carries the "can\'t tell whether the target is reachable" caveat into Custom amount scope', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
+          dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 50,
+          targetExceedsPaste: true,
+        }}
+        dilutionScope="portion"
+        targetMl="1000"
+        altLiquidWaterGrams={900}
+        unknownLiquidGrams={900}
+        overDilutionCertain={false}
+      />,
+    );
+    expect(screen.getByText(/can.t tell whether/i)).toBeTruthy();
+  });
+
+  it('does not print the density caveat in Custom amount scope with no amount asked for', () => {
+    // The caveat explains a g→ml bridge; with no volume anywhere on screen it explains
+    // nothing.
+    render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="" />);
+    expect(screen.queryByText(/1\.03 g\/ml/)).toBeNull();
+    cleanup();
+    render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" />);
+    expect(screen.getByText(/1\.03 g\/ml/)).toBeTruthy();
+  });
+});
+
 describe('the g/oz/lb display-unit switch', () => {
   it('shows one unit at a time and switches the dilution figures', () => {
     render(<DilutionPanel {...BASE} dilutionScope="batch" weightUnit="g" targetMl="" />);

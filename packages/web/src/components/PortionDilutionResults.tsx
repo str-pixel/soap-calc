@@ -1,6 +1,6 @@
 import { lsPartialDilution, type DilutionResult } from '@soap-calc/core';
 import { formatWeight } from '../lib/weightUnits';
-import { measurementBelowSolids, measurementExceedsSolution } from '../lib/measuredPaste';
+import { measuredPasteRejectionFor } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
 type PortionDilutionResultsProps = {
@@ -31,7 +31,7 @@ type PortionDilutionResultsProps = {
 /**
  * Dilute only part of the batch. Paste keeps far better than diluted soap — it stores
  * sealed, refrigerates and freezes — so the common workflow is to cook one batch of paste
- * and draw it down over time. The batch figures above answer "dilute it all"; this answers
+ * and draw it down over time. Whole batch scope answers "dilute it all"; this answers
  * "make just this much now".
  *
  * The paste weight can be measured rather than computed, and should be: the reference
@@ -49,72 +49,23 @@ export function PortionDilutionResults({
   measuredPasteIsRemaining,
   wholeBatchPasteGrams,
 }: PortionDilutionResultsProps) {
-  const hasMeasurement = measuredPasteGrams.trim() !== '';
-  const measured = Number(measuredPasteGrams);
-  // Mirrors core's own predictedPasteGrams (anhydrous + the water already in the paste) —
-  // computed here too so the UI can refuse a physically impossible remaining reading
-  // BEFORE calling lsPartialDilution, the same way pasteBelowSolids/pasteExceedsSolution
-  // already do for their own guards. This counts only the WATER fraction of an
-  // alternative liquid, though — see wholeBatchPasteBasis just below for the corrected
-  // figure that actually gates the remaining-mode ceiling.
-  const predictedPasteGrams =
-    dilution.anhydrousGrams + Math.max(0, dilution.totalWaterGrams - dilution.dilutionWaterGrams);
-  // Review round 3: predictedPasteGrams structurally misses an alternative liquid's
-  // non-water solids (real mass sitting in the pot), so the TRUE whole-batch paste is
-  // heavier than predictedPasteGrams whenever the recipe has a split liquid. The corrected
-  // figure (wholeBatchPasteGrams, from the view model) is used for the ceiling below —
-  // and passed straight through to lsPartialDilution for the composition ratio too, so
-  // the UI's own rejection and core's arithmetic always agree on the same basis. Falls
-  // back to the uncorrected predictedPasteGrams (round 2's basis) when absent — the exact
-  // same fallback core itself applies when its own wholeBatchPasteGrams param is omitted.
-  const wholeBatchPasteBasis =
-    wholeBatchPasteGrams !== undefined &&
-    wholeBatchPasteGrams !== null &&
-    Number.isFinite(wholeBatchPasteGrams) &&
-    wholeBatchPasteGrams > 0
-      ? wholeBatchPasteGrams
-      : predictedPasteGrams;
-  // A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate —
-  // so a WHOLE-BATCH reading below that is not physically possible. It is a mis-tare (the
-  // crock left on the scale) or a PORTION weight, and the reference's own ratio method does
-  // weigh the portion, which makes the mistake an easy one. Left unguarded the app answered
-  // with confident nonsense: a 900 g reading on a 1,200 g-soap batch reported "lighter than
-  // predicted — water lost to the cook", which cannot be true of water that was never there.
-  // The floor does not apply once the reading is declared REMAINING: what's left after an
-  // earlier dilution can legitimately be less than the recipe's whole anhydrous soap — that
-  // is the entire point of the declaration, and rejecting it left no way to enter an honest
-  // measurement (the batch no longer exists at full weight to "enter instead").
-  const pasteBelowSolids =
-    !measuredPasteIsRemaining &&
-    hasMeasurement &&
-    Number.isFinite(measured) &&
-    measured > 0 &&
-    measurementBelowSolids(measured, dilution);
-  // Likewise, a paste heavier than the whole target solution cannot be diluted INTO that
-  // solution. Core returns null for it; saying so beats the figures silently vanishing.
-  // Kept as-is for whole-batch mode — unaffected by the remaining-only ceiling below.
-  const pasteExceedsSolution =
-    hasMeasurement && Number.isFinite(measured) && measurementExceedsSolution(measured, dilution);
-  // Review round 2, finding 2: a REMAINING reading cannot weigh more than the whole
-  // batch's own paste ever did — solids and the water already in the paste don't appear
-  // from nowhere. Left unguarded, a bogus reading (e.g. 3,000 g against a 1,700 g true
-  // paste) scaled to a pot anhydrous bigger than the entire batch's own anhydrous soap:
-  // physically impossible input, confidently wrong output. Checked against
-  // wholeBatchPasteBasis (round 3's corrected figure, not the water-only
-  // predictedPasteGrams — see its own comment above) so a legitimate remaining reading on
-  // a split-liquid recipe isn't falsely rejected. Core rejects this too (returns null,
-  // checked against the same basis via the wholeBatchPasteGrams param below), so the bad
-  // value can never reach the arithmetic either way — this mirrors that guard at the UI
-  // layer so the maker sees why, not just a vanished result.
-  const pasteExceedsRemainingCeiling =
-    measuredPasteIsRemaining &&
-    hasMeasurement &&
-    Number.isFinite(measured) &&
-    measured > 0 &&
-    measured > wholeBatchPasteBasis;
-  const measurementRejected = pasteBelowSolids || pasteExceedsSolution || pasteExceedsRemainingCeiling;
-  const hasValidMeasurement =
-    hasMeasurement && Number.isFinite(measured) && measured > 0 && !measurementRejected;
+  // The three physical-impossibility rules — below the anhydrous solids, heavier than the
+  // target solution, a remainder heavier than the whole batch ever was — live in
+  // lib/measuredPaste, together with the long record of the bug each one closed. The
+  // measured-paste INPUT is in DilutionPanel's shell, where it is visible in BOTH dilution
+  // scopes, and so are the alerts that reject a reading: this component only renders in
+  // Custom amount scope, so alerts kept here were unreachable in the default one. Reading
+  // the verdict from the same helper the shell uses means the two can never disagree about
+  // whether a reading is usable.
+  const rejection = measuredPasteRejectionFor(
+    measuredPasteGrams,
+    dilution,
+    measuredPasteIsRemaining,
+    wholeBatchPasteGrams,
+  );
+  const measured = rejection.measuredGrams;
+  const measurementRejected = rejection.rejected;
+  const hasValidMeasurement = rejection.accepted;
   // targetExceedsPaste is computed from the recipe's ASSUMED cook water — exactly the
   // assumption a measured paste is evidence against (Task 5: a valid measurement outranks
   // the flag). With one, the paste IS recoverable — that's the whole point of weighing it —
@@ -152,29 +103,6 @@ export function PortionDilutionResults({
 
   return (
     <>
-      {pasteBelowSolids && (
-        <p className="results-hint" role="alert">
-          That is less than the {formatWeight(dilution.anhydrousGrams, weightUnit)} of soap
-          this batch makes, so it cannot be the whole batch&apos;s paste — check the scale
-          was tared, and enter the whole batch rather than the portion you are diluting.
-        </p>
-      )}
-      {pasteExceedsSolution && (
-        <p className="results-hint" role="alert">
-          Your paste already weighs more than the{' '}
-          {formatWeight(dilution.solutionGrams, weightUnit)} this target dilutes to, so
-          there is no water to add — raise the target concentration above, or check the
-          measurement.
-        </p>
-      )}
-      {pasteExceedsRemainingCeiling && (
-        <p className="results-hint" role="alert">
-          That is more than the {formatWeight(wholeBatchPasteBasis, weightUnit)} the whole
-          batch&apos;s paste ever weighed, so it cannot be what is left of it — check the
-          scale, or switch the declaration above to &quot;all of it&quot; if that is what
-          you weighed.
-        </p>
-      )}
       {pasteAlreadyThinner && (
         <p className="results-hint">
           The paste is already more dilute than the target above, so there is no dilution
@@ -236,8 +164,8 @@ export function PortionDilutionResults({
                 <p className="results-hint">
                   Your paste is {formatWeight(Math.abs(driftGrams), weightUnit)}{' '}
                   {driftGrams < 0 ? 'lighter' : 'heavier'} than predicted
-                  {driftGrams < 0 ? ' — water lost to the cook' : ''}. The batch figures above
-                  use your measurement too, not just these figures.
+                  {driftGrams < 0 ? ' — water lost to the cook' : ''}. Whole batch scope uses
+                  your measurement too, not just these figures.
                 </p>
               )
             )

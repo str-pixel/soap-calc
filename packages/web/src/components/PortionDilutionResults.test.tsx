@@ -112,7 +112,10 @@ test('flags how far the measured paste drifted from the predicted one', () => {
   // DilutionPanel's batch row now uses the measurement too (see its own
   // batchDilutionWaterGrams), so this drift note must not claim otherwise.
   expect(screen.queryByText(/still use the predicted weight/i)).toBeNull();
-  expect(screen.getByText(/batch figures above use your measurement too/i)).toBeTruthy();
+  // Those figures are no longer "above" — they are behind the scope toggle, and only one
+  // scope's figures are on screen at a time. Name the scope, not a position.
+  expect(screen.getByText(/Whole batch scope uses your measurement too/i)).toBeTruthy();
+  expect(screen.queryByText(/batch figures above/i)).toBeNull();
 });
 
 test('without a measurement the computed paste carries the evaporation caveat', () => {
@@ -124,14 +127,17 @@ test('refuses a measurement below the anhydrous soap weight — not physically a
   // The paste always contains all the anhydrous soap (1,200 g here); solids do not
   // evaporate. A smaller reading is a mis-tare or a portion weight, and treating it as a
   // batch produced confident nonsense ("1,599 g lighter — water lost to the cook").
+  // The alert that says so now renders beside the INPUT, in DilutionPanel's shell, so it
+  // reaches both scopes; this component only has to stop computing from the bad reading.
   render(<PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="900" />);
-  expect(screen.getByText(/less than the .*soap this batch makes|below the/i)).toBeTruthy();
   expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+  expect(screen.queryByRole('alert')).toBeNull();
 });
 
-test('explains rather than vanishing when the measured paste exceeds the target solution', () => {
+test('refuses a measured paste that exceeds the target solution — the alert for it lives beside the input', () => {
   render(<PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="4100" />);
-  expect(screen.getByText(/already weighs more than/i)).toBeTruthy();
+  expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+  expect(screen.queryByRole('alert')).toBeNull();
 });
 
 describe('the measured-paste declaration (whole batch vs. what is left)', () => {
@@ -148,7 +154,7 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
         measuredPasteIsRemaining
       />,
     );
-    expect(screen.queryByText(/less than the .*soap this batch makes|below the/i)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
     // Fraction is taken against the POT's own achievable volume (900 g remaining → 2,250 g
     // pot solution → 2,184 ml achievable), not the recipe's — see the worked-example test
     // below for why. 500/2,184 ≈ 0.229: 206 g paste, 309 g water.
@@ -216,14 +222,16 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
         measuredPasteIsRemaining
       />,
     );
-    expect(screen.queryByText(/batch figures above use your measurement too/i)).toBeNull();
+    expect(screen.queryByText(/Whole batch scope uses your measurement too/i)).toBeNull();
   });
 
   test('rejects a remaining reading heavier than the whole batch\'s own predicted paste — a remainder cannot exceed the whole', () => {
     // Review round 2, finding 2: RESULT's predicted whole-batch paste is 1,600 g
     // (1,200 g anhydrous + 400 g cook water). A 2,000 g "remaining" reading would
     // otherwise be accepted and scale to more soap than the entire batch ever contained —
-    // physically impossible input must be refused, not silently computed.
+    // physically impossible input must be refused, not silently computed. The alert naming
+    // the ceiling now renders beside the input in DilutionPanel (which reaches both
+    // scopes); what this component owes is refusing to compute.
     render(
       <PortionDilutionResults
         {...PROPS}
@@ -232,9 +240,8 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
         measuredPasteIsRemaining
       />,
     );
-    expect(screen.getByText(/more than the 1,600 g/i)).toBeTruthy();
-    expect(screen.getByText(/ever weighed/i)).toBeTruthy();
     expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   test('accepts a remaining reading exactly at the predicted whole-batch paste (the boundary)', () => {
@@ -246,7 +253,6 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
         measuredPasteIsRemaining
       />,
     );
-    expect(screen.queryByText(/ever weighed/i)).toBeNull();
     expect(screen.getByText(/Paste to weigh out/)).toBeTruthy();
   });
 
@@ -317,7 +323,11 @@ describe('the whole-batch drift note and the remaining-mode ceiling quote the sa
     expect(screen.queryByText(/20 g lighter than predicted/)).toBeNull();
   });
 
-  test('the remaining-mode ceiling names the same 250 g basis', () => {
+  test('the remaining-mode ceiling refuses the same 300 g reading the drift note is measured against', () => {
+    // The alert that NAMES the 250 g ceiling now renders beside the input in DilutionPanel
+    // (both scopes reach it there) — see its own "quotes the corrected whole-batch basis"
+    // and "names the clamp-free 250 g basis" pins. What this component owes is refusing to
+    // compute from the reading at all.
     render(
       <PortionDilutionResults
         {...PROPS}
@@ -328,8 +338,8 @@ describe('the whole-batch drift note and the remaining-mode ceiling quote the sa
         wholeBatchPasteGrams={wholeBatchPasteGrams}
       />,
     );
-    expect(screen.getByText(/more than the 250 g/i)).toBeTruthy();
-    expect(screen.getByText(/ever weighed/i)).toBeTruthy();
+    expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 
@@ -365,11 +375,11 @@ describe('the remaining-mode ceiling uses the TRUE whole-batch paste, not just t
         wholeBatchPasteGrams={wholeBatchPasteGrams}
       />,
     );
-    expect(screen.queryByText(/ever weighed/i)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText(/Paste to weigh out/)).toBeTruthy();
   });
 
-  test('still rejects a reading above the TRUE whole-batch paste, and names the corrected 1,700 g basis, not the uncorrected 1,600 g', () => {
+  test('still rejects a reading above the TRUE whole-batch paste (the alert naming the 1,700 g basis is pinned in DilutionPanel)', () => {
     render(
       <PortionDilutionResults
         {...PROPS}
@@ -380,8 +390,6 @@ describe('the remaining-mode ceiling uses the TRUE whole-batch paste, not just t
         wholeBatchPasteGrams={wholeBatchPasteGrams}
       />,
     );
-    expect(screen.getByText(/more than the 1,700 g/i)).toBeTruthy();
-    expect(screen.queryByText(/more than the 1,600 g/i)).toBeNull();
     expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
   });
 
@@ -396,8 +404,8 @@ describe('the remaining-mode ceiling uses the TRUE whole-batch paste, not just t
       />,
     );
     // 1,620 g exceeds the uncorrected 1,600 g predicted paste, so without a corrected
-    // basis this is (correctly, for a recipe with no split liquid) still rejected.
-    expect(screen.getByText(/more than the 1,600 g/i)).toBeTruthy();
+    // basis this is (correctly, for a recipe with no split liquid) still rejected — the
+    // same reading the test above accepts once the corrected 1,700 g basis is supplied.
     expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
   });
 });
