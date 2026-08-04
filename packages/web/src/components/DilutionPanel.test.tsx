@@ -11,6 +11,21 @@ const RESULT: DilutionResult = {
   dilutionWaterGrams: 2400, glycerinGrams: 110, soapConcentrationPercent: 30, targetExceedsPaste: false,
 };
 
+// The props every scope/unit test needs but none of them varies. Declared here rather
+// than repeated per test because these tests pass twice as many props as the older ones.
+const BASE = {
+  dilution: RESULT,
+  soapConcentrationPercent: '30',
+  onSoapConcentrationChange: () => {},
+  weightUnit: 'g' as const,
+  measuredPasteGrams: '',
+  measuredPasteIsRemaining: false,
+  onMeasuredPasteGramsChange: () => {},
+  onMeasuredPasteIsRemainingChange: () => {},
+  onTargetMlChange: () => {},
+  onDilutionScopeChange: () => {},
+};
+
 test('renders the dilution figures', () => {
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   expect(screen.getByText('Dilution water to add')).toBeTruthy();
@@ -188,7 +203,7 @@ test('ratio mode derives the concentration a water:paste ratio lands on', () => 
 test('ratio mode uses cookWaterGrams for paste, not totalWater minus dilutionWater (the targetExceedsPaste clamp trap)', () => {
   // totalWaterGrams - dilutionWaterGrams would give the WRONG paste here: dilutionWaterGrams
   // is clamped to 0 when targetExceedsPaste (see the DilutionPanel cookWaterGrams prop doc
-  // and PartialDilution's identical trap), so the forbidden derivation would compute paste
+  // and PortionDilutionResults' identical trap), so the forbidden derivation would compute paste
   // as 1,200 + (133 - 0) = 1,333 g. The correct paste — from cookWaterGrams — is
   // 1,200 + 1,600 = 2,800 g. At a 1:1 ratio that is 2,800 g water to add and 21.4% soap
   // (1,200 / 5,600), not the 1,333 g / different percentage the forbidden formula implies.
@@ -220,7 +235,7 @@ test('ratio mode uses cookWaterGrams for paste, not totalWater minus dilutionWat
 
 test('ratio mode writes the derived concentration back once the ratio is actually edited, so downstream consumers reconcile', () => {
   // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
-  // without this write-back, vm.dilution / PartialDilution / BatchSheet
+  // without this write-back, vm.dilution / PortionDilutionResults / BatchSheet
   // would all keep showing the old persisted concentration's figures beside this panel's.
   // But the write-back must not fire on mode entry alone (see the dedicated describe
   // block below) — this test touches the ratio input first, as a real edit would. The
@@ -483,7 +498,9 @@ test('a measured paste corrects the batch dilution water', () => {
     />,
   );
   expect(screen.getByText(/^2,520 g/)).toBeTruthy();
-  expect(screen.getByText(/measured paste/i)).toBeTruthy();
+  // Not /measured paste/i alone: the new measured-paste input's own label ("Measured
+  // paste weight") also matches that broad a pattern now that the field lives here too.
+  expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
 });
 
 test('a measurement declared as what is left after earlier dilutions does NOT correct the batch row — it is not the batch', () => {
@@ -501,7 +518,7 @@ test('a measurement declared as what is left after earlier dilutions does NOT co
   );
   expect(screen.getByText(/^2,400 g/)).toBeTruthy();
   expect(screen.queryByText(/^2,520 g/)).toBeNull();
-  expect(screen.queryByText(/measured paste/i)).toBeNull();
+  expect(screen.queryByText(/uses your measured paste/i)).toBeNull();
 });
 
 test('the measured-paste hint names "Dilution water" explicitly in concentration mode', () => {
@@ -641,4 +658,69 @@ test('does not render a bottle size field or bottle count', () => {
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   expect(screen.queryByLabelText('Bottle size (ml)')).toBeNull();
   expect(screen.queryByText(/Bottles filled/)).toBeNull();
+});
+
+it('shows batch figures on "Whole batch" and portion figures on "Custom amount"', () => {
+  const onScopeChange = vi.fn();
+  const { rerender } = render(
+    <DilutionPanel {...BASE} dilutionScope="batch" onDilutionScopeChange={onScopeChange} targetMl="1200" />,
+  );
+  expect(screen.getByText('Dilution water to add')).toBeTruthy();
+  expect(screen.queryByText('Paste to weigh out')).toBeNull();
+
+  fireEvent.click(screen.getByLabelText('Custom amount'));
+  expect(onScopeChange).toHaveBeenCalledWith('portion');
+
+  rerender(
+    <DilutionPanel {...BASE} dilutionScope="portion" onDilutionScopeChange={onScopeChange} targetMl="1200" />,
+  );
+  expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+  expect(screen.queryByText('Dilution water to add')).toBeNull();
+});
+
+it('only offers the amount field in custom-amount scope', () => {
+  const { rerender } = render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" />);
+  expect(screen.queryByLabelText('Amount to make (ml)')).toBeNull();
+  rerender(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="" />);
+  expect(screen.getByLabelText('Amount to make (ml)')).toBeTruthy();
+});
+
+it('names the measurement declaration without repeating "whole batch"', () => {
+  render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" />);
+  expect(screen.getByLabelText('all of it')).toBeTruthy();
+  expect(screen.getByLabelText("what's left after earlier dilutions")).toBeTruthy();
+});
+
+// Moved from the old PartialDilution.test.tsx: these drove the measured-paste input, the
+// declaration radios or the ml field, all of which now live in this shell rather than in
+// PortionDilutionResults.
+describe('portion scope: the measured-paste input and declaration that used to live in PartialDilution', () => {
+  it('keeps the measured-paste and amount inputs visible even when the paste is already more dilute than the target', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="portion"
+        targetMl=""
+        dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }}
+      />,
+    );
+    expect(screen.getByLabelText('Amount to make (ml)')).toBeTruthy();
+    expect(screen.getByLabelText('Measured paste weight (g)')).toBeTruthy();
+    expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+  });
+
+  it('labels the measured-paste field without qualifying it as the whole batch — that distinction now lives in the declaration radios below it', () => {
+    render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" />);
+    expect(screen.getByLabelText('Measured paste weight (g)')).toBeTruthy();
+  });
+
+  it('defaults to the "all of it" declaration', () => {
+    render(
+      <DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" measuredPasteGrams="1480" />,
+    );
+    expect(screen.getByRole('radio', { name: /all of it/i })).toHaveProperty('checked', true);
+    expect(
+      screen.getByRole('radio', { name: /what.s left after earlier dilutions/i }),
+    ).toHaveProperty('checked', false);
+  });
 });

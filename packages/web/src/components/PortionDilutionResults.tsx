@@ -3,25 +3,21 @@ import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
 import { measurementBelowSolids, measurementExceedsSolution } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
-type PartialDilutionProps = {
-  dilution: DilutionResult | null;
+type PortionDilutionResultsProps = {
+  dilution: DilutionResult;
   weightUnit: WeightUnit;
-  /** Lifted to App beside the bottle size, so both snippets survive a collapse or a
-   * process switch the same way. Neither belongs in the recipe: they are "what am I
-   * making right now" decisions, not properties of the formula. */
+  /** Lives in App, not the recipe: it is a "what am I making right now" decision, not a
+   * property of the formula. */
   targetMl: string;
-  onTargetMlChange: (value: string) => void;
   /** The maker's scale reading for the paste, in grams — the whole batch by default, or
    * what's left after earlier dilutions when `measuredPasteIsRemaining` is set. */
   measuredPasteGrams: string;
-  onMeasuredPasteGramsChange: (value: string) => void;
   /** True when `measuredPasteGrams` is what's LEFT after part of the batch was already
    * diluted away, not the whole batch. "Lighter than predicted" has two indistinguishable
    * explanations — evaporation during the cook (same soap, less water) or part of the
    * batch already gone (composition unchanged, just less of it) — so the maker must say
    * which. Defaults to whole-batch so existing sessions are unaffected. */
-  measuredPasteIsRemaining?: boolean;
-  onMeasuredPasteIsRemainingChange?: (value: boolean) => void;
+  measuredPasteIsRemaining: boolean;
   /** The best-known WHOLE-BATCH paste mass (see useRecipeViewModel) — corrects the
    * recipe's own water-only predicted figure for an alternative liquid's non-water
    * solids, which are real mass sitting in the pot the recipe never counts. Used as the
@@ -45,18 +41,14 @@ type PartialDilutionProps = {
  * recipe never counted. Given a measurement, the water figure absorbs the whole difference
  * and every portion below is exact arithmetic.
  */
-export function PartialDilution({
+export function PortionDilutionResults({
   dilution,
   weightUnit,
   targetMl,
-  onTargetMlChange,
   measuredPasteGrams,
-  onMeasuredPasteGramsChange,
-  measuredPasteIsRemaining = false,
-  onMeasuredPasteIsRemainingChange,
+  measuredPasteIsRemaining,
   wholeBatchPasteGrams,
-}: PartialDilutionProps) {
-  if (dilution === null) return null;
+}: PortionDilutionResultsProps) {
   const hasMeasurement = measuredPasteGrams.trim() !== '';
   const measured = Number(measuredPasteGrams);
   // Mirrors core's own predictedPasteGrams (anhydrous + the water already in the paste) —
@@ -159,72 +151,7 @@ export function PartialDilution({
   const driftGrams = portion?.pasteMeasured ? measured - portion.wholeBatchPasteGrams : 0;
 
   return (
-    <details className="panel panel--nested">
-      <summary className="panel__title">Dilute part of the batch</summary>
-      <p className="panel__subtitle">
-        Paste stores better than diluted soap — weigh out a portion and dilute just that.
-      </p>
-      <label className="field">
-        {/* Grams regardless of the display unit: this is a scale reading the maker
-            takes at the pot, and the core figures it feeds are all gram-based.
-            "Whole batch" is load-bearing — the subtitle above talks about portions,
-            and the reference's ratio method weighs the portion, so an unqualified
-            label invites a portion weight and silently over-dilutes. Always shown,
-            even when the target exceeds the recipe's ASSUMED cook water below: a
-            measurement is exactly what can override that assumption (Task 5), so
-            hiding the input would remove the only way out of the refusal. */}
-        <span>Measured paste weight — whole batch (g, optional)</span>
-        <input
-          type="number"
-          className="input input--number"
-          min={1}
-          step={10}
-          value={measuredPasteGrams}
-          onChange={(e) => onMeasuredPasteGramsChange(e.target.value)}
-          aria-label="Measured paste weight — whole batch (g)"
-        />
-      </label>
-      {/* "Lighter than predicted" has two indistinguishable explanations — evaporation
-          during the cook (same soap, less water: MORE concentrated) or part of the batch
-          already diluted away (composition unchanged, just less of it) — one number
-          cannot tell them apart, so the maker must say which. Defaults to whole batch so
-          existing behaviour (and existing sessions) are unchanged unless this is touched. */}
-      <div
-        className="dilution-mode-toggle"
-        role="radiogroup"
-        aria-label="What the measured paste weight represents"
-      >
-        <label className="field field--inline">
-          <input
-            type="radio"
-            name="measuredPasteScope"
-            checked={!measuredPasteIsRemaining}
-            onChange={() => onMeasuredPasteIsRemainingChange?.(false)}
-          />
-          <span>the whole batch, before any dilution</span>
-        </label>
-        <label className="field field--inline">
-          <input
-            type="radio"
-            name="measuredPasteScope"
-            checked={measuredPasteIsRemaining}
-            onChange={() => onMeasuredPasteIsRemainingChange?.(true)}
-          />
-          <span>what&apos;s left after earlier dilutions</span>
-        </label>
-      </div>
-      <label className="field">
-        <span>Amount to make (ml)</span>
-        <input
-          type="number"
-          className="input input--number"
-          min={1}
-          step={10}
-          value={targetMl}
-          onChange={(e) => onTargetMlChange(e.target.value)}
-          aria-label="Amount to make (ml)"
-        />
-      </label>
+    <>
       {pasteBelowSolids && (
         <p className="results-hint" role="alert">
           That is less than the {formatWeight(dilution.anhydrousGrams, weightUnit)} of soap
@@ -301,8 +228,8 @@ export function PartialDilution({
                 anhydrous soap is scaled down from your{' '}
                 {formatWeight(measured, weightUnit)} reading, assuming the paste&apos;s
                 composition hasn&apos;t changed — not from the recipe&apos;s whole-batch
-                figure. The batch row above still shows the recipe&apos;s own computed
-                figures; a remaining-paste reading is not the batch.
+                figure. Switch to Whole batch to see the recipe&apos;s own computed
+                figures — a remaining-paste reading is not the batch.
               </p>
             ) : (
               Math.abs(driftGrams) >= 1 && (
@@ -324,6 +251,6 @@ export function PartialDilution({
           )}
         </>
       )}
-    </details>
+    </>
   );
 }

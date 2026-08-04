@@ -3,8 +3,8 @@ import type { DilutionResult } from '@soap-calc/core';
 /**
  * A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate — so
  * a reading below that is not a whole-batch paste. It is a mis-tare (the crock left on the
- * scale) or a PORTION weight. Shared by PartialDilution and DilutionPanel so a measured
- * paste is validated against the same rule everywhere it corrects a figure. The boundary
+ * scale) or a PORTION weight. Shared by PortionDilutionResults and DilutionPanel so a
+ * measured paste is validated against the same rule everywhere it corrects a figure. The boundary
  * (measured === anhydrousGrams) is accepted.
  */
 export function measurementBelowSolids(measuredGrams: number, dilution: DilutionResult): boolean {
@@ -23,7 +23,7 @@ export function measurementExceedsSolution(measuredGrams: number, dilution: Dilu
  * Parses a measured-paste input string (as stored in App/view-model state) into a finite,
  * positive gram figure, or undefined when blank/invalid. Centralizes the "is there a
  * usable number here" check so every caller that might apply the measurement —
- * PartialDilution, DilutionPanel, the printed batch sheet — reads it identically.
+ * PortionDilutionResults, DilutionPanel, the printed batch sheet — reads it identically.
  */
 export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined): number | undefined {
   if (measuredPasteGrams === undefined) return undefined;
@@ -42,7 +42,7 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * `isRemaining` gates this for the BATCH row specifically: a reading declared as what's
  * LEFT after earlier dilutions describes a smaller pot, not the whole batch, so it can
  * never be valid for a caller (DilutionPanel's batch row, the printed BatchSheet) that
- * corrects a BATCH-level figure with it — PartialDilution's own portion arithmetic
+ * corrects a BATCH-level figure with it — PortionDilutionResults' own portion arithmetic
  * doesn't go through this gate, since a remaining reading is exactly what it wants.
  */
 export function measuredPasteIsValidFor(
@@ -61,7 +61,7 @@ export function measuredPasteIsValidFor(
 
 /**
  * The batch's dilution-water figure, corrected by a valid measured paste — the same
- * arithmetic DilutionPanel and PartialDilution already apply: solutionGrams is fixed by
+ * arithmetic DilutionPanel and PortionDilutionResults already apply: solutionGrams is fixed by
  * the target concentration, so solutionGrams - measured is what is still needed to reach
  * it, and a valid measurement OUTRANKS the recipe's own dilutionWaterGrams (Task 5's
  * measured-paste-outranks-targetExceedsPaste principle — that flag is derived from the

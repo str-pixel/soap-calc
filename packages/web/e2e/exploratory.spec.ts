@@ -361,23 +361,24 @@ test.describe('liquid soap', () => {
     await expect(section.getByRole('alert')).toContainText(/already more dilute/);
   });
 
-  test('partial dilution is a separate snippet that scales paste and water', async ({ page }) => {
+  test('custom-amount scope sizes a portion that scales paste and water', async ({ page }) => {
     // Paste stores better than diluted soap, so making only part of the batch now is its
-    // own optional step, collapsed like the other dilution add-ons.
-    const partial = page.locator('details').filter({ hasText: 'Dilute part of the batch' }).first();
+    // own optional scope, chosen with a toggle rather than shown by default.
+    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
     await expect(page.getByLabel('Amount to make (ml)')).toBeHidden();
-    await partial.locator('summary').click();
+    await section.getByLabel('Custom amount').click();
+    await expect(page.getByLabel('Amount to make (ml)')).toBeVisible();
     await page.getByLabel('Amount to make (ml)').fill('1000');
     await page.getByLabel('Amount to make (ml)').blur();
-    await expect(partial).toContainText(/Paste to weigh out/);
-    await expect(partial).toContainText(/% of the batch/);
+    await expect(section).toContainText(/Paste to weigh out/);
+    await expect(section).toContainText(/% of the batch/);
     // No measurement yet: the computed paste must carry the evaporation caveat.
-    await expect(partial).toContainText(/evaporat/i);
+    await expect(section).toContainText(/evaporat/i);
     // Weighing the paste replaces the computed figure and moves the water to match.
-    await page.getByLabel('Measured paste weight — whole batch (g)').fill('1400');
-    await page.getByLabel('Measured paste weight — whole batch (g)').blur();
-    await expect(partial).toContainText(/than predicted/);
-    await expect(partial).toContainText(/ : 1/);
+    await page.getByLabel('Measured paste weight (g)').fill('1400');
+    await page.getByLabel('Measured paste weight (g)').blur();
+    await expect(section).toContainText(/than predicted/);
+    await expect(section).toContainText(/ : 1/);
   });
 
   test('negative superfat triggers Neutralize panel with citric estimate', async ({ page }, testInfo) => {

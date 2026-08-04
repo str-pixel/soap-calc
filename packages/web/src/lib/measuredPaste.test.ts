@@ -51,7 +51,7 @@ describe('correctedDilutionWaterGrams', () => {
     expect(correctedDilutionWaterGrams(DILUTION, '900')).toBe(2400); // below solids: rejected
   });
 
-  it('uses solutionGrams - measured for a valid measurement — the same arithmetic DilutionPanel and PartialDilution apply', () => {
+  it('uses solutionGrams - measured for a valid measurement — the same arithmetic DilutionPanel and PortionDilutionResults apply', () => {
     // 4,000 - 1,480 = 2,520.
     expect(correctedDilutionWaterGrams(DILUTION, '1480')).toBe(2520);
   });

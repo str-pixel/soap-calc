@@ -226,7 +226,7 @@ describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid soli
   // Review round 3: predictedPasteGrams (anhydrousGrams + cookWaterGrams) counts only the
   // WATER fraction of an alternative liquid — its non-water solids are real mass sitting
   // in the pot the recipe never counts (see ls-yield.ts, DilutionPanel.tsx,
-  // PartialDilution.tsx, all verbatim on this point). So for a split-liquid recipe the
+  // PortionDilutionResults.tsx, all verbatim on this point). So for a split-liquid recipe the
   // TRUE whole-batch paste is structurally heavier than predictedPasteGrams, and round 2's
   // ceiling (which used predictedPasteGrams) both rejected legitimate remaining readings
   // above it AND (via the same basis feeding the composition ratio) understated the pot's

@@ -3,8 +3,7 @@ import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
-import { DilutionPanel } from './components/DilutionPanel';
-import { PartialDilution } from './components/PartialDilution';
+import { DilutionPanel, type DilutionScope } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
@@ -85,15 +84,15 @@ export default function App() {
   const [vesselVolumeLiters, setVesselVolumeLiters] = useState('');
   // Both live here rather than in the recipe: "how much am I making right now" and "what
   // did my paste weigh" are bench decisions, not properties of the formula, so they must
-  // not dirty a saved or exported recipe. App state keeps them across panel collapse and
-  // process switches within a session.
+  // not dirty a saved or exported recipe. App state keeps them across process switches
+  // within a session.
   const [portionTargetMl, setPortionTargetMl] = useState('');
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
   // What the measured paste weight above represents: the whole batch before any dilution
   // (the default — matches all existing sessions), or what's left after earlier dilutions.
   // "Lighter than predicted" has two indistinguishable explanations — cook evaporation
   // (same soap, less water) or part of the batch already diluted away (composition
-  // unchanged, just less of it) — so the maker must say which; see PartialDilution.
+  // unchanged, just less of it) — so the maker must say which; see DilutionPanel.
   const [measuredPasteIsRemaining, setMeasuredPasteIsRemaining] = useState(false);
   // A measurement describes one specific batch's paste; it must not survive an edit to the
   // recipe that batch was measured from, or the dilution figures keep using a paste weight
@@ -137,10 +136,13 @@ export default function App() {
   // default — LS:1536, and what the persisted settings.soapConcentrationPercent already
   // is) or a water:paste ratio by weight (LS:1534). Session-local like the portion inputs
   // above, not a recipe setting — the persisted concentration is still the one figure every
-  // downstream consumer (vm.dilution, PartialDilution, BatchSheet) reads;
+  // downstream consumer (vm.dilution, DilutionPanel, BatchSheet) reads;
   // ratio mode only ever writes into it via DilutionPanel's onSoapConcentrationChange.
   const [dilutionMode, setDilutionMode] = useState<'concentration' | 'ratio'>('concentration');
   const [waterPasteRatio, setWaterPasteRatio] = useState('2');
+  // "Dilute it all" vs "make just this much now" — a decision about the session, not the
+  // recipe, so it lives here rather than in settings. Defaults to the whole batch.
+  const [dilutionScope, setDilutionScope] = useState<DilutionScope>('batch');
   useEffect(() => {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
@@ -512,18 +514,11 @@ export default function App() {
                 onWaterPasteRatioChange={setWaterPasteRatio}
                 measuredPasteGrams={measuredPasteGrams}
                 measuredPasteIsRemaining={measuredPasteIsRemaining}
-              />
-            )}
-            {processOffers(process, 'dilution') && (
-              // Diluting a portion is its own step — see PartialDilution.
-              <PartialDilution
-                dilution={vm.dilution}
-                weightUnit={weightUnit}
+                dilutionScope={dilutionScope}
+                onDilutionScopeChange={setDilutionScope}
                 targetMl={portionTargetMl}
                 onTargetMlChange={setPortionTargetMl}
-                measuredPasteGrams={measuredPasteGrams}
                 onMeasuredPasteGramsChange={setMeasuredPasteGrams}
-                measuredPasteIsRemaining={measuredPasteIsRemaining}
                 onMeasuredPasteIsRemainingChange={setMeasuredPasteIsRemaining}
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
               />

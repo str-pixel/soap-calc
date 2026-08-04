@@ -15,8 +15,11 @@ import {
   parseMeasuredPasteGrams,
 } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
+import { PortionDilutionResults } from './PortionDilutionResults';
 
 export type DilutionMode = 'concentration' | 'ratio';
+
+export type DilutionScope = 'batch' | 'portion';
 
 type DilutionPanelProps = {
   dilution: DilutionResult | null;
@@ -50,18 +53,34 @@ type DilutionPanelProps = {
   /** Water:paste ratio by weight, as typed (e.g. "2" for 2:1). */
   waterPasteRatio?: string;
   onWaterPasteRatioChange?: (value: string) => void;
-  /** The maker's scale reading for the paste, in grams (same App state PartialDilution
+  /** The maker's scale reading for the paste, in grams (same App state PortionDilutionResults
    * reads — see its doc comment). The reference weighs the paste precisely because a
    * computed figure cannot account for cook evaporation or an alternative liquid's
    * uncounted solids, so when this is present, declared as the WHOLE batch, and passes
-   * PartialDilution's own guards, it corrects the BATCH dilution water here too, not just
-   * the portion below. */
+   * PortionDilutionResults' own guards, it corrects the BATCH dilution water here too, not
+   * just the portion below. */
   measuredPasteGrams?: string;
   /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
-   * whole batch (see PartialDilution's declaration). A remaining-paste reading describes a
+   * whole batch (see the declaration radios above). A remaining-paste reading describes a
    * smaller pot, not the batch — it must never correct this BATCH row, only the portion in
-   * PartialDilution. */
+   * PortionDilutionResults. */
   measuredPasteIsRemaining?: boolean;
+  onMeasuredPasteGramsChange?: (value: string) => void;
+  onMeasuredPasteIsRemainingChange?: (value: boolean) => void;
+  /** "Dilute it all" (the default, matching today's panel) vs. "make just this much now" —
+   * a decision about the session, not the recipe. See App's own doc comment on the state
+   * this drives. Optional/defaulted to 'batch' so every pre-existing caller (and test) that
+   * predates the scope toggle keeps seeing exactly the batch panel it always has. */
+  dilutionScope?: DilutionScope;
+  onDilutionScopeChange?: (scope: DilutionScope) => void;
+  /** Lives in App, not the recipe: it is a "what am I making right now" decision, not a
+   * property of the formula. Only read when dilutionScope is 'portion'. */
+  targetMl?: string;
+  onTargetMlChange?: (value: string) => void;
+  /** The best-known WHOLE-BATCH paste mass (see useRecipeViewModel) — passed straight
+   * through to PortionDilutionResults, which needs it for the same corrected
+   * ceiling/composition basis the batch row's own measured-paste guards use. */
+  wholeBatchPasteGrams?: number | null;
 };
 
 export function DilutionPanel({
@@ -80,6 +99,13 @@ export function DilutionPanel({
   onWaterPasteRatioChange,
   measuredPasteGrams,
   measuredPasteIsRemaining = false,
+  onMeasuredPasteGramsChange,
+  onMeasuredPasteIsRemainingChange,
+  dilutionScope = 'batch',
+  onDilutionScopeChange,
+  targetMl = '',
+  onTargetMlChange,
+  wholeBatchPasteGrams,
 }: DilutionPanelProps) {
   // Set only by the ratio input's own onChange below — never by mode entry — so the
   // write-back effect further down can require a real edit before touching the saved
@@ -100,7 +126,7 @@ export function DilutionPanel({
   // Which intended uses the current target suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
-  // Same guards PartialDilution applies to the identical measurement: below the anhydrous
+  // Same guards PortionDilutionResults applies to the identical measurement: below the anhydrous
   // soap it cannot be a whole-batch paste, above the target solution there is no water left
   // to add. Both accept the boundary. A measured paste that survives these WINS over the
   // computed figures below — see the "measured paste" hint on the batch row, and the ratio
@@ -115,7 +141,7 @@ export function DilutionPanel({
   // paste. Otherwise pasteGrams is anhydrousGrams + the paste's TRUE water — not
   // dilution.totalWaterGrams - dilutionWaterGrams, which the targetExceedsPaste clamp on
   // dilutionWaterGrams can zero out (see DilutionPanelProps.cookWaterGrams and
-  // PartialDilution's identical trap).
+  // PortionDilutionResults' identical trap).
   const ratioNum = Number(waterPasteRatio);
   const ratioValid = Number.isFinite(ratioNum) && ratioNum > 0;
   const pasteGrams = dilution
@@ -149,7 +175,7 @@ export function DilutionPanel({
     roundedRatioConcentrationPercent !== null &&
     clampedRatioConcentrationPercent !== roundedRatioConcentrationPercent;
   // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
-  // vm.dilution, PartialDilution and the printed BatchSheet all read the
+  // vm.dilution, PortionDilutionResults and the printed BatchSheet all read the
   // persisted concentration, so without this write-back the app would show the ratio's own
   // water figure here beside a different figure everywhere else. soapConcentrationPercent IS
   // a dep (despite being what this writes) so an EXTERNAL change to it — opening a recipe
@@ -180,7 +206,7 @@ export function DilutionPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ratioTouched, dilutionMode, clampedRatioConcentrationPercent, soapConcentrationPercent]);
   // The measurement corrects the BATCH figure the same way it already corrects the portion
-  // in PartialDilution — shared with the printed BatchSheet so both surfaces always agree.
+  // in PortionDilutionResults — shared with the printed BatchSheet so both surfaces always agree.
   const batchDilutionWaterGrams = dilution
     ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
     : 0;
@@ -255,6 +281,86 @@ export function DilutionPanel({
           />
         </label>
       )}
+      <label className="field">
+        {/* Grams regardless of the display unit: this is a scale reading the maker takes at
+            the pot, and the core figures it feeds are all gram-based. Always shown, even when
+            the target exceeds the recipe's ASSUMED cook water: a measurement is exactly what
+            can override that assumption, so hiding the input would remove the only way out of
+            the refusal. */}
+        <span>Measured paste weight (g, optional)</span>
+        <input
+          type="number"
+          className="input input--number"
+          min={1}
+          step={10}
+          value={measuredPasteGrams ?? ''}
+          onChange={(e) => onMeasuredPasteGramsChange?.(e.target.value)}
+          aria-label="Measured paste weight (g)"
+        />
+      </label>
+      {/* "Lighter than predicted" has two indistinguishable explanations — evaporation during
+          the cook (same soap, less water: MORE concentrated) or part of the batch already
+          diluted away (composition unchanged, just less of it) — one number cannot tell them
+          apart, so the maker must say which. Deliberately NOT worded "whole batch": the scope
+          toggle below already owns that phrase, and two controls reading alike is how a maker
+          picks the wrong one. */}
+      <div className="dilution-mode-toggle" role="radiogroup" aria-label="What the measured paste weight represents">
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="measuredPasteScope"
+            checked={!measuredPasteIsRemaining}
+            onChange={() => onMeasuredPasteIsRemainingChange?.(false)}
+          />
+          <span>all of it</span>
+        </label>
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="measuredPasteScope"
+            checked={measuredPasteIsRemaining}
+            onChange={() => onMeasuredPasteIsRemainingChange?.(true)}
+          />
+          <span>what&apos;s left after earlier dilutions</span>
+        </label>
+      </div>
+      {/* Paste stores better than diluted soap — it keeps sealed, refrigerates and freezes —
+          so the common workflow is to cook one batch and draw it down over time. Whole batch
+          answers "dilute it all"; custom amount answers "make just this much now". */}
+      <div className="dilution-mode-toggle" role="radiogroup" aria-label="How much of the batch to dilute">
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="dilutionScope"
+            checked={dilutionScope === 'batch'}
+            onChange={() => onDilutionScopeChange?.('batch')}
+          />
+          <span>Whole batch</span>
+        </label>
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="dilutionScope"
+            checked={dilutionScope === 'portion'}
+            onChange={() => onDilutionScopeChange?.('portion')}
+          />
+          <span>Custom amount</span>
+        </label>
+      </div>
+      {dilutionScope === 'portion' && (
+        <label className="field">
+          <span>Amount to make (ml)</span>
+          <input
+            type="number"
+            className="input input--number"
+            min={1}
+            step={10}
+            value={targetMl}
+            onChange={(e) => onTargetMlChange?.(e.target.value)}
+            aria-label="Amount to make (ml)"
+          />
+        </label>
+      )}
       {dilutionMode === 'ratio' && !ratioValid && (
         <p className="results-hint">
           Enter a water:paste ratio greater than zero (e.g. 2 for 2:1) to see the water this
@@ -293,64 +399,77 @@ export function DilutionPanel({
         )}
       {dilution ? (
         <>
-          <dl className="results-grid">
-            {/* Ratio mode's own block above already owns the water-to-add figure ("Water to
-                add at this ratio"). This row reads whatever concentration is currently
-                PERSISTED — the write-back only narrows toward the ratio's figure, closing to
-                within 0.1% at best, and can diverge by orders of magnitude once the 1-99%
-                clamp kicks in — so showing both bare water figures at once would leave the
-                maker guessing which one to actually pour. Suppress this row in ratio mode and
-                let the ratio block be the sole source for that number; every other row here
-                (paste, solution, total water, glycerin, volume) still reflects the applied
-                concentration and carries no such competing figure. */}
-            {dilutionMode !== 'ratio' && (
-              <div className="results-grid__item results-grid__item--primary">
-                <dt>Dilution water to add</dt>
-                <dd>{formatWeightWithAlternates(batchDilutionWaterGrams, weightUnit)}</dd>
-              </div>
-            )}
-            <div className="results-grid__item">
-              <dt>Paste (anhydrous)</dt>
-              <dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd>
-            </div>
-            <div className="results-grid__item">
-              <dt>Finished solution</dt>
-              <dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd>
-            </div>
-            <div className="results-grid__item">
-              <dt>Total water</dt>
-              <dd>{formatWeight(dilution.totalWaterGrams, weightUnit)}</dd>
-            </div>
-            <div className="results-grid__item">
-              <dt>Glycerin (retained)</dt>
-              <dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd>
-            </div>
-            {showBottledRow && bottledGrams !== null && (
-              <div className="results-grid__item">
-                <dt>≈ Finished product</dt>
-                <dd>{formatWeight(bottledGrams, weightUnit)}</dd>
-              </div>
-            )}
-            {finishedVolumeMl !== null && (
-              <div className="results-grid__item">
-                <dt>≈ Finished volume</dt>
-                <dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd>
-              </div>
-            )}
-          </dl>
-          {measuredPasteValid && (
-            <p className="results-hint">
-              {/* Named explicitly rather than positionally: in ratio mode the main grid's
-                  own "Dilution water to add" row is suppressed (see just above), so
-                  "above" would land on Total water/Glycerin instead — neither of which is
-                  measurement-corrected. Ratio mode's own water figure IS corrected (its
-                  pasteGrams already prefers a valid measurement), so name that row there. */}
-              {dilutionMode === 'ratio' ? 'Water to add at this ratio' : 'Dilution water'} above
-              uses your measured paste ({formatWeight(measuredPasteNum, weightUnit)}
-              ), not the recipe&apos;s computed paste — the cook evaporates water the recipe still
-              counts, and an alternative liquid&apos;s solids are mass it never counted, so the
-              measurement is more accurate.
-            </p>
+          {dilutionScope === 'batch' ? (
+            <>
+              <dl className="results-grid">
+                {/* Ratio mode's own block above already owns the water-to-add figure ("Water to
+                    add at this ratio"). This row reads whatever concentration is currently
+                    PERSISTED — the write-back only narrows toward the ratio's figure, closing to
+                    within 0.1% at best, and can diverge by orders of magnitude once the 1-99%
+                    clamp kicks in — so showing both bare water figures at once would leave the
+                    maker guessing which one to actually pour. Suppress this row in ratio mode and
+                    let the ratio block be the sole source for that number; every other row here
+                    (paste, solution, total water, glycerin, volume) still reflects the applied
+                    concentration and carries no such competing figure. */}
+                {dilutionMode !== 'ratio' && (
+                  <div className="results-grid__item results-grid__item--primary">
+                    <dt>Dilution water to add</dt>
+                    <dd>{formatWeightWithAlternates(batchDilutionWaterGrams, weightUnit)}</dd>
+                  </div>
+                )}
+                <div className="results-grid__item">
+                  <dt>Paste (anhydrous)</dt>
+                  <dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd>
+                </div>
+                <div className="results-grid__item">
+                  <dt>Finished solution</dt>
+                  <dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd>
+                </div>
+                <div className="results-grid__item">
+                  <dt>Total water</dt>
+                  <dd>{formatWeight(dilution.totalWaterGrams, weightUnit)}</dd>
+                </div>
+                <div className="results-grid__item">
+                  <dt>Glycerin (retained)</dt>
+                  <dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd>
+                </div>
+                {showBottledRow && bottledGrams !== null && (
+                  <div className="results-grid__item">
+                    <dt>≈ Finished product</dt>
+                    <dd>{formatWeight(bottledGrams, weightUnit)}</dd>
+                  </div>
+                )}
+                {finishedVolumeMl !== null && (
+                  <div className="results-grid__item">
+                    <dt>≈ Finished volume</dt>
+                    <dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd>
+                  </div>
+                )}
+              </dl>
+              {measuredPasteValid && (
+                <p className="results-hint">
+                  {/* Named explicitly rather than positionally: in ratio mode the main grid's
+                      own "Dilution water to add" row is suppressed (see just above), so
+                      "above" would land on Total water/Glycerin instead — neither of which is
+                      measurement-corrected. Ratio mode's own water figure IS corrected (its
+                      pasteGrams already prefers a valid measurement), so name that row there. */}
+                  {dilutionMode === 'ratio' ? 'Water to add at this ratio' : 'Dilution water'} above
+                  uses your measured paste ({formatWeight(measuredPasteNum, weightUnit)}
+                  ), not the recipe&apos;s computed paste — the cook evaporates water the recipe still
+                  counts, and an alternative liquid&apos;s solids are mass it never counted, so the
+                  measurement is more accurate.
+                </p>
+              )}
+            </>
+          ) : (
+            <PortionDilutionResults
+              dilution={dilution}
+              weightUnit={weightUnit}
+              targetMl={targetMl}
+              measuredPasteGrams={measuredPasteGrams ?? ''}
+              measuredPasteIsRemaining={measuredPasteIsRemaining}
+              wholeBatchPasteGrams={wholeBatchPasteGrams}
+            />
           )}
           {/* LS:1531 — shown regardless of which figure (concentration or ratio) the maker
               started from, since the swelling and absorbing it describes happens either way. */}
@@ -366,47 +485,51 @@ export function DilutionPanel({
               exact.
             </p>
           )}
-          {/* targetExceedsPaste is computed from the recipe's ASSUMED cook water — exactly
-              the assumption a measured paste is evidence against (that's the whole reason
-              the reference weighs the paste: the computed figure can't see evaporation). A
-              valid measurement outranks the flag, so suppress this alert rather than assert
-              "already more dilute" beside a water figure the measurement just produced. */}
-          {dilution.targetExceedsPaste &&
-            !measuredPasteValid &&
-            (unknownLiquidGrams === 0 || overDilutionCertain) && (
-              <p className="results-hint" role="alert">
-                The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
-                only lowers the concentration further.
-              </p>
-            )}
-          {dilution.targetExceedsPaste && unknownLiquidGrams > 0 && !overDilutionCertain && (
-            // Suppressed, not reworded: targetExceedsPaste is a factual claim about the
-            // paste, and it was derived from an ASSUMED water content. Asserting it can tell
-            // the user a batch is finished when it still needs hundreds of grams of water.
-            <p className="results-hint">
-              Can&apos;t tell whether {formatConcentrationPercent(dilution.soapConcentrationPercent)}% is reachable —{' '}
-              {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
-              declared water content. Declare its % water in Split liquid.
-            </p>
-          )}
-          {altLiquidWaterGrams > 0 && unknownLiquidGrams === 0 && (
-            <p className="results-hint">
-              Already {formatWeight(altLiquidWaterGrams, weightUnit)} lighter: that much
-              water came in with the alternative liquid and is counted as part of the paste.
-              Top up with plain distilled water only.
-            </p>
-          )}
-          {/* Floor hint only when a positive floor exists. When the target already exceeds the
-              paste, the can't-tell / certain-alert branches above own the message — rendering
-              this too repeated "declare its % water" verbatim and printed a vacuous
-              "0 g is the LEAST you will need". */}
-          {altLiquidWaterGrams > 0 && unknownLiquidGrams > 0 && !dilution.targetExceedsPaste && (
-            <p className="results-hint">
-              {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
-              declared water content — it is counted as all water, so{' '}
-              {formatWeight(dilution.dilutionWaterGrams, weightUnit)} is the LEAST you will
-              need. Declare its % water, or dilute in increments and check by weight.
-            </p>
+          {dilutionScope === 'batch' && (
+            <>
+              {/* targetExceedsPaste is computed from the recipe's ASSUMED cook water — exactly
+                  the assumption a measured paste is evidence against (that's the whole reason
+                  the reference weighs the paste: the computed figure can't see evaporation). A
+                  valid measurement outranks the flag, so suppress this alert rather than assert
+                  "already more dilute" beside a water figure the measurement just produced. */}
+              {dilution.targetExceedsPaste &&
+                !measuredPasteValid &&
+                (unknownLiquidGrams === 0 || overDilutionCertain) && (
+                  <p className="results-hint" role="alert">
+                    The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
+                    only lowers the concentration further.
+                  </p>
+                )}
+              {dilution.targetExceedsPaste && unknownLiquidGrams > 0 && !overDilutionCertain && (
+                // Suppressed, not reworded: targetExceedsPaste is a factual claim about the
+                // paste, and it was derived from an ASSUMED water content. Asserting it can tell
+                // the user a batch is finished when it still needs hundreds of grams of water.
+                <p className="results-hint">
+                  Can&apos;t tell whether {formatConcentrationPercent(dilution.soapConcentrationPercent)}% is reachable —{' '}
+                  {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
+                  declared water content. Declare its % water in Split liquid.
+                </p>
+              )}
+              {altLiquidWaterGrams > 0 && unknownLiquidGrams === 0 && (
+                <p className="results-hint">
+                  Already {formatWeight(altLiquidWaterGrams, weightUnit)} lighter: that much
+                  water came in with the alternative liquid and is counted as part of the paste.
+                  Top up with plain distilled water only.
+                </p>
+              )}
+              {/* Floor hint only when a positive floor exists. When the target already exceeds the
+                  paste, the can't-tell / certain-alert branches above own the message — rendering
+                  this too repeated "declare its % water" verbatim and printed a vacuous
+                  "0 g is the LEAST you will need". */}
+              {altLiquidWaterGrams > 0 && unknownLiquidGrams > 0 && !dilution.targetExceedsPaste && (
+                <p className="results-hint">
+                  {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
+                  declared water content — it is counted as all water, so{' '}
+                  {formatWeight(dilution.dilutionWaterGrams, weightUnit)} is the LEAST you will
+                  need. Declare its % water, or dilute in increments and check by weight.
+                </p>
+              )}
+            </>
           )}
           <p className="results-hint">
             Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
