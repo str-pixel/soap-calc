@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LS_DILUTION_TARGETS,
   LS_SOLUTION_DENSITY_G_PER_ML,
@@ -81,6 +81,10 @@ export function DilutionPanel({
   measuredPasteGrams,
   measuredPasteIsRemaining = false,
 }: DilutionPanelProps) {
+  // Set only by the ratio input's own onChange below — never by mode entry — so the
+  // write-back effect further down can require a real edit before touching the saved
+  // target. See that effect's comment for the bug this guards against.
+  const [ratioTouched, setRatioTouched] = useState(false);
   // Which intended uses the current target suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe.
   const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
@@ -147,12 +151,22 @@ export function DilutionPanel({
   // no-op value — React bails out of re-rendering on an unchanged state value, so the
   // dependency does not cycle. onSoapConcentrationChange itself stays excluded (a fresh
   // function every render, unrelated to the derived value).
+  //
+  // Gated on ratioTouched: App seeds waterPasteRatio to a default ('2') that exists before
+  // the maker has ever looked at ratio mode, so entering it (or leaving and re-entering)
+  // with no edit used to fire this write-back anyway — silently rewriting a saved target
+  // that came from opening a recipe file, with no undo (undo/redo only wraps oil-line
+  // edits) and no visual difference from a figure the maker actually typed. Requiring an
+  // explicit edit to the ratio input first (see its onChange below) makes entering and
+  // leaving ratio mode alone a no-op, while a real edit still writes back exactly as
+  // before — including the external-resync behavior described above, since ratioTouched
+  // stays true once set.
   useEffect(() => {
-    if (dilutionMode === 'ratio' && clampedRatioConcentrationPercent !== null) {
+    if (ratioTouched && dilutionMode === 'ratio' && clampedRatioConcentrationPercent !== null) {
       onSoapConcentrationChange(String(clampedRatioConcentrationPercent));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dilutionMode, clampedRatioConcentrationPercent, soapConcentrationPercent]);
+  }, [ratioTouched, dilutionMode, clampedRatioConcentrationPercent, soapConcentrationPercent]);
   // The measurement corrects the BATCH figure the same way it already corrects the portion
   // in PartialDilution — shared with the printed BatchSheet so both surfaces always agree.
   const batchDilutionWaterGrams = dilution
@@ -207,7 +221,10 @@ export function DilutionPanel({
             min={0.5}
             step={0.5}
             value={waterPasteRatio}
-            onChange={(e) => onWaterPasteRatioChange?.(e.target.value)}
+            onChange={(e) => {
+              setRatioTouched(true);
+              onWaterPasteRatioChange?.(e.target.value);
+            }}
             aria-label="Water to paste ratio"
           />
         </label>

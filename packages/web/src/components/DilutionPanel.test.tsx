@@ -218,10 +218,16 @@ test('ratio mode uses cookWaterGrams for paste, not totalWater minus dilutionWat
   expect(screen.getByText(/lands at 21.4% soap/i)).toBeTruthy();
 });
 
-test('ratio mode writes the derived concentration back so downstream consumers reconcile', () => {
+test('ratio mode writes the derived concentration back once the ratio is actually edited, so downstream consumers reconcile', () => {
   // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
   // without this write-back, vm.dilution / PartialDilution / BottleCalculator / BatchSheet
   // would all keep showing the old persisted concentration's figures beside this panel's.
+  // But the write-back must not fire on mode entry alone (see the dedicated describe
+  // block below) — this test touches the ratio input first, as a real edit would. The
+  // fired value ('2.5') only needs to differ from the current DOM value so React actually
+  // dispatches the change (same-value change events on a controlled input are a no-op);
+  // the mocked onWaterPasteRatioChange doesn't feed a new value back into the `waterPasteRatio`
+  // prop, so the write-back below still derives from the original ratio prop ('2' → 25%).
   const onSoapConcentrationChange = vi.fn();
   render(
     <DilutionPanel
@@ -236,6 +242,7 @@ test('ratio mode writes the derived concentration back so downstream consumers r
       onWaterPasteRatioChange={() => {}}
     />,
   );
+  fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '2.5' } });
   expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
 });
 
@@ -245,7 +252,9 @@ test('re-syncs the ratio write-back when soapConcentrationPercent changes extern
   // deps (dilutionMode, clampedRatioConcentrationPercent only) would then never re-fire,
   // since the derived ratio value is unchanged, leaving the newly-imported target on
   // screen while the ratio's own readout ("lands at 25% soap") still speaks of the OLD
-  // ratio-derived number. soapConcentrationPercent must be a dep so the effect re-syncs.
+  // ratio-derived number. soapConcentrationPercent must be a dep so the effect re-syncs —
+  // but only once the ratio has actually been touched (fireEvent.change below), matching
+  // the write-back's own gate.
   const onSoapConcentrationChange = vi.fn();
   const { rerender } = render(
     <DilutionPanel
@@ -260,6 +269,7 @@ test('re-syncs the ratio write-back when soapConcentrationPercent changes extern
       onWaterPasteRatioChange={() => {}}
     />,
   );
+  fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '2.5' } });
   expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
   onSoapConcentrationChange.mockClear();
   rerender(
@@ -278,12 +288,89 @@ test('re-syncs the ratio write-back when soapConcentrationPercent changes extern
   expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
 });
 
+describe('ratio mode does not silently rewrite the saved target on mode entry alone', () => {
+  // Bug: App seeds waterPasteRatio to '2', and the write-back effect fired on mode ENTRY
+  // with no user edit. So opening a recipe at 30%, clicking the ratio radio, and clicking
+  // back silently read 25% — written through setSettings, so undo/redo (which only wraps
+  // oil-line edits) could not recover it, and autosave/export picked it up. The field
+  // looked identical whether the user typed it or the mode wrote it.
+  test('mounting directly in ratio mode with no edit to the ratio leaves soapConcentrationPercent untouched', () => {
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel
+        dilution={RESULT}
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+        weightUnit="g"
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
+  test('leaving ratio mode again without ever editing the ratio still leaves soapConcentrationPercent untouched', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel
+        dilution={RESULT}
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+        weightUnit="g"
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    rerender(
+      <DilutionPanel
+        dilution={RESULT}
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+        weightUnit="g"
+        cookWaterGrams={400}
+        dilutionMode="concentration"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
+  test('editing the ratio does write the derived concentration back', () => {
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel
+        dilution={RESULT}
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+        weightUnit="g"
+        cookWaterGrams={400}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '3' } });
+    expect(onSoapConcentrationChange).toHaveBeenCalled();
+  });
+});
+
 test('extreme ratio clamps the written-back concentration so the ratio panel cannot vanish', () => {
   // At a 100,000:1 ratio the true derived concentration rounds to 0.0%. calculateDilution
   // only accepts (0, 100) exclusive, so writing 0 back would null out `dilution` upstream —
   // and since this whole ratio UI is gated on `dilution`, it would silently vanish with no
   // way back except switching modes. The write-back must clamp into range, and the panel
-  // must say so rather than just silently substituting a different number.
+  // must say so rather than just silently substituting a different number. Requires an
+  // edit first (fireEvent.change below) — see the write-back's touched gate.
   const onSoapConcentrationChange = vi.fn();
   render(
     <DilutionPanel
@@ -298,6 +385,7 @@ test('extreme ratio clamps the written-back concentration so the ratio panel can
       onWaterPasteRatioChange={() => {}}
     />,
   );
+  fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '100001' } });
   expect(onSoapConcentrationChange).toHaveBeenCalledWith('1');
   expect(onSoapConcentrationChange).not.toHaveBeenCalledWith('0');
   expect(screen.getByText(/outside the 1.99% range/i)).toBeTruthy();
