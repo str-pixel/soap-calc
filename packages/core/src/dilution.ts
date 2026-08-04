@@ -55,6 +55,13 @@ export function calculateDilution(input: DilutionInput): DilutionResult | null {
   const solutionGrams = anhydrousGrams / soapFrac;
   const totalWaterGrams = solutionGrams - anhydrousGrams;
   const targetExceedsPaste = totalWaterGrams < cook;
+  // Clamped to 0, not left negative — but that clamp makes any figure DERIVED from
+  // (totalWaterGrams - dilutionWaterGrams) unreliable once targetExceedsPaste is true: the
+  // subtraction no longer recovers the real cook water, it recovers 0, so a "paste weight"
+  // built from it silently understates the true paste by the whole clamped amount. See
+  // ls-yield.ts's predictedPasteGrams field for where this bit a drift comparison, and use
+  // its wholeBatchPasteGrams (or an equivalent clamp-free basis) instead of re-deriving one
+  // here.
   const dilutionWaterGrams = Math.max(0, totalWaterGrams - cook);
   const koh = Number.isFinite(kohGrams) && kohGrams > 0 ? kohGrams : 0;
   const naoh = Number.isFinite(naohGrams) && naohGrams > 0 ? naohGrams : 0;

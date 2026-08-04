@@ -310,6 +310,57 @@ describe('the measured-paste declaration (whole batch vs. what is left)', () => 
   });
 });
 
+describe('the whole-batch drift note and the remaining-mode ceiling quote the same paste figure (Commit 2)', () => {
+  // Verified trace: 100 g anhydrous, 150 g cook water, 50% target. solutionGrams = 200,
+  // totalWaterGrams = 100 < cook (150), so targetExceedsPaste clamps dilutionWaterGrams to
+  // 0. Core's own predictedPasteGrams (anhydrous + max(0, totalWater - dilutionWater)) is
+  // then 100 + 100 = 200 g — understated, because the clamp erased the 150 g of real cook
+  // water. The view model's wholeBatchPasteGrams (anhydrous + cookWaterGrams, clamp-free)
+  // is the true 250 g. Before the fix, the whole-batch drift note used the 200 g figure
+  // while the remaining-mode ceiling used the 250 g figure — same batch, same reading, two
+  // different "whole batch's paste" numbers depending only on which radio was selected.
+  const dilution: DilutionResult = {
+    anhydrousGrams: 100,
+    solutionGrams: 200,
+    totalWaterGrams: 100,
+    dilutionWaterGrams: 0,
+    glycerinGrams: 0,
+    soapConcentrationPercent: 50,
+    targetExceedsPaste: true,
+  };
+  const wholeBatchPasteGrams = 250;
+
+  test('the whole-batch drift note quotes the clamp-free 250 g basis, not the clamped 200 g predicted figure', () => {
+    render(
+      <PartialDilution
+        {...PROPS}
+        dilution={dilution}
+        targetMl="100"
+        measuredPasteGrams="180"
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    // 180 − 250 = 70 g lighter. The old, buggy comparison (180 − 200) would have said 20 g.
+    expect(screen.getByText(/70 g lighter than predicted/)).toBeTruthy();
+    expect(screen.queryByText(/20 g lighter than predicted/)).toBeNull();
+  });
+
+  test('the remaining-mode ceiling names the same 250 g basis', () => {
+    render(
+      <PartialDilution
+        {...PROPS}
+        dilution={dilution}
+        targetMl="100"
+        measuredPasteGrams="300"
+        measuredPasteIsRemaining
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    expect(screen.getByText(/more than the 250 g/i)).toBeTruthy();
+    expect(screen.getByText(/ever weighed/i)).toBeTruthy();
+  });
+});
+
 describe('the remaining-mode ceiling uses the TRUE whole-batch paste, not just the water-only predicted figure (round 3)', () => {
   // Review round 3: predictedPasteGrams (anhydrousGrams + cookWaterGrams) counts only the
   // WATER fraction of an alternative liquid — its non-water solids are real mass sitting

@@ -32,10 +32,18 @@ export type LsPartialDilution = {
   waterPasteRatio: number;
   /** True when the paste figure came from the maker's scale rather than the recipe. */
   pasteMeasured: boolean;
-  /** What the recipe predicts the WHOLE batch's paste to weigh (anhydrous soap + the water
-   * already in it), unscaled by the portion's fraction. Present whether or not a
-   * measurement was given, so callers can diff it against a measurement (drift) without
-   * recomputing the same expression this function already evaluates internally. */
+  /** What the recipe predicts the WHOLE batch's paste to weigh: anhydrous soap + the water
+   * the ARITHMETIC (totalWaterGrams - dilutionWaterGrams) says is already in it, unscaled
+   * by the portion's fraction. UNRELIABLE as a drift-comparison basis when the caller's
+   * dilutionWaterGrams came from the targetExceedsPaste clamp: that clamp pins
+   * dilutionWaterGrams to 0, so this expression silently loses the real cook water and
+   * understates the true paste (100 g anhydrous + 150 g cook water reads as 200 g here, not
+   * 250 g — the clamp erased the 150). Callers comparing a measurement against "the whole
+   * batch's paste" (drift, or a ceiling) must use {@link wholeBatchPasteGrams} instead,
+   * which resolves to the caller-supplied clamp-free figure when there is one. This field
+   * stays only as the documented, byte-identical FALLBACK wholeBatchPasteGrams itself uses
+   * when no corrected basis is available — do not re-derive a "predicted paste" from
+   * totalWaterGrams/dilutionWaterGrams elsewhere; it will silently reproduce this trap. */
   predictedPasteGrams: number;
   /** The basis actually used for the remaining-mode composition ratio and its ceiling:
    * `batch.wholeBatchPasteGrams` when the caller supplied one (corrects predictedPasteGrams
