@@ -18,3 +18,55 @@ export function measurementBelowSolids(measuredGrams: number, dilution: Dilution
 export function measurementExceedsSolution(measuredGrams: number, dilution: DilutionResult): boolean {
   return measuredGrams > dilution.solutionGrams;
 }
+
+/**
+ * Parses a measured-paste input string (as stored in App/view-model state) into a finite,
+ * positive gram figure, or undefined when blank/invalid. Centralizes the "is there a
+ * usable number here" check so every caller that might apply the measurement —
+ * PartialDilution, DilutionPanel, the printed batch sheet — reads it identically.
+ */
+export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined): number | undefined {
+  if (measuredPasteGrams === undefined) return undefined;
+  const trimmed = measuredPasteGrams.trim();
+  if (trimmed === '') return undefined;
+  const n = Number(trimmed);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+/**
+ * True when a parsed measured-paste reading is valid FOR this dilution: not below the
+ * anhydrous solids floor (measurementBelowSolids) and not above the target solution
+ * ceiling (measurementExceedsSolution) — the shared bar every caller that lets a
+ * measurement override a computed figure must clear first.
+ */
+export function measuredPasteIsValidFor(
+  measuredPasteGrams: string | undefined,
+  dilution: DilutionResult,
+): boolean {
+  const measured = parseMeasuredPasteGrams(measuredPasteGrams);
+  return (
+    measured !== undefined &&
+    !measurementBelowSolids(measured, dilution) &&
+    !measurementExceedsSolution(measured, dilution)
+  );
+}
+
+/**
+ * The batch's dilution-water figure, corrected by a valid measured paste — the same
+ * arithmetic DilutionPanel and PartialDilution already apply: solutionGrams is fixed by
+ * the target concentration, so solutionGrams - measured is what is still needed to reach
+ * it, and a valid measurement OUTRANKS the recipe's own dilutionWaterGrams (Task 5's
+ * measured-paste-outranks-targetExceedsPaste principle — that flag is derived from the
+ * recipe's ASSUMED cook water, the measurement is direct evidence against it). Falls back
+ * to the recipe's computed figure with no valid measurement. Shared by DilutionPanel's
+ * batch row and the printed BatchSheet so both surfaces always show the same number.
+ */
+export function correctedDilutionWaterGrams(
+  dilution: DilutionResult,
+  measuredPasteGrams: string | undefined,
+): number {
+  if (measuredPasteIsValidFor(measuredPasteGrams, dilution)) {
+    return dilution.solutionGrams - (parseMeasuredPasteGrams(measuredPasteGrams) as number);
+  }
+  return dilution.dilutionWaterGrams;
+}

@@ -38,6 +38,12 @@ export type BatchSheetData = {
   pcsfIsExtra: boolean;
   extrasGrams: number;
   dilution: DilutionResult | null;
+  /** The maker's scale reading for the whole batch's paste, in grams — the same App state
+   * DilutionPanel and PartialDilution read (see DilutionPanel's own doc). A valid one
+   * corrects the printed "Dilution water to add" figure via correctedDilutionWaterGrams
+   * (lib/measuredPaste), so the sheet a maker carries to the bench matches the screen.
+   * Optional: data built before the field existed prints the recipe's own computed figure. */
+  measuredPasteGrams?: string;
   /** Grams of split liquid with undeclared water content. Non-zero makes the printed
    * dilution figure a lower bound, and the sheet must say so — the bench copy is the one
    * surface with no sibling panel to explain it. Optional: data built before the field

@@ -425,6 +425,7 @@ function lsSheetData(extra: {
   overDilutionCertain?: boolean;
   dilutionOverride?: import('@soap-calc/core').DilutionResult;
   neutralization?: import('@soap-calc/core').NeutralizationResult | null;
+  measuredPasteGrams?: string;
 }) {
   const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
   const lines = createStarterLines();
@@ -609,6 +610,46 @@ test('without certainty the sheet still hedges', () => {
     />,
   );
   expect(screen.getByText(/can.t tell whether 50%/i)).toBeTruthy();
+  expect(screen.queryByText(/already more dilute/i)).toBeNull();
+});
+
+test('printed dilution water reflects a measured paste, matching the on-screen figure', () => {
+  // The screen (DilutionPanel) already corrects its "Dilution water to add" row from a
+  // valid measured paste; the printed sheet used to keep showing the recipe's own
+  // computed dilutionWaterGrams instead, so a maker who weighed their paste saw two
+  // different numbers. solutionGrams 4,059 - measured 1,600 = 2,459 g, not 2,000 g.
+  render(<BatchSheet data={lsSheetData({ measuredPasteGrams: '1600' })} />);
+  expect(screen.getByText(/^2,459 g/)).toBeTruthy();
+  expect(screen.queryByText(/^2,000 g/)).toBeNull();
+  expect(screen.getByText(/measured paste/i)).toBeTruthy();
+});
+
+test('prints the recipe-computed dilution water, with no measurement note, when no measurement is given', () => {
+  render(<BatchSheet data={lsSheetData({})} />);
+  expect(screen.getByText(/^2,000 g/)).toBeTruthy();
+  expect(screen.queryByText(/measured paste/i)).toBeNull();
+});
+
+test('a measured paste that outranks targetExceedsPaste also suppresses the printed "already more dilute" alert', () => {
+  // Mirrors DilutionPanel: targetExceedsPaste was derived from the recipe's ASSUMED cook
+  // water. Measured paste 1,300 g is valid (between the 1,218 g anhydrous floor and the
+  // 1,433 g solution ceiling) and implies 1,433 - 1,300 = 133 g of water is still needed —
+  // the opposite of "already more dilute". Printing both would contradict the corrected
+  // water figure right above it.
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        overDilutionCertain: true,
+        measuredPasteGrams: '1300',
+        dilutionOverride: {
+          anhydrousGrams: 1218, solutionGrams: 1433, totalWaterGrams: 215,
+          dilutionWaterGrams: 0, glycerinGrams: 107, soapConcentrationPercent: 85,
+          targetExceedsPaste: true,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByText(/^133 g/)).toBeTruthy();
   expect(screen.queryByText(/already more dilute/i)).toBeNull();
 });
 

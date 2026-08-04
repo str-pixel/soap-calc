@@ -203,6 +203,7 @@ export default function App() {
     weightUnit,
     process,
     vesselVolumeCm3,
+    measuredPasteGrams,
   });
   useRecipeAutosave(process, recipeName, lines, settings, additives, () =>
     flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),

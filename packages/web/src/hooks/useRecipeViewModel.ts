@@ -47,6 +47,11 @@ export type UseRecipeViewModelArgs = {
    * (vessel volume ÷ batch volume) for the hp_vessel_too_small guard. Omitted/invalid input
    * simply skips the guard — it's an optional check, not a required one. */
   vesselVolumeCm3?: number | null;
+  /** The maker's scale reading for the whole batch's paste, in grams — the same App state
+   * DilutionPanel and PartialDilution read. Threaded into batchSheetData so a valid
+   * measurement corrects the printed dilution water the same way it corrects the screen
+   * (lib/measuredPaste's correctedDilutionWaterGrams, shared by both). */
+  measuredPasteGrams?: string;
 };
 
 export type RecipeViewModel = {
@@ -132,6 +137,7 @@ export function useRecipeViewModel({
   weightUnit,
   process,
   vesselVolumeCm3 = null,
+  measuredPasteGrams,
 }: UseRecipeViewModelArgs): RecipeViewModel {
   const previewState = usePreviewRecipeState(
     lines,
@@ -805,6 +811,7 @@ export function useRecipeViewModel({
       pcsfIsExtra,
       extrasGrams,
       dilution,
+      measuredPasteGrams,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
       overDilutionCertain,
@@ -821,6 +828,7 @@ export function useRecipeViewModel({
     batchWeightWithExtras,
     computedAdditives,
     dilution,
+    measuredPasteGrams,
     displayTotals,
     extrasGrams,
     indexes,

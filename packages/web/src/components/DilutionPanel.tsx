@@ -9,7 +9,11 @@ import {
 } from '@soap-calc/core';
 import { formatConcentrationPercent } from '../lib/format';
 import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
-import { measurementBelowSolids, measurementExceedsSolution } from '../lib/measuredPaste';
+import {
+  correctedDilutionWaterGrams,
+  measuredPasteIsValidFor,
+  parseMeasuredPasteGrams,
+} from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
 export type DilutionMode = 'concentration' | 'ratio';
@@ -78,15 +82,10 @@ export function DilutionPanel({
   // to add. Both accept the boundary. A measured paste that survives these WINS over the
   // computed figures below — see the "measured paste" hint on the batch row, and the ratio
   // pasteGrams override just below.
-  const hasMeasuredPaste = measuredPasteGrams !== undefined && measuredPasteGrams.trim() !== '';
-  const measuredPasteNum = Number(measuredPasteGrams);
   const measuredPasteValid =
-    dilution !== null &&
-    hasMeasuredPaste &&
-    Number.isFinite(measuredPasteNum) &&
-    measuredPasteNum > 0 &&
-    !measurementBelowSolids(measuredPasteNum, dilution) &&
-    !measurementExceedsSolution(measuredPasteNum, dilution);
+    dilution !== null && measuredPasteIsValidFor(measuredPasteGrams, dilution);
+  // Only meaningful when measuredPasteValid — parseMeasuredPasteGrams then always succeeds.
+  const measuredPasteNum = parseMeasuredPasteGrams(measuredPasteGrams) ?? NaN;
   // Ratio mode (LS:1534): weigh the paste, then add water at 1:1 / 2:1 / 3:1 by weight.
   // Prefer a valid MEASURED paste — the reference's ratio method is applied to a weighed
   // paste. Otherwise pasteGrams is anhydrousGrams + the paste's TRUE water — not
@@ -138,12 +137,10 @@ export function DilutionPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dilutionMode, clampedRatioConcentrationPercent]);
   // The measurement corrects the BATCH figure the same way it already corrects the portion
-  // in PartialDilution: solutionGrams is fixed by the target concentration, so whatever the
-  // paste actually weighed, solutionGrams - measured is the water still needed to get there.
-  const batchDilutionWaterGrams =
-    dilution && measuredPasteValid
-      ? dilution.solutionGrams - measuredPasteNum
-      : (dilution?.dilutionWaterGrams ?? 0);
+  // in PartialDilution — shared with the printed BatchSheet so both surfaces always agree.
+  const batchDilutionWaterGrams = dilution
+    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams)
+    : 0;
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough, and it is what the separate bottle count works

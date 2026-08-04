@@ -20,6 +20,11 @@ import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
+import {
+  correctedDilutionWaterGrams,
+  measuredPasteIsValidFor,
+  parseMeasuredPasteGrams,
+} from '../lib/measuredPaste';
 
 type BatchSheetProps = {
   data: BatchSheetData | null;
@@ -68,6 +73,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     pcsfIsExtra,
     extrasGrams,
     dilution,
+    measuredPasteGrams,
     neutralization,
     properties,
     indexes,
@@ -94,6 +100,15 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     (indexes.iodine !== null || indexes.ins !== null) &&
     Math.round(indexes.coveragePercent) < LOW_COVERAGE_PERCENT;
   const fattyAcidsLow = Math.round(fattyAcids.coveragePercent) < LOW_COVERAGE_PERCENT;
+  // A valid measured paste corrects the printed dilution water the same way it corrects
+  // DilutionPanel's on-screen batch row (lib/measuredPaste, shared so both surfaces always
+  // show the same number) — and, per Task 5, OUTRANKS targetExceedsPaste below, since that
+  // flag is derived from the recipe's ASSUMED cook water and the measurement is direct
+  // evidence against it.
+  const measuredPasteValid = dilution ? measuredPasteIsValidFor(measuredPasteGrams, dilution) : false;
+  const dilutionWaterGramsPrinted = dilution
+    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams)
+    : 0;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -295,17 +310,28 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 DilutionPanel) — one shared rule, so sheet and panel cannot disagree. */}
             <div><dt>Target concentration</dt><dd>{formatConcentrationPercent(dilution.soapConcentrationPercent)}%</dd></div>
             <div><dt>Dilution water to add</dt><dd>
-              {formatWeightWithAlternates(dilution.dilutionWaterGrams, weightUnit)}
-              {data.unknownLiquidGrams && !dilution.targetExceedsPaste ? ' (at least)' : ''}
+              {formatWeightWithAlternates(dilutionWaterGramsPrinted, weightUnit)}
+              {data.unknownLiquidGrams && !dilution.targetExceedsPaste && !measuredPasteValid
+                ? ' (at least)'
+                : ''}
             </dd></div>
             <div><dt>Finished solution</dt><dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd></div>
             <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
           </dl>
+          {measuredPasteValid && (
+            <p className="batch-sheet__note">
+              Dilution water above uses the measured paste weight (
+              {formatWeight(parseMeasuredPasteGrams(measuredPasteGrams) as number, weightUnit)}), not
+              the recipe&apos;s computed paste.
+            </p>
+          )}
           {/* targetExceedsPaste is a factual claim about the paste, but it was derived from
               an ASSUMED water content — asserting it here could tell the maker a batch is
               already dilute enough when it still needs hundreds of grams of water. Mirrors
-              DilutionPanel's can't-tell branch instead of the floor caveat below. */}
-          {dilution.targetExceedsPaste && data.overDilutionCertain ? (
+              DilutionPanel's can't-tell branch instead of the floor caveat below. A valid
+              measured paste outranks the flag outright (Task 5) — see dilutionWaterGramsPrinted
+              above — so both branches below are suppressed the same way DilutionPanel does. */}
+          {dilution.targetExceedsPaste && !measuredPasteValid && data.overDilutionCertain ? (
             // Certain across the unknown's whole 0-100% range — state the fact, exactly as
             // the panel does; hedging here made the two surfaces disagree for one recipe.
             <p className="batch-sheet__note">
@@ -314,7 +340,10 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               lowers the concentration further.
             </p>
           ) : null}
-          {data.unknownLiquidGrams && dilution.targetExceedsPaste && !data.overDilutionCertain ? (
+          {data.unknownLiquidGrams &&
+          dilution.targetExceedsPaste &&
+          !measuredPasteValid &&
+          !data.overDilutionCertain ? (
             <p className="batch-sheet__note">
               Can&apos;t tell whether {formatConcentrationPercent(dilution.soapConcentrationPercent)}% is
               reachable — {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative
