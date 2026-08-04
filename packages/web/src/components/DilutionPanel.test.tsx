@@ -723,4 +723,30 @@ describe('portion scope: the measured-paste input and declaration that used to l
       screen.getByRole('radio', { name: /what.s left after earlier dilutions/i }),
     ).toHaveProperty('checked', false);
   });
+
+  it('the remaining-ceiling alert points back at the declaration radio by its actual rendered label, not a stale one', () => {
+    // Regression pin: an earlier version of this alert quoted "the whole batch, before any
+    // dilution" — the pre-rename label — after the declaration radio itself was renamed to
+    // "all of it" in this shell, leaving the alert telling the maker to pick an option that
+    // exists nowhere in the UI. RESULT's predicted whole-batch paste is 1,200 g anhydrous +
+    // 400 g cook water = 1,600 g (see the equivalent PortionDilutionResults tests); 2,000 g
+    // declared "remaining" exceeds it, so the ceiling alert fires.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="portion"
+        targetMl="1000"
+        measuredPasteGrams="2000"
+        measuredPasteIsRemaining
+      />,
+    );
+    // Read the label live off the actual radio rather than hardcoding the string a second
+    // time in this test — a copy-pasted literal would keep "passing" even if the radio's
+    // real label and the alert's quoted phrase drifted apart again on the next rename. Only
+    // asking the radio for its own label catches that divergence.
+    const declarationRadio = screen.getByRole('radio', { name: /all of it/i });
+    const declaredLabel = declarationRadio.closest('label')?.textContent?.trim();
+    expect(declaredLabel).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toContain(declaredLabel);
+  });
 });

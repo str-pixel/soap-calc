@@ -171,8 +171,8 @@ export function PortionDilutionResults({
         <p className="results-hint" role="alert">
           That is more than the {formatWeight(wholeBatchPasteBasis, weightUnit)} the whole
           batch&apos;s paste ever weighed, so it cannot be what is left of it — check the
-          scale, or switch the declaration above to &quot;the whole batch, before any
-          dilution&quot; if that is what you weighed.
+          scale, or switch the declaration above to &quot;all of it&quot; if that is what
+          you weighed.
         </p>
       )}
       {pasteAlreadyThinner && (
