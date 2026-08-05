@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, it, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { BatchSheet } from './BatchSheet';
 import { buildBatchSheetData } from '../lib/batchSheet';
@@ -428,7 +428,8 @@ function lsSheetData(extra: {
   measuredPasteGrams?: string;
   measuredPasteIsRemaining?: boolean;
   bottledSolutionGrams?: number | null;
-  bottleSizeMl?: string;
+  /** Overrides the fixture's own 'g' below — it is spread after it. */
+  weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
 }) {
   const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
   const lines = createStarterLines();
@@ -616,6 +617,17 @@ test('without certainty the sheet still hedges', () => {
   expect(screen.queryByText(/already more dilute/i)).toBeNull();
 });
 
+it('prints the dilution water in one unit only', () => {
+  render(<BatchSheet data={lsSheetData({})} />);
+  const row = screen.getByText(/Dilution water/i).closest('div')!;
+  // The negative alone would pass for almost any format change — including printing
+  // nothing at all — so pin the string the row is actually expected to carry. The sheet
+  // is built at weightUnit 'g' and the fixture's dilutionWaterGrams is 2,000.
+  expect(row.textContent).toContain('2,000 g');
+  expect(row.textContent).not.toMatch(/\(.*oz.*\/.*lb.*\)/);
+  expect(row.textContent).not.toMatch(/oz|lb/);
+});
+
 test('printed dilution water reflects a measured paste, matching the on-screen figure', () => {
   // The screen (DilutionPanel) already corrects its "Dilution water to add" row from a
   // valid measured paste; the printed sheet used to keep showing the recipe's own
@@ -625,6 +637,21 @@ test('printed dilution water reflects a measured paste, matching the on-screen f
   expect(screen.getByText(/^2,459 g/)).toBeTruthy();
   expect(screen.queryByText(/^2,000 g/)).toBeNull();
   expect(screen.getByText(/measured paste/i)).toBeTruthy();
+});
+
+test('echoes the measured paste in grams on the printed sheet, whatever the print unit', () => {
+  // The field it comes from is grams-only, so quoting it back converted makes the maker
+  // convert to recognise their own entry. The two on-screen echoes (DilutionPanel's "uses
+  // your measured paste" hint and PortionDilutionResults' "scaled down from your N g
+  // reading") were fixed for this; the printed sheet was the leftover — and it is the one
+  // surface that is read away from the app, where the typed number cannot be checked.
+  render(<BatchSheet data={lsSheetData({ measuredPasteGrams: '1600', weightUnit: 'lb' })} />);
+  const note = screen.getByText(/measured paste weight/i);
+  expect(note.textContent).toMatch(/1,600 g/);
+  expect(note.textContent).not.toMatch(/3\.53 lb/);
+  // The corrected water figure beside it is a bench readout and DOES print in lb — without
+  // this the assertion above would also pass for a sheet that ignored weightUnit entirely.
+  expect(screen.getByText('Dilution water to add').closest('div')!.textContent).toContain('5.42 lb');
 });
 
 test('prints the recipe-computed dilution water, with no measurement note, when no measurement is given', () => {
@@ -661,16 +688,10 @@ test('omits the bottled-mass row when it matches the chemistry-only solution (no
   expect(screen.queryByText('4,059 g (with extras)')).toBeNull();
 });
 
-test('prints the bottle count reachable from the same bottle size the on-screen BottleCalculator uses', () => {
-  render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515, bottleSizeMl: '500' })} />);
-  // 4,383 ml / 500 ml, floored = 8 bottles.
-  expect(screen.getByText(/Bottles filled \(500 ml\)/)).toBeTruthy();
-  expect(screen.getByText('8')).toBeTruthy();
-});
-
-test('omits the bottle count when no bottle size is reachable', () => {
-  render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515 })} />);
-  expect(screen.queryByText(/Bottles filled/)).toBeNull();
+it('prints no bottle count, but keeps the finished product and volume', () => {
+  render(<BatchSheet data={lsSheetData({})} />);
+  expect(screen.queryByText(/Bottles filled/i)).toBeNull();
+  expect(screen.getByText(/Finished volume/i)).toBeTruthy();
 });
 
 test('a measured paste that outranks targetExceedsPaste also suppresses the printed "already more dilute" alert', () => {

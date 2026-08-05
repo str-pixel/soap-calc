@@ -34,3 +34,6 @@ blob-report/
 # or any test, so it's a local artifact, not a tracked source of truth. (canonical-oils.json and
 # canonical-oils-lite.json ARE tracked — those are the real build outputs.)
 packages/oils-data/data/build-report.json
+
+# SDD scratch workspace (ledger, briefs, review packages)
+.superpowers/

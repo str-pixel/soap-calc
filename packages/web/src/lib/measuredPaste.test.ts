@@ -3,6 +3,7 @@ import type { DilutionResult } from '@soap-calc/core';
 import {
   correctedDilutionWaterGrams,
   measuredPasteIsValidFor,
+  measuredPasteRejectionFor,
   parseMeasuredPasteGrams,
 } from './measuredPaste';
 
@@ -51,7 +52,7 @@ describe('correctedDilutionWaterGrams', () => {
     expect(correctedDilutionWaterGrams(DILUTION, '900')).toBe(2400); // below solids: rejected
   });
 
-  it('uses solutionGrams - measured for a valid measurement — the same arithmetic DilutionPanel and PartialDilution apply', () => {
+  it('uses solutionGrams - measured for a valid measurement — the same arithmetic DilutionPanel and PortionDilutionResults apply', () => {
     // 4,000 - 1,480 = 2,520.
     expect(correctedDilutionWaterGrams(DILUTION, '1480')).toBe(2520);
   });
@@ -68,6 +69,122 @@ describe('measuredPasteIsValidFor with a remaining-paste declaration', () => {
   it('is unaffected — still whatever it was before — when isRemaining is omitted or false', () => {
     expect(measuredPasteIsValidFor('1480', DILUTION)).toBe(true);
     expect(measuredPasteIsValidFor('1480', DILUTION, false)).toBe(true);
+  });
+});
+
+describe('measuredPasteRejectionFor', () => {
+  // One source for the three rejection rules, so the shell that owns the INPUT and the
+  // portion results that consume the reading can never disagree about whether it is usable.
+  it('rejects a whole-batch reading below the anhydrous solids floor, naming which rule fired', () => {
+    const rejection = measuredPasteRejectionFor('900', DILUTION, false);
+    expect(rejection.belowSolids).toBe(true);
+    expect(rejection.exceedsSolution).toBe(false);
+    expect(rejection.exceedsRemainingCeiling).toBe(false);
+    expect(rejection.rejected).toBe(true);
+    expect(rejection.accepted).toBe(false);
+  });
+
+  it('does not apply the solids floor to a reading declared as what is left', () => {
+    // The whole point of the declaration: what remains after an earlier dilution can
+    // legitimately weigh less than the recipe's whole anhydrous soap.
+    const rejection = measuredPasteRejectionFor('900', DILUTION, true);
+    expect(rejection.belowSolids).toBe(false);
+    expect(rejection.rejected).toBe(false);
+    expect(rejection.accepted).toBe(true);
+  });
+
+  it('rejects a reading heavier than the target solution under either declaration', () => {
+    expect(measuredPasteRejectionFor('4100', DILUTION, false).exceedsSolution).toBe(true);
+    expect(measuredPasteRejectionFor('4100', DILUTION, true).exceedsSolution).toBe(true);
+  });
+
+  it('rejects a remaining reading above the whole-batch ceiling and reports the basis it used', () => {
+    // Predicted whole-batch paste: 1,200 anhydrous + (2,800 − 2,400) water already in the
+    // paste = 1,600 g.
+    const rejection = measuredPasteRejectionFor('2000', DILUTION, true);
+    expect(rejection.exceedsRemainingCeiling).toBe(true);
+    expect(rejection.wholeBatchPasteBasis).toBe(1600);
+    // The boundary is accepted.
+    expect(measuredPasteRejectionFor('1600', DILUTION, true).exceedsRemainingCeiling).toBe(false);
+  });
+
+  it('prefers a supplied corrected whole-batch basis over the water-only predicted figure', () => {
+    // An alternative liquid's non-water solids are real mass the recipe never counts, so a
+    // 1,650 g remainder is honest on a recipe whose true paste weighed 1,700 g.
+    const rejection = measuredPasteRejectionFor('1650', DILUTION, true, 1700);
+    expect(rejection.wholeBatchPasteBasis).toBe(1700);
+    expect(rejection.exceedsRemainingCeiling).toBe(false);
+    expect(rejection.accepted).toBe(true);
+  });
+
+  it('reports no measurement — and so no rejection — for a blank or unparseable field', () => {
+    // '0' is deliberately NOT in this list: it is a value the maker typed, and it is
+    // rejected. See the nonPositive describe below for why, and for the distinction from
+    // the blank field, where Number('') is also 0.
+    for (const value of ['', '   ', undefined, 'abc']) {
+      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      expect(rejection.rejected).toBe(false);
+      expect(rejection.accepted).toBe(false);
+    }
+    expect(measuredPasteRejectionFor('', DILUTION, false).hasMeasurement).toBe(false);
+  });
+
+  it('accepts a usable whole-batch reading and hands back the parsed grams', () => {
+    const rejection = measuredPasteRejectionFor('1480', DILUTION, false);
+    expect(rejection.accepted).toBe(true);
+    expect(rejection.measuredGrams).toBe(1480);
+  });
+});
+
+describe('a reading that is not a weight at all', () => {
+  // belowSolids and exceedsRemainingCeiling both self-disabled via `measured > 0`, and
+  // `accepted` requires it too, so a typed -500 produced {rejected: false, accepted: false}
+  // — no alert anywhere, and the batch row quietly falling back to the recipe's computed
+  // figure with a physically impossible number still on screen above it. min={1} on a
+  // type="number" input is only enforced on submit, and this form has no submit, so it is
+  // typeable. Those `> 0` guards were written to exempt the BLANK field (Number('') === 0),
+  // which hasMeasurement already covers.
+  it('rejects zero and negative readings under either declaration', () => {
+    for (const isRemaining of [false, true]) {
+      for (const value of ['0', '-500', '-0.5']) {
+        const rejection = measuredPasteRejectionFor(value, DILUTION, isRemaining);
+        expect(rejection.nonPositive).toBe(true);
+        expect(rejection.rejected).toBe(true);
+        expect(rejection.accepted).toBe(false);
+      }
+    }
+  });
+
+  it('does not fire on a blank field, where Number() is also 0', () => {
+    for (const value of ['', '   ', undefined]) {
+      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      expect(rejection.nonPositive).toBe(false);
+      expect(rejection.rejected).toBe(false);
+    }
+  });
+
+  it('does not fire on an unparseable field', () => {
+    const rejection = measuredPasteRejectionFor('abc', DILUTION, false);
+    expect(rejection.nonPositive).toBe(false);
+    expect(rejection.rejected).toBe(false);
+  });
+
+  it('owns the verdict alone, so only one alert can be on screen for it', () => {
+    // A negative reading is trivially below the anhydrous floor too; without the existing
+    // `> 0` guard on belowSolids they would both fire and the shell would render two
+    // paragraphs for one reading.
+    const rejection = measuredPasteRejectionFor('-500', DILUTION, false);
+    expect(rejection.belowSolids).toBe(false);
+    expect(rejection.exceedsSolution).toBe(false);
+    expect(rejection.exceedsRemainingCeiling).toBe(false);
+  });
+
+  it('leaves every positive reading exactly as it was', () => {
+    expect(measuredPasteRejectionFor('1480', DILUTION, false).nonPositive).toBe(false);
+    expect(measuredPasteRejectionFor('1480', DILUTION, false).accepted).toBe(true);
+    expect(measuredPasteRejectionFor('900', DILUTION, false).belowSolids).toBe(true);
+    expect(measuredPasteRejectionFor('4100', DILUTION, false).exceedsSolution).toBe(true);
+    expect(measuredPasteRejectionFor('2000', DILUTION, true).exceedsRemainingCeiling).toBe(true);
   });
 });
 

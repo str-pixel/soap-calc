@@ -59,10 +59,13 @@ describe('App process switch', () => {
   it('clears the measured paste when the recipe oils change', async () => {
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    // "Dilute part of the batch" is a collapsed <details>; open it so its fields are
-    // interactive.
-    await userEvent.click(screen.getByText(/Dilute part of the batch/i));
-    const measuredInput = screen.getByLabelText(/Measured paste weight — whole batch/i);
+    // Exact string, not a broad regex: the DECLARATION radiogroup ("all of it" / "what's
+    // left after earlier dilutions") carries the aria-label "What the measured paste weight
+    // represents" — not the scope toggle, which is labelled "How much of the batch to
+    // dilute" — and a loose /Measured paste weight/i match would hit that group too now
+    // that both controls live in this same panel, making the query ambiguous (two matches)
+    // rather than missing.
+    const measuredInput = screen.getByLabelText('Measured paste weight (g)');
     await userEvent.type(measuredInput, '1500');
     expect((measuredInput as HTMLInputElement).value).toBe('1500');
 
@@ -87,8 +90,7 @@ describe('App process switch', () => {
     await userEvent.type(firstOilWeight, '600');
     await userEvent.tab();
 
-    await userEvent.click(screen.getByText(/Dilute part of the batch/i));
-    let measuredInput = screen.getByLabelText(/Measured paste weight — whole batch/i);
+    let measuredInput = screen.getByLabelText('Measured paste weight (g)');
     await userEvent.type(measuredInput, '1500');
     expect((measuredInput as HTMLInputElement).value).toBe('1500');
 
@@ -96,8 +98,7 @@ describe('App process switch', () => {
     // back. LS's own oils never changed, so the measurement must survive the round trip.
     await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    await userEvent.click(screen.getByText(/Dilute part of the batch/i));
-    measuredInput = screen.getByLabelText(/Measured paste weight — whole batch/i);
+    measuredInput = screen.getByLabelText('Measured paste weight (g)');
     expect((measuredInput as HTMLInputElement).value).toBe('1500');
 
     // Now genuinely edit an LS oil weight — a real in-process change — which must still
@@ -112,8 +113,7 @@ describe('App process switch', () => {
   it('preserves the measured paste across a process-tab round trip with unchanged oils', async () => {
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    await userEvent.click(screen.getByText(/Dilute part of the batch/i));
-    let measuredInput = screen.getByLabelText(/Measured paste weight — whole batch/i);
+    let measuredInput = screen.getByLabelText('Measured paste weight (g)');
     await userEvent.type(measuredInput, '1500');
     expect((measuredInput as HTMLInputElement).value).toBe('1500');
 
@@ -122,9 +122,8 @@ describe('App process switch', () => {
     // even though the oils themselves never changed. That must not read as an oils edit.
     await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    await userEvent.click(screen.getByText(/Dilute part of the batch/i));
 
-    measuredInput = screen.getByLabelText(/Measured paste weight — whole batch/i);
+    measuredInput = screen.getByLabelText('Measured paste weight (g)');
     expect((measuredInput as HTMLInputElement).value).toBe('1500');
   });
 });

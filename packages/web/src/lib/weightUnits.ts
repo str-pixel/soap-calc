@@ -86,16 +86,14 @@ export function parsePercentInput(value: string): string | null {
   return value;
 }
 
-/** Pour-figure formatting: the selected unit first, then the OTHER kitchen-scale units
- * (g / oz / lb, minus the primary) in parentheses — "2,400 g (84.7 oz / 5.29 lb)" — so
- * the one figure a maker weighs out reads on any scale without switching the app unit.
- * kg is never an alternate (no kitchen scale defaults to it); a kg-mode user gets all
- * three others. */
-export function formatWeightWithAlternates(grams: number, unit: WeightUnit): string {
-  const alternates = (['g', 'oz', 'lb'] as const).filter((u) => u !== unit);
-  const alt = alternates.map((u) => formatWeight(grams, u)).join(' / ');
-  return `${formatWeight(grams, unit)} (${alt})`;
-}
+/** The units a maker's own scale actually reads, for the dilution panel's local switch.
+ * kg is excluded on purpose: no kitchen scale defaults to it, and a dilution figure in
+ * kg reads as a rounding error (2.4 kg hides the 400 g). A kg-mode recipe therefore
+ * falls back to grams here — see DilutionPanel's initial unit. */
+export const DILUTION_UNIT_OPTIONS = (['g', 'oz', 'lb'] as const).map((id) => ({
+  id: id as WeightUnit,
+  short: WEIGHT_UNITS[id].short,
+}));
 
 export function formatWeight(grams: number, unit: WeightUnit, digits?: number): string {
   const config = WEIGHT_UNITS[unit];

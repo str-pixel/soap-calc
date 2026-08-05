@@ -2420,6 +2420,15 @@ a:hover {
   margin-bottom: 0.75rem;
 }
 
+/* Visible antecedent for a radio row whose options only make sense after a question
+   ("all of it" — all of WHAT?). Matches .field--inline's own muted caption styling so the
+   group reads as one line rather than as a heading over it. */
+.dilution-toggle__legend {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  align-self: center;
+}
+
 /* Dilution: intended-use targets. Collapsed by default — it is reference, not a control. */
 .dilution-uses > summary {
   cursor: pointer;

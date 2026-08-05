@@ -5,7 +5,6 @@ import {
   effectiveSuperfatPercent,
   formatPropertyScore,
   formatSoapPropertyPercent,
-  lsBottleCount,
   lsFinishedVolumeMl,
   LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
@@ -21,7 +20,7 @@ import {
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
-import { formatWeight, formatWeightWithAlternates } from '../lib/weightUnits';
+import { formatWeight } from '../lib/weightUnits';
 import {
   correctedDilutionWaterGrams,
   measuredPasteIsValidFor,
@@ -78,7 +77,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     measuredPasteGrams,
     measuredPasteIsRemaining,
     bottledSolutionGrams,
-    bottleSizeMl,
     neutralization,
     properties,
     indexes,
@@ -121,20 +119,11 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // additives, append-mode post-cook oil, and split-liquid solids, and is bigger than
   // dilution.solutionGrams whenever any of those are present (mirrors DilutionPanel's
   // own bottledGrams/showBottledRow). lsFinishedVolumeMl is the same core helper the
-  // on-screen panel and BottleCalculator use — never recomputed here.
+  // on-screen panel uses — never recomputed here.
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
-  const bottleMl = Number(bottleSizeMl);
-  const bottleCount =
-    bottleSizeMl !== undefined &&
-    bottleSizeMl.trim() !== '' &&
-    Number.isFinite(bottleMl) &&
-    bottleMl > 0 &&
-    bottledGrams !== null
-      ? lsBottleCount(bottledGrams, bottleMl)
-      : null;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -336,7 +325,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 DilutionPanel) — one shared rule, so sheet and panel cannot disagree. */}
             <div><dt>Target concentration</dt><dd>{formatConcentrationPercent(dilution.soapConcentrationPercent)}%</dd></div>
             <div><dt>Dilution water to add</dt><dd>
-              {formatWeightWithAlternates(dilutionWaterGramsPrinted, weightUnit)}
+              {formatWeight(dilutionWaterGramsPrinted, weightUnit)}
               {data.unknownLiquidGrams && !dilution.targetExceedsPaste && !measuredPasteValid
                 ? ' (at least)'
                 : ''}
@@ -349,14 +338,17 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             {finishedVolumeMl !== null && (
               <div><dt>≈ Finished volume</dt><dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd></div>
             )}
-            {bottleCount !== null && (
-              <div><dt>≈ Bottles filled ({bottleSizeMl} ml)</dt><dd>{bottleCount}</dd></div>
-            )}
           </dl>
           {measuredPasteValid && (
             <p className="batch-sheet__note">
               Dilution water above uses the measured paste weight (
-              {formatWeight(parseMeasuredPasteGrams(measuredPasteGrams) as number, weightUnit)}), not
+              {/* Grams, not the sheet's print unit — the same rule the two on-screen echoes
+                  follow. The field this comes from is grams-only ("Measured paste weight
+                  (g, optional)"), so printing a sheet in lb quoted a typed 1,600 back as
+                  "3.53 lb": the maker's own entry, in a unit they never used, on the page
+                  they take to the bench. Every other weight on this sheet is a bench
+                  readout and stays on the print unit. */}
+              {formatWeight(parseMeasuredPasteGrams(measuredPasteGrams) as number, 'g')}), not
               the recipe&apos;s computed paste.
             </p>
           )}

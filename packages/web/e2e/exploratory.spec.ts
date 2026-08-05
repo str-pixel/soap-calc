@@ -361,34 +361,34 @@ test.describe('liquid soap', () => {
     await expect(section.getByRole('alert')).toContainText(/already more dilute/);
   });
 
-  test('bottle count is a separate snippet, collapsed until opened', async ({ page }) => {
-    // Bottling is a step after the batch dilution, so its field and count live outside the
-    // dilution figures and stay closed until wanted.
-    const bottles = page.locator('details').filter({ hasText: 'Bottle count' }).first();
-    await expect(page.getByLabel('Bottle size (ml)')).toBeHidden();
-    await bottles.locator('summary').click();
-    await page.getByLabel('Bottle size (ml)').fill('500');
-    await page.getByLabel('Bottle size (ml)').blur();
-    await expect(bottles).toContainText(/Bottles filled \(500 ml\)/);
+  test('dilution display-unit switch shows one unit at a time', async ({ page }) => {
+    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
+    const dd = section.locator('dt').filter({ hasText: /Dilution water to add/ }).first().locator('xpath=following-sibling::dd[1]');
+    await expect(dd).toContainText('g');
+    await expect(dd).not.toContainText('oz');
+    await section.getByRole('radio', { name: 'oz' }).click();
+    await expect(dd).toContainText('oz');
+    await expect(dd).not.toContainText(' g');
   });
 
-  test('partial dilution is a separate snippet that scales paste and water', async ({ page }) => {
+  test('custom-amount scope sizes a portion that scales paste and water', async ({ page }) => {
     // Paste stores better than diluted soap, so making only part of the batch now is its
-    // own optional step, collapsed like the bottle count.
-    const partial = page.locator('details').filter({ hasText: 'Dilute part of the batch' }).first();
+    // own optional scope, chosen with a toggle rather than shown by default.
+    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
     await expect(page.getByLabel('Amount to make (ml)')).toBeHidden();
-    await partial.locator('summary').click();
+    await section.getByLabel('Custom amount').click();
+    await expect(page.getByLabel('Amount to make (ml)')).toBeVisible();
     await page.getByLabel('Amount to make (ml)').fill('1000');
     await page.getByLabel('Amount to make (ml)').blur();
-    await expect(partial).toContainText(/Paste to weigh out/);
-    await expect(partial).toContainText(/% of the batch/);
+    await expect(section).toContainText(/Paste to weigh out/);
+    await expect(section).toContainText(/% of the batch/);
     // No measurement yet: the computed paste must carry the evaporation caveat.
-    await expect(partial).toContainText(/evaporat/i);
+    await expect(section).toContainText(/evaporat/i);
     // Weighing the paste replaces the computed figure and moves the water to match.
-    await page.getByLabel('Measured paste weight — whole batch (g)').fill('1400');
-    await page.getByLabel('Measured paste weight — whole batch (g)').blur();
-    await expect(partial).toContainText(/than predicted/);
-    await expect(partial).toContainText(/ : 1/);
+    await page.getByLabel('Measured paste weight (g)').fill('1400');
+    await page.getByLabel('Measured paste weight (g)').blur();
+    await expect(section).toContainText(/than predicted/);
+    await expect(section).toContainText(/ : 1/);
   });
 
   test('negative superfat triggers Neutralize panel with citric estimate', async ({ page }, testInfo) => {

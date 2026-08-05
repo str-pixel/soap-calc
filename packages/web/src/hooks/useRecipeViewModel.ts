@@ -48,19 +48,15 @@ export type UseRecipeViewModelArgs = {
    * simply skips the guard — it's an optional check, not a required one. */
   vesselVolumeCm3?: number | null;
   /** The maker's scale reading for the whole batch's paste, in grams — the same App state
-   * DilutionPanel and PartialDilution read. Threaded into batchSheetData so a valid
+   * DilutionPanel and PortionDilutionResults read. Threaded into batchSheetData so a valid
    * measurement corrects the printed dilution water the same way it corrects the screen
    * (lib/measuredPaste's correctedDilutionWaterGrams, shared by both). */
   measuredPasteGrams?: string;
   /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
-   * whole batch (see PartialDilution's declaration). Threaded into batchSheetData so a
+   * whole batch (see DilutionPanel's declaration radios). Threaded into batchSheetData so a
    * remaining-paste reading never corrects the printed BATCH row, matching DilutionPanel's
    * on-screen guard. */
   measuredPasteIsRemaining?: boolean;
-  /** The maker's own bottle-size input, in ml — the same App state BottleCalculator reads.
-   * Threaded into batchSheetData so the printed sheet can carry a bottle count alongside
-   * the on-screen one, computed from the same lsBottleCount core helper. */
-  bottleSizeMl?: string;
 };
 
 export type RecipeViewModel = {
@@ -118,7 +114,7 @@ export type RecipeViewModel = {
    * outside LS / before a dilution exists. See computeBottledSolutionGrams. */
   bottledSolutionGrams: number | null;
   /** The best-known WHOLE-BATCH paste mass — anhydrousGrams + cookWaterGrams, corrected
-   * for an alternative liquid's non-water solids. Feeds PartialDilution's remaining-mode
+   * for an alternative liquid's non-water solids. Feeds PortionDilutionResults' remaining-mode
    * ceiling/composition basis. Null before a dilution exists. */
   wholeBatchPasteGrams: number | null;
   batchWeightWithExtras: number;
@@ -152,7 +148,6 @@ export function useRecipeViewModel({
   vesselVolumeCm3 = null,
   measuredPasteGrams,
   measuredPasteIsRemaining,
-  bottleSizeMl,
 }: UseRecipeViewModelArgs): RecipeViewModel {
   const previewState = usePreviewRecipeState(
     lines,
@@ -438,7 +433,7 @@ export function useRecipeViewModel({
   // already uses) for an alternative liquid's non-water solids: real mass sitting in the
   // pot that a water-only figure structurally misses (splitLiquidPasteWater is only the
   // liquid's WATER fraction; splitLiquidGrams is its total mass, so the difference is its
-  // solids). Feeds PartialDilution's remaining-mode ceiling/composition basis (see
+  // solids). Feeds PortionDilutionResults' remaining-mode ceiling/composition basis (see
   // lsPartialDilution's wholeBatchPasteGrams param) — without this, a legitimate remaining
   // reading above the water-only figure was falsely rejected on any split-liquid recipe,
   // and the composition it derived understated the pot's true paste mass. Null before a
@@ -847,7 +842,6 @@ export function useRecipeViewModel({
       measuredPasteGrams,
       measuredPasteIsRemaining,
       bottledSolutionGrams,
-      bottleSizeMl,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
       overDilutionCertain,
@@ -867,7 +861,6 @@ export function useRecipeViewModel({
     measuredPasteGrams,
     measuredPasteIsRemaining,
     bottledSolutionGrams,
-    bottleSizeMl,
     displayTotals,
     extrasGrams,
     indexes,

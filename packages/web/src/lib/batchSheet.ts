@@ -39,14 +39,14 @@ export type BatchSheetData = {
   extrasGrams: number;
   dilution: DilutionResult | null;
   /** The maker's scale reading for the whole batch's paste, in grams — the same App state
-   * DilutionPanel and PartialDilution read (see DilutionPanel's own doc). A valid one
+   * DilutionPanel and PortionDilutionResults read (see DilutionPanel's own doc). A valid one
    * corrects the printed "Dilution water to add" figure via correctedDilutionWaterGrams
    * (lib/measuredPaste), so the sheet a maker carries to the bench matches the screen.
    * Optional: data built before the field existed prints the recipe's own computed figure. */
   measuredPasteGrams?: string;
   /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
-   * whole batch (see PartialDilution's declaration). A remaining-paste reading describes a
-   * smaller pot, not the batch — it must never correct this printed batch row. */
+   * whole batch (see DilutionPanel's declaration radios). A remaining-paste reading describes
+   * a smaller pot, not the batch — it must never correct this printed batch row. */
   measuredPasteIsRemaining?: boolean;
   /** The mass of finished product actually bottled: solution base (real paste when the
    * target exceeds it) plus additives, append-mode post-cook oil, and split-liquid solids —
@@ -55,11 +55,6 @@ export type BatchSheetData = {
    * sheet is the page taken to the bench and that is what actually gets bottled. Null/
    * undefined falls back to `dilution.solutionGrams` (no separate row needed). */
   bottledSolutionGrams?: number | null;
-  /** The maker's own bottle-size input, in ml (same App state BottleCalculator reads).
-   * Present so the printed sheet can carry a bottle count too — App-local, so absent on
-   * data built before this field existed (no count printed, matching other optional
-   * fields' convention). */
-  bottleSizeMl?: string;
   /** Grams of split liquid with undeclared water content. Non-zero makes the printed
    * dilution figure a lower bound, and the sheet must say so — the bench copy is the one
    * surface with no sibling panel to explain it. Optional: data built before the field

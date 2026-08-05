@@ -133,7 +133,7 @@ export function computeBottledSolutionGrams(input: {
   extrasGrams: number;
   splitLiquidPasteWaterGrams: number;
   /** The maker's scale reading for the WHOLE batch's paste — same App/view-model state
-   * DilutionPanel and PartialDilution read. Optional so callers/tests with no measurement
+   * DilutionPanel and PortionDilutionResults read. Optional so callers/tests with no measurement
    * are unaffected. */
   measuredPasteGrams?: string;
   /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions, not the whole
