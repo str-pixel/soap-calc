@@ -1,6 +1,30 @@
 import type { DilutionResult } from '@soap-calc/core';
 
 /**
+ * What every UI surface passes for the `isRemaining` parameter below: a measured paste is
+ * the WHOLE batch, always.
+ *
+ * DilutionPanel used to carry a declaration beside the measured-paste field — "That weight
+ * is: (o) all of it ( ) what's left after earlier dilutions" — because a reading lighter than
+ * the recipe predicts has two indistinguishable causes: water boiled off during the cook
+ * (same soap, less water, MORE concentrated), or part of the batch already diluted away (same
+ * composition, less of it). That control is gone by request. The whole-batch reading is also
+ * how the reference frames the ratio method the panel offers — weigh the pot you are diluting
+ * and multiply (LS:1534) — and sizing a partial dilution is what Custom amount and its
+ * "Amount to make (ml)" field are for.
+ *
+ * REMAINING MODE IS THEREFORE UNREACHABLE FROM THE UI, and is kept anyway: the parameter, the
+ * remaining-mode ceiling (`exceedsRemainingCeiling`), the `isRemaining` gate on
+ * {@link measuredPasteIsValidFor}, computeBottledSolutionGrams' matching gate and core's
+ * `lsPartialDilution` arithmetic were all proven correct by large differential fuzzes, they
+ * are still tested directly, and they are what a caller (or a restored control) would need.
+ * Nothing in this module decides that policy — this constant is the single place the UI does,
+ * so a reader following an `isRemaining = false` argument back finds the reason here rather
+ * than a bare literal at four call sites.
+ */
+export const MEASURED_PASTE_IS_REMAINING = false;
+
+/**
  * The mass in the pot that CANNOT leave during the cook, and so the physical floor under any
  * whole-batch paste reading: the batch's anhydrous soap plus an alternative liquid's
  * non-water SOLIDS.
@@ -107,6 +131,8 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * never be valid for a caller (DilutionPanel's batch row, the printed BatchSheet) that
  * corrects a BATCH-level figure with it — PortionDilutionResults' own portion arithmetic
  * doesn't go through this gate, since a remaining reading is exactly what it wants.
+ * Every UI caller passes {@link MEASURED_PASTE_IS_REMAINING}, so this gate never fires
+ * today; see that constant for why it is kept.
  *
  * `wholeBatchPasteGrams`/`cookWaterGrams` are the two figures the floor needs to see an
  * alternative liquid's solids (see {@link solidsFloorGramsFor}). They MUST be passed by
@@ -195,6 +221,12 @@ export type MeasuredPasteRejection = {
  * does when its matching param is omitted. `cookWaterGrams` is the recipe's own cook water,
  * needed alongside it for the solids floor alone (see {@link solidsFloorGramsFor}) — it is
  * NOT part of the ceiling, and does not touch `wholeBatchPasteBasis`.
+ *
+ * Every UI caller passes {@link MEASURED_PASTE_IS_REMAINING}, so `exceedsRemainingCeiling`
+ * cannot fire from the app today and no surface renders a paragraph for it. The rule stays —
+ * see that constant — and so does the `!isRemaining` exclusion on `belowSolids` and
+ * `exceedsSolution`, which is what keeps the four rules mutually exclusive for a caller that
+ * does declare a remainder.
  */
 export function measuredPasteRejectionFor(
   measuredPasteGrams: string | undefined,
@@ -239,9 +271,9 @@ export function measuredPasteRejectionFor(
   // falling back to the recipe's computed figure with the impossible number still on
   // screen above it. min={1} on a type="number" input is only enforced on submit, and this
   // form has none, so it is typeable. This owns the verdict alone rather than folding into
-  // belowSolids: that rule's remedy ("switch the declaration to what's left after earlier
-  // dilutions") is no help for a negative number, and it is disabled in remaining mode,
-  // which would have left that declaration silent all over again.
+  // belowSolids: that rule's remedy is about how the pot was weighed, which is no help for a
+  // negative number, and it is disabled in remaining mode, which would have left a remaining
+  // reading of -500 with no verdict at all.
   const nonPositive = hasMeasurement && Number.isFinite(measured) && measured <= 0;
   // A batch's paste always contains ALL of its anhydrous soap AND all of the solids an
   // alternative liquid put in the pot — neither evaporates — so a WHOLE-BATCH reading below
@@ -277,8 +309,8 @@ export function measuredPasteRejectionFor(
   //
   // The ceiling wins there, and must: it is the rule with the actionable remedy in that
   // state (the reading is above what this target can hold, so the target is what moves),
-  // while the floor's remedies — re-tare, or re-declare as a remainder — answer a mistake
-  // that is not the one being made. `rejected` is unaffected either way, so nothing this
+  // while the floor's remedies — re-tare, or weigh the whole pot — answer a mistake that is
+  // not the one being made. `rejected` is unaffected either way, so nothing this
   // exclusion touches becomes acceptable; only the redundant paragraph goes.
   const solidsFloorGrams = solidsFloorGramsFor(dilution, wholeBatchPasteGrams, cookWaterGrams);
   const belowSolids =
@@ -318,15 +350,14 @@ export function measuredPasteRejectionFor(
   // remainder's own solution is measured x solutionGrams / basis, so it falls short of the
   // remainder exactly when basis > solutionGrams, whatever was weighed. Refusing the subset
   // of readings that happen to sit above solutionGrams would refuse an arbitrary slice of a
-  // reading-independent condition and stay silent on the rest of it. That condition already
-  // has an owner in both scopes — PortionDilutionResults' measuredPasteAlreadyThinner (which
-  // suppresses the portion and says why, and which every reading this gate newly accepts
-  // satisfies by the same inequality) and DilutionPanel's pasteAlreadyPastTarget twin — and
-  // both are deliberately NOT role="alert", because nothing about the reading is impossible.
-  // So the case moves from a wrong refusal to the right explanation, and nothing it feeds
-  // changes: measuredPasteIsValidFor still refuses every remaining reading outright, so the
-  // batch row, correctedDilutionWaterGrams, computeBottledSolutionGrams and BatchSheet never
-  // saw it either way, and lsPartialDilution is not reached because the portion is null.
+  // reading-independent condition and stay silent on the rest of it. (When the panel still
+  // offered the declaration, that condition had an explanation in both scopes rather than a
+  // refusal — PortionDilutionResults' measuredPasteAlreadyThinner and DilutionPanel's
+  // pasteAlreadyPastTarget twin, neither a role="alert", because nothing about the reading is
+  // impossible. The first of those is gone with the control; the second still renders, for
+  // its own unmeasured case.) Nothing this suppression feeds changes either way:
+  // measuredPasteIsValidFor still refuses every remaining reading outright, so the batch row,
+  // correctedDilutionWaterGrams, computeBottledSolutionGrams and BatchSheet never see it.
   const exceedsSolution =
     !isRemaining &&
     hasMeasurement &&
@@ -346,11 +377,15 @@ export function measuredPasteRejectionFor(
   // layer so the maker sees why, not just a vanished result.
   //
   // Since exceedsSolution stood down under this declaration, this is the ONLY ceiling a
-  // remaining reading meets, and its alert is the only one the panel can print for an
-  // over-heavy remainder. Its remedies — check the scale, or re-declare as "all of it" — are
-  // the two ways to get here, and neither is the target. Anything added to this rule is
-  // therefore added to the whole of the remaining declaration's ceiling; there is no longer a
-  // second rule behind it to catch what it lets through.
+  // remaining reading meets. Anything added to this rule is therefore added to the whole of
+  // the remaining declaration's ceiling; there is no longer a second rule behind it to catch
+  // what it lets through.
+  //
+  // No surface renders it today: every UI caller passes MEASURED_PASTE_IS_REMAINING, so
+  // `isRemaining` is always false and this is always false with it. The alert DilutionPanel
+  // used to print for it is gone (its remedies named the declaration control). Kept for the
+  // reason on that constant — a direct consumer, or a restored control, needs this ceiling or
+  // an over-heavy remainder reaches the arithmetic with nothing standing behind it.
   const exceedsRemainingCeiling =
     isRemaining &&
     hasMeasurement &&
@@ -427,6 +462,12 @@ export function measuredPasteRejectionFor(
  * short-circuit cost was downstream, in computeBottledSolutionGrams, which read the base as
  * solids-free and added them on top of a pot weighed WITH them. Corrected there, at the
  * point that knows the difference, rather than here.
+ *
+ * `isRemaining` reaches this only through {@link measuredPasteIsValidFor}, whose gate refuses
+ * a remaining reading outright so this row falls back to the corrected pot. Both UI callers
+ * pass {@link MEASURED_PASTE_IS_REMAINING}, so that path is unreachable from the app today
+ * and this function's behaviour for every reading the UI can produce is exactly what it was;
+ * the parameter is kept for the reason on that constant.
  */
 export function correctedDilutionWaterGrams(
   dilution: DilutionResult,

@@ -87,13 +87,9 @@ export default function App() {
   // not dirty a saved or exported recipe. App state keeps them across process switches
   // within a session.
   const [portionTargetMl, setPortionTargetMl] = useState('');
+  // Always the whole batch's paste: the declaration that used to sit beside the field is
+  // gone — see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING.
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
-  // What the measured paste weight above represents: the whole batch before any dilution
-  // (the default — matches all existing sessions), or what's left after earlier dilutions.
-  // "Lighter than predicted" has two indistinguishable explanations — cook evaporation
-  // (same soap, less water) or part of the batch already diluted away (composition
-  // unchanged, just less of it) — so the maker must say which; see DilutionPanel.
-  const [measuredPasteIsRemaining, setMeasuredPasteIsRemaining] = useState(false);
   // A measurement describes one specific batch's paste; it must not survive an edit to the
   // recipe that batch was measured from, or the dilution figures keep using a paste weight
   // that no longer belongs to the oils being diluted. There is no single handler that
@@ -128,7 +124,6 @@ export default function App() {
     const prev = prevProcessOilsRef.current;
     if (prev.process === process && prev.oilsSignature !== oilsSignature) {
       setMeasuredPasteGrams('');
-      setMeasuredPasteIsRemaining(false);
     }
     prevProcessOilsRef.current = { process, oilsSignature };
   }, [process, oilsSignature]);
@@ -210,7 +205,6 @@ export default function App() {
     process,
     vesselVolumeCm3,
     measuredPasteGrams,
-    measuredPasteIsRemaining,
   });
   useRecipeAutosave(process, recipeName, lines, settings, additives, () =>
     flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
@@ -513,13 +507,11 @@ export default function App() {
                 waterPasteRatio={waterPasteRatio}
                 onWaterPasteRatioChange={setWaterPasteRatio}
                 measuredPasteGrams={measuredPasteGrams}
-                measuredPasteIsRemaining={measuredPasteIsRemaining}
                 dilutionScope={dilutionScope}
                 onDilutionScopeChange={setDilutionScope}
                 targetMl={portionTargetMl}
                 onTargetMlChange={setPortionTargetMl}
                 onMeasuredPasteGramsChange={setMeasuredPasteGrams}
-                onMeasuredPasteIsRemainingChange={setMeasuredPasteIsRemaining}
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
               />
             )}

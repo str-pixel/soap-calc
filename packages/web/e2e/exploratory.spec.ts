@@ -388,8 +388,8 @@ test.describe('liquid soap', () => {
     await expect(section).toContainText(/boils off water the recipe still counts/i);
     await expect(section).not.toContainText(/never counted/i);
     // Weighing the paste replaces the computed figure and moves the water to match.
-    await page.getByLabel('Measured paste weight (g)').fill('1400');
-    await page.getByLabel('Measured paste weight (g)').blur();
+    await page.getByLabel('Measured paste weight — the whole batch (g, optional)').fill('1400');
+    await page.getByLabel('Measured paste weight — the whole batch (g, optional)').blur();
     await expect(section).toContainText(/than predicted/);
     await expect(section).toContainText(/ : 1/);
   });

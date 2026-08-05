@@ -496,11 +496,13 @@ describe('the paste floor counts solids that cannot boil off', () => {
             expect(r.rejected).toBe(fired >= 1);
             // The one thing the remaining declaration's narrower ceiling lets through: a
             // remainder above the whole batch's target solution. It is only ever accepted
-            // where the pot itself outweighs that solution — which is exactly the condition
-            // PortionDilutionResults' measuredPasteAlreadyThinner tests (its potSolutionGrams
-            // is measured x solutionGrams / basis, short of the reading precisely when
-            // basis > solutionGrams), so every reading in this class still meets a surface
-            // that suppresses the portion and says why. Nothing silently computes from it.
+            // where the pot itself outweighs that solution — a remainder's own solution is
+            // measured x solutionGrams / basis, short of the reading precisely when
+            // basis > solutionGrams — so core's `potSolutionGrams - pasteGrams < 0` refuses
+            // every reading in this class and nothing can silently compute from it. (No UI
+            // surface reaches this: the declaration control is gone and every reading is a
+            // whole-batch one. The property is asserted for the direct consumers the rule is
+            // kept for — see MEASURED_PASTE_IS_REMAINING.)
             if (r.accepted && isRemaining && r.measuredGrams > solutionGrams) {
               accepted++;
               expect(r.wholeBatchPasteBasis).toBeGreaterThan(solutionGrams);

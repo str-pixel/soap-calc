@@ -156,7 +156,14 @@ export function computeBottledSolutionGrams(input: {
   /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions, not the whole
    * batch. A remaining reading describes a smaller pot, never the batch this function
    * prices, so it must not feed the bottled base — same isRemaining gate
-   * `correctedDilutionWaterGrams` and DilutionPanel's batch row already apply. */
+   * `correctedDilutionWaterGrams` and DilutionPanel's batch row already apply.
+   *
+   * UNREACHABLE FROM THE UI: the declaration control is gone and every reading is the whole
+   * batch, so the view model no longer passes this and it defaults to undefined (falsy) —
+   * which is the value this path always had for a whole-batch reading, so nothing the app can
+   * produce behaves differently. Kept, with its gate and its test, for the reason on
+   * lib/measuredPaste's MEASURED_PASTE_IS_REMAINING: the refusal is what stops a remainder
+   * pricing a bottle it is not, and a direct consumer still needs it. */
   measuredPasteIsRemaining?: boolean;
   /** The view model's corrected whole-batch paste (anhydrous + cook water + an alternative
    * liquid's non-water solids). Threaded through for one reason: it is what

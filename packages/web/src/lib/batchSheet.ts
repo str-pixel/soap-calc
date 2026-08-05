@@ -44,10 +44,6 @@ export type BatchSheetData = {
    * (lib/measuredPaste), so the sheet a maker carries to the bench matches the screen.
    * Optional: data built before the field existed prints the recipe's own computed figure. */
   measuredPasteGrams?: string;
-  /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
-   * whole batch (see DilutionPanel's declaration radios). A remaining-paste reading describes
-   * a smaller pot, not the batch — it must never correct this printed batch row. */
-  measuredPasteIsRemaining?: boolean;
   /** The mass of finished product actually bottled: solution base (real paste when the
    * target exceeds it) plus additives, append-mode post-cook oil, and split-liquid solids —
    * see useRecipeViewModel's bottledSolutionGrams / computeBottledSolutionGrams. Printed
