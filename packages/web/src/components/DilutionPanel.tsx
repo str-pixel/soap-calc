@@ -59,11 +59,13 @@ type DilutionPanelProps = {
   waterPasteRatio?: string;
   onWaterPasteRatioChange?: (value: string) => void;
   /** The maker's scale reading for the paste, in grams (same App state PortionDilutionResults
-   * reads — see its doc comment). The reference weighs the paste precisely because a
-   * computed figure cannot account for cook evaporation or an alternative liquid's
-   * uncounted solids, so when this is present, declared as the WHOLE batch, and passes
-   * PortionDilutionResults' own guards, it corrects the BATCH dilution water here too, not
-   * just the portion below. */
+   * reads — see its doc comment). The reference weighs the paste precisely because no
+   * computed figure can account for the water a particular cook drove off, so when this is
+   * present, declared as the WHOLE batch, and passes PortionDilutionResults' own guards, it
+   * corrects the BATCH dilution water here too, not just the portion below. (An alternative
+   * liquid's uncounted solids were the other half of that reason until `wholeBatchPasteGrams`
+   * started carrying them into the computed paste — the fifth site of a clause this branch
+   * made stale, and the only developer-facing one.) */
   measuredPasteGrams?: string;
   /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
    * whole batch (see the declaration radios above). A remaining-paste reading describes a

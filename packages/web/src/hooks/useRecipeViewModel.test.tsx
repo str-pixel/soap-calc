@@ -687,6 +687,39 @@ test('the real view model pours one water figure into both dilution scopes', () 
   expect(batchWaterGrams).toBeCloseTo(vm.dilution.dilutionWaterGrams - solidsGrams, 6);
 });
 
+test('the printed sheet is handed the corrected paste, and the bottled mass is priced from it', () => {
+  // BatchSheet's CONSUMPTION of data.wholeBatchPasteGrams is pinned in its own file, but
+  // nothing asserted the view model puts it there — so dropping it from buildBatchSheetData
+  // survived the suite and silently returned the printed sheet to the recipe's water-only
+  // figure while the panel kept showing the corrected one: the screen-versus-bench split
+  // this branch exists to close, back again with every test green.
+  let vm: any;
+  probe((v) => { vm = v; },
+    {
+      lyeType: 'koh',
+      soapConcentrationPercent: '30',
+      splitLiquids: [{
+        key: 's1', presetKey: '', name: 'declared liquid', customWaterPercent: '50',
+        sizeMode: 'grams' as const, amount: '900', addAt: 'trace' as const,
+      }],
+    },
+    'ls');
+
+  const solidsGrams = vm.wholeBatchPasteGrams - (vm.dilution.anhydrousGrams + vm.cookWaterGrams);
+  expect(solidsGrams).toBeCloseTo(450, 6); // non-vacuous: without solids nothing can differ
+  expect(vm.batchSheetData).not.toBeNull();
+  expect(vm.batchSheetData.wholeBatchPasteGrams).toBeCloseTo(vm.wholeBatchPasteGrams, 6);
+  // Same figure the sheet will print, and it is NOT the recipe's own water-only one.
+  expect(
+    correctedDilutionWaterGrams(vm.dilution, '', false, vm.batchSheetData.wholeBatchPasteGrams),
+  ).toBeCloseTo(vm.dilution.dilutionWaterGrams - solidsGrams, 6);
+
+  // The bottled mass is priced from the same corrected water: the pot finishes at
+  // solutionGrams, so the only thing above it is the non-liquid extras (none here). Without
+  // the basis threaded into computeBottledSolutionGrams this is solutionGrams + 450.
+  expect(vm.bottledSolutionGrams).toBeCloseTo(vm.dilution.solutionGrams, 6);
+});
+
 test('and so is the dilution water derived from it — the undeclared-liquid caveat must not promise otherwise', () => {
   // The panel and the printed sheet used to call that figure "the LEAST you will need" and
   // offer "declare its % water" as the lever. Once the water is solutionGrams minus the

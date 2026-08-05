@@ -771,7 +771,16 @@ test('a measured paste corrects the batch dilution water', () => {
   expect(screen.getByText(/^2,520 g/)).toBeTruthy();
   // Not /measured paste/i alone: the new measured-paste input's own label ("Measured
   // paste weight") also matches that broad a pattern now that the field lives here too.
-  expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
+  const hint = screen.getByText(/uses your measured paste/i);
+  expect(hint).toBeTruthy();
+  // The reason it gives has to be one a measurement can still deliver. It used to add "an
+  // alternative liquid's solids are mass it never counted", which the computed paste this
+  // outranks now counts — and no unit test could see the regression: the paragraph only
+  // renders with a valid measurement in Whole batch scope, and the e2e negative for its
+  // Custom-amount twin runs before the measurement is filled in.
+  expect(hint.textContent).toMatch(/boils off water the recipe still counts/i);
+  expect(hint.textContent).not.toMatch(/solids/i);
+  expect(hint.textContent).not.toMatch(/never counted/i);
 });
 
 test('a measurement declared as what is left after earlier dilutions does NOT correct the batch row — it is not the batch', () => {

@@ -106,6 +106,47 @@ describe('computeBottledSolutionGrams', () => {
     ).toBeCloseTo(3030.3, 0);
   });
 
+  it('a split liquid bottles solutionGrams plus the NON-liquid extras — its solids are counted once, not twice', () => {
+    // 200 g of canned coconut milk at 68% water: 136 g of water into the paste (already in
+    // cookWaterGrams) and 64 g of non-water solids. The corrected water is solutionGrams
+    // minus the real 1,900 + 64 g pot, so the base lands a solids' worth SHORT of
+    // solutionGrams and the extras term puts exactly that back — the pot really does finish
+    // at solutionGrams once the prescribed water is in.
+    //
+    // Two mutants survive without this: dropping wholeBatchPasteGrams from the
+    // correctedDilutionWaterGrams call here, and useRecipeViewModel not passing it. Both
+    // revert to solutionGrams + 64 g — a bottle heavier than anything the maker is told to
+    // pour, and silently back to pre-branch behaviour.
+    // cookWaterGrams is the fixture's own totalWater − dilutionWater (2,800 − 1,900), so the
+    // pot below really is the one this dilution was computed for.
+    const cookWaterGrams = 900; // 764 g lye water + 136 g of the milk's water
+    const splitLiquidSolidsGrams = 64;
+    const wholeBatchPasteGrams =
+      dilution.anhydrousGrams + cookWaterGrams + splitLiquidSolidsGrams;
+    expect(
+      computeBottledSolutionGrams({
+        dilution,
+        cookWaterGrams,
+        extrasGrams: 200 + 50, // the milk itself, plus 50 g of a solution-dosed additive
+        splitLiquidPasteWaterGrams: 136,
+        wholeBatchPasteGrams,
+      }),
+      // 4,000 g solution + the 50 g additive. The milk's own 200 g is already inside the
+      // solution: 136 g as paste water, 64 g as the solids the corrected water made room for.
+    ).toBeCloseTo(dilution.solutionGrams + 50, 6);
+    // Control: the same call WITHOUT the corrected basis is the mutant's answer, and it is
+    // 64 g heavier — so the assertion above is the correction talking, not arithmetic that
+    // would hold either way.
+    expect(
+      computeBottledSolutionGrams({
+        dilution,
+        cookWaterGrams,
+        extrasGrams: 200 + 50,
+        splitLiquidPasteWaterGrams: 136,
+      }),
+    ).toBeCloseTo(dilution.solutionGrams + 50 + splitLiquidSolidsGrams, 6);
+  });
+
   it('a REMAINING-declared measurement does not feed the bottled base — a remainder is not the batch', () => {
     const anhydrousGrams = 1000;
     const cookWaterGrams = 2200;

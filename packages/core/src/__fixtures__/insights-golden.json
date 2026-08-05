@@ -560,7 +560,7 @@
    {
     "level": "info",
     "code": "glycerin_solvent_dilution",
-    "message": "Glycerin acts as a solvent: the paste dissolves faster and needs less dilution water than the water-only figure — dilute in increments and stop at the target consistency."
+    "message": "Glycerin acts as a solvent: the paste dissolves faster, and the batch can reach the consistency you want before all of the dilution water is in. Add it in increments and stop at the consistency rather than at the figure."
    },
    {
     "level": "warning",
