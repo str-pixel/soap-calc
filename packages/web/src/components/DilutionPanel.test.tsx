@@ -1118,6 +1118,229 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     expect(screen.getByRole('alert').textContent).toMatch(/already more dilute/i);
   });
 
+  // 400 g of a zero-water liquid on a 1,200 g-anhydrous batch at an 80% target: a 300 g
+  // water allowance against 400 g of solids, so the solids-corrected total goes NEGATIVE.
+  // The state the "Total water" correction cannot answer, and the one it is not allowed to
+  // answer wrongly.
+  const SOLIDS_PAST_ALLOWANCE = {
+    dilution: {
+      anhydrousGrams: 1200,
+      solutionGrams: 1500,
+      totalWaterGrams: 300,
+      dilutionWaterGrams: 0,
+      glycerinGrams: 100,
+      soapConcentrationPercent: 80,
+      targetExceedsPaste: true,
+    },
+    cookWaterGrams: 330,
+    wholeBatchPasteGrams: 1930, // 1,200 + 330 + 400 g of solids
+  };
+
+  it('falls back to the target\'s own water when the solids exceed its whole allowance — never a negative, never a false zero', () => {
+    // Three ways to print 300 − 400, all claims about a solution that cannot exist: "-96 g"
+    // is not a weight, "0 g" asserts the finished solution holds none (and contradicts a
+    // live pour — see the next test), and core's own figure at least means something
+    // definite, is what this row has printed for every unreachable target in the app's
+    // history, and keeps Paste (anhydrous) + Total water = Finished solution intact in
+    // exactly the state where the corrected figure has to break it.
+    render(<DilutionPanel {...BASE} {...SOLIDS_PAST_ALLOWANCE} dilutionScope="batch" targetMl="" />);
+    const total = screen.getByText('Total water').nextElementSibling!.textContent!;
+    expect(total).toBe('300 g');
+    // Spelled out, because both mutants are silent otherwise: no minus sign anywhere in the
+    // grid, and not the clamped zero either.
+    expect(total).not.toContain('-');
+    expect(total).not.toBe('0 g');
+    // The identity the fallback preserves, read straight off the screen.
+    expect(
+      Number(screen.getByText('Paste (anhydrous)').nextElementSibling!.textContent!.replace(/[^0-9.]/g, '')) +
+        Number(total.replace(/[^0-9.]/g, '')),
+    ).toBe(
+      Number(screen.getByText('Finished solution').nextElementSibling!.textContent!.replace(/[^0-9.]/g, '')),
+    );
+  });
+
+  it('and never prints a total of none beside water it is telling the maker to pour', () => {
+    // The sharp form. A 1,400 g reading on this batch is physically impossible — the true
+    // pot is 1,930 g — but it clears every measured-paste guard (at or above the 1,200 g
+    // anhydrous floor, at or below the 1,500 g solution ceiling), so it is applied: the pour
+    // becomes 1,500 − 1,400 = 100 g. Clamped at zero, the panel said the finished solution
+    // holds no water directly above an instruction to add 100 g of it. That guard gap is
+    // pre-existing and is not this row's to close; contradicting the pour was.
+    render(
+      <DilutionPanel
+        {...BASE}
+        {...SOLIDS_PAST_ALLOWANCE}
+        measuredPasteGrams="1400"
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    const pour = screen.getByText('Dilution water to add').nextElementSibling!.textContent!;
+    const total = screen.getByText('Total water').nextElementSibling!.textContent!;
+    expect(pour).toBe('100 g');
+    expect(total).toBe('300 g');
+    expect(Number(total.replace(/[^0-9.]/g, ''))).toBeGreaterThanOrEqual(
+      Number(pour.replace(/[^0-9.]/g, '')),
+    );
+  });
+
+  it('a pot that weighs exactly the solution is AT the target, not past it — no alert, and nothing to pour', () => {
+    // The boundary the corrected-pot verdict is deliberately strict about, and the sibling
+    // of the ones lib/measuredPaste documents accepting (measured === anhydrousGrams,
+    // measured === solutionGrams). At pot === solution the batch reaches the target exactly
+    // with no water added: the 0 g is completion, not refusal, and an alert saying the paste
+    // is "already more dilute than the target" would be false — it is exactly at it.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1200,
+          solutionGrams: 2000,
+          totalWaterGrams: 800,
+          dilutionWaterGrams: 400,
+          glycerinGrams: 100,
+          soapConcentrationPercent: 60,
+          targetExceedsPaste: false,
+        }}
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={2000} // 1,200 + 400 + 400 g of solids — exactly the solution
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('0 g');
+    expect(screen.queryByRole('alert')).toBeNull();
+    // One gram past it and the verdict is due — the boundary is the only thing separating
+    // these two renders.
+    cleanup();
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1200,
+          solutionGrams: 2000,
+          totalWaterGrams: 800,
+          dilutionWaterGrams: 400,
+          glycerinGrams: 100,
+          soapConcentrationPercent: 60,
+          targetExceedsPaste: false,
+        }}
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={2001}
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    expect(screen.getByRole('alert').textContent).toMatch(/already more dilute than the target above/i);
+  });
+
+  it('stops telling a maker who just weighed the paste to weigh the paste', () => {
+    // A rejected reading is the only state where this alert stacks on another, and it is
+    // the one where its closing remedy is already spent: the maker weighed the pot, the
+    // reading was refused above, and "or weigh the paste above" sends them back to do it
+    // again. The verdict itself stays — the row fell back to the recipe's own clamped
+    // figure precisely BECAUSE the reading was refused, so it still needs accounting for.
+    const props = {
+      ...BASE,
+      dilution: {
+        anhydrousGrams: 1200,
+        solutionGrams: 1900,
+        totalWaterGrams: 700,
+        dilutionWaterGrams: 300,
+        glycerinGrams: 100,
+        soapConcentrationPercent: 63.2,
+        targetExceedsPaste: false,
+      },
+      cookWaterGrams: 400,
+      wholeBatchPasteGrams: 2000,
+      dilutionScope: 'batch' as const,
+      targetMl: '',
+    };
+
+    // Rejected (1,950 g is heavier than the 1,900 g solution): two alerts, and the second
+    // ends at the remedy.
+    render(<DilutionPanel {...props} measuredPasteGrams="1950" />);
+    const stacked = screen.getAllByRole('alert').map((n) => n.textContent!.replace(/\s+/g, ' '));
+    expect(stacked).toHaveLength(2);
+    const verdict = stacked.find((t) => t.includes('it weighs 2,000 g'))!;
+    expect(verdict).toContain('Lower the target concentration above (more water) until the paste can reach it.');
+    expect(verdict).not.toMatch(/weigh the paste above/i);
+    cleanup();
+
+    // With the field blank there is nothing stacked and nothing spent, so the clause is the
+    // most useful thing the alert can say — a lighter real pot is the one way out that does
+    // not move the target.
+    render(<DilutionPanel {...props} />);
+    expect(screen.getByRole('alert').textContent).toMatch(/or weigh the paste above/i);
+  });
+
+  it('names the solids even when an undeclared liquid is in the pot — they come from declared rows alone', () => {
+    // 400 g of glycerin (declared, zero water) beside 600 g of an undeclared liquid at a 30%
+    // target. The old gate withheld the whole paragraph on the mere presence of the
+    // undeclared grams, so the 400 g the solids take off the pour — and the 400 g gap they
+    // open between Paste (anhydrous) + Total water and Finished solution — went unnamed.
+    // Solids are exact here whatever the undeclared liquid contains: an undeclared row is
+    // counted as ALL water, so it contributes none.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1200,
+          solutionGrams: 4000,
+          totalWaterGrams: 2800,
+          dilutionWaterGrams: 1870,
+          glycerinGrams: 100,
+          soapConcentrationPercent: 30,
+          targetExceedsPaste: false,
+        }}
+        cookWaterGrams={930} // 330 g lye water + the undeclared 600 g, counted as all water
+        wholeBatchPasteGrams={2530} // + 400 g of glycerin solids
+        altLiquidWaterGrams={600}
+        unknownLiquidGrams={600}
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    const hint = screen.getByText(/plain distilled water only/i).textContent!.replace(/\s+/g, ' ');
+    expect(hint).toContain('400 g of your alternative liquid is solids rather than water');
+    expect(hint).toContain('not part of the total water above');
+    // And it must NOT claim a head start: the pour is lighter by the undeclared liquid's
+    // assumed water too, and that part is exactly what is not knowable.
+    expect(hint).not.toMatch(/Already .* lighter/);
+    // The gap it accounts for, read off the screen: 1,200 + 2,400 against 4,000.
+    expect(screen.getByText('Total water').nextElementSibling!.textContent).toBe('2,400 g');
+  });
+
+  it('says a zero-water liquid brought no water in Custom amount too, not just Whole batch', () => {
+    // The portion-scope twin of the batch sentence one branch above, which is pinned in
+    // dilutionKnownDefects. Both exist because the water-only wording ("Part of the water is
+    // already there: it came in with the alternative liquid") is simply false of glycerin —
+    // no water came in with it — and Custom amount carries these caveats for the same reason
+    // Whole batch does, the liquid being a property of the recipe rather than of how much of
+    // it you are making.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
+          dilutionWaterGrams: 2070, glycerinGrams: 110, soapConcentrationPercent: 30,
+          targetExceedsPaste: false,
+        }}
+        cookWaterGrams={330}
+        wholeBatchPasteGrams={1930} // + 400 g of a zero-water liquid's solids
+        altLiquidWaterGrams={0}
+        unknownLiquidGrams={0}
+        dilutionScope="portion"
+        targetMl="1000"
+      />,
+    );
+    const hint = screen.getByText(/plain distilled water only/i).textContent!.replace(/\s+/g, ' ');
+    expect(hint).toContain('it brought no water, but it takes up room in the finished solution');
+    expect(hint).not.toMatch(/Part of the water is already there/);
+    // No batch figure travels into portion scope — that rule predates this branch.
+    expect(hint).not.toMatch(/400 g/);
+  });
+
   it('never stacks the corrected-pot verdict on the water-only one — the flag is subsumed, not paralleled', () => {
     // The gate that keeps them apart is load-bearing, and it is the one thing about
     // pasteAlreadyPastTarget a reader would be tempted to drop as redundant.
