@@ -346,6 +346,37 @@ export function DilutionPanel({
   // Shared with PortionDilutionResults so this shell's Whole-batch twin of that refusal and
   // the child's own Custom-amount wording of it can never name different controls.
   const refusalWording = dilutionTargetWording(dilutionMode, ratioNotAppliedYet);
+  // The Whole-batch twin of PortionDilutionResults' unmeasuredPasteAlreadyThinner, and the
+  // exact condition under which correctedDilutionWaterGrams' clamp fires: the corrected pot
+  // outweighs the whole solution its own soap makes at the target, so the batch row prints
+  // "0 g". That zero is honest — there really is no water to add — but until this branch
+  // existed nothing on screen said so, while Custom amount, one radio away, refused the same
+  // recipe in words. Same predicate, same remedy, same mutual exclusion as the child's.
+  //
+  // Gated on !targetExceedsPaste because this predicate strictly SUBSUMES that flag:
+  // targetExceedsPaste is totalWater < cookWater, i.e. solutionGrams < anhydrous + cookWater,
+  // and the corrected pot is never lighter than that — so ungated the two alerts would both
+  // fire for every over-dilute recipe. It is also why the water-only FALLBACK basis cannot
+  // reach here at all (bestKnownPasteGrams is then exactly anhydrous + cookWater): a true
+  // verdict always comes off the corrected, solids-aware pot.
+  //
+  // Suppressed by a VALID measurement, exactly as the targetExceedsPaste alert below is:
+  // the measured-paste guards already refuse a reading heavier than the solution (with their
+  // own alert), so a reading that survives them leaves solutionGrams - measured >= 0 and no
+  // clamp to explain. A REJECTED reading is NOT suppressed: the row falls back to the
+  // recipe's own clamped figure in that case, and the rejection alert speaks only about the
+  // reading — it never accounts for the zero underneath it.
+  //
+  // Flat, with no overDilutionCertain hedge, for the reason spelled out on
+  // measuredOverDilutionCertain above: both sides are declaration-invariant, so an
+  // undeclared liquid cannot overturn it. No collision with the "can't tell whether X% is
+  // reachable" hedge either — that one is gated on targetExceedsPaste, which is false here.
+  const pasteAlreadyPastTarget =
+    dilution !== null &&
+    !dilution.targetExceedsPaste &&
+    !measuredPasteValid &&
+    bestKnownPasteGrams !== null &&
+    bestKnownPasteGrams > dilution.solutionGrams;
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough — so the density bridge is shown here rather than
@@ -681,16 +712,47 @@ export function DilutionPanel({
                   <dt>Finished solution</dt>
                   <dd>{formatWeight(dilution.solutionGrams, displayUnit)}</dd>
                 </div>
-                {/* KNOWN DEFECT, deferred: this is calculateDilution's WATER-only total,
-                    while "Dilution water to add" above is now the solids-corrected pour.
-                    Subtracting one from the other used to recover the water already in the
-                    paste; it now overstates it by exactly the alternative liquid's solids
-                    (64 g on a 200 g canned-milk recipe, 400 g on a 400 g glycerin one), and
-                    nothing on screen names the difference. Pinned as defect 4 in
-                    web/src/dilutionKnownDefects.test.tsx. */}
+                {/* The water the finished solution actually holds, which is NOT
+                    calculateDilution's totalWaterGrams once an alternative liquid puts
+                    non-water solids in the pot. Core works from soap + water alone, so its
+                    total is solutionGrams - anhydrous; the corrected pour fills the pot to
+                    solutionGrams with anhydrous AND the solids in it, so the water that
+                    actually ends up there is a solids' worth less. Printing core's figure
+                    claimed water that is not in the bottle, and left the two rows
+                    irreconcilable: subtracting the pour from it used to recover the water
+                    already in the paste and instead overstated it by exactly the solids
+                    (64 g on a 200 g canned-milk recipe, 400 g on a 400 g glycerin one).
+
+                    Corrected rather than annotated, because the row is a claim about the
+                    finished product and the claim was wrong — a note explaining a figure
+                    nobody should act on would not have made it act-on-able. With this,
+                    Total water − Dilution water to add is the paste's own water again, and
+                    it stays exact under a measurement too: the pour is then
+                    solutionGrams − measured, so the difference is measured − anhydrous −
+                    solids, which is precisely the water in the pot that was weighed.
+
+                    Byte-identical for any recipe without a split liquid — solids is 0 — and
+                    that matters beyond the arithmetic: it leaves this row's long-standing
+                    behaviour under targetExceedsPaste (where it prints LESS than the paste's
+                    own water, because the target is not reachable) exactly as it was.
+                    Deriving it as cookWaterGrams + the pour instead would read better in
+                    that one state and be wrong in two others: it would use the ASSUMED cook
+                    water a measurement is direct evidence against, and it would move recipes
+                    that have no alternative liquid at all.
+
+                    Clamped at zero, matching calculateDilution's own clamp on
+                    dilutionWaterGrams and reachable the same way — a liquid whose solids
+                    exceed the target's whole water allowance leaves no water in a solution
+                    that cannot be reached anyway. The pour reads 0 g beside it, and the
+                    pasteAlreadyPastTarget alert below says why. */}
                 <div className="results-grid__item">
                   <dt>Total water</dt>
-                  <dd>{formatWeight(dilution.totalWaterGrams, displayUnit)}</dd>
+                  <dd>
+                    {formatWeight(
+                      Math.max(0, dilution.totalWaterGrams - splitLiquidSolidsGrams),
+                      displayUnit,
+                    )}
+                  </dd>
                 </div>
                 <div className="results-grid__item">
                   <dt>Glycerin (retained)</dt>
@@ -823,6 +885,21 @@ export function DilutionPanel({
                     only lowers the concentration further.
                   </p>
                 )}
+              {/* The sibling above answers the water-only form of this state; this one
+                  answers the form only the corrected pot can see — see
+                  pasteAlreadyPastTarget for the predicate, the gating and why the two can
+                  never both fire. The two figures are quoted because the claim is a
+                  comparison, and the row it explains prints a bare "0 g". */}
+              {pasteAlreadyPastTarget && bestKnownPasteGrams !== null && (
+                <p className="results-hint" role="alert">
+                  The paste is already more dilute than {refusalWording.named}: it weighs{' '}
+                  {formatWeight(bestKnownPasteGrams, displayUnit)} against the{' '}
+                  {formatWeight(dilution.solutionGrams, displayUnit)} its soap makes at that
+                  concentration, so there is no dilution water to add.{' '}
+                  {refusalWording.remedy} until the paste can reach it, or weigh the paste
+                  above — the cook boils off water this figure still counts.
+                </p>
+              )}
             </>
           )}
           {/* An alternative liquid is a property of the RECIPE, not of how much of it you
@@ -831,14 +908,14 @@ export function DilutionPanel({
               undeclared, for exactly the same reasons the batch's figure is — and Custom
               amount used to print them bare. Only the batch FIGURES they quote are
               scope-bound, so each drops or replaces its own. */}
-          {/* KNOWN DEFECT, deferred: the gate is the liquid's WATER, but the figure it
-              explains is derived from the corrected paste, which counts its SOLIDS too. A
-              glycerin recipe has waterFraction 0 — so the pour drops by the full glycerin
-              mass (2,506 g → 2,106 g for 400 g at a 30% target) with this paragraph gated
-              off entirely. The solids-aware wording it would need is already inside, on the
-              splitLiquidSolidsGrams branch below. Pinned as defect 3 in
-              web/src/dilutionKnownDefects.test.tsx. */}
-          {altLiquidWaterGrams > 0 && unknownLiquidGrams === 0 && (
+          {/* The gate is "did this liquid take anything off the water to add" — water OR
+              solids — not water alone. The figure it explains is derived from the corrected
+              paste, which counts both, so a water-only gate withheld the paragraph from
+              exactly the recipes whose drop is largest: glycerin has waterFraction 0, so
+              400 g of it moved the pour 2,506 g → 2,106 g with nothing on screen saying
+              why. Each of the three cases below quotes only what its own liquid actually
+              contributed. */}
+          {(altLiquidWaterGrams > 0 || splitLiquidSolidsGrams > 0.5) && unknownLiquidGrams === 0 && (
             <p className="results-hint">
               {/* The last sentence is the load-bearing one: it is the only place telling
                   the maker not to top up with more milk or juice, and it is as true of a
@@ -853,12 +930,21 @@ export function DilutionPanel({
                   understated the drop by the solids — 136 g against a real 200 g for
                   200 g of canned coconut milk. The water-only wording is kept verbatim for
                   the recipes it is still exactly right for (a liquid that is all water, or
-                  no corrected basis at all), so nothing changes for them. */}
+                  no corrected basis at all), so nothing changes for them.
+
+                  A liquid with NO water (glycerin, waterFraction 0) gets its own wording
+                  rather than the mixed one: "0 g of water that went into the paste" is a
+                  clause about nothing, and the head start it would sit beside is entirely
+                  solids. Same sentence shape, same figure, one term instead of two. */}
               {dilutionScope === 'batch'
                 ? splitLiquidSolidsGrams > 0.5
-                  ? `Already ${formatWeight(altLiquidWaterGrams + splitLiquidSolidsGrams, displayUnit)} lighter: ${formatWeight(altLiquidWaterGrams, displayUnit)} of water that went into the paste, and ${formatWeight(splitLiquidSolidsGrams, displayUnit)} of solids that take up room in the finished solution.`
+                  ? altLiquidWaterGrams > 0
+                    ? `Already ${formatWeight(altLiquidWaterGrams + splitLiquidSolidsGrams, displayUnit)} lighter: ${formatWeight(altLiquidWaterGrams, displayUnit)} of water that went into the paste, and ${formatWeight(splitLiquidSolidsGrams, displayUnit)} of solids that take up room in the finished solution.`
+                    : `Already ${formatWeight(splitLiquidSolidsGrams, displayUnit)} lighter: the alternative liquid brought no water, and all of it is solids that take up room in the finished solution.`
                   : `Already ${formatWeight(altLiquidWaterGrams, displayUnit)} lighter: that much water came in with the alternative liquid and is counted as part of the paste.`
-                : 'Part of the water is already there: it came in with the alternative liquid and is counted as part of the paste.'}{' '}
+                : altLiquidWaterGrams > 0
+                  ? 'Part of the water is already there: it came in with the alternative liquid and is counted as part of the paste.'
+                  : 'The alternative liquid is already in the pot: it brought no water, but it takes up room in the finished solution, so the figures here are net of it.'}{' '}
               Top up with plain distilled water only.
             </p>
           )}

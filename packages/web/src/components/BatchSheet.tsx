@@ -385,6 +385,31 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               DilutionPanel's can't-tell branch instead of the floor caveat below. A valid
               measured paste outranks the flag outright (Task 5) — see dilutionWaterGramsPrinted
               above — so both branches below are suppressed the same way DilutionPanel does. */}
+          {/* The sheet is the page carried to the bench, so the state DilutionPanel's
+              pasteAlreadyPastTarget alert explains on screen has to be explained here too:
+              the corrected pot outweighs the whole solution its soap makes at the target, so
+              correctedDilutionWaterGrams clamps and "Dilution water to add" above prints
+              "0 g". Printed bare, that reads as a batch needing nothing.
+
+              Same predicate and same gating as the panel's — see its comment for why
+              !targetExceedsPaste is load-bearing (this strictly subsumes that flag), why a
+              valid measurement suppresses it, and why no undeclared-liquid hedge belongs on
+              it. Unreachable without a corrected paste basis, which is why the branch below
+              reads data.wholeBatchPasteGrams directly. */}
+          {!dilution.targetExceedsPaste &&
+          !measuredPasteValid &&
+          hasCorrectedPasteBasis &&
+          (data.wholeBatchPasteGrams as number) > dilution.solutionGrams ? (
+            <p className="batch-sheet__note">
+              The paste is already more dilute than{' '}
+              {formatConcentrationPercent(dilution.soapConcentrationPercent)}%: it weighs{' '}
+              {formatWeight(data.wholeBatchPasteGrams as number, weightUnit)} against the{' '}
+              {formatWeight(dilution.solutionGrams, weightUnit)} its soap makes at that
+              concentration, so there is no dilution water to add. Lower the target
+              concentration (more water) until the paste can reach it, or weigh the paste —
+              the cook boils off water this figure still counts.
+            </p>
+          ) : null}
           {dilution.targetExceedsPaste && !measuredPasteValid && data.overDilutionCertain ? (
             // Certain across the unknown's whole 0-100% range — state the fact, exactly as
             // the panel does; hedging here made the two surfaces disagree for one recipe.

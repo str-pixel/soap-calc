@@ -255,14 +255,19 @@ export function measuredPasteRejectionFor(
  * never an instruction. It prints as "0 g" — the honest answer, where the uncorrected
  * figure was a positive number that would have pushed the batch past its target.
  *
- * KNOWN DEFECT, deferred: that "0 g" reaches the screen and the printed sheet with NO alert
- * beside it, because every explanatory branch is gated on targetExceedsPaste (false here) or
- * on a rejected MEASUREMENT (none here). Pinned in web/src/dilutionKnownDefects.test.tsx —
- * see defect 1 there for the reachable recipes and what a fix would key on.
+ * That "0 g" used to reach the screen and the printed sheet with NO alert beside it: every
+ * explanatory branch was gated on targetExceedsPaste (false here) or on a rejected
+ * MEASUREMENT (none here). Both surfaces now carry a branch keyed on the clamp's own
+ * condition instead — DilutionPanel's pasteAlreadyPastTarget and BatchSheet's twin of it —
+ * so the zero is never printed bare. Any new surface pouring this figure owes the maker the
+ * same account; the clamp fires exactly when wholeBatchPasteGrams > solutionGrams.
  *
- * KNOWN DEFECT, deferred (defect 2, same test file): the measured branch above returns
- * before the wholeBatchPasteGrams correction, so computeBottledSolutionGrams adds an
- * alternative liquid's solids on top of a pot that was weighed WITH them.
+ * The measured branch above still returns before the wholeBatchPasteGrams correction, and
+ * must: solutionGrams is the pot's target mass and the measurement is the pot, so
+ * solutionGrams - measured is what is left to pour whatever the pot is made of. What that
+ * short-circuit cost was downstream, in computeBottledSolutionGrams, which read the base as
+ * solids-free and added them on top of a pot weighed WITH them. Corrected there, at the
+ * point that knows the difference, rather than here.
  */
 export function correctedDilutionWaterGrams(
   dilution: DilutionResult,

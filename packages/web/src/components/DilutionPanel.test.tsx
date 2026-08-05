@@ -1118,6 +1118,88 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     expect(screen.getByRole('alert').textContent).toMatch(/already more dilute/i);
   });
 
+  it('never stacks the corrected-pot verdict on the water-only one — the flag is subsumed, not paralleled', () => {
+    // The gate that keeps them apart is load-bearing, and it is the one thing about
+    // pasteAlreadyPastTarget a reader would be tempted to drop as redundant.
+    // targetExceedsPaste IS totalWater < cookWater, i.e. solutionGrams < anhydrous +
+    // cookWater — and the corrected pot is that sum PLUS the liquid's solids, so it is over
+    // the solution too whenever the flag is set. Ungated, every over-dilute split-liquid
+    // recipe would print two alerts making the same claim in different words.
+    //
+    // 1,200 g anhydrous at a 90% target: 1,333 g of solution against 400 g of cook water
+    // (flag set) and a 1,700 g pot once 100 g of a liquid's solids are counted.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1200,
+          solutionGrams: 1200 / 0.9,
+          totalWaterGrams: 1200 / 0.9 - 1200,
+          dilutionWaterGrams: 0,
+          glycerinGrams: 100,
+          soapConcentrationPercent: 90,
+          targetExceedsPaste: true,
+        }}
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1700}
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts).toHaveLength(1);
+    // …and it is the water-only one, which owns this state: it is the plainer sentence, and
+    // the corrected pot adds nothing to a verdict the recipe's own water already settles.
+    expect(alerts[0].textContent).toMatch(/adding water only lowers the concentration further/i);
+  });
+
+  it('a valid measurement settles the corrected-pot verdict rather than being talked over', () => {
+    // Same exclusion the water-only alert already applies, for the same reason: the pot the
+    // verdict describes is anhydrous + ASSUMED cook water + solids, and a reading is direct
+    // evidence about the pot. The measured-paste guards refuse anything heavier than the
+    // solution with their own alert, so a reading that survives them always leaves a real
+    // figure to pour — here 1,900 − 1,800 = 100 g — and nothing left to refuse.
+    const overTarget = {
+      anhydrousGrams: 1200,
+      solutionGrams: 1900,
+      totalWaterGrams: 700,
+      dilutionWaterGrams: 300,
+      glycerinGrams: 100,
+      soapConcentrationPercent: 63.2,
+      targetExceedsPaste: false,
+    };
+    // Unmeasured, this is exactly the state the alert exists for: a 2,000 g pot (400 g of it
+    // a zero-water liquid's solids) against 1,900 g of solution, so the row clamps to 0 g.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={overTarget}
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={2000}
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('0 g');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByRole('alert').textContent).toMatch(/already more dilute than the target above/i);
+    cleanup();
+
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={overTarget}
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={2000}
+        measuredPasteGrams="1800"
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('100 g');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('explains a zero or negative reading rather than silently ignoring it, in both scopes', () => {
     // A negative reading passed every rule (they all self-disabled via `measured > 0`), so
     // it produced no alert at all while the batch row quietly used the recipe's computed

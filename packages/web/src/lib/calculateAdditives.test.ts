@@ -147,6 +147,43 @@ describe('computeBottledSolutionGrams', () => {
     ).toBeCloseTo(dilution.solutionGrams + 50 + splitLiquidSolidsGrams, 6);
   });
 
+  it('a measured pot counts the liquid\'s solids once too — the maker weighed them', () => {
+    // The measured twin of the case above, and the one that used to disagree with it.
+    // correctedDilutionWaterGrams short-circuits to solutionGrams − measured on this path
+    // (rightly: the measurement IS the pot, whatever it is made of), so the base is exactly
+    // solutionGrams — with the 64 g of milk solids already inside it. Adding them again
+    // through the extras term priced the bottle 64 g heavy against an identical batch with
+    // the field left blank.
+    const cookWaterGrams = 900; // 764 g lye water + 136 g of the milk's water
+    const wholeBatchPasteGrams = dilution.anhydrousGrams + cookWaterGrams + 64;
+    const args = {
+      dilution,
+      cookWaterGrams,
+      extrasGrams: 200 + 50, // the milk itself, plus 50 g of a solution-dosed additive
+      splitLiquidPasteWaterGrams: 136,
+      wholeBatchPasteGrams,
+    };
+    expect(
+      computeBottledSolutionGrams({ ...args, measuredPasteGrams: String(wholeBatchPasteGrams) }),
+    ).toBeCloseTo(dilution.solutionGrams + 50, 6);
+    // …and it holds for a reading that DRIFTS from the computed pot, which is the whole
+    // point of weighing: 64 g lighter (water lost to the cook) buys 64 g more dilution
+    // water, so the bottle lands in the same place. The answer must not depend on how close
+    // the scale came to the recipe's own figure.
+    expect(
+      computeBottledSolutionGrams({ ...args, measuredPasteGrams: String(wholeBatchPasteGrams - 64) }),
+    ).toBeCloseTo(dilution.solutionGrams + 50, 6);
+    // Control: without the corrected basis the solids are unknowable, so this path falls
+    // back to the pre-correction formula exactly as the unmeasured one does — 64 g heavier.
+    expect(
+      computeBottledSolutionGrams({
+        ...args,
+        wholeBatchPasteGrams: undefined,
+        measuredPasteGrams: String(wholeBatchPasteGrams),
+      }),
+    ).toBeCloseTo(dilution.solutionGrams + 50 + 64, 6);
+  });
+
   it('a REMAINING-declared measurement does not feed the bottled base — a remainder is not the batch', () => {
     const anhydrousGrams = 1000;
     const cookWaterGrams = 2200;

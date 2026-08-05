@@ -541,6 +541,38 @@ test('no caveat rows when everything is declared', () => {
   expect(screen.queryByText(/no declared water content/i)).toBeNull();
 });
 
+test('the printed sheet explains a pour the liquid\'s solids clamped to 0 g', () => {
+  // The sheet is the page carried to the bench, so DilutionPanel's pasteAlreadyPastTarget
+  // alert needs a twin here. A 4,200 g pot against 4,059 g of solution makes
+  // correctedDilutionWaterGrams clamp, and "Dilution water to add" then prints "0 g" — which,
+  // printed bare, reads as a batch that needs nothing rather than one that cannot get there.
+  render(<BatchSheet data={lsSheetData({ wholeBatchPasteGrams: 4200 })} />);
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('0 g');
+  const note = screen.getByText(/already more dilute than 30%/i).textContent!.replace(/\s+/g, ' ');
+  // Both sides of the comparison, so the figure can be checked against the rows above it.
+  expect(note).toContain('it weighs 4,200 g against the 4,059 g');
+  expect(note).toContain('there is no dilution water to add');
+});
+
+test('…and never prints that note beside the water-only one, which subsumes it', () => {
+  // The same exclusion the panel applies, pinned separately because this is a separate copy
+  // of the predicate and copies drift. targetExceedsPaste already means solutionGrams <
+  // anhydrous + cook water, and the corrected pot only adds the liquid's solids on top — so
+  // an ungated twin would double the notes on every over-dilute split-liquid sheet.
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        wholeBatchPasteGrams: 4200,
+        targetExceedsPaste: true,
+        overDilutionCertain: true,
+      })}
+    />,
+  );
+  const notes = screen.getAllByText(/already more dilute/i);
+  expect(notes).toHaveLength(1);
+  expect(notes[0].textContent).toMatch(/adding water only lowers the concentration further/i);
+});
+
 test('printed dilution shows the can\'t-tell wording (not a false floor) when the target already exceeds an undeclared paste', () => {
   render(<BatchSheet data={lsSheetData({ unknownLiquidGrams: 300, targetExceedsPaste: true })} />);
   // No vacuous floor claim: the "(at least)" suffix and "least you will need" caveat are

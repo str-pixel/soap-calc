@@ -134,12 +134,16 @@ export function computeExtrasGrams(
  * base-result read: its acetate/citrate mass is small, and folding it in here without
  * also touching solutionGrams would be easy to mistake for a double count.
  *
- * KNOWN DEFECT, deferred: "counted here ONCE" holds only on the UNMEASURED path. With a
- * valid whole-batch measurement correctedDilutionWaterGrams short-circuits before its
- * solids correction, so the base is exactly solutionGrams and the extras term adds the
- * solids a second time — the measured pot already contains them. Pre-existing (both paths
- * over-counted before the solids work; only the unmeasured one was fixed), and pinned as
- * defect 2 in web/src/dilutionKnownDefects.test.tsx. */
+ * "Counted ONCE" holds on BOTH paths, which took a second correction to make true. A valid
+ * whole-batch measurement makes correctedDilutionWaterGrams short-circuit to
+ * solutionGrams - measured, so the base is exactly solutionGrams — with the solids already
+ * inside it, because the maker put the pot with them in it on the scale. Adding them again
+ * through the extras term priced the bottle a solids' worth heavy (4,115 g against a
+ * 4,051 g solution on a 200 g canned-milk batch, and it scaled with the liquid). So the
+ * term that comes off extrasGrams below is the whole split liquid on the measured path and
+ * its water alone on the unmeasured one — the difference being exactly what each base
+ * already contains. Both over-counted before the solids work; only the unmeasured one was
+ * fixed then, which is how the two came to disagree about one batch. */
 export function computeBottledSolutionGrams(input: {
   dilution: DilutionResult;
   cookWaterGrams: number;
@@ -184,7 +188,27 @@ export function computeBottledSolutionGrams(input: {
       measuredPasteIsRemaining,
       wholeBatchPasteGrams,
     );
-  return base + Math.max(0, extrasGrams - splitLiquidPasteWaterGrams);
+  // The alternative liquid's non-water solids, off the same corrected basis
+  // correctedDilutionWaterGrams subtracts from solutionGrams — never re-derived from the
+  // split-liquid rows, so this and the water figure the panel prints can never disagree
+  // about the same pot. Zero without a corrected basis, exactly as the water correction is:
+  // a caller that supplies none cannot know the solids are there, and both paths then fall
+  // back to the pre-correction formula together.
+  const splitLiquidSolidsGrams =
+    wholeBatchPasteGrams !== undefined &&
+    wholeBatchPasteGrams !== null &&
+    Number.isFinite(wholeBatchPasteGrams) &&
+    wholeBatchPasteGrams > 0
+      ? Math.max(0, wholeBatchPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
+      : 0;
+  // What the base ALREADY holds of the split liquid, and the whole difference between the
+  // two paths. Unmeasured, the base is built from anhydrous + cookWaterGrams, so it carries
+  // the liquid's water only and the extras term has to put its solids back. Measured, the
+  // base is the pot the maker weighed — water and solids both — so putting the solids back
+  // would count them twice.
+  const splitLiquidInBaseGrams =
+    splitLiquidPasteWaterGrams + (measuredPaste !== undefined ? splitLiquidSolidsGrams : 0);
+  return base + Math.max(0, extrasGrams - splitLiquidInBaseGrams);
 }
 
 /** The post-cook superfat: one or more oils added after cook/dilution with no lye effect.

@@ -1,18 +1,17 @@
 // @vitest-environment jsdom
 /**
- * CHARACTERIZATION TESTS FOR FOUR KNOWN, UNFIXED DILUTION DEFECTS.
+ * THE FOUR FORMER DILUTION DEFECTS, NOW PINNED AS FIXED BEHAVIOUR.
  *
- * Every assertion in this file pins behaviour that is WRONG. None of them describes what
- * the app ought to do. They exist because the four defects below were found in review,
- * deliberately deferred, and described only in prose — so nothing stopped them drifting.
- * Each test names the defect, states the correct behaviour, and says plainly that a
- * failure here is the signal the defect was FIXED, not that something broke: when one of
- * these fails, delete the test (or rewrite it as a normal test of the fixed behaviour)
- * rather than restoring the old number.
+ * Every assertion in this file used to pin behaviour that was WRONG — four defects found in
+ * review, deliberately deferred, and described only in prose, so nothing stopped them
+ * drifting. Each test carried the correct behaviour in its comment and said that a failure
+ * was the signal the defect had been FIXED. All four were then fixed together, and every
+ * assertion here was flipped to the corrected expectation: this file now guards the fixes
+ * rather than the bugs. A failure here means a fix regressed.
  *
  * The figures are driven end-to-end — the real `useRecipeViewModel`, the real
- * `DilutionPanel` / `BatchSheet`, wired the way `App.tsx` wires them — so a defect that is
- * fixed anywhere along that chain shows up here.
+ * `DilutionPanel` / `BatchSheet`, wired the way `App.tsx` wires them — so a regression
+ * anywhere along that chain shows up here.
  *
  * Shared basis for every case below: the starter recipe (1,000 g oils) under LS with KOH
  * at the 90% default purity and a 5% superfat → 215.33 g of lye, 1,215.33 g anhydrous,
@@ -125,28 +124,27 @@ function hintTexts(): string[] {
   );
 }
 
-describe('DEFECT 1 (unfixed): a corrected paste past the target prints "0 g" with no alert', () => {
-  // WHAT HAPPENS. `correctedDilutionWaterGrams` clamps `solutionGrams - wholeBatchPasteGrams`
-  // at zero (lib/measuredPaste). A big low-water alternative liquid can push the CORRECTED
-  // paste past the whole target solution while `targetExceedsPaste` — computed by
-  // calculateDilution from anhydrous + WATER only, so blind to the liquid's solids — stays
-  // false. The clamp then fires and the batch row prints "0 g", while every alert that could
-  // explain it is gated on `targetExceedsPaste` (DilutionPanel's "already more dilute"
-  // branch) or on a MEASURED reading (`measurementRejection.exceedsSolution`). Neither is in
-  // play, so the panel and the printed sheet say nothing at all.
+describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of printing "0 g" bare', () => {
+  // WHAT USED TO HAPPEN. `correctedDilutionWaterGrams` clamps `solutionGrams -
+  // wholeBatchPasteGrams` at zero (lib/measuredPaste). A big low-water alternative liquid can
+  // push the CORRECTED paste past the whole target solution while `targetExceedsPaste` —
+  // computed by calculateDilution from anhydrous + WATER only, so blind to the liquid's
+  // solids — stays false. The clamp then fires and the batch row prints "0 g", while every
+  // alert that could explain it was gated on `targetExceedsPaste` (DilutionPanel's "already
+  // more dilute" branch) or on a MEASURED reading (`measurementRejection.exceedsSolution`).
+  // Neither is in play, so the panel and the printed sheet said nothing at all.
   //
   // The 0 g is HONEST — the pot really cannot reach the target, so there is no water to add.
-  // The silence is the defect.
+  // The silence was the defect.
   //
-  // WHAT THE CORRECT BEHAVIOUR WOULD BE. An alert on the same footing as the
-  // targetExceedsPaste one, keyed on the corrected pot exceeding the target solution
-  // (wholeBatchPasteGrams > solutionGrams) rather than on the water-only flag, telling the
-  // maker the pot is already past the target and to lower it (or widen the ratio).
-  //
-  // A FAILURE HERE IS THE FIX LANDING. The `toBe(0)` alert counts are the assertions that
-  // must change; do not "repair" them by re-silencing the panel.
+  // WHAT IT GUARANTEES NOW. An alert on the same footing as the targetExceedsPaste one and
+  // mutually exclusive with it, keyed on the corrected pot exceeding the target solution
+  // (`wholeBatchPasteGrams > solutionGrams`) rather than on the water-only flag — quoting
+  // both figures, and naming the same remedy Custom amount names for the identical state.
+  // The printed sheet carries the twin. Nothing about the guards changed: the 0 g is still
+  // the honest number, and this is display only.
 
-  it('glycerin 400 g at a 65% target: 0 g on screen, zero alerts', () => {
+  it('glycerin 400 g at a 65% target: 0 g on screen, and one alert saying why', () => {
     const settings = {
       lyeType: 'koh' as const,
       soapConcentrationPercent: '65',
@@ -170,18 +168,23 @@ describe('DEFECT 1 (unfixed): a corrected paste past the target prints "0 g" wit
     // …with the recipe's own (uncorrected, unclamped) figure still a live 324 g, which is
     // what the maker would have been told to pour before the solids were counted.
     expect(vm.dilution!.dilutionWaterGrams).toBeCloseTo(324.41, 1);
-    // DEFECT: nothing on screen explains the zero.
-    expect(screen.queryAllByRole('alert').length).toBe(0);
-    // Not even a plain (non-alert) paragraph says the pot is past the target. Deliberately
-    // narrow: this recipe is ALSO missing the "Already N g lighter" head-start hint, but
-    // that is defect 3's gate, and fixing it must not fail a defect-1 test — that hint
-    // explains the deduction, never the zero.
+    // FIXED: exactly one alert, and it accounts for the zero — no more, since the
+    // targetExceedsPaste branch this one subsumes must not fire alongside it.
+    const alerts = screen.queryAllByRole('alert');
+    expect(alerts.length).toBe(1);
+    const alert = alerts[0]!.textContent!.replace(/\s+/g, ' ');
+    // Both sides of the comparison it asserts, so the maker can check the claim…
+    expect(alert).toContain('already more dilute than the target above');
+    expect(alert).toContain('1,945 g');
+    expect(alert).toContain('1,870 g');
+    // …and the remedy Custom amount gives for the same state, from the same shared wording.
+    expect(alert).toContain('Lower the target concentration above (more water)');
     expect(hintTexts().some((t) => /more dilute|cannot be diluted|past the target/.test(t))).toBe(
-      false,
+      true,
     );
   });
 
-  it('1,600 g canned coconut milk on 1,000 g oils at a 40% target: 0 g on screen, zero alerts', () => {
+  it('1,600 g canned coconut milk on 1,000 g oils at a 40% target: 0 g on screen, one alert', () => {
     const settings = {
       lyeType: 'koh' as const,
       soapConcentrationPercent: '40',
@@ -201,21 +204,28 @@ describe('DEFECT 1 (unfixed): a corrected paste past the target prints "0 g" wit
     renderPanel(vm, settings.soapConcentrationPercent);
     expect(rowText('Dilution water to add')).toBe('0 g');
     expect(vm.dilution!.dilutionWaterGrams).toBeCloseTo(405, 1);
-    // DEFECT: no alert. The panel DOES print the head-start hint here (the milk carries
-    // water, so defect 3's gate passes) — but that paragraph explains the deduction, not
-    // the zero, and it is not an alert.
-    expect(screen.queryAllByRole('alert').length).toBe(0);
+    // FIXED: one alert, quoting this recipe's own two figures rather than the glycerin
+    // case's — the branch reads the pot it was given, it does not hard-code a scenario.
+    const alerts = screen.queryAllByRole('alert');
+    expect(alerts.length).toBe(1);
+    expect(alerts[0]!.textContent!.replace(/\s+/g, ' ')).toContain(
+      'it weighs 3,145 g against the 3,038 g its soap makes at that concentration',
+    );
+    // The head-start hint still prints alongside and still explains the DEDUCTION rather
+    // than the zero — the two paragraphs answer different questions and both belong.
     expect(
       hintTexts().some((t) => t.startsWith('Already 1,600 g lighter')),
     ).toBe(true);
   });
 
-  it('one radio away, Custom amount explains the very state Whole batch prints bare', () => {
-    // The sharpest form of the defect, and the shortest road to the fix: the predicate,
-    // the wording, the remedy and the mutual exclusion with targetExceedsPaste ALREADY
-    // exist, in PortionDilutionResults' `unmeasuredPasteAlreadyThinner`
-    // (solutionGrams - wholeBatchPasteBasis < 0). Custom amount refuses and says why; Whole
-    // batch, same recipe, same panel, one radio apart, prints "0 g" and nothing else.
+  it('Custom amount still explains the state Whole batch used to print bare', () => {
+    // The sharpest form of the defect, and the shortest road that was taken to the fix: the
+    // predicate, the wording, the remedy and the mutual exclusion with targetExceedsPaste
+    // ALREADY existed, in PortionDilutionResults' `unmeasuredPasteAlreadyThinner`
+    // (solutionGrams - wholeBatchPasteBasis < 0). Custom amount refused and said why; Whole
+    // batch, same recipe, same panel, one radio apart, printed "0 g" and nothing else. This
+    // case is unchanged by the fix and stays as the anchor the Whole-batch twin is worded
+    // against — if this sentence moves, that one has to move with it.
     const settings = {
       lyeType: 'koh' as const,
       soapConcentrationPercent: '65',
@@ -260,9 +270,9 @@ describe('DEFECT 1 (unfixed): a corrected paste past the target prints "0 g" wit
     expect(screen.queryByText('Water to add')).toBeNull();
   });
 
-  it('the printed batch sheet is silent in the same way', () => {
-    // The sheet is the page carried to the bench, so it is a second surface the fix has to
-    // cover — it prints the same corrected figure through the same shared helper and has no
+  it('the printed batch sheet carries the twin note', () => {
+    // The sheet is the page carried to the bench, so it is a second surface the fix had to
+    // cover — it prints the same corrected figure through the same shared helper and had no
     // branch for this state either.
     const vm = viewModelFor({
       lyeType: 'koh',
@@ -275,29 +285,38 @@ describe('DEFECT 1 (unfixed): a corrected paste past the target prints "0 g" wit
     ).find((s) => s.querySelector('h2')?.textContent === 'Dilution')!;
     const text = dilutionSection.textContent!.replace(/\s+/g, ' ');
     expect(text).toContain('Dilution water to add0 g');
-    // DEFECT: not one note beside it.
-    expect(dilutionSection.querySelectorAll('.batch-sheet__note').length).toBe(0);
+    // FIXED: exactly one note, quoting the same two figures the panel does. The sheet has
+    // no dilution-mode toggle, so it names the concentration outright where the panel
+    // defers to dilutionTargetWording.
+    const notes = dilutionSection.querySelectorAll('.batch-sheet__note');
+    expect(notes.length).toBe(1);
+    const note = notes[0]!.textContent!.replace(/\s+/g, ' ');
+    expect(note).toContain('already more dilute than 65%');
+    expect(note).toContain('it weighs 1,945 g against the 1,870 g');
+    expect(note).toContain('there is no dilution water to add');
   });
 });
 
-describe('DEFECT 2 (unfixed, pre-existing): a measured paste makes the bottled mass over-count the solids', () => {
-  // WHAT HAPPENS. `correctedDilutionWaterGrams` short-circuits on a valid whole-batch
+describe('DEFECT 2 (fixed, was pre-existing): a measured paste no longer over-counts the solids', () => {
+  // WHAT USED TO HAPPEN. `correctedDilutionWaterGrams` short-circuits on a valid whole-batch
   // measurement and returns `solutionGrams - measured` WITHOUT ever reading
-  // `wholeBatchPasteGrams`. `computeBottledSolutionGrams` then builds
-  // `base = measured + (solutionGrams - measured)` = exactly `solutionGrams`, and adds
-  // `extrasGrams - splitLiquidPasteWaterGrams` on top — which is the alternative liquid's
-  // SOLIDS plus any additives. But the measured pot already contains those solids: the
-  // maker weighed them. So the finished-product mass is over by the solids.
+  // `wholeBatchPasteGrams` — which is correct for a POUR: the measurement is the pot,
+  // whatever it is made of. `computeBottledSolutionGrams` then built
+  // `base = measured + (solutionGrams - measured)` = exactly `solutionGrams`, and added
+  // `extrasGrams - splitLiquidPasteWaterGrams` on top — the alternative liquid's SOLIDS plus
+  // any additives. But the measured pot already contains those solids: the maker weighed
+  // them. So the finished-product mass came out over by the solids, and it scaled with the
+  // liquid rather than being a fixed offset.
   //
   // Pre-existing, not a regression: both branches over-counted before the solids work
   // (the unmeasured base was anhydrous + cookWater + dilutionWaterGrams, also exactly
-  // solutionGrams). The recent work fixed the unmeasured branch and left this one byte-
-  // identical, which is why the two now disagree.
+  // solutionGrams). That work fixed the unmeasured branch and left this one byte-identical,
+  // which is why the two came to disagree.
   //
-  // WHAT THE CORRECT BEHAVIOUR WOULD BE. 4,051.11 g with a measurement, the same as
-  // without one: the solids must be counted once, and the measurement already counts them.
-  //
-  // A FAILURE HERE IS THE FIX LANDING.
+  // WHAT IT GUARANTEES NOW. 4,051.11 g with a measurement, the same as without one: the
+  // solids are counted once, and the measurement already counts them. Fixed in
+  // computeBottledSolutionGrams, at the point that knows what its base contains — the pour
+  // helper is unchanged, because its short-circuit was never wrong for the pour.
 
   const settings = {
     lyeType: 'koh' as const,
@@ -309,7 +328,7 @@ describe('DEFECT 2 (unfixed, pre-existing): a measured paste makes the bottled m
   // <= 4,051.11 solution), so it is applied rather than rejected.
   const MEASURED = '1745';
 
-  it('the same recipe prices 64 g heavier with a measurement than without one', () => {
+  it('the same recipe prices the same with a measurement as without one', () => {
     const unmeasured = viewModelFor(settings);
     const measured = viewModelFor(settings, MEASURED, false);
 
@@ -324,20 +343,23 @@ describe('DEFECT 2 (unfixed, pre-existing): a measured paste makes the bottled m
     // the bottled mass IS the solution.
     expect(unmeasured.bottledSolutionGrams!).toBeCloseTo(4051.11, 1);
 
-    // DEFECT: measured, the same batch gains the milk's solids a second time.
-    expect(measured.bottledSolutionGrams!).toBeCloseTo(4115.11, 1);
-    expect(measured.bottledSolutionGrams! - unmeasured.bottledSolutionGrams!).toBeCloseTo(64, 3);
+    // FIXED: measured, the same batch prices identically — the milk's solids are in the
+    // reading, so they are not added on top of it.
+    expect(measured.bottledSolutionGrams!).toBeCloseTo(4051.11, 1);
+    expect(measured.bottledSolutionGrams! - unmeasured.bottledSolutionGrams!).toBeCloseTo(0, 6);
   });
 
-  it('and the panel prints the inflated mass as "≈ Finished product"', () => {
+  it('and the panel no longer prints an inflated "≈ Finished product" beside the solution', () => {
     const measured = viewModelFor(settings, MEASURED, false);
     renderPanel(measured, settings.soapConcentrationPercent, MEASURED, false);
-    // The row only appears at all because the over-count pushed the bottled mass past the
-    // solution — unmeasured, the two match and the row is suppressed (asserted below).
-    expect(rowText('≈ Finished product')).toBe('4,115 g');
+    // The row used to appear only because the over-count pushed the bottled mass past the
+    // solution (it prints when the two differ). They match now, so it is suppressed — the
+    // same way it already was without a measurement, asserted below.
+    expect(screen.queryByText('≈ Finished product')).toBeNull();
     expect(rowText('Finished solution')).toBe('4,051 g');
-    // …and the volume the bottle count is derived from follows it: 4,115.11 / 1.03.
-    expect(rowText('≈ Finished volume')).toBe('3,995 ml');
+    // …and the volume the bottle count is derived from follows: 4,051.11 / 1.03, not
+    // 4,115.11 / 1.03 (3,995 ml).
+    expect(rowText('≈ Finished volume')).toBe('3,933 ml');
 
     cleanup();
     const unmeasured = viewModelFor(settings);
@@ -346,11 +368,12 @@ describe('DEFECT 2 (unfixed, pre-existing): a measured paste makes the bottled m
     expect(rowText('≈ Finished volume')).toBe('3,933 ml');
   });
 
-  it('the cause: the measured branch never reaches the wholeBatchPasteGrams correction', () => {
-    // Passing the corrected pot or omitting it makes no difference once a valid measurement
-    // is present — that is the short-circuit, and it is what makes this branch byte-
-    // identical to its pre-solids-work self. Without a measurement the same argument moves
-    // the answer by exactly the solids, which is the correction the measured branch misses.
+  it('the corrected pot is now decisive on the measured path too, not just the unmeasured one', () => {
+    // Passing the corrected pot or omitting it used to make no difference once a valid
+    // measurement was present — the short-circuit, and what made this branch byte-identical
+    // to its pre-solids-work self. It is decisive on both paths now, and by the same 64 g:
+    // the solids are knowable only from wholeBatchPasteGrams, so a caller that supplies none
+    // still falls back to the pre-correction formula on either path.
     const vm = viewModelFor(settings);
     const args = {
       dilution: vm.dilution!,
@@ -366,10 +389,11 @@ describe('DEFECT 2 (unfixed, pre-existing): a measured paste makes the bottled m
       ...args, wholeBatchPasteGrams: undefined,
       measuredPasteGrams: MEASURED, measuredPasteIsRemaining: false,
     });
-    // DEFECT: identical — the correction is inert on this path.
-    expect(withCorrection).toBeCloseTo(withoutCorrection, 6);
+    // FIXED: the correction bites here too — the uncorrected call is the old, heavy answer.
+    expect(withoutCorrection - withCorrection).toBeCloseTo(64, 3);
+    expect(withCorrection).toBeCloseTo(4051.11, 1);
 
-    // The control: with no measurement the same argument is decisive.
+    // The control, unchanged: with no measurement the same argument is decisive.
     expect(
       computeBottledSolutionGrams({ ...args, wholeBatchPasteGrams: undefined }) -
         computeBottledSolutionGrams(args),
@@ -377,24 +401,22 @@ describe('DEFECT 2 (unfixed, pre-existing): a measured paste makes the bottled m
   });
 });
 
-describe('DEFECT 3 (unfixed): the head-start hint never renders on a glycerin recipe', () => {
-  // WHAT HAPPENS. The "Already N g lighter" paragraph is gated on `altLiquidWaterGrams > 0`
-  // (DilutionPanel), which is `splitLiquidPasteWater` from the view model — the liquid's
-  // WATER only. Glycerin's waterFraction is 0, so that is exactly 0 for any amount of it,
-  // and the paragraph is gated off entirely. Meanwhile the pour figure is derived from
-  // `wholeBatchPasteGrams`, which counts the glycerin as SOLIDS — so it drops by the full
-  // glycerin mass with nothing on screen explaining why.
+describe('DEFECT 3 (fixed): the head-start hint renders on a glycerin recipe', () => {
+  // WHAT USED TO HAPPEN. The "Already N g lighter" paragraph was gated on
+  // `altLiquidWaterGrams > 0` (DilutionPanel), which is `splitLiquidPasteWater` from the view
+  // model — the liquid's WATER only. Glycerin's waterFraction is 0, so that is exactly 0 for
+  // any amount of it, and the paragraph was gated off entirely. Meanwhile the pour figure is
+  // derived from `wholeBatchPasteGrams`, which counts the glycerin as SOLIDS — so it dropped
+  // by the full glycerin mass with nothing on screen explaining why.
   //
-  // WHAT THE CORRECT BEHAVIOUR WOULD BE. The gate should be "this liquid took something off
-  // the water to add" — water OR solids — so a glycerin recipe gets the solids-only wording
-  // the paragraph's own branch already contains ("… and N g of solids that take up room in
-  // the finished solution").
-  //
-  // A FAILURE HERE IS THE FIX LANDING.
+  // WHAT IT GUARANTEES NOW. The gate is "this liquid took something off the water to add" —
+  // water OR solids — so a zero-water liquid gets the paragraph, in solids-only wording of
+  // its own rather than the mixed one ("0 g of water that went into the paste" is a clause
+  // about nothing). The mixed and water-only wordings are untouched.
 
   const AT_30 = { lyeType: 'koh' as const, soapConcentrationPercent: '30' };
 
-  it('400 g of glycerin takes 400 g off the pour with no paragraph at all', () => {
+  it('400 g of glycerin takes 400 g off the pour, and the paragraph says so', () => {
     const plain = viewModelFor(AT_30);
     const glycerin = viewModelFor({ ...AT_30, splitLiquids: [GLYCERIN_400] });
 
@@ -411,15 +433,26 @@ describe('DEFECT 3 (unfixed): the head-start hint never renders on a glycerin re
     renderPanel(glycerin, AT_30.soapConcentrationPercent);
     expect(rowText('Dilution water to add')).toBe('2,106 g');
     expect(plainPour - rowGrams('Dilution water to add')).toBe(400);
-    // DEFECT: the 400 g drop is unexplained — no head-start paragraph, and no alert either.
-    expect(hintTexts().some((t) => t.startsWith('Already '))).toBe(false);
+    // FIXED: the 400 g drop is accounted for, and the paragraph quotes the whole 400 g
+    // rather than a water term that would have read "0 g".
+    expect(
+      hintTexts().some((t) =>
+        t.startsWith(
+          'Already 400 g lighter: the alternative liquid brought no water, and all of it is solids that take up room in the finished solution.',
+        ),
+      ),
+    ).toBe(true);
+    // Still not an alert: nothing here is wrong or impossible. At a 30% target this pot is
+    // nowhere near the solution, so defect 1's branch is correctly silent — the two answer
+    // different questions and must not be conflated.
     expect(screen.queryAllByRole('alert').length).toBe(0);
   });
 
-  it('the paragraph itself works — it is only the water-only gate that withholds it', () => {
+  it('the mixed water+solids wording is unchanged for a liquid that carries both', () => {
     // Same panel, same solids-aware wording, on a liquid that happens to carry water. This
-    // is the control that keeps the assertion above honest: the paragraph is not missing,
-    // it is gated off.
+    // was the control that kept the assertion above honest — the paragraph was never
+    // missing, only gated off — and it now doubles as the pin that widening the gate left
+    // the wording it already had alone.
     const milk = viewModelFor({ ...AT_30, splitLiquids: [MILK_200] });
     expect(milk.splitLiquidPasteWater).toBeCloseTo(136, 3);
     renderPanel(milk, AT_30.soapConcentrationPercent);
@@ -433,23 +466,24 @@ describe('DEFECT 3 (unfixed): the head-start hint never renders on a glycerin re
   });
 });
 
-describe('DEFECT 4 (unfixed): "Total water" no longer reconciles with the pour', () => {
-  // WHAT HAPPENS. "Total water" is `dilution.totalWaterGrams` — solutionGrams - anhydrous,
-  // a WATER-only figure. "Dilution water to add" is now the solids-corrected
+describe('DEFECT 4 (fixed): "Total water" reconciles with the pour again', () => {
+  // WHAT USED TO HAPPEN. "Total water" printed `dilution.totalWaterGrams` — solutionGrams -
+  // anhydrous, core's WATER-only figure. "Dilution water to add" is the solids-corrected
   // `solutionGrams - wholeBatchPasteGrams`. Subtracting one from the other used to recover
-  // the water already in the paste; it now over-states it by exactly the alternative
-  // liquid's solids, and the gap scales with the liquid.
+  // the water already in the paste; it over-stated it by exactly the alternative liquid's
+  // solids, and the gap scaled with the liquid. Nothing on screen named the difference, and
+  // the two rows sit one above the other in the same grid.
   //
-  // Nothing on screen names the difference, and the two rows sit one above the other in the
-  // same grid.
-  //
-  // WHAT THE CORRECT BEHAVIOUR WOULD BE. Either the total row becomes the corrected pot's
-  // total (so the rows reconcile again), or the panel states that the pour figure also
-  // displaces the liquid's solids. Today it does neither.
-  //
-  // A FAILURE HERE IS THE FIX LANDING.
+  // WHAT IT GUARANTEES NOW. The row is the water the finished solution actually holds:
+  // core's total less the room the liquid's solids take up in it. That was the choice
+  // between the two available fixes — the alternative was to leave the row alone and add a
+  // solids line beside it — because core's figure was not merely unreconcilable, it was
+  // WRONG about the bottle: the corrected pour fills the pot to solutionGrams with the
+  // solids inside it, so the water that ends up there really is a solids' worth less. A row
+  // labelled "Total water" claiming water that is not in the bottle cannot be rescued by a
+  // footnote. The subtraction works again as a consequence, not as the goal.
 
-  it('milk 200 g at 30%: the rows imply 530 g of paste water where the paste holds 466 g', () => {
+  it('milk 200 g at 30%: the rows imply exactly the 466 g of water the paste holds', () => {
     const vm = viewModelFor({
       lyeType: 'koh',
       soapConcentrationPercent: '30',
@@ -464,16 +498,18 @@ describe('DEFECT 4 (unfixed): "Total water" no longer reconciles with the pour',
     expect(vm.cookWaterGrams).toBeCloseTo(466, 3);
 
     renderPanel(vm, '30');
-    expect(rowText('Total water')).toBe('2,836 g');
+    // FIXED: 2,836 g less the milk's 64 g of solids. Core's own figure is untouched — only
+    // what the panel prints for the finished solution changed.
+    expect(rowText('Total water')).toBe('2,772 g');
     expect(rowText('Dilution water to add')).toBe('2,306 g');
-    // DEFECT: 530 g implied against 466 g of real paste water — over by the milk's 64 g of
-    // solids.
     const implied = rowGrams('Total water') - rowGrams('Dilution water to add');
-    expect(implied).toBe(530);
-    expect(implied - vm.cookWaterGrams).toBeCloseTo(64, 0);
+    expect(implied).toBe(466);
+    expect(implied - vm.cookWaterGrams).toBeCloseTo(0, 0);
   });
 
-  it('glycerin 400 g at 30%: the same gap is 400 g, because the gap IS the solids', () => {
+  it('glycerin 400 g at 30%: it closes there too, and by the whole 400 g', () => {
+    // The correction scales with the liquid, so this is the case that would survive a fix
+    // hard-coded to one recipe: none of the glycerin is water, so the row moves by all of it.
     const vm = viewModelFor({
       lyeType: 'koh',
       soapConcentrationPercent: '30',
@@ -482,19 +518,20 @@ describe('DEFECT 4 (unfixed): "Total water" no longer reconciles with the pour',
     expect(vm.cookWaterGrams).toBeCloseTo(330, 3);
 
     renderPanel(vm, '30');
-    expect(rowText('Total water')).toBe('2,836 g');
+    expect(rowText('Total water')).toBe('2,436 g');
     expect(rowText('Dilution water to add')).toBe('2,106 g');
     const implied = rowGrams('Total water') - rowGrams('Dilution water to add');
-    expect(implied).toBe(730);
-    // DEFECT: 400 g over — the whole glycerin mass, since none of it is water.
-    expect(implied - vm.cookWaterGrams).toBeCloseTo(400, 0);
+    expect(implied).toBe(330);
+    expect(implied - vm.cookWaterGrams).toBeCloseTo(0, 0);
   });
 
-  it('a recipe with no alternative liquid still reconciles exactly', () => {
-    // The control: the gap is the SOLIDS, so with no solids there is no gap. Without this
-    // the two assertions above could pass on a panel that was simply wrong everywhere.
+  it('a recipe with no alternative liquid is byte-identical, and still reconciles exactly', () => {
+    // The control: the correction is the SOLIDS, so with no solids there is nothing to
+    // correct and this row prints core's own figure unchanged. Without this the two
+    // assertions above could pass on a panel that was simply wrong everywhere.
     const vm = viewModelFor({ lyeType: 'koh', soapConcentrationPercent: '30' });
     renderPanel(vm, '30');
+    expect(rowGrams('Total water')).toBe(Math.round(vm.dilution!.totalWaterGrams));
     expect(rowGrams('Total water') - rowGrams('Dilution water to add')).toBe(
       Math.round(vm.cookWaterGrams),
     );
