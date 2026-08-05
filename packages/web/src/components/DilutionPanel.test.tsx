@@ -1104,6 +1104,91 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     expect(screen.queryByText(/already more dilute/i)).toBeNull();
   });
 
+  describe('the floor the alert names is the floor that rejected the reading', () => {
+    // RESULT is 1,200 g anhydrous with 400 g of cook water. Add 900 g of an alternative
+    // liquid at 50% water and 450 g of it is solids that stay in the crock: the pot is
+    // 2,050 g and nothing under 1,650 g can be all of the paste. Quoting "the 1,200 g of
+    // soap this batch makes" beside that bound would name a figure that is neither the
+    // threshold nor anything else on screen — and a 1,500 g reading is not below it, so the
+    // sentence would be false as well as useless.
+    const WITH_SOLIDS = { cookWaterGrams: 400, wholeBatchPasteGrams: 2050 };
+
+    it('names the soap AND the solids, and quotes the raised floor', () => {
+      render(
+        <DilutionPanel {...BASE} {...WITH_SOLIDS} measuredPasteGrams="1500" dilutionScope="batch" targetMl="" />,
+      );
+      const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+      expect(alert).toContain('less than the 1,650 g of soap and alternative-liquid solids');
+      expect(alert).toContain('the cook boils off water, not solids');
+      // Both remedies still apply — a mis-tare and a portion weight are still the two ways
+      // to get here — and each still names a control above this point.
+      expect(alert).toContain('Check the scale was tared');
+      expect(alert).toContain("what's left after earlier dilutions");
+    });
+
+    it('keeps the original wording, verbatim, for a recipe with no solids', () => {
+      render(
+        <DilutionPanel
+          {...BASE}
+          cookWaterGrams={400}
+          wholeBatchPasteGrams={1600} // anhydrous + cook water: no split liquid
+          measuredPasteGrams="900"
+          dilutionScope="batch"
+          targetMl=""
+        />,
+      );
+      const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+      expect(alert).toContain('less than the 1,200 g of soap this batch makes');
+      expect(alert).toContain('solids do not evaporate');
+      expect(alert).not.toContain('alternative-liquid solids');
+    });
+
+    it('applies nothing it has refused: the batch row falls back to the corrected pot', () => {
+      // The panel must not reject in one place and apply in another. Before the floor was
+      // raised the same reading was applied here, printing 4,000 − 1,500 = 2,500 g of water
+      // for a pot that cannot exist.
+      render(
+        <DilutionPanel {...BASE} {...WITH_SOLIDS} measuredPasteGrams="1500" dilutionScope="batch" targetMl="" />,
+      );
+      // 4,000 − 2,050: the unmeasured corrected pour, the same figure the field-blank panel
+      // prints — asserted right below so this cannot pass on a coincidence.
+      expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('1,950 g');
+      expect(screen.queryByText(/uses your measured paste/i)).toBeNull();
+      cleanup();
+      render(<DilutionPanel {...BASE} {...WITH_SOLIDS} dilutionScope="batch" targetMl="" />);
+      expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('1,950 g');
+    });
+
+    it('refuses it in Custom amount too, and sizes no portion from it', () => {
+      render(
+        <DilutionPanel {...BASE} {...WITH_SOLIDS} measuredPasteGrams="1500" dilutionScope="portion" targetMl="1000" />,
+      );
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0].textContent).toContain('1,650 g');
+      expect(screen.queryByText('Paste to weigh out')).toBeNull();
+      // The shell reads the same verdict for its density caveat, which explains a
+      // gram→millilitre bridge and so must not print with no millilitre figure beside it.
+      // It is the one thing that catches the shell keeping the old floor while the child
+      // uses the new one.
+      expect(screen.queryByText(/Volume assumes/i)).toBeNull();
+    });
+
+    it('leaves a reading at or above the floor exactly as it was', () => {
+      // The control: raising the floor must not disturb the readings the feature exists for.
+      // 1,650 g is the boundary and is accepted; 1,900 g is a normal post-cook reading,
+      // lighter than the 2,050 g the recipe predicts because the cook boiled water off.
+      for (const [reading, pour] of [['1650', '2,350 g'], ['1900', '2,100 g']] as const) {
+        render(
+          <DilutionPanel {...BASE} {...WITH_SOLIDS} measuredPasteGrams={reading} dilutionScope="batch" targetMl="" />,
+        );
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe(pour);
+        cleanup();
+      }
+    });
+  });
+
   it('still states the over-dilution verdict when nothing rejected a reading', () => {
     // The exclusion is about a CONTESTED assumption, not about the verdict itself: with no
     // measurement on the field there is nothing contesting it, so it must still be said.
@@ -1160,12 +1245,20 @@ describe('the measurement feedback follows the measured-paste input, not the sco
   });
 
   it('and never prints a total of none beside water it is telling the maker to pour', () => {
-    // The sharp form. A 1,400 g reading on this batch is physically impossible — the true
-    // pot is 1,930 g — but it clears every measured-paste guard (at or above the 1,200 g
-    // anhydrous floor, at or below the 1,500 g solution ceiling), so it is applied: the pour
-    // becomes 1,500 − 1,400 = 100 g. Clamped at zero, the panel said the finished solution
-    // holds no water directly above an instruction to add 100 g of it. That guard gap is
-    // pre-existing and is not this row's to close; contradicting the pour was.
+    // The sharp form, and the reading the solids floor was raised to refuse. A 1,400 g
+    // reading on this batch is physically impossible — the pot holds 1,200 g of soap and
+    // 400 g of solids that cannot boil off, so nothing under 1,600 g can be all of it — and
+    // it used to clear every guard on the anhydrous-only floor and be applied, making the
+    // pour 1,500 − 1,400 = 100 g beside a "Total water" of 300 g.
+    //
+    // It is refused now, so the row falls back to the corrected pot's own clamped figure and
+    // there is no live pour left to contradict. The invariant this test exists for survives
+    // in a stronger form than it could be asserted in: on this fixture the corrected total
+    // goes negative exactly because solids (400 g) exceed the target's whole water allowance
+    // (300 g), and that is the same inequality that puts the floor (anhydrous + solids)
+    // above the ceiling (anhydrous + allowance) — so NO reading is acceptable here at all,
+    // and "a live pour beside the fallback total" is now unreachable rather than merely
+    // absent. Pinned as such in measuredPaste.test's own sweep over the same figures.
     render(
       <DilutionPanel
         {...BASE}
@@ -1177,11 +1270,18 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     );
     const pour = screen.getByText('Dilution water to add').nextElementSibling!.textContent!;
     const total = screen.getByText('Total water').nextElementSibling!.textContent!;
-    expect(pour).toBe('100 g');
+    expect(pour).toBe('0 g');
     expect(total).toBe('300 g');
     expect(Number(total.replace(/[^0-9.]/g, ''))).toBeGreaterThanOrEqual(
       Number(pour.replace(/[^0-9.]/g, '')),
     );
+    // …and the reading is not silently dropped: one alert, naming the floor it missed and
+    // why that floor is where it is.
+    const alerts = screen.queryAllByRole('alert');
+    expect(alerts.length).toBe(1);
+    const alert = alerts[0]!.textContent!.replace(/\s+/g, ' ');
+    expect(alert).toContain('less than the 1,600 g of soap and alternative-liquid solids');
+    expect(alert).toContain('the cook boils off water, not solids');
   });
 
   it('a pot that weighs exactly the solution is AT the target, not past it — no alert, and nothing to pour', () => {
@@ -2361,6 +2461,13 @@ describe('never prints an over-dilution verdict and a hedge that contradicts it 
     unknownLiquidGrams: 900,
     overDilutionCertain: false,
     wholeBatchPasteGrams: 3000,
+    // 885 g of lye water + the undeclared liquid's 900 g, counted as all water. It travels
+    // with wholeBatchPasteGrams because the panel identifies the liquid's non-water SOLIDS
+    // as the difference between them — the head-start paragraph has always been derived that
+    // way, and the floor under a measured paste is now too. Omitted, the pair says the pot is
+    // 3,000 g of which none is water, i.e. 1,785 g of solids, which is not this recipe: the
+    // comment above turns on the split cancelling to 0 g of solids either way.
+    cookWaterGrams: 1785,
   };
 
   it('hedges instead of asserting, with no measurement to go on', () => {

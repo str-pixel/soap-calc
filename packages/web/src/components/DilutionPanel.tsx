@@ -48,7 +48,14 @@ type DilutionPanelProps = {
   /** The paste's true water (lye water + split-liquid water) — see useRecipeViewModel's
    * cookWaterGrams. Ratio mode needs the real paste mass (anhydrousGrams + this), not
    * dilution.totalWaterGrams - dilutionWaterGrams, which the targetExceedsPaste clamp can
-   * zero out. */
+   * zero out.
+   *
+   * It travels WITH `wholeBatchPasteGrams`, and a caller supplying one owes the other: the
+   * difference between them is the alternative liquid's non-water solids, which is what the
+   * head-start paragraph quotes and — since the floor correction — what the floor under a
+   * measured paste counts. Supply the pot alone and the pair says none of it is water, i.e.
+   * that all the cook water is solids. Defaulted to 0 for the ratio-mode expression above,
+   * which predates both. */
   cookWaterGrams?: number;
   /** Which way the maker is choosing the dilution: a target concentration (the default,
    * and what the reference calls out at LS:1536), or a water:paste ratio by weight
@@ -86,7 +93,9 @@ type DilutionPanelProps = {
   onTargetMlChange?: (value: string) => void;
   /** The best-known WHOLE-BATCH paste mass (see useRecipeViewModel) — passed straight
    * through to PortionDilutionResults, which needs it for the same corrected
-   * ceiling/composition basis the batch row's own measured-paste guards use. */
+   * ceiling/composition basis the batch row's own measured-paste guards use. With
+   * `cookWaterGrams` it also fixes the FLOOR under a measured paste: the two identify the
+   * alternative liquid's solids, and solids do not boil off. */
   wholeBatchPasteGrams?: number | null;
 };
 
@@ -140,7 +149,14 @@ export function DilutionPanel({
   // pasteGrams override just below. measuredPasteIsRemaining forces this false regardless
   // of the measurement's own value: a remaining-paste reading is not the batch.
   const measuredPasteValid =
-    dilution !== null && measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining);
+    dilution !== null &&
+    measuredPasteIsValidFor(
+      measuredPasteGrams,
+      dilution,
+      measuredPasteIsRemaining,
+      wholeBatchPasteGrams,
+      cookWaterGrams,
+    );
   // Only meaningful when measuredPasteValid — parseMeasuredPasteGrams then always succeeds.
   const measuredPasteNum = parseMeasuredPasteGrams(measuredPasteGrams) ?? NaN;
   // The measured-paste INPUT lives in this shell and is visible in BOTH scopes, so its
@@ -155,6 +171,7 @@ export function DilutionPanel({
         dilution,
         measuredPasteIsRemaining,
         wholeBatchPasteGrams,
+        cookWaterGrams,
       )
     : null;
   // A remaining-paste reading is legitimate and still does not move the batch row (see
@@ -293,6 +310,7 @@ export function DilutionPanel({
         measuredPasteGrams,
         measuredPasteIsRemaining,
         wholeBatchPasteGrams,
+        cookWaterGrams,
       )
     : 0;
   // Asked of the same helper PortionDilutionResults itself renders from, so the shell can
@@ -308,6 +326,7 @@ export function DilutionPanel({
         measuredPasteGrams: measuredPasteGrams ?? '',
         measuredPasteIsRemaining,
         wholeBatchPasteGrams,
+        cookWaterGrams,
       })
     : null;
   const portionOnScreen = dilutionScope === 'portion' && portionState?.portion != null;
@@ -546,15 +565,39 @@ export function DilutionPanel({
               the field to go back to the recipe&apos;s own computed paste.
             </p>
           )}
-          {measurementRejection.belowSolids && (
-            <p className="results-hint" role="alert">
-              That is less than the {formatWeight(dilution.anhydrousGrams, 'g')} of
-              soap this batch makes, and solids do not evaporate — so it cannot be all of the
-              paste. Check the scale was tared, or switch the declaration above to
-              &quot;what&apos;s left after earlier dilutions&quot; if part of the batch is
-              already diluted.
-            </p>
-          )}
+          {/* Two wordings, one floor. The figure is always the floor the guard actually
+              applied (measurementRejection.solidsFloorGrams) rather than a bound re-derived
+              here, for the reason wholeBatchPasteBasis exists on the same object: a surface
+              that recomputes the threshold it is explaining can drift from the one that
+              rejected the reading.
+
+              With an alternative liquid's solids in the pot the floor is higher than the
+              batch's soap, and saying "the N g of soap this batch makes" beside it would name
+              a figure that is neither the bound nor anything else on screen. Naming the
+              solids is also the only way the sentence stays checkable: the maker can see
+              their liquid's mass in Split liquid and add it up. Both remedies survive
+              unchanged — a mis-tare and a portion weight are still the two ways to get here.
+              The no-solids branch is the original paragraph, verbatim, so every recipe
+              without a split liquid reads exactly as it did. */}
+          {measurementRejection.belowSolids &&
+            (measurementRejection.solidsFloorGrams > dilution.anhydrousGrams ? (
+              <p className="results-hint" role="alert">
+                That is less than the{' '}
+                {formatWeight(measurementRejection.solidsFloorGrams, 'g')} of soap and
+                alternative-liquid solids this batch&apos;s pot holds, and the cook boils off
+                water, not solids — so it cannot be all of the paste. Check the scale was
+                tared, or switch the declaration above to &quot;what&apos;s left after earlier
+                dilutions&quot; if part of the batch is already diluted.
+              </p>
+            ) : (
+              <p className="results-hint" role="alert">
+                That is less than the {formatWeight(dilution.anhydrousGrams, 'g')} of
+                soap this batch makes, and solids do not evaporate — so it cannot be all of the
+                paste. Check the scale was tared, or switch the declaration above to
+                &quot;what&apos;s left after earlier dilutions&quot; if part of the batch is
+                already diluted.
+              </p>
+            ))}
           {measurementRejection.exceedsSolution && (
             <p className="results-hint" role="alert">
               Your paste already weighs more than the{' '}
@@ -851,6 +894,7 @@ export function DilutionPanel({
               measuredPasteGrams={measuredPasteGrams ?? ''}
               measuredPasteIsRemaining={measuredPasteIsRemaining}
               wholeBatchPasteGrams={wholeBatchPasteGrams}
+              cookWaterGrams={cookWaterGrams}
               unknownLiquidGrams={unknownLiquidGrams}
               overDilutionCertain={overDilutionCertain}
               dilutionMode={dilutionMode}

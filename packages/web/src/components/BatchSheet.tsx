@@ -108,8 +108,19 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // show the same number) — and, per Task 5, OUTRANKS targetExceedsPaste below, since that
   // flag is derived from the recipe's ASSUMED cook water and the measurement is direct
   // evidence against it.
+  //
+  // The corrected basis and the cook water go into the validity gate too, not only into the
+  // water figure below: the floor under a reading counts an alternative liquid's solids, and
+  // the sheet is the page carried to the bench — it must refuse exactly what the panel
+  // refuses, or the two would disagree about whether the maker's own reading was usable.
   const measuredPasteValid = dilution
-    ? measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining)
+    ? measuredPasteIsValidFor(
+        measuredPasteGrams,
+        dilution,
+        measuredPasteIsRemaining,
+        data.wholeBatchPasteGrams,
+        data.cookWaterGrams,
+      )
     : false;
   // wholeBatchPasteGrams is the second correction the shared helper applies: an alternative
   // liquid's non-water solids are real mass in the pot that calculateDilution's
@@ -130,6 +141,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         measuredPasteGrams,
         measuredPasteIsRemaining,
         data.wholeBatchPasteGrams,
+        data.cookWaterGrams,
       )
     : 0;
   // The sheet is the page taken to the bench, so it must carry what actually gets

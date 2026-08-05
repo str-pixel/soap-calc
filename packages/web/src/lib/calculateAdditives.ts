@@ -177,7 +177,18 @@ export function computeBottledSolutionGrams(input: {
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
   } = input;
-  const measuredPaste = measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining)
+  // Both corrected-basis figures go into the validity gate, not only into the water term:
+  // the paste floor counts an alternative liquid's solids (lib/measuredPaste), so a reading
+  // lighter than the pot's own undissolvable contents is refused here exactly as the panel
+  // and the printed sheet refuse it — otherwise this would price a bottle from a pot the
+  // maker is being told on screen cannot exist.
+  const measuredPaste = measuredPasteIsValidFor(
+    measuredPasteGrams,
+    dilution,
+    measuredPasteIsRemaining,
+    wholeBatchPasteGrams,
+    cookWaterGrams,
+  )
     ? (parseMeasuredPasteGrams(measuredPasteGrams) as number)
     : undefined;
   const base =
@@ -187,6 +198,7 @@ export function computeBottledSolutionGrams(input: {
       measuredPasteGrams,
       measuredPasteIsRemaining,
       wholeBatchPasteGrams,
+      cookWaterGrams,
     );
   // The alternative liquid's non-water solids, off the same corrected basis
   // correctedDilutionWaterGrams subtracts from solutionGrams — never re-derived from the

@@ -26,6 +26,13 @@ type PortionDilutionResultsProps = {
    * recipe-computed figure when absent (a recipe with no split liquid, or data built
    * before this field existed). */
   wholeBatchPasteGrams?: number | null;
+  /** The recipe's own cook water (lye water plus an alternative liquid's water fraction).
+   * Needed alongside `wholeBatchPasteGrams` for one thing only: the paste floor is anhydrous
+   * soap plus the liquid's non-water SOLIDS, and the two figures are what identify those
+   * solids (lib/measuredPaste's solidsFloorGramsFor). Forwarded by DilutionPanel so this
+   * component and the shell's own rejection alert judge one reading by one floor. Absent,
+   * the floor falls back to anhydrous alone, exactly as before. */
+  cookWaterGrams?: number;
   /** Grams of alternative liquid whose water content was never declared. Forwarded from
    * DilutionPanel (which gets it from App) for one reason only: targetExceedsPaste is
    * derived from the recipe's ASSUMED water content, so above zero the over-dilution
@@ -88,9 +95,15 @@ export function portionDilutionFor({
   measuredPasteGrams,
   measuredPasteIsRemaining,
   wholeBatchPasteGrams,
+  cookWaterGrams,
 }: Pick<
   PortionDilutionResultsProps,
-  'dilution' | 'targetMl' | 'measuredPasteGrams' | 'measuredPasteIsRemaining' | 'wholeBatchPasteGrams'
+  | 'dilution'
+  | 'targetMl'
+  | 'measuredPasteGrams'
+  | 'measuredPasteIsRemaining'
+  | 'wholeBatchPasteGrams'
+  | 'cookWaterGrams'
 >) {
   // The three physical-impossibility rules — below the anhydrous solids, heavier than the
   // target solution, a remainder heavier than the whole batch ever was — live in
@@ -105,6 +118,7 @@ export function portionDilutionFor({
     dilution,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
+    cookWaterGrams,
   );
   const measured = rejection.measuredGrams;
   const measurementRejected = rejection.rejected;
@@ -213,6 +227,7 @@ export function PortionDilutionResults({
   measuredPasteGrams,
   measuredPasteIsRemaining,
   wholeBatchPasteGrams,
+  cookWaterGrams,
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
   dilutionMode = 'concentration',
@@ -230,6 +245,7 @@ export function PortionDilutionResults({
     measuredPasteGrams,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
+    cookWaterGrams,
   });
   // What the recipe predicted, for the drift readout. NOT portion.predictedPasteGrams:
   // that figure is anhydrous + max(0, totalWater - dilutionWater), and dilutionWater is

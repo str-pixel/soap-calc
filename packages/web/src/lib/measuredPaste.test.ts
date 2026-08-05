@@ -228,6 +228,157 @@ describe('a reading that is not a weight at all', () => {
   });
 });
 
+describe('the paste floor counts solids that cannot boil off', () => {
+  // DILUTION is 1,200 g anhydrous with 400 g of cook water (2,800 total − 2,400 dilution),
+  // so its own water-only paste is 1,600 g. Put a 900 g alternative liquid at 50% water in
+  // that pot and 450 g of it is SOLIDS: the real pot is 2,050 g, and the mass that cannot
+  // leave during the cook is 1,200 + 450 = 1,650 g. A reading under that describes a pot
+  // that cannot exist — the crock left on the scale, or a portion weighed instead of the
+  // batch — and the anhydrous-only floor accepted every one of them down to 1,200 g.
+  const COOK_WATER = 400;
+  const SOLIDS = 450;
+  const POT = DILUTION.anhydrousGrams + COOK_WATER + SOLIDS; // 2,050
+  const FLOOR = DILUTION.anhydrousGrams + SOLIDS; // 1,650
+
+  it('rejects a whole-batch reading between the anhydrous soap and the real floor', () => {
+    // 1,400 g clears the old floor by 200 g and is still 250 g short of the pot's own
+    // undissolvable contents.
+    const rejection = measuredPasteRejectionFor('1400', DILUTION, false, POT, COOK_WATER);
+    expect(rejection.belowSolids).toBe(true);
+    expect(rejection.rejected).toBe(true);
+    expect(rejection.accepted).toBe(false);
+    // The figure the alert must quote, reported rather than re-derived by the surface.
+    expect(rejection.solidsFloorGrams).toBe(FLOOR);
+  });
+
+  it('accepts the floor exactly, and rejects a hair below it', () => {
+    expect(measuredPasteRejectionFor(String(FLOOR), DILUTION, false, POT, COOK_WATER).accepted).toBe(true);
+    expect(
+      measuredPasteRejectionFor(String(FLOOR - 0.001), DILUTION, false, POT, COOK_WATER).belowSolids,
+    ).toBe(true);
+  });
+
+  it('still accepts a reading lighter than the recipe predicts — cook water is NOT in the floor', () => {
+    // The case the whole feature exists for (LS:2172): the cook boils water off, so a paste
+    // lighter than the computed 2,050 g pot is the expected, meaningful reading. Extending
+    // the floor to cook water would reject exactly these.
+    for (const reading of ['2049', '1800', '1651', String(FLOOR)]) {
+      const rejection = measuredPasteRejectionFor(reading, DILUTION, false, POT, COOK_WATER);
+      expect(rejection.belowSolids).toBe(false);
+      expect(rejection.accepted).toBe(true);
+    }
+  });
+
+  it('leaves the floor at the anhydrous soap when there are no solids to count', () => {
+    // A recipe with no split liquid: the corrected pot IS anhydrous + cook water, so the
+    // solids term is exactly zero and every reading down to 1,200 g is still accepted.
+    const rejection = measuredPasteRejectionFor('1300', DILUTION, false, 1600, COOK_WATER);
+    expect(rejection.solidsFloorGrams).toBe(DILUTION.anhydrousGrams);
+    expect(rejection.accepted).toBe(true);
+    expect(measuredPasteRejectionFor('1200', DILUTION, false, 1600, COOK_WATER).accepted).toBe(true);
+    expect(measuredPasteRejectionFor('1199', DILUTION, false, 1600, COOK_WATER).belowSolids).toBe(true);
+  });
+
+  it('falls back to the anhydrous floor when either half of the corrected basis is missing', () => {
+    // Both figures are needed to know the solids are there, so a caller that supplies one,
+    // the other, or neither gets exactly the behaviour it had before.
+    for (const args of [
+      [undefined, undefined],
+      [POT, undefined],
+      [undefined, COOK_WATER],
+      [null, COOK_WATER],
+      [0, COOK_WATER],
+      [Number.NaN, COOK_WATER],
+      [POT, Number.NaN],
+      [POT, null],
+    ] as const) {
+      const rejection = measuredPasteRejectionFor('1400', DILUTION, false, args[0], args[1]);
+      expect(rejection.solidsFloorGrams).toBe(DILUTION.anhydrousGrams);
+      expect(rejection.belowSolids).toBe(false);
+      expect(rejection.accepted).toBe(true);
+    }
+  });
+
+  it('never drops the floor BELOW the anhydrous soap, whatever pot it is handed', () => {
+    // The clamp on the solids term, and the same Math.max(0, …) the other two derivations of
+    // this quantity carry (DilutionPanel, computeBottledSolutionGrams). An incoherent pair —
+    // a pot lighter than its own soap plus water — would otherwise make the solids negative
+    // and take the original anhydrous guard away with it, so a 100 g reading on a
+    // 1,200 g-soap batch would sail through.
+    const rejection = measuredPasteRejectionFor('100', DILUTION, false, 1300, COOK_WATER);
+    expect(rejection.solidsFloorGrams).toBe(DILUTION.anhydrousGrams);
+    expect(rejection.belowSolids).toBe(true);
+  });
+
+  it('does not invent solids out of the targetExceedsPaste clamp on a recipe with none', () => {
+    // The reason the solids come from cookWaterGrams rather than
+    // totalWaterGrams − dilutionWaterGrams: once the clamp has fired that subtraction
+    // recovers 0, not the real cook water (see calculateDilution's own note), so the cheaper
+    // derivation would read 700 g of phantom solids on a recipe with no alternative liquid
+    // at all and reject every reading under 1,900 g.
+    const CLAMPED: DilutionResult = {
+      anhydrousGrams: 1200, solutionGrams: 1500, totalWaterGrams: 300,
+      dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 80,
+      targetExceedsPaste: true,
+    };
+    const rejection = measuredPasteRejectionFor('1250', CLAMPED, false, 1200 + 700, 700);
+    expect(rejection.solidsFloorGrams).toBe(1200);
+    expect(rejection.belowSolids).toBe(false);
+    expect(rejection.accepted).toBe(true);
+  });
+
+  it('leaves a remaining-declared reading alone — the floor is a whole-batch rule', () => {
+    // What's left after an earlier dilution can legitimately weigh less than the batch's own
+    // solids; raising the floor must not take that away.
+    const rejection = measuredPasteRejectionFor('1400', DILUTION, true, POT, COOK_WATER);
+    expect(rejection.belowSolids).toBe(false);
+    expect(rejection.accepted).toBe(true);
+  });
+
+  it('moves the ceiling and the remaining-mode basis not at all', () => {
+    // Only the floor changes: the solution ceiling and wholeBatchPasteBasis answer the same
+    // way with the cook water supplied as without it.
+    for (const cook of [COOK_WATER, undefined]) {
+      expect(measuredPasteRejectionFor('4100', DILUTION, false, POT, cook).exceedsSolution).toBe(true);
+      expect(measuredPasteRejectionFor('4000', DILUTION, false, POT, cook).exceedsSolution).toBe(false);
+      expect(measuredPasteRejectionFor('2100', DILUTION, true, POT, cook).exceedsRemainingCeiling).toBe(true);
+      expect(measuredPasteRejectionFor('2050', DILUTION, true, POT, cook).wholeBatchPasteBasis).toBe(POT);
+    }
+  });
+
+  it('carries the same floor into every consumer, so nothing applies a reading the verdict refuses', () => {
+    // measuredPasteIsValidFor backs DilutionPanel's batch row, the printed BatchSheet and
+    // computeBottledSolutionGrams; correctedDilutionWaterGrams is the figure all three pour.
+    // A reading the rejection verdict refuses must stop feeding them, and the pour must fall
+    // back to the corrected pot rather than to the reading.
+    expect(measuredPasteIsValidFor('1400', DILUTION, false, POT, COOK_WATER)).toBe(false);
+    expect(correctedDilutionWaterGrams(DILUTION, '1400', false, POT, COOK_WATER)).toBe(
+      DILUTION.solutionGrams - POT, // 1,950 — the unmeasured corrected pour, not 4,000 − 1,400
+    );
+    // …and an accepted reading still outranks both computed bases, exactly as before.
+    expect(measuredPasteIsValidFor('1700', DILUTION, false, POT, COOK_WATER)).toBe(true);
+    expect(correctedDilutionWaterGrams(DILUTION, '1700', false, POT, COOK_WATER)).toBe(2300);
+  });
+
+  it('makes a live pour beside an unreachable target impossible, not merely absent', () => {
+    // 400 g of a zero-water liquid on a 1,200 g-anhydrous batch at an 80% target: the solids
+    // exceed the target's whole 300 g water allowance, which is the same inequality that
+    // puts the floor (1,600 g) above the ceiling (1,500 g). So the window is empty — there
+    // is no reading at all that the panel can apply here, which is what makes DilutionPanel's
+    // "never a total of none beside a live pour" invariant structural rather than incidental.
+    const OVER: DilutionResult = {
+      anhydrousGrams: 1200, solutionGrams: 1500, totalWaterGrams: 300,
+      dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 80,
+      targetExceedsPaste: true,
+    };
+    for (let reading = 1; reading <= 2000; reading++) {
+      expect(measuredPasteIsValidFor(String(reading), OVER, false, 1930, 330)).toBe(false);
+    }
+    // The old floor accepted 301 of them, every one physically impossible.
+    expect(measuredPasteIsValidFor('1400', OVER, false, 1930)).toBe(true);
+  });
+});
+
 describe('correctedDilutionWaterGrams with a remaining-paste declaration', () => {
   it('falls back to the recipe-computed figure — a remaining-paste reading must not correct the BATCH row', () => {
     expect(correctedDilutionWaterGrams(DILUTION, '1480', true)).toBe(2400);

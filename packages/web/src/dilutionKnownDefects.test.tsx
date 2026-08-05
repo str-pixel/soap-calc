@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 /**
- * THE FOUR FORMER DILUTION DEFECTS, NOW PINNED AS FIXED BEHAVIOUR.
+ * THE FORMER DILUTION DEFECTS, NOW PINNED AS FIXED BEHAVIOUR.
  *
  * Every assertion in this file used to pin behaviour that was WRONG — four defects found in
  * review, deliberately deferred, and described only in prose, so nothing stopped them
  * drifting. Each test carried the correct behaviour in its comment and said that a failure
  * was the signal the defect had been FIXED. All four were then fixed together, and every
  * assertion here was flipped to the corrected expectation: this file now guards the fixes
- * rather than the bugs. A failure here means a fix regressed.
+ * rather than the bugs. A failure here means a fix regressed. A fifth (the measured-paste
+ * floor, below) was found and fixed afterwards and is pinned here for the same reason: it is
+ * the same wiring, and it is only visible end to end.
  *
  * The figures are driven end-to-end — the real `useRecipeViewModel`, the real
  * `DilutionPanel` / `BatchSheet`, wired the way `App.tsx` wires them — so a regression
@@ -535,5 +537,92 @@ describe('DEFECT 4 (fixed): "Total water" reconciles with the pour again', () =>
     expect(rowGrams('Total water') - rowGrams('Dilution water to add')).toBe(
       Math.round(vm.cookWaterGrams),
     );
+  });
+});
+
+describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off', () => {
+  // WHAT USED TO HAPPEN. `measuredPasteRejectionFor` floored a measured paste at the
+  // ANHYDROUS soap alone. But the pot also holds the cook water and, on a split-liquid
+  // recipe, the alternative liquid's non-water SOLIDS — and solids do not leave during the
+  // cook. So a reading below anhydrous + solids describes a pot that cannot exist, and every
+  // guard passed it: the panel and the printed sheet then poured from it.
+  //
+  // Cook water is deliberately NOT in the floor. It evaporates — that is the whole reason
+  // the reference tells the maker to weigh the paste — so a reading lighter than the recipe
+  // predicts is the expected, meaningful case the feature exists to accept.
+  //
+  // WHAT IT GUARANTEES NOW. 385 g of glycerin (all of it solids) on the starter recipe makes
+  // a 1,930 g pot whose undissolvable contents weigh 1,600 g. A typed 1,400 g is refused,
+  // with an alert naming that floor and why it is there, and every figure downstream — the
+  // batch row, the printed sheet, the bottled mass — falls back to the corrected pot
+  // together. Nothing rejects in one place and applies in another.
+
+  const GLYCERIN_385: SplitLiquidRow = { ...GLYCERIN_400, key: 'g2', amount: '385' };
+  const SETTINGS = {
+    lyeType: 'koh' as const,
+    soapConcentrationPercent: '30',
+    splitLiquids: [GLYCERIN_385],
+  };
+  const IMPOSSIBLE = '1400';
+
+  it('the reading is refused, and the alert names the floor it missed', () => {
+    const vm = viewModelFor(SETTINGS, IMPOSSIBLE, false);
+    // The pot, and the mass in it that cannot boil off.
+    expect(vm.cookWaterGrams).toBeCloseTo(330, 3);
+    expect(vm.wholeBatchPasteGrams!).toBeCloseTo(1930.33, 1);
+    expect(vm.dilution!.anhydrousGrams + 385).toBeCloseTo(1600.33, 1);
+    // …and the reading clears the OLD floor by 185 g, which is why nothing caught it.
+    expect(Number(IMPOSSIBLE)).toBeGreaterThan(vm.dilution!.anhydrousGrams);
+
+    renderPanel(vm, SETTINGS.soapConcentrationPercent, IMPOSSIBLE, false);
+    const alerts = screen.queryAllByRole('alert');
+    expect(alerts.length).toBe(1);
+    const alert = alerts[0]!.textContent!.replace(/\s+/g, ' ');
+    expect(alert).toContain('less than the 1,600 g of soap and alternative-liquid solids');
+    expect(alert).toContain('the cook boils off water, not solids');
+  });
+
+  it('the row, the pour and the bottled mass all fall back to the corrected pot together', () => {
+    const rejected = viewModelFor(SETTINGS, IMPOSSIBLE, false);
+    const blank = viewModelFor(SETTINGS);
+
+    renderPanel(rejected, SETTINGS.soapConcentrationPercent, IMPOSSIBLE, false);
+    // 4,051 − 1,930, not the 4,051 − 1,400 = 2,651 g the accepted reading used to pour: a
+    // 530 g over-dose derived from a pot 200 g lighter than its own glycerin.
+    expect(rowText('Dilution water to add')).toBe('2,121 g');
+    // No "uses your measured paste" note either — the panel does not claim a reading it
+    // refused one paragraph above.
+    expect(hintTexts().some((t) => /uses your measured paste/i.test(t))).toBe(false);
+    cleanup();
+
+    // The same figure the field-blank panel prints, which is what "falls back" means.
+    renderPanel(blank, SETTINGS.soapConcentrationPercent);
+    expect(rowText('Dilution water to add')).toBe('2,121 g');
+    // The bottled mass follows the same basis: 4,051 g of solution with the glycerin inside
+    // it, counted once, measured or not.
+    expect(rejected.bottledSolutionGrams!).toBeCloseTo(blank.bottledSolutionGrams!, 6);
+    expect(rejected.bottledSolutionGrams!).toBeCloseTo(rejected.dilution!.solutionGrams, 6);
+  });
+
+  it('the printed sheet refuses it too — the bench copy cannot disagree with the screen', () => {
+    const vm = viewModelFor(SETTINGS, IMPOSSIBLE, false);
+    render(<BatchSheet data={vm.batchSheetData} />);
+    const dilutionSection = Array.from(
+      document.querySelectorAll('.batch-sheet__section'),
+    ).find((s) => s.querySelector('h2')?.textContent === 'Dilution')!;
+    const text = dilutionSection.textContent!.replace(/\s+/g, ' ');
+    expect(text).toContain('Dilution water to add2,121 g');
+    expect(text).not.toContain('uses the measured paste weight');
+  });
+
+  it('a reading the cook could actually produce is still accepted, and still wins', () => {
+    // The control, and the line the fix must not cross: 1,750 g is 180 g lighter than the
+    // computed pot because the cook boiled that water off — exactly the reading weighing the
+    // paste exists to capture. It is at or above the 1,600 g floor, so it is applied.
+    const vm = viewModelFor(SETTINGS, '1750', false);
+    renderPanel(vm, SETTINGS.soapConcentrationPercent, '1750', false);
+    expect(screen.queryAllByRole('alert').length).toBe(0);
+    expect(rowText('Dilution water to add')).toBe('2,301 g'); // 4,051 − 1,750
+    expect(hintTexts().some((t) => /uses your measured paste/i.test(t))).toBe(true);
   });
 });

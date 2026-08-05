@@ -845,6 +845,10 @@ export function useRecipeViewModel({
       measuredPasteGrams,
       measuredPasteIsRemaining,
       wholeBatchPasteGrams,
+      // Paired with wholeBatchPasteGrams: together they identify an alternative liquid's
+      // non-water solids, which the floor under a measured paste counts. The sheet must
+      // judge a reading by the same floor the panel does — see BatchSheetData.cookWaterGrams.
+      cookWaterGrams,
       bottledSolutionGrams,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
@@ -865,6 +869,7 @@ export function useRecipeViewModel({
     measuredPasteGrams,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
+    cookWaterGrams,
     bottledSolutionGrams,
     displayTotals,
     extrasGrams,
