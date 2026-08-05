@@ -95,8 +95,13 @@ export function lsPartialDilution(
      * ceiling — a too-light basis both rejects legitimate remaining readings above it AND
      * (via that same basis feeding the composition ratio) overstates the pot's soap
      * fraction. Falls back to predictedPasteGrams when omitted, non-finite, or ≤ 0, so
-     * every caller that doesn't know about split-liquid solids is unaffected. Only
-     * consumed in remaining mode. */
+     * every caller that doesn't know about split-liquid solids is unaffected.
+     *
+     * Consumed in remaining mode AND as the UNMEASURED paste itself (see pasteGrams below):
+     * an undivided pot really does hold anhydrous + cook water + those solids, so sizing an
+     * unmeasured portion off predictedPasteGrams poured water for a lighter paste than the
+     * one on the bench — and disagreed with the whole-batch row, which subtracts this same
+     * corrected figure from solutionGrams. A MEASUREMENT still outranks both. */
     wholeBatchPasteGrams?: number;
   },
   targetVolumeMl: number,
@@ -129,7 +134,18 @@ export function lsPartialDilution(
   // predictedPasteGrams whenever the recipe used a split liquid, since predictedPasteGrams
   // structurally undercounts the liquid's own solids.
   if (isRemaining && (m as number) > wholeBatchPasteGrams) return null;
-  const pasteGrams = pasteMeasured ? (m as number) : predictedPasteGrams;
+  // Measured wins outright — the scale is the only figure that can see cook evaporation.
+  // Unmeasured, the pot is the corrected whole-batch basis, NOT predictedPasteGrams: an
+  // alternative liquid's non-water solids are real mass sitting in it, so the water-only
+  // figure sized the portion off a paste lighter than the pot and left Custom amount
+  // pouring the solids' worth of extra water — while Whole batch, which subtracts this
+  // same corrected figure from solutionGrams, poured the right one. Identical to
+  // predictedPasteGrams for every caller that supplies no corrected basis (the fallback
+  // above) and for every recipe with no split liquid (solids = 0, so the two expressions
+  // are the same number). Where they now differ, the paste being past the target makes
+  // batchWaterGrams negative and this returns null, which is the same refusal the measured
+  // branch has always given for the same physical situation.
+  const pasteGrams = pasteMeasured ? (m as number) : wholeBatchPasteGrams;
   // Whole-batch (default): the pot holds all the recipe's anhydrous soap, and the target
   // solution is the recipe's own fixed solutionGrams. Remaining: the paste is homogeneous,
   // so the pot's own anhydrous soap — and therefore its own target solution — is a

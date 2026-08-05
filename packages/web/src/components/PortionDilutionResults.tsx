@@ -40,7 +40,37 @@ type PortionDilutionResultsProps = {
    * spelled out rather than imported to keep the type dependency one-way (the panel
    * imports this module). Defaults to the panel's own default. */
   dilutionMode?: 'concentration' | 'ratio';
+  /** True while ratio mode is showing a ratio the write-back has not applied — see
+   * DilutionPanel's own `ratioNotAppliedYet`. Everything here is computed from the SAVED
+   * target in that state, so a refusal must not name the ratio's own concentration as the
+   * thing the paste is past. */
+  ratioNotAppliedYet?: boolean;
 };
+
+/**
+ * What a refusal should call the target it says the paste is past, and what it should tell
+ * the maker to do about it. Exported so DilutionPanel's Whole-batch twin of the same
+ * refusal words it identically — the two describe one state and used to drift apart.
+ *
+ * Ratio mode shows no concentration field at all, so "the target above" / "set a target"
+ * named a control that is not on screen; and while the ratio is not applied yet, every
+ * figure here still runs on the SAVED target, so naming the ratio's own concentration would
+ * be wrong in the other direction. The remedy is the same action either way — editing the
+ * ratio both applies it and widens it — and points the same way as the exceeds-solution
+ * alert: the paste is past the target, so it takes MORE water.
+ */
+export function dilutionTargetWording(
+  dilutionMode: 'concentration' | 'ratio',
+  ratioNotAppliedYet: boolean,
+): { named: string; remedy: string } {
+  if (dilutionMode !== 'ratio') {
+    return { named: 'the target above', remedy: 'Lower the target concentration above (more water)' };
+  }
+  return {
+    named: ratioNotAppliedYet ? 'your saved target above' : 'the concentration this ratio lands at',
+    remedy: 'Raise the water:paste ratio above (more water)',
+  };
+}
 
 /**
  * The portion this component would render — null when either of the two verdicts below
@@ -112,8 +142,29 @@ export function portionDilutionFor({
         (dilution.solutionGrams / dilution.anhydrousGrams)
       : dilution.solutionGrams;
   const measuredPasteAlreadyThinner = hasValidMeasurement && potSolutionGrams - measured < 0;
+  // The UNMEASURED twin of the line above, and the third way core can refuse. Once core
+  // sizes an unmeasured pot from the corrected basis rather than the water-only
+  // predictedPasteGrams (so Custom amount pours what Whole batch pours), that pot can be
+  // heavier than the solution its own soap makes at the target — a big low-water liquid —
+  // while the recipe's targetExceedsPaste flag, computed from water alone, stays false. Core
+  // then returns null and pasteAlreadyThinner cannot cover it (that flag IS
+  // targetExceedsPaste), so both render branches went false and this component emitted an
+  // empty fragment again: the exact blank measuredPasteAlreadyThinner was added to close.
+  //
+  // Unreachable off the fallback basis, so no existing caller changes: predictedPasteGrams
+  // is anhydrousGrams + cook when totalWater >= cook and anhydrousGrams + totalWater
+  // (= solutionGrams) otherwise, and neither can exceed solutionGrams. Nothing any guard
+  // computes changes — this only names a null core was already going to return.
+  const unmeasuredPasteAlreadyThinner =
+    !hasValidMeasurement &&
+    !measurementRejected &&
+    !pasteAlreadyThinner &&
+    dilution.solutionGrams - rejection.wholeBatchPasteBasis < 0;
   const portion =
-    pasteAlreadyThinner || measurementRejected || measuredPasteAlreadyThinner
+    pasteAlreadyThinner ||
+    measurementRejected ||
+    measuredPasteAlreadyThinner ||
+    unmeasuredPasteAlreadyThinner
       ? null
       : lsPartialDilution(
           {
@@ -126,7 +177,13 @@ export function portionDilutionFor({
           },
           Number(targetMl),
         );
-  return { measured, pasteAlreadyThinner, measuredPasteAlreadyThinner, portion };
+  return {
+    measured,
+    pasteAlreadyThinner,
+    measuredPasteAlreadyThinner,
+    unmeasuredPasteAlreadyThinner,
+    portion,
+  };
 }
 
 /**
@@ -153,8 +210,15 @@ export function PortionDilutionResults({
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
   dilutionMode = 'concentration',
+  ratioNotAppliedYet = false,
 }: PortionDilutionResultsProps) {
-  const { measured, pasteAlreadyThinner, measuredPasteAlreadyThinner, portion } = portionDilutionFor({
+  const {
+    measured,
+    pasteAlreadyThinner,
+    measuredPasteAlreadyThinner,
+    unmeasuredPasteAlreadyThinner,
+    portion,
+  } = portionDilutionFor({
     dilution,
     targetMl,
     measuredPasteGrams,
@@ -185,19 +249,23 @@ export function PortionDilutionResults({
   const overDilutionKnowable = unknownLiquidGrams === 0 || overDilutionCertain;
   // Both refusals below used to say "the target above" and "set a target", which names a
   // field ratio mode does not show — its inputs are the ratio, the measured paste and the
-  // amount. Same branch DilutionPanel's exceeds-solution alert already carries, and the
-  // same direction: the paste is past the target, so the remedy is MORE water — a wider
-  // ratio, or a lower concentration.
-  const dilutionTargetNamed =
-    dilutionMode === 'ratio' ? 'the concentration this ratio lands at' : 'the target above';
-  const dilutionTargetRemedy =
-    dilutionMode === 'ratio'
-      ? 'Raise the water:paste ratio above (more water)'
-      : 'Lower the target concentration above (more water)';
+  // amount. See dilutionTargetWording for the full reasoning, including why an unapplied
+  // ratio must not be named as the target these figures were computed against.
+  const { named: dilutionTargetNamed, remedy: dilutionTargetRemedy } = dilutionTargetWording(
+    dilutionMode,
+    ratioNotAppliedYet,
+  );
   return (
     <>
-      {pasteAlreadyThinner &&
-        (overDilutionKnowable ? (
+      {/* unmeasuredPasteAlreadyThinner rides this paragraph rather than earning one of its
+          own: it says exactly what that case needs, down to the "weigh the whole batch's
+          paste above" remedy, which is the one thing that can still size a portion here. It
+          takes the KNOWABLE branch unconditionally — the two are mutually exclusive (see its
+          own derivation), and unlike targetExceedsPaste it is not a water-derived claim at
+          all: it compares solutionGrams against the pot's whole mass, and both are fixed
+          however the undeclared liquid's water turns out to be split. */}
+      {(pasteAlreadyThinner || unmeasuredPasteAlreadyThinner) &&
+        (overDilutionKnowable || unmeasuredPasteAlreadyThinner ? (
           <p className="results-hint">
             The paste is already more dilute than {dilutionTargetNamed}, so there is no
             dilution water to divide up. {dilutionTargetRemedy} until the paste can reach it,

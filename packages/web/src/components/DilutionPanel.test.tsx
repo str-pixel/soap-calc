@@ -1461,6 +1461,67 @@ describe('figures that belong to one scope stay in that scope; caveats that desc
     expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('1,936 g');
   });
 
+  it('never bounds the row with a number bigger than the row', () => {
+    // Mixed liquids, which is what makes this reachable: 200 g of a DECLARED liquid at 68%
+    // water (136 g water, 64 g solids) beside 300 g of an undeclared one (counted as all
+    // water, so no solids of its own). unknownLiquidGrams > 0 means SOME liquid is
+    // undeclared, not all of it — so a declared liquid contributes solids alongside, and the
+    // hint's uncorrected figure sat 64 g ABOVE the corrected row it claims to be a floor for.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
+          dilutionWaterGrams: 2070, glycerinGrams: 110, soapConcentrationPercent: 30,
+          targetExceedsPaste: false,
+        }}
+        cookWaterGrams={730}
+        wholeBatchPasteGrams={1994}
+        altLiquidWaterGrams={436}
+        unknownLiquidGrams={300}
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    const row = screen.getByText('Dilution water to add').nextElementSibling!.textContent!;
+    expect(row).toBe('2,006 g');
+    const hint = screen.getByText(/no declared water content/i).textContent!;
+    const quoted = Number((hint.match(/([\d,]+) g/g) ?? [])
+      .map((s) => Number(s.replace(/[, g]/g, '')))
+      .find((n) => n !== 300));
+    expect(quoted).toBeLessThanOrEqual(Number(row.replace(/[, g]/g, '')));
+    expect(quoted).toBe(2006);
+    // …and it no longer offers declaring as a lever on that figure. The corrected water is
+    // solutionGrams − (anhydrous + lye water + the liquid's whole mass), so declaring only
+    // moves mass between that liquid's water and its solids — never the sum, never this
+    // number. See useRecipeViewModel.test's declaration sweep for the property itself.
+    expect(hint).not.toMatch(/LEAST you will need/i);
+    expect(hint).toMatch(/same either way/i);
+  });
+
+  it('still calls it a floor when there is no corrected basis to make it exact', () => {
+    // Without wholeBatchPasteGrams the figure really is the recipe's water-only one, which
+    // the undeclared liquid's all-water assumption does bound. The old wording is right
+    // there and stays — this is the branch every caller predating the corrected basis takes.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
+          dilutionWaterGrams: 2070, glycerinGrams: 110, soapConcentrationPercent: 30,
+          targetExceedsPaste: false,
+        }}
+        altLiquidWaterGrams={436}
+        unknownLiquidGrams={300}
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    const hint = screen.getByText(/no declared water content/i).textContent!;
+    expect(hint).toMatch(/2,070 g is the LEAST you will need/);
+    expect(hint).toMatch(/Declare its % water/);
+  });
+
   it('does not call absent water figures a lower bound', () => {
     // In Custom amount the hint's portion-scope wording is literally "the water figures
     // here are the LEAST you will need" — it points at figures. Ungated on whether a
@@ -1918,6 +1979,51 @@ describe('the density caveat needs a millilitre figure to explain', () => {
   it('is unaffected in Whole batch scope, which always shows a finished volume', () => {
     render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" />);
     expect(screen.getByText(/1\.03 g\/ml/)).toBeTruthy();
+  });
+});
+
+describe('Whole batch and Custom amount pour one figure for the same undivided batch', () => {
+  // Same split-liquid fixture the ratio/sheet pin uses: 1,200 g anhydrous, 850 g cook water,
+  // 450 g of the liquid's solids → a 2,500 g pot, a 7,500 g solution at 16%. Round 1's fix
+  // corrected the batch row and the printed sheet but not the portion, which kept sizing off
+  // core's water-only predictedPasteGrams — so the two scopes disagreed by exactly the solids,
+  // one radio apart on the same panel, with no measurement anywhere in play.
+  const SPLIT = {
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 7500, totalWaterGrams: 6300,
+      dilutionWaterGrams: 5450, glycerinGrams: 110, soapConcentrationPercent: 16,
+      targetExceedsPaste: false,
+    },
+    soapConcentrationPercent: '16',
+    cookWaterGrams: 850,
+    wholeBatchPasteGrams: 2500,
+  };
+  // The whole batch, asked for by volume: 7,500 g ÷ 1.03 g/ml. Round-tripping through String
+  // is exact in JS, so the fraction lands on 1 and nothing is clamped.
+  const FULL_VOLUME_ML = String(7500 / 1.03);
+
+  it('asks the same water of both scopes', () => {
+    render(<DilutionPanel {...BASE} {...SPLIT} dilutionScope="batch" targetMl="" />);
+    const batchFigure = screen.getByText('Dilution water to add').nextElementSibling!.textContent;
+    // Absolute as well as relative: an equality alone would pass if both regressed together.
+    expect(batchFigure).toBe('5,000 g');
+    cleanup();
+
+    render(<DilutionPanel {...BASE} {...SPLIT} dilutionScope="portion" targetMl={FULL_VOLUME_ML} />);
+    // The portion really is the whole batch — otherwise the two figures are answers to
+    // different questions and the equality below would prove nothing.
+    expect(screen.getByText('Portion').nextElementSibling!.textContent).toBe('100% of the batch');
+    expect(screen.getByText('Water to add').nextElementSibling!.textContent).toBe(batchFigure);
+    expect(screen.getByText('Paste to weigh out').nextElementSibling!.textContent).toBe('2,500 g');
+  });
+
+  it('leaves a recipe with no corrected basis exactly as it was', () => {
+    const props = { ...SPLIT, wholeBatchPasteGrams: undefined };
+    render(<DilutionPanel {...BASE} {...props} dilutionScope="batch" targetMl="" />);
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('5,450 g');
+    cleanup();
+    render(<DilutionPanel {...BASE} {...props} dilutionScope="portion" targetMl={FULL_VOLUME_ML} />);
+    expect(screen.getByText('Water to add').nextElementSibling!.textContent).toBe('5,450 g');
   });
 });
 

@@ -16,7 +16,11 @@ import {
   parseMeasuredPasteGrams,
 } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
-import { PortionDilutionResults, portionDilutionFor } from './PortionDilutionResults';
+import {
+  PortionDilutionResults,
+  dilutionTargetWording,
+  portionDilutionFor,
+} from './PortionDilutionResults';
 
 export type DilutionMode = 'concentration' | 'ratio';
 
@@ -178,13 +182,19 @@ export function DilutionPanel({
   // holding the correction for. Falls back to the water-only figure when there is no
   // corrected one (no split liquid, or a caller predating the prop), which is byte-identical
   // to before for those recipes.
+  // Hoisted out of bestKnownPasteGrams (same predicate, unchanged) because the undeclared-
+  // liquid caveat below needs the same question answered: whether the figures on screen were
+  // derived from the corrected paste decides whether they are declaration-invariant or a
+  // lower bound, and those are opposite things to tell the maker.
+  const hasCorrectedPasteBasis =
+    wholeBatchPasteGrams !== undefined &&
+    wholeBatchPasteGrams !== null &&
+    Number.isFinite(wholeBatchPasteGrams) &&
+    wholeBatchPasteGrams > 0;
   const bestKnownPasteGrams = !dilution
     ? null
-    : wholeBatchPasteGrams !== undefined &&
-        wholeBatchPasteGrams !== null &&
-        Number.isFinite(wholeBatchPasteGrams) &&
-        wholeBatchPasteGrams > 0
-      ? wholeBatchPasteGrams
+    : hasCorrectedPasteBasis
+      ? (wholeBatchPasteGrams as number)
       : dilution.anhydrousGrams + cookWaterGrams;
   // The correction bestKnownPasteGrams carries over the recipe's own water-only figure —
   // an alternative liquid's non-water solids. Derived from that same basis rather than
@@ -331,6 +341,9 @@ export function DilutionPanel({
   // when totalWater >= cook and anhydrous + totalWater otherwise, neither of which can
   // exceed solutionGrams — so a true verdict here always came off the corrected basis.)
   const measuredOverDilutionCertain = portionState?.measuredPasteAlreadyThinner ?? false;
+  // Shared with PortionDilutionResults so this shell's Whole-batch twin of that refusal and
+  // the child's own Custom-amount wording of it can never name different controls.
+  const refusalWording = dilutionTargetWording(dilutionMode, ratioNotAppliedYet);
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough — so the density bridge is shown here rather than
@@ -719,18 +732,13 @@ export function DilutionPanel({
                       maker there unconditionally handed them a second refusal instead of
                       the remedy. Asked of the child's own helper, so the two always agree.
 
-                      The remedy names whichever control the current mode shows, the same
-                      branch the exceeds-solution alert above carries and the same one the
-                      child's own wording of this refusal now carries: ratio mode has no
-                      concentration field, so "set a target" pointed at nothing. */}
+                      The target it names and the remedy it gives come from the child's own
+                      dilutionTargetWording, so this twin and the paragraph Custom amount
+                      prints for the identical state can never word it differently — ratio
+                      mode has no concentration field, so "set a target" pointed at nothing,
+                      and an unapplied ratio is not the target these figures ran on. */}
                   {portionState?.measuredPasteAlreadyThinner
-                    ? `Custom amount cannot size anything from that reading either: what is left is already more dilute than ${
-                        dilutionMode === 'ratio' ? 'the concentration this ratio lands at' : 'the target above'
-                      }, so there is no dilution water to divide up. ${
-                        dilutionMode === 'ratio'
-                          ? 'Raise the water:paste ratio above (more water)'
-                          : 'Lower the target concentration above (more water)'
-                      } until the pot can reach it.`
+                    ? `Custom amount cannot size anything from that reading either: what is left is already more dilute than ${refusalWording.named}, so there is no dilution water to divide up. ${refusalWording.remedy} until the pot can reach it.`
                     : 'Switch to Custom amount to size what you are making from that reading instead.'}
                 </p>
               )}
@@ -753,6 +761,7 @@ export function DilutionPanel({
               unknownLiquidGrams={unknownLiquidGrams}
               overDilutionCertain={overDilutionCertain}
               dilutionMode={dilutionMode}
+              ratioNotAppliedYet={ratioNotAppliedYet}
             />
           )}
           {/* LS:1531 — shown regardless of which figure (concentration or ratio) the maker
@@ -867,13 +876,28 @@ export function DilutionPanel({
             !dilution.targetExceedsPaste &&
             (dilutionScope === 'batch' || portionOnScreen) && (
             <p className="results-hint">
+              {/* The quoted figure is the CORRECTED one the row above prints, not the
+                  recipe's own dilutionWaterGrams. unknownLiquidGrams > 0 means SOME liquid
+                  is undeclared, not all of it, so a declared liquid can contribute solids
+                  alongside — and the uncorrected figure then sat ABOVE the row it claims to
+                  bound (2,070 g offered as the floor under a 2,006 g row).
+
+                  And with the corrected basis it is not a bound at all: the water to add is
+                  solutionGrams − (anhydrous + lye water + the liquid's whole mass), and
+                  declaring the % water only moves mass between that liquid's water and its
+                  solids — never the sum, so never this figure. Promising that declaring
+                  would lower it promised an effect it cannot have. What the declaration
+                  really buys is knowing how much of the PASTE is water, which is what the
+                  1:1 lye-dissolution check and the paste's own composition run on. */}
               {formatWeight(unknownLiquidGrams, displayUnit)} of alternative liquid has no
-              declared water content — it is counted as all water, so{' '}
+              declared water content —{' '}
+              {hasCorrectedPasteBasis ? 'but' : 'it is counted as all water, so'}{' '}
               {dilutionScope === 'batch'
-                ? `${formatWeight(dilution.dilutionWaterGrams, displayUnit)} is`
+                ? `${formatWeight(batchDilutionWaterGrams, displayUnit)} is`
                 : 'the water figures here are'}{' '}
-              the LEAST you will need. Declare its % water, or dilute in increments and check
-              by weight.
+              {hasCorrectedPasteBasis
+                ? "the same either way: the liquid's whole mass is in the pot however its water and solids divide up. Declaring the % water tells you how much of your paste is water, not how much to add."
+                : 'the LEAST you will need. Declare its % water, or dilute in increments and check by weight.'}
             </p>
           )}
           <p className="results-hint">

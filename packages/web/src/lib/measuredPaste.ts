@@ -215,8 +215,17 @@ export function measuredPasteRejectionFor(
 
 /**
  * The batch's dilution-water figure, corrected for the two things the recipe's own
- * `dilutionWaterGrams` cannot see. Shared by DilutionPanel's batch row, the printed
- * BatchSheet and computeBottledSolutionGrams so no surface can pour a different number.
+ * `dilutionWaterGrams` cannot see. Shared by DilutionPanel's WHOLE-BATCH row, the printed
+ * BatchSheet and computeBottledSolutionGrams.
+ *
+ * Those three, and no more: Custom amount's water comes from core's `lsPartialDilution`,
+ * which does its own `potSolutionGrams - pasteGrams` off the same corrected basis. An
+ * earlier version of this note claimed "no surface can pour a different number", which read
+ * as a guarantee this function is in no position to give — and was false while
+ * lsPartialDilution still sized an unmeasured pot from the water-only predictedPasteGrams,
+ * leaving Custom amount and Whole batch a solids' worth apart. Both correction rules below
+ * have to hold on both paths; keep them in step by hand, and pin them against each other
+ * (DilutionPanel.test's "Whole batch and Custom amount pour one figure").
  *
  * 1. A valid measured paste — the same arithmetic DilutionPanel and PortionDilutionResults
  *    already apply: solutionGrams is fixed by the target concentration, so

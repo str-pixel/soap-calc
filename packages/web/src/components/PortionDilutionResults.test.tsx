@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import { PortionDilutionResults } from './PortionDilutionResults';
+import { PortionDilutionResults, dilutionTargetWording } from './PortionDilutionResults';
 import type { DilutionResult } from '@soap-calc/core';
 
 afterEach(cleanup);
@@ -169,6 +169,38 @@ describe('a refusal names a control the current mode actually shows', () => {
     wholeBatchPasteGrams: 3100,
     targetMl: '1000',
   };
+
+  test('an unapplied ratio is not named as the target the figures ran on', () => {
+    // While the write-back has not fired, everything here is still computed from the SAVED
+    // target — the panel's own "Not applied yet" note says so three paragraphs up. Naming
+    // "the concentration this ratio lands at" pointed the refusal at a number that governs
+    // nothing on screen yet. The remedy is unchanged: editing the ratio both applies it and
+    // widens it.
+    expect(dilutionTargetWording('ratio', true)).toEqual({
+      named: 'your saved target above',
+      remedy: 'Raise the water:paste ratio above (more water)',
+    });
+    expect(dilutionTargetWording('ratio', false).named).toBe('the concentration this ratio lands at');
+    // Concentration mode has the field on screen and is unaffected by the ratio's state.
+    expect(dilutionTargetWording('concentration', true)).toEqual({
+      named: 'the target above',
+      remedy: 'Lower the target concentration above (more water)',
+    });
+  });
+
+  test('the rendered refusal follows that wording', () => {
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={OVER}
+        dilutionMode="ratio"
+        ratioNotAppliedYet
+      />,
+    );
+    const refusal = screen.getByText(/no dilution water to divide up/i);
+    expect(refusal.textContent).toMatch(/your saved target above/i);
+    expect(refusal.textContent).not.toMatch(/this ratio lands at/i);
+  });
 
   test('the measured-reading refusal points at the ratio in ratio mode', () => {
     render(<PortionDilutionResults {...PROPS} {...REFUSED_READING} dilutionMode="ratio" />);
@@ -556,6 +588,37 @@ describe('a portion core refuses is explained, never left blank', () => {
     glycerinGrams: 0, soapConcentrationPercent: 33, targetExceedsPaste: false,
   };
   const wholeBatchPasteGrams = anhydrousGrams + cookWaterGrams + 200;
+
+  test('says why an UNMEASURED portion sizes nothing either, now that the pot includes its solids', () => {
+    // Same batch, no reading at all. Once core sizes the unmeasured pot from the corrected
+    // basis (round 1, finding 1) it refuses this for the same reason it refuses the reading
+    // above — 3,100 g of paste against a 3,030 g solution — and targetExceedsPaste, computed
+    // from water alone, cannot see it. Without this the component went silent: the exact
+    // blank this describe exists to forbid.
+    const { container } = render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    expect(screen.queryByText('Paste to weigh out')).toBeNull();
+    expect(container.textContent?.trim()).not.toBe('');
+    expect(screen.getByText(/no dilution water to divide up/i)).toBeTruthy();
+    // The control: drop the solids and the same fixture computes, so the refusal above is
+    // the solids talking rather than the component refusing everything.
+    cleanup();
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        wholeBatchPasteGrams={anhydrousGrams + cookWaterGrams}
+      />,
+    );
+    expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+  });
 
   test('says why an accepted reading still sizes no portion, instead of rendering nothing at all', () => {
     const { container } = render(

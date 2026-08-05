@@ -117,6 +117,13 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // prescribes the solids' worth of extra water. DilutionPanel's ratio block has always
   // poured off the corrected paste, so this row and that one used to differ by exactly the
   // solids — with the sheet, the page actually carried to the scale, holding the wrong one.
+  // Whether the printed figures came off the corrected paste, which decides whether the
+  // undeclared-liquid caveat below reads as a floor or as "the same either way".
+  const hasCorrectedPasteBasis =
+    data.wholeBatchPasteGrams !== undefined &&
+    data.wholeBatchPasteGrams !== null &&
+    Number.isFinite(data.wholeBatchPasteGrams) &&
+    data.wholeBatchPasteGrams > 0;
   const dilutionWaterGramsPrinted = dilution
     ? correctedDilutionWaterGrams(
         dilution,
@@ -337,7 +344,16 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <div><dt>Target concentration</dt><dd>{formatConcentrationPercent(dilution.soapConcentrationPercent)}%</dd></div>
             <div><dt>Dilution water to add</dt><dd>
               {formatWeight(dilutionWaterGramsPrinted, weightUnit)}
-              {data.unknownLiquidGrams && !dilution.targetExceedsPaste && !measuredPasteValid
+              {/* The marker only survives without a corrected paste basis. With one the
+                  figure is solutionGrams − (anhydrous + lye water + the liquid's whole
+                  mass), and declaring the undeclared liquid's % water moves mass between
+                  its water and its solids without moving that sum — so the figure is exact,
+                  not a floor, and "(at least)" told the maker to expect a number that can
+                  never come. */}
+              {data.unknownLiquidGrams &&
+              !dilution.targetExceedsPaste &&
+              !measuredPasteValid &&
+              !hasCorrectedPasteBasis
                 ? ' (at least)'
                 : ''}
             </dd></div>
@@ -391,8 +407,10 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           {data.unknownLiquidGrams && !dilution.targetExceedsPaste ? (
             <p className="batch-sheet__note">
               {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative liquid has
-              no declared water content — it is counted as all water, so the dilution
-              figure is the least you will need. Dilute in increments and check by weight.
+              no declared water content —{' '}
+              {hasCorrectedPasteBasis
+                ? 'the dilution figure above is the same whatever it turns out to be, since the liquid is in the pot either way. What is unknown is how much of your paste is water.'
+                : 'it is counted as all water, so the dilution figure is the least you will need. Dilute in increments and check by weight.'}
             </p>
           ) : null}
         </section>

@@ -522,6 +522,20 @@ test('printed dilution carries the unknown-liquid caveat when water content is u
   expect(screen.getByText(/no declared water content/i)).toBeTruthy();
 });
 
+test('the printed caveat drops the floor framing once the figure is exact', () => {
+  // With a corrected paste basis the printed water is solutionGrams − (anhydrous + lye
+  // water + the liquid's whole mass): declaring the undeclared liquid's % water moves mass
+  // between its water and its solids and leaves that sum alone, so the figure cannot move.
+  // "(at least)" and "the least you will need" promised a lower number that can never come.
+  render(<BatchSheet data={lsSheetData({ unknownLiquidGrams: 300, wholeBatchPasteGrams: 2059 })} />);
+  expect(screen.queryByText(/at least/i)).toBeNull();
+  expect(screen.getByText(/no declared water content/i).textContent).toMatch(
+    /same whatever it turns out to be/i,
+  );
+  // The row itself still prints, corrected: 4,059 − 2,059.
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('2,000 g');
+});
+
 test('no caveat rows when everything is declared', () => {
   render(<BatchSheet data={lsSheetData({})} />);
   expect(screen.queryByText(/no declared water content/i)).toBeNull();
