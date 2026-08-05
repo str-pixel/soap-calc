@@ -214,9 +214,9 @@ export function DilutionPanel({
   // PortionDilutionResults' identical trap).
   const ratioNum = Number(waterPasteRatio);
   const ratioValid = Number.isFinite(ratioNum) && ratioNum > 0;
-  // The corrected whole-batch paste when the view model has one — the SAME figure the
-  // remaining-mode ceiling alert above quotes ("the N g the whole batch's paste ever
-  // weighed"), and the same one forwarded to PortionDilutionResults. anhydrousGrams +
+  // The corrected whole-batch paste when the view model has one — the same basis
+  // measuredPasteRejectionFor judges a reading against (its wholeBatchPasteBasis), and the
+  // same one forwarded to PortionDilutionResults. anhydrousGrams +
   // cookWaterGrams counts only the WATER fraction of an alternative liquid, so on a
   // split-liquid recipe it undercounts the pot by that liquid's solids: 300 g anhydrous +
   // 100 g cook water against a true 470 g pot printed 800 g of water for 2:1 where the pot
@@ -339,9 +339,9 @@ export function DilutionPanel({
   // Asked of the same helper PortionDilutionResults itself renders from, so the shell can
   // never believe something about Custom amount that Custom amount does not show. The
   // portion figures are still the child's to render; the shell reads this verdict for two
-  // things only — the density caveat below (which needs a millilitre figure to explain)
-  // and the batch row's own pointer at Custom amount, which must not send the maker to a
-  // scope that has nothing to size.
+  // things only — the density caveat below (which needs a millilitre figure to explain) and
+  // portionOwnsUndeclaredLiquidHedge, which suppresses the shell's copy of a hedge the child
+  // is already printing in its own words.
   const portionState = dilution
     ? portionDilutionFor({
         dilution,
@@ -521,6 +521,22 @@ export function DilutionPanel({
                     setRatioTouched(true);
                     onWaterPasteRatioChange?.(preset);
                   }}
+                  // …and `change` is not enough, because the preset the maker most needs to
+                  // apply is the one ALREADY checked. App seeds waterPasteRatio to '2' and a
+                  // 30% target, so entering ratio mode shows 2:1 selected beside "Not applied
+                  // yet: … still uses your saved 30% target, not the 25% above" — and clicking
+                  // a checked radio changes no checkedness, so it fires no `change` at all.
+                  // The one obvious remedy was inert; recovery meant picking a different
+                  // preset and coming back. `click` fires either way.
+                  //
+                  // This does not reopen the round-2 bug it looks like it might: that one was
+                  // ENTERING ratio mode silently rewriting a typed target with no user action
+                  // at all. Re-asserting a ratio is a user action, and the gate it sets is the
+                  // same one typing sets. Only a real click reaches this.
+                  onClick={() => {
+                    setRatioTouched(true);
+                    onWaterPasteRatioChange?.(preset);
+                  }}
                 />
                 <span>{preset}:1</span>
               </label>
@@ -547,17 +563,30 @@ export function DilutionPanel({
               paste's starting weight is step one of it — which is why this reads as a
               property of the ratio rather than as a tip.
               Once a reading is accepted the caveat is discharged, and saying so is the
-              point: the instruction is the part that must not survive its own remedy. This
-              does not duplicate the "uses your measured paste" hint under the results grid —
-              that one names WHICH row the reading corrected and why a measurement outranks a
-              computed paste; this one answers whether the ratio is still an estimate, and it
-              is the only answer on screen in Custom amount scope, where that hint does not
-              render at all. */}
-          <p className="results-hint">
-            {measuredPasteValid
-              ? `You have weighed the paste (${formatWeight(measuredPasteNum, 'g')}), so this ratio is taken against what the pot really holds rather than an estimate — the water your cook drove off is already counted.`
-              : `A ratio is only as exact as the paste it multiplies, and this one runs on the recipe's computed paste: the cook drives off water the recipe still counts, and only your scale knows how much.${pasteReadingEntered ? '' : ' Weigh the pot and enter it as Measured paste weight below.'}`}
-          </p>
+              point: the instruction is the part that must not survive its own remedy.
+
+              Two gates, both about not saying something twice or about nothing.
+
+              `ratioValid`: with the field empty this printed "A ratio is only as exact as the
+              paste it multiplies, and this one runs on…" directly above "Enter a
+              water:paste ratio greater than zero" — a sentence about a ratio that does not
+              exist, and "this ratio is taken against…" is no better in the measured branch.
+
+              The whole-batch exclusion: the discharged wording used to be defended as not
+              duplicating the "uses your measured paste" hint under the results grid, and that
+              holds in Custom amount, where the grid hint does not render and this is the only
+              answer on screen. In Whole batch both rendered, quoting the same figure and
+              giving the same cook-evaporation reason, a grid apart. The grid hint is the one
+              that ALSO names which row the reading corrected, so it owns the message there.
+              The estimate branch is unaffected in either scope: with no valid reading there is
+              no grid hint to duplicate. */}
+          {ratioValid && !(dilutionScope === 'batch' && measuredPasteValid) && (
+            <p className="results-hint">
+              {measuredPasteValid
+                ? `You have weighed the paste (${formatWeight(measuredPasteNum, 'g')}), so this ratio is taken against what the pot really holds rather than an estimate — the water your cook drove off is already counted.`
+                : `A ratio is only as exact as the paste it multiplies, and this one runs on the recipe's computed paste: the cook drives off water the recipe still counts, and only your scale knows how much.${pasteReadingEntered ? '' : ' Weigh the pot and enter it as Measured paste weight below.'}`}
+            </p>
+          )}
         </>
       ) : (
         <label className="field">
@@ -579,8 +608,23 @@ export function DilutionPanel({
             the pot, and the core figures it feeds are all gram-based. Always shown, even when
             the target exceeds the recipe's ASSUMED cook water: a measurement is exactly what
             can override that assumption, so hiding the input would remove the only way out of
-            the refusal. */}
-        <span>Measured paste weight (g, optional)</span>
+            the refusal.
+
+            "the whole batch" is in the VISIBLE label because the declaration radio that used
+            to sit under this field ("That weight is: (o) all of it") was the only thing
+            naming the paste before an error did — and it is gone. Concentration mode is the
+            default and has no ratio caveat to carry the point, so without this nothing on the
+            panel says which paste is wanted. Custom amount is where it bites: the field sits
+            under "Paste to weigh out — 412 g" and a hint saying "Weigh your paste and enter
+            it above", and the reference itself frames the reading as a portion (LS:1534,
+            "place the portion of paste you wish to dilute on a tared scale"), so the maker's
+            prior runs against this app's. A deep drawdown trips the solids floor and is
+            refused; a SHALLOW one clears it and is taken as the batch with no alert at all.
+
+            The aria-label below is deliberately NOT widened to match: it is the accessible
+            name App.test and the e2e specs select on, and it already omits "(optional)" for
+            the same reason. */}
+        <span>Measured paste weight — the whole batch (g, optional)</span>
         <input
           type="number"
           className="input input--number"

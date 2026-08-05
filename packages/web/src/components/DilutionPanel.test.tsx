@@ -312,8 +312,8 @@ describe('ratio mode weighs the paste the rest of the panel already knows about'
   // anhydrousGrams + cookWaterGrams counts only the WATER fraction of an alternative
   // liquid; its non-water solids are real mass sitting in the pot. This panel is HANDED the
   // corrected figure (wholeBatchPasteGrams — it forwards it to PortionDilutionResults and
-  // quotes it in the remaining-mode ceiling alert) and then computed the ratio against the
-  // water-only one anyway. 300 g anhydrous, 100 g cook water, plus 100 g of split liquid at
+  // judges a measured reading against it) and then computed the ratio against the water-only
+  // one anyway. 300 g anhydrous, 100 g cook water, plus 100 g of split liquid at
   // 30% water = 70 g of solids → a 470 g pot. At 2:1 that is 940 g of water; the water-only
   // 400 g basis prescribed 800 g — 140 g short, against a basis the panel itself calls
   // wrong two paragraphs up.
@@ -1015,9 +1015,36 @@ describe('portion scope: the measured-paste input that used to live in PartialDi
     expect(screen.getByText(/already more dilute/i)).toBeTruthy();
   });
 
-  it('labels the measured-paste field plainly — every reading is the whole batch', () => {
-    render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" />);
-    expect(screen.getByLabelText('Measured paste weight (g)')).toBeTruthy();
+  it('labels the measured-paste field with the batch it wants, in every scope and mode', () => {
+    // The declaration radio ("That weight is: (o) all of it") used to be the antecedent that
+    // told the maker WHICH paste before any error did. With it gone the field's own copy has
+    // to carry that, and it has to carry it in concentration mode too — the ratio caveat only
+    // renders in the other one.
+    //
+    // It matters most in Custom amount, where the field sits under "Paste to weigh out —
+    // 412 g" and a hint reading "Weigh your paste and enter it above for exact figures", and
+    // the source itself frames the reading as a portion (LS:1534: "place the portion of paste
+    // you wish to dilute on a tared scale"). A shallow drawdown clears the solids floor and is
+    // silently taken as the batch — 1,500 g against a 1,600 g pot pours 2,500 g, no alert.
+    for (const scope of ['batch', 'portion'] as const) {
+      for (const mode of ['concentration', 'ratio'] as const) {
+        render(
+          <DilutionPanel
+            {...BASE}
+            dilutionScope={scope}
+            targetMl={scope === 'batch' ? '' : '1000'}
+            dilutionMode={mode}
+            waterPasteRatio="2"
+            onDilutionModeChange={() => {}}
+            onWaterPasteRatioChange={() => {}}
+          />,
+        );
+        expect(screen.getByText('Measured paste weight — the whole batch (g, optional)')).toBeTruthy();
+        // The accessible name is deliberately unchanged — App and the e2e specs select on it.
+        expect(screen.getByLabelText('Measured paste weight (g)')).toBeTruthy();
+        cleanup();
+      }
+    }
   });
 });
 
@@ -2408,6 +2435,47 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(PRESETS.some((name) => checked(name))).toBe(false);
   });
 
+  it('applies the preset that is ALREADY checked, which is the one on the default path', () => {
+    // App seeds waterPasteRatio to '2' and the target to 30%, so entering ratio mode renders
+    // 2:1 already checked beside "Not applied yet: … still uses your saved 30% target, not
+    // the 25% above". The obvious move is to click the highlighted 2:1 — and a radio that is
+    // already checked fires no `change` event at all, so onChange never ran, ratioTouched
+    // stayed false and nothing applied. Two clicks, zero write-backs, note still on screen.
+    // Re-asserting the same ratio is an explicit edit; `click` fires whether or not
+    // checkedness moves, which is what makes it reachable.
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel
+        {...RATIO_BASE}
+        waterPasteRatio="2"
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+      />,
+    );
+    const preset = screen.getByRole('radio', { name: '2:1' }) as HTMLInputElement;
+    expect(preset.checked).toBe(true);
+    // The state the maker is looking at: the ratio's own 25% has not been applied.
+    expect(screen.getByText(/Not applied yet/i)).toBeTruthy();
+    fireEvent.click(preset);
+    // 1,200 anhydrous + 400 cook water = 1,600 g paste; 2:1 → 4,800 g solution → 25%.
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+  });
+
+  it('applies it through a click on the label too, the way a maker actually hits a radio', () => {
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel
+        {...RATIO_BASE}
+        waterPasteRatio="2"
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+      />,
+    );
+    const label = screen.getByRole('radio', { name: '2:1' }).closest('label')!;
+    fireEvent.click(label);
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+  });
+
   it('picking a preset sets the ratio and counts as a real edit, so it applies', () => {
     // Same gate the typed input carries: entering ratio mode writes nothing back, but a
     // deliberate pick is an edit and must apply, or the panel would show a ratio nothing
@@ -2446,12 +2514,40 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(screen.queryByText(/only as exact as the paste it multiplies/i)).toBeNull();
   });
 
-  it('says the caveat is met rather than repeating it once a valid paste weight is in', () => {
+  it('says the caveat is met rather than repeating it, in the scope that has no other answer', () => {
     // 1,480 g clears the 1,200 g anhydrous floor and sits under the 4,000 g solution, so
-    // the ratio is already multiplying a weighed pot.
-    render(<DilutionPanel {...RATIO_BASE} measuredPasteGrams="1480" />);
+    // the ratio is already multiplying a weighed pot. Custom amount is where this sentence
+    // is the ONLY thing on screen saying so — the grid's own "uses your measured paste" hint
+    // is whole-batch and does not render here.
+    render(<DilutionPanel {...RATIO_BASE} dilutionScope="portion" targetMl="1000" measuredPasteGrams="1480" />);
     expect(screen.getByText(/you have weighed the paste \(1,480 g\)/i)).toBeTruthy();
     expect(screen.queryByText(/Weigh the pot and enter it/i)).toBeNull();
+  });
+
+  it('does not repeat it in Whole batch, where the grid hint already says it', () => {
+    // Both paragraphs quoted the same 1,480 g and both gave the cook-evaporation reason, one
+    // above the grid and one below it. The grid hint is the one that also names WHICH row the
+    // reading corrected, so it owns the message wherever it renders.
+    render(<DilutionPanel {...RATIO_BASE} measuredPasteGrams="1480" />);
+    expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
+    expect(screen.queryByText(/you have weighed the paste/i)).toBeNull();
+    // …and the estimate half is untouched: no reading, no grid hint, so the caveat is the
+    // only answer and still renders in this very scope.
+    cleanup();
+    render(<DilutionPanel {...RATIO_BASE} />);
+    expect(screen.getByText(/only as exact as the paste it multiplies/i)).toBeTruthy();
+  });
+
+  it('says nothing about "this ratio" while there is no ratio to speak of', () => {
+    // With the field empty the panel prints "Enter a water:paste ratio greater than zero"
+    // — and printed "A ratio is only as exact as the paste it multiplies, and this one runs
+    // on…" directly above it, about a ratio that does not exist.
+    render(<DilutionPanel {...RATIO_BASE} waterPasteRatio="" />);
+    expect(screen.getByText(/Enter a water:paste ratio greater than zero/i)).toBeTruthy();
+    expect(screen.queryByText(/only as exact as the paste it multiplies/i)).toBeNull();
+    cleanup();
+    render(<DilutionPanel {...RATIO_BASE} waterPasteRatio="" dilutionScope="portion" targetMl="1000" measuredPasteGrams="1480" />);
+    expect(screen.queryByText(/you have weighed the paste/i)).toBeNull();
   });
 
   it('keeps the estimate but drops the instruction when a reading is on screen unused', () => {
