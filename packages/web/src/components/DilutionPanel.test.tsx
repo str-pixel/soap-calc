@@ -1252,13 +1252,16 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     // pour 1,500 − 1,400 = 100 g beside a "Total water" of 300 g.
     //
     // It is refused now, so the row falls back to the corrected pot's own clamped figure and
-    // there is no live pour left to contradict. The invariant this test exists for survives
-    // in a stronger form than it could be asserted in: on this fixture the corrected total
-    // goes negative exactly because solids (400 g) exceed the target's whole water allowance
+    // there is no live pour left to contradict. On this fixture the corrected total goes
+    // negative exactly because solids (400 g) exceed the target's whole water allowance
     // (300 g), and that is the same inequality that puts the floor (anhydrous + solids)
     // above the ceiling (anhydrous + allowance) — so NO reading is acceptable here at all,
-    // and "a live pour beside the fallback total" is now unreachable rather than merely
-    // absent. Pinned as such in measuredPaste.test's own sweep over the same figures.
+    // and "a live pour beside the fallback total" is unreachable rather than merely absent.
+    // Pinned as such in measuredPaste.test's own sweep over the same figures.
+    //
+    // Which is why this test does not stop here: the emptiness that makes the fixture safe
+    // also makes its copy of the invariant vacuous, so the second and third renders below
+    // carry it on a pot that accepts readings.
     render(
       <DilutionPanel
         {...BASE}
@@ -1282,6 +1285,76 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     const alert = alerts[0]!.textContent!.replace(/\s+/g, ' ');
     expect(alert).toContain('less than the 1,600 g of soap and alternative-liquid solids');
     expect(alert).toContain('the cook boils off water, not solids');
+    cleanup();
+
+    // The relation above reads 300 >= 0 on this fixture, which is true of any two numbers
+    // the row could print — it survives every mutation of either figure. That is not a
+    // weakness of the invariant, it is the fixture: the acceptance window here is EMPTY (the
+    // floor sits above the ceiling), so no reading can put a live pour on screen to test it
+    // against. So test it where it can fail — on a pot whose window is open, with a reading
+    // the panel actually applies, at the one reading where the relation is TIGHT.
+    //
+    // 1,200 g of soap, 400 g of cook water and 900 g of a half-water liquid: a 2,050 g pot,
+    // 450 g of it solids, so the floor is 1,650 g and the target's own water allowance
+    // (2,800 g) is far past it. A reading AT the floor is accepted, and it is the extreme
+    // case by construction: the paste holds no water at all, so every gram of the finished
+    // solution's water is still to be poured and the two rows must print the SAME number.
+    // One gram more of pour than total is a pot that reaches the target and overshoots it.
+    render(
+      <DilutionPanel
+        {...BASE}
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={2050}
+        measuredPasteGrams="1650"
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    const livePour = screen.getByText('Dilution water to add').nextElementSibling!.textContent!;
+    const liveTotal = screen.getByText('Total water').nextElementSibling!.textContent!;
+    // The pour is measurement-DERIVED, not the fallback: 4,000 − 1,650, where the unmeasured
+    // corrected pour on this same pot is 4,000 − 2,050 = 1,950 g. Asserted both ways round so
+    // the relation below cannot pass on a reading that was quietly refused — which is exactly
+    // how the 1,400 g render above stopped exercising it.
+    expect(screen.queryAllByRole('alert')).toHaveLength(0);
+    expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
+    expect(livePour).toBe('2,350 g');
+    expect(livePour).not.toBe('1,950 g');
+    // Total water is corrected for the solids too (2,800 − 450), so this is 2,350 against
+    // 2,350: the invariant at zero slack, where a gram of drift in either figure breaks it.
+    expect(liveTotal).toBe('2,350 g');
+    expect(Number(liveTotal.replace(/[^0-9.]/g, ''))).toBeGreaterThanOrEqual(
+      Number(livePour.replace(/[^0-9.]/g, '')),
+    );
+    cleanup();
+
+    // …and with slack, so the relation is not pinned only at its degenerate point: a normal
+    // post-cook 1,900 g reading holds 250 g of its own water, leaving 2,100 g to pour out of
+    // the same 2,350 g total.
+    render(
+      <DilutionPanel
+        {...BASE}
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={2050}
+        measuredPasteGrams="1900"
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    const slackPour = screen.getByText('Dilution water to add').nextElementSibling!.textContent!;
+    const slackTotal = screen.getByText('Total water').nextElementSibling!.textContent!;
+    expect(slackPour).toBe('2,100 g');
+    expect(slackTotal).toBe('2,350 g');
+    expect(Number(slackTotal.replace(/[^0-9.]/g, ''))).toBeGreaterThanOrEqual(
+      Number(slackPour.replace(/[^0-9.]/g, '')),
+    );
+    // The slack is the paste's own water, read off the screen rather than restated: total
+    // minus pour is what the 1,900 g pot brought with it (1,900 − 1,200 anhydrous − 450
+    // solids). This is the identity the row's own note claims holds "under a measurement
+    // too", and nothing tested it on a live one.
+    expect(
+      Number(slackTotal.replace(/[^0-9.]/g, '')) - Number(slackPour.replace(/[^0-9.]/g, '')),
+    ).toBe(250);
   });
 
   it('a pot that weighs exactly the solution is AT the target, not past it — no alert, and nothing to pour', () => {

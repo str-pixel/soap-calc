@@ -53,9 +53,13 @@ type DilutionPanelProps = {
    * It travels WITH `wholeBatchPasteGrams`, and a caller supplying one owes the other: the
    * difference between them is the alternative liquid's non-water solids, which is what the
    * head-start paragraph quotes and — since the floor correction — what the floor under a
-   * measured paste counts. Supply the pot alone and the pair says none of it is water, i.e.
-   * that all the cook water is solids. Defaulted to 0 for the ratio-mode expression above,
-   * which predates both. */
+   * measured paste counts.
+   *
+   * Left UNDEFAULTED for that reason (see the destructuring below): omitted, it means "the
+   * cook water is unknown", which lib/measuredPaste answers by falling the floor back to the
+   * anhydrous soap. Zero means something different and equally real — a recipe whose water
+   * is entirely a zero-water alternative liquid — and the two must not collapse. The
+   * arithmetic sites coalesce to 0 for themselves. */
   cookWaterGrams?: number;
   /** Which way the maker is choosing the dilution: a target concentration (the default,
    * and what the reference calls out at LS:1536), or a water:paste ratio by weight
@@ -108,7 +112,17 @@ export function DilutionPanel({
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
   bottledSolutionGrams = null,
-  cookWaterGrams = 0,
+  // Deliberately NOT defaulted to 0. lib/measuredPaste has its own answer for "the cook
+  // water is unknown" — fall the paste floor back to the anhydrous soap, byte-identical to
+  // before the solids correction — and it can only give that answer if `undefined` reaches
+  // it. A `= 0` default here spent that escape hatch at the component boundary: a caller
+  // supplying `wholeBatchPasteGrams` alone would be read as "the pot is 1,600 g and none of
+  // it is water", making the floor the whole pot and putting "soap and alternative-liquid
+  // solids" on screen for a recipe that has no alternative liquid. Fail-closed, so no figure
+  // was ever wrong — but the copy was, and the module's documented fallback was unreachable.
+  // The two arithmetic sites below coalesce for themselves; the four guard call sites pass
+  // this straight through.
+  cookWaterGrams,
   dilutionMode = 'concentration',
   onDilutionModeChange,
   waterPasteRatio = '',
@@ -214,14 +228,14 @@ export function DilutionPanel({
     ? null
     : hasCorrectedPasteBasis
       ? (wholeBatchPasteGrams as number)
-      : dilution.anhydrousGrams + cookWaterGrams;
+      : dilution.anhydrousGrams + (cookWaterGrams ?? 0);
   // The correction bestKnownPasteGrams carries over the recipe's own water-only figure —
   // an alternative liquid's non-water solids. Derived from that same basis rather than
   // taken as a prop so it can never disagree with the paste the figures are computed from;
   // zero when there is no corrected basis, which is every recipe without a split liquid.
   const splitLiquidSolidsGrams =
     dilution && bestKnownPasteGrams !== null
-      ? Math.max(0, bestKnownPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
+      ? Math.max(0, bestKnownPasteGrams - (dilution.anhydrousGrams + (cookWaterGrams ?? 0)))
       : 0;
   const pasteGrams = dilution ? (measuredPasteValid ? measuredPasteNum : bestKnownPasteGrams) : null;
   const ratioWaterGrams =

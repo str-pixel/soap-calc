@@ -297,6 +297,14 @@ describe('the paste floor counts solids that cannot boil off', () => {
       expect(rejection.belowSolids).toBe(false);
       expect(rejection.accepted).toBe(true);
     }
+    // …but ZERO cook water is a supplied figure, not a missing one, and the distinction is
+    // real: a recipe whose only liquid is a zero-water alternative (all the glycerin, no lye
+    // water) has cook water 0 and a pot that is nothing but soap and solids. Treating that 0
+    // as "unknown" would drop the floor back to the anhydrous soap on exactly the recipe
+    // whose solids are largest.
+    const noCookWater = measuredPasteRejectionFor('1300', DILUTION, false, 1600, 0);
+    expect(noCookWater.solidsFloorGrams).toBe(1600);
+    expect(noCookWater.belowSolids).toBe(true);
   });
 
   it('never drops the floor BELOW the anhydrous soap, whatever pot it is handed', () => {
@@ -376,6 +384,90 @@ describe('the paste floor counts solids that cannot boil off', () => {
     }
     // The old floor accepted 301 of them, every one physically impossible.
     expect(measuredPasteIsValidFor('1400', OVER, false, 1930)).toBe(true);
+  });
+
+  it('gives a reading in the gap ONE refusal — the ceiling\'s — when the floor outruns it', () => {
+    // The state the raised floor created and nothing used to answer for. Until the floor
+    // counted solids it was strictly below the ceiling for any target under 100%
+    // (solutionGrams is anhydrous ÷ the target), so the two rules could not both fire. Once
+    // solids outweigh the target's WHOLE water allowance the floor sits above the ceiling,
+    // and every reading between them broke both rules at once.
+    //
+    // The starter recipe under KOH with 400 g of glycerin, at a 78% target — the reported
+    // repro, and reachable by typing one number: a 1,615.33 g floor against a 1,558.12 g
+    // ceiling. A 1,580 g reading is in the gap. The panel printed both refusals, and their
+    // remedies point opposite ways: the floor's says the reading is too LIGHT to be the
+    // whole pot ("check the scale was tared"), the ceiling's says it is too HEAVY for the
+    // target ("lower the target concentration").
+    const GLYCERIN: DilutionResult = {
+      anhydrousGrams: 1215.33, solutionGrams: 1215.33 / 0.78,
+      totalWaterGrams: 1215.33 / 0.78 - 1215.33, dilutionWaterGrams: 1215.33 / 0.78 - 1215.33 - 330,
+      glycerinGrams: 400, soapConcentrationPercent: 78, targetExceedsPaste: false,
+    };
+    const rejection = measuredPasteRejectionFor('1580', GLYCERIN, false, 1215.33 + 330 + 400, 330);
+    expect(rejection.solidsFloorGrams).toBeCloseTo(1615.33, 2);
+    expect(GLYCERIN.solutionGrams).toBeLessThan(rejection.solidsFloorGrams);
+    // The ceiling wins: it is the rule whose remedy answers the mistake being made.
+    expect(rejection.exceedsSolution).toBe(true);
+    expect(rejection.belowSolids).toBe(false);
+    // …and the verdict itself does not move. Nothing this exclusion touches becomes usable;
+    // only the second paragraph goes.
+    expect(rejection.rejected).toBe(true);
+    expect(rejection.accepted).toBe(false);
+  });
+
+  it('sets exactly one rule flag per reading — with one known, declaration-bound exception', () => {
+    // The exclusivity the module's doc asserts, swept rather than argued: the surfaces render
+    // the four rules as four independent `&&` branches, so a reading that sets two flags puts
+    // two paragraphs on screen. Each rule is checked at every boundary of every other, on
+    // recipes with no solids, ordinary solids, and solids past the target's whole allowance.
+    //
+    // The exception is real and is pinned here rather than hidden: exceedsSolution is not
+    // gated on the declaration and exceedsRemainingCeiling does not exclude it, so a
+    // REMAINING reading above both the solution and the pot sets both. It predates the solids
+    // floor, is unchanged by it, and closing it means moving the remaining-mode ceiling — so
+    // it is asserted as the ONLY surviving overlap. Narrow this when that ceiling is fixed;
+    // a new pair showing up here is a regression.
+    let overlaps = 0;
+    for (const [anhydrous, targetPct, cook, solids] of [
+      [1200, 30, 400, 0], [1200, 30, 400, 450], [1200, 80, 330, 400],
+      [1215.33, 78, 330, 400], [1215.33, 65, 330, 400], [500, 50, 100, 900],
+    ] as const) {
+      const solutionGrams = anhydrous / (targetPct / 100);
+      const d: DilutionResult = {
+        anhydrousGrams: anhydrous, solutionGrams, totalWaterGrams: solutionGrams - anhydrous,
+        dilutionWaterGrams: Math.max(0, solutionGrams - anhydrous - cook),
+        glycerinGrams: 100, soapConcentrationPercent: targetPct,
+        targetExceedsPaste: solutionGrams - anhydrous < cook,
+      };
+      const pot = anhydrous + cook + solids;
+      for (const bound of [anhydrous, anhydrous + solids, solutionGrams, pot]) {
+        for (const delta of [-1, -0.01, 0, 0.01, 1]) {
+          for (const isRemaining of [false, true]) {
+            const r = measuredPasteRejectionFor(String(bound + delta), d, isRemaining, pot, cook);
+            const fired = [
+              r.nonPositive, r.belowSolids, r.exceedsSolution, r.exceedsRemainingCeiling,
+            ].filter(Boolean).length;
+            if (fired > 1) {
+              overlaps++;
+              // The one pair, and only under the remaining declaration.
+              expect(isRemaining).toBe(true);
+              expect(r.exceedsSolution && r.exceedsRemainingCeiling).toBe(true);
+              expect(r.nonPositive || r.belowSolids).toBe(false);
+              expect(fired).toBe(2);
+            }
+            // A WHOLE-BATCH reading — the declaration this branch's floor correction touches,
+            // and the one the repro was typed under — never sets two.
+            if (!isRemaining) expect(fired).toBeLessThanOrEqual(1);
+            // …and the flags still add up to the verdict either way, so exclusivity is never
+            // bought by dropping a refusal on the floor.
+            expect(r.rejected).toBe(fired >= 1);
+          }
+        }
+      }
+    }
+    // The exception is reachable, so the assertions above are not vacuous.
+    expect(overlaps).toBeGreaterThan(0);
   });
 });
 
