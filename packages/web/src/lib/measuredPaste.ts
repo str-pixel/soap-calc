@@ -214,22 +214,54 @@ export function measuredPasteRejectionFor(
 }
 
 /**
- * The batch's dilution-water figure, corrected by a valid measured paste — the same
- * arithmetic DilutionPanel and PortionDilutionResults already apply: solutionGrams is fixed by
- * the target concentration, so solutionGrams - measured is what is still needed to reach
- * it, and a valid measurement OUTRANKS the recipe's own dilutionWaterGrams (Task 5's
- * measured-paste-outranks-targetExceedsPaste principle — that flag is derived from the
- * recipe's ASSUMED cook water, the measurement is direct evidence against it). Falls back
- * to the recipe's computed figure with no valid measurement. Shared by DilutionPanel's
- * batch row and the printed BatchSheet so both surfaces always show the same number.
+ * The batch's dilution-water figure, corrected for the two things the recipe's own
+ * `dilutionWaterGrams` cannot see. Shared by DilutionPanel's batch row, the printed
+ * BatchSheet and computeBottledSolutionGrams so no surface can pour a different number.
+ *
+ * 1. A valid measured paste — the same arithmetic DilutionPanel and PortionDilutionResults
+ *    already apply: solutionGrams is fixed by the target concentration, so
+ *    solutionGrams - measured is what is still needed to reach it, and a valid measurement
+ *    OUTRANKS the recipe's own dilutionWaterGrams (Task 5's
+ *    measured-paste-outranks-targetExceedsPaste principle — that flag is derived from the
+ *    recipe's ASSUMED cook water, the measurement is direct evidence against it).
+ *
+ * 2. An alternative liquid's non-water SOLIDS, when the view model's corrected
+ *    `wholeBatchPasteGrams` is supplied. calculateDilution works from anhydrous + water
+ *    alone, so its dilutionWaterGrams is solutionGrams - anhydrous - cookWater — it leaves
+ *    the solids out of the pot entirely and prescribes water for a paste lighter than the
+ *    one on the scale. DilutionPanel's ratio mode already derives its pour from the
+ *    corrected paste (pasteGrams x ratio), so before this the ratio block and every
+ *    concentration-derived surface disagreed by exactly the solids: 5,000 g on screen
+ *    against 5,450 g on the batch sheet for a 900 g liquid at 50% water. Subtracting the
+ *    corrected paste from the same solutionGrams is the ratio block's own basis, so the
+ *    two now land on one number.
+ *
+ * Falls back to the recipe's computed figure when neither correction is available, which
+ * is byte-identical for a recipe with no split liquid: wholeBatchPasteGrams is then exactly
+ * anhydrous + cookWater, and solutionGrams - that IS dilutionWaterGrams.
+ *
+ * Clamped at zero, matching calculateDilution's own clamp on dilutionWaterGrams: the
+ * corrected paste can exceed the target solution (a big low-water liquid) while the
+ * recipe's water-only targetExceedsPaste flag stays false, and a negative pour figure is
+ * never an instruction. It prints as "0 g" — the honest answer, where the uncorrected
+ * figure was a positive number that would have pushed the batch past its target.
  */
 export function correctedDilutionWaterGrams(
   dilution: DilutionResult,
   measuredPasteGrams: string | undefined,
   isRemaining = false,
+  wholeBatchPasteGrams?: number | null,
 ): number {
   if (measuredPasteIsValidFor(measuredPasteGrams, dilution, isRemaining)) {
     return dilution.solutionGrams - (parseMeasuredPasteGrams(measuredPasteGrams) as number);
+  }
+  if (
+    wholeBatchPasteGrams !== undefined &&
+    wholeBatchPasteGrams !== null &&
+    Number.isFinite(wholeBatchPasteGrams) &&
+    wholeBatchPasteGrams > 0
+  ) {
+    return Math.max(0, dilution.solutionGrams - wholeBatchPasteGrams);
   }
   return dilution.dilutionWaterGrams;
 }

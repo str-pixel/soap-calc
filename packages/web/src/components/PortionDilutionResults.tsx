@@ -35,6 +35,11 @@ type PortionDilutionResultsProps = {
   /** True when the over-dilution verdict holds across the undeclared liquid's whole
    * 0–100% water range, so it can be stated as fact after all. */
   overDilutionCertain?: boolean;
+  /** Which control the maker is choosing the dilution with, so a refusal here can name
+   * something that is actually on screen. Structurally DilutionPanel's own DilutionMode,
+   * spelled out rather than imported to keep the type dependency one-way (the panel
+   * imports this module). Defaults to the panel's own default. */
+  dilutionMode?: 'concentration' | 'ratio';
 };
 
 /**
@@ -147,6 +152,7 @@ export function PortionDilutionResults({
   wholeBatchPasteGrams,
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
+  dilutionMode = 'concentration',
 }: PortionDilutionResultsProps) {
   const { measured, pasteAlreadyThinner, measuredPasteAlreadyThinner, portion } = portionDilutionFor({
     dilution,
@@ -177,14 +183,26 @@ export function PortionDilutionResults({
   // the portion either way, because the clamped figures it would be computed from are
   // unusable regardless of what the liquid turns out to contain.
   const overDilutionKnowable = unknownLiquidGrams === 0 || overDilutionCertain;
+  // Both refusals below used to say "the target above" and "set a target", which names a
+  // field ratio mode does not show — its inputs are the ratio, the measured paste and the
+  // amount. Same branch DilutionPanel's exceeds-solution alert already carries, and the
+  // same direction: the paste is past the target, so the remedy is MORE water — a wider
+  // ratio, or a lower concentration.
+  const dilutionTargetNamed =
+    dilutionMode === 'ratio' ? 'the concentration this ratio lands at' : 'the target above';
+  const dilutionTargetRemedy =
+    dilutionMode === 'ratio'
+      ? 'Raise the water:paste ratio above (more water)'
+      : 'Lower the target concentration above (more water)';
   return (
     <>
       {pasteAlreadyThinner &&
         (overDilutionKnowable ? (
           <p className="results-hint">
-            The paste is already more dilute than the target above, so there is no dilution
-            water to divide up. Set a target the paste can actually reach, or weigh the whole
-            batch&apos;s paste above to size a portion from your measurement instead.
+            The paste is already more dilute than {dilutionTargetNamed}, so there is no
+            dilution water to divide up. {dilutionTargetRemedy} until the paste can reach it,
+            or weigh the whole batch&apos;s paste above to size a portion from your
+            measurement instead.
           </p>
         ) : (
           <p className="results-hint">
@@ -203,9 +221,9 @@ export function PortionDilutionResults({
           above (that one requires no valid measurement; this one requires one). */}
       {measuredPasteAlreadyThinner && (
         <p className="results-hint">
-          The paste your reading describes is already more dilute than the target above:
-          the soap in it makes less solution at that target than the paste itself weighs,
-          so there is no dilution water to divide up. Set a target it can reach, or
+          The paste your reading describes is already more dilute than {dilutionTargetNamed}:
+          the soap in it makes less solution at that concentration than the paste itself
+          weighs, so there is no dilution water to divide up. {dilutionTargetRemedy}, or
           re-check the reading.
         </p>
       )}

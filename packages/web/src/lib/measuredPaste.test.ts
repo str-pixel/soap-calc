@@ -56,6 +56,46 @@ describe('correctedDilutionWaterGrams', () => {
     // 4,000 - 1,480 = 2,520.
     expect(correctedDilutionWaterGrams(DILUTION, '1480')).toBe(2520);
   });
+
+  describe('and the corrected whole-batch paste, for an alternative liquid\'s solids', () => {
+    // DILUTION is 1,200 g anhydrous into a 4,000 g solution, with 2,400 g of dilution water
+    // — so the recipe's own (water-only) paste is 1,600 g. A 900 g split liquid at 50% water
+    // puts 450 g of SOLIDS in that pot on top of the water already counted: the real paste is
+    // 2,050 g, and 4,000 - 2,050 = 1,950 g is what reaches the target. calculateDilution
+    // cannot see this — its solution is anhydrous + water with no room for solids — so the
+    // uncorrected 2,400 g would land the batch 450 g past its target, and disagree with the
+    // ratio block, which has always poured off the real paste.
+    it('subtracts the corrected paste from the same solutionGrams the ratio block uses', () => {
+      expect(correctedDilutionWaterGrams(DILUTION, '', false, 2050)).toBe(1950);
+    });
+
+    it('is exactly the recipe figure when there is nothing to correct', () => {
+      // No split liquid: the corrected paste IS anhydrous + cook water (1,600 g), so this
+      // reduces to dilutionWaterGrams with no special case.
+      expect(correctedDilutionWaterGrams(DILUTION, '', false, 1600)).toBe(2400);
+      // …and an absent/unusable basis takes the same path it always did.
+      expect(correctedDilutionWaterGrams(DILUTION, '', false, null)).toBe(2400);
+      expect(correctedDilutionWaterGrams(DILUTION, '', false, 0)).toBe(2400);
+      expect(correctedDilutionWaterGrams(DILUTION, '', false, Number.NaN)).toBe(2400);
+    });
+
+    it('never returns a negative pour when the corrected paste is past the target solution', () => {
+      // Reachable with targetExceedsPaste still FALSE: the flag is computed from water
+      // alone, so a large low-water liquid can push the real paste over the solution while
+      // the recipe believes there is water left to add.
+      expect(correctedDilutionWaterGrams(DILUTION, '', false, 4500)).toBe(0);
+    });
+
+    it('is outranked by a valid measurement — the scale beats both computed bases', () => {
+      expect(correctedDilutionWaterGrams(DILUTION, '1480', false, 2050)).toBe(2520);
+    });
+
+    it('still ignores a remaining-declared reading, and corrects the batch figure anyway', () => {
+      // A "what's left" reading describes a smaller pot, so it cannot correct this BATCH
+      // row — but the solids correction is a property of the recipe and still applies.
+      expect(correctedDilutionWaterGrams(DILUTION, '1480', true, 2050)).toBe(1950);
+    });
+  });
 });
 
 describe('measuredPasteIsValidFor with a remaining-paste declaration', () => {

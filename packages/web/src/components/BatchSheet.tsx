@@ -111,8 +111,19 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   const measuredPasteValid = dilution
     ? measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining)
     : false;
+  // wholeBatchPasteGrams is the second correction the shared helper applies: an alternative
+  // liquid's non-water solids are real mass in the pot that calculateDilution's
+  // anhydrous + water arithmetic never counts, so the recipe's own dilutionWaterGrams
+  // prescribes the solids' worth of extra water. DilutionPanel's ratio block has always
+  // poured off the corrected paste, so this row and that one used to differ by exactly the
+  // solids — with the sheet, the page actually carried to the scale, holding the wrong one.
   const dilutionWaterGramsPrinted = dilution
-    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
+    ? correctedDilutionWaterGrams(
+        dilution,
+        measuredPasteGrams,
+        measuredPasteIsRemaining,
+        data.wholeBatchPasteGrams,
+      )
     : 0;
   // The sheet is the page taken to the bench, so it must carry what actually gets
   // bottled, not only the chemistry-only solution above: bottledSolutionGrams adds in

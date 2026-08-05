@@ -58,10 +58,15 @@ test('the liquid\'s own water is deducted from the dilution water', async ({ pag
   await addLiquid(page, 'coconut-milk-canned', '200');
 
   // 200 g of canned coconut milk is 68% water — 136 g already in the paste before dilution
-  // starts, so the prescribed dilution water must drop by exactly that.
+  // starts, and 64 g of solids sitting in the pot with it. The target fixes the mass of the
+  // finished solution, so BOTH come off the water to add: the whole 200 g. Deducting only
+  // the water left the panel prescribing the solids' worth of extra water, and disagreeing
+  // with its own water:paste ratio block, which has always poured off the real paste.
   const after = grams(await dilutionWaterDd(page).innerText());
-  expect(Math.round(before - after)).toBe(136);
-  await expect(dilutionPanel(page)).toContainText(/136 g lighter/i);
+  expect(Math.round(before - after)).toBe(200);
+  await expect(dilutionPanel(page)).toContainText(/200 g lighter/i);
+  await expect(dilutionPanel(page)).toContainText(/136 g of water/i);
+  await expect(dilutionPanel(page)).toContainText(/64 g of solids/i);
 });
 
 test('a fatty liquid warns that it raises the effective superfat', async ({ page }) => {

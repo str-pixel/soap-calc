@@ -212,10 +212,14 @@ describe('the "declare its % water" remedy is printed once per screen, in either
     expect(screen.queryByText(/can.t tell whether/i)).toBeNull();
   });
 
-  it('keeps the shell\'s own hedge in Custom amount scope when the child renders figures instead', () => {
-    // A valid measurement outranks targetExceedsPaste, so the child sizes a portion and
-    // prints no hedge at all — the shell's caveat is then the only one, and must not have
-    // been suppressed by scope alone.
+  it('drops the hedge entirely once a valid measurement answers the question it asks', () => {
+    // This used to assert the opposite — that the shell's hedge is the one left speaking
+    // when the child renders figures — as a control for "not suppressed by scope alone".
+    // The control was sound; the fixture was not. A valid 1,300 g whole-batch reading
+    // outranks targetExceedsPaste, which is exactly why the child sizes a portion here:
+    // that portion IS the answer to "can't tell whether 50% is reachable", printed three
+    // paragraphs above the hedge still asking it. The scope-alone control it was standing
+    // in for is the two-scope loop above, which pins the hedge present in both.
     render(
       <DilutionPanel
         {...BASE}
@@ -229,8 +233,8 @@ describe('the "declare its % water" remedy is printed once per screen, in either
       />,
     );
     expect(screen.getByText('Paste to weigh out')).toBeTruthy();
-    expect(screen.getAllByText(/declare its % water/i)).toHaveLength(1);
-    expect(screen.getByText(/can.t tell whether/i)).toBeTruthy();
+    expect(screen.queryByText(/can.t tell whether/i)).toBeNull();
+    expect(screen.queryByText(/declare its % water/i)).toBeNull();
   });
 });
 
@@ -1253,6 +1257,37 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     const hint = screen.getByText(/recipe.s whole batch/i);
     expect(hint.textContent).not.toMatch(/Switch to Custom amount/i);
     expect(hint.textContent).toMatch(/already more dilute than the target/i);
+    expect(hint.textContent).toMatch(/lower the target concentration above/i);
+  });
+
+  it('names the ratio, not a concentration field, when ratio mode is what is on screen', () => {
+    // Same state as the test above, in the mode that shows no concentration input at all:
+    // "set a target" pointed at a control that is not on screen. Mirrors the shell's own
+    // exceeds-solution alert, which has always branched this way.
+    const anhydrousGrams = 1000;
+    const cookWaterGrams = 1900;
+    const solutionGrams = anhydrousGrams / 0.33;
+    const totalWaterGrams = solutionGrams - anhydrousGrams;
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams, solutionGrams, totalWaterGrams,
+          dilutionWaterGrams: totalWaterGrams - cookWaterGrams,
+          glycerinGrams: 0, soapConcentrationPercent: 33, targetExceedsPaste: false,
+        }}
+        wholeBatchPasteGrams={anhydrousGrams + cookWaterGrams + 200}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        dilutionScope="batch"
+        targetMl=""
+        measuredPasteGrams="2000"
+        measuredPasteIsRemaining
+      />,
+    );
+    const hint = screen.getByText(/recipe.s whole batch/i);
+    expect(hint.textContent).toMatch(/raise the water:paste ratio above/i);
+    expect(hint.textContent).not.toMatch(/target concentration/i);
   });
 
   it('still points at Custom amount when a portion really can be sized from the reading', () => {
@@ -1395,6 +1430,35 @@ describe('figures that belong to one scope stay in that scope; caveats that desc
     // 300 g is the WHOLE batch's head start, not this portion's — the instruction carries,
     // the batch-scoped figure does not.
     expect(screen.queryByText(/Already 300 g lighter/i)).toBeNull();
+  });
+
+  it('counts the liquid\'s solids in the head start, since the water figure now does', () => {
+    // 200 g of canned coconut milk at 68% water: 136 g of water into the paste and 64 g of
+    // solids. The dilution water is derived from the corrected paste, so it drops by the
+    // whole 200 g — quoting only the 136 g of water understated the maker's head start by
+    // the solids, on the one line that puts a number to it.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{
+          anhydrousGrams: 1218, solutionGrams: 4059, totalWaterGrams: 2841,
+          dilutionWaterGrams: 2000, glycerinGrams: 107, soapConcentrationPercent: 30,
+          targetExceedsPaste: false,
+        }}
+        cookWaterGrams={841}
+        wholeBatchPasteGrams={1218 + 841 + 64}
+        altLiquidWaterGrams={136}
+        unknownLiquidGrams={0}
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    const hint = screen.getByText(/plain distilled water only/i);
+    expect(hint.textContent).toMatch(/Already 200 g lighter/);
+    expect(hint.textContent).toMatch(/136 g of water/);
+    expect(hint.textContent).toMatch(/64 g of solids/);
+    // And the figure it is describing agrees: 4,059 − (1,218 + 841 + 64).
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('1,936 g');
   });
 
   it('does not call absent water figures a lower bound', () => {
@@ -1857,29 +1921,84 @@ describe('the density caveat needs a millilitre figure to explain', () => {
   });
 });
 
-it('never prints the over-dilution verdict and its own hedge on one screen', () => {
-  // Custom amount scope used to assert "the paste is already more dilute than the target"
-  // two paragraphs above this shell's own "can't tell whether 50% is reachable" — same
-  // panel, same state, opposite verdicts. The hedge is now PortionDilutionResults' own
-  // (the shell's was a verbatim duplicate of it here — see the "printed once per screen"
-  // describe), so the assertion reads the hedge's substance rather than the shell's
-  // wording. What must never happen is the flat verdict appearing beside either.
-  render(
-    <DilutionPanel
-      {...BASE}
-      dilution={{
-        anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
-        dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 50,
-        targetExceedsPaste: true,
-      }}
-      dilutionScope="portion"
-      targetMl="1000"
-      altLiquidWaterGrams={900}
-      unknownLiquidGrams={900}
-      overDilutionCertain={false}
-    />,
-  );
-  const hedge = screen.getByText(/no declared water content/i);
-  expect(hedge.textContent).toMatch(/unknown/i);
-  expect(screen.queryByText(/already more dilute/i)).toBeNull();
+describe('never prints an over-dilution verdict and a hedge that contradicts it on one screen', () => {
+  // 1,215 g anhydrous at a 50% target → a 2,431 g solution against 1,785 g of cook water
+  // (885 g lye water + a 900 g alternative liquid whose water content is UNDECLARED, so it
+  // counts as all water). targetExceedsPaste is set and dilutionWaterGrams clamps to 0.
+  //
+  // The whole batch's paste is 3,000 g, and that figure is the same whatever the liquid
+  // turns out to contain: an undeclared 900 g counts as 900 g of water and 0 g of solids,
+  // a 900 g declared at 50% counts as 450 g of each — 1,215 + 1,785 + 0 and
+  // 1,215 + 1,335 + 450 are both 3,000 (solids = total − water, so the split cancels).
+  const OVER_DILUTED = {
+    anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
+    dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 50,
+    targetExceedsPaste: true,
+  };
+  const UNDECLARED = {
+    dilution: OVER_DILUTED,
+    altLiquidWaterGrams: 900,
+    unknownLiquidGrams: 900,
+    overDilutionCertain: false,
+    wholeBatchPasteGrams: 3000,
+  };
+
+  it('hedges instead of asserting, with no measurement to go on', () => {
+    // Custom amount scope used to assert "the paste is already more dilute than the target"
+    // two paragraphs above this shell's own "can't tell whether 50% is reachable" — same
+    // panel, same state, opposite verdicts. The hedge is now PortionDilutionResults' own
+    // (the shell's was a verbatim duplicate of it here — see the "printed once per screen"
+    // describe), so the assertion reads the hedge's substance rather than the shell's
+    // wording.
+    render(<DilutionPanel {...BASE} {...UNDECLARED} dilutionScope="portion" targetMl="1000" />);
+    const hedge = screen.getByText(/no declared water content/i);
+    expect(hedge.textContent).toMatch(/unknown/i);
+    expect(screen.queryByText(/already more dilute/i)).toBeNull();
+  });
+
+  // A measured "what's left" reading turns the same state around: 1,300 g clears every
+  // rejection rule (remaining, so no anhydrous floor; under the 2,431 g solution; under the
+  // 3,000 g whole-batch ceiling), and the soap in it makes only 1,300 × 2,431 / 3,000 =
+  // 1,053 g of solution at 50% — less than the paste itself weighs. That verdict is
+  // certain: it reduces to "3,000 g of paste > a 2,431 g solution", and both figures are
+  // fixed whatever the undeclared liquid contains. So here the verdict is the one that
+  // stands and the hedge is what must go — the opposite disposal from the case above, and
+  // the invariant is the same either way: never both.
+  const REMAINING = { measuredPasteGrams: '1300', measuredPasteIsRemaining: true };
+
+  it('asserts the verdict and drops the hedge in Custom amount, given a reading', () => {
+    render(
+      <DilutionPanel {...BASE} {...UNDECLARED} {...REMAINING} dilutionScope="portion" targetMl="1000" />,
+    );
+    expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+    expect(screen.queryByText(/no declared water content/i)).toBeNull();
+  });
+
+  it('asserts the verdict and drops the hedge in Whole batch, given the same reading', () => {
+    render(
+      <DilutionPanel {...BASE} {...UNDECLARED} {...REMAINING} dilutionScope="batch" targetMl="" />,
+    );
+    expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+    expect(screen.queryByText(/no declared water content/i)).toBeNull();
+  });
+
+  it('drops the hedge for a valid whole-batch reading too — the measurement settles it', () => {
+    // Nothing is suppressing the portion here: 1,300 g declared as ALL of it is a valid
+    // whole-batch paste (above the 1,215 g anhydrous floor, below the 2,431 g solution),
+    // so the batch row prints 2,431 − 1,300 = 1,131 g of water still to add. The hedge
+    // asking whether 50% is reachable was printing three paragraphs under a figure that
+    // reaches it. The over-dilution alert directly above was already gated this way.
+    render(
+      <DilutionPanel
+        {...BASE}
+        {...UNDECLARED}
+        measuredPasteGrams="1300"
+        dilutionScope="batch"
+        targetMl=""
+      />,
+    );
+    expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('1,131 g');
+    expect(screen.queryByText(/no declared water content/i)).toBeNull();
+  });
 });

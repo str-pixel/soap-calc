@@ -746,6 +746,9 @@ export function useRecipeViewModel({
           splitLiquidPasteWaterGrams: splitLiquidPasteWater,
           measuredPasteGrams,
           measuredPasteIsRemaining,
+          // Same corrected paste the panel's and the sheet's water figures are derived
+          // from, so what this prices is what the maker is actually told to pour.
+          wholeBatchPasteGrams,
         })
       : null;
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
@@ -841,6 +844,7 @@ export function useRecipeViewModel({
       dilution,
       measuredPasteGrams,
       measuredPasteIsRemaining,
+      wholeBatchPasteGrams,
       bottledSolutionGrams,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
@@ -860,6 +864,7 @@ export function useRecipeViewModel({
     dilution,
     measuredPasteGrams,
     measuredPasteIsRemaining,
+    wholeBatchPasteGrams,
     bottledSolutionGrams,
     displayTotals,
     extrasGrams,

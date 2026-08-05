@@ -608,6 +608,44 @@ test('the over-dilution verdict survives an unknown liquid when it cannot change
   expect(certain.overDilutionCertain).toBe(true);
 });
 
+test('the whole-batch paste is the same mass however the liquid\'s water is declared', () => {
+  // The property DilutionPanel's measured-over-dilution suppression rests on: with an
+  // undeclared liquid it asserts "already more dilute" flat and drops the "can't tell" hedge,
+  // which is only honest if declaring the water content cannot move the verdict. That verdict
+  // reduces to wholeBatchPasteGrams > solutionGrams, and solutionGrams is anhydrous ÷ the
+  // target — so the whole claim is this equality. Asserted rather than reasoned about,
+  // because it is an emergent property of two independent terms (cookWaterGrams counts the
+  // liquid's WATER, the solids term counts total − that water) and either could drift.
+  const LIQUID = {
+    key: 'u3', presetKey: '', name: 'mystery', customWaterPercent: '',
+    sizeMode: 'grams' as const, amount: '900', addAt: 'trace' as const,
+  };
+  const pasteFor = (customWaterPercent: string) => {
+    let vm: any;
+    probe((v) => { vm = v; },
+      {
+        lyeType: 'koh',
+        soapConcentrationPercent: '50',
+        splitLiquids: [{ ...LIQUID, customWaterPercent }],
+      },
+      'ls');
+    return vm;
+  };
+  const undeclared = pasteFor('');
+  expect(undeclared.unknownLiquidGrams).toBeCloseTo(900, 3);
+  expect(undeclared.wholeBatchPasteGrams).toBeGreaterThan(0);
+  for (const percent of ['1', '25', '50', '90', '100']) {
+    const declared = pasteFor(percent);
+    // The declaration really does move the terms it is made of — without this the equality
+    // below would also hold for a view model that ignored the field entirely.
+    if (percent !== '100') {
+      expect(declared.cookWaterGrams).toBeLessThan(undeclared.cookWaterGrams);
+    }
+    expect(declared.unknownLiquidGrams).toBe(0);
+    expect(declared.wholeBatchPasteGrams).toBeCloseTo(undeclared.wholeBatchPasteGrams, 6);
+  }
+});
+
 test('…and is hedged when the unknown genuinely could flip it', () => {
   const SMALL = {
     key: 'u2', presetKey: '', name: 'mystery', customWaterPercent: '',

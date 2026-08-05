@@ -124,6 +124,12 @@ export function computeExtrasGrams(
  * branch, so the water term drops out and the paste term is all that's left).
  * Extras: everything in extrasGrams except the split liquids' water (counted via the
  * base either way) — additives at every stage, append-mode PCSF oil, split-liquid solids.
+ * Those solids are counted here ONCE, and only here: with `wholeBatchPasteGrams` supplied
+ * the water term is solutionGrams - (paste including its solids), so the base comes out a
+ * solids' worth SHORT of solutionGrams and this extras term puts it back. The pot really
+ * does end up at solutionGrams once the prescribed water is in — which is the point of
+ * correcting the water figure, and the reason adding the solids on top of an uncorrected
+ * water figure priced a bottle heavier than anything the maker was told to pour.
  * Acid-compensation alkali is DELIBERATELY excluded, mirroring the dilution calc's
  * base-result read: its acetate/citrate mass is small, and folding it in here without
  * also touching solutionGrams would be easy to mistake for a double count. */
@@ -141,15 +147,36 @@ export function computeBottledSolutionGrams(input: {
    * prices, so it must not feed the bottled base — same isRemaining gate
    * `correctedDilutionWaterGrams` and DilutionPanel's batch row already apply. */
   measuredPasteIsRemaining?: boolean;
+  /** The view model's corrected whole-batch paste (anhydrous + cook water + an alternative
+   * liquid's non-water solids). Threaded through for one reason: it is what
+   * `correctedDilutionWaterGrams` now subtracts from solutionGrams, so the water term below
+   * must be the same one the panel and the sheet pour. Leaving it out here would have this
+   * function price a bottle from more water than the maker is told to add — overstating the
+   * batch by the solids, which then arrive again through `extrasGrams`. Optional: absent,
+   * the water term is the recipe's own figure and this reduces to the previous formula
+   * exactly. */
+  wholeBatchPasteGrams?: number | null;
 }): number {
-  const { dilution, cookWaterGrams, extrasGrams, splitLiquidPasteWaterGrams, measuredPasteGrams, measuredPasteIsRemaining } =
-    input;
+  const {
+    dilution,
+    cookWaterGrams,
+    extrasGrams,
+    splitLiquidPasteWaterGrams,
+    measuredPasteGrams,
+    measuredPasteIsRemaining,
+    wholeBatchPasteGrams,
+  } = input;
   const measuredPaste = measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining)
     ? (parseMeasuredPasteGrams(measuredPasteGrams) as number)
     : undefined;
   const base =
     (measuredPaste ?? dilution.anhydrousGrams + cookWaterGrams) +
-    correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining);
+    correctedDilutionWaterGrams(
+      dilution,
+      measuredPasteGrams,
+      measuredPasteIsRemaining,
+      wholeBatchPasteGrams,
+    );
   return base + Math.max(0, extrasGrams - splitLiquidPasteWaterGrams);
 }
 

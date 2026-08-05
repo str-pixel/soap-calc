@@ -186,6 +186,14 @@ export function DilutionPanel({
         wholeBatchPasteGrams > 0
       ? wholeBatchPasteGrams
       : dilution.anhydrousGrams + cookWaterGrams;
+  // The correction bestKnownPasteGrams carries over the recipe's own water-only figure —
+  // an alternative liquid's non-water solids. Derived from that same basis rather than
+  // taken as a prop so it can never disagree with the paste the figures are computed from;
+  // zero when there is no corrected basis, which is every recipe without a split liquid.
+  const splitLiquidSolidsGrams =
+    dilution && bestKnownPasteGrams !== null
+      ? Math.max(0, bestKnownPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
+      : 0;
   const pasteGrams = dilution ? (measuredPasteValid ? measuredPasteNum : bestKnownPasteGrams) : null;
   const ratioWaterGrams =
     dilution && pasteGrams !== null && ratioValid ? pasteGrams * ratioNum : null;
@@ -262,8 +270,18 @@ export function DilutionPanel({
   }, [ratioTouched, dilutionMode, clampedRatioConcentrationPercent, soapConcentrationPercent]);
   // The measurement corrects the BATCH figure the same way it already corrects the portion
   // in PortionDilutionResults — shared with the printed BatchSheet so both surfaces always agree.
+  // wholeBatchPasteGrams is passed for the second correction the helper applies: without it
+  // this row derived its water from calculateDilution's anhydrous + water pot while the
+  // ratio block above derived its own from bestKnownPasteGrams, which counts an alternative
+  // liquid's solids. Two figures on one screen, differing by exactly those solids (5,000 g
+  // at the ratio against 5,450 g here and on the printed sheet). Same basis both ways now.
   const batchDilutionWaterGrams = dilution
-    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
+    ? correctedDilutionWaterGrams(
+        dilution,
+        measuredPasteGrams,
+        measuredPasteIsRemaining,
+        wholeBatchPasteGrams,
+      )
     : 0;
   // Asked of the same helper PortionDilutionResults itself renders from, so the shell can
   // never believe something about Custom amount that Custom amount does not show. The
@@ -293,6 +311,26 @@ export function DilutionPanel({
   // already avoids inside this shell; this is that rule applied across the scope seam.
   const portionOwnsUndeclaredLiquidHedge =
     dilutionScope === 'portion' && (portionState?.pasteAlreadyThinner ?? false);
+  // The other half of that hedge's job, and the opposite disposal. measuredPasteAlreadyThinner
+  // is asserted flat in BOTH scopes — PortionDilutionResults' own paragraph in Custom amount,
+  // the "Custom amount cannot size anything from that reading either" branch of the
+  // remaining-reading note in Whole batch — with no overDilutionKnowable split like its
+  // sibling's, so an undeclared liquid put "already more dilute than the target" and "can't
+  // tell whether N% is reachable" on one screen for EVERY accepted "what's left" reading in
+  // this state.
+  //
+  // Suppressing the hedge rather than hedging the verdict, because this verdict really is
+  // certain: it reduces to wholeBatchPasteGrams > solutionGrams (the pot's own soap makes
+  // less solution at the target than the pot weighs), and BOTH sides of that are fixed
+  // whatever the undeclared liquid contains. solutionGrams is anhydrous ÷ the target, and
+  // the view model's wholeBatchPasteGrams is anhydrous + cookWater + solids where solids is
+  // (liquid total − its water) — so it collapses to anhydrous + lye water + the liquid's
+  // total mass, with the water/solids split cancelling out. Declaring the liquid's % water
+  // moves water into solids and back, and never moves this sum. (The uncorrected water-only
+  // fallback basis cannot reach this branch at all: predictedPasteGrams is anhydrous + cook
+  // when totalWater >= cook and anhydrous + totalWater otherwise, neither of which can
+  // exceed solutionGrams — so a true verdict here always came off the corrected basis.)
+  const measuredOverDilutionCertain = portionState?.measuredPasteAlreadyThinner ?? false;
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough — so the density bridge is shown here rather than
@@ -679,9 +717,20 @@ export function DilutionPanel({
                       target, Custom amount answers with an explanation and no figures (see
                       PortionDilutionResults' measuredPasteAlreadyThinner) — so sending the
                       maker there unconditionally handed them a second refusal instead of
-                      the remedy. Asked of the child's own helper, so the two always agree. */}
+                      the remedy. Asked of the child's own helper, so the two always agree.
+
+                      The remedy names whichever control the current mode shows, the same
+                      branch the exceeds-solution alert above carries and the same one the
+                      child's own wording of this refusal now carries: ratio mode has no
+                      concentration field, so "set a target" pointed at nothing. */}
                   {portionState?.measuredPasteAlreadyThinner
-                    ? 'Custom amount cannot size anything from that reading either: what is left is already more dilute than the target above, so there is no dilution water to divide up. Set a target the pot can reach first.'
+                    ? `Custom amount cannot size anything from that reading either: what is left is already more dilute than ${
+                        dilutionMode === 'ratio' ? 'the concentration this ratio lands at' : 'the target above'
+                      }, so there is no dilution water to divide up. ${
+                        dilutionMode === 'ratio'
+                          ? 'Raise the water:paste ratio above (more water)'
+                          : 'Lower the target concentration above (more water)'
+                      } until the pot can reach it.`
                     : 'Switch to Custom amount to size what you are making from that reading instead.'}
                 </p>
               )}
@@ -690,7 +739,10 @@ export function DilutionPanel({
             /* unknownLiquidGrams/overDilutionCertain are forwarded for one reason: the
                over-dilution verdict is only assertable when the undeclared liquid cannot
                change it — the same test this shell's own alert below applies — so the two
-               can never print opposite verdicts on one screen. */
+               can never print opposite verdicts on one screen. dilutionMode is forwarded
+               for a sibling reason: the child's refusals name a remedy, and which control
+               that is depends on the mode chosen up here — it has no other way to know
+               whether a concentration field is even on screen. */
             <PortionDilutionResults
               dilution={dilution}
               weightUnit={displayUnit}
@@ -700,6 +752,7 @@ export function DilutionPanel({
               wholeBatchPasteGrams={wholeBatchPasteGrams}
               unknownLiquidGrams={unknownLiquidGrams}
               overDilutionCertain={overDilutionCertain}
+              dilutionMode={dilutionMode}
             />
           )}
           {/* LS:1531 — shown regardless of which figure (concentration or ratio) the maker
@@ -760,18 +813,37 @@ export function DilutionPanel({
                   the maker not to top up with more milk or juice, and it is as true of a
                   portion as of the batch. Only the head start is a whole-batch figure —
                   quoting it in Custom amount would put the batch's 300 g beside a much
-                  smaller portion water figure with nothing to say which is which. */}
+                  smaller portion water figure with nothing to say which is which.
+
+                  The head start is the liquid's WHOLE mass once the water figure is
+                  derived from the corrected paste, not just the water it carried: its
+                  solids occupy room in the finished solution too, so they come off the
+                  water to add exactly as its water does. Quoting the water alone
+                  understated the drop by the solids — 136 g against a real 200 g for
+                  200 g of canned coconut milk. The water-only wording is kept verbatim for
+                  the recipes it is still exactly right for (a liquid that is all water, or
+                  no corrected basis at all), so nothing changes for them. */}
               {dilutionScope === 'batch'
-                ? `Already ${formatWeight(altLiquidWaterGrams, displayUnit)} lighter: that much water`
-                : 'Part of the water is already there: it'}{' '}
-              came in with the alternative liquid and is counted as part of the paste. Top up
-              with plain distilled water only.
+                ? splitLiquidSolidsGrams > 0.5
+                  ? `Already ${formatWeight(altLiquidWaterGrams + splitLiquidSolidsGrams, displayUnit)} lighter: ${formatWeight(altLiquidWaterGrams, displayUnit)} of water that went into the paste, and ${formatWeight(splitLiquidSolidsGrams, displayUnit)} of solids that take up room in the finished solution.`
+                  : `Already ${formatWeight(altLiquidWaterGrams, displayUnit)} lighter: that much water came in with the alternative liquid and is counted as part of the paste.`
+                : 'Part of the water is already there: it came in with the alternative liquid and is counted as part of the paste.'}{' '}
+              Top up with plain distilled water only.
             </p>
           )}
           {dilution.targetExceedsPaste &&
             unknownLiquidGrams > 0 &&
             !overDilutionCertain &&
-            !portionOwnsUndeclaredLiquidHedge && (
+            !portionOwnsUndeclaredLiquidHedge &&
+            !measuredOverDilutionCertain &&
+            // A valid whole-batch reading settles the question this hedge asks. The
+            // over-dilution alert directly above is gated the same way and for the same
+            // reason (targetExceedsPaste comes from the recipe's ASSUMED cook water; the
+            // measurement is direct evidence against it) — ungated here, the panel printed
+            // "Dilution water above uses your measured paste (1,300 g)" and, three
+            // paragraphs later, "can't tell whether 90% is reachable" from a figure that
+            // reaches it.
+            !measuredPasteValid && (
             // Suppressed, not reworded: targetExceedsPaste is a factual claim about the
             // paste, and it was derived from an ASSUMED water content. Asserting it can tell
             // the user a batch is finished when it still needs hundreds of grams of water.
