@@ -195,10 +195,16 @@ export function portionDilutionFor({
  * The paste weight can be measured rather than computed, and should be: the reference has
  * the maker weigh the paste before picking a water:paste ratio, and marks its own dilution
  * table as estimates for that reason — no printed figure can know how much water a
- * particular cook drove off (LS:2172). A computed paste is wrong in two directions at once
- * — the cook boils off water the recipe still counts, and an alternative liquid's non-water
- * solids are mass the recipe never counted. Given a measurement, the water figure absorbs
- * the whole difference and every portion below is exact arithmetic.
+ * particular cook drove off (LS:2172).
+ *
+ * A computed paste used to be wrong in two directions at once. One of them is fixed:
+ * `wholeBatchPasteGrams` carries an alternative liquid's non-water solids into the basis
+ * this component and core both size from, so the paste figures below DO include that mass —
+ * which is why the estimate caveat they carry no longer says otherwise. What survives is
+ * evaporation, which no arithmetic can see: given a measurement the water figure absorbs
+ * the whole difference and every portion below is exact arithmetic. A caller that supplies
+ * no corrected basis still misses the solids, and falls back to the recipe's own water-only
+ * paste exactly as before.
  */
 export function PortionDilutionResults({
   dilution,
@@ -360,10 +366,19 @@ export function PortionDilutionResults({
             )
           ) : (
             <p className="results-hint">
-              Paste weight here is computed from the recipe, so treat it as an estimate:
-              the cook evaporates water the recipe still counts, and an alternative
-              liquid&apos;s solids are mass it never counted. Weigh your paste and enter
-              it above for exact figures.
+              {/* The solids half of this caveat had to go: "Paste to weigh out" now runs on
+                  the corrected whole-batch pot, which counts an alternative liquid's
+                  non-water solids, so telling the maker they are missing from the figure
+                  directly above described the opposite of what it prints. Evaporation is
+                  the half that survives — no arithmetic can see it — and it is the half
+                  that makes weighing the fix. Left unconditional rather than branched on
+                  whether a corrected basis was supplied: it is true either way, and a
+                  clause about alternative liquids is noise on the many recipes that have
+                  none. The solids correction itself is documented on this component and on
+                  lsPartialDilution, where the next editor will look. */}
+              Paste weight here is computed from the recipe, so treat it as an estimate: the
+              cook boils off water the recipe still counts, and no figure on paper knows how
+              much yours drove off. Weigh your paste and enter it above for exact figures.
             </p>
           )}
         </>

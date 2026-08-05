@@ -713,10 +713,16 @@ export function DilutionPanel({
                       typed into a grams-only field, not a bench readout. On lb this echoed
                       a typed 1480 back as "3.26 lb" — their own entry, in a unit they never
                       used. */}
+                  {/* The reason given for preferring the measurement is down to one clause.
+                      The computed paste this outranks is now the corrected whole-batch pot,
+                      which already counts an alternative liquid's solids — that went stale
+                      in c1dc31d, when the batch row started deriving its water from that
+                      pot, and stayed stale here while the same sentence was fixed in Custom
+                      amount. Evaporation is what a measurement still buys. */}
                   {dilutionMode === 'ratio' ? 'Water to add at this ratio' : 'Dilution water'} above
                   uses your measured paste ({formatWeight(measuredPasteNum, 'g')}
-                  ), not the recipe&apos;s computed paste — the cook evaporates water the recipe still
-                  counts, and an alternative liquid&apos;s solids are mass it never counted, so the
+                  ), not the recipe&apos;s computed paste — the cook boils off water the recipe
+                  still counts, and no figure on paper knows how much yours drove off, so the
                   measurement is more accurate.
                 </p>
               )}

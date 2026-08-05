@@ -279,9 +279,16 @@ test('flags how far the measured paste drifted from the predicted one', () => {
   expect(screen.queryByText(/batch figures above/i)).toBeNull();
 });
 
-test('without a measurement the computed paste carries the evaporation caveat', () => {
+test('without a measurement the computed paste carries the evaporation caveat — and only that', () => {
   render(<PortionDilutionResults {...PROPS} targetMl="1000" />);
-  expect(screen.getByText(/evaporat/i)).toBeTruthy();
+  const caveat = screen.getByText(/boils off water the recipe still counts/i);
+  expect(caveat).toBeTruthy();
+  // The caveat used to add "an alternative liquid's solids are mass it never counted" —
+  // true while the portion ran on the recipe's water-only paste, false from the moment it
+  // started running on the corrected pot, which counts them. "Paste to weigh out" sits two
+  // paragraphs above it, so the claim was contradicted by the figure it described.
+  expect(caveat.textContent).not.toMatch(/never counted/i);
+  expect(caveat.textContent).not.toMatch(/solids/i);
 });
 
 test('refuses a measurement below the anhydrous soap weight — not physically a paste', () => {

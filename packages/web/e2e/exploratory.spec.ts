@@ -382,8 +382,11 @@ test.describe('liquid soap', () => {
     await page.getByLabel('Amount to make (ml)').blur();
     await expect(section).toContainText(/Paste to weigh out/);
     await expect(section).toContainText(/% of the batch/);
-    // No measurement yet: the computed paste must carry the evaporation caveat.
-    await expect(section).toContainText(/evaporat/i);
+    // No measurement yet: the computed paste must carry the evaporation caveat — and only
+    // that. It used to add "an alternative liquid's solids are mass it never counted", which
+    // the corrected paste basis makes false: those solids ARE in the figure above it now.
+    await expect(section).toContainText(/boils off water the recipe still counts/i);
+    await expect(section).not.toContainText(/never counted/i);
     // Weighing the paste replaces the computed figure and moves the water to match.
     await page.getByLabel('Measured paste weight (g)').fill('1400');
     await page.getByLabel('Measured paste weight (g)').blur();
