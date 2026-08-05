@@ -681,6 +681,13 @@ export function DilutionPanel({
                   <dt>Finished solution</dt>
                   <dd>{formatWeight(dilution.solutionGrams, displayUnit)}</dd>
                 </div>
+                {/* KNOWN DEFECT, deferred: this is calculateDilution's WATER-only total,
+                    while "Dilution water to add" above is now the solids-corrected pour.
+                    Subtracting one from the other used to recover the water already in the
+                    paste; it now overstates it by exactly the alternative liquid's solids
+                    (64 g on a 200 g canned-milk recipe, 400 g on a 400 g glycerin one), and
+                    nothing on screen names the difference. Pinned as defect 4 in
+                    web/src/dilutionKnownDefects.test.tsx. */}
                 <div className="results-grid__item">
                   <dt>Total water</dt>
                   <dd>{formatWeight(dilution.totalWaterGrams, displayUnit)}</dd>
@@ -824,6 +831,13 @@ export function DilutionPanel({
               undeclared, for exactly the same reasons the batch's figure is — and Custom
               amount used to print them bare. Only the batch FIGURES they quote are
               scope-bound, so each drops or replaces its own. */}
+          {/* KNOWN DEFECT, deferred: the gate is the liquid's WATER, but the figure it
+              explains is derived from the corrected paste, which counts its SOLIDS too. A
+              glycerin recipe has waterFraction 0 — so the pour drops by the full glycerin
+              mass (2,506 g → 2,106 g for 400 g at a 30% target) with this paragraph gated
+              off entirely. The solids-aware wording it would need is already inside, on the
+              splitLiquidSolidsGrams branch below. Pinned as defect 3 in
+              web/src/dilutionKnownDefects.test.tsx. */}
           {altLiquidWaterGrams > 0 && unknownLiquidGrams === 0 && (
             <p className="results-hint">
               {/* The last sentence is the load-bearing one: it is the only place telling

@@ -254,6 +254,15 @@ export function measuredPasteRejectionFor(
  * recipe's water-only targetExceedsPaste flag stays false, and a negative pour figure is
  * never an instruction. It prints as "0 g" — the honest answer, where the uncorrected
  * figure was a positive number that would have pushed the batch past its target.
+ *
+ * KNOWN DEFECT, deferred: that "0 g" reaches the screen and the printed sheet with NO alert
+ * beside it, because every explanatory branch is gated on targetExceedsPaste (false here) or
+ * on a rejected MEASUREMENT (none here). Pinned in web/src/dilutionKnownDefects.test.tsx —
+ * see defect 1 there for the reachable recipes and what a fix would key on.
+ *
+ * KNOWN DEFECT, deferred (defect 2, same test file): the measured branch above returns
+ * before the wholeBatchPasteGrams correction, so computeBottledSolutionGrams adds an
+ * alternative liquid's solids on top of a pot that was weighed WITH them.
  */
 export function correctedDilutionWaterGrams(
   dilution: DilutionResult,

@@ -132,7 +132,14 @@ export function computeExtrasGrams(
  * water figure priced a bottle heavier than anything the maker was told to pour.
  * Acid-compensation alkali is DELIBERATELY excluded, mirroring the dilution calc's
  * base-result read: its acetate/citrate mass is small, and folding it in here without
- * also touching solutionGrams would be easy to mistake for a double count. */
+ * also touching solutionGrams would be easy to mistake for a double count.
+ *
+ * KNOWN DEFECT, deferred: "counted here ONCE" holds only on the UNMEASURED path. With a
+ * valid whole-batch measurement correctedDilutionWaterGrams short-circuits before its
+ * solids correction, so the base is exactly solutionGrams and the extras term adds the
+ * solids a second time — the measured pot already contains them. Pre-existing (both paths
+ * over-counted before the solids work; only the unmeasured one was fixed), and pinned as
+ * defect 2 in web/src/dilutionKnownDefects.test.tsx. */
 export function computeBottledSolutionGrams(input: {
   dilution: DilutionResult;
   cookWaterGrams: number;
