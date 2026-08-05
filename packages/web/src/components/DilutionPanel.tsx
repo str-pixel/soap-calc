@@ -24,6 +24,23 @@ import {
 
 export type DilutionMode = 'concentration' | 'ratio';
 
+/** The water:paste ratios the reference actually prints, all of them WATER : PASTE by
+ * weight — the same direction the field label states, and the direction the reference's own
+ * worked example confirms (32 oz of paste at 2:1 takes 64 oz of water, LS:1534).
+ *
+ * 1:1 is offered as a place to begin and add to rather than a destination (LS:1534); 2:1 and
+ * 3:1 are the range makers start from depending on the recipe (LS:1534); 2.5:1 comes off the
+ * dilution table for a beginner CPLS recipe (LS:2172), where 2:1 is tabled beside it, and 1:1
+ * and 2:1 are tabled again for a beginner LTLS recipe (LS:2291).
+ *
+ * Offered BESIDE the numeric input, never instead of it: the reference names these as
+ * starting points, not as the only legal values, and a maker who has recorded what their own
+ * recipe took must still be able to type it.
+ *
+ * Strings rather than numbers because they are written straight back into the ratio input's
+ * own string state, and '2.5' must reach it as typed. */
+const LS_WATER_PASTE_RATIO_PRESETS = ['1', '2', '2.5', '3'] as const;
+
 export type DilutionScope = 'batch' | 'portion';
 
 type DilutionPanelProps = {
@@ -173,6 +190,13 @@ export function DilutionPanel({
     );
   // Only meaningful when measuredPasteValid — parseMeasuredPasteGrams then always succeeds.
   const measuredPasteNum = parseMeasuredPasteGrams(measuredPasteGrams) ?? NaN;
+  // Is there a reading in the field at all — accepted or not? Only the ratio caveat below
+  // asks, and only to decide whether to close with "weigh the pot". A reading that this row
+  // cannot use (rejected, or declared as what's LEFT) still leaves the ratio running on the
+  // computed paste, so the caveat's VERDICT holds either way; what would not hold is telling
+  // a maker who has just been to the scale to go to the scale. Every such reading already has
+  // its own explanation on screen — a rejection alert, or the remaining-reading note.
+  const pasteReadingEntered = (measuredPasteGrams ?? '').trim() !== '';
   // The measured-paste INPUT lives in this shell and is visible in BOTH scopes, so its
   // feedback has to be here too: the three rejection alerts used to render only inside
   // PortionDilutionResults, which appears in Custom amount scope alone — leaving the
@@ -482,21 +506,91 @@ export function DilutionPanel({
         </label>
       </div>
       {dilutionMode === 'ratio' ? (
-        <label className="field">
-          <span>Water : paste ratio (by weight)</span>
-          <input
-            type="number"
-            className="input input--number"
-            min={0.5}
-            step={0.5}
-            value={waterPasteRatio}
-            onChange={(e) => {
-              setRatioTouched(true);
-              onWaterPasteRatioChange?.(e.target.value);
-            }}
-            aria-label="Water to paste ratio"
-          />
-        </label>
+        <>
+          <label className="field">
+            <span>Water : paste ratio (by weight)</span>
+            <input
+              type="number"
+              className="input input--number"
+              min={0.5}
+              step={0.5}
+              value={waterPasteRatio}
+              onChange={(e) => {
+                setRatioTouched(true);
+                onWaterPasteRatioChange?.(e.target.value);
+              }}
+              aria-label="Water to paste ratio"
+            />
+          </label>
+          {/* Same radio-group shape (and same visible legend) as the four other groups in
+              this panel, for the same reason: bare "1:1 2:1" options beside a number field
+              say nothing about what they set. The label above keeps owning the DIRECTION —
+              these read "2:1", and the same tokens mean water:lye elsewhere in the app, so
+              the group never restates the relationship on its own. */}
+          <div
+            className="dilution-mode-toggle"
+            role="radiogroup"
+            aria-label="Common water to paste ratios"
+          >
+            <span className="dilution-toggle__legend">Common starting points:</span>
+            {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => (
+              <label className="field field--inline" key={preset}>
+                <input
+                  type="radio"
+                  name="waterPasteRatioPreset"
+                  // Compared as a NUMBER, not as the string: '2', '2.0' and a typed '2' are
+                  // one ratio, and the input's own step can produce any of them. A ratio
+                  // that matches no preset — the reference prints four, not an exhaustive
+                  // list — simply leaves the group unselected rather than snapping the
+                  // maker's own figure to a nearby one.
+                  checked={ratioValid && ratioNum === Number(preset)}
+                  onChange={() => {
+                    // A pick is an edit to the ratio, exactly as typing is, so it sets the
+                    // same ratioTouched gate the write-back effect below requires. Without
+                    // it a preset would move the readout while every figure underneath —
+                    // and the printed sheet — stayed on the saved target, which is the
+                    // split the "Not applied yet" note exists to report.
+                    setRatioTouched(true);
+                    onWaterPasteRatioChange?.(preset);
+                  }}
+                />
+                <span>{preset}:1</span>
+              </label>
+            ))}
+          </div>
+          {/* LS:1534 in our own words: 1:1 is named as somewhere to begin and add to, 2:1
+              and 3:1 as where others start depending on the recipe, and the recipe
+              dependence is solubility — coconut-heavy soaps dissolve readily and take less
+              water, high-unsaturated ones like castile take more. Deliberately does NOT
+              repeat the add-in-stages technique: the LS:1531 paragraph further down already
+              owns that, and it applies to both modes. */}
+          <p className="results-hint">
+            1:1 is where you start, not where you land — expect to add more as the paste
+            dissolves. 2:1 and 3:1 are the other common starting points, and which one suits
+            you is a property of the recipe: coconut-heavy soaps dissolve readily and need
+            less water, while castile and other high-unsaturated blends need more.
+          </p>
+          {/* The caveat the reference attaches to its ratio rows and to no concentration row
+              (LS:2172, repeated at LS:2294): those water figures are estimates, and the
+              paste has to be weighed first because the cook evaporates water. Hence its
+              placement — in ratio mode only, against the ratio control, above the very field
+              it names.
+              LS:1534 makes the same demand as a precondition of the method — knowing the
+              paste's starting weight is step one of it — which is why this reads as a
+              property of the ratio rather than as a tip.
+              Once a reading is accepted the caveat is discharged, and saying so is the
+              point: the instruction is the part that must not survive its own remedy. This
+              does not duplicate the "uses your measured paste" hint under the results grid —
+              that one names WHICH row the reading corrected and why a measurement outranks a
+              computed paste; this one answers whether the ratio is still an estimate, and it
+              is the only answer on screen in Custom amount scope, where that hint does not
+              render at all. */}
+          <p className="results-hint">
+            {measuredPasteValid
+              ? `You have weighed the paste (${formatWeight(measuredPasteNum, 'g')}), so this ratio is taken against what the pot really holds rather than an estimate — the water your cook drove off is already counted.`
+              : `A ratio is only as exact as the paste it multiplies, and this one runs on the recipe's computed paste: the cook drives off water the recipe still counts, and only your scale knows how much.${pasteReadingEntered ? '' : ' Weigh the pot and enter it as Measured paste weight below.'}`}
+          </p>
+        </>
       ) : (
         <label className="field">
           <span>Target soap concentration (%)</span>

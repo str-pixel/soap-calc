@@ -2724,3 +2724,92 @@ describe('never prints an over-dilution verdict and a hedge that contradicts it 
     expect(screen.queryByText(/no declared water content/i)).toBeNull();
   });
 });
+
+describe("ratio mode offers the reference's own starting ratios", () => {
+  // RESULT's paste is 1,200 anhydrous + 400 cook water = 1,600 g, so 2:1 is 3,200 g of
+  // water, a 4,800 g solution and 1,200/4,800 = 25% soap.
+  const RATIO_BASE = {
+    ...BASE,
+    dilutionScope: 'batch' as const,
+    targetMl: '',
+    cookWaterGrams: 400,
+    dilutionMode: 'ratio' as const,
+    waterPasteRatio: '2',
+    onDilutionModeChange: () => {},
+    onWaterPasteRatioChange: () => {},
+  };
+  const PRESETS = ['1:1', '2:1', '2.5:1', '3:1'];
+  const checked = (name: string) =>
+    (screen.getByRole('radio', { name }) as HTMLInputElement).checked;
+
+  it('offers the four printed ratios without taking away the free input', () => {
+    render(<DilutionPanel {...RATIO_BASE} />);
+    for (const name of PRESETS) expect(screen.getByRole('radio', { name })).toBeTruthy();
+    // A maker must still be able to type a ratio the reference never printed.
+    expect(screen.getByLabelText('Water to paste ratio')).toBeTruthy();
+  });
+
+  it('checks the preset the current ratio equals, and none of them when it is custom', () => {
+    render(<DilutionPanel {...RATIO_BASE} waterPasteRatio="2.5" />);
+    expect(checked('2.5:1')).toBe(true);
+    expect(checked('2:1')).toBe(false);
+    cleanup();
+    render(<DilutionPanel {...RATIO_BASE} waterPasteRatio="1.75" />);
+    expect(PRESETS.some((name) => checked(name))).toBe(false);
+  });
+
+  it('picking a preset sets the ratio and counts as a real edit, so it applies', () => {
+    // Same gate the typed input carries: entering ratio mode writes nothing back, but a
+    // deliberate pick is an edit and must apply, or the panel would show a ratio nothing
+    // downstream is running on. The mocked handler never feeds the new value back, so the
+    // write-back still derives from the rendered '2' — 25%, as above.
+    const onWaterPasteRatioChange = vi.fn();
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel
+        {...RATIO_BASE}
+        onWaterPasteRatioChange={onWaterPasteRatioChange}
+        onSoapConcentrationChange={onSoapConcentrationChange}
+      />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('radio', { name: '3:1' }));
+    expect(onWaterPasteRatioChange).toHaveBeenCalledWith('3');
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+  });
+
+  it('frames 1:1 as a place to start and ties the choice to the recipe', () => {
+    render(<DilutionPanel {...RATIO_BASE} />);
+    const framing = screen.getByText(/1:1 is where you start/i);
+    expect(framing.textContent).toMatch(/coconut/i);
+    expect(framing.textContent).toMatch(/castile/i);
+  });
+
+  it('carries the weigh-your-paste caveat in ratio mode and nowhere else', () => {
+    render(<DilutionPanel {...RATIO_BASE} />);
+    expect(screen.getByText(/only as exact as the paste it multiplies/i)).toBeTruthy();
+    expect(screen.getByText(/Weigh the pot and enter it as Measured paste weight below/i))
+      .toBeTruthy();
+    cleanup();
+    // The reference attaches it to its ratio rows and to no concentration row.
+    render(<DilutionPanel {...RATIO_BASE} dilutionMode="concentration" />);
+    expect(screen.queryByText(/only as exact as the paste it multiplies/i)).toBeNull();
+  });
+
+  it('says the caveat is met rather than repeating it once a valid paste weight is in', () => {
+    // 1,480 g clears the 1,200 g anhydrous floor and sits under the 4,000 g solution, so
+    // the ratio is already multiplying a weighed pot.
+    render(<DilutionPanel {...RATIO_BASE} measuredPasteGrams="1480" />);
+    expect(screen.getByText(/you have weighed the paste \(1,480 g\)/i)).toBeTruthy();
+    expect(screen.queryByText(/Weigh the pot and enter it/i)).toBeNull();
+  });
+
+  it('keeps the estimate but drops the instruction when a reading is on screen unused', () => {
+    // Declared as what is LEFT, so it cannot correct the batch — the ratio really is
+    // running on the computed paste and the caveat still holds. Telling a maker who has
+    // just weighed the pot to go and weigh it is the one thing this must not do.
+    render(<DilutionPanel {...RATIO_BASE} measuredPasteGrams="1480" measuredPasteIsRemaining />);
+    expect(screen.getByText(/only as exact as the paste it multiplies/i)).toBeTruthy();
+    expect(screen.queryByText(/Weigh the pot and enter it/i)).toBeNull();
+  });
+});
