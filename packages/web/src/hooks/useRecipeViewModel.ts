@@ -52,11 +52,6 @@ export type UseRecipeViewModelArgs = {
    * measurement corrects the printed dilution water the same way it corrects the screen
    * (lib/measuredPaste's correctedDilutionWaterGrams, shared by both). */
   measuredPasteGrams?: string;
-  /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions rather than the
-   * whole batch (see DilutionPanel's declaration radios). Threaded into batchSheetData so a
-   * remaining-paste reading never corrects the printed BATCH row, matching DilutionPanel's
-   * on-screen guard. */
-  measuredPasteIsRemaining?: boolean;
 };
 
 export type RecipeViewModel = {
@@ -147,7 +142,6 @@ export function useRecipeViewModel({
   process,
   vesselVolumeCm3 = null,
   measuredPasteGrams,
-  measuredPasteIsRemaining,
 }: UseRecipeViewModelArgs): RecipeViewModel {
   const previewState = usePreviewRecipeState(
     lines,
@@ -745,7 +739,6 @@ export function useRecipeViewModel({
           extrasGrams,
           splitLiquidPasteWaterGrams: splitLiquidPasteWater,
           measuredPasteGrams,
-          measuredPasteIsRemaining,
           // Same corrected paste the panel's and the sheet's water figures are derived
           // from, so what this prices is what the maker is actually told to pour.
           wholeBatchPasteGrams,
@@ -843,7 +836,6 @@ export function useRecipeViewModel({
       extrasGrams,
       dilution,
       measuredPasteGrams,
-      measuredPasteIsRemaining,
       wholeBatchPasteGrams,
       // Paired with wholeBatchPasteGrams: together they identify an alternative liquid's
       // non-water solids, which the floor under a measured paste counts. The sheet must
@@ -867,7 +859,6 @@ export function useRecipeViewModel({
     computedAdditives,
     dilution,
     measuredPasteGrams,
-    measuredPasteIsRemaining,
     wholeBatchPasteGrams,
     cookWaterGrams,
     bottledSolutionGrams,

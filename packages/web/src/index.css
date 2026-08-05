@@ -2421,8 +2421,8 @@ a:hover {
 }
 
 /* Visible antecedent for a radio row whose options only make sense after a question
-   ("all of it" — all of WHAT?). Matches .field--inline's own muted caption styling so the
-   group reads as one line rather than as a heading over it. */
+   ("2:1" — a ratio of what to what?). Matches .field--inline's own muted caption styling so
+   the group reads as one line rather than as a heading over it. */
 .dilution-toggle__legend {
   font-size: 0.85rem;
   color: var(--text-muted);

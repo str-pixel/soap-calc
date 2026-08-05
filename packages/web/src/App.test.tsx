@@ -59,12 +59,9 @@ describe('App process switch', () => {
   it('clears the measured paste when the recipe oils change', async () => {
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    // Exact string, not a broad regex: the DECLARATION radiogroup ("all of it" / "what's
-    // left after earlier dilutions") carries the aria-label "What the measured paste weight
-    // represents" — not the scope toggle, which is labelled "How much of the batch to
-    // dilute" — and a loose /Measured paste weight/i match would hit that group too now
-    // that both controls live in this same panel, making the query ambiguous (two matches)
-    // rather than missing.
+    // Exact string, not a broad regex: the field's own visible label reads "Measured paste
+    // weight (g, optional)", so a loose /Measured paste weight/i match finds two nodes and
+    // throws on ambiguity rather than missing.
     const measuredInput = screen.getByLabelText('Measured paste weight (g)');
     await userEvent.type(measuredInput, '1500');
     expect((measuredInput as HTMLInputElement).value).toBe('1500');

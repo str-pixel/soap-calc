@@ -22,6 +22,7 @@ import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
 import {
+  MEASURED_PASTE_IS_REMAINING,
   correctedDilutionWaterGrams,
   measuredPasteIsValidFor,
   parseMeasuredPasteGrams,
@@ -75,7 +76,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     extrasGrams,
     dilution,
     measuredPasteGrams,
-    measuredPasteIsRemaining,
     bottledSolutionGrams,
     neutralization,
     properties,
@@ -113,11 +113,13 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // water figure below: the floor under a reading counts an alternative liquid's solids, and
   // the sheet is the page carried to the bench — it must refuse exactly what the panel
   // refuses, or the two would disagree about whether the maker's own reading was usable.
+  // Which is also why the declaration argument is the same constant the panel passes: one
+  // reading, one meaning, both surfaces.
   const measuredPasteValid = dilution
     ? measuredPasteIsValidFor(
         measuredPasteGrams,
         dilution,
-        measuredPasteIsRemaining,
+        MEASURED_PASTE_IS_REMAINING,
         data.wholeBatchPasteGrams,
         data.cookWaterGrams,
       )
@@ -139,7 +141,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     ? correctedDilutionWaterGrams(
         dilution,
         measuredPasteGrams,
-        measuredPasteIsRemaining,
+        MEASURED_PASTE_IS_REMAINING,
         data.wholeBatchPasteGrams,
         data.cookWaterGrams,
       )

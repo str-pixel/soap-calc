@@ -51,7 +51,6 @@ const MILK_1600: SplitLiquidRow = { ...MILK_200, amount: '1600' };
 function viewModelFor(
   settingsOverride: Partial<RecipeSettings>,
   measuredPasteGrams?: string,
-  measuredPasteIsRemaining = false,
 ): RecipeViewModel {
   let captured: RecipeViewModel | undefined;
   function Probe() {
@@ -64,7 +63,6 @@ function viewModelFor(
       weightUnit: 'g',
       process: 'ls',
       measuredPasteGrams,
-      measuredPasteIsRemaining,
     });
     return null;
   }
@@ -79,7 +77,6 @@ function renderPanel(
   vm: RecipeViewModel,
   soapConcentrationPercent: string,
   measuredPasteGrams = '',
-  measuredPasteIsRemaining = false,
 ) {
   render(
     <DilutionPanel
@@ -95,12 +92,10 @@ function renderPanel(
       dilutionMode="concentration"
       waterPasteRatio="2"
       measuredPasteGrams={measuredPasteGrams}
-      measuredPasteIsRemaining={measuredPasteIsRemaining}
       dilutionScope="batch"
       targetMl=""
       wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
       onMeasuredPasteGramsChange={() => {}}
-      onMeasuredPasteIsRemainingChange={() => {}}
       onDilutionScopeChange={() => {}}
       onTargetMlChange={() => {}}
       onDilutionModeChange={() => {}}
@@ -248,12 +243,10 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
         dilutionMode="concentration"
         waterPasteRatio="2"
         measuredPasteGrams=""
-        measuredPasteIsRemaining={false}
         dilutionScope="portion"
         targetMl="500"
         wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
         onMeasuredPasteGramsChange={() => {}}
-        onMeasuredPasteIsRemainingChange={() => {}}
         onDilutionScopeChange={() => {}}
         onTargetMlChange={() => {}}
         onDilutionModeChange={() => {}}
@@ -332,7 +325,7 @@ describe('DEFECT 2 (fixed, was pre-existing): a measured paste no longer over-co
 
   it('the same recipe prices the same with a measurement as without one', () => {
     const unmeasured = viewModelFor(settings);
-    const measured = viewModelFor(settings, MEASURED, false);
+    const measured = viewModelFor(settings, MEASURED);
 
     // Nothing about the batch changed — same solution, same pot, same 64 g of milk solids
     // (200 g at 68% water).
@@ -352,8 +345,8 @@ describe('DEFECT 2 (fixed, was pre-existing): a measured paste no longer over-co
   });
 
   it('and the panel no longer prints an inflated "≈ Finished product" beside the solution', () => {
-    const measured = viewModelFor(settings, MEASURED, false);
-    renderPanel(measured, settings.soapConcentrationPercent, MEASURED, false);
+    const measured = viewModelFor(settings, MEASURED);
+    renderPanel(measured, settings.soapConcentrationPercent, MEASURED);
     // The row used to appear only because the over-count pushed the bottled mass past the
     // solution (it prints when the two differ). They match now, so it is suppressed — the
     // same way it already was without a measurement, asserted below.
@@ -566,7 +559,7 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
   const IMPOSSIBLE = '1400';
 
   it('the reading is refused, and the alert names the floor it missed', () => {
-    const vm = viewModelFor(SETTINGS, IMPOSSIBLE, false);
+    const vm = viewModelFor(SETTINGS, IMPOSSIBLE);
     // The pot, and the mass in it that cannot boil off.
     expect(vm.cookWaterGrams).toBeCloseTo(330, 3);
     expect(vm.wholeBatchPasteGrams!).toBeCloseTo(1930.33, 1);
@@ -574,7 +567,7 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
     // …and the reading clears the OLD floor by 185 g, which is why nothing caught it.
     expect(Number(IMPOSSIBLE)).toBeGreaterThan(vm.dilution!.anhydrousGrams);
 
-    renderPanel(vm, SETTINGS.soapConcentrationPercent, IMPOSSIBLE, false);
+    renderPanel(vm, SETTINGS.soapConcentrationPercent, IMPOSSIBLE);
     const alerts = screen.queryAllByRole('alert');
     expect(alerts.length).toBe(1);
     const alert = alerts[0]!.textContent!.replace(/\s+/g, ' ');
@@ -583,10 +576,10 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
   });
 
   it('the row, the pour and the bottled mass all fall back to the corrected pot together', () => {
-    const rejected = viewModelFor(SETTINGS, IMPOSSIBLE, false);
+    const rejected = viewModelFor(SETTINGS, IMPOSSIBLE);
     const blank = viewModelFor(SETTINGS);
 
-    renderPanel(rejected, SETTINGS.soapConcentrationPercent, IMPOSSIBLE, false);
+    renderPanel(rejected, SETTINGS.soapConcentrationPercent, IMPOSSIBLE);
     // 4,051 − 1,930, not the 4,051 − 1,400 = 2,651 g the accepted reading used to pour: a
     // 530 g over-dose derived from a pot 200 g lighter than its own glycerin.
     expect(rowText('Dilution water to add')).toBe('2,121 g');
@@ -605,7 +598,7 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
   });
 
   it('the printed sheet refuses it too — the bench copy cannot disagree with the screen', () => {
-    const vm = viewModelFor(SETTINGS, IMPOSSIBLE, false);
+    const vm = viewModelFor(SETTINGS, IMPOSSIBLE);
     render(<BatchSheet data={vm.batchSheetData} />);
     const dilutionSection = Array.from(
       document.querySelectorAll('.batch-sheet__section'),
@@ -619,8 +612,8 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
     // The control, and the line the fix must not cross: 1,750 g is 180 g lighter than the
     // computed pot because the cook boiled that water off — exactly the reading weighing the
     // paste exists to capture. It is at or above the 1,600 g floor, so it is applied.
-    const vm = viewModelFor(SETTINGS, '1750', false);
-    renderPanel(vm, SETTINGS.soapConcentrationPercent, '1750', false);
+    const vm = viewModelFor(SETTINGS, '1750');
+    renderPanel(vm, SETTINGS.soapConcentrationPercent, '1750');
     expect(screen.queryAllByRole('alert').length).toBe(0);
     expect(rowText('Dilution water to add')).toBe('2,301 g'); // 4,051 − 1,750
     expect(hintTexts().some((t) => /uses your measured paste/i.test(t))).toBe(true);

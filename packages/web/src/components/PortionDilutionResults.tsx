@@ -1,6 +1,6 @@
 import { lsPartialDilution, type DilutionResult } from '@soap-calc/core';
 import { formatWeight } from '../lib/weightUnits';
-import { measuredPasteRejectionFor } from '../lib/measuredPaste';
+import { MEASURED_PASTE_IS_REMAINING, measuredPasteRejectionFor } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
 type PortionDilutionResultsProps = {
@@ -9,15 +9,11 @@ type PortionDilutionResultsProps = {
   /** Lives in App, not the recipe: it is a "what am I making right now" decision, not a
    * property of the formula. */
   targetMl: string;
-  /** The maker's scale reading for the paste, in grams — the whole batch by default, or
-   * what's left after earlier dilutions when `measuredPasteIsRemaining` is set. */
+  /** The maker's scale reading for the paste, in grams — always the WHOLE batch. There used
+   * to be a declaration beside the field letting the maker call it "what's left after earlier
+   * dilutions" instead; it is gone (see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING for
+   * why, and for where the remaining-mode arithmetic still lives). */
   measuredPasteGrams: string;
-  /** True when `measuredPasteGrams` is what's LEFT after part of the batch was already
-   * diluted away, not the whole batch. "Lighter than predicted" has two indistinguishable
-   * explanations — evaporation during the cook (same soap, less water) or part of the
-   * batch already gone (composition unchanged, just less of it) — so the maker must say
-   * which. Defaults to whole-batch so existing sessions are unaffected. */
-  measuredPasteIsRemaining: boolean;
   /** The best-known WHOLE-BATCH paste mass (see useRecipeViewModel) — corrects the
    * recipe's own water-only predicted figure for an alternative liquid's non-water
    * solids, which are real mass sitting in the pot the recipe never counts. Used as the
@@ -93,30 +89,24 @@ export function portionDilutionFor({
   dilution,
   targetMl,
   measuredPasteGrams,
-  measuredPasteIsRemaining,
   wholeBatchPasteGrams,
   cookWaterGrams,
 }: Pick<
   PortionDilutionResultsProps,
-  | 'dilution'
-  | 'targetMl'
-  | 'measuredPasteGrams'
-  | 'measuredPasteIsRemaining'
-  | 'wholeBatchPasteGrams'
-  | 'cookWaterGrams'
+  'dilution' | 'targetMl' | 'measuredPasteGrams' | 'wholeBatchPasteGrams' | 'cookWaterGrams'
 >) {
-  // The three physical-impossibility rules — below the anhydrous solids, heavier than the
-  // target solution, a remainder heavier than the whole batch ever was — live in
-  // lib/measuredPaste, together with the long record of the bug each one closed. The
-  // measured-paste INPUT is in DilutionPanel's shell, where it is visible in BOTH dilution
-  // scopes, and so are the alerts that reject a reading: this component only renders in
-  // Custom amount scope, so alerts kept here were unreachable in the default one. Reading
-  // the verdict from the same helper the shell uses means the two can never disagree about
-  // whether a reading is usable.
+  // The physical-impossibility rules — below the anhydrous solids, heavier than the target
+  // solution (and, for a declaration this UI no longer offers, a remainder heavier than the
+  // whole batch ever was) — live in lib/measuredPaste, together with the long record of the
+  // bug each one closed. The measured-paste INPUT is in DilutionPanel's shell, where it is
+  // visible in BOTH dilution scopes, and so are the alerts that reject a reading: this
+  // component only renders in Custom amount scope, so alerts kept here were unreachable in
+  // the default one. Reading the verdict from the same helper the shell uses means the two
+  // can never disagree about whether a reading is usable.
   const rejection = measuredPasteRejectionFor(
     measuredPasteGrams,
     dilution,
-    measuredPasteIsRemaining,
+    MEASURED_PASTE_IS_REMAINING,
     wholeBatchPasteGrams,
     cookWaterGrams,
   );
@@ -131,39 +121,25 @@ export function portionDilutionFor({
   // one, so it is excluded here too.
   const pasteAlreadyThinner =
     dilution.targetExceedsPaste && !hasValidMeasurement && !measurementRejected;
-  // lsPartialDilution has a feasibility test of its own that none of the rules above can
-  // see: it returns null whenever the pot's paste already weighs more than the solution
-  // that pot's own soap makes at the target (ls-yield's `potSolutionGrams - pasteGrams <
-  // 0`). The three rejection rules bound the READING against whole-batch figures; this
-  // depends on the RECIPE, so a reading all three accept can still land here — and
-  // pasteAlreadyThinner cannot cover it, because that flag requires there to be NO valid
-  // measurement. Both render branches then went false and this component emitted an empty
-  // fragment: no figures, no alert, nothing saying why. Reachable two ways, both with an
-  // accepted "what's left" reading: a split liquid's non-water solids can make the true
-  // whole-batch paste heavier than the target solution while the recipe's own
-  // targetExceedsPaste flag (computed from water alone) stays false, and a set
-  // targetExceedsPaste is itself exactly that condition.
+  // A MEASURED reading can no longer make core refuse, and there is no longer a branch here
+  // for it. lsPartialDilution returns null when the pot's paste outweighs the solution that
+  // pot's own soap makes at the target (ls-yield's `potSolutionGrams - pasteGrams < 0`); with
+  // a whole-batch reading that pot IS the recipe's, so the test reduces to
+  // solutionGrams < measured — which is exactly `exceedsSolution`, so the reading was already
+  // rejected and `hasValidMeasurement` is false. The condition was only reachable through an
+  // accepted "what's left" reading, whose own pot is a share of the batch's: that declaration
+  // is gone (see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING), and the paragraph that
+  // explained it went with it rather than sit here unrenderable. The unmeasured twin below is
+  // still live and still needed.
   //
-  // Re-derived with core's own expressions, in core's own order, off the same basis
-  // (wholeBatchPasteBasis resolves identically to core's wholeBatchPasteGrams — same
-  // preference, same predictedPasteGrams fallback), so the two can never disagree about
-  // which side of zero this falls on. Nothing any guard computes changes: adding it to the
-  // suppression below only names a null core was already going to return.
-  const potSolutionGrams =
-    hasValidMeasurement && measuredPasteIsRemaining
-      ? measured *
-        (dilution.anhydrousGrams / rejection.wholeBatchPasteBasis) *
-        (dilution.solutionGrams / dilution.anhydrousGrams)
-      : dilution.solutionGrams;
-  const measuredPasteAlreadyThinner = hasValidMeasurement && potSolutionGrams - measured < 0;
-  // The UNMEASURED twin of the line above, and the third way core can refuse. Once core
-  // sizes an unmeasured pot from the corrected basis rather than the water-only
-  // predictedPasteGrams (so Custom amount pours what Whole batch pours), that pot can be
-  // heavier than the solution its own soap makes at the target — a big low-water liquid —
+  // The UNMEASURED twin, and the other way core can refuse. Once core sizes an unmeasured pot
+  // from the corrected basis rather than the water-only predictedPasteGrams (so Custom amount
+  // pours what Whole batch pours), that pot can be heavier than the solution its own soap
+  // makes at the target — a big low-water liquid —
   // while the recipe's targetExceedsPaste flag, computed from water alone, stays false. Core
   // then returns null and pasteAlreadyThinner cannot cover it (that flag IS
   // targetExceedsPaste), so both render branches went false and this component emitted an
-  // empty fragment again: the exact blank measuredPasteAlreadyThinner was added to close.
+  // empty fragment: no figures, no alert, nothing saying why.
   //
   // Unreachable off the fallback basis, so no existing caller changes: predictedPasteGrams
   // is anhydrousGrams + cook when totalWater >= cook and anhydrousGrams + totalWater
@@ -175,16 +151,15 @@ export function portionDilutionFor({
     !pasteAlreadyThinner &&
     dilution.solutionGrams - rejection.wholeBatchPasteBasis < 0;
   const portion =
-    pasteAlreadyThinner ||
-    measurementRejected ||
-    measuredPasteAlreadyThinner ||
-    unmeasuredPasteAlreadyThinner
+    pasteAlreadyThinner || measurementRejected || unmeasuredPasteAlreadyThinner
       ? null
       : lsPartialDilution(
           {
             ...dilution,
             measuredPasteGrams: hasValidMeasurement ? measured : undefined,
-            measuredPasteIsRemaining: hasValidMeasurement ? measuredPasteIsRemaining : undefined,
+            // Left at core's own default (undefined = whole batch). Core's remaining-mode
+            // arithmetic is intact and tested there; nothing in this app declares a
+            // remainder — see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING.
             // Same corrected basis the UI's own ceiling check above uses, so core's
             // composition ratio and this component's rejection never disagree.
             wholeBatchPasteGrams: wholeBatchPasteGrams ?? undefined,
@@ -194,7 +169,6 @@ export function portionDilutionFor({
   return {
     measured,
     pasteAlreadyThinner,
-    measuredPasteAlreadyThinner,
     unmeasuredPasteAlreadyThinner,
     portion,
   };
@@ -225,7 +199,6 @@ export function PortionDilutionResults({
   weightUnit,
   targetMl,
   measuredPasteGrams,
-  measuredPasteIsRemaining,
   wholeBatchPasteGrams,
   cookWaterGrams,
   unknownLiquidGrams = 0,
@@ -233,29 +206,23 @@ export function PortionDilutionResults({
   dilutionMode = 'concentration',
   ratioNotAppliedYet = false,
 }: PortionDilutionResultsProps) {
-  const {
-    measured,
-    pasteAlreadyThinner,
-    measuredPasteAlreadyThinner,
-    unmeasuredPasteAlreadyThinner,
-    portion,
-  } = portionDilutionFor({
-    dilution,
-    targetMl,
-    measuredPasteGrams,
-    measuredPasteIsRemaining,
-    wholeBatchPasteGrams,
-    cookWaterGrams,
-  });
+  const { measured, pasteAlreadyThinner, unmeasuredPasteAlreadyThinner, portion } =
+    portionDilutionFor({
+      dilution,
+      targetMl,
+      measuredPasteGrams,
+      wholeBatchPasteGrams,
+      cookWaterGrams,
+    });
   // What the recipe predicted, for the drift readout. NOT portion.predictedPasteGrams:
   // that figure is anhydrous + max(0, totalWater - dilutionWater), and dilutionWater is
   // ZEROED by the targetExceedsPaste clamp — so predictedPasteGrams silently loses the
   // real cook water in that branch and understates the whole batch's paste (round 2's bug:
   // 100 g anhydrous + 150 g cook water reads as a 200 g predicted paste, not 250 g).
-  // portion.wholeBatchPasteGrams is core's own clamp-free resolution of the SAME basis the
-  // remaining-mode ceiling above already checks against (wholeBatchPasteBasis) — using it
-  // here means the drift note and the ceiling can never quote two different "whole batch's
-  // paste" figures for the same reading. Falls back to predictedPasteGrams itself when no
+  // portion.wholeBatchPasteGrams is core's own clamp-free resolution of the SAME basis
+  // measuredPasteRejectionFor resolves (wholeBatchPasteBasis) — using it here means the drift
+  // note and the rejection thresholds can never quote two different "whole batch's paste"
+  // figures for the same reading. Falls back to predictedPasteGrams itself when no
   // corrected basis was supplied (core's own fallback), so a no-split-liquid, non-clamped
   // recipe is unaffected.
   const driftGrams = portion?.pasteMeasured ? measured - portion.wholeBatchPasteGrams : 0;
@@ -303,20 +270,6 @@ export function PortionDilutionResults({
             measurement instead.
           </p>
         ))}
-      {/* The other half of "a suppressed portion always says why" — see
-          measuredPasteAlreadyThinner's own derivation above. Deliberately not a
-          role="alert": nothing about the reading is impossible, so it is not a rejection.
-          The paste is simply past the target already, which is a fact about the recipe and
-          the target, not a mistake at the scale. Mutually exclusive with the paragraph
-          above (that one requires no valid measurement; this one requires one). */}
-      {measuredPasteAlreadyThinner && (
-        <p className="results-hint">
-          The paste your reading describes is already more dilute than {dilutionTargetNamed}:
-          the soap in it makes less solution at that concentration than the paste itself
-          weighs, so there is no dilution water to divide up. {dilutionTargetRemedy}, or
-          re-check the reading.
-        </p>
-      )}
       {portion && (
         <>
           <dl className="results-grid">
@@ -349,36 +302,22 @@ export function PortionDilutionResults({
               </dd>
             </div>
           </dl>
+          {/* One wording, because there is one kind of pot: the batch. This used to branch on
+              the measured-paste declaration ("more than the remaining paste holds") — see
+              lib/measuredPaste's MEASURED_PASTE_IS_REMAINING for where that control went. */}
           {portion.clamped && (
             <p className="results-hint">
-              {measuredPasteIsRemaining
-                ? "That is more than the remaining paste holds — the figures above use all of it."
-                : 'That is more than the batch holds — the figures above are the whole batch.'}
+              That is more than the batch holds — the figures above are the whole batch.
             </p>
           )}
           {portion.pasteMeasured ? (
-            measuredPasteIsRemaining ? (
+            Math.abs(driftGrams) >= 1 && (
               <p className="results-hint">
-                Treated as what&apos;s left after earlier dilutions: this portion&apos;s
-                anhydrous soap is scaled down from your{' '}
-                {/* Grams, not weightUnit: the measured-paste field in DilutionPanel's shell
-                    is grams-only, and its own rejection alerts already hardcode grams for
-                    this reason. Every other figure here is a bench readout and follows the
-                    display unit; this one is the maker's own typed entry echoed back. */}
-                {formatWeight(measured, 'g')} reading, assuming the paste&apos;s
-                composition hasn&apos;t changed — not from the recipe&apos;s whole-batch
-                figure. Switch to Whole batch to see the recipe&apos;s own computed
-                figures — a remaining-paste reading is not the batch.
+                Your paste is {formatWeight(Math.abs(driftGrams), weightUnit)}{' '}
+                {driftGrams < 0 ? 'lighter' : 'heavier'} than predicted
+                {driftGrams < 0 ? ' — water lost to the cook' : ''}. Whole batch scope uses
+                your measurement too, not just these figures.
               </p>
-            ) : (
-              Math.abs(driftGrams) >= 1 && (
-                <p className="results-hint">
-                  Your paste is {formatWeight(Math.abs(driftGrams), weightUnit)}{' '}
-                  {driftGrams < 0 ? 'lighter' : 'heavier'} than predicted
-                  {driftGrams < 0 ? ' — water lost to the cook' : ''}. Whole batch scope uses
-                  your measurement too, not just these figures.
-                </p>
-              )
             )
           ) : (
             <p className="results-hint">
