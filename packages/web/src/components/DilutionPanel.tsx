@@ -529,6 +529,12 @@ export function DilutionPanel({
                   // The one obvious remedy was inert; recovery meant picking a different
                   // preset and coming back. `click` fires either way.
                   //
+                  // THE TWO HANDLERS MUST DO THE SAME THING. `click` covers the already-checked
+                  // case that fires no `change`; on a real change BOTH run, so anything that
+                  // is not idempotent — a toggle, a counter, logging added to one of them —
+                  // is a bug in whichever handler differs. Keep them identical or collapse
+                  // them into one named function; do not let them diverge.
+                  //
                   // This does not reopen the round-2 bug it looks like it might: that one was
                   // ENTERING ratio mode silently rewriting a typed target with no user action
                   // at all. Re-asserting a ratio is a user action, and the gate it sets is the
@@ -621,9 +627,13 @@ export function DilutionPanel({
             prior runs against this app's. A deep drawdown trips the solids floor and is
             refused; a SHALLOW one clears it and is taken as the batch with no alert at all.
 
-            The aria-label below is deliberately NOT widened to match: it is the accessible
-            name App.test and the e2e specs select on, and it already omits "(optional)" for
-            the same reason. */}
+            This span IS the input's accessible name — the wrapping <label> associates them,
+            and there is deliberately no aria-label on the input to override it. There used to
+            be one ("Measured paste weight (g)"), kept narrow so the existing test and e2e
+            selectors would not need touching; that left the disambiguation above visible-only,
+            so a screen-reader user never heard "the whole batch" and voice control could not
+            match the words on screen. One string now serves both, so they cannot drift: edit
+            the span and the accessible name follows. The selectors moved instead. */}
         <span>Measured paste weight — the whole batch (g, optional)</span>
         <input
           type="number"
@@ -632,7 +642,6 @@ export function DilutionPanel({
           step={10}
           value={measuredPasteGrams ?? ''}
           onChange={(e) => onMeasuredPasteGramsChange?.(e.target.value)}
-          aria-label="Measured paste weight (g)"
         />
       </label>
       {/* The reading is rejected in BOTH scopes, so its explanation renders in both — beside

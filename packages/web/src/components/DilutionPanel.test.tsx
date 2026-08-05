@@ -11,6 +11,22 @@ const RESULT: DilutionResult = {
   dilutionWaterGrams: 2400, glycerinGrams: 110, soapConcentrationPercent: 30, targetExceedsPaste: false,
 };
 
+/**
+ * The three name sources that apply to the inputs in this panel, in the precedence the
+ * accessible-name algorithm gives them: aria-label, then aria-labelledby, then the wrapping
+ * <label>. Written out rather than pulled from dom-accessibility-api, which is only a
+ * transitive dependency here — and writing it out is the point: the precedence IS the claim
+ * being made, that an aria-label silently replaces the words on screen rather than adding
+ * to them.
+ */
+function accessibleNameOf(el: HTMLElement): string {
+  const ariaLabel = el.getAttribute('aria-label');
+  if (ariaLabel !== null) return ariaLabel;
+  const labelledBy = el.getAttribute('aria-labelledby');
+  if (labelledBy !== null) return document.getElementById(labelledBy)?.textContent ?? '';
+  return el.closest('label')?.textContent ?? '';
+}
+
 // The props every scope/unit test needs but none of them varies. Declared here rather
 // than repeated per test because these tests pass twice as many props as the older ones.
 const BASE = {
@@ -948,7 +964,7 @@ describe('a measured paste is the whole batch — there is no declaration to mak
     render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" />);
     expect((screen.getByRole('radio', { name: 'Whole batch' }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByRole('radio', { name: 'Custom amount' }) as HTMLInputElement).checked).toBe(false);
-    expect(screen.getByLabelText('Measured paste weight (g)')).toBeTruthy();
+    expect(screen.getByLabelText('Measured paste weight — the whole batch (g, optional)')).toBeTruthy();
   });
 
   it('takes the reading as the whole batch in both scopes, with no radio to say so', () => {
@@ -1011,7 +1027,7 @@ describe('portion scope: the measured-paste input that used to live in PartialDi
       />,
     );
     expect(screen.getByLabelText('Amount to make (ml)')).toBeTruthy();
-    expect(screen.getByLabelText('Measured paste weight (g)')).toBeTruthy();
+    expect(screen.getByLabelText('Measured paste weight — the whole batch (g, optional)')).toBeTruthy();
     expect(screen.getByText(/already more dilute/i)).toBeTruthy();
   });
 
@@ -1040,8 +1056,18 @@ describe('portion scope: the measured-paste input that used to live in PartialDi
           />,
         );
         expect(screen.getByText('Measured paste weight — the whole batch (g, optional)')).toBeTruthy();
-        // The accessible name is deliberately unchanged — App and the e2e specs select on it.
-        expect(screen.getByLabelText('Measured paste weight (g)')).toBeTruthy();
+        // …and every user gets the same words. Read the visible label off the DOM rather
+        // than restating it, so this half cannot go stale when the copy changes: whatever
+        // the span says, the accessible name has to contain it.
+        //
+        // This replaces an "the aria-label is unchanged" clause, which pinned the wrong
+        // thing — it was satisfied precisely by the narrow aria-label that withheld "the
+        // whole batch" from screen-reader and voice-control users. A restored aria-label
+        // fails this, because aria-label WINS over the wrapping label and would no longer
+        // contain the span.
+        const visibleLabel = screen.getByText(/^Measured paste weight/).textContent!;
+        const input = screen.getByLabelText(visibleLabel);
+        expect(accessibleNameOf(input).includes(visibleLabel)).toBe(true);
         cleanup();
       }
     }
@@ -2178,7 +2204,7 @@ describe('the g/oz/lb display-unit switch', () => {
 
   it('echoes the measured paste itself in grams too — it is the number the maker typed', () => {
     // Same class as the three thresholds below, applied to the reading rather than to the
-    // bounds on it: the field is grams-only ("Measured paste weight (g, optional)"), so
+    // bounds on it: the field is grams-only ("Measured paste weight — the whole batch (g, optional)"), so
     // typing 1480 and flipping the panel to lb rendered "uses your measured paste
     // (3.26 lb)" — the maker's own entry, echoed back as a number they never wrote.
     render(<DilutionPanel {...BASE} weightUnit="lb" dilutionScope="batch" targetMl="" measuredPasteGrams="1480" />);
@@ -2200,7 +2226,8 @@ describe('the g/oz/lb display-unit switch', () => {
   });
 
   it('quotes the measured-paste thresholds in grams, the unit that field is typed in', () => {
-    // The input is grams-only ("Measured paste weight (g, optional)"), so a threshold
+    // The input is grams-only ("Measured paste weight — the whole batch (g,
+    // optional)"), so a threshold
     // quoted in the display unit made the maker convert to check a claim about the number
     // they had just typed: "less than the 2.65 lb of soap this batch makes" against a
     // typed 900. Every OTHER figure in the panel is a bench readout and stays on the

@@ -384,8 +384,9 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <p className="batch-sheet__note">
               Dilution water above uses the measured paste weight (
               {/* Grams, not the sheet's print unit — the same rule the two on-screen echoes
-                  follow. The field this comes from is grams-only ("Measured paste weight
-                  (g, optional)"), so printing a sheet in lb quoted a typed 1,600 back as
+                  follow. The field this comes from is grams-only ("Measured paste weight —
+                  the whole batch (g, optional)"), so printing a sheet in lb quoted a typed
+                  1,600 back as
                   "3.53 lb": the maker's own entry, in a unit they never used, on the page
                   they take to the bench. Every other weight on this sheet is a bench
                   readout and stays on the print unit. */}
