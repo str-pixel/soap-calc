@@ -281,6 +281,43 @@ describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid soli
     expect(r).toBeNull();
   });
 
+  describe('and no measurement at all — the pot still holds the solids', () => {
+    // The unmeasured pot really is anhydrous + cook water + the liquid's solids, which is
+    // what wholeBatchPasteGrams resolves to. Using predictedPasteGrams here left the portion
+    // pouring water for a paste 100 g lighter than the one in the pot, so Custom amount and
+    // Whole batch printed different figures for the same undivided batch.
+    it('takes the paste (and therefore the water) from the corrected basis', () => {
+      const r = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams }, 99_000);
+      expect(r).not.toBeNull();
+      if (!r) return;
+      expect(r.clamped).toBe(true); // the whole batch, so no fraction to reason about
+      expect(r.pasteGrams).toBeCloseTo(1700, 6);
+      expect(r.waterGrams).toBeCloseTo(solutionGrams - 1700, 6);
+    });
+
+    it('is unchanged when no corrected basis is supplied', () => {
+      const r = lsPartialDilution(BATCH, 99_000);
+      expect(r?.pasteGrams).toBeCloseTo(predictedPasteGrams, 6);
+      expect(r?.waterGrams).toBeCloseTo(dilutionWaterGrams, 6);
+    });
+
+    it('is unchanged when there is no split liquid — the two bases are the same figure', () => {
+      // A recipe with no alternative liquid has no solids, so the view model's corrected
+      // basis IS anhydrous + cook water. Supplying it must therefore change nothing.
+      const noSolids = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams: predictedPasteGrams }, 99_000);
+      const withoutBasis = lsPartialDilution(BATCH, 99_000);
+      expect(noSolids?.pasteGrams).toBeCloseTo(withoutBasis!.pasteGrams, 9);
+      expect(noSolids?.waterGrams).toBeCloseTo(withoutBasis!.waterGrams, 9);
+    });
+
+    it('is still outranked by a measurement — the scale beats both computed bases', () => {
+      const r = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams, measuredPasteGrams: 1750 }, 99_000);
+      expect(r?.pasteMeasured).toBe(true);
+      expect(r?.pasteGrams).toBeCloseTo(1750, 6);
+      expect(r?.waterGrams).toBeCloseTo(solutionGrams - 1750, 6);
+    });
+  });
+
   it('falls back to predictedPasteGrams (byte-identical to round 2) when wholeBatchPasteGrams is omitted — a no-split-liquid recipe', () => {
     const withoutBasis = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1620, measuredPasteIsRemaining: true }, 1000);
     // 1,620 g exceeds the uncorrected 1,600 g predicted paste, so without the corrected

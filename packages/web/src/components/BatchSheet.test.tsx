@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
-import { afterEach, expect, it, test } from 'vitest';
+import { afterEach, describe, expect, it, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { BatchSheet } from './BatchSheet';
+// The dilution figure has to be identical on the screen and on the page carried to the
+// bench, so the pin renders both surfaces from one fixture rather than trusting two
+// same-shaped assertions in two files to stay in step.
+import { DilutionPanel } from './DilutionPanel';
 import { buildBatchSheetData } from '../lib/batchSheet';
 import { computePostCookSuperfat } from '../lib/calculateAdditives';
 import { calculateRecipe } from '../lib/calculateRecipe';
@@ -427,6 +431,7 @@ function lsSheetData(extra: {
   neutralization?: import('@soap-calc/core').NeutralizationResult | null;
   measuredPasteGrams?: string;
   measuredPasteIsRemaining?: boolean;
+  wholeBatchPasteGrams?: number | null;
   bottledSolutionGrams?: number | null;
   /** Overrides the fixture's own 'g' below — it is spread after it. */
   weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
@@ -517,9 +522,55 @@ test('printed dilution carries the unknown-liquid caveat when water content is u
   expect(screen.getByText(/no declared water content/i)).toBeTruthy();
 });
 
+test('the printed caveat drops the floor framing once the figure is exact', () => {
+  // With a corrected paste basis the printed water is solutionGrams − (anhydrous + lye
+  // water + the liquid's whole mass): declaring the undeclared liquid's % water moves mass
+  // between its water and its solids and leaves that sum alone, so the figure cannot move.
+  // "(at least)" and "the least you will need" promised a lower number that can never come.
+  render(<BatchSheet data={lsSheetData({ unknownLiquidGrams: 300, wholeBatchPasteGrams: 2059 })} />);
+  expect(screen.queryByText(/at least/i)).toBeNull();
+  expect(screen.getByText(/no declared water content/i).textContent).toMatch(
+    /same whatever it turns out to be/i,
+  );
+  // The row itself still prints, corrected: 4,059 − 2,059.
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('2,000 g');
+});
+
 test('no caveat rows when everything is declared', () => {
   render(<BatchSheet data={lsSheetData({})} />);
   expect(screen.queryByText(/no declared water content/i)).toBeNull();
+});
+
+test('the printed sheet explains a pour the liquid\'s solids clamped to 0 g', () => {
+  // The sheet is the page carried to the bench, so DilutionPanel's pasteAlreadyPastTarget
+  // alert needs a twin here. A 4,200 g pot against 4,059 g of solution makes
+  // correctedDilutionWaterGrams clamp, and "Dilution water to add" then prints "0 g" — which,
+  // printed bare, reads as a batch that needs nothing rather than one that cannot get there.
+  render(<BatchSheet data={lsSheetData({ wholeBatchPasteGrams: 4200 })} />);
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('0 g');
+  const note = screen.getByText(/already more dilute than 30%/i).textContent!.replace(/\s+/g, ' ');
+  // Both sides of the comparison, so the figure can be checked against the rows above it.
+  expect(note).toContain('it weighs 4,200 g against the 4,059 g');
+  expect(note).toContain('there is no dilution water to add');
+});
+
+test('…and never prints that note beside the water-only one, which subsumes it', () => {
+  // The same exclusion the panel applies, pinned separately because this is a separate copy
+  // of the predicate and copies drift. targetExceedsPaste already means solutionGrams <
+  // anhydrous + cook water, and the corrected pot only adds the liquid's solids on top — so
+  // an ungated twin would double the notes on every over-dilute split-liquid sheet.
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        wholeBatchPasteGrams: 4200,
+        targetExceedsPaste: true,
+        overDilutionCertain: true,
+      })}
+    />,
+  );
+  const notes = screen.getAllByText(/already more dilute/i);
+  expect(notes).toHaveLength(1);
+  expect(notes[0].textContent).toMatch(/adding water only lowers the concentration further/i);
 });
 
 test('printed dilution shows the can\'t-tell wording (not a false floor) when the target already exceeds an undeclared paste', () => {
@@ -715,6 +766,85 @@ test('a measured paste that outranks targetExceedsPaste also suppresses the prin
   );
   expect(screen.getByText(/^133 g/)).toBeTruthy();
   expect(screen.queryByText(/already more dilute/i)).toBeNull();
+});
+
+describe('the ratio block and the printed sheet pour one figure (split-liquid recipe)', () => {
+  // A split-liquid LS batch: 1,200 g anhydrous, 400 g lye water, and 900 g of an
+  // alternative liquid declared at 50% water — 450 g of water (so 850 g of cook water)
+  // and 450 g of NON-water solids, real mass sitting in the pot that the recipe's own
+  // water-only arithmetic never counts. The pot therefore holds 2,500 g of paste.
+  //
+  // At 2:1 the ratio block pours 2,500 × 2 = 5,000 g, landing at 1,200 / 7,500 = 16.0%
+  // soap — the exact figure the panel's write-back persists. Read back at 16%,
+  // calculateDilution answers 7,500 − 1,200 − 850 = 5,450 g, because its own solution is
+  // anhydrous + water with no room for the solids. The 450 g gap is exactly those solids,
+  // and it is the difference between the screen and the page taken to the bench.
+  const RATIO_SPLIT_DILUTION = {
+    anhydrousGrams: 1200,
+    solutionGrams: 7500,
+    totalWaterGrams: 6300,
+    dilutionWaterGrams: 5450,
+    glycerinGrams: 110,
+    soapConcentrationPercent: 16,
+    targetExceedsPaste: false,
+  };
+  const WHOLE_BATCH_PASTE_GRAMS = 2500;
+
+  function ratioPanelFigure(): string {
+    render(
+      <DilutionPanel
+        dilution={RATIO_SPLIT_DILUTION}
+        soapConcentrationPercent="16"
+        onSoapConcentrationChange={() => {}}
+        weightUnit="g"
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        cookWaterGrams={850}
+        wholeBatchPasteGrams={WHOLE_BATCH_PASTE_GRAMS}
+      />,
+    );
+    const figure = screen.getByText('Water to add at this ratio').nextElementSibling!.textContent!;
+    cleanup();
+    return figure;
+  }
+
+  test('the sheet prints the same water the ratio block does', () => {
+    const panelFigure = ratioPanelFigure();
+    // Stated absolutely as well as relatively: an equality alone would also pass if both
+    // surfaces regressed to the same wrong number.
+    expect(panelFigure).toBe('5,000 g');
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          dilutionOverride: RATIO_SPLIT_DILUTION,
+          wholeBatchPasteGrams: WHOLE_BATCH_PASTE_GRAMS,
+        })}
+      />,
+    );
+    const sheetFigure = screen.getByText('Dilution water to add').nextElementSibling!.textContent;
+    expect(sheetFigure).toBe(panelFigure);
+  });
+
+  test('the concentration grid prints it too — one number, whichever mode chose it', () => {
+    render(
+      <DilutionPanel
+        dilution={RATIO_SPLIT_DILUTION}
+        soapConcentrationPercent="16"
+        onSoapConcentrationChange={() => {}}
+        weightUnit="g"
+        cookWaterGrams={850}
+        wholeBatchPasteGrams={WHOLE_BATCH_PASTE_GRAMS}
+      />,
+    );
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('5,000 g');
+  });
+
+  test('a recipe with no split liquid is untouched: no corrected basis, the recipe figure stands', () => {
+    // The fixture's own dilution (2,000 g) with no wholeBatchPasteGrams supplied — the
+    // fallback every caller predating the corrected basis still takes.
+    render(<BatchSheet data={lsSheetData({})} />);
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('2,000 g');
+  });
 });
 
 test('printed Neutralize section shows the stearic-acid alternative and its cannot-overdose note', () => {

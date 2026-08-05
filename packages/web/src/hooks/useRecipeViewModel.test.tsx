@@ -10,6 +10,8 @@ import {
   type RecipeSettings,
 } from '../lib/recipe';
 import { processProfileById, type ProcessId } from '../lib/process';
+import { correctedDilutionWaterGrams } from '../lib/measuredPaste';
+import { lsFinishedVolumeMl, lsPartialDilution } from '@soap-calc/core';
 
 afterEach(cleanup);
 
@@ -606,6 +608,171 @@ test('the over-dilution verdict survives an unknown liquid when it cannot change
   expect(certain.dilution.targetExceedsPaste).toBe(true);
   expect(certain.unknownLiquidGrams).toBeCloseTo(900, 3);
   expect(certain.overDilutionCertain).toBe(true);
+});
+
+test('the whole-batch paste is the same mass however the liquid\'s water is declared', () => {
+  // The property DilutionPanel's measured-over-dilution suppression rests on: with an
+  // undeclared liquid it asserts "already more dilute" flat and drops the "can't tell" hedge,
+  // which is only honest if declaring the water content cannot move the verdict. That verdict
+  // reduces to wholeBatchPasteGrams > solutionGrams, and solutionGrams is anhydrous ÷ the
+  // target — so the whole claim is this equality. Asserted rather than reasoned about,
+  // because it is an emergent property of two independent terms (cookWaterGrams counts the
+  // liquid's WATER, the solids term counts total − that water) and either could drift.
+  const LIQUID = {
+    key: 'u3', presetKey: '', name: 'mystery', customWaterPercent: '',
+    sizeMode: 'grams' as const, amount: '900', addAt: 'trace' as const,
+  };
+  const pasteFor = (customWaterPercent: string) => {
+    let vm: any;
+    probe((v) => { vm = v; },
+      {
+        lyeType: 'koh',
+        soapConcentrationPercent: '50',
+        splitLiquids: [{ ...LIQUID, customWaterPercent }],
+      },
+      'ls');
+    return vm;
+  };
+  const undeclared = pasteFor('');
+  expect(undeclared.unknownLiquidGrams).toBeCloseTo(900, 3);
+  expect(undeclared.wholeBatchPasteGrams).toBeGreaterThan(0);
+  for (const percent of ['1', '25', '50', '90', '100']) {
+    const declared = pasteFor(percent);
+    // The declaration really does move the terms it is made of — without this the equality
+    // below would also hold for a view model that ignored the field entirely.
+    if (percent !== '100') {
+      expect(declared.cookWaterGrams).toBeLessThan(undeclared.cookWaterGrams);
+    }
+    expect(declared.unknownLiquidGrams).toBe(0);
+    expect(declared.wholeBatchPasteGrams).toBeCloseTo(undeclared.wholeBatchPasteGrams, 6);
+  }
+});
+
+test('the real view model pours one water figure into both dilution scopes', () => {
+  // The synthetic pin lives in DilutionPanel.test; this drives the actual hook, which is
+  // where the two figures were measured apart: 900 g of a liquid declared at 50% water on
+  // the starter oils under KOH gave 1,606 g on the whole-batch row and the printed sheet
+  // against 2,056 g in Custom amount at the full batch volume — exactly the 450 g of solids,
+  // one radio apart on the same panel, with no measurement anywhere in play.
+  let vm: any;
+  probe((v) => { vm = v; },
+    {
+      lyeType: 'koh',
+      soapConcentrationPercent: '30',
+      splitLiquids: [{
+        key: 's1', presetKey: '', name: 'declared liquid', customWaterPercent: '50',
+        sizeMode: 'grams' as const, amount: '900', addAt: 'trace' as const,
+      }],
+    },
+    'ls');
+
+  const solidsGrams = vm.wholeBatchPasteGrams - (vm.dilution.anhydrousGrams + vm.cookWaterGrams);
+  // Non-vacuous: without solids in play the two paths agree trivially.
+  expect(solidsGrams).toBeCloseTo(450, 6);
+
+  const batchWaterGrams = correctedDilutionWaterGrams(
+    vm.dilution,
+    '',
+    false,
+    vm.wholeBatchPasteGrams,
+  );
+  const portion = lsPartialDilution(
+    { ...vm.dilution, wholeBatchPasteGrams: vm.wholeBatchPasteGrams },
+    lsFinishedVolumeMl(vm.dilution.solutionGrams)!,
+  );
+  expect(portion).not.toBeNull();
+  expect(portion!.pasteGrams).toBeCloseTo(vm.wholeBatchPasteGrams, 6);
+  expect(portion!.waterGrams).toBeCloseTo(batchWaterGrams, 6);
+  // …and the figure they agree on is the corrected one, not the water-only 2,056 g.
+  expect(batchWaterGrams).toBeCloseTo(vm.dilution.dilutionWaterGrams - solidsGrams, 6);
+});
+
+test('the printed sheet is handed the corrected paste, and the bottled mass is priced from it', () => {
+  // BatchSheet's CONSUMPTION of data.wholeBatchPasteGrams is pinned in its own file, but
+  // nothing asserted the view model puts it there — so dropping it from buildBatchSheetData
+  // survived the suite and silently returned the printed sheet to the recipe's water-only
+  // figure while the panel kept showing the corrected one: the screen-versus-bench split
+  // this branch exists to close, back again with every test green.
+  let vm: any;
+  probe((v) => { vm = v; },
+    {
+      lyeType: 'koh',
+      soapConcentrationPercent: '30',
+      splitLiquids: [{
+        key: 's1', presetKey: '', name: 'declared liquid', customWaterPercent: '50',
+        sizeMode: 'grams' as const, amount: '900', addAt: 'trace' as const,
+      }],
+    },
+    'ls');
+
+  const solidsGrams = vm.wholeBatchPasteGrams - (vm.dilution.anhydrousGrams + vm.cookWaterGrams);
+  expect(solidsGrams).toBeCloseTo(450, 6); // non-vacuous: without solids nothing can differ
+  expect(vm.batchSheetData).not.toBeNull();
+  expect(vm.batchSheetData.wholeBatchPasteGrams).toBeCloseTo(vm.wholeBatchPasteGrams, 6);
+  // Same figure the sheet will print, and it is NOT the recipe's own water-only one.
+  expect(
+    correctedDilutionWaterGrams(vm.dilution, '', false, vm.batchSheetData.wholeBatchPasteGrams),
+  ).toBeCloseTo(vm.dilution.dilutionWaterGrams - solidsGrams, 6);
+
+  // The bottled mass is priced from the same corrected water: the pot finishes at
+  // solutionGrams, so the only thing above it is the non-liquid extras (none here). Without
+  // the basis threaded into computeBottledSolutionGrams this is solutionGrams + 450.
+  expect(vm.bottledSolutionGrams).toBeCloseTo(vm.dilution.solutionGrams, 6);
+});
+
+test('and so is the dilution water derived from it — the undeclared-liquid caveat must not promise otherwise', () => {
+  // The panel and the printed sheet used to call that figure "the LEAST you will need" and
+  // offer "declare its % water" as the lever. Once the water is solutionGrams minus the
+  // CORRECTED paste, the declaration cannot move it: the liquid's whole mass is in the pot
+  // either way. Driven at a reachable target (30%, so targetExceedsPaste is false and the
+  // caveat's own branch is the one that renders) and with a BUDGET-sized row as well as a
+  // grams-sized one, since budget sizing is the only path that could have made the lye water
+  // itself depend on the row — it sizes off amount/sizeMode, never the water fraction.
+  const declarations = ['', '5', '50', '95', '100'];
+  for (const sizing of [
+    { sizeMode: 'grams' as const, amount: '900' },
+    { sizeMode: 'percent_of_liquid' as const, amount: '60' },
+  ]) {
+    const waters = declarations.map((customWaterPercent) => {
+      let vm: any;
+      probe((v) => { vm = v; },
+        {
+          lyeType: 'koh',
+          waterMode: 'percent_of_oils',
+          waterPercentOfOils: '33',
+          soapConcentrationPercent: '30',
+          splitLiquids: [{
+            key: 'd1', presetKey: '', name: 'mystery', customWaterPercent,
+            addAt: 'trace' as const, ...sizing,
+          }],
+        },
+        'ls');
+      return correctedDilutionWaterGrams(vm.dilution, '', false, vm.wholeBatchPasteGrams);
+    });
+    // Control first: the UNCORRECTED figure is what actually moved, so the equality below
+    // is a property of the correction and not of the fixture standing still.
+    expect(waters.every((w) => Math.abs(w - waters[0]) < 1e-6)).toBe(true);
+    expect(waters[0]).toBeGreaterThan(0);
+  }
+  let undeclaredVm: any;
+  let declaredVm: any;
+  const rowFor = (customWaterPercent: string) => ({
+    key: 'd1', presetKey: '', name: 'mystery', customWaterPercent,
+    sizeMode: 'grams' as const, amount: '900', addAt: 'trace' as const,
+  });
+  const settingsFor = (customWaterPercent: string) => ({
+    lyeType: 'koh' as const,
+    waterMode: 'percent_of_oils' as const,
+    waterPercentOfOils: '33',
+    soapConcentrationPercent: '30',
+    splitLiquids: [rowFor(customWaterPercent)],
+  });
+  probe((v) => { undeclaredVm = v; }, settingsFor(''), 'ls');
+  probe((v) => { declaredVm = v; }, settingsFor('5'), 'ls');
+  expect(undeclaredVm.dilution.dilutionWaterGrams).not.toBeCloseTo(
+    declaredVm.dilution.dilutionWaterGrams,
+    3,
+  );
 });
 
 test('…and is hedged when the unknown genuinely could flip it', () => {

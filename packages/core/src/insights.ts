@@ -595,16 +595,32 @@ export const INSIGHT_RULES: InsightRule[] = [
   {
     code: 'glycerin_solvent_dilution',
     processes: ['ls'],
-    // Glycerin-as-solvent advisory (LS): the paste dissolves faster and the finished soap
-    // reaches its target feel with less dilution water than the water-only figure suggests.
-    // No numeric model exists — advise increments, never adjust the dilution math.
+    // Glycerin-as-solvent advisory (LS). Two things are going on and only one of them is
+    // modelled:
+    //
+    // 1. MASS. A glycerin SPLIT-LIQUID row is 0% water, so its entire mass is non-water
+    //    solids — and the web view model's wholeBatchPasteGrams carries exactly that into
+    //    the corrected dilution water (solutionGrams minus the real pot), which the panel
+    //    and the printed sheet both pour from. So for that path the dilution math IS
+    //    adjusted, by the glycerin's whole weight: 400 g of it takes the figure down by
+    //    400 g. This comment used to say "never adjust the dilution math", and the message
+    //    told the maker to go under "the water-only figure" — which, once the shown figure
+    //    stopped being the water-only one, discounted the glycerin twice.
+    // 2. SOLVENT ACTION. Glycerin dissolves the paste faster and the batch can reach the
+    //    consistency the maker wants before all the water is in. That has no numeric model
+    //    and is not in any figure.
+    //
+    // The message may only speak to (2), because this predicate ALSO fires for the glycerin
+    // ADDITIVE path, where nothing is adjusted — an additive is not a split liquid and never
+    // reaches wholeBatchPasteGrams. So it names no figure to beat: it points at the bench
+    // (increments, stop at the consistency), which is true whichever path lit it.
     check: (input) => {
       if (input.lsGlycerinSolvent) {
         return {
           level: 'info',
           code: 'glycerin_solvent_dilution',
           message:
-            'Glycerin acts as a solvent: the paste dissolves faster and needs less dilution water than the water-only figure — dilute in increments and stop at the target consistency.',
+            'Glycerin acts as a solvent: the paste dissolves faster, and the batch can reach the consistency you want before all of the dilution water is in. Add it in increments and stop at the consistency rather than at the figure.',
         };
       }
       return null;

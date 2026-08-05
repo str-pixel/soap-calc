@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import { PortionDilutionResults } from './PortionDilutionResults';
+import { PortionDilutionResults, dilutionTargetWording } from './PortionDilutionResults';
 import type { DilutionResult } from '@soap-calc/core';
 
 afterEach(cleanup);
@@ -121,6 +121,102 @@ describe('an undeclared alternative liquid makes "already more dilute" unknowabl
   });
 });
 
+describe('a refusal names a control the current mode actually shows', () => {
+  // Both refusal paragraphs pointed at "the target above" and told the maker to "set a
+  // target". In ratio mode the panel above shows a water:paste ratio, the measured paste
+  // and the amount — no concentration field at all, so the remedy named a control that is
+  // not on screen. DilutionPanel's own exceeds-solution alert already branches this way
+  // ("raise the water:paste ratio above" / "lower the target concentration above"), and
+  // the direction is the same one: the paste is past the target, so it takes MORE water —
+  // a wider ratio, or a lower concentration.
+  const OVER = {
+    ...RESULT,
+    dilutionWaterGrams: 0,
+    soapConcentrationPercent: 90,
+    targetExceedsPaste: true,
+  };
+
+  test('the computed-paste refusal points at the ratio in ratio mode', () => {
+    render(<PortionDilutionResults {...PROPS} dilution={OVER} dilutionMode="ratio" />);
+    const refusal = screen.getByText(/no dilution water to divide up/i);
+    expect(refusal.textContent).toMatch(/water:paste ratio/i);
+    expect(refusal.textContent).not.toMatch(/target concentration/i);
+  });
+
+  test('…and at the concentration field in concentration mode', () => {
+    render(<PortionDilutionResults {...PROPS} dilution={OVER} />);
+    const refusal = screen.getByText(/no dilution water to divide up/i);
+    expect(refusal.textContent).toMatch(/target concentration/i);
+    expect(refusal.textContent).not.toMatch(/water:paste ratio/i);
+  });
+
+  // The measured-reading refusal is the sibling paragraph and had the same problem. Same
+  // fixture as "a portion core refuses is explained": a 2,000 g "what's left" reading that
+  // every rejection rule accepts, on a batch whose true paste (3,100 g) is heavier than the
+  // 3,030 g solution its own soap makes at 33%.
+  const REFUSED_READING = {
+    dilution: {
+      anhydrousGrams: 1000,
+      solutionGrams: 1000 / 0.33,
+      totalWaterGrams: 1000 / 0.33 - 1000,
+      dilutionWaterGrams: 1000 / 0.33 - 1000 - 1900,
+      glycerinGrams: 0,
+      soapConcentrationPercent: 33,
+      targetExceedsPaste: false,
+    },
+    measuredPasteGrams: '2000',
+    measuredPasteIsRemaining: true,
+    wholeBatchPasteGrams: 3100,
+    targetMl: '1000',
+  };
+
+  test('an unapplied ratio is not named as the target the figures ran on', () => {
+    // While the write-back has not fired, everything here is still computed from the SAVED
+    // target — the panel's own "Not applied yet" note says so three paragraphs up. Naming
+    // "the concentration this ratio lands at" pointed the refusal at a number that governs
+    // nothing on screen yet. The remedy is unchanged: editing the ratio both applies it and
+    // widens it.
+    expect(dilutionTargetWording('ratio', true)).toEqual({
+      named: 'your saved target above',
+      remedy: 'Raise the water:paste ratio above (more water)',
+    });
+    expect(dilutionTargetWording('ratio', false).named).toBe('the concentration this ratio lands at');
+    // Concentration mode has the field on screen and is unaffected by the ratio's state.
+    expect(dilutionTargetWording('concentration', true)).toEqual({
+      named: 'the target above',
+      remedy: 'Lower the target concentration above (more water)',
+    });
+  });
+
+  test('the rendered refusal follows that wording', () => {
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={OVER}
+        dilutionMode="ratio"
+        ratioNotAppliedYet
+      />,
+    );
+    const refusal = screen.getByText(/no dilution water to divide up/i);
+    expect(refusal.textContent).toMatch(/your saved target above/i);
+    expect(refusal.textContent).not.toMatch(/this ratio lands at/i);
+  });
+
+  test('the measured-reading refusal points at the ratio in ratio mode', () => {
+    render(<PortionDilutionResults {...PROPS} {...REFUSED_READING} dilutionMode="ratio" />);
+    const refusal = screen.getByText(/reading describes is already more dilute/i);
+    expect(refusal.textContent).toMatch(/water:paste ratio/i);
+    expect(refusal.textContent).not.toMatch(/target concentration/i);
+  });
+
+  test('…and at the concentration field in concentration mode', () => {
+    render(<PortionDilutionResults {...PROPS} {...REFUSED_READING} />);
+    const refusal = screen.getByText(/reading describes is already more dilute/i);
+    expect(refusal.textContent).toMatch(/target concentration/i);
+    expect(refusal.textContent).not.toMatch(/water:paste ratio/i);
+  });
+});
+
 test('a valid measured paste sizes a portion even when targetExceedsPaste is set — the measurement outranks the computed flag (Task 5)', () => {
   // targetExceedsPaste was derived from the recipe's ASSUMED cook water (dilutionWaterGrams
   // clamped to 0 here). The measured paste (1,500 g) is direct evidence against that
@@ -183,9 +279,16 @@ test('flags how far the measured paste drifted from the predicted one', () => {
   expect(screen.queryByText(/batch figures above/i)).toBeNull();
 });
 
-test('without a measurement the computed paste carries the evaporation caveat', () => {
+test('without a measurement the computed paste carries the evaporation caveat — and only that', () => {
   render(<PortionDilutionResults {...PROPS} targetMl="1000" />);
-  expect(screen.getByText(/evaporat/i)).toBeTruthy();
+  const caveat = screen.getByText(/boils off water the recipe still counts/i);
+  expect(caveat).toBeTruthy();
+  // The caveat used to add "an alternative liquid's solids are mass it never counted" —
+  // true while the portion ran on the recipe's water-only paste, false from the moment it
+  // started running on the corrected pot, which counts them. "Paste to weigh out" sits two
+  // paragraphs above it, so the claim was contradicted by the figure it described.
+  expect(caveat.textContent).not.toMatch(/never counted/i);
+  expect(caveat.textContent).not.toMatch(/solids/i);
 });
 
 test('refuses a measurement below the anhydrous soap weight — not physically a paste', () => {
@@ -493,6 +596,37 @@ describe('a portion core refuses is explained, never left blank', () => {
   };
   const wholeBatchPasteGrams = anhydrousGrams + cookWaterGrams + 200;
 
+  test('says why an UNMEASURED portion sizes nothing either, now that the pot includes its solids', () => {
+    // Same batch, no reading at all. Once core sizes the unmeasured pot from the corrected
+    // basis (round 1, finding 1) it refuses this for the same reason it refuses the reading
+    // above — 3,100 g of paste against a 3,030 g solution — and targetExceedsPaste, computed
+    // from water alone, cannot see it. Without this the component went silent: the exact
+    // blank this describe exists to forbid.
+    const { container } = render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    expect(screen.queryByText('Paste to weigh out')).toBeNull();
+    expect(container.textContent?.trim()).not.toBe('');
+    expect(screen.getByText(/no dilution water to divide up/i)).toBeTruthy();
+    // The control: drop the solids and the same fixture computes, so the refusal above is
+    // the solids talking rather than the component refusing everything.
+    cleanup();
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        dilution={dilution}
+        targetMl="1000"
+        wholeBatchPasteGrams={anhydrousGrams + cookWaterGrams}
+      />,
+    );
+    expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+  });
+
   test('says why an accepted reading still sizes no portion, instead of rendering nothing at all', () => {
     const { container } = render(
       <PortionDilutionResults
@@ -542,6 +676,12 @@ describe('a portion core refuses is explained, never left blank', () => {
   });
 
   test('stays silent when the portion really does compute', () => {
+    // 1,500 g of this paste holds 484 g of soap → a 1,466 g solution, which is LESS than
+    // the 1,500 g of paste, so a smaller "what's left" reading is refused for the same
+    // reason 2,000 g is. This render used to carry no assertions at all and its own comment
+    // conceded the reading was refused — a dead control that could not fail. Asserted now,
+    // so the silence below is demonstrably about the DECLARATION and not about the reading
+    // being smaller.
     render(
       <PortionDilutionResults
         {...PROPS}
@@ -552,9 +692,10 @@ describe('a portion core refuses is explained, never left blank', () => {
         wholeBatchPasteGrams={wholeBatchPasteGrams}
       />,
     );
-    // 1,500 g of this paste holds 484 g of soap → a 1,466 g solution, which is LESS than
-    // the 1,500 g of paste... so this too is refused. Use the whole-batch declaration
-    // instead, where the pot's solution is the recipe's own 3,030 g.
+    expect(screen.queryByText('Paste to weigh out')).toBeNull();
+    expect(screen.getByText(/no dilution water to divide up/i)).toBeTruthy();
+    // Same reading, declared as the whole batch instead: the pot's solution is the recipe's
+    // own 3,030 g, so the portion computes and nothing is refused.
     cleanup();
     render(
       <PortionDilutionResults

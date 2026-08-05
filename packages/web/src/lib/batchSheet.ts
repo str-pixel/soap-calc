@@ -55,6 +55,24 @@ export type BatchSheetData = {
    * sheet is the page taken to the bench and that is what actually gets bottled. Null/
    * undefined falls back to `dilution.solutionGrams` (no separate row needed). */
   bottledSolutionGrams?: number | null;
+  /** The best-known WHOLE-BATCH paste mass — see useRecipeViewModel. Corrects the printed
+   * "Dilution water to add" for an alternative liquid's non-water solids, which
+   * calculateDilution's anhydrous + water arithmetic leaves out of the pot entirely
+   * (correctedDilutionWaterGrams, the same helper DilutionPanel's batch row goes through).
+   * Without it the sheet carried to the bench prescribed the solids' worth of extra water
+   * — 5,450 g against the 5,000 g on screen for a 900 g liquid at 50% water. Optional:
+   * absent, the recipe's own figure prints, which is identical for a recipe with no split
+   * liquid. */
+  wholeBatchPasteGrams?: number | null;
+  /** The recipe's own cook water — lye water plus an alternative liquid's water fraction
+   * (useRecipeViewModel's cookWaterGrams). Carried for one reason: with
+   * `wholeBatchPasteGrams` it identifies the liquid's non-water SOLIDS, and the floor under a
+   * measured paste is anhydrous soap plus those solids (lib/measuredPaste). Without it this
+   * sheet would apply a reading the panel beside it rejects as physically impossible, and
+   * print a pour derived from a pot lighter than its own undissolvable contents. Optional:
+   * absent, the floor is anhydrous alone, which is the same figure for any recipe with no
+   * split liquid. */
+  cookWaterGrams?: number;
   /** Grams of split liquid with undeclared water content. Non-zero makes the printed
    * dilution figure a lower bound, and the sheet must say so — the bench copy is the one
    * surface with no sibling panel to explain it. Optional: data built before the field

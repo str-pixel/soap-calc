@@ -71,9 +71,12 @@ export function lsPartialDilution(
     /** The maker's own scale reading for the paste — the WHOLE batch by default, or what's
      * LEFT after earlier dilutions when {@link measuredPasteIsRemaining} is set. Preferred
      * over the computed figure whenever it is available, because a computed paste cannot be
-     * right: the cook evaporates water the recipe still counts, and an alternative liquid's
-     * non-water solids are mass the recipe never counted. The reference weighs the paste
-     * for exactly this reason. Ignored when non-finite or ≤ 0. */
+     * right: the cook boils off water the recipe still counts, and nothing on paper knows
+     * how much a particular cook drove off. The reference weighs the paste for exactly this
+     * reason. (An alternative liquid's non-water solids were the OTHER half of that claim
+     * until {@link wholeBatchPasteGrams} started carrying them into the computed paste too —
+     * see its own note. A caller that supplies no corrected basis still misses them.)
+     * Ignored when non-finite or ≤ 0. */
     measuredPasteGrams?: number;
     /** True when {@link measuredPasteGrams} is what is LEFT after part of the batch was
      * already diluted away, not the whole batch. "Measured paste is lighter than
@@ -95,8 +98,13 @@ export function lsPartialDilution(
      * ceiling — a too-light basis both rejects legitimate remaining readings above it AND
      * (via that same basis feeding the composition ratio) overstates the pot's soap
      * fraction. Falls back to predictedPasteGrams when omitted, non-finite, or ≤ 0, so
-     * every caller that doesn't know about split-liquid solids is unaffected. Only
-     * consumed in remaining mode. */
+     * every caller that doesn't know about split-liquid solids is unaffected.
+     *
+     * Consumed in remaining mode AND as the UNMEASURED paste itself (see pasteGrams below):
+     * an undivided pot really does hold anhydrous + cook water + those solids, so sizing an
+     * unmeasured portion off predictedPasteGrams poured water for a lighter paste than the
+     * one on the bench — and disagreed with the whole-batch row, which subtracts this same
+     * corrected figure from solutionGrams. A MEASUREMENT still outranks both. */
     wholeBatchPasteGrams?: number;
   },
   targetVolumeMl: number,
@@ -129,7 +137,30 @@ export function lsPartialDilution(
   // predictedPasteGrams whenever the recipe used a split liquid, since predictedPasteGrams
   // structurally undercounts the liquid's own solids.
   if (isRemaining && (m as number) > wholeBatchPasteGrams) return null;
-  const pasteGrams = pasteMeasured ? (m as number) : predictedPasteGrams;
+  // Measured wins outright — the scale is the only figure that can see cook evaporation.
+  // Unmeasured, the pot is the corrected whole-batch basis, NOT predictedPasteGrams: an
+  // alternative liquid's non-water solids are real mass sitting in it, so the water-only
+  // figure sized the portion off a paste lighter than the pot and left Custom amount
+  // pouring the solids' worth of extra water — while Whole batch, which subtracts this
+  // same corrected figure from solutionGrams, poured the right one.
+  //
+  // Identical to predictedPasteGrams for every caller that supplies no corrected basis (the
+  // fallback above), and — WHILE dilutionWaterGrams is unclamped — for every recipe with no
+  // split liquid, where solids = 0 makes the two expressions the same number. That qualifier
+  // is load-bearing and was missing here: once the caller's dilutionWaterGrams has been
+  // clamped to 0 (targetExceedsPaste), predictedPasteGrams collapses to
+  // anhydrousGrams + totalWaterGrams, which is solutionGrams — so it is LIGHTER than a
+  // corrected basis even with no split liquid at all, and the two diverge. Worked case:
+  // anhydrous 2260.56, totalWater 10175.14, dilutionWater 0, solution 12435.71, basis
+  // 15694.47 — this used to return a zero-water portion and now returns null.
+  //
+  // Not reachable from the only production caller: PortionDilutionResults refuses to call
+  // this at all in that state (its pasteAlreadyThinner is targetExceedsPaste with no valid
+  // measurement), and it says so on screen rather than sizing a portion from clamped
+  // figures. So the divergence is real, is confined to direct callers, and is the correct
+  // answer for them — a pot already past its target has no water to divide up, which is the
+  // same refusal the measured branch has always given for the same physical situation.
+  const pasteGrams = pasteMeasured ? (m as number) : wholeBatchPasteGrams;
   // Whole-batch (default): the pot holds all the recipe's anhydrous soap, and the target
   // solution is the recipe's own fixed solutionGrams. Remaining: the paste is homogeneous,
   // so the pot's own anhydrous soap — and therefore its own target solution — is a

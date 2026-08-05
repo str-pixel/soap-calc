@@ -746,6 +746,9 @@ export function useRecipeViewModel({
           splitLiquidPasteWaterGrams: splitLiquidPasteWater,
           measuredPasteGrams,
           measuredPasteIsRemaining,
+          // Same corrected paste the panel's and the sheet's water figures are derived
+          // from, so what this prices is what the maker is actually told to pour.
+          wholeBatchPasteGrams,
         })
       : null;
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
@@ -841,6 +844,11 @@ export function useRecipeViewModel({
       dilution,
       measuredPasteGrams,
       measuredPasteIsRemaining,
+      wholeBatchPasteGrams,
+      // Paired with wholeBatchPasteGrams: together they identify an alternative liquid's
+      // non-water solids, which the floor under a measured paste counts. The sheet must
+      // judge a reading by the same floor the panel does — see BatchSheetData.cookWaterGrams.
+      cookWaterGrams,
       bottledSolutionGrams,
       unknownLiquidGrams,
       lyeWaterUnverifiable,
@@ -860,6 +868,8 @@ export function useRecipeViewModel({
     dilution,
     measuredPasteGrams,
     measuredPasteIsRemaining,
+    wholeBatchPasteGrams,
+    cookWaterGrams,
     bottledSolutionGrams,
     displayTotals,
     extrasGrams,

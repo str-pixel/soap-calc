@@ -124,9 +124,26 @@ export function computeExtrasGrams(
  * branch, so the water term drops out and the paste term is all that's left).
  * Extras: everything in extrasGrams except the split liquids' water (counted via the
  * base either way) — additives at every stage, append-mode PCSF oil, split-liquid solids.
+ * Those solids are counted here ONCE, and only here: with `wholeBatchPasteGrams` supplied
+ * the water term is solutionGrams - (paste including its solids), so the base comes out a
+ * solids' worth SHORT of solutionGrams and this extras term puts it back. The pot really
+ * does end up at solutionGrams once the prescribed water is in — which is the point of
+ * correcting the water figure, and the reason adding the solids on top of an uncorrected
+ * water figure priced a bottle heavier than anything the maker was told to pour.
  * Acid-compensation alkali is DELIBERATELY excluded, mirroring the dilution calc's
  * base-result read: its acetate/citrate mass is small, and folding it in here without
- * also touching solutionGrams would be easy to mistake for a double count. */
+ * also touching solutionGrams would be easy to mistake for a double count.
+ *
+ * "Counted ONCE" holds on BOTH paths, which took a second correction to make true. A valid
+ * whole-batch measurement makes correctedDilutionWaterGrams short-circuit to
+ * solutionGrams - measured, so the base is exactly solutionGrams — with the solids already
+ * inside it, because the maker put the pot with them in it on the scale. Adding them again
+ * through the extras term priced the bottle a solids' worth heavy (4,115 g against a
+ * 4,051 g solution on a 200 g canned-milk batch, and it scaled with the liquid). So the
+ * term that comes off extrasGrams below is the whole split liquid on the measured path and
+ * its water alone on the unmeasured one — the difference being exactly what each base
+ * already contains. Both over-counted before the solids work; only the unmeasured one was
+ * fixed then, which is how the two came to disagree about one batch. */
 export function computeBottledSolutionGrams(input: {
   dilution: DilutionResult;
   cookWaterGrams: number;
@@ -141,16 +158,69 @@ export function computeBottledSolutionGrams(input: {
    * prices, so it must not feed the bottled base — same isRemaining gate
    * `correctedDilutionWaterGrams` and DilutionPanel's batch row already apply. */
   measuredPasteIsRemaining?: boolean;
+  /** The view model's corrected whole-batch paste (anhydrous + cook water + an alternative
+   * liquid's non-water solids). Threaded through for one reason: it is what
+   * `correctedDilutionWaterGrams` now subtracts from solutionGrams, so the water term below
+   * must be the same one the panel and the sheet pour. Leaving it out here would have this
+   * function price a bottle from more water than the maker is told to add — overstating the
+   * batch by the solids, which then arrive again through `extrasGrams`. Optional: absent,
+   * the water term is the recipe's own figure and this reduces to the previous formula
+   * exactly. */
+  wholeBatchPasteGrams?: number | null;
 }): number {
-  const { dilution, cookWaterGrams, extrasGrams, splitLiquidPasteWaterGrams, measuredPasteGrams, measuredPasteIsRemaining } =
-    input;
-  const measuredPaste = measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining)
+  const {
+    dilution,
+    cookWaterGrams,
+    extrasGrams,
+    splitLiquidPasteWaterGrams,
+    measuredPasteGrams,
+    measuredPasteIsRemaining,
+    wholeBatchPasteGrams,
+  } = input;
+  // Both corrected-basis figures go into the validity gate, not only into the water term:
+  // the paste floor counts an alternative liquid's solids (lib/measuredPaste), so a reading
+  // lighter than the pot's own undissolvable contents is refused here exactly as the panel
+  // and the printed sheet refuse it — otherwise this would price a bottle from a pot the
+  // maker is being told on screen cannot exist.
+  const measuredPaste = measuredPasteIsValidFor(
+    measuredPasteGrams,
+    dilution,
+    measuredPasteIsRemaining,
+    wholeBatchPasteGrams,
+    cookWaterGrams,
+  )
     ? (parseMeasuredPasteGrams(measuredPasteGrams) as number)
     : undefined;
   const base =
     (measuredPaste ?? dilution.anhydrousGrams + cookWaterGrams) +
-    correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining);
-  return base + Math.max(0, extrasGrams - splitLiquidPasteWaterGrams);
+    correctedDilutionWaterGrams(
+      dilution,
+      measuredPasteGrams,
+      measuredPasteIsRemaining,
+      wholeBatchPasteGrams,
+      cookWaterGrams,
+    );
+  // The alternative liquid's non-water solids, off the same corrected basis
+  // correctedDilutionWaterGrams subtracts from solutionGrams — never re-derived from the
+  // split-liquid rows, so this and the water figure the panel prints can never disagree
+  // about the same pot. Zero without a corrected basis, exactly as the water correction is:
+  // a caller that supplies none cannot know the solids are there, and both paths then fall
+  // back to the pre-correction formula together.
+  const splitLiquidSolidsGrams =
+    wholeBatchPasteGrams !== undefined &&
+    wholeBatchPasteGrams !== null &&
+    Number.isFinite(wholeBatchPasteGrams) &&
+    wholeBatchPasteGrams > 0
+      ? Math.max(0, wholeBatchPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
+      : 0;
+  // What the base ALREADY holds of the split liquid, and the whole difference between the
+  // two paths. Unmeasured, the base is built from anhydrous + cookWaterGrams, so it carries
+  // the liquid's water only and the extras term has to put its solids back. Measured, the
+  // base is the pot the maker weighed — water and solids both — so putting the solids back
+  // would count them twice.
+  const splitLiquidInBaseGrams =
+    splitLiquidPasteWaterGrams + (measuredPaste !== undefined ? splitLiquidSolidsGrams : 0);
+  return base + Math.max(0, extrasGrams - splitLiquidInBaseGrams);
 }
 
 /** The post-cook superfat: one or more oils added after cook/dilution with no lye effect.

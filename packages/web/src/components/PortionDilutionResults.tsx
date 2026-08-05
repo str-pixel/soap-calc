@@ -26,6 +26,13 @@ type PortionDilutionResultsProps = {
    * recipe-computed figure when absent (a recipe with no split liquid, or data built
    * before this field existed). */
   wholeBatchPasteGrams?: number | null;
+  /** The recipe's own cook water (lye water plus an alternative liquid's water fraction).
+   * Needed alongside `wholeBatchPasteGrams` for one thing only: the paste floor is anhydrous
+   * soap plus the liquid's non-water SOLIDS, and the two figures are what identify those
+   * solids (lib/measuredPaste's solidsFloorGramsFor). Forwarded by DilutionPanel so this
+   * component and the shell's own rejection alert judge one reading by one floor. Absent,
+   * the floor falls back to anhydrous alone, exactly as before. */
+  cookWaterGrams?: number;
   /** Grams of alternative liquid whose water content was never declared. Forwarded from
    * DilutionPanel (which gets it from App) for one reason only: targetExceedsPaste is
    * derived from the recipe's ASSUMED water content, so above zero the over-dilution
@@ -35,7 +42,42 @@ type PortionDilutionResultsProps = {
   /** True when the over-dilution verdict holds across the undeclared liquid's whole
    * 0–100% water range, so it can be stated as fact after all. */
   overDilutionCertain?: boolean;
+  /** Which control the maker is choosing the dilution with, so a refusal here can name
+   * something that is actually on screen. Structurally DilutionPanel's own DilutionMode,
+   * spelled out rather than imported to keep the type dependency one-way (the panel
+   * imports this module). Defaults to the panel's own default. */
+  dilutionMode?: 'concentration' | 'ratio';
+  /** True while ratio mode is showing a ratio the write-back has not applied — see
+   * DilutionPanel's own `ratioNotAppliedYet`. Everything here is computed from the SAVED
+   * target in that state, so a refusal must not name the ratio's own concentration as the
+   * thing the paste is past. */
+  ratioNotAppliedYet?: boolean;
 };
+
+/**
+ * What a refusal should call the target it says the paste is past, and what it should tell
+ * the maker to do about it. Exported so DilutionPanel's Whole-batch twin of the same
+ * refusal words it identically — the two describe one state and used to drift apart.
+ *
+ * Ratio mode shows no concentration field at all, so "the target above" / "set a target"
+ * named a control that is not on screen; and while the ratio is not applied yet, every
+ * figure here still runs on the SAVED target, so naming the ratio's own concentration would
+ * be wrong in the other direction. The remedy is the same action either way — editing the
+ * ratio both applies it and widens it — and points the same way as the exceeds-solution
+ * alert: the paste is past the target, so it takes MORE water.
+ */
+export function dilutionTargetWording(
+  dilutionMode: 'concentration' | 'ratio',
+  ratioNotAppliedYet: boolean,
+): { named: string; remedy: string } {
+  if (dilutionMode !== 'ratio') {
+    return { named: 'the target above', remedy: 'Lower the target concentration above (more water)' };
+  }
+  return {
+    named: ratioNotAppliedYet ? 'your saved target above' : 'the concentration this ratio lands at',
+    remedy: 'Raise the water:paste ratio above (more water)',
+  };
+}
 
 /**
  * The portion this component would render — null when either of the two verdicts below
@@ -53,9 +95,15 @@ export function portionDilutionFor({
   measuredPasteGrams,
   measuredPasteIsRemaining,
   wholeBatchPasteGrams,
+  cookWaterGrams,
 }: Pick<
   PortionDilutionResultsProps,
-  'dilution' | 'targetMl' | 'measuredPasteGrams' | 'measuredPasteIsRemaining' | 'wholeBatchPasteGrams'
+  | 'dilution'
+  | 'targetMl'
+  | 'measuredPasteGrams'
+  | 'measuredPasteIsRemaining'
+  | 'wholeBatchPasteGrams'
+  | 'cookWaterGrams'
 >) {
   // The three physical-impossibility rules — below the anhydrous solids, heavier than the
   // target solution, a remainder heavier than the whole batch ever was — live in
@@ -70,6 +118,7 @@ export function portionDilutionFor({
     dilution,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
+    cookWaterGrams,
   );
   const measured = rejection.measuredGrams;
   const measurementRejected = rejection.rejected;
@@ -107,8 +156,29 @@ export function portionDilutionFor({
         (dilution.solutionGrams / dilution.anhydrousGrams)
       : dilution.solutionGrams;
   const measuredPasteAlreadyThinner = hasValidMeasurement && potSolutionGrams - measured < 0;
+  // The UNMEASURED twin of the line above, and the third way core can refuse. Once core
+  // sizes an unmeasured pot from the corrected basis rather than the water-only
+  // predictedPasteGrams (so Custom amount pours what Whole batch pours), that pot can be
+  // heavier than the solution its own soap makes at the target — a big low-water liquid —
+  // while the recipe's targetExceedsPaste flag, computed from water alone, stays false. Core
+  // then returns null and pasteAlreadyThinner cannot cover it (that flag IS
+  // targetExceedsPaste), so both render branches went false and this component emitted an
+  // empty fragment again: the exact blank measuredPasteAlreadyThinner was added to close.
+  //
+  // Unreachable off the fallback basis, so no existing caller changes: predictedPasteGrams
+  // is anhydrousGrams + cook when totalWater >= cook and anhydrousGrams + totalWater
+  // (= solutionGrams) otherwise, and neither can exceed solutionGrams. Nothing any guard
+  // computes changes — this only names a null core was already going to return.
+  const unmeasuredPasteAlreadyThinner =
+    !hasValidMeasurement &&
+    !measurementRejected &&
+    !pasteAlreadyThinner &&
+    dilution.solutionGrams - rejection.wholeBatchPasteBasis < 0;
   const portion =
-    pasteAlreadyThinner || measurementRejected || measuredPasteAlreadyThinner
+    pasteAlreadyThinner ||
+    measurementRejected ||
+    measuredPasteAlreadyThinner ||
+    unmeasuredPasteAlreadyThinner
       ? null
       : lsPartialDilution(
           {
@@ -121,7 +191,13 @@ export function portionDilutionFor({
           },
           Number(targetMl),
         );
-  return { measured, pasteAlreadyThinner, measuredPasteAlreadyThinner, portion };
+  return {
+    measured,
+    pasteAlreadyThinner,
+    measuredPasteAlreadyThinner,
+    unmeasuredPasteAlreadyThinner,
+    portion,
+  };
 }
 
 /**
@@ -133,10 +209,16 @@ export function portionDilutionFor({
  * The paste weight can be measured rather than computed, and should be: the reference has
  * the maker weigh the paste before picking a water:paste ratio, and marks its own dilution
  * table as estimates for that reason — no printed figure can know how much water a
- * particular cook drove off (LS:2172). A computed paste is wrong in two directions at once
- * — the cook boils off water the recipe still counts, and an alternative liquid's non-water
- * solids are mass the recipe never counted. Given a measurement, the water figure absorbs
- * the whole difference and every portion below is exact arithmetic.
+ * particular cook drove off (LS:2172).
+ *
+ * A computed paste used to be wrong in two directions at once. One of them is fixed:
+ * `wholeBatchPasteGrams` carries an alternative liquid's non-water solids into the basis
+ * this component and core both size from, so the paste figures below DO include that mass —
+ * which is why the estimate caveat they carry no longer says otherwise. What survives is
+ * evaporation, which no arithmetic can see: given a measurement the water figure absorbs
+ * the whole difference and every portion below is exact arithmetic. A caller that supplies
+ * no corrected basis still misses the solids, and falls back to the recipe's own water-only
+ * paste exactly as before.
  */
 export function PortionDilutionResults({
   dilution,
@@ -145,15 +227,25 @@ export function PortionDilutionResults({
   measuredPasteGrams,
   measuredPasteIsRemaining,
   wholeBatchPasteGrams,
+  cookWaterGrams,
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
+  dilutionMode = 'concentration',
+  ratioNotAppliedYet = false,
 }: PortionDilutionResultsProps) {
-  const { measured, pasteAlreadyThinner, measuredPasteAlreadyThinner, portion } = portionDilutionFor({
+  const {
+    measured,
+    pasteAlreadyThinner,
+    measuredPasteAlreadyThinner,
+    unmeasuredPasteAlreadyThinner,
+    portion,
+  } = portionDilutionFor({
     dilution,
     targetMl,
     measuredPasteGrams,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
+    cookWaterGrams,
   });
   // What the recipe predicted, for the drift readout. NOT portion.predictedPasteGrams:
   // that figure is anhydrous + max(0, totalWater - dilutionWater), and dilutionWater is
@@ -177,14 +269,30 @@ export function PortionDilutionResults({
   // the portion either way, because the clamped figures it would be computed from are
   // unusable regardless of what the liquid turns out to contain.
   const overDilutionKnowable = unknownLiquidGrams === 0 || overDilutionCertain;
+  // Both refusals below used to say "the target above" and "set a target", which names a
+  // field ratio mode does not show — its inputs are the ratio, the measured paste and the
+  // amount. See dilutionTargetWording for the full reasoning, including why an unapplied
+  // ratio must not be named as the target these figures were computed against.
+  const { named: dilutionTargetNamed, remedy: dilutionTargetRemedy } = dilutionTargetWording(
+    dilutionMode,
+    ratioNotAppliedYet,
+  );
   return (
     <>
-      {pasteAlreadyThinner &&
-        (overDilutionKnowable ? (
+      {/* unmeasuredPasteAlreadyThinner rides this paragraph rather than earning one of its
+          own: it says exactly what that case needs, down to the "weigh the whole batch's
+          paste above" remedy, which is the one thing that can still size a portion here. It
+          takes the KNOWABLE branch unconditionally — the two are mutually exclusive (see its
+          own derivation), and unlike targetExceedsPaste it is not a water-derived claim at
+          all: it compares solutionGrams against the pot's whole mass, and both are fixed
+          however the undeclared liquid's water turns out to be split. */}
+      {(pasteAlreadyThinner || unmeasuredPasteAlreadyThinner) &&
+        (overDilutionKnowable || unmeasuredPasteAlreadyThinner ? (
           <p className="results-hint">
-            The paste is already more dilute than the target above, so there is no dilution
-            water to divide up. Set a target the paste can actually reach, or weigh the whole
-            batch&apos;s paste above to size a portion from your measurement instead.
+            The paste is already more dilute than {dilutionTargetNamed}, so there is no
+            dilution water to divide up. {dilutionTargetRemedy} until the paste can reach it,
+            or weigh the whole batch&apos;s paste above to size a portion from your
+            measurement instead.
           </p>
         ) : (
           <p className="results-hint">
@@ -203,9 +311,9 @@ export function PortionDilutionResults({
           above (that one requires no valid measurement; this one requires one). */}
       {measuredPasteAlreadyThinner && (
         <p className="results-hint">
-          The paste your reading describes is already more dilute than the target above:
-          the soap in it makes less solution at that target than the paste itself weighs,
-          so there is no dilution water to divide up. Set a target it can reach, or
+          The paste your reading describes is already more dilute than {dilutionTargetNamed}:
+          the soap in it makes less solution at that concentration than the paste itself
+          weighs, so there is no dilution water to divide up. {dilutionTargetRemedy}, or
           re-check the reading.
         </p>
       )}
@@ -274,10 +382,19 @@ export function PortionDilutionResults({
             )
           ) : (
             <p className="results-hint">
-              Paste weight here is computed from the recipe, so treat it as an estimate:
-              the cook evaporates water the recipe still counts, and an alternative
-              liquid&apos;s solids are mass it never counted. Weigh your paste and enter
-              it above for exact figures.
+              {/* The solids half of this caveat had to go: "Paste to weigh out" now runs on
+                  the corrected whole-batch pot, which counts an alternative liquid's
+                  non-water solids, so telling the maker they are missing from the figure
+                  directly above described the opposite of what it prints. Evaporation is
+                  the half that survives — no arithmetic can see it — and it is the half
+                  that makes weighing the fix. Left unconditional rather than branched on
+                  whether a corrected basis was supplied: it is true either way, and a
+                  clause about alternative liquids is noise on the many recipes that have
+                  none. The solids correction itself is documented on this component and on
+                  lsPartialDilution, where the next editor will look. */}
+              Paste weight here is computed from the recipe, so treat it as an estimate: the
+              cook boils off water the recipe still counts, and no figure on paper knows how
+              much yours drove off. Weigh your paste and enter it above for exact figures.
             </p>
           )}
         </>

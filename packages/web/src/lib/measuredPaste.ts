@@ -1,10 +1,64 @@
 import type { DilutionResult } from '@soap-calc/core';
 
 /**
+ * The mass in the pot that CANNOT leave during the cook, and so the physical floor under any
+ * whole-batch paste reading: the batch's anhydrous soap plus an alternative liquid's
+ * non-water SOLIDS.
+ *
+ * Cook water is deliberately NOT in this floor, and must never be added to it. Water boils
+ * off — that is the entire reason the reference has the maker weigh the paste (LS:2172), and
+ * a reading lighter than the recipe predicts is the expected, meaningful case this feature
+ * exists to accept. Solids are the opposite: an alternative liquid's non-water fraction is
+ * dissolved or suspended in the paste and is still in the crock when the cook ends, so a
+ * reading below anhydrous + solids describes a pot that cannot exist.
+ *
+ * The floor was `anhydrousGrams` alone until this correction, which accepted readings
+ * physically short by the whole solids mass: a 1,930 g pot (1,215 g anhydrous, 330 g lye
+ * water, 385 g glycerin — all of it solids) took a typed 1,400 g, cleared every guard, and
+ * the panel printed a pour and a measurement-corrected bottled mass off a pot 200 g lighter
+ * than its own undissolvable contents.
+ *
+ * Solids are derived exactly as every other surface on this branch derives them —
+ * `wholeBatchPasteGrams - (anhydrousGrams + cookWaterGrams)`, clamped at zero — rather than
+ * from `totalWaterGrams - dilutionWaterGrams`, which recovers 0 rather than the real cook
+ * water once the targetExceedsPaste clamp has fired (see calculateDilution's own note) and
+ * would invent a floor out of the clamp on a recipe with no split liquid at all.
+ *
+ * Both inputs are needed to know the solids are there, so the floor falls back to
+ * `anhydrousGrams` — today's behaviour, byte-identical — whenever either is missing or
+ * unusable: a recipe with no split liquid (where the corrected basis IS anhydrous + cook
+ * water, so the solids term is exactly 0), and any caller that supplies neither.
+ */
+function solidsFloorGramsFor(
+  dilution: DilutionResult,
+  wholeBatchPasteGrams?: number | null,
+  cookWaterGrams?: number | null,
+): number {
+  const hasCorrectedBasis =
+    wholeBatchPasteGrams !== undefined &&
+    wholeBatchPasteGrams !== null &&
+    Number.isFinite(wholeBatchPasteGrams) &&
+    wholeBatchPasteGrams > 0;
+  const hasCookWater =
+    cookWaterGrams !== undefined &&
+    cookWaterGrams !== null &&
+    Number.isFinite(cookWaterGrams) &&
+    cookWaterGrams >= 0;
+  if (!hasCorrectedBasis || !hasCookWater) return dilution.anhydrousGrams;
+  const solidsGrams = Math.max(
+    0,
+    (wholeBatchPasteGrams as number) - (dilution.anhydrousGrams + (cookWaterGrams as number)),
+  );
+  return dilution.anhydrousGrams + solidsGrams;
+}
+
+/**
  * INTERNAL to this module — deliberately not exported. A batch's paste always contains ALL
- * of its anhydrous soap — solids do not evaporate — so a reading below that is not a
- * whole-batch paste. It is a mis-tare (the crock left on the scale) or a PORTION weight.
- * The boundary (measured === anhydrousGrams) is accepted.
+ * of its anhydrous soap AND all of the solids an alternative liquid put in the pot — neither
+ * evaporates — so a reading below that is not a whole-batch paste. It is a mis-tare (the
+ * crock left on the scale) or a PORTION weight. The boundary (measured === the floor) is
+ * accepted. See {@link solidsFloorGramsFor} for the floor itself and why cook water is not
+ * part of it.
  *
  * The shared entry point every surface must go through is {@link measuredPasteRejectionFor}
  * (or {@link measuredPasteIsValidFor} for the yes/no form). This predicate answers only one
@@ -14,8 +68,8 @@ import type { DilutionResult } from '@soap-calc/core';
  * PortionDilutionResults and DilutionPanel", which is how the rejection alerts came to be
  * rendered from one surface only and vanished from the default dilution scope.
  */
-function measurementBelowSolids(measuredGrams: number, dilution: DilutionResult): boolean {
-  return measuredGrams < dilution.anhydrousGrams;
+function measurementBelowSolids(measuredGrams: number, solidsFloorGrams: number): boolean {
+  return measuredGrams < solidsFloorGrams;
 }
 
 /**
@@ -44,7 +98,7 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
 
 /**
  * True when a parsed measured-paste reading is valid FOR this dilution: not below the
- * anhydrous solids floor (measurementBelowSolids) and not above the target solution
+ * non-evaporable solids floor (measurementBelowSolids) and not above the target solution
  * ceiling (measurementExceedsSolution) — the shared bar every caller that lets a
  * measurement override a computed figure must clear first.
  *
@@ -53,17 +107,28 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * never be valid for a caller (DilutionPanel's batch row, the printed BatchSheet) that
  * corrects a BATCH-level figure with it — PortionDilutionResults' own portion arithmetic
  * doesn't go through this gate, since a remaining reading is exactly what it wants.
+ *
+ * `wholeBatchPasteGrams`/`cookWaterGrams` are the two figures the floor needs to see an
+ * alternative liquid's solids (see {@link solidsFloorGramsFor}). They MUST be passed by
+ * every caller that also renders {@link measuredPasteRejectionFor}'s verdict, or the panel
+ * would reject a reading in one place and apply it in another; omitting both is the
+ * documented, byte-identical fallback to the anhydrous-only floor.
  */
 export function measuredPasteIsValidFor(
   measuredPasteGrams: string | undefined,
   dilution: DilutionResult,
   isRemaining = false,
+  wholeBatchPasteGrams?: number | null,
+  cookWaterGrams?: number | null,
 ): boolean {
   if (isRemaining) return false;
   const measured = parseMeasuredPasteGrams(measuredPasteGrams);
   return (
     measured !== undefined &&
-    !measurementBelowSolids(measured, dilution) &&
+    !measurementBelowSolids(
+      measured,
+      solidsFloorGramsFor(dilution, wholeBatchPasteGrams, cookWaterGrams),
+    ) &&
     !measurementExceedsSolution(measured, dilution)
   );
 }
@@ -77,13 +142,23 @@ export type MeasuredPasteRejection = {
   /** The field holds a number that is not a weight at all — zero or negative. Applies under
    * either declaration, and is exclusive of the three rules below. */
   nonPositive: boolean;
-  /** The reading is lighter than the batch's own anhydrous soap (whole-batch mode only). */
+  /** The reading is lighter than the batch's own non-evaporable mass — its anhydrous soap
+   * plus an alternative liquid's solids (whole-batch mode only). Yields to
+   * `exceedsSolution`: the floor can sit ABOVE the ceiling once the solids outweigh the
+   * target's whole water allowance, and a reading in that gap gets the ceiling's refusal
+   * alone — see the rule's own note for why. */
   belowSolids: boolean;
-  /** The reading is heavier than the whole solution the target dilutes to. */
+  /** The reading is heavier than the whole solution the target dilutes to (WHOLE-BATCH
+   * readings only). The rule that yields to nothing within its own declaration:
+   * `nonPositive` and `belowSolids` both exclude it explicitly, so among the whole-batch
+   * rules it always wins. Never fires on a remaining reading — `exceedsRemainingCeiling` is
+   * the ceiling a remainder is judged against; see that field. */
   exceedsSolution: boolean;
-  /** A remaining reading is heavier than the whole batch's paste ever was. */
+  /** A remaining reading is heavier than the whole batch's paste ever was — the ONLY ceiling
+   * a remaining reading is judged against, since `exceedsSolution` now stands down under
+   * that declaration. */
   exceedsRemainingCeiling: boolean;
-  /** Any of the three above fired. */
+  /** Any of the four above fired. */
   rejected: boolean;
   /** There is a usable reading AND nothing rejected it — safe to compute from. */
   accepted: boolean;
@@ -94,6 +169,16 @@ export type MeasuredPasteRejection = {
   /** The whole-batch paste mass the remaining-mode ceiling was checked against, and the
    * figure the ceiling alert must quote. */
   wholeBatchPasteBasis: number;
+  /** The floor `belowSolids` was checked against — anhydrous soap plus whatever solids an
+   * alternative liquid put in the pot — and the figure the belowSolids alert must quote, for
+   * the same reason `wholeBatchPasteBasis` exists: a surface that re-derives the bound it is
+   * explaining can drift from the guard that applied it. Exactly `anhydrousGrams` when there
+   * are no solids, or when no corrected basis / cook water was supplied.
+   *
+   * Reported whether or not `belowSolids` fired, so it is NOT on its own evidence that a
+   * reading was refused by the floor: it can exceed `solutionGrams`, in which case the
+   * ceiling owns every reading above it and `belowSolids` stays false. Read the flag. */
+  solidsFloorGrams: number;
 };
 
 /**
@@ -107,13 +192,16 @@ export type MeasuredPasteRejection = {
  *
  * `wholeBatchPasteGrams` is the view model's corrected whole-batch paste mass; omit it and
  * the ceiling falls back to the recipe's own water-only predicted figure, exactly as core
- * does when its matching param is omitted.
+ * does when its matching param is omitted. `cookWaterGrams` is the recipe's own cook water,
+ * needed alongside it for the solids floor alone (see {@link solidsFloorGramsFor}) — it is
+ * NOT part of the ceiling, and does not touch `wholeBatchPasteBasis`.
  */
 export function measuredPasteRejectionFor(
   measuredPasteGrams: string | undefined,
   dilution: DilutionResult,
   isRemaining: boolean,
   wholeBatchPasteGrams?: number | null,
+  cookWaterGrams?: number | null,
 ): MeasuredPasteRejection {
   const raw = measuredPasteGrams ?? '';
   const hasMeasurement = raw.trim() !== '';
@@ -155,29 +243,92 @@ export function measuredPasteRejectionFor(
   // dilutions") is no help for a negative number, and it is disabled in remaining mode,
   // which would have left that declaration silent all over again.
   const nonPositive = hasMeasurement && Number.isFinite(measured) && measured <= 0;
-  // A batch's paste always contains ALL of its anhydrous soap — solids do not evaporate —
-  // so a WHOLE-BATCH reading below that is not physically possible. It is a mis-tare (the
-  // crock left on the scale) or a PORTION weight, and the reference's own ratio method does
-  // weigh the portion, which makes the mistake an easy one. Left unguarded the app answered
-  // with confident nonsense: a 900 g reading on a 1,200 g-soap batch reported "lighter than
-  // predicted — water lost to the cook", which cannot be true of water that was never there.
+  // A batch's paste always contains ALL of its anhydrous soap AND all of the solids an
+  // alternative liquid put in the pot — neither evaporates — so a WHOLE-BATCH reading below
+  // that is not physically possible. It is a mis-tare (the crock left on the scale) or a
+  // PORTION weight, and the reference's own ratio method does weigh the portion, which makes
+  // the mistake an easy one. Left unguarded the app answered with confident nonsense: a
+  // 900 g reading on a 1,200 g-soap batch reported "lighter than predicted — water lost to
+  // the cook", which cannot be true of water that was never there.
+  //
+  // The floor counts SOLIDS and not cook water, which is the whole of the distinction: cook
+  // water boils off, so a reading lighter than the recipe predicts is the expected case this
+  // feature exists to accept, while an alternative liquid's non-water fraction stays in the
+  // crock. Anhydrous alone was the floor until this correction and let a reading short by the
+  // entire solids mass through — see solidsFloorGramsFor for the worked case and for why the
+  // floor falls back to anhydrous when the caller supplies no corrected basis.
+  //
   // The floor does not apply once the reading is declared REMAINING: what's left after an
   // earlier dilution can legitimately be less than the recipe's whole anhydrous soap — that
   // is the entire point of the declaration, and rejecting it left no way to enter an honest
   // measurement (the batch no longer exists at full weight to "enter instead").
+  //
+  // `!measurementExceedsSolution` is what keeps this rule disjoint from the ceiling, and it
+  // became load-bearing the moment the floor stopped being `anhydrousGrams`. That old floor
+  // was strictly below `solutionGrams` for any target under 100% (solutionGrams is anhydrous
+  // ÷ the target), so the two rules could not both fire and no exclusion was needed. The
+  // corrected floor CAN outrun the ceiling: floor > ceiling reduces to
+  // solids > totalWaterGrams — the liquid's undissolvable mass outweighing the target's
+  // whole water allowance — which is reachable on a real recipe at a typable target (400 g
+  // of glycerin on the starter recipe at 78%: a 1,615 g floor against a 1,558 g ceiling).
+  // A reading in the gap between them then tripped both rules and the shell printed two
+  // refusals that contradict each other: "check the scale was tared, it cannot be all of the
+  // paste" beside "it already weighs more than the target dilutes to, lower the target".
+  //
+  // The ceiling wins there, and must: it is the rule with the actionable remedy in that
+  // state (the reading is above what this target can hold, so the target is what moves),
+  // while the floor's remedies — re-tare, or re-declare as a remainder — answer a mistake
+  // that is not the one being made. `rejected` is unaffected either way, so nothing this
+  // exclusion touches becomes acceptable; only the redundant paragraph goes.
+  const solidsFloorGrams = solidsFloorGramsFor(dilution, wholeBatchPasteGrams, cookWaterGrams);
   const belowSolids =
     !isRemaining &&
     hasMeasurement &&
     Number.isFinite(measured) &&
     measured > 0 &&
-    measurementBelowSolids(measured, dilution);
-  // Likewise, a paste heavier than the whole target solution cannot be diluted INTO that
-  // solution. Core returns null for it; saying so beats the figures silently vanishing.
-  // Kept as-is for whole-batch mode — unaffected by the remaining-only ceiling below.
-  // `!nonPositive` rather than `measured > 0`: a negative reading is never above the
-  // solution, so this is only belt-and-braces, but it keeps all three rules uniformly
-  // exclusive of the new one so the shell can never render two paragraphs for one reading.
+    !measurementExceedsSolution(measured, dilution) &&
+    measurementBelowSolids(measured, solidsFloorGrams);
+  // Likewise, a WHOLE-BATCH paste heavier than the whole target solution cannot be diluted
+  // INTO that solution. Core returns null for it; saying so beats the figures silently
+  // vanishing. `!nonPositive` rather than `measured > 0`: a negative reading is never above
+  // the solution, so this is only belt-and-braces, but it is what makes the whole-batch rules
+  // mutually exclusive, so the shell renders one paragraph for one reading. That exclusivity
+  // is asserted, not incidental: this rule yields to nothing under its own declaration, and
+  // nonPositive and belowSolids each defer to it explicitly (see belowSolids' own note for
+  // the case where the floor outruns the ceiling and this rule is the only one standing).
+  //
+  // `!isRemaining` is what finally makes that property hold for all four rules, and it is a
+  // claim about what this rule MEANS, not a tie-break bolted on to stop two paragraphs
+  // printing. `solutionGrams` is anhydrous ÷ the target — what the WHOLE batch's soap makes
+  // at that concentration. A remainder is not the batch, so "your paste already weighs more
+  // than the N g this target dilutes to" is not a statement about it, and the remedy that
+  // paragraph gives ("lower the target concentration") answers a mistake the maker did not
+  // make: a remainder that reads heavy is a scale or declaration problem, and the ceiling
+  // that owns it is exceedsRemainingCeiling, checked against the pot the remainder came out
+  // of. Until this gate, a remaining 4,100 g against a 4,000 g solution and a 2,050 g pot set
+  // both flags and the panel stacked both paragraphs, the wrong advice first.
+  //
+  // Suppressed for EVERY remaining reading, not only where exceedsRemainingCeiling also
+  // fires, because the leftover case is not this rule's either. That case is
+  // solutionGrams < measured <= wholeBatchPasteBasis, reachable only when the corrected pot
+  // outweighs the solution (the water-only fallback basis can never exceed solutionGrams, so
+  // the two suppression scopes differ on split-liquid recipes alone). There the reading is
+  // perfectly possible — 4,200 g really can be left of a 4,500 g pot — and what is out of
+  // reach is the TARGET, for a reason that does not depend on the reading at all: the
+  // remainder's own solution is measured x solutionGrams / basis, so it falls short of the
+  // remainder exactly when basis > solutionGrams, whatever was weighed. Refusing the subset
+  // of readings that happen to sit above solutionGrams would refuse an arbitrary slice of a
+  // reading-independent condition and stay silent on the rest of it. That condition already
+  // has an owner in both scopes — PortionDilutionResults' measuredPasteAlreadyThinner (which
+  // suppresses the portion and says why, and which every reading this gate newly accepts
+  // satisfies by the same inequality) and DilutionPanel's pasteAlreadyPastTarget twin — and
+  // both are deliberately NOT role="alert", because nothing about the reading is impossible.
+  // So the case moves from a wrong refusal to the right explanation, and nothing it feeds
+  // changes: measuredPasteIsValidFor still refuses every remaining reading outright, so the
+  // batch row, correctedDilutionWaterGrams, computeBottledSolutionGrams and BatchSheet never
+  // saw it either way, and lsPartialDilution is not reached because the portion is null.
   const exceedsSolution =
+    !isRemaining &&
     hasMeasurement &&
     Number.isFinite(measured) &&
     !nonPositive &&
@@ -193,6 +344,13 @@ export function measuredPasteRejectionFor(
   // checked against the same basis via the wholeBatchPasteGrams param), so the bad
   // value can never reach the arithmetic either way — this mirrors that guard at the UI
   // layer so the maker sees why, not just a vanished result.
+  //
+  // Since exceedsSolution stood down under this declaration, this is the ONLY ceiling a
+  // remaining reading meets, and its alert is the only one the panel can print for an
+  // over-heavy remainder. Its remedies — check the scale, or re-declare as "all of it" — are
+  // the two ways to get here, and neither is the target. Anything added to this rule is
+  // therefore added to the whole of the remaining declaration's ceiling; there is no longer a
+  // second rule behind it to catch what it lets through.
   const exceedsRemainingCeiling =
     isRemaining &&
     hasMeasurement &&
@@ -210,26 +368,95 @@ export function measuredPasteRejectionFor(
     hasMeasurement,
     measuredGrams: measured,
     wholeBatchPasteBasis,
+    solidsFloorGrams,
   };
 }
 
 /**
- * The batch's dilution-water figure, corrected by a valid measured paste — the same
- * arithmetic DilutionPanel and PortionDilutionResults already apply: solutionGrams is fixed by
- * the target concentration, so solutionGrams - measured is what is still needed to reach
- * it, and a valid measurement OUTRANKS the recipe's own dilutionWaterGrams (Task 5's
- * measured-paste-outranks-targetExceedsPaste principle — that flag is derived from the
- * recipe's ASSUMED cook water, the measurement is direct evidence against it). Falls back
- * to the recipe's computed figure with no valid measurement. Shared by DilutionPanel's
- * batch row and the printed BatchSheet so both surfaces always show the same number.
+ * The batch's dilution-water figure, corrected for the two things the recipe's own
+ * `dilutionWaterGrams` cannot see. Shared by DilutionPanel's WHOLE-BATCH row, the printed
+ * BatchSheet and computeBottledSolutionGrams.
+ *
+ * Those three, and no more: Custom amount's water comes from core's `lsPartialDilution`,
+ * which does its own `potSolutionGrams - pasteGrams` off the same corrected basis. An
+ * earlier version of this note claimed "no surface can pour a different number", which read
+ * as a guarantee this function is in no position to give — and was false while
+ * lsPartialDilution still sized an unmeasured pot from the water-only predictedPasteGrams,
+ * leaving Custom amount and Whole batch a solids' worth apart. Both correction rules below
+ * have to hold on both paths; keep them in step by hand, and pin them against each other
+ * (DilutionPanel.test's "Whole batch and Custom amount pour one figure").
+ *
+ * 1. A valid measured paste — the same arithmetic DilutionPanel and PortionDilutionResults
+ *    already apply: solutionGrams is fixed by the target concentration, so
+ *    solutionGrams - measured is what is still needed to reach it, and a valid measurement
+ *    OUTRANKS the recipe's own dilutionWaterGrams (Task 5's
+ *    measured-paste-outranks-targetExceedsPaste principle — that flag is derived from the
+ *    recipe's ASSUMED cook water, the measurement is direct evidence against it).
+ *
+ * 2. An alternative liquid's non-water SOLIDS, when the view model's corrected
+ *    `wholeBatchPasteGrams` is supplied. calculateDilution works from anhydrous + water
+ *    alone, so its dilutionWaterGrams is solutionGrams - anhydrous - cookWater — it leaves
+ *    the solids out of the pot entirely and prescribes water for a paste lighter than the
+ *    one on the scale. DilutionPanel's ratio mode already derives its pour from the
+ *    corrected paste (pasteGrams x ratio), so before this the ratio block and every
+ *    concentration-derived surface disagreed by exactly the solids: 5,000 g on screen
+ *    against 5,450 g on the batch sheet for a 900 g liquid at 50% water. Subtracting the
+ *    corrected paste from the same solutionGrams is the ratio block's own basis, so the
+ *    two now land on one number.
+ *
+ * Falls back to the recipe's computed figure when neither correction is available, which
+ * is byte-identical for a recipe with no split liquid: wholeBatchPasteGrams is then exactly
+ * anhydrous + cookWater, and solutionGrams - that IS dilutionWaterGrams.
+ *
+ * Clamped at zero, matching calculateDilution's own clamp on dilutionWaterGrams: the
+ * corrected paste can exceed the target solution (a big low-water liquid) while the
+ * recipe's water-only targetExceedsPaste flag stays false, and a negative pour figure is
+ * never an instruction. It prints as "0 g" — the honest answer, where the uncorrected
+ * figure was a positive number that would have pushed the batch past its target.
+ *
+ * That "0 g" used to reach the screen and the printed sheet with NO alert beside it: every
+ * explanatory branch was gated on targetExceedsPaste (false here) or on a rejected
+ * MEASUREMENT (none here). Both surfaces now carry a branch keyed on the clamp's own
+ * condition instead — DilutionPanel's pasteAlreadyPastTarget and BatchSheet's twin of it —
+ * so the zero is never printed bare. Any new surface pouring this figure owes the maker the
+ * same account; the clamp fires exactly when wholeBatchPasteGrams > solutionGrams.
+ *
+ * The measured branch above still returns before the wholeBatchPasteGrams correction, and
+ * must: solutionGrams is the pot's target mass and the measurement is the pot, so
+ * solutionGrams - measured is what is left to pour whatever the pot is made of. What that
+ * short-circuit cost was downstream, in computeBottledSolutionGrams, which read the base as
+ * solids-free and added them on top of a pot weighed WITH them. Corrected there, at the
+ * point that knows the difference, rather than here.
  */
 export function correctedDilutionWaterGrams(
   dilution: DilutionResult,
   measuredPasteGrams: string | undefined,
   isRemaining = false,
+  wholeBatchPasteGrams?: number | null,
+  cookWaterGrams?: number | null,
 ): number {
-  if (measuredPasteIsValidFor(measuredPasteGrams, dilution, isRemaining)) {
+  // wholeBatchPasteGrams/cookWaterGrams are forwarded into the validity gate, not just used
+  // by the correction below it: the floor a reading is judged against has to be the same one
+  // the rejection alert names, or this row would pour from a reading the panel is refusing
+  // one paragraph above.
+  if (
+    measuredPasteIsValidFor(
+      measuredPasteGrams,
+      dilution,
+      isRemaining,
+      wholeBatchPasteGrams,
+      cookWaterGrams,
+    )
+  ) {
     return dilution.solutionGrams - (parseMeasuredPasteGrams(measuredPasteGrams) as number);
+  }
+  if (
+    wholeBatchPasteGrams !== undefined &&
+    wholeBatchPasteGrams !== null &&
+    Number.isFinite(wholeBatchPasteGrams) &&
+    wholeBatchPasteGrams > 0
+  ) {
+    return Math.max(0, dilution.solutionGrams - wholeBatchPasteGrams);
   }
   return dilution.dilutionWaterGrams;
 }

@@ -108,11 +108,41 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // show the same number) — and, per Task 5, OUTRANKS targetExceedsPaste below, since that
   // flag is derived from the recipe's ASSUMED cook water and the measurement is direct
   // evidence against it.
+  //
+  // The corrected basis and the cook water go into the validity gate too, not only into the
+  // water figure below: the floor under a reading counts an alternative liquid's solids, and
+  // the sheet is the page carried to the bench — it must refuse exactly what the panel
+  // refuses, or the two would disagree about whether the maker's own reading was usable.
   const measuredPasteValid = dilution
-    ? measuredPasteIsValidFor(measuredPasteGrams, dilution, measuredPasteIsRemaining)
+    ? measuredPasteIsValidFor(
+        measuredPasteGrams,
+        dilution,
+        measuredPasteIsRemaining,
+        data.wholeBatchPasteGrams,
+        data.cookWaterGrams,
+      )
     : false;
+  // wholeBatchPasteGrams is the second correction the shared helper applies: an alternative
+  // liquid's non-water solids are real mass in the pot that calculateDilution's
+  // anhydrous + water arithmetic never counts, so the recipe's own dilutionWaterGrams
+  // prescribes the solids' worth of extra water. DilutionPanel's ratio block has always
+  // poured off the corrected paste, so this row and that one used to differ by exactly the
+  // solids — with the sheet, the page actually carried to the scale, holding the wrong one.
+  // Whether the printed figures came off the corrected paste, which decides whether the
+  // undeclared-liquid caveat below reads as a floor or as "the same either way".
+  const hasCorrectedPasteBasis =
+    data.wholeBatchPasteGrams !== undefined &&
+    data.wholeBatchPasteGrams !== null &&
+    Number.isFinite(data.wholeBatchPasteGrams) &&
+    data.wholeBatchPasteGrams > 0;
   const dilutionWaterGramsPrinted = dilution
-    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, measuredPasteIsRemaining)
+    ? correctedDilutionWaterGrams(
+        dilution,
+        measuredPasteGrams,
+        measuredPasteIsRemaining,
+        data.wholeBatchPasteGrams,
+        data.cookWaterGrams,
+      )
     : 0;
   // The sheet is the page taken to the bench, so it must carry what actually gets
   // bottled, not only the chemistry-only solution above: bottledSolutionGrams adds in
@@ -326,7 +356,16 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <div><dt>Target concentration</dt><dd>{formatConcentrationPercent(dilution.soapConcentrationPercent)}%</dd></div>
             <div><dt>Dilution water to add</dt><dd>
               {formatWeight(dilutionWaterGramsPrinted, weightUnit)}
-              {data.unknownLiquidGrams && !dilution.targetExceedsPaste && !measuredPasteValid
+              {/* The marker only survives without a corrected paste basis. With one the
+                  figure is solutionGrams − (anhydrous + lye water + the liquid's whole
+                  mass), and declaring the undeclared liquid's % water moves mass between
+                  its water and its solids without moving that sum — so the figure is exact,
+                  not a floor, and "(at least)" told the maker to expect a number that can
+                  never come. */}
+              {data.unknownLiquidGrams &&
+              !dilution.targetExceedsPaste &&
+              !measuredPasteValid &&
+              !hasCorrectedPasteBasis
                 ? ' (at least)'
                 : ''}
             </dd></div>
@@ -358,6 +397,31 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               DilutionPanel's can't-tell branch instead of the floor caveat below. A valid
               measured paste outranks the flag outright (Task 5) — see dilutionWaterGramsPrinted
               above — so both branches below are suppressed the same way DilutionPanel does. */}
+          {/* The sheet is the page carried to the bench, so the state DilutionPanel's
+              pasteAlreadyPastTarget alert explains on screen has to be explained here too:
+              the corrected pot outweighs the whole solution its soap makes at the target, so
+              correctedDilutionWaterGrams clamps and "Dilution water to add" above prints
+              "0 g". Printed bare, that reads as a batch needing nothing.
+
+              Same predicate and same gating as the panel's — see its comment for why
+              !targetExceedsPaste is load-bearing (this strictly subsumes that flag), why a
+              valid measurement suppresses it, and why no undeclared-liquid hedge belongs on
+              it. Unreachable without a corrected paste basis, which is why the branch below
+              reads data.wholeBatchPasteGrams directly. */}
+          {!dilution.targetExceedsPaste &&
+          !measuredPasteValid &&
+          hasCorrectedPasteBasis &&
+          (data.wholeBatchPasteGrams as number) > dilution.solutionGrams ? (
+            <p className="batch-sheet__note">
+              The paste is already more dilute than{' '}
+              {formatConcentrationPercent(dilution.soapConcentrationPercent)}%: it weighs{' '}
+              {formatWeight(data.wholeBatchPasteGrams as number, weightUnit)} against the{' '}
+              {formatWeight(dilution.solutionGrams, weightUnit)} its soap makes at that
+              concentration, so there is no dilution water to add. Lower the target
+              concentration (more water) until the paste can reach it, or weigh the paste —
+              the cook boils off water this figure still counts.
+            </p>
+          ) : null}
           {dilution.targetExceedsPaste && !measuredPasteValid && data.overDilutionCertain ? (
             // Certain across the unknown's whole 0-100% range — state the fact, exactly as
             // the panel does; hedging here made the two surfaces disagree for one recipe.
@@ -380,8 +444,10 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           {data.unknownLiquidGrams && !dilution.targetExceedsPaste ? (
             <p className="batch-sheet__note">
               {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative liquid has
-              no declared water content — it is counted as all water, so the dilution
-              figure is the least you will need. Dilute in increments and check by weight.
+              no declared water content —{' '}
+              {hasCorrectedPasteBasis
+                ? 'the dilution figure above is the same whatever it turns out to be, since the liquid is in the pot either way. What is unknown is how much of your paste is water.'
+                : 'it is counted as all water, so the dilution figure is the least you will need. Dilute in increments and check by weight.'}
             </p>
           ) : null}
         </section>

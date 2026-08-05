@@ -64,8 +64,17 @@ export function lyeSolutionWaterStatus(input: {
  * concentration, so every gram of water already in that paste is a gram of dilution water
  * that must NOT be added again. All three split-liquid stages (lye, oils, trace) happen
  * before the cook, so all three count — the stage changes when the water arrives, not
- * whether it is there at dilution time. Glycerin (waterFraction 0) correctly adds nothing:
- * it reduces the dilution water through its solvent action, which has no numeric model.
+ * whether it is there at dilution time.
+ *
+ * Glycerin (waterFraction 0) correctly adds nothing HERE — it carries no water, and water
+ * is all this function is asked for. That is not the same as being ignored: its whole mass
+ * is non-water solids, and the caller's corrected whole-batch paste (the web view model's
+ * wholeBatchPasteGrams, = anhydrous + this + the liquids' solids) picks all of it up, which
+ * is what takes the dilution water down by the glycerin's own weight. This note used to say
+ * glycerin "reduces the dilution water through its solvent action, which has no numeric
+ * model", which conflated the two: the MASS is modelled, downstream of here; the extra
+ * solvent effect — a paste that dissolves faster and reaches its target consistency early —
+ * is the part with no numeric model.
  */
 export function splitLiquidPasteWaterGrams(
   rows: readonly { grams: number | null; waterFraction: number }[],
