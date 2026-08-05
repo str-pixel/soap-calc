@@ -1203,6 +1203,128 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     expect(screen.getByRole('alert').textContent).toMatch(/already more dilute/i);
   });
 
+  describe('a remainder is refused as a remainder, not as a batch', () => {
+    // RESULT is a 4,000 g solution. Add 900 g of an alternative liquid at 50% water and the
+    // pot is 2,050 g. A 4,100 g reading declared "what's left" is above BOTH bounds, and the
+    // two rules used to fire together: exceedsSolution was not gated on the declaration and
+    // exceedsRemainingCeiling did not exclude it, so the shell rendered its two branches
+    // independently and stacked two role="alert" paragraphs — the WRONG one first. "Lower
+    // the target concentration" is no remedy for a remainder: the target does not decide
+    // what is left in the pot, and lowering it would not make 4,100 g of remainder possible
+    // out of a pot that never held more than 2,050 g.
+    const WITH_SOLIDS = { cookWaterGrams: 400, wholeBatchPasteGrams: 2050 };
+
+    for (const [scope, targetMl] of [['batch', ''], ['portion', '1000']] as const) {
+      it(`gives an over-heavy remainder exactly one alert — the actionable one — in ${scope} scope`, () => {
+        render(
+          <DilutionPanel
+            {...BASE}
+            {...WITH_SOLIDS}
+            measuredPasteGrams="4100"
+            measuredPasteIsRemaining
+            dilutionScope={scope}
+            targetMl={targetMl}
+          />,
+        );
+        const alerts = screen.getAllByRole('alert');
+        expect(alerts).toHaveLength(1);
+        const alert = alerts[0].textContent!.replace(/\s+/g, ' ');
+        // The ceiling that is actually about a remainder: it quotes the pot the remainder
+        // would have to have come out of, and its remedies are the two ways to get here.
+        expect(alert).toContain("more than the 2,050 g the whole batch's paste ever weighed");
+        expect(alert).toContain('check the scale');
+        expect(alert).toContain('all of it');
+        // …and the batch-level refusal is gone, not merely reordered.
+        expect(alert).not.toMatch(/already weighs more than/i);
+        expect(alert).not.toMatch(/lower the target concentration/i);
+      });
+    }
+
+    it('still refuses the same reading as a WHOLE-BATCH one, with the solution ceiling', () => {
+      // The control that makes the suppression attributable to the DECLARATION and not to
+      // the reading: 4,100 g declared "all of it" is exactly what exceedsSolution is for,
+      // and its paragraph is unchanged.
+      render(
+        <DilutionPanel {...BASE} {...WITH_SOLIDS} measuredPasteGrams="4100" dilutionScope="batch" targetMl="" />,
+      );
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0].textContent).toMatch(/already weighs more than/i);
+      expect(alerts[0].textContent).toMatch(/lower the target concentration/i);
+    });
+
+    // The other half of the decision: exceedsSolution stands down for EVERY remaining
+    // reading, not only where the remaining ceiling catches it too. That leaves
+    // solutionGrams < reading <= pot, reachable only when the corrected pot outweighs the
+    // solution — 4,500 g of pot against RESULT's 4,000 g solution. 4,200 g really can be
+    // left of a 4,500 g pot, so the reading is not the problem; the TARGET is, by an
+    // inequality (pot > solution) that does not mention the reading at all.
+    const POT_PAST_TARGET = { cookWaterGrams: 400, wholeBatchPasteGrams: 4500 };
+
+    it('does not refuse a remainder that is merely bigger than the target solution — it names the target', () => {
+      render(
+        <DilutionPanel
+          {...BASE}
+          {...POT_PAST_TARGET}
+          measuredPasteGrams="4200"
+          measuredPasteIsRemaining
+          dilutionScope="batch"
+          targetMl=""
+        />,
+      );
+      // Before: two alerts — the wrong refusal of the reading, plus the pot-past-target
+      // verdict. Now one, and it is the verdict about the pot and the target.
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts).toHaveLength(1);
+      const alert = alerts[0].textContent!.replace(/\s+/g, ' ');
+      expect(alert).toContain('it weighs 4,500 g against the 4,000 g its soap makes');
+      expect(alert).not.toMatch(/already weighs more than/i);
+      // …and the reading is acknowledged rather than ignored: the batch row still will not
+      // take a remainder (that gate is untouched), and says so, pointing at the same
+      // remedy rather than at a scope that cannot size anything either.
+      const hints = Array.from(document.querySelectorAll('.results-hint')).map((n) =>
+        (n.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      );
+      expect(hints.some((t) => /Custom amount cannot size anything from that reading either/.test(t))).toBe(true);
+    });
+
+    it('explains that reading in Custom amount instead of refusing it, and still sizes nothing', () => {
+      render(
+        <DilutionPanel
+          {...BASE}
+          {...POT_PAST_TARGET}
+          measuredPasteGrams="4200"
+          measuredPasteIsRemaining
+          dilutionScope="portion"
+          targetMl="1000"
+        />,
+      );
+      // No rejection at all now — nothing about the reading is impossible, which is why
+      // this paragraph is deliberately not a role="alert".
+      expect(screen.queryAllByRole('alert')).toHaveLength(0);
+      expect(
+        screen.getByText(/The paste your reading describes is already more dilute than/i),
+      ).toBeTruthy();
+      // …and no portion is computed from it: the reading is accepted, the TARGET is not
+      // reachable, and the figures stay off the screen either way.
+      expect(screen.queryByText('Paste to weigh out')).toBeNull();
+      // Control: the same panel with a pot the target CAN reach sizes a portion from the
+      // same declaration, so the blank above is a decision and not a broken render.
+      cleanup();
+      render(
+        <DilutionPanel
+          {...BASE}
+          {...WITH_SOLIDS}
+          measuredPasteGrams="1800"
+          measuredPasteIsRemaining
+          dilutionScope="portion"
+          targetMl="1000"
+        />,
+      );
+      expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+    });
+  });
+
   // 400 g of a zero-water liquid on a 1,200 g-anhydrous batch at an 80% target: a 300 g
   // water allowance against 400 g of solids, so the solids-corrected total goes NEGATIVE.
   // The state the "Total water" correction cannot answer, and the one it is not allowed to

@@ -148,22 +148,15 @@ export type MeasuredPasteRejection = {
    * target's whole water allowance, and a reading in that gap gets the ceiling's refusal
    * alone — see the rule's own note for why. */
   belowSolids: boolean;
-  /** The reading is heavier than the whole solution the target dilutes to. The rule that
-   * yields to nothing: `nonPositive` and `belowSolids` both exclude it explicitly, so among
-   * the WHOLE-BATCH rules it always wins. Not gated on the declaration, so it can fire
-   * alongside `exceedsRemainingCeiling` — see that field. */
+  /** The reading is heavier than the whole solution the target dilutes to (WHOLE-BATCH
+   * readings only). The rule that yields to nothing within its own declaration:
+   * `nonPositive` and `belowSolids` both exclude it explicitly, so among the whole-batch
+   * rules it always wins. Never fires on a remaining reading — `exceedsRemainingCeiling` is
+   * the ceiling a remainder is judged against; see that field. */
   exceedsSolution: boolean;
-  /** A remaining reading is heavier than the whole batch's paste ever was.
-   *
-   * The one rule that does NOT exclude `exceedsSolution`, and the one place the "one
-   * paragraph per reading" property does not hold: a remaining reading above both the target
-   * solution and the pot sets both flags, and the surfaces render the two branches
-   * independently, so both paragraphs appear (a remaining 4,100 g against a 4,000 g solution
-   * and a 2,050 g pot prints "lower the target concentration" above "it cannot be what is
-   * left of it" — and the first is the wrong advice for a remainder, whose problem is not
-   * the target). Long-standing, untouched by the floor correction, and left alone
-   * deliberately: closing it moves the remaining-mode ceiling. Fix it there, not by widening
-   * this rule. */
+  /** A remaining reading is heavier than the whole batch's paste ever was — the ONLY ceiling
+   * a remaining reading is judged against, since `exceedsSolution` now stands down under
+   * that declaration. */
   exceedsRemainingCeiling: boolean;
   /** Any of the four above fired. */
   rejected: boolean;
@@ -295,25 +288,47 @@ export function measuredPasteRejectionFor(
     measured > 0 &&
     !measurementExceedsSolution(measured, dilution) &&
     measurementBelowSolids(measured, solidsFloorGrams);
-  // Likewise, a paste heavier than the whole target solution cannot be diluted INTO that
-  // solution. Core returns null for it; saying so beats the figures silently vanishing.
-  // Kept as-is for whole-batch mode — unaffected by the remaining-only ceiling below.
-  // `!nonPositive` rather than `measured > 0`: a negative reading is never above the
-  // solution, so this is only belt-and-braces, but it is what makes the three WHOLE-BATCH
-  // rules mutually exclusive, so the shell renders one paragraph for one whole-batch
-  // reading. That exclusivity is asserted, not incidental: this rule yields to nothing, and
+  // Likewise, a WHOLE-BATCH paste heavier than the whole target solution cannot be diluted
+  // INTO that solution. Core returns null for it; saying so beats the figures silently
+  // vanishing. `!nonPositive` rather than `measured > 0`: a negative reading is never above
+  // the solution, so this is only belt-and-braces, but it is what makes the whole-batch rules
+  // mutually exclusive, so the shell renders one paragraph for one reading. That exclusivity
+  // is asserted, not incidental: this rule yields to nothing under its own declaration, and
   // nonPositive and belowSolids each defer to it explicitly (see belowSolids' own note for
   // the case where the floor outruns the ceiling and this rule is the only one standing).
   //
-  // WHOLE-BATCH, and not a claim about all four. This rule is not gated on the declaration,
-  // and exceedsRemainingCeiling does not exclude it, so a REMAINING reading above both the
-  // solution and the pot still sets two flags and still prints two paragraphs — the one
-  // surviving hole in "one refusal per reading", pinned by the sweep in measuredPaste.test
-  // rather than papered over here. It predates the solids floor by two rounds and is
-  // untouched by it; the earlier wording of this note claimed the property held for all four
-  // and had never been swept. Closing it means moving the remaining-mode ceiling, which is
-  // where the fix belongs — not in widening this rule to swallow the other's case.
+  // `!isRemaining` is what finally makes that property hold for all four rules, and it is a
+  // claim about what this rule MEANS, not a tie-break bolted on to stop two paragraphs
+  // printing. `solutionGrams` is anhydrous ÷ the target — what the WHOLE batch's soap makes
+  // at that concentration. A remainder is not the batch, so "your paste already weighs more
+  // than the N g this target dilutes to" is not a statement about it, and the remedy that
+  // paragraph gives ("lower the target concentration") answers a mistake the maker did not
+  // make: a remainder that reads heavy is a scale or declaration problem, and the ceiling
+  // that owns it is exceedsRemainingCeiling, checked against the pot the remainder came out
+  // of. Until this gate, a remaining 4,100 g against a 4,000 g solution and a 2,050 g pot set
+  // both flags and the panel stacked both paragraphs, the wrong advice first.
+  //
+  // Suppressed for EVERY remaining reading, not only where exceedsRemainingCeiling also
+  // fires, because the leftover case is not this rule's either. That case is
+  // solutionGrams < measured <= wholeBatchPasteBasis, reachable only when the corrected pot
+  // outweighs the solution (the water-only fallback basis can never exceed solutionGrams, so
+  // the two suppression scopes differ on split-liquid recipes alone). There the reading is
+  // perfectly possible — 4,200 g really can be left of a 4,500 g pot — and what is out of
+  // reach is the TARGET, for a reason that does not depend on the reading at all: the
+  // remainder's own solution is measured x solutionGrams / basis, so it falls short of the
+  // remainder exactly when basis > solutionGrams, whatever was weighed. Refusing the subset
+  // of readings that happen to sit above solutionGrams would refuse an arbitrary slice of a
+  // reading-independent condition and stay silent on the rest of it. That condition already
+  // has an owner in both scopes — PortionDilutionResults' measuredPasteAlreadyThinner (which
+  // suppresses the portion and says why, and which every reading this gate newly accepts
+  // satisfies by the same inequality) and DilutionPanel's pasteAlreadyPastTarget twin — and
+  // both are deliberately NOT role="alert", because nothing about the reading is impossible.
+  // So the case moves from a wrong refusal to the right explanation, and nothing it feeds
+  // changes: measuredPasteIsValidFor still refuses every remaining reading outright, so the
+  // batch row, correctedDilutionWaterGrams, computeBottledSolutionGrams and BatchSheet never
+  // saw it either way, and lsPartialDilution is not reached because the portion is null.
   const exceedsSolution =
+    !isRemaining &&
     hasMeasurement &&
     Number.isFinite(measured) &&
     !nonPositive &&
@@ -329,6 +344,13 @@ export function measuredPasteRejectionFor(
   // checked against the same basis via the wholeBatchPasteGrams param), so the bad
   // value can never reach the arithmetic either way — this mirrors that guard at the UI
   // layer so the maker sees why, not just a vanished result.
+  //
+  // Since exceedsSolution stood down under this declaration, this is the ONLY ceiling a
+  // remaining reading meets, and its alert is the only one the panel can print for an
+  // over-heavy remainder. Its remedies — check the scale, or re-declare as "all of it" — are
+  // the two ways to get here, and neither is the target. Anything added to this rule is
+  // therefore added to the whole of the remaining declaration's ceiling; there is no longer a
+  // second rule behind it to catch what it lets through.
   const exceedsRemainingCeiling =
     isRemaining &&
     hasMeasurement &&
