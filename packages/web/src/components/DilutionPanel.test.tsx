@@ -2503,6 +2503,59 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
   });
 
+  it('applies the already-checked preset from the KEYBOARD, where no click ever arrives', () => {
+    // An event census in Chromium on a real radio group, listeners on the raw inputs:
+    //   checked   + Space  → keydown, keyup                          ← nothing else at all
+    //   checked   + click  → click                                   (the onClick fix)
+    //   unchecked + Space  → keydown, keyup, click, input, change
+    //   arrow to sibling   → keydown, click(sibling), keyup(sibling)
+    // So Space on the checked preset — which is exactly where roving focus lands when you
+    // tab into the group on the seeded path — fired NO activation event. Same inertness the
+    // onClick fix closed for the mouse, still open for anyone not using one.
+    //
+    // Driven with fireEvent, NOT userEvent.keyboard(' '): jsdom synthesises a `click` on a
+    // checked radio where Chromium fires none (censused both ways), so a userEvent-driven
+    // test would pass through the onClick handler and prove nothing about this one. keydown
+    // + keyup alone is what the real browser delivers here.
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel
+        {...RATIO_BASE}
+        waterPasteRatio="2"
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+      />,
+    );
+    const preset = screen.getByRole('radio', { name: '2:1' }) as HTMLInputElement;
+    expect(preset.checked).toBe(true);
+    preset.focus();
+    fireEvent.keyDown(preset, { key: ' ', code: 'Space' });
+    fireEvent.keyUp(preset, { key: ' ', code: 'Space' });
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
+  });
+
+  it('does not apply a preset merely because a key came up over it', () => {
+    // The handler has to be Space and nothing else. Focus arrives by Tab, and the Tab KEYUP
+    // lands on the newly focused element — so an ungated keyup would write a ratio back the
+    // moment the group was tabbed into, with no pick at all. That is the round-2 bug
+    // (entering ratio mode rewriting a typed target with no user action) in a new costume.
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel
+        {...RATIO_BASE}
+        waterPasteRatio="2"
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+      />,
+    );
+    const preset = screen.getByRole('radio', { name: '2:1' });
+    preset.focus();
+    for (const key of ['Tab', 'ArrowDown', 'Enter', 'a']) {
+      fireEvent.keyUp(preset, { key });
+    }
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
   it('picking a preset sets the ratio and counts as a real edit, so it applies', () => {
     // Same gate the typed input carries: entering ratio mode writes nothing back, but a
     // deliberate pick is an edit and must apply, or the panel would show a ratio nothing
@@ -2563,6 +2616,27 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     cleanup();
     render(<DilutionPanel {...RATIO_BASE} />);
     expect(screen.getByText(/only as exact as the paste it multiplies/i)).toBeTruthy();
+  });
+
+  it('does not name the ratio row while the ratio row is gated off', () => {
+    // Batch scope, ratio mode, EMPTY ratio field, valid reading: the "Water to add at this
+    // ratio" row is suppressed (nothing to compute), and the grid hint said "Water to add at
+    // this ratio above uses your measured paste (1,480 g)…" — pointing at a row that is not
+    // on screen, directly under "Enter a water:paste ratio greater than zero". Pre-existing;
+    // same copy-points-at-nothing class as the caveat below.
+    render(<DilutionPanel {...RATIO_BASE} waterPasteRatio="" measuredPasteGrams="1480" />);
+    expect(screen.getByText(/Enter a water:paste ratio greater than zero/i)).toBeTruthy();
+    expect(screen.queryByText(/uses your measured paste/i)).toBeNull();
+    // The control, so this is a gate and not a deletion: with the ratio back, the row is on
+    // screen and the hint names it again.
+    cleanup();
+    render(<DilutionPanel {...RATIO_BASE} waterPasteRatio="2" measuredPasteGrams="1480" />);
+    expect(screen.getByText('Water to add at this ratio')).toBeTruthy();
+    expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
+    // …and concentration mode, which has its own row and has never been gated on a ratio.
+    cleanup();
+    render(<DilutionPanel {...RATIO_BASE} dilutionMode="concentration" waterPasteRatio="" measuredPasteGrams="1480" />);
+    expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
   });
 
   it('says nothing about "this ratio" while there is no ratio to speak of', () => {

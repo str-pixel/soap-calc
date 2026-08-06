@@ -501,52 +501,69 @@ export function DilutionPanel({
             aria-label="Common water to paste ratios"
           >
             <span className="dilution-toggle__legend">Common starting points:</span>
-            {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => (
-              <label className="field field--inline" key={preset}>
-                <input
-                  type="radio"
-                  name="waterPasteRatioPreset"
-                  // Compared as a NUMBER, not as the string: '2', '2.0' and a typed '2' are
-                  // one ratio, and the input's own step can produce any of them. A ratio
-                  // that matches no preset — the reference prints four, not an exhaustive
-                  // list — simply leaves the group unselected rather than snapping the
-                  // maker's own figure to a nearby one.
-                  checked={ratioValid && ratioNum === Number(preset)}
-                  onChange={() => {
-                    // A pick is an edit to the ratio, exactly as typing is, so it sets the
-                    // same ratioTouched gate the write-back effect below requires. Without
-                    // it a preset would move the readout while every figure underneath —
-                    // and the printed sheet — stayed on the saved target, which is the
-                    // split the "Not applied yet" note exists to report.
-                    setRatioTouched(true);
-                    onWaterPasteRatioChange?.(preset);
-                  }}
-                  // …and `change` is not enough, because the preset the maker most needs to
-                  // apply is the one ALREADY checked. App seeds waterPasteRatio to '2' and a
-                  // 30% target, so entering ratio mode shows 2:1 selected beside "Not applied
-                  // yet: … still uses your saved 30% target, not the 25% above" — and clicking
-                  // a checked radio changes no checkedness, so it fires no `change` at all.
-                  // The one obvious remedy was inert; recovery meant picking a different
-                  // preset and coming back. `click` fires either way.
-                  //
-                  // THE TWO HANDLERS MUST DO THE SAME THING. `click` covers the already-checked
-                  // case that fires no `change`; on a real change BOTH run, so anything that
-                  // is not idempotent — a toggle, a counter, logging added to one of them —
-                  // is a bug in whichever handler differs. Keep them identical or collapse
-                  // them into one named function; do not let them diverge.
-                  //
-                  // This does not reopen the round-2 bug it looks like it might: that one was
-                  // ENTERING ratio mode silently rewriting a typed target with no user action
-                  // at all. Re-asserting a ratio is a user action, and the gate it sets is the
-                  // same one typing sets. Only a real click reaches this.
-                  onClick={() => {
-                    setRatioTouched(true);
-                    onWaterPasteRatioChange?.(preset);
-                  }}
-                />
-                <span>{preset}:1</span>
-              </label>
-            ))}
+            {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => {
+              // A pick is an edit to the ratio, exactly as typing is, so it sets the same
+              // ratioTouched gate the write-back effect below requires. Without it a preset
+              // would move the readout while every figure underneath — and the printed sheet
+              // — stayed on the saved target, which is the split the "Not applied yet" note
+              // exists to report.
+              //
+              // THREE handlers reach it, because no one event covers the case that matters.
+              // An event census in Chromium, listeners on the raw inputs:
+              //
+              //   checked   + click  → click
+              //   checked   + Space  → keydown, keyup                    ← and nothing else
+              //   unchecked + Space  → keydown, keyup, click, input, change
+              //   arrow to sibling   → keydown, click(sibling), keyup(sibling)
+              //
+              // `change` alone misses every row but the third: App seeds waterPasteRatio to
+              // '2' and a 30% target, so entering ratio mode shows 2:1 ALREADY CHECKED beside
+              // "Not applied yet: … still uses your saved 30% target, not the 25% above", and
+              // re-asserting a checked radio changes no checkedness. The one obvious remedy
+              // was inert — by mouse until `click` was added, and by keyboard until `keyup`
+              // was. Recovery meant picking another preset and coming back.
+              //
+              // ONE function, not three copies, so "they must all do the same thing" is
+              // structural rather than a promise: on a real change two or three of them fire
+              // in the same interaction, which is only safe because this is idempotent —
+              // setRatioTouched(true) twice is once, and onWaterPasteRatioChange with the same
+              // string is a no-op re-render React bails out of. Anything stateful added here
+              // (a toggle, a counter, logging) would fire an unpredictable number of times.
+              //
+              // keyup rather than keydown: it is where the browser's own activation lands
+              // (census row 3 — keyup precedes the synthetic click), and keydown repeats while
+              // the key is held. Gated hard on Space because focus arrives by Tab and the Tab
+              // KEYUP lands on the newly focused element — an ungated keyup would write a
+              // ratio back the moment the group was tabbed into, which is the round-2 bug
+              // (entering ratio mode rewriting a typed target with no user action) in a new
+              // costume. Space is a pick; arriving is not.
+              const applyPreset = () => {
+                setRatioTouched(true);
+                onWaterPasteRatioChange?.(preset);
+              };
+              return (
+                <label className="field field--inline" key={preset}>
+                  <input
+                    type="radio"
+                    name="waterPasteRatioPreset"
+                    // Compared as a NUMBER, not as the string: '2', '2.0' and a typed '2' are
+                    // one ratio, and the input's own step can produce any of them. A ratio
+                    // that matches no preset — the reference prints four, not an exhaustive
+                    // list — simply leaves the group unselected rather than snapping the
+                    // maker's own figure to a nearby one.
+                    checked={ratioValid && ratioNum === Number(preset)}
+                    onChange={applyPreset}
+                    onClick={applyPreset}
+                    onKeyUp={(e) => {
+                      // 'Spacebar' is the legacy spelling; ' ' is what every current browser
+                      // and both test drivers send.
+                      if (e.key === ' ' || e.key === 'Spacebar') applyPreset();
+                    }}
+                  />
+                  <span>{preset}:1</span>
+                </label>
+              );
+            })}
           </div>
           {/* LS:1534 in our own words: 1:1 is named as somewhere to begin and add to, 2:1
               and 3:1 as where others start depending on the recipe, and the recipe
@@ -925,7 +942,15 @@ export function DilutionPanel({
                   </div>
                 )}
               </dl>
-              {measuredPasteValid && (
+              {/* `ratioValid` in ratio mode, because the row this names has to be ON SCREEN.
+                  With the ratio field empty neither water row renders — the concentration row
+                  is suppressed by the mode, and "Water to add at this ratio" needs a ratio —
+                  so this pointed at nothing, directly under "Enter a water:paste ratio greater
+                  than zero". Exactly the gate the ratio caveat above carries, for the same
+                  reason. `ratioValid` is the whole condition: with a valid measurement
+                  pasteGrams is positive, so a positive ratio makes ratioWaterGrams and
+                  ratioConcentrationPercent non-null, which is what that row is gated on. */}
+              {measuredPasteValid && (dilutionMode !== 'ratio' || ratioValid) && (
                 <p className="results-hint">
                   {/* Named explicitly rather than positionally: in ratio mode the main grid's
                       own "Dilution water to add" row is suppressed (see just above), so
