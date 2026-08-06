@@ -2576,18 +2576,95 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
   });
 
-  it('frames 1:1 as a place to start and ties the choice to the recipe', () => {
+  /** The one paragraph of ratio guidance, however it is worded. Selected on the durable
+   *  claim (it is the copy that ties the choice to the oils) rather than on an opening
+   *  phrase, so a rewrite that keeps the claims keeps the tests. Disambiguated from the
+   *  minimum-dilution paragraph further down the panel, which names coconut-heavy soaps
+   *  too, by the ratios only this one prints. */
+  const ratioGuidance = () => {
+    const [paragraph] = screen
+      .getAllByText(/coconut-heavy soaps/i)
+      .filter((el) => /2:1/.test(el.textContent ?? ''));
+    expect(paragraph).toBeTruthy();
+    return paragraph.textContent ?? '';
+  };
+
+  it('attributes the starting ratios rather than calling them common or universal', () => {
     render(<DilutionPanel {...RATIO_BASE} />);
-    const framing = screen.getByText(/1:1 is where you start/i);
-    expect(framing.textContent).toMatch(/coconut/i);
-    expect(framing.textContent).toMatch(/castile/i);
+    const text = ratioGuidance();
+    // LS:1534 attributes them — SOME makers start at 1:1, OTHERS at 2:1 or 3:1 — and the
+    // reference's own beginner CPLS table does not offer 1:1 at all (lowest row 2:1,
+    // LS:2172). "1:1 is where you start" stated it as everyone's starting point.
+    expect(text).toMatch(/some makers/i);
+    expect(text).toMatch(/others/i);
+    expect(text).toMatch(/1:1/);
+    expect(text).toMatch(/2:1 or 3:1/);
+    // "The most common ratios are 1:1, 2:1, 3:1" is said of water:LYE (LS:1500) — the same
+    // numerals for a different quantity at a different stage. Nothing calls a water:PASTE
+    // ratio common, so this panel must not, in the prose or in either group name.
+    expect(text).not.toMatch(/common/i);
+    expect(screen.getByRole('radiogroup', { name: /starting points/i })).toBeTruthy();
+    expect(screen.queryByRole('radiogroup', { name: /common/i })).toBeNull();
+    expect(screen.queryByText(/common starting points/i)).toBeNull();
+  });
+
+  it('drives the water requirement off the recipe minimum, not off a dissolving mechanism', () => {
+    render(<DilutionPanel {...RATIO_BASE} />);
+    const text = ratioGuidance();
+    // The reference's model is a per-recipe MINIMUM dilution (LS:1524 — under it the
+    // solution is supersaturated and paste is left over; LS:1603 — every recipe has its
+    // own). LS:1534 gives no mechanism at all for needing more water.
+    expect(text).toMatch(/minimum/i);
+    expect(text).toMatch(/undissolved/i);
+    // "expect to add more as the paste dissolves" was invented AND backwards: too little
+    // water is what prevents dissolution. The absorb-and-swell picture is Gradual
+    // Dilution's (LS:1531), a different method, and the LS:1531 paragraph further down
+    // already owns it for both modes — so it must not be imported here.
+    expect(text).not.toMatch(/as the paste dissolv/i);
+    expect(text).not.toMatch(/absorb/i);
+    expect(text).not.toMatch(/swell/i);
+  });
+
+  it('scopes the more-water claim to castile and exempts castor', () => {
+    render(<DilutionPanel {...RATIO_BASE} />);
+    const text = ratioGuidance();
+    // LS:1534/LS:1603/LS:2181 support coconut-less / castile-more. What they do not support
+    // is sweeping in every unsaturated blend: ricinoleic acid is unsaturated and INCREASES
+    // solubility with a rapid dilution (LS:848, LS:915, LS:2382), and most liquid-soap
+    // recipes carry 15-30% castor (LS:2723) — so "castile and other high-unsaturated
+    // blends need more" told the majority of makers the wrong thing about their own recipe.
+    expect(text).toMatch(/coconut/i);
+    expect(text).toMatch(/castile/i);
+    expect(text).toMatch(/castor/i);
+    expect(text).not.toMatch(/high-unsaturated/i);
+    // Castile is named by what makes it thirsty (its oil), not by the fatty-acid class it
+    // shares with castor.
+    expect(text).toMatch(/olive-heavy castile/i);
+  });
+
+  it('accounts for the fourth preset instead of offering four and explaining three', () => {
+    render(<DilutionPanel {...RATIO_BASE} />);
+    // 2.5:1 is on screen as a button but appears exactly once in the reference (LS:2172), a
+    // row in one beginner CPLS recipe's dilution table — never named as a general place to
+    // start. Copy naming only 1:1/2:1/3:1 left it looking like a fourth sourced convention.
+    expect(screen.getByRole('radio', { name: '2.5:1' })).toBeTruthy();
+    expect(ratioGuidance()).toMatch(/2\.5:1 is a step between/i);
   });
 
   it('carries the weigh-your-paste caveat in ratio mode and nowhere else', () => {
     render(<DilutionPanel {...RATIO_BASE} />);
-    expect(screen.getByText(/only as exact as the paste it multiplies/i)).toBeTruthy();
-    expect(screen.getByText(/Weigh the pot and enter it as Measured paste weight below/i))
-      .toBeTruthy();
+    const caveat = screen.getByText(/only as exact as the paste it multiplies/i);
+    expect(caveat).toBeTruthy();
+    // What goes on the scale is the PASTE. Both routes the reference gives yield paste and
+    // never pot + paste: a tared scale (LS:1534), or the crockpot shortcut, which
+    // SUBTRACTS the empty pot (LS:1538). "Weigh the pot and enter it as Measured paste
+    // weight below" was that shortcut with its subtraction deleted — a maker following it
+    // literally enters a figure carrying 2-4 kg of empty crockpot, and the ratio multiplies
+    // that mass into the dilution water. Both halves are pinned: name the paste, and if the
+    // pot is mentioned at all, name the subtraction with it.
+    expect(caveat.textContent).toMatch(/weigh the paste and enter it as measured paste weight/i);
+    expect(caveat.textContent).toMatch(/subtract the empty pot/i);
+    expect(caveat.textContent).not.toMatch(/weigh the (crock)?pot and enter/i);
     cleanup();
     // The reference attaches it to its ratio rows and to no concentration row.
     render(<DilutionPanel {...RATIO_BASE} dilutionMode="concentration" />);
@@ -2596,12 +2673,15 @@ describe("ratio mode offers the reference's own starting ratios", () => {
 
   it('says the caveat is met rather than repeating it, in the scope that has no other answer', () => {
     // 1,480 g clears the 1,200 g anhydrous floor and sits under the 4,000 g solution, so
-    // the ratio is already multiplying a weighed pot. Custom amount is where this sentence
+    // the ratio is already multiplying a weighed paste. Custom amount is where this sentence
     // is the ONLY thing on screen saying so — the grid's own "uses your measured paste" hint
     // is whole-batch and does not render here.
     render(<DilutionPanel {...RATIO_BASE} dilutionScope="portion" targetMl="1000" measuredPasteGrams="1480" />);
     expect(screen.getByText(/you have weighed the paste \(1,480 g\)/i)).toBeTruthy();
-    expect(screen.queryByText(/Weigh the pot and enter it/i)).toBeNull();
+    // The instruction is discharged, in whatever words it is written — including any
+    // reintroduced pot-weighing form of it.
+    expect(screen.queryByText(/enter it as measured paste weight/i)).toBeNull();
+    expect(screen.queryByText(/weigh the (crock)?pot/i)).toBeNull();
   });
 
   it('does not repeat it in Whole batch, where the grid hint already says it', () => {
@@ -2654,11 +2734,15 @@ describe("ratio mode offers the reference's own starting ratios", () => {
   it('keeps the estimate but drops the instruction when a reading is on screen unused', () => {
     // 900 g is below the 1,200 g anhydrous floor, so it is REFUSED and cannot correct the
     // batch — the ratio really is running on the computed paste and the caveat still holds.
-    // Telling a maker who has just weighed the pot to go and weigh it is the one thing this
-    // must not do. (This used to be pinned with a "what's left" reading; the rejected one is
-    // what still reaches this branch now that every reading is the whole batch.)
+    // Telling a maker who has just been to the scale to go to the scale is the one thing
+    // this must not do. (This used to be pinned with a "what's left" reading; the rejected
+    // one is what still reaches this branch now that every reading is the whole batch.)
     render(<DilutionPanel {...RATIO_BASE} measuredPasteGrams="900" />);
-    expect(screen.getByText(/only as exact as the paste it multiplies/i)).toBeTruthy();
-    expect(screen.queryByText(/Weigh the pot and enter it/i)).toBeNull();
+    const caveat = screen.getByText(/only as exact as the paste it multiplies/i);
+    expect(caveat).toBeTruthy();
+    // Pinned on the claim, not the sentence: no weighing instruction in any wording, so a
+    // rewrite cannot smuggle one back in past a stale exact-string assertion.
+    expect(caveat.textContent).not.toMatch(/enter it as measured paste weight/i);
+    expect(caveat.textContent).not.toMatch(/weigh the (paste|pot|crockpot)/i);
   });
 });
