@@ -57,15 +57,19 @@ describe('troubleshootingFor', () => {
     // LS:1610, LS:2181) — and it flatly denies the viscosity version (LS:1657 coconut
     // soaps thin as milk even at the minimum; LS:3585 the "preconceived (and incorrect)
     // notion"). Setting IS the right verb for the two causes the book does support — NaOH
-    // (LS:2679) and salt — so the pin is scoped to the concentration sentence alone.
+    // (LS:2679) and salt — so the pin is scoped to the concentration sentence alone. Within
+    // that sentence the banned-verb list is the same one DilutionPanel.test pins on the
+    // panel's minimum-dilution paragraph (thickens / sets / solidifies / congeals /
+    // hardens / gels): the scoping carries the NaOH/salt carve-out, not the verb list.
     const gel = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom))!;
     const concentrationSentence = gel.cause
       .split(/(?<=\.)\s+/)
       .find((s) => /maximum concentration/i.test(s))!;
     expect(concentrationSentence).toBeTruthy();
     expect(concentrationSentence).toMatch(/never dissolves|undissolved|lumps/i);
-    expect(concentrationSentence).not.toMatch(/\bsets?\b/i);
-    expect(concentrationSentence).not.toMatch(/\bthickens\b/i);
+    expect(concentrationSentence).not.toMatch(
+      /thickens|\bsets?\b|solidif|congeal|harden|\bgels?\b/i,
+    );
   });
 
   it('runs the salt curve in the same direction as the rest of the app — the gel is the PEAK', () => {

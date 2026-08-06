@@ -1293,9 +1293,15 @@ describe('the measurement feedback follows the measured-paste input, not the sco
       expect(alert).toMatch(/crockpot/i);
       // The control-based remedy still leads: a correct reading against an unreachable
       // target is the other, older way into this alert, and it is not a measurement error.
-      expect(alert.indexOf('lower the target concentration')).toBeLessThan(
-        alert.search(/subtract the empty pot/i),
-      );
+      // Both indices are asserted found before they are compared — indexOf/search return -1
+      // on a miss, and -1 is less than every hit, so an unguarded comparison would go
+      // vacuous the moment either phrase was reworded (or merely re-cased, which the
+      // sibling test's case-insensitive presence pin would not catch).
+      const remedyIndex = alert.search(/lower the target concentration/i);
+      const subtractIndex = alert.search(/subtract the empty pot/i);
+      expect(remedyIndex).toBeGreaterThanOrEqual(0);
+      expect(subtractIndex).toBeGreaterThanOrEqual(0);
+      expect(remedyIndex).toBeLessThan(subtractIndex);
     });
   });
 
