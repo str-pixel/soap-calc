@@ -88,9 +88,12 @@ type DilutionPanelProps = {
   waterPasteRatio?: string;
   onWaterPasteRatioChange?: (value: string) => void;
   /** The maker's scale reading for the paste, in grams (same App state PortionDilutionResults
-   * reads — see its doc comment). ALWAYS the whole batch: the reference's own ratio method
-   * weighs the pot and multiplies, and sizing a partial dilution is what Custom amount and
-   * its "Amount to make (ml)" field are for. The reference weighs the paste precisely because
+   * reads — see its doc comment). ALWAYS the whole batch, and that is this app's choice, not
+   * the reference's: the reference's ratio method is portion-first (LS:1534 weighs "the
+   * portion of paste you wish to dilute"), while here sizing a partial dilution is what
+   * Custom amount and its "Amount to make (ml)" field are for. Whichever route, what goes on
+   * the scale is PASTE — the crockpot shortcut subtracts the empty pot (LS:1538) — never pot
+   * and paste together. The reference weighs the paste precisely because
    * no computed figure can account for the water a particular cook drove off, so when this is
    * present and passes PortionDilutionResults' own guards, it corrects the BATCH dilution
    * water here too, not just the portion below. (An alternative liquid's uncounted solids
@@ -185,7 +188,7 @@ export function DilutionPanel({
   // Only meaningful when measuredPasteValid — parseMeasuredPasteGrams then always succeeds.
   const measuredPasteNum = parseMeasuredPasteGrams(measuredPasteGrams) ?? NaN;
   // Is there a reading in the field at all — accepted or not? Only the ratio caveat below
-  // asks, and only to decide whether to close with "weigh the pot". A reading this row cannot
+  // asks, and only to decide whether to close with "weigh the paste". A reading this row cannot
   // use (a rejected one) still leaves the ratio running on the computed paste, so the caveat's
   // VERDICT holds either way; what would not hold is telling a maker who has just been to the
   // scale to go to the scale. Every such reading already has its own rejection alert on
@@ -431,12 +434,25 @@ export function DilutionPanel({
           <h2 className="panel__title">Dilution</h2>
           <p className="panel__subtitle">Water to add to reach a target soap concentration</p>
         </div>
-        <div className="dilution-mode-toggle" role="radiogroup" aria-label="Dilution display unit">
+        {/* The accessible name CONTAINS the visible label rather than equalling it
+            (Label-in-Name), and deliberately does not equal it: BatchBasics' global selector
+            is named exactly "Weight unit", and SettingsPanel.test queries that string
+            exactly. Two controls answering to the identical name would be ambiguous at App
+            level; the trailing qualifier keeps this one distinguishable while a voice or
+            screen-reader user still hears the words on screen. */}
+        <div
+          className="dilution-mode-toggle"
+          role="radiogroup"
+          aria-label="Weight unit for the dilution figures"
+        >
           {/* Same visible antecedent the ratio presets below carry, for the same reason:
               "g oz lb" beside a heading is three bare radios with nothing on screen saying
               what they switch. The name was in aria-label only, which sighted makers never
-              see. */}
-          <span className="dilution-toggle__legend">Show weights in:</span>
+              see.
+              The app already has a name for this control — BatchBasics calls its global
+              twin "Weight unit" — and inventing a second phrasing for the same choice made
+              the panel-local switch look like a different kind of setting. */}
+          <span className="dilution-toggle__legend">Weight unit</span>
           {DILUTION_UNIT_OPTIONS.map((option) => (
             <label className="field field--inline" key={option.id}>
               <input
@@ -494,13 +510,29 @@ export function DilutionPanel({
               panel, for the same reason: bare "1:1 2:1" options beside a number field
               say nothing about what they set. The label above keeps owning the DIRECTION —
               these read "2:1", and the same tokens mean water:lye elsewhere in the app, so
-              the group never restates the relationship on its own. */}
+              the group never restates the relationship on its own.
+
+              Neither name says "common" any more, visible or accessible. "The most common
+              ratios used are 1:1, 2:1 and 3:1" is said of water:LYE (LS:1500) — the same
+              three numerals, but a different quantity measured at a different stage of the
+              process. Nothing calls a water:PASTE ratio common, so a water:paste group
+              claiming it was citing the wrong thing to both audiences at once. What the
+              reference does say about these is that they are where makers begin (LS:1534),
+              which is what the legend now says. The group's accessible name leads with the
+              visible caption verbatim, so Label-in-Name holds here as it does for the unit
+              switch above.
+
+              Colon dropped, and dropped from the unit legend above in the same pass: the
+              two are the only captions of their kind in this panel, they share a class and
+              an inline row, and BatchBasics — which owns the app's other weight-unit
+              control — punctuates its own field captions without one. One of the two
+              keeping a colon would have been arbitrary. */}
           <div
             className="dilution-mode-toggle"
             role="radiogroup"
-            aria-label="Common water to paste ratios"
+            aria-label="Starting points for the water to paste ratio"
           >
-            <span className="dilution-toggle__legend">Common starting points:</span>
+            <span className="dilution-toggle__legend">Starting points</span>
             {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => {
               // A pick is an edit to the ratio, exactly as typing is, so it sets the same
               // ratioTouched gate the write-back effect below requires. Without it a preset
@@ -565,17 +597,56 @@ export function DilutionPanel({
               );
             })}
           </div>
-          {/* LS:1534 in our own words: 1:1 is named as somewhere to begin and add to, 2:1
-              and 3:1 as where others start depending on the recipe, and the recipe
-              dependence is solubility — coconut-heavy soaps dissolve readily and take less
-              water, high-unsaturated ones like castile take more. Deliberately does NOT
-              repeat the add-in-stages technique: the LS:1531 paragraph further down already
-              owns that, and it applies to both modes. */}
+          {/* This paragraph owns the RATIOS and nothing else. Three sentences, three claims.
+              1. ATTRIBUTED, not universal: the reference says some makers begin at 1:1 and
+                 others at 2:1 or 3:1 depending on the recipe (LS:1534). It never says
+                 everyone starts at 1:1, and its own beginner table does not offer 1:1 at
+                 all — the lowest row there is 2:1 (LS:2172).
+              2. The fourth preset is accounted for by SOURCE rather than by editorial. It
+                 was called "a step between those two rather than a starting point of its
+                 own", which is the opposite of what the one place it appears shows: LS:2172
+                 is a table headed "Dilution Preference" for the beginner recipe that
+                 LS:2192 identifies as the Beginner Castile, and 2.5:1 is the more dilute of
+                 the two ratios that table offers. Its arithmetic confirms the calibration —
+                 paste is 19.31 oz anhydrous + 6.62 oz lye water = 25.93 oz, so 2.5:1 is
+                 64.83 oz of water (the table's own figure) for a 90.75 oz solution at
+                 21.3% soap, inside the 20-30% band LS:2181 gives castile. It is a
+                 castile-calibrated CHOICE for exactly the recipe class that needs the most
+                 water, not an interpolation — and denying it starting-point status also
+                 fought this group's own "Starting points" legend.
+                 No figure is quoted in the copy on purpose: the readout directly below
+                 prints what 2.5:1 lands at for THIS recipe, which is 21.3% only for the
+                 book's paste-to-anhydrous ratio and drifts with the lye-water concentration.
+                 A fixed "21%" here would have argued with a live figure one paragraph away.
+              3. The minimum is a FLOOR TO CLEAR, never a destination. It replaces an
+                 invented mechanism ("expect to add more as the paste dissolves" — unsourced,
+                 and backwards, since too little water is what PREVENTS dissolution; the
+                 absorb-and-swell picture is Gradual Dilution's, LS:1531, whose own paragraph
+                 further down owns it for both modes). But the first repair overshot into
+                 "where you land is set by the recipe's own minimum", which the reference
+                 attacks by name: LS:1605 hands the decision to the maker once the minimum is
+                 met ("you can then decide if you would like to include additional water…
+                 depending on what the product will be used for"), LS:3585 calls diluting to
+                 the minimum for thickness a "preconceived (and incorrect) notion", and
+                 LS:1690 asks whether the commercial soaps use the absolute minimum and
+                 answers NO WAY. It also contradicted this app in two places: core's
+                 ls-dilution-targets ("any concentration above the recipe's own minimum
+                 'works', and the right answer depends entirely on the product") and the
+                 minimum-dilution paragraph further down this very panel. So the claim is
+                 bounded to what LS:1524/LS:1605 support — how LITTLE water you can use —
+                 and where you land is left to the intended-use list below, which already
+                 owns it. Naming a floor is not naming the add-in-stages technique either,
+                 so the LS:1531 paragraph keeps its own message.
+              What this paragraph deliberately does NOT say: which oils raise the minimum.
+              That claim, with the actual figures, belongs to the minimum-dilution paragraph
+              further down (see its comment) — it used to render here too, and both fired on
+              one screen in ratio + whole batch.
+              No source is named in the visible text, here or anywhere in this panel. */}
           <p className="results-hint">
-            1:1 is where you start, not where you land — expect to add more as the paste
-            dissolves. 2:1 and 3:1 are the other common starting points, and which one suits
-            you is a property of the recipe: coconut-heavy soaps dissolve readily and need
-            less water, while castile and other high-unsaturated blends need more.
+            Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
+            comes off a castile dilution table, the more dilute of its two ratio rows. The
+            recipe&apos;s own minimum sets how little water you can use — below it, some
+            paste stays undissolved.
           </p>
           {/* The caveat the reference attaches to its ratio rows and to no concentration row
               (LS:2172, repeated at LS:2294): those water figures are estimates, and the
@@ -587,6 +658,18 @@ export function DilutionPanel({
               property of the ratio rather than as a tip.
               Once a reading is accepted the caveat is discharged, and saying so is the
               point: the instruction is the part that must not survive its own remedy.
+
+              WHAT GETS WEIGHED IS THE PASTE. Both of the reference's routes to that number
+              yield paste and never pot + paste: put the paste on a tared scale (LS:1534),
+              or — the crockpot shortcut, which exists precisely so the paste need not be
+              turned out of the pot — weigh the loaded crockpot and SUBTRACT the empty one
+              (LS:1538, with LS:1536 advising you weigh and mark your crockpots before you
+              ever start). This used to close with "Weigh the pot and enter it as Measured
+              paste weight below", which is the shortcut with its subtraction deleted: a
+              maker who followed it literally typed a figure carrying an empty crockpot's
+              2-4 kg, and the ratio multiplied that mass straight into the dilution water.
+              If a future edit names the pot again it owes the subtraction in the same
+              breath — DilutionPanel.test pins both halves.
 
               Two gates, both about not saying something twice or about nothing.
 
@@ -607,7 +690,7 @@ export function DilutionPanel({
             <p className="results-hint">
               {measuredPasteValid
                 ? `You have weighed the paste (${formatWeight(measuredPasteNum, 'g')}), so this ratio is taken against what the pot really holds rather than an estimate — the water your cook drove off is already counted.`
-                : `A ratio is only as exact as the paste it multiplies, and this one runs on the recipe's computed paste: the cook drives off water the recipe still counts, and only your scale knows how much.${pasteReadingEntered ? '' : ' Weigh the pot and enter it as Measured paste weight below.'}`}
+                : `A ratio is only as exact as the paste it multiplies, and this one runs on the recipe's computed paste: the cook drives off water the recipe still counts, and only your scale knows how much.${pasteReadingEntered ? '' : " Weigh the paste and enter it as Measured paste weight below — or weigh the loaded crockpot and subtract the empty pot's own weight."}`}
             </p>
           )}
         </>
@@ -639,10 +722,19 @@ export function DilutionPanel({
             default and has no ratio caveat to carry the point, so without this nothing on the
             panel says which paste is wanted. Custom amount is where it bites: the field sits
             under "Paste to weigh out — 412 g" and a hint saying "Weigh your paste and enter
-            it above", and the reference itself frames the reading as a portion (LS:1534,
-            "place the portion of paste you wish to dilute on a tared scale"), so the maker's
-            prior runs against this app's. A deep drawdown trips the solids floor and is
-            refused; a SHALLOW one clears it and is taken as the batch with no alert at all.
+            it above", and the reference itself frames the reading as a portion (LS:1534
+            weighs the portion you wish to dilute), so the maker's prior runs against this
+            app's. A deep drawdown trips the solids floor and is refused; a SHALLOW one
+            clears it and is taken as the batch with no alert at all.
+
+            That divergence is DELIBERATE and this label is the correct half of it: every
+            figure this field feeds — the corrected batch pour, the ratio's paste, the
+            portion's own ceiling — is derived from a whole-batch mass, so a label promising
+            the reference's portion-first reading would describe an app that does not exist.
+            Do not "correct" it toward the source; the source is portion-first and this app
+            is not. What the source is authoritative about here is the two ways to GET the
+            number (tared paste, LS:1534; loaded crockpot minus the empty one, LS:1538), and
+            the ratio caveat above is where those are named.
 
             This span IS the input's accessible name — the wrapping <label> associates them,
             and there is deliberately no aria-label on the input to override it. There used to
@@ -708,15 +800,15 @@ export function DilutionPanel({
                 {formatWeight(measurementRejection.solidsFloorGrams, 'g')} of soap and
                 alternative-liquid solids this batch&apos;s pot holds, and the cook boils off
                 water, not solids — so it cannot be all of the paste. Check the scale was
-                tared, and that what you weighed was the whole pot: this field takes the
+                tared, and that what you weighed was all of the paste: this field takes the
                 batch&apos;s full paste weight.
               </p>
             ) : (
               <p className="results-hint" role="alert">
                 That is less than the {formatWeight(dilution.anhydrousGrams, 'g')} of
                 soap this batch makes, and solids do not evaporate — so it cannot be all of the
-                paste. Check the scale was tared, and that what you weighed was the whole pot:
-                this field takes the batch&apos;s full paste weight.
+                paste. Check the scale was tared, and that what you weighed was all of the
+                paste: this field takes the batch&apos;s full paste weight.
               </p>
             ))}
           {measurementRejection.exceedsSolution && (
@@ -731,7 +823,19 @@ export function DilutionPanel({
               {dilutionMode === 'ratio'
                 ? 'raise the water:paste ratio above (more water)'
                 : 'lower the target concentration above (more water)'}
-              , or check the measurement.
+              {/* The measurement clause now names the specific mistake, because this branch
+                  is where that mistake lands. Offering the crockpot shortcut in the ratio
+                  caveat above made "forgot to subtract the empty pot" reachable, and a
+                  forgotten subtraction always overshoots — an empty crockpot's 2-4 kg on top
+                  of the paste is heavier than the solution, so it trips THIS rule and never
+                  the solids floor (which only fires on a reading that is too light, and
+                  whose "check the scale was tared" remedy stays right for the mistake it
+                  does catch). Left generic, the leading remedy told a maker carrying 3 kg of
+                  stoneware to add more water, which would have compounded the error. Named
+                  second, after the control-based remedy, because a reading really can be
+                  correct and the target really can be out of reach. */}
+              , or check the measurement — if you weighed the crockpot, subtract the empty
+              pot&apos;s own weight.
             </p>
           )}
         </>
@@ -1201,12 +1305,61 @@ export function DilutionPanel({
                 : 'the LEAST you will need. Declare its % water, or dilute in increments and check by weight.'}
             </p>
           )}
+          {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance above used to
+              say it too — in words, without figures — so in ratio + whole batch the same
+              claim rendered twice on one screen; this one carries the numbers (LS:1603:
+              coconut to 40%, castile 25%; LS:1605: most combination recipes 25-35%), so it
+              keeps the claim and the other drops it.
+              It also renders in BOTH modes and BOTH scopes, where the ratio paragraph is
+              ratio-only — so ceding the claim here widens its reach rather than narrowing it.
+              The castor clause moved here for the same reason and for one of its own: it is
+              an exception to "unsaturated oils are less soluble" (LS:848), and the ratio
+              paragraph no longer states that rule, so over there the reader met an exception
+              to nothing. Here "castile ~25%" is the rule standing right in front of it, and
+              the clause states the rule as it names the exception, so it needs no setup.
+              Ricinoleic acid is unsaturated yet increases solubility and dilutes rapidly
+              (LS:848, LS:915, LS:2382) — worth saying because castor is not a trace
+              ingredient in liquid soap: the reference's own 30-Minute HTLS formulating guide
+              puts it at 15-30% of the oils (LS:2723). That is a guide for one method, not a
+              census of what makers build, and the earlier comment overstated it as "most
+              liquid-soap recipes carry 15-30% castor" — the cite is now scoped to what it
+              actually says.
+              No % is claimed for castor-rich blends: the reference gives solubility
+              direction, not a concentration figure, and inventing one is what this branch
+              exists to stop.
+              THE CONSEQUENCE is undissolved soap, never a viscosity change. "Past that the
+              soap thickens or sets" survived three copy audits because it was never the
+              named claim, and it was inherited from core's LS_MINIMUM_DILUTION_GUIDE doc
+              (see the corrected comment there for the full accounting). The reference
+              states the below-minimum failure four times and it is the same state each
+              time — supersaturation with soap left over: lumps of undiluted paste or a
+              thick, goopy layer on top (LS:1519), "remaining soap paste" (LS:1524),
+              "remaining soap pieces or a white foamy layer on top" (LS:1610), "saturated
+              and have remaining soap" (LS:2181). "Thickens" is contradicted outright for
+              the case the sentence led with — coconut-heavy soaps are thin as milk or
+              juice even AT the minimum (LS:1657) — and "sets" is attributed to cold
+              dilution water (LS:2277, LS:2370) or NaOH (LS:2679), never to too little
+              water. It was also the belief LS:3585 calls "preconceived (and incorrect)",
+              which the ratio-guidance comment above already cites: one panel cited the
+              debunking while printing the debunked claim.
+              The same-worded overflow sentence follows lsConcentrationAboveAllMinimums,
+              whose own doc now matches: above every ceiling means no recipe dissolves that
+              much soap, not that the pot refuses to be liquid.
+              THE HAIR SENTENCE stands alone and names its subject. "Not recommended for
+              hair." sat directly after the salt-thickening sentence, so it read as a claim
+              about salt-thickened soap — but the reference's claim is a row in the
+              intended-use list itself (LS:1690: shampoo, not recommended for use in hair),
+              about liquid soap as such, and LS:3089 lists shampoos among the products salt
+              IS used in commercially. Naming the soap ("itself, thickened or not") detaches
+              it from the sentence it happens to follow. */}
           <p className="results-hint">
             Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
-            hold up to ~40% soap, most blends 25–35%, castile ~25%. Past that the soap thickens
-            or sets.
+            hold up to ~40% soap, most blends 25–35%, olive-heavy castile ~25%. Past that, the
+            extra soap simply stays undissolved — lumps of paste, or a thick layer sitting on
+            top. Castor is the odd one out — unsaturated like olive, but it makes soap more
+            soluble rather than less.
             {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent))
-              ? ' This target is above what even a coconut-heavy recipe holds as a liquid.'
+              ? ' This target is above what even a coconut-heavy recipe can fully dissolve.'
               : ''}
           </p>
           <details className="results-hint dilution-uses">
@@ -1237,7 +1390,8 @@ export function DilutionPanel({
             </dl>
             <p>
               Diluting further and thickening with salt is the cheaper way to a thick soap —
-              water costs a fraction of what the oils did. Not recommended for hair.
+              water costs a fraction of what the oils did. Liquid soap itself, thickened or
+              not, is not recommended for hair.
             </p>
           </details>
         </>

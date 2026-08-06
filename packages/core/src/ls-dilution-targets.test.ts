@@ -81,11 +81,35 @@ describe('minimum-dilution guide', () => {
     expect(maxes[0]).toBe(40);
   });
 
-  it('flags a target no recipe type can hold as a liquid', () => {
+  it('flags a target no recipe type can fully dissolve', () => {
     // Dish/laundry's 35-45% band runs past the 40% ceiling of even a coconut-heavy soap,
     // so the top of that band is reachable only by the most tolerant recipes.
     expect(lsConcentrationAboveAllMinimums(45)).toBe(true);
     expect(lsConcentrationAboveAllMinimums(40)).toBe(false);
     expect(lsConcentrationAboveAllMinimums(30)).toBe(false);
+  });
+
+  it('caps the dish/laundry bands by what the recipe dissolves, never by thickness', () => {
+    // LS:1690 reads "Dish Soap - Minimum dilution concentration or 35-45% soap": use the
+    // band, or the recipe's own minimum if it cannot reach the band. The note used to say
+    // "whichever is thicker" — but the minimum IS the thickest attainable point, so that
+    // always resolved past every recipe class's ceiling, and for castile it pointed at
+    // concentrations LS:2181 states outright would be "too high (your recipe would be
+    // saturated and have remaining soap)". The below-minimum failure state is undissolved
+    // soap (LS:1519, LS:1524, LS:1610, LS:2181), never a change of viscosity (LS:1657
+    // contradicts "thickens" for coconut soaps even AT the minimum; LS:3585 names
+    // minimum-water-for-thickness a "preconceived (and incorrect) notion") — so no note
+    // may sell the minimum as the thicker option, in any wording.
+    const noted = LS_DILUTION_TARGETS.filter((t) => t.note?.includes('minimum dilution'));
+    expect(noted.map((t) => t.key).sort()).toEqual(['dish', 'laundry']);
+    for (const t of noted) {
+      expect(t.note).toMatch(/cannot dissolve/i);
+      expect(t.note).not.toMatch(/thicker|thickest|thickens|sets/i);
+    }
+    // And no shipped string anywhere in the module claims a viscosity consequence for the
+    // minimum: the failure is undissolved soap.
+    for (const t of LS_DILUTION_TARGETS) {
+      expect(`${t.label} ${t.note ?? ''}`).not.toMatch(/thickens|sets solid|stay liquid/i);
+    }
   });
 });

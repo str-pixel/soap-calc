@@ -8,10 +8,12 @@ import type { DilutionResult } from '@soap-calc/core';
  * is: (o) all of it ( ) what's left after earlier dilutions" — because a reading lighter than
  * the recipe predicts has two indistinguishable causes: water boiled off during the cook
  * (same soap, less water, MORE concentrated), or part of the batch already diluted away (same
- * composition, less of it). That control is gone by request. The whole-batch reading is also
- * how the reference frames the ratio method the panel offers — weigh the pot you are diluting
- * and multiply (LS:1534) — and sizing a partial dilution is what Custom amount and its
- * "Amount to make (ml)" field are for.
+ * composition, less of it). That control is gone by request. Whole-batch is this app's choice
+ * rather than the reference's: LS:1534 weighs the PORTION of paste you wish to dilute and
+ * multiplies that, so it is portion-first, and here sizing a partial dilution is what Custom
+ * amount and its "Amount to make (ml)" field are for instead. What the reference does settle
+ * is that the number is a PASTE weight either way — a tared scale (LS:1534), or the loaded
+ * crockpot minus the empty one (LS:1538) — and never a vessel weighed along with its contents.
  *
  * REMAINING MODE IS THEREFORE UNREACHABLE FROM THE UI, and is kept anyway: the parameter, the
  * remaining-mode ceiling (`exceedsRemainingCeiling`), the `isRemaining` gate on
@@ -309,7 +311,7 @@ export function measuredPasteRejectionFor(
   //
   // The ceiling wins there, and must: it is the rule with the actionable remedy in that
   // state (the reading is above what this target can hold, so the target is what moves),
-  // while the floor's remedies — re-tare, or weigh the whole pot — answer a mistake that is
+  // while the floor's remedies — re-tare, or weigh all of the paste — answer a mistake that is
   // not the one being made. `rejected` is unaffected either way, so nothing this
   // exclusion touches becomes acceptable; only the redundant paragraph goes.
   const solidsFloorGrams = solidsFloorGramsFor(dilution, wholeBatchPasteGrams, cookWaterGrams);

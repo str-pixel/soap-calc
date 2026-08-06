@@ -49,6 +49,20 @@ describe('App process switch', () => {
     expect(options).toEqual(['koh', 'dual']);
   });
 
+  it('keeps the global weight-unit selector unambiguous with the dilution panel on screen', async () => {
+    // The dilution panel's own unit switch is captioned "Weight unit" too, so that a sighted
+    // maker and a voice-control user see and say the same words the app already uses for
+    // this choice (BatchBasics). Its ACCESSIBLE name must therefore contain that string
+    // without equalling it: SettingsPanel's global selector answers to exactly "Weight unit"
+    // and is queried that way, and Liquid Soap is the one process where both controls are
+    // mounted at once. Naming the panel switch "Weight unit" outright would make this throw.
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    expect(screen.getByRole('radiogroup', { name: /weight unit/i })).toBeTruthy();
+    const globalSelector = screen.getByLabelText('Weight unit');
+    expect(globalSelector.tagName).toBe('SELECT');
+  });
+
   it('shows CP extras (dose converters + notes) for Cold process but not Liquid Soap', async () => {
     render(<App />);
     expect(screen.getByText('CP extras')).toBeTruthy();
