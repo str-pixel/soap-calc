@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within, cleanup } from '@testing-library/react';
+import { render, screen, within, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 
@@ -123,5 +123,62 @@ describe('App process switch', () => {
 
     measuredInput = screen.getByLabelText('Measured paste weight — the whole batch (g, optional)');
     expect((measuredInput as HTMLInputElement).value).toBe('1500');
+  });
+});
+
+describe('the seeded ratio preset applies from the path the app actually opens on', () => {
+  // App seeds waterPasteRatio to '2' and the saved target to 30%, so entering ratio mode
+  // renders 2:1 ALREADY CHECKED beside "Not applied yet: every figure below — and the printed
+  // batch sheet — still uses your saved 30% target, not the 25% above". Both of these drive
+  // the real App rather than the panel in isolation, because the seeding is App's and the
+  // bug only exists at those seeded values: DilutionPanel's own tests have to be handed the
+  // state that App creates for free.
+  //
+  // 1,200 g of anhydrous soap is not what the starter recipe makes, so the exact landing
+  // percentage is read off the app rather than hardcoded — what is asserted is that the
+  // saved target MOVED to whatever the ratio lands at, and that the split note cleared.
+  async function enterRatioMode() {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    const savedTarget = (
+      within(panel).getByLabelText('Target soap concentration percent') as HTMLInputElement
+    ).value;
+    await userEvent.click(within(panel).getByLabelText('Water : paste ratio'));
+    const preset = within(panel).getByRole('radio', { name: '2:1' }) as HTMLInputElement;
+    // The whole premise: the preset the maker would reach for is already selected, and the
+    // panel is telling them nothing below it has been applied.
+    expect(preset.checked).toBe(true);
+    expect(within(panel).getByText(/Not applied yet/i)).toBeTruthy();
+    return { panel, preset, savedTarget };
+  }
+
+  async function assertApplied(panel: HTMLElement, savedTarget: string) {
+    expect(within(panel).queryByText(/Not applied yet/i)).toBeNull();
+    await userEvent.click(within(panel).getByLabelText('Target concentration'));
+    const applied = (
+      within(panel).getByLabelText('Target soap concentration percent') as HTMLInputElement
+    ).value;
+    expect(applied).not.toBe(savedTarget);
+    expect(Number(applied)).toBeGreaterThan(0);
+  }
+
+  it('applies when the already-checked preset is clicked', async () => {
+    const { panel, preset, savedTarget } = await enterRatioMode();
+    await userEvent.click(preset);
+    await assertApplied(panel, savedTarget);
+  });
+
+  it('applies when the already-checked preset is activated with Space', async () => {
+    // fireEvent, not userEvent.keyboard(' '): jsdom synthesises a `click` on a checked radio
+    // where Chromium (censused) fires only keydown and keyup, so a userEvent-driven Space
+    // would go through the onClick handler and prove nothing about the keyboard path.
+    const { panel, preset, savedTarget } = await enterRatioMode();
+    preset.focus();
+    fireEvent.keyDown(preset, { key: ' ', code: 'Space' });
+    fireEvent.keyUp(preset, { key: ' ', code: 'Space' });
+    await assertApplied(panel, savedTarget);
   });
 });

@@ -394,6 +394,49 @@ test.describe('liquid soap', () => {
     await expect(section).toContainText(/ : 1/);
   });
 
+  // The one bug in this feature that jsdom cannot see. A component test drives synthetic
+  // events, and jsdom synthesises a `click` when Space is pressed on an ALREADY-CHECKED radio
+  // where Chromium fires only keydown and keyup — so the unit pins for this are written with
+  // fireEvent to imitate the real sequence, and these two are here to check that imitation
+  // against the browser itself. Censused in Chromium, listeners on raw inputs:
+  //   checked + click → click | checked + Space → keydown, keyup (nothing else)
+  //   unchecked + Space → keydown, keyup, click, input, change
+  test('the already-checked ratio preset applies from the keyboard, on the seeded path', async ({ page }) => {
+    // App opens ratio mode with waterPasteRatio '2' and the saved target still in force, so
+    // 2:1 is already selected beside "Not applied yet" — and re-asserting a checked radio
+    // fires no change event. Recovery meant picking another preset and coming back.
+    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
+    const saved = await section.getByLabel('Target soap concentration percent').inputValue();
+    await section.getByLabel('Water : paste ratio').click();
+    const preset = section.getByRole('radio', { name: '2:1' });
+    await expect(preset).toBeChecked();
+    await expect(section).toContainText(/Not applied yet/);
+
+    // Keyboard only — no click anywhere in this test.
+    await preset.focus();
+    await page.keyboard.press(' ');
+
+    await expect(section).not.toContainText(/Not applied yet/);
+    await section.getByLabel('Target concentration').click();
+    expect(await section.getByLabel('Target soap concentration percent').inputValue()).not.toBe(saved);
+  });
+
+  test('tabbing into the preset group applies nothing', async ({ page }) => {
+    // The other half of the Space handler: focus arrives by Tab and the Tab KEYUP lands on
+    // the newly focused element, so an ungated keyup would write a ratio back on arrival —
+    // the "entering ratio mode rewrites your typed target" bug in a new costume.
+    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
+    await section.getByLabel('Water : paste ratio').click();
+    await expect(section).toContainText(/Not applied yet/);
+    const preset = section.getByRole('radio', { name: '2:1' });
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.press('Tab');
+      if (await preset.evaluate((el) => el === document.activeElement)) break;
+    }
+    await expect(preset).toBeFocused();
+    await expect(section).toContainText(/Not applied yet/);
+  });
+
   test('negative superfat triggers Neutralize panel with citric estimate', async ({ page }, testInfo) => {
     await page.getByLabel('Superfat %', { exact: true }).fill('-3');
     await page.getByLabel('Superfat %', { exact: true }).blur();
