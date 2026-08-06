@@ -49,18 +49,54 @@ describe('App process switch', () => {
     expect(options).toEqual(['koh', 'dual']);
   });
 
-  it('keeps the global weight-unit selector unambiguous with the dilution panel on screen', async () => {
-    // The dilution panel's own unit switch is captioned "Weight unit" too, so that a sighted
-    // maker and a voice-control user see and say the same words the app already uses for
-    // this choice (BatchBasics). Its ACCESSIBLE name must therefore contain that string
-    // without equalling it: SettingsPanel's global selector answers to exactly "Weight unit"
-    // and is queried that way, and Liquid Soap is the one process where both controls are
-    // mounted at once. Naming the panel switch "Weight unit" outright would make this throw.
+  it('keeps the global weight-unit selector\'s name unique app-wide on the Liquid Soap tab', async () => {
+    // The dilution panel used to mount its own g/oz/lb switch, captioned "Weight unit" with
+    // a qualified accessible name so this exact-string query stayed unambiguous. The switch
+    // is gone — the global selector is the only unit control — and Liquid Soap is the one
+    // process where the dilution panel is on screen, so this is where a resurrected local
+    // control would collide. getByLabelText throws on ambiguity, which is the pin.
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    expect(screen.getByRole('radiogroup', { name: /weight unit/i })).toBeTruthy();
     const globalSelector = screen.getByLabelText('Weight unit');
     expect(globalSelector.tagName).toBe('SELECT');
+  });
+
+  it('the dilution figures follow the app-wide weight unit', async () => {
+    // The panel has no unit control of its own: the global selector is the only one, and
+    // every dilution figure reads whatever it says.
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const panel = screen.getByRole('heading', { name: 'Dilution' }).closest('section')!;
+    const waterDd = () =>
+      within(panel).getByText('Dilution water to add').nextElementSibling!.textContent ?? '';
+    expect(waterDd()).toContain(' g');
+
+    await userEvent.selectOptions(screen.getByLabelText('Weight unit'), 'oz');
+    expect(waterDd()).toContain('oz');
+    expect(waterDd()).not.toContain(' g');
+  });
+
+  it('kg mode renders kg on the panel figure and the printed sheet\'s dilution row alike', async () => {
+    // kg used to be the one unit where screen and sheet split: the panel's local switch had
+    // no kg radio and fell back to grams, while the printed BatchSheet always used the
+    // app-wide unit — so a kg-mode maker saw grams on screen and kg on paper. With the
+    // global selector as the only unit control, both surfaces quote the same figure in the
+    // same unit, and this pins the agreement, not just the unit.
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    await userEvent.selectOptions(screen.getByLabelText('Weight unit'), 'kg');
+
+    const panel = screen.getByRole('heading', { name: 'Dilution' }).closest('section')!;
+    const panelDd =
+      within(panel).getByText('Dilution water to add').nextElementSibling!.textContent ?? '';
+    expect(panelDd).toContain('kg');
+
+    const sheet = document.querySelector('.batch-sheet') as HTMLElement;
+    const sheetDd =
+      within(sheet).getByText('Dilution water to add').nextElementSibling!.textContent ?? '';
+    expect(sheetDd).toContain('kg');
+    // Same unit AND the same figure: the sheet's row is exactly the panel's row.
+    expect(sheetDd).toContain(panelDd);
   });
 
   it('shows CP extras (dose converters + notes) for Cold process but not Liquid Soap', async () => {

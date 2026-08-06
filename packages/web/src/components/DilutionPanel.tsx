@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LS_DILUTION_TARGETS,
   LS_SOLUTION_DENSITY_G_PER_ML,
@@ -8,7 +8,7 @@ import {
   type DilutionResult,
 } from '@soap-calc/core';
 import { formatConcentrationPercent } from '../lib/format';
-import { DILUTION_UNIT_OPTIONS, formatWeight } from '../lib/weightUnits';
+import { formatWeight } from '../lib/weightUnits';
 import {
   MEASURED_PASTE_IS_REMAINING,
   correctedDilutionWaterGrams,
@@ -48,6 +48,14 @@ type DilutionPanelProps = {
   dilution: DilutionResult | null;
   soapConcentrationPercent: string;
   onSoapConcentrationChange: (value: string) => void;
+  /** The app-wide unit (BatchBasics' "Weight unit" selector) — the ONLY unit control, used
+   * as-is for every figure here, kg included. Deliberately no kg→g fallback: the panel once
+   * kept a local g/oz/lb switch seeded from this prop with kg mapped to grams, so a kg-mode
+   * maker saw grams on screen while the printed BatchSheet (which has always used this prop
+   * directly) quoted kg. One unit in, one unit out is what keeps screen and sheet agreeing
+   * in all four units — do not re-add a fallback that re-splits them. The measured-paste
+   * echoes and rejection thresholds are the one exception and stay in grams; see the
+   * comment above the rejection alerts. */
   weightUnit: WeightUnit;
   /** Water the recipe's alternative liquids already put in the paste. Deducted from the
    * dilution figure upstream; passed here only so the readout can say so. */
@@ -414,56 +422,12 @@ export function DilutionPanel({
   // VOLUME below (derived from it, not from the solution) reconciles with what is above it.
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
-  // A reading aid, not a setting: the maker flips this to match whatever scale is on the
-  // bench without disturbing the app-wide unit every other panel uses. Seeded from that
-  // unit so the panel opens consistent with the rest of the app, and re-seeded when it
-  // changes — same prevRef pattern App already uses for the mold-sizer bar weight, which
-  // would otherwise strand this switch on a unit the maker has since moved away from.
-  const seedUnit = (u: WeightUnit): WeightUnit => (u === 'kg' ? 'g' : u);
-  const [displayUnit, setDisplayUnit] = useState<WeightUnit>(() => seedUnit(weightUnit));
-  const prevWeightUnitRef = useRef(weightUnit);
-  useEffect(() => {
-    if (prevWeightUnitRef.current === weightUnit) return;
-    prevWeightUnitRef.current = weightUnit;
-    setDisplayUnit(seedUnit(weightUnit));
-  }, [weightUnit]);
   return (
     <section className="panel panel--nested">
       <div className="panel__head">
         <div>
           <h2 className="panel__title">Dilution</h2>
           <p className="panel__subtitle">Water to add to reach a target soap concentration</p>
-        </div>
-        {/* The accessible name CONTAINS the visible label rather than equalling it
-            (Label-in-Name), and deliberately does not equal it: BatchBasics' global selector
-            is named exactly "Weight unit", and SettingsPanel.test queries that string
-            exactly. Two controls answering to the identical name would be ambiguous at App
-            level; the trailing qualifier keeps this one distinguishable while a voice or
-            screen-reader user still hears the words on screen. */}
-        <div
-          className="dilution-mode-toggle"
-          role="radiogroup"
-          aria-label="Weight unit for the dilution figures"
-        >
-          {/* Same visible antecedent the ratio presets below carry, for the same reason:
-              "g oz lb" beside a heading is three bare radios with nothing on screen saying
-              what they switch. The name was in aria-label only, which sighted makers never
-              see.
-              The app already has a name for this control — BatchBasics calls its global
-              twin "Weight unit" — and inventing a second phrasing for the same choice made
-              the panel-local switch look like a different kind of setting. */}
-          <span className="dilution-toggle__legend">Weight unit</span>
-          {DILUTION_UNIT_OPTIONS.map((option) => (
-            <label className="field field--inline" key={option.id}>
-              <input
-                type="radio"
-                name="dilutionDisplayUnit"
-                checked={displayUnit === option.id}
-                onChange={() => setDisplayUnit(option.id)}
-              />
-              <span>{option.short}</span>
-            </label>
-          ))}
         </div>
       </div>
       {/* Two ways to choose the same number (LS:1534 ratio vs. LS:1536 concentration) —
@@ -519,14 +483,11 @@ export function DilutionPanel({
               claiming it was citing the wrong thing to both audiences at once. What the
               reference does say about these is that they are where makers begin (LS:1534),
               which is what the legend now says. The group's accessible name leads with the
-              visible caption verbatim, so Label-in-Name holds here as it does for the unit
-              switch above.
+              visible caption verbatim, so Label-in-Name holds.
 
-              Colon dropped, and dropped from the unit legend above in the same pass: the
-              two are the only captions of their kind in this panel, they share a class and
-              an inline row, and BatchBasics — which owns the app's other weight-unit
-              control — punctuates its own field captions without one. One of the two
-              keeping a colon would have been arbitrary. */}
+              No colon after the legend: BatchBasics — which owns the app's weight-unit
+              selector — punctuates its own field captions without one, and this caption
+              follows suit. */}
           <div
             className="dilution-mode-toggle"
             role="radiogroup"
@@ -710,7 +671,7 @@ export function DilutionPanel({
         </label>
       )}
       <label className="field">
-        {/* Grams regardless of the display unit: this is a scale reading the maker takes at
+        {/* Grams regardless of the app-wide unit: this is a scale reading the maker takes at
             the pot, and the core figures it feeds are all gram-based. Always shown, even when
             the target exceeds the recipe's ASSUMED cook water: a measurement is exactly what
             can override that assumption, so hiding the input would remove the only way out of
@@ -758,11 +719,11 @@ export function DilutionPanel({
           computed paste because of it. Every remedy names a control that is above this
           point and visible in the current mode.
 
-          The thresholds below are quoted in GRAMS, not displayUnit — alone in this panel.
-          Every other figure here is a bench readout and belongs on whatever unit the maker's
-          scale is set to; these are bounds on the number they just typed into a grams-only
-          field, so quoting "less than the 2.65 lb of soap this batch makes" beside a typed 900
-          made them convert before they could check the claim.
+          The thresholds below are quoted in GRAMS, not the app-wide weightUnit — alone in
+          this panel. Every other figure here is a bench readout and belongs on the app-wide
+          unit; these are bounds on the number they just typed into a grams-only field, so
+          quoting "less than the 2.65 lb of soap this batch makes" beside a typed 900 made
+          them convert before they could check the claim.
 
           There is no branch here for `exceedsRemainingCeiling`: that rule only ever fires on a
           reading declared as what's LEFT after earlier dilutions, and this panel declares every
@@ -897,7 +858,7 @@ export function DilutionPanel({
           <dl className="results-grid">
             <div className="results-grid__item results-grid__item--primary">
               <dt>Water to add at this ratio</dt>
-              <dd>{formatWeight(ratioWaterGrams, displayUnit)}</dd>
+              <dd>{formatWeight(ratioWaterGrams, weightUnit)}</dd>
             </div>
           </dl>
         )}
@@ -960,16 +921,16 @@ export function DilutionPanel({
                 {dilutionMode !== 'ratio' && (
                   <div className="results-grid__item results-grid__item--primary">
                     <dt>Dilution water to add</dt>
-                    <dd>{formatWeight(batchDilutionWaterGrams, displayUnit)}</dd>
+                    <dd>{formatWeight(batchDilutionWaterGrams, weightUnit)}</dd>
                   </div>
                 )}
                 <div className="results-grid__item">
                   <dt>Paste (anhydrous)</dt>
-                  <dd>{formatWeight(dilution.anhydrousGrams, displayUnit)}</dd>
+                  <dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd>
                 </div>
                 <div className="results-grid__item">
                   <dt>Finished solution</dt>
-                  <dd>{formatWeight(dilution.solutionGrams, displayUnit)}</dd>
+                  <dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd>
                 </div>
                 {/* The water the finished solution actually holds, which is NOT
                     calculateDilution's totalWaterGrams once an alternative liquid puts
@@ -1025,18 +986,18 @@ export function DilutionPanel({
                       splitLiquidSolidsGrams > dilution.totalWaterGrams
                         ? dilution.totalWaterGrams
                         : dilution.totalWaterGrams - splitLiquidSolidsGrams,
-                      displayUnit,
+                      weightUnit,
                     )}
                   </dd>
                 </div>
                 <div className="results-grid__item">
                   <dt>Glycerin (retained)</dt>
-                  <dd>{formatWeight(dilution.glycerinGrams, displayUnit)}</dd>
+                  <dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd>
                 </div>
                 {showBottledRow && bottledGrams !== null && (
                   <div className="results-grid__item">
                     <dt>≈ Finished product</dt>
-                    <dd>{formatWeight(bottledGrams, displayUnit)}</dd>
+                    <dd>{formatWeight(bottledGrams, weightUnit)}</dd>
                   </div>
                 )}
                 {finishedVolumeMl !== null && (
@@ -1091,7 +1052,7 @@ export function DilutionPanel({
                whether a concentration field is even on screen. */
             <PortionDilutionResults
               dilution={dilution}
-              weightUnit={displayUnit}
+              weightUnit={weightUnit}
               targetMl={targetMl}
               measuredPasteGrams={measuredPasteGrams ?? ''}
               wholeBatchPasteGrams={wholeBatchPasteGrams}
@@ -1165,8 +1126,8 @@ export function DilutionPanel({
               {pasteAlreadyPastTarget && bestKnownPasteGrams !== null && (
                 <p className="results-hint" role="alert">
                   The paste is already more dilute than {refusalWording.named}: it weighs{' '}
-                  {formatWeight(bestKnownPasteGrams, displayUnit)} against the{' '}
-                  {formatWeight(dilution.solutionGrams, displayUnit)} its soap makes at that
+                  {formatWeight(bestKnownPasteGrams, weightUnit)} against the{' '}
+                  {formatWeight(dilution.solutionGrams, weightUnit)} its soap makes at that
                   concentration, so there is no dilution water to add.{' '}
                   {measurementRejection?.rejected ?? false
                     ? `${refusalWording.remedy} until the paste can reach it.`
@@ -1232,14 +1193,14 @@ export function DilutionPanel({
                   (anhydrous) + Total water falling short of Finished solution. */}
               {unknownLiquidGrams > 0
                 ? dilutionScope === 'batch'
-                  ? `${formatWeight(splitLiquidSolidsGrams, displayUnit)} of your alternative liquid is solids rather than water: they take up room in the finished solution, so they come off the water to add and are not part of the total water above.`
+                  ? `${formatWeight(splitLiquidSolidsGrams, weightUnit)} of your alternative liquid is solids rather than water: they take up room in the finished solution, so they come off the water to add and are not part of the total water above.`
                   : 'Part of your alternative liquid is solids rather than water: they take up room in the finished solution, so they come off the water to add.'
                 : dilutionScope === 'batch'
                   ? splitLiquidSolidsGrams > 0.5
                     ? altLiquidWaterGrams > 0
-                      ? `Already ${formatWeight(altLiquidWaterGrams + splitLiquidSolidsGrams, displayUnit)} lighter: ${formatWeight(altLiquidWaterGrams, displayUnit)} of water that went into the paste, and ${formatWeight(splitLiquidSolidsGrams, displayUnit)} of solids that take up room in the finished solution.`
-                      : `Already ${formatWeight(splitLiquidSolidsGrams, displayUnit)} lighter: the alternative liquid brought no water, and all of it is solids that take up room in the finished solution.`
-                    : `Already ${formatWeight(altLiquidWaterGrams, displayUnit)} lighter: that much water came in with the alternative liquid and is counted as part of the paste.`
+                      ? `Already ${formatWeight(altLiquidWaterGrams + splitLiquidSolidsGrams, weightUnit)} lighter: ${formatWeight(altLiquidWaterGrams, weightUnit)} of water that went into the paste, and ${formatWeight(splitLiquidSolidsGrams, weightUnit)} of solids that take up room in the finished solution.`
+                      : `Already ${formatWeight(splitLiquidSolidsGrams, weightUnit)} lighter: the alternative liquid brought no water, and all of it is solids that take up room in the finished solution.`
+                    : `Already ${formatWeight(altLiquidWaterGrams, weightUnit)} lighter: that much water came in with the alternative liquid and is counted as part of the paste.`
                   : altLiquidWaterGrams > 0
                     ? 'Part of the water is already there: it came in with the alternative liquid and is counted as part of the paste.'
                     : 'The alternative liquid is already in the pot: it brought no water, but it takes up room in the finished solution, so the figures here are net of it.'}{' '}
@@ -1263,7 +1224,7 @@ export function DilutionPanel({
             // the user a batch is finished when it still needs hundreds of grams of water.
             <p className="results-hint">
               Can&apos;t tell whether {formatConcentrationPercent(dilution.soapConcentrationPercent)}% is reachable —{' '}
-              {formatWeight(unknownLiquidGrams, displayUnit)} of alternative liquid has no
+              {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
               declared water content. Declare its % water in Split liquid.
             </p>
           )}
@@ -1294,11 +1255,11 @@ export function DilutionPanel({
                   would lower it promised an effect it cannot have. What the declaration
                   really buys is knowing how much of the PASTE is water, which is what the
                   1:1 lye-dissolution check and the paste's own composition run on. */}
-              {formatWeight(unknownLiquidGrams, displayUnit)} of alternative liquid has no
+              {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
               declared water content —{' '}
               {hasCorrectedPasteBasis ? 'but' : 'it is counted as all water, so'}{' '}
               {dilutionScope === 'batch'
-                ? `${formatWeight(batchDilutionWaterGrams, displayUnit)} is`
+                ? `${formatWeight(batchDilutionWaterGrams, weightUnit)} is`
                 : 'the water figures here are'}{' '}
               {hasCorrectedPasteBasis
                 ? "the same either way: the liquid's whole mass is in the pot however its water and solids divide up. Declaring the % water tells you how much of your paste is water, not how much to add."
