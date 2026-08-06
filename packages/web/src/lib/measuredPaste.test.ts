@@ -262,6 +262,106 @@ describe('a reading that is not a weight at all', () => {
   });
 });
 
+describe('a reading finer than the scale reads', () => {
+  // Browsers interpret a comma typed into <input type="number"> as a DECIMAL POINT — every
+  // locale, Chromium included — so a maker typing 1,222 (twelve hundred twenty-two grams)
+  // commits 1.222, and the app never sees the comma. The only fingerprint left is the
+  // precision: no kitchen scale weighing a paste batch reads finer than 0.1 g, so a reading
+  // with two or more typed decimal digits is not a scale reading. The floor caught the worst
+  // of these by accident — 1.222 g is below the anhydrous soap — with an alert blaming the
+  // scale's tare, the wrong diagnosis; an artifact above the floor (1480,25 → 1480.25) was
+  // silently ACCEPTED, and every surface poured from it.
+  it('rejects a reading with two or more typed decimal digits, under either declaration', () => {
+    for (const isRemaining of [false, true]) {
+      for (const value of ['1.222', '1480.25', '1480.50', '0.15']) {
+        const rejection = measuredPasteRejectionFor(value, DILUTION, isRemaining);
+        expect(rejection.subTenthPrecision).toBe(true);
+        expect(rejection.rejected).toBe(true);
+        expect(rejection.accepted).toBe(false);
+      }
+    }
+  });
+
+  it('judges the typed string, never the float', () => {
+    // 1480.50 parses to exactly the float 1480.5 parses to — but a scale doesn't print
+    // trailing zeros, and two typed decimals are the trap's shape whatever they round to.
+    expect(measuredPasteRejectionFor('1480.50', DILUTION, false).subTenthPrecision).toBe(true);
+    expect(measuredPasteRejectionFor('1480.5', DILUTION, false).subTenthPrecision).toBe(false);
+    expect(measuredPasteRejectionFor('1480.5', DILUTION, false).accepted).toBe(true);
+  });
+
+  it('owns the verdict alone — the floor and both ceilings defer to it', () => {
+    // 0.15 is far below the floor, 4100.25 above the solution, 2000.25 above a remaining
+    // basis: each magnitude rule would fire, and each stands down, because a bound on a
+    // number that is not a scale reading answers the wrong question — and its remedy
+    // (re-tare, lower the target) is no help against a swallowed separator.
+    const below = measuredPasteRejectionFor('0.15', DILUTION, false);
+    expect(below.subTenthPrecision).toBe(true);
+    expect(below.belowSolids).toBe(false);
+    const above = measuredPasteRejectionFor('4100.25', DILUTION, false);
+    expect(above.subTenthPrecision).toBe(true);
+    expect(above.exceedsSolution).toBe(false);
+    const remaining = measuredPasteRejectionFor('2000.25', DILUTION, true);
+    expect(remaining.subTenthPrecision).toBe(true);
+    expect(remaining.exceedsRemainingCeiling).toBe(false);
+    for (const rejection of [below, above, remaining]) {
+      expect(rejection.rejected).toBe(true);
+      expect(rejection.accepted).toBe(false);
+    }
+  });
+
+  it('defers to nonPositive — a sub-tenth reading that is not a weight at all keeps that verdict', () => {
+    // A typed -0.55 or 0.00 is refused as a non-weight, whose remedy (enter what the scale
+    // reads, or clear the field) subsumes this rule's; two paragraphs would say less.
+    for (const value of ['-0.55', '0.00']) {
+      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      expect(rejection.nonPositive).toBe(true);
+      expect(rejection.subTenthPrecision).toBe(false);
+      expect(rejection.rejected).toBe(true);
+    }
+  });
+
+  it('does not fire on blank, unparseable, or tenth-and-coarser readings', () => {
+    for (const value of ['', '   ', undefined, 'abc', '1.2.3', '1.23.4', '1480', '1480.5', '900', '4100']) {
+      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      expect(rejection.subTenthPrecision).toBe(false);
+    }
+    // '1.23.4' carries two decimal digits but parses to NaN — junk stays junk, no rule
+    // fires, no crash.
+    expect(measuredPasteRejectionFor('1.23.4', DILUTION, false).rejected).toBe(false);
+    // …and the readings the magnitude rules own still land exactly where they did.
+    expect(measuredPasteRejectionFor('900', DILUTION, false).belowSolids).toBe(true);
+    expect(measuredPasteRejectionFor('4100', DILUTION, false).exceedsSolution).toBe(true);
+  });
+
+  it('judges scientific notation by its typed decimal digits, not its magnitude', () => {
+    // The number input's own grammar admits an exponent, so the rule must not crash on one.
+    // Only DECIMAL DIGITS are the separator's fingerprint: 2e3 carries none and passes
+    // through to the magnitude rules on its parsed 2,000 g — a fine whole-batch reading
+    // here — while 1.25e3 carries two and is refused, whatever it multiplies out to. A
+    // scale prints neither exponents nor hundredths; the typed characters are what this
+    // rule reads, by design.
+    const plain = measuredPasteRejectionFor('2e3', DILUTION, false);
+    expect(plain.subTenthPrecision).toBe(false);
+    expect(plain.accepted).toBe(true);
+    const mantissa = measuredPasteRejectionFor('1.25e3', DILUTION, false);
+    expect(mantissa.subTenthPrecision).toBe(true);
+    expect(mantissa.rejected).toBe(true);
+  });
+
+  it('stops feeding every consumer: the gate refuses it and the pour falls back', () => {
+    // measuredPasteIsValidFor backs DilutionPanel's batch row, the printed BatchSheet and
+    // computeBottledSolutionGrams; correctedDilutionWaterGrams is the figure all three
+    // pour. A refused reading must not correct any of them.
+    expect(measuredPasteIsValidFor('1480.25', DILUTION)).toBe(false);
+    expect(correctedDilutionWaterGrams(DILUTION, '1480.25')).toBe(2400); // the recipe's own figure
+    expect(correctedDilutionWaterGrams(DILUTION, '1480.25', false, 2050)).toBe(1950); // the corrected pot
+    // …while the tenth-precision reading it shadows still outranks both, exactly as before.
+    expect(measuredPasteIsValidFor('1480.5', DILUTION)).toBe(true);
+    expect(correctedDilutionWaterGrams(DILUTION, '1480.5')).toBe(4000 - 1480.5);
+  });
+});
+
 describe('the paste floor counts solids that cannot boil off', () => {
   // DILUTION is 1,200 g anhydrous with 400 g of cook water (2,800 total − 2,400 dilution),
   // so its own water-only paste is 1,600 g. Put a 900 g alternative liquid at 50% water in
@@ -287,8 +387,11 @@ describe('the paste floor counts solids that cannot boil off', () => {
 
   it('accepts the floor exactly, and rejects a hair below it', () => {
     expect(measuredPasteRejectionFor(String(FLOOR), DILUTION, false, POT, COOK_WATER).accepted).toBe(true);
+    // A tenth of a gram — the finest reading a paste scale produces, so the finest string
+    // the floor can ever be asked about: anything finer is subTenthPrecision's, not this
+    // rule's (this used to probe FLOOR − 0.001, a string no scale can type any more).
     expect(
-      measuredPasteRejectionFor(String(FLOOR - 0.001), DILUTION, false, POT, COOK_WATER).belowSolids,
+      measuredPasteRejectionFor(String(FLOOR - 0.1), DILUTION, false, POT, COOK_WATER).belowSolids,
     ).toBe(true);
   });
 
@@ -485,9 +588,14 @@ describe('the paste floor counts solids that cannot boil off', () => {
       for (const bound of [anhydrous, anhydrous + solids, solutionGrams, pot]) {
         for (const delta of [-1, -0.01, 0, 0.01, 1]) {
           for (const isRemaining of [false, true]) {
+            // The ±0.01 deltas (and every non-integer bound String()ed) now double as the
+            // precision rule's own sweep: those strings carry two or more decimal digits,
+            // so subTenthPrecision claims them and every magnitude rule must stand down —
+            // exactly the exclusivity this loop exists to prove.
             const r = measuredPasteRejectionFor(String(bound + delta), d, isRemaining, pot, cook);
             const fired = [
-              r.nonPositive, r.belowSolids, r.exceedsSolution, r.exceedsRemainingCeiling,
+              r.nonPositive, r.subTenthPrecision, r.belowSolids, r.exceedsSolution,
+              r.exceedsRemainingCeiling,
             ].filter(Boolean).length;
             // One reading, one refusal — under BOTH declarations now.
             expect(fired).toBeLessThanOrEqual(1);

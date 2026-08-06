@@ -1721,6 +1721,51 @@ describe('the measurement feedback follows the measured-paste input, not the sco
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('explains a sub-tenth reading as a swallowed separator, not a scale problem, in both scopes', () => {
+    // A thousands comma typed into this <input type="number"> is read by the browser as a
+    // DECIMAL POINT — every locale — and normalized before React ever sees it, so a typed
+    // 1,222 g commits as 1.222 g and the only fingerprint left is the impossible
+    // precision. The floor caught this case by accident, with an alert blaming the scale's
+    // tare: the wrong diagnosis, inviting a re-weigh that would reproduce the same number.
+    for (const [scope, targetMl] of [['batch', ''], ['portion', '1000']] as const) {
+      render(<DilutionPanel {...BASE} dilutionScope={scope} targetMl={targetMl} measuredPasteGrams="1.222" />);
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts).toHaveLength(1);
+      const alert = alerts[0].textContent!.replace(/\s+/g, ' ');
+      // What their entry became, quoted in grams — the 1000× shrink made visible.
+      expect(alert).toContain('1.222 g');
+      // The real cause, and the real fix…
+      expect(alert).toMatch(/decimal point/i);
+      expect(alert).toMatch(/separator/i);
+      // …not the tare-blame the floor used to answer with, nor any other rule's verdict.
+      expect(alert).not.toMatch(/tared/i);
+      expect(alert).not.toMatch(/cannot be all of the paste/i);
+      // A refused reading feeds nothing in this scope either.
+      expect(screen.queryByText(/uses your measured paste/i)).toBeNull();
+      expect(screen.queryByText('Paste to weigh out')).toBeNull();
+      cleanup();
+    }
+  });
+
+  it('refuses a two-decimal artifact ABOVE the floor, which used to be silently accepted', () => {
+    // 1480,25 → 1480.25: clears the 1,200 g floor, sits under the 4,000 g ceiling, and
+    // used to be applied — the batch row poured 4,000 − 1,480.25 with no alert anywhere.
+    // No scale produced it; refuse it, say what arrived, and fall back.
+    render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" measuredPasteGrams="1480.25" />);
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toContain('1480.25 g');
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('2,400 g');
+    expect(screen.queryByText(/uses your measured paste/i)).toBeNull();
+    cleanup();
+    // The tenth-precision reading it shadows is still the feature working as designed —
+    // the refusal is about the typed string, not the value it rounds to.
+    render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" measuredPasteGrams="1480.5" />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText(/uses your measured paste/i)).toBeTruthy();
+    // 4,000 − 1,480.5, on the panel's own gram display rule (0 decimals at batch scale).
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('2,520 g');
+  });
+
   it('the below-solids alert names the field, not a control that is no longer there', () => {
     // Two stale remedies in this paragraph's history. It once ended "enter the whole batch
     // rather than the portion you are diluting", which read as the SCOPE toggle; then it
