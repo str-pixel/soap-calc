@@ -109,6 +109,31 @@ function measurementExceedsSolution(measuredGrams: number, dilution: DilutionRes
 }
 
 /**
+ * INTERNAL to this module — deliberately not exported; go through
+ * {@link measuredPasteRejectionFor} (or {@link measuredPasteIsValidFor}) like the other
+ * rules. True when the TYPED reading carries two or more decimal digits — finer than any
+ * scale weighing a batch of paste reads (0.1 g at the finest), so it is not a scale
+ * reading at all.
+ *
+ * What it actually catches is a swallowed thousands separator: browsers interpret a comma
+ * typed into `<input type="number">` as a DECIMAL POINT — every locale, Chromium included —
+ * so a maker typing 1,222 (twelve hundred twenty-two grams) commits 1.222, and the app
+ * never sees the comma. The only detectable fingerprint is the impossible precision.
+ *
+ * Judged on the RAW STRING, never the parsed float, because the float destroys the
+ * evidence: 1480.50 parses to exactly the float 1480.5 parses to, but a scale doesn't
+ * print trailing zeros — two typed decimals are the trap's shape whatever they round to.
+ * Scientific notation is judged the same way: only decimal DIGITS are the separator's
+ * fingerprint, so '2e3' (none) passes through to the magnitude rules on its parsed value,
+ * while '1.25e3' (two) is refused whatever it multiplies out to. Junk that happens to
+ * match ('1.23.4') is already unparseable and never reaches the rule.
+ */
+const MORE_THAN_ONE_DECIMAL_DIGIT = /\.\d\d/;
+function measurementFinerThanScale(raw: string): boolean {
+  return MORE_THAN_ONE_DECIMAL_DIGIT.test(raw.trim());
+}
+
+/**
  * Parses a measured-paste input string (as stored in App/view-model state) into a finite,
  * positive gram figure, or undefined when blank/invalid. Centralizes the "is there a
  * usable number here" check so every caller that might apply the measurement —
@@ -153,6 +178,12 @@ export function measuredPasteIsValidFor(
   const measured = parseMeasuredPasteGrams(measuredPasteGrams);
   return (
     measured !== undefined &&
+    // The same precision rule measuredPasteRejectionFor applies (subTenthPrecision): a
+    // reading with two or more typed decimal digits is a swallowed thousands separator,
+    // not a scale reading, and must not correct anything. Checked here too — this gate
+    // does not go through the rejection object — or the panel would refuse a reading in
+    // its alert and apply it in the batch row one paragraph below.
+    !measurementFinerThanScale(measuredPasteGrams as string) &&
     !measurementBelowSolids(
       measured,
       solidsFloorGramsFor(dilution, wholeBatchPasteGrams, cookWaterGrams),
@@ -170,23 +201,33 @@ export type MeasuredPasteRejection = {
   /** The field holds a number that is not a weight at all — zero or negative. Applies under
    * either declaration, and is exclusive of the three rules below. */
   nonPositive: boolean;
+  /** The typed reading carries two or more decimal digits — finer than any scale weighing
+   * paste reads (0.1 g), so it is not a scale reading: it is almost certainly a thousands
+   * separator the browser swallowed as a decimal point (a typed 1,222 commits as 1.222).
+   * Judged on the raw string, never the float — see measurementFinerThanScale. Applies
+   * under either declaration, like `nonPositive`: a number no scale produced is not a
+   * remainder either. Defers only to `nonPositive` (whose remedy subsumes this one); the
+   * three magnitude rules below all defer to IT, because a bound on a number that is not a
+   * scale reading answers the wrong question, with the wrong remedy. */
+  subTenthPrecision: boolean;
   /** The reading is lighter than the batch's own non-evaporable mass — its anhydrous soap
    * plus an alternative liquid's solids (whole-batch mode only). Yields to
-   * `exceedsSolution`: the floor can sit ABOVE the ceiling once the solids outweigh the
-   * target's whole water allowance, and a reading in that gap gets the ceiling's refusal
-   * alone — see the rule's own note for why. */
+   * `subTenthPrecision` and to `exceedsSolution`: the floor can sit ABOVE the ceiling once
+   * the solids outweigh the target's whole water allowance, and a reading in that gap gets
+   * the ceiling's refusal alone — see the rule's own note for why. */
   belowSolids: boolean;
   /** The reading is heavier than the whole solution the target dilutes to (WHOLE-BATCH
-   * readings only). The rule that yields to nothing within its own declaration:
-   * `nonPositive` and `belowSolids` both exclude it explicitly, so among the whole-batch
-   * rules it always wins. Never fires on a remaining reading — `exceedsRemainingCeiling` is
-   * the ceiling a remainder is judged against; see that field. */
+   * readings only). The strongest of the MAGNITUDE rules within its own declaration:
+   * `nonPositive` and `belowSolids` both exclude it explicitly, so among those it always
+   * wins — but it defers to `subTenthPrecision`, which is not a magnitude claim at all.
+   * Never fires on a remaining reading — `exceedsRemainingCeiling` is the ceiling a
+   * remainder is judged against; see that field. */
   exceedsSolution: boolean;
   /** A remaining reading is heavier than the whole batch's paste ever was — the ONLY ceiling
    * a remaining reading is judged against, since `exceedsSolution` now stands down under
    * that declaration. */
   exceedsRemainingCeiling: boolean;
-  /** Any of the four above fired. */
+  /** Any of the five above fired. */
   rejected: boolean;
   /** There is a usable reading AND nothing rejected it — safe to compute from. */
   accepted: boolean;
@@ -277,6 +318,27 @@ export function measuredPasteRejectionFor(
   // negative number, and it is disabled in remaining mode, which would have left a remaining
   // reading of -500 with no verdict at all.
   const nonPositive = hasMeasurement && Number.isFinite(measured) && measured <= 0;
+  // A reading with two or more TYPED decimal digits is finer than any scale weighing a
+  // paste batch reads (0.1 g at the finest), so it is not a scale reading — it is almost
+  // certainly a thousands separator the browser swallowed as a decimal point (a typed
+  // 1,222 commits as 1.222; see measurementFinerThanScale for the mechanism, the
+  // raw-string-not-float design, and the scientific-notation verdict). The floor below
+  // caught the worst of these by accident, with an alert blaming the scale's tare — the
+  // wrong diagnosis — while a two-decimal artifact above the floor (1480,25 → 1480.25) was
+  // silently accepted and poured from.
+  //
+  // Applies under either declaration, exactly like nonPositive and for the same reason: a
+  // number no scale produced is not a remainder either. Defers to nonPositive alone
+  // (`measured > 0` — that rule's remedy subsumes this one, and a negative reading's typed
+  // decimals are the least of its problems); the three magnitude rules each defer to THIS
+  // via an explicit exclusion, because a floor or ceiling verdict on a number that is not
+  // a scale reading answers the wrong question — its remedies (re-tare, weigh all of it,
+  // lower the target) send the maker back to a scale that was never the problem.
+  const subTenthPrecision =
+    hasMeasurement &&
+    Number.isFinite(measured) &&
+    measured > 0 &&
+    measurementFinerThanScale(raw);
   // A batch's paste always contains ALL of its anhydrous soap AND all of the solids an
   // alternative liquid put in the pot — neither evaporates — so a WHOLE-BATCH reading below
   // that is not physically possible. It is a mis-tare (the crock left on the scale) or a
@@ -320,6 +382,7 @@ export function measuredPasteRejectionFor(
     hasMeasurement &&
     Number.isFinite(measured) &&
     measured > 0 &&
+    !subTenthPrecision &&
     !measurementExceedsSolution(measured, dilution) &&
     measurementBelowSolids(measured, solidsFloorGrams);
   // Likewise, a WHOLE-BATCH paste heavier than the whole target solution cannot be diluted
@@ -365,6 +428,7 @@ export function measuredPasteRejectionFor(
     hasMeasurement &&
     Number.isFinite(measured) &&
     !nonPositive &&
+    !subTenthPrecision &&
     measurementExceedsSolution(measured, dilution);
   // Review round 2, finding 2: a REMAINING reading cannot weigh more than the whole
   // batch's own paste ever did — solids and the water already in the paste don't appear
@@ -388,15 +452,23 @@ export function measuredPasteRejectionFor(
   // used to print for it is gone (its remedies named the declaration control). Kept for the
   // reason on that constant — a direct consumer, or a restored control, needs this ceiling or
   // an over-heavy remainder reaches the arithmetic with nothing standing behind it.
+  //
+  // `!subTenthPrecision` for the same reason the whole-batch magnitude rules carry it: the
+  // precision rule fires under either declaration (a number no scale produced is not a
+  // remainder either), and without the exclusion a remaining 2000.25 against a 1,600 g pot
+  // would set both flags — the exclusivity the sweep asserts holds for all five rules.
   const exceedsRemainingCeiling =
     isRemaining &&
     hasMeasurement &&
     Number.isFinite(measured) &&
     measured > 0 &&
+    !subTenthPrecision &&
     measured > wholeBatchPasteBasis;
-  const rejected = nonPositive || belowSolids || exceedsSolution || exceedsRemainingCeiling;
+  const rejected =
+    nonPositive || subTenthPrecision || belowSolids || exceedsSolution || exceedsRemainingCeiling;
   return {
     nonPositive,
+    subTenthPrecision,
     belowSolids,
     exceedsSolution,
     exceedsRemainingCeiling,

@@ -738,6 +738,28 @@ export function DilutionPanel({
               the field to go back to the recipe&apos;s own computed paste.
             </p>
           )}
+          {/* The quoted figure is the RAW TYPED STRING with " g" appended, not formatWeight:
+              the panel's gram formatter rounds batch-scale figures to whole grams and small
+              ones to a single decimal, so it would print 1.222 as "1.2 g" and 1480.50 as
+              "1,481 g" — destroying the very decimals this alert exists to show. Grams, not
+              the app-wide unit, per this block's rule above: it is the number they just
+              typed into a grams-only field, echoed back exactly as the browser committed it.
+
+              The cause named is the swallowed separator, not the scale: browsers read a
+              comma typed into <input type="number"> as a decimal point in every locale, so
+              a typed 1,222 arrives here as 1.222 and no code downstream can see the comma.
+              The floor used to catch the worst of these with its "check the scale was
+              tared" remedy — a diagnosis that sends the maker back to re-weigh a pot that
+              was weighed correctly, and retype the same number. */}
+          {measurementRejection.subTenthPrecision && (
+            <p className="results-hint" role="alert">
+              This field received {(measuredPasteGrams ?? '').trim()} g — more decimal
+              digits than a scale reading carries, since no scale weighing a batch of paste
+              reads finer than 0.1 g. If you typed a thousands separator, this field reads
+              the comma as a decimal point and the weight arrives a thousand times too
+              light — re-enter it as plain digits, without separators.
+            </p>
+          )}
           {/* Two wordings, one floor. The figure is always the floor the guard actually
               applied (measurementRejection.solidsFloorGrams) rather than a bound re-derived
               here, for the reason wholeBatchPasteBasis exists on the same object: a surface
