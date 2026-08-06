@@ -1256,6 +1256,26 @@ describe('the measurement feedback follows the measured-paste input, not the sco
       expect(alerts[0].textContent).toMatch(/already weighs more than/i);
       expect(alerts[0].textContent).toMatch(/lower the target concentration/i);
     });
+
+    it('names the forgotten pot subtraction, the overshoot its own ratio copy made reachable', () => {
+      // Offering the crockpot shortcut (loaded pot minus empty pot, LS:1538) in the ratio
+      // caveat made one new mistake reachable: skip the subtraction and the reading carries
+      // an empty crockpot's 2-4 kg. That always OVERSHOOTS, so it lands here and never on
+      // the solids floor — whose "check the scale was tared" answers a reading that is too
+      // light, a mistake this one is not. Left generic ("or check the measurement"), the
+      // leading remedy told a maker holding 3 kg of stoneware to add more water.
+      render(
+        <DilutionPanel {...BASE} {...WITH_SOLIDS} measuredPasteGrams="4100" dilutionScope="batch" targetMl="" />,
+      );
+      const alert = screen.getByRole('alert').textContent ?? '';
+      expect(alert).toMatch(/subtract the empty pot/i);
+      expect(alert).toMatch(/crockpot/i);
+      // The control-based remedy still leads: a correct reading against an unreachable
+      // target is the other, older way into this alert, and it is not a measurement error.
+      expect(alert.indexOf('lower the target concentration')).toBeLessThan(
+        alert.search(/subtract the empty pot/i),
+      );
+    });
   });
 
   // 400 g of a zero-water liquid on a 1,200 g-anhydrous batch at an 80% target: a 300 g
@@ -2596,18 +2616,23 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
   });
 
-  /** The one paragraph of ratio guidance, however it is worded. Selected on the durable
-   *  claim (it is the copy that ties the choice to the oils) rather than on an opening
-   *  phrase, so a rewrite that keeps the claims keeps the tests. Disambiguated from the
-   *  minimum-dilution paragraph further down the panel, which names coconut-heavy soaps
-   *  too, by the ratios only this one prints. */
+  /** The one paragraph of ratio guidance, however it is worded. Selected STRUCTURALLY — the
+   *  hint immediately after the presets group — rather than by any phrase in it, so every
+   *  assertion below is about the claims and none is propped up by the wording it inspects.
+   *  It used to be selected by "coconut-heavy soaps" filtered on "2:1", which was itself the
+   *  evidence of a duplicated claim: the only reason a filter was needed is that a second
+   *  paragraph on the same screen was making the same point. That claim has one owner now
+   *  (see the minimum-dilution test below), so the disambiguation is gone with it. */
   const ratioGuidance = () => {
-    const [paragraph] = screen
-      .getAllByText(/coconut-heavy soaps/i)
-      .filter((el) => /2:1/.test(el.textContent ?? ''));
-    expect(paragraph).toBeTruthy();
-    return paragraph.textContent ?? '';
+    const presets = screen.getByRole('radiogroup', { name: /starting points/i });
+    const paragraph = presets.nextElementSibling;
+    expect(paragraph?.className).toContain('results-hint');
+    return paragraph?.textContent ?? '';
   };
+
+  /** The minimum-dilution paragraph, which renders in both modes and both scopes. */
+  const minimumDilutionCopy = () =>
+    screen.getByText(/minimum dilution is a property of the recipe/i).textContent ?? '';
 
   it('attributes the starting ratios rather than calling them common or universal', () => {
     render(<DilutionPanel {...RATIO_BASE} />);
@@ -2645,30 +2670,89 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(text).not.toMatch(/swell/i);
   });
 
-  it('scopes the more-water claim to castile and exempts castor', () => {
+  it('treats the minimum as a floor to clear and never as the destination', () => {
     render(<DilutionPanel {...RATIO_BASE} />);
     const text = ratioGuidance();
-    // LS:1534/LS:1603/LS:2181 support coconut-less / castile-more. What they do not support
-    // is sweeping in every unsaturated blend: ricinoleic acid is unsaturated and INCREASES
-    // solubility with a rapid dilution (LS:848, LS:915, LS:2382), and most liquid-soap
-    // recipes carry 15-30% castor (LS:2723) — so "castile and other high-unsaturated
-    // blends need more" told the majority of makers the wrong thing about their own recipe.
-    expect(text).toMatch(/coconut/i);
-    expect(text).toMatch(/castile/i);
-    expect(text).toMatch(/castor/i);
-    expect(text).not.toMatch(/high-unsaturated/i);
-    // Castile is named by what makes it thirsty (its oil), not by the fatty-acid class it
-    // shares with castor.
-    expect(text).toMatch(/olive-heavy castile/i);
+    // The supported claim is a BOUND ON HOW LITTLE water: LS:1524 (below the minimum the
+    // solution is supersaturated with paste left over) and LS:1605 (once it is met the soap
+    // is fully dissolved). Everything above the floor is the PRODUCT's call, and the
+    // reference is emphatic — LS:1605 hands the decision over explicitly ("you can then
+    // decide… depending on what the product will be used for"), LS:3585 calls diluting to
+    // the minimum for thickness a "preconceived (and incorrect) notion", and LS:1690 asks
+    // whether the commercial soaps use the absolute minimum and answers NO WAY.
+    expect(text).toMatch(/how little water/i);
+    // The first repair of the dissolving mechanism overshot into "Where you land is set by
+    // the recipe's own minimum", which asserts the floor IS the destination. Pinned as a
+    // claim, not a string: nothing here may make the minimum the place you end up.
+    expect(text).not.toMatch(/where you land/i);
+    expect(text).not.toMatch(/minimum[^.]*\b(target|destination|lands?|end up|stop)\b/i);
+    expect(text).not.toMatch(/\b(land|end up|stop|finish)\w*\b[^.]*\bminimum\b/i);
+    // And the panel must stay coherent with itself: the paragraph that owns the minimum
+    // says in as many words that it is not the product's business, and the intended-use
+    // list below is where the destination is actually chosen.
+    expect(minimumDilutionCopy()).toMatch(/property of the recipe, not the product/i);
+    expect(screen.getByText(/this suits|see the usual targets/i)).toBeTruthy();
   });
 
-  it('accounts for the fourth preset instead of offering four and explaining three', () => {
+  it('accounts for the fourth preset by where it comes from, not by demoting it', () => {
     render(<DilutionPanel {...RATIO_BASE} />);
-    // 2.5:1 is on screen as a button but appears exactly once in the reference (LS:2172), a
-    // row in one beginner CPLS recipe's dilution table — never named as a general place to
-    // start. Copy naming only 1:1/2:1/3:1 left it looking like a fourth sourced convention.
+    const text = ratioGuidance();
+    // 2.5:1 is on screen as a button and appears exactly once in the reference (LS:2172).
+    // That once is a "Dilution Preference" table for the beginner recipe LS:2192 names as
+    // the Beginner Castile, where it is the MORE DILUTE of the two ratios offered and lands
+    // 21.3% soap (paste 19.31 oz anhydrous + 6.62 oz lye water = 25.93; 2.5 x 25.93 = 64.83
+    // oz water, the table's own figure; 19.31 / 90.75) — inside the 20-30% band LS:2181
+    // gives castile. So it is a castile-calibrated choice, and "a step between those two
+    // rather than a starting point of its own" asserted the opposite of its only source,
+    // while fighting this group's own "Starting points" legend.
     expect(screen.getByRole('radio', { name: '2.5:1' })).toBeTruthy();
-    expect(ratioGuidance()).toMatch(/2\.5:1 is a step between/i);
+    expect(text).toMatch(/2\.5:1/);
+    expect(text).toMatch(/castile/i);
+    expect(text).not.toMatch(/step between/i);
+    expect(text).not.toMatch(/rather than a starting point/i);
+    // No figure: the live readout below prints what 2.5:1 lands at for the CURRENT recipe,
+    // and 21.3% is only the book's paste-to-anhydrous ratio. A fixed number here would
+    // argue with a computed one a paragraph away.
+    expect(text).not.toMatch(/21|%/);
+  });
+
+  it('gives the oils-to-minimum claim a single owner on screen', () => {
+    // Ratio + Whole batch renders both paragraphs at once, and both used to say which oils
+    // need more water. The minimum-dilution paragraph carries the actual figures (LS:1603
+    // coconut ~40% / castile ~25%, LS:1605 most blends 25-35%) and renders in BOTH modes
+    // and BOTH scopes, so it owns the claim and the ratio-only guidance drops it.
+    render(<DilutionPanel {...RATIO_BASE} />);
+    // Paragraphs only. The intended-use list further down also says "coconut-heavy", in a
+    // note that comes from core's LS_DILUTION_TARGETS and makes a different claim — that a
+    // coconut-heavy soap runs thinner, so a foaming-dispenser range can go higher. It is
+    // inside the <details>, not a hint paragraph, and core stays zero-diff regardless.
+    const namingCoconut = screen.getAllByText(/coconut/i).filter((el) => el.tagName === 'P');
+    expect(namingCoconut).toHaveLength(1);
+    expect(namingCoconut[0].textContent).toMatch(/minimum dilution is a property/i);
+    expect(ratioGuidance()).not.toMatch(/coconut/i);
+    expect(minimumDilutionCopy()).toMatch(/coconut-heavy soaps/i);
+  });
+
+  it('states the unsaturated rule where it states the castor exception', () => {
+    render(<DilutionPanel {...RATIO_BASE} />);
+    const text = minimumDilutionCopy();
+    // Ricinoleic acid is unsaturated yet increases solubility and dilutes rapidly (LS:848,
+    // LS:915, LS:2382), which is why "castile and other high-unsaturated blends need more
+    // water" was an overgeneralization worth killing. But an exception needs its rule: while
+    // this clause sat in the ratio paragraph, that paragraph had already been narrowed to
+    // "olive-heavy castile" and no longer stated the unsaturated rule at all, so the reader
+    // met an exception to nothing. It lives beside the castile figure now and names the rule
+    // in the same breath.
+    expect(text).toMatch(/castor/i);
+    expect(text).toMatch(/unsaturated/i);
+    expect(text).toMatch(/castile/i);
+    // Direction only. The reference gives castor's effect on solubility, never a
+    // concentration for castor-rich blends, so no % may be attached to it.
+    expect(text).toMatch(/more soluble/i);
+    expect(text).not.toMatch(/castor[^.]*\d+\s*%/i);
+    // And the sweeping form stays dead wherever it might come back.
+    expect(text).not.toMatch(/high-unsaturated/i);
+    expect(ratioGuidance()).not.toMatch(/high-unsaturated/i);
   });
 
   it('carries the weigh-your-paste caveat in ratio mode and nowhere else', () => {

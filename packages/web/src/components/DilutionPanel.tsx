@@ -597,40 +597,56 @@ export function DilutionPanel({
               );
             })}
           </div>
-          {/* LS:1534 in our own words, sentence by sentence.
+          {/* This paragraph owns the RATIOS and nothing else. Three sentences, three claims.
               1. ATTRIBUTED, not universal: the reference says some makers begin at 1:1 and
                  others at 2:1 or 3:1 depending on the recipe (LS:1534). It never says
-                 everyone starts at 1:1, and its own beginner CPLS table does not offer 1:1
-                 at all — the lowest row there is 2:1 (LS:2172).
-              2. The fourth preset gets accounted for rather than smuggled in. 2.5:1 appears
-                 exactly once in the reference (LS:2172), as a row in that one beginner
-                 recipe's dilution table, beside 2:1. It is never named as a general place
-                 to start, so the copy does not imply a fourth school of practice — it is
-                 described as what it arithmetically is, a step between the two.
-              3. The DRIVER is the recipe's own minimum dilution (LS:1524: below the minimum
-                 the solution is supersaturated and paste is left over; LS:1603: every
-                 recipe has a unique minimum). This replaces an invented mechanism — "expect
-                 to add more as the paste dissolves" — which was both unsourced and
-                 backwards: too little water is what PREVENTS dissolution, and the absorb-
-                 and-swell picture belongs to Gradual Dilution (LS:1531), a different method
-                 that the paragraph further down already owns for both modes. That comment's
-                 old promise not to repeat the add-in-stages technique is now kept: naming
-                 the floor is not the same as naming the technique.
-              4. Recipe dependence stays (LS:1534, LS:1603, LS:2181 — castile needs a
-                 20-30% solution), but scoped to olive-heavy castile rather than to every
-                 unsaturated blend, with castor called out as the exception the reference
-                 itself documents: ricinoleic acid is unsaturated yet INCREASES solubility
-                 and dilutes rapidly (LS:848, LS:915, LS:2382). Most liquid-soap recipes
-                 carry 15-30% castor (LS:2723), so a sweeping "high-unsaturated blends need
-                 more water" would have misread the majority of what makers actually build.
+                 everyone starts at 1:1, and its own beginner table does not offer 1:1 at
+                 all — the lowest row there is 2:1 (LS:2172).
+              2. The fourth preset is accounted for by SOURCE rather than by editorial. It
+                 was called "a step between those two rather than a starting point of its
+                 own", which is the opposite of what the one place it appears shows: LS:2172
+                 is a table headed "Dilution Preference" for the beginner recipe that
+                 LS:2192 identifies as the Beginner Castile, and 2.5:1 is the more dilute of
+                 the two ratios that table offers. Its arithmetic confirms the calibration —
+                 paste is 19.31 oz anhydrous + 6.62 oz lye water = 25.93 oz, so 2.5:1 is
+                 64.83 oz of water (the table's own figure) for a 90.75 oz solution at
+                 21.3% soap, inside the 20-30% band LS:2181 gives castile. It is a
+                 castile-calibrated CHOICE for exactly the recipe class that needs the most
+                 water, not an interpolation — and denying it starting-point status also
+                 fought this group's own "Starting points" legend.
+                 No figure is quoted in the copy on purpose: the readout directly below
+                 prints what 2.5:1 lands at for THIS recipe, which is 21.3% only for the
+                 book's paste-to-anhydrous ratio and drifts with the lye-water concentration.
+                 A fixed "21%" here would have argued with a live figure one paragraph away.
+              3. The minimum is a FLOOR TO CLEAR, never a destination. It replaces an
+                 invented mechanism ("expect to add more as the paste dissolves" — unsourced,
+                 and backwards, since too little water is what PREVENTS dissolution; the
+                 absorb-and-swell picture is Gradual Dilution's, LS:1531, whose own paragraph
+                 further down owns it for both modes). But the first repair overshot into
+                 "where you land is set by the recipe's own minimum", which the reference
+                 attacks by name: LS:1605 hands the decision to the maker once the minimum is
+                 met ("you can then decide if you would like to include additional water…
+                 depending on what the product will be used for"), LS:3585 calls diluting to
+                 the minimum for thickness a "preconceived (and incorrect) notion", and
+                 LS:1690 asks whether the commercial soaps use the absolute minimum and
+                 answers NO WAY. It also contradicted this app in two places: core's
+                 ls-dilution-targets ("any concentration above the recipe's own minimum
+                 'works', and the right answer depends entirely on the product") and the
+                 minimum-dilution paragraph further down this very panel. So the claim is
+                 bounded to what LS:1524/LS:1605 support — how LITTLE water you can use —
+                 and where you land is left to the intended-use list below, which already
+                 owns it. Naming a floor is not naming the add-in-stages technique either,
+                 so the LS:1531 paragraph keeps its own message.
+              What this paragraph deliberately does NOT say: which oils raise the minimum.
+              That claim, with the actual figures, belongs to the minimum-dilution paragraph
+              further down (see its comment) — it used to render here too, and both fired on
+              one screen in ratio + whole batch.
               No source is named in the visible text, here or anywhere in this panel. */}
           <p className="results-hint">
-            Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1 is
-            a step between those two rather than a starting point of its own. Where you land
-            is set by the recipe&apos;s own minimum — below it some paste stays undissolved —
-            and that minimum tracks the oils: coconut-heavy soaps dissolve readily and need
-            less water, olive-heavy castile more. Castor is the exception among unsaturated
-            oils: it makes soap more soluble, not less.
+            Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
+            comes off a castile dilution table, the more dilute of the two it offers. The
+            recipe&apos;s own minimum sets how little water you can use — below it, some
+            paste stays undissolved.
           </p>
           {/* The caveat the reference attaches to its ratio rows and to no concentration row
               (LS:2172, repeated at LS:2294): those water figures are estimates, and the
@@ -807,7 +823,19 @@ export function DilutionPanel({
               {dilutionMode === 'ratio'
                 ? 'raise the water:paste ratio above (more water)'
                 : 'lower the target concentration above (more water)'}
-              , or check the measurement.
+              {/* The measurement clause now names the specific mistake, because this branch
+                  is where that mistake lands. Offering the crockpot shortcut in the ratio
+                  caveat above made "forgot to subtract the empty pot" reachable, and a
+                  forgotten subtraction always overshoots — an empty crockpot's 2-4 kg on top
+                  of the paste is heavier than the solution, so it trips THIS rule and never
+                  the solids floor (which only fires on a reading that is too light, and
+                  whose "check the scale was tared" remedy stays right for the mistake it
+                  does catch). Left generic, the leading remedy told a maker carrying 3 kg of
+                  stoneware to add more water, which would have compounded the error. Named
+                  second, after the control-based remedy, because a reading really can be
+                  correct and the target really can be out of reach. */}
+              , or check the measurement — if you weighed the crockpot, subtract the empty
+              pot&apos;s own weight.
             </p>
           )}
         </>
@@ -1277,10 +1305,33 @@ export function DilutionPanel({
                 : 'the LEAST you will need. Declare its % water, or dilute in increments and check by weight.'}
             </p>
           )}
+          {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance above used to
+              say it too — in words, without figures — so in ratio + whole batch the same
+              claim rendered twice on one screen; this one carries the numbers (LS:1603:
+              coconut to 40%, castile 25%; LS:1605: most combination recipes 25-35%), so it
+              keeps the claim and the other drops it.
+              It also renders in BOTH modes and BOTH scopes, where the ratio paragraph is
+              ratio-only — so ceding the claim here widens its reach rather than narrowing it.
+              The castor clause moved here for the same reason and for one of its own: it is
+              an exception to "unsaturated oils are less soluble" (LS:848), and the ratio
+              paragraph no longer states that rule, so over there the reader met an exception
+              to nothing. Here "castile ~25%" is the rule standing right in front of it, and
+              the clause states the rule as it names the exception, so it needs no setup.
+              Ricinoleic acid is unsaturated yet increases solubility and dilutes rapidly
+              (LS:848, LS:915, LS:2382) — worth saying because castor is not a trace
+              ingredient in liquid soap: the reference's own 30-Minute HTLS formulating guide
+              puts it at 15-30% of the oils (LS:2723). That is a guide for one method, not a
+              census of what makers build, and the earlier comment overstated it as "most
+              liquid-soap recipes carry 15-30% castor" — the cite is now scoped to what it
+              actually says.
+              No % is claimed for castor-rich blends: the reference gives solubility
+              direction, not a concentration figure, and inventing one is what this branch
+              exists to stop. */}
           <p className="results-hint">
             Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
-            hold up to ~40% soap, most blends 25–35%, castile ~25%. Past that the soap thickens
-            or sets.
+            hold up to ~40% soap, most blends 25–35%, olive-heavy castile ~25%. Past that the
+            soap thickens or sets. Castor is the odd one out — unsaturated like olive, but it
+            makes soap more soluble rather than less.
             {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent))
               ? ' This target is above what even a coconut-heavy recipe holds as a liquid.'
               : ''}
