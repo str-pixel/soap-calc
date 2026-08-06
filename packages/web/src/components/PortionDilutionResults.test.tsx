@@ -102,6 +102,24 @@ describe('an undeclared alternative liquid makes "already more dilute" unknowabl
     expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
   });
 
+  test('quotes the undeclared figure in the app-wide unit when it hedges', () => {
+    // The hedge is prose, not a grid row — exactly the kind of site the app-wide-unit
+    // rewire could miss while every grid figure obeyed (mutation-verified: hardcoding
+    // this one call to grams passed the whole suite). 900 g → 31.7 oz.
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        weightUnit="oz"
+        dilution={OVER}
+        unknownLiquidGrams={900}
+        overDilutionCertain={false}
+      />,
+    );
+    const hedge = screen.getByText(/No portion can be sized yet/i).textContent ?? '';
+    expect(hedge).toMatch(/31\.7 oz of alternative liquid/);
+    expect(hedge).not.toContain(' g');
+  });
+
   test('still asserts it when the verdict holds across the undeclared liquid\'s whole range', () => {
     render(
       <PortionDilutionResults
@@ -315,6 +333,26 @@ describe('the drift note quotes the clamp-free whole-batch paste (Commit 2)', ()
     // 180 − 250 = 70 g lighter. The old, buggy comparison (180 − 200) would have said 20 g.
     expect(screen.getByText(/70 g lighter than predicted/)).toBeTruthy();
     expect(screen.queryByText(/20 g lighter than predicted/)).toBeNull();
+  });
+
+  test('quotes the drift in the app-wide unit', () => {
+    // Same 70 g drift, oz mode: the note sits directly under a portion grid the unit
+    // rewire already governs, so a drift left in grams would put "2.5 oz of water"
+    // figures above "70 g lighter" prose about the same paste (mutation-verified: this
+    // call regressing to grams passed the whole suite). 70 g → 2.5 oz.
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        weightUnit="oz"
+        dilution={dilution}
+        targetMl="100"
+        measuredPasteGrams="180"
+        wholeBatchPasteGrams={wholeBatchPasteGrams}
+      />,
+    );
+    const note = screen.getByText(/lighter than predicted/).textContent ?? '';
+    expect(note).toMatch(/2\.5 oz lighter than predicted/);
+    expect(note).not.toMatch(/70 g/);
   });
 });
 

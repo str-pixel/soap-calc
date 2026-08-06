@@ -2140,6 +2140,84 @@ describe('the figures follow the app-wide weight unit', () => {
     expect(floor).not.toMatch(/2,000 g/);
   });
 
+  it('quotes the app-wide unit in the solids-bearing wordings of the head-start caveat too', () => {
+    // The sibling test above pins the water-only wording; the paragraph has three more
+    // wordings, chosen by what the liquid contributed, and each quotes its own figures —
+    // so each needs its own render or its formatWeight call can silently regress to grams
+    // while the water-only pin stays green (mutation-verified: it did). All three run on
+    // the corrected pot: 1,800 g against 1,200 g anhydrous + 400 g cook water = 200 g of
+    // solids (7.1 oz); 100 g of declared water = 3.5 oz; their 300 g sum = 10.6 oz.
+    const corrected = { cookWaterGrams: 400, wholeBatchPasteGrams: 1800 };
+
+    // Mixed liquid: water AND solids, three figures in one sentence.
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="oz"
+        dilutionScope="batch"
+        targetMl=""
+        altLiquidWaterGrams={100}
+        {...corrected}
+      />,
+    );
+    const mixed = screen.getByText(/plain distilled water only/i).textContent ?? '';
+    expect(mixed).toMatch(/Already 10\.6 oz lighter: 3\.5 oz of water/);
+    expect(mixed).toMatch(/7\.1 oz of solids/);
+    expect(mixed).not.toContain(' g');
+    cleanup();
+
+    // All-solids liquid (glycerin): one figure, its own sentence shape.
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="oz"
+        dilutionScope="batch"
+        targetMl=""
+        altLiquidWaterGrams={0}
+        {...corrected}
+      />,
+    );
+    const solidsOnly = screen.getByText(/plain distilled water only/i).textContent ?? '';
+    expect(solidsOnly).toMatch(/Already 7\.1 oz lighter: the alternative liquid brought no water/);
+    expect(solidsOnly).not.toContain(' g');
+    cleanup();
+
+    // Undeclared liquid: only the solids are knowable, and only they are quoted.
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="oz"
+        dilutionScope="batch"
+        targetMl=""
+        unknownLiquidGrams={300}
+        {...corrected}
+      />,
+    );
+    const undeclared = screen.getByText(/plain distilled water only/i).textContent ?? '';
+    expect(undeclared).toMatch(/7\.1 oz of your alternative liquid is solids/);
+    expect(undeclared).not.toContain(' g');
+  });
+
+  it('quotes both figures of the paste-already-past-target alert in the app-wide unit', () => {
+    // The alert is a comparison — the pot's 4,200 g against the 4,000 g solution its soap
+    // makes — so BOTH figures have to move with the unit: one converted beside one in
+    // grams would compare 148.2 oz against 4,000 and read as wildly over-dilute. Neither
+    // was pinned before (mutation-verified: hardcoding either to grams passed the suite).
+    render(
+      <DilutionPanel
+        {...BASE}
+        weightUnit="oz"
+        dilutionScope="batch"
+        targetMl=""
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={4200}
+      />,
+    );
+    const alert = screen.getByText(/it weighs/).textContent ?? '';
+    expect(alert).toMatch(/weighs 148\.2 oz against the 141\.1 oz its soap makes/);
+    expect(alert).not.toContain(' g');
+  });
+
   it('quotes the app-wide unit in the undeclared-liquid figure of the can\'t-tell hedge', () => {
     render(
       <DilutionPanel
