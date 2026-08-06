@@ -2213,16 +2213,36 @@ describe('the g/oz/lb display-unit switch', () => {
     expect(hint.textContent).not.toMatch(/3\.26 lb/);
   });
 
-  it('has a visible caption, not just an aria-label', () => {
+  it('has a visible caption, not just an aria-label, and uses the app name for this control', () => {
     // Three bare radios reading "g oz lb" beside the panel heading, with the name only in
     // aria-label — the same gap this branch closed for the ratio presets below and
     // for the same reason. Sighted makers get no antecedent at all.
     render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" />);
-    expect(screen.getByText('Show weights in:')).toBeTruthy();
+    // The app already names this choice: BatchBasics captions its global weight-unit select
+    // "Weight unit". A panel-local switch for the same choice under a different phrase read
+    // as a different kind of setting.
+    expect(screen.getByText('Weight unit')).toBeTruthy();
     // The radios keep their own short accessible names — every unit assertion in this file
     // selects them that way.
     expect(screen.getByRole('radio', { name: 'g' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'lb' })).toBeTruthy();
+  });
+
+  it('names the unit group so it contains the visible label without colliding with the global one', () => {
+    // Two claims, and they pull against each other. Label-in-Name wants the accessible name
+    // to CONTAIN the visible "Weight unit", so voice control can act on the words on screen.
+    // But BatchBasics' global selector answers to exactly "Weight unit" and SettingsPanel's
+    // own test queries that exact string — making this group's name equal to it would put
+    // two controls behind one exact query at App level. Containment plus a qualifier
+    // satisfies both; anything that reduces this to the bare string breaks the second.
+    render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="" />);
+    const group = screen.getByRole('radiogroup', { name: /weight unit/i });
+    const name = group.getAttribute('aria-label') ?? '';
+    expect(name).toContain('Weight unit');
+    expect(name).not.toBe('Weight unit');
+    // And an exact-string query still finds nothing here, which is what keeps the global
+    // selector's own query unambiguous once both are on one page.
+    expect(screen.queryByLabelText('Weight unit')).toBeNull();
   });
 
   it('quotes the measured-paste thresholds in grams, the unit that field is typed in', () => {

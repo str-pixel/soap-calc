@@ -434,12 +434,25 @@ export function DilutionPanel({
           <h2 className="panel__title">Dilution</h2>
           <p className="panel__subtitle">Water to add to reach a target soap concentration</p>
         </div>
-        <div className="dilution-mode-toggle" role="radiogroup" aria-label="Dilution display unit">
+        {/* The accessible name CONTAINS the visible label rather than equalling it
+            (Label-in-Name), and deliberately does not equal it: BatchBasics' global selector
+            is named exactly "Weight unit", and SettingsPanel.test queries that string
+            exactly. Two controls answering to the identical name would be ambiguous at App
+            level; the trailing qualifier keeps this one distinguishable while a voice or
+            screen-reader user still hears the words on screen. */}
+        <div
+          className="dilution-mode-toggle"
+          role="radiogroup"
+          aria-label="Weight unit for the dilution figures"
+        >
           {/* Same visible antecedent the ratio presets below carry, for the same reason:
               "g oz lb" beside a heading is three bare radios with nothing on screen saying
               what they switch. The name was in aria-label only, which sighted makers never
-              see. */}
-          <span className="dilution-toggle__legend">Show weights in:</span>
+              see.
+              The app already has a name for this control — BatchBasics calls its global
+              twin "Weight unit" — and inventing a second phrasing for the same choice made
+              the panel-local switch look like a different kind of setting. */}
+          <span className="dilution-toggle__legend">Weight unit</span>
           {DILUTION_UNIT_OPTIONS.map((option) => (
             <label className="field field--inline" key={option.id}>
               <input
@@ -506,13 +519,20 @@ export function DilutionPanel({
               claiming it was citing the wrong thing to both audiences at once. What the
               reference does say about these is that they are where makers begin (LS:1534),
               which is what the legend now says. The group's accessible name leads with the
-              visible caption verbatim, so Label-in-Name holds. */}
+              visible caption verbatim, so Label-in-Name holds here as it does for the unit
+              switch above.
+
+              Colon dropped, and dropped from the unit legend above in the same pass: the
+              two are the only captions of their kind in this panel, they share a class and
+              an inline row, and BatchBasics — which owns the app's other weight-unit
+              control — punctuates its own field captions without one. One of the two
+              keeping a colon would have been arbitrary. */}
           <div
             className="dilution-mode-toggle"
             role="radiogroup"
             aria-label="Starting points for the water to paste ratio"
           >
-            <span className="dilution-toggle__legend">Starting points:</span>
+            <span className="dilution-toggle__legend">Starting points</span>
             {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => {
               // A pick is an edit to the ratio, exactly as typing is, so it sets the same
               // ratioTouched gate the write-back effect below requires. Without it a preset
