@@ -86,15 +86,6 @@ export function parsePercentInput(value: string): string | null {
   return value;
 }
 
-/** The units a maker's own scale actually reads, for the dilution panel's local switch.
- * kg is excluded on purpose: no kitchen scale defaults to it, and a dilution figure in
- * kg reads as a rounding error (2.4 kg hides the 400 g). A kg-mode recipe therefore
- * falls back to grams here — see DilutionPanel's initial unit. */
-export const DILUTION_UNIT_OPTIONS = (['g', 'oz', 'lb'] as const).map((id) => ({
-  id: id as WeightUnit,
-  short: WEIGHT_UNITS[id].short,
-}));
-
 export function formatWeight(grams: number, unit: WeightUnit, digits?: number): string {
   const config = WEIGHT_UNITS[unit];
   const value = gramsToDisplayValue(grams, unit);

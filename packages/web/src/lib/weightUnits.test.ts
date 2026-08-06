@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DILUTION_UNIT_OPTIONS,
   formatWeight,
   isWeightUnit,
   gramsStringToInputDisplay,
@@ -44,9 +43,6 @@ describe('weightUnits', () => {
     expect(parsePercentInput('36.')).toBeNull();
   });
 
-  it('offers exactly the three kitchen-scale units for dilution', () => {
-    expect(DILUTION_UNIT_OPTIONS.map((o) => o.id)).toEqual(['g', 'oz', 'lb']);
-  });
 });
 
 describe('isWeightUnit hardening', () => {

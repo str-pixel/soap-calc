@@ -361,16 +361,6 @@ test.describe('liquid soap', () => {
     await expect(section.getByRole('alert')).toContainText(/already more dilute/);
   });
 
-  test('dilution display-unit switch shows one unit at a time', async ({ page }) => {
-    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
-    const dd = section.locator('dt').filter({ hasText: /Dilution water to add/ }).first().locator('xpath=following-sibling::dd[1]');
-    await expect(dd).toContainText('g');
-    await expect(dd).not.toContainText('oz');
-    await section.getByRole('radio', { name: 'oz' }).click();
-    await expect(dd).toContainText('oz');
-    await expect(dd).not.toContainText(' g');
-  });
-
   test('custom-amount scope sizes a portion that scales paste and water', async ({ page }) => {
     // Paste stores better than diluted soap, so making only part of the batch now is its
     // own optional scope, chosen with a toggle rather than shown by default.
