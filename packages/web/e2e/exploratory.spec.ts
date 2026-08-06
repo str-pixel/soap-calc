@@ -427,6 +427,23 @@ test.describe('liquid soap', () => {
     await expect(section).toContainText(/Not applied yet/);
   });
 
+  test('inline radio labels lay out circle-beside-text, not stacked', async ({ page }) => {
+    // jsdom never computes stylesheets, so this pin has to live in e2e. The day-one bug:
+    // .field--inline set no flex-direction, so .field's column applied and every radio
+    // floated centered ABOVE its own label text — a detached circle over a row of words —
+    // while .field's later 0.3rem gap overrode the 0.5rem .field--inline declared at the
+    // same single-class specificity. The compound .field.field--inline rule fixes both;
+    // assert the computed result so neither regression can come back silently.
+    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
+    const modeLabel = section.locator('label.field--inline').filter({ hasText: 'Water : paste ratio' });
+    const style = await modeLabel.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { flexDirection: cs.flexDirection, gap: cs.gap };
+    });
+    expect(style.flexDirection).toBe('row');
+    expect(style.gap).toBe('8px'); // 0.5rem — matches .field--checkbox, not .field's 0.3rem
+  });
+
   test('negative superfat triggers Neutralize panel with citric estimate', async ({ page }, testInfo) => {
     await page.getByLabel('Superfat %', { exact: true }).fill('-3');
     await page.getByLabel('Superfat %', { exact: true }).blur();
