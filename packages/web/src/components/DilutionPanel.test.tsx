@@ -138,9 +138,14 @@ describe('intended-use dilution targets', () => {
     expect(screen.getByText('Baby or gentle soap')).toBeTruthy();
   });
 
-  it('warns when the target is above what any recipe holds as a liquid', () => {
+  it('warns when the target is above what any recipe can fully dissolve', () => {
     render30('55');
-    expect(screen.getByText(/above what even a coconut-heavy recipe holds/i)).toBeTruthy();
+    // The warning's consequence is solubility, not viscosity: above every ceiling means no
+    // recipe dissolves that much soap (LS:1519 supersaturated, lumps or a goopy layer) —
+    // not that the pot "holds as a liquid" refuses to, which was the old wording's claim.
+    const warning = screen.getByText(/above what even a coconut-heavy recipe/i);
+    expect(warning.textContent).toMatch(/fully dissolve/i);
+    expect(warning.textContent).not.toMatch(/as a liquid|thickens|\bsets?\b/i);
     cleanup();
     render30('30');
     expect(screen.queryByText(/above what even a coconut-heavy recipe/i)).toBeNull();
@@ -150,6 +155,22 @@ describe('intended-use dilution targets', () => {
     render30('12');
     expect(screen.queryByText(/^shampoo/i)).toBeNull();
     expect(screen.getByText(/not recommended for hair/i)).toBeTruthy();
+  });
+
+  it('makes the hair caveat about the soap, not about the salt sentence it follows', () => {
+    // LS:1690's claim is a row in the intended-use list — liquid soap as shampoo is not
+    // recommended, full stop — and LS:3089 lists shampoos among the products salt IS used
+    // in. Sitting straight after "thickening with salt is the cheaper way…", a bare "Not
+    // recommended for hair." read as a warning about salt-thickened soap. The sentence
+    // must name its subject and must not lean on the salt clause for one.
+    render30('12');
+    const paragraph = screen.getByText(/not recommended for hair/i).textContent ?? '';
+    const hairSentence = paragraph
+      .split(/(?<=\.)\s+/)
+      .find((s) => /hair/i.test(s))!;
+    expect(hairSentence).toBeTruthy();
+    expect(hairSentence).toMatch(/liquid soap/i);
+    expect(hairSentence).not.toMatch(/salt/i);
   });
 });
 
@@ -2708,6 +2729,10 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(screen.getByRole('radio', { name: '2.5:1' })).toBeTruthy();
     expect(text).toMatch(/2\.5:1/);
     expect(text).toMatch(/castile/i);
+    // "the more dilute of the two it offers" had no antecedent — LS:2172 offers five rows
+    // (two ratios + three solution percentages), so a reader checking the table found five
+    // where the sentence said two. The comparison is scoped to the ratio rows it is about.
+    expect(text).toMatch(/two ratio rows/i);
     expect(text).not.toMatch(/step between/i);
     expect(text).not.toMatch(/rather than a starting point/i);
     // No figure: the live readout below prints what 2.5:1 lands at for the CURRENT recipe,
@@ -2731,6 +2756,30 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(namingCoconut[0].textContent).toMatch(/minimum dilution is a property/i);
     expect(ratioGuidance()).not.toMatch(/coconut/i);
     expect(minimumDilutionCopy()).toMatch(/coconut-heavy soaps/i);
+  });
+
+  it('says the below-minimum failure is undissolved soap, never thickening or setting', () => {
+    render(<DilutionPanel {...RATIO_BASE} />);
+    const text = minimumDilutionCopy();
+    // The reference states the failure four times, and it is the same state each time —
+    // supersaturation with soap left over: lumps of undiluted paste or a thick, goopy
+    // layer on top (LS:1519), "remaining soap paste" (LS:1524), "remaining soap pieces or
+    // a white foamy layer on top" (LS:1610), "saturated and have remaining soap"
+    // (LS:2181). "Past that the soap thickens or sets" claimed a viscosity consequence
+    // instead: "thickens" is contradicted outright for the case the sentence led with
+    // (LS:1657 — coconut-heavy soaps are thin as milk or juice even AT the minimum), and
+    // "sets" is the book's word for cold dilution water (LS:2277, LS:2370) or NaOH
+    // (LS:2679), never for too little water. It was also the exact belief LS:3585 names a
+    // "preconceived (and incorrect) notion" — which this panel cites while it was printing
+    // the claim.
+    expect(text).toMatch(/undissolved/i);
+    expect(text).toMatch(/lumps/i);
+    expect(text).toMatch(/layer/i);
+    // Pinned as a claim, not a string: no viscosity consequence in any wording.
+    expect(text).not.toMatch(/thickens|\bsets?\b|solidif|congeal|harden|\bgels?\b/i);
+    // The ratio guidance names the same failure state, so the two paragraphs that both
+    // derive from the minimum can never disagree about what going under it does.
+    expect(ratioGuidance()).toMatch(/undissolved/i);
   });
 
   it('states the unsaturated rule where it states the castor exception', () => {

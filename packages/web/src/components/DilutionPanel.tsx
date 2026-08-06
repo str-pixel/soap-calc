@@ -644,7 +644,7 @@ export function DilutionPanel({
               No source is named in the visible text, here or anywhere in this panel. */}
           <p className="results-hint">
             Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
-            comes off a castile dilution table, the more dilute of the two it offers. The
+            comes off a castile dilution table, the more dilute of its two ratio rows. The
             recipe&apos;s own minimum sets how little water you can use — below it, some
             paste stays undissolved.
           </p>
@@ -1326,14 +1326,40 @@ export function DilutionPanel({
               actually says.
               No % is claimed for castor-rich blends: the reference gives solubility
               direction, not a concentration figure, and inventing one is what this branch
-              exists to stop. */}
+              exists to stop.
+              THE CONSEQUENCE is undissolved soap, never a viscosity change. "Past that the
+              soap thickens or sets" survived three copy audits because it was never the
+              named claim, and it was inherited from core's LS_MINIMUM_DILUTION_GUIDE doc
+              (see the corrected comment there for the full accounting). The reference
+              states the below-minimum failure four times and it is the same state each
+              time — supersaturation with soap left over: lumps of undiluted paste or a
+              thick, goopy layer on top (LS:1519), "remaining soap paste" (LS:1524),
+              "remaining soap pieces or a white foamy layer on top" (LS:1610), "saturated
+              and have remaining soap" (LS:2181). "Thickens" is contradicted outright for
+              the case the sentence led with — coconut-heavy soaps are thin as milk or
+              juice even AT the minimum (LS:1657) — and "sets" is attributed to cold
+              dilution water (LS:2277, LS:2370) or NaOH (LS:2679), never to too little
+              water. It was also the belief LS:3585 calls "preconceived (and incorrect)",
+              which the ratio-guidance comment above already cites: one panel cited the
+              debunking while printing the debunked claim.
+              The same-worded overflow sentence follows lsConcentrationAboveAllMinimums,
+              whose own doc now matches: above every ceiling means no recipe dissolves that
+              much soap, not that the pot refuses to be liquid.
+              THE HAIR SENTENCE stands alone and names its subject. "Not recommended for
+              hair." sat directly after the salt-thickening sentence, so it read as a claim
+              about salt-thickened soap — but the reference's claim is a row in the
+              intended-use list itself (LS:1690: shampoo, not recommended for use in hair),
+              about liquid soap as such, and LS:3089 lists shampoos among the products salt
+              IS used in commercially. Naming the soap ("itself, thickened or not") detaches
+              it from the sentence it happens to follow. */}
           <p className="results-hint">
             Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
-            hold up to ~40% soap, most blends 25–35%, olive-heavy castile ~25%. Past that the
-            soap thickens or sets. Castor is the odd one out — unsaturated like olive, but it
-            makes soap more soluble rather than less.
+            hold up to ~40% soap, most blends 25–35%, olive-heavy castile ~25%. Past that, the
+            extra soap simply stays undissolved — lumps of paste, or a thick layer sitting on
+            top. Castor is the odd one out — unsaturated like olive, but it makes soap more
+            soluble rather than less.
             {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent))
-              ? ' This target is above what even a coconut-heavy recipe holds as a liquid.'
+              ? ' This target is above what even a coconut-heavy recipe can fully dissolve.'
               : ''}
           </p>
           <details className="results-hint dilution-uses">
@@ -1364,7 +1390,8 @@ export function DilutionPanel({
             </dl>
             <p>
               Diluting further and thickening with salt is the cheaper way to a thick soap —
-              water costs a fraction of what the oils did. Not recommended for hair.
+              water costs a fraction of what the oils did. Liquid soap itself, thickened or
+              not, is not recommended for hair.
             </p>
           </details>
         </>

@@ -38,16 +38,34 @@ describe('troubleshootingFor', () => {
   });
 
   it('also names the over-concentration cause the app’s own dilution guide asserts', () => {
-    // LS_MINIMUM_DILUTION_GUIDE says a soap held above its recipe's own maximum
-    // concentration thickens or sets solid — the gel entry denied that path entirely by
-    // opening "not the water", when a too-concentrated dilution IS a water-side cause. The
-    // NaOH/stearic-palmitic cause stays the LEAD cause; this is additive, not a replacement.
+    // A too-concentrated dilution IS a water-side cause of this symptom — the entry used to
+    // deny that path entirely by opening "not the water". The NaOH/stearic-palmitic cause
+    // stays the LEAD cause; this is additive, not a replacement.
     const gel = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom))!;
     expect(gel.cause).toMatch(/maximum concentration|ceiling/i);
     expect(gel.fix).toMatch(/add water/i);
     // Still must not reintroduce the inverted "add water / less water" fix as the ONLY
     // remedy, and must not smuggle back the flatly wrong "not the water" denial.
     expect(gel.fix).not.toMatch(/less water/i);
+  });
+
+  it('describes the over-concentration path as undissolved soap, not as the soap setting', () => {
+    // The concentration clause used to say a soap held above its ceiling "sets too" — a
+    // claim inherited from LS_MINIMUM_DILUTION_GUIDE's old doc comment and supported
+    // nowhere: the reference's below-minimum failure is supersaturation with soap left
+    // over — lumps of undiluted paste or a thick, goopy layer on top (LS:1519, LS:1524,
+    // LS:1610, LS:2181) — and it flatly denies the viscosity version (LS:1657 coconut
+    // soaps thin as milk even at the minimum; LS:3585 the "preconceived (and incorrect)
+    // notion"). Setting IS the right verb for the two causes the book does support — NaOH
+    // (LS:2679) and salt — so the pin is scoped to the concentration sentence alone.
+    const gel = troubleshootingFor('ls').find((e) => /stringy|gelatin/i.test(e.symptom))!;
+    const concentrationSentence = gel.cause
+      .split(/(?<=\.)\s+/)
+      .find((s) => /maximum concentration/i.test(s))!;
+    expect(concentrationSentence).toBeTruthy();
+    expect(concentrationSentence).toMatch(/never dissolves|undissolved|lumps/i);
+    expect(concentrationSentence).not.toMatch(/\bsets?\b/i);
+    expect(concentrationSentence).not.toMatch(/\bthickens\b/i);
   });
 
   it('runs the salt curve in the same direction as the rest of the app — the gel is the PEAK', () => {

@@ -10,7 +10,8 @@
  * These are recommended ranges by intended use, expressed as % soap in the finished
  * solution (the same figure the dilution calculator takes). They are guidance, not limits:
  * every recipe also has a MINIMUM dilution set by its fatty acids (see
- * LS_MINIMUM_DILUTION_GUIDE), and no target below that will stay liquid.
+ * LS_MINIMUM_DILUTION_GUIDE), and a target holding more soap than that leaves the excess
+ * undissolved in the pot.
  */
 export type LsDilutionTarget = {
   key: string;
@@ -41,14 +42,14 @@ export const LS_DILUTION_TARGETS: readonly LsDilutionTarget[] = [
     label: 'Dish soap',
     low: 35,
     high: 45,
-    note: 'Or the recipe’s own minimum dilution, whichever is thicker.',
+    note: 'Or the recipe’s own minimum dilution, if it cannot dissolve this much soap.',
   },
   {
     key: 'laundry',
     label: 'Laundry soap',
     low: 35,
     high: 45,
-    note: 'Or the recipe’s own minimum dilution, whichever is thicker.',
+    note: 'Or the recipe’s own minimum dilution, if it cannot dissolve this much soap.',
   },
 ];
 
@@ -64,14 +65,27 @@ export function lsDilutionUsesFor(
 
 /**
  * The floor, which is a property of the recipe rather than the product. Every recipe has its
- * own minimum dilution set by its fatty acids: a soap held above it thickens or sets solid.
- * These are the anchors — a target below the relevant one will not stay liquid however much
- * the intended use might want it.
+ * own minimum dilution set by its fatty acids, and the failure state for a target above it
+ * (more soap than the recipe dissolves) is UNDISSOLVED SOAP, not a change of viscosity: the
+ * solution is supersaturated and the excess sits in the pot as lumps of paste or a thick,
+ * goopy layer on top (LS:1519; LS:1524 "supersaturated and there will be remaining soap
+ * paste"; LS:1610 "remaining soap pieces or a white foamy layer on top"; LS:2181 "saturated
+ * and have remaining soap" — four statements, one failure state).
+ *
+ * An earlier revision said a soap held above the minimum "thickens or sets solid", and the
+ * panel copy inherited it. The reference contradicts the "thickens" half for the very
+ * recipes this guide leads with — coconut-heavy soaps are thin as milk or juice "even at
+ * the minimum dilution concentration" (LS:1657) — and supports "sets" nowhere: hardening is
+ * attributed to cold dilution water (LS:2277, LS:2370) or an over-large NaOH share
+ * (LS:2679), never to too little water. It is also the exact belief LS:3585 names a
+ * "preconceived (and incorrect) notion" (that minimum water buys a thick soap). The
+ * viscosity-consequence claim must not come back in any wording; the guide's numbers are
+ * unchanged and are what LS:1603/LS:1605 give.
  */
 export type LsMinimumDilution = {
   key: string;
   label: string;
-  /** Highest % soap that still stays liquid for this kind of recipe. */
+  /** Highest % soap this kind of recipe can fully dissolve. */
   maxSoapPercent: number;
 };
 
@@ -81,7 +95,8 @@ export const LS_MINIMUM_DILUTION_GUIDE: readonly LsMinimumDilution[] = [
   { key: 'castile', label: 'Castile / high unsaturated', maxSoapPercent: 25 },
 ];
 
-/** True when the target is above every recipe type's ceiling — it cannot stay liquid. */
+/** True when the target is above every recipe type's ceiling — no recipe dissolves this
+ * much soap, so some of the paste will stay undissolved whatever the blend. */
 export function lsConcentrationAboveAllMinimums(soapConcentrationPercent: number): boolean {
   if (!Number.isFinite(soapConcentrationPercent)) return false;
   return soapConcentrationPercent > LS_MINIMUM_DILUTION_GUIDE[0].maxSoapPercent;
