@@ -99,17 +99,24 @@ describe('minimum-dilution guide', () => {
     // soap (LS:1519, LS:1524, LS:1610, LS:2181), never a change of viscosity (LS:1657
     // contradicts "thickens" for coconut soaps even AT the minimum; LS:3585 names
     // minimum-water-for-thickness a "preconceived (and incorrect) notion") — so no note
-    // may sell the minimum as the thicker option, in any wording.
+    // may sell the minimum as the thicker option, in any wording. The banned-verb list is
+    // the same one DilutionPanel.test pins on the panel's own minimum-dilution paragraph
+    // (thickens / sets / solidifies / congeals / hardens / gels), so an appended synonym
+    // cannot slip through here while being banned there.
     const noted = LS_DILUTION_TARGETS.filter((t) => t.note?.includes('minimum dilution'));
     expect(noted.map((t) => t.key).sort()).toEqual(['dish', 'laundry']);
     for (const t of noted) {
       expect(t.note).toMatch(/cannot dissolve/i);
-      expect(t.note).not.toMatch(/thicker|thickest|thickens|sets/i);
+      expect(t.note).not.toMatch(
+        /thicker|thickest|thickens|\bsets?\b|solidif|congeal|harden|\bgels?\b/i,
+      );
     }
     // And no shipped string anywhere in the module claims a viscosity consequence for the
-    // minimum: the failure is undissolved soap.
+    // minimum: the failure is undissolved soap. Same verb list, module-wide.
     for (const t of LS_DILUTION_TARGETS) {
-      expect(`${t.label} ${t.note ?? ''}`).not.toMatch(/thickens|sets solid|stay liquid/i);
+      expect(`${t.label} ${t.note ?? ''}`).not.toMatch(
+        /thickens|\bsets?\b|solidif|congeal|harden|\bgels?\b|stay liquid/i,
+      );
     }
   });
 });
