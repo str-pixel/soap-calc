@@ -847,18 +847,40 @@ export function DilutionPanel({
         </label>
       </div>
       {dilutionScope === 'portion' && (
-        <label className="field">
-          <span>Amount to make (ml)</span>
-          <input
-            type="number"
-            className="input input--number"
-            min={1}
-            step={10}
-            value={targetMl}
-            onChange={(e) => onTargetMlChange?.(e.target.value)}
-            aria-label="Amount to make (ml)"
-          />
-        </label>
+        <>
+          <label className="field">
+            <span>Amount to make (ml)</span>
+            <input
+              type="number"
+              className="input input--number"
+              min={1}
+              step={10}
+              value={targetMl}
+              onChange={(e) => onTargetMlChange?.(e.target.value)}
+              aria-label="Amount to make (ml)"
+            />
+          </label>
+          {/* The measured-paste field's comma trap, on this field: a typed 1,200 commits as
+              1.200 (the browser reads the comma as a decimal point, every locale), and the
+              only defense used to be the resulting 1.2 ml portion looking absurd. The
+              verdict is portionDilutionFor's — resolved there so the figures, the density
+              caveat and this alert suppress together — and the fingerprint is the paste
+              rule's own (lib/measuredPaste's subTenthPrecisionFingerprint, judged on the
+              raw string): only two or more typed decimals refuse, so a 1200.5 ml ask — odd
+              but honest — still computes. The quoted figure is the RAW TYPED STRING with
+              " ml" appended, exactly as the paste alert quotes grams and for the same
+              reason: a formatter would round away the very decimals this alert exists to
+              show. ml, not grams — it is the number they just typed into an ml field. */}
+          {portionState?.targetMlSubTenthPrecision && (
+            <p className="results-hint" role="alert">
+              This field received {targetMl.trim()} ml — more decimal digits than an amount
+              to make carries: nobody asks for a portion to the hundredth of a millilitre.
+              If you typed a thousands separator, this field reads the comma as a decimal
+              point and the amount arrives a thousand times too small — re-enter it as
+              plain digits, without separators.
+            </p>
+          )}
+        </>
       )}
       {dilutionMode === 'ratio' && !ratioValid && (
         <p className="results-hint">

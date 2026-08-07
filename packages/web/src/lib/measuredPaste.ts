@@ -134,6 +134,26 @@ function measurementFinerThanScale(raw: string): boolean {
 }
 
 /**
+ * The swallowed-separator fingerprint in full: a non-blank raw string that parses to a
+ * finite, POSITIVE number and carries two or more typed decimal digits
+ * (measurementFinerThanScale above — see it for the raw-string-not-float design and the
+ * scientific-notation verdict). This is exactly the `subTenthPrecision` verdict
+ * {@link measuredPasteRejectionFor} reaches for the measured-paste field, extracted so the
+ * ONE other input with the same trap — DilutionPanel's "Amount to make (ml)" field, where a
+ * typed 1,200 commits as 1.200 and shrinks the ask a thousandfold — judges its raw string
+ * by the same single source of truth rather than a second copy of the regex. The
+ * fingerprint reads the same both places: nobody asks for a portion to the hundredth of a
+ * millilitre, just as no scale weighing paste reads finer than 0.1 g. Junk that happens to
+ * carry two decimals ('1.23.4') parses to NaN and stays junk; zero and negative numbers are
+ * some other rule's problem (nonPositive for the paste field, the child's own `> 0` gate
+ * for the amount), so a fingerprint on them would answer with the wrong remedy.
+ */
+export function subTenthPrecisionFingerprint(raw: string): boolean {
+  const n = Number(raw);
+  return raw.trim() !== '' && Number.isFinite(n) && n > 0 && measurementFinerThanScale(raw);
+}
+
+/**
  * Parses a measured-paste input string (as stored in App/view-model state) into a finite,
  * positive gram figure, or undefined when blank/invalid. Centralizes the "is there a
  * usable number here" check so every caller that might apply the measurement —
@@ -334,11 +354,10 @@ export function measuredPasteRejectionFor(
   // via an explicit exclusion, because a floor or ceiling verdict on a number that is not
   // a scale reading answers the wrong question — its remedies (re-tare, weigh all of it,
   // lower the target) send the maker back to a scale that was never the problem.
-  const subTenthPrecision =
-    hasMeasurement &&
-    Number.isFinite(measured) &&
-    measured > 0 &&
-    measurementFinerThanScale(raw);
+  //
+  // The derivation IS the shared fingerprint (non-blank, finite, positive, two or more
+  // typed decimals) — one function, so this rule and the ml-field's twin can never drift.
+  const subTenthPrecision = subTenthPrecisionFingerprint(raw);
   // A batch's paste always contains ALL of its anhydrous soap AND all of the solids an
   // alternative liquid put in the pot — neither evaporates — so a WHOLE-BATCH reading below
   // that is not physically possible. It is a mis-tare (the crock left on the scale) or a

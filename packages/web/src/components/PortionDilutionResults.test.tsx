@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import { PortionDilutionResults, dilutionTargetWording } from './PortionDilutionResults';
+import { PortionDilutionResults, dilutionTargetWording, portionDilutionFor } from './PortionDilutionResults';
 import type { DilutionResult } from '@soap-calc/core';
 
 afterEach(cleanup);
@@ -431,5 +431,42 @@ describe('a portion core refuses is explained, never left blank', () => {
     );
     expect(screen.getByText('Paste to weigh out')).toBeTruthy();
     expect(screen.queryByText(/no dilution water to divide up/i)).toBeNull();
+  });
+});
+
+describe('an amount asked to the hundredth of a millilitre is a swallowed comma, not an ask', () => {
+  // The "Amount to make (ml)" field is a number input, so a typed thousands comma commits
+  // as a decimal point: 1,200 ml arrives as 1.200 — a silent 1000× shrink whose only
+  // defense used to be the resulting portion looking absurd. Core is right to compute a
+  // 1.2 ml ask (a tiny portion is a valid ask); the refusal is the SHELL's, judged on the
+  // typed string exactly as the measured-paste field's subTenthPrecision rule is, and
+  // resolved here in portionDilutionFor so every surface reading this verdict — the child's
+  // figures, the shell's density caveat — suppresses together.
+  test('portionDilutionFor refuses to compute from a two-decimal amount, and says why', () => {
+    const state = portionDilutionFor({
+      dilution: RESULT,
+      targetMl: '1.200',
+      measuredPasteGrams: '',
+    });
+    expect(state.targetMlSubTenthPrecision).toBe(true);
+    expect(state.portion).toBeNull();
+  });
+
+  test('one decimal is odd but honest, and still computes — only two or more refuse', () => {
+    // 1200.5 ml ≈ 30.9% of the 3,883 ml batch; and the plain 1200 control alongside.
+    for (const targetMl of ['1200.5', '1200', '1.2']) {
+      const state = portionDilutionFor({ dilution: RESULT, targetMl, measuredPasteGrams: '' });
+      expect(state.targetMlSubTenthPrecision).toBe(false);
+      expect(state.portion).not.toBeNull();
+    }
+  });
+
+  test('the component renders no figures for a refused amount (positive control alongside)', () => {
+    render(<PortionDilutionResults {...PROPS} targetMl="1.200" />);
+    expect(screen.queryByText('Paste to weigh out')).toBeNull();
+    expect(screen.queryByText('Water to add')).toBeNull();
+    cleanup();
+    render(<PortionDilutionResults {...PROPS} targetMl="1200.5" />);
+    expect(screen.getByText('Paste to weigh out')).toBeTruthy();
   });
 });

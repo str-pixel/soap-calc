@@ -5,6 +5,7 @@ import {
   measuredPasteIsValidFor,
   measuredPasteRejectionFor,
   parseMeasuredPasteGrams,
+  subTenthPrecisionFingerprint,
 } from './measuredPaste';
 
 const DILUTION: DilutionResult = {
@@ -624,6 +625,35 @@ describe('the paste floor counts solids that cannot boil off', () => {
     }
     // That class is reachable, so the invariant above is not vacuous.
     expect(accepted).toBeGreaterThan(0);
+  });
+});
+
+describe('subTenthPrecisionFingerprint — the swallowed-separator test, exported for the ml field', () => {
+  // One regex, one module: DilutionPanel's "Amount to make (ml)" field has the same comma
+  // trap as the measured-paste field (a typed 1,200 ml commits as 1.2 — a silent 1000×
+  // shrink), and the same fingerprint catches it: a finite, positive raw string carrying
+  // two or more typed decimal digits. Nobody asks for a portion to the hundredth of a
+  // millilitre, just as no paste scale reads finer than 0.1 g.
+  it('fires on a finite, positive raw string with two or more typed decimal digits', () => {
+    for (const raw of ['1.200', '1.222', '1200.55', '0.15', '1.25e3']) {
+      expect(subTenthPrecisionFingerprint(raw)).toBe(true);
+    }
+  });
+
+  it('stays quiet on whole numbers, single decimals, junk, blanks and non-positives', () => {
+    // '1200.5' is the load-bearing negative: one decimal is odd but honest, and must keep
+    // computing — only two or more refuse.
+    for (const raw of ['1200', '1200.5', '1.2', '2e3', '', '   ', 'abc', '1.23.4', '-1.25', '0.00']) {
+      expect(subTenthPrecisionFingerprint(raw)).toBe(false);
+    }
+  });
+
+  it('is the identical verdict measuredPasteRejectionFor reaches, so the two can never drift', () => {
+    for (const raw of ['1.222', '1480.25', '1480.5', '1480', '2e3', '1.25e3', '-0.55', '1.23.4', '']) {
+      expect(subTenthPrecisionFingerprint(raw)).toBe(
+        measuredPasteRejectionFor(raw, DILUTION, false).subTenthPrecision,
+      );
+    }
   });
 });
 
