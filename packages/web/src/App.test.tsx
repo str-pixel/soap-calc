@@ -179,7 +179,7 @@ describe('App process switch', () => {
 describe('the seeded ratio preset applies from the path the app actually opens on', () => {
   // App seeds waterPasteRatio to '2' and the saved target to 30%, so entering ratio mode
   // renders 2:1 ALREADY CHECKED beside "Not applied yet: every figure below — and the printed
-  // batch sheet — still uses your saved 30% target, not the 25% above". Both of these drive
+  // batch sheet — still uses your saved 30% target". Both of these drive
   // the real App rather than the panel in isolation, because the seeding is App's and the
   // bug only exists at those seeded values: DilutionPanel's own tests have to be handed the
   // state that App creates for free.

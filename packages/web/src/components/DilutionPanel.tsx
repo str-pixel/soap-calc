@@ -629,7 +629,7 @@ export function DilutionPanel({
               //
               // `change` alone misses every row but the third: App seeds waterPasteRatio to
               // '2' and a 30% target, so entering ratio mode shows 2:1 ALREADY CHECKED beside
-              // "Not applied yet: … still uses your saved 30% target, not the 25% above", and
+              // "Not applied yet: … still uses your saved 30% target", and
               // re-asserting a checked radio changes no checkedness. The one obvious remedy
               // was inert — by mouse until `click` was added, and by keyboard until `keyup`
               // was. Recovery meant picking another preset and coming back.
@@ -1243,6 +1243,31 @@ export function DilutionPanel({
               )}
             </>
           )}
+          {/* The solubility ceiling, out loud. lsConcentrationAboveAllMinimums has a LIVE
+              gate, which makes this sentence state feedback, not always-true reference — a
+              prior round collapsed it into the notes <details> below as the tail of the
+              minimum-dilution paragraph, which buried the one warning for the 40-45%
+              window: dish and laundry ranges reach 45% while the solubility ceiling is
+              40%, so at a 45% target the uses summary AFFIRMS "this suits dish soap,
+              laundry soap" inline while the only can't-dissolve warning sat collapsed.
+              It is a role="alert", which the prose budget exempts by design — the budget
+              tests count non-alert paragraphs, and the alert channel is governed by the
+              panel's own no-stacking rule instead, kept here by suppression: when a
+              stronger verdict about this same target already owns the screen —
+              targetExceedsPaste (the FLAG, not its render: its hedged can't-tell state is
+              already questioning the target), the corrected-pot verdict, or an
+              exceeds-solution rejection — this stays silent, exactly the subsumption
+              those alerts already practice on one another. Renders in both scopes: it
+              describes the target, not an amount. The claim and its wording are the old
+              overflow tail's, unchanged. */}
+          {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent)) &&
+            !dilution.targetExceedsPaste &&
+            !pasteAlreadyPastTarget &&
+            !(measurementRejection?.exceedsSolution ?? false) && (
+              <p className="results-hint" role="alert">
+                This target is above what even a coconut-heavy recipe can fully dissolve.
+              </p>
+            )}
           {/* THE alternative-liquid paragraph — one per state. An alternative liquid is a
               property of the RECIPE, not of how much of it you are making, so its caveats
               follow into both scopes; the clauses, their gates and their scope-bound
@@ -1285,169 +1310,180 @@ export function DilutionPanel({
               not, is not recommended for hair.
             </p>
           </details>
-          {/* THE COLLAPSED NOTES — where the prose budget sends reference prose. The rule
-              (pinned by the prose-budget describe in DilutionPanel.test): in any single
-              state the panel may carry at most one alert plus TWO inline hint paragraphs;
-              guidance that is true in every state is reference, not feedback, and lives
-              here instead, where it does not count against the state and is still one
-              click away. Everything in this block keeps its exact wording and its own
-              gate from the inline site it left — moving prose must not move claims. */}
-          <details className="results-hint dilution-notes">
-            <summary>Dilution notes</summary>
-            {/* This paragraph owns the RATIOS and nothing else. Three sentences, three claims.
-                It renders in ratio mode only — the presets it accounts for are ratio mode's —
-                and moved here from directly under those presets: it is true whatever state
-                the ratio is in, which is what made it budget-exempt reference. The claims
-                are AUDITED and the wording is pinned — movable, not rewordable.
-                1. ATTRIBUTED, not universal: the reference says some makers begin at 1:1 and
-                   others at 2:1 or 3:1 depending on the recipe (LS:1534). It never says
-                   everyone starts at 1:1, and its own beginner table does not offer 1:1 at
-                   all — the lowest row there is 2:1 (LS:2172).
-                2. The fourth preset is accounted for by SOURCE rather than by editorial. It
-                   was called "a step between those two rather than a starting point of its
-                   own", which is the opposite of what the one place it appears shows: LS:2172
-                   is a table headed "Dilution Preference" for the beginner recipe that
-                   LS:2192 identifies as the Beginner Castile, and 2.5:1 is the more dilute of
-                   the two ratios that table offers. Its arithmetic confirms the calibration —
-                   paste is 19.31 oz anhydrous + 6.62 oz lye water = 25.93 oz, so 2.5:1 is
-                   64.83 oz of water (the table's own figure) for a 90.75 oz solution at
-                   21.3% soap, inside the 20-30% band LS:2181 gives castile. It is a
-                   castile-calibrated CHOICE for exactly the recipe class that needs the most
-                   water, not an interpolation — and denying it starting-point status also
-                   fought this group's own "Starting points" legend.
-                   No figure is quoted in the copy on purpose: the live "lands at" readout
-                   above these notes prints what 2.5:1 lands at for THIS recipe, which is
-                   21.3% only for the book's paste-to-anhydrous ratio and drifts with the
-                   lye-water concentration. A fixed "21%" here would have argued with a live
-                   figure on the same screen.
-                3. The minimum is a FLOOR TO CLEAR, never a destination. It replaces an
-                   invented mechanism ("expect to add more as the paste dissolves" — unsourced,
-                   and backwards, since too little water is what PREVENTS dissolution; the
-                   absorb-and-swell picture is Gradual Dilution's, LS:1531, whose own note
-                   below owns it for both modes). But the first repair overshot into
-                   "where you land is set by the recipe's own minimum", which the reference
-                   attacks by name: LS:1605 hands the decision to the maker once the minimum is
-                   met ("you can then decide if you would like to include additional water…
-                   depending on what the product will be used for"), LS:3585 calls diluting to
-                   the minimum for thickness a "preconceived (and incorrect) notion", and
-                   LS:1690 asks whether the commercial soaps use the absolute minimum and
-                   answers NO WAY. It also contradicted this app in two places: core's
-                   ls-dilution-targets ("any concentration above the recipe's own minimum
-                   'works', and the right answer depends entirely on the product") and the
-                   minimum-dilution paragraph directly below. So the claim is
-                   bounded to what LS:1524/LS:1605 support — how LITTLE water you can use —
-                   and where you land is left to the intended-use list above, which already
-                   owns it. Naming a floor is not naming the add-in-stages technique either,
-                   so the LS:1531 note keeps its own message.
-                What this paragraph deliberately does NOT say: which oils raise the minimum.
-                That claim, with the actual figures, belongs to the minimum-dilution paragraph
-                directly below (see its comment) — the two used to render as stacked hints on
-                one ratio + whole batch screen.
-                No source is named in the visible text, here or anywhere in this panel. */}
-            {dilutionMode === 'ratio' && (
-              <p>
-                Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
-                comes off a castile dilution table, the more dilute of its two ratio rows. The
-                recipe&apos;s own minimum sets how little water you can use — below it, some
-                paste stays undissolved.
-              </p>
-            )}
-            {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance (in ratio
-              mode, the note above) used to
-              say it too — in words, without figures — so in ratio + whole batch the same
-              claim rendered twice on one screen; this one carries the numbers (LS:1603:
-              coconut to 40%, castile 25%; LS:1605: most combination recipes 25-35%), so it
-              keeps the claim and the other drops it.
-              It also renders in BOTH modes and BOTH scopes, where the ratio note is
-              ratio-only — so ceding the claim here widens its reach rather than narrowing it.
-              Moved into these collapsed notes whole, overflow sentence included, under the
-              prose budget: everything it says is a property of recipe classes, not of the
-              state on screen, and the states it used to stack in (the ratio paragraph plus
-              an alternative-liquid caveat) are exactly the budget's busiest. The overflow
-              sentence keeps its own live gate in here, and the state it fires in is never
-              silent inline: the uses <details> above already headlines "No common use calls
-              for N%" for every target past the last range.
-              The castor clause moved here for the same reason and for one of its own: it is
-              an exception to "unsaturated oils are less soluble" (LS:848), and the ratio
-              paragraph no longer states that rule, so over there the reader met an exception
-              to nothing. Here "castile ~25%" is the rule standing right in front of it, and
-              the clause states the rule as it names the exception, so it needs no setup.
-              Ricinoleic acid is unsaturated yet increases solubility and dilutes rapidly
-              (LS:848, LS:915, LS:2382) — worth saying because castor is not a trace
-              ingredient in liquid soap: the reference's own 30-Minute HTLS formulating guide
-              puts it at 15-30% of the oils (LS:2723). That is a guide for one method, not a
-              census of what makers build, and the earlier comment overstated it as "most
-              liquid-soap recipes carry 15-30% castor" — the cite is now scoped to what it
-              actually says.
-              No % is claimed for castor-rich blends: the reference gives solubility
-              direction, not a concentration figure, and inventing one is what this branch
-              exists to stop.
-              THE CONSEQUENCE is undissolved soap, never a viscosity change. "Past that the
-              soap thickens or sets" survived three copy audits because it was never the
-              named claim, and it was inherited from core's LS_MINIMUM_DILUTION_GUIDE doc
-              (see the corrected comment there for the full accounting). The reference
-              states the below-minimum failure four times and it is the same state each
-              time — supersaturation with soap left over: lumps of undiluted paste or a
-              thick, goopy layer on top (LS:1519), "remaining soap paste" (LS:1524),
-              "remaining soap pieces or a white foamy layer on top" (LS:1610), "saturated
-              and have remaining soap" (LS:2181). "Thickens" is contradicted outright for
-              the case the sentence led with — coconut-heavy soaps are thin as milk or
-              juice even AT the minimum (LS:1657) — and "sets" is attributed to cold
-              dilution water (LS:2277, LS:2370) or NaOH (LS:2679), never to too little
-              water. It was also the belief LS:3585 calls "preconceived (and incorrect)",
-              which the ratio-guidance comment above already cites: one panel cited the
-              debunking while printing the debunked claim.
-              The same-worded overflow sentence follows lsConcentrationAboveAllMinimums,
-              whose own doc now matches: above every ceiling means no recipe dissolves that
-              much soap, not that the pot refuses to be liquid.
-              THE HAIR SENTENCE stands alone and names its subject. "Not recommended for
-              hair." sat directly after the salt-thickening sentence, so it read as a claim
-              about salt-thickened soap — but the reference's claim is a row in the
-              intended-use list itself (LS:1690: shampoo, not recommended for use in hair),
-              about liquid soap as such, and LS:3089 lists shampoos among the products salt
-              IS used in commercially. Naming the soap ("itself, thickened or not") detaches
-              it from the sentence it happens to follow. */}
-            <p>
-              Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
-              hold up to ~40% soap, most blends 25–35%, olive-heavy castile ~25%. Past that, the
-              extra soap simply stays undissolved — lumps of paste, or a thick layer sitting on
-              top. Castor is the odd one out — unsaturated like olive, but it makes soap more
-              soluble rather than less.
-              {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent))
-                ? ' This target is above what even a coconut-heavy recipe can fully dissolve.'
-                : ''}
-            </p>
-            {/* LS:1531 — true regardless of which figure (concentration or ratio) the maker
-                started from, since the swelling and absorbing it describes happens either
-                way. That is also what makes it reference rather than feedback: it used to
-                render as a loose paragraph in EVERY state with a dilution, which is a
-                standing charge against the prose budget for a technique that never
-                changes. */}
-            <p>
-              Whichever figure you start from, add the water in stages: enough to cover the paste,
-              then more in small amounts, and give it time between — the paste swells and keeps
-              absorbing. Recording where you stopped makes the next batch of the same recipe exact.
-            </p>
-            {/* The density bridge explains a gram→millilitre conversion, so it needs a volume
-                on screen to explain — reference prose or not, its gate survives the move
-                into these notes. Whole batch always shows one ("≈ Finished volume");
-                Custom amount only when a portion actually renders its "Makes" figure. An
-                amount being asked for is NOT that question — a rejected measurement, or a
-                paste already thinner than the target, suppresses the portion with the amount
-                still typed in, and the caveat printed beside no millilitre figure at all:
-                exactly the case the earlier Number(targetMl) > 0 gate was written to prevent. */}
-            {finishedVolumeMl !== null && (dilutionScope === 'batch' || portionOnScreen) && (
-              <p>
-                Volume assumes ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a planning figure, not a
-                measured density. Weigh a known volume of your own solution if it has to be
-                exact.
-              </p>
-            )}
-          </details>
         </>
       ) : (
         <p className="results-hint">Enter oils and a target concentration (1–99%) to compute dilution.</p>
       )}
+      {/* THE COLLAPSED NOTES — where the prose budget sends reference prose. The rule
+          (pinned by the prose-budget describe in DilutionPanel.test): in any single
+          state the panel may carry at most one alert plus TWO inline hint paragraphs;
+          guidance that is true in every state is reference, not feedback, and lives
+          here instead, where it does not count against the state and is still one
+          click away. Everything in this block keeps its exact wording and its own
+          gate from the inline site it left — moving prose must not move claims.
+
+          OUTSIDE the dilution ? branch on purpose. Ratio mode's presets render before a
+          recipe exists (App seeds the ratio input, so switching modes first is a real
+          path), and the guidance accounting for those presets has to be reachable in
+          that state too — inside the branch, "Some makers start at 1:1…" vanished
+          exactly where the presets stood unexplained, the copy-points-at-nothing class
+          the presets' own comment warns about. Every paragraph in here carries its own
+          gate, and none needs a dilution: the density caveat's finishedVolumeMl is
+          null-safe and simply gates it off while there is nothing to convert. */}
+      <details className="results-hint dilution-notes">
+        <summary>Dilution notes</summary>
+        {/* This paragraph owns the RATIOS and nothing else. Three sentences, three claims.
+            It renders in ratio mode only — the presets it accounts for are ratio mode's —
+            and moved here from directly under those presets: it is true whatever state
+            the ratio is in, which is what made it budget-exempt reference. The claims
+            are AUDITED and the wording is pinned — movable, not rewordable.
+            1. ATTRIBUTED, not universal: the reference says some makers begin at 1:1 and
+               others at 2:1 or 3:1 depending on the recipe (LS:1534). It never says
+               everyone starts at 1:1, and its own beginner table does not offer 1:1 at
+               all — the lowest row there is 2:1 (LS:2172).
+            2. The fourth preset is accounted for by SOURCE rather than by editorial. It
+               was called "a step between those two rather than a starting point of its
+               own", which is the opposite of what the one place it appears shows: LS:2172
+               is a table headed "Dilution Preference" for the beginner recipe that
+               LS:2192 identifies as the Beginner Castile, and 2.5:1 is the more dilute of
+               the two ratios that table offers. Its arithmetic confirms the calibration —
+               paste is 19.31 oz anhydrous + 6.62 oz lye water = 25.93 oz, so 2.5:1 is
+               64.83 oz of water (the table's own figure) for a 90.75 oz solution at
+               21.3% soap, inside the 20-30% band LS:2181 gives castile. It is a
+               castile-calibrated CHOICE for exactly the recipe class that needs the most
+               water, not an interpolation — and denying it starting-point status also
+               fought this group's own "Starting points" legend.
+               No figure is quoted in the copy on purpose: the live "lands at" readout
+               above these notes prints what 2.5:1 lands at for THIS recipe, which is
+               21.3% only for the book's paste-to-anhydrous ratio and drifts with the
+               lye-water concentration. A fixed "21%" here would have argued with a live
+               figure on the same screen.
+            3. The minimum is a FLOOR TO CLEAR, never a destination. It replaces an
+               invented mechanism ("expect to add more as the paste dissolves" — unsourced,
+               and backwards, since too little water is what PREVENTS dissolution; the
+               absorb-and-swell picture is Gradual Dilution's, LS:1531, whose own note
+               below owns it for both modes). But the first repair overshot into
+               "where you land is set by the recipe's own minimum", which the reference
+               attacks by name: LS:1605 hands the decision to the maker once the minimum is
+               met ("you can then decide if you would like to include additional water…
+               depending on what the product will be used for"), LS:3585 calls diluting to
+               the minimum for thickness a "preconceived (and incorrect) notion", and
+               LS:1690 asks whether the commercial soaps use the absolute minimum and
+               answers NO WAY. It also contradicted this app in two places: core's
+               ls-dilution-targets ("any concentration above the recipe's own minimum
+               'works', and the right answer depends entirely on the product") and the
+               minimum-dilution paragraph directly below. So the claim is
+               bounded to what LS:1524/LS:1605 support — how LITTLE water you can use —
+               and where you land is left to the intended-use list above, which already
+               owns it. Naming a floor is not naming the add-in-stages technique either,
+               so the LS:1531 note keeps its own message.
+            What this paragraph deliberately does NOT say: which oils raise the minimum.
+            That claim, with the actual figures, belongs to the minimum-dilution paragraph
+            directly below (see its comment) — the two used to render as stacked hints on
+            one ratio + whole batch screen.
+            No source is named in the visible text, here or anywhere in this panel. */}
+        {dilutionMode === 'ratio' && (
+          <p>
+            Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
+            comes off a castile dilution table, the more dilute of its two ratio rows. The
+            recipe&apos;s own minimum sets how little water you can use — below it, some
+            paste stays undissolved.
+          </p>
+        )}
+        {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance (in ratio
+          mode, the note above) used to
+          say it too — in words, without figures — so in ratio + whole batch the same
+          claim rendered twice on one screen; this one carries the numbers (LS:1603:
+          coconut to 40%, castile 25%; LS:1605: most combination recipes 25-35%), so it
+          keeps the claim and the other drops it.
+          It also renders in BOTH modes and BOTH scopes, where the ratio note is
+          ratio-only — so ceding the claim here widens its reach rather than narrowing it.
+          Moved into these collapsed notes under the prose budget — MINUS its old
+          overflow tail: everything left is a property of recipe classes, not of the
+          state on screen, and the states it used to stack in (the ratio paragraph plus
+          an alternative-liquid caveat) are exactly the budget's busiest. The overflow
+          sentence ("This target is above what even a coconut-heavy recipe can fully
+          dissolve.") has a LIVE gate, which makes it state feedback rather than
+          reference, so it renders inline as the solubility alert above these notes.
+          The round that first buried it here defended the move by claiming the uses
+          summary already headlines "No common use calls for N%" in every such state —
+          FALSE for the 40-45% window, where dish and laundry ranges reach 45% while
+          the ceiling is 40%, so the summary affirmed a use with nothing inline saying
+          the soap will not dissolve.
+          The castor clause moved here for the same reason and for one of its own: it is
+          an exception to "unsaturated oils are less soluble" (LS:848), and the ratio
+          paragraph no longer states that rule, so over there the reader met an exception
+          to nothing. Here "castile ~25%" is the rule standing right in front of it, and
+          the clause states the rule as it names the exception, so it needs no setup.
+          Ricinoleic acid is unsaturated yet increases solubility and dilutes rapidly
+          (LS:848, LS:915, LS:2382) — worth saying because castor is not a trace
+          ingredient in liquid soap: the reference's own 30-Minute HTLS formulating guide
+          puts it at 15-30% of the oils (LS:2723). That is a guide for one method, not a
+          census of what makers build, and the earlier comment overstated it as "most
+          liquid-soap recipes carry 15-30% castor" — the cite is now scoped to what it
+          actually says.
+          No % is claimed for castor-rich blends: the reference gives solubility
+          direction, not a concentration figure, and inventing one is what this branch
+          exists to stop.
+          THE CONSEQUENCE is undissolved soap, never a viscosity change. "Past that the
+          soap thickens or sets" survived three copy audits because it was never the
+          named claim, and it was inherited from core's LS_MINIMUM_DILUTION_GUIDE doc
+          (see the corrected comment there for the full accounting). The reference
+          states the below-minimum failure four times and it is the same state each
+          time — supersaturation with soap left over: lumps of undiluted paste or a
+          thick, goopy layer on top (LS:1519), "remaining soap paste" (LS:1524),
+          "remaining soap pieces or a white foamy layer on top" (LS:1610), "saturated
+          and have remaining soap" (LS:2181). "Thickens" is contradicted outright for
+          the case the sentence led with — coconut-heavy soaps are thin as milk or
+          juice even AT the minimum (LS:1657) — and "sets" is attributed to cold
+          dilution water (LS:2277, LS:2370) or NaOH (LS:2679), never to too little
+          water. It was also the belief LS:3585 calls "preconceived (and incorrect)",
+          which the ratio-guidance comment above already cites: one panel cited the
+          debunking while printing the debunked claim.
+          The same-worded overflow sentence follows lsConcentrationAboveAllMinimums,
+          whose own doc now matches: above every ceiling means no recipe dissolves that
+          much soap, not that the pot refuses to be liquid.
+          THE HAIR SENTENCE stands alone and names its subject. "Not recommended for
+          hair." sat directly after the salt-thickening sentence, so it read as a claim
+          about salt-thickened soap — but the reference's claim is a row in the
+          intended-use list itself (LS:1690: shampoo, not recommended for use in hair),
+          about liquid soap as such, and LS:3089 lists shampoos among the products salt
+          IS used in commercially. Naming the soap ("itself, thickened or not") detaches
+          it from the sentence it happens to follow. */}
+        <p>
+          Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
+          hold up to ~40% soap, most blends 25–35%, olive-heavy castile ~25%. Past that, the
+          extra soap simply stays undissolved — lumps of paste, or a thick layer sitting on
+          top. Castor is the odd one out — unsaturated like olive, but it makes soap more
+          soluble rather than less.
+        </p>
+        {/* LS:1531 — true regardless of which figure (concentration or ratio) the maker
+            started from, since the swelling and absorbing it describes happens either
+            way. That is also what makes it reference rather than feedback: it used to
+            render as a loose paragraph in EVERY state with a dilution, which is a
+            standing charge against the prose budget for a technique that never
+            changes. */}
+        <p>
+          Whichever figure you start from, add the water in stages: enough to cover the paste,
+          then more in small amounts, and give it time between — the paste swells and keeps
+          absorbing. Recording where you stopped makes the next batch of the same recipe exact.
+        </p>
+        {/* The density bridge explains a gram→millilitre conversion, so it needs a volume
+            on screen to explain — reference prose or not, its gate survives the move
+            into these notes. Whole batch always shows one ("≈ Finished volume");
+            Custom amount only when a portion actually renders its "Makes" figure. An
+            amount being asked for is NOT that question — a rejected measurement, or a
+            paste already thinner than the target, suppresses the portion with the amount
+            still typed in, and the caveat printed beside no millilitre figure at all:
+            exactly the case the earlier Number(targetMl) > 0 gate was written to prevent. */}
+        {finishedVolumeMl !== null && (dilutionScope === 'batch' || portionOnScreen) && (
+          <p>
+            Volume assumes ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a planning figure, not a
+            measured density. Weigh a known volume of your own solution if it has to be
+            exact.
+          </p>
+        )}
+      </details>
     </section>
   );
 }

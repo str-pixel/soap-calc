@@ -152,6 +152,27 @@ describe('intended-use dilution targets', () => {
     expect(screen.queryByText(/above what even a coconut-heavy recipe/i)).toBeNull();
   });
 
+  it('does not affirm a use band the soap cannot dissolve without warning in the same state', () => {
+    // The one window where the affirmation and the ceiling cross: dish and laundry ranges
+    // reach 45% while the solubility ceiling is 40%, so at a 45% target the uses summary
+    // says "this suits dish soap, laundry soap" — and a round that filed the can't-dissolve
+    // sentence under collapsed reference left that affirmation standing inline with zero
+    // warnings, defended by a claim ("the summary already says no common use calls for N%")
+    // that is false exactly here. The warning is a role="alert" — outside the prose budget
+    // by the budget describe's own counting rule, and INSIDE the panel's one-verdict-per-
+    // target rule: when targetExceedsPaste, the corrected-pot verdict or an exceeds-
+    // solution rejection already owns the target, this stays silent (those states assert
+    // something strictly stronger about the same target).
+    render30('45');
+    const summary = screen.getByText(/at 45% this suits/i);
+    expect(summary.textContent?.toLowerCase()).toContain('dish soap');
+    const warning = screen.getByRole('alert');
+    expect(warning.textContent).toMatch(/above what even a coconut-heavy recipe/i);
+    expect(warning.textContent).toMatch(/fully dissolve/i);
+    // Live, not reference: it must be inline — never inside the collapsed notes.
+    expect(warning.closest('details')).toBeNull();
+  });
+
   it('does not offer a hair use', () => {
     render30('12');
     expect(screen.queryByText(/^shampoo/i)).toBeNull();
@@ -677,8 +698,9 @@ describe('ratio mode says so while the ratio has not been applied to anything be
     // 25.02, and 2:1 on this paste (1,200 g anhydrous + 400 g cook water → 4,800 g solution)
     // lands at exactly 25.0. The two differ by 0.02 — a real difference, but smaller than the
     // 0.1 the write-back rounds to, so there is no split to report. Without the tolerance the
-    // note renders and reads "your saved 25% target, not the 25% above": the same number
-    // twice, since formatConcentrationPercent rounds both to one decimal.
+    // note's clause renders "still uses your saved 25% target" in the same paragraph as a
+    // readout landing at 25% — the same number twice, since formatConcentrationPercent
+    // rounds both to one decimal.
     render(
       <DilutionPanel
         {...ratioProps}
@@ -2560,8 +2582,8 @@ describe("ratio mode offers the reference's own starting ratios", () => {
 
   it('applies the preset that is ALREADY checked, which is the one on the default path', () => {
     // App seeds waterPasteRatio to '2' and the target to 30%, so entering ratio mode renders
-    // 2:1 already checked beside "Not applied yet: … still uses your saved 30% target, not
-    // the 25% above". The obvious move is to click the highlighted 2:1 — and a radio that is
+    // 2:1 already checked beside "Not applied yet: … still uses your saved 30% target".
+    // The obvious move is to click the highlighted 2:1 — and a radio that is
     // already checked fires no `change` event at all, so onChange never ran, ratioTouched
     // stayed false and nothing applied. Two clicks, zero write-backs, note still on screen.
     // Re-asserting the same ratio is an explicit edit; `click` fires whether or not
@@ -2713,6 +2735,23 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(screen.getByRole('radiogroup', { name: /starting points/i })).toBeTruthy();
     expect(screen.queryByRole('radiogroup', { name: /common/i })).toBeNull();
     expect(screen.queryByText(/common starting points/i)).toBeNull();
+  });
+
+  it('explains the presets even before a recipe exists', () => {
+    // App seeds waterPasteRatio to '2', so ratio mode — presets included — is reachable
+    // before any oils are entered. The guidance that accounts for those presets rendered
+    // in that state for as long as it sat under the radiogroup; a round that moved it
+    // into the collapsed notes left the notes inside the dilution ? branch, so with
+    // dilution null the presets stood entirely unexplained — the copy-points-at-nothing
+    // class the panel guards against everywhere else, in reverse. The notes <details> is
+    // hoisted out of the branch; every note in it carries its own gate.
+    render(<DilutionPanel {...RATIO_BASE} dilution={null} />);
+    expect(screen.getByRole('radiogroup', { name: /starting points/i })).toBeTruthy();
+    expect(ratioGuidance()).toMatch(/some makers start at 1:1/i);
+    // The panel is still in its waiting state — hoisting the notes must not conjure
+    // figures or feedback out of a recipe that does not exist.
+    expect(screen.getByText(/Enter oils and a target/)).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('drives the water requirement off the recipe minimum, not off a dissolving mechanism', () => {
