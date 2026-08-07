@@ -413,6 +413,124 @@ export function DilutionPanel({
     !measuredPasteValid &&
     bestKnownPasteGrams !== null &&
     bestKnownPasteGrams > dilution.solutionGrams;
+  // ── The alternative-liquid paragraph, and the portion-scope note the child carries ──
+  // Three hints used to render as separate paragraphs — the head start, the can't-tell
+  // hedge, the undeclared-liquid floor — and a split-liquid recipe could stack all three
+  // under the ratio readout. They are one topic (what the alternative liquid does to the
+  // water figures), so they are one paragraph now: every clause keeps its old gate and its
+  // old wording, and the exclusions between them (targetExceedsPaste splits the hedge from
+  // the floor; a valid measurement or the portion's own hedge silences the can't-tell) are
+  // unchanged. In Custom amount the head-start and floor clauses ride the child's own
+  // status paragraph instead (composed here, where the batch wordings live, so the two
+  // scopes' wordings cannot drift apart) — and only once a portion actually renders, which
+  // closes a hole this shell used to have: "the figures here are net of it" printed with
+  // no figures on screen when the portion was refused. The hedge stays the shell's in both
+  // scopes, exactly as before.
+  //
+  // Head-start gate: "did this liquid take anything off the water to add" — water OR
+  // solids, not water alone. The figure it explains is derived from the corrected paste,
+  // which counts both, so a water-only gate withheld the paragraph from exactly the
+  // recipes whose drop is largest (glycerin: waterFraction 0). An undeclared liquid does
+  // not withhold it outright, only the claims it makes unknowable: solids come from
+  // DECLARED rows alone, so they are exact whatever the undeclared grams contain, and the
+  // undeclared wording names them and the row they are missing from without claiming a
+  // head start (the pour is lighter by the assumed water too, and that part is not
+  // knowable). Each wording quotes only what its own liquid actually contributed.
+  const altLiquidGate =
+    unknownLiquidGrams === 0
+      ? altLiquidWaterGrams > 0 || splitLiquidSolidsGrams > 0.5
+      : splitLiquidSolidsGrams > 0.5;
+  // The can't-tell hedge: targetExceedsPaste is a factual claim about the paste derived
+  // from an ASSUMED water content, so with an undeclared liquid it is suppressed, not
+  // reworded — asserting it can tell the user a batch is finished when it still needs
+  // hundreds of grams of water. A valid whole-batch reading settles the question (the
+  // over-dilution alert above is gated the same way and for the same reason), and in
+  // Custom amount the child's own suppressed-portion hedge says the same thing with the
+  // missing figures explained, so it owns the message there.
+  const cantTellGate =
+    dilution !== null &&
+    dilution.targetExceedsPaste &&
+    unknownLiquidGrams > 0 &&
+    !overDilutionCertain &&
+    !portionOwnsUndeclaredLiquidHedge &&
+    !measuredPasteValid;
+  // The floor/same-either-way clause: only when a positive floor exists (when the target
+  // already exceeds the paste, the hedge owns the message — rendering this too repeated
+  // "declare its % water" verbatim and printed a vacuous "0 g is the LEAST you will
+  // need"). The quoted batch figure is the CORRECTED one the row above prints, and with a
+  // corrected basis it is not a bound at all: the water to add is solutionGrams −
+  // (anhydrous + lye water + the liquid's whole mass), and declaring the % water only
+  // moves mass between that liquid's water and its solids — never the sum. What the
+  // declaration really buys is knowing how much of the PASTE is water.
+  const floorGate =
+    dilution !== null &&
+    altLiquidWaterGrams > 0 &&
+    unknownLiquidGrams > 0 &&
+    !dilution.targetExceedsPaste;
+  const shellAltLiquidClauses: string[] = [];
+  if (dilution && dilutionScope === 'batch' && altLiquidGate) {
+    // The last sentence is the load-bearing one: it is the only place telling the maker
+    // not to top up with more milk or juice. The head start is the liquid's WHOLE mass
+    // once the water figure is derived from the corrected paste — its solids occupy room
+    // in the finished solution too, so they come off the water to add exactly as its water
+    // does. The water-only wording is kept verbatim for the recipes it is still exactly
+    // right for (a liquid that is all water, or no corrected basis at all).
+    shellAltLiquidClauses.push(
+      `${
+        unknownLiquidGrams > 0
+          ? `${formatWeight(splitLiquidSolidsGrams, weightUnit)} of your alternative liquid is solids rather than water: they take up room in the finished solution, so they come off the water to add and are not part of the total water above.`
+          : splitLiquidSolidsGrams > 0.5
+            ? altLiquidWaterGrams > 0
+              ? `Already ${formatWeight(altLiquidWaterGrams + splitLiquidSolidsGrams, weightUnit)} lighter: ${formatWeight(altLiquidWaterGrams, weightUnit)} of water that went into the paste, and ${formatWeight(splitLiquidSolidsGrams, weightUnit)} of solids that take up room in the finished solution.`
+              : `Already ${formatWeight(splitLiquidSolidsGrams, weightUnit)} lighter: the alternative liquid brought no water, and all of it is solids that take up room in the finished solution.`
+            : `Already ${formatWeight(altLiquidWaterGrams, weightUnit)} lighter: that much water came in with the alternative liquid and is counted as part of the paste.`
+      } Top up with plain distilled water only.`,
+    );
+  }
+  if (dilution && cantTellGate) {
+    shellAltLiquidClauses.push(
+      `Can't tell whether ${formatConcentrationPercent(dilution.soapConcentrationPercent)}% is reachable — ${formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no declared water content. Declare its % water in Split liquid.`,
+    );
+  }
+  if (dilution && dilutionScope === 'batch' && floorGate) {
+    shellAltLiquidClauses.push(
+      `${formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no declared water content — ${
+        hasCorrectedPasteBasis ? 'but' : 'it is counted as all water, so'
+      } ${formatWeight(batchDilutionWaterGrams, weightUnit)} is ${
+        hasCorrectedPasteBasis
+          ? "the same either way: the liquid's whole mass is in the pot however its water and solids divide up. Declaring the % water tells you how much of your paste is water, not how much to add."
+          : 'the LEAST you will need. Declare its % water, or dilute in increments and check by weight.'
+      }`,
+    );
+  }
+  // The same two clauses in their portion wordings — no batch figure travels into Custom
+  // amount (the head start is a whole-batch number, and quoting it beside a much smaller
+  // portion water figure said nothing about which is which). Rendered by the child inside
+  // its own status paragraph, and therefore only beside a portion that actually computed.
+  const portionAltLiquidClauses: string[] = [];
+  if (dilution && dilutionScope === 'portion' && altLiquidGate) {
+    portionAltLiquidClauses.push(
+      `${
+        unknownLiquidGrams > 0
+          ? 'Part of your alternative liquid is solids rather than water: they take up room in the finished solution, so they come off the water to add.'
+          : altLiquidWaterGrams > 0
+            ? 'Part of the water is already there: it came in with the alternative liquid and is counted as part of the paste.'
+            : 'The alternative liquid is already in the pot: it brought no water, but it takes up room in the finished solution, so the figures here are net of it.'
+      } Top up with plain distilled water only.`,
+    );
+  }
+  if (dilution && dilutionScope === 'portion' && floorGate) {
+    portionAltLiquidClauses.push(
+      `${formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no declared water content — ${
+        hasCorrectedPasteBasis ? 'but' : 'it is counted as all water, so'
+      } the water figures here are ${
+        hasCorrectedPasteBasis
+          ? "the same either way: the liquid's whole mass is in the pot however its water and solids divide up. Declaring the % water tells you how much of your paste is water, not how much to add."
+          : 'the LEAST you will need. Declare its % water, or dilute in increments and check by weight.'
+      }`,
+    );
+  }
+  const portionAltLiquidNote = portionAltLiquidClauses.join(' ');
   const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough — so the density bridge is shown here rather than
@@ -511,7 +629,7 @@ export function DilutionPanel({
               //
               // `change` alone misses every row but the third: App seeds waterPasteRatio to
               // '2' and a 30% target, so entering ratio mode shows 2:1 ALREADY CHECKED beside
-              // "Not applied yet: … still uses your saved 30% target, not the 25% above", and
+              // "Not applied yet: … still uses your saved 30% target", and
               // re-asserting a checked radio changes no checkedness. The one obvious remedy
               // was inert — by mouse until `click` was added, and by keyboard until `keyup`
               // was. Recovery meant picking another preset and coming back.
@@ -558,102 +676,13 @@ export function DilutionPanel({
               );
             })}
           </div>
-          {/* This paragraph owns the RATIOS and nothing else. Three sentences, three claims.
-              1. ATTRIBUTED, not universal: the reference says some makers begin at 1:1 and
-                 others at 2:1 or 3:1 depending on the recipe (LS:1534). It never says
-                 everyone starts at 1:1, and its own beginner table does not offer 1:1 at
-                 all — the lowest row there is 2:1 (LS:2172).
-              2. The fourth preset is accounted for by SOURCE rather than by editorial. It
-                 was called "a step between those two rather than a starting point of its
-                 own", which is the opposite of what the one place it appears shows: LS:2172
-                 is a table headed "Dilution Preference" for the beginner recipe that
-                 LS:2192 identifies as the Beginner Castile, and 2.5:1 is the more dilute of
-                 the two ratios that table offers. Its arithmetic confirms the calibration —
-                 paste is 19.31 oz anhydrous + 6.62 oz lye water = 25.93 oz, so 2.5:1 is
-                 64.83 oz of water (the table's own figure) for a 90.75 oz solution at
-                 21.3% soap, inside the 20-30% band LS:2181 gives castile. It is a
-                 castile-calibrated CHOICE for exactly the recipe class that needs the most
-                 water, not an interpolation — and denying it starting-point status also
-                 fought this group's own "Starting points" legend.
-                 No figure is quoted in the copy on purpose: the readout directly below
-                 prints what 2.5:1 lands at for THIS recipe, which is 21.3% only for the
-                 book's paste-to-anhydrous ratio and drifts with the lye-water concentration.
-                 A fixed "21%" here would have argued with a live figure one paragraph away.
-              3. The minimum is a FLOOR TO CLEAR, never a destination. It replaces an
-                 invented mechanism ("expect to add more as the paste dissolves" — unsourced,
-                 and backwards, since too little water is what PREVENTS dissolution; the
-                 absorb-and-swell picture is Gradual Dilution's, LS:1531, whose own paragraph
-                 further down owns it for both modes). But the first repair overshot into
-                 "where you land is set by the recipe's own minimum", which the reference
-                 attacks by name: LS:1605 hands the decision to the maker once the minimum is
-                 met ("you can then decide if you would like to include additional water…
-                 depending on what the product will be used for"), LS:3585 calls diluting to
-                 the minimum for thickness a "preconceived (and incorrect) notion", and
-                 LS:1690 asks whether the commercial soaps use the absolute minimum and
-                 answers NO WAY. It also contradicted this app in two places: core's
-                 ls-dilution-targets ("any concentration above the recipe's own minimum
-                 'works', and the right answer depends entirely on the product") and the
-                 minimum-dilution paragraph further down this very panel. So the claim is
-                 bounded to what LS:1524/LS:1605 support — how LITTLE water you can use —
-                 and where you land is left to the intended-use list below, which already
-                 owns it. Naming a floor is not naming the add-in-stages technique either,
-                 so the LS:1531 paragraph keeps its own message.
-              What this paragraph deliberately does NOT say: which oils raise the minimum.
-              That claim, with the actual figures, belongs to the minimum-dilution paragraph
-              further down (see its comment) — it used to render here too, and both fired on
-              one screen in ratio + whole batch.
-              No source is named in the visible text, here or anywhere in this panel. */}
-          <p className="results-hint">
-            Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
-            comes off a castile dilution table, the more dilute of its two ratio rows. The
-            recipe&apos;s own minimum sets how little water you can use — below it, some
-            paste stays undissolved.
-          </p>
-          {/* The caveat the reference attaches to its ratio rows and to no concentration row
-              (LS:2172, repeated at LS:2294): those water figures are estimates, and the
-              paste has to be weighed first because the cook evaporates water. Hence its
-              placement — in ratio mode only, against the ratio control, above the very field
-              it names.
-              LS:1534 makes the same demand as a precondition of the method — knowing the
-              paste's starting weight is step one of it — which is why this reads as a
-              property of the ratio rather than as a tip.
-              Once a reading is accepted the caveat is discharged, and saying so is the
-              point: the instruction is the part that must not survive its own remedy.
-
-              WHAT GETS WEIGHED IS THE PASTE. Both of the reference's routes to that number
-              yield paste and never pot + paste: put the paste on a tared scale (LS:1534),
-              or — the crockpot shortcut, which exists precisely so the paste need not be
-              turned out of the pot — weigh the loaded crockpot and SUBTRACT the empty one
-              (LS:1538, with LS:1536 advising you weigh and mark your crockpots before you
-              ever start). This used to close with "Weigh the pot and enter it as Measured
-              paste weight below", which is the shortcut with its subtraction deleted: a
-              maker who followed it literally typed a figure carrying an empty crockpot's
-              2-4 kg, and the ratio multiplied that mass straight into the dilution water.
-              If a future edit names the pot again it owes the subtraction in the same
-              breath — DilutionPanel.test pins both halves.
-
-              Two gates, both about not saying something twice or about nothing.
-
-              `ratioValid`: with the field empty this printed "A ratio is only as exact as the
-              paste it multiplies, and this one runs on…" directly above "Enter a
-              water:paste ratio greater than zero" — a sentence about a ratio that does not
-              exist, and "this ratio is taken against…" is no better in the measured branch.
-
-              The whole-batch exclusion: the discharged wording used to be defended as not
-              duplicating the "uses your measured paste" hint under the results grid, and that
-              holds in Custom amount, where the grid hint does not render and this is the only
-              answer on screen. In Whole batch both rendered, quoting the same figure and
-              giving the same cook-evaporation reason, a grid apart. The grid hint is the one
-              that ALSO names which row the reading corrected, so it owns the message there.
-              The estimate branch is unaffected in either scope: with no valid reading there is
-              no grid hint to duplicate. */}
-          {ratioValid && !(dilutionScope === 'batch' && measuredPasteValid) && (
-            <p className="results-hint">
-              {measuredPasteValid
-                ? `You have weighed the paste (${formatWeight(measuredPasteNum, 'g')}), so this ratio is taken against what the pot really holds rather than an estimate — the water your cook drove off is already counted.`
-                : `A ratio is only as exact as the paste it multiplies, and this one runs on the recipe's computed paste: the cook drives off water the recipe still counts, and only your scale knows how much.${pasteReadingEntered ? '' : " Weigh the paste and enter it as Measured paste weight below — or weigh the loaded crockpot and subtract the empty pot's own weight."}`}
-            </p>
-          )}
+          {/* The prose that used to sit here moved under the prose budget (at most two
+              inline hint paragraphs per state): the ratio-preset guidance ("Some makers
+              start at 1:1…") is always-true reference and lives in the collapsed notes
+              <details> at the bottom of the panel, with its sourcing comment; the
+              weigh-your-paste caveat is state-specific and rides the "lands at" readout
+              below the ratio's own water figure, one paragraph per state instead of three
+              stacked here. */}
         </>
       ) : (
         <label className="field">
@@ -906,12 +935,83 @@ export function DilutionPanel({
             </div>
           </dl>
         )}
+      {/* THE ratio paragraph — one per state, under the prose budget. It owns everything
+          the ratio has to say about itself: the readout (the true derived concentration,
+          however extreme, so the panel never lies about what the ratio implies), the
+          not-applied split, and the paste-basis caveat. These used to be three stacked
+          paragraphs; each clause keeps its old gate, so no state gains or loses a claim —
+          only the paragraph breaks between them are gone.
+
+          NOT-APPLIED CLAUSE (formerly its own note below the clamp alert). The write-back
+          waits for a real edit to the ratio (ratioTouched — see its own comment), so
+          entering ratio mode leaves the saved target in force. That is deliberate and must
+          stay: entering and leaving the mode used to rewrite a typed target with no undo.
+          What it left unsaid is the split it creates — this readout answers for the ratio
+          while every row below, and the printed sheet, still answer for the saved target.
+          Three disagreeing figures on one screen and nothing saying they are answers to
+          different questions. Naming the split is the fix; writing back on entry is not.
+          The clause names the action WITHOUT promising a destination, because the obvious
+          single edit does not reach the figure quoted here: from an untouched 2:1 at a
+          saved 30%, taking the ratio input's own step to 2.5 applies 21.4% — landing on
+          the 25% needs a round trip (2 → 2.5 → 2), since the write-back only fires once
+          the field has been touched. The ratio's own figure needs no restating inside the
+          clause: it is the bolded readout starting this same paragraph, so the two roles
+          (saved target in force, ratio's figure not) cannot be swapped by rewording one
+          of them.
+
+          PASTE-BASIS CLAUSE (formerly the caveat above the presets, and — in batch scope
+          with a measurement — the grid hint below the main grid). The reference attaches
+          the estimate warning to its ratio rows and to no concentration row (LS:2172,
+          repeated at LS:2294): those water figures are estimates, and the paste has to be
+          weighed first because the cook evaporates water. LS:1534 makes the same demand
+          as a precondition of the method — knowing the paste's starting weight is step
+          one of it. Once a reading is accepted the caveat is discharged, and saying so is
+          the point: the instruction is the part that must not survive its own remedy.
+
+          WHAT GETS WEIGHED IS THE PASTE. Both of the reference's routes to that number
+          yield paste and never pot + paste: put the paste on a tared scale (LS:1534), or —
+          the crockpot shortcut, which exists precisely so the paste need not be turned out
+          of the pot — weigh the loaded crockpot and SUBTRACT the empty one (LS:1538, with
+          LS:1536 advising you weigh and mark your crockpots before you ever start). This
+          once closed with "Weigh the pot and enter it as Measured paste weight below",
+          which is the shortcut with its subtraction deleted: a maker who followed it
+          literally typed a figure carrying an empty crockpot's 2-4 kg, and the ratio
+          multiplied that mass straight into the dilution water. If a future edit names the
+          pot again it owes the subtraction in the same breath — DilutionPanel.test pins
+          both halves. ("above", not "below": the field sits above this paragraph now.)
+
+          WHICH WORDING, BY SCOPE. In batch scope a valid reading takes the old grid
+          hint's wording, naming the row it corrected ("Water to add at this ratio above")
+          — in ratio mode the main grid's own "Dilution water to add" row is suppressed,
+          so the row must be named, not pointed at. In portion scope the same reading
+          takes the discharged wording, which is the only thing on that screen saying the
+          caveat is met. With no valid reading, both scopes carry the estimate caveat; the
+          weighing instruction drops once a reading is on the field unused (rejected, with
+          its own alert) — telling a maker who has just been to the scale to go to the
+          scale is the one thing this must not do. The whole paragraph is gated on the
+          derived concentration, which requires a valid ratio: with the field empty this
+          said "A ratio is only as exact as the paste it multiplies, and this one runs
+          on…" directly above "Enter a water:paste ratio greater than zero" — a sentence
+          about a ratio that does not exist. */}
       {dilutionMode === 'ratio' && ratioConcentrationPercent !== null && (
         <p className="results-hint">
           <strong>
             {waterPasteRatio}:1 water:paste lands at{' '}
             {formatConcentrationPercent(ratioConcentrationPercent)}% soap.
           </strong>
+          {ratioNotAppliedYet && (
+            <>
+              {' '}
+              Not applied yet: every figure below — and the printed batch sheet — still uses
+              your saved {formatConcentrationPercent(persistedTargetPercent)}% target.
+              Editing the ratio applies whatever it then lands at.
+            </>
+          )}{' '}
+          {measuredPasteValid
+            ? dilutionScope === 'batch'
+              ? `Water to add at this ratio above uses your measured paste (${formatWeight(measuredPasteNum, 'g')}), not the recipe's computed paste — the cook boils off water the recipe still counts, and no figure on paper knows how much yours drove off, so the measurement is more accurate.`
+              : `You have weighed the paste (${formatWeight(measuredPasteNum, 'g')}), so this ratio is taken against what the pot really holds rather than an estimate — the water your cook drove off is already counted.`
+            : `A ratio is only as exact as the paste it multiplies, and this one runs on the recipe's computed paste: the cook drives off water the recipe still counts, and only your scale knows how much.${pasteReadingEntered ? '' : " Weigh the paste and enter it as Measured paste weight above — or weigh the loaded crockpot and subtract the empty pot's own weight."}`}
         </p>
       )}
       {dilutionMode === 'ratio' &&
@@ -934,20 +1034,8 @@ export function DilutionPanel({
               : 'Raise the ratio (more water) to land inside that range directly.'}
           </p>
         )}
-      {/* The second sentence names the action WITHOUT promising a destination, because the
-          obvious single edit does not reach the figure quoted here: from an untouched 2:1 at a
-          saved 30%, taking the ratio input's own step to 2.5 applies 21.4% — landing on this
-          25% needs a round trip (2 → 2.5 → 2), since the write-back only fires once the field
-          has been touched. The first sentence is the durable part and stays: the rows below
-          and the printed sheet answer at the saved target, whatever the ratio says. */}
-      {ratioNotAppliedYet && clampedRatioConcentrationPercent !== null && (
-        <p className="results-hint">
-          Not applied yet: every figure below — and the printed batch sheet — still uses your
-          saved {formatConcentrationPercent(persistedTargetPercent)}% target, not the{' '}
-          {formatConcentrationPercent(clampedRatioConcentrationPercent)}% above. Editing the
-          ratio applies whatever it then lands at.
-        </p>
-      )}
+      {/* The not-applied note that used to render here on its own is now a clause of the
+          ratio paragraph above — same gate, same claims, one paragraph fewer. */}
       {dilution ? (
         <>
           {dilutionScope === 'batch' ? (
@@ -1051,35 +1139,26 @@ export function DilutionPanel({
                   </div>
                 )}
               </dl>
-              {/* `ratioValid` in ratio mode, because the row this names has to be ON SCREEN.
-                  With the ratio field empty neither water row renders — the concentration row
-                  is suppressed by the mode, and "Water to add at this ratio" needs a ratio —
-                  so this pointed at nothing, directly under "Enter a water:paste ratio greater
-                  than zero". Exactly the gate the ratio caveat above carries, for the same
-                  reason. `ratioValid` is the whole condition: with a valid measurement
-                  pasteGrams is positive, so a positive ratio makes ratioWaterGrams and
-                  ratioConcentrationPercent non-null, which is what that row is gated on. */}
-              {measuredPasteValid && (dilutionMode !== 'ratio' || ratioValid) && (
-                <p className="results-hint">
-                  {/* Named explicitly rather than positionally: in ratio mode the main grid's
-                      own "Dilution water to add" row is suppressed (see just above), so
-                      "above" would land on Total water/Glycerin instead — neither of which is
-                      measurement-corrected. Ratio mode's own water figure IS corrected (its
-                      pasteGrams already prefers a valid measurement), so name that row there.
+              {/* Concentration mode only: in ratio mode the same sentence is a clause of
+                  the ratio paragraph above the grid, naming "Water to add at this ratio"
+                  (the main grid's own "Dilution water to add" row is suppressed there, so
+                  "above" would land on Total water/Glycerin — neither of which is
+                  measurement-corrected). One paragraph per state either way.
 
-                      The reading itself is quoted in GRAMS, like the three rejection
-                      thresholds above and for the same reason: it is the number the maker
-                      typed into a grams-only field, not a bench readout. On lb this echoed
-                      a typed 1480 back as "3.26 lb" — their own entry, in a unit they never
-                      used. */}
-                  {/* The reason given for preferring the measurement is down to one clause.
-                      The computed paste this outranks is now the corrected whole-batch pot,
-                      which already counts an alternative liquid's solids — that went stale
-                      in c1dc31d, when the batch row started deriving its water from that
-                      pot, and stayed stale here while the same sentence was fixed in Custom
-                      amount. Evaporation is what a measurement still buys. */}
-                  {dilutionMode === 'ratio' ? 'Water to add at this ratio' : 'Dilution water'} above
-                  uses your measured paste ({formatWeight(measuredPasteNum, 'g')}
+                  The reading itself is quoted in GRAMS, like the three rejection
+                  thresholds above and for the same reason: it is the number the maker
+                  typed into a grams-only field, not a bench readout. On lb this echoed
+                  a typed 1480 back as "3.26 lb" — their own entry, in a unit they never
+                  used. */}
+              {/* The reason given for preferring the measurement is down to one clause.
+                  The computed paste this outranks is now the corrected whole-batch pot,
+                  which already counts an alternative liquid's solids — that went stale
+                  in c1dc31d, when the batch row started deriving its water from that
+                  pot, and stayed stale here while the same sentence was fixed in Custom
+                  amount. Evaporation is what a measurement still buys. */}
+              {measuredPasteValid && dilutionMode !== 'ratio' && (
+                <p className="results-hint">
+                  Dilution water above uses your measured paste ({formatWeight(measuredPasteNum, 'g')}
                   ), not the recipe&apos;s computed paste — the cook boils off water the recipe
                   still counts, and no figure on paper knows how much yours drove off, so the
                   measurement is more accurate.
@@ -1105,29 +1184,13 @@ export function DilutionPanel({
               overDilutionCertain={overDilutionCertain}
               dilutionMode={dilutionMode}
               ratioNotAppliedYet={ratioNotAppliedYet}
+              altLiquidNote={portionAltLiquidNote}
             />
           )}
-          {/* LS:1531 — shown regardless of which figure (concentration or ratio) the maker
-              started from, since the swelling and absorbing it describes happens either way. */}
-          <p className="results-hint">
-            Whichever figure you start from, add the water in stages: enough to cover the paste,
-            then more in small amounts, and give it time between — the paste swells and keeps
-            absorbing. Recording where you stopped makes the next batch of the same recipe exact.
-          </p>
-          {/* The density bridge explains a gram→millilitre conversion, so it needs a volume
-              on screen to explain. Whole batch always shows one ("≈ Finished volume");
-              Custom amount only when a portion actually renders its "Makes" figure. An
-              amount being asked for is NOT that question — a rejected measurement, or a
-              paste already thinner than the target, suppresses the portion with the amount
-              still typed in, and the caveat printed beside no millilitre figure at all:
-              exactly the case the earlier Number(targetMl) > 0 gate was written to prevent. */}
-          {finishedVolumeMl !== null && (dilutionScope === 'batch' || portionOnScreen) && (
-            <p className="results-hint">
-              Volume assumes ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a planning figure, not a
-              measured density. Weigh a known volume of your own solution if it has to be
-              exact.
-            </p>
-          )}
+          {/* The add-in-stages technique note (LS:1531) and the density caveat used to
+              render here as loose paragraphs in every state; both are always-true reference
+              prose and live in the collapsed notes <details> below, outside the prose
+              budget. */}
           {dilutionScope === 'batch' && (
             <>
               {/* targetExceedsPaste is computed from the recipe's ASSUMED cook water — exactly
@@ -1180,193 +1243,41 @@ export function DilutionPanel({
               )}
             </>
           )}
-          {/* An alternative liquid is a property of the RECIPE, not of how much of it you
-              are making, so these three caveats follow into both scopes: a portion's water
-              figure is net of that liquid's water, and a lower bound when its water is
-              undeclared, for exactly the same reasons the batch's figure is — and Custom
-              amount used to print them bare. Only the batch FIGURES they quote are
-              scope-bound, so each drops or replaces its own. */}
-          {/* The gate is "did this liquid take anything off the water to add" — water OR
-              solids — not water alone. The figure it explains is derived from the corrected
-              paste, which counts both, so a water-only gate withheld the paragraph from
-              exactly the recipes whose drop is largest: glycerin has waterFraction 0, so
-              400 g of it moved the pour 2,506 g → 2,106 g with nothing on screen saying
-              why. Each of the four cases below quotes only what its own liquid actually
-              contributed.
-
-              An undeclared liquid no longer withholds the paragraph outright, only the
-              claims it makes unknowable. Solids come from DECLARED rows alone — an
-              undeclared liquid is counted as all water (splitLiquidWaterFraction ?? 1), so
-              it contributes none — which makes splitLiquidSolidsGrams exact whatever the
-              undeclared grams turn out to be, and no hedge is resurrected by printing it.
-              The head start and the water term stay behind the old gate, because both DO
-              move with the declaration. Without this, 400 g of glycerin beside 600 g of an
-              undeclared liquid took 400 g off the pour AND opened a 400 g gap between
-              Paste (anhydrous) + Total water and Finished solution, with no paragraph
-              anywhere naming either — the same gate that used to withhold the explanation
-              of the pour's drop before the water-OR-solids fix above. */}
-          {(unknownLiquidGrams === 0
-            ? altLiquidWaterGrams > 0 || splitLiquidSolidsGrams > 0.5
-            : splitLiquidSolidsGrams > 0.5) && (
-            <p className="results-hint">
-              {/* The last sentence is the load-bearing one: it is the only place telling
-                  the maker not to top up with more milk or juice, and it is as true of a
-                  portion as of the batch. Only the head start is a whole-batch figure —
-                  quoting it in Custom amount would put the batch's 300 g beside a much
-                  smaller portion water figure with nothing to say which is which.
-
-                  The head start is the liquid's WHOLE mass once the water figure is
-                  derived from the corrected paste, not just the water it carried: its
-                  solids occupy room in the finished solution too, so they come off the
-                  water to add exactly as its water does. Quoting the water alone
-                  understated the drop by the solids — 136 g against a real 200 g for
-                  200 g of canned coconut milk. The water-only wording is kept verbatim for
-                  the recipes it is still exactly right for (a liquid that is all water, or
-                  no corrected basis at all), so nothing changes for them.
-
-                  A liquid with NO water (glycerin, waterFraction 0) gets its own wording
-                  rather than the mixed one: "0 g of water that went into the paste" is a
-                  clause about nothing, and the head start it would sit beside is entirely
-                  solids. Same sentence shape, same figure, one term instead of two.
-
-                  The undeclared-liquid case leads, because it is the one branch that must
-                  NOT say "Already N g lighter": the pour is lighter by the undeclared
-                  liquid's assumed water as well, and that part is not knowable. It names
-                  the solids alone, and names the row they are missing from — which is the
-                  whole reason it exists, since nothing else on screen accounts for Paste
-                  (anhydrous) + Total water falling short of Finished solution. */}
-              {unknownLiquidGrams > 0
-                ? dilutionScope === 'batch'
-                  ? `${formatWeight(splitLiquidSolidsGrams, weightUnit)} of your alternative liquid is solids rather than water: they take up room in the finished solution, so they come off the water to add and are not part of the total water above.`
-                  : 'Part of your alternative liquid is solids rather than water: they take up room in the finished solution, so they come off the water to add.'
-                : dilutionScope === 'batch'
-                  ? splitLiquidSolidsGrams > 0.5
-                    ? altLiquidWaterGrams > 0
-                      ? `Already ${formatWeight(altLiquidWaterGrams + splitLiquidSolidsGrams, weightUnit)} lighter: ${formatWeight(altLiquidWaterGrams, weightUnit)} of water that went into the paste, and ${formatWeight(splitLiquidSolidsGrams, weightUnit)} of solids that take up room in the finished solution.`
-                      : `Already ${formatWeight(splitLiquidSolidsGrams, weightUnit)} lighter: the alternative liquid brought no water, and all of it is solids that take up room in the finished solution.`
-                    : `Already ${formatWeight(altLiquidWaterGrams, weightUnit)} lighter: that much water came in with the alternative liquid and is counted as part of the paste.`
-                  : altLiquidWaterGrams > 0
-                    ? 'Part of the water is already there: it came in with the alternative liquid and is counted as part of the paste.'
-                    : 'The alternative liquid is already in the pot: it brought no water, but it takes up room in the finished solution, so the figures here are net of it.'}{' '}
-              Top up with plain distilled water only.
-            </p>
-          )}
-          {dilution.targetExceedsPaste &&
-            unknownLiquidGrams > 0 &&
-            !overDilutionCertain &&
-            !portionOwnsUndeclaredLiquidHedge &&
-            // A valid whole-batch reading settles the question this hedge asks. The
-            // over-dilution alert directly above is gated the same way and for the same
-            // reason (targetExceedsPaste comes from the recipe's ASSUMED cook water; the
-            // measurement is direct evidence against it) — ungated here, the panel printed
-            // "Dilution water above uses your measured paste (1,300 g)" and, three
-            // paragraphs later, "can't tell whether 90% is reachable" from a figure that
-            // reaches it.
-            !measuredPasteValid && (
-            // Suppressed, not reworded: targetExceedsPaste is a factual claim about the
-            // paste, and it was derived from an ASSUMED water content. Asserting it can tell
-            // the user a batch is finished when it still needs hundreds of grams of water.
-            <p className="results-hint">
-              Can&apos;t tell whether {formatConcentrationPercent(dilution.soapConcentrationPercent)}% is reachable —{' '}
-              {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
-              declared water content. Declare its % water in Split liquid.
-            </p>
-          )}
-          {/* Floor hint only when a positive floor exists. When the target already exceeds the
-              paste, the can't-tell / certain-alert branches above own the message — rendering
-              this too repeated "declare its % water" verbatim and printed a vacuous
-              "0 g is the LEAST you will need". */}
-          {/* …and, in Custom amount, only once a portion really rendered. The portion-scope
-              wording points AT figures ("the water figures here are the LEAST you will
-              need"), so with the amount field blank or a measurement rejected it bounded
-              nothing that was on screen — the same trap the density caveat above is gated
-              against, with the same gate. */}
-          {altLiquidWaterGrams > 0 &&
-            unknownLiquidGrams > 0 &&
+          {/* The solubility ceiling, out loud. lsConcentrationAboveAllMinimums has a LIVE
+              gate, which makes this sentence state feedback, not always-true reference — a
+              prior round collapsed it into the notes <details> below as the tail of the
+              minimum-dilution paragraph, which buried the one warning for the 40-45%
+              window: dish and laundry ranges reach 45% while the solubility ceiling is
+              40%, so at a 45% target the uses summary AFFIRMS "this suits dish soap,
+              laundry soap" inline while the only can't-dissolve warning sat collapsed.
+              It is a role="alert", which the prose budget exempts by design — the budget
+              tests count non-alert paragraphs, and the alert channel is governed by the
+              panel's own no-stacking rule instead, kept here by suppression: when a
+              stronger verdict about this same target already owns the screen —
+              targetExceedsPaste (the FLAG, not its render: its hedged can't-tell state is
+              already questioning the target), the corrected-pot verdict, or an
+              exceeds-solution rejection — this stays silent, exactly the subsumption
+              those alerts already practice on one another. Renders in both scopes: it
+              describes the target, not an amount. The claim and its wording are the old
+              overflow tail's, unchanged. */}
+          {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent)) &&
             !dilution.targetExceedsPaste &&
-            (dilutionScope === 'batch' || portionOnScreen) && (
-            <p className="results-hint">
-              {/* The quoted figure is the CORRECTED one the row above prints, not the
-                  recipe's own dilutionWaterGrams. unknownLiquidGrams > 0 means SOME liquid
-                  is undeclared, not all of it, so a declared liquid can contribute solids
-                  alongside — and the uncorrected figure then sat ABOVE the row it claims to
-                  bound (2,070 g offered as the floor under a 2,006 g row).
-
-                  And with the corrected basis it is not a bound at all: the water to add is
-                  solutionGrams − (anhydrous + lye water + the liquid's whole mass), and
-                  declaring the % water only moves mass between that liquid's water and its
-                  solids — never the sum, so never this figure. Promising that declaring
-                  would lower it promised an effect it cannot have. What the declaration
-                  really buys is knowing how much of the PASTE is water, which is what the
-                  1:1 lye-dissolution check and the paste's own composition run on. */}
-              {formatWeight(unknownLiquidGrams, weightUnit)} of alternative liquid has no
-              declared water content —{' '}
-              {hasCorrectedPasteBasis ? 'but' : 'it is counted as all water, so'}{' '}
-              {dilutionScope === 'batch'
-                ? `${formatWeight(batchDilutionWaterGrams, weightUnit)} is`
-                : 'the water figures here are'}{' '}
-              {hasCorrectedPasteBasis
-                ? "the same either way: the liquid's whole mass is in the pot however its water and solids divide up. Declaring the % water tells you how much of your paste is water, not how much to add."
-                : 'the LEAST you will need. Declare its % water, or dilute in increments and check by weight.'}
-            </p>
+            !pasteAlreadyPastTarget &&
+            !(measurementRejection?.exceedsSolution ?? false) && (
+              <p className="results-hint" role="alert">
+                This target is above what even a coconut-heavy recipe can fully dissolve.
+              </p>
+            )}
+          {/* THE alternative-liquid paragraph — one per state. An alternative liquid is a
+              property of the RECIPE, not of how much of it you are making, so its caveats
+              follow into both scopes; the clauses, their gates and their scope-bound
+              figures are composed above (see shellAltLiquidClauses / the portion note),
+              where each clause's own reasoning lives. In Custom amount only the can't-tell
+              hedge renders here — the head-start and floor clauses ride the child's status
+              paragraph, beside the portion figures they describe. */}
+          {shellAltLiquidClauses.length > 0 && (
+            <p className="results-hint">{shellAltLiquidClauses.join(' ')}</p>
           )}
-          {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance above used to
-              say it too — in words, without figures — so in ratio + whole batch the same
-              claim rendered twice on one screen; this one carries the numbers (LS:1603:
-              coconut to 40%, castile 25%; LS:1605: most combination recipes 25-35%), so it
-              keeps the claim and the other drops it.
-              It also renders in BOTH modes and BOTH scopes, where the ratio paragraph is
-              ratio-only — so ceding the claim here widens its reach rather than narrowing it.
-              The castor clause moved here for the same reason and for one of its own: it is
-              an exception to "unsaturated oils are less soluble" (LS:848), and the ratio
-              paragraph no longer states that rule, so over there the reader met an exception
-              to nothing. Here "castile ~25%" is the rule standing right in front of it, and
-              the clause states the rule as it names the exception, so it needs no setup.
-              Ricinoleic acid is unsaturated yet increases solubility and dilutes rapidly
-              (LS:848, LS:915, LS:2382) — worth saying because castor is not a trace
-              ingredient in liquid soap: the reference's own 30-Minute HTLS formulating guide
-              puts it at 15-30% of the oils (LS:2723). That is a guide for one method, not a
-              census of what makers build, and the earlier comment overstated it as "most
-              liquid-soap recipes carry 15-30% castor" — the cite is now scoped to what it
-              actually says.
-              No % is claimed for castor-rich blends: the reference gives solubility
-              direction, not a concentration figure, and inventing one is what this branch
-              exists to stop.
-              THE CONSEQUENCE is undissolved soap, never a viscosity change. "Past that the
-              soap thickens or sets" survived three copy audits because it was never the
-              named claim, and it was inherited from core's LS_MINIMUM_DILUTION_GUIDE doc
-              (see the corrected comment there for the full accounting). The reference
-              states the below-minimum failure four times and it is the same state each
-              time — supersaturation with soap left over: lumps of undiluted paste or a
-              thick, goopy layer on top (LS:1519), "remaining soap paste" (LS:1524),
-              "remaining soap pieces or a white foamy layer on top" (LS:1610), "saturated
-              and have remaining soap" (LS:2181). "Thickens" is contradicted outright for
-              the case the sentence led with — coconut-heavy soaps are thin as milk or
-              juice even AT the minimum (LS:1657) — and "sets" is attributed to cold
-              dilution water (LS:2277, LS:2370) or NaOH (LS:2679), never to too little
-              water. It was also the belief LS:3585 calls "preconceived (and incorrect)",
-              which the ratio-guidance comment above already cites: one panel cited the
-              debunking while printing the debunked claim.
-              The same-worded overflow sentence follows lsConcentrationAboveAllMinimums,
-              whose own doc now matches: above every ceiling means no recipe dissolves that
-              much soap, not that the pot refuses to be liquid.
-              THE HAIR SENTENCE stands alone and names its subject. "Not recommended for
-              hair." sat directly after the salt-thickening sentence, so it read as a claim
-              about salt-thickened soap — but the reference's claim is a row in the
-              intended-use list itself (LS:1690: shampoo, not recommended for use in hair),
-              about liquid soap as such, and LS:3089 lists shampoos among the products salt
-              IS used in commercially. Naming the soap ("itself, thickened or not") detaches
-              it from the sentence it happens to follow. */}
-          <p className="results-hint">
-            Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
-            hold up to ~40% soap, most blends 25–35%, olive-heavy castile ~25%. Past that, the
-            extra soap simply stays undissolved — lumps of paste, or a thick layer sitting on
-            top. Castor is the odd one out — unsaturated like olive, but it makes soap more
-            soluble rather than less.
-            {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent))
-              ? ' This target is above what even a coconut-heavy recipe can fully dissolve.'
-              : ''}
-          </p>
           <details className="results-hint dilution-uses">
             <summary>
               {suitedUses.length > 0
@@ -1403,6 +1314,176 @@ export function DilutionPanel({
       ) : (
         <p className="results-hint">Enter oils and a target concentration (1–99%) to compute dilution.</p>
       )}
+      {/* THE COLLAPSED NOTES — where the prose budget sends reference prose. The rule
+          (pinned by the prose-budget describe in DilutionPanel.test): in any single
+          state the panel may carry at most one alert plus TWO inline hint paragraphs;
+          guidance that is true in every state is reference, not feedback, and lives
+          here instead, where it does not count against the state and is still one
+          click away. Everything in this block keeps its exact wording and its own
+          gate from the inline site it left — moving prose must not move claims.
+
+          OUTSIDE the dilution ? branch on purpose. Ratio mode's presets render before a
+          recipe exists (App seeds the ratio input, so switching modes first is a real
+          path), and the guidance accounting for those presets has to be reachable in
+          that state too — inside the branch, "Some makers start at 1:1…" vanished
+          exactly where the presets stood unexplained, the copy-points-at-nothing class
+          the presets' own comment warns about. Every paragraph in here carries its own
+          gate, and none needs a dilution: the density caveat's finishedVolumeMl is
+          null-safe and simply gates it off while there is nothing to convert. */}
+      <details className="results-hint dilution-notes">
+        <summary>Dilution notes</summary>
+        {/* This paragraph owns the RATIOS and nothing else. Three sentences, three claims.
+            It renders in ratio mode only — the presets it accounts for are ratio mode's —
+            and moved here from directly under those presets: it is true whatever state
+            the ratio is in, which is what made it budget-exempt reference. The claims
+            are AUDITED and the wording is pinned — movable, not rewordable.
+            1. ATTRIBUTED, not universal: the reference says some makers begin at 1:1 and
+               others at 2:1 or 3:1 depending on the recipe (LS:1534). It never says
+               everyone starts at 1:1, and its own beginner table does not offer 1:1 at
+               all — the lowest row there is 2:1 (LS:2172).
+            2. The fourth preset is accounted for by SOURCE rather than by editorial. It
+               was called "a step between those two rather than a starting point of its
+               own", which is the opposite of what the one place it appears shows: LS:2172
+               is a table headed "Dilution Preference" for the beginner recipe that
+               LS:2192 identifies as the Beginner Castile, and 2.5:1 is the more dilute of
+               the two ratios that table offers. Its arithmetic confirms the calibration —
+               paste is 19.31 oz anhydrous + 6.62 oz lye water = 25.93 oz, so 2.5:1 is
+               64.83 oz of water (the table's own figure) for a 90.75 oz solution at
+               21.3% soap, inside the 20-30% band LS:2181 gives castile. It is a
+               castile-calibrated CHOICE for exactly the recipe class that needs the most
+               water, not an interpolation — and denying it starting-point status also
+               fought this group's own "Starting points" legend.
+               No figure is quoted in the copy on purpose: the live "lands at" readout
+               above these notes prints what 2.5:1 lands at for THIS recipe, which is
+               21.3% only for the book's paste-to-anhydrous ratio and drifts with the
+               lye-water concentration. A fixed "21%" here would have argued with a live
+               figure on the same screen.
+            3. The minimum is a FLOOR TO CLEAR, never a destination. It replaces an
+               invented mechanism ("expect to add more as the paste dissolves" — unsourced,
+               and backwards, since too little water is what PREVENTS dissolution; the
+               absorb-and-swell picture is Gradual Dilution's, LS:1531, whose own note
+               below owns it for both modes). But the first repair overshot into
+               "where you land is set by the recipe's own minimum", which the reference
+               attacks by name: LS:1605 hands the decision to the maker once the minimum is
+               met ("you can then decide if you would like to include additional water…
+               depending on what the product will be used for"), LS:3585 calls diluting to
+               the minimum for thickness a "preconceived (and incorrect) notion", and
+               LS:1690 asks whether the commercial soaps use the absolute minimum and
+               answers NO WAY. It also contradicted this app in two places: core's
+               ls-dilution-targets ("any concentration above the recipe's own minimum
+               'works', and the right answer depends entirely on the product") and the
+               minimum-dilution paragraph directly below. So the claim is
+               bounded to what LS:1524/LS:1605 support — how LITTLE water you can use —
+               and where you land is left to the intended-use list above, which already
+               owns it. Naming a floor is not naming the add-in-stages technique either,
+               so the LS:1531 note keeps its own message.
+            What this paragraph deliberately does NOT say: which oils raise the minimum.
+            That claim, with the actual figures, belongs to the minimum-dilution paragraph
+            directly below (see its comment) — the two used to render as stacked hints on
+            one ratio + whole batch screen.
+            No source is named in the visible text, here or anywhere in this panel. */}
+        {dilutionMode === 'ratio' && (
+          <p>
+            Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
+            comes off a castile dilution table, the more dilute of its two ratio rows. The
+            recipe&apos;s own minimum sets how little water you can use — below it, some
+            paste stays undissolved.
+          </p>
+        )}
+        {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance (in ratio
+          mode, the note above) used to
+          say it too — in words, without figures — so in ratio + whole batch the same
+          claim rendered twice on one screen; this one carries the numbers (LS:1603:
+          coconut to 40%, castile 25%; LS:1605: most combination recipes 25-35%), so it
+          keeps the claim and the other drops it.
+          It also renders in BOTH modes and BOTH scopes, where the ratio note is
+          ratio-only — so ceding the claim here widens its reach rather than narrowing it.
+          Moved into these collapsed notes under the prose budget — MINUS its old
+          overflow tail: everything left is a property of recipe classes, not of the
+          state on screen, and the states it used to stack in (the ratio paragraph plus
+          an alternative-liquid caveat) are exactly the budget's busiest. The overflow
+          sentence ("This target is above what even a coconut-heavy recipe can fully
+          dissolve.") has a LIVE gate, which makes it state feedback rather than
+          reference, so it renders inline as the solubility alert above these notes.
+          The round that first buried it here defended the move by claiming the uses
+          summary already headlines "No common use calls for N%" in every such state —
+          FALSE for the 40-45% window, where dish and laundry ranges reach 45% while
+          the ceiling is 40%, so the summary affirmed a use with nothing inline saying
+          the soap will not dissolve.
+          The castor clause moved here for the same reason and for one of its own: it is
+          an exception to "unsaturated oils are less soluble" (LS:848), and the ratio
+          paragraph no longer states that rule, so over there the reader met an exception
+          to nothing. Here "castile ~25%" is the rule standing right in front of it, and
+          the clause states the rule as it names the exception, so it needs no setup.
+          Ricinoleic acid is unsaturated yet increases solubility and dilutes rapidly
+          (LS:848, LS:915, LS:2382) — worth saying because castor is not a trace
+          ingredient in liquid soap: the reference's own 30-Minute HTLS formulating guide
+          puts it at 15-30% of the oils (LS:2723). That is a guide for one method, not a
+          census of what makers build, and the earlier comment overstated it as "most
+          liquid-soap recipes carry 15-30% castor" — the cite is now scoped to what it
+          actually says.
+          No % is claimed for castor-rich blends: the reference gives solubility
+          direction, not a concentration figure, and inventing one is what this branch
+          exists to stop.
+          THE CONSEQUENCE is undissolved soap, never a viscosity change. "Past that the
+          soap thickens or sets" survived three copy audits because it was never the
+          named claim, and it was inherited from core's LS_MINIMUM_DILUTION_GUIDE doc
+          (see the corrected comment there for the full accounting). The reference
+          states the below-minimum failure four times and it is the same state each
+          time — supersaturation with soap left over: lumps of undiluted paste or a
+          thick, goopy layer on top (LS:1519), "remaining soap paste" (LS:1524),
+          "remaining soap pieces or a white foamy layer on top" (LS:1610), "saturated
+          and have remaining soap" (LS:2181). "Thickens" is contradicted outright for
+          the case the sentence led with — coconut-heavy soaps are thin as milk or
+          juice even AT the minimum (LS:1657) — and "sets" is attributed to cold
+          dilution water (LS:2277, LS:2370) or NaOH (LS:2679), never to too little
+          water. It was also the belief LS:3585 calls "preconceived (and incorrect)",
+          which the ratio-guidance comment above already cites: one panel cited the
+          debunking while printing the debunked claim.
+          The same-worded overflow sentence follows lsConcentrationAboveAllMinimums,
+          whose own doc now matches: above every ceiling means no recipe dissolves that
+          much soap, not that the pot refuses to be liquid.
+          THE HAIR SENTENCE stands alone and names its subject. "Not recommended for
+          hair." sat directly after the salt-thickening sentence, so it read as a claim
+          about salt-thickened soap — but the reference's claim is a row in the
+          intended-use list itself (LS:1690: shampoo, not recommended for use in hair),
+          about liquid soap as such, and LS:3089 lists shampoos among the products salt
+          IS used in commercially. Naming the soap ("itself, thickened or not") detaches
+          it from the sentence it happens to follow. */}
+        <p>
+          Minimum dilution is a property of the recipe, not the product: coconut-heavy soaps
+          hold up to ~40% soap, most blends 25–35%, olive-heavy castile ~25%. Past that, the
+          extra soap simply stays undissolved — lumps of paste, or a thick layer sitting on
+          top. Castor is the odd one out — unsaturated like olive, but it makes soap more
+          soluble rather than less.
+        </p>
+        {/* LS:1531 — true regardless of which figure (concentration or ratio) the maker
+            started from, since the swelling and absorbing it describes happens either
+            way. That is also what makes it reference rather than feedback: it used to
+            render as a loose paragraph in EVERY state with a dilution, which is a
+            standing charge against the prose budget for a technique that never
+            changes. */}
+        <p>
+          Whichever figure you start from, add the water in stages: enough to cover the paste,
+          then more in small amounts, and give it time between — the paste swells and keeps
+          absorbing. Recording where you stopped makes the next batch of the same recipe exact.
+        </p>
+        {/* The density bridge explains a gram→millilitre conversion, so it needs a volume
+            on screen to explain — reference prose or not, its gate survives the move
+            into these notes. Whole batch always shows one ("≈ Finished volume");
+            Custom amount only when a portion actually renders its "Makes" figure. An
+            amount being asked for is NOT that question — a rejected measurement, or a
+            paste already thinner than the target, suppresses the portion with the amount
+            still typed in, and the caveat printed beside no millilitre figure at all:
+            exactly the case the earlier Number(targetMl) > 0 gate was written to prevent. */}
+        {finishedVolumeMl !== null && (dilutionScope === 'batch' || portionOnScreen) && (
+          <p>
+            Volume assumes ~{LS_SOLUTION_DENSITY_G_PER_ML} g/ml — a planning figure, not a
+            measured density. Weigh a known volume of your own solution if it has to be
+            exact.
+          </p>
+        )}
+      </details>
     </section>
   );
 }
