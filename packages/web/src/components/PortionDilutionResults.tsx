@@ -52,6 +52,15 @@ type PortionDilutionResultsProps = {
    * target in that state, so a refusal must not name the ratio's own concentration as the
    * thing the paste is past. */
   ratioNotAppliedYet?: boolean;
+  /** The alternative-liquid caveats in their PORTION wordings, composed by DilutionPanel's
+   * shell — where the batch wordings of the same clauses live, so the two scopes cannot
+   * drift apart — and rendered here as part of this component's own status paragraph.
+   * Riding that paragraph does two things at once: the note only prints beside portion
+   * figures that actually computed (the shell used to say "the figures here are net of it"
+   * with no figures on screen when the portion was refused), and it costs no paragraph of
+   * its own under the panel's prose budget (at most two inline hint paragraphs per state).
+   * Empty means the recipe has no alternative liquid, or nothing about it needs saying. */
+  altLiquidNote?: string;
 };
 
 /**
@@ -222,6 +231,7 @@ export function PortionDilutionResults({
   overDilutionCertain = false,
   dilutionMode = 'concentration',
   ratioNotAppliedYet = false,
+  altLiquidNote = '',
 }: PortionDilutionResultsProps) {
   const { measured, pasteAlreadyThinner, unmeasuredPasteAlreadyThinner, portion } =
     portionDilutionFor({
@@ -243,6 +253,52 @@ export function PortionDilutionResults({
   // corrected basis was supplied (core's own fallback), so a no-split-liquid, non-clamped
   // recipe is unaffected.
   const driftGrams = portion?.pasteMeasured ? measured - portion.wholeBatchPasteGrams : 0;
+
+  // THE portion status paragraph — one per rendered portion, under the panel's prose
+  // budget (at most two inline hint paragraphs per state; DilutionPanel's ratio paragraph
+  // can be on screen beside this one, and nothing else may be). Its clauses used to be up
+  // to three stacked paragraphs — the clamp note, the drift-or-estimate note, and (in the
+  // shell, where it could print beside no figures at all) the alternative-liquid caveats.
+  // Every clause keeps its old gate and its old wording; only the paragraph breaks between
+  // them are gone.
+  const statusClauses: string[] = [];
+  if (portion) {
+    // One wording, because there is one kind of pot: the batch. This used to branch on
+    // the measured-paste declaration ("more than the remaining paste holds") — see
+    // lib/measuredPaste's MEASURED_PASTE_IS_REMAINING for where that control went.
+    if (portion.clamped) {
+      statusClauses.push(
+        'That is more than the batch holds — the figures above are the whole batch.',
+      );
+    }
+    if (portion.pasteMeasured) {
+      if (Math.abs(driftGrams) >= 1) {
+        statusClauses.push(
+          `Your paste is ${formatWeight(Math.abs(driftGrams), weightUnit)} ${
+            driftGrams < 0 ? 'lighter' : 'heavier'
+          } than predicted${
+            driftGrams < 0 ? ' — water lost to the cook' : ''
+          }. Whole batch scope uses your measurement too, not just these figures.`,
+        );
+      }
+    } else {
+      // The solids half of this caveat had to go: "Paste to weigh out" now runs on the
+      // corrected whole-batch pot, which counts an alternative liquid's non-water solids,
+      // so telling the maker they are missing from the figure directly above described
+      // the opposite of what it prints. Evaporation is the half that survives — no
+      // arithmetic can see it — and it is the half that makes weighing the fix. Left
+      // unconditional rather than branched on whether a corrected basis was supplied: it
+      // is true either way, and a clause about alternative liquids is noise on the many
+      // recipes that have none. The solids correction itself is documented on this
+      // component and on lsPartialDilution, where the next editor will look.
+      statusClauses.push(
+        'Paste weight here is computed from the recipe, so treat it as an estimate: the cook boils off water the recipe still counts, and no figure on paper knows how much yours drove off. Weigh your paste and enter it above for exact figures.',
+      );
+    }
+    // Last, so the paste clauses keep leading exactly as they did as paragraphs of their
+    // own — the note describes the water figures, which the sentences above frame.
+    if (altLiquidNote) statusClauses.push(altLiquidNote);
+  }
 
   // Whether the paste really is thinner than the target is a claim about the recipe's
   // ASSUMED water content, so an alternative liquid with no declared % water makes it
@@ -319,39 +375,10 @@ export function PortionDilutionResults({
               </dd>
             </div>
           </dl>
-          {/* One wording, because there is one kind of pot: the batch. This used to branch on
-              the measured-paste declaration ("more than the remaining paste holds") — see
-              lib/measuredPaste's MEASURED_PASTE_IS_REMAINING for where that control went. */}
-          {portion.clamped && (
-            <p className="results-hint">
-              That is more than the batch holds — the figures above are the whole batch.
-            </p>
-          )}
-          {portion.pasteMeasured ? (
-            Math.abs(driftGrams) >= 1 && (
-              <p className="results-hint">
-                Your paste is {formatWeight(Math.abs(driftGrams), weightUnit)}{' '}
-                {driftGrams < 0 ? 'lighter' : 'heavier'} than predicted
-                {driftGrams < 0 ? ' — water lost to the cook' : ''}. Whole batch scope uses
-                your measurement too, not just these figures.
-              </p>
-            )
-          ) : (
-            <p className="results-hint">
-              {/* The solids half of this caveat had to go: "Paste to weigh out" now runs on
-                  the corrected whole-batch pot, which counts an alternative liquid's
-                  non-water solids, so telling the maker they are missing from the figure
-                  directly above described the opposite of what it prints. Evaporation is
-                  the half that survives — no arithmetic can see it — and it is the half
-                  that makes weighing the fix. Left unconditional rather than branched on
-                  whether a corrected basis was supplied: it is true either way, and a
-                  clause about alternative liquids is noise on the many recipes that have
-                  none. The solids correction itself is documented on this component and on
-                  lsPartialDilution, where the next editor will look. */}
-              Paste weight here is computed from the recipe, so treat it as an estimate: the
-              cook boils off water the recipe still counts, and no figure on paper knows how
-              much yours drove off. Weigh your paste and enter it above for exact figures.
-            </p>
+          {/* The composed status paragraph — see statusClauses above for what rides it
+              and why it is one paragraph. */}
+          {statusClauses.length > 0 && (
+            <p className="results-hint">{statusClauses.join(' ')}</p>
           )}
         </>
       )}

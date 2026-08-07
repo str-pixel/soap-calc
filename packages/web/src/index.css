@@ -2444,3 +2444,12 @@ a:hover {
 .dilution-uses__row--match dd {
   font-weight: 600;
 }
+
+/* Dilution: collapsed reference notes — where the prose budget sends always-true
+   guidance. Same treatment as the intended-use targets above: reference, not a control. */
+.dilution-notes > summary {
+  cursor: pointer;
+}
+.dilution-notes > p {
+  margin: 0.5rem 0 0;
+}

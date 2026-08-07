@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { DilutionPanel } from './DilutionPanel';
 import type { DilutionResult } from '@soap-calc/core';
 
@@ -627,12 +628,15 @@ describe('ratio mode says so while the ratio has not been applied to anything be
     render(<DilutionPanel {...ratioProps} />);
     const note = screen.getByText(/not applied yet/i);
     // Pinned to their ROLES, not merely to their presence somewhere in the sentence. Asserting
-    // only /30%/ and /25%/ let a swapped pair — "your saved 25% target … not the 30% above",
-    // exactly backwards — pass the whole suite; same failure mode the exceeds-solution remedy
-    // copy closed earlier. The saved target is the one still in force; the ratio's figure is
-    // the one nothing below is using yet.
+    // only /30%/ and /25%/ let a swapped pair — "your saved 25% target" against a readout
+    // landing at 30%, exactly backwards — pass the whole suite; same failure mode the
+    // exceeds-solution remedy copy closed earlier. The saved target is the one still in
+    // force; the ratio's figure is the one nothing below is using yet. The note is a clause
+    // of the ratio paragraph now (prose budget: one ratio paragraph per state), so both
+    // figures live in ONE paragraph, each welded to its role — "saved … target" and
+    // "lands at … soap" — and rewording one cannot swap them.
     expect(note.textContent).toMatch(/saved 30% target/);
-    expect(note.textContent).toMatch(/not the 25% above/);
+    expect(note.textContent).toMatch(/lands at 25% soap/);
     // No promise about where a single edit lands: from this untouched 2:1 / saved-30% state,
     // the one edit the ratio input's own step offers (2 → 2.5) sets the target to 21.4%, not
     // 25% — 25% needs a round trip (2 → 2.5 → 2), because the write-back waits for a touch.
@@ -1949,11 +1953,18 @@ describe('figures that belong to one scope stay in that scope; caveats that desc
     const row = screen.getByText('Dilution water to add').nextElementSibling!.textContent!;
     expect(row).toBe('2,006 g');
     const hint = screen.getByText(/no declared water content/i).textContent!;
-    const quoted = Number((hint.match(/([\d,]+) g/g) ?? [])
-      .map((s) => Number(s.replace(/[, g]/g, '')))
-      .find((n) => n !== 300));
-    expect(quoted).toBeLessThanOrEqual(Number(row.replace(/[, g]/g, '')));
-    expect(quoted).toBe(2006);
+    // The alternative-liquid caveats are ONE paragraph now (prose budget), so the floor
+    // clause shares it with the head-start clause and its 64 g of solids — the bound can
+    // no longer be singled out as "the first figure that is not the liquid's 300 g".
+    // Pinned the other way around: EVERY figure the paragraph quotes stays at or under
+    // the row it describes, and the batch figure it names is the corrected row figure
+    // itself, said in the same-either-way wording — never the recipe's own 2,070 g, which
+    // sat 64 g ABOVE the row it claimed to be a floor for.
+    const quoted = (hint.match(/([\d,]+) g/g) ?? []).map((s) => Number(s.replace(/[, g]/g, '')));
+    expect(quoted.length).toBeGreaterThan(0);
+    for (const n of quoted) expect(n).toBeLessThanOrEqual(Number(row.replace(/[, g]/g, '')));
+    expect(hint).toContain('2,006 g is');
+    expect(hint).not.toContain('2,070');
     // …and it no longer offers declaring as a lever on that figure. The corrected water is
     // solutionGrams − (anhydrous + lye water + the liquid's whole mass), so declaring only
     // moves mass between that liquid's water and its solids — never the sum, never this
@@ -2662,16 +2673,22 @@ describe("ratio mode offers the reference's own starting ratios", () => {
   });
 
   /** The one paragraph of ratio guidance, however it is worded. Selected STRUCTURALLY — the
-   *  hint immediately after the presets group — rather than by any phrase in it, so every
-   *  assertion below is about the claims and none is propped up by the wording it inspects.
-   *  It used to be selected by "coconut-heavy soaps" filtered on "2:1", which was itself the
-   *  evidence of a duplicated claim: the only reason a filter was needed is that a second
-   *  paragraph on the same screen was making the same point. That claim has one owner now
-   *  (see the minimum-dilution test below), so the disambiguation is gone with it. */
+   *  first paragraph of the collapsed dilution-notes <details>, which the guidance leads in
+   *  ratio mode — rather than by any phrase in it, so every assertion below is about the
+   *  claims and none is propped up by the wording it inspects.
+   *  It used to be the hint immediately after the presets group; the prose budget moved it
+   *  into the collapsed notes (always-true reference does not count against a state's two
+   *  inline hint paragraphs), claims and wording intact — the audited ratio-preset claims
+   *  are movable, not rewordable, and every assertion below still runs against them.
+   *  Before that it was selected by "coconut-heavy soaps" filtered on "2:1", which was
+   *  itself the evidence of a duplicated claim: the only reason a filter was needed is that
+   *  a second paragraph on the same screen was making the same point. That claim has one
+   *  owner now (see the minimum-dilution test below), so the disambiguation is gone with it. */
   const ratioGuidance = () => {
-    const presets = screen.getByRole('radiogroup', { name: /starting points/i });
-    const paragraph = presets.nextElementSibling;
-    expect(paragraph?.className).toContain('results-hint');
+    const notes = document.querySelector('details.dilution-notes');
+    expect(notes).toBeTruthy();
+    const paragraph = notes!.querySelector('p');
+    expect(paragraph).toBeTruthy();
     return paragraph?.textContent ?? '';
   };
 
@@ -2922,6 +2939,97 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(caveat.textContent).not.toMatch(/enter it as measured paste weight/i);
     expect(caveat.textContent).not.toMatch(/weigh the (paste|pot|crockpot)/i);
   });
+});
+
+describe('the prose budget: at most two inline hint paragraphs in any one state', () => {
+  // The panel's guidance grew one review round at a time, each paragraph individually
+  // justified — and busy states stacked four to nine of them at once. The budget: figures,
+  // the alert machinery (untouched, its own rule), and AT MOST TWO prose hint paragraphs
+  // outside <details>. Reference prose that is always true lives in the collapsed notes
+  // instead, where it does not count against the state.
+  //
+  // Counted structurally: every <p class="results-hint"> that is not role="alert" and not
+  // inside a <details>. The states below are the documented busiest ones — split-liquid +
+  // measured + ratio mode (both scopes), an undeclared liquid past the target (both
+  // scopes), the glycerin corrected-pot clamp — plus the undeclared-past-target case in
+  // ratio mode, which layers the ratio readout on top.
+  const inlineProse = () =>
+    Array.from(document.querySelectorAll('p.results-hint')).filter(
+      (p) => p.getAttribute('role') !== 'alert' && p.closest('details') === null,
+    );
+
+  const RATIO_ON = {
+    dilutionMode: 'ratio' as const,
+    waterPasteRatio: '2',
+    onDilutionModeChange: () => {},
+    onWaterPasteRatioChange: () => {},
+  };
+  // The split-liquid fixture the scope-parity describe uses (16% target, 850 g cook water,
+  // a 2,500 g corrected pot → 450 g of solids), with the liquid's water declared and a
+  // valid 2,300 g reading — clears the 1,650 g floor, sits under the 7,500 g solution.
+  const SPLIT_MEASURED = {
+    ...BASE,
+    ...RATIO_ON,
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 7500, totalWaterGrams: 6300,
+      dilutionWaterGrams: 5450, glycerinGrams: 110, soapConcentrationPercent: 16,
+      targetExceedsPaste: false,
+    },
+    soapConcentrationPercent: '16',
+    cookWaterGrams: 850,
+    wholeBatchPasteGrams: 2500,
+    altLiquidWaterGrams: 400,
+    measuredPasteGrams: '2300',
+  };
+  // The undeclared-liquid-past-the-target fixture from the contradiction describe above.
+  const OVER_UNDECLARED = {
+    ...BASE,
+    dilution: {
+      anhydrousGrams: 1215, solutionGrams: 2431, totalWaterGrams: 1215,
+      dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 50,
+      targetExceedsPaste: true,
+    },
+    soapConcentrationPercent: '50',
+    altLiquidWaterGrams: 900,
+    unknownLiquidGrams: 900,
+    overDilutionCertain: false,
+    wholeBatchPasteGrams: 3000,
+    cookWaterGrams: 1785,
+  };
+  // The corrected-pot clamp: a 2,000 g pot (400 g of it a zero-water liquid's solids)
+  // against the 1,900 g solution its own soap makes — the batch row prints 0 g and the
+  // pasteAlreadyPastTarget alert accounts for it.
+  const GLYCERIN_CLAMP = {
+    ...BASE,
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 1900, totalWaterGrams: 700,
+      dilutionWaterGrams: 300, glycerinGrams: 100, soapConcentrationPercent: 63.2,
+      targetExceedsPaste: false,
+    },
+    soapConcentrationPercent: '63.2',
+    cookWaterGrams: 400,
+    wholeBatchPasteGrams: 2000,
+    altLiquidWaterGrams: 0,
+  };
+
+  const CASES: [string, ComponentProps<typeof DilutionPanel>][] = [
+    ['split liquid + measured paste + ratio mode, Whole batch', { ...SPLIT_MEASURED, dilutionScope: 'batch', targetMl: '' }],
+    ['split liquid + measured paste + ratio mode, Custom amount', { ...SPLIT_MEASURED, dilutionScope: 'portion', targetMl: '1000' }],
+    ['undeclared liquid past the target, Whole batch', { ...OVER_UNDECLARED, dilutionScope: 'batch', targetMl: '' }],
+    ['undeclared liquid past the target, Custom amount', { ...OVER_UNDECLARED, dilutionScope: 'portion', targetMl: '1000' }],
+    ['undeclared liquid past the target + ratio mode, Whole batch', { ...OVER_UNDECLARED, ...RATIO_ON, cookWaterGrams: 1785, dilutionScope: 'batch', targetMl: '' }],
+    ['undeclared liquid past the target + ratio mode, Custom amount', { ...OVER_UNDECLARED, ...RATIO_ON, cookWaterGrams: 1785, dilutionScope: 'portion', targetMl: '1000' }],
+    ['glycerin corrected-pot clamp, Whole batch', { ...GLYCERIN_CLAMP, dilutionScope: 'batch', targetMl: '' }],
+    ['glycerin corrected-pot clamp, Custom amount', { ...GLYCERIN_CLAMP, dilutionScope: 'portion', targetMl: '1000' }],
+  ];
+
+  for (const [name, props] of CASES) {
+    it(`${name}: at most two inline hint paragraphs`, () => {
+      render(<DilutionPanel {...props} />);
+      const prose = inlineProse().map((p) => (p.textContent ?? '').replace(/\s+/g, ' ').trim());
+      expect(prose.length, `inline prose:\n- ${prose.join('\n- ')}`).toBeLessThanOrEqual(2);
+    });
+  }
 });
 
 describe('an amount asked to the hundredth of a millilitre is a swallowed comma', () => {
