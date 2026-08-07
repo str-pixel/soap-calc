@@ -91,7 +91,7 @@ test.describe('smoke & layout', () => {
     // CP-only / LS-only visibility
     await expect(page.getByRole('heading', { name: 'CP extras' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Dilution' })).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Preserve' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Preservative' })).toHaveCount(0);
     await shot(page, testInfo, 'cp-default.png');
   });
 
@@ -152,7 +152,7 @@ test.describe('process/variant sweep', () => {
     }
     // LS-only panels
     await expect(page.getByRole('heading', { name: 'Dilution' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Preserve' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Preservative' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'CP extras' })).toHaveCount(0);
     await shot(page, testInfo, 'ls.png');
   });

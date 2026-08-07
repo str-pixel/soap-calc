@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
+import { LS_PRESERVATIVES, type LsPreservativeId } from '@soap-calc/core';
 import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
@@ -7,7 +8,7 @@ import { DilutionPanel, type DilutionScope } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
-import { PreservePanel } from './components/PreservePanel';
+import { PreservativeSnippet } from './components/PreservativeSnippet';
 import { PricingPanel } from './components/PricingPanel';
 import { ProcessGuidePanel } from './components/ProcessGuidePanel';
 import { TroubleshootingPanel } from './components/TroubleshootingPanel';
@@ -138,6 +139,17 @@ export default function App() {
   // "Dilute it all" vs "make just this much now" — a decision about the session, not the
   // recipe, so it lives here rather than in settings. Defaults to the whole batch.
   const [dilutionScope, setDilutionScope] = useState<DilutionScope>('batch');
+  // The preservative being sized and the dose typed for it — bench decisions like
+  // portionTargetMl above (which bottle of preservative is on the bench today is not a
+  // property of the formula), so they live here, survive process switches within a
+  // session, and never enter the recipe. Seeded from the table's anchor entry so the
+  // snippet opens showing a complete, legal dose rather than an empty field.
+  const [preservativeId, setPreservativeId] = useState<LsPreservativeId>(
+    LS_PRESERVATIVES[0].id,
+  );
+  const [preservativeDosePct, setPreservativeDosePct] = useState(
+    String(LS_PRESERVATIVES[0].defaultPct),
+  );
   useEffect(() => {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
@@ -515,11 +527,23 @@ export default function App() {
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
               />
             )}
+            {/* Directly below Dilution because its % is OF the dilution's finished mass —
+                the same base the panel's own ≈ Finished product row quotes. Replaces the
+                old static Preserve panel: the snippet carries the same need logic AND the
+                dose it used to defer to "your supplier". */}
+            {processOffers(process, 'preserve') && (
+              <PreservativeSnippet
+                finishedGrams={vm.bottledSolutionGrams ?? vm.dilution?.solutionGrams ?? null}
+                weightUnit={weightUnit}
+                preservativeId={preservativeId}
+                onPreservativeIdChange={setPreservativeId}
+                dosePct={preservativeDosePct}
+                onDosePctChange={setPreservativeDosePct}
+              />
+            )}
             {processOffers(process, 'neutralize') && vm.neutralization && (
               <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
             )}
-
-            {processOffers(process, 'preserve') && <PreservePanel />}
           </div>
 
           {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}

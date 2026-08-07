@@ -955,6 +955,57 @@ a:hover {
   transform: rotate(45deg);
 }
 
+/* ── Preservative snippet ─────────────────────────────────────────────── */
+/* A collapsed <details> that is itself a nested panel: closed, one titled line on the
+   panel surface; open, a panel like its siblings. Same chevron treatment as the app's
+   other disclosures (.settings-advanced / .troubleshooting-entry). */
+.preservative__summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  user-select: none;
+}
+
+.preservative__summary::-webkit-details-marker {
+  display: none;
+}
+
+.preservative__summary::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.preservative[open] .preservative__summary {
+  margin-bottom: 0.35rem;
+}
+
+.preservative[open] .preservative__summary::before {
+  transform: rotate(45deg);
+}
+
+/* Same row shape as the Dilution panel's toggles: legend as the antecedent, then the
+   inline radio fields, wrapping as the column narrows. */
+.preservative__picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.preservative__legend {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  align-self: center;
+}
+
 /* ── Split-liquid ─────────────────────────────────────────────────────── */
 .split-liquid-preview {
   grid-column: 1 / -1;
