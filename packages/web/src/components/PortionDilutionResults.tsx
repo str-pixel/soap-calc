@@ -1,6 +1,10 @@
 import { lsPartialDilution, type DilutionResult } from '@soap-calc/core';
 import { formatWeight } from '../lib/weightUnits';
-import { MEASURED_PASTE_IS_REMAINING, measuredPasteRejectionFor } from '../lib/measuredPaste';
+import {
+  MEASURED_PASTE_IS_REMAINING,
+  measuredPasteRejectionFor,
+  subTenthPrecisionFingerprint,
+} from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
 type PortionDilutionResultsProps = {
@@ -121,6 +125,18 @@ export function portionDilutionFor({
   // one, so it is excluded here too.
   const pasteAlreadyThinner =
     dilution.targetExceedsPaste && !hasValidMeasurement && !measurementRejected;
+  // The "Amount to make (ml)" field has the measured-paste field's own comma trap: a typed
+  // thousands separator commits as a decimal point (1,200 ml → 1.200), and the ask arrives
+  // a thousand times too small. Core is right to compute a 1.2 ml portion — a tiny ask is a
+  // valid ask — so the refusal is judged HERE, on the typed string, by the same fingerprint
+  // the paste field's subTenthPrecision rule reads (two or more typed decimal digits on a
+  // finite positive number: nobody asks for a portion to the hundredth of a millilitre).
+  // Resolved in this helper rather than in the shell's render so every surface that reads
+  // this verdict — the child's figures, the shell's density caveat (portionOnScreen) —
+  // suppresses together, exactly how measuredPasteRejectionFor keeps the two surfaces
+  // agreeing about a paste reading. The alert itself renders in DilutionPanel's shell,
+  // beside the field it describes.
+  const targetMlSubTenthPrecision = subTenthPrecisionFingerprint(targetMl);
   // A MEASURED reading can no longer make core refuse, and there is no longer a branch here
   // for it. lsPartialDilution returns null when the pot's paste outweighs the solution that
   // pot's own soap makes at the target (ls-yield's `potSolutionGrams - pasteGrams < 0`); with
@@ -151,7 +167,7 @@ export function portionDilutionFor({
     !pasteAlreadyThinner &&
     dilution.solutionGrams - rejection.wholeBatchPasteBasis < 0;
   const portion =
-    pasteAlreadyThinner || measurementRejected || unmeasuredPasteAlreadyThinner
+    pasteAlreadyThinner || measurementRejected || unmeasuredPasteAlreadyThinner || targetMlSubTenthPrecision
       ? null
       : lsPartialDilution(
           {
@@ -170,6 +186,7 @@ export function portionDilutionFor({
     measured,
     pasteAlreadyThinner,
     unmeasuredPasteAlreadyThinner,
+    targetMlSubTenthPrecision,
     portion,
   };
 }

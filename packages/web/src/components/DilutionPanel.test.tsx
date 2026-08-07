@@ -2418,9 +2418,13 @@ describe('Whole batch and Custom amount pour one figure for the same undivided b
     cookWaterGrams: 850,
     wholeBatchPasteGrams: 2500,
   };
-  // The whole batch, asked for by volume: 7,500 g ÷ 1.03 g/ml. Round-tripping through String
-  // is exact in JS, so the fraction lands on 1 and nothing is clamped.
-  const FULL_VOLUME_ML = String(7500 / 1.03);
+  // The whole batch, asked for by volume: 7,500 g ÷ 1.03 g/ml ≈ 7,281.55 ml. This used to
+  // be String(7500 / 1.03) so the fraction landed on 1 with nothing clamped — but that
+  // string carries thirteen decimal digits, which the swallowed-comma fingerprint on the
+  // amount field now refuses (correctly: it is not an ask anyone can type). Ask for the
+  // next whole millilitre instead and let the clamp land the fraction on 1 — the portion
+  // is still the whole undivided batch, which is the state this pin compares.
+  const FULL_VOLUME_ML = '7282';
 
   it('asks the same water of both scopes', () => {
     render(<DilutionPanel {...BASE} {...SPLIT} dilutionScope="batch" targetMl="" />);
@@ -2917,5 +2921,67 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     // rewrite cannot smuggle one back in past a stale exact-string assertion.
     expect(caveat.textContent).not.toMatch(/enter it as measured paste weight/i);
     expect(caveat.textContent).not.toMatch(/weigh the (paste|pot|crockpot)/i);
+  });
+});
+
+describe('an amount asked to the hundredth of a millilitre is a swallowed comma', () => {
+  // The same trap the measured-paste field already guards: browsers read a comma typed
+  // into <input type="number"> as a decimal point, so 1,200 ml commits as 1.200 — a silent
+  // 1000× shrink. The fingerprint is the same one (two or more typed decimal digits,
+  // judged on the raw string — lib/measuredPaste's subTenthPrecisionFingerprint), the
+  // refusal is the shell's (core rightly computes a 1.2 ml ask), and the alert renders
+  // beside the field it describes, in Custom amount scope where that field lives.
+  it('refuses the amount, quotes the typed string in ml, and names the swallowed separator', () => {
+    render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1.200" />);
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    // The RAW string with " ml" appended — a formatter would round the very decimals this
+    // alert exists to show. ml, not grams: it is the number typed into an ml field.
+    expect(alert).toContain('1.200 ml');
+    expect(alert).not.toContain('1.200 g');
+    expect(alert).toMatch(/comma as a decimal point/i);
+    expect(alert).toMatch(/a thousand times too small/i);
+    expect(alert).toMatch(/plain digits, without separators/i);
+    // The refusal is the single message: no portion figures computed from 1.2 ml…
+    expect(screen.queryByText('Paste to weigh out')).toBeNull();
+    expect(screen.queryByText('Water to add')).toBeNull();
+    // …and no density caveat, which must not explain a millilitre figure that is not on
+    // screen (same gate an invalid amount already takes).
+    expect(screen.queryByText(/1\.03 g\/ml/)).toBeNull();
+  });
+
+  it('a one-decimal amount is odd but honest and still computes — only two or more refuse', () => {
+    render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1200.5" />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+    cleanup();
+    render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1200" />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+  });
+
+  it('does not render in Whole batch scope, where the field itself is hidden', () => {
+    // The stale targetMl state persists across the scope toggle, but an alert about a
+    // field that is not on screen explains nothing — same rule as every other portion
+    // surface. The batch figures are untouched by the poisoned amount.
+    render(<DilutionPanel {...BASE} dilutionScope="batch" targetMl="1.200" />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('2,400 g');
+  });
+
+  it('each poisoned field gets its own alert — grams for the paste, ml for the amount', () => {
+    // Two independent inputs, two independent swallowed commas: the paste alert quotes its
+    // field's grams, the amount alert its field's ml, and neither speaks for the other.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="portion"
+        targetMl="1.200"
+        measuredPasteGrams="1480.25"
+      />,
+    );
+    const alerts = screen.getAllByRole('alert').map((a) => a.textContent!.replace(/\s+/g, ' '));
+    expect(alerts).toHaveLength(2);
+    expect(alerts.some((a) => a.includes('1480.25 g'))).toBe(true);
+    expect(alerts.some((a) => a.includes('1.200 ml'))).toBe(true);
   });
 });

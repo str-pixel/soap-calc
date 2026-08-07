@@ -34,6 +34,7 @@ import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
 import { OIL_DISPLAY_NAMES } from '../src/oil-display-names.js';
 import { maxAbsShift, propertyShift, PROPERTY_SHIFT_THRESHOLD, type PropertyShift } from '../src/property-shift.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
+import { writeGeneratedJson } from '../src/write-generated.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../../..');
@@ -517,7 +518,10 @@ function main() {
   CanonicalOilDatabase.parse(db);
 
   mkdirSync(dirname(outPath), { recursive: true });
-  writeFileSync(outPath, JSON.stringify(db, null, 2) + '\n');
+  // Both tracked outputs go through writeGeneratedJson: a rebuild of unchanged data keeps
+  // each file byte-identical (the old generatedAt survives), so `npm run build:oils` never
+  // dirties a clean tree with a timestamp-only diff. See the writer for the contract.
+  writeGeneratedJson(outPath, db);
 
   // Oils whose fatty-acid profile is truncated (sums < MIN_MAPPED_PERCENT) carry unreliable
   // bar-property scores, so the web hides them from the oil picker. They still resolve by id
@@ -560,7 +564,7 @@ function main() {
         : {}),
     })),
   };
-  writeFileSync(litePath, JSON.stringify(liteDb, null, 2) + '\n');
+  writeGeneratedJson(litePath, liteDb);
 
   (report as Record<string, unknown>).iodineDeviations = classifyProfileIodineDeviations(oils);
 
