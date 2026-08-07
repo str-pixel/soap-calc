@@ -2,7 +2,8 @@
  * Preservatives documented working at liquid soap's pH, with their dose ceilings.
  *
  * Why a table at all: diluted liquid soap sits at a water activity well inside the
- * microbial growth range (~0.98 diluted vs ~0.87 for the paste — LS:3176–3181), and "the
+ * microbial growth range (~0.98 diluted vs ~0.87 for the paste, which the book itself
+ * places only NEAR the level that stops growth, not safely past it — LS:3176–3181), and "the
  * alkaline pH alone protects it" is a named myth (LS:1638). Only a handful of
  * preservatives hold up at pH 9–10+, and practitioner documentation (Classic Bells,
  * https://classicbells.com/soap/liquidSoapPreservative.asp) names exactly three: Suttocide
@@ -21,11 +22,20 @@
  *   EU cap for that product.
  *
  * FORMALDEHYDE LABELLING. Reg. (EU) 2022/1181 requires "releases formaldehyde" on the
- * label once total released formaldehyde exceeds 0.001% (10 ppm). `euFormaldehydeWarning`
- * is true where an effective dose generally crosses that threshold (Suttocide A, Glydant
- * Plus). Diazolidinyl urea (in Liquid Germall Plus) is also a formaldehyde releaser, but
- * whether 0.5% as supplied crosses 0.001% released depends on supplier data, so no
- * blanket claim is encoded for it — the flag drives the UI note, not a chemistry census.
+ * label once total released formaldehyde exceeds 0.001% (10 ppm). `formaldehydeLabel`
+ * states each product's standing toward that duty — every releaser says so, in one of
+ * two strengths:
+ * - 'generally-required': an effective dose generally crosses the threshold (Suttocide
+ *   A, Glydant Plus), so the UI states the label duty outright.
+ * - 'check-threshold': the product contains a formaldehyde releaser (Liquid Germall
+ *   Plus's diazolidinyl urea — uniformly listed among the releasers the 10 ppm rule
+ *   catches, alongside DMDM hydantoin and imidazolidinyl urea), but no verified
+ *   released-formaldehyde figure at its dose exists here, so the UI says "check", never
+ *   "exempt". At the 0.5% supplier max the bottle carries ~0.198% DU — the same order
+ *   of active as the Glydant dose that IS flagged — so silence would have implied an
+ *   exemption that likely does not exist.
+ * - 'not-a-releaser': no formaldehyde chemistry at all (phenoxyethanol); the UI stays
+ *   silent because there is nothing to check.
  *
  * STAGE. All four are heat-sensitive to some degree: add after dilution, in the cool-down
  * (LS:2520). `addBelowC` carries the supplier's own figure where one exists.
@@ -41,6 +51,12 @@ export type LsPreservativeId =
  * "supplier's maximum". */
 export type LsPreservativeCeiling = 'eu' | 'supplier';
 
+/** The product's standing toward the EU "releases formaldehyde" label duty
+ * (Reg. (EU) 2022/1181, threshold 0.001% total released formaldehyde) — see the header's
+ * FORMALDEHYDE LABELLING notes for what each value asserts and why Germall's is the
+ * middle one. */
+export type LsFormaldehydeLabel = 'generally-required' | 'check-threshold' | 'not-a-releaser';
+
 export type LsPreservative = {
   id: LsPreservativeId;
   label: string;
@@ -55,9 +71,7 @@ export type LsPreservative = {
   /** The hard ceiling, % w/w as supplied. */
   maxPct: number;
   ceiling: LsPreservativeCeiling;
-  /** True where an effective dose generally requires the EU "releases formaldehyde"
-   * label (threshold 0.001% total released formaldehyde, Reg. (EU) 2022/1181). */
-  euFormaldehydeWarning: boolean;
+  formaldehydeLabel: LsFormaldehydeLabel;
   /** Supplier's add-below temperature in °C, null where no figure is published. */
   addBelowC: number | null;
 };
@@ -72,7 +86,10 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
     // sold as a 50% solution", usage 0.5–1%, formaldehyde donor).
     // EU ceiling: Annex V/51 caps SHMG at 0.5% ACTIVE; a 50% solution therefore tops out
     // at 1.0% AS SUPPLIED. The supplier-typical 0.5–1.0% runs right up to that cap, so
-    // the default sits at the ceiling.
+    // the default sits at the ceiling. Since Reg. (EU) 2021/1902, V/51 additionally
+    // conditions the RAW MATERIAL: its releasable formaldehyde must be < 0.1% w/w — a
+    // supplier-side spec on the ingredient as bought, which does not move the 1.0%
+    // as-supplied dose ceiling.
     id: 'suttocide-a',
     label: 'Suttocide A',
     composition: 'Sodium hydroxymethylglycinate, 50% solution',
@@ -81,7 +98,7 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
     defaultPct: 1.0,
     maxPct: 1.0,
     ceiling: 'eu',
-    euFormaldehydeWarning: true,
+    formaldehydeLabel: 'generally-required',
     addBelowC: null,
   },
   {
@@ -104,7 +121,7 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
     defaultPct: 0.5,
     maxPct: 0.5,
     ceiling: 'supplier',
-    euFormaldehydeWarning: false,
+    formaldehydeLabel: 'check-threshold',
     addBelowC: 50,
   },
   {
@@ -112,11 +129,14 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
     // soapmaker buys). Verified against Lonza's own Glydant Plus TDS
     // (https://mychem.ir/uploads/tds/32529.pdf): powder is 94–96% DMDMH + 4.5–5.5% IPBC
     // at 0.075–0.18% use, "wide pH range: 3–9", best added at 45 °C in the cool-down;
-    // the LIQUID carries half those actives at twice the use level — 0.15–0.36%
-    // (https://www.knowde.com/stores/arxada/products/glydant-plus-liquid). The
-    // supplier's 0.36% binds well before the EU active caps (Annex V/33 DMDMH 0.6%;
-    // V/56 IPBC 0.02% rinse-off — ≈0.8% as supplied at ~2.5% IPBC), so the ceiling is
-    // the supplier's. NOTE: an earlier spec figure of "~55% active → ~1.09% as
+    // the LIQUID runs at twice the use level — 0.15–0.36%
+    // (https://www.knowde.com/stores/arxada/products/glydant-plus-liquid). On the
+    // liquid's ACTIVES the two sources disagree: the powder TDS's "twice the amount of
+    // active" sentence implies ~48% DMDMH, while the Knowde listing gives DMDMH 64–72%
+    // (its IPBC 2.2–2.8% does match the halving). Encoded numbers are unaffected either
+    // way: the supplier's 0.36% binds well before the EU active caps at EITHER strength
+    // (Annex V/33 DMDMH 0.6% → ≥0.83% as supplied even at 72%; V/56 IPBC 0.02%
+    // rinse-off → ≈0.8% at ~2.5% IPBC), so the ceiling is the supplier's. NOTE: an earlier spec figure of "~55% active → ~1.09% as
     // supplied, default 0.5%, max 1.0%" described plain Glydant (55% DMDMH, no IPBC),
     // not this product; the verified Glydant Plus figures replace it. Soap-pH use is
     // practitioner-documented (classicbells.com above) — the rated range stops at 9.
@@ -128,7 +148,7 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
     defaultPct: 0.36,
     maxPct: 0.36,
     ceiling: 'supplier',
-    euFormaldehydeWarning: true,
+    formaldehydeLabel: 'generally-required',
     addBelowC: 45,
   },
   {
@@ -137,7 +157,7 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
     // worldwide"). Typical 0.6–1%, rated pH 3–10
     // (https://www.makingskincare.com/preservatives/), which is exactly why it carries
     // the marginal flag: diluted liquid soap commonly sits at or above the top of that
-    // range. Not a formaldehyde releaser.
+    // range. Not a formaldehyde releaser — the one entry with nothing to check.
     id: 'phenoxyethanol',
     label: 'Phenoxyethanol',
     composition: 'Phenoxyethanol',
@@ -146,7 +166,7 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
     defaultPct: 1.0,
     maxPct: 1.0,
     ceiling: 'eu',
-    euFormaldehydeWarning: false,
+    formaldehydeLabel: 'not-a-releaser',
     addBelowC: null,
   },
 ];

@@ -31,7 +31,7 @@ describe('the preservative table', () => {
     expect(p.ceiling).toBe('eu');
     expect(p.defaultPct).toBe(1.0);
     expect(p.typicalPctRange).toEqual([0.5, 1.0]);
-    expect(p.euFormaldehydeWarning).toBe(true);
+    expect(p.formaldehydeLabel).toBe('generally-required');
   });
 
   test('Liquid Germall Plus: the supplier maximum 0.5% binds before any EU active cap', () => {
@@ -40,7 +40,11 @@ describe('the preservative table', () => {
     expect(p.ceiling).toBe('supplier');
     expect(p.defaultPct).toBe(0.5);
     expect(p.addBelowC).toBe(50);
-    expect(p.euFormaldehydeWarning).toBe(false);
+    // Diazolidinyl urea IS a formaldehyde releaser — Germall must never present as
+    // formaldehyde-free. What is not asserted for it is the categorical "generally
+    // required" (no verified released-formaldehyde figure at 0.5%), hence the
+    // check-the-threshold status rather than silence.
+    expect(p.formaldehydeLabel).toBe('check-threshold');
   });
 
   test('Glydant Plus: the supplier-recommended 0.36% binds before the EU DMDMH/IPBC caps', () => {
@@ -49,7 +53,7 @@ describe('the preservative table', () => {
     expect(p.ceiling).toBe('supplier');
     expect(p.defaultPct).toBe(0.36);
     expect(p.typicalPctRange).toEqual([0.15, 0.36]);
-    expect(p.euFormaldehydeWarning).toBe(true);
+    expect(p.formaldehydeLabel).toBe('generally-required');
   });
 
   test('Phenoxyethanol: EU ceiling 1.0%, default at the ceiling, no formaldehyde warning', () => {
@@ -57,7 +61,22 @@ describe('the preservative table', () => {
     expect(p.maxPct).toBe(1.0);
     expect(p.ceiling).toBe('eu');
     expect(p.defaultPct).toBe(1.0);
-    expect(p.euFormaldehydeWarning).toBe(false);
+    expect(p.formaldehydeLabel).toBe('not-a-releaser');
+  });
+
+  // The asymmetry guard: a composition naming a known formaldehyde releaser (SHMG, a
+  // hydantoin, an imidazolidinyl/diazolidinyl urea) must carry SOME formaldehyde status —
+  // de-flagging any releaser to 'not-a-releaser' fails here structurally, whatever its
+  // per-product pin above says.
+  test('no product whose composition names a known releaser is marked not-a-releaser', () => {
+    const releaserPattern = /hydroxymethylglycinate|hydantoin|urea/i;
+    for (const p of LS_PRESERVATIVES) {
+      if (releaserPattern.test(p.composition)) {
+        expect(p.formaldehydeLabel, p.id).not.toBe('not-a-releaser');
+      }
+    }
+    // and the pattern itself must be live: it matches three of the four
+    expect(LS_PRESERVATIVES.filter((p) => releaserPattern.test(p.composition))).toHaveLength(3);
   });
 
   test('every default is usable as-is: inside the typical range and never above the ceiling', () => {

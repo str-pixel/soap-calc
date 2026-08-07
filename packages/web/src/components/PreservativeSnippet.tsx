@@ -73,16 +73,20 @@ export function PreservativeSnippet({
       </p>
       {/* THE NEED PARAGRAPH — why this snippet exists, in the book's logic and this
           app's words. Diluted vs paste is a WATER story, not a pH story: dilution lifts
-          water activity from ~0.87 (self-stable paste) into the ~0.98 growth range
-          (LS:3176–3181), and "the pH protects it" is a named myth (LS:1638). The three
-          obligation tiers are the book's own: additives make one necessary (LS:3051,
-          LS:2975), selling makes one responsible practice (LS:3230), a small personal
-          batch is the maker's informed choice (LS:3228). */}
+          water activity from ~0.87 into the ~0.98 growth range (LS:3176–3181), and "the
+          pH protects it" is a named myth (LS:1638). The paste claim carries the book's
+          own hedge: 0.866 is reported as NEAR the level that no longer supports growth,
+          not safely past it, so the copy says "near the dryness that stops growth" and
+          never calls the paste too dry outright. The three obligation tiers are the
+          book's own: additives make one necessary (LS:3051, LS:2975), selling makes one
+          responsible practice (LS:3230), a small personal batch is the maker's informed
+          choice (LS:3228). */}
       <p className="results-hint">
-        Diluted soap supports mold and bacteria whatever its pH — the paste was too dry
-        for growth, the finished solution is not. With milk, beer or botanicals in the
-        recipe a preservative is necessary; if you sell, using one is responsible
-        practice; for a small personal batch used up quickly, it is your informed call.
+        Diluted soap supports mold and bacteria whatever its pH — the paste sits near
+        the dryness that stops growth, and dilution moves it well inside the growth
+        range. With milk, beer or botanicals in the recipe a preservative is necessary;
+        if you sell, using one is responsible practice; for a small personal batch used
+        up quickly, it is your informed call.
       </p>
       {/* Same group shape as the Dilution panel's toggles: a visible legend as the
           antecedent, and an accessible name that leads with it verbatim so
@@ -178,15 +182,30 @@ export function PreservativeSnippet({
           finished, diluted soap.
         </p>
       )}
-      {/* Reg. (EU) 2022/1181: 0.001% total released formaldehyde obliges the label
-          warning. Rendered only for the two products whose effective doses generally
-          cross it — see euFormaldehydeWarning's doc in core for why Germall (also a
-          releaser) makes no blanket claim. */}
-      {preservative.euFormaldehydeWarning && (
+      {/* Reg. (EU) 2022/1181: 0.001% (10 ppm) total released formaldehyde obliges the
+          label warning. EVERY releaser gets a note — silence is reserved for the one
+          product with no formaldehyde chemistry — in the two strengths core's
+          formaldehydeLabel doc explains: the label duty stated outright where an
+          effective dose generally crosses the threshold, and a check-the-threshold note
+          for Germall, whose diazolidinyl urea is a listed releaser but has no verified
+          released-formaldehyde figure at its dose. Naming DU here is deliberate: the
+          composition line above lists three ingredients, and the note must say which
+          one carries the duty. */}
+      {preservative.formaldehydeLabel !== 'not-a-releaser' && (
         <p className="results-hint">
-          {preservative.label} is a formaldehyde releaser: at an effective dose an
-          EU-market label will generally need the warning &ldquo;releases
-          formaldehyde&rdquo;.
+          {preservative.formaldehydeLabel === 'generally-required' ? (
+            <>
+              {preservative.label} is a formaldehyde releaser: at an effective dose an
+              EU-market label will generally need the warning &ldquo;releases
+              formaldehyde&rdquo;.
+            </>
+          ) : (
+            <>
+              {preservative.label} contains a formaldehyde releaser (diazolidinyl urea)
+              — for an EU-market label, check released formaldehyde against the 0.001%
+              &ldquo;releases formaldehyde&rdquo; threshold.
+            </>
+          )}
         </p>
       )}
     </details>

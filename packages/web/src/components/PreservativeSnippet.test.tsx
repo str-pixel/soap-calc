@@ -77,7 +77,7 @@ test('picking another preservative reseeds the dose with ITS default and shows i
   // 0.5% of 4,000 g
   expect(screen.getByText('20 g')).toBeTruthy();
   // the selected product's own facts: composition, rated pH, typical range, 50 °C stage
-  expect(screen.getByText(/diazolidinyl urea/)).toBeTruthy();
+  expect(screen.getByText(/Propylene glycol \+ diazolidinyl urea/)).toBeTruthy();
   expect(screen.getByText(/Rated pH 3–8/)).toBeTruthy();
   expect(screen.getByText(/below 50 °C for Liquid Germall Plus/)).toBeTruthy();
 });
@@ -119,22 +119,29 @@ test('without a dilution there are no figures — only the enter-oils-first hint
   expect(screen.queryByText('≈ Finished product')).toBeNull();
 });
 
-test('the formaldehyde-label note renders for the two releasers that cross the EU threshold, and only those', () => {
+test('every formaldehyde releaser says so — outright where the threshold is generally crossed, as a check for Germall, silence only where there is nothing to release', () => {
   render(<Harness />);
-  // Suttocide A (default) carries it
-  expect(screen.getByText(/releases formaldehyde/)).toBeTruthy();
+  // Suttocide A (default) and Glydant Plus: the label duty stated outright
+  expect(screen.getByText(/will generally need the warning/)).toBeTruthy();
   fireEvent.click(screen.getByRole('radio', { name: 'Glydant Plus' }));
-  expect(screen.getByText(/releases formaldehyde/)).toBeTruthy();
+  expect(screen.getByText(/will generally need the warning/)).toBeTruthy();
+  // Germall: no categorical claim, but never silence — it contains a releaser, and the
+  // note says which one and what to check it against
   fireEvent.click(screen.getByRole('radio', { name: 'Liquid Germall Plus' }));
-  expect(screen.queryByText(/releases formaldehyde/)).toBeNull();
+  expect(screen.queryByText(/will generally need the warning/)).toBeNull();
+  expect(screen.getByText(/formaldehyde releaser \(diazolidinyl urea\)/)).toBeTruthy();
+  expect(screen.getByText(/check released formaldehyde/)).toBeTruthy();
+  // Phenoxyethanol releases nothing, so nothing about formaldehyde renders at all
   fireEvent.click(screen.getByRole('radio', { name: 'Phenoxyethanol' }));
-  expect(screen.queryByText(/releases formaldehyde/)).toBeNull();
+  expect(screen.queryByText(/formaldehyde/i)).toBeNull();
 });
 
 test('the copy owns the two framing claims: why a preservative, and that nothing is auto-added', () => {
   render(<Harness />);
-  // need logic: growth is about water, not pH
+  // need logic: growth is about water, not pH — and the paste's own dryness is stated
+  // with the book's hedge (NEAR the no-growth line), never as categorically safe
   expect(screen.getByText(/whatever its pH/i)).toBeTruthy();
+  expect(screen.getByText(/near the dryness that stops growth/i)).toBeTruthy();
   // bench figure: the recipe itself is never touched
   expect(screen.getByText(/never added into the recipe/i)).toBeTruthy();
 });
