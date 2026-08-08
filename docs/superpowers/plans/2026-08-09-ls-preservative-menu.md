@@ -304,7 +304,12 @@ Replace the `max` attribute on the dose input (line 148) — `max={preservative.
       )}
 ```
 
-Then change the results gate on line 163 from `finishedGrams !== null ? (` to `finishedGrams !== null && tier !== 'impossible' ? (` so a refused dose prints no figures at all.
+**Leave the results gate on line 163 (`finishedGrams !== null ? (`) exactly as it is.** It is
+tempting to add `&& tier !== 'impossible'` so a refused dose prints no figures — do not.
+`grams` is already `null` at that tier, and the results grid is gated on `grams !== null`,
+so no figure renders either way. Adding the clause instead drops the whole branch into the
+*empty state*, which tells a maker who has entered oils to "Enter oils and a dilution
+target" — a stale hint contradicting the screen they are looking at.
 
 - [ ] **Step 4: Run the snippet tests**
 

@@ -174,7 +174,7 @@ export function PreservativeSnippet({
           under-dose may not protect the batch.
         </p>
       )}
-      {finishedGrams !== null && tier !== 'impossible' ? (
+      {finishedGrams !== null ? (
         <>
           {grams !== null && (
             <dl className="results-grid">

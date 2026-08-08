@@ -152,6 +152,17 @@ test('a dose over 100% is refused outright — no figure, because it is not a do
   expect(screen.queryByText('Preservative to add')).toBeNull();
 });
 
+test('an impossible dose does not fall back to the enter-oils hint', () => {
+  // Regression: the results gate must not special-case 'impossible' — finishedGrams is
+  // already set (oils and a dilution ARE entered), so the empty-state hints must not
+  // render just because the dose itself is refused.
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(doseInput(), { target: { value: '150' } });
+  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+  expect(screen.queryByText('Preservative to add')).toBeNull();
+  expect(screen.queryByText(/Enter oils and a dilution target/)).toBeNull();
+});
+
 test('the ceiling alert echoes the dose canonically, not as typed', () => {
   render(<Harness finishedGrams={4000} />);
   fireEvent.change(doseInput(), { target: { value: '2.500' } });
