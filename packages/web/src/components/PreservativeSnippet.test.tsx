@@ -106,18 +106,19 @@ test('picking another preservative reseeds the dose with ITS default and shows i
   expect(screen.getByText(/below 50 °C for Liquid Germall Plus/)).toBeTruthy();
 });
 
-test('a dose above an EU ceiling is hard-clamped, and the message names the EU as the authority', () => {
+test('a dose above an EU ceiling is NOT clamped — the alert names the EU, the figure follows the typed dose', () => {
+  // The inverse of the old assertion, deliberately: the maker owns the number. Nothing on
+  // screen may be computed from a dose they did not type.
   render(<Harness finishedGrams={4000} />);
   fireEvent.change(doseInput(), { target: { value: '2' } });
   const alert = screen.getByRole('alert');
   expect(alert.textContent).toContain('1%');
   expect(alert.textContent).toContain('EU legal maximum');
-  // the grams figure uses the CLAMPED 1%, not the typed 2%
-  expect(screen.getByText('40 g')).toBeTruthy();
-  expect(screen.queryByText('80 g')).toBeNull();
+  expect(screen.getByText('80 g')).toBeTruthy();   // 2% of 4,000 g — the typed dose
+  expect(screen.queryByText('40 g')).toBeNull();   // never the old clamped 1%
 });
 
-test("a dose above a supplier ceiling clamps too, and the message says it is the supplier's", () => {
+test("a dose above a supplier ceiling says whose maximum it is, and still computes", () => {
   render(<Harness finishedGrams={4000} />);
   fireEvent.click(screen.getByRole('radio', { name: 'Liquid Germall Plus' }));
   fireEvent.change(doseInput(), { target: { value: '0.8' } });
@@ -125,15 +126,37 @@ test("a dose above a supplier ceiling clamps too, and the message says it is the
   expect(alert.textContent).toContain('0.5%');
   expect(alert.textContent).toContain('supplier');
   expect(alert.textContent).not.toContain('EU legal maximum');
-  expect(screen.getByText('20 g')).toBeTruthy();
+  expect(screen.getByText('32 g')).toBeTruthy();   // 0.8% of 4,000 g
 });
 
-test('a dose at or under the ceiling raises no clamp message', () => {
+test('a dose inside the typical range raises nothing', () => {
   render(<Harness finishedGrams={4000} />);
-  fireEvent.change(doseInput(), { target: { value: '0.5' } });
+  fireEvent.change(doseInput(), { target: { value: '0.7' } });
   expect(screen.queryByRole('alert')).toBeNull();
-  // 0.5% of 4,000 g
-  expect(screen.getByText('20 g')).toBeTruthy();
+  expect(screen.queryByText(/Below the typical/)).toBeNull();
+  expect(screen.getByText('28 g')).toBeTruthy();   // 0.7% of 4,000 g
+});
+
+test('an under-dose is flagged as a plain note, not an alert', () => {
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(doseInput(), { target: { value: '0.2' } });
+  expect(screen.getByText(/Below the typical 0.5–1% for Suttocide A/)).toBeTruthy();
+  expect(screen.queryByRole('alert')).toBeNull();  // plain note: it must not steal focus
+  expect(screen.getByText('8 g')).toBeTruthy();    // 0.2% of 4,000 g — still computed
+});
+
+test('a dose over 100% is refused outright — no figure, because it is not a dose', () => {
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(doseInput(), { target: { value: '150' } });
+  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+  expect(screen.queryByText('Preservative to add')).toBeNull();
+});
+
+test('the ceiling alert echoes the dose canonically, not as typed', () => {
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(doseInput(), { target: { value: '2.500' } });
+  expect(screen.getByRole('alert').textContent).toContain('2.5%');
+  expect(screen.getByRole('alert').textContent).not.toContain('2.500%');
 });
 
 test('without a dilution there are no figures — only the enter-oils-first hint', () => {

@@ -1,7 +1,7 @@
 import {
   LS_PRESERVATIVES,
-  clampLsPreservativePct,
   lsPreservativeById,
+  lsPreservativeDoseTier,
   preservativeDoseGrams,
   type LsPreservativeId,
 } from '@soap-calc/core';
@@ -65,13 +65,16 @@ export function PreservativeSnippet({
 }: PreservativeSnippetProps) {
   const preservative = lsPreservativeById(preservativeId);
   const doseNum = Number(dosePct);
-  const doseEntered = dosePct.trim() !== '' && Number.isFinite(doseNum) && doseNum > 0;
-  // The HARD clamp: the grams below are computed from the clamped dose, never the typed
-  // one, so no figure on screen can exceed the ceiling — the alert explains the gap.
-  const { pct: effectivePct, clamped } = clampLsPreservativePct(doseNum, preservative);
+  // NO CLAMP. The grams are always the typed dose against the finished mass; the ladder
+  // below explains where that dose sits. A figure computed from a number the maker did
+  // not type is the thing this replaced.
+  const tier = lsPreservativeDoseTier(doseNum, preservative);
+  // Canonical echo: '2.500' and '2.5e0' both print as 2.5, the same rule parseAdditiveLine
+  // uses on import.
+  const typedPct = String(doseNum);
   const grams =
-    finishedGrams !== null && doseEntered
-      ? preservativeDoseGrams(finishedGrams, effectivePct)
+    finishedGrams !== null && tier !== 'none' && tier !== 'impossible'
+      ? preservativeDoseGrams(finishedGrams, doseNum)
       : null;
   const [typicalLow, typicalHigh] = preservative.typicalPctRange;
   return (
@@ -145,22 +148,33 @@ export function PreservativeSnippet({
           type="number"
           className="input input--number"
           min={0}
-          max={preservative.maxPct}
+          max={100}
           step={0.1}
           value={dosePct}
           onChange={(e) => onDosePctChange(e.target.value)}
         />
       </label>
-      {clamped && (
+      {tier === 'impossible' && (
         <p className="results-hint" role="alert">
-          Capped at {preservative.maxPct}% —{' '}
-          {preservative.ceiling === 'eu'
-            ? `the EU legal maximum for ${preservative.label} in a finished product`
-            : `the supplier's own maximum for ${preservative.label}`}
-          . The figure below uses {preservative.maxPct}%.
+          A dose must be 100% or less of the finished product.
         </p>
       )}
-      {finishedGrams !== null ? (
+      {tier === 'above-max' && (
+        <p className="results-hint" role="alert">
+          {typedPct}% is above{' '}
+          {preservative.ceiling === 'eu'
+            ? `the EU legal maximum of ${preservative.maxPct}% for ${preservative.label} in a finished product`
+            : `${preservative.label}'s supplier maximum of ${preservative.maxPct}%`}
+          . The figures below use the {typedPct}% you entered.
+        </p>
+      )}
+      {tier === 'below-typical' && (
+        <p className="results-hint">
+          Below the typical {typicalLow}–{typicalHigh}% for {preservative.label} — an
+          under-dose may not protect the batch.
+        </p>
+      )}
+      {finishedGrams !== null && tier !== 'impossible' ? (
         <>
           {grams !== null && (
             <dl className="results-grid">

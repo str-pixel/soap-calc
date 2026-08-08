@@ -189,19 +189,6 @@ export function lsPreservativeById(id: LsPreservativeId): LsPreservative {
   return BY_ID.get(id) as LsPreservative;
 }
 
-/** The dose the calculator may actually use: the entered % clamped into
- * [0, preservative.maxPct]. `clamped` is true only when the CEILING clipped it — junk
- * (NaN, negative) resolves to a zero dose without claiming a ceiling did it, so the UI's
- * clamp message never fires over an empty or half-typed field. */
-export function clampLsPreservativePct(
-  pct: number,
-  preservative: LsPreservative,
-): { pct: number; clamped: boolean } {
-  if (!Number.isFinite(pct) || pct <= 0) return { pct: 0, clamped: false };
-  if (pct > preservative.maxPct) return { pct: preservative.maxPct, clamped: true };
-  return { pct, clamped: false };
-}
-
 /**
  * Where a typed dose sits relative to a product's own numbers. Replaces the old clamp:
  * the caller keeps the dose the user typed and renders a note, rather than substituting

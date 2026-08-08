@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
   LS_PRESERVATIVES,
-  clampLsPreservativePct,
   lsPreservativeById,
   lsPreservativeDoseTier,
   preservativeDoseGrams,
@@ -112,30 +111,6 @@ describe('preservativeDoseGrams', () => {
     expect(preservativeDoseGrams(-5, 1)).toBe(0);
     expect(preservativeDoseGrams(1000, -1)).toBe(0);
     expect(preservativeDoseGrams(Infinity, 1)).toBe(0);
-  });
-});
-
-describe('clampLsPreservativePct', () => {
-  const suttocide = byId['suttocide-a'];
-  const germall = byId['liquid-germall-plus'];
-
-  test('a dose under the ceiling passes through unclamped', () => {
-    expect(clampLsPreservativePct(0.7, suttocide)).toEqual({ pct: 0.7, clamped: false });
-  });
-
-  test('a dose AT the ceiling is legal, not clamped', () => {
-    expect(clampLsPreservativePct(1.0, suttocide)).toEqual({ pct: 1.0, clamped: false });
-    expect(clampLsPreservativePct(0.5, germall)).toEqual({ pct: 0.5, clamped: false });
-  });
-
-  test('a dose above the ceiling clamps to it and says so', () => {
-    expect(clampLsPreservativePct(2, suttocide)).toEqual({ pct: 1.0, clamped: true });
-    expect(clampLsPreservativePct(0.8, germall)).toEqual({ pct: 0.5, clamped: true });
-  });
-
-  test('junk (NaN, negative) resolves to a zero dose, not a clamp message', () => {
-    expect(clampLsPreservativePct(NaN, suttocide)).toEqual({ pct: 0, clamped: false });
-    expect(clampLsPreservativePct(-1, suttocide)).toEqual({ pct: 0, clamped: false });
   });
 });
 
