@@ -46,7 +46,6 @@ practitioner sources. **No candidate passed.** Recorded here so it is not re-run
 
 | Candidate | Verdict |
 |---|---|
-| **Quaternium-15** (Dowicil 200) | Best fit on paper — Dow's own literature: *"The antimicrobial activity of DOWICIL 200 is essentially uniform between pH 4 and pH 10"*, use 0.02–0.2%. **Prohibited in EU cosmetics.** Commission Regulation (EU) 2019/831 recital 6: Quaternium-15 *"should be deleted from the list of preservatives allowed in cosmetic products in Annex V … and added to the list of substances prohibited in cosmetic products in Annex II"* — it lands as Annex II entries 1385/1386. SCCS could not establish its safety; the cis-isomer is CMR cat. 2. Verified against the regulation text (CELEX 32019R0831), not a summary. |
 | Benzyl alcohol blends (euxyl K 900 / K 903 / K 940) | Sources conflict; the majority put efficacy falling off between pH 5.5 and 8. Nothing documents pH 9–10. |
 | Sodium benzoate, potassium sorbate, Geogard, Optiphen, Sharomix | Organic acids need their undissociated form and are inert at soap pH. Cosmetic chemist PhilGeis, Chemists' Corner "Preservative for pH 9-10 liquid soap": *"Organic acids would be useless in alkaline products, including liquid soap."* |
 | Parabens (Phenonip, Germaben II) | Rated pH 3–8; parabens hydrolyse under alkali. |
@@ -295,11 +294,17 @@ never enters the oil, lye or batch arithmetic.
 |---|---|---|
 | `PreservativeSnippet.tsx:34-36` (props doc) | *"Session-local UI state living in App beside portionTargetMl … Deliberately NOT recipe state — this snippet is a bench figure like the portion sizer, and it never adds anything to the recipe."* | **Flatly false** after §4. Rewritten: recipe state, saved and exported and printed; why it moved (a custom product name that vanishes on reload is worthless); and the half that stays true — it adds nothing to the batch arithmetic. Note it no longer sits "beside `portionTargetMl`", which *does* stay session-local. |
 | `PreservativeSnippet.tsx:48-50` (component doc) | *"A dose calculator, not a recipe field … writes nothing back into the recipe."* | **Half false.** Rewritten to "a recipe setting, not a recipe ingredient". |
-| `PreservativeSnippet.tsx:86-87` (subtitle, on screen) | *"Grams to weigh into the finished, diluted soap — a bench figure, never added into the recipe"* | **Misleading** once the pick and dose persist and print on the sheet. Reworded to keep the claim that is actually load-bearing — the preservative is not counted in the batch or lye figures — instead of the one that stops being true. |
+| `PreservativeSnippet.tsx:86-87` (subtitle, on screen) | *"Grams to weigh into the finished, diluted soap — a bench figure, never added into the recipe"* | **Misleading** once the pick and dose persist and print on the sheet. Reworded (below). |
 
-The subtitle is the only user-visible change here, and it is pinned by
-`PreservativeSnippet.test.tsx:170` (`/never added into the recipe/i`), which moves with
-it.
+**Decided subtitle** — user confirmed the preservative belongs in the recipe, so the copy
+states what persists and keeps the claim that survives:
+
+> Grams to weigh into the finished, diluted soap — saved with the recipe, never counted
+> in the batch or lye figures
+
+This is the only user-visible copy change in the design. It is pinned by
+`PreservativeSnippet.test.tsx:170` (`/never added into the recipe/i`), whose assertion
+moves to the new claim.
 
 ### 7 · Styles
 
