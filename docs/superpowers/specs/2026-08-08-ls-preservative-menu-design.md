@@ -75,7 +75,6 @@ export type LsPreservativeDoseTier =
   | 'unrated'       // a real dose, but no product data to judge it against (custom)
   | 'below-typical'
   | 'typical'
-  | 'above-typical' // over the typical range, still within the ceiling
   | 'above-max';    // over the EU/supplier ceiling
 
 /** `p` is absent for a custom entry, where the only judgements available are
@@ -110,9 +109,15 @@ Nothing is ever recomputed behind the user's back.
 | `unrated` | the `Custom…` standing note (§3) — no range judgement is possible | shown |
 | `below-typical` | *"Below the typical 0.5–1% for Suttocide A — an under-dose may not protect the batch."* (plain note) | shown |
 | `typical` | — (the existing `Typical 0.5–1% of the finished product.` line already states the range) | shown |
-| `above-typical` | *"Above the typical 0.5–1% for Suttocide A."* (plain note) | shown |
 | `above-max` | `role="alert"`: *"2% is above the EU legal maximum of 1% for Suttocide A in a finished product. The figures below use the 2% you entered."* — or *"…above Liquid Germall Plus's supplier maximum of 0.5%"* per the entry's `ceiling` field | shown, **at the typed dose** |
 | `impossible` | `role="alert"`: *"A dose must be 100% or less of the finished product."* | **not shown** |
+
+**There is no `above-typical` rung** (dropped while planning, 2026-08-09). An earlier draft
+had one for "over the typical range but still under the ceiling". That band is empty:
+every shipped entry's `typicalHigh` **is** its `maxPct` — Suttocide A 1.0/1.0, Liquid
+Germall Plus 0.5/0.5, Glydant Plus 0.36/0.36, Phenoxyethanol 1.0/1.0 — so the rung and its
+note could never render, and no component test could reach them. A core test pins the
+coincidence, so adding an entry with headroom fails loudly and the rung comes back with it.
 
 Two deliberate choices:
 
@@ -158,7 +163,7 @@ hazard the reseed rule exists to prevent. A blank field forces a deliberate entr
 - a name text input appears (placeholder `Name`, `maxLength={200}` on the input, matching
   `settingString`'s 200-character cap on load);
 - the tier is computed with no `p`, so every product-relative rung —
-  `below-typical`, `typical`, `above-typical`, `above-max` — is unreachable by
+  `below-typical`, `typical`, `above-max` — is unreachable by
   construction, and the composition/pH line, the typical-range line, the formaldehyde
   note and the per-product `addBelowC` temperature are suppressed alongside them. The app
   knows none of them, and a silent formaldehyde note would imply an exemption that may
