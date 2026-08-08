@@ -8,6 +8,7 @@ import { DilutionPanel, type DilutionScope } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
+import { portionDilutionFor } from './components/PortionDilutionResults';
 import { PreservativeSnippet } from './components/PreservativeSnippet';
 import { PricingPanel } from './components/PricingPanel';
 import { ProcessGuidePanel } from './components/ProcessGuidePanel';
@@ -263,6 +264,49 @@ export default function App() {
       vm.pcsfIsExtra,
     ],
   );
+
+  // WHAT THE PRESERVATIVE DOSE IS A PERCENTAGE OF: the mass of what the maker is actually
+  // making right now. Which mass that is has an owner already — the Dilution panel's scope
+  // toggle — so this follows it rather than assuming the batch.
+  //
+  // Whole batch: today's finished-product figure, the same one the panel's own row quotes.
+  // Custom amount: the PORTION's own finished solution. That scope prints portion figures
+  // and deliberately shows no batch mass at all, so dosing the batch there prescribed a
+  // whole batch's grams into a bottle a fraction of its size — a 250 ml draw off a 4 kg
+  // batch read 40 g of Suttocide A, about 16% w/w in that bottle against a 1.0% EU ceiling.
+  //
+  // Null (→ the snippet's hint for that state, never a silent fall back to the batch)
+  // whenever no such mass exists: no dilution at all, or a Custom amount whose portion does
+  // not resolve — nothing asked for yet, a refused paste reading, a paste already thinner
+  // than the target. portionDilutionFor is the panel's OWN resolution of that question,
+  // imported rather than re-derived so the dose and the figures on screen can never
+  // disagree about whether a portion exists or what it weighs.
+  //
+  // The portion base is chemistry-only (paste + water), like every other portion figure:
+  // extras that ride into the bottle are counted in the batch figure but never apportioned.
+  // That understates the portion's finished mass slightly, which understates the dose —
+  // toward, never past, the ceiling.
+  const preservativeBaseGrams = useMemo(() => {
+    if (dilutionScope !== 'portion') return vm.finishedProductGrams;
+    if (!vm.dilution) return null;
+    return (
+      portionDilutionFor({
+        dilution: vm.dilution,
+        targetMl: portionTargetMl,
+        measuredPasteGrams,
+        wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
+        cookWaterGrams: vm.cookWaterGrams,
+      }).portion?.solutionGrams ?? null
+    );
+  }, [
+    dilutionScope,
+    measuredPasteGrams,
+    portionTargetMl,
+    vm.cookWaterGrams,
+    vm.dilution,
+    vm.finishedProductGrams,
+    vm.wholeBatchPasteGrams,
+  ]);
 
   // Extracted so The Numbers reads identically in both the Recipe and Pricing views:
   // the pricing calculator needs the same batch figures it prices, so both share one
@@ -528,12 +572,14 @@ export default function App() {
               />
             )}
             {/* Directly below Dilution because its % is OF the dilution's finished mass —
-                the same base the panel's own ≈ Finished product row quotes. Replaces the
-                old static Preserve panel: the snippet carries the same need logic AND the
-                dose it used to defer to "your supplier". */}
+                and of whichever scope's finished mass the panel above is showing (see
+                preservativeBaseGrams). Replaces the old static Preserve panel: the snippet
+                carries the same need logic AND the dose it used to defer to "your
+                supplier". */}
             {processOffers(process, 'preserve') && (
               <PreservativeSnippet
-                finishedGrams={vm.bottledSolutionGrams ?? vm.dilution?.solutionGrams ?? null}
+                finishedGrams={preservativeBaseGrams}
+                basisScope={dilutionScope}
                 weightUnit={weightUnit}
                 preservativeId={preservativeId}
                 onPreservativeIdChange={setPreservativeId}

@@ -230,6 +230,39 @@ export function computeBottledSolutionGrams(input: {
   return base + Math.max(0, extrasGrams - splitLiquidInBaseGrams);
 }
 
+/**
+ * The finished, ready-for-use mass of the WHOLE batch: the bottled figure when there is
+ * one, else the dilution's own solution. Three surfaces quote this number — the Dilution
+ * panel's ≈ Finished product row, the printed sheet's, and the Preservative snippet's dose
+ * base — and they wrote the same `??` chain out three times. It lives here now, beside the
+ * function that computes the bottled figure, so a rule that decides a DOSE (the snippet
+ * multiplies it by a % with a legal ceiling on it) cannot drift between its readers.
+ *
+ * The fallback arm is unreachable from the view model — `bottledSolutionGrams` is null
+ * exactly when `dilution` is (useRecipeViewModel computes it as `dilution && result ? … :
+ * null`, and `dilution` itself is null whenever `result` is) — so App, DilutionPanel and
+ * BatchSheet fed from the view model always take the first arm. It is kept for the
+ * component-level callers that supply a `dilution` and nothing else: both components
+ * default the bottled prop to null, and their tests exercise exactly that. Verified, not
+ * assumed — dropping the arm would silently blank the panel's volume row for those callers.
+ *
+ * DOUBLE-COUNT WARNING for the dose base. `computeBottledSolutionGrams` adds `extrasGrams`
+ * on top of the solution, and additives are part of extras. A maker who ALSO records their
+ * preservative as a solution-basis additive therefore inflates the very mass the snippet
+ * doses against: the preservative's own grams push the base up, and the dose computed from
+ * that base is larger again. The error is small (a 1% additive moves the base 1%) and
+ * always toward a bigger dose, so it can push a ceiling-height dose slightly over the
+ * ceiling in reality. It cannot be netted out here: nothing in the additive catalog marks a
+ * line as a preservative (there is no preservative entry at all — such a line is always a
+ * free-text custom one), so this function cannot tell which grams are the double count.
+ */
+export function finishedProductGramsFor(
+  bottledSolutionGrams: number | null | undefined,
+  dilution: Pick<DilutionResult, 'solutionGrams'> | null | undefined,
+): number | null {
+  return bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
+}
+
 /** The post-cook superfat: one or more oils added after cook/dilution with no lye effect.
  * Each row is a % of recipe oil weight (same basis as additives/split-liquid); the aggregate
  * `percentOfOil`/`grams` sum the contributing rows. `null` when no row has a valid, non-zero

@@ -9,12 +9,26 @@ import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
 type PreservativeSnippetProps = {
-  /** The finished, ready-for-use mass the dose is a % of: App passes
-   * vm.bottledSolutionGrams ?? vm.dilution?.solutionGrams — the same base the Dilution
-   * panel's own "≈ Finished product" row quotes, so the two can never disagree. Null
-   * before a dilution exists (no oils, or outside LS), which renders the
-   * enter-oils-first hint instead of figures. */
+  /** The finished, ready-for-use mass the dose is a % of — THE MASS OF WHAT THE MAKER IS
+   * ACTUALLY MAKING, which is whatever the Dilution panel's scope toggle says it is. In
+   * Whole batch that is the batch's finished product (lib/calculateAdditives'
+   * finishedProductGramsFor, the same figure the panel's own row quotes); in Custom amount
+   * it is the PORTION's own finished solution. It is emphatically NOT always the batch:
+   * this prop used to be handed the batch's mass in both scopes, so a 250 ml draw off a
+   * 4 kg batch was told to weigh in the batch's 40 g of Suttocide — about 16% w/w in that
+   * bottle, sixteen times the EU ceiling. App resolves it; `basisScope` says which of the
+   * two it resolved, and the two must move together.
+   *
+   * Null whenever there is no such mass — no oils/outside LS, or a Custom amount with no
+   * usable portion (nothing asked for yet, a refused paste reading, a paste already
+   * thinner than the target). Null renders the hint for that state; it must never quietly
+   * fall back to the batch, which is the bug above wearing a different hat. */
   finishedGrams: number | null;
+  /** Which scope `finishedGrams` was resolved in, so the base row can NAME the mass it
+   * quotes and the empty-state hint can ask for the right thing. Passed independently of
+   * `finishedGrams` because it is still the answer when that is null. Defaults to 'batch',
+   * matching DilutionPanel's own scope default. */
+  basisScope?: 'batch' | 'portion';
   /** The app-wide unit (BatchBasics' selector) — used as-is, like every bench readout. */
   weightUnit: WeightUnit;
   /** Session-local UI state living in App beside portionTargetMl: which preservative is
@@ -42,6 +56,7 @@ type PreservativeSnippetProps = {
  */
 export function PreservativeSnippet({
   finishedGrams,
+  basisScope = 'batch',
   weightUnit,
   preservativeId,
   onPreservativeIdChange,
@@ -153,11 +168,12 @@ export function PreservativeSnippet({
                 <dt>Preservative to add</dt>
                 <dd>{formatWeight(grams, weightUnit)}</dd>
               </div>
-              {/* The same figure, and the same label, as the Dilution panel's own
-                  finished-product row — this is the mass the % is a percentage OF, so
-                  it renders beside the dose it explains. */}
+              {/* The mass the % is a percentage OF, beside the dose it explains — and
+                  NAMED for which of the two masses it is, in the scope toggle's own words
+                  ("Whole batch" / "Custom amount"), because they are different numbers and
+                  the dose follows whichever is in play. */}
               <div className="results-grid__item">
-                <dt>≈ Finished product</dt>
+                <dt>≈ Finished product ({basisScope === 'portion' ? 'custom amount' : 'whole batch'})</dt>
                 <dd>{formatWeight(finishedGrams, weightUnit)}</dd>
               </div>
             </dl>
@@ -176,6 +192,14 @@ export function PreservativeSnippet({
             from.
           </p>
         </>
+      ) : basisScope === 'portion' ? (
+        /* Custom amount with no portion to dose. The state-specific ask, not the batch's:
+           the maker is on a screen with no batch figures on it, and the one thing that
+           sizes a dose here is the amount they are making. */
+        <p className="results-hint">
+          Enter an Amount to make above — with Custom amount chosen, the dose is a % of the
+          portion you are making now, not of the whole batch.
+        </p>
       ) : (
         <p className="results-hint">
           Enter oils and a dilution target to size a preservative dose — the % is of the

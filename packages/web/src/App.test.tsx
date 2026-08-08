@@ -232,3 +232,75 @@ describe('the seeded ratio preset applies from the path the app actually opens o
     await assertApplied(panel, savedTarget);
   });
 });
+
+describe('the preservative dose is a % of what the maker is actually making', () => {
+  // THE SAFETY PIN. The snippet used to be handed the whole batch's finished mass in every
+  // state, including Custom amount scope — where the Dilution panel prints portion figures
+  // and deliberately shows no ≈ Finished product row at all. A maker drawing 250 ml off a
+  // multi-kilo batch was told to weigh in the batch's dose, an order of magnitude past the
+  // ceiling for the bottle actually in front of them.
+  async function openSnippet() {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+    return snippet;
+  }
+
+  function figure(snippet: HTMLElement, label: string): string {
+    const item = Array.from(snippet.querySelectorAll('.results-grid__item')).find(
+      (el) => el.querySelector('dt')?.textContent?.trim() === label,
+    );
+    return item?.querySelector('dd')?.textContent?.trim() ?? '';
+  }
+
+  function grams(text: string): number {
+    return Number(text.replace(/[^\d.]/g, ''));
+  }
+
+  it('Custom amount doses the portion, not the batch', async () => {
+    const snippet = await openSnippet();
+    const batchBase = grams(figure(snippet, '≈ Finished product (whole batch)'));
+    // The starter LS recipe makes kilos of diluted soap; the portion below is 250 ml of it.
+    expect(batchBase).toBeGreaterThan(1000);
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    await userEvent.type(screen.getByLabelText('Amount to make (ml)'), '250');
+
+    // 250 ml at the solution density core uses (1.03 g/ml) is 257.5 g, whatever the recipe
+    // is — the portion's own finished solution, not a share of the batch's.
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('258 g');
+    expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
+    // …and the dose follows it: 1% of 257.5 g. The batch's own 1% dose is >10 g, so this
+    // assertion fails the moment the base reverts to the batch.
+    expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(2.6, 1);
+  });
+
+  it('Whole batch scope is unchanged: the base is the batch, and it matches the panel', async () => {
+    const snippet = await openSnippet();
+    const base = grams(figure(snippet, '≈ Finished product (whole batch)'));
+    const dilutionPanel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    // The starter recipe has no additives, so the panel shows no separate ≈ Finished
+    // product row — its Finished solution row IS the finished product, and that is the
+    // number the snippet must be dosing.
+    const solution = grams(
+      within(dilutionPanel).getByText('Finished solution').nextElementSibling!.textContent!,
+    );
+    expect(base).toBeCloseTo(solution, 0);
+    expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(base * 0.01, 0);
+  });
+
+  it('an unsized Custom amount falls back to the hint, never to the batch', async () => {
+    // No amount typed yet: no portion exists, so there is nothing to dose. Quietly using
+    // the batch here is exactly the bug — the maker would be reading a batch dose on a
+    // screen showing no batch figures.
+    const snippet = await openSnippet();
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
+    expect(within(snippet).getByText(/Amount to make/i)).toBeTruthy();
+  });
+});

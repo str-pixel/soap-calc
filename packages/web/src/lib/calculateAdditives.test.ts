@@ -3,6 +3,7 @@ import {
   computeBottledSolutionGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
+  finishedProductGramsFor,
   splitLiquidWaterFraction,
   splitLiquidWaterInputState,
 } from './calculateAdditives';
@@ -207,6 +208,45 @@ describe('computeBottledSolutionGrams', () => {
         measuredPasteIsRemaining: true,
       }),
     ).toBeCloseTo(anhydrousGrams + cookWaterGrams, 0); // 3,200 g, the recipe's own figure
+  });
+});
+
+describe('finishedProductGramsFor', () => {
+  // One rule, three readers (the Dilution panel's ≈ Finished product row, the printed
+  // sheet's, and the Preservative snippet's dose base) — it used to be the same `??` chain
+  // written out three times, and one of those readers multiplies it by a % with a legal
+  // ceiling on it.
+  const dilution: DilutionResult = {
+    solutionGrams: 4000,
+    anhydrousGrams: 1200,
+    totalWaterGrams: 2800,
+    dilutionWaterGrams: 1900,
+    glycerinGrams: 0,
+    soapConcentrationPercent: 30,
+    targetExceedsPaste: false,
+  };
+
+  it('prefers the bottled figure, which counts the extras that ride into the bottle', () => {
+    expect(finishedProductGramsFor(4120, dilution)).toBe(4120);
+  });
+
+  it('falls back to the solution for a caller that has no bottled figure', () => {
+    // Unreachable from the view model (bottledSolutionGrams is null exactly when dilution
+    // is) but live for the component-level callers that pass a dilution and nothing else —
+    // both DilutionPanel and BatchSheet default the bottled prop to null.
+    expect(finishedProductGramsFor(null, dilution)).toBe(4000);
+    expect(finishedProductGramsFor(undefined, dilution)).toBe(4000);
+  });
+
+  it('is null with neither — nothing to dose or to convert to a volume', () => {
+    expect(finishedProductGramsFor(null, null)).toBeNull();
+    expect(finishedProductGramsFor(undefined, undefined)).toBeNull();
+  });
+
+  it('keeps a real zero rather than falling through it', () => {
+    // ?? and not ||: a 0 g bottled figure is an answer, and falling through to a nonzero
+    // solution would quote a mass the batch does not have.
+    expect(finishedProductGramsFor(0, dilution)).toBe(0);
   });
 });
 

@@ -12,9 +12,11 @@ afterEach(cleanup);
 // pick is the component's job (its pick handler writes both), not the harness's.
 function Harness({
   finishedGrams = 4000,
+  basisScope,
   weightUnit = 'g',
 }: {
   finishedGrams?: number | null;
+  basisScope?: 'batch' | 'portion';
   weightUnit?: WeightUnit;
 }) {
   const [id, setId] = useState<LsPreservativeId>(LS_PRESERVATIVES[0].id);
@@ -22,6 +24,7 @@ function Harness({
   return (
     <PreservativeSnippet
       finishedGrams={finishedGrams}
+      basisScope={basisScope}
       weightUnit={weightUnit}
       preservativeId={id}
       onPreservativeIdChange={setId}
@@ -66,8 +69,29 @@ test('the dose is seeded with the default and computes grams from the finished m
   expect(screen.getByText('Preservative to add')).toBeTruthy();
   // 1% of 4,000 g finished product
   expect(screen.getByText('40 g')).toBeTruthy();
-  expect(screen.getByText('≈ Finished product')).toBeTruthy();
+  expect(screen.getByText('≈ Finished product (whole batch)')).toBeTruthy();
   expect(screen.getByText('4,000 g')).toBeTruthy();
+});
+
+test('the base row names the scope it came from, and the portion scope is a different mass', () => {
+  // The dose is a % of what is being made. Both scopes render a base row; only the label
+  // says which mass it is, so the label is the maker's one signal that a 258 g figure
+  // beside a 4,000 g batch is not a mistake.
+  render(<Harness finishedGrams={257.5} basisScope="portion" />);
+  expect(screen.getByText('≈ Finished product (custom amount)')).toBeTruthy();
+  expect(screen.queryByText('≈ Finished product (whole batch)')).toBeNull();
+  // 1% of 257.5 g — the portion's dose, not the batch's 40 g
+  expect(screen.getByText('2.6 g')).toBeTruthy();
+});
+
+test('a Custom amount with nothing to dose asks for the amount, not for oils', () => {
+  // The null here means "no portion yet", not "no recipe yet" — and the maker is looking at
+  // a screen with no batch figures on it. Falling back to the batch's mass is the bug this
+  // whole state exists to refuse.
+  render(<Harness finishedGrams={null} basisScope="portion" />);
+  expect(screen.getByText(/Amount to make/i)).toBeTruthy();
+  expect(screen.queryByText(/Enter oils and a dilution target/)).toBeNull();
+  expect(screen.queryByText(/≈ Finished product/)).toBeNull();
 });
 
 test('picking another preservative reseeds the dose with ITS default and shows its facts', () => {
@@ -116,7 +140,7 @@ test('without a dilution there are no figures — only the enter-oils-first hint
   render(<Harness finishedGrams={null} />);
   expect(screen.getByText(/Enter oils and a dilution target/)).toBeTruthy();
   expect(screen.queryByText('Preservative to add')).toBeNull();
-  expect(screen.queryByText('≈ Finished product')).toBeNull();
+  expect(screen.queryByText(/≈ Finished product/)).toBeNull();
 });
 
 test('every formaldehyde releaser says so — outright where the threshold is generally crossed, as a check for Germall, silence only where there is nothing to release', () => {
