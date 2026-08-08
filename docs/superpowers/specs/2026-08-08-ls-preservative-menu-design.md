@@ -284,13 +284,57 @@ described in *Problem* bites, and it decides the row's mass:
 - The portion figure is deliberately not printed. The portion sizer is a bench-time
   scratch calculation over an unsaved amount; the sheet is the batch document.
 
-### 6 · Styles
+### 6 · The prose that says this is not recipe state
+
+Persistence contradicts three separate pieces of writing, one of them user-visible and
+pinned by a test. All three are rewritten together — the distinction to preserve is
+**setting vs ingredient**: the preservative is now saved with the recipe, but it still
+never enters the oil, lye or batch arithmetic.
+
+| Site | Today | Status |
+|---|---|---|
+| `PreservativeSnippet.tsx:34-36` (props doc) | *"Session-local UI state living in App beside portionTargetMl … Deliberately NOT recipe state — this snippet is a bench figure like the portion sizer, and it never adds anything to the recipe."* | **Flatly false** after §4. Rewritten: recipe state, saved and exported and printed; why it moved (a custom product name that vanishes on reload is worthless); and the half that stays true — it adds nothing to the batch arithmetic. Note it no longer sits "beside `portionTargetMl`", which *does* stay session-local. |
+| `PreservativeSnippet.tsx:48-50` (component doc) | *"A dose calculator, not a recipe field … writes nothing back into the recipe."* | **Half false.** Rewritten to "a recipe setting, not a recipe ingredient". |
+| `PreservativeSnippet.tsx:86-87` (subtitle, on screen) | *"Grams to weigh into the finished, diluted soap — a bench figure, never added into the recipe"* | **Misleading** once the pick and dose persist and print on the sheet. Reworded to keep the claim that is actually load-bearing — the preservative is not counted in the batch or lye figures — instead of the one that stops being true. |
+
+The subtitle is the only user-visible change here, and it is pinned by
+`PreservativeSnippet.test.tsx:170` (`/never added into the recipe/i`), which moves with
+it.
+
+### 7 · Styles
 
 `.preservative__picker` and `.preservative__legend` (`index.css:996`, `:1003`) go dead
 with the radiogroup and are removed. The select and the name input reuse `.field` /
 `.input`, as the dose field already does.
 
 ## Testing
+
+**Baseline before any change:** `npm test` is green at `dd38741` — typecheck, oils
+validation, core, and 1196 web tests across 79 files, exit 0. Every figure below was read
+off the suite as it stands, not recalled.
+
+**Four existing test sites assert the exact inverse of this design** and are deliberate
+reversals, not breakage to be repaired:
+
+| Site | Asserts today |
+|---|---|
+| `ls-preservatives.test.ts:117-139` | the whole `clampLsPreservativePct` describe block — pass-through, clamp-at-ceiling, junk-to-zero |
+| `PreservativeSnippet.test.tsx:109-118` | *"a dose above an EU ceiling is hard-clamped"* — and pins `queryByText('80 g')` **null**, i.e. the typed 2% must NOT show |
+| `PreservativeSnippet.test.tsx:120-129` | the supplier-ceiling twin, grams pinned to the clamped 0.5% |
+| `ls-preservative.spec.ts:54-58` | *"The ceiling is hard … the figure stays at the 1% EU maximum"* |
+
+The first is replaced by tier tests; the other three inverted — same alert, opposite
+figure. Anyone who "fixes" one back has undone the feature.
+
+**Two more existing tests transform rather than disappear:**
+
+- `PreservativeSnippet.test.tsx:58-64` — Label-in-Name over `getByRole('radiogroup')`,
+  asserting the accessible name leads with the visible caption verbatim. The select
+  inherits the obligation, so this becomes the select's version of the same assertion.
+- `PreservativeSnippet.test.tsx:170` — pins the subtitle rewritten in §6.
+
+The `Harness` at `PreservativeSnippet.test.tsx:13-35` gains custom-name state and its
+`useState<LsPreservativeId>` widens to `string`.
 
 **Core — `ls-preservatives.test.ts`.** The `clampLsPreservativePct` describe block is
 replaced by `lsPreservativeDoseTier` boundary tests: exactly `typicalLow`, a hair below;
@@ -327,11 +371,14 @@ by anything portion-shaped — the sheet has no `dilutionScope` input to be affe
 and this test is what stops one being added later.
 
 **E2E — `ls-preservative.spec.ts`.** The radio assertion at line 34 becomes a select
-assertion. **Lines 54–58 assert the exact inverse of this design** — *"The ceiling is
-hard: typing past it raises the named clamp message and the figure stays at the 1% EU
-maximum"* — and must be rewritten to assert the opposite: the alert names the EU maximum
-**and** the figure follows the typed 2%. This is a deliberate reversal, not a broken
-test; do not restore it. `exploratory.spec.ts` only asserts the heading and is unaffected.
+assertion; lines 54–58 invert per the table above — the alert names the EU maximum **and**
+the figure follows the typed 2%. `exploratory.spec.ts` only asserts the heading
+(lines 94, 155) and is unaffected.
+
+**Definition of done:** `npm test` green again — same 79 files, test count up by the new
+cases — plus the Playwright spec passing. No existing test is deleted to make a new one
+pass; the four inversions above are rewritten in place, so the diff shows the reversal
+rather than hiding it.
 
 ## Out of scope
 
