@@ -20,6 +20,15 @@ silently computed at 1%. Three consequences:
    vanish on refresh, and the batch sheet carried to the bench never mentions the
    preservative at all.
 
+**What the snippet already does that this design must not break.** Its dose base is not
+simply "the batch": `finishedGrams` follows the Dilution panel's scope toggle, and
+`basisScope` (`'batch' | 'portion'`) names which of the two masses was resolved, so the
+base row can say which it is and the empty state can ask for the right thing. That prop
+exists because of a fixed bug its own doc records — the batch's mass was once used in
+both scopes, so a 250 ml draw off a 4 kg batch was told to weigh in the batch's 40 g of
+Suttocide, about 16% w/w in that bottle and sixteen times the EU ceiling. Everything
+below leaves the scope machinery alone, and §5 is where it bites.
+
 **User decisions (this session):**
 
 | Question | Decision |
@@ -61,7 +70,7 @@ carries every product the table cannot cite. Its copy says so.
 unchanged. What changes is the dose contract.
 
 ```ts
-export type LsDoseTier =
+export type LsPreservativeDoseTier =
   | 'none'          // blank, zero, negative, NaN — no figure, no warning
   | 'impossible'    // over 100% of the finished product — not a dose at all
   | 'unrated'       // a real dose, but no product data to judge it against (custom)
@@ -75,7 +84,7 @@ export type LsDoseTier =
  * `impossible` — which outranks `above-max`, since 150% is not a ceiling breach to
  * warn about but a number that is not a dose. With no `p`, any real dose is
  * `'unrated'`. */
-export function lsPreservativeDoseTier(pct: number, p?: LsPreservative): LsDoseTier;
+export function lsPreservativeDoseTier(pct: number, p?: LsPreservative): LsPreservativeDoseTier;
 ```
 
 - `clampLsPreservativePct` is **deleted**. Verified: its only production call site is
@@ -156,8 +165,8 @@ hazard the reseed rule exists to prevent. A blank field forces a deliberate entr
   knows none of them, and a silent formaldehyde note would imply an exemption that may
   not exist;
 - `none` and `impossible` still apply (they are arithmetic, not product data);
-- the grams, the `≈ Finished product` row, and the generic "add after dilution, once the
-  soap has cooled" stage line all remain;
+- the grams, the scope-named `≈ Finished product (whole batch | custom amount)` row, and
+  the generic "add after dilution, once the soap has cooled" stage line all remain;
 - one standing note appears, carrying the research outcome to where it is useful — a user
   reaching for `Custom…` is most likely holding exactly one of the products screened out
   above:
@@ -174,15 +183,41 @@ selected (switch back and it is still there), simply unused. This differs from
 `AdditivesPanel`, which overwrites `line.name` from the catalog entry; here the name
 field and the product select are separate controls, so there is nothing to overwrite.
 
+**Props.** Two change, one is added, the scope pair is untouched:
+
+```ts
+type PreservativeSnippetProps = {
+  finishedGrams: number | null;               // unchanged — scope-resolved by App
+  basisScope?: 'batch' | 'portion';           // unchanged
+  weightUnit: WeightUnit;                     // unchanged
+  preservativeId: string;                     // was LsPreservativeId; '' = custom
+  onPreservativeIdChange: (id: string) => void;
+  preservativeCustomName: string;             // new
+  onPreservativeCustomNameChange: (name: string) => void;
+  dosePct: string;
+  onDosePctChange: (value: string) => void;
+};
+```
+
+The base row keeps its scope-named label — `≈ Finished product (whole batch)` /
+`(custom amount)` — and **both** empty-state branches survive unchanged, including the
+portion-specific one ("Enter an Amount to make above — with Custom amount chosen, the
+dose is a % of the portion you are making now, not of the whole batch"). `Custom…`
+suppresses product facts, never scope facts.
+
 ### 4 · Persistence
 
 Three fields join `RecipeSettings` in `packages/web/src/lib/recipe.ts`:
 
 | Field | Default | Meaning |
 |---|---|---|
-| `preservativeId` | `'suttocide-a'` (today's `LS_PRESERVATIVES[0].id`) | `''` = custom |
+| `preservativeId` | `LS_PRESERVATIVES[0].id` | `''` = custom |
 | `preservativeCustomName` | `''` | free text, used only when `preservativeId === ''` |
-| `preservativeDosePct` | `'1'` (today's `String(LS_PRESERVATIVES[0].defaultPct)`) | input string, like every other numeric setting |
+| `preservativeDosePct` | `String(LS_PRESERVATIVES[0].defaultPct)` | input string, like every other numeric setting |
+
+The two defaults are **computed from the table, not written as literals** — they are the
+same expressions `App` seeds today, and a literal `'suttocide-a'` / `'1'` would drift
+silently if the table is ever reordered or its `defaultPct` revised.
 
 `normalizeSettings` coercion:
 
@@ -205,6 +240,12 @@ above. It gains tests only.
 reads/writes through the settings object like every other setting. These fields ride
 along on CP and HP recipes unused, the same way `soapConcentrationPercent` already does.
 
+**What stays session-local:** `dilutionScope` (`App.tsx:142`), `portionTargetMl`,
+`measuredPasteGrams` and the `preservativeBaseGrams` memo built from them are untouched.
+The persistence decision covers the preservative *pick, name and dose* — the three things
+a maker would be annoyed to retype — and deliberately not the scope, which is a
+bench-time view over the saved recipe rather than part of it. §5 depends on this.
+
 ### 5 · Batch sheet
 
 The existing **Dilution** section (already LS-gated, since it renders only when
@@ -212,7 +253,7 @@ The existing **Dilution** section (already LS-gated, since it renders only when
 `impossible`:
 
 ```
-Preservative        Suttocide A · 1% · 10.0 g
+Preservative        Suttocide A · 1% · 10.0 g (whole batch)
 ```
 
 followed by the stage line ("Add after dilution, once the soap has cooled — below 50 °C
@@ -222,6 +263,26 @@ bare.
 
 The formaldehyde note does **not** print: it is a labelling duty for the finished
 product, not a bench instruction.
+
+**The row is always whole-batch, and says so.** This is the one place the scope machinery
+described in *Problem* bites, and it decides the row's mass:
+
+- The sheet uses the `bottledGrams` it **already computes** at `BatchSheet.tsx:159` —
+  `finishedProductGramsFor(bottledSolutionGrams, dilution)`. Verified: that is the exact
+  expression behind `vm.finishedProductGrams` (`useRecipeViewModel.ts:756`), which is
+  what `App` hands the snippet in batch scope (`App.tsx:290`). Sheet and panel therefore
+  agree by construction, the way the dilution rows already do — no second rule to drift.
+- **`dilutionScope` must not reach the sheet.** It is session-local `useState`
+  (`App.tsx:142`), so a sheet that mirrored it would print a different preservative mass
+  before and after a reload, from a recipe file that records no scope. Worse, the two
+  masses differ by the whole batch-to-portion ratio: mirroring the scope on a batch
+  document is the same class of error as the fixed bug the `basisScope` doc records,
+  printed onto paper instead of shown on screen.
+- Hence the `(whole batch)` suffix is **not decoration** — while a maker is working in
+  Custom amount scope, the screen shows the portion's dose and the sheet shows the
+  batch's. Two different correct numbers, and each has to name which it is.
+- The portion figure is deliberately not printed. The portion sizer is a bench-time
+  scratch calculation over an unsaved amount; the sheet is the batch document.
 
 ### 6 · Styles
 
@@ -249,7 +310,10 @@ ever returned. `lsPreservativeById`'s test gains an unknown-id case returning
 - each rung of the ladder renders its own copy, and only its own;
 - **the regression the old clamp made untestable: with a dose above the ceiling, the
   grams equal `finishedGrams × typedPct / 100`**;
-- a blank custom name renders `Custom preservative` in warnings.
+- a blank custom name renders `Custom preservative` in warnings;
+- the scope behaviour still holds with a custom entry selected: `basisScope="portion"`
+  keeps the scope-named base row and the portion-specific empty state, so `Custom…`
+  suppresses product facts without suppressing scope facts.
 
 **Web — `recipe.test.ts` / `recipeFile.test.ts`.** Defaults; round-trip of all three
 fields through save/load and export/import; an unresolvable `preservativeId` degrading to
@@ -257,7 +321,10 @@ fields through save/load and export/import; an unresolvable `preservativeId` deg
 
 **Web — `BatchSheet.test.tsx`.** The row prints with product name, dose and grams; it is
 omitted at tier `none` and `impossible`; the custom-name fallback prints; the
-`above-max` caveat prints and the formaldehyde note does not.
+`above-max` caveat prints and the formaldehyde note does not. **The scope guard:** the
+printed grams equal the dose against the sheet's own `bottledGrams`, and are unaffected
+by anything portion-shaped — the sheet has no `dilutionScope` input to be affected by,
+and this test is what stops one being added later.
 
 **E2E — `ls-preservative.spec.ts`.** The radio assertion at line 34 becomes a select
 assertion. **Lines 54–58 assert the exact inverse of this design** — *"The ceiling is
