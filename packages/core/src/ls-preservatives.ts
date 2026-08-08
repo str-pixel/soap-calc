@@ -57,6 +57,16 @@ export type LsPreservativeCeiling = 'eu' | 'supplier';
  * middle one. */
 export type LsFormaldehydeLabel = 'generally-required' | 'check-threshold' | 'not-a-releaser';
 
+/** Where a typed dose sits relative to the selected product — see lsPreservativeDoseTier
+ * for the ordering rules and for why there is no 'above-typical'. */
+export type LsPreservativeDoseTier =
+  | 'none'
+  | 'impossible'
+  | 'unrated'
+  | 'below-typical'
+  | 'typical'
+  | 'above-max';
+
 export type LsPreservative = {
   id: LsPreservativeId;
   label: string;
@@ -190,6 +200,34 @@ export function clampLsPreservativePct(
   if (!Number.isFinite(pct) || pct <= 0) return { pct: 0, clamped: false };
   if (pct > preservative.maxPct) return { pct: preservative.maxPct, clamped: true };
   return { pct, clamped: false };
+}
+
+/**
+ * Where a typed dose sits relative to a product's own numbers. Replaces the old clamp:
+ * the caller keeps the dose the user typed and renders a note, rather than substituting
+ * the ceiling and computing from that.
+ *
+ * `preservative` is absent for a custom entry, where the app has no rated range and no
+ * ceiling — only the two arithmetic judgements survive, and any real dose is 'unrated'.
+ *
+ * ORDER MATTERS. 'none' first, so a half-typed field ('', '-', '0.') raises nothing.
+ * Then 'impossible', which outranks 'above-max': more preservative than finished product
+ * is not a ceiling breach to warn about, it is a number that is not a dose.
+ *
+ * There is deliberately no 'above-typical' tier. Every shipped entry's typicalHigh IS its
+ * maxPct (pinned by a test in this file's suite), so the band between them is empty and
+ * such a tier would be unreachable copy. An entry with headroom must add it.
+ */
+export function lsPreservativeDoseTier(
+  pct: number,
+  preservative?: LsPreservative,
+): LsPreservativeDoseTier {
+  if (!Number.isFinite(pct) || pct <= 0) return 'none';
+  if (pct > 100) return 'impossible';
+  if (!preservative) return 'unrated';
+  if (pct > preservative.maxPct) return 'above-max';
+  if (pct < preservative.typicalPctRange[0]) return 'below-typical';
+  return 'typical';
 }
 
 /** Grams of preservative (as supplied) for a finished-product mass at a % w/w dose.

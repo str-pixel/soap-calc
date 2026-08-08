@@ -3,6 +3,7 @@ import {
   LS_PRESERVATIVES,
   clampLsPreservativePct,
   lsPreservativeById,
+  lsPreservativeDoseTier,
   preservativeDoseGrams,
   type LsPreservative,
 } from './ls-preservatives.js';
@@ -135,5 +136,61 @@ describe('clampLsPreservativePct', () => {
   test('junk (NaN, negative) resolves to a zero dose, not a clamp message', () => {
     expect(clampLsPreservativePct(NaN, suttocide)).toEqual({ pct: 0, clamped: false });
     expect(clampLsPreservativePct(-1, suttocide)).toEqual({ pct: 0, clamped: false });
+  });
+});
+
+describe('lsPreservativeDoseTier', () => {
+  const suttocide = byId['suttocide-a'];       // typical [0.5, 1.0], max 1.0 (eu)
+  const germall = byId['liquid-germall-plus']; // typical [0.1, 0.5], max 0.5 (supplier)
+
+  test('junk and empty-ish doses are none, so no note fires mid-keystroke', () => {
+    expect(lsPreservativeDoseTier(NaN, suttocide)).toBe('none');
+    expect(lsPreservativeDoseTier(0, suttocide)).toBe('none');
+    expect(lsPreservativeDoseTier(-1, suttocide)).toBe('none');
+    expect(lsPreservativeDoseTier(Infinity, suttocide)).toBe('none');
+  });
+
+  test('a dose inside the typical range is typical, boundaries included', () => {
+    expect(lsPreservativeDoseTier(0.7, suttocide)).toBe('typical');
+    expect(lsPreservativeDoseTier(0.5, suttocide)).toBe('typical'); // exactly typicalLow
+    expect(lsPreservativeDoseTier(1.0, suttocide)).toBe('typical'); // exactly typicalHigh = maxPct
+    expect(lsPreservativeDoseTier(0.1, germall)).toBe('typical');
+    expect(lsPreservativeDoseTier(0.5, germall)).toBe('typical');
+  });
+
+  test('a dose under the typical range is below-typical', () => {
+    expect(lsPreservativeDoseTier(0.4, suttocide)).toBe('below-typical');
+    expect(lsPreservativeDoseTier(0.09, germall)).toBe('below-typical');
+  });
+
+  test('a dose over the ceiling is above-max — the figure is no longer clamped to it', () => {
+    expect(lsPreservativeDoseTier(1.01, suttocide)).toBe('above-max');
+    expect(lsPreservativeDoseTier(2, suttocide)).toBe('above-max');
+    expect(lsPreservativeDoseTier(0.8, germall)).toBe('above-max');
+  });
+
+  test('over 100% is impossible, and outranks above-max: not a ceiling breach, not a dose', () => {
+    expect(lsPreservativeDoseTier(101, suttocide)).toBe('impossible');
+    // 150 is also far above suttocide's 1.0 ceiling; impossible still wins.
+    expect(lsPreservativeDoseTier(150, suttocide)).toBe('impossible');
+    expect(lsPreservativeDoseTier(100, suttocide)).toBe('above-max'); // exactly 100 is a dose
+  });
+
+  test('with no preservative (a custom entry) only the arithmetic tiers are reachable', () => {
+    expect(lsPreservativeDoseTier(1)).toBe('unrated');
+    expect(lsPreservativeDoseTier(0.001)).toBe('unrated');
+    expect(lsPreservativeDoseTier(100)).toBe('unrated');
+    expect(lsPreservativeDoseTier(101)).toBe('impossible');
+    expect(lsPreservativeDoseTier(0)).toBe('none');
+    expect(lsPreservativeDoseTier(NaN)).toBe('none');
+  });
+
+  test('no shipped entry can produce a dose that is above typical but under its ceiling', () => {
+    // Why there is no 'above-typical' tier: every entry's typicalHigh IS its maxPct, so the
+    // band between them is empty. If an entry with headroom is ever added, this test fails
+    // and the tier (plus its UI note) must be added with it.
+    for (const p of LS_PRESERVATIVES) {
+      expect(p.typicalPctRange[1], p.id).toBe(p.maxPct);
+    }
   });
 });
