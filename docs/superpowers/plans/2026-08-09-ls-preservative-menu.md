@@ -14,7 +14,7 @@
 
 - **Baseline is green and must stay green.** `npm test` at `5ffc884`: typecheck + oils validation + core + 1196 web tests across 79 files, exit 0. Run it at the end of every task.
 - **Every commit compiles.** Task order exists to avoid an intermediate broken tree — do not reorder.
-- **No test is deleted to make a new one pass.** Four existing tests assert the inverse of this design and are rewritten *in place* (Tasks 2, 3, 6) so the diff shows the reversal.
+- **No test is deleted to make a new one pass.** Four existing tests assert the inverse of this design and are rewritten *in place* (Tasks 2, 3, 6) so the diff shows the reversal. The one permitted deletion is the `clampLsPreservativePct` `describe` block (Task 2, Step 5) — its subject is removed from the codebase in the same commit, and Task 1's tier tests already cover the behaviour that replaces it. Reviewers: this is the exception, and it is the only one.
 - **Doses are % w/w of the finished, ready-for-use product** (the diluted solution) — never of oils or paste.
 - **`''` means custom** for `preservativeId`, matching `catalogId: ''` (additives) and `presetKey: ''` (alternative liquids).
 - **Session-local state stays session-local:** `dilutionScope`, `portionTargetMl`, `measuredPasteGrams` and the `preservativeBaseGrams` memo are not touched by this work.
