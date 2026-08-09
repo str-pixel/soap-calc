@@ -92,6 +92,15 @@ export type RecipeSettings = {
   preservativeId: string;
   preservativeCustomName: string;
   preservativeDosePct: string;
+  /** True only once the maker has actually touched the picker, the custom name or the
+   * dose — mirrors `batchSetByUser`'s "did the maker touch it" idiom. The batch sheet
+   * gates its Preservative row on this in addition to the dose tier: the three fields
+   * above default to a real, legal Suttocide A dose so the snippet always opens showing
+   * a complete worked example, but printing that unrequested choice onto every sheet
+   * (including recipes saved before this flag existed) would name a specific commercial
+   * product the maker never chose. An absent flag — any recipe saved or exported before
+   * this field existed — must default to false, never to true. */
+  preservativeSetByUser: boolean;
 };
 
 export function newLineKey(): string {
@@ -149,6 +158,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   preservativeId: LS_PRESERVATIVES[0].id,
   preservativeCustomName: '',
   preservativeDosePct: String(LS_PRESERVATIVES[0].defaultPct),
+  preservativeSetByUser: false,
 };
 
 /** One alternative liquid in a recipe: the singleton settings minus the global enable,
@@ -436,6 +446,9 @@ export function normalizeSettings(
     ? partial.processVariant
     : defaultVariantFor(processForLyeType(lyeType));
   const d = DEFAULT_SETTINGS;
+  // Bound once, the way normalizeAdditiveLine's rawCatalogId is, rather than calling
+  // settingString twice for the same value.
+  const rawPreservativeId = settingString(partial?.preservativeId, d.preservativeId);
   return {
     ...preserveUnknownSettings(partial),
     weightUnit,
@@ -465,11 +478,13 @@ export function normalizeSettings(
     // An id the table no longer resolves becomes a custom entry KEEPING the typed name —
     // the same degradation normalizeAdditiveLine applies to a stale catalogId. '' is
     // already a custom entry and passes through untouched.
-    preservativeId: lsPreservativeById(settingString(partial?.preservativeId, d.preservativeId))
-      ? settingString(partial?.preservativeId, d.preservativeId)
-      : '',
+    preservativeId: lsPreservativeById(rawPreservativeId) ? rawPreservativeId : '',
     preservativeCustomName: settingString(partial?.preservativeCustomName, d.preservativeCustomName),
     preservativeDosePct: settingString(partial?.preservativeDosePct, d.preservativeDosePct),
+    // Mirrors resolveBatchProvenance's "explicit flag or false" half — but with no total to
+    // infer from, an absent flag (every recipe saved before this field existed) must mean
+    // false outright, never true. See the field's own doc for why that direction matters.
+    preservativeSetByUser: partial?.preservativeSetByUser === true,
   };
 }
 

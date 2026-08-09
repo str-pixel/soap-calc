@@ -64,7 +64,9 @@ test('collapsed by default, opens, and computes the dose from the finished dilut
   // the ≤0.6 g allowance above accounts for), so doubling doseGrams and comparing it to a
   // second, separately rounded reading can drift by close to a gram even though the
   // underlying (finishedGrams × pct / 100) maths is exact — hence the wide tolerance rather
-  // than a tight toBeCloseTo.
+  // than a tight toBeCloseTo. Derivation: this reading's own rounding contributes up to 0.5 g,
+  // and doubling the earlier reading doubles ITS up-to-0.5 g rounding error too — 0.5 (this
+  // reading) + 2 × 0.5 (the doubled earlier reading) = 1.5.
   expect(Math.abs((await gramsOf('Preservative to add')) - doseGrams * 2)).toBeLessThanOrEqual(1.5);
 
   // Custom… clears the dose and offers a name field. Exact match: getByLabel is a

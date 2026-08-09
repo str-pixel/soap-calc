@@ -304,3 +304,44 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(within(snippet).getByText(/Amount to make/i)).toBeTruthy();
   });
 });
+
+describe("the preservative pick reseeds the dose through App's own wiring", () => {
+  // THE SAFETY PIN for App.tsx's three preservativeSnippet handlers (~573-583). The select's
+  // onChange in PreservativeSnippet fires TWO writes in one synchronous handler — the id,
+  // then the reseeded dose — both through App's single `setSettings`. The functional-updater
+  // form `setSettings((s) => ({ ...s, ... }))` lets the second write build on the first; the
+  // plain object-spread form `setSettings({ ...settings, ... })` used elsewhere in this file
+  // reads the SAME pre-event `settings` closure for both calls, so whichever call is applied
+  // last silently discards the other call's field. PreservativeSnippet.test.tsx's Harness
+  // cannot catch this regression: its id and dose are two independent useStates, so both
+  // writes land there no matter what App does (see that file's Harness comment). Only a test
+  // that renders the real App exercises the real setSettings object.
+  it('picking Liquid Germall Plus updates the select AND reseeds the dose to its own default', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+
+    // An oil weight, so the snippet has a finished mass to dose against.
+    const [firstOilWeight] = screen.getAllByLabelText(/^Weight in/);
+    await userEvent.clear(firstOilWeight);
+    await userEvent.type(firstOilWeight, '500');
+    await userEvent.tab();
+
+    const summary = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('summary') as HTMLElement;
+    await userEvent.click(summary);
+
+    const picker = screen.getByLabelText('Which preservative') as HTMLSelectElement;
+    await userEvent.selectOptions(picker, 'liquid-germall-plus');
+
+    // BOTH must hold. Under the object-spread break one of these two writes is clobbered —
+    // whichever assertion fails first depends on which handler lost, but the app can never
+    // legitimately show Liquid Germall Plus selected next to a dose that is not its own 0.5%
+    // default (Suttocide A's 1% is double Germall's supplier maximum).
+    expect(picker.value).toBe('liquid-germall-plus');
+    const doseInput = screen.getByLabelText(
+      /Dose \(% of finished product\)/,
+    ) as HTMLInputElement;
+    expect(doseInput.value).toBe('0.5');
+  });
+});

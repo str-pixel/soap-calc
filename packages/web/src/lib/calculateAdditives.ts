@@ -233,10 +233,11 @@ export function computeBottledSolutionGrams(input: {
 /**
  * The finished, ready-for-use mass of the WHOLE batch: the bottled figure when there is
  * one, else the dilution's own solution. Three surfaces quote this number — the Dilution
- * panel's ≈ Finished product row, the printed sheet's, and the Preservative snippet's dose
- * base — and they wrote the same `??` chain out three times. It lives here now, beside the
- * function that computes the bottled figure, so a rule that decides a DOSE (the snippet
- * multiplies it by a % with a legal ceiling on it) cannot drift between its readers.
+ * panel's ≈ Finished product row, the printed sheet's, and the Preservative snippet's
+ * batch-scope dose base — and they wrote the same `??` chain out three times. It lives here
+ * now, beside the function that computes the bottled figure, so a rule that decides a DOSE
+ * (the snippet multiplies it by a % with a legal ceiling on it) cannot drift between its
+ * readers.
  *
  * The fallback arm is unreachable from the view model — `bottledSolutionGrams` is null
  * exactly when `dilution` is (useRecipeViewModel computes it as `dilution && result ? … :

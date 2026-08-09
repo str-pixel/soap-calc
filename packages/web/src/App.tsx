@@ -571,15 +571,15 @@ export default function App() {
                 weightUnit={weightUnit}
                 preservativeId={settings.preservativeId}
                 onPreservativeIdChange={(preservativeId) =>
-                  setSettings((s) => ({ ...s, preservativeId }))
+                  setSettings((s) => ({ ...s, preservativeId, preservativeSetByUser: true }))
                 }
                 preservativeCustomName={settings.preservativeCustomName}
                 onPreservativeCustomNameChange={(preservativeCustomName) =>
-                  setSettings((s) => ({ ...s, preservativeCustomName }))
+                  setSettings((s) => ({ ...s, preservativeCustomName, preservativeSetByUser: true }))
                 }
                 dosePct={settings.preservativeDosePct}
                 onDosePctChange={(preservativeDosePct) =>
-                  setSettings((s) => ({ ...s, preservativeDosePct }))
+                  setSettings((s) => ({ ...s, preservativeDosePct, preservativeSetByUser: true }))
                 }
               />
             )}

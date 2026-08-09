@@ -476,6 +476,7 @@ describe('recipeFile', () => {
       preservativeId: '',
       preservativeCustomName: 'Optiphen Plus',
       preservativeDosePct: '1.5',
+      preservativeSetByUser: true,
     };
     const payload = serializeRecipeFile('LS test', createStarterLines(), settings, [], 'ls');
     const parsed = parseRecipeFile(JSON.stringify(payload));
@@ -484,6 +485,22 @@ describe('recipeFile', () => {
     expect(parsed.data.settings.preservativeId).toBe('');
     expect(parsed.data.settings.preservativeCustomName).toBe('Optiphen Plus');
     expect(parsed.data.settings.preservativeDosePct).toBe('1.5');
+    expect(parsed.data.settings.preservativeSetByUser).toBe(true);
+  });
+
+  it('an exported recipe that never set the flag imports it back false', () => {
+    // The provenance flag itself must round-trip in both directions — a maker who never
+    // touched the snippet exports false, and false must come back, not the field being
+    // dropped and re-defaulted by coincidence.
+    const settings: RecipeSettings = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+    };
+    const payload = serializeRecipeFile('LS test', createStarterLines(), settings, [], 'ls');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.preservativeSetByUser).toBe(false);
   });
 });
 

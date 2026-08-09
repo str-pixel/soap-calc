@@ -513,4 +513,20 @@ describe('preservative settings', () => {
   it('keeps an over-ceiling dose verbatim — the panel warns, the loader does not edit', () => {
     expect(normalizeSettings({ preservativeDosePct: '2' }).preservativeDosePct).toBe('2');
   });
+
+  it('preservativeSetByUser defaults false — an absent flag on a legacy recipe must not print the row', () => {
+    expect(normalizeSettings({}).preservativeSetByUser).toBe(false);
+    expect(normalizeSettings(undefined).preservativeSetByUser).toBe(false);
+  });
+
+  it('preserves an explicit preservativeSetByUser: true', () => {
+    expect(normalizeSettings({ preservativeSetByUser: true }).preservativeSetByUser).toBe(true);
+  });
+
+  it('coerces anything other than a literal true to false', () => {
+    expect(
+      normalizeSettings({ preservativeSetByUser: 'true' } as unknown as Partial<RecipeSettings>)
+        .preservativeSetByUser,
+    ).toBe(false);
+  });
 });

@@ -8,8 +8,14 @@ import { PreservativeSnippet } from './PreservativeSnippet';
 
 afterEach(cleanup);
 
-// Mirrors App's wiring exactly: id + dose are sibling session states, and the RESEED on
-// pick is the component's job (its pick handler writes both), not the harness's.
+// Diverges from App's wiring on purpose: id, custom name and dose are now RecipeSettings
+// fields that App threads through one `setSettings` object, but the Harness holds three
+// independent useStates instead. That means the reseed-on-pick this component performs
+// (its onChange writes both id and dose in one handler) is exercised here whether or not
+// App's own handler still uses the functional setSettings((s) => …) form it needs — a
+// broken App reducer would still pass every test in this file, because setId/setDose
+// never collide the way two writes into the same settings object can. Nothing here
+// guards App's wiring; see the reseed-on-pick test in App.test.tsx for that.
 function Harness({
   finishedGrams = 4000,
   basisScope,

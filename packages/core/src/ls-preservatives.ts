@@ -15,8 +15,8 @@
  * maxima (Reg. EC/1223/2009) — for liquid soap the finished product is the diluted
  * solution, not the paste.
  *
- * CEILINGS. `maxPct` is the hard cap the UI clamps at; `ceiling` names who set it, because
- * the clamp message must say whether exceeding it is illegal (EU) or off-spec (supplier):
+ * CEILINGS. `maxPct` is the ceiling the UI warns above; `ceiling` names who set it, because
+ * the warning must say whether exceeding it is illegal (EU) or off-spec (supplier):
  * - 'eu': the Annex V active-substance cap converted to as-supplied strength.
  * - 'supplier': the supplier's own maximum recommended use level, which binds BELOW the
  *   EU cap for that product.
@@ -47,7 +47,7 @@ export type LsPreservativeId =
   | 'glydant-plus'
   | 'phenoxyethanol';
 
-/** Who set maxPct — decides whether the clamp message says "EU legal maximum" or
+/** Who set maxPct — decides whether the warning above it says "EU legal maximum" or
  * "supplier's maximum". */
 export type LsPreservativeCeiling = 'eu' | 'supplier';
 
