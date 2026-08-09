@@ -32,8 +32,8 @@ type PreservativeSnippetProps = {
   weightUnit: WeightUnit;
   /** Which preservative is being sized. `''` is the CUSTOM sentinel — the same idiom as
    * an additive line's `catalogId: ''` — and means the app has no product data at all:
-   * no rated pH, no ceiling, no formaldehyde status. Recipe state (settings), so the pick
-   * and its dose survive a reload and reach the batch sheet. */
+   * no rated pH, no ceiling, no formaldehyde status. Session state for now, held in App
+   * beside the other bench decisions; a later task moves it into the recipe. */
   preservativeId: string;
   onPreservativeIdChange: (id: string) => void;
   /** Free-text product name, used only while `preservativeId` is `''`. Retained across a
