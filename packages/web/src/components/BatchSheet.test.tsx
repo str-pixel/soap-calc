@@ -434,10 +434,18 @@ function lsSheetData(extra: {
   bottledSolutionGrams?: number | null;
   /** Overrides the fixture's own 'g' below — it is spread after it. */
   weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
+  /** Merged into the fixture's settings — for the preservative row, whose three fields
+   * live in RecipeSettings and do not affect calculateRecipe. */
+  preservative?: Partial<
+    Pick<
+      import('../lib/recipe').RecipeSettings,
+      'preservativeId' | 'preservativeCustomName' | 'preservativeDosePct'
+    >
+  >;
 }) {
-  const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
+  const { targetExceedsPaste, dilutionOverride, preservative, ...rest } = extra;
   const lines = createStarterLines();
-  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const };
+  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const, ...preservative };
   const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
   if (!result || !displayTotals) throw new Error('expected a valid calculation');
 
@@ -856,4 +864,52 @@ test('printed Neutralize section shows the stearic-acid alternative and its cann
   expect(screen.getByText('Or stearic acid')).toBeTruthy();
   expect(screen.getByText('22 g')).toBeTruthy();
   expect(screen.getByText(/cannot be overdosed/i)).toBeTruthy();
+});
+
+test('prints the preservative dose against the whole batch, and names the scope', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '1' },
+  })} />);
+  const row = screen.getByText('Preservative').closest('div')!;
+  expect(row.textContent).toContain('Suttocide A');
+  expect(row.textContent).toContain('1%');
+  expect(row.textContent).toContain('whole batch');
+  // 1% of the fixture's 4,059 g finished solution
+  expect(row.textContent).toContain('41 g');
+});
+
+test('a blank custom name still prints a headed row', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: { preservativeId: '', preservativeCustomName: '', preservativeDosePct: '1' },
+  })} />);
+  expect(screen.getByText('Preservative').closest('div')!.textContent)
+    .toContain('Custom preservative');
+});
+
+test('no dose, no row', () => {
+  render(<BatchSheet data={lsSheetData({ preservative: { preservativeDosePct: '' } })} />);
+  expect(screen.queryByText('Preservative')).toBeNull();
+});
+
+test('an impossible dose prints no row either', () => {
+  render(<BatchSheet data={lsSheetData({ preservative: { preservativeDosePct: '150' } })} />);
+  expect(screen.queryByText('Preservative')).toBeNull();
+});
+
+test('an over-ceiling dose prints its caveat; the formaldehyde note stays off the sheet', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '2' },
+  })} />);
+  expect(screen.getByText(/above the EU legal maximum/i)).toBeTruthy();
+  expect(screen.queryByText(/releases formaldehyde/i)).toBeNull();
+});
+
+test('the printed dose is the batch figure — the sheet has no portion scope to follow', () => {
+  // bottledSolutionGrams overrides the finished mass; the row must track THAT, and there
+  // must be no way to make it track a Custom-amount portion instead.
+  render(<BatchSheet data={lsSheetData({
+    bottledSolutionGrams: 2000,
+    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '1' },
+  })} />);
+  expect(screen.getByText('Preservative').closest('div')!.textContent).toContain('20 g');
 });

@@ -6,7 +6,10 @@ import {
   formatPropertyScore,
   formatSoapPropertyPercent,
   lsFinishedVolumeMl,
+  lsPreservativeById,
+  lsPreservativeDoseTier,
   LOW_COVERAGE_PERCENT,
+  preservativeDoseGrams,
   saturatedUnsaturatedRatio,
   fToC,
 } from '@soap-calc/core';
@@ -160,6 +163,22 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
+
+  // THE SHEET IS A BATCH DOCUMENT. It prints the batch's dose and says so — never the
+  // Dilution panel's Custom amount portion. `dilutionScope` is session-only state that no
+  // recipe file records, so a sheet that mirrored it would print one mass before a reload
+  // and another after. bottledGrams is finishedProductGramsFor(...), the same expression
+  // behind vm.finishedProductGrams that App hands the snippet in batch scope, so sheet and
+  // panel cannot drift.
+  const preservative = lsPreservativeById(settings.preservativeId);
+  const preservativeDosePct = Number(settings.preservativeDosePct);
+  const preservativeTier = lsPreservativeDoseTier(preservativeDosePct, preservative);
+  const preservativeName =
+    preservative?.label ?? (settings.preservativeCustomName.trim() || 'Custom preservative');
+  const preservativeGrams =
+    bottledGrams !== null && preservativeTier !== 'none' && preservativeTier !== 'impossible'
+      ? preservativeDoseGrams(bottledGrams, preservativeDosePct)
+      : null;
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -379,6 +398,21 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
             {showBottledRow && bottledGrams !== null && (
               <div><dt>≈ Bottled (with extras)</dt><dd>{formatWeight(bottledGrams, weightUnit)}</dd></div>
+            )}
+            {preservativeGrams !== null && (
+              <div>
+                <dt>Preservative</dt>
+                <dd>
+                  {preservativeName} · {preservativeDosePct}% ·{' '}
+                  {formatWeight(preservativeGrams, weightUnit)} (whole batch)
+                  {preservative?.addBelowC != null
+                    ? ` — add after dilution, below ${preservative.addBelowC} °C`
+                    : ' — add after dilution, once cooled'}
+                  {preservativeTier === 'above-max' && preservative
+                    ? `. NOTE: above the ${preservative.ceiling === 'eu' ? 'EU legal maximum' : "supplier's maximum"} of ${preservative.maxPct}%.`
+                    : ''}
+                </dd>
+              </div>
             )}
             {finishedVolumeMl !== null && (
               <div><dt>≈ Finished volume</dt><dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd></div>
