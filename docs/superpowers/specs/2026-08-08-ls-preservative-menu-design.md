@@ -268,6 +268,19 @@ bare.
 The formaldehyde note does **not** print: it is a labelling duty for the finished
 product, not a bench instruction.
 
+**The row prints only once the maker has chosen** (user decision, 2026-08-09, raised by the
+final whole-branch review). The settings default to Suttocide A at 1%, so gating the row on
+the dose alone would print `Preservative | Suttocide A · 1% · 41 g` on *every* liquid-soap
+sheet — including recipes saved before this feature existed, and makers who never opened
+the snippet. The printed page is an instruction naming a specific commercial product, and
+the snippet's own copy says using one at all "is your informed call" (LS:3228); the sheet
+must not make that call on the maker's behalf.
+
+So `RecipeSettings` carries `preservativeSetByUser`, mirroring the existing
+`batchSetByUser` idiom for exactly this "did the maker touch it" question. It flips true
+when the picker, the custom name or the dose changes. The snippet is unaffected — it still
+opens showing a complete, legal worked dose. Only the sheet waits.
+
 **The row is always whole-batch, and says so.** This is the one place the scope machinery
 described in *Problem* bites, and it decides the row's mass:
 
