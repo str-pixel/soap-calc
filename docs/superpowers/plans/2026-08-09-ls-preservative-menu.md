@@ -706,6 +706,11 @@ Append to `packages/web/src/lib/recipeFile.test.ts`, inside the existing `descri
   it('round-trips a custom preservative through export and import', () => {
     const settings: RecipeSettings = {
       ...DEFAULT_SETTINGS,
+      // KOH, not DEFAULT_SETTINGS' NaOH: parseRecipeFile deliberately refuses an
+      // ls+naoh file (a combination this app never exports), so a NaOH fixture would
+      // fail this test for an unrelated reason. Same precedent as the existing
+      // 'round-trips a solution-basis additive through a file' test in this file.
+      lyeType: 'koh' as const,
       preservativeId: '',
       preservativeCustomName: 'Optiphen Plus',
       preservativeDosePct: '1.5',
