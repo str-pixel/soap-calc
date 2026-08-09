@@ -3,7 +3,11 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * Browser guard for the Preservative snippet below the Dilution panel (LS only):
  * collapsed by default, opens on click, and computes grams from the finished diluted
- * mass at the selected preservative's default dose.
+ * mass at the selected preservative's default dose. The picker is a <select> menu
+ * (`Which preservative`) whose first option is Custom…; choosing it clears the dose
+ * and reveals a Name field. A dose past a preservative's ceiling raises a named
+ * warning naming the EU as the authority, but is not clamped — the figure keeps
+ * following whatever dose the maker typed.
  */
 
 const weightInputs = (page: Page) => page.locator('input[aria-label^="Weight in"]');
@@ -31,7 +35,7 @@ test('collapsed by default, opens, and computes the dose from the finished dilut
   await expect(snippet).toHaveAttribute('open', /.*/);
 
   // The anchor choice is pre-selected with its default dose seeded.
-  await expect(page.getByRole('radio', { name: 'Suttocide A' })).toBeChecked();
+  await expect(page.getByLabel('Which preservative')).toHaveValue('suttocide-a');
   const dose = page.getByLabel('Dose (% of finished product)');
   await expect(dose).toHaveValue('1');
 
@@ -51,9 +55,24 @@ test('collapsed by default, opens, and computes the dose from the finished dilut
   // half-gram each rounding can contribute.
   expect(Math.abs(doseGrams - finished * 0.01)).toBeLessThanOrEqual(0.6);
 
-  // The ceiling is hard: typing past it raises the named clamp message and the figure
-  // stays at the 1% EU maximum.
+  // THE CEILING IS A WARNING, NOT A CLAMP — the inverse of what this spec asserted before
+  // 2026-08-09, and deliberately so. The alert still names the EU as the authority, but the
+  // figure follows the dose the maker typed. Do not "restore" the old assertion.
   await dose.fill('2');
   await expect(page.getByRole('alert').filter({ hasText: 'EU legal maximum' })).toBeVisible();
-  expect(await gramsOf('Preservative to add')).toBeCloseTo(doseGrams, 1);
+  // Both readings are independently formatWeight-rounded to the whole gram (same rounding
+  // the ≤0.6 g allowance above accounts for), so doubling doseGrams and comparing it to a
+  // second, separately rounded reading can drift by close to a gram even though the
+  // underlying (finishedGrams × pct / 100) maths is exact — hence the wide tolerance rather
+  // than a tight toBeCloseTo. Derivation: this reading's own rounding contributes up to 0.5 g,
+  // and doubling the earlier reading doubles ITS up-to-0.5 g rounding error too — 0.5 (this
+  // reading) + 2 × 0.5 (the doubled earlier reading) = 1.5.
+  expect(Math.abs((await gramsOf('Preservative to add')) - doseGrams * 2)).toBeLessThanOrEqual(1.5);
+
+  // Custom… clears the dose and offers a name field. Exact match: getByLabel is a
+  // case-insensitive substring match by default, and the toolbar's own "Recipe name"
+  // field elsewhere on the page also contains "name".
+  await page.getByLabel('Which preservative').selectOption('');
+  await expect(dose).toHaveValue('');
+  await expect(page.getByLabel('Name', { exact: true })).toBeVisible();
 });

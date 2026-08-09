@@ -1,29 +1,50 @@
 import {
   LS_PRESERVATIVES,
-  clampLsPreservativePct,
   lsPreservativeById,
+  lsPreservativeDoseTier,
   preservativeDoseGrams,
-  type LsPreservativeId,
 } from '@soap-calc/core';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
 type PreservativeSnippetProps = {
-  /** The finished, ready-for-use mass the dose is a % of: App passes
-   * vm.bottledSolutionGrams ?? vm.dilution?.solutionGrams — the same base the Dilution
-   * panel's own "≈ Finished product" row quotes, so the two can never disagree. Null
-   * before a dilution exists (no oils, or outside LS), which renders the
-   * enter-oils-first hint instead of figures. */
+  /** The finished, ready-for-use mass the dose is a % of — THE MASS OF WHAT THE MAKER IS
+   * ACTUALLY MAKING, which is whatever the Dilution panel's scope toggle says it is. In
+   * Whole batch that is the batch's finished product (lib/calculateAdditives'
+   * finishedProductGramsFor, the same figure the panel's own row quotes); in Custom amount
+   * it is the PORTION's own finished solution. It is emphatically NOT always the batch:
+   * this prop used to be handed the batch's mass in both scopes, so a 250 ml draw off a
+   * 4 kg batch was told to weigh in the batch's 40 g of Suttocide — about 16% w/w in that
+   * bottle, sixteen times the EU ceiling. App resolves it; `basisScope` says which of the
+   * two it resolved, and the two must move together.
+   *
+   * Null whenever there is no such mass — no oils/outside LS, or a Custom amount with no
+   * usable portion (nothing asked for yet, a refused paste reading, a paste already
+   * thinner than the target). Null renders the hint for that state; it must never quietly
+   * fall back to the batch, which is the bug above wearing a different hat. */
   finishedGrams: number | null;
+  /** Which scope `finishedGrams` was resolved in, so the base row can NAME the mass it
+   * quotes and the empty-state hint can ask for the right thing. Passed independently of
+   * `finishedGrams` because it is still the answer when that is null. Defaults to 'batch',
+   * matching DilutionPanel's own scope default. */
+  basisScope?: 'batch' | 'portion';
   /** The app-wide unit (BatchBasics' selector) — used as-is, like every bench readout. */
   weightUnit: WeightUnit;
-  /** Session-local UI state living in App beside portionTargetMl: which preservative is
-   * being sized, and the dose typed for it. Deliberately NOT recipe state — this snippet
-   * is a bench figure like the portion sizer, and it never adds anything to the recipe. */
-  preservativeId: LsPreservativeId;
-  onPreservativeIdChange: (id: LsPreservativeId) => void;
-  /** The dose as typed, % of finished product. Reseeded to the preservative's own
-   * default on every pick (see the pick handler below). */
+  /** Which preservative is being sized. `''` is the CUSTOM sentinel — the same idiom as
+   * an additive line's `catalogId: ''` — and means the app has no product data at all:
+   * no rated pH, no ceiling, no formaldehyde status. This pick, the custom name and the
+   * dose are recipe state: saved with the recipe, exported with it, printed on the
+   * batch sheet. */
+  preservativeId: string;
+  onPreservativeIdChange: (id: string) => void;
+  /** Free-text product name, used only while `preservativeId` is `''`. Retained across a
+   * switch to a known product so switching back restores it. */
+  preservativeCustomName: string;
+  onPreservativeCustomNameChange: (name: string) => void;
+  /** The dose as typed, % of finished product. Reseeded to a product's own default on
+   * every pick, and CLEARED when Custom… is chosen — there is no default to reseed from,
+   * and carrying the last product's dose onto an unknown one is the hazard the reseed
+   * rule exists to prevent. */
   dosePct: string;
   onDosePctChange: (value: string) => void;
 };
@@ -31,10 +52,11 @@ type PreservativeSnippetProps = {
 /**
  * The Preservative snippet — a collapsed <details> below the Dilution panel, LS only.
  *
- * A dose calculator, not a recipe field: it answers "how many grams of preservative go
- * into the bottle this batch fills" from the finished diluted mass, and writes nothing
- * back into the recipe. All product data, ceilings and the dose math live in core's
- * ls-preservatives.ts, where each constant carries its verification citation; the copy
+ * A recipe SETTING, not a recipe ingredient: the pick, the custom name and the dose are
+ * saved with the recipe, exported with it and printed on the batch sheet — but no
+ * preservative mass ever enters the oil, lye or batch arithmetic. All product data,
+ * ceilings and the dose math live in core's ls-preservatives.ts, where each constant
+ * carries its verification citation; the copy
  * here paraphrases the book's need logic (LS:3176–3181 water activity 0.984 diluted vs
  * 0.866 paste; LS:1638 the pH myth; LS:3051/LS:2975 milk, beer and botanicals; LS:3230
  * selling; LS:3228 the personal-batch choice) and the stage rule (after dilution, cooled
@@ -42,23 +64,30 @@ type PreservativeSnippetProps = {
  */
 export function PreservativeSnippet({
   finishedGrams,
+  basisScope = 'batch',
   weightUnit,
   preservativeId,
   onPreservativeIdChange,
+  preservativeCustomName,
+  onPreservativeCustomNameChange,
   dosePct,
   onDosePctChange,
 }: PreservativeSnippetProps) {
+  // undefined === the custom entry. Everything product-specific below is gated on it.
   const preservative = lsPreservativeById(preservativeId);
   const doseNum = Number(dosePct);
-  const doseEntered = dosePct.trim() !== '' && Number.isFinite(doseNum) && doseNum > 0;
-  // The HARD clamp: the grams below are computed from the clamped dose, never the typed
-  // one, so no figure on screen can exceed the ceiling — the alert explains the gap.
-  const { pct: effectivePct, clamped } = clampLsPreservativePct(doseNum, preservative);
+  // NO CLAMP. The grams are always the typed dose against the finished mass; the ladder
+  // below explains where that dose sits. A figure computed from a number the maker did
+  // not type is the thing this replaced.
+  const tier = lsPreservativeDoseTier(doseNum, preservative);
+  // Canonical echo: '2.500' and '2.5e0' both print as 2.5, the same rule parseAdditiveLine
+  // uses on import.
+  const typedPct = String(doseNum);
   const grams =
-    finishedGrams !== null && doseEntered
-      ? preservativeDoseGrams(finishedGrams, effectivePct)
+    finishedGrams !== null && tier !== 'none' && tier !== 'impossible'
+      ? preservativeDoseGrams(finishedGrams, doseNum)
       : null;
-  const [typicalLow, typicalHigh] = preservative.typicalPctRange;
+  const [typicalLow, typicalHigh] = preservative?.typicalPctRange ?? [0, 0];
   return (
     <details className="panel panel--nested preservative">
       {/* An h2 inside the summary keeps this titled like its sibling panels (same
@@ -68,8 +97,8 @@ export function PreservativeSnippet({
         <h2 className="panel__title">Preservative</h2>
       </summary>
       <p className="panel__subtitle">
-        Grams to weigh into the finished, diluted soap — a bench figure, never added into
-        the recipe
+        Grams to weigh into the finished, diluted soap — saved with the recipe, never
+        counted in the batch or lye figures
       </p>
       {/* THE NEED PARAGRAPH — why this snippet exists, in the book's logic and this
           app's words. Diluted vs paste is a WATER story, not a pH story: dilution lifts
@@ -88,40 +117,64 @@ export function PreservativeSnippet({
         if you sell, using one is responsible practice; for a small personal batch used
         up quickly, it is your informed call.
       </p>
-      {/* Same group shape as the Dilution panel's toggles: a visible legend as the
-          antecedent, and an accessible name that leads with it verbatim so
-          Label-in-Name holds. */}
-      <div
-        className="preservative__picker"
-        role="radiogroup"
-        aria-label="Which preservative to dose"
-      >
-        <span className="preservative__legend">Which preservative</span>
-        {LS_PRESERVATIVES.map((p) => (
-          <label className="field field--inline" key={p.id}>
+      <label className="field">
+        {/* The span IS the accessible name (wrapping label, no aria-label) — the same
+            one-string discipline as the dose field, and the visible caption the
+            radiogroup's legend used to carry. */}
+        <span>Which preservative</span>
+        <select
+          className="input"
+          value={preservativeId}
+          onChange={(e) => {
+            const id = e.target.value;
+            onPreservativeIdChange(id);
+            const picked = lsPreservativeById(id);
+            // Reseed, don't carry: each product's default IS product data (its own
+            // verified typical dose), so a dose typed for one must not silently become
+            // another's — 1% of Suttocide is legal, 1% of Germall is double the
+            // supplier's maximum. Custom has no default, so it clears instead.
+            onDosePctChange(picked ? String(picked.defaultPct) : '');
+          }}
+        >
+          <option value="">Custom…</option>
+          {LS_PRESERVATIVES.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {preservative ? (
+        /* The selected product's own facts — composition, rated pH, typical dose — so the
+           default in the field below arrives explained, not asserted. */
+        <p className="results-hint">
+          {preservative.composition} — {preservative.phNote}. Typical {typicalLow}–
+          {typicalHigh}% of the finished product.
+        </p>
+      ) : (
+        <>
+          <label className="field">
+            <span>Name</span>
             <input
-              type="radio"
-              name="lsPreservative"
-              checked={preservativeId === p.id}
-              onChange={() => {
-                onPreservativeIdChange(p.id);
-                // Reseed, don't carry: each product's default IS product data (its own
-                // verified typical dose), so a dose typed for one must not silently
-                // become another's — 1% of Suttocide is legal, 1% of Germall is double
-                // the supplier's maximum.
-                onDosePctChange(String(p.defaultPct));
-              }}
+              type="text"
+              className="input"
+              placeholder="Name"
+              maxLength={200}
+              value={preservativeCustomName}
+              onChange={(e) => onPreservativeCustomNameChange(e.target.value)}
             />
-            <span>{p.label}</span>
           </label>
-        ))}
-      </div>
-      {/* The selected product's own facts — composition, rated pH, typical dose — so
-          the default in the field below arrives explained, not asserted. */}
-      <p className="results-hint">
-        {preservative.composition} — {preservative.phNote}. Typical {typicalLow}–
-        {typicalHigh}% of the finished product.
-      </p>
+          {/* The research this table is built on, at the one moment it is useful: a maker
+              reaching for Custom… is most likely holding an organic-acid system, which is
+              inert at soap pH. The app has no data for their bottle and says so rather
+              than implying a rating it cannot cite. */}
+          <p className="results-hint">
+            Few preservatives hold at soap&apos;s pH 9–10. Organic-acid systems (sodium
+            benzoate, potassium sorbate, Geogard, Optiphen) are inert here. Check your
+            supplier&apos;s rated pH range and use level before dosing.
+          </p>
+        </>
+      )}
       <label className="field">
         {/* This span IS the input's accessible name (wrapping label, no aria-label) —
             same one-string discipline as the measured-paste field. */}
@@ -130,19 +183,30 @@ export function PreservativeSnippet({
           type="number"
           className="input input--number"
           min={0}
-          max={preservative.maxPct}
+          max={100}
           step={0.1}
           value={dosePct}
           onChange={(e) => onDosePctChange(e.target.value)}
         />
       </label>
-      {clamped && (
+      {tier === 'impossible' && (
         <p className="results-hint" role="alert">
-          Capped at {preservative.maxPct}% —{' '}
+          A dose must be 100% or less of the finished product.
+        </p>
+      )}
+      {preservative && tier === 'above-max' && (
+        <p className="results-hint" role="alert">
+          {typedPct}% is above{' '}
           {preservative.ceiling === 'eu'
-            ? `the EU legal maximum for ${preservative.label} in a finished product`
-            : `the supplier's own maximum for ${preservative.label}`}
-          . The figure below uses {preservative.maxPct}%.
+            ? `the EU legal maximum of ${preservative.maxPct}% for ${preservative.label} in a finished product`
+            : `${preservative.label}'s supplier maximum of ${preservative.maxPct}%`}
+          . The figures below use the {typedPct}% you entered.
+        </p>
+      )}
+      {preservative && tier === 'below-typical' && (
+        <p className="results-hint">
+          Below the typical {typicalLow}–{typicalHigh}% for {preservative.label} — an
+          under-dose may not protect the batch.
         </p>
       )}
       {finishedGrams !== null ? (
@@ -153,11 +217,12 @@ export function PreservativeSnippet({
                 <dt>Preservative to add</dt>
                 <dd>{formatWeight(grams, weightUnit)}</dd>
               </div>
-              {/* The same figure, and the same label, as the Dilution panel's own
-                  finished-product row — this is the mass the % is a percentage OF, so
-                  it renders beside the dose it explains. */}
+              {/* The mass the % is a percentage OF, beside the dose it explains — and
+                  NAMED for which of the two masses it is, in the scope toggle's own words
+                  ("Whole batch" / "Custom amount"), because they are different numbers and
+                  the dose follows whichever is in play. */}
               <div className="results-grid__item">
-                <dt>≈ Finished product</dt>
+                <dt>≈ Finished product ({basisScope === 'portion' ? 'custom amount' : 'whole batch'})</dt>
                 <dd>{formatWeight(finishedGrams, weightUnit)}</dd>
               </div>
             </dl>
@@ -168,7 +233,7 @@ export function PreservativeSnippet({
               for liquid soap, the diluted solution above). */}
           <p className="results-hint">
             Add after dilution, once the soap has cooled
-            {preservative.addBelowC !== null
+            {preservative?.addBelowC != null
               ? ` — below ${preservative.addBelowC} °C for ${preservative.label}`
               : ''}
             . Doses and legal maxima are % of the finished, ready-to-use product, which
@@ -176,6 +241,14 @@ export function PreservativeSnippet({
             from.
           </p>
         </>
+      ) : basisScope === 'portion' ? (
+        /* Custom amount with no portion to dose. The state-specific ask, not the batch's:
+           the maker is on a screen with no batch figures on it, and the one thing that
+           sizes a dose here is the amount they are making. */
+        <p className="results-hint">
+          Enter an Amount to make above — with Custom amount chosen, the dose is a % of the
+          portion you are making now, not of the whole batch.
+        </p>
       ) : (
         <p className="results-hint">
           Enter oils and a dilution target to size a preservative dose — the % is of the
@@ -191,7 +264,7 @@ export function PreservativeSnippet({
           released-formaldehyde figure at its dose. Naming DU here is deliberate: the
           composition line above lists three ingredients, and the note must say which
           one carries the duty. */}
-      {preservative.formaldehydeLabel !== 'not-a-releaser' && (
+      {preservative && preservative.formaldehydeLabel !== 'not-a-releaser' && (
         <p className="results-hint">
           {preservative.formaldehydeLabel === 'generally-required' ? (
             <>

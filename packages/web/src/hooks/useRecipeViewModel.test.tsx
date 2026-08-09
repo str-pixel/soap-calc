@@ -231,6 +231,29 @@ test('bottledSolutionGrams counts additive grams on top of the dilution solution
   );
   expect(vm.dilution).not.toBeNull();
   expect(vm.bottledSolutionGrams).toBeCloseTo(vm.dilution.solutionGrams + 10);
+  // …and finishedProductGrams is that same figure, never the bare solution: it is the one
+  // the ≈ Finished product row, the printed sheet and the preservative dose all read, so a
+  // fall-through to solutionGrams here would dose 4,000 g of a 4,010 g bottle.
+  expect(vm.finishedProductGrams).toBe(vm.bottledSolutionGrams);
+});
+
+test('finishedProductGrams exists exactly when a dilution does — the ?? fallback is unreachable here', () => {
+  // The resolver's second arm (dilution.solutionGrams) is kept for component-level callers
+  // that pass a dilution and no bottled figure. On the view-model path it cannot fire:
+  // bottledSolutionGrams is computed as `dilution && result ? … : null`, and dilution is
+  // itself null whenever result is. Pinned rather than argued, so a future refactor that
+  // makes the two nullable independently gets caught here.
+  let ls: any;
+  probe((v) => { ls = v; }, { lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
+  expect(ls.dilution).not.toBeNull();
+  expect(ls.bottledSolutionGrams).not.toBeNull();
+  expect(ls.finishedProductGrams).toBe(ls.bottledSolutionGrams);
+
+  let cp: any;
+  probe((v) => { cp = v; }, {}, 'cp');
+  expect(cp.dilution).toBeNull();
+  expect(cp.bottledSolutionGrams).toBeNull();
+  expect(cp.finishedProductGrams).toBeNull();
 });
 
 test('LS superfat above 3% raises the ls_superfat_high insight', () => {

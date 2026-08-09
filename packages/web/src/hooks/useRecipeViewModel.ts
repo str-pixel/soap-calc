@@ -8,6 +8,7 @@ import {
   computeExtrasGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
+  finishedProductGramsFor,
   splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
 import type { CureEstimate } from '../lib/cureEstimate';
@@ -108,6 +109,11 @@ export type RecipeViewModel = {
    * exceeds it) plus additives, append-mode PCSF oil, and split-liquid solids. Null
    * outside LS / before a dilution exists. See computeBottledSolutionGrams. */
   bottledSolutionGrams: number | null;
+  /** The finished, ready-for-use mass of the WHOLE batch: `bottledSolutionGrams` when there
+   * is one, else the dilution's own solution. The one figure the ≈ Finished product row,
+   * the printed sheet and the Preservative snippet's batch-scope dose base all quote — see
+   * finishedProductGramsFor. Null outside LS / before a dilution exists. */
+  finishedProductGrams: number | null;
   /** The best-known WHOLE-BATCH paste mass — anhydrousGrams + cookWaterGrams, corrected
    * for an alternative liquid's non-water solids. Feeds PortionDilutionResults' remaining-mode
    * ceiling/composition basis. Null before a dilution exists. */
@@ -744,6 +750,10 @@ export function useRecipeViewModel({
           wholeBatchPasteGrams,
         })
       : null;
+  // The same mass under one name for every surface that quotes it — see
+  // finishedProductGramsFor for the rule and for why its fallback arm, dead on this path,
+  // is still owed to the component-level callers.
+  const finishedProductGrams = finishedProductGramsFor(bottledSolutionGrams, dilution);
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
   // see normalizeSettingsWithinProcess) before resolving the profile.
   const profile = isProcessVariantId(settings.processVariant)
@@ -934,6 +944,7 @@ export function useRecipeViewModel({
     pcsfIsExtra,
     extrasGrams,
     bottledSolutionGrams,
+    finishedProductGrams,
     wholeBatchPasteGrams,
     batchWeightWithExtras,
     liveOilBatchFraction,

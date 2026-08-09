@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_KOH_BLEND_PERCENT } from '@soap-calc/core';
+import { DEFAULT_KOH_BLEND_PERCENT, LS_PRESERVATIVES } from '@soap-calc/core';
 import {
   createStarterLines,
   DEFAULT_SETTINGS,
@@ -477,5 +477,56 @@ describe('soapingTempF setting (2026-07-27)', () => {
   it('defaults to 125 and round-trips an explicit value', () => {
     expect(normalizeSettings(undefined).soapingTempF).toBe('125');
     expect(normalizeSettings({ soapingTempF: '150' } as any).soapingTempF).toBe('150');
+  });
+});
+
+describe('preservative settings', () => {
+  it('defaults to the table anchor at its own default dose', () => {
+    const s = normalizeSettings({});
+    expect(s.preservativeId).toBe(LS_PRESERVATIVES[0].id);
+    expect(s.preservativeDosePct).toBe(String(LS_PRESERVATIVES[0].defaultPct));
+    expect(s.preservativeCustomName).toBe('');
+  });
+
+  it('keeps a preservativeId the table still resolves', () => {
+    expect(normalizeSettings({ preservativeId: 'glydant-plus' }).preservativeId).toBe('glydant-plus');
+  });
+
+  it('keeps the empty custom sentinel rather than replacing it with the default', () => {
+    // '' is a real choice (Custom…), not a missing value.
+    const s = normalizeSettings({ preservativeId: '', preservativeCustomName: 'Optiphen Plus' });
+    expect(s.preservativeId).toBe('');
+    expect(s.preservativeCustomName).toBe('Optiphen Plus');
+  });
+
+  it('degrades an unresolvable id to a custom entry, keeping the name', () => {
+    // Mirrors normalizeAdditiveLine's stale-catalogId rule: the line survives as free text
+    // rather than as a broken pick whose <select> has no matching <option>.
+    const s = normalizeSettings({
+      preservativeId: 'quaternium-15',
+      preservativeCustomName: 'my bottle',
+    } as unknown as Partial<RecipeSettings>);
+    expect(s.preservativeId).toBe('');
+    expect(s.preservativeCustomName).toBe('my bottle');
+  });
+
+  it('keeps an over-ceiling dose verbatim — the panel warns, the loader does not edit', () => {
+    expect(normalizeSettings({ preservativeDosePct: '2' }).preservativeDosePct).toBe('2');
+  });
+
+  it('preservativeSetByUser defaults false — an absent flag on a legacy recipe must not print the row', () => {
+    expect(normalizeSettings({}).preservativeSetByUser).toBe(false);
+    expect(normalizeSettings(undefined).preservativeSetByUser).toBe(false);
+  });
+
+  it('preserves an explicit preservativeSetByUser: true', () => {
+    expect(normalizeSettings({ preservativeSetByUser: true }).preservativeSetByUser).toBe(true);
+  });
+
+  it('coerces anything other than a literal true to false', () => {
+    expect(
+      normalizeSettings({ preservativeSetByUser: 'true' } as unknown as Partial<RecipeSettings>)
+        .preservativeSetByUser,
+    ).toBe(false);
   });
 });

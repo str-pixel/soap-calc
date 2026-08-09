@@ -6,7 +6,10 @@ import {
   formatPropertyScore,
   formatSoapPropertyPercent,
   lsFinishedVolumeMl,
+  lsPreservativeById,
+  lsPreservativeDoseTier,
   LOW_COVERAGE_PERCENT,
+  preservativeDoseGrams,
   saturatedUnsaturatedRatio,
   fToC,
 } from '@soap-calc/core';
@@ -17,6 +20,7 @@ import {
   formatBatchSheetProperty,
   formatBatchWeight,
 } from '../lib/batchSheet';
+import { finishedProductGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
@@ -152,10 +156,51 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // dilution.solutionGrams whenever any of those are present (mirrors DilutionPanel's
   // own bottledGrams/showBottledRow). lsFinishedVolumeMl is the same core helper the
   // on-screen panel uses — never recomputed here.
-  const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
+  // The shared resolution (lib/calculateAdditives), not a hand-written ?? chain: the sheet
+  // is the page carried to the bench, so its finished-product figure must be the one the
+  // screen quotes — and the one the preservative dose is a percentage of.
+  const bottledGrams = finishedProductGramsFor(bottledSolutionGrams, dilution);
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
+
+  // THE SHEET IS A BATCH DOCUMENT. It prints the batch's dose and says so — never the
+  // Dilution panel's Custom amount portion. `dilutionScope` is session-only state that no
+  // recipe file records, so a sheet that mirrored it would print one mass before a reload
+  // and another after. bottledGrams is finishedProductGramsFor(...), the same expression
+  // behind vm.finishedProductGrams that App hands the snippet in batch scope, so sheet and
+  // panel cannot drift.
+  const preservative = lsPreservativeById(settings.preservativeId);
+  const preservativeDosePct = Number(settings.preservativeDosePct);
+  const preservativeTier = lsPreservativeDoseTier(preservativeDosePct, preservative);
+  const preservativeName =
+    preservative?.label ?? (settings.preservativeCustomName.trim() || 'Custom preservative');
+  // Gated on preservativeSetByUser as well as the tier: the three fields default to a real,
+  // legal Suttocide A dose so the snippet always opens with a complete worked example, but
+  // printing that unrequested default onto every liquid-soap sheet — including recipes
+  // saved before this flag existed — would name a specific commercial product the maker
+  // never chose. Only once the maker has touched the picker, the custom name or the dose
+  // does the row print; the snippet itself is unaffected and still opens showing the anchor
+  // choice.
+  const preservativeGrams =
+    bottledGrams !== null &&
+    settings.preservativeSetByUser &&
+    preservativeTier !== 'none' &&
+    preservativeTier !== 'impossible'
+      ? preservativeDoseGrams(bottledGrams, preservativeDosePct)
+      : null;
+  // Named locals so the row's <dd> isn't packing six things and two inline ternaries.
+  // Both always end their own sentence with a period — the base note used to end bare
+  // ("...once cooled" with no full stop) and only gained one when the ceiling note was
+  // appended, so a row with no ceiling breach printed no closing punctuation at all.
+  const stageNote =
+    preservative?.addBelowC != null
+      ? `add after dilution, below ${preservative.addBelowC} °C.`
+      : 'add after dilution, once cooled.';
+  const ceilingNote =
+    preservativeTier === 'above-max' && preservative
+      ? ` NOTE: above the ${preservative.ceiling === 'eu' ? 'EU legal maximum' : "supplier's maximum"} of ${preservative.maxPct}%.`
+      : '';
 
   return (
     <article className="batch-sheet" aria-hidden="true">
@@ -375,6 +420,16 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
             {showBottledRow && bottledGrams !== null && (
               <div><dt>≈ Bottled (with extras)</dt><dd>{formatWeight(bottledGrams, weightUnit)}</dd></div>
+            )}
+            {preservativeGrams !== null && (
+              <div>
+                <dt>Preservative</dt>
+                <dd>
+                  {preservativeName} · {preservativeDosePct}% ·{' '}
+                  {formatWeight(preservativeGrams, weightUnit)} (whole batch) — {stageNote}
+                  {ceilingNote}
+                </dd>
+              </div>
             )}
             {finishedVolumeMl !== null && (
               <div><dt>≈ Finished volume</dt><dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd></div>

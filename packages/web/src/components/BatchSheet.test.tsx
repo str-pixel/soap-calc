@@ -434,10 +434,21 @@ function lsSheetData(extra: {
   bottledSolutionGrams?: number | null;
   /** Overrides the fixture's own 'g' below — it is spread after it. */
   weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
+  /** Merged into the fixture's settings — for the preservative row, whose four fields
+   * live in RecipeSettings and do not affect calculateRecipe. */
+  preservative?: Partial<
+    Pick<
+      import('../lib/recipe').RecipeSettings,
+      | 'preservativeId'
+      | 'preservativeCustomName'
+      | 'preservativeDosePct'
+      | 'preservativeSetByUser'
+    >
+  >;
 }) {
-  const { targetExceedsPaste, dilutionOverride, ...rest } = extra;
+  const { targetExceedsPaste, dilutionOverride, preservative, ...rest } = extra;
   const lines = createStarterLines();
-  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const };
+  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const, ...preservative };
   const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
   if (!result || !displayTotals) throw new Error('expected a valid calculation');
 
@@ -856,4 +867,116 @@ test('printed Neutralize section shows the stearic-acid alternative and its cann
   expect(screen.getByText('Or stearic acid')).toBeTruthy();
   expect(screen.getByText('22 g')).toBeTruthy();
   expect(screen.getByText(/cannot be overdosed/i)).toBeTruthy();
+});
+
+test('prints the preservative dose against the whole batch, and names the scope', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '1', preservativeSetByUser: true },
+  })} />);
+  const row = screen.getByText('Preservative').closest('div')!;
+  expect(row.textContent).toContain('Suttocide A');
+  expect(row.textContent).toContain('1%');
+  expect(row.textContent).toContain('whole batch');
+  // 1% of the fixture's 4,059 g finished solution
+  expect(row.textContent).toContain('41 g');
+});
+
+test('a blank custom name still prints a headed row', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: {
+      preservativeId: '',
+      preservativeCustomName: '',
+      preservativeDosePct: '1',
+      preservativeSetByUser: true,
+    },
+  })} />);
+  expect(screen.getByText('Preservative').closest('div')!.textContent)
+    .toContain('Custom preservative');
+});
+
+test('a typed custom name reaches the sheet, not just the blank fallback', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: {
+      preservativeId: '',
+      preservativeCustomName: 'Optiphen Plus',
+      preservativeDosePct: '1',
+      preservativeSetByUser: true,
+    },
+  })} />);
+  expect(screen.getByText('Preservative').closest('div')!.textContent)
+    .toContain('Optiphen Plus');
+});
+
+test('no dose, no row', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: { preservativeDosePct: '', preservativeSetByUser: true },
+  })} />);
+  expect(screen.queryByText('Preservative')).toBeNull();
+});
+
+test('an impossible dose prints no row either', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: { preservativeDosePct: '150', preservativeSetByUser: true },
+  })} />);
+  expect(screen.queryByText('Preservative')).toBeNull();
+});
+
+test('an over-ceiling dose prints its caveat; the formaldehyde note stays off the sheet', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '2', preservativeSetByUser: true },
+  })} />);
+  expect(screen.getByText(/above the EU legal maximum/i)).toBeTruthy();
+  expect(screen.queryByText(/releases formaldehyde/i)).toBeNull();
+});
+
+test('the printed dose is the batch figure — the sheet has no portion scope to follow', () => {
+  // bottledSolutionGrams overrides the finished mass; the row must track THAT, and there
+  // must be no way to make it track a Custom-amount portion instead.
+  render(<BatchSheet data={lsSheetData({
+    bottledSolutionGrams: 2000,
+    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '1', preservativeSetByUser: true },
+  })} />);
+  expect(screen.getByText('Preservative').closest('div')!.textContent).toContain('20 g');
+});
+
+test('the row prints only once the maker has actually chosen — a valid dose is not enough', () => {
+  // RecipeSettings defaults preservativeId/preservativeDosePct to a real, legal Suttocide A
+  // dose so the snippet always opens complete — but a maker who never opened the snippet
+  // (or a recipe saved before this flag existed) must not have that default choice printed
+  // onto the sheet as an instruction naming a specific commercial product.
+  render(<BatchSheet data={lsSheetData({
+    preservative: {
+      preservativeId: 'suttocide-a',
+      preservativeDosePct: '1',
+      preservativeSetByUser: false,
+    },
+  })} />);
+  expect(screen.queryByText('Preservative')).toBeNull();
+});
+
+test('the row prints once the maker has chosen', () => {
+  render(<BatchSheet data={lsSheetData({
+    preservative: {
+      preservativeId: 'suttocide-a',
+      preservativeDosePct: '1',
+      preservativeSetByUser: true,
+    },
+  })} />);
+  expect(screen.getByText('Preservative')).toBeTruthy();
+});
+
+test('a below-50°C stage note prints for a preservative that actually carries one', () => {
+  // Every other sheet test uses suttocide-a, whose addBelowC is null, so the addBelowC
+  // arm of the stage note has never rendered in this file. Liquid Germall Plus's is 50.
+  render(<BatchSheet data={lsSheetData({
+    preservative: {
+      preservativeId: 'liquid-germall-plus',
+      preservativeDosePct: '0.5',
+      preservativeSetByUser: true,
+    },
+  })} />);
+  const row = screen.getByText('Preservative').closest('div')!;
+  expect(row.textContent).toContain('Liquid Germall Plus');
+  expect(row.textContent).toContain('add after dilution, below 50 °C');
+  expect(row.textContent).not.toContain('once cooled');
 });

@@ -15,8 +15,8 @@
  * maxima (Reg. EC/1223/2009) — for liquid soap the finished product is the diluted
  * solution, not the paste.
  *
- * CEILINGS. `maxPct` is the hard cap the UI clamps at; `ceiling` names who set it, because
- * the clamp message must say whether exceeding it is illegal (EU) or off-spec (supplier):
+ * CEILINGS. `maxPct` is the ceiling the UI warns above; `ceiling` names who set it, because
+ * the warning must say whether exceeding it is illegal (EU) or off-spec (supplier):
  * - 'eu': the Annex V active-substance cap converted to as-supplied strength.
  * - 'supplier': the supplier's own maximum recommended use level, which binds BELOW the
  *   EU cap for that product.
@@ -47,7 +47,7 @@ export type LsPreservativeId =
   | 'glydant-plus'
   | 'phenoxyethanol';
 
-/** Who set maxPct — decides whether the clamp message says "EU legal maximum" or
+/** Who set maxPct — decides whether the warning above it says "EU legal maximum" or
  * "supplier's maximum". */
 export type LsPreservativeCeiling = 'eu' | 'supplier';
 
@@ -56,6 +56,16 @@ export type LsPreservativeCeiling = 'eu' | 'supplier';
  * FORMALDEHYDE LABELLING notes for what each value asserts and why Germall's is the
  * middle one. */
 export type LsFormaldehydeLabel = 'generally-required' | 'check-threshold' | 'not-a-releaser';
+
+/** Where a typed dose sits relative to the selected product — see lsPreservativeDoseTier
+ * for the ordering rules and for why there is no 'above-typical'. */
+export type LsPreservativeDoseTier =
+  | 'none'
+  | 'impossible'
+  | 'unrated'
+  | 'below-typical'
+  | 'typical'
+  | 'above-max';
 
 export type LsPreservative = {
   id: LsPreservativeId;
@@ -171,25 +181,41 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
   },
 ];
 
-const BY_ID = new Map(LS_PRESERVATIVES.map((p) => [p.id, p]));
+const BY_ID: Map<string, LsPreservative> = new Map(LS_PRESERVATIVES.map((p) => [p.id, p]));
 
-export function lsPreservativeById(id: LsPreservativeId): LsPreservative {
-  // The map is built from the id union's own table, so this cannot miss for a
-  // well-typed caller; the non-null assertion keeps the return type honest.
-  return BY_ID.get(id) as LsPreservative;
+/** The table entry for an id, or `undefined` when there is none — which is how a caller
+ * learns the selection is a CUSTOM entry (`''`), and how a stale id from an older or
+ * hand-edited recipe degrades instead of throwing. Mirrors `catalogEntryById`. */
+export function lsPreservativeById(id: string): LsPreservative | undefined {
+  return BY_ID.get(id);
 }
 
-/** The dose the calculator may actually use: the entered % clamped into
- * [0, preservative.maxPct]. `clamped` is true only when the CEILING clipped it — junk
- * (NaN, negative) resolves to a zero dose without claiming a ceiling did it, so the UI's
- * clamp message never fires over an empty or half-typed field. */
-export function clampLsPreservativePct(
+/**
+ * Where a typed dose sits relative to a product's own numbers. Replaces the old clamp:
+ * the caller keeps the dose the user typed and renders a note, rather than substituting
+ * the ceiling and computing from that.
+ *
+ * `preservative` is absent for a custom entry, where the app has no rated range and no
+ * ceiling — only the two arithmetic judgements survive, and any real dose is 'unrated'.
+ *
+ * ORDER MATTERS. 'none' first, so a half-typed field ('', '-', '0.') raises nothing.
+ * Then 'impossible', which outranks 'above-max': more preservative than finished product
+ * is not a ceiling breach to warn about, it is a number that is not a dose.
+ *
+ * There is deliberately no 'above-typical' tier. Every shipped entry's typicalHigh IS its
+ * maxPct (pinned by a test in this file's suite), so the band between them is empty and
+ * such a tier would be unreachable copy. An entry with headroom must add it.
+ */
+export function lsPreservativeDoseTier(
   pct: number,
-  preservative: LsPreservative,
-): { pct: number; clamped: boolean } {
-  if (!Number.isFinite(pct) || pct <= 0) return { pct: 0, clamped: false };
-  if (pct > preservative.maxPct) return { pct: preservative.maxPct, clamped: true };
-  return { pct, clamped: false };
+  preservative?: LsPreservative,
+): LsPreservativeDoseTier {
+  if (!Number.isFinite(pct) || pct <= 0) return 'none';
+  if (pct > 100) return 'impossible';
+  if (!preservative) return 'unrated';
+  if (pct > preservative.maxPct) return 'above-max';
+  if (pct < preservative.typicalPctRange[0]) return 'below-typical';
+  return 'typical';
 }
 
 /** Grams of preservative (as supplied) for a finished-product mass at a % w/w dose.

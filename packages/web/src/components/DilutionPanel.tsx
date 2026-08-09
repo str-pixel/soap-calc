@@ -7,6 +7,7 @@ import {
   lsFinishedVolumeMl,
   type DilutionResult,
 } from '@soap-calc/core';
+import { finishedProductGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent } from '../lib/format';
 import { formatWeight } from '../lib/weightUnits';
 import {
@@ -531,7 +532,10 @@ export function DilutionPanel({
     );
   }
   const portionAltLiquidNote = portionAltLiquidClauses.join(' ');
-  const bottledGrams = bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
+  // One shared rule (lib/calculateAdditives) rather than a fourth hand-written ?? chain:
+  // the Preservative snippet doses against this same figure, so "what the finished product
+  // weighs" must not be able to mean two things in one column.
+  const bottledGrams = finishedProductGramsFor(bottledSolutionGrams, dilution);
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough — so the density bridge is shown here rather than
   // left implicit.
