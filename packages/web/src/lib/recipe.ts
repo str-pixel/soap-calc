@@ -1,4 +1,9 @@
-import { alternativeLiquidPreset, catalogEntryById } from '@soap-calc/core';
+import {
+  alternativeLiquidPreset,
+  catalogEntryById,
+  LS_PRESERVATIVES,
+  lsPreservativeById,
+} from '@soap-calc/core';
 import type { AdditiveStage, DoseBasis, DoseUnit, GelMode, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
 import { defaultVariantFor, isProcessVariantId, processForLyeType, type ProcessVariantId } from './process';
@@ -80,6 +85,13 @@ export type RecipeSettings = {
   soapingTempF: string;
   processVariant: ProcessVariantId;
   gelMode: GelMode;
+  /** Which preservative the LS dose calculator is sizing. `''` = a custom entry, the same
+   * sentinel as an additive's `catalogId`. Recipe state rather than session state because
+   * a custom product name that vanishes on reload is worthless — but it is a SETTING, not
+   * an ingredient: no preservative mass enters the oil, lye or batch arithmetic. */
+  preservativeId: string;
+  preservativeCustomName: string;
+  preservativeDosePct: string;
 };
 
 export function newLineKey(): string {
@@ -134,6 +146,9 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   soapingTempF: '125', // CP default — mid of the most-recommended 120–130 °F band
   processVariant: 'cp',
   gelMode: 'natural',
+  preservativeId: LS_PRESERVATIVES[0].id,
+  preservativeCustomName: '',
+  preservativeDosePct: String(LS_PRESERVATIVES[0].defaultPct),
 };
 
 /** One alternative liquid in a recipe: the singleton settings minus the global enable,
@@ -447,6 +462,14 @@ export function normalizeSettings(
     postCookSuperfatOils: normalizePostCookSuperfatOils(partial ?? {}),
     soapConcentrationPercent: settingString(partial?.soapConcentrationPercent, d.soapConcentrationPercent),
     soapingTempF: settingString(partial?.soapingTempF, d.soapingTempF),
+    // An id the table no longer resolves becomes a custom entry KEEPING the typed name —
+    // the same degradation normalizeAdditiveLine applies to a stale catalogId. '' is
+    // already a custom entry and passes through untouched.
+    preservativeId: lsPreservativeById(settingString(partial?.preservativeId, d.preservativeId))
+      ? settingString(partial?.preservativeId, d.preservativeId)
+      : '',
+    preservativeCustomName: settingString(partial?.preservativeCustomName, d.preservativeCustomName),
+    preservativeDosePct: settingString(partial?.preservativeDosePct, d.preservativeDosePct),
   };
 }
 

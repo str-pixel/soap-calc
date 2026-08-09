@@ -466,6 +466,25 @@ describe('recipeFile', () => {
     if (!parsed.ok) return;
     expect(parsed.data.additives[0].amount).toBe('0.5');
   });
+
+  it('round-trips a custom preservative through export and import', () => {
+    // koh, because an app-exported LS file always carries an LS lye choice — see the
+    // solution-basis-additive test above for the same requirement.
+    const settings: RecipeSettings = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+      preservativeId: '',
+      preservativeCustomName: 'Optiphen Plus',
+      preservativeDosePct: '1.5',
+    };
+    const payload = serializeRecipeFile('LS test', createStarterLines(), settings, [], 'ls');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.preservativeId).toBe('');
+    expect(parsed.data.settings.preservativeCustomName).toBe('Optiphen Plus');
+    expect(parsed.data.settings.preservativeDosePct).toBe('1.5');
+  });
 });
 
 describe('recipe file process', () => {

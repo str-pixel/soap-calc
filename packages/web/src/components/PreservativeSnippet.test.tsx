@@ -210,8 +210,8 @@ test('the copy owns the two framing claims: why a preservative, and that nothing
   // with the book's hedge (NEAR the no-growth line), never as categorically safe
   expect(screen.getByText(/whatever its pH/i)).toBeTruthy();
   expect(screen.getByText(/near the dryness that stops growth/i)).toBeTruthy();
-  // bench figure: the recipe itself is never touched
-  expect(screen.getByText(/never added into the recipe/i)).toBeTruthy();
+  // saved with the recipe, but never counted in the oil, lye or batch arithmetic
+  expect(screen.getByText(/never counted in the batch or lye figures/i)).toBeTruthy();
 });
 
 test('grams follow the app-wide weight unit', () => {

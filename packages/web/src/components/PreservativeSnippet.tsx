@@ -32,8 +32,9 @@ type PreservativeSnippetProps = {
   weightUnit: WeightUnit;
   /** Which preservative is being sized. `''` is the CUSTOM sentinel — the same idiom as
    * an additive line's `catalogId: ''` — and means the app has no product data at all:
-   * no rated pH, no ceiling, no formaldehyde status. Session state for now, held in App
-   * beside the other bench decisions; a later task moves it into the recipe. */
+   * no rated pH, no ceiling, no formaldehyde status. This pick, the custom name and the
+   * dose are recipe state: saved with the recipe, exported with it, printed on the
+   * batch sheet. */
   preservativeId: string;
   onPreservativeIdChange: (id: string) => void;
   /** Free-text product name, used only while `preservativeId` is `''`. Retained across a
@@ -51,10 +52,11 @@ type PreservativeSnippetProps = {
 /**
  * The Preservative snippet — a collapsed <details> below the Dilution panel, LS only.
  *
- * A dose calculator, not a recipe field: it answers "how many grams of preservative go
- * into the bottle this batch fills" from the finished diluted mass, and writes nothing
- * back into the recipe. All product data, ceilings and the dose math live in core's
- * ls-preservatives.ts, where each constant carries its verification citation; the copy
+ * A recipe SETTING, not a recipe ingredient: the pick, the custom name and the dose are
+ * saved with the recipe, exported with it and printed on the batch sheet — but no
+ * preservative mass ever enters the oil, lye or batch arithmetic. All product data,
+ * ceilings and the dose math live in core's ls-preservatives.ts, where each constant
+ * carries its verification citation; the copy
  * here paraphrases the book's need logic (LS:3176–3181 water activity 0.984 diluted vs
  * 0.866 paste; LS:1638 the pH myth; LS:3051/LS:2975 milk, beer and botanicals; LS:3230
  * selling; LS:3228 the personal-batch choice) and the stage rule (after dilution, cooled
@@ -73,8 +75,6 @@ export function PreservativeSnippet({
 }: PreservativeSnippetProps) {
   // undefined === the custom entry. Everything product-specific below is gated on it.
   const preservative = lsPreservativeById(preservativeId);
-  const displayName =
-    preservative?.label ?? (preservativeCustomName.trim() || 'Custom preservative');
   const doseNum = Number(dosePct);
   // NO CLAMP. The grams are always the typed dose against the finished mass; the ladder
   // below explains where that dose sits. A figure computed from a number the maker did
@@ -97,8 +97,8 @@ export function PreservativeSnippet({
         <h2 className="panel__title">Preservative</h2>
       </summary>
       <p className="panel__subtitle">
-        Grams to weigh into the finished, diluted soap — a bench figure, never added into
-        the recipe
+        Grams to weigh into the finished, diluted soap — saved with the recipe, never
+        counted in the batch or lye figures
       </p>
       {/* THE NEED PARAGRAPH — why this snippet exists, in the book's logic and this
           app's words. Diluted vs paste is a WATER story, not a pH story: dilution lifts
@@ -198,14 +198,14 @@ export function PreservativeSnippet({
         <p className="results-hint" role="alert">
           {typedPct}% is above{' '}
           {preservative.ceiling === 'eu'
-            ? `the EU legal maximum of ${preservative.maxPct}% for ${displayName} in a finished product`
-            : `${displayName}'s supplier maximum of ${preservative.maxPct}%`}
+            ? `the EU legal maximum of ${preservative.maxPct}% for ${preservative.label} in a finished product`
+            : `${preservative.label}'s supplier maximum of ${preservative.maxPct}%`}
           . The figures below use the {typedPct}% you entered.
         </p>
       )}
       {preservative && tier === 'below-typical' && (
         <p className="results-hint">
-          Below the typical {typicalLow}–{typicalHigh}% for {displayName} — an
+          Below the typical {typicalLow}–{typicalHigh}% for {preservative.label} — an
           under-dose may not protect the batch.
         </p>
       )}
@@ -268,13 +268,13 @@ export function PreservativeSnippet({
         <p className="results-hint">
           {preservative.formaldehydeLabel === 'generally-required' ? (
             <>
-              {displayName} is a formaldehyde releaser: at an effective dose an
+              {preservative.label} is a formaldehyde releaser: at an effective dose an
               EU-market label will generally need the warning &ldquo;releases
               formaldehyde&rdquo;.
             </>
           ) : (
             <>
-              {displayName} contains a formaldehyde releaser (diazolidinyl urea)
+              {preservative.label} contains a formaldehyde releaser (diazolidinyl urea)
               — for an EU-market label, check released formaldehyde against the 0.001%
               &ldquo;releases formaldehyde&rdquo; threshold.
             </>

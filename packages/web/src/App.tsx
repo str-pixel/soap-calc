@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
-import { LS_PRESERVATIVES } from '@soap-calc/core';
 import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
@@ -140,16 +139,6 @@ export default function App() {
   // "Dilute it all" vs "make just this much now" — a decision about the session, not the
   // recipe, so it lives here rather than in settings. Defaults to the whole batch.
   const [dilutionScope, setDilutionScope] = useState<DilutionScope>('batch');
-  // The preservative being sized and the dose typed for it — bench decisions like
-  // portionTargetMl above (which bottle of preservative is on the bench today is not a
-  // property of the formula), so they live here, survive process switches within a
-  // session, and never enter the recipe. Seeded from the table's anchor entry so the
-  // snippet opens showing a complete, legal dose rather than an empty field.
-  const [preservativeId, setPreservativeId] = useState<string>(LS_PRESERVATIVES[0].id);
-  const [preservativeCustomName, setPreservativeCustomName] = useState('');
-  const [preservativeDosePct, setPreservativeDosePct] = useState(
-    String(LS_PRESERVATIVES[0].defaultPct),
-  );
   useEffect(() => {
     saveMoldSizerInput(moldSizerInput);
   }, [moldSizerInput]);
@@ -580,12 +569,18 @@ export default function App() {
                 finishedGrams={preservativeBaseGrams}
                 basisScope={dilutionScope}
                 weightUnit={weightUnit}
-                preservativeId={preservativeId}
-                onPreservativeIdChange={setPreservativeId}
-                preservativeCustomName={preservativeCustomName}
-                onPreservativeCustomNameChange={setPreservativeCustomName}
-                dosePct={preservativeDosePct}
-                onDosePctChange={setPreservativeDosePct}
+                preservativeId={settings.preservativeId}
+                onPreservativeIdChange={(preservativeId) =>
+                  setSettings((s) => ({ ...s, preservativeId }))
+                }
+                preservativeCustomName={settings.preservativeCustomName}
+                onPreservativeCustomNameChange={(preservativeCustomName) =>
+                  setSettings((s) => ({ ...s, preservativeCustomName }))
+                }
+                dosePct={settings.preservativeDosePct}
+                onDosePctChange={(preservativeDosePct) =>
+                  setSettings((s) => ({ ...s, preservativeDosePct }))
+                }
               />
             )}
             {processOffers(process, 'neutralize') && vm.neutralization && (
