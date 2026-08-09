@@ -31,7 +31,7 @@ test('collapsed by default, opens, and computes the dose from the finished dilut
   await expect(snippet).toHaveAttribute('open', /.*/);
 
   // The anchor choice is pre-selected with its default dose seeded.
-  await expect(page.getByRole('radio', { name: 'Suttocide A' })).toBeChecked();
+  await expect(page.getByLabel('Which preservative')).toHaveValue('suttocide-a');
   const dose = page.getByLabel('Dose (% of finished product)');
   await expect(dose).toHaveValue('1');
 

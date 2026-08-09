@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
-import { LS_PRESERVATIVES, type LsPreservativeId } from '@soap-calc/core';
+import { LS_PRESERVATIVES } from '@soap-calc/core';
 import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
@@ -145,9 +145,8 @@ export default function App() {
   // property of the formula), so they live here, survive process switches within a
   // session, and never enter the recipe. Seeded from the table's anchor entry so the
   // snippet opens showing a complete, legal dose rather than an empty field.
-  const [preservativeId, setPreservativeId] = useState<LsPreservativeId>(
-    LS_PRESERVATIVES[0].id,
-  );
+  const [preservativeId, setPreservativeId] = useState<string>(LS_PRESERVATIVES[0].id);
+  const [preservativeCustomName, setPreservativeCustomName] = useState('');
   const [preservativeDosePct, setPreservativeDosePct] = useState(
     String(LS_PRESERVATIVES[0].defaultPct),
   );
@@ -583,6 +582,8 @@ export default function App() {
                 weightUnit={weightUnit}
                 preservativeId={preservativeId}
                 onPreservativeIdChange={setPreservativeId}
+                preservativeCustomName={preservativeCustomName}
+                onPreservativeCustomNameChange={setPreservativeCustomName}
                 dosePct={preservativeDosePct}
                 onDosePctChange={setPreservativeDosePct}
               />

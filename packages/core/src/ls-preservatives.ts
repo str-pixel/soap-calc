@@ -181,12 +181,13 @@ export const LS_PRESERVATIVES: readonly LsPreservative[] = [
   },
 ];
 
-const BY_ID = new Map(LS_PRESERVATIVES.map((p) => [p.id, p]));
+const BY_ID: Map<string, LsPreservative> = new Map(LS_PRESERVATIVES.map((p) => [p.id, p]));
 
-export function lsPreservativeById(id: LsPreservativeId): LsPreservative {
-  // The map is built from the id union's own table, so this cannot miss for a
-  // well-typed caller; the non-null assertion keeps the return type honest.
-  return BY_ID.get(id) as LsPreservative;
+/** The table entry for an id, or `undefined` when there is none — which is how a caller
+ * learns the selection is a CUSTOM entry (`''`), and how a stale id from an older or
+ * hand-edited recipe degrades instead of throwing. Mirrors `catalogEntryById`. */
+export function lsPreservativeById(id: string): LsPreservative | undefined {
+  return BY_ID.get(id);
 }
 
 /**

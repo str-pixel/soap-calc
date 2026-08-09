@@ -3,7 +3,6 @@ import {
   lsPreservativeById,
   lsPreservativeDoseTier,
   preservativeDoseGrams,
-  type LsPreservativeId,
 } from '@soap-calc/core';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
@@ -31,13 +30,20 @@ type PreservativeSnippetProps = {
   basisScope?: 'batch' | 'portion';
   /** The app-wide unit (BatchBasics' selector) — used as-is, like every bench readout. */
   weightUnit: WeightUnit;
-  /** Session-local UI state living in App beside portionTargetMl: which preservative is
-   * being sized, and the dose typed for it. Deliberately NOT recipe state — this snippet
-   * is a bench figure like the portion sizer, and it never adds anything to the recipe. */
-  preservativeId: LsPreservativeId;
-  onPreservativeIdChange: (id: LsPreservativeId) => void;
-  /** The dose as typed, % of finished product. Reseeded to the preservative's own
-   * default on every pick (see the pick handler below). */
+  /** Which preservative is being sized. `''` is the CUSTOM sentinel — the same idiom as
+   * an additive line's `catalogId: ''` — and means the app has no product data at all:
+   * no rated pH, no ceiling, no formaldehyde status. Recipe state (settings), so the pick
+   * and its dose survive a reload and reach the batch sheet. */
+  preservativeId: string;
+  onPreservativeIdChange: (id: string) => void;
+  /** Free-text product name, used only while `preservativeId` is `''`. Retained across a
+   * switch to a known product so switching back restores it. */
+  preservativeCustomName: string;
+  onPreservativeCustomNameChange: (name: string) => void;
+  /** The dose as typed, % of finished product. Reseeded to a product's own default on
+   * every pick, and CLEARED when Custom… is chosen — there is no default to reseed from,
+   * and carrying the last product's dose onto an unknown one is the hazard the reseed
+   * rule exists to prevent. */
   dosePct: string;
   onDosePctChange: (value: string) => void;
 };
@@ -60,10 +66,15 @@ export function PreservativeSnippet({
   weightUnit,
   preservativeId,
   onPreservativeIdChange,
+  preservativeCustomName,
+  onPreservativeCustomNameChange,
   dosePct,
   onDosePctChange,
 }: PreservativeSnippetProps) {
+  // undefined === the custom entry. Everything product-specific below is gated on it.
   const preservative = lsPreservativeById(preservativeId);
+  const displayName =
+    preservative?.label ?? (preservativeCustomName.trim() || 'Custom preservative');
   const doseNum = Number(dosePct);
   // NO CLAMP. The grams are always the typed dose against the finished mass; the ladder
   // below explains where that dose sits. A figure computed from a number the maker did
@@ -76,7 +87,7 @@ export function PreservativeSnippet({
     finishedGrams !== null && tier !== 'none' && tier !== 'impossible'
       ? preservativeDoseGrams(finishedGrams, doseNum)
       : null;
-  const [typicalLow, typicalHigh] = preservative.typicalPctRange;
+  const [typicalLow, typicalHigh] = preservative?.typicalPctRange ?? [0, 0];
   return (
     <details className="panel panel--nested preservative">
       {/* An h2 inside the summary keeps this titled like its sibling panels (same
@@ -106,40 +117,64 @@ export function PreservativeSnippet({
         if you sell, using one is responsible practice; for a small personal batch used
         up quickly, it is your informed call.
       </p>
-      {/* Same group shape as the Dilution panel's toggles: a visible legend as the
-          antecedent, and an accessible name that leads with it verbatim so
-          Label-in-Name holds. */}
-      <div
-        className="preservative__picker"
-        role="radiogroup"
-        aria-label="Which preservative to dose"
-      >
-        <span className="preservative__legend">Which preservative</span>
-        {LS_PRESERVATIVES.map((p) => (
-          <label className="field field--inline" key={p.id}>
+      <label className="field">
+        {/* The span IS the accessible name (wrapping label, no aria-label) — the same
+            one-string discipline as the dose field, and the visible caption the
+            radiogroup's legend used to carry. */}
+        <span>Which preservative</span>
+        <select
+          className="input"
+          value={preservativeId}
+          onChange={(e) => {
+            const id = e.target.value;
+            onPreservativeIdChange(id);
+            const picked = lsPreservativeById(id);
+            // Reseed, don't carry: each product's default IS product data (its own
+            // verified typical dose), so a dose typed for one must not silently become
+            // another's — 1% of Suttocide is legal, 1% of Germall is double the
+            // supplier's maximum. Custom has no default, so it clears instead.
+            onDosePctChange(picked ? String(picked.defaultPct) : '');
+          }}
+        >
+          <option value="">Custom…</option>
+          {LS_PRESERVATIVES.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {preservative ? (
+        /* The selected product's own facts — composition, rated pH, typical dose — so the
+           default in the field below arrives explained, not asserted. */
+        <p className="results-hint">
+          {preservative.composition} — {preservative.phNote}. Typical {typicalLow}–
+          {typicalHigh}% of the finished product.
+        </p>
+      ) : (
+        <>
+          <label className="field">
+            <span>Name</span>
             <input
-              type="radio"
-              name="lsPreservative"
-              checked={preservativeId === p.id}
-              onChange={() => {
-                onPreservativeIdChange(p.id);
-                // Reseed, don't carry: each product's default IS product data (its own
-                // verified typical dose), so a dose typed for one must not silently
-                // become another's — 1% of Suttocide is legal, 1% of Germall is double
-                // the supplier's maximum.
-                onDosePctChange(String(p.defaultPct));
-              }}
+              type="text"
+              className="input"
+              placeholder="Name"
+              maxLength={200}
+              value={preservativeCustomName}
+              onChange={(e) => onPreservativeCustomNameChange(e.target.value)}
             />
-            <span>{p.label}</span>
           </label>
-        ))}
-      </div>
-      {/* The selected product's own facts — composition, rated pH, typical dose — so
-          the default in the field below arrives explained, not asserted. */}
-      <p className="results-hint">
-        {preservative.composition} — {preservative.phNote}. Typical {typicalLow}–
-        {typicalHigh}% of the finished product.
-      </p>
+          {/* The research this table is built on, at the one moment it is useful: a maker
+              reaching for Custom… is most likely holding an organic-acid system, which is
+              inert at soap pH. The app has no data for their bottle and says so rather
+              than implying a rating it cannot cite. */}
+          <p className="results-hint">
+            Few preservatives hold at soap&apos;s pH 9–10. Organic-acid systems (sodium
+            benzoate, potassium sorbate, Geogard, Optiphen) are inert here. Check your
+            supplier&apos;s rated pH range and use level before dosing.
+          </p>
+        </>
+      )}
       <label className="field">
         {/* This span IS the input's accessible name (wrapping label, no aria-label) —
             same one-string discipline as the measured-paste field. */}
@@ -159,18 +194,18 @@ export function PreservativeSnippet({
           A dose must be 100% or less of the finished product.
         </p>
       )}
-      {tier === 'above-max' && (
+      {preservative && tier === 'above-max' && (
         <p className="results-hint" role="alert">
           {typedPct}% is above{' '}
           {preservative.ceiling === 'eu'
-            ? `the EU legal maximum of ${preservative.maxPct}% for ${preservative.label} in a finished product`
-            : `${preservative.label}'s supplier maximum of ${preservative.maxPct}%`}
+            ? `the EU legal maximum of ${preservative.maxPct}% for ${displayName} in a finished product`
+            : `${displayName}'s supplier maximum of ${preservative.maxPct}%`}
           . The figures below use the {typedPct}% you entered.
         </p>
       )}
-      {tier === 'below-typical' && (
+      {preservative && tier === 'below-typical' && (
         <p className="results-hint">
-          Below the typical {typicalLow}–{typicalHigh}% for {preservative.label} — an
+          Below the typical {typicalLow}–{typicalHigh}% for {displayName} — an
           under-dose may not protect the batch.
         </p>
       )}
@@ -198,7 +233,7 @@ export function PreservativeSnippet({
               for liquid soap, the diluted solution above). */}
           <p className="results-hint">
             Add after dilution, once the soap has cooled
-            {preservative.addBelowC !== null
+            {preservative?.addBelowC != null
               ? ` — below ${preservative.addBelowC} °C for ${preservative.label}`
               : ''}
             . Doses and legal maxima are % of the finished, ready-to-use product, which
@@ -229,17 +264,17 @@ export function PreservativeSnippet({
           released-formaldehyde figure at its dose. Naming DU here is deliberate: the
           composition line above lists three ingredients, and the note must say which
           one carries the duty. */}
-      {preservative.formaldehydeLabel !== 'not-a-releaser' && (
+      {preservative && preservative.formaldehydeLabel !== 'not-a-releaser' && (
         <p className="results-hint">
           {preservative.formaldehydeLabel === 'generally-required' ? (
             <>
-              {preservative.label} is a formaldehyde releaser: at an effective dose an
+              {displayName} is a formaldehyde releaser: at an effective dose an
               EU-market label will generally need the warning &ldquo;releases
               formaldehyde&rdquo;.
             </>
           ) : (
             <>
-              {preservative.label} contains a formaldehyde releaser (diazolidinyl urea)
+              {displayName} contains a formaldehyde releaser (diazolidinyl urea)
               — for an EU-market label, check released formaldehyde against the 0.001%
               &ldquo;releases formaldehyde&rdquo; threshold.
             </>

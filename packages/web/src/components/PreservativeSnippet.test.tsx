@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { LS_PRESERVATIVES, type LsPreservativeId } from '@soap-calc/core';
+import { LS_PRESERVATIVES } from '@soap-calc/core';
 import type { WeightUnit } from '../lib/recipe';
 import { PreservativeSnippet } from './PreservativeSnippet';
 
@@ -19,7 +19,8 @@ function Harness({
   basisScope?: 'batch' | 'portion';
   weightUnit?: WeightUnit;
 }) {
-  const [id, setId] = useState<LsPreservativeId>(LS_PRESERVATIVES[0].id);
+  const [id, setId] = useState<string>(LS_PRESERVATIVES[0].id);
+  const [customName, setCustomName] = useState('');
   const [dose, setDose] = useState(String(LS_PRESERVATIVES[0].defaultPct));
   return (
     <PreservativeSnippet
@@ -28,10 +29,16 @@ function Harness({
       weightUnit={weightUnit}
       preservativeId={id}
       onPreservativeIdChange={setId}
+      preservativeCustomName={customName}
+      onPreservativeCustomNameChange={setCustomName}
       dosePct={dose}
       onDosePctChange={setDose}
     />
   );
+}
+
+function picker(): HTMLSelectElement {
+  return screen.getByLabelText('Which preservative') as HTMLSelectElement;
 }
 
 function doseInput(): HTMLInputElement {
@@ -45,22 +52,25 @@ test('renders collapsed by default — a snippet, not an open panel', () => {
   expect(details!.hasAttribute('open')).toBe(false);
 });
 
-test('offers the four preservatives as a radio group, anchor choice selected', () => {
+test('offers the four preservatives plus Custom… in one menu, anchor choice selected', () => {
   render(<Harness />);
-  for (const label of ['Suttocide A', 'Liquid Germall Plus', 'Glydant Plus', 'Phenoxyethanol']) {
-    expect(screen.getByRole('radio', { name: label })).toBeTruthy();
-  }
-  expect((screen.getByRole('radio', { name: 'Suttocide A' }) as HTMLInputElement).checked).toBe(
-    true,
-  );
+  const options = Array.from(picker().options).map((o) => o.textContent);
+  expect(options).toEqual([
+    'Custom…',
+    'Suttocide A',
+    'Liquid Germall Plus',
+    'Glydant Plus',
+    'Phenoxyethanol',
+  ]);
+  expect(picker().value).toBe('suttocide-a');
 });
 
-test("Label-in-Name: the group's accessible name leads with its visible caption", () => {
+test("Label-in-Name: the menu's accessible name is its visible caption", () => {
+  // Inherited obligation from the radiogroup this replaced — the visible caption and the
+  // accessible name must not diverge.
   render(<Harness />);
-  const group = screen.getByRole('radiogroup');
-  const visibleLegend = 'Which preservative';
-  expect(group.textContent).toContain(visibleLegend);
-  expect(group.getAttribute('aria-label')!.startsWith(visibleLegend)).toBe(true);
+  expect(screen.getByText('Which preservative')).toBeTruthy();
+  expect(picker()).toBeTruthy(); // getByLabelText('Which preservative') resolved it
 });
 
 test('the dose is seeded with the default and computes grams from the finished mass', () => {
@@ -96,7 +106,7 @@ test('a Custom amount with nothing to dose asks for the amount, not for oils', (
 
 test('picking another preservative reseeds the dose with ITS default and shows its facts', () => {
   render(<Harness finishedGrams={4000} />);
-  fireEvent.click(screen.getByRole('radio', { name: 'Liquid Germall Plus' }));
+  fireEvent.change(picker(), { target: { value: 'liquid-germall-plus' } });
   expect(doseInput().value).toBe('0.5');
   // 0.5% of 4,000 g
   expect(screen.getByText('20 g')).toBeTruthy();
@@ -120,7 +130,7 @@ test('a dose above an EU ceiling is NOT clamped — the alert names the EU, the 
 
 test("a dose above a supplier ceiling says whose maximum it is, and still computes", () => {
   render(<Harness finishedGrams={4000} />);
-  fireEvent.click(screen.getByRole('radio', { name: 'Liquid Germall Plus' }));
+  fireEvent.change(picker(), { target: { value: 'liquid-germall-plus' } });
   fireEvent.change(doseInput(), { target: { value: '0.8' } });
   const alert = screen.getByRole('alert');
   expect(alert.textContent).toContain('0.5%');
@@ -181,16 +191,16 @@ test('every formaldehyde releaser says so — outright where the threshold is ge
   render(<Harness />);
   // Suttocide A (default) and Glydant Plus: the label duty stated outright
   expect(screen.getByText(/will generally need the warning/)).toBeTruthy();
-  fireEvent.click(screen.getByRole('radio', { name: 'Glydant Plus' }));
+  fireEvent.change(picker(), { target: { value: 'glydant-plus' } });
   expect(screen.getByText(/will generally need the warning/)).toBeTruthy();
   // Germall: no categorical claim, but never silence — it contains a releaser, and the
   // note says which one and what to check it against
-  fireEvent.click(screen.getByRole('radio', { name: 'Liquid Germall Plus' }));
+  fireEvent.change(picker(), { target: { value: 'liquid-germall-plus' } });
   expect(screen.queryByText(/will generally need the warning/)).toBeNull();
   expect(screen.getByText(/formaldehyde releaser \(diazolidinyl urea\)/)).toBeTruthy();
   expect(screen.getByText(/check released formaldehyde/)).toBeTruthy();
   // Phenoxyethanol releases nothing, so nothing about formaldehyde renders at all
-  fireEvent.click(screen.getByRole('radio', { name: 'Phenoxyethanol' }));
+  fireEvent.change(picker(), { target: { value: 'phenoxyethanol' } });
   expect(screen.queryByText(/formaldehyde/i)).toBeNull();
 });
 
@@ -208,4 +218,57 @@ test('grams follow the app-wide weight unit', () => {
   render(<Harness finishedGrams={4000} weightUnit="oz" />);
   // 40 g ≈ 1.4 oz (formatWeight's magnitude-aware single decimal)
   expect(screen.getByText('1.4 oz')).toBeTruthy();
+});
+
+test('picking Custom… clears the dose — a dose typed for one product must not walk onto another', () => {
+  render(<Harness finishedGrams={4000} />);
+  expect(doseInput().value).toBe('1');
+  fireEvent.change(picker(), { target: { value: '' } });
+  expect(doseInput().value).toBe('');
+  expect(screen.queryByText('Preservative to add')).toBeNull();
+});
+
+test('Custom… reveals a name field and suppresses every product-specific fact', () => {
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(picker(), { target: { value: '' } });
+  expect(screen.getByLabelText('Name')).toBeTruthy();
+  // no composition, no rated pH, no typical range, no formaldehyde note, no °C
+  expect(screen.queryByText(/Sodium hydroxymethylglycinate/)).toBeNull();
+  expect(screen.queryByText(/Rated pH/)).toBeNull();
+  expect(screen.queryByText(/Typical /)).toBeNull();
+  expect(screen.queryByText(/formaldehyde/i)).toBeNull();
+  expect(screen.queryByText(/below 50 °C/)).toBeNull();
+});
+
+test('Custom… carries the standing note about what does not work at soap pH', () => {
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(picker(), { target: { value: '' } });
+  expect(screen.getByText(/Few preservatives hold at soap's pH 9–10/)).toBeTruthy();
+  expect(screen.getByText(/Organic-acid systems/)).toBeTruthy();
+});
+
+test('a custom dose still computes, and still refuses the impossible', () => {
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(picker(), { target: { value: '' } });
+  fireEvent.change(doseInput(), { target: { value: '1.5' } });
+  expect(screen.getByText('60 g')).toBeTruthy();      // 1.5% of 4,000 g
+  expect(screen.queryByRole('alert')).toBeNull();     // no ceiling to breach
+  fireEvent.change(doseInput(), { target: { value: '150' } });
+  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+});
+
+test('Custom… suppresses product facts but never scope facts', () => {
+  render(<Harness finishedGrams={257.5} basisScope="portion" />);
+  fireEvent.change(picker(), { target: { value: '' } });
+  fireEvent.change(doseInput(), { target: { value: '1' } });
+  expect(screen.getByText('≈ Finished product (custom amount)')).toBeTruthy();
+  expect(screen.getByText('2.6 g')).toBeTruthy();
+});
+
+test('switching back from Custom… to a product restores its own default dose', () => {
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(picker(), { target: { value: '' } });
+  fireEvent.change(picker(), { target: { value: 'glydant-plus' } });
+  expect(doseInput().value).toBe('0.36');
+  expect(screen.getByText(/DMDM hydantoin/)).toBeTruthy();
 });

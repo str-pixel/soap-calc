@@ -991,21 +991,6 @@ a:hover {
   transform: rotate(45deg);
 }
 
-/* Same row shape as the Dilution panel's toggles: legend as the antecedent, then the
-   inline radio fields, wrapping as the column narrows. */
-.preservative__picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.preservative__legend {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  align-self: center;
-}
-
 /* ── Split-liquid ─────────────────────────────────────────────────────── */
 .split-liquid-preview {
   grid-column: 1 / -1;

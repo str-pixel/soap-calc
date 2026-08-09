@@ -94,6 +94,11 @@ describe('the preservative table', () => {
       expect(lsPreservativeById(p.id)).toBe(p);
     }
   });
+
+  test('an id outside the table is undefined — the custom sentinel and any stale id', () => {
+    expect(lsPreservativeById('')).toBeUndefined();
+    expect(lsPreservativeById('optiphen-plus')).toBeUndefined();
+  });
 });
 
 describe('preservativeDoseGrams', () => {
