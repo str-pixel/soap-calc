@@ -508,8 +508,10 @@ In `packages/web/src/components/PreservativeSnippet.tsx`, change the two id prop
 ```tsx
   /** Which preservative is being sized. `''` is the CUSTOM sentinel — the same idiom as
    * an additive line's `catalogId: ''` — and means the app has no product data at all:
-   * no rated pH, no ceiling, no formaldehyde status. Recipe state (settings), so the pick
-   * and its dose survive a reload and reach the batch sheet. */
+   * no rated pH, no ceiling, no formaldehyde status. Session state for now, held in App
+   * beside the other bench decisions; Task 4 moves it into the recipe. Describe only what
+   * is true in THIS commit — App's own comment on the same state says "never enter the
+   * recipe", and two comments contradicting each other is worse than either. */
   preservativeId: string;
   onPreservativeIdChange: (id: string) => void;
   /** Free-text product name, used only while `preservativeId` is `''`. Retained across a
@@ -818,7 +820,23 @@ Remove `LS_PRESERVATIVES` from App's core import if nothing else uses it.
 
 In `packages/web/src/components/PreservativeSnippet.tsx`:
 
-The props doc at lines 34-36 was replaced in Task 3; confirm it now says recipe state (it does).
+**The `preservativeId` props doc** — Task 3 left it describing session state, which was
+true then and is false now. Rewrite it to say the pick, the custom name and the dose are
+recipe state: saved with the recipe, exported with it, printed on the sheet — and delete
+its "Task 4 moves it into the recipe" forward reference, which this task discharges.
+
+**Delete the dead `displayName`.** Task 3 introduced
+`preservative?.label ?? (preservativeCustomName.trim() || 'Custom preservative')` in this
+component, but every use site sits inside a `preservative &&` gate, so the fallback branch
+is unreachable — and it stays unreachable after this task, because the snippet never
+echoes a custom product name anywhere. Replace each use with `preservative.label` and
+remove the binding. The `Custom preservative` fallback is genuinely needed only on the
+batch sheet, where Task 5 computes it independently.
+
+**Update `App.tsx`'s stale comment** on the preservative state block (the one that today
+says these are bench decisions that "never enter the recipe") — it is the counterpart of
+the props doc above and must move with it, or the contradiction simply changes which file
+it lives in.
 
 The component doc (lines 48-50) — replace "A dose calculator, not a recipe field … writes nothing back into the recipe." with:
 
