@@ -3256,6 +3256,41 @@ describe('gradual dilution — recording the water actually poured', () => {
   });
 });
 
+describe('gradual: which paste it counts from', () => {
+  const G = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    cookWaterGrams: 400, wholeBatchPasteGrams: 1600, onGradualWaterChange: () => {},
+    gradualWaterGrams: '2000',
+  };
+
+  it('uses the pot the maker actually weighed, and says so', () => {
+    // Weighed 1,500 g (the cook drove off more than the recipe predicted). Finished is
+    // 1,500 + 2,000 = 3,500 g, not the computed 3,600 g.
+    render(<DilutionPanel {...G} measuredPasteGrams="1500" />);
+    expect(screen.getByText('3,500 g')).toBeTruthy();
+    // Brief defect found here: the panel already has TWO always-on, unrelated uses of the
+    // literal word "measured" — the "Measured paste weight" field's own label (every mode)
+    // and the density caveat's "not a measured density" (whole-batch scope, whenever a
+    // volume renders) — so /measured/i is ambiguous the moment both are on screen at once,
+    // regardless of what this readout says. "Weighed" is the same claim the brief's own
+    // prose makes ("the pot the maker actually weighed") without colliding with either.
+    expect(screen.getByText(/weighed/i)).toBeTruthy();
+  });
+
+  it('falls back to the computed paste when no reading was taken, and names that instead', () => {
+    render(<DilutionPanel {...G} measuredPasteGrams="" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.getByText(/computed|from the recipe/i)).toBeTruthy();
+  });
+
+  it('ignores a reading the shared gate rejects, rather than counting from an impossible pot', () => {
+    // Below the anhydrous floor: physically impossible, and measuredPasteRejectionFor
+    // already refuses it everywhere else in the app.
+    render(<DilutionPanel {...G} measuredPasteGrams="900" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+  });
+});
+
 describe('the re-entry guard — a derived mode must not revert a typed target', () => {
   it('returning to gradual without touching the field leaves a typed concentration alone', () => {
     // The bug this guards, in ratio's own words at DilutionPanel.tsx:170-179: the

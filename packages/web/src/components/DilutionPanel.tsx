@@ -203,8 +203,8 @@ export function DilutionPanel({
   // Same guards PortionDilutionResults applies to the identical measurement: below the anhydrous
   // soap it cannot be a whole-batch paste, above the target solution there is no water left
   // to add. Both accept the boundary. A measured paste that survives these WINS over the
-  // computed figures below — see the "measured paste" hint on the batch row, and the ratio
-  // pasteGrams override just below.
+  // computed figures below — see the "measured paste" hint on the batch row, and the
+  // ratio/gradual pasteGrams override just below.
   const measuredPasteValid =
     dilution !== null &&
     measuredPasteIsValidFor(
@@ -270,15 +270,31 @@ export function DilutionPanel({
     : hasCorrectedPasteBasis
       ? (wholeBatchPasteGrams as number)
       : dilution.anhydrousGrams + (cookWaterGrams ?? 0);
+  // The paste ratio mode multiplies, and — as of this task — gradual sums with the record
+  // below: a valid MEASURED reading (measuredPasteValid, the shared
+  // measuredPasteIsValidFor gate above — the same one PortionDilutionResults and the batch
+  // pour answer to, so no surface in the app can disagree about whether a reading is
+  // usable) wins over bestKnownPasteGrams, the recipe's own computed pot. Hoisted above
+  // `gradual` (it used to sit below, feeding ratio alone) so gradual can share this exact
+  // selection rather than re-deriving its own copy of the same rule.
+  //
+  // wholeBatchPasteGrams (anhydrousGrams + cookWaterGrams + splitLiquidSolidsGrams,
+  // computed in the view model) is a PREDICTION and is never corrected by a measured
+  // reading — the two figures live independently, and this ternary is where the app
+  // decides between them. A cook boils off water the recipe still counts, and nothing on
+  // paper knows how much a particular cook drove off, which is the whole reason the
+  // reference has the maker weigh the paste; a valid measurement is direct evidence
+  // against the prediction and always outranks it.
+  const pasteGrams = dilution ? (measuredPasteValid ? measuredPasteNum : bestKnownPasteGrams) : null;
   // Gradual Dilution (LS:1531): the maker records water actually poured, and the
   // concentration is DERIVED from that record rather than targeted — the opposite
   // direction from concentration and ratio mode, which both choose a number and let the
-  // app find the water. pasteGrams here is bestKnownPasteGrams, the same corrected
-  // whole-batch pot ratio falls back to when there is no measurement — not `pasteGrams`
-  // below, which ratio prefers a valid MEASURED reading over. Choosing between the measured
-  // pot and the computed one for gradual (with its own "measured"/"computed" readout
-  // wording) is a later task's job; until then this runs on the computed pot alone, exactly
-  // as if no reading had ever been taken.
+  // app find the water. Counts from `pasteGrams` immediately above — the maker's weighed
+  // paste when there is a valid one, else the recipe's computed pot — exactly the basis
+  // ratio mode already prefers a measurement over, so gradual and ratio can never disagree
+  // about which pot they are pouring into. The readout below names which of the two it
+  // used ("measured" / "computed"), the same discipline basisScope's "(whole batch)" /
+  // "(custom amount)" labels already practice for naming a figure's basis in place.
   //
   // '' parses to NaN, never to 0: gradualDilutionFrom's zero is a legitimate reading (the
   // pot before any water — Gradual Dilution's own starting point), so an EMPTY field must
@@ -286,9 +302,9 @@ export function DilutionPanel({
   // fire before the maker had recorded anything at all.
   const gradualWaterNum = gradualWaterGrams.trim() === '' ? NaN : Number(gradualWaterGrams);
   const gradual =
-    dilution && bestKnownPasteGrams !== null
+    dilution && pasteGrams !== null
       ? gradualDilutionFrom({
-          pasteGrams: bestKnownPasteGrams,
+          pasteGrams,
           anhydrousGrams: dilution.anhydrousGrams,
           waterAddedGrams: gradualWaterNum,
         })
@@ -297,11 +313,14 @@ export function DilutionPanel({
   // an alternative liquid's non-water solids. Derived from that same basis rather than
   // taken as a prop so it can never disagree with the paste the figures are computed from;
   // zero when there is no corrected basis, which is every recipe without a split liquid.
+  // Deliberately still keyed on bestKnownPasteGrams, NOT pasteGrams: this is the
+  // alternative liquid's contribution to the recipe's OWN computed pot, a property of the
+  // recipe rather than of what a maker happened to weigh, and it must stay the same figure
+  // whether or not a measurement is on the field.
   const splitLiquidSolidsGrams =
     dilution && bestKnownPasteGrams !== null
       ? Math.max(0, bestKnownPasteGrams - (dilution.anhydrousGrams + (cookWaterGrams ?? 0)))
       : 0;
-  const pasteGrams = dilution ? (measuredPasteValid ? measuredPasteNum : bestKnownPasteGrams) : null;
   const ratioWaterGrams =
     dilution && pasteGrams !== null && ratioValid ? pasteGrams * ratioNum : null;
   const ratioSolutionGrams =
@@ -1049,7 +1068,23 @@ export function DilutionPanel({
       {dilutionScope === 'batch' && dilutionMode === 'gradual' && gradual !== null && (
         <dl className="results-grid">
           <div className="results-grid__item results-grid__item--primary">
-            <dt>Finished so far</dt>
+            {/* Names which pot this sum counts from — the same discipline basisScope's
+                "(whole batch)" / "(custom amount)" labels already practice for a figure's
+                basis, one parenthetical rather than a paragraph. wholeBatchPasteGrams is a
+                computed PREDICTION and is never corrected by a measured reading (see
+                pasteGrams' own comment above), so this is the one place gradual has to say
+                which of the two it actually poured into.
+
+                "weighed", not "measured": the field just above this row is already titled
+                "Measured paste weight" and is visible in every mode, so a second "measured"
+                here would be a second, unrelated match for the same word on one screen —
+                confusing for a reader, and literally ambiguous for a query that finds text
+                by content (DilutionPanel.test's own `getByText(/measured/i)` pins this: it
+                is answered by that field's label, and must stay the ONLY thing on screen
+                that reads that way). "Weighed" says the identical thing — it is the verb
+                this task's own brief uses for the same act ("the pot the maker actually
+                weighed") — without competing with the field's name for it. */}
+            <dt>Finished so far ({measuredPasteValid ? 'weighed' : 'computed'})</dt>
             <dd>{formatWeight(gradual.finishedGrams, weightUnit)}</dd>
           </div>
         </dl>
@@ -1191,10 +1226,21 @@ export function DilutionPanel({
                     maker guessing which one to actually pour. Suppress this row in ratio mode and
                     let the ratio block be the sole source for that number; every other row here
                     (paste, solution, total water, glycerin, volume) still reflects the applied
-                    concentration and carries no such competing figure — in ratio mode. Gradual
-                    mode's own competing figure is a MASS, not a water figure, so it collides
-                    with "Finished solution" instead; see that row's own gate below. */}
-                {dilutionMode !== 'ratio' && (
+                    concentration and carries no such competing figure — in ratio mode.
+
+                    Gradual mode is excluded too, and for a sharper reason than a competing
+                    figure: this row derives from the PERSISTED target, and gradual mode has no
+                    target — the concentration is DERIVED from the water the maker already typed
+                    into "Water added so far" (see `gradual`'s own comment). Before that
+                    write-back settles this printed a stale figure left over from whatever mode
+                    came before (a 30% target's 2,500 g beside gradual's own 3,500 g "Finished so
+                    far", on the same screen, for the same pour); once it has settled it can only
+                    restate the water already recorded, relabelled. Task 4's own basis label on
+                    "Finished so far" (measured/computed) is the one place gradual needs to say
+                    which paste it counted from — this row's identical-sounding hint one
+                    paragraph below would have said it a second time, of a figure that no longer
+                    exists in this mode. */}
+                {dilutionMode === 'concentration' && (
                   <div className="results-grid__item results-grid__item--primary">
                     <dt>Dilution water to add</dt>
                     <dd>{formatWeight(batchDilutionWaterGrams, weightUnit)}</dd>
@@ -1209,9 +1255,12 @@ export function DilutionPanel({
                     (anhydrous ÷ the PERSISTED target). Once the write-back has settled the two
                     agree up to gradualDilutionFrom's 2 dp rounding, and a few-gram mismatch from
                     that rounding would read as an error rather than as the harmless rounding it
-                    is. Same reasoning as "Dilution water to add" above, one row over: showing
-                    both mass figures at once leaves the maker guessing which is the real one, so
-                    gradual mode suppresses this and lets its own grid be the sole source. */}
+                    is. Same PRINCIPLE as "Dilution water to add" above, one row over — don't
+                    print two figures answering the same question — even though the reason each
+                    one collides is different (that row is stale-target vs. record; this one is
+                    mass vs. mass): showing both mass figures at once leaves the maker guessing
+                    which is the real one, so gradual mode suppresses this and lets its own grid
+                    be the sole source. */}
                 {dilutionMode !== 'gradual' && (
                   <div className="results-grid__item">
                     <dt>Finished solution</dt>
@@ -1297,7 +1346,12 @@ export function DilutionPanel({
                   the ratio paragraph above the grid, naming "Water to add at this ratio"
                   (the main grid's own "Dilution water to add" row is suppressed there, so
                   "above" would land on Total water/Glycerin — neither of which is
-                  measurement-corrected). One paragraph per state either way.
+                  measurement-corrected). In gradual mode the row itself is gone too (see
+                  its own gate above — gradual has no persisted target for it to correct),
+                  so this sentence would point "above" at nothing; gradual's own basis
+                  label on "Finished so far" (Task 4: "measured" / "computed") is where
+                  that mode says which paste it counted from instead. One paragraph per
+                  state either way.
 
                   The reading itself is quoted in GRAMS, like the three rejection
                   thresholds above and for the same reason: it is the number the maker
@@ -1310,7 +1364,7 @@ export function DilutionPanel({
                   in c1dc31d, when the batch row started deriving its water from that
                   pot, and stayed stale here while the same sentence was fixed in Custom
                   amount. Evaporation is what a measurement still buys. */}
-              {measuredPasteValid && dilutionMode !== 'ratio' && (
+              {measuredPasteValid && dilutionMode === 'concentration' && (
                 <p className="results-hint">
                   Dilution water above uses your measured paste ({formatWeight(measuredPasteNum, 'g')}
                   ), not the recipe&apos;s computed paste — the cook boils off water the recipe
