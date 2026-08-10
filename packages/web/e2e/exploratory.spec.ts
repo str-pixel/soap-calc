@@ -375,8 +375,16 @@ test.describe('liquid soap', () => {
     // No measurement yet: the computed paste must carry the evaporation caveat — and only
     // that. It used to add "an alternative liquid's solids are mass it never counted", which
     // the corrected paste basis makes false: those solids ARE in the figure above it now.
-    await expect(section).toContainText(/boils off water the recipe still counts/i);
-    await expect(section).not.toContainText(/never counted/i);
+    // Scoped to the caveat ITSELF, not the whole section. The claim under test is about
+    // this one sentence; asserting it against the section became wrong once the Preservative
+    // snippet moved inside the Dilution panel, because its own subtitle legitimately says
+    // "never counted in the batch or lye figures" — two words shared with a stale clause
+    // about alternative-liquid solids that has nothing to do with it.
+    const pasteCaveat = section
+      .locator('.results-hint')
+      .filter({ hasText: /boils off water the recipe still counts/i });
+    await expect(pasteCaveat).toContainText(/boils off water the recipe still counts/i);
+    await expect(pasteCaveat).not.toContainText(/never counted/i);
     // Weighing the paste replaces the computed figure and moves the water to match.
     await page.getByLabel('Measured paste weight — the whole batch (g, optional)').fill('1400');
     await page.getByLabel('Measured paste weight — the whole batch (g, optional)').blur();

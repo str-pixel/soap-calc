@@ -180,6 +180,19 @@ export default function App() {
     workspaceGeneration,
   );
   const weightUnit = settings.weightUnit;
+  // A recorded gradual dilution reopens in Gradual mode. `dilutionMode` is session state
+  // and the recorded water is recipe state, so without this the water survives a reload
+  // and then has nowhere to appear: the panel comes back in Concentration mode and the
+  // field that shows the record is not on screen at all. A figure the maker is promised
+  // will "always be shown" cannot be reachable only by remembering which mode wrote it.
+  //
+  // Keyed on workspaceGeneration — load, import, new recipe, undo of a load — so it
+  // restores the recorded state exactly when a recipe arrives, and never fights a maker
+  // who deliberately switches modes afterwards.
+  useEffect(() => {
+    if (settings.gradualWaterGrams.trim() !== '') setDilutionMode('gradual');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceGeneration]);
   // The mold sizer stores its bar weight as a raw display string interpreted in the
   // current unit; convert it on unit change (like recipe weights) so "120 g" doesn't
   // silently become "120 oz".
