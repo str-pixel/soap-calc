@@ -524,33 +524,6 @@ export default function App() {
               onChange={setAdditives}
             />
 
-            {/* Beside Additives, because choosing a preservative is the same kind of
-                decision — which extras go in, and how much. It is NOT an additive line
-                though: no preservative mass enters the oil, lye or batch arithmetic.
-                Its % is of the DILUTION's finished mass, in whichever scope the Dilution
-                panel (next column) is showing — see preservativeBaseGrams and the
-                basisScope prop, which is why the base row names its own scope rather than
-                relying on sitting under the toggle that sets it. */}
-            {processOffers(process, 'preserve') && (
-              <PreservativeSnippet
-                finishedGrams={preservativeBaseGrams}
-                basisScope={dilutionScope}
-                weightUnit={weightUnit}
-                preservativeId={settings.preservativeId}
-                onPreservativeIdChange={(preservativeId) =>
-                  setSettings((s) => ({ ...s, preservativeId, preservativeSetByUser: true }))
-                }
-                preservativeCustomName={settings.preservativeCustomName}
-                onPreservativeCustomNameChange={(preservativeCustomName) =>
-                  setSettings((s) => ({ ...s, preservativeCustomName, preservativeSetByUser: true }))
-                }
-                dosePct={settings.preservativeDosePct}
-                onDosePctChange={(preservativeDosePct) =>
-                  setSettings((s) => ({ ...s, preservativeDosePct, preservativeSetByUser: true }))
-                }
-              />
-            )}
-
             {processOffers(process, 'cpExtras') && (
               <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />
             )}
@@ -584,6 +557,30 @@ export default function App() {
                 onTargetMlChange={setPortionTargetMl}
                 onMeasuredPasteGramsChange={setMeasuredPasteGrams}
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
+              />
+            )}
+            {/* Directly below Dilution because its % is OF the dilution's finished mass —
+                and of whichever scope's finished mass the panel above is showing (see
+                preservativeBaseGrams). Replaces the old static Preserve panel: the snippet
+                carries the same need logic AND the dose it used to defer to "your
+                supplier". */}
+            {processOffers(process, 'preserve') && (
+              <PreservativeSnippet
+                finishedGrams={preservativeBaseGrams}
+                basisScope={dilutionScope}
+                weightUnit={weightUnit}
+                preservativeId={settings.preservativeId}
+                onPreservativeIdChange={(preservativeId) =>
+                  setSettings((s) => ({ ...s, preservativeId, preservativeSetByUser: true }))
+                }
+                preservativeCustomName={settings.preservativeCustomName}
+                onPreservativeCustomNameChange={(preservativeCustomName) =>
+                  setSettings((s) => ({ ...s, preservativeCustomName, preservativeSetByUser: true }))
+                }
+                dosePct={settings.preservativeDosePct}
+                onDosePctChange={(preservativeDosePct) =>
+                  setSettings((s) => ({ ...s, preservativeDosePct, preservativeSetByUser: true }))
+                }
               />
             )}
             {processOffers(process, 'neutralize') && vm.neutralization && (
