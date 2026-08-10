@@ -83,3 +83,56 @@ export function calculateDilution(input: DilutionInput): DilutionResult | null {
     targetExceedsPaste,
   };
 }
+
+export type GradualDilutionInput = {
+  /** The pot's paste mass — measured when the maker weighed it, else computed. */
+  pasteGrams: number;
+  /** Anhydrous soap (oils + lye), the numerator of soap concentration. */
+  anhydrousGrams: number;
+  /** Total water poured in so far. Zero is legitimate: the pot before dilution. */
+  waterAddedGrams: number;
+};
+
+export type GradualDilutionResult = {
+  /** paste + water, from the raw inputs. What the panel prints. */
+  finishedGrams: number;
+  /** The true concentration, unrounded — the readout tells the truth. */
+  concentrationPercent: number;
+  /** What may be WRITTEN to settings: 2 dp, clamped to calculateDilution's range. */
+  writeBackPercent: number;
+  /** True when the clamp moved the written value away from the true one. */
+  clamped: boolean;
+};
+
+/**
+ * The book's Gradual Dilution (LS:1531) turned into figures: the maker records the water
+ * they poured, and the concentration is DERIVED rather than targeted.
+ *
+ * Rounded to 2 dp, not ratio mode's 1 dp: measured against calculateDilution, 1 dp leaves
+ * the recovered mass up to ~8 g from what was actually poured and 0 dp up to ~47 g, which
+ * is a visible discrepancy and a real shift in a preservative dose. 2 dp keeps it under a
+ * gram for no cost.
+ *
+ * The clamp mirrors ratio's: what is WRITTEN is bounded to [1, 99] because calculateDilution
+ * rejects the endpoints and a rejected value nulls `dilution`, vanishing the very panel the
+ * maker would need to correct it. `concentrationPercent` stays unclamped so the readout
+ * never lies about what was recorded.
+ */
+export function gradualDilutionFrom(
+  input: GradualDilutionInput,
+): GradualDilutionResult | null {
+  const { pasteGrams, anhydrousGrams, waterAddedGrams } = input;
+  if (!Number.isFinite(pasteGrams) || pasteGrams <= 0) return null;
+  if (!Number.isFinite(anhydrousGrams) || anhydrousGrams <= 0) return null;
+  if (!Number.isFinite(waterAddedGrams) || waterAddedGrams < 0) return null;
+  const finishedGrams = pasteGrams + waterAddedGrams;
+  const concentrationPercent = (anhydrousGrams / finishedGrams) * 100;
+  const rounded = Math.round(concentrationPercent * 100) / 100;
+  const writeBackPercent = Math.min(99, Math.max(1, rounded));
+  return {
+    finishedGrams,
+    concentrationPercent,
+    writeBackPercent,
+    clamped: writeBackPercent !== rounded,
+  };
+}
