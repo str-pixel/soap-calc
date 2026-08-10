@@ -101,6 +101,12 @@ export type RecipeSettings = {
    * product the maker never chose. An absent flag — any recipe saved or exported before
    * this field existed — must default to false, never to true. */
   preservativeSetByUser: boolean;
+  /** Water actually poured in, in grams, recorded by a maker diluting gradually (LS:1531
+   * — "record how much water you started with and how much additional water you added").
+   * Recipe state, not a bench figure: it must survive a reload because it is always on
+   * screen, and it is the basis of a preservative dose that is itself recipe state.
+   * Blank means no gradual record — the default, and what every legacy recipe means. */
+  gradualWaterGrams: string;
 };
 
 export function newLineKey(): string {
@@ -159,6 +165,7 @@ export const DEFAULT_SETTINGS: RecipeSettings = {
   preservativeCustomName: '',
   preservativeDosePct: String(LS_PRESERVATIVES[0].defaultPct),
   preservativeSetByUser: false,
+  gradualWaterGrams: '',
 };
 
 /** One alternative liquid in a recipe: the singleton settings minus the global enable,
@@ -485,6 +492,7 @@ export function normalizeSettings(
     // infer from, an absent flag (every recipe saved before this field existed) must mean
     // false outright, never true. See the field's own doc for why that direction matters.
     preservativeSetByUser: partial?.preservativeSetByUser === true,
+    gradualWaterGrams: settingString(partial?.gradualWaterGrams, d.gradualWaterGrams),
   };
 }
 

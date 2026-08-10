@@ -502,6 +502,19 @@ describe('recipeFile', () => {
     if (!parsed.ok) return;
     expect(parsed.data.settings.preservativeSetByUser).toBe(false);
   });
+
+  it('round-trips the recorded gradual water', () => {
+    const settings: RecipeSettings = {
+      ...DEFAULT_SETTINGS,
+      lyeType: 'koh' as const,
+      gradualWaterGrams: '2000',
+    };
+    const payload = serializeRecipeFile('LS gradual', createStarterLines(), settings, [], 'ls');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.gradualWaterGrams).toBe('2000');
+  });
 });
 
 describe('recipe file process', () => {

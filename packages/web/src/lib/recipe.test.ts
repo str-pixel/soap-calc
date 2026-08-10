@@ -530,3 +530,18 @@ describe('preservative settings', () => {
     ).toBe(false);
   });
 });
+
+describe('gradual dilution water', () => {
+  it('defaults to blank — no gradual record on a fresh or legacy recipe', () => {
+    expect(normalizeSettings({}).gradualWaterGrams).toBe('');
+  });
+
+  it('keeps a recorded amount verbatim, including one that lands off-target', () => {
+    expect(normalizeSettings({ gradualWaterGrams: '2000' }).gradualWaterGrams).toBe('2000');
+  });
+
+  it('coerces junk to the default rather than throwing', () => {
+    const s = normalizeSettings({ gradualWaterGrams: 12 } as unknown as Partial<RecipeSettings>);
+    expect(s.gradualWaterGrams).toBe('12'); // settingString coerces a finite number
+  });
+});
