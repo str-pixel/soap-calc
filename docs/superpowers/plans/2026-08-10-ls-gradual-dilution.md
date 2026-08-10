@@ -392,12 +392,26 @@ Add a `dilutionMode === 'gradual'` branch beside the existing ratio branch, with
 result, where `pasteGrams` is Task 4's chosen basis:
 
 ```tsx
+  // DEPEND ON THE PRIMITIVE, NEVER ON `gradual`. `gradualDilutionFrom` returns a fresh
+  // object every render, useEffect compares deps by reference, and the write-back reaches
+  // setSettings, which always spreads a new settings object — so an object dependency here
+  // re-fires the effect on every render it causes, forever, from the first keystroke.
+  // Ratio's own effect above depends on numbers for exactly this reason; its comment names
+  // the property being relied on ("React bails out of re-rendering on an unchanged state
+  // value"), which only holds for primitives.
+  const gradualWriteBack = gradual?.writeBackPercent ?? null;
   useEffect(() => {
-    if (gradualTouched && dilutionMode === 'gradual' && gradual !== null) {
-      onSoapConcentrationChange(String(gradual.writeBackPercent));
+    if (gradualTouched && dilutionMode === 'gradual' && gradualWriteBack !== null) {
+      onSoapConcentrationChange(String(gradualWriteBack));
     }
-  }, [gradualTouched, dilutionMode, gradual]);
+  }, [gradualTouched, dilutionMode, gradualWriteBack]);
 ```
+
+**No inert-mock test can catch that loop**, because every test in this file wires
+`onSoapConcentrationChange` to a `vi.fn()` that never triggers a further render. The
+regression test must close the feedback loop itself: wrap the panel in a harness whose
+handler actually sets state and feeds the value back as a prop, then assert the call count
+settles instead of growing.
 
 Render the clamp notice when `gradual.clamped`, in the same shape as `ratioWriteBackClamped`'s.
 

@@ -88,6 +88,14 @@ export default function App() {
   // not dirty a saved or exported recipe. App state keeps them across process switches
   // within a session.
   const [portionTargetMl, setPortionTargetMl] = useState('');
+  // Gradual dilution of a single jar: the paste the maker weighed out of the stored batch,
+  // and the water they have poured into it so far. Session-local like portionTargetMl and
+  // measuredPasteGrams beside it — bench figures describing one jar on one day, which must
+  // not dirty a saved or exported recipe. Deliberately NOT the same as settings'
+  // gradualWaterGrams: that one records the WHOLE BATCH's dilution and is recipe state,
+  // because the batch is the recipe. A jar diluted thinner has not redefined it.
+  const [portionPasteGrams, setPortionPasteGrams] = useState('');
+  const [portionWaterGrams, setPortionWaterGrams] = useState('');
   // Always the whole batch's paste: the declaration that used to sit beside the field is
   // gone — see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING.
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
@@ -564,6 +572,10 @@ export default function App() {
                 onDilutionScopeChange={setDilutionScope}
                 targetMl={portionTargetMl}
                 onTargetMlChange={setPortionTargetMl}
+                portionPasteGrams={portionPasteGrams}
+                onPortionPasteChange={setPortionPasteGrams}
+                portionWaterGrams={portionWaterGrams}
+                onPortionWaterChange={setPortionWaterGrams}
                 onMeasuredPasteGramsChange={setMeasuredPasteGrams}
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
               />

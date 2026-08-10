@@ -53,6 +53,18 @@ export type LsPartialDilution = {
   wholeBatchPasteGrams: number;
   /** True when more was asked for than the batch holds, so the figures are the whole batch. */
   clamped: boolean;
+  /** The pot's own anhydrous soap — the recipe's whole `anhydrousGrams` in whole-batch mode,
+   * or (with a measured, REMAINING reading) that reading's proportional share of it:
+   * `measured × anhydrousGrams / wholeBatchPasteGrams`, since the paste is homogeneous — the
+   * same arithmetic `measuredPasteIsRemaining`'s own doc above derives. Exposed as its own
+   * field, independent of `fraction`: unlike pasteGrams/waterGrams/solutionGrams above, this
+   * is the FULL pot's anhydrous share, not a fraction-scaled slice of it, because a caller
+   * asking "what does this measured pot itself contain" (e.g. a jar with its own recorded
+   * water, deriving ITS OWN concentration rather than a share of what the recipe's target
+   * would want) has no target volume to scale by. Reusing this field is what keeps the
+   * ratio in one place; re-deriving `measured × anhydrousGrams / wholeBatchPasteGrams` at a
+   * second call site is the same trap `predictedPasteGrams`' own doc warns against above. */
+  potAnhydrousGrams: number;
 };
 
 /**
@@ -205,5 +217,6 @@ export function lsPartialDilution(
     predictedPasteGrams,
     wholeBatchPasteGrams,
     clamped,
+    potAnhydrousGrams,
   };
 }

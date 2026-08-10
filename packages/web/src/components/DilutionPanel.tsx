@@ -6,6 +6,7 @@ import {
   lsConcentrationAboveAllMinimums,
   lsDilutionUsesFor,
   lsFinishedVolumeMl,
+  lsPartialDilution,
   type DilutionResult,
 } from '@soap-calc/core';
 import { finishedProductGramsFor } from '../lib/calculateAdditives';
@@ -104,6 +105,18 @@ type DilutionPanelProps = {
    * below. */
   gradualWaterGrams?: string;
   onGradualWaterChange?: (value: string) => void;
+  /** Gradual Dilution's own two figures, but for ONE JAR in Custom amount scope rather
+   * than the whole batch: paste weighed out of the stored batch, and water poured into
+   * that jar so far. Session-local in App like portionTargetMl/measuredPasteGrams — bench
+   * figures for what is on the scale right now, not properties of the recipe — and unlike
+   * `gradualWaterGrams` above, NEVER written back to settings.soapConcentrationPercent:
+   * see `portionGradual`'s own comment for why a jar diluted thinner than the batch has
+   * not redefined the recipe. Empty means nothing typed yet, matching gradualWaterGrams'
+   * own "empty ≠ zero" rule. */
+  portionPasteGrams?: string;
+  onPortionPasteChange?: (value: string) => void;
+  portionWaterGrams?: string;
+  onPortionWaterChange?: (value: string) => void;
   /** The maker's scale reading for the paste, in grams (same App state PortionDilutionResults
    * reads — see its doc comment). ALWAYS the whole batch, and that is this app's choice, not
    * the reference's: the reference's ratio method is portion-first (LS:1534 weighs "the
@@ -163,6 +176,10 @@ export function DilutionPanel({
   onWaterPasteRatioChange,
   gradualWaterGrams = '',
   onGradualWaterChange,
+  portionPasteGrams = '',
+  onPortionPasteChange,
+  portionWaterGrams = '',
+  onPortionWaterChange,
   measuredPasteGrams,
   onMeasuredPasteGramsChange,
   dilutionScope = 'batch',
@@ -308,6 +325,61 @@ export function DilutionPanel({
           anhydrousGrams: dilution.anhydrousGrams,
           waterAddedGrams: gradualWaterNum,
         })
+      : null;
+  // Gradual Dilution, for a JAR in Custom amount scope rather than the whole batch — and
+  // THE CENTRAL PROHIBITION this task exists to enforce: this concentration is NEVER
+  // written to settings.soapConcentrationPercent. `gradual` immediately above IS the
+  // recipe's own record — whole-batch gradual legitimately redefines the recipe's target,
+  // because the batch IS the recipe. A maker who dilutes ONE JAR thinner than the batch
+  // has not redefined the recipe, so `portionGradual` below reaches only the readouts
+  // further down; no effect anywhere in this file reads it, and none may be added that
+  // does (a regression test asserts on the onSoapConcentrationChange spy itself, not on a
+  // rendered figure — the damage is the write, not the display).
+  //
+  // '' parses to NaN, same rule as gradualWaterNum above: an empty field is "nothing
+  // typed yet", not the legitimate zero-water reading.
+  const portionPasteNum = portionPasteGrams.trim() === '' ? NaN : Number(portionPasteGrams);
+  const portionWaterNum = portionWaterGrams.trim() === '' ? NaN : Number(portionWaterGrams);
+  // The jar's own anhydrous share comes from lsPartialDilution's `potAnhydrousGrams` field
+  // — the exact proportional-share arithmetic ("the paste is homogeneous, so...") that
+  // function's own remaining-mode branch already derives and documents, extended to
+  // expose it — rather than a fresh `portionPasteGrams × (anhydrousGrams /
+  // wholeBatchPasteGrams)` computed here: see ls-yield.ts's own warning against a second
+  // "predicted paste" derivation, the trap this task's own brief names by number. Passing
+  // the jar's paste as a MEASURED, REMAINING reading is what borrows the arithmetic
+  // without duplicating it — mathematically a jar weighed out on purpose is no different
+  // from a jar left over: either way it is a homogeneous share of the same batch.
+  //
+  // lsPartialDilution needs a target volume to size a FRACTION of the pot to;
+  // potAnhydrousGrams is the pot's FULL share and is untouched by that fraction (see its
+  // own doc), so any valid volume works for this call. The rest of the result — pasteGrams,
+  // waterGrams, solutionGrams, volumeMl, fraction — answers "what does the RECIPE's own
+  // target want from this jar", and gradual mode asks the opposite question, so those
+  // fields are discarded; the jar's own finished volume is passed only because it is the
+  // least arbitrary figure available for the unused parameter.
+  const portionGradualShare =
+    dilution &&
+    Number.isFinite(portionPasteNum) &&
+    portionPasteNum > 0 &&
+    Number.isFinite(portionWaterNum) &&
+    portionWaterNum >= 0
+      ? lsPartialDilution(
+          {
+            ...dilution,
+            measuredPasteGrams: portionPasteNum,
+            measuredPasteIsRemaining: true,
+            wholeBatchPasteGrams: wholeBatchPasteGrams ?? undefined,
+          },
+          lsFinishedVolumeMl(portionPasteNum + portionWaterNum) ?? 1,
+        )
+      : null;
+  const portionGradual =
+    portionGradualShare !== null
+      ? {
+          finishedGrams: portionPasteNum + portionWaterNum,
+          concentrationPercent:
+            (portionGradualShare.potAnhydrousGrams / (portionPasteNum + portionWaterNum)) * 100,
+        }
       : null;
   // The correction bestKnownPasteGrams carries over the recipe's own water-only figure —
   // an alternative liquid's non-water solids. Derived from that same basis rather than
@@ -794,20 +866,54 @@ export function DilutionPanel({
               stacked here. */}
         </>
       ) : dilutionMode === 'gradual' ? (
-        <label className="field">
-          <span>Water added so far (g)</span>
-          <input
-            type="number"
-            className="input input--number"
-            min={0}
-            value={gradualWaterGrams}
-            onChange={(e) => {
-              setGradualTouched(true);
-              onGradualWaterChange?.(e.target.value);
-            }}
-            aria-label="Water added so far (g)"
-          />
-        </label>
+        dilutionScope === 'portion' ? (
+          <>
+            {/* Session-local in App (portionPasteGrams/portionWaterGrams), NOT
+                settings.gradualWaterGrams — that field is the WHOLE BATCH's own record,
+                and Gradual legitimately writes ITS derived percentage back into the
+                recipe's saved target below. A jar weighed out here is a bench figure,
+                like portionTargetMl and measuredPasteGrams beside it, and must never
+                dirty the saved recipe — see `portionGradual`'s own comment above for the
+                prohibition this enforces. */}
+            <label className="field">
+              <span>Paste weighed out (g)</span>
+              <input
+                type="number"
+                className="input input--number"
+                min={1}
+                value={portionPasteGrams}
+                onChange={(e) => onPortionPasteChange?.(e.target.value)}
+                aria-label="Paste weighed out (g)"
+              />
+            </label>
+            <label className="field">
+              <span>Water added so far (g)</span>
+              <input
+                type="number"
+                className="input input--number"
+                min={0}
+                value={portionWaterGrams}
+                onChange={(e) => onPortionWaterChange?.(e.target.value)}
+                aria-label="Water added so far (g)"
+              />
+            </label>
+          </>
+        ) : (
+          <label className="field">
+            <span>Water added so far (g)</span>
+            <input
+              type="number"
+              className="input input--number"
+              min={0}
+              value={gradualWaterGrams}
+              onChange={(e) => {
+                setGradualTouched(true);
+                onGradualWaterChange?.(e.target.value);
+              }}
+              aria-label="Water added so far (g)"
+            />
+          </label>
+        )
       ) : (
         <label className="field">
           <span>Target soap concentration (%)</span>
@@ -999,7 +1105,12 @@ export function DilutionPanel({
           <span>Custom amount</span>
         </label>
       </div>
-      {dilutionScope === 'portion' && (
+      {/* Gradual asks for the paste actually weighed out and the water actually poured,
+          not a TARGET volume to size a portion to — those two new fields render above,
+          in the mode-selection block, in place of this one. Showing both at once would
+          offer two unrelated ways to describe the same jar; gradual's own workflow (LS:1531)
+          has no "amount to make" step at all. */}
+      {dilutionScope === 'portion' && dilutionMode !== 'gradual' && (
         <>
           <label className="field">
             <span>Amount to make (ml)</span>
@@ -1191,8 +1302,12 @@ export function DilutionPanel({
       {/* Gradual's own readout — the true derived concentration, at the 2 dp
           gradualDilutionFrom rounds to (not ratio's 1 dp: see that function's own doc for
           why gradual needs the extra digit), however extreme, so this never lies about
-          what the record implies. */}
-      {dilutionMode === 'gradual' && gradual !== null && (
+          what the record implies. Whole-batch scope only — the same scoping the "Finished
+          so far" grid above already carries, and the portion's own mirror of this readout
+          is below, gated the other way. Ungating this would show a stale whole-batch
+          record (settings.gradualWaterGrams, recipe state) as if it described the jar
+          currently on screen the moment BOTH figures exist at once. */}
+      {dilutionScope === 'batch' && dilutionMode === 'gradual' && gradual !== null && (
         <p className="results-hint">
           <strong>That lands at {formatGrams(gradual.concentrationPercent, 2)}% soap.</strong>
         </p>
@@ -1203,13 +1318,58 @@ export function DilutionPanel({
           is clamped to [1, 99] (gradualDilutionFrom itself); the readout above stays
           unclamped and keeps telling the truth, so this note points back at it rather than
           restating the figure. Tense follows the write-back, not the clamp, exactly as
-          ratio's does: untouched, nothing has been written yet. */}
-      {dilutionMode === 'gradual' && gradual !== null && gradual.clamped && (
+          ratio's does: untouched, nothing has been written yet. Whole-batch only, for the
+          same reason as the readout immediately above. */}
+      {dilutionScope === 'batch' && dilutionMode === 'gradual' && gradual !== null && gradual.clamped && (
         <p className="results-hint" role="alert">
           That is outside the 1–99% range the calculator can target, so the saved target{' '}
           {gradualTouched ? 'is' : 'would be'} capped at{' '}
           {formatGrams(gradual.writeBackPercent, 0)}%.
         </p>
+      )}
+      {/* Gradual's own figures for a JAR in Custom amount scope — the mirror of the two
+          blocks above, but reading `portionGradual` instead of `gradual`, and
+          deliberately never fed to onSoapConcentrationChange anywhere in this file: see
+          `portionGradual`'s own comment for why a jar's figure must never redefine the
+          recipe's saved target.
+
+          Named "(this jar)" rather than "(custom amount)": the scope toggle's own
+          "Custom amount" label, a few lines above and always on screen, already owns
+          that exact string, and repeating it here would leave two on-screen elements
+          answering "which one names Custom amount" with no way to tell them apart — the
+          same collision basisScope's own "(whole batch)"/"(custom amount)" wording is
+          careful never to create twice on one screen. "This jar" says the same thing the
+          rest of this feature's own brief does throughout. */}
+      {dilutionScope === 'portion' && dilutionMode === 'gradual' && portionGradual !== null && (
+        <>
+          <dl className="results-grid">
+            <div className="results-grid__item results-grid__item--primary">
+              <dt>Finished so far (this jar)</dt>
+              <dd>{formatWeight(portionGradual.finishedGrams, weightUnit)}</dd>
+            </div>
+          </dl>
+          <p className="results-hint">
+            <strong>
+              That jar lands at {formatGrams(portionGradual.concentrationPercent, 2)}% soap.
+            </strong>{' '}
+            {/* THE PROHIBITION, on screen: a jar diluted thinner than the batch has not
+                redefined the recipe, so this figure is read-only reporting and never a
+                write-back — unlike whole-batch Gradual above, which legitimately writes
+                its own derived percentage into the recipe's saved target because the
+                batch IS the recipe. The saved target is echoed here, read-only, so a
+                maker comparing the two figures can see for themselves that diluting this
+                one jar left it untouched. */}
+            Your recipe&apos;s saved target is unchanged at{' '}
+            <input
+              type="number"
+              className="input input--number"
+              value={soapConcentrationPercent}
+              readOnly
+              aria-label="Recipe's saved target concentration — unchanged by this jar (%)"
+            />
+            %.
+          </p>
+        </>
       )}
       {/* The not-applied note that used to render here on its own is now a clause of the
           ratio paragraph above — same gate, same claims, one paragraph fewer. */}

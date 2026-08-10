@@ -42,6 +42,10 @@ describe('lsPartialDilution', () => {
     expect(r.solutionGrams).toBeCloseTo(2000, 0);
     expect(r.volumeMl).toBeCloseTo(1941.7, 0);
     expect(r.clamped).toBe(false);
+    // Whole-batch mode: the pot's own anhydrous IS the recipe's whole anhydrousGrams, and —
+    // unlike pasteGrams/waterGrams/solutionGrams just above — untouched by the half-volume
+    // fraction this test asked for.
+    expect(r.potAnhydrousGrams).toBe(1200);
   });
 
   it('clamps to the whole batch when more is asked for than exists', () => {
@@ -219,6 +223,29 @@ describe('lsPartialDilution with a remaining (already-drawn-down) paste measurem
   it('accepts a remaining reading exactly at the predicted whole-batch paste (the boundary)', () => {
     const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: predictedPasteGrams, measuredPasteIsRemaining: true }, 1200);
     expect(r).not.toBeNull();
+  });
+
+  it("exposes the pot's own anhydrous share directly, independent of the requested volume", () => {
+    // Same pot as the very first test above: 1,437 g of remaining paste carries
+    // 1,437 × (1,000/1,600) ≈ 898 g of anhydrous soap. Unlike pasteGrams/waterGrams/
+    // solutionGrams, this field is not scaled by `fraction` — it is the pot's FULL
+    // anhydrous content, so two different requested volumes on the same pot must report
+    // the identical figure. A caller deriving a measured jar's OWN concentration (not a
+    // share of what the recipe's target wants from it) reads this rather than
+    // re-deriving `measured × anhydrousGrams / wholeBatchPasteGrams` itself.
+    const small = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
+      1200,
+    );
+    const large = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
+      2800,
+    );
+    expect(small).not.toBeNull();
+    expect(large).not.toBeNull();
+    if (!small || !large) return;
+    expect(small.potAnhydrousGrams).toBeCloseTo(898, 0);
+    expect(large.potAnhydrousGrams).toBeCloseTo(898, 0);
   });
 });
 

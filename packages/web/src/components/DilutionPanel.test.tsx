@@ -3311,3 +3311,58 @@ describe('the re-entry guard — a derived mode must not revert a typed target',
     expect(onSoapConcentrationChange).not.toHaveBeenCalled();
   });
 });
+
+describe('gradual in Custom amount scope', () => {
+  const P = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    dilutionScope: 'portion' as const, cookWaterGrams: 400, wholeBatchPasteGrams: 1600,
+    onGradualWaterChange: () => {},
+    onPortionPasteChange: () => {}, onPortionWaterChange: () => {},
+  };
+
+  it('asks for the paste weighed out, not a target volume', () => {
+    render(<DilutionPanel {...P} portionPasteGrams="" portionWaterGrams="" />);
+    expect(screen.getByLabelText(/Paste weighed out/)).toBeTruthy();
+    expect(screen.getByLabelText(/Water added so far/)).toBeTruthy();
+  });
+
+  it("reports the jar's own figures, each named as the portion's", () => {
+    // 400 g of paste is a quarter of the 1,600 g batch, so it carries 300 g anhydrous.
+    // Add 900 g water → 1,300 g finished, 300/1300 = 23.08% soap.
+    //
+    // The water is 900 and not 600 DELIBERATELY. At 600 the jar lands at exactly 30%,
+    // which is also the recipe target this panel echoes read-only a few lines below — so
+    // the assertion matched two elements and could not tell the jar's own figure from the
+    // recipe's. A test that cannot distinguish the two numbers cannot prove the jar is
+    // being reported separately, which is the entire claim.
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900" />);
+    expect(screen.getByText('1,300 g')).toBeTruthy();
+    expect(screen.getByText(/23\.08% soap/)).toBeTruthy();
+    expect(screen.getByText(/this jar/i)).toBeTruthy();
+  });
+
+  // THE GUARD. A jar diluted thinner has not redefined the recipe. Asserted on the spy
+  // rather than on a rendered figure, because the damage is the write, not the display.
+  it('NEVER writes the jar\'s concentration back into the recipe', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...P} portionPasteGrams="" portionWaterGrams=""
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Paste weighed out/), { target: { value: '400' } });
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '900' } });
+    rerender(
+      <DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900"
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves the recipe target on screen unchanged beside the jar figure', () => {
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900"
+      soapConcentrationPercent="30" />);
+    // 400 + 900 = 1,300 g at 300/1300 = 23.1% — the jar. The recipe still says 30%.
+    expect(screen.getByText(/23(\.\d+)?% soap/)).toBeTruthy();
+    expect(screen.getByDisplayValue('30')).toBeTruthy();
+  });
+});
