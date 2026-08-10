@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   LS_DILUTION_TARGETS,
   LS_SOLUTION_DENSITY_G_PER_ML,
@@ -148,6 +148,12 @@ type DilutionPanelProps = {
    * `cookWaterGrams` it also fixes the FLOOR under a measured paste: the two identify the
    * alternative liquid's solids, and solids do not boil off. */
   wholeBatchPasteGrams?: number | null;
+  /** Rendered at the end of this panel, after the dilution figures. App supplies the
+   * Preservative snippet here so the dose sits with the mass it is a percentage of —
+   * structurally, not by convention. Deliberately a node and not the snippet's own props:
+   * this panel has no reason to know what a preservative is, and threading six more props
+   * through a component that already takes twenty is how a panel becomes unmaintainable. */
+  preservativeSlot?: ReactNode;
 };
 
 export function DilutionPanel({
@@ -187,6 +193,7 @@ export function DilutionPanel({
   targetMl = '',
   onTargetMlChange,
   wholeBatchPasteGrams,
+  preservativeSlot,
 }: DilutionPanelProps) {
   // Set only by the ratio input's own onChange below — never by mode entry — so the
   // write-back effect further down can require a real edit before touching the saved
@@ -1864,6 +1871,15 @@ export function DilutionPanel({
           </p>
         )}
       </details>
+      {/* The preservative dose, rendered by App and placed here as an opaque node. INSIDE
+          this panel rather than beside it because the dose is a % of the finished mass this
+          panel computes — an adjacency that was only a layout convention until now, and one
+          that was lost once already when the snippet was moved to sit with Additives and
+          moved back the next day. Structure now enforces what a comment used to ask for.
+
+          A node rather than the snippet's own six props: this component already takes
+          twenty and has no reason to learn what a preservative is. */}
+      {preservativeSlot}
     </section>
   );
 }

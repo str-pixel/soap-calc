@@ -576,44 +576,35 @@ export default function App() {
                 onPortionPasteChange={setPortionPasteGrams}
                 portionWaterGrams={portionWaterGrams}
                 onPortionWaterChange={setPortionWaterGrams}
+                /* The preservative dose lives INSIDE this panel now, not beside it. Passed as
+                   a node so DilutionPanel places it without learning what a preservative is;
+                   the wiring stays here, where the settings it writes already live. The
+                   adjacency matters because the dose is a % of the finished mass the panel
+                   computes — it was a layout convention until this, and it was lost once
+                   already when the snippet was moved to sit with Additives. */
+                preservativeSlot={
+                  processOffers(process, 'preserve') ? (
+                    <PreservativeSnippet
+                      finishedGrams={preservativeBaseGrams}
+                      basisScope={dilutionScope}
+                      weightUnit={weightUnit}
+                      preservativeId={settings.preservativeId}
+                      onPreservativeIdChange={(preservativeId) =>
+                        setSettings((s) => ({ ...s, preservativeId, preservativeSetByUser: true }))
+                      }
+                      preservativeCustomName={settings.preservativeCustomName}
+                      onPreservativeCustomNameChange={(preservativeCustomName) =>
+                        setSettings((s) => ({ ...s, preservativeCustomName, preservativeSetByUser: true }))
+                      }
+                      dosePct={settings.preservativeDosePct}
+                      onDosePctChange={(preservativeDosePct) =>
+                        setSettings((s) => ({ ...s, preservativeDosePct, preservativeSetByUser: true }))
+                      }
+                    />
+                  ) : null
+                }
                 onMeasuredPasteGramsChange={setMeasuredPasteGrams}
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
-              />
-            )}
-            {/* PLACEMENT IS A LAYOUT DECISION, NOT A CORRECTNESS ONE — and the layout
-                reason is the good one, so read it before moving this.
-
-                Directly below Dilution so the snippet's "≈ Finished product (whole batch)"
-                row lands immediately under Dilution's own "Finished solution" figure. They
-                are the same number, and it is the number the dose is a percentage OF, so a
-                maker reads dose against basis in one glance.
-
-                What is NOT the reason: correctness. This was moved beside Additives on
-                2026-08-09 and moved back the next day — every test passed and it rendered
-                fine two columns away, because `basisScope` makes the base row NAME its own
-                scope ("whole batch" / "custom amount") rather than inheriting meaning from
-                the toggle it sits under. So do not keep this here believing the arithmetic
-                depends on it; keep it here because the two figures line up.
-
-                Replaces the old static Preserve panel: the snippet carries the same need
-                logic AND the dose it used to defer to "your supplier". */}
-            {processOffers(process, 'preserve') && (
-              <PreservativeSnippet
-                finishedGrams={preservativeBaseGrams}
-                basisScope={dilutionScope}
-                weightUnit={weightUnit}
-                preservativeId={settings.preservativeId}
-                onPreservativeIdChange={(preservativeId) =>
-                  setSettings((s) => ({ ...s, preservativeId, preservativeSetByUser: true }))
-                }
-                preservativeCustomName={settings.preservativeCustomName}
-                onPreservativeCustomNameChange={(preservativeCustomName) =>
-                  setSettings((s) => ({ ...s, preservativeCustomName, preservativeSetByUser: true }))
-                }
-                dosePct={settings.preservativeDosePct}
-                onDosePctChange={(preservativeDosePct) =>
-                  setSettings((s) => ({ ...s, preservativeDosePct, preservativeSetByUser: true }))
-                }
               />
             )}
             {processOffers(process, 'neutralize') && vm.neutralization && (

@@ -345,3 +345,22 @@ describe("the preservative pick reseeds the dose through App's own wiring", () =
     expect(doseInput.value).toBe('0.5');
   });
 });
+
+describe('the preservative sits inside the panel it doses against', () => {
+  it('renders within the Dilution panel, not as a sibling beside it', async () => {
+    // Structural, not cosmetic. The dose is a % of the finished mass the Dilution panel
+    // computes, and while that was only a layout convention the snippet was moved out to
+    // sit with Additives (2026-08-09) and moved back the next day — every test passing
+    // both times, because nothing asserted the adjacency. This is that assertion.
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+    const enclosingPanel = snippet.closest('section.panel') as HTMLElement;
+    expect(enclosingPanel).toBeTruthy();
+    // The enclosing panel must be the Dilution panel itself — proven by its own content,
+    // not by a class name that could drift.
+    expect(enclosingPanel.textContent).toContain('Dilution water to add');
+  });
+});
