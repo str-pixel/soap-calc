@@ -244,7 +244,124 @@ Add to `RecipeSettings` after the preservative fields:
 
 **Interfaces:** Consumes `gradualDilutionFrom` (Task 1) and `settings.gradualWaterGrams` (Task 2).
 
-- [ ] **Step 1: Failing tests** covering: the third radio exists and is selectable; entering water renders the three readouts (`Water added`, `Finished so far`, `Lands at N% soap`); **"Finished so far" equals paste + water exactly**, not `dilution.solutionGrams`; blank water renders no readouts and writes nothing; an extreme record shows the true concentration while reporting that the written value was capped.
+- [ ] **Step 1: Write the failing tests**
+
+Append to `packages/web/src/components/DilutionPanel.test.tsx`. It already has `RESULT`
+(anhydrous 1,200 g, solution 4,000 g, totalWater 2,800 g, dilutionWater 2,400 g → **cook
+water 400 g, paste 1,600 g**) and a `BASE` props object; reuse both. `vi` is already
+imported.
+
+```tsx
+describe('gradual dilution — recording the water actually poured', () => {
+  // paste 1,600 g (anhydrous 1,200 + cook 400). Pour 2,000 g → finished 3,600 g,
+  // concentration 1200/3600 = 33.3333% → written at 2 dp as 33.33.
+  const GRADUAL = {
+    ...BASE,
+    dilutionMode: 'gradual' as const,
+    onDilutionModeChange: () => {},
+    cookWaterGrams: 400,
+    wholeBatchPasteGrams: 1600,
+    onGradualWaterChange: () => {},
+  };
+
+  it('offers Gradual as a third mode beside the two precise ones', () => {
+    render(<DilutionPanel {...BASE} dilutionMode="concentration" onDilutionModeChange={() => {}} />);
+    expect(screen.getByRole('radio', { name: /Gradual/ })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Target concentration' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Water : paste ratio' })).toBeTruthy();
+  });
+
+  it('shows the water, the finished mass and where it lands', () => {
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    expect(screen.getByText(/Finished so far/)).toBeTruthy();
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.getByText(/33\.33% soap/)).toBeTruthy();
+  });
+
+  it('the finished figure is paste + water, NOT the recomputed solution', () => {
+    // The whole point: 4,000 g is what the old target predicted; 3,600 g is what was
+    // poured. Printing solutionGrams here would quietly show the prediction again.
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.queryByText(/Finished so far[\s\S]*4,000 g/)).toBeNull();
+  });
+
+  it('writes the derived concentration back at 2 dp once the field is touched', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2000' } });
+    rerender(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="2000" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('33.33');
+  });
+
+  it('writes nothing at all until the maker has typed a water amount', () => {
+    const onSoapConcentrationChange = vi.fn();
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />);
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+  });
+
+  it('an extreme record keeps the readout honest while capping what is written', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    // Almost no water: true concentration 1200/1610 = 74.5%, still under the cap — use a
+    // paste that pushes past it instead.
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '0' } });
+    rerender(
+      <DilutionPanel {...GRADUAL} wholeBatchPasteGrams={1210} gradualWaterGrams="0"
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    // 1200/1210 = 99.17% — the readout says so, the written value is capped at 99.
+    expect(screen.getByText(/99\.17% soap/)).toBeTruthy();
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('99');
+    expect(screen.getByText(/capp?ed|clamped/i)).toBeTruthy();
+  });
+
+  it('does not loop: the paste it derives from is unmoved by the concentration it writes', () => {
+    // If wholeBatchPasteGrams ever became concentration-dependent, gradual would chase its
+    // own write-back. Nothing else in the suite would notice.
+    const { rerender } = render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    const before = screen.getByText('3,600 g');
+    rerender(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000"
+      dilution={{ ...RESULT, solutionGrams: 3600, soapConcentrationPercent: 33.33 }} />);
+    expect(before).toBeTruthy();
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+  });
+
+  it('never reports over-dilution from an honest record', () => {
+    // totalWater = cook + solids + water >= cook, so targetExceedsPaste cannot hold.
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    expect(screen.queryByText(/exceeds the paste|more water than the paste/i)).toBeNull();
+  });
+});
+
+describe('the re-entry guard — a derived mode must not revert a typed target', () => {
+  it('returning to gradual without touching the field leaves a typed concentration alone', () => {
+    // The bug this guards, in ratio's own words at DilutionPanel.tsx:170-179: the
+    // write-back fired on re-entry alone and reverted the typed value, "with no visual
+    // difference and no undo".
+    const onSoapConcentrationChange = vi.fn();
+    const props = {
+      ...BASE, cookWaterGrams: 400, wholeBatchPasteGrams: 1600,
+      onDilutionModeChange: () => {}, onGradualWaterChange: () => {},
+      gradualWaterGrams: '2000', onSoapConcentrationChange,
+    };
+    const { rerender } = render(<DilutionPanel {...props} dilutionMode="gradual" />);
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2000' } });
+    onSoapConcentrationChange.mockClear();
+    // leave for concentration mode, type an exact target, come back WITHOUT retyping water
+    rerender(<DilutionPanel {...props} dilutionMode="concentration" soapConcentrationPercent="40" />);
+    rerender(<DilutionPanel {...props} dilutionMode="gradual" soapConcentrationPercent="40" />);
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+});
+```
 
 - [ ] **Step 2: Run to verify they fail.**
 
@@ -312,7 +429,38 @@ clamped case renders something coherent rather than a contradiction.
 
 The spec's finding: `wholeBatchPasteGrams` is `anhydrous + cookWater + splitLiquidSolids` and is **not** corrected by a measured reading. Gradual must choose.
 
-- [ ] **Step 1: Failing tests.** With a valid `measuredPasteGrams`, "Finished so far" uses the measurement and the readout names it. With no reading, or one that `measuredPasteRejectionFor` rejects, it falls back to `wholeBatchPasteGrams` and names *that*.
+- [ ] **Step 1: Write the failing tests**
+
+```tsx
+describe('gradual: which paste it counts from', () => {
+  const G = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    cookWaterGrams: 400, wholeBatchPasteGrams: 1600, onGradualWaterChange: () => {},
+    gradualWaterGrams: '2000',
+  };
+
+  it('uses the pot the maker actually weighed, and says so', () => {
+    // Weighed 1,500 g (the cook drove off more than the recipe predicted). Finished is
+    // 1,500 + 2,000 = 3,500 g, not the computed 3,600 g.
+    render(<DilutionPanel {...G} measuredPasteGrams="1500" />);
+    expect(screen.getByText('3,500 g')).toBeTruthy();
+    expect(screen.getByText(/measured/i)).toBeTruthy();
+  });
+
+  it('falls back to the computed paste when no reading was taken, and names that instead', () => {
+    render(<DilutionPanel {...G} measuredPasteGrams="" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.getByText(/computed|from the recipe/i)).toBeTruthy();
+  });
+
+  it('ignores a reading the shared gate rejects, rather than counting from an impossible pot', () => {
+    // Below the anhydrous floor: physically impossible, and measuredPasteRejectionFor
+    // already refuses it everywhere else in the app.
+    render(<DilutionPanel {...G} measuredPasteGrams="900" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+  });
+});
+```
 
 - [ ] **Step 2-3:** Implement the selection, reusing `measuredPasteRejectionFor` from `lib/measuredPaste` so this panel and the rest of the app cannot disagree about whether a reading is usable. The readout names its basis — the same discipline as `basisScope`'s "(whole batch)" / "(custom amount)".
 
@@ -324,7 +472,58 @@ The spec's finding: `wholeBatchPasteGrams` is `anhydrous + cookWater + splitLiqu
 
 **Files:** `DilutionPanel.tsx` / `PortionDilutionResults.tsx`, `App.tsx` (two session-local states), tests.
 
-- [ ] **Step 1: Failing tests.** In Custom amount + gradual: the two inputs render (*Paste weighed out (g)*, *Water added so far (g)*); the portion's finished mass and its own concentration render, each naming that they are the portion's; the preservative dose follows the portion's finished mass. **The guard test that matters: `onSoapConcentrationChange` is NEVER called in portion gradual** — assert on the spy, not on a rendered figure.
+- [ ] **Step 1: Write the failing tests**
+
+```tsx
+describe('gradual in Custom amount scope', () => {
+  const P = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    dilutionScope: 'portion' as const, cookWaterGrams: 400, wholeBatchPasteGrams: 1600,
+    onGradualWaterChange: () => {},
+    onPortionPasteChange: () => {}, onPortionWaterChange: () => {},
+  };
+
+  it('asks for the paste weighed out, not a target volume', () => {
+    render(<DilutionPanel {...P} portionPasteGrams="" portionWaterGrams="" />);
+    expect(screen.getByLabelText(/Paste weighed out/)).toBeTruthy();
+    expect(screen.getByLabelText(/Water added so far/)).toBeTruthy();
+  });
+
+  it("reports the jar's own figures, each named as the portion's", () => {
+    // 400 g of paste is a quarter of the 1,600 g batch, so it carries 300 g anhydrous.
+    // Add 600 g water → 1,000 g finished, 30% soap.
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="600" />);
+    expect(screen.getByText('1,000 g')).toBeTruthy();
+    expect(screen.getByText(/30(\.0+)?% soap/)).toBeTruthy();
+    expect(screen.getByText(/custom amount/i)).toBeTruthy();
+  });
+
+  // THE GUARD. A jar diluted thinner has not redefined the recipe. Asserted on the spy
+  // rather than on a rendered figure, because the damage is the write, not the display.
+  it('NEVER writes the jar\'s concentration back into the recipe', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...P} portionPasteGrams="" portionWaterGrams=""
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Paste weighed out/), { target: { value: '400' } });
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '900' } });
+    rerender(
+      <DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900"
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves the recipe target on screen unchanged beside the jar figure', () => {
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900"
+      soapConcentrationPercent="30" />);
+    // 400 + 900 = 1,300 g at 300/1300 = 23.1% — the jar. The recipe still says 30%.
+    expect(screen.getByText(/23(\.\d+)?% soap/)).toBeTruthy();
+    expect(screen.getByDisplayValue('30')).toBeTruthy();
+  });
+});
+```
 
 - [ ] **Step 2-3: Implement — through core's existing helper, NOT a fresh formula.**
 
@@ -376,7 +575,31 @@ The two inputs are **session-local in `App`**, consistent with `portionTargetMl`
 
 **Files:** `BatchSheet.tsx`, `BatchSheet.test.tsx`.
 
-- [ ] **Step 1: Failing tests.** With `gradualWaterGrams` recorded, the Dilution section prints a line naming the water added and the finished mass it produced. Absent otherwise. The existing `lsSheetData` fixture gains a `gradualWaterGrams` override, the way it gained `preservative`.
+- [ ] **Step 1: Write the failing tests**
+
+`lsSheetData` (`BatchSheet.test.tsx:425`) gains a `gradualWaterGrams` override on its
+`preservative` settings-merge parameter — extend that same merge rather than adding a
+second convention.
+
+```tsx
+test('records the water actually poured, and what it produced', () => {
+  render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: '2000' } })} />);
+  const row = screen.getByText(/Water added/).closest('div')!;
+  expect(row.textContent).toContain('2,000 g');
+});
+
+test('says nothing about gradual water when none was recorded', () => {
+  render(<BatchSheet data={lsSheetData({})} />);
+  expect(screen.queryByText(/Water added/)).toBeNull();
+});
+
+test('the recorded line does not contradict the computed dilution row', () => {
+  // Both print. The sheet must not show one figure as if it were the other.
+  render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: '2000' } })} />);
+  expect(screen.getByText('Dilution water to add')).toBeTruthy();
+  expect(screen.getByText(/Water added/)).toBeTruthy();
+});
+```
 
 - [ ] **Step 2-4: Implement, full suite, commit** — `feat(ls): the sheet says what you poured, not what was predicted`
 
@@ -386,7 +609,49 @@ The two inputs are **session-local in `App`**, consistent with `portionTargetMl`
 
 **Files:** `packages/web/e2e/ls-gradual-dilution.spec.ts` (new).
 
-- [ ] **Step 1:** A spec that switches to Liquid soap, enters oils, selects Gradual, records water, and asserts: the three readouts appear; "Finished so far" equals paste + water; and **the preservative dose follows the recorded water** rather than the previous target's predicted mass.
+- [ ] **Step 1: Write the spec**
+
+Follow `e2e/ls-preservative.spec.ts`'s shape — same `freshLsRecipe` helper and `gramsOf`
+reader. Note its documented gotchas: `getByLabel('Name')` needs `{ exact: true }` because
+the toolbar has a "Recipe name" field, and two independently whole-gram-rounded readings
+can differ by up to `0.5 + 2 × 0.5 = 1.5 g`.
+
+```ts
+test('the dose follows the water you recorded, not the target you left behind', async ({ page }) => {
+  await freshLsRecipe(page);
+
+  const snippet = page.locator('details.preservative');
+  await snippet.locator('summary').click();
+  const doseAtTarget = await gramsOf(snippet, 'Preservative to add');
+  expect(doseAtTarget).toBeGreaterThan(0);
+
+  // Switch to Gradual and record less water than the target assumed.
+  await page.getByRole('radio', { name: /Gradual/ }).click();
+  const water = page.getByLabel('Water added so far (g)', { exact: true });
+  await water.fill('1000');
+  await water.blur();
+
+  // The panel states what is in the pot.
+  await expect(page.getByText(/Finished so far/)).toBeVisible();
+
+  // And the dose follows it DOWN — less soap in the bottle, less preservative.
+  const doseAfter = await gramsOf(snippet, 'Preservative to add');
+  expect(doseAfter).toBeLessThan(doseAtTarget);
+
+  // The finished-product row the dose is a % of now equals what was recorded.
+  const finished = await gramsOf(snippet, '≈ Finished product');
+  expect(Math.abs(doseAfter - finished * 0.01)).toBeLessThanOrEqual(1.5);
+});
+
+test('the recorded water survives a reload', async ({ page }) => {
+  await freshLsRecipe(page);
+  await page.getByRole('radio', { name: /Gradual/ }).click();
+  await page.getByLabel('Water added so far (g)', { exact: true }).fill('1000');
+  await page.getByLabel('Water added so far (g)', { exact: true }).blur();
+  await page.reload();
+  await expect(page.getByLabel('Water added so far (g)', { exact: true })).toHaveValue('1000');
+});
+```
 
 - [ ] **Step 2:** Run `npm run test:e2e -w @soap-calc/web -- e2e/ls-gradual-dilution.spec.ts`. If Playwright cannot execute, report that honestly — do not weaken assertions to obtain a pass.
 
