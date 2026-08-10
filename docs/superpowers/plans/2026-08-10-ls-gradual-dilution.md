@@ -248,7 +248,11 @@ Add to `RecipeSettings` after the preservative fields:
 
 - [ ] **Step 2: Run to verify they fail.**
 
-- [ ] **Step 3: Implement.** Extend the `DilutionMode` union with `'gradual'`. Add the third radio to the existing `dilution-mode-toggle` radiogroup (`DilutionPanel.tsx:558-578`), matching the two present exactly:
+- [ ] **Step 3: Implement.** Extend the `DilutionMode` union with `'gradual'`
+(`DilutionPanel.tsx:27`) — **and `App.tsx:137` with it**, which does *not* use that type:
+it declares `useState<'concentration' | 'ratio'>('concentration')` with the union written
+out inline. Widen it to `useState<DilutionMode>` and import the type, or App can never hold
+`'gradual'` and `onDilutionModeChange={setDilutionMode}` stops typechecking. Add the third radio to the existing `dilution-mode-toggle` radiogroup (`DilutionPanel.tsx:558-578`), matching the two present exactly:
 
 ```tsx
           <label className="field field--inline">
@@ -266,7 +270,9 @@ Add a `dilutionMode === 'gradual'` branch beside the existing ratio branch, with
 
 - [ ] **Step 4: THE RE-ENTRY GUARD.** `DilutionPanel.tsx:176-179` resets `ratioTouched` on every `dilutionMode` change. Its comment records the bug: without it, leaving a derived mode to type an exact target and returning *without touching the field* re-fired the write-back and silently reverted the typed value, "with no visual difference and no undo". Add `gradualTouched` to that same effect. **Write a test that fails without it**: enter gradual water, switch to Target concentration, type a different %, switch back to gradual, and assert the typed % survives.
 
-- [ ] **Step 5: The write-back**, mirroring `:329-332`:
+- [ ] **Step 5: The write-back**, mirroring `:329-332`. `gradual` is the memoised
+`gradualDilutionFrom({ pasteGrams, anhydrousGrams: dilution.anhydrousGrams, waterAddedGrams })`
+result, where `pasteGrams` is Task 4's chosen basis:
 
 ```tsx
   useEffect(() => {
@@ -277,6 +283,24 @@ Add a `dilutionMode === 'gradual'` branch beside the existing ratio branch, with
 ```
 
 Render the clamp notice when `gradual.clamped`, in the same shape as `ratioWriteBackClamped`'s.
+
+**Why this cannot loop, and a test to keep it that way.** Gradual writes a concentration
+that is derived from the paste — so if the paste moved when the concentration did, the
+write-back would chase itself. Verified that it does not: `calculateDilution` takes
+`anhydrousGrams` as an input and returns it untouched (`dilution.ts:48`, `:77`), and
+`wholeBatchPasteGrams` is `anhydrous + cookWater + splitLiquidSolids`
+(`useRecipeViewModel.ts:442-446`) whose solids term derives from the liquid rows and their
+water fractions (`:279-289`), not from the concentration. **Add a regression test**: record
+water, let the write-back settle, and assert the displayed paste is unchanged — a future
+edit that makes `wholeBatchPasteGrams` concentration-dependent would otherwise introduce an
+oscillation that no existing test would catch.
+
+**`targetExceedsPaste` interaction.** From an unclamped gradual record the flag is
+unreachable: `totalWater = solution − anhydrous = cookWater + solids + water`, which is
+`≥ cookWater`, so `totalWaterGrams < cookWaterGrams` (`dilution.ts:57`) cannot hold. Under
+the **clamp** it becomes reachable again, and the panel carries substantial over-dilution
+messaging keyed on that flag. Assert the unreachability in the normal case, and check the
+clamped case renders something coherent rather than a contradiction.
 
 - [ ] **Step 6-7: Full suite green, commit** — `feat(ls): gradual dilution — the app holds the number you poured`
 
@@ -302,13 +326,23 @@ The spec's finding: `wholeBatchPasteGrams` is `anhydrous + cookWater + splitLiqu
 
 - [ ] **Step 1: Failing tests.** In Custom amount + gradual: the two inputs render (*Paste weighed out (g)*, *Water added so far (g)*); the portion's finished mass and its own concentration render, each naming that they are the portion's; the preservative dose follows the portion's finished mass. **The guard test that matters: `onSoapConcentrationChange` is NEVER called in portion gradual** — assert on the spy, not on a rendered figure.
 
-- [ ] **Step 2-3: Implement.**
+- [ ] **Step 2-3: Implement — through core's existing helper, NOT a fresh formula.**
 
-```
-portionFinished       = portionPaste + portionWater
-portionAnhydrousShare = portionPaste × (anhydrousGrams / wholeBatchPasteGrams)
-portionConcentration  = portionAnhydrousShare / portionFinished
-```
+An earlier draft of this plan restated the share arithmetic inline as
+`portionPaste × (anhydrousGrams / wholeBatchPasteGrams)`. **Do not do that.**
+`lsPartialDilution` (`packages/core/src/ls-yield.ts:65`) already owns this derivation —
+its own doc states the rule, *"the paste is homogeneous, so the pot's own anhydrous soap is
+a proportional share of the measurement (measured × anhydrousGrams / predictedPasteGrams)"* —
+and it deliberately distinguishes `predictedPasteGrams` from `wholeBatchPasteGrams`, a
+distinction the inline formula above silently collapsed by picking one of them. The same
+file warns in terms: *"do not re-derive a 'predicted paste' from
+totalWaterGrams/dilutionWaterGrams elsewhere; it will silently reproduce this trap."*
+
+So: derive the portion's finished mass as `portionPaste + portionWater` (that part is just
+addition), and take the portion's **anhydrous share from `lsPartialDilution`'s existing
+result**, extending that function if it does not expose what is needed rather than
+duplicating its ratio in the panel. If extending core proves larger than expected, stop and
+report — a second portion-share derivation is the outcome this step exists to prevent.
 
 The two inputs are **session-local in `App`**, consistent with `portionTargetMl` and `measuredPasteGrams` — bench figures that must not dirty a saved recipe. Only the whole-batch record is recipe state.
 
