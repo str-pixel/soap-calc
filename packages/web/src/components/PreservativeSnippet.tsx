@@ -50,7 +50,11 @@ type PreservativeSnippetProps = {
 };
 
 /**
- * The Preservative snippet — a collapsed <details> below the Dilution panel, LS only.
+ * The Preservative snippet — a collapsed <details> after the Additives panel, LS only.
+ * It sits with Additives because picking a preservative is the same kind of decision, but
+ * its dose is a % of the DILUTION's finished mass, which the Dilution panel owns in the
+ * next column — hence `basisScope`, which lets the base row name its own scope instead of
+ * relying on sitting under the toggle that sets it.
  *
  * A recipe SETTING, not a recipe ingredient: the pick, the custom name and the dose are
  * saved with the recipe, exported with it and printed on the batch sheet — but no
@@ -244,10 +248,12 @@ export function PreservativeSnippet({
       ) : basisScope === 'portion' ? (
         /* Custom amount with no portion to dose. The state-specific ask, not the batch's:
            the maker is on a screen with no batch figures on it, and the one thing that
-           sizes a dose here is the amount they are making. */
+           sizes a dose here is the amount they are making. The Dilution panel is NAMED
+           rather than pointed at — this snippet sits beside Additives now, so "above" was
+           directing the maker at whatever happens to be above it instead. */
         <p className="results-hint">
-          Enter an Amount to make above — with Custom amount chosen, the dose is a % of the
-          portion you are making now, not of the whole batch.
+          Enter an Amount to make in the Dilution panel — with Custom amount chosen, the
+          dose is a % of the portion you are making now, not of the whole batch.
         </p>
       ) : (
         <p className="results-hint">
