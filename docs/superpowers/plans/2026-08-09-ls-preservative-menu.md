@@ -6,7 +6,7 @@
 
 **Architecture:** Core gains a pure dose *classifier* that replaces the clamp; the snippet renders a ladder of notes off it instead of substituting a figure. `''` is the custom sentinel, matching the additives catalog idiom. Three fields join `RecipeSettings`, which gives save/load/export/import for free because both file paths already funnel through `normalizeSettings`.
 
-**Tech Stack:** TypeScript, React 18, Vitest + @testing-library/react (jsdom), Playwright, npm workspaces.
+**Tech Stack:** TypeScript, React 19.1, Vitest + @testing-library/react (jsdom), Playwright, npm workspaces.
 
 **Spec:** `docs/superpowers/specs/2026-08-08-ls-preservative-menu-design.md`
 
@@ -19,6 +19,11 @@
 - **`''` means custom** for `preservativeId`, matching `catalogId: ''` (additives) and `presetKey: ''` (alternative liquids).
 - **Session-local state stays session-local:** `dilutionScope`, `portionTargetMl`, `measuredPasteGrams` and the `preservativeBaseGrams` memo are not touched by this work.
 - **Never invent product data.** No new preservative is added to `LS_PRESERVATIVES`; no pH rating, ceiling or formaldehyde status is asserted for a custom entry.
+- **Commits.** `AGENTS.md` says *"Do not auto-commit or auto-push unless explicitly asked."*
+  Each task below ends in a commit step because the user explicitly authorised
+  subagent-driven execution, which commits per task, for **this run**. Anyone reusing this
+  plan does not inherit that authorisation: get it first, or treat every commit step as
+  "stage and stop". Nothing here authorises a push.
 - Run all commands from the repo root `/Users/str/soap-calc`. Full suite: `npm test`. Single web file: `npm test -w @soap-calc/web -- src/path/file.test.tsx`. Single core file: `npm test -w @soap-calc/core -- src/file.test.ts`.
 
 ---

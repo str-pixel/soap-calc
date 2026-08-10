@@ -179,8 +179,12 @@ hazard the reseed rule exists to prevent. A blank field forces a deliberate entr
   > potassium sorbate, Geogard, Optiphen) are inert here. Check your supplier's rated pH
   > range and use level before dosing.
 
-**Name fallback:** every string that interpolates a product name — warnings and the batch
-sheet row — falls back to `Custom preservative` when the custom name is blank.
+**Name fallback:** on the **batch sheet**, a blank custom name falls back to
+`Custom preservative` so the row is never headless. The snippet itself needs no fallback:
+it interpolates a product name only into product-specific copy, which a custom entry
+suppresses entirely, so there is no string there for a custom name to fill. (An earlier
+draft asserted the fallback applied to warnings too; the unreachable binding that implied
+was deleted before merge.)
 
 **Name retention:** the typed custom name stays in state while a known product is
 selected (switch back and it is still there), simply unused. This differs from
@@ -211,13 +215,14 @@ suppresses product facts, never scope facts.
 
 ### 4 · Persistence
 
-Three fields join `RecipeSettings` in `packages/web/src/lib/recipe.ts`:
+Four fields join `RecipeSettings` in `packages/web/src/lib/recipe.ts`:
 
 | Field | Default | Meaning |
 |---|---|---|
 | `preservativeId` | `LS_PRESERVATIVES[0].id` | `''` = custom |
 | `preservativeCustomName` | `''` | free text, used only when `preservativeId === ''` |
 | `preservativeDosePct` | `String(LS_PRESERVATIVES[0].defaultPct)` | input string, like every other numeric setting |
+| `preservativeSetByUser` | `false` | has the maker touched any of the three above? Gates the batch-sheet row — see §5 |
 
 The two defaults are **computed from the table, not written as literals** — they are the
 same expressions `App` seeds today, and a literal `'suttocide-a'` / `'1'` would drift
@@ -230,6 +235,10 @@ silently if the table is ever reordered or its `defaultPct` revised.
   `catalogId` degrades to a custom additive row.
 - `preservativeCustomName`, `preservativeDosePct`: `settingString(...)` with the defaults
   above.
+- `preservativeSetByUser`: `partial?.preservativeSetByUser === true` — an absent field, as
+  on any recipe written before this feature, must mean **false**, so an untouched recipe
+  prints no row. All three handlers in `App` set it true alongside the value they change,
+  in the same functional update.
 
 Adding them to `DEFAULT_SETTINGS` enrols them in `KNOWN_SETTING_KEYS` automatically, so
 `preserveUnknownSettings` will not shadow them.
@@ -377,7 +386,8 @@ ever returned. `lsPreservativeById`'s test gains an unknown-id case returning
 - each rung of the ladder renders its own copy, and only its own;
 - **the regression the old clamp made untestable: with a dose above the ceiling, the
   grams equal `finishedGrams × typedPct / 100`**;
-- a blank custom name renders `Custom preservative` in warnings;
+- (the blank-custom-name fallback is a batch-sheet concern, covered in the `BatchSheet`
+  tests below — the snippet has no string for it to fill);
 - the scope behaviour still holds with a custom entry selected: `basisScope="portion"`
   keeps the scope-named base row and the portion-specific empty state, so `Custom…`
   suppresses product facts without suppressing scope facts.
