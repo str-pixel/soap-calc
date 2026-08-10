@@ -3,7 +3,7 @@ import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
-import { DilutionPanel, type DilutionScope } from './components/DilutionPanel';
+import { DilutionPanel, type DilutionMode, type DilutionScope } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
@@ -130,11 +130,16 @@ export default function App() {
   }, [process, oilsSignature]);
   // Which way the maker is choosing the dilution target: a soap concentration (the
   // default — LS:1536, and what the persisted settings.soapConcentrationPercent already
-  // is) or a water:paste ratio by weight (LS:1534). Session-local like the portion inputs
-  // above, not a recipe setting — the persisted concentration is still the one figure every
-  // downstream consumer (vm.dilution, DilutionPanel, BatchSheet) reads;
-  // ratio mode only ever writes into it via DilutionPanel's onSoapConcentrationChange.
-  const [dilutionMode, setDilutionMode] = useState<'concentration' | 'ratio'>('concentration');
+  // is), a water:paste ratio by weight (LS:1534), or Gradual Dilution — recording the water
+  // actually poured in and letting the concentration fall out of that (also LS:1531).
+  // Session-local like the portion inputs above, not a recipe setting — the persisted
+  // concentration is still the one figure every downstream consumer (vm.dilution,
+  // DilutionPanel, BatchSheet) reads; ratio and gradual only ever write into it via
+  // DilutionPanel's onSoapConcentrationChange. waterPasteRatio below is session-local for
+  // the same reason; gradualWaterGrams is the one exception — it is recipe state
+  // (settings.gradualWaterGrams, RecipeSettings' own field), because it is also the basis
+  // of a preservative dose that is itself recipe state and must survive a reload.
+  const [dilutionMode, setDilutionMode] = useState<DilutionMode>('concentration');
   const [waterPasteRatio, setWaterPasteRatio] = useState('2');
   // "Dilute it all" vs "make just this much now" — a decision about the session, not the
   // recipe, so it lives here rather than in settings. Defaults to the whole batch.
@@ -550,6 +555,10 @@ export default function App() {
                 onDilutionModeChange={setDilutionMode}
                 waterPasteRatio={waterPasteRatio}
                 onWaterPasteRatioChange={setWaterPasteRatio}
+                gradualWaterGrams={settings.gradualWaterGrams}
+                onGradualWaterChange={(value) =>
+                  setSettings({ ...settings, gradualWaterGrams: value })
+                }
                 measuredPasteGrams={measuredPasteGrams}
                 dilutionScope={dilutionScope}
                 onDilutionScopeChange={setDilutionScope}

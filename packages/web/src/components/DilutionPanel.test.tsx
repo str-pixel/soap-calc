@@ -3132,3 +3132,113 @@ describe('an amount asked to the hundredth of a millilitre is a swallowed comma'
     expect(alerts.some((a) => a.includes('1.200 ml'))).toBe(true);
   });
 });
+
+describe('gradual dilution — recording the water actually poured', () => {
+  // paste 1,600 g (anhydrous 1,200 + cook 400). Pour 2,000 g → finished 3,600 g,
+  // concentration 1200/3600 = 33.3333% → written at 2 dp as 33.33.
+  const GRADUAL = {
+    ...BASE,
+    dilutionMode: 'gradual' as const,
+    onDilutionModeChange: () => {},
+    cookWaterGrams: 400,
+    wholeBatchPasteGrams: 1600,
+    onGradualWaterChange: () => {},
+  };
+
+  it('offers Gradual as a third mode beside the two precise ones', () => {
+    render(<DilutionPanel {...BASE} dilutionMode="concentration" onDilutionModeChange={() => {}} />);
+    expect(screen.getByRole('radio', { name: /Gradual/ })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Target concentration' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Water : paste ratio' })).toBeTruthy();
+  });
+
+  it('shows the water, the finished mass and where it lands', () => {
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    expect(screen.getByText(/Finished so far/)).toBeTruthy();
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.getByText(/33\.33% soap/)).toBeTruthy();
+  });
+
+  it('the finished figure is paste + water, NOT the recomputed solution', () => {
+    // The whole point: 4,000 g is what the old target predicted; 3,600 g is what was
+    // poured. Printing solutionGrams here would quietly show the prediction again.
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.queryByText(/Finished so far[\s\S]*4,000 g/)).toBeNull();
+  });
+
+  it('writes the derived concentration back at 2 dp once the field is touched', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2000' } });
+    rerender(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="2000" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('33.33');
+  });
+
+  it('writes nothing at all until the maker has typed a water amount', () => {
+    const onSoapConcentrationChange = vi.fn();
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />);
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+  });
+
+  it('an extreme record keeps the readout honest while capping what is written', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    // Almost no water: true concentration 1200/1610 = 74.5%, still under the cap — use a
+    // paste that pushes past it instead.
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '0' } });
+    rerender(
+      <DilutionPanel {...GRADUAL} wholeBatchPasteGrams={1210} gradualWaterGrams="0"
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    // 1200/1210 = 99.17% — the readout says so, the written value is capped at 99.
+    expect(screen.getByText(/99\.17% soap/)).toBeTruthy();
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('99');
+    expect(screen.getByText(/capp?ed|clamped/i)).toBeTruthy();
+  });
+
+  it('does not loop: the paste it derives from is unmoved by the concentration it writes', () => {
+    // If wholeBatchPasteGrams ever became concentration-dependent, gradual would chase its
+    // own write-back. Nothing else in the suite would notice.
+    const { rerender } = render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    const before = screen.getByText('3,600 g');
+    rerender(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000"
+      dilution={{ ...RESULT, solutionGrams: 3600, soapConcentrationPercent: 33.33 }} />);
+    expect(before).toBeTruthy();
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+  });
+
+  it('never reports over-dilution from an honest record', () => {
+    // totalWater = cook + solids + water >= cook, so targetExceedsPaste cannot hold.
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    expect(screen.queryByText(/exceeds the paste|more water than the paste/i)).toBeNull();
+  });
+});
+
+describe('the re-entry guard — a derived mode must not revert a typed target', () => {
+  it('returning to gradual without touching the field leaves a typed concentration alone', () => {
+    // The bug this guards, in ratio's own words at DilutionPanel.tsx:170-179: the
+    // write-back fired on re-entry alone and reverted the typed value, "with no visual
+    // difference and no undo".
+    const onSoapConcentrationChange = vi.fn();
+    const props = {
+      ...BASE, cookWaterGrams: 400, wholeBatchPasteGrams: 1600,
+      onDilutionModeChange: () => {}, onGradualWaterChange: () => {},
+      gradualWaterGrams: '2000', onSoapConcentrationChange,
+    };
+    const { rerender } = render(<DilutionPanel {...props} dilutionMode="gradual" />);
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2000' } });
+    onSoapConcentrationChange.mockClear();
+    // leave for concentration mode, type an exact target, come back WITHOUT retyping water
+    rerender(<DilutionPanel {...props} dilutionMode="concentration" soapConcentrationPercent="40" />);
+    rerender(<DilutionPanel {...props} dilutionMode="gradual" soapConcentrationPercent="40" />);
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+});

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import {
   LS_DILUTION_TARGETS,
   LS_SOLUTION_DENSITY_G_PER_ML,
+  gradualDilutionFrom,
   lsConcentrationAboveAllMinimums,
   lsDilutionUsesFor,
   lsFinishedVolumeMl,
   type DilutionResult,
 } from '@soap-calc/core';
 import { finishedProductGramsFor } from '../lib/calculateAdditives';
-import { formatConcentrationPercent } from '../lib/format';
+import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { formatWeight } from '../lib/weightUnits';
 import {
   MEASURED_PASTE_IS_REMAINING,
@@ -24,7 +25,7 @@ import {
   portionDilutionFor,
 } from './PortionDilutionResults';
 
-export type DilutionMode = 'concentration' | 'ratio';
+export type DilutionMode = 'concentration' | 'ratio' | 'gradual';
 
 /** The water:paste ratios the reference actually prints, all of them WATER : PASTE by
  * weight — the same direction the field label states, and the direction the reference's own
@@ -96,6 +97,13 @@ type DilutionPanelProps = {
   /** Water:paste ratio by weight, as typed (e.g. "2" for 2:1). */
   waterPasteRatio?: string;
   onWaterPasteRatioChange?: (value: string) => void;
+  /** Water actually poured in so far, in grams, as typed — Gradual Dilution's own record
+   * (LS:1531: add water in increments and record how much). Empty means "nothing typed
+   * yet", not zero: zero is itself a legitimate reading (the pot before any water at all),
+   * so the two must never collapse to the same value — see the parsing next to `gradual`
+   * below. */
+  gradualWaterGrams?: string;
+  onGradualWaterChange?: (value: string) => void;
   /** The maker's scale reading for the paste, in grams (same App state PortionDilutionResults
    * reads — see its doc comment). ALWAYS the whole batch, and that is this app's choice, not
    * the reference's: the reference's ratio method is portion-first (LS:1534 weighs "the
@@ -153,6 +161,8 @@ export function DilutionPanel({
   onDilutionModeChange,
   waterPasteRatio = '',
   onWaterPasteRatioChange,
+  gradualWaterGrams = '',
+  onGradualWaterChange,
   measuredPasteGrams,
   onMeasuredPasteGramsChange,
   dilutionScope = 'batch',
@@ -165,6 +175,11 @@ export function DilutionPanel({
   // write-back effect further down can require a real edit before touching the saved
   // target. See that effect's comment for the bug this guards against.
   const [ratioTouched, setRatioTouched] = useState(false);
+  // Gradual's own touched flag, same discipline as ratioTouched immediately above and for
+  // the identical reason (see the reset effect right below, and the write-back effect
+  // further down): set only by the water-added field's own onChange, never by entering the
+  // mode, so a derived value is never written until the maker has actually typed something.
+  const [gradualTouched, setGradualTouched] = useState(false);
   // Review round 2, finding 1: a touch from an EARLIER visit to ratio mode must not carry
   // forward — otherwise: edit the ratio once (writes back, say 25%); switch to
   // concentration mode and type an exact target directly (say 40%); switch back to ratio
@@ -175,6 +190,11 @@ export function DilutionPanel({
   // into ratio mode needs its own explicit edit before anything is written again.
   useEffect(() => {
     setRatioTouched(false);
+    // Gradual is a second derived mode sharing this machinery, and the bug above is not
+    // ratio-specific: leaving gradual to type an exact target on Target concentration, then
+    // returning to gradual WITHOUT retyping the water, must not re-fire gradual's own
+    // write-back and revert the typed value either. Same reset, same reason.
+    setGradualTouched(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dilutionMode]);
   // Which intended uses the current target suits — the dilution figure is the one number
@@ -250,6 +270,29 @@ export function DilutionPanel({
     : hasCorrectedPasteBasis
       ? (wholeBatchPasteGrams as number)
       : dilution.anhydrousGrams + (cookWaterGrams ?? 0);
+  // Gradual Dilution (LS:1531): the maker records water actually poured, and the
+  // concentration is DERIVED from that record rather than targeted — the opposite
+  // direction from concentration and ratio mode, which both choose a number and let the
+  // app find the water. pasteGrams here is bestKnownPasteGrams, the same corrected
+  // whole-batch pot ratio falls back to when there is no measurement — not `pasteGrams`
+  // below, which ratio prefers a valid MEASURED reading over. Choosing between the measured
+  // pot and the computed one for gradual (with its own "measured"/"computed" readout
+  // wording) is a later task's job; until then this runs on the computed pot alone, exactly
+  // as if no reading had ever been taken.
+  //
+  // '' parses to NaN, never to 0: gradualDilutionFrom's zero is a legitimate reading (the
+  // pot before any water — Gradual Dilution's own starting point), so an EMPTY field must
+  // not collapse to the same result as a typed "0", or the readout and write-back would
+  // fire before the maker had recorded anything at all.
+  const gradualWaterNum = gradualWaterGrams.trim() === '' ? NaN : Number(gradualWaterGrams);
+  const gradual =
+    dilution && bestKnownPasteGrams !== null
+      ? gradualDilutionFrom({
+          pasteGrams: bestKnownPasteGrams,
+          anhydrousGrams: dilution.anhydrousGrams,
+          waterAddedGrams: gradualWaterNum,
+        })
+      : null;
   // The correction bestKnownPasteGrams carries over the recipe's own water-only figure —
   // an alternative liquid's non-water solids. Derived from that same basis rather than
   // taken as a prop so it can never disagree with the paste the figures are computed from;
@@ -332,6 +375,18 @@ export function DilutionPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ratioTouched, dilutionMode, clampedRatioConcentrationPercent, soapConcentrationPercent]);
+  // Gradual's write-back, mirroring ratio's immediately above: same touched-gate (see
+  // gradualTouched's own comment — entering a derived mode must not write anything on its
+  // own) and the same target field. Unlike ratio's effect this does NOT list
+  // soapConcentrationPercent as a dependency: gradual.writeBackPercent is derived from the
+  // paste and the recorded water alone, never from the persisted target, so there is
+  // nothing here an external change to that target would need to resync.
+  useEffect(() => {
+    if (gradualTouched && dilutionMode === 'gradual' && gradual !== null) {
+      onSoapConcentrationChange(String(gradual.writeBackPercent));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gradualTouched, dilutionMode, gradual]);
   // The measurement corrects the BATCH figure the same way it already corrects the portion
   // in PortionDilutionResults — shared with the printed BatchSheet so both surfaces always agree.
   // wholeBatchPasteGrams is passed for the second correction the helper applies: without it
@@ -376,9 +431,19 @@ export function DilutionPanel({
   // already avoids inside this shell; this is that rule applied across the scope seam.
   const portionOwnsUndeclaredLiquidHedge =
     dilutionScope === 'portion' && (portionState?.pasteAlreadyThinner ?? false);
+  // dilutionTargetWording and PortionDilutionResults are typed against the narrower
+  // 'concentration' | 'ratio' union on purpose — see dilutionTargetWording's own doc
+  // comment: the type dependency stays one-way, this component imports theirs, not the
+  // reverse, so they cannot import DilutionMode back. Gradual's Custom-amount behaviour
+  // (report the jar's own figures, never write back to the recipe) is a later task's own
+  // job; until it lands, gradual falls back to 'concentration' at this boundary, which
+  // changes nothing reachable today (gradual mode is new) and, since both consumers already
+  // treat every non-ratio mode identically, leaves gradual + Custom amount with today's
+  // ordinary concentration-mode wording rather than a compile error.
+  const narrowDilutionMode = dilutionMode === 'gradual' ? 'concentration' : dilutionMode;
   // Shared with PortionDilutionResults so this shell's Whole-batch twin of that refusal and
   // the child's own Custom-amount wording of it can never name different controls.
-  const refusalWording = dilutionTargetWording(dilutionMode, ratioNotAppliedYet);
+  const refusalWording = dilutionTargetWording(narrowDilutionMode, ratioNotAppliedYet);
   // The Whole-batch twin of PortionDilutionResults' unmeasuredPasteAlreadyThinner, and the
   // exact condition under which correctedDilutionWaterGrams' clamp fires: the corrected pot
   // outweighs the whole solution its own soap makes at the target, so the batch row prints
@@ -574,6 +639,15 @@ export function DilutionPanel({
           />
           <span>Water : paste ratio</span>
         </label>
+        <label className="field field--inline">
+          <input
+            type="radio"
+            name="dilutionMode"
+            checked={dilutionMode === 'gradual'}
+            onChange={() => onDilutionModeChange?.('gradual')}
+          />
+          <span>Gradual — record what you added</span>
+        </label>
       </div>
       {dilutionMode === 'ratio' ? (
         <>
@@ -688,6 +762,21 @@ export function DilutionPanel({
               below the ratio's own water figure, one paragraph per state instead of three
               stacked here. */}
         </>
+      ) : dilutionMode === 'gradual' ? (
+        <label className="field">
+          <span>Water added so far (g)</span>
+          <input
+            type="number"
+            className="input input--number"
+            min={0}
+            value={gradualWaterGrams}
+            onChange={(e) => {
+              setGradualTouched(true);
+              onGradualWaterChange?.(e.target.value);
+            }}
+            aria-label="Water added so far (g)"
+          />
+        </label>
       ) : (
         <label className="field">
           <span>Target soap concentration (%)</span>
@@ -939,6 +1028,20 @@ export function DilutionPanel({
             </div>
           </dl>
         )}
+      {/* Gradual's own figure, whole-batch scope only — mirroring the ratio grid above.
+          paste + water, from the RAW INPUTS, never dilution.solutionGrams: that field is
+          still the old PREDICTION (4,000 g in the fixture this guards), and gradual exists
+          precisely because the maker stopped predicting and started measuring what they
+          actually poured (3,600 g in the same fixture). Printing the prediction here would
+          quietly resurrect it under a new label. */}
+      {dilutionScope === 'batch' && dilutionMode === 'gradual' && gradual !== null && (
+        <dl className="results-grid">
+          <div className="results-grid__item results-grid__item--primary">
+            <dt>Finished so far</dt>
+            <dd>{formatWeight(gradual.finishedGrams, weightUnit)}</dd>
+          </div>
+        </dl>
+      )}
       {/* THE ratio paragraph — one per state, under the prose budget. It owns everything
           the ratio has to say about itself: the readout (the true derived concentration,
           however extreme, so the panel never lies about what the ratio implies), the
@@ -1038,6 +1141,29 @@ export function DilutionPanel({
               : 'Raise the ratio (more water) to land inside that range directly.'}
           </p>
         )}
+      {/* Gradual's own readout — the true derived concentration, at the 2 dp
+          gradualDilutionFrom rounds to (not ratio's 1 dp: see that function's own doc for
+          why gradual needs the extra digit), however extreme, so this never lies about
+          what the record implies. */}
+      {dilutionMode === 'gradual' && gradual !== null && (
+        <p className="results-hint">
+          <strong>That lands at {formatGrams(gradual.concentrationPercent, 2)}% soap.</strong>
+        </p>
+      )}
+      {/* The clamp notice, same shape as ratio's immediately above: calculateDilution only
+          accepts (0, 100) exclusive, so an extreme record could otherwise write back a
+          concentration that nulls `dilution` and vanishes this whole panel. What is WRITTEN
+          is clamped to [1, 99] (gradualDilutionFrom itself); the readout above stays
+          unclamped and keeps telling the truth, so this note points back at it rather than
+          restating the figure. Tense follows the write-back, not the clamp, exactly as
+          ratio's does: untouched, nothing has been written yet. */}
+      {dilutionMode === 'gradual' && gradual !== null && gradual.clamped && (
+        <p className="results-hint" role="alert">
+          That is outside the 1–99% range the calculator can target, so the saved target{' '}
+          {gradualTouched ? 'is' : 'would be'} capped at{' '}
+          {formatGrams(gradual.writeBackPercent, 0)}%.
+        </p>
+      )}
       {/* The not-applied note that used to render here on its own is now a clause of the
           ratio paragraph above — same gate, same claims, one paragraph fewer. */}
       {dilution ? (
@@ -1053,7 +1179,9 @@ export function DilutionPanel({
                     maker guessing which one to actually pour. Suppress this row in ratio mode and
                     let the ratio block be the sole source for that number; every other row here
                     (paste, solution, total water, glycerin, volume) still reflects the applied
-                    concentration and carries no such competing figure. */}
+                    concentration and carries no such competing figure — in ratio mode. Gradual
+                    mode's own competing figure is a MASS, not a water figure, so it collides
+                    with "Finished solution" instead; see that row's own gate below. */}
                 {dilutionMode !== 'ratio' && (
                   <div className="results-grid__item results-grid__item--primary">
                     <dt>Dilution water to add</dt>
@@ -1064,10 +1192,20 @@ export function DilutionPanel({
                   <dt>Paste (anhydrous)</dt>
                   <dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd>
                 </div>
-                <div className="results-grid__item">
-                  <dt>Finished solution</dt>
-                  <dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd>
-                </div>
+                {/* Gradual's own grid above already owns the finished-mass figure ("Finished so
+                    far") — paste + water from the raw inputs, not this row's solutionGrams
+                    (anhydrous ÷ the PERSISTED target). Once the write-back has settled the two
+                    agree up to gradualDilutionFrom's 2 dp rounding, and a few-gram mismatch from
+                    that rounding would read as an error rather than as the harmless rounding it
+                    is. Same reasoning as "Dilution water to add" above, one row over: showing
+                    both mass figures at once leaves the maker guessing which is the real one, so
+                    gradual mode suppresses this and lets its own grid be the sole source. */}
+                {dilutionMode !== 'gradual' && (
+                  <div className="results-grid__item">
+                    <dt>Finished solution</dt>
+                    <dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd>
+                  </div>
+                )}
                 {/* The water the finished solution actually holds, which is NOT
                     calculateDilution's totalWaterGrams once an alternative liquid puts
                     non-water solids in the pot. Core works from soap + water alone, so its
@@ -1186,7 +1324,7 @@ export function DilutionPanel({
               cookWaterGrams={cookWaterGrams}
               unknownLiquidGrams={unknownLiquidGrams}
               overDilutionCertain={overDilutionCertain}
-              dilutionMode={dilutionMode}
+              dilutionMode={narrowDilutionMode}
               ratioNotAppliedYet={ratioNotAppliedYet}
               altLiquidNote={portionAltLiquidNote}
             />
