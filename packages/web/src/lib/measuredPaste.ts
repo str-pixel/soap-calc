@@ -168,10 +168,61 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
 }
 
 /**
+ * The TARGET-INDEPENDENT half of {@link measuredPasteIsValidFor}: everything the reading
+ * says about the POT, and nothing about any target. A reading that clears this is a
+ * physically possible whole-batch paste weight — it parses to a positive number, it is not
+ * finer than a scale reads (so not a swallowed thousands separator), and it is not lighter
+ * than the batch's own non-evaporable mass (see {@link solidsFloorGramsFor}).
+ *
+ * WHAT IT DELIBERATELY OMITS is `measurementExceedsSolution`, and the omission is the whole
+ * point. "Heavier than the whole solution this target dilutes to" is a claim about a
+ * TARGET; the two derived dilution modes do not have one. Ratio mode multiplies the pot it
+ * is given, and Gradual mode DERIVES the target from the pot plus the water recorded — so
+ * for gradual, `dilution.solutionGrams` is downstream of its own write-back, and letting it
+ * pick the basis closed a feedback loop that hung the app:
+ *
+ *   basis = the weighed pot → write round2(100 × anhydrous ÷ pot) → solutionGrams is now
+ *   anhydrous ÷ that percent, which lands a hair BELOW the pot whenever the 2 dp rounding
+ *   went up (223 of 445 whole-gram readings in one swept window, at zero recorded water) →
+ *   the ceiling rejects the reading → basis flips to the computed pot → a different percent
+ *   → solutionGrams clears the reading again → the ceiling accepts it → forever.
+ *
+ * Ratio mode never showed it because its water is `paste × ratio > 0`, so its solution
+ * always clears the reading comfortably; gradual's own first record is the pot before any
+ * water at all (LS:1531), where solution and reading are the same number by construction.
+ *
+ * The ceiling is not weakened anywhere it means something: {@link measuredPasteIsValidFor}
+ * still applies it for every TARGET-derived figure (the batch pour, the printed sheet's
+ * pour, the portion), and {@link measuredPasteRejectionFor} still reports it to the maker.
+ * Only the choice of WHICH POT to count from is decided here.
+ */
+export function measuredPasteDescribesPotFor(
+  measuredPasteGrams: string | undefined,
+  dilution: DilutionResult,
+  wholeBatchPasteGrams?: number | null,
+  cookWaterGrams?: number | null,
+): boolean {
+  const measured = parseMeasuredPasteGrams(measuredPasteGrams);
+  return (
+    measured !== undefined &&
+    // The same precision rule measuredPasteRejectionFor applies (subTenthPrecision): a
+    // reading with two or more typed decimal digits is a swallowed thousands separator,
+    // not a scale reading, and must not correct anything.
+    !measurementFinerThanScale(measuredPasteGrams as string) &&
+    !measurementBelowSolids(
+      measured,
+      solidsFloorGramsFor(dilution, wholeBatchPasteGrams, cookWaterGrams),
+    )
+  );
+}
+
+/**
  * True when a parsed measured-paste reading is valid FOR this dilution: not below the
  * non-evaporable solids floor (measurementBelowSolids) and not above the target solution
  * ceiling (measurementExceedsSolution) — the shared bar every caller that lets a
- * measurement override a computed figure must clear first.
+ * measurement override a TARGET-DERIVED figure must clear first. A caller choosing which
+ * pot to count from, with no target in play, wants {@link measuredPasteDescribesPotFor}
+ * above instead; see it for the loop the ceiling closed when it decided that.
  *
  * `isRemaining` gates this for the BATCH row specifically: a reading declared as what's
  * LEFT after earlier dilutions describes a smaller pot, not the whole batch, so it can
@@ -198,16 +249,13 @@ export function measuredPasteIsValidFor(
   const measured = parseMeasuredPasteGrams(measuredPasteGrams);
   return (
     measured !== undefined &&
-    // The same precision rule measuredPasteRejectionFor applies (subTenthPrecision): a
-    // reading with two or more typed decimal digits is a swallowed thousands separator,
-    // not a scale reading, and must not correct anything. Checked here too — this gate
-    // does not go through the rejection object — or the panel would refuse a reading in
-    // its alert and apply it in the batch row one paragraph below.
-    !measurementFinerThanScale(measuredPasteGrams as string) &&
-    !measurementBelowSolids(
-      measured,
-      solidsFloorGramsFor(dilution, wholeBatchPasteGrams, cookWaterGrams),
-    ) &&
+    // The parse, the precision rule and the solids floor are the pot's own rules and are
+    // shared with measuredPasteDescribesPotFor above — one derivation, so a reading can
+    // never be a possible pot for one caller and an impossible one for another. (The
+    // precision rule is checked on this path too, rather than only inside the rejection
+    // object, or the panel would refuse a reading in its alert and apply it in the batch
+    // row one paragraph below.)
+    measuredPasteDescribesPotFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams) &&
     !measurementExceedsSolution(measured, dilution)
   );
 }

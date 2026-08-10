@@ -68,6 +68,43 @@ export type LsPartialDilution = {
 };
 
 /**
+ * The anhydrous soap in ONE WEIGHED POT of a batch's paste. The paste is homogeneous, so a
+ * pot is a proportional share of it: `potPasteGrams × anhydrousGrams / wholeBatchPasteGrams`.
+ * Null when the inputs cannot describe a share — a non-positive figure anywhere, or a pot
+ * heavier than the whole batch's paste ever was (solids and the water already in the paste
+ * do not appear from nowhere; the boundary, pot === batch, is a legitimate share of 1).
+ *
+ * This IS {@link lsPartialDilution}'s remaining-mode arithmetic, extracted rather than
+ * copied: that function calls this one, so there is still exactly one derivation of the
+ * ratio and one ceiling under it — the trap `predictedPasteGrams` warns about above.
+ *
+ * Extracted because the UI has a caller that needs the share and NOTHING else:
+ * DilutionPanel's Custom-amount Gradual mode, where the maker weighs a jar out and records
+ * the water they poured into it, and the jar's concentration is that share ÷ (paste +
+ * water). Asking lsPartialDilution for it meant asking a question about the recipe's own
+ * TARGET at the same time — that function needs a target volume and refuses outright when
+ * the saved target implies a solution lighter than the pot (see the batchWaterGrams guard
+ * below) — so a jar figure that has nothing to do with the target vanished from the screen
+ * whenever the target happened to be a low-water one. The share does not depend on the
+ * target and now does not ask about it.
+ */
+export function lsPotAnhydrousShare(input: {
+  /** The whole batch's anhydrous soap. */
+  anhydrousGrams: number;
+  /** The whole batch's paste — the corrected, solids-aware figure where the caller has one. */
+  wholeBatchPasteGrams: number;
+  /** The pot on the scale: a weighed-out jar, or what is left after earlier dilutions. */
+  potPasteGrams: number;
+}): number | null {
+  const { anhydrousGrams, wholeBatchPasteGrams, potPasteGrams } = input;
+  if (!Number.isFinite(anhydrousGrams) || anhydrousGrams <= 0) return null;
+  if (!Number.isFinite(wholeBatchPasteGrams) || wholeBatchPasteGrams <= 0) return null;
+  if (!Number.isFinite(potPasteGrams) || potPasteGrams <= 0) return null;
+  if (potPasteGrams > wholeBatchPasteGrams) return null;
+  return potPasteGrams * (anhydrousGrams / wholeBatchPasteGrams);
+}
+
+/**
  * Dilute a portion of the paste rather than the whole batch — the common workflow when a
  * paste is stored and drawn down over time, since paste keeps far better than diluted soap.
  * Everything scales linearly with the share of the batch taken, so the target volume simply
@@ -139,16 +176,29 @@ export function lsPartialDilution(
   const wholeBatchPasteGrams =
     wb !== undefined && Number.isFinite(wb) && wb > 0 ? wb : predictedPasteGrams;
   const isRemaining = pasteMeasured && batch.measuredPasteIsRemaining === true;
+  // The pot's own anhydrous soap: the recipe's whole anhydrousGrams in whole-batch mode, or
+  // — with a measured, REMAINING reading — that reading's proportional share of it, since
+  // the paste is homogeneous. Both the share and its ceiling come from
+  // {@link lsPotAnhydrousShare}, which owns that one derivation for this function and for
+  // the UI's own weighed-jar caller.
+  //
   // A remainder cannot weigh more than the whole batch's own paste ever did — solids and
   // the water already in the paste don't appear from nowhere. Left unguarded, a bogus
   // "remaining" reading heavier than the true whole-batch paste scaled to a pot anhydrous
   // bigger than the entire batch's own anhydrous soap: physically impossible input,
-  // confidently wrong output. Reject before any arithmetic runs on it. Checked against
-  // wholeBatchPasteGrams (the corrected basis), not the raw predictedPasteGrams — round
-  // 2's version of this guard rejected legitimate remaining readings above
-  // predictedPasteGrams whenever the recipe used a split liquid, since predictedPasteGrams
-  // structurally undercounts the liquid's own solids.
-  if (isRemaining && (m as number) > wholeBatchPasteGrams) return null;
+  // confidently wrong output. Rejected (null share → null result) before any arithmetic runs
+  // on it. Checked against wholeBatchPasteGrams (the corrected basis), not the raw
+  // predictedPasteGrams — round 2's version of this guard rejected legitimate remaining
+  // readings above predictedPasteGrams whenever the recipe used a split liquid, since
+  // predictedPasteGrams structurally undercounts the liquid's own solids.
+  const potAnhydrousGrams = isRemaining
+    ? lsPotAnhydrousShare({
+        anhydrousGrams: batch.anhydrousGrams,
+        wholeBatchPasteGrams,
+        potPasteGrams: m as number,
+      })
+    : batch.anhydrousGrams;
+  if (potAnhydrousGrams === null) return null;
   // Measured wins outright — the scale is the only figure that can see cook evaporation.
   // Unmeasured, the pot is the corrected whole-batch basis, NOT predictedPasteGrams: an
   // alternative liquid's non-water solids are real mass sitting in it, so the water-only
@@ -174,15 +224,9 @@ export function lsPartialDilution(
   // same refusal the measured branch has always given for the same physical situation.
   const pasteGrams = pasteMeasured ? (m as number) : wholeBatchPasteGrams;
   // Whole-batch (default): the pot holds all the recipe's anhydrous soap, and the target
-  // solution is the recipe's own fixed solutionGrams. Remaining: the paste is homogeneous,
-  // so the pot's own anhydrous soap — and therefore its own target solution — is a
+  // solution is the recipe's own fixed solutionGrams. Remaining: the pot's own anhydrous
+  // soap (potAnhydrousGrams above) — and therefore its own target solution — is a
   // proportional share of the measurement rather than the recipe's whole-batch figures.
-  // Scaled against wholeBatchPasteGrams (not predictedPasteGrams) for the same reason as
-  // the ceiling above: using the water-only figure here understates the pot's true paste
-  // mass and so overstates its soap fraction whenever the recipe has a split liquid.
-  const potAnhydrousGrams = isRemaining
-    ? (m as number) * (batch.anhydrousGrams / wholeBatchPasteGrams)
-    : batch.anhydrousGrams;
   const potSolutionGrams = isRemaining
     ? potAnhydrousGrams * (batch.solutionGrams / batch.anhydrousGrams)
     : batch.solutionGrams;

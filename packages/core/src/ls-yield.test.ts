@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { LS_SOLUTION_DENSITY_G_PER_ML, lsFinishedVolumeMl, lsPartialDilution } from './ls-yield.js';
+import {
+  LS_SOLUTION_DENSITY_G_PER_ML,
+  lsFinishedVolumeMl,
+  lsPartialDilution,
+  lsPotAnhydrousShare,
+} from './ls-yield.js';
 
 describe('ls-yield', () => {
   it('finished volume = grams / density', () => {
@@ -353,5 +358,72 @@ describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid soli
     const atPredicted = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1600, measuredPasteIsRemaining: true }, 1000);
     expect(atPredicted).not.toBeNull();
     expect(atPredicted?.wholeBatchPasteGrams).toBe(predictedPasteGrams);
+  });
+});
+
+describe('lsPotAnhydrousShare — the soap in one weighed pot', () => {
+  // The batch above: 1,200 g of anhydrous soap in a 1,600 g pot of paste.
+  const BATCH = { anhydrousGrams: 1200, wholeBatchPasteGrams: 1600 };
+
+  it('is the pot’s proportional share, because the paste is homogeneous', () => {
+    // A quarter of the paste carries a quarter of the soap.
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 })).toBeCloseTo(300, 9);
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 1600 })).toBeCloseTo(1200, 9);
+  });
+
+  it('refuses a pot heavier than the batch’s own paste, and accepts the boundary', () => {
+    // Solids and the water already in the paste do not appear from nowhere; weighing out
+    // ALL of it is a legitimate share of 1.
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 1600.1 })).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 4000 })).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 1600 })).not.toBeNull();
+  });
+
+  it('refuses non-positive and non-finite figures rather than returning a number', () => {
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 0 })).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: -400 })).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: NaN })).toBeNull();
+    expect(lsPotAnhydrousShare({ anhydrousGrams: 0, wholeBatchPasteGrams: 1600, potPasteGrams: 400 })).toBeNull();
+    expect(lsPotAnhydrousShare({ anhydrousGrams: 1200, wholeBatchPasteGrams: 0, potPasteGrams: 400 })).toBeNull();
+  });
+
+  it('asks nothing about any target — the share is the same at every concentration', () => {
+    // THE POINT OF THE EXTRACTION. lsPartialDilution needs a target volume and refuses
+    // outright when the saved target implies a solution lighter than the pot; the jar's own
+    // recorded concentration has nothing to do with either, so it must not inherit them.
+    const share = lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 });
+    expect(share).toBeCloseTo(300, 9);
+    // The same pot, against a recipe whose target is so low-water that lsPartialDilution
+    // refuses it (solution 1,500 g < the 1,600 g pot).
+    const refused = lsPartialDilution(
+      {
+        anhydrousGrams: 1200,
+        totalWaterGrams: 300,
+        dilutionWaterGrams: 0,
+        solutionGrams: 1500,
+        wholeBatchPasteGrams: 1600,
+        measuredPasteGrams: 400,
+        measuredPasteIsRemaining: true,
+      },
+      1000,
+    );
+    expect(refused).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 })).toBeCloseTo(share as number, 9);
+  });
+
+  it('is the very arithmetic lsPartialDilution reports, not a second copy of it', () => {
+    // One derivation: potAnhydrousGrams comes back through this function, so a change to
+    // the ratio or its ceiling cannot move one caller without the other.
+    const r = lsPartialDilution(
+      {
+        anhydrousGrams: 1200, totalWaterGrams: 2800, dilutionWaterGrams: 2400, solutionGrams: 4000,
+        wholeBatchPasteGrams: 1600, measuredPasteGrams: 400, measuredPasteIsRemaining: true,
+      },
+      500,
+    );
+    expect(r?.potAnhydrousGrams).toBeCloseTo(
+      lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 }) as number,
+      9,
+    );
   });
 });

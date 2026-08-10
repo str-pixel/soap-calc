@@ -3,7 +3,12 @@ import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
-import { DilutionPanel, type DilutionMode, type DilutionScope } from './components/DilutionPanel';
+import {
+  DilutionPanel,
+  portionGradualFor,
+  type DilutionMode,
+  type DilutionScope,
+} from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
@@ -189,8 +194,16 @@ export default function App() {
   // Keyed on workspaceGeneration — load, import, new recipe, undo of a load — so it
   // restores the recorded state exactly when a recipe arrives, and never fights a maker
   // who deliberately switches modes afterwards.
+  //
+  // BOTH DIRECTIONS, because that key covers arrivals with no record as well as arrivals
+  // with one: workspaceGeneration also bumps on New recipe and on import
+  // (useRecipeStorage's own handlers). One-way, opening a recipe that recorded water and
+  // then starting a new one left the panel in Gradual with an empty field, no dilution rows
+  // and no figure anywhere — a mode restored for a record that no longer exists. The reset
+  // target is the panel's own default, so a workspace with no record opens exactly as a
+  // cold start does.
   useEffect(() => {
-    if (settings.gradualWaterGrams.trim() !== '') setDilutionMode('gradual');
+    setDilutionMode(settings.gradualWaterGrams.trim() !== '' ? 'gradual' : 'concentration');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceGeneration]);
   // The mold sizer stores its bar weight as a raw display string interpreted in the
@@ -300,9 +313,32 @@ export default function App() {
   // extras that ride into the bottle are counted in the batch figure but never apportioned.
   // That understates the portion's finished mass slightly, which understates the dose —
   // toward, never past, the ceiling.
+  //
+  // CUSTOM AMOUNT + GRADUAL IS ITS OWN JAR, and dosing it through portionDilutionFor was
+  // the worst version of this bug rather than a variant of it. That resolution sizes a jar
+  // from "Amount to make (ml)" — the one input gradual mode takes OFF the panel, replacing
+  // it with the paste weighed out and the water poured. So a maker who recorded a 1,300 g
+  // jar was told to weigh in 21 g of preservative: 1.6% of what they actually made, past
+  // the EU ceiling for several listed products, in the mode built to keep the dose on the
+  // mass that really exists. And with the amount blank — the normal state, since nothing
+  // fills it in that mode — there was no dose at all, under a hint asking for a control
+  // that is not on screen. portionGradualFor is the panel's OWN resolution of the jar,
+  // imported for the same reason portionDilutionFor is: the dose and the figures beside it
+  // cannot then disagree about whether a jar exists or what it weighs.
   const preservativeBaseGrams = useMemo(() => {
     if (dilutionScope !== 'portion') return vm.finishedProductGrams;
     if (!vm.dilution) return null;
+    if (dilutionMode === 'gradual') {
+      return (
+        portionGradualFor({
+          dilution: vm.dilution,
+          portionPasteGrams,
+          portionWaterGrams,
+          wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
+          cookWaterGrams: vm.cookWaterGrams,
+        }).jar?.finishedGrams ?? null
+      );
+    }
     return (
       portionDilutionFor({
         dilution: vm.dilution,
@@ -313,9 +349,12 @@ export default function App() {
       }).portion?.solutionGrams ?? null
     );
   }, [
+    dilutionMode,
     dilutionScope,
     measuredPasteGrams,
+    portionPasteGrams,
     portionTargetMl,
+    portionWaterGrams,
     vm.cookWaterGrams,
     vm.dilution,
     vm.finishedProductGrams,
@@ -600,6 +639,10 @@ export default function App() {
                     <PreservativeSnippet
                       finishedGrams={preservativeBaseGrams}
                       basisScope={dilutionScope}
+                      /* Moves with preservativeBaseGrams' own gradual branch above: the two
+                         answer one question (which jar, and how the maker described it), so
+                         the empty state asks for the fields that actually resolve it. */
+                      portionIsRecorded={dilutionMode === 'gradual'}
                       weightUnit={weightUnit}
                       preservativeId={settings.preservativeId}
                       onPreservativeIdChange={(preservativeId) =>

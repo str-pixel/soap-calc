@@ -293,6 +293,48 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(base * 0.01, 0);
   });
 
+  it('Custom amount + Gradual doses the jar that was recorded, not a target-derived one', async () => {
+    // THE SAFETY PIN for the worst version of this bug. Custom amount resolved its dose
+    // through the "Amount to make (ml)" field — the one input Gradual takes off the panel —
+    // so a recorded 1,300 g jar was dosed against a portion sized from a stale amount, and
+    // the snippet printed 21 g beside its own "1,300 g": 1.6% w/w in the jar the maker
+    // actually has, past the EU ceiling for several listed preservatives.
+    const snippet = await openSnippet();
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    // The stale amount that used to drive the dose in this mode.
+    await userEvent.type(screen.getByLabelText('Amount to make (ml)'), '2000');
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Paste weighed out (g)'), '400');
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '900');
+
+    const dilutionPanel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    // What the panel says is in the jar, and what the snippet says it is dosing: ONE figure,
+    // on one screen. 400 g of paste plus 900 g of water is 1,300 g.
+    const jar = within(dilutionPanel)
+      .getByText('Finished so far (this jar)')
+      .nextElementSibling!.textContent!.trim();
+    expect(jar).toBe('1,300 g');
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe(jar);
+    expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
+    // 1% of 1,300 g. The 2,060 g the stale amount implies would print 21 g here.
+    expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(13, 0);
+  });
+
+  it('Custom amount + Gradual asks for the fields it actually doses from', async () => {
+    // With nothing recorded there is no jar to dose — and the ask has to name the two
+    // fields on screen, not the "Amount to make" input this mode removes. That hint was the
+    // normal state of the snippet in gradual mode, since nothing ever fills that field in.
+    const snippet = await openSnippet();
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
+    expect(within(snippet).getByText(/paste weighed out and the water added so far/i)).toBeTruthy();
+    expect(within(snippet).queryByText(/Enter an Amount to make/i)).toBeNull();
+    expect(screen.queryByLabelText('Amount to make (ml)')).toBeNull();
+  });
+
   it('an unsized Custom amount falls back to the hint, never to the batch', async () => {
     // No amount typed yet: no portion exists, so there is nothing to dose. Quietly using
     // the batch here is exactly the bug — the maker would be reading a batch dose on a
@@ -302,6 +344,54 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
     expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
     expect(within(snippet).getByText(/Amount to make/i)).toBeTruthy();
+  });
+});
+
+describe('the dilution mode follows the recipe that arrives, in both directions', () => {
+  // A recorded gradual dilution reopens in Gradual mode, because the water is recipe state
+  // and the mode is not — without that, the record survives a reload and has nowhere to
+  // appear. But the same key (workspaceGeneration) also fires on New recipe and on import,
+  // and the effect only ever SET gradual: starting a new recipe after opening one with a
+  // record left the panel in Gradual, with an empty field, no dilution rows, and a mode
+  // restored for a record that no longer exists.
+  async function ls() {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+  }
+
+  async function chooseNewRecipe() {
+    await userEvent.click(screen.getByRole('button', { name: /actions/i }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'New recipe' }));
+  }
+
+  it('a new recipe leaves Gradual behind with the record it belonged to', async () => {
+    await ls();
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
+    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(true);
+
+    await chooseNewRecipe();
+
+    // Back to the panel's own default, exactly as a cold start opens.
+    expect((screen.getByRole('radio', { name: 'Target concentration' }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByLabelText('Target soap concentration percent')).toBeTruthy();
+    expect(screen.queryByLabelText('Water added so far (g)')).toBeNull();
+  });
+
+  it('a recipe that HAS a record still opens in Gradual', async () => {
+    // The direction that already worked, pinned so the reset above cannot swallow it: the
+    // record is saved with the recipe and autosaved back on reload.
+    await ls();
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
+    // The autosave debounce (500 ms) is what makes this a reload rather than a re-render:
+    // the record has to be in storage before the second mount reads it.
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    cleanup();
+    render(<App />);
+    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText('Water added so far (g)')).toHaveProperty('value', '1500');
   });
 });
 

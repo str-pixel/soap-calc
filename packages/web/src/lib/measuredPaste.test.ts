@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DilutionResult } from '@soap-calc/core';
 import {
   correctedDilutionWaterGrams,
+  measuredPasteDescribesPotFor,
   measuredPasteIsValidFor,
   measuredPasteRejectionFor,
   parseMeasuredPasteGrams,
@@ -665,5 +666,51 @@ describe('correctedDilutionWaterGrams with a remaining-paste declaration', () =>
   it('is unaffected — still corrects — when isRemaining is omitted or false', () => {
     expect(correctedDilutionWaterGrams(DILUTION, '1480')).toBe(2520);
     expect(correctedDilutionWaterGrams(DILUTION, '1480', false)).toBe(2520);
+  });
+});
+
+describe('measuredPasteDescribesPotFor — the pot’s own rules, with no target in them', () => {
+  it('agrees with measuredPasteIsValidFor on every reading under the ceiling', () => {
+    for (const raw of ['1200', '1480', '2500', '3999.5', '4000']) {
+      expect(measuredPasteDescribesPotFor(raw, DILUTION)).toBe(
+        measuredPasteIsValidFor(raw, DILUTION),
+      );
+    }
+  });
+
+  it('keeps the three rules that describe the pot', () => {
+    // Unparseable / blank / non-positive.
+    expect(measuredPasteDescribesPotFor('', DILUTION)).toBe(false);
+    expect(measuredPasteDescribesPotFor(undefined, DILUTION)).toBe(false);
+    expect(measuredPasteDescribesPotFor('-500', DILUTION)).toBe(false);
+    // A swallowed thousands separator is not a scale reading, whatever it multiplies out to.
+    expect(measuredPasteDescribesPotFor('1480.25', DILUTION)).toBe(false);
+    // Below the batch's own non-evaporable mass: not a whole-batch paste at all.
+    expect(measuredPasteDescribesPotFor('900', DILUTION)).toBe(false);
+    // …and the solids floor moves with an alternative liquid, exactly as it does for the
+    // full gate: 1,200 g of soap + 450 g of solids in a 2,500 g pot.
+    expect(measuredPasteDescribesPotFor('1500', DILUTION, 2500, 850)).toBe(false);
+    expect(measuredPasteDescribesPotFor('1700', DILUTION, 2500, 850)).toBe(true);
+  });
+
+  it('drops the target-derived ceiling, and that is the whole difference', () => {
+    // 4,500 g is heavier than the 4,000 g solution this target dilutes to — a claim about
+    // the TARGET, which the derived modes do not have. The pot is still a possible pot.
+    expect(measuredPasteIsValidFor('4500', DILUTION)).toBe(false);
+    expect(measuredPasteDescribesPotFor('4500', DILUTION)).toBe(true);
+  });
+
+  it('is invariant to the target — the property the write-back loop needed', () => {
+    // Gradual writes the concentration back, so `dilution` is rebuilt from the panel's own
+    // output on the next render. A basis that moved with it could not settle: at 85.41% the
+    // solution lands a hair under a weighed 1,405 g pot, which is exactly where the old gate
+    // flipped and the app hung.
+    const at30 = { ...DILUTION, solutionGrams: 4000, soapConcentrationPercent: 30 };
+    const at8541 = { ...DILUTION, solutionGrams: 1404.99, soapConcentrationPercent: 85.41 };
+    expect(measuredPasteDescribesPotFor('1405', at30)).toBe(true);
+    expect(measuredPasteDescribesPotFor('1405', at8541)).toBe(true);
+    // The full gate is the one that flips, and still should — it guards a pour figure.
+    expect(measuredPasteIsValidFor('1405', at30)).toBe(true);
+    expect(measuredPasteIsValidFor('1405', at8541)).toBe(false);
   });
 });

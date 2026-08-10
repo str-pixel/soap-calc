@@ -28,9 +28,11 @@ import { formatWeight } from '../lib/weightUnits';
 import {
   MEASURED_PASTE_IS_REMAINING,
   correctedDilutionWaterGrams,
+  measuredPasteDescribesPotFor,
   measuredPasteIsValidFor,
   parseMeasuredPasteGrams,
 } from '../lib/measuredPaste';
+import { bestKnownPasteGramsFor } from './DilutionPanel';
 
 type BatchSheetProps = {
   data: BatchSheetData | null;
@@ -190,6 +192,30 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     Number.isFinite(gradualWaterRecordedNum) &&
     gradualWaterRecordedNum > 0
       ? gradualWaterRecordedNum
+      : null;
+  // What that record MADE, which is the other half of the line spec §4 asks this sheet to
+  // carry: paste + water, from the same two figures the panel adds up, so the page taken to
+  // the bench states the mass that exists rather than only the water that went into it.
+  // The paste is the panel's own basis — the pot the maker weighed when that reading
+  // describes a possible pot, else the recipe's computed one — resolved through the same two
+  // shared helpers the panel calls, so the two surfaces cannot print different masses for
+  // one record. Deliberately NOT a second row in the list: "Finished solution" is already
+  // there, the write-back makes the two agree to within a gram, and two near-identical
+  // masses in one column read as an error. It rides the note below instead, where it can be
+  // named as the record's own.
+  const gradualPasteBasisGrams = dilution
+    ? measuredPasteDescribesPotFor(
+        measuredPasteGrams,
+        dilution,
+        data.wholeBatchPasteGrams,
+        data.cookWaterGrams,
+      )
+      ? (parseMeasuredPasteGrams(measuredPasteGrams) as number)
+      : bestKnownPasteGramsFor(dilution, data.wholeBatchPasteGrams, data.cookWaterGrams)
+    : null;
+  const gradualFinishedGrams =
+    gradualWaterRecordedGrams !== null && gradualPasteBasisGrams !== null
+      ? gradualPasteBasisGrams + gradualWaterRecordedGrams
       : null;
   const preservativeGrams =
     bottledGrams !== null &&
@@ -442,6 +468,26 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               <div>
                 <dt>Water actually added</dt>
                 <dd>{formatWeight(gradualWaterRecordedGrams, weightUnit)}</dd>
+              </div>
+            )}
+            {/* Which row answers which question, said out loud rather than left to two
+                labels that both read as "water for this batch". They are usually within a
+                gram of each other, because recording the water writes its own concentration
+                back into the target — but they are not the same claim, and while a record
+                sits beside a target it has not been applied to they can be hundreds of
+                grams apart with nothing on the page distinguishing them. The finished mass
+                the record produced rides here too (spec §4), where it is named as the
+                record's own and cannot be mistaken for the target-derived "Finished
+                solution" row above. */}
+            {gradualWaterRecordedGrams !== null && gradualFinishedGrams !== null && (
+              <div>
+                <dt>That record makes</dt>
+                <dd>
+                  {formatWeight(gradualFinishedGrams, weightUnit)} — paste plus the water you
+                  recorded. &ldquo;Dilution water to add&rdquo; above is what the saved{' '}
+                  {formatConcentrationPercent(dilution.soapConcentrationPercent)}% target
+                  implies instead.
+                </dd>
               </div>
             )}
             {preservativeGrams !== null && (

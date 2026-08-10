@@ -431,6 +431,9 @@ function lsSheetData(extra: {
   neutralization?: import('@soap-calc/core').NeutralizationResult | null;
   measuredPasteGrams?: string;
   wholeBatchPasteGrams?: number | null;
+  /** Travels with wholeBatchPasteGrams — together they identify an alternative liquid's
+   * solids, and they are what the sheet's own gradual basis and paste floor read. */
+  cookWaterGrams?: number;
   bottledSolutionGrams?: number | null;
   /** Overrides the fixture's own 'g' below — it is spread after it. */
   weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
@@ -984,9 +987,64 @@ test('a below-50°C stage note prints for a preservative that actually carries o
 
 describe('the sheet records the water actually poured', () => {
   test('prints the recorded water and the finished mass it produced', () => {
-    render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: '2000' } })} />);
+    // BOTH halves, which is what this test's name has always promised and what spec §4 asks
+    // the sheet to carry: for a while only the water row existed, so the page said what went
+    // in and never what came out.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '2000' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
     const row = screen.getByText(/Water actually added/).closest('div')!;
     expect(row.textContent).toContain('2,000 g');
+    // 1,600 g of paste plus the 2,000 g recorded — the panel's own basis and the panel's own
+    // sum, through the shared helpers, so screen and sheet cannot print different masses.
+    const made = screen.getByText(/That record makes/).closest('div')!;
+    expect(made.textContent).toContain('3,600 g');
+  });
+
+  test('names which row is the record and which is the target, so neither stands in for the other', () => {
+    // They are usually within a gram of each other, and can be hundreds apart while a
+    // record sits beside a target it has not been applied to. Two labels that both read as
+    // "water for this batch" are not enough on a printed page with no tooltips.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '2000' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    const made = screen.getByText(/That record makes/).closest('div')!.textContent!;
+    expect(made).toMatch(/paste plus the water you recorded/i);
+    expect(made).toMatch(/Dilution water to add.*saved 30% target/i);
+  });
+
+  test('takes the pot the maker weighed, when the reading describes one', () => {
+    // The same basis the panel's "Finished so far (weighed)" counts from — a measurement
+    // outranks the computed pot on both surfaces or they print different finished masses
+    // for one record.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '2000' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+          measuredPasteGrams: '1500',
+        })}
+      />,
+    );
+    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('3,500 g');
+  });
+
+  test('says nothing about a finished mass when nothing was recorded', () => {
+    render(<BatchSheet data={lsSheetData({ wholeBatchPasteGrams: 1600, cookWaterGrams: 382 })} />);
+    expect(screen.queryByText(/That record makes/)).toBeNull();
   });
 
   test('says nothing about poured water when none was recorded', () => {
