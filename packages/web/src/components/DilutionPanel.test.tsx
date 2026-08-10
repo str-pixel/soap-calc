@@ -3324,17 +3324,33 @@ describe('gradual in Custom amount scope', () => {
     render(<DilutionPanel {...P} portionPasteGrams="" portionWaterGrams="" />);
     expect(screen.getByLabelText(/Paste weighed out/)).toBeTruthy();
     expect(screen.getByLabelText(/Water added so far/)).toBeTruthy();
+    expect(screen.queryByLabelText(/Amount to make/)).toBeNull();
+  });
+
+  it('shows none of the target-sized portion grid, even with a stale amount left behind', () => {
+    // The reachable path: size a jar in Concentration mode, then switch to Gradual without
+    // clearing the amount. targetMl is App session state and survives that switch, so the
+    // whole target-derived grid used to render beside the jar's own recorded figures —
+    // two unlabelled figure sets, disagreeing, describing the same jar. Hiding the input
+    // was not enough; the state's downstream effect had to go too.
+    render(
+      <DilutionPanel {...P} targetMl="1000" portionPasteGrams="400" portionWaterGrams="900" />,
+    );
+    expect(screen.getByText(/23\.08% soap/)).toBeTruthy();
+    expect(screen.queryByText(/Paste to weigh out/i)).toBeNull();
+    expect(screen.queryByText(/^Makes$/i)).toBeNull();
   });
 
   it("reports the jar's own figures, each named as the portion's", () => {
     // 400 g of paste is a quarter of the 1,600 g batch, so it carries 300 g anhydrous.
     // Add 900 g water → 1,300 g finished, 300/1300 = 23.08% soap.
     //
-    // The water is 900 and not 600 DELIBERATELY. At 600 the jar lands at exactly 30%,
-    // which is also the recipe target this panel echoes read-only a few lines below — so
-    // the assertion matched two elements and could not tell the jar's own figure from the
-    // recipe's. A test that cannot distinguish the two numbers cannot prove the jar is
-    // being reported separately, which is the entire claim.
+    // The water is 900 and not 600 DELIBERATELY. At 600 the jar lands on exactly 30%, and
+    // the match is ambiguous — but NOT, as an earlier version of this comment claimed,
+    // against the recipe-target echo: that is a readOnly <input>, reachable by
+    // getByDisplayValue and never by getByText. The real second match is the static
+    // dilution-uses table's "General hand soap: 15–30% soap" row, which renders
+    // unconditionally. 900 lands the jar at 23.08% and matches exactly once.
     render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900" />);
     expect(screen.getByText('1,300 g')).toBeTruthy();
     expect(screen.getByText(/23\.08% soap/)).toBeTruthy();

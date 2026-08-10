@@ -537,12 +537,13 @@ export function DilutionPanel({
   // dilutionTargetWording and PortionDilutionResults are typed against the narrower
   // 'concentration' | 'ratio' union on purpose — see dilutionTargetWording's own doc
   // comment: the type dependency stays one-way, this component imports theirs, not the
-  // reverse, so they cannot import DilutionMode back. Gradual's Custom-amount behaviour
-  // (report the jar's own figures, never write back to the recipe) is a later task's own
-  // job; until it lands, gradual falls back to 'concentration' at this boundary, which
-  // changes nothing reachable today (gradual mode is new) and, since both consumers already
-  // treat every non-ratio mode identically, leaves gradual + Custom amount with today's
-  // ordinary concentration-mode wording rather than a compile error.
+  // reverse, so they cannot import DilutionMode back. Gradual's Custom-amount behaviour has
+  // now landed, and it turned this narrowing from "harmless placeholder" into something
+  // narrower still: PortionDilutionResults, the consumer that made gradual + Custom amount
+  // reachable at all, no longer renders in gradual mode — a stale `targetMl` was otherwise
+  // putting its whole target-derived grid on screen beside the jar's own recorded figures.
+  // The narrowing survives for the remaining consumer and for the one-way type dependency;
+  // it no longer stands in for a decision nobody had made yet.
   const narrowDilutionMode = dilutionMode === 'gradual' ? 'concentration' : dilutionMode;
   // Shared with PortionDilutionResults so this shell's Whole-batch twin of that refusal and
   // the child's own Custom-amount wording of it can never name different controls.
@@ -1541,19 +1542,30 @@ export function DilutionPanel({
                for a sibling reason: the child's refusals name a remedy, and which control
                that is depends on the mode chosen up here — it has no other way to know
                whether a concentration field is even on screen. */
-            <PortionDilutionResults
-              dilution={dilution}
-              weightUnit={weightUnit}
-              targetMl={targetMl}
-              measuredPasteGrams={measuredPasteGrams ?? ''}
-              wholeBatchPasteGrams={wholeBatchPasteGrams}
-              cookWaterGrams={cookWaterGrams}
-              unknownLiquidGrams={unknownLiquidGrams}
-              overDilutionCertain={overDilutionCertain}
-              dilutionMode={narrowDilutionMode}
-              ratioNotAppliedYet={ratioNotAppliedYet}
-              altLiquidNote={portionAltLiquidNote}
-            />
+            /* NOT in gradual mode. Hiding the "Amount to make (ml)" INPUT was not enough:
+               `targetMl` is App session state that survives a mode switch, so a maker who
+               sized a jar in Concentration mode and then chose Gradual kept this entire grid
+               on screen — "Paste to weigh out", "Water to add", "Makes" — every figure sized
+               from the recipe's SAVED TARGET, sitting unlabelled beside the jar's own
+               recorded figures and disagreeing with them. That is precisely the "two
+               unrelated ways to describe the same jar" the mode-selection comment above
+               claims to prevent; suppressing the input alone left the stale state's
+               downstream effect untouched. Gradual's own jar readout replaces this block. */
+            dilutionMode !== 'gradual' && (
+              <PortionDilutionResults
+                dilution={dilution}
+                weightUnit={weightUnit}
+                targetMl={targetMl}
+                measuredPasteGrams={measuredPasteGrams ?? ''}
+                wholeBatchPasteGrams={wholeBatchPasteGrams}
+                cookWaterGrams={cookWaterGrams}
+                unknownLiquidGrams={unknownLiquidGrams}
+                overDilutionCertain={overDilutionCertain}
+                dilutionMode={narrowDilutionMode}
+                ratioNotAppliedYet={ratioNotAppliedYet}
+                altLiquidNote={portionAltLiquidNote}
+              />
+            )
           )}
           {/* The add-in-stages technique note (LS:1531) and the density caveat used to
               render here as loose paragraphs in every state; both are always-true reference
