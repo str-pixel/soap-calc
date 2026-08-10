@@ -1066,4 +1066,37 @@ describe('the sheet records the water actually poured', () => {
     render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: 'abc' } })} />);
     expect(screen.queryByText(/Water actually added/)).toBeNull();
   });
+
+  test('a 0 g record is a record, and prints as one', () => {
+    // The pot before any water at all is Gradual Dilution's own starting entry (LS:1531),
+    // and the panel's ask says so outright — "0 g counts, and is where the record starts".
+    // While this row was gated on `> 0`, that record printed nothing on paper: the screen
+    // said the maker had recorded something and the sheet said they had not.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '0' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    expect(screen.getByText(/Water actually added/).closest('div')!.textContent).toContain('0 g');
+    // …and what it makes is the pot itself: 1,600 g of paste plus nothing.
+    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('1,600 g');
+  });
+
+  test('a negative record is not a pour, and still prints nothing', () => {
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '-100' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    expect(screen.queryByText(/Water actually added/)).toBeNull();
+    expect(screen.queryByText(/That record makes/)).toBeNull();
+  });
 });

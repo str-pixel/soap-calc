@@ -58,7 +58,11 @@ type PreservativeSnippetProps = {
 };
 
 /**
- * The Preservative snippet — a collapsed <details> below the Dilution panel, LS only.
+ * The Preservative snippet — a collapsed <details> INSIDE the Dilution panel, LS only. App
+ * renders it and hands it to that panel's `preservativeSlot`, so the dose sits with the
+ * finished mass it is a percentage of; see the slot's own comment for why that adjacency is
+ * structural rather than a layout convention. (It sat BELOW the panel until d83e7fe, and
+ * this line went on saying so.)
  *
  * A recipe SETTING, not a recipe ingredient: the pick, the custom name and the dose are
  * saved with the recipe, exported with it and printed on the batch sheet — but no

@@ -199,11 +199,25 @@ export default function App() {
   // with one: workspaceGeneration also bumps on New recipe and on import
   // (useRecipeStorage's own handlers). One-way, opening a recipe that recorded water and
   // then starting a new one left the panel in Gradual with an empty field, no dilution rows
-  // and no figure anywhere — a mode restored for a record that no longer exists. The reset
-  // target is the panel's own default, so a workspace with no record opens exactly as a
-  // cold start does.
+  // and no figure anywhere — a mode restored for a record that no longer exists.
+  //
+  // The reverse direction leaves Gradual and NOTHING ELSE. A flat reset to 'concentration'
+  // was the obvious one-liner and cost a mode the maker chose: workspaceGeneration also
+  // bumps on a PROCESS TAB SWITCH (useRecipeStorage's setProcess), so a maker working in
+  // Water:paste ratio who looked at the Cold process tab and came back was put in Target
+  // concentration — session state nobody asked to lose. Only Gradual can be left stale by an
+  // arriving recipe, because it is the only mode whose figures come from a record the recipe
+  // carries; ratio's and concentration's inputs are session-local and remain exactly as
+  // valid for the workspace that just arrived. So the reset target is the panel's own
+  // default only for the mode that has to move.
   useEffect(() => {
-    setDilutionMode(settings.gradualWaterGrams.trim() !== '' ? 'gradual' : 'concentration');
+    setDilutionMode((current) =>
+      settings.gradualWaterGrams.trim() !== ''
+        ? 'gradual'
+        : current === 'gradual'
+          ? 'concentration'
+          : current,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceGeneration]);
   // The mold sizer stores its bar weight as a raw display string interpreted in the

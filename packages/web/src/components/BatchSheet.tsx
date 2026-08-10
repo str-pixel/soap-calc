@@ -109,14 +109,18 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     (indexes.iodine !== null || indexes.ins !== null) &&
     Math.round(indexes.coveragePercent) < LOW_COVERAGE_PERCENT;
   const fattyAcidsLow = Math.round(fattyAcids.coveragePercent) < LOW_COVERAGE_PERCENT;
-  // A valid measured paste corrects the printed dilution water the same way it corrects
-  // DilutionPanel's on-screen batch row (lib/measuredPaste, shared so both surfaces always
-  // show the same number) — and, per Task 5, OUTRANKS targetExceedsPaste below, since that
-  // flag is derived from the recipe's ASSUMED cook water and the measurement is direct
-  // evidence against it.
+  // The verdict this sheet's own COPY answers to, and DilutionPanel's `measuredPasteValid`
+  // exactly: it gates the "Dilution water above uses the measured paste weight" note below
+  // and — per Task 5 — OUTRANKS targetExceedsPaste there, since that flag is derived from the
+  // recipe's ASSUMED cook water and the measurement is direct evidence against it. The
+  // printed water FIGURE has its own, slightly wider gate inside correctedDilutionWaterGrams
+  // (lib/measuredPaste's correctedPotGramsFor), so a gradual record whose own 2 dp write-back
+  // left the solution a hair under the pot is not refused by a target it produced; the two
+  // gates differ only inside that rounding, which is below the resolution of anything this
+  // note says.
   //
-  // The corrected basis and the cook water go into the validity gate too, not only into the
-  // water figure below: the floor under a reading counts an alternative liquid's solids, and
+  // The corrected basis and the cook water go into the gate too, not only into the water
+  // figure below: the floor under a reading counts an alternative liquid's solids, and
   // the sheet is the page carried to the bench — it must refuse exactly what the panel
   // refuses, or the two would disagree about whether the maker's own reading was usable.
   // Which is also why the declaration argument is the same constant the panel passes: one
@@ -184,13 +188,23 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // never chose. Only once the maker has touched the picker, the custom name or the dose
   // does the row print; the snippet itself is unaffected and still opens showing the anchor
   // choice.
-  // Blank is the ordinary case (no gradual record) and must print nothing; junk must also
-  // print nothing rather than a bare row with an empty figure.
+  // Blank is the ordinary case (no gradual record) and must print nothing; junk (and a
+  // negative, which is not a pour) must also print nothing rather than a bare row with an
+  // empty or impossible figure.
+  //
+  // ZERO IS A RECORD, not a blank, and the gate says `>= 0` for that reason alone: the pot
+  // before any water at all is Gradual Dilution's own starting entry (LS:1531), and the
+  // panel's own copy says so in as many words — "0 g counts, and is where the record starts"
+  // (DilutionPanel's batch ask). While this read `> 0` the page taken to the bench dropped
+  // both rows for exactly that record, so a maker who had recorded the starting weight found
+  // the screen and the paper disagreeing about whether a record existed. `.trim() !== ''` is
+  // what keeps a blank field out — Number('') is 0, so the parse alone cannot tell them
+  // apart, which is the same "empty ≠ zero" rule the panel's own gradualWaterNum applies.
   const gradualWaterRecordedNum = Number(settings.gradualWaterGrams);
   const gradualWaterRecordedGrams =
     settings.gradualWaterGrams.trim() !== '' &&
     Number.isFinite(gradualWaterRecordedNum) &&
-    gradualWaterRecordedNum > 0
+    gradualWaterRecordedNum >= 0
       ? gradualWaterRecordedNum
       : null;
   // What that record MADE, which is the other half of the line spec §4 asks this sheet to
