@@ -559,11 +559,23 @@ export default function App() {
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
               />
             )}
-            {/* Directly below Dilution because its % is OF the dilution's finished mass —
-                and of whichever scope's finished mass the panel above is showing (see
-                preservativeBaseGrams). Replaces the old static Preserve panel: the snippet
-                carries the same need logic AND the dose it used to defer to "your
-                supplier". */}
+            {/* PLACEMENT IS A LAYOUT DECISION, NOT A CORRECTNESS ONE — and the layout
+                reason is the good one, so read it before moving this.
+
+                Directly below Dilution so the snippet's "≈ Finished product (whole batch)"
+                row lands immediately under Dilution's own "Finished solution" figure. They
+                are the same number, and it is the number the dose is a percentage OF, so a
+                maker reads dose against basis in one glance.
+
+                What is NOT the reason: correctness. This was moved beside Additives on
+                2026-08-09 and moved back the next day — every test passed and it rendered
+                fine two columns away, because `basisScope` makes the base row NAME its own
+                scope ("whole batch" / "custom amount") rather than inheriting meaning from
+                the toggle it sits under. So do not keep this here believing the arithmetic
+                depends on it; keep it here because the two figures line up.
+
+                Replaces the old static Preserve panel: the snippet carries the same need
+                logic AND the dose it used to defer to "your supplier". */}
             {processOffers(process, 'preserve') && (
               <PreservativeSnippet
                 finishedGrams={preservativeBaseGrams}

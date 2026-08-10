@@ -78,7 +78,8 @@ export type LsPreservative = {
   typicalPctRange: readonly [number, number];
   /** Seeds the dose input. Always within typicalPctRange and never above maxPct. */
   defaultPct: number;
-  /** The hard ceiling, % w/w as supplied. */
+  /** The ceiling the UI warns above, % w/w as supplied. NOT enforced: the dose the maker
+   * types is the dose that computes — see lsPreservativeDoseTier's 'above-max'. */
   maxPct: number;
   ceiling: LsPreservativeCeiling;
   formaldehydeLabel: LsFormaldehydeLabel;
