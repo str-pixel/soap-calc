@@ -893,6 +893,83 @@ test('ratio mode: a valid measured paste wins over the computed anhydrous + cook
   expect(screen.getByText(/lands at 27% soap/i)).toBeTruthy();
 });
 
+describe('ratio mode counts from the pot, not from the target it is about to replace', () => {
+  // THE ONLY CONDITION where ratio's basis gate can differ: a reading that clears the pot's
+  // own rules (parses, not finer than a scale reads, not below the solids floor) and is
+  // HEAVIER than the solution the SAVED target dilutes to. Every other ratio test in this
+  // file sits under that ceiling, where the two gates agree by construction — so "all the
+  // pre-existing ratio tests pass unchanged" was true and proved nothing about the change.
+  //
+  // 1,200 g of anhydrous soap in a computed 1,600 g pot, saved at an 80% target: 1,500 g of
+  // solution. The maker weighs 1,550 g — a real reading (the cook drove off less than the
+  // recipe assumed), and above that 1,500 g. Ratio mode has no target of its own; it
+  // multiplies whatever pot it is given and WRITES the concentration that lands on. So the
+  // pot it multiplies must be the one on the scale, not the one the saved target implies.
+  const PAST_TARGET = {
+    ...BASE,
+    soapConcentrationPercent: '80',
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 1500, totalWaterGrams: 300,
+      dilutionWaterGrams: 0, glycerinGrams: 110, soapConcentrationPercent: 80,
+      targetExceedsPaste: true,
+    },
+    cookWaterGrams: 400,
+    wholeBatchPasteGrams: 1600,
+    measuredPasteGrams: '1550',
+    dilutionMode: 'ratio' as const,
+    waterPasteRatio: '2',
+    onDilutionModeChange: () => {},
+    onWaterPasteRatioChange: () => {},
+  };
+
+  it('pours the ratio against the weighed pot, and says which pot that was', () => {
+    render(<DilutionPanel {...PAST_TARGET} />);
+    // 1,550 x 2 = 3,100 g. The computed 1,600 g pot would prescribe 3,200 g — a hundred
+    // grams of water, on an instruction the maker follows at the bench.
+    expect(screen.getByText('Water to add at this ratio').nextElementSibling!.textContent).toBe(
+      '3,100 g',
+    );
+    // 1,200 / (1,550 + 3,100) = 25.81% — not the 25.0% the computed pot lands on.
+    expect(screen.getByText(/lands at 25\.8% soap/i)).toBeTruthy();
+    // And the paragraph names the basis it actually used, quoting the reading.
+    expect(
+      screen.getByText(/uses your measured paste \(1,550 g\)/i),
+    ).toBeTruthy();
+  });
+
+  it('writes back the concentration that pot lands on', () => {
+    // The write-back is the half of this that leaves the panel: it becomes
+    // settings.soapConcentrationPercent, which every other surface reads. 25.8 against 25.
+    const onSoapConcentrationChange = vi.fn();
+    render(<DilutionPanel {...PAST_TARGET} onSoapConcentrationChange={onSoapConcentrationChange} />);
+    // A value different from the DOM's, so React actually dispatches; the mocked handler
+    // does not feed it back, so the derived figure still comes from the '2' prop.
+    fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '2.5' } });
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('25.8');
+  });
+
+  it('still refuses the reading where the refusal is about the SAVED target, and names the ratio', () => {
+    // The ceiling is not weakened — it is asked a different question. The reading really is
+    // heavier than the 80% target's solution, the alert says so, and its remedy names the
+    // control on screen. What changed is only which pot the ratio multiplies.
+    render(<DilutionPanel {...PAST_TARGET} />);
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/already weighs more than the 1,500 g this target dilutes to/i);
+    expect(alert).toMatch(/raise the water:paste ratio above/i);
+  });
+
+  it('a reading UNDER that ceiling is untouched — both gates agree there', () => {
+    // The control for the three above: same fixture, a 1,450 g reading that clears the
+    // ceiling too. 1,450 x 2 = 2,900 g, and nothing about this case ever depended on which
+    // gate chose the basis.
+    render(<DilutionPanel {...PAST_TARGET} measuredPasteGrams="1450" />);
+    expect(screen.getByText('Water to add at this ratio').nextElementSibling!.textContent).toBe(
+      '2,900 g',
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
 test('a valid measured paste outranks the computed over-dilution flag: shows the water, drops the alert', () => {
   // anhydrous 1,000 g, declared cook water 2,000 g → computed paste 3,000 g exceeds the
   // 2,500 g solution for a 40% target, so core sets targetExceedsPaste. But the measured
