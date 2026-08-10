@@ -16,8 +16,8 @@ The book gives three ways to determine dilution water, "in order of precision" (
 | Method | Source | In the app before this change |
 |---|---|---|
 | **Gradual Dilution** | LS:1531 — *"add enough water to cover your paste… continue to add water in small increments until you have reached the desired consistency"* | **No** |
-| **Ratio Dilution** | LS:1533 — water:paste 1:1 / 2:1 / 3:1, and *"start at 1:1 and then slowly add more water as required"* | Yes (`dilutionMode: 'ratio'`) |
-| **Soap Concentration** | LS:1535 — the anhydrous-based calculation | Yes (`dilutionMode: 'concentration'`) |
+| **Ratio Dilution** | LS:1534 — water:paste 1:1 / 2:1 / 3:1, and *"start at 1:1 and then slowly add more water as required"* | Yes (`dilutionMode: 'ratio'`) |
+| **Soap Concentration** | LS:1536 — the anhydrous-based calculation | Yes (`dilutionMode: 'concentration'`) |
 
 The app implements the two precise methods and omits the imprecise one — which is exactly
 the method where the finished mass **cannot be known in advance**, and therefore the one
@@ -55,8 +55,20 @@ Dilution panel's existing mode radiogroup and labelled for the method the book n
 ### 2 · Whole-batch gradual: record water, derive everything
 
 **Input:** one field, *Water added so far (g)*. The paste weight is **shown, not typed** —
-the app already has it as `wholeBatchPasteGrams` (`anhydrousGrams + cookWaterGrams`,
-already corrected by a measured-paste reading when the maker has taken one).
+the app already has it as `wholeBatchPasteGrams`, which is
+`anhydrousGrams + cookWaterGrams + splitLiquidSolidsGrams`
+(`useRecipeViewModel.ts:442-446`) — an alternative liquid's non-water solids are real mass
+in the pot and are counted.
+
+**Which paste, when the maker has weighed theirs.** `wholeBatchPasteGrams` is a *computed*
+figure; a measured-paste reading does **not** flow into it (verified — the measurement is
+applied separately, through `correctedDilutionWaterGrams` and the `lib/measuredPaste`
+helpers). Gradual must therefore choose explicitly, and it chooses the **measurement when
+one is present and passes `measuredPasteRejectionFor`**, because a maker recording water
+poured into a pot they weighed is describing that pot, not the model of it. When there is
+no reading, or the reading is rejected, gradual falls back to the computed figure and the
+readout says which of the two it used — the same name-your-basis discipline as
+`basisScope`.
 
 ```
 paste        = wholeBatchPasteGrams          (shown)
@@ -79,11 +91,38 @@ solutionGrams = anhydrous ÷ concentration
               = paste + water                       ← precisely what was poured
 ```
 
-**Rounding caveat, and the one place it bites.** The write-back rounds/clamps the
-concentration the way ratio mode does, so the recovered `solutionGrams` can sit a gram or
-two off the recorded `paste + water`. Therefore the panel prints **"Finished so far" from
-the raw inputs**, not from `dilution.solutionGrams`. The two must never be shown as if they
-were the same number without being the same number.
+**Rounding is worse than it looks — measured, not estimated.** Ratio mode writes back at
+**one decimal place** (`Math.round(x * 10) / 10`, `DilutionPanel.tsx:272-273`). Running
+`calculateDilution` over four water amounts on a 1,041 g-anhydrous / 1,423 g-paste batch:
+
+| Water added | Finished (recorded) | Exact | Drift at 0 dp | at 1 dp | at 2 dp |
+|---|---|---|---|---|---|
+| 1,777 g | 3,200 g | 32.5313% | **−45.5 g** | +3.1 g | +0.1 g |
+| 2,000 g | 3,423 g | 30.4119% | **+47.0 g** | +1.3 g | +0.2 g |
+| 2,536 g | 3,959 g | 26.2945% | **+44.8 g** | −0.8 g | +0.7 g |
+| 3,111 g | 4,534 g | 22.9599% | −7.9 g | −7.9 g | −0.0 g |
+
+So: **gradual writes back at 2 dp**, not ratio's 1 dp. At 1 dp the recovered mass can sit
+~8 g from what was poured, which is a visible discrepancy on screen and a real shift in the
+preservative dose; 2 dp keeps it under a gram for no cost.
+
+Even at 2 dp the two numbers are not identical, so the panel prints **"Finished so far"
+from the raw inputs**, never from `dilution.solutionGrams`. Two figures shown as the same
+number must be the same number.
+
+**Clamp, don't refuse.** An extreme record can round the concentration outside
+`calculateDilution`'s accepted `(0, 100)`. Ratio already solved this: it clamps what gets
+**written** to `[1, 99]` while the readout keeps telling the truth, and flags that it did
+(`ratioWriteBackClamped`, `DilutionPanel.tsx:280-286`) — because writing an out-of-range
+value sends `dilution` to null upstream and vanishes the entire panel that the maker would
+need in order to fix it. Gradual takes the identical approach.
+
+**The re-entry guard is not optional.** `DilutionPanel.tsx:170-179` resets `ratioTouched` on
+every `dilutionMode` change, and its comment records the bug that forced it: with the guard
+absent, leaving ratio mode to type an exact target and then returning to ratio *without
+touching the ratio field* re-fired the write-back and silently reverted the typed value,
+"with no visual difference and no undo". Gradual introduces a second derived mode and needs
+the identical `gradualTouched` reset, or it reintroduces that bug on a new axis.
 
 ### 3 · Custom amount gradual: report, never write back
 
@@ -129,9 +168,18 @@ disclosure **within** it, after the dilution figures. The dependency becomes str
 dose cannot be separated from the mass it is a percentage of, which is what happened when
 the panel was moved beside Additives on 2026-08-09 and moved back the next day.
 
-Its props are unchanged — `finishedGrams` and `basisScope` are already resolved by `App`
-and already carry the scope, so nesting is a placement change, not a contract change. The
-comment at `App.tsx:562` recording *why* the placement matters moves with it.
+**Nesting is not free, and the obvious way is the wrong way.** The snippet takes 9 props;
+`DilutionPanel` already takes 20. Threading the six it does not already have would take
+that panel to 26 and make the app's largest component newly responsible for preservative
+concerns it has no reason to know about.
+
+Instead **`App` renders the snippet and passes it down as a single node prop** — e.g.
+`preservativeSlot?: ReactNode` — which `DilutionPanel` places after its dilution figures
+without knowing what it is. One prop, no new coupling, and the preservative's own wiring
+stays where it already lives. The snippet's own props are genuinely unchanged.
+
+The comment at `App.tsx:562` recording *why* the placement matters moves with it, and
+should now say the adjacency is enforced structurally rather than by convention.
 
 ### 6 · Persistence
 
