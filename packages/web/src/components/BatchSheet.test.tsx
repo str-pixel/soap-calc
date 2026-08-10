@@ -443,6 +443,7 @@ function lsSheetData(extra: {
       | 'preservativeCustomName'
       | 'preservativeDosePct'
       | 'preservativeSetByUser'
+      | 'gradualWaterGrams'
     >
   >;
 }) {
@@ -979,4 +980,32 @@ test('a below-50°C stage note prints for a preservative that actually carries o
   expect(row.textContent).toContain('Liquid Germall Plus');
   expect(row.textContent).toContain('add after dilution, below 50 °C');
   expect(row.textContent).not.toContain('once cooled');
+});
+
+describe('the sheet records the water actually poured', () => {
+  test('prints the recorded water and the finished mass it produced', () => {
+    render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: '2000' } })} />);
+    const row = screen.getByText(/Water actually added/).closest('div')!;
+    expect(row.textContent).toContain('2,000 g');
+  });
+
+  test('says nothing about poured water when none was recorded', () => {
+    render(<BatchSheet data={lsSheetData({})} />);
+    expect(screen.queryByText(/Water actually added/)).toBeNull();
+  });
+
+  test('does not present the recorded figure as the computed one', () => {
+    // Both print, and they answer different questions: "Dilution water to add" is what the
+    // saved target implies, "Water actually added" is what went in the pot. A sheet that
+    // showed one as the other would be the paper version of the confusion this whole
+    // feature exists to remove.
+    render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: '2000' } })} />);
+    expect(screen.getByText('Dilution water to add')).toBeTruthy();
+    expect(screen.getByText(/Water actually added/)).toBeTruthy();
+  });
+
+  test('ignores a blank or unparseable record rather than printing a bare row', () => {
+    render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: 'abc' } })} />);
+    expect(screen.queryByText(/Water actually added/)).toBeNull();
+  });
 });

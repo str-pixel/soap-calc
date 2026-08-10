@@ -182,6 +182,15 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // never chose. Only once the maker has touched the picker, the custom name or the dose
   // does the row print; the snippet itself is unaffected and still opens showing the anchor
   // choice.
+  // Blank is the ordinary case (no gradual record) and must print nothing; junk must also
+  // print nothing rather than a bare row with an empty figure.
+  const gradualWaterRecordedNum = Number(settings.gradualWaterGrams);
+  const gradualWaterRecordedGrams =
+    settings.gradualWaterGrams.trim() !== '' &&
+    Number.isFinite(gradualWaterRecordedNum) &&
+    gradualWaterRecordedNum > 0
+      ? gradualWaterRecordedNum
+      : null;
   const preservativeGrams =
     bottledGrams !== null &&
     settings.preservativeSetByUser &&
@@ -420,6 +429,20 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <div><dt>Glycerin (retained)</dt><dd>{formatWeight(dilution.glycerinGrams, weightUnit)}</dd></div>
             {showBottledRow && bottledGrams !== null && (
               <div><dt>≈ Bottled (with extras)</dt><dd>{formatWeight(bottledGrams, weightUnit)}</dd></div>
+            )}
+            {/* What went in the pot, when the maker diluted gradually (LS:1531 — "record how
+                much water you started with and how much additional water you added"). It sits
+                beside "Dilution water to add" deliberately and is NAMED against it: that row
+                is what the saved target implies, this one is what was actually poured. They
+                are usually close, because recording the water writes its own concentration
+                back into the target — but they answer different questions, and a sheet that
+                let one stand in for the other would be the paper version of the confusion
+                this feature exists to remove. Absent entirely when nothing was recorded. */}
+            {gradualWaterRecordedGrams !== null && (
+              <div>
+                <dt>Water actually added</dt>
+                <dd>{formatWeight(gradualWaterRecordedGrams, weightUnit)}</dd>
+              </div>
             )}
             {preservativeGrams !== null && (
               <div>
