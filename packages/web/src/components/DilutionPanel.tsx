@@ -375,18 +375,30 @@ export function DilutionPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ratioTouched, dilutionMode, clampedRatioConcentrationPercent, soapConcentrationPercent]);
+  // The PRIMITIVE gradual writes, hoisted out of the object so the effect below can depend
+  // on it directly. gradualDilutionFrom returns a fresh object every call (no useMemo — see
+  // `gradual`'s own comment), so `gradual` itself is a new reference on every render;
+  // useEffect compares dependencies by reference, so listing the object would re-fire the
+  // effect on every re-render while touched, not only when the derived percentage actually
+  // changes — and since the effect calls onSoapConcentrationChange, which (in App) always
+  // spreads a new settings object, App re-renders, this component is rebuilt, `gradual` is
+  // a new reference with identical values, and the effect fires again: an unbounded render
+  // loop from the first keystroke. Depending on this primitive instead is what makes React
+  // bail out on an unchanged value — the same property ratio's own effect comment names,
+  // which only holds for primitives, not for a freshly-allocated object.
+  const gradualWriteBack = gradual?.writeBackPercent ?? null;
   // Gradual's write-back, mirroring ratio's immediately above: same touched-gate (see
   // gradualTouched's own comment — entering a derived mode must not write anything on its
   // own) and the same target field. Unlike ratio's effect this does NOT list
-  // soapConcentrationPercent as a dependency: gradual.writeBackPercent is derived from the
-  // paste and the recorded water alone, never from the persisted target, so there is
-  // nothing here an external change to that target would need to resync.
+  // soapConcentrationPercent as a dependency: gradualWriteBack is derived from the paste and
+  // the recorded water alone, never from the persisted target, so there is nothing here an
+  // external change to that target would need to resync.
   useEffect(() => {
-    if (gradualTouched && dilutionMode === 'gradual' && gradual !== null) {
-      onSoapConcentrationChange(String(gradual.writeBackPercent));
+    if (gradualTouched && dilutionMode === 'gradual' && gradualWriteBack !== null) {
+      onSoapConcentrationChange(String(gradualWriteBack));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gradualTouched, dilutionMode, gradual]);
+  }, [gradualTouched, dilutionMode, gradualWriteBack]);
   // The measurement corrects the BATCH figure the same way it already corrects the portion
   // in PortionDilutionResults — shared with the printed BatchSheet so both surfaces always agree.
   // wholeBatchPasteGrams is passed for the second correction the helper applies: without it

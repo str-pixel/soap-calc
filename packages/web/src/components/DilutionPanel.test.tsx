@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import type { ComponentProps } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { DilutionPanel } from './DilutionPanel';
 import type { DilutionResult } from '@soap-calc/core';
 
@@ -3204,15 +3204,49 @@ describe('gradual dilution — recording the water actually poured', () => {
     expect(screen.getByText(/capp?ed|clamped/i)).toBeTruthy();
   });
 
-  it('does not loop: the paste it derives from is unmoved by the concentration it writes', () => {
-    // If wholeBatchPasteGrams ever became concentration-dependent, gradual would chase its
-    // own write-back. Nothing else in the suite would notice.
-    const { rerender } = render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
-    const before = screen.getByText('3,600 g');
-    rerender(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000"
-      dilution={{ ...RESULT, solutionGrams: 3600, soapConcentrationPercent: 33.33 }} />);
-    expect(before).toBeTruthy();
-    expect(screen.getByText('3,600 g')).toBeTruthy();
+  it('does not loop: a real feedback path from the write-back back into the prop settles instead of growing', () => {
+    // Every other test in this file — including the earlier draft of this one — wires
+    // onSoapConcentrationChange to an inert vi.fn() (or asserts a one-shot DOM snapshot
+    // after a manual rerender) and so can never see a real render loop: nothing feeds the
+    // written value back into soapConcentrationPercent the way App actually does. This
+    // harness closes that loop for real, and wraps the written value in a FRESH OBJECT on
+    // every call — mirroring App's setSettings({ ...settings, ... }), which always spreads
+    // a new object — so an unchanged STRING value can never mask a broken effect dependency
+    // by tripping React's bail-out on an unchanged primitive: that bail-out is real, but it
+    // protects only the harness's own top-level state, never DilutionPanel's internal
+    // `gradual`, which gradualDilutionFrom rebuilds as a fresh object on every render
+    // regardless of why that render happened.
+    function Harness() {
+      const [percent, setPercent] = useState({ value: '30' });
+      const [water, setWater] = useState('');
+      const [calls, setCalls] = useState(0);
+      return (
+        <>
+          <span data-testid="calls">{calls}</span>
+          <DilutionPanel
+            {...BASE}
+            dilutionMode="gradual"
+            onDilutionModeChange={() => {}}
+            cookWaterGrams={400}
+            wholeBatchPasteGrams={1600}
+            gradualWaterGrams={water}
+            onGradualWaterChange={setWater}
+            soapConcentrationPercent={percent.value}
+            onSoapConcentrationChange={(value) => {
+              setCalls((c) => c + 1);
+              setPercent({ value });
+            }}
+          />
+        </>
+      );
+    }
+    render(<Harness />);
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2000' } });
+    // A real coupling settles at the write-back's own re-render — one or two calls, never a
+    // count that keeps climbing. A dependency on the raw `gradual` OBJECT fails this: a
+    // fresh reference every render re-fires the effect on every re-render while touched,
+    // whether or not the derived percentage actually changed, and it never settles.
+    expect(Number(screen.getByTestId('calls').textContent)).toBeLessThanOrEqual(2);
   });
 
   it('never reports over-dilution from an honest record', () => {
