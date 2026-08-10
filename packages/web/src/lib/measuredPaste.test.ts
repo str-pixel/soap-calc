@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DilutionResult } from '@soap-calc/core';
 import {
   correctedDilutionWaterGrams,
+  correctedPotGramsFor,
   measuredPasteDescribesPotFor,
   measuredPasteIsValidFor,
   measuredPasteRejectionFor,
@@ -712,5 +713,106 @@ describe('measuredPasteDescribesPotFor — the pot’s own rules, with no target
     // The full gate is the one that flips, and still should — it guards a pour figure.
     expect(measuredPasteIsValidFor('1405', at30)).toBe(true);
     expect(measuredPasteIsValidFor('1405', at8541)).toBe(false);
+  });
+});
+
+describe('correctedPotGramsFor — one pot for the pour and for what gets bottled', () => {
+  it('prefers the reading whenever it describes a possible pot', () => {
+    expect(correctedPotGramsFor(DILUTION, '1480', false, 1600, 400)).toEqual({
+      grams: 1480,
+      fromMeasurement: true,
+    });
+  });
+
+  it('falls back to the corrected pot when the reading does not describe one', () => {
+    // Below the solids floor, and a swallowed separator: neither is a pot.
+    expect(correctedPotGramsFor(DILUTION, '900', false, 1600, 400)).toEqual({
+      grams: 1600,
+      fromMeasurement: false,
+    });
+    expect(correctedPotGramsFor(DILUTION, '1480.25', false, 1600, 400)).toEqual({
+      grams: 1600,
+      fromMeasurement: false,
+    });
+  });
+
+  it('is null when nothing knows the pot', () => {
+    expect(correctedPotGramsFor(DILUTION, '')).toBeNull();
+    expect(correctedPotGramsFor(DILUTION, '900')).toBeNull();
+  });
+
+  it('refuses a remaining reading, which is not the whole batch’s pot', () => {
+    expect(correctedPotGramsFor(DILUTION, '1480', true, 1600, 400)).toEqual({
+      grams: 1600,
+      fromMeasurement: false,
+    });
+  });
+
+  it('takes a reading its own write-back rounded the target down from', () => {
+    // THE SPLIT this function exists for. A weighed 1,405 g pot with no water recorded writes
+    // round2(120000/1405) = 85.41%, and 1,200 / 0.8541 is 1,404.9877 g — a hair UNDER the
+    // reading. measuredPasteIsValidFor refuses it there, which is how the panel came to count
+    // from 1,405 g while the bottled figure fell back to the computed 1,600 g pot.
+    const at8541: DilutionResult = {
+      ...DILUTION,
+      solutionGrams: 1200 / 0.8541,
+      soapConcentrationPercent: 85.41,
+    };
+    expect(measuredPasteIsValidFor('1405', at8541, false, 1600, 400)).toBe(false);
+    expect(correctedPotGramsFor(at8541, '1405', false, 1600, 400)).toEqual({
+      grams: 1405,
+      fromMeasurement: true,
+    });
+    // …and the recipe's own saved target answers identically for the same pot, which is the
+    // agreement the whole feature turns on.
+    const at30 = { ...DILUTION, solutionGrams: 4000, soapConcentrationPercent: 30 };
+    expect(correctedPotGramsFor(at30, '1405', false, 1600, 400)?.grams).toBe(1405);
+  });
+
+  it('still refuses a reading past the target by more than any rounding explains', () => {
+    // The crockpot mistake: 4,500 g against a 4,000 g solution at 30% is 500 g over, where
+    // the write-back's 2 dp rounding could account for at most 4,000 x 0.005/30 = 0.67 g.
+    // Every target-derived figure must go on ignoring it — the panel's own alert tells the
+    // maker to subtract the empty pot — so this falls back to the recipe's computed pot.
+    expect(correctedPotGramsFor(DILUTION, '4500', false, 1600, 400)).toEqual({
+      grams: 1600,
+      fromMeasurement: false,
+    });
+    // The bound, at both edges: 4,000.6 g is inside the rounding window, 4,000.8 g is not.
+    // (Neither is typable at a scale's precision — this is the boundary, not a use case.)
+    expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400)?.fromMeasurement).toBe(true);
+    expect(correctedPotGramsFor(DILUTION, '4000.8', false, 1600, 400)?.fromMeasurement).toBe(false);
+  });
+});
+
+describe('correctedDilutionWaterGrams past the target’s own solution', () => {
+  it('pours nothing for a pot its own record put a hair over the solution', () => {
+    // The gradual state: the pot IS the finished soap, so there is nothing left to add. This
+    // used to fall through to the corrected-pot branch, which answers 0 here as well
+    // (1,404.99 − 1,600 clamps) — the figure only moves where the computed pot is LIGHTER
+    // than the solution, and it moves toward the pot the maker weighed.
+    const at8541: DilutionResult = {
+      ...DILUTION,
+      solutionGrams: 1200 / 0.8541,
+      soapConcentrationPercent: 85.41,
+    };
+    expect(correctedDilutionWaterGrams(at8541, '1405', false, 1600, 400)).toBe(0);
+    expect(correctedDilutionWaterGrams(at8541, '1405', false, 1300, 400)).toBe(0);
+  });
+
+  it('is unchanged for a reading past the widened ceiling — the recipe answers, not the scale', () => {
+    // 4,000 − 1,600: the recipe's own computed pot, exactly as before. A crockpot-sized
+    // reading must not be able to zero the pour.
+    expect(correctedDilutionWaterGrams(DILUTION, '4500', false, 1600, 400)).toBe(2400);
+  });
+
+  it('is unchanged for every reading the target can still take water to reach', () => {
+    // The clamp is a no-op under solutionGrams, which is where the two gates agree — so this
+    // change moves nothing for any reading the old gate accepted.
+    for (const raw of ['1200', '1480', '2500', '3999.5', '4000']) {
+      expect(correctedDilutionWaterGrams(DILUTION, raw, false, 1600, 400)).toBe(
+        4000 - Number(raw),
+      );
+    }
   });
 });

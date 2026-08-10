@@ -167,9 +167,13 @@ type DilutionPanelProps = {
 /**
  * The best-known WHOLE-BATCH paste mass this panel works from: the view model's corrected,
  * solids-aware figure when there is one, else the recipe's own anhydrous + cook water.
- * Module-level so App can resolve the identical figure for the preservative dose without a
- * second copy of the rule — the same reason portionDilutionFor is exported from
- * PortionDilutionResults.
+ *
+ * Module-level, and exported, so the printed BatchSheet resolves the identical figure
+ * without a second copy of the rule: it is the paste half of the "That record makes" row
+ * (BatchSheet.tsx), which has to add up to the same mass this panel prints as "Finished so
+ * far" or screen and paper state different masses for one record. Same reason
+ * portionDilutionFor and portionGradualFor are exported — App is the importer for those two
+ * (the preservative dose), and BatchSheet is the importer for this one.
  */
 export function bestKnownPasteGramsFor(
   dilution: DilutionResult | null,
@@ -344,9 +348,17 @@ export function DilutionPanel({
   // Same guards PortionDilutionResults applies to the identical measurement: below the anhydrous
   // soap it cannot be a whole-batch paste, above the target solution there is no water left
   // to add. Both accept the boundary. A measured paste that survives these WINS over the
-  // computed TARGET-DERIVED figures below — the batch pour and its hint, and the portion.
-  // Which POT the derived modes count from is a different question with a different gate:
-  // see measuredPasteDescribesPot just below.
+  // computed TARGET-DERIVED figures below — the portion — and this is the gate the copy about
+  // them answers to: the "Dilution water above uses your measured paste" hint, and the
+  // suppression of the two already-more-dilute alerts and the can't-tell hedge, all of which
+  // speak in the maker's voice about a reading the exceeds-solution alert would otherwise be
+  // refusing.
+  //
+  // TWO OTHER QUESTIONS have their own gates, and neither is this one. Which POT the derived
+  // modes count from is measuredPasteDescribesPot just below. Which pot the batch POUR and
+  // the bottled mass are measured against is lib/measuredPaste's correctedPotGramsFor — this
+  // ceiling widened by exactly the gradual write-back's own rounding, so a target this record
+  // itself produced cannot refuse the record; see that function.
   const measuredPasteValid =
     dilution !== null &&
     measuredPasteIsValidFor(
@@ -367,8 +379,10 @@ export function DilutionPanel({
   // forever). See measuredPasteDescribesPotFor for the full account and the swept numbers.
   //
   // The reading is still judged against the ceiling everywhere the ceiling means something:
-  // measuredPasteValid above (the batch pour, the printed sheet, the portion) and the
-  // rejection alerts below both keep it.
+  // measuredPasteValid above (the portion, and the copy that speaks for a reading) keeps it
+  // exactly, the rejection alerts below keep it exactly, and the batch pour and the bottled
+  // mass keep it widened by the write-back's own rounding (correctedPotGramsFor). Only the
+  // basis this line chooses drops it altogether.
   const measuredPasteDescribesPot =
     dilution !== null &&
     measuredPasteDescribesPotFor(
@@ -441,8 +455,12 @@ export function DilutionPanel({
   // solution the SAVED TARGET dilutes to, and neither derived mode has a target — ratio
   // multiplies whatever pot it is given, and gradual writes the target this expression
   // produces. A basis chosen by a figure downstream of itself is not a basis. The batch pour
-  // one screen below still answers to the ceiling, because solutionGrams − measured really
-  // does have to be a pour it can print.
+  // one screen below still answers to a ceiling, because solutionGrams − measured really does
+  // have to be a pour it can print — but to correctedPotGramsFor's, which is this ceiling
+  // widened by the write-back's own rounding, so the pour and the bottled mass count from the
+  // same pot this line does whenever the target IS this record's. That agreement is the point:
+  // while they disagreed, the panel printed "Finished so far (weighed) 1,405 g" beside a
+  // 1,600 g finished product with a legally-capped preservative dose taken against the second.
   //
   // wholeBatchPasteGrams (anhydrousGrams + cookWaterGrams + splitLiquidSolidsGrams,
   // computed in the view model) is a PREDICTION and is never corrected by a measured

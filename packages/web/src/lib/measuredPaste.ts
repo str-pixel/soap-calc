@@ -16,8 +16,9 @@ import type { DilutionResult } from '@soap-calc/core';
  * crockpot minus the empty one (LS:1538) — and never a vessel weighed along with its contents.
  *
  * REMAINING MODE IS THEREFORE UNREACHABLE FROM THE UI, and is kept anyway: the parameter, the
- * remaining-mode ceiling (`exceedsRemainingCeiling`), the `isRemaining` gate on
- * {@link measuredPasteIsValidFor}, computeBottledSolutionGrams' matching gate and core's
+ * remaining-mode ceiling (`exceedsRemainingCeiling`), the `isRemaining` gates on
+ * {@link measuredPasteIsValidFor} and {@link correctedPotGramsFor} (which is the one
+ * computeBottledSolutionGrams and the pour now go through) and core's
  * `lsPartialDilution` arithmetic were all proven correct by large differential fuzzes, they
  * are still tested directly, and they are what a caller (or a restored control) would need.
  * Nothing in this module decides that policy — this constant is the single place the UI does,
@@ -191,10 +192,14 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * always clears the reading comfortably; gradual's own first record is the pot before any
  * water at all (LS:1531), where solution and reading are the same number by construction.
  *
- * The ceiling is not weakened anywhere it means something: {@link measuredPasteIsValidFor}
- * still applies it for every TARGET-derived figure (the batch pour, the printed sheet's
- * pour, the portion), and {@link measuredPasteRejectionFor} still reports it to the maker.
- * Only the choice of WHICH POT to count from is decided here.
+ * The ceiling is not weakened anywhere it means something. {@link measuredPasteIsValidFor}
+ * still applies it exactly for the portion and for the copy that speaks in the maker's voice
+ * about a reading; {@link measuredPasteRejectionFor} still reports it; and the batch pour,
+ * the printed sheet's pour and the bottled mass apply it through
+ * {@link correctedPotGramsFor}, which widens it by exactly the gradual write-back's rounding
+ * and no further — so a target a record itself produced cannot refuse that record, while a
+ * reading past the target for any other reason is still ignored. Only the choice of WHICH POT
+ * the derived modes count from drops it altogether, and that is what is decided here.
  */
 export function measuredPasteDescribesPotFor(
   measuredPasteGrams: string | undefined,
@@ -219,10 +224,13 @@ export function measuredPasteDescribesPotFor(
 /**
  * True when a parsed measured-paste reading is valid FOR this dilution: not below the
  * non-evaporable solids floor (measurementBelowSolids) and not above the target solution
- * ceiling (measurementExceedsSolution) — the shared bar every caller that lets a
- * measurement override a TARGET-DERIVED figure must clear first. A caller choosing which
- * pot to count from, with no target in play, wants {@link measuredPasteDescribesPotFor}
- * above instead; see it for the loop the ceiling closed when it decided that.
+ * ceiling (measurementExceedsSolution) — the bar for the portion's arithmetic, and for every
+ * surface whose COPY speaks about the reading in the maker's voice. Two other callers want
+ * two other questions: one choosing which pot the derived modes count from, with no target in
+ * play, wants {@link measuredPasteDescribesPotFor} above (see it for the loop the ceiling
+ * closed when it decided that), and one measuring a pour or a bottled mass against the pot
+ * wants {@link correctedPotGramsFor}, whose ceiling is this one widened by the gradual
+ * write-back's own rounding.
  *
  * `isRemaining` gates this for the BATCH row specifically: a reading declared as what's
  * LEFT after earlier dilutions describes a smaller pot, not the whole batch, so it can
@@ -488,8 +496,9 @@ export function measuredPasteRejectionFor(
   // pasteAlreadyPastTarget twin, neither a role="alert", because nothing about the reading is
   // impossible. The first of those is gone with the control; the second still renders, for
   // its own unmeasured case.) Nothing this suppression feeds changes either way:
-  // measuredPasteIsValidFor still refuses every remaining reading outright, so the batch row,
-  // correctedDilutionWaterGrams, computeBottledSolutionGrams and BatchSheet never see it.
+  // measuredPasteIsValidFor and correctedPotGramsFor both refuse every remaining reading
+  // outright, so the batch row, correctedDilutionWaterGrams, computeBottledSolutionGrams and
+  // BatchSheet never see it.
   const exceedsSolution =
     !isRemaining &&
     hasMeasurement &&
@@ -549,6 +558,116 @@ export function measuredPasteRejectionFor(
 }
 
 /**
+ * Half of the last digit `gradualDilutionFrom` (core) rounds its written percentage to, and
+ * therefore the most a recorded percent can differ from the record it was derived from.
+ * DilutionPanel's own `gradualNotAppliedYet` threshold is this same number for the same
+ * reason; both have to move if core's rounding ever does.
+ */
+const GRADUAL_WRITE_BACK_ROUNDING = 0.005;
+
+/**
+ * The largest pot mass that could have WRITTEN this dilution's own target — `solutionGrams`
+ * widened by the gradual write-back's rounding, and nothing more.
+ *
+ * Gradual derives the target from the pot: a pot of M grams writes
+ * `p = round2(100 × anhydrous ÷ M)`, so `solutionGrams` comes back as `100 × anhydrous ÷ p`
+ * — which lands a hair UNDER M whenever that rounding went up. The rounding is bounded
+ * (|p − 100·anhydrous/M| <= 0.005), so the HEAVIEST pot that writes this p is
+ * `100 × anhydrous ÷ (p − 0.005)`, i.e. `solutionGrams × p ÷ (p − 0.005)`. That is this
+ * bound, closed-form and tight — not a tolerance chosen to make a case pass.
+ *
+ * Falls back to `solutionGrams` for a target at or below the rounding itself, where the
+ * widened bound is meaningless (calculateDilution accepts any percent in (0, 100); the UI
+ * never types below 1).
+ */
+function targetSolutionCeilingGrams(dilution: DilutionResult): number {
+  const p = dilution.soapConcentrationPercent;
+  if (!Number.isFinite(p) || p <= GRADUAL_WRITE_BACK_ROUNDING) return dilution.solutionGrams;
+  return (dilution.solutionGrams * p) / (p - GRADUAL_WRITE_BACK_ROUNDING);
+}
+
+/**
+ * WHICH POT the corrected water figure is measured against, and the single place that
+ * choice is made for every batch-level consumer: {@link correctedDilutionWaterGrams} (and
+ * through it DilutionPanel's pour row and the printed BatchSheet's) and
+ * computeBottledSolutionGrams' base.
+ *
+ * It is {@link measuredPasteDescribesPotFor}'s three pot rules, plus a ceiling that is
+ * `solutionGrams` WIDENED by {@link targetSolutionCeilingGrams} — and that widening is the
+ * whole of this function's reason to exist. {@link measuredPasteIsValidFor} compares the
+ * reading against `solutionGrams` exactly, and in gradual mode `solutionGrams` is anhydrous ÷
+ * the percent the panel's own record just wrote: with no water recorded the pot IS the
+ * finished mass, so the two are the same number up to 2 dp of rounding, and about half of the
+ * readings in the window land the solution a hair below the reading. Deciding the pot there
+ * split the panel from the mass it doses — a weighed 1,405 g pot against a 1,600 g computed
+ * one had the panel print 1,405 g while the bottled figure came back 1,600 g, giving one batch
+ * two masses, a finished volume from the larger, and a preservative dose (legally capped, EU
+ * Annex V) taken against it: on the app's own starter recipe a 1,400 g pot was dosed at 1% of
+ * 1,666 g, which is 1.19% of what the maker had. 213 of the 433 whole-gram readings between
+ * the solids floor and the computed pot landed in it, with nothing on screen naming the
+ * split — the exceeds-solution alert is suppressed in gradual mode precisely because it is a
+ * rounding artifact there.
+ *
+ * THE CEILING IS NOT DROPPED, only widened to exactly the rounding, and the difference
+ * matters. A reading past `solutionGrams` by more than any rounding could explain is the
+ * app's own named mistake — the maker weighed the loaded crockpot and forgot to subtract the
+ * empty one — and every target-derived figure must go on ignoring it and falling back to the
+ * recipe's computed pot, which is what the alert beside the field tells the maker has
+ * happened. Dropping the ceiling outright would have priced a bottle, a volume and a dose off
+ * a pot with 3 kg of stoneware in it.
+ *
+ * The bound is TIGHT rather than generous, and provably so: for a record of R grams of paste
+ * plus W of water, the written p satisfies 100·anhydrous = p_true·(R + W) with
+ * |p − p_true| <= 0.005, and R > solutionGrams·p/(p − 0.005) reduces to
+ * R·(p − p_true) − 0.005·R > p_true·W, whose left side is never positive. So a gradual record
+ * can never sit above this ceiling once its own write-back has been applied — for any W, not
+ * only zero. The two states where the saved target is NOT round2(p_true) each already have
+ * their own account on screen: the write-back has not fired yet (DilutionPanel's "Not applied
+ * yet" clause) or the [1, 99] clamp moved what it wrote (that mode's clamp alert).
+ *
+ * `fromMeasurement` is not a convenience: computeBottledSolutionGrams has to know whether
+ * the pot it is pricing is the one the MAKER weighed — a weighed pot already contains an
+ * alternative liquid's solids, an unmeasured base built from anhydrous + cook water does
+ * not — so the two answers must come from one call, or the base and its solids term could
+ * disagree about the same pot.
+ *
+ * Null means no pot is known: no usable reading AND no corrected basis. Callers fall back to
+ * the recipe's own figures there, exactly as they did before this function existed.
+ *
+ * `isRemaining` refuses the reading outright, the same gate {@link measuredPasteIsValidFor}
+ * applies and for the same reason — a remainder is not the whole batch's pot, so a
+ * batch-level figure must never be corrected with one. Every UI caller passes
+ * {@link MEASURED_PASTE_IS_REMAINING}, so that branch is unreachable from the app today;
+ * see that constant for why it is kept.
+ */
+export function correctedPotGramsFor(
+  dilution: DilutionResult,
+  measuredPasteGrams: string | undefined,
+  isRemaining = false,
+  wholeBatchPasteGrams?: number | null,
+  cookWaterGrams?: number | null,
+): { grams: number; fromMeasurement: boolean } | null {
+  const measured = parseMeasuredPasteGrams(measuredPasteGrams);
+  if (
+    !isRemaining &&
+    measured !== undefined &&
+    measuredPasteDescribesPotFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams) &&
+    measured <= targetSolutionCeilingGrams(dilution)
+  ) {
+    return { grams: measured, fromMeasurement: true };
+  }
+  if (
+    wholeBatchPasteGrams !== undefined &&
+    wholeBatchPasteGrams !== null &&
+    Number.isFinite(wholeBatchPasteGrams) &&
+    wholeBatchPasteGrams > 0
+  ) {
+    return { grams: wholeBatchPasteGrams, fromMeasurement: false };
+  }
+  return null;
+}
+
+/**
  * The batch's dilution-water figure, corrected for the two things the recipe's own
  * `dilutionWaterGrams` cannot see. Shared by DilutionPanel's WHOLE-BATCH row, the printed
  * BatchSheet and computeBottledSolutionGrams.
@@ -562,10 +681,10 @@ export function measuredPasteRejectionFor(
  * have to hold on both paths; keep them in step by hand, and pin them against each other
  * (DilutionPanel.test's "Whole batch and Custom amount pour one figure").
  *
- * 1. A valid measured paste — the same arithmetic DilutionPanel and PortionDilutionResults
- *    already apply: solutionGrams is fixed by the target concentration, so
- *    solutionGrams - measured is what is still needed to reach it, and a valid measurement
- *    OUTRANKS the recipe's own dilutionWaterGrams (Task 5's
+ * 1. A measured paste that describes a possible pot — the same arithmetic DilutionPanel and
+ *    PortionDilutionResults already apply: solutionGrams is fixed by the target
+ *    concentration, so solutionGrams - measured is what is still needed to reach it, and a
+ *    usable measurement OUTRANKS the recipe's own dilutionWaterGrams (Task 5's
  *    measured-paste-outranks-targetExceedsPaste principle — that flag is derived from the
  *    recipe's ASSUMED cook water, the measurement is direct evidence against it).
  *
@@ -580,35 +699,44 @@ export function measuredPasteRejectionFor(
  *    corrected paste from the same solutionGrams is the ratio block's own basis, so the
  *    two now land on one number.
  *
- * Falls back to the recipe's computed figure when neither correction is available, which
- * is byte-identical for a recipe with no split liquid: wholeBatchPasteGrams is then exactly
- * anhydrous + cookWater, and solutionGrams - that IS dilutionWaterGrams.
+ * Both rules are ONE subtraction from ONE pot — `solutionGrams - the pot`, where the pot is
+ * {@link correctedPotGramsFor}'s (the reading when it describes a possible one, else the
+ * view model's corrected paste). Falls back to the recipe's computed figure when there is no
+ * pot at all, which is byte-identical for a recipe with no split liquid: wholeBatchPasteGrams
+ * is then exactly anhydrous + cookWater, and solutionGrams - that IS dilutionWaterGrams.
  *
- * Clamped at zero, matching calculateDilution's own clamp on dilutionWaterGrams: the
- * corrected paste can exceed the target solution (a big low-water liquid) while the
- * recipe's water-only targetExceedsPaste flag stays false, and a negative pour figure is
- * never an instruction. It prints as "0 g" — the honest answer, where the uncorrected
- * figure was a positive number that would have pushed the batch past its target.
+ * Clamped at zero, matching calculateDilution's own clamp on dilutionWaterGrams: a pot can
+ * exceed the target solution — a big low-water alternative liquid, while the recipe's
+ * water-only targetExceedsPaste flag stays false, or a gradual record whose own 2 dp
+ * write-back left the solution a hair under the pot — and a negative pour figure is never an
+ * instruction. It prints as "0 g", the honest answer: there is no water left to add.
  *
- * That "0 g" used to reach the screen and the printed sheet with NO alert beside it: every
+ * That "0 g" used to reach the screen and the printed sheet with NO account beside it: every
  * explanatory branch was gated on targetExceedsPaste (false here) or on a rejected
  * MEASUREMENT (none here). Both surfaces now carry a branch keyed on the clamp's own
- * condition instead — DilutionPanel's pasteAlreadyPastTarget and BatchSheet's twin of it —
- * so the zero is never printed bare. Any new surface pouring this figure owes the maker the
- * same account; the clamp fires exactly when wholeBatchPasteGrams > solutionGrams.
+ * condition instead — DilutionPanel's pasteAlreadyPastTarget and BatchSheet's twin of it.
+ * Any new surface pouring this figure owes the maker the same account; the clamp fires
+ * exactly when the pot outweighs solutionGrams. (Gradual mode renders no pour row of its own
+ * — it has no target for one to answer — so the only zero it prints is the sheet's, and the
+ * sheet carries the same branches: a weighed 1,400 g pot with no water recorded prints "0 g"
+ * beside the sheet's own "The paste is already more dilute than 87.3%" and its
+ * "That record makes 1,400 g".)
  *
- * The measured branch above still returns before the wholeBatchPasteGrams correction, and
- * must: solutionGrams is the pot's target mass and the measurement is the pot, so
- * solutionGrams - measured is what is left to pour whatever the pot is made of. What that
- * short-circuit cost was downstream, in computeBottledSolutionGrams, which read the base as
- * solids-free and added them on top of a pot weighed WITH them. Corrected there, at the
- * point that knows the difference, rather than here.
+ * WHICH POT, AND WHY IT IS NOT {@link measuredPasteIsValidFor}'s CHOICE — that gate compares
+ * the reading against solutionGrams exactly, and in gradual mode solutionGrams is the panel's
+ * own write-back rounded to 2 dp, so it lands under the reading about half the time. The pot
+ * is chosen by {@link correctedPotGramsFor} instead, whose ceiling is solutionGrams widened by
+ * exactly that rounding: see it for the bound, the proof that it is tight, and the split it
+ * closed downstream in computeBottledSolutionGrams. The figure here is unchanged for every
+ * reading either gate accepts, and for every reading past the widened ceiling (still the
+ * corrected pot, still the recipe's own answer to a crockpot-sized mis-reading). It moves
+ * only inside the rounding window, where it becomes 0 rather than a pour measured against a
+ * pot the maker's own scale contradicts.
  *
- * `isRemaining` reaches this only through {@link measuredPasteIsValidFor}, whose gate refuses
- * a remaining reading outright so this row falls back to the corrected pot. Both UI callers
- * pass {@link MEASURED_PASTE_IS_REMAINING}, so that path is unreachable from the app today
- * and this function's behaviour for every reading the UI can produce is exactly what it was;
- * the parameter is kept for the reason on that constant.
+ * `isRemaining` refuses the reading in {@link correctedPotGramsFor}, so this row falls back to
+ * the corrected pot for one. Both UI callers pass {@link MEASURED_PASTE_IS_REMAINING}, so that
+ * path is unreachable from the app today; the parameter is kept for the reason on that
+ * constant.
  */
 export function correctedDilutionWaterGrams(
   dilution: DilutionResult,
@@ -617,28 +745,17 @@ export function correctedDilutionWaterGrams(
   wholeBatchPasteGrams?: number | null,
   cookWaterGrams?: number | null,
 ): number {
-  // wholeBatchPasteGrams/cookWaterGrams are forwarded into the validity gate, not just used
-  // by the correction below it: the floor a reading is judged against has to be the same one
-  // the rejection alert names, or this row would pour from a reading the panel is refusing
-  // one paragraph above.
-  if (
-    measuredPasteIsValidFor(
-      measuredPasteGrams,
-      dilution,
-      isRemaining,
-      wholeBatchPasteGrams,
-      cookWaterGrams,
-    )
-  ) {
-    return dilution.solutionGrams - (parseMeasuredPasteGrams(measuredPasteGrams) as number);
-  }
-  if (
-    wholeBatchPasteGrams !== undefined &&
-    wholeBatchPasteGrams !== null &&
-    Number.isFinite(wholeBatchPasteGrams) &&
-    wholeBatchPasteGrams > 0
-  ) {
-    return Math.max(0, dilution.solutionGrams - wholeBatchPasteGrams);
-  }
-  return dilution.dilutionWaterGrams;
+  // wholeBatchPasteGrams/cookWaterGrams are forwarded into the pot gate, not just used by the
+  // correction below it: the floor a reading is judged against has to be the same one the
+  // rejection alert names, or this row would pour from a reading the panel is refusing one
+  // paragraph above.
+  const pot = correctedPotGramsFor(
+    dilution,
+    measuredPasteGrams,
+    isRemaining,
+    wholeBatchPasteGrams,
+    cookWaterGrams,
+  );
+  if (pot === null) return dilution.dilutionWaterGrams;
+  return Math.max(0, dilution.solutionGrams - pot.grams);
 }
