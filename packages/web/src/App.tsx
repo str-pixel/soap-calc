@@ -373,11 +373,19 @@ export default function App() {
   // that is not on screen. portionGradualFor is the panel's OWN resolution of the jar,
   // imported for the same reason portionDilutionFor is: the dose and the figures beside it
   // cannot then disagree about whether a jar exists or what it weighs.
-  const preservativeBaseGrams = useMemo(() => {
-    if (dilutionScope !== 'portion') return vm.finishedProductGrams;
-    if (!vm.dilution) return null;
+  // Returns the mass AND the scope that mass is actually in — never the scope the toggle
+  // is set to. A Custom amount larger than the batch CLAMPS to the whole batch, and the
+  // panel says so twice ("more than the batch holds", "100% of the batch"); labelling the
+  // dose basis "(custom amount)" one line below contradicted both. The figure was right and
+  // the name was not, which is the same failure the basisScope prop was added to prevent,
+  // wearing the opposite face: `finishedGrams` and `basisScope` must move together.
+  const preservativeBasis = useMemo((): { grams: number | null; scope: DilutionScope } => {
+    if (dilutionScope !== 'portion') return { grams: vm.finishedProductGrams, scope: 'batch' };
+    if (!vm.dilution) return { grams: null, scope: 'portion' };
     if (dilutionMode === 'gradual') {
-      return (
+      return {
+        scope: 'portion',
+        grams: (
         portionGradualFor({
           dilution: vm.dilution,
           portionPasteGrams,
@@ -389,18 +397,22 @@ export default function App() {
           measuredPasteGrams,
           wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
           cookWaterGrams: vm.cookWaterGrams,
-        }).jar?.finishedGrams ?? null
-      );
+        }).jar?.finishedGrams ?? null),
+      };
     }
-    return (
-      portionDilutionFor({
-        dilution: vm.dilution,
-        targetMl: portionTargetMl,
-        measuredPasteGrams,
-        wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
-        cookWaterGrams: vm.cookWaterGrams,
-      }).portion?.solutionGrams ?? null
-    );
+    const { portion } = portionDilutionFor({
+      dilution: vm.dilution,
+      targetMl: portionTargetMl,
+      measuredPasteGrams,
+      wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
+      cookWaterGrams: vm.cookWaterGrams,
+    });
+    return {
+      grams: portion?.solutionGrams ?? null,
+      // core sets `clamped` when more was asked for than the batch holds and then hands back
+      // the batch's own figures — so this IS the whole batch, and the label says so.
+      scope: portion?.clamped ? 'batch' : 'portion',
+    };
   }, [
     dilutionMode,
     dilutionScope,
@@ -696,9 +708,9 @@ export default function App() {
                 preservativeSlot={
                   processOffers(process, 'preserve') ? (
                     <PreservativeSnippet
-                      finishedGrams={preservativeBaseGrams}
-                      basisScope={dilutionScope}
-                      /* Moves with preservativeBaseGrams' own gradual branch above: the two
+                      finishedGrams={preservativeBasis.grams}
+                      basisScope={preservativeBasis.scope}
+                      /* Moves with preservativeBasis' own gradual branch above: the two
                          answer one question (which jar, and how the maker described it), so
                          the empty state asks for the fields that actually resolve it. */
                       portionIsRecorded={dilutionMode === 'gradual'}
