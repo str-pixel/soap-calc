@@ -594,11 +594,14 @@ test('a reading a hair over the solution pours the recipe’s own figure with no
 });
 
 test('…and answers identically just past that band, so the band leaves no seam', () => {
-  // 4,059.8 g is past the widened bound even in gradual mode, so this arm never moved. Pinned
-  // beside its twin above: if the two readings ever print different pours again in
-  // concentration mode, the band is back.
+  // The band on this fixture is (4,059, 4,060.68] — 1,218 g anhydrous at 30% gives a ceiling
+  // of 100 x 1218 / 29.995 = 4,060.68 g. An earlier version of this test used 4,059.8 g and
+  // called it "past the widened bound"; that reading is INSIDE the band, so the test was a
+  // duplicate of its twin above and its comment asserted the reverse of the arithmetic.
+  // 4,061 g is genuinely outside, which is what makes this a seam check rather than a
+  // second copy of the previous one.
   render(
-    <BatchSheet data={lsSheetData({ measuredPasteGrams: '4059.8', wholeBatchPasteGrams: 1600 })} />,
+    <BatchSheet data={lsSheetData({ measuredPasteGrams: '4061', wholeBatchPasteGrams: 1600 })} />,
   );
   expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain(
     '2,459 g',
