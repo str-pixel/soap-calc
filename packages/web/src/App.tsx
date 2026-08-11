@@ -31,6 +31,7 @@ import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { useRecipeViewModel } from './hooks/useRecipeViewModel';
 import { useUndoShortcut } from './hooks/useUndoShortcut';
+import { parseGradualWaterRecordGrams } from './lib/measuredPaste';
 import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 import type { PricingProfile } from './lib/pricingProfile';
@@ -153,6 +154,13 @@ export default function App() {
   // (settings.gradualWaterGrams, RecipeSettings' own field), because it is also the basis
   // of a preservative dose that is itself recipe state and must survive a reload.
   const [dilutionMode, setDilutionMode] = useState<DilutionMode>('concentration');
+  // The mode the MAKER picked, and the record that was on the recipe when they picked it —
+  // the one thing the restore effect below cannot read off state, since a mode set by that
+  // effect and a mode set by a click are the same value afterwards. A ref rather than state:
+  // nothing renders from it, and it must not be a dependency of anything.
+  const gradualModeChoiceRef = useRef<{ record: number | undefined; mode: DilutionMode } | null>(
+    null,
+  );
   const [waterPasteRatio, setWaterPasteRatio] = useState('2');
   // "Dilute it all" vs "make just this much now" — a decision about the session, not the
   // recipe, so it lives here rather than in settings. Defaults to the whole batch.
@@ -210,10 +218,36 @@ export default function App() {
   // carries; ratio's and concentration's inputs are session-local and remain exactly as
   // valid for the workspace that just arrived. So the reset target is the panel's own
   // default only for the mode that has to move.
+  //
+  // AND THE FORWARD DIRECTION COSTS THE SAME MAKER THE SAME GLANCE, which is what
+  // `gradualModeChoiceRef` below answers. That tab switch is a workspace arrival like any
+  // other, so with a record on the recipe this effect re-imposed Gradual on every one of
+  // them: record the water, switch to Target concentration to type an exact 25%, look at the
+  // Cold process tab, come back — and the panel is in Gradual again with the target field
+  // gone, which is the complaint above in the other direction. The restore is for a record
+  // the maker has not yet had a chance to answer for; once they have chosen a mode WITH THAT
+  // RECORD in hand, that choice is what the arriving workspace should find. A different
+  // record — an import, a new recipe, the same file with more water poured — is a new
+  // question and restores as before. (Two recipes carrying the identical record keep the
+  // choice, which is the one case this cannot tell apart, and the mode is a radio the maker
+  // can see and move.)
+  //
+  // Read through the shared parser rather than a bare `.trim() !== ''`, because "is there a
+  // record" has exactly one answer in this app: the sheet's record rows, the panel's own
+  // derivation and the widened paste ceiling all ask lib/measuredPaste. A fourth copy here
+  // meant junk and a negative — and, since the parser learned the swallowed-separator
+  // fingerprint, a typo'd '2.000' — counted as a record for the MODE while every surface
+  // that would have shown it said there was none: the panel pinned to Gradual on every
+  // reload, showing a field it refuses and no figures at all.
+  const gradualRecordGrams = parseGradualWaterRecordGrams(settings.gradualWaterGrams);
   useEffect(() => {
+    const choice = gradualModeChoiceRef.current;
+    const chosenForThisRecord = choice !== null && choice.record === gradualRecordGrams;
     setDilutionMode((current) =>
-      settings.gradualWaterGrams.trim() !== ''
-        ? 'gradual'
+      gradualRecordGrams !== undefined
+        ? chosenForThisRecord
+          ? current
+          : 'gradual'
         : current === 'gradual'
           ? 'concentration'
           : current,
@@ -348,6 +382,11 @@ export default function App() {
           dilution: vm.dilution,
           portionPasteGrams,
           portionWaterGrams,
+          // The jar is a share of the pot the maker WEIGHED when there is a reading for it,
+          // exactly as the panel's own readout is — the same argument as passing it to
+          // portionDilutionFor below. Omitted, this dosed a jar sized from the recipe's
+          // prediction while the figure beside it on screen came off the scale.
+          measuredPasteGrams,
           wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
           cookWaterGrams: vm.cookWaterGrams,
         }).jar?.finishedGrams ?? null
@@ -626,7 +665,13 @@ export default function App() {
                 bottledSolutionGrams={vm.bottledSolutionGrams}
                 cookWaterGrams={vm.cookWaterGrams}
                 dilutionMode={dilutionMode}
-                onDilutionModeChange={setDilutionMode}
+                // Records WHAT the maker chose and WHICH record was on the recipe when they
+                // chose it, so the restore effect above can tell a mode it imposed from a
+                // mode they picked. See that effect for the tab-switch round trip this fixes.
+                onDilutionModeChange={(mode) => {
+                  gradualModeChoiceRef.current = { record: gradualRecordGrams, mode };
+                  setDilutionMode(mode);
+                }}
                 waterPasteRatio={waterPasteRatio}
                 onWaterPasteRatioChange={setWaterPasteRatio}
                 gradualWaterGrams={settings.gradualWaterGrams}

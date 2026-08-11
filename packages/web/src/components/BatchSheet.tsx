@@ -28,12 +28,12 @@ import { formatWeight } from '../lib/weightUnits';
 import {
   MEASURED_PASTE_IS_REMAINING,
   correctedDilutionWaterGrams,
-  measuredPasteDescribesPotFor,
+  hasCorrectedPasteBasis,
   measuredPasteIsValidFor,
   parseGradualWaterRecordGrams,
   parseMeasuredPasteGrams,
+  weighedOrComputedPotGramsFor,
 } from '../lib/measuredPaste';
-import { bestKnownPasteGramsFor } from './DilutionPanel';
 
 type BatchSheetProps = {
   data: BatchSheetData | null;
@@ -117,9 +117,9 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // printed water FIGURE has its own, slightly wider gate inside correctedDilutionWaterGrams
   // (lib/measuredPaste's correctedPotGramsFor), so a gradual record whose own 2 dp write-back
   // left the solution a hair under the pot is not refused by a target it produced; the two
-  // gates differ only inside that rounding, and only on a recipe carrying a record — which is
-  // below the resolution of anything this note says, and is a state where the record rows
-  // below speak for the figure anyway.
+  // gates differ only inside that rounding, and only where the record's own paste and water
+  // add up to the target in force — which is below the resolution of anything this note says,
+  // and is a state where the record rows below speak for the figure anyway.
   //
   // The corrected basis and the cook water go into the gate too, not only into the water
   // figure below: the floor under a reading counts an alternative liquid's solids, and
@@ -143,12 +143,10 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // poured off the corrected paste, so this row and that one used to differ by exactly the
   // solids — with the sheet, the page actually carried to the scale, holding the wrong one.
   // Whether the printed figures came off the corrected paste, which decides whether the
-  // undeclared-liquid caveat below reads as a floor or as "the same either way".
-  const hasCorrectedPasteBasis =
-    data.wholeBatchPasteGrams !== undefined &&
-    data.wholeBatchPasteGrams !== null &&
-    Number.isFinite(data.wholeBatchPasteGrams) &&
-    data.wholeBatchPasteGrams > 0;
+  // undeclared-liquid caveat below reads as a floor or as "the same either way". The
+  // four-clause predicate is lib/measuredPaste's, shared with the panel and with the paste
+  // floor itself rather than written out a sixth time.
+  const correctedPasteBasis = hasCorrectedPasteBasis(data.wholeBatchPasteGrams);
   const dilutionWaterGramsPrinted = dilution
     ? correctedDilutionWaterGrams(
         dilution,
@@ -215,23 +213,36 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // What that record MADE, which is the other half of the line spec §4 asks this sheet to
   // carry: paste + water, from the same two figures the panel adds up, so the page taken to
   // the bench states the mass that exists rather than only the water that went into it.
-  // The paste is the panel's own basis — the pot the maker weighed when that reading
-  // describes a possible pot, else the recipe's computed one — resolved through the same two
-  // shared helpers the panel calls, so the two surfaces cannot print different masses for
-  // one record. Deliberately NOT a second row in the list: "Finished solution" is already
+  // Deliberately NOT a second row in the list: "Finished solution" is already
   // there, the write-back makes the two agree to within a gram, and two near-identical
   // masses in one column read as an error. It rides the note below instead, where it can be
   // named as the record's own.
-  const gradualPasteBasisGrams = dilution
-    ? measuredPasteDescribesPotFor(
-        measuredPasteGrams,
-        dilution,
-        data.wholeBatchPasteGrams,
-        data.cookWaterGrams,
-      )
-      ? (parseMeasuredPasteGrams(measuredPasteGrams) as number)
-      : bestKnownPasteGramsFor(dilution, data.wholeBatchPasteGrams, data.cookWaterGrams)
-    : null;
+  //
+  // ONE CALL, to the resolution the panel's own "Finished so far" counts from
+  // (lib/measuredPaste's weighedOrComputedPotGramsFor): the pot the maker weighed when that
+  // reading describes a possible one, else the recipe's computed pot. This sheet used to
+  // hand-roll that selection out of two helpers imported from DilutionPanel — the same
+  // arithmetic, spelled twice, with nothing holding the copies together and the panel's
+  // import graph dragged into this module for it.
+  //
+  // IT IS NOT correctedPotGramsFor, the gate behind this page's own "Dilution water to add"
+  // row, and the difference is a difference of QUESTION rather than of rigour. That row
+  // measures a pour against the saved target, so a reading past what the target can hold is
+  // refused there. This row states what the RECORD makes, which is a claim about the pot and
+  // the pour alone — the panel derives its own target from exactly this figure, so a
+  // target-derived ceiling on it would let that output pick its own input (the render loop
+  // measuredPasteDescribesPotFor documents). Where the two answer differently the record has
+  // not been applied to the saved target, and the note under this row says so in as many
+  // words. Making them agree by putting the ceiling here would print a mass on paper that the
+  // panel does not show on screen for the same record, which is the split the shared
+  // resolution exists to prevent.
+  const gradualPasteBasisGrams =
+    weighedOrComputedPotGramsFor(
+      dilution,
+      measuredPasteGrams,
+      data.wholeBatchPasteGrams,
+      data.cookWaterGrams,
+    )?.grams ?? null;
   const gradualFinishedGrams =
     gradualWaterRecordedGrams !== null && gradualPasteBasisGrams !== null
       ? gradualPasteBasisGrams + gradualWaterRecordedGrams
@@ -466,7 +477,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               {data.unknownLiquidGrams &&
               !dilution.targetExceedsPaste &&
               !measuredPasteValid &&
-              !hasCorrectedPasteBasis
+              !correctedPasteBasis
                 ? ' (at least)'
                 : ''}
             </dd></div>
@@ -556,7 +567,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               reads data.wholeBatchPasteGrams directly. */}
           {!dilution.targetExceedsPaste &&
           !measuredPasteValid &&
-          hasCorrectedPasteBasis &&
+          correctedPasteBasis &&
           (data.wholeBatchPasteGrams as number) > dilution.solutionGrams ? (
             <p className="batch-sheet__note">
               The paste is already more dilute than{' '}
@@ -591,7 +602,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <p className="batch-sheet__note">
               {formatWeight(data.unknownLiquidGrams, weightUnit)} of alternative liquid has
               no declared water content —{' '}
-              {hasCorrectedPasteBasis
+              {correctedPasteBasis
                 ? 'the dilution figure above is the same whatever it turns out to be, since the liquid is in the pot either way. What is unknown is how much of your paste is water.'
                 : 'it is counted as all water, so the dilution figure is the least you will need. Dilute in increments and check by weight.'}
             </p>

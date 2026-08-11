@@ -10,7 +10,11 @@ import {
   type DoseUnit,
 } from '@soap-calc/core';
 import type { AcidLyeRecipe, DilutionResult } from '@soap-calc/core';
-import { correctedDilutionWaterGrams, correctedPotGramsFor } from './measuredPaste';
+import {
+  correctedDilutionWaterGrams,
+  correctedPotGramsFor,
+  hasCorrectedPasteBasis,
+} from './measuredPaste';
 import type { AdditiveLine, RecipeSettings, SplitLiquidSettings } from './recipe';
 
 export type ComputedAdditive = {
@@ -242,13 +246,9 @@ export function computeBottledSolutionGrams(input: {
   // about the same pot. Zero without a corrected basis, exactly as the water correction is:
   // a caller that supplies none cannot know the solids are there, and both paths then fall
   // back to the pre-correction formula together.
-  const splitLiquidSolidsGrams =
-    wholeBatchPasteGrams !== undefined &&
-    wholeBatchPasteGrams !== null &&
-    Number.isFinite(wholeBatchPasteGrams) &&
-    wholeBatchPasteGrams > 0
-      ? Math.max(0, wholeBatchPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
-      : 0;
+  const splitLiquidSolidsGrams = hasCorrectedPasteBasis(wholeBatchPasteGrams)
+    ? Math.max(0, wholeBatchPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
+    : 0;
   // What the base ALREADY holds of the split liquid, and the whole difference between the
   // two paths. Unmeasured, the base is built from anhydrous + cookWaterGrams, so it carries
   // the liquid's water only and the extras term has to put its solids back. Measured, the

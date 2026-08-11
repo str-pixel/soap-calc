@@ -3868,3 +3868,126 @@ describe('gradual in Whole batch: the panel asks for the record', () => {
     expect(screen.getByText(/75% soap/)).toBeTruthy();
   });
 });
+
+describe('the swallowed thousands separator, on the three fields gradual added', () => {
+  // The trap this whole module already documents, on the inputs the gradual mode introduced:
+  // `<input type="number">` reads a typed comma as a DECIMAL POINT in every locale, so a maker
+  // typing 2,000 g of water commits '2.000' and the app records 2 g. The only detectable
+  // fingerprint is the impossible precision (two or more typed decimals — no scale weighing a
+  // batch reads finer than 0.1 g), which is exactly what the measured-paste field and the
+  // "Amount to make (ml)" field are already judged by.
+  const G = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    cookWaterGrams: 400, wholeBatchPasteGrams: 1600, onGradualWaterChange: () => {},
+  };
+  const P = {
+    ...G, dilutionScope: 'portion' as const,
+    onPortionPasteChange: () => {}, onPortionWaterChange: () => {},
+  };
+
+  it('refuses a record of 2 g typed as 2,000 g, instead of deriving 76% from it', () => {
+    render(<DilutionPanel {...G} gradualWaterGrams="2.000" />);
+    // 1,600 g of paste plus a recorded 2 g is 1,602 g at 74.91% soap — the number the app
+    // would write into settings.soapConcentrationPercent, and size a legally capped
+    // preservative dose against, for a 3,600 g batch.
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+    expect(screen.queryByText(/That lands at/)).toBeNull();
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/2\.000 g/);
+    expect(alert).toMatch(/thousands separator/i);
+  });
+
+  it('writes nothing back from a record it has refused', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...G} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2.000' } });
+    rerender(
+      <DilutionPanel {...G} gradualWaterGrams="2.000" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps a one-decimal record, which a scale really does read', () => {
+    render(<DilutionPanel {...G} gradualWaterGrams="2000.5" />);
+    expect(screen.getByText(/Finished so far/)).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it("refuses a jar's paste typed as 1,300 g, instead of sizing a 1.3 g jar", () => {
+    render(<DilutionPanel {...P} portionPasteGrams="1.300" portionWaterGrams="900" />);
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/1\.300 g/);
+    expect(alert).toMatch(/thousands separator/i);
+  });
+
+  it("refuses a jar's water typed as 2,000 g", () => {
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="2.000" />);
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/2\.000 g/);
+    expect(alert).toMatch(/thousands separator/i);
+  });
+});
+
+describe('a jar is weighed out of the pot the maker weighed', () => {
+  // The mode exists to report what actually exists, so the batch paste a jar is a share of has
+  // to be the pot on the scale when there is one — the same preference batch-scope gradual and
+  // ratio mode already apply. Sizing the share from the recipe's PREDICTION while the maker
+  // has weighed the pot reports a concentration for a jar nobody has.
+  const P = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    dilutionScope: 'portion' as const, cookWaterGrams: 400, wholeBatchPasteGrams: 1600,
+    onGradualWaterChange: () => {}, onPortionPasteChange: () => {}, onPortionWaterChange: () => {},
+  };
+
+  it("takes the jar's share of the soap from the weighed pot, not the computed one", () => {
+    // The cook boiled 200 g off: a 1,600 g computed pot weighed 1,400 g. A 400 g jar is then
+    // 400/1400 of the batch's 1,200 g of soap = 342.86 g, in 600 g of jar → 57.14% soap.
+    // Off the computed pot the same jar reads 50.00% — seven points thinner than what is in it.
+    render(
+      <DilutionPanel {...P} measuredPasteGrams="1400" portionPasteGrams="400" portionWaterGrams="200" />,
+    );
+    expect(screen.getByText('600 g')).toBeTruthy();
+    expect(screen.getByText(/57\.14% soap/)).toBeTruthy();
+  });
+
+  it('judges "more paste than the batch holds" against the same weighed pot', () => {
+    // A cook that lost nothing: 1,800 g on the scale against a 1,600 g prediction. A 1,700 g
+    // jar really is in the pot, and refusing it quoted a bound the maker's own scale
+    // contradicts — "all of it weighs 1,600 g" beside a reading of 1,800.
+    render(
+      <DilutionPanel {...P} measuredPasteGrams="1800" portionPasteGrams="1700" portionWaterGrams="300" />,
+    );
+    expect(screen.queryByText(/more paste than the batch holds/i)).toBeNull();
+    expect(screen.getByText('2,000 g')).toBeTruthy();
+  });
+});
+
+describe('the density caveat needs a millilitre figure on screen', () => {
+  it('stays off in Custom amount + Gradual, where no volume is printed', () => {
+    // targetMl is App session state that survives a mode switch, so a jar sized in Target
+    // concentration mode leaves a live figure behind. Gradual correctly suppresses the whole
+    // target-derived grid — but the caveat explaining a gram→millilitre bridge kept keying on
+    // that stale amount, and printed beside no millilitre figure at all.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionMode="gradual"
+        onDilutionModeChange={() => {}}
+        dilutionScope="portion"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        onGradualWaterChange={() => {}}
+        onPortionPasteChange={() => {}}
+        onPortionWaterChange={() => {}}
+        targetMl="1200"
+        portionPasteGrams="400"
+        portionWaterGrams="900"
+      />,
+    );
+    expect(screen.queryByText(/Volume assumes/)).toBeNull();
+  });
+});
