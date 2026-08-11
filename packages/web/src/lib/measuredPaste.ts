@@ -441,13 +441,9 @@ export function measuredPasteRejectionFor(
   // the UI's own rejection and core's arithmetic always agree on the same basis. Falls
   // back to the uncorrected predictedPasteGrams (round 2's basis) when absent — the exact
   // same fallback core itself applies when its own wholeBatchPasteGrams param is omitted.
-  const wholeBatchPasteBasis =
-    wholeBatchPasteGrams !== undefined &&
-    wholeBatchPasteGrams !== null &&
-    Number.isFinite(wholeBatchPasteGrams) &&
-    wholeBatchPasteGrams > 0
-      ? wholeBatchPasteGrams
-      : predictedPasteGrams;
+  const wholeBatchPasteBasis = hasCorrectedPasteBasis(wholeBatchPasteGrams)
+    ? wholeBatchPasteGrams
+    : predictedPasteGrams;
   // Review round 4, finding 8: a scale reading of zero or less is not a paste weight under
   // EITHER declaration — it is below the anhydrous floor trivially, and a remainder of
   // nothing has nothing left to dilute. The `measured > 0` guards on belowSolids and
