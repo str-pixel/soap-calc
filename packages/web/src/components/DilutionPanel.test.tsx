@@ -3991,3 +3991,64 @@ describe('the density caveat needs a millilitre figure on screen', () => {
     expect(screen.queryByText(/Volume assumes/)).toBeNull();
   });
 });
+
+describe("the undeclared-liquid hedge is not lost between two suppressions", () => {
+  // REGRESSION PIN. This clause is suppressed in Custom amount because the child says the
+  // same thing with the missing figures explained — but that child does not render in
+  // gradual mode. While portionState was still computed from a stale targetMl in gradual,
+  // pasteAlreadyThinner could be true and suppress this clause too, so an undeclared
+  // liquid went unmentioned on BOTH surfaces. The fix that resolved portionState only for
+  // portion + non-gradual repaired it silently; nothing pinned it until now.
+  const OVER = {
+    ...RESULT,
+    // targetExceedsPaste is the hedge's precondition: the target asks for less water than
+    // the cook already put in, judged from an ASSUMED water content.
+    targetExceedsPaste: true,
+  };
+
+  const HEDGE = /Can't tell whether .* is reachable/;
+
+  it('speaks in Custom amount + Gradual, where no child is there to say it', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={OVER}
+        dilutionMode="gradual"
+        onDilutionModeChange={() => {}}
+        dilutionScope="portion"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        unknownLiquidGrams={500}
+        targetMl="1000"
+        gradualWaterGrams=""
+        onGradualWaterChange={() => {}}
+        portionPasteGrams=""
+        portionWaterGrams=""
+        onPortionPasteChange={() => {}}
+        onPortionWaterChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(HEDGE)).toBeTruthy();
+  });
+
+  it('still lets the child own it in Custom amount + Target concentration', () => {
+    // The suppression is correct where the child actually renders — this is the arm that
+    // makes the test above a claim about gradual rather than about the hedge in general.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={OVER}
+        dilutionMode="concentration"
+        onDilutionModeChange={() => {}}
+        dilutionScope="portion"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        unknownLiquidGrams={500}
+        targetMl="1000"
+      />,
+    );
+    // Whichever surface carries it, the maker is told. What must never happen is silence.
+    expect(screen.queryAllByText(HEDGE).length + screen.queryAllByText(/no declared water content/i).length)
+      .toBeGreaterThan(0);
+  });
+});

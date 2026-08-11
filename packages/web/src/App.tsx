@@ -158,7 +158,7 @@ export default function App() {
   // the one thing the restore effect below cannot read off state, since a mode set by that
   // effect and a mode set by a click are the same value afterwards. A ref rather than state:
   // nothing renders from it, and it must not be a dependency of anything.
-  const gradualModeChoiceRef = useRef<{ record: number | undefined; mode: DilutionMode } | null>(
+  const gradualModeChoiceRef = useRef<{ record: number | undefined } | null>(
     null,
   );
   const [waterPasteRatio, setWaterPasteRatio] = useState('2');
@@ -669,7 +669,7 @@ export default function App() {
                 // chose it, so the restore effect above can tell a mode it imposed from a
                 // mode they picked. See that effect for the tab-switch round trip this fixes.
                 onDilutionModeChange={(mode) => {
-                  gradualModeChoiceRef.current = { record: gradualRecordGrams, mode };
+                  gradualModeChoiceRef.current = { record: gradualRecordGrams };
                   setDilutionMode(mode);
                 }}
                 waterPasteRatio={waterPasteRatio}

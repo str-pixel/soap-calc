@@ -911,7 +911,15 @@ export function DilutionPanel({
   // hundreds of grams of water. A valid whole-batch reading settles the question (the
   // over-dilution alert above is gated the same way and for the same reason), and in
   // Custom amount the child's own suppressed-portion hedge says the same thing with the
-  // missing figures explained, so it owns the message there.
+  // missing figures explained, so it owns the message there — EXCEPT in gradual, where that
+  // child does not render at all. `portionState` is resolved only for portion + non-gradual
+  // for exactly that reason, so `portionOwnsUndeclaredLiquidHedge` is false there and this
+  // shell clause speaks instead.
+  //
+  // It did not always. While `portionState` was still computed from a stale `targetMl` in
+  // gradual too, `pasteAlreadyThinner` could be true — suppressing this clause in favour of
+  // a child that had already been suppressed, so the warning appeared on NEITHER surface and
+  // an undeclared liquid went unmentioned. Pinned by a test.
   const cantTellGate =
     dilution !== null &&
     dilution.targetExceedsPaste &&
