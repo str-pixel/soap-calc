@@ -293,6 +293,70 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(base * 0.01, 0);
   });
 
+  it('Custom amount + Gradual doses the jar that was recorded, not a target-derived one', async () => {
+    // THE SAFETY PIN for the worst version of this bug. Custom amount resolved its dose
+    // through the "Amount to make (ml)" field — the one input Gradual takes off the panel —
+    // so a recorded 1,300 g jar was dosed against a portion sized from a stale amount, and
+    // the snippet printed 21 g beside its own "1,300 g": 1.6% w/w in the jar the maker
+    // actually has, past the EU ceiling for several listed preservatives.
+    const snippet = await openSnippet();
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    // The stale amount that used to drive the dose in this mode.
+    await userEvent.type(screen.getByLabelText('Amount to make (ml)'), '2000');
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Paste weighed out (g)'), '400');
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '900');
+
+    const dilutionPanel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    // What the panel says is in the jar, and what the snippet says it is dosing: ONE figure,
+    // on one screen. 400 g of paste plus 900 g of water is 1,300 g.
+    const jar = within(dilutionPanel)
+      .getByText('Finished so far (this jar)')
+      .nextElementSibling!.textContent!.trim();
+    expect(jar).toBe('1,300 g');
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe(jar);
+    expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
+    // 1% of 1,300 g. The 2,060 g the stale amount implies would print 21 g here.
+    expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(13, 0);
+  });
+
+  it('Custom amount + Gradual doses a jar the weighed pot can actually hold', async () => {
+    // The jar is a share of the batch's paste, and which batch that is decides whether a jar
+    // exists at all: with the basis fixed to the recipe's PREDICTION, a maker whose cook lost
+    // nothing — 1,800 g on the scale against a 1,666 g predicted pot — was told a 1,700 g jar
+    // was "more paste than the batch holds", and the dose vanished with the readout. The
+    // reading has to reach this resolution through App as well as through the panel, since the
+    // dose is App's own call to it.
+    const snippet = await openSnippet();
+    await userEvent.type(
+      screen.getByLabelText('Measured paste weight — the whole batch (g, optional)'),
+      '1800',
+    );
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Paste weighed out (g)'), '1700');
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '300');
+
+    // 1,700 g of paste plus 300 g of water, and 1% of it.
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('2,000 g');
+    expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(20, 0);
+  });
+
+  it('Custom amount + Gradual asks for the fields it actually doses from', async () => {
+    // With nothing recorded there is no jar to dose — and the ask has to name the two
+    // fields on screen, not the "Amount to make" input this mode removes. That hint was the
+    // normal state of the snippet in gradual mode, since nothing ever fills that field in.
+    const snippet = await openSnippet();
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
+    expect(within(snippet).getByText(/paste weighed out and the water added so far/i)).toBeTruthy();
+    expect(within(snippet).queryByText(/Enter an Amount to make/i)).toBeNull();
+    expect(screen.queryByLabelText('Amount to make (ml)')).toBeNull();
+  });
+
   it('an unsized Custom amount falls back to the hint, never to the batch', async () => {
     // No amount typed yet: no portion exists, so there is nothing to dose. Quietly using
     // the batch here is exactly the bug — the maker would be reading a batch dose on a
@@ -302,6 +366,182 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
     expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
     expect(within(snippet).getByText(/Amount to make/i)).toBeTruthy();
+  });
+});
+
+describe('Whole batch + Gradual: one batch has one finished mass', () => {
+  // THE SAFETY PIN for the split that no gradual test could see, because none of them ever
+  // rendered a finished-product figure at all: `bottledSolutionGrams` only exists on the
+  // <App/> path (useRecipeViewModel computes it), and every component-level gradual test
+  // leaves it null.
+  //
+  // The panel's paste basis is target-independent — it counts from the pot the maker
+  // weighed. `computeBottledSolutionGrams` was not: it chose its base with
+  // measuredPasteIsValidFor, whose ceiling compares the reading against
+  // dilution.solutionGrams — anhydrous ÷ the very percent gradual's write-back had just
+  // produced. With no water recorded the pot IS the finished mass, so the two figures are the
+  // same number up to the write-back's 2 dp rounding, and about half of the readings in the
+  // window land the solution a hair UNDER the reading. There the base fell back to the
+  // recipe's COMPUTED pot, and the screen carried two masses for one batch — "Finished so far
+  // (weighed) 1,400 g" beside a 1,666 g finished product, a finished volume derived from the
+  // second, and a preservative dose that is a percentage of it. That dose has a legal ceiling
+  // (EU Annex V), so a 1% ask arriving as 1.19% of the pot the maker actually has is the
+  // whole reason this feature exists.
+  async function gradualLs() {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+    return {
+      panel,
+      snippet,
+      paste: screen.getByLabelText('Measured paste weight — the whole batch (g, optional)'),
+      water: screen.getByLabelText('Water added so far (g)'),
+    };
+  }
+
+  /** The value cell of a results-grid row inside `root`, as text ("1,400 g"), or ''. */
+  function row(root: HTMLElement, label: string): string {
+    const item = Array.from(root.querySelectorAll('.results-grid__item')).find(
+      (el) => el.querySelector('dt')?.textContent?.trim() === label,
+    );
+    return item?.querySelector('dd')?.textContent?.trim() ?? '';
+  }
+
+  function num(text: string): number {
+    return Number(text.replace(/[^\d.]/g, ''));
+  }
+
+  /** Gradual's own mass row, under whichever basis label the panel chose. */
+  function potRow(panel: HTMLElement): string {
+    return row(panel, 'Finished so far (weighed)') || row(panel, 'Finished so far (computed)');
+  }
+
+  it('the mass the preservative doses is the pot the panel counts from', async () => {
+    const { panel, snippet, paste, water } = await gradualLs();
+    // The starter LS recipe makes 1,222.15 g of anhydrous soap in a computed 1,666.15 g pot.
+    // 1,400 g is a reading in the half of the window whose 2 dp write-back rounds UP:
+    // 122215/1400 = 87.2964 → 87.30 → a solution of 1,399.94 g, a hair under the 1,400 g on
+    // the scale. Zero water is not an exotic input — it is the reference's own starting
+    // record (LS:1531).
+    fireEvent.change(paste, { target: { value: '1400' } });
+    fireEvent.change(water, { target: { value: '0' } });
+
+    expect(potRow(panel)).toBe('1,400 g');
+    // ONE mass, on one screen: what the panel says is in the pot is what the snippet says it
+    // is dosing. The 1,666 g computed pot is what this printed before.
+    expect(row(snippet, '≈ Finished product (whole batch)')).toBe(potRow(panel));
+    // …and the volume the maker sizes bottles from follows it: 1,400 / 1.03 = 1,359 ml, not
+    // the 1,618 ml the computed pot implies.
+    expect(row(panel, '≈ Finished volume')).toBe('1,359 ml');
+    // The dose is the harm. At the default 1% of finished product that is 14 g; against the
+    // computed pot it was 17 g — 1.19% of the batch actually in front of the maker.
+    expect(num(row(snippet, 'Preservative to add'))).toBeCloseTo(14, 0);
+  });
+
+  it('holds across the whole zero-water window, not just at one reading', async () => {
+    // Which readings split depends on where 2 dp rounding lands, so a single fixture proves
+    // the fix for one number and not for the rule. Every whole-gram reading from just above
+    // the solids floor to the computed pot, driven through the real <App/>.
+    const { panel, snippet, paste, water } = await gradualLs();
+    fireEvent.change(water, { target: { value: '0' } });
+    const anhydrous = num(row(panel, 'Paste (anhydrous)'));
+    const computedPot = num(potRow(panel));
+    expect(anhydrous).toBeGreaterThan(0);
+    expect(computedPot).toBeGreaterThan(anhydrous);
+
+    const split: string[] = [];
+    let checked = 0;
+    for (let reading = Math.ceil(anhydrous) + 1; reading <= computedPot; reading += 1) {
+      fireEvent.change(paste, { target: { value: String(reading) } });
+      // Skip the readings the WRITE-BACK's own [1, 99] clamp moves: a pot that light is over
+      // 99% soap, so the saved target is capped below what was recorded and the app really is
+      // pricing a different (heavier) solution than the record describes. The panel says so
+      // in an alert of its own, which is the account this test is looking for everywhere
+      // else; see the residual-fix report for why that corner is left as the clamp's.
+      const clamped = Array.from(panel.querySelectorAll('[role="alert"]')).some((a) =>
+        /outside the 1–99% range/.test(a.textContent ?? ''),
+      );
+      if (clamped) continue;
+      checked += 1;
+      if (potRow(panel) !== row(snippet, '≈ Finished product (whole batch)')) {
+        split.push(`${reading} g: pot ${potRow(panel)} vs ${row(snippet, '≈ Finished product (whole batch)')}`);
+      }
+    }
+    // The sweep has to have swept something — a helper that silently found no rows would
+    // otherwise pass this test with an empty list.
+    expect(checked).toBeGreaterThan(300);
+    expect(split, `${split.length} readings show two masses for one batch`).toEqual([]);
+  }, 60000);
+});
+
+describe('the dilution mode follows the recipe that arrives, in both directions', () => {
+  // A recorded gradual dilution reopens in Gradual mode, because the water is recipe state
+  // and the mode is not — without that, the record survives a reload and has nowhere to
+  // appear. But the same key (workspaceGeneration) also fires on New recipe and on import,
+  // and the effect only ever SET gradual: starting a new recipe after opening one with a
+  // record left the panel in Gradual, with an empty field, no dilution rows, and a mode
+  // restored for a record that no longer exists.
+  async function ls() {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+  }
+
+  async function chooseNewRecipe() {
+    await userEvent.click(screen.getByRole('button', { name: /actions/i }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'New recipe' }));
+  }
+
+  it('a new recipe leaves Gradual behind with the record it belonged to', async () => {
+    await ls();
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
+    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(true);
+
+    await chooseNewRecipe();
+
+    // Back to the panel's own default, exactly as a cold start opens.
+    expect((screen.getByRole('radio', { name: 'Target concentration' }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByLabelText('Target soap concentration percent')).toBeTruthy();
+    expect(screen.queryByLabelText('Water added so far (g)')).toBeNull();
+  });
+
+  it('a process-tab round trip keeps the mode the maker chose', async () => {
+    // workspaceGeneration bumps on a process switch as well as on New/import
+    // (useRecipeStorage's setProcess), so a flat reset to the default here charged a maker
+    // for glancing at another tab: choose Water : paste ratio, look at Cold process, come
+    // back, and the panel had silently returned to Target concentration with the ratio's own
+    // figures gone from the screen. Only Gradual is stale-able by an arriving recipe.
+    await ls();
+    await userEvent.click(screen.getByRole('radio', { name: 'Water : paste ratio' }));
+    expect((screen.getByRole('radio', { name: 'Water : paste ratio' }) as HTMLInputElement).checked).toBe(true);
+
+    await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+
+    expect((screen.getByRole('radio', { name: 'Water : paste ratio' }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText('Water to paste ratio')).toBeTruthy();
+  });
+
+  it('a recipe that HAS a record still opens in Gradual', async () => {
+    // The direction that already worked, pinned so the reset above cannot swallow it: the
+    // record is saved with the recipe and autosaved back on reload.
+    await ls();
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
+    // The autosave debounce (500 ms) is what makes this a reload rather than a re-render:
+    // the record has to be in storage before the second mount reads it.
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    cleanup();
+    render(<App />);
+    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText('Water added so far (g)')).toHaveProperty('value', '1500');
   });
 });
 
@@ -343,5 +583,96 @@ describe("the preservative pick reseeds the dose through App's own wiring", () =
       /Dose \(% of finished product\)/,
     ) as HTMLInputElement;
     expect(doseInput.value).toBe('0.5');
+  });
+});
+
+describe('the preservative sits inside the panel it doses against', () => {
+  it('renders within the Dilution panel, not as a sibling beside it', async () => {
+    // Structural, not cosmetic. The dose is a % of the finished mass the Dilution panel
+    // computes, and while that was only a layout convention the snippet was moved out to
+    // sit with Additives (2026-08-09) and moved back the next day — every test passing
+    // both times, because nothing asserted the adjacency. This is that assertion.
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+    const enclosingPanel = snippet.closest('section.panel') as HTMLElement;
+    expect(enclosingPanel).toBeTruthy();
+    // The enclosing panel must be the Dilution panel itself — proven by its own content,
+    // not by a class name that could drift.
+    expect(enclosingPanel.textContent).toContain('Dilution water to add');
+  });
+});
+
+describe('a mode the maker chose survives the arrivals a record used to override', () => {
+  // workspaceGeneration bumps on a PROCESS TAB SWITCH as well as on load/import/new
+  // (useRecipeStorage's setProcess), and the restore effect treated every bump as a recipe
+  // arriving with a record to answer for. The reverse direction was already fixed for exactly
+  // this reason ("a process-tab round trip keeps the mode the maker chose"); the forward one
+  // charged the same glance to anyone who had recorded water.
+  async function ls() {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+  }
+
+  async function processRoundTrip() {
+    await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+  }
+
+  it('keeps Target concentration after a tab round trip, with the record still on the recipe', async () => {
+    await ls();
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
+    // Leaving Gradual to type an exact target is the whole reason the other two modes exist.
+    await userEvent.click(screen.getByRole('radio', { name: 'Target concentration' }));
+    await userEvent.clear(screen.getByLabelText('Target soap concentration percent'));
+    await userEvent.type(screen.getByLabelText('Target soap concentration percent'), '25');
+
+    await processRoundTrip();
+
+    expect(
+      (screen.getByRole('radio', { name: 'Target concentration' }) as HTMLInputElement).checked,
+    ).toBe(true);
+    // The field the maker was typing into is still the one on screen — the complaint the
+    // effect's own comment raises about the other direction, in this one.
+    expect(screen.getByLabelText('Target soap concentration percent')).toHaveProperty(
+      'value',
+      '25',
+    );
+  });
+
+  it('still restores Gradual when the RECORD is the thing that changed', async () => {
+    // The choice is answered to one record. A recipe arriving with a different one is a new
+    // question, and the record has nowhere to appear unless the mode moves.
+    await ls();
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
+    await userEvent.click(screen.getByRole('radio', { name: 'Target concentration' }));
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    cleanup();
+    // A reload restores the record the maker opted out of, and the mode with it: the ref that
+    // remembers the choice is session state, exactly like the mode itself.
+    render(<App />);
+    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('does not pin the maker into Gradual for a record no surface would show', async () => {
+    // '-100' is not a pour, and the shared parser says so — no sheet rows, no derived
+    // percentage, no widened ceiling. The mode restore asked its own `.trim() !== ''` instead,
+    // so this reopened in Gradual on every reload: a field the app refuses, and no figures.
+    await ls();
+    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '-100');
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    cleanup();
+    render(<App />);
+    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(
+      false,
+    );
+    expect(
+      (screen.getByRole('radio', { name: 'Target concentration' }) as HTMLInputElement).checked,
+    ).toBe(true);
   });
 });

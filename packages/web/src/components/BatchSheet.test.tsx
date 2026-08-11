@@ -431,6 +431,9 @@ function lsSheetData(extra: {
   neutralization?: import('@soap-calc/core').NeutralizationResult | null;
   measuredPasteGrams?: string;
   wholeBatchPasteGrams?: number | null;
+  /** Travels with wholeBatchPasteGrams — together they identify an alternative liquid's
+   * solids, and they are what the sheet's own gradual basis and paste floor read. */
+  cookWaterGrams?: number;
   bottledSolutionGrams?: number | null;
   /** Overrides the fixture's own 'g' below — it is spread after it. */
   weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
@@ -443,6 +446,7 @@ function lsSheetData(extra: {
       | 'preservativeCustomName'
       | 'preservativeDosePct'
       | 'preservativeSetByUser'
+      | 'gradualWaterGrams'
     >
   >;
 }) {
@@ -557,11 +561,73 @@ test('the printed sheet explains a pour the liquid\'s solids clamped to 0 g', ()
   // correctedDilutionWaterGrams clamp, and "Dilution water to add" then prints "0 g" — which,
   // printed bare, reads as a batch that needs nothing rather than one that cannot get there.
   render(<BatchSheet data={lsSheetData({ wholeBatchPasteGrams: 4200 })} />);
-  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('0 g');
+  const pour = screen.getByText('Dilution water to add').nextElementSibling!;
+  expect(pour.textContent).toContain('0 g');
   const note = screen.getByText(/already more dilute than 30%/i).textContent!.replace(/\s+/g, ' ');
   // Both sides of the comparison, so the figure can be checked against the rows above it.
   expect(note).toContain('it weighs 4,200 g against the 4,059 g');
   expect(note).toContain('there is no dilution water to add');
+});
+
+test('a reading a hair over the solution pours the recipe’s own figure with no record behind it', () => {
+  // THE WIDENED CEILING BELONGS TO GRADUAL ALONE. correctedPotGramsFor accepts a reading up
+  // to solutionGrams stretched by the gradual write-back's own 2 dp rounding — here
+  // 100 x 1,218 / (30 - 0.005) = 4,059.68 g against a 4,059 g solution — and that argument
+  // only holds where a record actually WROTE the target. In concentration mode the maker
+  // typed 30% themselves, so a 4,059.6 g reading is simply over the target (the app's own
+  // named mistake: the crockpot weighed with the paste still in it), and every target-derived
+  // figure must go on answering from the recipe's computed 1,600 g pot.
+  //
+  // Inside that band the printed sheet had no way to say anything at all. measuredPasteIsValidFor
+  // still refused the reading, so the "uses the measured paste weight" note stayed off; the
+  // already-more-dilute note keys on the COMPUTED pot, which is under the solution, so that
+  // stayed off too; and gradual's record rows need a record. The page carried to the bench
+  // printed "Dilution water to add — 0 g" and not one word about where the water went.
+  render(
+    <BatchSheet data={lsSheetData({ measuredPasteGrams: '4059.6', wholeBatchPasteGrams: 1600 })} />,
+  );
+  // 4,059 - 1,600, the recipe's own answer to a reading it cannot use.
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain(
+    '2,459 g',
+  );
+  expect(screen.queryByText(/uses the measured paste weight/i)).toBeNull();
+});
+
+test('…and answers identically just past that band, so the band leaves no seam', () => {
+  // The band on this fixture is (4,059, 4,060.68] — 1,218 g anhydrous at 30% gives a ceiling
+  // of 100 x 1218 / 29.995 = 4,060.68 g. An earlier version of this test used 4,059.8 g and
+  // called it "past the widened bound"; that reading is INSIDE the band, so the test was a
+  // duplicate of its twin above and its comment asserted the reverse of the arithmetic.
+  // 4,061 g is genuinely outside, which is what makes this a seam check rather than a
+  // second copy of the previous one.
+  render(
+    <BatchSheet data={lsSheetData({ measuredPasteGrams: '4061', wholeBatchPasteGrams: 1600 })} />,
+  );
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain(
+    '2,459 g',
+  );
+});
+
+test('…while a gradual record keeps the widening, and its rows account for the 0 g', () => {
+  // The other side of the same rule, at the surface the finding was found on. With a record
+  // in hand the widening is earned — the saved 30% is what that record wrote — so the pour
+  // clamps to "0 g", and the two rows gradual prints are the account the bare figure lacked:
+  // what went in the pot, and what it made.
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        measuredPasteGrams: '4059.6',
+        wholeBatchPasteGrams: 1600,
+        preservative: { gradualWaterGrams: '0' },
+      })}
+    />,
+  );
+  const pour = screen.getByText('Dilution water to add').nextElementSibling!;
+  expect(pour.textContent).toContain('0 g');
+  expect(screen.getByText(/Water actually added/).closest('div')!.textContent).toContain('0 g');
+  // The weighed pot plus nothing — the sheet's own rounding, off the reading the widening let
+  // it keep.
+  expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('4,060 g');
 });
 
 test('…and never prints that note beside the water-only one, which subsumes it', () => {
@@ -979,4 +1045,225 @@ test('a below-50°C stage note prints for a preservative that actually carries o
   expect(row.textContent).toContain('Liquid Germall Plus');
   expect(row.textContent).toContain('add after dilution, below 50 °C');
   expect(row.textContent).not.toContain('once cooled');
+});
+
+describe('the sheet records the water actually poured', () => {
+  test('prints the recorded water and the finished mass it produced', () => {
+    // BOTH halves, which is what this test's name has always promised and what spec §4 asks
+    // the sheet to carry: for a while only the water row existed, so the page said what went
+    // in and never what came out.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '2000' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    const row = screen.getByText(/Water actually added/).closest('div')!;
+    expect(row.textContent).toContain('2,000 g');
+    // 1,600 g of paste plus the 2,000 g recorded — the panel's own basis and the panel's own
+    // sum, through the shared helpers, so screen and sheet cannot print different masses.
+    const made = screen.getByText(/That record makes/).closest('div')!;
+    expect(made.textContent).toContain('3,600 g');
+  });
+
+  test('names which row is the record and which is the target, so neither stands in for the other', () => {
+    // They are usually within a gram of each other, and can be hundreds apart while a
+    // record sits beside a target it has not been applied to. Two labels that both read as
+    // "water for this batch" are not enough on a printed page with no tooltips.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '2000' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    const made = screen.getByText(/That record makes/).closest('div')!.textContent!;
+    expect(made).toMatch(/paste plus the water you recorded/i);
+    expect(made).toMatch(/Dilution water to add.*saved 30% target/i);
+  });
+
+  test('takes the pot the maker weighed, when the reading describes one', () => {
+    // The same basis the panel's "Finished so far (weighed)" counts from — a measurement
+    // outranks the computed pot on both surfaces or they print different finished masses
+    // for one record.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '2000' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+          measuredPasteGrams: '1500',
+        })}
+      />,
+    );
+    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('3,500 g');
+  });
+
+  test('says nothing about a finished mass when nothing was recorded', () => {
+    render(<BatchSheet data={lsSheetData({ wholeBatchPasteGrams: 1600, cookWaterGrams: 382 })} />);
+    expect(screen.queryByText(/That record makes/)).toBeNull();
+  });
+
+  test('says nothing about poured water when none was recorded', () => {
+    render(<BatchSheet data={lsSheetData({})} />);
+    expect(screen.queryByText(/Water actually added/)).toBeNull();
+  });
+
+  test('does not present the recorded figure as the computed one', () => {
+    // Both print, and they answer different questions: "Dilution water to add" is what the
+    // saved target implies, "Water actually added" is what went in the pot. A sheet that
+    // showed one as the other would be the paper version of the confusion this whole
+    // feature exists to remove.
+    render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: '2000' } })} />);
+    expect(screen.getByText('Dilution water to add')).toBeTruthy();
+    expect(screen.getByText(/Water actually added/)).toBeTruthy();
+  });
+
+  test('ignores a blank or unparseable record rather than printing a bare row', () => {
+    render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: 'abc' } })} />);
+    expect(screen.queryByText(/Water actually added/)).toBeNull();
+  });
+
+  test('a 0 g record is a record, and prints as one', () => {
+    // The pot before any water at all is Gradual Dilution's own starting entry (LS:1531),
+    // and the panel's ask says so outright — "0 g counts, and is where the record starts".
+    // While this row was gated on `> 0`, that record printed nothing on paper: the screen
+    // said the maker had recorded something and the sheet said they had not.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '0' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    expect(screen.getByText(/Water actually added/).closest('div')!.textContent).toContain('0 g');
+    // …and what it makes is the pot itself: 1,600 g of paste plus nothing.
+    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('1,600 g');
+  });
+
+  test('the mass a record makes reads the same on screen and on paper', () => {
+    // THE PIN ON THE SHARED RESOLUTION, and on the one thing that must not be "fixed" by
+    // giving this row the pour's own ceiling. The row states what the RECORD makes, so it
+    // counts from the target-independent basis (lib/measuredPaste's
+    // weighedOrComputedPotGramsFor) — the same call, and now literally the same function, the
+    // panel's "Finished so far" makes. The pour beside it is measured AGAINST the saved
+    // target and keeps the widened ceiling, so on a crockpot-sized reading with a target the
+    // record has not been applied to, the two legitimately differ; the row's own sentence is
+    // what says which is which, and the panel prints "Not applied yet" for the same state.
+    //
+    // Put the ceiling on this row and the paper would state a mass the screen does not show
+    // for the same record — and the ceiling cannot go on the panel's basis instead, because
+    // gradual DERIVES its target from it (the render loop measuredPasteDescribesPotFor
+    // documents).
+    const gradualDilution = {
+      anhydrousGrams: 1218,
+      solutionGrams: 4059,
+      totalWaterGrams: 2841,
+      dilutionWaterGrams: 2000,
+      glycerinGrams: 107,
+      soapConcentrationPercent: 30,
+      targetExceedsPaste: false,
+    };
+    render(
+      <DilutionPanel
+        dilution={gradualDilution}
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={() => {}}
+        weightUnit="g"
+        dilutionMode="gradual"
+        gradualWaterGrams="0"
+        measuredPasteGrams="4500"
+        cookWaterGrams={382}
+        wholeBatchPasteGrams={1600}
+      />,
+    );
+    const onScreen = screen
+      .getByText('Finished so far (weighed)')
+      .nextElementSibling!.textContent!.trim();
+    expect(onScreen).toBe('4,500 g');
+    cleanup();
+
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          dilutionOverride: gradualDilution,
+          preservative: { gradualWaterGrams: '0' },
+          measuredPasteGrams: '4500',
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain(onScreen);
+    // …while the pour keeps its own ceiling and answers from the recipe's computed pot:
+    // 4,059 - 1,600. One page, two questions, both named.
+    expect(screen.getByText('Dilution water to add').closest('div')!.textContent).toContain(
+      '2,459 g',
+    );
+  });
+
+  test('a leftover record does not widen the paste ceiling for a target it never wrote', () => {
+    // The batch-sheet defect this branch closed once, reachable again through a field nothing
+    // clears when the maker leaves Gradual. `gradualWaterGrams` is recipe state and
+    // `dilutionMode` is not, so "a record exists" was still true after recording 2,000 g,
+    // switching to Target concentration and typing 30% — and a 4,060 g reading (the loaded
+    // crockpot) sits inside the widened band around this fixture's 4,059 g solution. The pot
+    // became the reading, and "Dilution water to add" printed a bare "0 g" on the page carried
+    // to the bench.
+    //
+    // 4,060 g of paste plus the 2,000 g recorded is 6,060 g, which is 20.1% soap and not the
+    // 30% in force, so this record cannot have written this target: the reading is simply past
+    // it, and the recipe's own computed pot answers. 4,059 - 1,600.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '2000' },
+          measuredPasteGrams: '4060',
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    expect(screen.getByText('Dilution water to add').closest('div')!.textContent).toContain(
+      '2,459 g',
+    );
+  });
+
+  test('a record with a swallowed thousands separator is not a record', () => {
+    // A typed 2,000 commits as '2.000' in every locale (the browser reads the comma as a
+    // decimal point), so this row would have printed "Water actually added — 2 g" for a pour
+    // of two kilograms, beside a finished mass 2.25x lighter than the batch on the bench.
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '2.000' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    expect(screen.queryByText(/Water actually added/)).toBeNull();
+    expect(screen.queryByText(/That record makes/)).toBeNull();
+  });
+
+  test('a negative record is not a pour, and still prints nothing', () => {
+    render(
+      <BatchSheet
+        data={lsSheetData({
+          preservative: { gradualWaterGrams: '-100' },
+          wholeBatchPasteGrams: 1600,
+          cookWaterGrams: 382,
+        })}
+      />,
+    );
+    expect(screen.queryByText(/Water actually added/)).toBeNull();
+    expect(screen.queryByText(/That record makes/)).toBeNull();
+  });
 });

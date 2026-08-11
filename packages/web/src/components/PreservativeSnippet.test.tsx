@@ -19,10 +19,12 @@ afterEach(cleanup);
 function Harness({
   finishedGrams = 4000,
   basisScope,
+  portionIsRecorded,
   weightUnit = 'g',
 }: {
   finishedGrams?: number | null;
   basisScope?: 'batch' | 'portion';
+  portionIsRecorded?: boolean;
   weightUnit?: WeightUnit;
 }) {
   const [id, setId] = useState<string>(LS_PRESERVATIVES[0].id);
@@ -32,6 +34,7 @@ function Harness({
     <PreservativeSnippet
       finishedGrams={finishedGrams}
       basisScope={basisScope}
+      portionIsRecorded={portionIsRecorded}
       weightUnit={weightUnit}
       preservativeId={id}
       onPreservativeIdChange={setId}
@@ -108,6 +111,25 @@ test('a Custom amount with nothing to dose asks for the amount, not for oils', (
   expect(screen.getByText(/Amount to make/i)).toBeTruthy();
   expect(screen.queryByText(/Enter oils and a dilution target/)).toBeNull();
   expect(screen.queryByText(/≈ Finished product/)).toBeNull();
+});
+
+test('a RECORDED Custom amount asks for the two fields that size it, not for an amount', () => {
+  // Gradual dilution takes the "Amount to make (ml)" input off the panel entirely and
+  // replaces it with the paste weighed out and the water poured in. Asking for an amount
+  // there names a control the maker cannot see — and it was the snippet's normal state in
+  // that mode, since nothing ever fills that field in.
+  render(<Harness finishedGrams={null} basisScope="portion" portionIsRecorded />);
+  expect(screen.getByText(/paste weighed out and the water added so far/i)).toBeTruthy();
+  expect(screen.queryByText(/Enter an Amount to make/i)).toBeNull();
+  expect(screen.queryByText(/Enter oils and a dilution target/)).toBeNull();
+});
+
+test('a recorded jar is still dosed and named as the custom amount it is', () => {
+  // The flag changes the empty state and nothing else: the base row keeps the scope
+  // toggle's own wording, because that is what the maker chose up the panel.
+  render(<Harness finishedGrams={1300} basisScope="portion" portionIsRecorded />);
+  expect(screen.getByText('≈ Finished product (custom amount)')).toBeTruthy();
+  expect(screen.getByText('13 g')).toBeTruthy(); // 1% of the 1,300 g jar
 });
 
 test('picking another preservative reseeds the dose with ITS default and shows its facts', () => {

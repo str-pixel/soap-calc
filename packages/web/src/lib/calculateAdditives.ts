@@ -10,7 +10,11 @@ import {
   type DoseUnit,
 } from '@soap-calc/core';
 import type { AcidLyeRecipe, DilutionResult } from '@soap-calc/core';
-import { correctedDilutionWaterGrams, measuredPasteIsValidFor, parseMeasuredPasteGrams } from './measuredPaste';
+import {
+  correctedDilutionWaterGrams,
+  correctedPotGramsFor,
+  hasCorrectedPasteBasis,
+} from './measuredPaste';
 import type { AdditiveLine, RecipeSettings, SplitLiquidSettings } from './recipe';
 
 export type ComputedAdditive = {
@@ -113,12 +117,14 @@ export function computeExtrasGrams(
  * computeExtrasGrams so "what counts as an extra" and "what rides through to the bottle"
  * are one tested rule set.
  *
- * Base: the pot's real paste — a valid whole-batch measurement when there is one, else the
- * recipe's own anhydrous + cook water — plus whatever water is still needed to reach the
- * target. That water figure is `correctedDilutionWaterGrams`, the SAME measurement-aware
+ * Base: the pot's real paste — the whole-batch reading when `correctedPotGramsFor` (the
+ * shared pot choice) takes it, else the recipe's own
+ * anhydrous + cook water — plus whatever water is still needed to reach the target. That
+ * water figure is `correctedDilutionWaterGrams`, the SAME measurement-aware
  * function the Dilution panel's own water row already uses (Task 5: a measurement outranks
- * the targetExceedsPaste clamp), so this and that row never disagree about what actually
- * gets bottled. With no measurement this reduces exactly to the old formula: unmeasured
+ * the targetExceedsPaste clamp), measured against the SAME pot, so this and that row never
+ * disagree about what actually gets bottled. With no measurement this reduces exactly to the
+ * old formula: unmeasured
  * paste + dilution.dilutionWaterGrams, which is dilution.solutionGrams when the clamp never
  * fired, or anhydrous + cook water when it did (dilutionWaterGrams pinned to 0 in that
  * branch, so the water term drops out and the paste term is all that's left).
@@ -134,9 +140,11 @@ export function computeExtrasGrams(
  * base-result read: its acetate/citrate mass is small, and folding it in here without
  * also touching solutionGrams would be easy to mistake for a double count.
  *
- * "Counted ONCE" holds on BOTH paths, which took a second correction to make true. A valid
- * whole-batch measurement makes correctedDilutionWaterGrams short-circuit to
- * solutionGrams - measured, so the base is exactly solutionGrams — with the solids already
+ * "Counted ONCE" holds on BOTH paths, which took a second correction to make true. A
+ * whole-batch reading the pot gate accepts makes correctedDilutionWaterGrams return
+ * max(0, solutionGrams - measured), so the base is max(measured, solutionGrams) — the target's
+ * own solution for any reading the target can still take water to reach, and the weighed pot
+ * itself for one already past it. Either way the solids are already
  * inside it, because the maker put the pot with them in it on the scale. Adding them again
  * through the extras term priced the bottle a solids' worth heavy (4,115 g against a
  * 4,051 g solution on a 200 g canned-milk batch, and it scaled with the liquid). So the
@@ -174,6 +182,14 @@ export function computeBottledSolutionGrams(input: {
    * the water term is the recipe's own figure and this reduces to the previous formula
    * exactly. */
   wholeBatchPasteGrams?: number | null;
+  /** `settings.gradualWaterGrams` — the water the maker recorded pouring. Threaded through
+   * for one reason: it is what licenses the widened paste ceiling in `correctedPotGramsFor`,
+   * so the pot this prices and the pot the panel and the sheet pour against are chosen by the
+   * same rule. Leaving it out would price the bottle off the recipe's computed pot for a
+   * gradual record the two other surfaces are counting from — the exact split this branch
+   * closed. Optional, and absent it is the unwidened ceiling, which is what a caller with no
+   * record wants. */
+  gradualWaterGrams?: string;
 }): number {
   const {
     dilution,
@@ -183,21 +199,37 @@ export function computeBottledSolutionGrams(input: {
     measuredPasteGrams,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
+    gradualWaterGrams,
   } = input;
-  // Both corrected-basis figures go into the validity gate, not only into the water term:
-  // the paste floor counts an alternative liquid's solids (lib/measuredPaste), so a reading
-  // lighter than the pot's own undissolvable contents is refused here exactly as the panel
-  // and the printed sheet refuse it — otherwise this would price a bottle from a pot the
-  // maker is being told on screen cannot exist.
-  const measuredPaste = measuredPasteIsValidFor(
-    measuredPasteGrams,
+  // THE SAME POT the water term below is measured against, from the same call, so this base
+  // and that subtraction can never describe different batches. Both corrected-basis figures
+  // go into the gate, not only into the water term: the paste floor counts an alternative
+  // liquid's solids (lib/measuredPaste), so a reading lighter than the pot's own
+  // undissolvable contents is refused here exactly as the panel and the printed sheet refuse
+  // it — otherwise this would price a bottle from a pot the maker is being told on screen
+  // cannot exist.
+  //
+  // correctedPotGramsFor, and never measuredPasteIsValidFor, which used to decide this: that
+  // gate compares the reading against solutionGrams exactly, and in gradual mode the saved
+  // target is what the panel's own record just wrote. A weighed pot with no water recorded
+  // lands solutionGrams a hair under the reading about half the time, and this fell back to
+  // the recipe's COMPUTED pot while DilutionPanel counted from the weighed one — "Finished so
+  // far (weighed) 1,405 g" beside a 1,600 g finished product, with the preservative's
+  // legally-capped % taken against the second. The pot choice widens that ceiling by exactly
+  // the write-back's own rounding and no further — and only where a gradual record exists to
+  // have written the target — so a reading past it (the loaded crockpot, 3 kg of stoneware
+  // included) is still refused here and this still prices the recipe's own pot, and a target
+  // the maker typed still holds the reading to solutionGrams exactly. See correctedPotGramsFor
+  // for the bound, why it is tight, and why the record is what licenses it.
+  const pot = correctedPotGramsFor(
     dilution,
+    measuredPasteGrams,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
     cookWaterGrams,
-  )
-    ? (parseMeasuredPasteGrams(measuredPasteGrams) as number)
-    : undefined;
+    gradualWaterGrams,
+  );
+  const measuredPaste = pot?.fromMeasurement ? pot.grams : undefined;
   const base =
     (measuredPaste ?? dilution.anhydrousGrams + cookWaterGrams) +
     correctedDilutionWaterGrams(
@@ -206,6 +238,7 @@ export function computeBottledSolutionGrams(input: {
       measuredPasteIsRemaining,
       wholeBatchPasteGrams,
       cookWaterGrams,
+      gradualWaterGrams,
     );
   // The alternative liquid's non-water solids, off the same corrected basis
   // correctedDilutionWaterGrams subtracts from solutionGrams — never re-derived from the
@@ -213,13 +246,9 @@ export function computeBottledSolutionGrams(input: {
   // about the same pot. Zero without a corrected basis, exactly as the water correction is:
   // a caller that supplies none cannot know the solids are there, and both paths then fall
   // back to the pre-correction formula together.
-  const splitLiquidSolidsGrams =
-    wholeBatchPasteGrams !== undefined &&
-    wholeBatchPasteGrams !== null &&
-    Number.isFinite(wholeBatchPasteGrams) &&
-    wholeBatchPasteGrams > 0
-      ? Math.max(0, wholeBatchPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
-      : 0;
+  const splitLiquidSolidsGrams = hasCorrectedPasteBasis(wholeBatchPasteGrams)
+    ? Math.max(0, wholeBatchPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
+    : 0;
   // What the base ALREADY holds of the split liquid, and the whole difference between the
   // two paths. Unmeasured, the base is built from anhydrous + cookWaterGrams, so it carries
   // the liquid's water only and the extras term has to put its solids back. Measured, the

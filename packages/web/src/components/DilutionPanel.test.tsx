@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import type { ComponentProps } from 'react';
+import { useRef, useState, type ComponentProps } from 'react';
 import { DilutionPanel } from './DilutionPanel';
-import type { DilutionResult } from '@soap-calc/core';
+import { calculateDilution, type DilutionResult } from '@soap-calc/core';
 
 afterEach(cleanup);
 
@@ -891,6 +891,83 @@ test('ratio mode: a valid measured paste wins over the computed anhydrous + cook
   );
   expect(screen.getByText(/^2,960 g/)).toBeTruthy();
   expect(screen.getByText(/lands at 27% soap/i)).toBeTruthy();
+});
+
+describe('ratio mode counts from the pot, not from the target it is about to replace', () => {
+  // THE ONLY CONDITION where ratio's basis gate can differ: a reading that clears the pot's
+  // own rules (parses, not finer than a scale reads, not below the solids floor) and is
+  // HEAVIER than the solution the SAVED target dilutes to. Every other ratio test in this
+  // file sits under that ceiling, where the two gates agree by construction — so "all the
+  // pre-existing ratio tests pass unchanged" was true and proved nothing about the change.
+  //
+  // 1,200 g of anhydrous soap in a computed 1,600 g pot, saved at an 80% target: 1,500 g of
+  // solution. The maker weighs 1,550 g — a real reading (the cook drove off less than the
+  // recipe assumed), and above that 1,500 g. Ratio mode has no target of its own; it
+  // multiplies whatever pot it is given and WRITES the concentration that lands on. So the
+  // pot it multiplies must be the one on the scale, not the one the saved target implies.
+  const PAST_TARGET = {
+    ...BASE,
+    soapConcentrationPercent: '80',
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 1500, totalWaterGrams: 300,
+      dilutionWaterGrams: 0, glycerinGrams: 110, soapConcentrationPercent: 80,
+      targetExceedsPaste: true,
+    },
+    cookWaterGrams: 400,
+    wholeBatchPasteGrams: 1600,
+    measuredPasteGrams: '1550',
+    dilutionMode: 'ratio' as const,
+    waterPasteRatio: '2',
+    onDilutionModeChange: () => {},
+    onWaterPasteRatioChange: () => {},
+  };
+
+  it('pours the ratio against the weighed pot, and says which pot that was', () => {
+    render(<DilutionPanel {...PAST_TARGET} />);
+    // 1,550 x 2 = 3,100 g. The computed 1,600 g pot would prescribe 3,200 g — a hundred
+    // grams of water, on an instruction the maker follows at the bench.
+    expect(screen.getByText('Water to add at this ratio').nextElementSibling!.textContent).toBe(
+      '3,100 g',
+    );
+    // 1,200 / (1,550 + 3,100) = 25.81% — not the 25.0% the computed pot lands on.
+    expect(screen.getByText(/lands at 25\.8% soap/i)).toBeTruthy();
+    // And the paragraph names the basis it actually used, quoting the reading.
+    expect(
+      screen.getByText(/uses your measured paste \(1,550 g\)/i),
+    ).toBeTruthy();
+  });
+
+  it('writes back the concentration that pot lands on', () => {
+    // The write-back is the half of this that leaves the panel: it becomes
+    // settings.soapConcentrationPercent, which every other surface reads. 25.8 against 25.
+    const onSoapConcentrationChange = vi.fn();
+    render(<DilutionPanel {...PAST_TARGET} onSoapConcentrationChange={onSoapConcentrationChange} />);
+    // A value different from the DOM's, so React actually dispatches; the mocked handler
+    // does not feed it back, so the derived figure still comes from the '2' prop.
+    fireEvent.change(screen.getByLabelText('Water to paste ratio'), { target: { value: '2.5' } });
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('25.8');
+  });
+
+  it('still refuses the reading where the refusal is about the SAVED target, and names the ratio', () => {
+    // The ceiling is not weakened — it is asked a different question. The reading really is
+    // heavier than the 80% target's solution, the alert says so, and its remedy names the
+    // control on screen. What changed is only which pot the ratio multiplies.
+    render(<DilutionPanel {...PAST_TARGET} />);
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/already weighs more than the 1,500 g this target dilutes to/i);
+    expect(alert).toMatch(/raise the water:paste ratio above/i);
+  });
+
+  it('a reading UNDER that ceiling is untouched — both gates agree there', () => {
+    // The control for the three above: same fixture, a 1,450 g reading that clears the
+    // ceiling too. 1,450 x 2 = 2,900 g, and nothing about this case ever depended on which
+    // gate chose the basis.
+    render(<DilutionPanel {...PAST_TARGET} measuredPasteGrams="1450" />);
+    expect(screen.getByText('Water to add at this ratio').nextElementSibling!.textContent).toBe(
+      '2,900 g',
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
 });
 
 test('a valid measured paste outranks the computed over-dilution flag: shows the water, drops the alert', () => {
@@ -2749,8 +2826,10 @@ describe("ratio mode offers the reference's own starting ratios", () => {
     expect(screen.getByRole('radiogroup', { name: /starting points/i })).toBeTruthy();
     expect(ratioGuidance()).toMatch(/some makers start at 1:1/i);
     // The panel is still in its waiting state — hoisting the notes must not conjure
-    // figures or feedback out of a recipe that does not exist.
-    expect(screen.getByText(/Enter oils and a target/)).toBeTruthy();
+    // figures or feedback out of a recipe that does not exist. The ask names the mode radio
+    // above, because ratio mode has replaced the concentration field the old wording sent
+    // the maker to look for; see the waiting-state describe below for all three modes.
+    expect(screen.getByText(/Enter oils/).textContent).toMatch(/Target concentration above/);
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -3051,7 +3130,24 @@ describe('the prose budget: at most two inline hint paragraphs in any one state'
     altLiquidWaterGrams: 0,
   };
 
+  // Gradual's own states were unbudgeted while it shipped two new hint paragraphs (the
+  // "lands at" readout with its not-applied clause, the jar readout, the ask-for-the-record
+  // prompt, and the portion's alternative-liquid note, which gradual mode had to start
+  // rendering itself once it stopped rendering PortionDilutionResults).
+  const GRADUAL_ON = {
+    dilutionMode: 'gradual' as const,
+    onDilutionModeChange: () => {},
+    onGradualWaterChange: () => {},
+    onPortionPasteChange: () => {},
+    onPortionWaterChange: () => {},
+  };
+
   const CASES: [string, ComponentProps<typeof DilutionPanel>][] = [
+    ['gradual + split liquid, Whole batch', { ...SPLIT_MEASURED, ...GRADUAL_ON, dilutionScope: 'batch', targetMl: '', gradualWaterGrams: '2000' }],
+    ['gradual + split liquid, Custom amount', { ...SPLIT_MEASURED, ...GRADUAL_ON, dilutionScope: 'portion', targetMl: '1000', portionPasteGrams: '400', portionWaterGrams: '900' }],
+    ['gradual + split liquid, record not applied to the saved target', { ...SPLIT_MEASURED, ...GRADUAL_ON, dilutionScope: 'batch', targetMl: '', gradualWaterGrams: '5000', soapConcentrationPercent: '16' }],
+    ['gradual with nothing recorded yet, Whole batch', { ...SPLIT_MEASURED, ...GRADUAL_ON, dilutionScope: 'batch', targetMl: '', gradualWaterGrams: '' }],
+    ['gradual with nothing recorded yet, Custom amount', { ...SPLIT_MEASURED, ...GRADUAL_ON, dilutionScope: 'portion', targetMl: '', portionPasteGrams: '', portionWaterGrams: '' }],
     ['split liquid + measured paste + ratio mode, Whole batch', { ...SPLIT_MEASURED, dilutionScope: 'batch', targetMl: '' }],
     ['split liquid + measured paste + ratio mode, Custom amount', { ...SPLIT_MEASURED, dilutionScope: 'portion', targetMl: '1000' }],
     ['undeclared liquid past the target, Whole batch', { ...OVER_UNDECLARED, dilutionScope: 'batch', targetMl: '' }],
@@ -3130,5 +3226,836 @@ describe('an amount asked to the hundredth of a millilitre is a swallowed comma'
     expect(alerts).toHaveLength(2);
     expect(alerts.some((a) => a.includes('1480.25 g'))).toBe(true);
     expect(alerts.some((a) => a.includes('1.200 ml'))).toBe(true);
+  });
+});
+
+describe('gradual dilution — recording the water actually poured', () => {
+  // paste 1,600 g (anhydrous 1,200 + cook 400). Pour 2,000 g → finished 3,600 g,
+  // concentration 1200/3600 = 33.3333% → written at 2 dp as 33.33.
+  const GRADUAL = {
+    ...BASE,
+    dilutionMode: 'gradual' as const,
+    onDilutionModeChange: () => {},
+    cookWaterGrams: 400,
+    wholeBatchPasteGrams: 1600,
+    onGradualWaterChange: () => {},
+  };
+
+  it('offers Gradual as a third mode beside the two precise ones', () => {
+    render(<DilutionPanel {...BASE} dilutionMode="concentration" onDilutionModeChange={() => {}} />);
+    expect(screen.getByRole('radio', { name: /Gradual/ })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Target concentration' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Water : paste ratio' })).toBeTruthy();
+  });
+
+  it('shows the water, the finished mass and where it lands', () => {
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    expect(screen.getByText(/Finished so far/)).toBeTruthy();
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.getByText(/33\.33% soap/)).toBeTruthy();
+  });
+
+  it('the finished figure is paste + water, NOT the recomputed solution', () => {
+    // The whole point: 4,000 g is what the old target predicted; 3,600 g is what was
+    // poured. Printing solutionGrams here would quietly show the prediction again.
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    // Read the row's own value cell. An earlier version asserted
+    // `queryByText(/Finished so far[\s\S]*4,000 g/)` was null, which could never fail:
+    // queryByText matches ONE element's text, and the label is a <dt> while the figure is
+    // its <dd>, so nothing can match both. The regression it named — printing
+    // solutionGrams as the finished mass — would have passed unnoticed, in the test that
+    // carries this feature's central claim.
+    const finishedRow = screen.getByText(/Finished so far/).closest('div')!;
+    expect(finishedRow.textContent).toContain('3,600 g');
+    expect(finishedRow.textContent).not.toContain('4,000 g');
+  });
+
+  it('writes the derived concentration back at 2 dp once the field is touched', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2000' } });
+    rerender(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="2000" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('33.33');
+  });
+
+  it('writes nothing at all until the maker has typed a water amount', () => {
+    const onSoapConcentrationChange = vi.fn();
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />);
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+  });
+
+  it('an extreme record keeps the readout honest while capping what is written', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...GRADUAL} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    // Almost no water: true concentration 1200/1610 = 74.5%, still under the cap — use a
+    // paste that pushes past it instead.
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '0' } });
+    rerender(
+      <DilutionPanel {...GRADUAL} wholeBatchPasteGrams={1210} gradualWaterGrams="0"
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    // 1200/1210 = 99.17% — the readout says so, the written value is capped at 99.
+    expect(screen.getByText(/99\.17% soap/)).toBeTruthy();
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith('99');
+    expect(screen.getByText(/capp?ed|clamped/i)).toBeTruthy();
+  });
+
+  /**
+   * THE FEEDBACK PATH APP ACTUALLY HAS, and the only harness in this file that closes it.
+   *
+   * Every other test here wires onSoapConcentrationChange to an inert vi.fn() (or asserts a
+   * one-shot DOM snapshot after a manual rerender) and so can never see a real render loop:
+   * nothing feeds the written value back into soapConcentrationPercent the way App does.
+   *
+   * The first version of this harness fed the STRING back but held `dilution` fixed, and
+   * that omission is what let a live render loop ship: App does not hold it fixed. The
+   * written percent goes into the recipe, `calculateDilution` is re-run from it, and the NEW
+   * dilution is what the panel judges the measured paste against on the next render —
+   * dilution.solutionGrams is anhydrous ÷ the very percent this panel just wrote. A harness
+   * that stubs `dilution` cuts that wire and cannot see the class of bug that lives on it.
+   * So the dilution here is recomputed from the written percent, by core, every render.
+   *
+   * The percent is also wrapped in a FRESH OBJECT on every call — mirroring App's
+   * setSettings({ ...settings, ... }) — so an unchanged STRING can never mask a broken
+   * effect dependency by tripping React's bail-out on an unchanged primitive: that bail-out
+   * is real, but it protects only the harness's own top-level state, never DilutionPanel's
+   * internal `gradual`, which gradualDilutionFrom rebuilds as a fresh object every render.
+   *
+   * `cap` is a safety valve, not part of the mechanism: past it the harness stops feeding
+   * the value back, so a broken dependency fails these tests on the call COUNT — with the
+   * count in the message — instead of hanging the worker on React's own "Maximum update
+   * depth exceeded". Nothing before the cap behaves differently.
+   */
+  function LoopHarness({
+    measuredPasteGrams = '',
+    initialPercent = '30',
+    cap = 20,
+  }: {
+    measuredPasteGrams?: string;
+    initialPercent?: string;
+    cap?: number;
+  }) {
+    const [percent, setPercent] = useState({ value: initialPercent });
+    const [water, setWater] = useState('');
+    const [calls, setCalls] = useState(0);
+    const callsRef = useRef(0);
+    // 1,200 g of anhydrous soap and 400 g of cook water — the same 1,600 g pot the GRADUAL
+    // fixture above describes, built by core rather than hand-written so solutionGrams
+    // really does follow the percent this panel writes.
+    const dilution = calculateDilution({
+      anhydrousGrams: 1200,
+      cookWaterGrams: 400,
+      kohGrams: 220,
+      naohGrams: 0,
+      soapConcentrationPercent: Number(percent.value),
+    });
+    return (
+      <>
+        <span data-testid="calls">{calls}</span>
+        <span data-testid="percent">{percent.value}</span>
+        <DilutionPanel
+          {...BASE}
+          dilution={dilution}
+          dilutionMode="gradual"
+          onDilutionModeChange={() => {}}
+          cookWaterGrams={400}
+          wholeBatchPasteGrams={1600}
+          measuredPasteGrams={measuredPasteGrams}
+          gradualWaterGrams={water}
+          onGradualWaterChange={setWater}
+          soapConcentrationPercent={percent.value}
+          onSoapConcentrationChange={(value) => {
+            callsRef.current += 1;
+            setCalls(callsRef.current);
+            if (callsRef.current <= cap) setPercent({ value });
+          }}
+        />
+      </>
+    );
+  }
+
+  it('does not loop: a real feedback path from the write-back back into the prop settles instead of growing', () => {
+    render(<LoopHarness />);
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2000' } });
+    // A real coupling settles at the write-back's own re-render — one or two calls, never a
+    // count that keeps climbing. A dependency on the raw `gradual` OBJECT fails this: a
+    // fresh reference every render re-fires the effect on every re-render while touched,
+    // whether or not the derived percentage actually changed, and it never settles.
+    const calls = Number(screen.getByTestId('calls').textContent);
+    expect(calls, `write-back calls: ${calls}`).toBeLessThanOrEqual(2);
+    expect(screen.getByTestId('percent').textContent).toBe('33.33');
+  });
+
+  it('does not loop on a weighed pot and a zero-water record — the basis cannot un-choose itself', () => {
+    // THE REGRESSION. Gradual's paste basis used to be picked by measuredPasteIsValidFor,
+    // which asks — among its rules — whether the reading is heavier than
+    // dilution.solutionGrams: the figure this mode's own write-back produces. With no water
+    // recorded, the pot IS the finished mass, so the written percent is anhydrous ÷ the
+    // reading rounded to 2 dp, and about half of the readings in the valid window round UP,
+    // putting solutionGrams a hair BELOW the reading. That rejected the measurement, which
+    // switched the basis to the computed 1,600 g pot, which wrote 75%, which re-accepted the
+    // measurement, which wrote 85.41% again — forever, at 60+ calls and a dead tab.
+    //
+    // 1,405 g is one of those readings: 120000/1405 = 85.4093 → 85.41 → a 1,404.99 g
+    // solution, a hair under the 1,405 g on the scale. Zero water is not an exotic input —
+    // it is the reference's own starting record, and dilution.test.ts blesses it.
+    render(<LoopHarness measuredPasteGrams="1405" />);
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '0' } });
+    const calls = Number(screen.getByTestId('calls').textContent);
+    expect(calls, `write-back calls: ${calls}`).toBeLessThanOrEqual(2);
+    // And it settles on the pot the maker weighed, not on the computed one: 1,405 g of paste
+    // plus nothing is 1,405 g of finished soap at 1200/1405 = 85.41% soap.
+    expect(screen.getByTestId('percent').textContent).toBe('85.41');
+    expect(screen.getByText('1,405 g')).toBeTruthy();
+    expect(screen.getByText(/85\.41% soap/)).toBeTruthy();
+  });
+
+  it('sweeps the zero-water window: no whole-gram reading in it can oscillate', () => {
+    // The finding swept 445 whole-gram readings and found 223 that looped. A sweep is the
+    // only honest guard here, because which readings loop depends on where 2 dp rounding
+    // lands — a single fixture proves the fix for one number, not for the rule. Every
+    // reading from the solids floor to the computed pot, judged on the property the fix
+    // establishes: the basis, and therefore the written percent, is a function of the
+    // reading alone, so writing it back cannot change it.
+    for (let measured = 1200; measured <= 1600; measured += 1) {
+      const first = Math.round((120000 / measured) * 100) / 100;
+      const clamped = Math.min(99, Math.max(1, first));
+      // What the panel would write on the next pass, judged against the solution the FIRST
+      // write produces. Before the fix this differed from `first` for 223 of these readings;
+      // after it, the basis ignores that solution entirely and the two always agree.
+      const solutionAfterWrite = 1200 / (clamped / 100);
+      const basisAfterWrite = measured > solutionAfterWrite ? 1600 : measured;
+      const second = Math.min(99, Math.max(1, Math.round((120000 / basisAfterWrite) * 100) / 100));
+      if (first === second) continue;
+      // A reading the OLD selection oscillated on — drive it through the panel and prove it
+      // settles now.
+      cleanup();
+      render(<LoopHarness measuredPasteGrams={String(measured)} />);
+      fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '0' } });
+      const calls = Number(screen.getByTestId('calls').textContent);
+      expect(calls, `${measured} g settled in ${calls} write-backs`).toBeLessThanOrEqual(2);
+      expect(screen.getByTestId('percent').textContent).toBe(String(clamped));
+    }
+  });
+
+  it('never reports over-dilution from an honest record', () => {
+    // The wording this asserts the ABSENCE of has to be a wording the panel can actually
+    // produce, or the test passes on a typo. It is "The paste is already more dilute than
+    // …", from the targetExceedsPaste alert and its corrected-pot sibling; the regex this
+    // test used to carry (/exceeds the paste|more water than the paste/i) matched no string
+    // in the component at all and could never have failed.
+    render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
+    expect(screen.queryByText(/already more dilute/i)).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    // The positive control, so the absence above is evidence rather than a spelling: the
+    // same panel, the same matcher, a recipe whose target really is past its paste.
+    cleanup();
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={{ ...RESULT, dilutionWaterGrams: 0, soapConcentrationPercent: 90, targetExceedsPaste: true }}
+        soapConcentrationPercent="90"
+      />,
+    );
+    expect(screen.getByText(/already more dilute/i)).toBeTruthy();
+  });
+});
+
+describe('gradual: a record the saved target has not been applied to', () => {
+  // CRITICAL: the write-back waits for a real edit (gradualTouched), so a record can sit on
+  // screen beside a target it has not been applied to — record 2,000 g, go to Target
+  // concentration, type 50%, come back. Two masses for one batch, and a preservative dose
+  // that is a percentage of the second one. Ratio mode names that split in words; gradual
+  // shipped without the twin.
+  const SAVED_50 = {
+    ...BASE,
+    dilutionMode: 'gradual' as const,
+    onDilutionModeChange: () => {},
+    onGradualWaterChange: () => {},
+    cookWaterGrams: 400,
+    wholeBatchPasteGrams: 1600,
+    soapConcentrationPercent: '50',
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 2400, totalWaterGrams: 1200,
+      dilutionWaterGrams: 800, glycerinGrams: 110, soapConcentrationPercent: 50,
+      targetExceedsPaste: false,
+    },
+  };
+
+  it('says so, and names what is still running on the saved target', () => {
+    render(<DilutionPanel {...SAVED_50} gradualWaterGrams="2000" />);
+    const hint = screen
+      .getByText(/Not applied yet/)
+      .closest('p')!
+      .textContent!.replace(/\s+/g, ' ');
+    // The record: 1,600 g of paste and 2,000 g of water is 3,600 g at 33.33% soap.
+    expect(hint).toMatch(/33\.33% soap/);
+    expect(hint).toMatch(/Not applied yet/);
+    // The saved target is quoted, and the two roles cannot be swapped: the readout's own
+    // figure is the record's, the quoted one is the target's.
+    expect(hint).toMatch(/saved 50% target/);
+    // And it names the two consumers that actually still run on it, both of which are
+    // rendered below this paragraph.
+    expect(hint).toMatch(/preservative dose/);
+    expect(hint).toMatch(/batch sheet/);
+  });
+
+  it('the two masses on screen are never both presented as the batch', () => {
+    // The mass the panel derives from the SAVED target (2,400 g) and the mass the record
+    // makes (3,600 g) are both computable in this state. Only one of them is printed as a
+    // figure — gradual suppresses the target-derived "Finished solution" row — and the
+    // other is accounted for in words.
+    render(<DilutionPanel {...SAVED_50} gradualWaterGrams="2000" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.queryByText('Finished solution')).toBeNull();
+    expect(screen.queryByText('2,400 g')).toBeNull();
+  });
+
+  it('drops the clause the moment the record is applied', () => {
+    render(<DilutionPanel {...SAVED_50} gradualWaterGrams="2000" />);
+    expect(screen.getByText(/Not applied yet/)).toBeTruthy();
+    // Touching the field is what fires the write-back, so the split closes with it. (A
+    // different value on purpose: React fires no change event when the committed value is
+    // the one already in a controlled input, so re-typing 2000 would touch nothing.)
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2100' } });
+    expect(screen.queryByText(/Not applied yet/)).toBeNull();
+  });
+
+  it('says nothing when the saved target already matches the record', () => {
+    render(
+      <DilutionPanel
+        {...SAVED_50}
+        soapConcentrationPercent="33.33"
+        dilution={{ ...SAVED_50.dilution, solutionGrams: 3600, soapConcentrationPercent: 33.33 }}
+        gradualWaterGrams="2000"
+      />,
+    );
+    expect(screen.queryByText(/Not applied yet/)).toBeNull();
+  });
+
+  it('is a whole-batch note only — a jar never writes back, and says so in its own words', () => {
+    render(
+      <DilutionPanel
+        {...SAVED_50}
+        dilutionScope="portion"
+        onDilutionScopeChange={() => {}}
+        onPortionPasteChange={() => {}}
+        onPortionWaterChange={() => {}}
+        portionPasteGrams="400"
+        portionWaterGrams="900"
+      />,
+    );
+    expect(screen.queryByText(/Not applied yet/)).toBeNull();
+    expect(screen.getByText(/saved target is unchanged/)).toBeTruthy();
+  });
+});
+
+describe('gradual: copy that names a control the mode has removed', () => {
+  const G = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    cookWaterGrams: 400, wholeBatchPasteGrams: 1600, onGradualWaterChange: () => {},
+  };
+  // The state the write-back itself produces: a weighed 1,405 g pot with no water recorded
+  // writes 85.41%, and anhydrous ÷ 85.41% is 1,404.99 g — a hair UNDER the reading. The
+  // ceiling that fact trips is the one that used to reject the basis and loop the app.
+  const ROUNDED = {
+    ...G,
+    soapConcentrationPercent: '85.41',
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 1404.99, totalWaterGrams: 204.99,
+      dilutionWaterGrams: 0, glycerinGrams: 110, soapConcentrationPercent: 85.41,
+      targetExceedsPaste: true,
+    },
+    measuredPasteGrams: '1405',
+    gradualWaterGrams: '0',
+  };
+
+  it('does not tell the maker to lower a target concentration that is not on screen', () => {
+    render(<DilutionPanel {...ROUNDED} />);
+    const alerts = screen.queryAllByRole('alert').map((a) => a.textContent!.replace(/\s+/g, ' '));
+    expect(alerts.join(' | ')).not.toMatch(/lower the target concentration/i);
+    expect(screen.queryByLabelText(/Target soap concentration/)).toBeNull();
+  });
+
+  it('does not refuse the very pot it is counting from', () => {
+    // The contradiction this suppression removes: "your paste already weighs more than the
+    // 1,405 g this target dilutes to" printed directly above the panel's own
+    // "Finished so far (weighed) 1,405 g", for the same reading, on one screen.
+    render(<DilutionPanel {...ROUNDED} />);
+    expect(screen.getByText(/Finished so far \(weighed\)/)).toBeTruthy();
+    expect(screen.getByText('1,405 g')).toBeTruthy();
+    expect(screen.queryByText(/already weighs more than/i)).toBeNull();
+  });
+
+  it('still refuses a reading on the rules that describe the pot, in gradual mode too', () => {
+    // The suppression is narrow: the two target-free rules still fire, still alert, and
+    // still decide the basis — so gradual's alerts and its figures answer to one question.
+    render(<DilutionPanel {...G} gradualWaterGrams="2000" measuredPasteGrams="900" />);
+    expect(screen.getByRole('alert').textContent).toMatch(/cannot be all of the paste/i);
+    expect(screen.getByText('3,600 g')).toBeTruthy(); // fell back to the computed pot
+    cleanup();
+    render(<DilutionPanel {...G} gradualWaterGrams="2000" measuredPasteGrams="1480.25" />);
+    expect(screen.getByRole('alert').textContent).toMatch(/thousands separator/i);
+  });
+
+  it('the exceeds-solution refusal is untouched in the modes that do have a target', () => {
+    // The positive control for the suppression above: same reading, same dilution, in
+    // concentration mode — where the target is a field on screen and the remedy names it.
+    render(
+      <DilutionPanel
+        {...BASE}
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        dilution={ROUNDED.dilution}
+        soapConcentrationPercent="85.41"
+        measuredPasteGrams="1405"
+      />,
+    );
+    const alerts = screen.getAllByRole('alert').map((a) => a.textContent!.replace(/\s+/g, ' '));
+    expect(alerts.some((a) => /already weighs more than/i.test(a))).toBe(true);
+    expect(alerts.some((a) => /lower the target concentration/i.test(a))).toBe(true);
+  });
+
+  it('does not explain a "0 g" pour row that gradual mode does not print', () => {
+    // pasteAlreadyPastTarget: a 2,000 g corrected pot against the 1,900 g its soap makes at
+    // the saved target. In concentration mode that alert accounts for a bare "0 g" in the
+    // pour row; in gradual mode the row is gone, and what is left is a remedy naming the
+    // concentration field and an instruction to weigh a paste that may already be weighed.
+    const CLAMPED = {
+      dilution: {
+        anhydrousGrams: 1200, solutionGrams: 1900, totalWaterGrams: 700,
+        dilutionWaterGrams: 300, glycerinGrams: 100, soapConcentrationPercent: 63.2,
+        targetExceedsPaste: false,
+      },
+      soapConcentrationPercent: '63.2',
+      cookWaterGrams: 400,
+      wholeBatchPasteGrams: 2000,
+    };
+    render(<DilutionPanel {...BASE} {...CLAMPED} />);
+    expect(screen.getByText(/already more dilute than the target above/i)).toBeTruthy();
+    cleanup();
+    render(<DilutionPanel {...BASE} {...CLAMPED} {...G} {...CLAMPED} gradualWaterGrams="2000" />);
+    expect(screen.queryByText(/already more dilute/i)).toBeNull();
+    expect(screen.queryByText('Dilution water to add')).toBeNull();
+  });
+
+  it('asks for what the current mode can actually give it while there is no recipe', () => {
+    // "Enter oils and a target concentration (1–99%)" names the concentration field's own
+    // caption — a field only concentration mode renders.
+    render(<DilutionPanel {...BASE} dilution={null} />);
+    expect(screen.getByText(/Enter oils and a target concentration/)).toBeTruthy();
+    for (const mode of ['ratio', 'gradual'] as const) {
+      cleanup();
+      render(
+        <DilutionPanel {...BASE} dilution={null} dilutionMode={mode} onDilutionModeChange={() => {}} />,
+      );
+      const ask = screen.getByText(/Enter oils/).textContent!;
+      expect(ask).not.toMatch(/Enter oils and a target concentration/);
+      // It names the mode radio, which IS on screen in every mode.
+      expect(ask).toMatch(/Target concentration above/);
+      expect(screen.getByRole('radio', { name: 'Target concentration' })).toBeTruthy();
+    }
+  });
+});
+
+describe('gradual: which paste it counts from', () => {
+  const G = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    cookWaterGrams: 400, wholeBatchPasteGrams: 1600, onGradualWaterChange: () => {},
+    gradualWaterGrams: '2000',
+  };
+
+  it('uses the pot the maker actually weighed, and says so', () => {
+    // Weighed 1,500 g (the cook drove off more than the recipe predicted). Finished is
+    // 1,500 + 2,000 = 3,500 g, not the computed 3,600 g.
+    render(<DilutionPanel {...G} measuredPasteGrams="1500" />);
+    expect(screen.getByText('3,500 g')).toBeTruthy();
+    // Brief defect found here: the panel already has TWO always-on, unrelated uses of the
+    // literal word "measured" — the "Measured paste weight" field's own label (every mode)
+    // and the density caveat's "not a measured density" (whole-batch scope, whenever a
+    // volume renders) — so /measured/i is ambiguous the moment both are on screen at once,
+    // regardless of what this readout says. "Weighed" is the same claim the brief's own
+    // prose makes ("the pot the maker actually weighed") without colliding with either.
+    expect(screen.getByText(/weighed/i)).toBeTruthy();
+  });
+
+  it('falls back to the computed paste when no reading was taken, and names that instead', () => {
+    render(<DilutionPanel {...G} measuredPasteGrams="" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+    expect(screen.getByText(/computed|from the recipe/i)).toBeTruthy();
+  });
+
+  it('ignores a reading the shared gate rejects, rather than counting from an impossible pot', () => {
+    // Below the anhydrous floor: physically impossible, and measuredPasteRejectionFor
+    // already refuses it everywhere else in the app.
+    render(<DilutionPanel {...G} measuredPasteGrams="900" />);
+    expect(screen.getByText('3,600 g')).toBeTruthy();
+  });
+});
+
+describe('the re-entry guard — a derived mode must not revert a typed target', () => {
+  it('returning to gradual without touching the field leaves a typed concentration alone', () => {
+    // The bug this guards, in ratio's own words at DilutionPanel.tsx:170-179: the
+    // write-back fired on re-entry alone and reverted the typed value, "with no visual
+    // difference and no undo".
+    const onSoapConcentrationChange = vi.fn();
+    const props = {
+      ...BASE, cookWaterGrams: 400, wholeBatchPasteGrams: 1600,
+      onDilutionModeChange: () => {}, onGradualWaterChange: () => {},
+      gradualWaterGrams: '2000', onSoapConcentrationChange,
+    };
+    const { rerender } = render(<DilutionPanel {...props} dilutionMode="gradual" />);
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2000' } });
+    onSoapConcentrationChange.mockClear();
+    // leave for concentration mode, type an exact target, come back WITHOUT retyping water
+    rerender(<DilutionPanel {...props} dilutionMode="concentration" soapConcentrationPercent="40" />);
+    rerender(<DilutionPanel {...props} dilutionMode="gradual" soapConcentrationPercent="40" />);
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('gradual in Custom amount scope', () => {
+  const P = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    dilutionScope: 'portion' as const, cookWaterGrams: 400, wholeBatchPasteGrams: 1600,
+    onGradualWaterChange: () => {},
+    onPortionPasteChange: () => {}, onPortionWaterChange: () => {},
+  };
+
+  it('asks for the paste weighed out, not a target volume', () => {
+    render(<DilutionPanel {...P} portionPasteGrams="" portionWaterGrams="" />);
+    expect(screen.getByLabelText(/Paste weighed out/)).toBeTruthy();
+    expect(screen.getByLabelText(/Water added so far/)).toBeTruthy();
+    expect(screen.queryByLabelText(/Amount to make/)).toBeNull();
+  });
+
+  it('shows none of the target-sized portion grid, even with a stale amount left behind', () => {
+    // The reachable path: size a jar in Concentration mode, then switch to Gradual without
+    // clearing the amount. targetMl is App session state and survives that switch, so the
+    // whole target-derived grid used to render beside the jar's own recorded figures —
+    // two unlabelled figure sets, disagreeing, describing the same jar. Hiding the input
+    // was not enough; the state's downstream effect had to go too.
+    render(
+      <DilutionPanel {...P} targetMl="1000" portionPasteGrams="400" portionWaterGrams="900" />,
+    );
+    expect(screen.getByText(/23\.08% soap/)).toBeTruthy();
+    expect(screen.queryByText(/Paste to weigh out/i)).toBeNull();
+    expect(screen.queryByText(/^Makes$/i)).toBeNull();
+  });
+
+  it("reports the jar's own figures, each named as the portion's", () => {
+    // 400 g of paste is a quarter of the 1,600 g batch, so it carries 300 g anhydrous.
+    // Add 900 g water → 1,300 g finished, 300/1300 = 23.08% soap.
+    //
+    // The water is 900 and not 600 DELIBERATELY. At 600 the jar lands on exactly 30%, and
+    // the match is ambiguous — but NOT, as an earlier version of this comment claimed,
+    // against the recipe-target echo: that is a readOnly <input>, reachable by
+    // getByDisplayValue and never by getByText. The real second match is the static
+    // dilution-uses table's "General hand soap: 15–30% soap" row, which renders
+    // unconditionally. 900 lands the jar at 23.08% and matches exactly once.
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900" />);
+    expect(screen.getByText('1,300 g')).toBeTruthy();
+    expect(screen.getByText(/23\.08% soap/)).toBeTruthy();
+    expect(screen.getByText(/this jar/i)).toBeTruthy();
+  });
+
+  // THE GUARD. A jar diluted thinner has not redefined the recipe. Asserted on the spy
+  // rather than on a rendered figure, because the damage is the write, not the display.
+  it('NEVER writes the jar\'s concentration back into the recipe', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...P} portionPasteGrams="" portionWaterGrams=""
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Paste weighed out/), { target: { value: '400' } });
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '900' } });
+    rerender(
+      <DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900"
+        onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves the recipe target on screen unchanged beside the jar figure', () => {
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900"
+      soapConcentrationPercent="30" />);
+    // 400 + 900 = 1,300 g at 300/1300 = 23.1% — the jar. The recipe still says 30%.
+    expect(screen.getByText(/23(\.\d+)?% soap/)).toBeTruthy();
+    expect(screen.getByDisplayValue('30')).toBeTruthy();
+  });
+
+  it('refuses a jar heavier than the whole batch, instead of blanking the readout', () => {
+    // The typo this catches: 4000 for 400. Until this alert the readout simply vanished —
+    // no figures, no explanation — while the measured-paste field one row up answered the
+    // same class of mistake with three alerts.
+    render(<DilutionPanel {...P} portionPasteGrams="4000" portionWaterGrams="900" />);
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/more paste than the batch holds/i);
+    // The bound the refusal actually applied, quoted rather than re-derived.
+    expect(alert).toContain('1,600 g');
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+  });
+
+  it("keeps the jar's own figures when the SAVED TARGET is past the batch's paste", () => {
+    // The jar's concentration is its share of the batch's soap over what the maker poured
+    // into it — no target anywhere in that sentence. It used to be resolved through
+    // lsPartialDilution, which refuses whenever the saved target implies a solution lighter
+    // than the pot, so a low-water target silently blanked a readout that does not depend
+    // on it. 1,200 g of soap at an 80% target makes 1,500 g of solution against a 1,600 g
+    // pot — refused there, computed here.
+    render(
+      <DilutionPanel
+        {...P}
+        soapConcentrationPercent="80"
+        dilution={{
+          anhydrousGrams: 1200, solutionGrams: 1500, totalWaterGrams: 300,
+          dilutionWaterGrams: 0, glycerinGrams: 110, soapConcentrationPercent: 80,
+          targetExceedsPaste: true,
+        }}
+        portionPasteGrams="400"
+        portionWaterGrams="900"
+      />,
+    );
+    expect(screen.getByText('1,300 g')).toBeTruthy();
+    expect(screen.getByText(/23\.08% soap/)).toBeTruthy();
+  });
+
+  it('asks for the two figures rather than showing nothing at all', () => {
+    // Spec §7: with the record incomplete the mode is inert and the panel ASKS — ratio mode
+    // has said "Enter a water:paste ratio greater than zero" in the same state all along.
+    render(<DilutionPanel {...P} portionPasteGrams="" portionWaterGrams="" />);
+    expect(screen.getByText(/Enter the paste you weighed out/)).toBeTruthy();
+    cleanup();
+    // Half-entered is still incomplete, and zero water is a record rather than a blank.
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="" />);
+    expect(screen.getByText(/Enter the paste you weighed out/)).toBeTruthy();
+    cleanup();
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="0" />);
+    expect(screen.queryByText(/Enter the paste you weighed out/)).toBeNull();
+    expect(screen.getByText('400 g')).toBeTruthy();
+  });
+
+  it('keeps the alternative-liquid instruction, which gradual mode used to drop', () => {
+    // "Top up with plain distilled water only" is the only sentence in the app telling a
+    // maker not to keep topping up with milk or juice, and it reached Custom amount only
+    // through PortionDilutionResults — the component gradual mode stopped rendering. So
+    // choosing Gradual silently removed it from a recipe that still has the liquid in it.
+    render(
+      <DilutionPanel {...P} altLiquidWaterGrams={400} portionPasteGrams="400" portionWaterGrams="900" />,
+    );
+    expect(screen.getByText(/Top up with plain distilled water only/)).toBeTruthy();
+  });
+});
+
+describe('gradual in Whole batch: the panel asks for the record', () => {
+  const G = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    cookWaterGrams: 400, wholeBatchPasteGrams: 1600, onGradualWaterChange: () => {},
+  };
+
+  it('asks for the water while the field is empty, and names zero as a real record', () => {
+    render(<DilutionPanel {...G} gradualWaterGrams="" />);
+    const ask = screen.getByText(/Enter the water you have added so far/).textContent!;
+    expect(ask).toMatch(/0 g counts/);
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+  });
+
+  it('stops asking the moment a record exists — zero included', () => {
+    render(<DilutionPanel {...G} gradualWaterGrams="0" />);
+    expect(screen.queryByText(/Enter the water you have added so far/)).toBeNull();
+    // The pot before any water: 1,600 g at 75% soap.
+    expect(screen.getByText('1,600 g')).toBeTruthy();
+    expect(screen.getByText(/75% soap/)).toBeTruthy();
+  });
+});
+
+describe('the swallowed thousands separator, on the three fields gradual added', () => {
+  // The trap this whole module already documents, on the inputs the gradual mode introduced:
+  // `<input type="number">` reads a typed comma as a DECIMAL POINT in every locale, so a maker
+  // typing 2,000 g of water commits '2.000' and the app records 2 g. The only detectable
+  // fingerprint is the impossible precision (two or more typed decimals — no scale weighing a
+  // batch reads finer than 0.1 g), which is exactly what the measured-paste field and the
+  // "Amount to make (ml)" field are already judged by.
+  const G = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    cookWaterGrams: 400, wholeBatchPasteGrams: 1600, onGradualWaterChange: () => {},
+  };
+  const P = {
+    ...G, dilutionScope: 'portion' as const,
+    onPortionPasteChange: () => {}, onPortionWaterChange: () => {},
+  };
+
+  it('refuses a record of 2 g typed as 2,000 g, instead of deriving 76% from it', () => {
+    render(<DilutionPanel {...G} gradualWaterGrams="2.000" />);
+    // 1,600 g of paste plus a recorded 2 g is 1,602 g at 74.91% soap — the number the app
+    // would write into settings.soapConcentrationPercent, and size a legally capped
+    // preservative dose against, for a 3,600 g batch.
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+    expect(screen.queryByText(/That lands at/)).toBeNull();
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/2\.000 g/);
+    expect(alert).toMatch(/thousands separator/i);
+  });
+
+  it('writes nothing back from a record it has refused', () => {
+    const onSoapConcentrationChange = vi.fn();
+    const { rerender } = render(
+      <DilutionPanel {...G} gradualWaterGrams="" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    fireEvent.change(screen.getByLabelText(/Water added so far/), { target: { value: '2.000' } });
+    rerender(
+      <DilutionPanel {...G} gradualWaterGrams="2.000" onSoapConcentrationChange={onSoapConcentrationChange} />,
+    );
+    expect(onSoapConcentrationChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps a one-decimal record, which a scale really does read', () => {
+    render(<DilutionPanel {...G} gradualWaterGrams="2000.5" />);
+    expect(screen.getByText(/Finished so far/)).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it("refuses a jar's paste typed as 1,300 g, instead of sizing a 1.3 g jar", () => {
+    render(<DilutionPanel {...P} portionPasteGrams="1.300" portionWaterGrams="900" />);
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/1\.300 g/);
+    expect(alert).toMatch(/thousands separator/i);
+  });
+
+  it("refuses a jar's water typed as 2,000 g", () => {
+    render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="2.000" />);
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
+    expect(alert).toMatch(/2\.000 g/);
+    expect(alert).toMatch(/thousands separator/i);
+  });
+});
+
+describe('a jar is weighed out of the pot the maker weighed', () => {
+  // The mode exists to report what actually exists, so the batch paste a jar is a share of has
+  // to be the pot on the scale when there is one — the same preference batch-scope gradual and
+  // ratio mode already apply. Sizing the share from the recipe's PREDICTION while the maker
+  // has weighed the pot reports a concentration for a jar nobody has.
+  const P = {
+    ...BASE, dilutionMode: 'gradual' as const, onDilutionModeChange: () => {},
+    dilutionScope: 'portion' as const, cookWaterGrams: 400, wholeBatchPasteGrams: 1600,
+    onGradualWaterChange: () => {}, onPortionPasteChange: () => {}, onPortionWaterChange: () => {},
+  };
+
+  it("takes the jar's share of the soap from the weighed pot, not the computed one", () => {
+    // The cook boiled 200 g off: a 1,600 g computed pot weighed 1,400 g. A 400 g jar is then
+    // 400/1400 of the batch's 1,200 g of soap = 342.86 g, in 600 g of jar → 57.14% soap.
+    // Off the computed pot the same jar reads 50.00% — seven points thinner than what is in it.
+    render(
+      <DilutionPanel {...P} measuredPasteGrams="1400" portionPasteGrams="400" portionWaterGrams="200" />,
+    );
+    expect(screen.getByText('600 g')).toBeTruthy();
+    expect(screen.getByText(/57\.14% soap/)).toBeTruthy();
+  });
+
+  it('judges "more paste than the batch holds" against the same weighed pot', () => {
+    // A cook that lost nothing: 1,800 g on the scale against a 1,600 g prediction. A 1,700 g
+    // jar really is in the pot, and refusing it quoted a bound the maker's own scale
+    // contradicts — "all of it weighs 1,600 g" beside a reading of 1,800.
+    render(
+      <DilutionPanel {...P} measuredPasteGrams="1800" portionPasteGrams="1700" portionWaterGrams="300" />,
+    );
+    expect(screen.queryByText(/more paste than the batch holds/i)).toBeNull();
+    expect(screen.getByText('2,000 g')).toBeTruthy();
+  });
+});
+
+describe('the density caveat needs a millilitre figure on screen', () => {
+  it('stays off in Custom amount + Gradual, where no volume is printed', () => {
+    // targetMl is App session state that survives a mode switch, so a jar sized in Target
+    // concentration mode leaves a live figure behind. Gradual correctly suppresses the whole
+    // target-derived grid — but the caveat explaining a gram→millilitre bridge kept keying on
+    // that stale amount, and printed beside no millilitre figure at all.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionMode="gradual"
+        onDilutionModeChange={() => {}}
+        dilutionScope="portion"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        onGradualWaterChange={() => {}}
+        onPortionPasteChange={() => {}}
+        onPortionWaterChange={() => {}}
+        targetMl="1200"
+        portionPasteGrams="400"
+        portionWaterGrams="900"
+      />,
+    );
+    expect(screen.queryByText(/Volume assumes/)).toBeNull();
+  });
+});
+
+describe("the undeclared-liquid hedge is not lost between two suppressions", () => {
+  // REGRESSION PIN. This clause is suppressed in Custom amount because the child says the
+  // same thing with the missing figures explained — but that child does not render in
+  // gradual mode. While portionState was still computed from a stale targetMl in gradual,
+  // pasteAlreadyThinner could be true and suppress this clause too, so an undeclared
+  // liquid went unmentioned on BOTH surfaces. The fix that resolved portionState only for
+  // portion + non-gradual repaired it silently; nothing pinned it until now.
+  const OVER = {
+    ...RESULT,
+    // targetExceedsPaste is the hedge's precondition: the target asks for less water than
+    // the cook already put in, judged from an ASSUMED water content.
+    targetExceedsPaste: true,
+  };
+
+  const HEDGE = /Can't tell whether .* is reachable/;
+
+  it('speaks in Custom amount + Gradual, where no child is there to say it', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={OVER}
+        dilutionMode="gradual"
+        onDilutionModeChange={() => {}}
+        dilutionScope="portion"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        unknownLiquidGrams={500}
+        targetMl="1000"
+        gradualWaterGrams=""
+        onGradualWaterChange={() => {}}
+        portionPasteGrams=""
+        portionWaterGrams=""
+        onPortionPasteChange={() => {}}
+        onPortionWaterChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(HEDGE)).toBeTruthy();
+  });
+
+  it('still lets the child own it in Custom amount + Target concentration', () => {
+    // The suppression is correct where the child actually renders — this is the arm that
+    // makes the test above a claim about gradual rather than about the hedge in general.
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilution={OVER}
+        dilutionMode="concentration"
+        onDilutionModeChange={() => {}}
+        dilutionScope="portion"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        unknownLiquidGrams={500}
+        targetMl="1000"
+      />,
+    );
+    // Whichever surface carries it, the maker is told. What must never happen is silence.
+    expect(screen.queryAllByText(HEDGE).length + screen.queryAllByText(/no declared water content/i).length)
+      .toBeGreaterThan(0);
   });
 });

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { LS_SOLUTION_DENSITY_G_PER_ML, lsFinishedVolumeMl, lsPartialDilution } from './ls-yield.js';
+import {
+  LS_SOLUTION_DENSITY_G_PER_ML,
+  lsFinishedVolumeMl,
+  lsPartialDilution,
+  lsPotAnhydrousShare,
+} from './ls-yield.js';
 
 describe('ls-yield', () => {
   it('finished volume = grams / density', () => {
@@ -42,6 +47,10 @@ describe('lsPartialDilution', () => {
     expect(r.solutionGrams).toBeCloseTo(2000, 0);
     expect(r.volumeMl).toBeCloseTo(1941.7, 0);
     expect(r.clamped).toBe(false);
+    // Whole-batch mode: the pot's own anhydrous IS the recipe's whole anhydrousGrams, and —
+    // unlike pasteGrams/waterGrams/solutionGrams just above — untouched by the half-volume
+    // fraction this test asked for.
+    expect(r.potAnhydrousGrams).toBe(1200);
   });
 
   it('clamps to the whole batch when more is asked for than exists', () => {
@@ -220,6 +229,29 @@ describe('lsPartialDilution with a remaining (already-drawn-down) paste measurem
     const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: predictedPasteGrams, measuredPasteIsRemaining: true }, 1200);
     expect(r).not.toBeNull();
   });
+
+  it("exposes the pot's own anhydrous share directly, independent of the requested volume", () => {
+    // Same pot as the very first test above: 1,437 g of remaining paste carries
+    // 1,437 × (1,000/1,600) ≈ 898 g of anhydrous soap. Unlike pasteGrams/waterGrams/
+    // solutionGrams, this field is not scaled by `fraction` — it is the pot's FULL
+    // anhydrous content, so two different requested volumes on the same pot must report
+    // the identical figure. A caller deriving a measured jar's OWN concentration (not a
+    // share of what the recipe's target wants from it) reads this rather than
+    // re-deriving `measured × anhydrousGrams / wholeBatchPasteGrams` itself.
+    const small = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
+      1200,
+    );
+    const large = lsPartialDilution(
+      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
+      2800,
+    );
+    expect(small).not.toBeNull();
+    expect(large).not.toBeNull();
+    if (!small || !large) return;
+    expect(small.potAnhydrousGrams).toBeCloseTo(898, 0);
+    expect(large.potAnhydrousGrams).toBeCloseTo(898, 0);
+  });
 });
 
 describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid solids)', () => {
@@ -326,5 +358,72 @@ describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid soli
     const atPredicted = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1600, measuredPasteIsRemaining: true }, 1000);
     expect(atPredicted).not.toBeNull();
     expect(atPredicted?.wholeBatchPasteGrams).toBe(predictedPasteGrams);
+  });
+});
+
+describe('lsPotAnhydrousShare — the soap in one weighed pot', () => {
+  // The batch above: 1,200 g of anhydrous soap in a 1,600 g pot of paste.
+  const BATCH = { anhydrousGrams: 1200, wholeBatchPasteGrams: 1600 };
+
+  it('is the pot’s proportional share, because the paste is homogeneous', () => {
+    // A quarter of the paste carries a quarter of the soap.
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 })).toBeCloseTo(300, 9);
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 1600 })).toBeCloseTo(1200, 9);
+  });
+
+  it('refuses a pot heavier than the batch’s own paste, and accepts the boundary', () => {
+    // Solids and the water already in the paste do not appear from nowhere; weighing out
+    // ALL of it is a legitimate share of 1.
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 1600.1 })).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 4000 })).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 1600 })).not.toBeNull();
+  });
+
+  it('refuses non-positive and non-finite figures rather than returning a number', () => {
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 0 })).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: -400 })).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: NaN })).toBeNull();
+    expect(lsPotAnhydrousShare({ anhydrousGrams: 0, wholeBatchPasteGrams: 1600, potPasteGrams: 400 })).toBeNull();
+    expect(lsPotAnhydrousShare({ anhydrousGrams: 1200, wholeBatchPasteGrams: 0, potPasteGrams: 400 })).toBeNull();
+  });
+
+  it('asks nothing about any target — the share is the same at every concentration', () => {
+    // THE POINT OF THE EXTRACTION. lsPartialDilution needs a target volume and refuses
+    // outright when the saved target implies a solution lighter than the pot; the jar's own
+    // recorded concentration has nothing to do with either, so it must not inherit them.
+    const share = lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 });
+    expect(share).toBeCloseTo(300, 9);
+    // The same pot, against a recipe whose target is so low-water that lsPartialDilution
+    // refuses it (solution 1,500 g < the 1,600 g pot).
+    const refused = lsPartialDilution(
+      {
+        anhydrousGrams: 1200,
+        totalWaterGrams: 300,
+        dilutionWaterGrams: 0,
+        solutionGrams: 1500,
+        wholeBatchPasteGrams: 1600,
+        measuredPasteGrams: 400,
+        measuredPasteIsRemaining: true,
+      },
+      1000,
+    );
+    expect(refused).toBeNull();
+    expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 })).toBeCloseTo(share as number, 9);
+  });
+
+  it('is the very arithmetic lsPartialDilution reports, not a second copy of it', () => {
+    // One derivation: potAnhydrousGrams comes back through this function, so a change to
+    // the ratio or its ceiling cannot move one caller without the other.
+    const r = lsPartialDilution(
+      {
+        anhydrousGrams: 1200, totalWaterGrams: 2800, dilutionWaterGrams: 2400, solutionGrams: 4000,
+        wholeBatchPasteGrams: 1600, measuredPasteGrams: 400, measuredPasteIsRemaining: true,
+      },
+      500,
+    );
+    expect(r?.potAnhydrousGrams).toBeCloseTo(
+      lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 }) as number,
+      9,
+    );
   });
 });

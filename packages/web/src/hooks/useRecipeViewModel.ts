@@ -748,6 +748,10 @@ export function useRecipeViewModel({
           // Same corrected paste the panel's and the sheet's water figures are derived
           // from, so what this prices is what the maker is actually told to pour.
           wholeBatchPasteGrams,
+          // And the same gradual record they read, which is what decides whether the paste
+          // ceiling was widened — so this prices the pot those two surfaces pour against
+          // rather than one chosen by a different rule.
+          gradualWaterGrams: settings.gradualWaterGrams,
         })
       : null;
   // The same mass under one name for every surface that quotes it — see

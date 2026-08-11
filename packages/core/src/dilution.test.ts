@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { calculateDilution } from './dilution.js';
+import { describe, expect, it, test } from 'vitest';
+import { calculateDilution, gradualDilutionFrom } from './dilution.js';
 
 describe('calculateDilution', () => {
   it('computes solution, water, dilution water, and glycerin', () => {
@@ -55,5 +55,51 @@ describe('glycerin purity & lye-excess awareness (deep-review)', () => {
     });
     // only 100/103 of the alkali saponifies
     expect(r?.glycerinGrams).toBeCloseTo(206 * (100 / 103) * (92.094 / (3 * 56.1056)), 1);
+  });
+});
+
+describe('gradualDilutionFrom', () => {
+  // A 1,041 g-anhydrous batch whose paste weighs 1,423 g (382 g cook water).
+  const base = { pasteGrams: 1423, anhydrousGrams: 1041 };
+
+  test('finished mass is exactly paste + water, and the concentration follows', () => {
+    const r = gradualDilutionFrom({ ...base, waterAddedGrams: 2000 })!;
+    expect(r.finishedGrams).toBe(3423);
+    expect(r.concentrationPercent).toBeCloseTo(30.4119, 4);
+  });
+
+  test('the written concentration is rounded to 2 dp — 1 dp drifts ~8 g, which is visible', () => {
+    const r = gradualDilutionFrom({ ...base, waterAddedGrams: 2000 })!;
+    expect(r.writeBackPercent).toBe(30.41);
+    expect(r.clamped).toBe(false);
+  });
+
+  test('round trip: calculateDilution on the written value recovers what was poured, under a gram', () => {
+    const r = gradualDilutionFrom({ ...base, waterAddedGrams: 2000 })!;
+    const d = calculateDilution({
+      anhydrousGrams: 1041, cookWaterGrams: 382, kohGrams: 191, naohGrams: 0,
+      soapConcentrationPercent: r.writeBackPercent,
+    })!;
+    expect(Math.abs(d.solutionGrams - r.finishedGrams)).toBeLessThan(1);
+  });
+
+  test('an extreme record clamps what is WRITTEN and says so, keeping the readout honest', () => {
+    // Almost no water: the true concentration exceeds 99%.
+    const r = gradualDilutionFrom({ pasteGrams: 1050, anhydrousGrams: 1041, waterAddedGrams: 0 })!;
+    expect(r.concentrationPercent).toBeGreaterThan(99); // readout tells the truth
+    expect(r.writeBackPercent).toBe(99);                // written value is clamped
+    expect(r.clamped).toBe(true);
+  });
+
+  test('junk and blanks yield null rather than a bogus concentration', () => {
+    expect(gradualDilutionFrom({ ...base, waterAddedGrams: NaN })).toBeNull();
+    expect(gradualDilutionFrom({ ...base, waterAddedGrams: -1 })).toBeNull();
+    expect(gradualDilutionFrom({ pasteGrams: 0, anhydrousGrams: 1041, waterAddedGrams: 100 })).toBeNull();
+    expect(gradualDilutionFrom({ pasteGrams: 1423, anhydrousGrams: 0, waterAddedGrams: 100 })).toBeNull();
+  });
+
+  test('zero water is a legitimate record — the pot before any dilution', () => {
+    const r = gradualDilutionFrom({ ...base, waterAddedGrams: 0 })!;
+    expect(r.finishedGrams).toBe(1423);
   });
 });

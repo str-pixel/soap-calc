@@ -28,6 +28,14 @@ type PreservativeSnippetProps = {
    * `finishedGrams` because it is still the answer when that is null. Defaults to 'batch',
    * matching DilutionPanel's own scope default. */
   basisScope?: 'batch' | 'portion';
+  /** True when Custom amount is being RECORDED rather than asked for — Gradual dilution,
+   * where the jar's mass comes from the paste the maker weighed out and the water they
+   * poured into it, and the "Amount to make (ml)" input is not on the panel at all. It
+   * changes one thing: what the empty state asks for. Asking for an amount to make in that
+   * mode names a control the maker cannot see, which is how the empty state read for every
+   * recorded jar (the field is blank in gradual mode by design). Ignored in batch scope,
+   * where the basis is the whole batch either way. */
+  portionIsRecorded?: boolean;
   /** The app-wide unit (BatchBasics' selector) — used as-is, like every bench readout. */
   weightUnit: WeightUnit;
   /** Which preservative is being sized. `''` is the CUSTOM sentinel — the same idiom as
@@ -50,7 +58,11 @@ type PreservativeSnippetProps = {
 };
 
 /**
- * The Preservative snippet — a collapsed <details> below the Dilution panel, LS only.
+ * The Preservative snippet — a collapsed <details> INSIDE the Dilution panel, LS only. App
+ * renders it and hands it to that panel's `preservativeSlot`, so the dose sits with the
+ * finished mass it is a percentage of; see the slot's own comment for why that adjacency is
+ * structural rather than a layout convention. (It sat BELOW the panel until d83e7fe, and
+ * this line went on saying so.)
  *
  * A recipe SETTING, not a recipe ingredient: the pick, the custom name and the dose are
  * saved with the recipe, exported with it and printed on the batch sheet — but no
@@ -65,6 +77,7 @@ type PreservativeSnippetProps = {
 export function PreservativeSnippet({
   finishedGrams,
   basisScope = 'batch',
+  portionIsRecorded = false,
   weightUnit,
   preservativeId,
   onPreservativeIdChange,
@@ -244,11 +257,21 @@ export function PreservativeSnippet({
       ) : basisScope === 'portion' ? (
         /* Custom amount with no portion to dose. The state-specific ask, not the batch's:
            the maker is on a screen with no batch figures on it, and the one thing that
-           sizes a dose here is the amount they are making. */
-        <p className="results-hint">
-          Enter an Amount to make above — with Custom amount chosen, the dose is a % of the
-          portion you are making now, not of the whole batch.
-        </p>
+           sizes a dose here is the jar they are making — which is a target volume they ask
+           for, or, in Gradual, two figures they record. Naming the wrong one of those sends
+           the maker looking for an input the panel above does not have. */
+        portionIsRecorded ? (
+          <p className="results-hint">
+            Enter the paste weighed out and the water added so far above — with Custom amount
+            and Gradual chosen, the dose is a % of the jar you are recording, not of the
+            whole batch.
+          </p>
+        ) : (
+          <p className="results-hint">
+            Enter an Amount to make above — with Custom amount chosen, the dose is a % of the
+            portion you are making now, not of the whole batch.
+          </p>
+        )
       ) : (
         <p className="results-hint">
           Enter oils and a dilution target to size a preservative dose — the % is of the

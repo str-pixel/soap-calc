@@ -150,8 +150,9 @@ describe('computeBottledSolutionGrams', () => {
 
   it('a measured pot counts the liquid\'s solids once too — the maker weighed them', () => {
     // The measured twin of the case above, and the one that used to disagree with it.
-    // correctedDilutionWaterGrams short-circuits to solutionGrams − measured on this path
-    // (rightly: the measurement IS the pot, whatever it is made of), so the base is exactly
+    // correctedDilutionWaterGrams measures its pour against the reading on this path
+    // (rightly: the measurement IS the pot, whatever it is made of), so for any reading the
+    // target can still take water to reach, the base is exactly
     // solutionGrams — with the 64 g of milk solids already inside it. Adding them again
     // through the extras term priced the bottle 64 g heavy against an identical batch with
     // the field left blank.
@@ -183,6 +184,85 @@ describe('computeBottledSolutionGrams', () => {
         measuredPasteGrams: String(wholeBatchPasteGrams),
       }),
     ).toBeCloseTo(dilution.solutionGrams + 50 + 64, 6);
+  });
+
+  it('prices the pot on the scale even when it is past the target’s own solution', () => {
+    // THE SPLIT. This base used to be chosen by measuredPasteIsValidFor, whose ceiling asks
+    // whether the reading is heavier than the solution the SAVED target dilutes to. In
+    // gradual mode that target is what the panel's own record just wrote: a weighed pot with
+    // no water recorded lands solutionGrams a hair UNDER the reading roughly half the time,
+    // because the write-back rounds to 2 dp. There this fell back to the recipe's COMPUTED
+    // pot — so the panel counted from the 1,405 g on the scale while the finished-product
+    // figure, the finished volume and the preservative dose all came off 1,600 g.
+    //
+    // 1,200 g of anhydrous soap; the record writes round2(120000/1405) = 85.41%, and
+    // 1,200 / 0.8541 is 1,404.99 g — under the reading.
+    //
+    // `gradualWaterGrams: '0'` IS that record — the pot before any water at all, which is
+    // where gradual's own record starts and what wrote this target. It is also what licenses
+    // the widened ceiling the base is chosen by: without a record the reading is judged
+    // against solutionGrams exactly, because a target the maker typed was not written from
+    // any pot. See correctedPotGramsFor.
+    const at8541: DilutionResult = {
+      anhydrousGrams: 1200,
+      solutionGrams: 1200 / 0.8541,
+      totalWaterGrams: 1200 / 0.8541 - 1200,
+      dilutionWaterGrams: 0,
+      glycerinGrams: 110,
+      soapConcentrationPercent: 85.41,
+      targetExceedsPaste: true,
+    };
+    expect(
+      computeBottledSolutionGrams({
+        dilution: at8541,
+        cookWaterGrams: 400,
+        extrasGrams: 0,
+        splitLiquidPasteWaterGrams: 0,
+        measuredPasteGrams: '1405',
+        wholeBatchPasteGrams: 1600,
+        gradualWaterGrams: '0',
+      }),
+    ).toBeCloseTo(1405, 6);
+    // …and the extras still ride on top of the pot that was weighed, not on a second one.
+    expect(
+      computeBottledSolutionGrams({
+        dilution: at8541,
+        cookWaterGrams: 400,
+        extrasGrams: 50,
+        splitLiquidPasteWaterGrams: 0,
+        measuredPasteGrams: '1405',
+        wholeBatchPasteGrams: 1600,
+        gradualWaterGrams: '0',
+      }),
+    ).toBeCloseTo(1455, 6);
+  });
+
+  it('prices the recipe’s own pot for the same reading with no record behind the target', () => {
+    // The other half of the rule, at the surface the dose is taken from. Same reading, same
+    // 85.41% — but nothing recorded, so the target is one the maker typed and the reading is
+    // simply past the solution it dilutes to. The bottled base falls back to the recipe's own
+    // anhydrous + cook water + the water the target still calls for, exactly as it did before
+    // the widening existed, and the panel's exceeds-solution alert is on screen saying why.
+    const at8541: DilutionResult = {
+      anhydrousGrams: 1200,
+      solutionGrams: 1200 / 0.8541,
+      totalWaterGrams: 1200 / 0.8541 - 1200,
+      dilutionWaterGrams: 0,
+      glycerinGrams: 110,
+      soapConcentrationPercent: 85.41,
+      targetExceedsPaste: true,
+    };
+    expect(
+      computeBottledSolutionGrams({
+        dilution: at8541,
+        cookWaterGrams: 400,
+        extrasGrams: 0,
+        splitLiquidPasteWaterGrams: 0,
+        measuredPasteGrams: '1405',
+        wholeBatchPasteGrams: 1600,
+      }),
+      // anhydrous + cook water, with the water term clamped to 0 against a 1,600 g pot.
+    ).toBeCloseTo(1600, 6);
   });
 
   it('a REMAINING-declared measurement does not feed the bottled base — a remainder is not the batch', () => {
