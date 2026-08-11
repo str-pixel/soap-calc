@@ -753,19 +753,26 @@ describe('correctedPotGramsFor — one pot for the pour and for what gets bottle
     // round2(120000/1405) = 85.41%, and 1,200 / 0.8541 is 1,404.9877 g — a hair UNDER the
     // reading. measuredPasteIsValidFor refuses it there, which is how the panel came to count
     // from 1,405 g while the bottled figure fell back to the computed 1,600 g pot.
+    //
+    // '0' is that record — the pot before any water at all (LS:1531), which is what wrote
+    // 85.41% — and it is the argument that licenses the widening. Stated rather than assumed:
+    // the widened ceiling belongs to a target a record produced, and this scenario is exactly
+    // one of those.
     const at8541: DilutionResult = {
       ...DILUTION,
       solutionGrams: 1200 / 0.8541,
       soapConcentrationPercent: 85.41,
     };
     expect(measuredPasteIsValidFor('1405', at8541, false, 1600, 400)).toBe(false);
-    expect(correctedPotGramsFor(at8541, '1405', false, 1600, 400)).toEqual({
+    expect(correctedPotGramsFor(at8541, '1405', false, 1600, 400, '0')).toEqual({
       grams: 1405,
       fromMeasurement: true,
     });
     // …and the recipe's own saved target answers identically for the same pot, which is the
-    // agreement the whole feature turns on.
+    // agreement the whole feature turns on. Under solutionGrams the widening never comes into
+    // it, so this arm holds with or without the record.
     const at30 = { ...DILUTION, solutionGrams: 4000, soapConcentrationPercent: 30 };
+    expect(correctedPotGramsFor(at30, '1405', false, 1600, 400, '0')?.grams).toBe(1405);
     expect(correctedPotGramsFor(at30, '1405', false, 1600, 400)?.grams).toBe(1405);
   });
 
@@ -774,14 +781,59 @@ describe('correctedPotGramsFor — one pot for the pour and for what gets bottle
     // the write-back's 2 dp rounding could account for at most 4,000 x 0.005/30 = 0.67 g.
     // Every target-derived figure must go on ignoring it — the panel's own alert tells the
     // maker to subtract the empty pot — so this falls back to the recipe's computed pot.
+    // With a record and without: 500 g is past the ceiling either way.
+    expect(correctedPotGramsFor(DILUTION, '4500', false, 1600, 400, '0')).toEqual({
+      grams: 1600,
+      fromMeasurement: false,
+    });
     expect(correctedPotGramsFor(DILUTION, '4500', false, 1600, 400)).toEqual({
       grams: 1600,
       fromMeasurement: false,
     });
     // The bound, at both edges: 4,000.6 g is inside the rounding window, 4,000.8 g is not.
     // (Neither is typable at a scale's precision — this is the boundary, not a use case.)
-    expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400)?.fromMeasurement).toBe(true);
-    expect(correctedPotGramsFor(DILUTION, '4000.8', false, 1600, 400)?.fromMeasurement).toBe(false);
+    expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400, '0')?.fromMeasurement).toBe(
+      true,
+    );
+    expect(correctedPotGramsFor(DILUTION, '4000.8', false, 1600, 400, '0')?.fromMeasurement).toBe(
+      false,
+    );
+  });
+
+  it('widens the ceiling only for a recipe that carries a gradual record', () => {
+    // THE LICENCE FOR THE WIDENING IS THE RECORD, and nothing else. Everything the bound
+    // argues is about a target the app WROTE from a pot; where the maker typed 30%
+    // themselves, or a ratio produced it, a reading past solutionGrams is the app's own named
+    // mistake and the pre-existing ceiling stands. Applied unconditionally it reached the
+    // printed batch sheet, where a reading inside the band clamped "Dilution water to add" to
+    // "0 g" with no note beside it — measuredPasteIsValidFor still refused the reading, so the
+    // measured-paste note stayed off, and the already-more-dilute note keys on the computed
+    // pot, which is under the solution. See BatchSheet.test's own pins.
+    for (const noRecord of [undefined, '', '   ', 'abc', '-100']) {
+      expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400, noRecord)).toEqual({
+        grams: 1600,
+        fromMeasurement: false,
+      });
+    }
+    // A 0 g record is a record — the pot before any water is where gradual's own record
+    // starts — so it licenses the widening exactly as a poured figure does.
+    for (const record of ['0', '0.0', ' 250 ']) {
+      expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400, record)).toEqual({
+        grams: 4000.6,
+        fromMeasurement: true,
+      });
+    }
+  });
+
+  it('is identical with and without a record for every reading under the solution', () => {
+    // The band is the ONLY place the record can change an answer: at or below solutionGrams
+    // both ceilings accept, above the widened bound both refuse. So concentration and ratio
+    // mode are restored byte-for-byte, and gradual keeps what it had.
+    for (const raw of ['1200', '1480', '2500', '3999.5', '4000', '4500', '9000']) {
+      expect(correctedPotGramsFor(DILUTION, raw, false, 1600, 400)).toEqual(
+        correctedPotGramsFor(DILUTION, raw, false, 1600, 400, '0'),
+      );
+    }
   });
 });
 
@@ -790,20 +842,35 @@ describe('correctedDilutionWaterGrams past the target’s own solution', () => {
     // The gradual state: the pot IS the finished soap, so there is nothing left to add. This
     // used to fall through to the corrected-pot branch, which answers 0 here as well
     // (1,404.99 − 1,600 clamps) — the figure only moves where the computed pot is LIGHTER
-    // than the solution, and it moves toward the pot the maker weighed.
+    // than the solution, and it moves toward the pot the maker weighed. '0' is the record
+    // that wrote 85.41% and licenses the widening; the second case is the one the record
+    // actually moves, and it needs it.
     const at8541: DilutionResult = {
       ...DILUTION,
       solutionGrams: 1200 / 0.8541,
       soapConcentrationPercent: 85.41,
     };
-    expect(correctedDilutionWaterGrams(at8541, '1405', false, 1600, 400)).toBe(0);
-    expect(correctedDilutionWaterGrams(at8541, '1405', false, 1300, 400)).toBe(0);
+    expect(correctedDilutionWaterGrams(at8541, '1405', false, 1600, 400, '0')).toBe(0);
+    expect(correctedDilutionWaterGrams(at8541, '1405', false, 1300, 400, '0')).toBe(0);
   });
 
   it('is unchanged for a reading past the widened ceiling — the recipe answers, not the scale', () => {
     // 4,000 − 1,600: the recipe's own computed pot, exactly as before. A crockpot-sized
-    // reading must not be able to zero the pour.
+    // reading must not be able to zero the pour, record or no record.
+    expect(correctedDilutionWaterGrams(DILUTION, '4500', false, 1600, 400, '0')).toBe(2400);
     expect(correctedDilutionWaterGrams(DILUTION, '4500', false, 1600, 400)).toBe(2400);
+  });
+
+  it('pours the recipe’s own figure inside the band when no record widened the target', () => {
+    // The batch-sheet defect at its source: 4,000.6 g is inside the widened band, so with the
+    // widening unconditional this clamped to 0 — a bare pour figure on the page carried to the
+    // bench, with every note that could have explained it keyed on the other gate. In
+    // concentration and ratio mode the target was not written from a pot, so the reading is
+    // simply over it and the recipe's computed pot answers: 4,000 − 1,600.
+    expect(correctedDilutionWaterGrams(DILUTION, '4000.6', false, 1600, 400)).toBe(2400);
+    // …and with the record, which is the state the sheet prints its two record rows for, the
+    // clamp is right and stays.
+    expect(correctedDilutionWaterGrams(DILUTION, '4000.6', false, 1600, 400, '0')).toBe(0);
   });
 
   it('is unchanged for every reading the target can still take water to reach', () => {
@@ -836,7 +903,10 @@ describe('the widened ceiling is exact at the boundary it attains', () => {
   })!;
 
   it("accepts the reading that wrote this very target", () => {
-    const pot = correctedPotGramsFor(tie, '224', false, 224, 0);
+    // '0' is the record that wrote it: 224 g of pot and no water at all. The widening is
+    // licensed by that record, so the boundary case is stated with it in hand — which is the
+    // only state the app can reach it in.
+    const pot = correctedPotGramsFor(tie, '224', false, 224, 0, '0');
     expect(pot).not.toBeNull();
     expect(pot!.fromMeasurement).toBe(true);
     expect(pot!.grams).toBe(224);
@@ -845,7 +915,7 @@ describe('the widened ceiling is exact at the boundary it attains', () => {
   it('still refuses a reading genuinely past the widened bound', () => {
     // 224 g is the heaviest pot that can write 46.88%; 260 g is well past it and must fall
     // back to the computed pot rather than being absorbed by a loose tolerance.
-    const pot = correctedPotGramsFor(tie, '260', false, 224, 0);
+    const pot = correctedPotGramsFor(tie, '260', false, 224, 0, '0');
     expect(pot!.fromMeasurement).toBe(false);
   });
 });

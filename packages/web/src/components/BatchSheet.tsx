@@ -30,6 +30,7 @@ import {
   correctedDilutionWaterGrams,
   measuredPasteDescribesPotFor,
   measuredPasteIsValidFor,
+  parseGradualWaterRecordGrams,
   parseMeasuredPasteGrams,
 } from '../lib/measuredPaste';
 import { bestKnownPasteGramsFor } from './DilutionPanel';
@@ -116,8 +117,9 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // printed water FIGURE has its own, slightly wider gate inside correctedDilutionWaterGrams
   // (lib/measuredPaste's correctedPotGramsFor), so a gradual record whose own 2 dp write-back
   // left the solution a hair under the pot is not refused by a target it produced; the two
-  // gates differ only inside that rounding, which is below the resolution of anything this
-  // note says.
+  // gates differ only inside that rounding, and only on a recipe carrying a record — which is
+  // below the resolution of anything this note says, and is a state where the record rows
+  // below speak for the figure anyway.
   //
   // The corrected basis and the cook water go into the gate too, not only into the water
   // figure below: the floor under a reading counts an alternative liquid's solids, and
@@ -154,6 +156,13 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         MEASURED_PASTE_IS_REMAINING,
         data.wholeBatchPasteGrams,
         data.cookWaterGrams,
+        // The gradual record, which is what licenses the widened paste ceiling inside that
+        // helper — and the reason this sheet can print a "0 g" pour without a note beside it
+        // and still be honest: a record is exactly the state in which the two rows below
+        // ("Water actually added", "That record makes …") are on the page to say where the
+        // water went. Without one the widening is off and the pour is the recipe's own
+        // figure, which the notes further down already know how to explain.
+        settings.gradualWaterGrams,
       )
     : 0;
   // The sheet is the page taken to the bench, so it must carry what actually gets
@@ -192,21 +201,17 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // negative, which is not a pour) must also print nothing rather than a bare row with an
   // empty or impossible figure.
   //
-  // ZERO IS A RECORD, not a blank, and the gate says `>= 0` for that reason alone: the pot
-  // before any water at all is Gradual Dilution's own starting entry (LS:1531), and the
-  // panel's own copy says so in as many words — "0 g counts, and is where the record starts"
-  // (DilutionPanel's batch ask). While this read `> 0` the page taken to the bench dropped
-  // both rows for exactly that record, so a maker who had recorded the starting weight found
-  // the screen and the paper disagreeing about whether a record existed. `.trim() !== ''` is
-  // what keeps a blank field out — Number('') is 0, so the parse alone cannot tell them
-  // apart, which is the same "empty ≠ zero" rule the panel's own gradualWaterNum applies.
-  const gradualWaterRecordedNum = Number(settings.gradualWaterGrams);
+  // ZERO IS A RECORD, not a blank (the shared parser's `>= 0`, and its trim before the parse
+  // — see parseGradualWaterRecordGrams): the pot before any water at all is Gradual
+  // Dilution's own starting entry (LS:1531), and the panel's own copy says so in as many
+  // words — "0 g counts, and is where the record starts" (DilutionPanel's batch ask). While
+  // this read `> 0` the page taken to the bench dropped both rows for exactly that record, so
+  // a maker who had recorded the starting weight found the screen and the paper disagreeing
+  // about whether a record existed. That is why the predicate is now shared rather than
+  // written out here: the same answer decides these two rows, the panel's own derivation, and
+  // whether the paste ceiling behind "Dilution water to add" was widened at all.
   const gradualWaterRecordedGrams =
-    settings.gradualWaterGrams.trim() !== '' &&
-    Number.isFinite(gradualWaterRecordedNum) &&
-    gradualWaterRecordedNum >= 0
-      ? gradualWaterRecordedNum
-      : null;
+    parseGradualWaterRecordGrams(settings.gradualWaterGrams) ?? null;
   // What that record MADE, which is the other half of the line spec §4 asks this sheet to
   // carry: paste + water, from the same two figures the panel adds up, so the page taken to
   // the bench states the mass that exists rather than only the water that went into it.

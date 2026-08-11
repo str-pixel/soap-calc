@@ -169,6 +169,30 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
 }
 
 /**
+ * Parses `settings.gradualWaterGrams` — the water the maker recorded pouring — into a finite,
+ * NON-NEGATIVE gram figure, or undefined when there is no record. The one place the app
+ * decides whether a gradual record EXISTS, which three surfaces now ask: the printed sheet's
+ * two record rows, DilutionPanel's own derivation, and {@link correctedPotGramsFor}'s decision
+ * about whether the widened ceiling has been earned. Three copies of the same predicate is
+ * exactly how the panel and the sheet came to disagree about whether a record existed once
+ * before (the `> 0` gate that dropped a 0 g record from the paper alone).
+ *
+ * `>= 0`, unlike {@link parseMeasuredPasteGrams}'s `> 0`: ZERO IS A RECORD. The pot before any
+ * water at all is Gradual Dilution's own starting entry (LS:1531) and it writes a target like
+ * any other. Blank is not zero — `Number('')` is 0, so the trim has to answer first, or an
+ * untouched field would read as a record of nothing poured.
+ */
+export function parseGradualWaterRecordGrams(
+  gradualWaterGrams: string | undefined,
+): number | undefined {
+  if (gradualWaterGrams === undefined) return undefined;
+  const trimmed = gradualWaterGrams.trim();
+  if (trimmed === '') return undefined;
+  const n = Number(trimmed);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
+/**
  * The TARGET-INDEPENDENT half of {@link measuredPasteIsValidFor}: everything the reading
  * says about the POT, and nothing about any target. A reading that clears this is a
  * physically possible whole-batch paste weight — it parses to a positive number, it is not
@@ -196,10 +220,11 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * still applies it exactly for the portion and for the copy that speaks in the maker's voice
  * about a reading; {@link measuredPasteRejectionFor} still reports it; and the batch pour,
  * the printed sheet's pour and the bottled mass apply it through
- * {@link correctedPotGramsFor}, which widens it by exactly the gradual write-back's rounding
- * and no further — so a target a record itself produced cannot refuse that record, while a
- * reading past the target for any other reason is still ignored. Only the choice of WHICH POT
- * the derived modes count from drops it altogether, and that is what is decided here.
+ * {@link correctedPotGramsFor}, which — on a recipe carrying a gradual record, and only there
+ * — widens it by exactly that write-back's rounding and no further, so a target a record
+ * itself produced cannot refuse that record, while a reading past the target for any other
+ * reason is still ignored. Only the choice of WHICH POT the derived modes count from drops it
+ * altogether, and that is what is decided here.
  */
 export function measuredPasteDescribesPotFor(
   measuredPasteGrams: string | undefined,
@@ -229,8 +254,9 @@ export function measuredPasteDescribesPotFor(
  * two other questions: one choosing which pot the derived modes count from, with no target in
  * play, wants {@link measuredPasteDescribesPotFor} above (see it for the loop the ceiling
  * closed when it decided that), and one measuring a pour or a bottled mass against the pot
- * wants {@link correctedPotGramsFor}, whose ceiling is this one widened by the gradual
- * write-back's own rounding.
+ * wants {@link correctedPotGramsFor}, whose ceiling is this one — widened by the gradual
+ * write-back's own rounding where, and only where, a gradual record exists to have written
+ * the target.
  *
  * `isRemaining` gates this for the BATCH row specifically: a reading declared as what's
  * LEFT after earlier dilutions describes a smaller pot, not the whole batch, so it can
@@ -578,14 +604,51 @@ const GRADUAL_WRITE_BACK_ROUNDING = 0.005;
  * bound, closed-form and tight — not a tolerance chosen to make a case pass. It is
  * ATTAINED, so the comparison sits exactly on the boundary and has to be exact there.
  *
+ * ONLY WHERE A GRADUAL RECORD EXISTS, and that condition is the whole of the widening's
+ * licence. Everything above is an argument about a target GRADUAL wrote from a pot with a
+ * recorded pour; in concentration mode the maker typed the target themselves, so a reading
+ * past `solutionGrams` there is what it has always been — the app's own named mistake, the
+ * crockpot weighed with the paste still in it — and the pre-existing comparison stands
+ * unchanged. Ratio mode writes a target from the pot too, and does not need the widening
+ * either: its water is `paste × ratio` with a strictly positive ratio, so its solution clears
+ * the reading by that whole term rather than by a rounding. (Which is why the write-back loop
+ * only ever showed itself in gradual, whose own first record is the pot before any water at
+ * all — see {@link measuredPasteDescribesPotFor}.)
+ *
+ * Applied in every mode, the widening cost the printed sheet its
+ * voice: inside the band (0.68 g at 30%, 6.1 g at 10%) the pot became the reading, so
+ * "Dilution water to add" clamped to "0 g", while every note that could have explained it
+ * keys on the other gate — {@link measuredPasteIsValidFor}, which still refused the reading,
+ * or the computed pot, which is under the solution. The page carried to the bench printed a
+ * bare zero. With a record in hand that zero always has an account beside it: the sheet's own
+ * "Water actually added" and "That record makes …" rows, which print off this same record.
+ *
+ * The signal is `settings.gradualWaterGrams` — RECIPE state, saved with the file and reaching
+ * every caller including the sheet — and never the session-only `dilutionMode`, which the
+ * sheet cannot see and a reload discards. It is asked through
+ * {@link parseGradualWaterRecordGrams}, the same predicate the panel and the sheet use to
+ * decide a record exists, so the widening cannot apply to a record no surface is showing.
+ * The bound is independent of HOW MUCH water was recorded — see {@link correctedPotGramsFor}
+ * for the proof, which holds for any W — so only the record's existence is read here.
+ *
  * Falls back to `solutionGrams` for a target at or below the rounding itself, where the
  * widened bound is meaningless (calculateDilution accepts any percent in (0, 100); the UI
  * never types below 1).
  */
-function measuredCouldHaveWrittenTarget(measured: number, dilution: DilutionResult): boolean {
+function measuredCouldHaveWrittenTarget(
+  measured: number,
+  dilution: DilutionResult,
+  gradualWaterGrams: string | undefined,
+): boolean {
+  // measurementExceedsSolution, not a hand-written `<=`, in BOTH fall-back arms: this is the
+  // pre-existing ceiling itself, the one measuredPasteIsValidFor applies, so the two gates
+  // agree byte-for-byte wherever the widening is not in force rather than by coincidence.
+  if (parseGradualWaterRecordGrams(gradualWaterGrams) === undefined) {
+    return !measurementExceedsSolution(measured, dilution);
+  }
   const p = dilution.soapConcentrationPercent;
   if (!Number.isFinite(p) || p <= GRADUAL_WRITE_BACK_ROUNDING) {
-    return measured <= dilution.solutionGrams;
+    return !measurementExceedsSolution(measured, dilution);
   }
   // DIVISION-FREE, and compared against 100·anhydrous rather than solutionGrams·p. Both
   // matter, because this bound is ATTAINED rather than approached: equality holds exactly
@@ -607,7 +670,8 @@ function measuredCouldHaveWrittenTarget(measured: number, dilution: DilutionResu
  * computeBottledSolutionGrams' base.
  *
  * It is {@link measuredPasteDescribesPotFor}'s three pot rules, plus a ceiling that is
- * `solutionGrams` WIDENED by {@link measuredCouldHaveWrittenTarget} — and that widening is the
+ * `solutionGrams` widened by {@link measuredCouldHaveWrittenTarget} WHERE A GRADUAL RECORD
+ * EXISTS and left exactly as it was everywhere else — and that widening is the
  * whole of this function's reason to exist. {@link measuredPasteIsValidFor} compares the
  * reading against `solutionGrams` exactly, and in gradual mode `solutionGrams` is anhydrous ÷
  * the percent the panel's own record just wrote: with no water recorded the pot IS the
@@ -639,6 +703,28 @@ function measuredCouldHaveWrittenTarget(measured: number, dilution: DilutionResu
  * their own account on screen: the write-back has not fired yet (DilutionPanel's "Not applied
  * yet" clause) or the [1, 99] clamp moved what it wrote (that mode's clamp alert).
  *
+ * `gradualWaterGrams` — `settings.gradualWaterGrams`, the water the maker recorded — is what
+ * licenses that widening, and without a record the ceiling is `measuredPasteIsValidFor`'s
+ * exactly. See {@link measuredCouldHaveWrittenTarget} for why the argument does not travel to
+ * a target the maker typed, and for the bare "0 g" it printed on the batch sheet while it did.
+ * Omitting the parameter is therefore the pre-widening behaviour, which is what every caller
+ * with no record to offer wants; the three app call sites — DilutionPanel's batch row, the
+ * printed BatchSheet's, and computeBottledSolutionGrams (from the view model) — all pass the
+ * recipe's own field, so the pot is chosen once for the pour, the paper and the dose.
+ *
+ * A CROCKPOT MIS-READING IS ABSORBED IN GRADUAL MODE, BY DESIGN, and it is worth saying so
+ * where a reader would otherwise assume this ceiling is a defence against it in every mode. A
+ * 4,500 g reading of a loaded crockpot with 0 g of water recorded writes its OWN target
+ * (round2(100·anhydrous/4,500)) — so `solutionGrams` becomes 4,500 g, the reading sits inside
+ * this ceiling honestly, and the pot, the bottle and the preservative dose are all taken
+ * against 4,500 g with no alert anywhere (DilutionPanel suppresses the exceeds-solution
+ * paragraph in gradual mode, because there the target is that mode's own output). That is
+ * inherent to a mode whose basis must be target-independent — the alternative is the render
+ * loop {@link measuredPasteDescribesPotFor} documents — and not something this ceiling can
+ * recover: with the target derived from the reading, no target-based rule can contradict it.
+ * The rules that still bite in gradual mode are the pot's own (the solids floor and the
+ * precision fingerprint), which is why the reading is judged by them there.
+ *
  * `fromMeasurement` is not a convenience: computeBottledSolutionGrams has to know whether
  * the pot it is pricing is the one the MAKER weighed — a weighed pot already contains an
  * alternative liquid's solids, an unmeasured base built from anhydrous + cook water does
@@ -660,13 +746,14 @@ export function correctedPotGramsFor(
   isRemaining = false,
   wholeBatchPasteGrams?: number | null,
   cookWaterGrams?: number | null,
+  gradualWaterGrams?: string,
 ): { grams: number; fromMeasurement: boolean } | null {
   const measured = parseMeasuredPasteGrams(measuredPasteGrams);
   if (
     !isRemaining &&
     measured !== undefined &&
     measuredPasteDescribesPotFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams) &&
-    measuredCouldHaveWrittenTarget(measured, dilution)
+    measuredCouldHaveWrittenTarget(measured, dilution, gradualWaterGrams)
   ) {
     return { grams: measured, fromMeasurement: true };
   }
@@ -740,12 +827,15 @@ export function correctedPotGramsFor(
  * the reading against solutionGrams exactly, and in gradual mode solutionGrams is the panel's
  * own write-back rounded to 2 dp, so it lands under the reading about half the time. The pot
  * is chosen by {@link correctedPotGramsFor} instead, whose ceiling is solutionGrams widened by
- * exactly that rounding: see it for the bound, the proof that it is tight, and the split it
- * closed downstream in computeBottledSolutionGrams. The figure here is unchanged for every
- * reading either gate accepts, and for every reading past the widened ceiling (still the
- * corrected pot, still the recipe's own answer to a crockpot-sized mis-reading). It moves
- * only inside the rounding window, where it becomes 0 rather than a pour measured against a
- * pot the maker's own scale contradicts.
+ * exactly that rounding WHEREVER A GRADUAL RECORD EXISTS: see it for the bound, the proof that
+ * it is tight, and the split it closed downstream in computeBottledSolutionGrams. The figure
+ * here is unchanged for every reading either gate accepts, and for every reading past the
+ * widened ceiling (still the corrected pot, still the recipe's own answer to a crockpot-sized
+ * mis-reading). It moves only inside the rounding window, and only for a recipe carrying a
+ * record — where it becomes 0 rather than a pour measured against a pot the maker's own scale
+ * contradicts, and where the sheet's "Water actually added" / "That record makes …" rows are
+ * on the page to account for that 0. With no record the widening is not in force at all, so
+ * concentration and ratio mode pour exactly what they poured before it existed.
  *
  * `isRemaining` refuses the reading in {@link correctedPotGramsFor}, so this row falls back to
  * the corrected pot for one. Both UI callers pass {@link MEASURED_PASTE_IS_REMAINING}, so that
@@ -758,17 +848,20 @@ export function correctedDilutionWaterGrams(
   isRemaining = false,
   wholeBatchPasteGrams?: number | null,
   cookWaterGrams?: number | null,
+  gradualWaterGrams?: string,
 ): number {
   // wholeBatchPasteGrams/cookWaterGrams are forwarded into the pot gate, not just used by the
   // correction below it: the floor a reading is judged against has to be the same one the
   // rejection alert names, or this row would pour from a reading the panel is refusing one
-  // paragraph above.
+  // paragraph above. gradualWaterGrams rides along for the same kind of reason: it is what
+  // decides whether the ceiling that pot was judged against was widened at all.
   const pot = correctedPotGramsFor(
     dilution,
     measuredPasteGrams,
     isRemaining,
     wholeBatchPasteGrams,
     cookWaterGrams,
+    gradualWaterGrams,
   );
   if (pot === null) return dilution.dilutionWaterGrams;
   return Math.max(0, dilution.solutionGrams - pot.grams);

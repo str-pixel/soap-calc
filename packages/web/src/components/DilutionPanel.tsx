@@ -18,6 +18,7 @@ import {
   measuredPasteDescribesPotFor,
   measuredPasteIsValidFor,
   measuredPasteRejectionFor,
+  parseGradualWaterRecordGrams,
   parseMeasuredPasteGrams,
 } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
@@ -357,8 +358,9 @@ export function DilutionPanel({
   // TWO OTHER QUESTIONS have their own gates, and neither is this one. Which POT the derived
   // modes count from is measuredPasteDescribesPot just below. Which pot the batch POUR and
   // the bottled mass are measured against is lib/measuredPaste's correctedPotGramsFor — this
-  // ceiling widened by exactly the gradual write-back's own rounding, so a target this record
-  // itself produced cannot refuse the record; see that function.
+  // ceiling widened by exactly the gradual write-back's own rounding on a recipe that carries
+  // a record, so a target this record itself produced cannot refuse the record, and this
+  // ceiling unchanged on one that does not; see that function.
   const measuredPasteValid =
     dilution !== null &&
     measuredPasteIsValidFor(
@@ -381,8 +383,9 @@ export function DilutionPanel({
   // The reading is still judged against the ceiling everywhere the ceiling means something:
   // measuredPasteValid above (the portion, and the copy that speaks for a reading) keeps it
   // exactly, the rejection alerts below keep it exactly, and the batch pour and the bottled
-  // mass keep it widened by the write-back's own rounding (correctedPotGramsFor). Only the
-  // basis this line chooses drops it altogether.
+  // mass keep it widened by the write-back's own rounding wherever a record exists to have
+  // written the target (correctedPotGramsFor). Only the basis this line chooses drops it
+  // altogether.
   const measuredPasteDescribesPot =
     dilution !== null &&
     measuredPasteDescribesPotFor(
@@ -457,8 +460,9 @@ export function DilutionPanel({
   // produces. A basis chosen by a figure downstream of itself is not a basis. The batch pour
   // one screen below still answers to a ceiling, because solutionGrams − measured really does
   // have to be a pour it can print — but to correctedPotGramsFor's, which is this ceiling
-  // widened by the write-back's own rounding, so the pour and the bottled mass count from the
-  // same pot this line does whenever the target IS this record's. That agreement is the point:
+  // widened by the write-back's own rounding for a recipe carrying a record, so the pour and
+  // the bottled mass count from the same pot this line does whenever the target IS this
+  // record's, and only then. That agreement is the point:
   // while they disagreed, the panel printed "Finished so far (weighed) 1,405 g" beside a
   // 1,600 g finished product with a legally-capped preservative dose taken against the second.
   //
@@ -487,8 +491,13 @@ export function DilutionPanel({
   // '' parses to NaN, never to 0: gradualDilutionFrom's zero is a legitimate reading (the
   // pot before any water — Gradual Dilution's own starting point), so an EMPTY field must
   // not collapse to the same result as a typed "0", or the readout and write-back would
-  // fire before the maker had recorded anything at all.
-  const gradualWaterNum = gradualWaterGrams.trim() === '' ? NaN : Number(gradualWaterGrams);
+  // fire before the maker had recorded anything at all. Through the shared parser, which
+  // answers that same "is there a record" question for the printed sheet's two record rows
+  // and for the paste ceiling behind the pour row (lib/measuredPaste) — NaN for "no record"
+  // because that is what core's gradualDilutionFrom refuses, so this reads identically to
+  // the hand-written parse it replaces (a negative is not a pour either way: the parser
+  // returns undefined, core rejects it).
+  const gradualWaterNum = parseGradualWaterRecordGrams(gradualWaterGrams) ?? NaN;
   const gradual =
     dilution && pasteGrams !== null
       ? gradualDilutionFrom({
@@ -681,6 +690,13 @@ export function DilutionPanel({
         MEASURED_PASTE_IS_REMAINING,
         wholeBatchPasteGrams,
         cookWaterGrams,
+        // The record is what licenses the widened paste ceiling that helper judges the
+        // reading against (lib/measuredPaste's correctedPotGramsFor). Passed here so this
+        // row, the printed sheet's twin of it and the bottled mass all choose the pot by one
+        // rule; without it this row would pour against solutionGrams exactly while the
+        // bottled figure counted from the weighed pot, which is the split the ceiling exists
+        // to close.
+        gradualWaterGrams,
       )
     : 0;
   // Asked of the same helper PortionDilutionResults itself renders from, so the shell can

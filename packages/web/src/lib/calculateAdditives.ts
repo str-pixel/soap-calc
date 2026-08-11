@@ -178,6 +178,14 @@ export function computeBottledSolutionGrams(input: {
    * the water term is the recipe's own figure and this reduces to the previous formula
    * exactly. */
   wholeBatchPasteGrams?: number | null;
+  /** `settings.gradualWaterGrams` — the water the maker recorded pouring. Threaded through
+   * for one reason: it is what licenses the widened paste ceiling in `correctedPotGramsFor`,
+   * so the pot this prices and the pot the panel and the sheet pour against are chosen by the
+   * same rule. Leaving it out would price the bottle off the recipe's computed pot for a
+   * gradual record the two other surfaces are counting from — the exact split this branch
+   * closed. Optional, and absent it is the unwidened ceiling, which is what a caller with no
+   * record wants. */
+  gradualWaterGrams?: string;
 }): number {
   const {
     dilution,
@@ -187,6 +195,7 @@ export function computeBottledSolutionGrams(input: {
     measuredPasteGrams,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
+    gradualWaterGrams,
   } = input;
   // THE SAME POT the water term below is measured against, from the same call, so this base
   // and that subtraction can never describe different batches. Both corrected-basis figures
@@ -203,15 +212,18 @@ export function computeBottledSolutionGrams(input: {
   // the recipe's COMPUTED pot while DilutionPanel counted from the weighed one — "Finished so
   // far (weighed) 1,405 g" beside a 1,600 g finished product, with the preservative's
   // legally-capped % taken against the second. The pot choice widens that ceiling by exactly
-  // the write-back's own rounding and no further, so a reading past it — the loaded crockpot,
-  // 3 kg of stoneware included — is still refused here and this still prices the recipe's own
-  // pot. See correctedPotGramsFor for the bound and why it is tight.
+  // the write-back's own rounding and no further — and only where a gradual record exists to
+  // have written the target — so a reading past it (the loaded crockpot, 3 kg of stoneware
+  // included) is still refused here and this still prices the recipe's own pot, and a target
+  // the maker typed still holds the reading to solutionGrams exactly. See correctedPotGramsFor
+  // for the bound, why it is tight, and why the record is what licenses it.
   const pot = correctedPotGramsFor(
     dilution,
     measuredPasteGrams,
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
     cookWaterGrams,
+    gradualWaterGrams,
   );
   const measuredPaste = pot?.fromMeasurement ? pot.grams : undefined;
   const base =
@@ -222,6 +234,7 @@ export function computeBottledSolutionGrams(input: {
       measuredPasteIsRemaining,
       wholeBatchPasteGrams,
       cookWaterGrams,
+      gradualWaterGrams,
     );
   // The alternative liquid's non-water solids, off the same corrected basis
   // correctedDilutionWaterGrams subtracts from solutionGrams — never re-derived from the

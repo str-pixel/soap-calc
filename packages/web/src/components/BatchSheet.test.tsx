@@ -561,11 +561,70 @@ test('the printed sheet explains a pour the liquid\'s solids clamped to 0 g', ()
   // correctedDilutionWaterGrams clamp, and "Dilution water to add" then prints "0 g" — which,
   // printed bare, reads as a batch that needs nothing rather than one that cannot get there.
   render(<BatchSheet data={lsSheetData({ wholeBatchPasteGrams: 4200 })} />);
-  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('0 g');
+  const pour = screen.getByText('Dilution water to add').nextElementSibling!;
+  expect(pour.textContent).toContain('0 g');
   const note = screen.getByText(/already more dilute than 30%/i).textContent!.replace(/\s+/g, ' ');
   // Both sides of the comparison, so the figure can be checked against the rows above it.
   expect(note).toContain('it weighs 4,200 g against the 4,059 g');
   expect(note).toContain('there is no dilution water to add');
+});
+
+test('a reading a hair over the solution pours the recipe’s own figure with no record behind it', () => {
+  // THE WIDENED CEILING BELONGS TO GRADUAL ALONE. correctedPotGramsFor accepts a reading up
+  // to solutionGrams stretched by the gradual write-back's own 2 dp rounding — here
+  // 100 x 1,218 / (30 - 0.005) = 4,059.68 g against a 4,059 g solution — and that argument
+  // only holds where a record actually WROTE the target. In concentration mode the maker
+  // typed 30% themselves, so a 4,059.6 g reading is simply over the target (the app's own
+  // named mistake: the crockpot weighed with the paste still in it), and every target-derived
+  // figure must go on answering from the recipe's computed 1,600 g pot.
+  //
+  // Inside that band the printed sheet had no way to say anything at all. measuredPasteIsValidFor
+  // still refused the reading, so the "uses the measured paste weight" note stayed off; the
+  // already-more-dilute note keys on the COMPUTED pot, which is under the solution, so that
+  // stayed off too; and gradual's record rows need a record. The page carried to the bench
+  // printed "Dilution water to add — 0 g" and not one word about where the water went.
+  render(
+    <BatchSheet data={lsSheetData({ measuredPasteGrams: '4059.6', wholeBatchPasteGrams: 1600 })} />,
+  );
+  // 4,059 - 1,600, the recipe's own answer to a reading it cannot use.
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain(
+    '2,459 g',
+  );
+  expect(screen.queryByText(/uses the measured paste weight/i)).toBeNull();
+});
+
+test('…and answers identically just past that band, so the band leaves no seam', () => {
+  // 4,059.8 g is past the widened bound even in gradual mode, so this arm never moved. Pinned
+  // beside its twin above: if the two readings ever print different pours again in
+  // concentration mode, the band is back.
+  render(
+    <BatchSheet data={lsSheetData({ measuredPasteGrams: '4059.8', wholeBatchPasteGrams: 1600 })} />,
+  );
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain(
+    '2,459 g',
+  );
+});
+
+test('…while a gradual record keeps the widening, and its rows account for the 0 g', () => {
+  // The other side of the same rule, at the surface the finding was found on. With a record
+  // in hand the widening is earned — the saved 30% is what that record wrote — so the pour
+  // clamps to "0 g", and the two rows gradual prints are the account the bare figure lacked:
+  // what went in the pot, and what it made.
+  render(
+    <BatchSheet
+      data={lsSheetData({
+        measuredPasteGrams: '4059.6',
+        wholeBatchPasteGrams: 1600,
+        preservative: { gradualWaterGrams: '0' },
+      })}
+    />,
+  );
+  const pour = screen.getByText('Dilution water to add').nextElementSibling!;
+  expect(pour.textContent).toContain('0 g');
+  expect(screen.getByText(/Water actually added/).closest('div')!.textContent).toContain('0 g');
+  // The weighed pot plus nothing — the sheet's own rounding, off the reading the widening let
+  // it keep.
+  expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('4,060 g');
 });
 
 test('…and never prints that note beside the water-only one, which subsumes it', () => {

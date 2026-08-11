@@ -197,6 +197,52 @@ describe('computeBottledSolutionGrams', () => {
     //
     // 1,200 g of anhydrous soap; the record writes round2(120000/1405) = 85.41%, and
     // 1,200 / 0.8541 is 1,404.99 g — under the reading.
+    //
+    // `gradualWaterGrams: '0'` IS that record — the pot before any water at all, which is
+    // where gradual's own record starts and what wrote this target. It is also what licenses
+    // the widened ceiling the base is chosen by: without a record the reading is judged
+    // against solutionGrams exactly, because a target the maker typed was not written from
+    // any pot. See correctedPotGramsFor.
+    const at8541: DilutionResult = {
+      anhydrousGrams: 1200,
+      solutionGrams: 1200 / 0.8541,
+      totalWaterGrams: 1200 / 0.8541 - 1200,
+      dilutionWaterGrams: 0,
+      glycerinGrams: 110,
+      soapConcentrationPercent: 85.41,
+      targetExceedsPaste: true,
+    };
+    expect(
+      computeBottledSolutionGrams({
+        dilution: at8541,
+        cookWaterGrams: 400,
+        extrasGrams: 0,
+        splitLiquidPasteWaterGrams: 0,
+        measuredPasteGrams: '1405',
+        wholeBatchPasteGrams: 1600,
+        gradualWaterGrams: '0',
+      }),
+    ).toBeCloseTo(1405, 6);
+    // …and the extras still ride on top of the pot that was weighed, not on a second one.
+    expect(
+      computeBottledSolutionGrams({
+        dilution: at8541,
+        cookWaterGrams: 400,
+        extrasGrams: 50,
+        splitLiquidPasteWaterGrams: 0,
+        measuredPasteGrams: '1405',
+        wholeBatchPasteGrams: 1600,
+        gradualWaterGrams: '0',
+      }),
+    ).toBeCloseTo(1455, 6);
+  });
+
+  it('prices the recipe’s own pot for the same reading with no record behind the target', () => {
+    // The other half of the rule, at the surface the dose is taken from. Same reading, same
+    // 85.41% — but nothing recorded, so the target is one the maker typed and the reading is
+    // simply past the solution it dilutes to. The bottled base falls back to the recipe's own
+    // anhydrous + cook water + the water the target still calls for, exactly as it did before
+    // the widening existed, and the panel's exceeds-solution alert is on screen saying why.
     const at8541: DilutionResult = {
       anhydrousGrams: 1200,
       solutionGrams: 1200 / 0.8541,
@@ -215,18 +261,8 @@ describe('computeBottledSolutionGrams', () => {
         measuredPasteGrams: '1405',
         wholeBatchPasteGrams: 1600,
       }),
-    ).toBeCloseTo(1405, 6);
-    // …and the extras still ride on top of the pot that was weighed, not on a second one.
-    expect(
-      computeBottledSolutionGrams({
-        dilution: at8541,
-        cookWaterGrams: 400,
-        extrasGrams: 50,
-        splitLiquidPasteWaterGrams: 0,
-        measuredPasteGrams: '1405',
-        wholeBatchPasteGrams: 1600,
-      }),
-    ).toBeCloseTo(1455, 6);
+      // anhydrous + cook water, with the water term clamped to 0 against a 1,600 g pot.
+    ).toBeCloseTo(1600, 6);
   });
 
   it('a REMAINING-declared measurement does not feed the bottled base — a remainder is not the batch', () => {
