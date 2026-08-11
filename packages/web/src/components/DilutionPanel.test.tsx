@@ -3259,8 +3259,15 @@ describe('gradual dilution — recording the water actually poured', () => {
     // The whole point: 4,000 g is what the old target predicted; 3,600 g is what was
     // poured. Printing solutionGrams here would quietly show the prediction again.
     render(<DilutionPanel {...GRADUAL} gradualWaterGrams="2000" />);
-    expect(screen.getByText('3,600 g')).toBeTruthy();
-    expect(screen.queryByText(/Finished so far[\s\S]*4,000 g/)).toBeNull();
+    // Read the row's own value cell. An earlier version asserted
+    // `queryByText(/Finished so far[\s\S]*4,000 g/)` was null, which could never fail:
+    // queryByText matches ONE element's text, and the label is a <dt> while the figure is
+    // its <dd>, so nothing can match both. The regression it named — printing
+    // solutionGrams as the finished mass — would have passed unnoticed, in the test that
+    // carries this feature's central claim.
+    const finishedRow = screen.getByText(/Finished so far/).closest('div')!;
+    expect(finishedRow.textContent).toContain('3,600 g');
+    expect(finishedRow.textContent).not.toContain('4,000 g');
   });
 
   it('writes the derived concentration back at 2 dp once the field is touched', () => {

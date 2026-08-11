@@ -70,7 +70,7 @@ no reading, or the reading is rejected, gradual falls back to the computed figur
 readout says which of the two it used — the same name-your-basis discipline as
 `basisScope`.
 
-```
+```text
 paste        = wholeBatchPasteGrams          (shown)
 finished     = paste + waterAdded            (shown — "Finished so far")
 concentration = anhydrousGrams / finished    (shown — "Lands at N% soap")
@@ -85,7 +85,7 @@ the preservative dose, the batch sheet and the insights all follow the recorded 
 
 The arithmetic closes exactly:
 
-```
+```text
 solutionGrams = anhydrous ÷ concentration
               = anhydrous ÷ (anhydrous / (paste + water))
               = paste + water                       ← precisely what was poured
@@ -131,7 +131,7 @@ is sized by target volume today and its paste is derived rather than weighed:
 
 **Inputs:** *Paste weighed out (g)* and *Water added so far (g)*.
 
-```
+```text
 portionFinished      = portionPaste + portionWater
 portionAnhydrousShare = portionPaste × (anhydrousGrams / wholeBatchPasteGrams)
 portionConcentration = portionAnhydrousShare / portionFinished
@@ -195,11 +195,19 @@ An absent field on a legacy recipe means no gradual record, which is correct.
 
 ### 7 · Edge cases
 
-- **Blank or zero water** → gradual mode is inert: no derived concentration, no write-back,
-  the panel asks for the water. It must not write a concentration of `anhydrous / paste`
-  and silently retarget the recipe the moment the mode is selected.
+- **Blank water** → gradual mode is inert: no derived concentration, no write-back, the
+  panel asks for the water. It must not write a concentration of `anhydrous / paste` and
+  silently retarget the recipe the moment the mode is selected.
+- **Zero water is a RECORD, not a blank** — the pot before any dilution, which is where the
+  reference's own method starts. It derives a concentration and writes back like any other
+  amount. An earlier draft of this bullet said "blank or zero", contradicting §2's ladder and
+  the core test that blesses zero explicitly. The code always kept them apart; this section
+  was the thing that was wrong.
 - **A concentration outside `calculateDilution`'s accepted range** (`<= 0` or `>= 100`) →
-  refuse and say so, rather than writing back a value that makes `calculateDilution` return
+  **clamp what is WRITTEN** to `[1, 99]` and flag it, keeping the readout truthful — never
+  refuse. Ratio mode already solved this and gradual copies it. An earlier draft said "refuse
+  and say so", which §2 already contradicted; refusing means writing back a value that makes
+  `calculateDilution` return
   `null` and blanks the whole panel.
 - **Water so large the concentration rounds to 0** → same refusal path.
 - **Switching modes** must not silently discard the recorded water; leaving gradual keeps

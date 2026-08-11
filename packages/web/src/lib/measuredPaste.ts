@@ -842,9 +842,13 @@ export function computedPotGramsFor(
   cookWaterGrams?: number | null,
 ): number | null {
   if (!dilution) return null;
+  // `?? 0` catches null/undefined but not NaN or Infinity, either of which would make the
+  // sum non-finite and propagate silently into the pour, the bottled base and the jar's
+  // share — a pot figure is the one thing on this screen that must never be NaN.
+  const cook = Number.isFinite(cookWaterGrams) ? (cookWaterGrams as number) : 0;
   return hasCorrectedPasteBasis(wholeBatchPasteGrams)
     ? wholeBatchPasteGrams
-    : dilution.anhydrousGrams + (cookWaterGrams ?? 0);
+    : dilution.anhydrousGrams + cook;
 }
 
 /**

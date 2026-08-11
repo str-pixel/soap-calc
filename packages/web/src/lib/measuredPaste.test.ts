@@ -1044,3 +1044,23 @@ describe('one pot resolution for the derived modes, shared by every surface', ()
     });
   });
 });
+
+describe('computedPotGramsFor refuses to produce a non-finite pot', () => {
+  const D = {
+    anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
+    dilutionWaterGrams: 2400, glycerinGrams: 110, soapConcentrationPercent: 30,
+    targetExceedsPaste: false,
+  } as DilutionResult;
+
+  it('treats a non-finite cook water as zero rather than poisoning the sum', () => {
+    // `?? 0` catches null and undefined but not these; the pot then flows into the pour,
+    // the bottled base and the jar's share.
+    expect(computedPotGramsFor(D, null, NaN)).toBe(1200);
+    expect(computedPotGramsFor(D, null, Infinity)).toBe(1200);
+    expect(computedPotGramsFor(D, null, -Infinity)).toBe(1200);
+  });
+
+  it('still adds a real cook water', () => {
+    expect(computedPotGramsFor(D, null, 400)).toBe(1600);
+  });
+});
