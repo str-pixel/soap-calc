@@ -566,24 +566,38 @@ export function measuredPasteRejectionFor(
 const GRADUAL_WRITE_BACK_ROUNDING = 0.005;
 
 /**
- * The largest pot mass that could have WRITTEN this dilution's own target — `solutionGrams`
- * widened by the gradual write-back's rounding, and nothing more.
+ * Whether a reading could have WRITTEN this dilution's own target — `solutionGrams` widened
+ * by the gradual write-back's rounding and nothing more, asked as a predicate so the
+ * comparison can be made without a divide (see the body).
  *
  * Gradual derives the target from the pot: a pot of M grams writes
  * `p = round2(100 × anhydrous ÷ M)`, so `solutionGrams` comes back as `100 × anhydrous ÷ p`
  * — which lands a hair UNDER M whenever that rounding went up. The rounding is bounded
  * (|p − 100·anhydrous/M| <= 0.005), so the HEAVIEST pot that writes this p is
  * `100 × anhydrous ÷ (p − 0.005)`, i.e. `solutionGrams × p ÷ (p − 0.005)`. That is this
- * bound, closed-form and tight — not a tolerance chosen to make a case pass.
+ * bound, closed-form and tight — not a tolerance chosen to make a case pass. It is
+ * ATTAINED, so the comparison sits exactly on the boundary and has to be exact there.
  *
  * Falls back to `solutionGrams` for a target at or below the rounding itself, where the
  * widened bound is meaningless (calculateDilution accepts any percent in (0, 100); the UI
  * never types below 1).
  */
-function targetSolutionCeilingGrams(dilution: DilutionResult): number {
+function measuredCouldHaveWrittenTarget(measured: number, dilution: DilutionResult): boolean {
   const p = dilution.soapConcentrationPercent;
-  if (!Number.isFinite(p) || p <= GRADUAL_WRITE_BACK_ROUNDING) return dilution.solutionGrams;
-  return (dilution.solutionGrams * p) / (p - GRADUAL_WRITE_BACK_ROUNDING);
+  if (!Number.isFinite(p) || p <= GRADUAL_WRITE_BACK_ROUNDING) {
+    return measured <= dilution.solutionGrams;
+  }
+  // DIVISION-FREE, and compared against 100·anhydrous rather than solutionGrams·p. Both
+  // matter, because this bound is ATTAINED rather than approached: equality holds exactly
+  // when the rounding went up by the full half-cent and no water was recorded. Written as
+  // `measured <= solutionGrams · p / (p − 0.005)` the comparison inherits the error in
+  // solutionGrams (itself anhydrous ÷ (p/100)), which at an exact half-cent tie lands the
+  // ceiling ~3e-14 BELOW the reading — refusing a record the reading itself produced, which
+  // silently restores the two-masses-for-one-batch bug this ceiling exists to prevent
+  // (~1 in 21,000 readings; 0 on the starter recipe, which is why it hid). Multiplying
+  // through by the positive (p − 0.005) removes the divide, and solutionGrams · p is
+  // exactly 100·anhydrous by construction.
+  return measured * (p - GRADUAL_WRITE_BACK_ROUNDING) <= 100 * dilution.anhydrousGrams;
 }
 
 /**
@@ -593,7 +607,7 @@ function targetSolutionCeilingGrams(dilution: DilutionResult): number {
  * computeBottledSolutionGrams' base.
  *
  * It is {@link measuredPasteDescribesPotFor}'s three pot rules, plus a ceiling that is
- * `solutionGrams` WIDENED by {@link targetSolutionCeilingGrams} — and that widening is the
+ * `solutionGrams` WIDENED by {@link measuredCouldHaveWrittenTarget} — and that widening is the
  * whole of this function's reason to exist. {@link measuredPasteIsValidFor} compares the
  * reading against `solutionGrams` exactly, and in gradual mode `solutionGrams` is anhydrous ÷
  * the percent the panel's own record just wrote: with no water recorded the pot IS the
@@ -652,7 +666,7 @@ export function correctedPotGramsFor(
     !isRemaining &&
     measured !== undefined &&
     measuredPasteDescribesPotFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams) &&
-    measured <= targetSolutionCeilingGrams(dilution)
+    measuredCouldHaveWrittenTarget(measured, dilution)
   ) {
     return { grams: measured, fromMeasurement: true };
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DilutionResult } from '@soap-calc/core';
+import { calculateDilution, type DilutionResult } from '@soap-calc/core';
 import {
   correctedDilutionWaterGrams,
   correctedPotGramsFor,
@@ -814,5 +814,38 @@ describe('correctedDilutionWaterGrams past the target’s own solution', () => {
         4000 - Number(raw),
       );
     }
+  });
+});
+
+describe('the widened ceiling is exact at the boundary it attains', () => {
+  // The bound is ATTAINED, not approached: equality holds exactly when the write-back's
+  // rounding went up by the full half-cent and no water was recorded. So the comparison
+  // sits on the boundary, and a form that inherits solutionGrams' own division error
+  // refuses a record the reading itself produced — silently restoring the two-masses bug
+  // the ceiling exists to prevent. Found by sweep at ~1 in 21,000 readings; zero on the
+  // starter recipe, which is why nothing caught it.
+  //
+  // 105 g anhydrous in a 224 g pot is exactly 46.875%, which round2 takes UP to 46.88 —
+  // the exact half-cent tie.
+  const tie = calculateDilution({
+    anhydrousGrams: 105,
+    cookWaterGrams: 0,
+    kohGrams: 20,
+    naohGrams: 0,
+    soapConcentrationPercent: 46.88,
+  })!;
+
+  it("accepts the reading that wrote this very target", () => {
+    const pot = correctedPotGramsFor(tie, '224', false, 224, 0);
+    expect(pot).not.toBeNull();
+    expect(pot!.fromMeasurement).toBe(true);
+    expect(pot!.grams).toBe(224);
+  });
+
+  it('still refuses a reading genuinely past the widened bound', () => {
+    // 224 g is the heaviest pot that can write 46.88%; 260 g is well past it and must fall
+    // back to the computed pot rather than being absorbed by a loose tolerance.
+    const pot = correctedPotGramsFor(tie, '260', false, 224, 0);
+    expect(pot!.fromMeasurement).toBe(false);
   });
 });
