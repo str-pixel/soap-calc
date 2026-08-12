@@ -293,6 +293,22 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(base * 0.01, 0);
   });
 
+  it('a Custom amount larger than the batch names itself the whole batch', async () => {
+    // Ask for more than exists and the portion CLAMPS: the panel says so twice — "That is
+    // more than the batch holds — the figures above are the whole batch" and "100% of the
+    // batch" — while the dose basis kept calling itself "(custom amount)" one line below.
+    // The figure was right; the name was not, and the name is the maker's only signal for
+    // which mass the % is of, so the two have to move together.
+    const snippet = await openSnippet();
+    const batchBase = figure(snippet, '≈ Finished product (whole batch)');
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    await userEvent.type(screen.getByLabelText('Amount to make (ml)'), '100000000');
+
+    expect(figure(snippet, '≈ Finished product (whole batch)')).toBe(batchBase);
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
+  });
+
   it('Custom amount + Gradual doses the jar that was recorded, not a target-derived one', async () => {
     // THE SAFETY PIN for the worst version of this bug. Custom amount resolved its dose
     // through the "Amount to make (ml)" field — the one input Gradual takes off the panel —
