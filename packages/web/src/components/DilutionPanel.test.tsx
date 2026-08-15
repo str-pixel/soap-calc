@@ -173,6 +173,44 @@ describe('intended-use dilution targets', () => {
     expect(warning.closest('details')).toBeNull();
   });
 
+  it('does not go silent in ratio mode, where the alert that used to subsume it is silent too', () => {
+    // Task 1 (2026-08-12-whole-app-review-fixes). This suppression is subsumption, not an
+    // independent verdict: it stands down only because a STRONGER claim about the same
+    // target — the exceeds-solution rejection — already owns the screen (see this alert's own
+    // comment in DilutionPanel.tsx). That rejection was made silent in ratio mode, because
+    // ratio mode is not aiming at the saved target at all (its own "lands at N%" readout
+    // tells the truth about the ratio instead). Once the stronger claim stopped rendering
+    // there, keying this suppression to the FLAG rather than to the stronger alert's own
+    // rendering left a maker whose SAVED target sits above the solubility ceiling told
+    // nothing at all: not this sentence, and not a ratio readout that only ever speaks to
+    // the ratio's own concentration, never the saved target's.
+    render(
+      <DilutionPanel
+        {...BASE}
+        soapConcentrationPercent="50"
+        dilution={{
+          anhydrousGrams: 1200, solutionGrams: 2400, totalWaterGrams: 1200,
+          dilutionWaterGrams: 1200, glycerinGrams: 110, soapConcentrationPercent: 50,
+          targetExceedsPaste: false,
+        }}
+        measuredPasteGrams="3000"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    // 3,000 g exceeds the saved 50% target's 2,400 g solution (exceedsSolution is true), and
+    // the panel prints no alert naming that rejection here — the positive control is the
+    // concentration-mode test elsewhere in this file that still gets that alert instead.
+    expect(screen.queryAllByRole('alert')).toHaveLength(1);
+    expect(
+      screen.getByText(/above what even a coconut-heavy recipe can fully dissolve/i),
+    ).toBeTruthy();
+  });
+
   it('does not offer a hair use', () => {
     render30('12');
     expect(screen.queryByText(/^shampoo/i)).toBeNull();
@@ -948,14 +986,19 @@ describe('ratio mode counts from the pot, not from the target it is about to rep
     expect(onSoapConcentrationChange).toHaveBeenCalledWith('25.8');
   });
 
-  it('still refuses the reading where the refusal is about the SAVED target, and names the ratio', () => {
-    // The ceiling is not weakened — it is asked a different question. The reading really is
-    // heavier than the 80% target's solution, the alert says so, and its remedy names the
-    // control on screen. What changed is only which pot the ratio multiplies.
+  it('does not refuse the reading against a target this mode is not aiming at', () => {
+    // Superseded by Task 1 (2026-08-12-whole-app-review-fixes). This test used to assert the
+    // opposite — that the reading was refused with "already weighs more than the 1,500 g
+    // this target dilutes to" and a remedy naming the ratio — on the theory that the ceiling
+    // was "asked a different question" rather than weakened. It was still the wrong question:
+    // ratio mode has no target of its own, it WRITES the concentration the ratio lands on (the
+    // two tests above), so a claim the reading "cannot be diluted to 80% at all" names a target
+    // this screen was never aiming at, sitting directly above the paragraph that calls the
+    // very same reading more accurate than the recipe's computed paste. Nothing about the
+    // basis is weakened: the tests above still prove the reading is what gets multiplied and
+    // what gets written back (25.8%, not the computed pot's 25.0%).
     render(<DilutionPanel {...PAST_TARGET} />);
-    const alert = screen.getByRole('alert').textContent!.replace(/\s+/g, ' ');
-    expect(alert).toMatch(/already weighs more than the 1,500 g this target dilutes to/i);
-    expect(alert).toMatch(/raise the water:paste ratio above/i);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('a reading UNDER that ceiling is untouched — both gates agree there', () => {
@@ -2448,9 +2491,14 @@ describe('copy that a previous round rewrote, pinned so it cannot drift back', (
     expect(alert).not.toMatch(/raise the target concentration/i);
   });
 
-  it('points it toward MORE water in ratio mode too, naming the control actually on screen', () => {
-    // The concentration field is not rendered in ratio mode, so the remedy names the
-    // ratio — and a WIDER ratio is the one that makes room for the paste already weighed.
+  it('no longer renders in ratio mode at all — ratio has no target for it to be about', () => {
+    // Superseded by Task 1 (2026-08-12-whole-app-review-fixes). This used to assert the
+    // remedy still fired here with "raise the water:paste ratio" — correct about the
+    // DIRECTION a wider ratio moves things, wrong about whether the claim belongs in ratio
+    // mode at all: "cannot be diluted to 30% at all" is a claim about the saved target, and
+    // ratio mode is not aiming at one. See the test below (in this same describe block) for
+    // the contradiction that wording used to sit in, and the readout that tells the truth
+    // instead.
     render(
       <DilutionPanel
         {...BASE}
@@ -2464,13 +2512,65 @@ describe('copy that a previous round rewrote, pinned so it cannot drift back', (
         onWaterPasteRatioChange={() => {}}
       />,
     );
-    const alert = screen
-      .getAllByRole('alert')
-      .map((a) => a.textContent ?? '')
-      .find((t) => /cannot be diluted to/i.test(t)) ?? '';
-    expect(alert).toMatch(/raise the water:paste ratio/i);
-    expect(alert).not.toMatch(/lower the water:paste ratio/i);
-    expect(alert).not.toMatch(/target concentration/i);
+    expect(
+      screen.queryAllByRole('alert').some((a) => /cannot be diluted to/i.test(a.textContent ?? '')),
+    ).toBe(false);
+  });
+
+  // Task 1 (2026-08-12 whole-app-review-fixes): superseded the test immediately above. Ratio
+  // mode has no target of its own — it multiplies whatever pot it is given and WRITES the
+  // concentration that lands on, never reads one — so a claim that the reading "cannot be
+  // diluted to 30% at all" is a claim about a target this mode is not aiming at. The figure
+  // (9,000 g, from the same 4,500 g reading) and the paste-basis caveat ("so the measurement
+  // is more accurate") are both correct and stay; only the alert asserting the reading is
+  // probably wrong is the defect, because it contradicts the caveat sitting right below it —
+  // one paragraph calls the reading suspect, the next calls the same number more accurate
+  // than the recipe's own estimate.
+  it('does not call the reading suspect while another paragraph calls it more accurate', () => {
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        measuredPasteGrams="4500"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    // Today both render: the target-based rejection sits directly above the caveat that
+    // calls the very same reading more accurate than the recipe's computed paste.
+    expect(screen.queryByText(/cannot be diluted to/i)).toBeNull();
+    expect(screen.getByText(/measurement is more accurate/i)).toBeTruthy();
+    // The positive: ratio mode's own readout still tells the truth about where 2:1 actually
+    // lands — 4,500 x 2 = 9,000 g of water, 1,200 / 13,500 = 8.9% soap.
+    expect(screen.getByText(/2:1 water:paste lands at 8\.9% soap/i)).toBeTruthy();
+  });
+
+  it('holds in Custom amount scope too, where the caveat has its own portion wording', () => {
+    // Step 4 of Task 1: same reading, same target, different scope. Portion scope's caveat
+    // ("You have weighed the paste… this ratio is taken against what the pot really holds")
+    // never claimed the target was reachable either — only the alert above it did, and only
+    // in batch scope's copy of it (:1401's paragraph renders in both scopes, unlike the
+    // caveat, whose wording branches on scope).
+    render(
+      <DilutionPanel
+        {...BASE}
+        dilutionScope="portion"
+        onDilutionScopeChange={() => {}}
+        targetMl="1000"
+        measuredPasteGrams="4500"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        dilutionMode="ratio"
+        waterPasteRatio="2"
+        onDilutionModeChange={() => {}}
+        onWaterPasteRatioChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/cannot be diluted to/i)).toBeNull();
+    expect(screen.getByText(/taken against what the pot really holds/i)).toBeTruthy();
   });
 });
 

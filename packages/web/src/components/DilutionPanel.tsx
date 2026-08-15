@@ -1384,11 +1384,15 @@ export function DilutionPanel({
                 paste: this field takes the batch&apos;s full paste weight.
               </p>
             ))}
-          {/* NOT IN GRADUAL MODE, where this paragraph has no subject. Every clause of it is
-              about a TARGET the paste cannot reach, and gradual has no target: the saved
-              percentage is this mode's own OUTPUT, written from the pot and the water
-              recorded. Two consequences, both of them wrong on screen. The remedy named a
-              concentration field that gradual takes off the panel — the exact bug
+          {/* CONCENTRATION MODE ONLY (dilutionMode === 'concentration' is the only remaining
+              case once gradual and ratio are both excluded — see each exclusion below). Every
+              clause of this paragraph is about a TARGET the paste cannot reach, and only
+              concentration mode is aiming at one.
+
+              NOT IN GRADUAL MODE, where this paragraph has no subject. Gradual has no target:
+              the saved percentage is this mode's own OUTPUT, written from the pot and the
+              water recorded. Two consequences, both of them wrong on screen. The remedy named
+              a concentration field that gradual takes off the panel — the exact bug
               dilutionTargetWording was written to fix for ratio. And the verdict itself
               becomes a rounding artifact: with a weighed pot and no water yet, the written
               percent is anhydrous ÷ that pot at 2 dp, so solutionGrams lands within a gram
@@ -1397,34 +1401,51 @@ export function DilutionPanel({
               panel's own "Finished so far (weighed) 1,405 g". The pot's own rules
               (nonPositive, subTenthPrecision, belowSolids) all still render here in gradual
               mode, and they are exactly the rules that decide gradual's basis — so in that
-              mode the alerts and the figures now answer to the same three questions. */}
-          {measurementRejection.exceedsSolution && dilutionMode !== 'gradual' && (
-            <p className="results-hint" role="alert">
-              Your paste already weighs more than the{' '}
-              {formatWeight(dilution.solutionGrams, 'g')} this target dilutes to, so
-              it cannot be diluted to{' '}
-              {formatConcentrationPercent(dilution.soapConcentrationPercent)}% at all —{' '}
-              {/* The remedy names whichever control is actually on screen, and points the
-                  right way: solutionGrams is anhydrous ÷ concentration, so it is a LOWER
-                  target (or a wider ratio) that makes room for the paste already weighed. */}
-              {dilutionMode === 'ratio'
-                ? 'raise the water:paste ratio above (more water)'
-                : 'lower the target concentration above (more water)'}
-              {/* The measurement clause now names the specific mistake, because this branch
-                  is where that mistake lands. Offering the crockpot shortcut in the ratio
-                  caveat above made "forgot to subtract the empty pot" reachable, and a
-                  forgotten subtraction always overshoots — an empty crockpot's 2-4 kg on top
-                  of the paste is heavier than the solution, so it trips THIS rule and never
-                  the solids floor (which only fires on a reading that is too light, and
-                  whose "check the scale was tared" remedy stays right for the mistake it
-                  does catch). Left generic, the leading remedy told a maker carrying 3 kg of
-                  stoneware to add more water, which would have compounded the error. Named
-                  second, after the control-based remedy, because a reading really can be
-                  correct and the target really can be out of reach. */}
-              , or check the measurement — if you weighed the crockpot, subtract the empty
-              pot&apos;s own weight.
-            </p>
-          )}
+              mode the alerts and the figures now answer to the same three questions.
+
+              NOT IN RATIO MODE either, for the identical reason (Task 1,
+              2026-08-12-whole-app-review-fixes): ratio multiplies whatever pot it is given —
+              see weighedOrComputedPotGramsFor, whose basis choice deliberately dropped this
+              same ceiling, because a target-derived bound has no business choosing the basis
+              for a mode that has no target — and WRITES the concentration that lands on, so
+              "cannot be diluted to 30% at all" is a claim about a target ratio mode is not
+              aiming at. Ratio's own "lands at N%" readout below already tells the truth about
+              where the reading actually lands, whatever that is. Left in, this paragraph sat
+              directly above the paste-basis caveat that calls the SAME reading "more
+              accurate" than the recipe's computed paste — one paragraph calling the number
+              suspect, the next calling it the better one. */}
+          {measurementRejection.exceedsSolution &&
+            dilutionMode !== 'gradual' &&
+            dilutionMode !== 'ratio' && (
+              <p className="results-hint" role="alert">
+                Your paste already weighs more than the{' '}
+                {formatWeight(dilution.solutionGrams, 'g')} this target dilutes to, so
+                it cannot be diluted to{' '}
+                {formatConcentrationPercent(dilution.soapConcentrationPercent)}% at all —{' '}
+                {/* Only one control is ever on screen here now: dilutionMode is always
+                    'concentration' inside this branch (ratio and gradual are both excluded
+                    above), so the remedy names the concentration field unconditionally. It
+                    used to branch on dilutionMode === 'ratio' to name the ratio input
+                    instead — dead since ratio stopped reaching this paragraph at all. */}
+                lower the target concentration above (more water)
+                {/* The measurement clause now names the specific mistake, because this branch
+                    is where that mistake lands. Offering the crockpot shortcut in the ratio
+                    caveat made "forgot to subtract the empty pot" reachable, and a
+                    forgotten subtraction always overshoots — an empty crockpot's 2-4 kg on top
+                    of the paste is heavier than the solution, so it trips THIS rule and never
+                    the solids floor (which only fires on a reading that is too light, and
+                    whose "check the scale was tared" remedy stays right for the mistake it
+                    does catch). Left generic, the leading remedy told a maker carrying 3 kg of
+                    stoneware to add more water, which would have compounded the error. Named
+                    second, after the control-based remedy, because a reading really can be
+                    correct and the target really can be out of reach. Still worth naming here
+                    even though the field that takes the reading is mode-independent — a
+                    maker can carry the crockpot habit into concentration mode from a session
+                    that started in ratio mode, where the shortcut is actually offered. */}
+                , or check the measurement — if you weighed the crockpot, subtract the empty
+                pot&apos;s own weight.
+              </p>
+            )}
         </>
       )}
       {/* Paste stores better than diluted soap — it keeps sealed, refrigerates and freezes —
@@ -2063,11 +2084,26 @@ export function DilutionPanel({
               exceeds-solution rejection — this stays silent, exactly the subsumption
               those alerts already practice on one another. Renders in both scopes: it
               describes the target, not an amount. The claim and its wording are the old
-              overflow tail's, unchanged. */}
+              overflow tail's, unchanged.
+
+              NOT ratio mode's exceeds-solution rejection, though: Task 1
+              (2026-08-12-whole-app-review-fixes) stopped that alert rendering in ratio mode
+              (a claim about a target ratio mode is not aiming at), so it no longer "owns the
+              screen" there — the subsumption this suppression practices requires the
+              stronger verdict to actually be on screen, and in ratio mode it is not. Left
+              unguarded, a maker whose SAVED target sits above the solubility ceiling (the
+              persisted soapConcentrationPercent, which the printed batch sheet still uses
+              until the ratio is touched — see ratioNotAppliedYet above) got told nothing at
+              all: not this sentence, suppressed by a flag whose own alert had gone silent,
+              and not ratio's "lands at N%" readout either, which speaks only to the ratio's
+              own concentration, never the saved target's. Gradual mode's identical
+              exceeds-solution exclusion (two paragraphs above) has the same gap at this same
+              line — untouched here because this task's brief scoped the question to ratio;
+              flagged in its report rather than changed blind. */}
           {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent)) &&
             !dilution.targetExceedsPaste &&
             !pasteAlreadyPastTarget &&
-            !(measurementRejection?.exceedsSolution ?? false) && (
+            !((measurementRejection?.exceedsSolution ?? false) && dilutionMode !== 'ratio') && (
               <p className="results-hint" role="alert">
                 This target is above what even a coconut-heavy recipe can fully dissolve.
               </p>
