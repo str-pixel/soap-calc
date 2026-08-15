@@ -30,6 +30,20 @@ const posNum = (s: string): number => {
   const n = Number(s);
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
+// A typed post-cook superfat percent (row or total), clamped into [0, 100]. The <input
+// max={...}> on these fields is an HTML hint only — it does not stop a value from being
+// typed or pasted — so this is the actual enforcement. Matters beyond cosmetics: core's
+// parsePercentOfOil REJECTS (returns null) anything over 100 rather than clamping it, so an
+// unclamped out-of-range row (e.g. a mistyped '200' for '20') would silently contribute 0 to
+// the subtract-mode lye reserve while the panel still showed it as allocated. Blank/invalid
+// text passes through unclamped — it's mid-edit, not an out-of-range number.
+const clampPct = (value: string): string => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return value;
+  if (n > 100) return '100';
+  if (n < 0) return '0';
+  return value;
+};
 
 // Plain-language descriptions of the two post-cook superfat methods (original wording).
 const PCSF_METHOD_HELP: Record<'append' | 'subtract', string> = {
@@ -173,7 +187,10 @@ export function SuperfatWaterPanel({
           0,
         );
         const budget = Math.max(0, Number(s.postCookSuperfatTotalPercent) || 0);
-        const headroom = Math.max(0, roundPct(budget - others));
+        // Capped at 100 in addition to the budget: the budget itself is clamped to 100 by
+        // setPcsfTotal below, but a row's OWN percent still must not exceed 100 (parsePercentOfOil's
+        // ceiling) regardless of what the budget carries — see clampPct.
+        const headroom = Math.min(100, Math.max(0, roundPct(budget - others)));
         const typed = patch.percent ?? '';
         const n = Number(typed);
         // Empty/invalid stays as typed (mid-edit); a valid over-budget number clamps.
@@ -196,8 +213,11 @@ export function SuperfatWaterPanel({
   // Editing the TOTAL budget: if it drops below what's already allocated, trim the oils to
   // fit by scaling them proportionally (the one action that moves the oil numbers — like the
   // recipe's Total-oil field). Raising it just opens headroom; the oils stay put.
-  const setPcsfTotal = (value: string) =>
+  const setPcsfTotal = (rawValue: string) =>
     setSettings((s) => {
+      // Clamped BEFORE use: an unclamped total would also inflate updatePcsfOil's headroom
+      // for every row (budget − others), letting an individual row reach past 100 too.
+      const value = clampPct(rawValue);
       const allocated = postCookSuperfatAllocated(s.postCookSuperfatOils);
       const next = Number(value);
       if (value.trim() !== '' && Number.isFinite(next) && next >= 0 && next < allocated && allocated > 0) {

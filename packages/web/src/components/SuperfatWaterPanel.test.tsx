@@ -138,6 +138,18 @@ test('an oil % is capped at the remaining budget (sum can never exceed the total
   expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('3');
 });
 
+test('typing 200 into the post-cook superfat total clamps to 100, not left uncapped', () => {
+  // A mistyped 200 (meaning 20) must not be reachable: budgeting more than 100% of the
+  // recipe's own oil as a reserve is nonsensical, and an unclamped total inflates the
+  // per-row headroom too (letting a row itself go over 100%, which the lye math then
+  // silently drops to a zero reserve — see useRecipeViewModel).
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  fireEvent.change(screen.getByLabelText('Post-cook superfat total %'), { target: { value: '200' } });
+  expect((screen.getByLabelText('Post-cook superfat total %') as HTMLInputElement).value).toBe('100');
+  // The allocation note must never claim a 200% budget either.
+  expect(screen.queryByText(/200%/)).toBeNull();
+});
+
 test('lowering the total below the allocated sum trims the oils to fit', () => {
   render(
     <Harness
