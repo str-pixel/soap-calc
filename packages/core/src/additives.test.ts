@@ -342,6 +342,15 @@ describe('doseBasis / hazards on the override seam (LS audit 2026-07-27)', () =>
       }
     }
   });
+
+  it('every solution-dosed LS entry defaults to after_cook (a solution basis presupposes a solution — nothing to dose a % of before dilution)', () => {
+    for (const entry of ADDITIVE_CATALOG) {
+      const ls = effectiveCatalogEntry(entry, 'ls');
+      if (ls.doseBasis === 'solution') {
+        expect(ls.defaultStage).toBe('after_cook');
+      }
+    }
+  });
 });
 
 describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
@@ -363,9 +372,11 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
     expect(cp.hazards).toEqual(['can make the bar crumbly']);
   });
 
-  it('fragrance LS: 0.5–3% of the finished solution (3% max)', () => {
+  it('fragrance LS: 0.5–3% of the finished solution (3% max), added after cook/dilution', () => {
     const ls = effectiveCatalogEntry(catalogEntryById('fragrance')!, 'ls');
-    expect([ls.typicalLow, ls.typicalHigh, ls.doseBasis]).toEqual([0.5, 3, 'solution']);
+    expect([ls.typicalLow, ls.typicalHigh, ls.doseBasis, ls.defaultStage]).toEqual([
+      0.5, 3, 'solution', 'after_cook',
+    ]);
     expect(effectiveCatalogEntry(catalogEntryById('fragrance')!, 'cp').doseBasis).toBeUndefined();
   });
 
