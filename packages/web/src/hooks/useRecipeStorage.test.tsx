@@ -155,6 +155,61 @@ describe('useRecipeStorage process', () => {
   });
 });
 
+describe('an unreadable draft is spoken for, not silently replaced', () => {
+  // Fails the READABLE_VERSIONS gate, so loadDraftSlot preserves it under
+  // `<key>:unreadable` and hands back no draft — the workspace falls to the starter.
+  const fromTheFuture = JSON.stringify({
+    version: 99,
+    name: 'Written by a newer build',
+    lines: [],
+    settings: {},
+  });
+
+  it('tells the maker on the path that opens the app onto one', () => {
+    localStorage.setItem('soap-calc:draft:cp', fromTheFuture);
+    const { result } = renderHook(() => useRecipeStorage());
+    // The initial workspace is seeded during the first render, before flashSaveMessage
+    // exists — the message has to arrive from a mount effect, so it is present here.
+    expect(result.current.recipeName).toBe('Starter recipe');
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept/i));
+  });
+
+  it('tells the maker who reaches one by switching process', () => {
+    localStorage.setItem('soap-calc:draft:ls', fromTheFuture);
+    const { result } = renderHook(() => useRecipeStorage()); // opens on cp, whose slot is empty
+    // An empty slot is not an unreadable one: seeding a starter over nothing says nothing.
+    expect(result.current.saveMessage).toBeNull();
+    act(() => result.current.setProcess('ls'));
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept/i));
+  });
+
+  it('yields the one message slot to the flush failure when both fire at once', () => {
+    // Storage that refuses every write: the outgoing flush fails AND the incoming slot is
+    // unreadable. flashSaveMessage is a single slot, so this must be a decision, not an
+    // ordering accident — the flush failure is about work that exists only in memory and
+    // is about to be lost, while the unreadable draft is already on disk.
+    const store = new Map<string, string>([['soap-calc:draft:ls', fromTheFuture]]);
+    vi.stubGlobal('localStorage', {
+      get length() {
+        return store.size;
+      },
+      clear: () => store.clear(),
+      getItem: (key: string) => store.get(key) ?? null,
+      key: (index: number) => [...store.keys()][index] ?? null,
+      removeItem: (key: string) => store.delete(key),
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+    } as unknown as Storage);
+
+    const { result } = renderHook(() => useRecipeStorage());
+    act(() => result.current.setProcess('ls'));
+    expect(result.current.saveMessage).toEqual(
+      expect.stringMatching(/export it to avoid losing changes/i),
+    );
+  });
+});
+
 describe('import flush freshness (deep-review)', () => {
   it('flushes the workspace as it is when the file resolves, not as it was when import started', async () => {
     const { result } = renderHook(() => useRecipeStorage());

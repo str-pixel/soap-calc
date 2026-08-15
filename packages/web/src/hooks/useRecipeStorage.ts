@@ -11,7 +11,7 @@ import {
 } from '../lib/recipe';
 import {
   loadActiveProcess,
-  loadDraft,
+  loadDraftSlot,
   migrateLegacyDraft,
   saveActiveProcess,
   saveDraft,
@@ -53,7 +53,7 @@ function starterSettings(process: ProcessId): RecipeSettings {
 }
 
 function loadWorkspace(process: ProcessId) {
-  const draft = loadDraft(process);
+  const { draft, unreadable } = loadDraftSlot(process);
   const settings = draft
     ? // Saved drafts carry their own provenance (see normalizeSettings for how a legacy
       // draft with no provenance field is resolved).
@@ -64,8 +64,20 @@ function loadWorkspace(process: ProcessId) {
     lines: migrateRecipeLines(draft?.lines ?? createStarterLines(), settings),
     additives: draft?.additives ?? createEmptyAdditives(),
     settings,
+    // Carried out rather than announced here: the initial seeding below runs during the
+    // first render, where flashSaveMessage does not exist yet. Both call sites decide
+    // for themselves when to say it.
+    unreadable,
   };
 }
+
+/** Said when a draft failed the version gate or was corrupt: it has been parked at
+ * `<draftKey>:unreadable` (see recipeStorage) and this workspace is a fresh starter.
+ * The sentence has to carry the rescue, not just the failure — a maker who reads only
+ * "could not read your saved recipe" concludes the work is gone and stops looking, when
+ * in fact it is still on disk and a build that can read it would get it back. */
+const UNREADABLE_DRAFT_MESSAGE =
+  'Your saved recipe could not be read — it has been kept unchanged in this browser, and a starter recipe loaded in its place.';
 
 /** Flash display time scaled to reading length. The old flat 2000 ms erased the 25-word
  * import-refusal copy before anyone could read it; ~50 ms/char tracks reading speed with
@@ -113,6 +125,13 @@ export function useRecipeStorage() {
     };
   }, []);
 
+  // The workspace this hook opened on was seeded during the first render, before
+  // flashSaveMessage or any state existed — so an unreadable draft found there is
+  // reported from here, on mount, rather than from loadWorkspace itself.
+  useEffect(() => {
+    if (initial.current?.ws.unreadable) flashSaveMessage(UNREADABLE_DRAFT_MESSAGE);
+  }, []);
+
   function flashSaveMessage(message: string) {
     if (messageTimer.current) clearTimeout(messageTimer.current);
     setSaveMessage(message);
@@ -125,9 +144,7 @@ export function useRecipeStorage() {
     // debounce (useRecipeAutosave) gets cancelled by effect-cleanup when state
     // swaps below, so without this an edit made <500ms before a tab switch is
     // silently lost. Warn if the flush fails (quota/blocked) so the loss isn't silent.
-    if (!saveDraft(process, recipeName, lines, settings, additives)) {
-      flashSaveMessage('Could not save the current recipe before switching — export it to avoid losing changes.');
-    }
+    const flushed = saveDraft(process, recipeName, lines, settings, additives);
     saveActiveProcess(next);
     const ws = loadWorkspace(next);
     setProcessState(next);
@@ -136,6 +153,15 @@ export function useRecipeStorage() {
     setAdditives(ws.additives);
     setSettings(ws.settings);
     setWorkspaceGeneration((g) => g + 1);
+    // Both can be true at once (storage full AND the incoming slot unreadable) and
+    // flashSaveMessage is a single slot, so choose rather than let call order decide:
+    // the failed flush is about work that exists only in memory and is about to be
+    // lost, while the unreadable draft is already safe on disk.
+    if (!flushed) {
+      flashSaveMessage('Could not save the current recipe before switching — export it to avoid losing changes.');
+    } else if (ws.unreadable) {
+      flashSaveMessage(UNREADABLE_DRAFT_MESSAGE);
+    }
   }
 
   function handleNew() {

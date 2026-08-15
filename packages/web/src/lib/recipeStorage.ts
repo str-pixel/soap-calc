@@ -127,16 +127,24 @@ function migrateSettings(settings: RecipeSettings, version: number): RecipeSetti
   return settings;
 }
 
-export function loadDraft(process: ProcessId): {
+export type LoadedDraft = {
   name: string;
   lines: RecipeLine[];
   additives: AdditiveLine[];
   settings: RecipeSettings;
-} | null {
+};
+
+/** What the slot held. `unreadable` separates "nothing was saved here" from "something
+ * was saved here that we had to set aside": both yield a null draft and a starter
+ * workspace, but only the second is a thing the maker has to be told, or their work
+ * simply appears to have vanished. See useRecipeStorage for who says it. */
+export type DraftSlot = { draft: LoadedDraft | null; unreadable: boolean };
+
+export function loadDraftSlot(process: ProcessId): DraftSlot {
   let raw: string | null = null;
   try {
     raw = localStorage.getItem(draftKey(process));
-    if (!raw) return null;
+    if (!raw) return { draft: null, unreadable: false };
     const data = JSON.parse(raw) as DraftPayload;
     if (!READABLE_VERSIONS.includes(data.version) || !Array.isArray(data.lines)) {
       // Preserve what we can't read: returning null seeds a starter workspace whose
@@ -144,21 +152,31 @@ export function loadDraft(process: ProcessId): {
       // (app rollback) or corrupted payload is parked in a backup slot instead of
       // being destroyed. First writer wins — don't churn the backup on every load.
       backupUnreadableDraft(process, raw);
-      return null;
+      return { draft: null, unreadable: true };
     }
     return {
-      name: typeof data.name === 'string' && data.name ? data.name : 'Untitled recipe',
-      lines: linesFromSaved(data.lines),
-      additives: additivesFromSaved(data.additives),
-      settings: migrateSettings(normalizeSettings(data.settings), data.version),
+      draft: {
+        name: typeof data.name === 'string' && data.name ? data.name : 'Untitled recipe',
+        lines: linesFromSaved(data.lines),
+        additives: additivesFromSaved(data.additives),
+        settings: migrateSettings(normalizeSettings(data.settings), data.version),
+      },
+      unreadable: false,
     };
   } catch {
     // JSON.parse-throwing corruption (truncated write) must be preserved the same
     // way as a parseable-but-invalid payload — this catch is the common corruption
     // path, and returning bare null here lets the seeding autosave destroy it.
     if (raw !== null) backupUnreadableDraft(process, raw);
-    return null;
+    // Throwing with no raw in hand is storage itself being unavailable (private mode),
+    // not a draft we set aside — there is no rescued recipe to announce.
+    return { draft: null, unreadable: raw !== null };
   }
+}
+
+/** The draft alone, for the callers that have nothing to say about an unreadable slot. */
+export function loadDraft(process: ProcessId): LoadedDraft | null {
+  return loadDraftSlot(process).draft;
 }
 
 /** Returns false when the write failed (e.g. quota exceeded or storage blocked in
