@@ -160,6 +160,19 @@ export function lsPartialDilution(
   densityGPerMl: number = LS_SOLUTION_DENSITY_G_PER_ML,
 ): LsPartialDilution | null {
   if (!Number.isFinite(targetVolumeMl) || targetVolumeMl <= 0) return null;
+  // anhydrousGrams, totalWaterGrams and dilutionWaterGrams feed potAnhydrousGrams and
+  // batchWaterGrams below through plain arithmetic — addition, subtraction, Math.max — which
+  // propagates a NaN or an Infinity as an ordinary-looking number rather than throwing. The
+  // guards further down CANNOT catch that: `potAnhydrousGrams === null` (NaN !== null) and
+  // `batchWaterGrams < 0` (NaN < 0 is false) both silently pass a non-finite value through.
+  // Only a finiteness check here, before any of the three is used, stops it.
+  if (
+    !Number.isFinite(batch.anhydrousGrams) ||
+    !Number.isFinite(batch.totalWaterGrams) ||
+    !Number.isFinite(batch.dilutionWaterGrams)
+  ) {
+    return null;
+  }
   const fullVolumeMl = lsFinishedVolumeMl(batch.solutionGrams, densityGPerMl);
   if (fullVolumeMl === null) return null;
   // Paste is what sits in the pot before dilution water. Computed, that is the anhydrous
