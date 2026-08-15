@@ -253,6 +253,41 @@ describe('intended-use dilution targets', () => {
     ).toBeTruthy();
   });
 
+  it('speaks alongside a refusal that is only about the reading, not about the target', () => {
+    // Task 13 (2026-08-12-whole-app-review-fixes). The same fixture as the two cases above —
+    // a saved 50% target the recipe's own paste can reach, so targetExceedsPaste is false —
+    // with a reading refused by the solids floor instead: 900 g is less than the 1,200 g of
+    // soap the batch makes, so it cannot be all of the paste. That refusal is a
+    // claim about the READING, and the flag it would otherwise stand in for is not set, so
+    // nothing on screen is answering for this target and both paragraphs belong here.
+    //
+    // Pinned because the rejection disjunct of `overDilutionSpokenFor` is gated on
+    // `dilution.targetExceedsPaste` and nothing else in this file exercises that gate from
+    // the FALSE side. Drop it and a reading refused for its own reasons silences a sentence
+    // about the target — the two alerts here collapse to one — in exactly the state where
+    // the target has no other voice.
+    render(
+      <DilutionPanel
+        {...BASE}
+        soapConcentrationPercent="50"
+        dilution={{
+          anhydrousGrams: 1200, solutionGrams: 2400, totalWaterGrams: 1200,
+          dilutionWaterGrams: 1200, glycerinGrams: 110, soapConcentrationPercent: 50,
+          targetExceedsPaste: false,
+        }}
+        measuredPasteGrams="900"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+      />,
+    );
+    // Document order: the reading's own refusal renders beside the input it describes, the
+    // ceiling sentence below the figures.
+    expect(alertTexts()).toEqual([
+      expect.stringMatching(/cannot be all of the paste/i),
+      expect.stringMatching(SOLUBILITY_CEILING),
+    ]);
+  });
+
   // ── Task 12 (2026-08-12-whole-app-review-fixes): the last flag-keyed clause ──
   // The suppression above stands down for a STRONGER VERDICT about the same target. Its
   // first clause read the raw targetExceedsPaste flag, but that flag's own alert is
@@ -371,6 +406,18 @@ describe('intended-use dilution targets', () => {
       expect(alerts[0]).toMatch(CEILING);
     });
 
+    it('speaks in gradual mode when even the rejection alert is silent', () => {
+      // Task 13: the gradual twin of the case immediately above, and the cell the fix moved
+      // that had no test of its own — ratio's version was pinned, gradual's was reached only
+      // by mutating the source. The exceeds-solution paragraph is excluded from gradual for
+      // the same reason it is excluded from ratio (gradual WRITES the concentration from the
+      // pot and the water recorded; it is not aiming at the saved target), so
+      // `measurementRejectionAlert` is false here and the flag's fourth voice is silent
+      // alongside its other three.
+      renderOverCeiling('gradual', { measuredPasteGrams: '3000' });
+      expect(alertTexts()).toEqual([expect.stringMatching(CEILING)]);
+    });
+
     it('speaks in Custom amount scope, where the flag has no alert of its own at all', () => {
       // The "already more dilute" alert is Whole-batch only; in Custom amount the child says
       // it instead, and with a valid reading the child sizes a portion and says nothing. The
@@ -383,6 +430,23 @@ describe('intended-use dilution targets', () => {
       const alerts = alertTexts();
       expect(alerts).toHaveLength(1);
       expect(alerts[0]).toMatch(CEILING);
+    });
+
+    it('speaks in Custom amount scope in gradual mode, where nothing else can', () => {
+      // Task 13, and the one this describe most needed: `pasteAlreadyThinnerAlert` carries
+      // `dilutionScope === 'batch'` for a plain reason at its render site (it lives inside
+      // the batch-scope block), but it is ALSO read as a voice by `overDilutionSpokenFor`,
+      // and there the gate is the whole of what stops it claiming a voice it does not have.
+      //
+      // Custom amount + gradual + no reading is the state with no other voice at all: the
+      // child that words this verdict in Custom amount is not rendered in gradual mode (a
+      // stale `targetMl` otherwise put its whole target-derived grid on screen beside the
+      // jar's recorded figures), there is no reading to refuse, and no undeclared liquid to
+      // hedge over. Drop the scope gate and the const goes true here while nothing renders
+      // for it, so this cell falls back to ZERO alerts at a target ten points past what any
+      // recipe dissolves — the same hole one scope over from the one this describe pins.
+      renderOverCeiling('gradual', { measuredPasteGrams: '', dilutionScope: 'portion' });
+      expect(alertTexts()).toEqual([expect.stringMatching(CEILING)]);
     });
 
     it('still yields to the child that says it in Custom amount scope', () => {
