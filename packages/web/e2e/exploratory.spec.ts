@@ -644,7 +644,7 @@ test.describe('pricing & profit', () => {
       `batch cost ${costBatch} vs materials ${expectedMaterials}`).toBe(true);
 
     // margin lever: 50% margin → price = 2×cost, markup 100%
-    await page.getByLabel('Pricing lever').selectOption('margin');
+    await page.getByLabel('Price from lever').selectOption('margin');
     await page.getByLabel('Target margin percent').fill('50');
     await page.getByLabel('Target margin percent').blur();
     const price = num(await pricingDd(page, /^Suggested price per kg/));
@@ -661,7 +661,7 @@ test.describe('pricing & profit', () => {
   test('kg→lb output switch scales per-unit cost by 2.20462', async ({ page }) => {
     await fillAllPrices(page, '10');
     const costPerKg = num(await pricingDd(page, /^Cost per kg/));
-    await page.getByLabel('Output unit').selectOption('lb');
+    await page.getByLabel('Price per unit').selectOption('lb');
     const costPerLb = num(await pricingDd(page, /^Cost per lb/));
     expect(relClose(costPerKg / costPerLb, 2.20462, 0.01, 0.01),
       `kg/lb cost ratio ${costPerKg / costPerLb}`).toBe(true);
@@ -669,7 +669,7 @@ test.describe('pricing & profit', () => {
 
   test('margin ≥100 shows em-dash, never Infinity', async ({ page }) => {
     await fillAllPrices(page, '10');
-    await page.getByLabel('Pricing lever').selectOption('margin');
+    await page.getByLabel('Price from lever').selectOption('margin');
     await page.getByLabel('Target margin percent').fill('100');
     await page.getByLabel('Target margin percent').blur();
     const price = await pricingDd(page, /^Suggested price per kg/);
@@ -678,7 +678,7 @@ test.describe('pricing & profit', () => {
 
   test('negative markup formats profit as -$x.xx (sign before symbol)', async ({ page }) => {
     await fillAllPrices(page, '10');
-    await page.getByLabel('Pricing lever').selectOption('markup');
+    await page.getByLabel('Price from lever').selectOption('markup');
     await page.getByLabel('Markup percent').fill('-50');
     await page.getByLabel('Markup percent').blur();
     const profit = await pricingDd(page, /^Profit per kg/);
@@ -731,12 +731,12 @@ test.describe('pricing & profit', () => {
 test('soaping-temperature slider: CP defaults to 125 °F; 165 raises the overflow warning', async ({ page }) => {
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Soaping temperature' }) }).first();
   // The control edits in °C (the setting still stores °F).
-  await expect(section.getByLabel('Soaping temperature')).toHaveValue('52');
+  await expect(section.getByLabel('Starting temperature °C')).toHaveValue('52');
   await expect(section).toContainText('52 °C (125 °F)');
   // Typing must survive keystroke by keystroke: an earlier draft-plus-effect version
   // clamped each transient value and rewrote the field ("5" became "16"), which a
   // fireEvent.change unit test cannot catch because it sets the whole value at once.
-  const tempInput = section.getByLabel('Soaping temperature');
+  const tempInput = section.getByLabel('Starting temperature °C');
   await tempInput.click();
   await page.keyboard.press('ControlOrMeta+a');
   await page.keyboard.press('Backspace');
@@ -748,7 +748,7 @@ test('soaping-temperature slider: CP defaults to 125 °F; 165 raises the overflo
   // The starter recipe's 33%-of-oils water is ~2.4:1 at the default 125 °F — the source's
   // "gel/partial gel likely at higher water" case.
   await expect(section).toContainText(/Gel phase: likely/i);
-  await section.getByLabel('Soaping temperature').fill('74'); // 74 °C = 165 °F, past the 160 °F line
+  await section.getByLabel('Starting temperature °C').fill('74'); // 74 °C = 165 °F, past the 160 °F line
   await expect(page.locator('.message-list--insights').filter({ hasText: /overheat and overflow/i })).toHaveCount(1);
 });
 

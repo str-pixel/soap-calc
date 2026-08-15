@@ -168,14 +168,20 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
           </label>
           <label className="field">
             Price per
-            <select className="input" aria-label="Output unit" value={profile.outputUnit}
+            {/* Superset of the visible "Price per" caption, the same pattern SliderField
+                uses elsewhere ("Superfat" -> "Superfat %") — Label-in-Name (WCAG 2.5.3)
+                needs the accessible name to contain what's on screen. This used to read
+                "Output unit", which shares no words with the caption. */}
+            <select className="input" aria-label="Price per unit" value={profile.outputUnit}
               onChange={(e) => setField({ outputUnit: e.target.value as PriceUnit })}>
               {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
           </label>
           <label className="field">
             Price from
-            <select className="input" aria-label="Pricing lever" value={profile.priceLever}
+            {/* Same fix as "Price per" above — was "Pricing lever", sharing no words with
+                the "Price from" caption. */}
+            <select className="input" aria-label="Price from lever" value={profile.priceLever}
               onChange={(e) => setField({ priceLever: e.target.value === 'markup' ? 'markup' : 'margin' })}>
               <option value="margin">target margin %</option>
               <option value="markup">markup %</option>

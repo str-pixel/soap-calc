@@ -4,6 +4,11 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { useRef, useState, type ComponentProps } from 'react';
 import { DilutionPanel } from './DilutionPanel';
 import { calculateDilution, type DilutionResult } from '@soap-calc/core';
+// The accessible-name algorithm (aria-label, then aria-labelledby, then the wrapping
+// <label>) — shared with SoapingTemperaturePanel.test.tsx and PricingPanel.test.tsx, which
+// assert the same Label-in-Name property on their own controls. See the helper's own doc
+// comment for why it's written out rather than pulled from a library.
+import { accessibleNameOf } from '../testing/accessibleName';
 
 afterEach(cleanup);
 
@@ -11,22 +16,6 @@ const RESULT: DilutionResult = {
   anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
   dilutionWaterGrams: 2400, glycerinGrams: 110, soapConcentrationPercent: 30, targetExceedsPaste: false,
 };
-
-/**
- * The three name sources that apply to the inputs in this panel, in the precedence the
- * accessible-name algorithm gives them: aria-label, then aria-labelledby, then the wrapping
- * <label>. Written out rather than pulled from dom-accessibility-api, which is only a
- * transitive dependency here — and writing it out is the point: the precedence IS the claim
- * being made, that an aria-label silently replaces the words on screen rather than adding
- * to them.
- */
-function accessibleNameOf(el: HTMLElement): string {
-  const ariaLabel = el.getAttribute('aria-label');
-  if (ariaLabel !== null) return ariaLabel;
-  const labelledBy = el.getAttribute('aria-labelledby');
-  if (labelledBy !== null) return document.getElementById(labelledBy)?.textContent ?? '';
-  return el.closest('label')?.textContent ?? '';
-}
 
 // The props every scope/unit test needs but none of them varies. Declared here rather
 // than repeated per test because these tests pass twice as many props as the older ones.

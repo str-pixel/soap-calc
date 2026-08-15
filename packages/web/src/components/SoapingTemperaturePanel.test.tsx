@@ -5,6 +5,8 @@ import { lsMethodForTemp, type LsMethodInfo } from '@soap-calc/core';
 import { SoapingTemperaturePanel } from './SoapingTemperaturePanel';
 import { DEFAULT_SETTINGS, type RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
+// Shared with DilutionPanel.test.tsx / PricingPanel.test.tsx — see that helper's doc comment.
+import { accessibleNameOf } from '../testing/accessibleName';
 
 afterEach(cleanup);
 
@@ -33,9 +35,23 @@ function renderPanel(
 test('CP defaults to 52 °C (125 °F) with the two-unit readout and the average-band note', () => {
   renderPanel();
   // The control edits in °C; the setting still stores °F.
-  expect((screen.getByLabelText('Soaping temperature') as HTMLInputElement).value).toBe('52');
+  expect((screen.getByLabelText('Starting temperature °C') as HTMLInputElement).value).toBe('52');
   expect(screen.getByText(/52 °C \(125 °F\)/)).toBeTruthy();
   expect(screen.getByText(/most commonly recommended/i)).toBeTruthy();
+});
+
+test("the temperature field's accessible name contains its visible caption, not a different one (Label-in-Name — WCAG 2.5.3)", () => {
+  // Read the visible caption straight off the DOM (the span next to the input) rather than
+  // restating it, so this can't go stale if the copy changes — same principle as
+  // DilutionPanel.test.tsx's "labels the measured-paste field with the batch it wants" test.
+  // Before this fix the aria-label was "Soaping temperature", copied from the panel's own
+  // <h2> title rather than this field's own caption — the two share no words, so "click
+  // Starting temperature" (voice control) or "what's labeled Starting temperature"
+  // (screen reader) would both fail to find this input.
+  const { container } = renderPanel();
+  const caption = container.querySelector('.slider-field__label')!.textContent!;
+  const input = container.querySelector('.slider-field__value') as HTMLElement;
+  expect(accessibleNameOf(input)).toContain(caption);
 });
 
 test('the band note follows the temperature: slowed at 95, accelerated at 150', () => {
@@ -48,7 +64,7 @@ test('the band note follows the temperature: slowed at 95, accelerated at 150', 
 
 test('typing °C writes the converted °F setting', () => {
   const { state } = renderPanel();
-  fireEvent.change(screen.getByLabelText('Soaping temperature'), { target: { value: '66' } });
+  fireEvent.change(screen.getByLabelText('Starting temperature °C'), { target: { value: '66' } });
   expect(state.settings.soapingTempF).toBe('151'); // cToF(66)
 });
 
@@ -175,7 +191,7 @@ test('a stale stored value keeps its own figure in the field, clamped only for t
   // 140 °F (60 °C) that was saved, while the readout and the hint show the 205 °F (96 °C)
   // the calculation actually uses under HTHP. Switching back to LTHP restores 140 intact.
   renderPanel({ processVariant: 'hp-hthp', soapingTempF: '140' }, 'hp');
-  expect((screen.getByLabelText('Soaping temperature') as HTMLInputElement).value).toBe('60');
+  expect((screen.getByLabelText('Starting temperature °C') as HTMLInputElement).value).toBe('60');
   expect(screen.getByText(/96 °C \(205 °F\)/)).toBeTruthy();
   expect(screen.getByText(/Outside this process/i).textContent).toContain('96 °C');
 });
