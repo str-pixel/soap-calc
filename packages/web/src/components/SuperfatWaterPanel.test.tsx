@@ -150,6 +150,46 @@ test('typing 200 into the post-cook superfat total clamps to 100, not left uncap
   expect(screen.queryByText(/200%/)).toBeNull();
 });
 
+test('a negative total floors to 0 for storage but does not wipe the oil rows (typo protection)', () => {
+  // A stray negative keystroke is a typo, not "set the budget to zero" — the trim-to-fit
+  // branch (which proportionally shrinks every row to match a lowered total) must not
+  // trigger off the floored value, or the maker's already-typed row gets silently discarded.
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  fireEvent.change(screen.getByLabelText('Post-cook superfat total %'), { target: { value: '-5' } });
+  expect((screen.getByLabelText('Post-cook superfat total %') as HTMLInputElement).value).toBe('0');
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('5');
+});
+
+test('an explicitly typed 0 total DOES trim the oil rows to 0, unlike a negative typo', () => {
+  // The sibling case to the negative-typo test above: typing an actual 0 is an intentional
+  // "no PCSF budget" and the pre-existing proportional-trim behavior correctly zeroes the
+  // rows to match — pinned explicitly so the two cases don't get conflated again.
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  fireEvent.change(screen.getByLabelText('Post-cook superfat total %'), { target: { value: '0' } });
+  expect((screen.getByLabelText('Post-cook superfat total %') as HTMLInputElement).value).toBe('0');
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('0');
+});
+
+test('a row still caps at 100 even when an imported recipe left the total budget unclamped', () => {
+  // normalizePostCookSuperfatOils clamps each OIL row on load, but not the TOTAL itself
+  // (normalizePostCookSuperfatTotal only floors it at the allocated sum — no ceiling), so an
+  // imported/loaded recipe can genuinely carry e.g. postCookSuperfatTotalPercent: '500'. The
+  // row-level ceiling in updatePcsfOil is what stops a row from riding that unclamped budget
+  // past 100, independent of setPcsfTotal (which never runs in this scenario) ever clamping it.
+  render(
+    <Harness
+      process="hp"
+      initial={{
+        postCookSuperfatTotalPercent: '500',
+        postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '' }],
+      }}
+    />,
+  );
+  const row = screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement;
+  fireEvent.change(row, { target: { value: '400' } });
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('100');
+});
+
 test('lowering the total below the allocated sum trims the oils to fit', () => {
   render(
     <Harness

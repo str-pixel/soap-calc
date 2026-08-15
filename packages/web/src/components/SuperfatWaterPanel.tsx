@@ -215,13 +215,24 @@ export function SuperfatWaterPanel({
   // recipe's Total-oil field). Raising it just opens headroom; the oils stay put.
   const setPcsfTotal = (rawValue: string) =>
     setSettings((s) => {
-      // Clamped BEFORE use: an unclamped total would also inflate updatePcsfOil's headroom
-      // for every row (budget − others), letting an individual row reach past 100 too.
+      // value is clamped for STORAGE (also keeps updatePcsfOil's headroom, which reads this
+      // same field back, from inflating past 100). The trim-to-fit branch below is gated on
+      // the RAW typed number instead, not this clamped one: a negative keystroke floors to
+      // '0' for storage, but must not be read as "the maker set the budget to zero" and
+      // wipe every row's percent — that's real data loss over a typo. A genuinely typed 0
+      // (or any real number below what's allocated) still trims; only the floor-from-negative
+      // case is excluded, via the rawNext >= 0 gate below.
       const value = clampPct(rawValue);
+      const rawNext = Number(rawValue);
       const allocated = postCookSuperfatAllocated(s.postCookSuperfatOils);
-      const next = Number(value);
-      if (value.trim() !== '' && Number.isFinite(next) && next >= 0 && next < allocated && allocated > 0) {
-        const factor = next / allocated;
+      if (
+        rawValue.trim() !== '' &&
+        Number.isFinite(rawNext) &&
+        rawNext >= 0 &&
+        rawNext < allocated &&
+        allocated > 0
+      ) {
+        const factor = Number(value) / allocated;
         return {
           ...s,
           postCookSuperfatTotalPercent: value,
