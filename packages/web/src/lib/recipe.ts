@@ -186,9 +186,23 @@ export function normalizeSplitLiquidRow(
   };
 }
 
+/** Import/load cap on the settings-nested row-list arrays (split liquids here,
+ * post-cook superfat oils below), mirroring recipeFile.ts's MAX_RECIPE_LINES: real recipes
+ * carry a handful of extra liquids/oils, not thousands — without a cap, a malformed/hostile
+ * settings blob builds an unbounded array + one React row each and hangs the tab. These
+ * arrive a level down inside `settings`, so recipeFile.ts's own `lines`/`additives` caps
+ * (which reject the whole file) never see them: every load path — file import, a corrupted
+ * localStorage draft, and the in-app workspace load — funnels through normalizeSettings
+ * instead, which is why the cap lives here rather than in the file parser. Truncated, not
+ * rejected — same as MAX_FIELD_LENGTH's per-string truncation — so a recipe the app itself
+ * exported still imports. 50, mirroring MAX_RECIPE_ADDITIVES: these lists are additive-like
+ * (a handful of optional rows), not primary-ingredient-like (MAX_RECIPE_LINES' 100). */
+const MAX_SPLIT_LIQUID_ROWS = 50;
+
 /** Normalize the alternative-liquid rows, migrating the singleton `splitLiquid` shape
  * (enabled → one row, disabled → none). A stored list wins over the legacy field. Only one
- * 'rest' row can exist (it consumes the remainder); later ones demote to percent_of_oils. */
+ * 'rest' row can exist (it consumes the remainder); later ones demote to percent_of_oils.
+ * The list is capped at MAX_SPLIT_LIQUID_ROWS rows (see its doc comment). */
 export function normalizeSplitLiquids(
   partial:
     | (Partial<RecipeSettings> & { splitLiquids?: unknown; splitLiquid?: unknown })
@@ -198,7 +212,10 @@ export function normalizeSplitLiquids(
   const list = (partial as { splitLiquids?: unknown } | null | undefined)?.splitLiquids;
   let rows: SplitLiquidRow[];
   if (Array.isArray(list)) {
-    rows = list.filter(isRecord).map((row) => normalizeSplitLiquidRow(row as Partial<SplitLiquidRow>));
+    rows = list
+      .slice(0, MAX_SPLIT_LIQUID_ROWS)
+      .filter(isRecord)
+      .map((row) => normalizeSplitLiquidRow(row as Partial<SplitLiquidRow>));
   } else {
     const legacy = (partial as { splitLiquid?: unknown } | null | undefined)?.splitLiquid;
     if (isRecord(legacy) && legacy.enabled === true) {
@@ -272,10 +289,43 @@ function clampPostCookSuperfatPercent(percent: string): string {
   return percent;
 }
 
+/** Import/load cap on the post-cook superfat oil list — same reasoning as
+ * MAX_SPLIT_LIQUID_ROWS above (see its doc comment): a settings-nested array that
+ * recipeFile.ts's own caps never see, truncated rather than rejected, capped at 50 to match
+ * MAX_RECIPE_ADDITIVES' "handful of optional rows" magnitude. */
+const MAX_POST_COOK_SUPERFAT_OILS = 50;
+
+// clampPostCookSuperfatPercent bounds each row into [0, 100] but says nothing about the
+// RUNNING SUM across rows — an imported file's rows can each be individually legal yet sum
+// past 100. That is not just cosmetic: SuperfatWaterPanel's setPcsfTotal only trims the oil
+// rows when the typed total is BELOW the allocated sum (see its own comment), so an
+// allocated sum already over 100 lets a typed total anywhere up to 100 slip past without
+// ever trimming the oils back down — a self-correction gap that normal in-app editing can
+// never trigger, because updatePcsfOil's headroom already keeps the running sum at or under
+// 100 on every keystroke. Capping the sum here at load time closes the gap by keeping that
+// state unreachable in the first place. Later rows lose ground first (order-preserving,
+// same rule as normalizeSplitLiquids' one-rest-row demotion).
+function capAllocatedSum(oils: PostCookSuperfatOil[]): PostCookSuperfatOil[] {
+  let runningSum = 0;
+  return oils.map((oil) => {
+    const n = Number(oil.percent);
+    if (!Number.isFinite(n) || n <= 0) return oil;
+    const headroom = Math.max(0, 100 - runningSum);
+    if (n <= headroom) {
+      runningSum += n;
+      return oil;
+    }
+    runningSum = 100;
+    return { ...oil, percent: String(headroom) };
+  });
+}
+
 /** Normalize the post-cook superfat oils, migrating the pre-multi-oil single-field shape
  * (`postCookSuperfatPercent` + `postCookSuperfatOilId`) into a one-row list. A stored list
  * wins over the legacy fields; each row keeps its raw input string percent, clamped into
- * [0, 100] — see clampPostCookSuperfatPercent. */
+ * [0, 100] — see clampPostCookSuperfatPercent — the list itself is capped at
+ * MAX_POST_COOK_SUPERFAT_OILS rows, and the running sum of percents is capped at 100 — see
+ * capAllocatedSum. */
 export function normalizePostCookSuperfatOils(
   partial: Partial<RecipeSettings> & {
     postCookSuperfatPercent?: unknown;
@@ -284,7 +334,8 @@ export function normalizePostCookSuperfatOils(
 ): PostCookSuperfatOil[] {
   const list = (partial as { postCookSuperfatOils?: unknown }).postCookSuperfatOils;
   if (Array.isArray(list)) {
-    return list
+    const rows = list
+      .slice(0, MAX_POST_COOK_SUPERFAT_OILS)
       .filter(
         (row): row is Record<string, unknown> =>
           isRecord(row) && typeof row.oilId === 'string' && row.oilId !== '',
@@ -293,6 +344,7 @@ export function normalizePostCookSuperfatOils(
         oilId: row.oilId as string,
         percent: clampPostCookSuperfatPercent(typeof row.percent === 'string' ? row.percent : ''),
       }));
+    return capAllocatedSum(rows);
   }
   // Legacy single-oil shape → one row, only when it carried a real, non-zero percent.
   const legacyOilId = partial.postCookSuperfatOilId;

@@ -545,3 +545,54 @@ describe('gradual dilution water', () => {
     expect(s.gradualWaterGrams).toBe('12'); // settingString coerces a finite number
   });
 });
+
+// settings.splitLiquids and settings.postCookSuperfatOils are the same shape as
+// recipeFile.ts's `lines`/`additives` (a hostile/malformed array building one React row
+// each), but they arrive a level down inside `settings` and every load path — file import,
+// a localStorage draft, and the in-app workspace load — funnels through normalizeSettings,
+// not recipeFile.ts's own array caps. Without a cap here, a 50,000-row settings blob (well
+// under recipeFile.ts's 1 MB byte cap) sails through where a 101-line `lines` array is
+// refused outright.
+describe('row-list caps on settings-nested arrays (unbounded-import guard)', () => {
+  it('caps a huge splitLiquids array instead of building all 50,000 rows', () => {
+    const huge = Array.from({ length: 50_000 }, (_, i) => ({
+      key: `k${i}`,
+      presetKey: '',
+      name: `liquid ${i}`,
+      customWaterPercent: '',
+      sizeMode: 'percent_of_oils',
+      amount: '1',
+      addAt: 'trace',
+    }));
+    const rows = normalizeSplitLiquids({ splitLiquids: huge } as never);
+    expect(rows.length).toBeLessThanOrEqual(50);
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it('caps a huge postCookSuperfatOils array instead of building all 50,000 rows', () => {
+    const huge = Array.from({ length: 50_000 }, () => ({ oilId: 'olive-oil', percent: '0.001' }));
+    const s = normalizeSettings({
+      postCookSuperfatOils: huge,
+    } as unknown as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatOils.length).toBeLessThanOrEqual(50);
+    expect(s.postCookSuperfatOils.length).toBeGreaterThan(0);
+  });
+
+  it('caps the running sum of post-cook superfat percents at 100, even though every row is individually legal', () => {
+    // Each row alone passes clampPostCookSuperfatPercent's [0,100] check, but the sum
+    // (120) does not — this is the state that defeats SuperfatWaterPanel's setPcsfTotal
+    // self-correction (its trim-to-fit branch only fires when the typed total is BELOW
+    // the allocated sum, so an allocated sum already over 100 lets a typed total up to
+    // 100 slip past without ever trimming the oils back down).
+    const s = normalizeSettings({
+      postCookSuperfatOils: [
+        { oilId: 'olive-oil', percent: '60' },
+        { oilId: 'shea-butter', percent: '60' },
+      ],
+    });
+    const total = s.postCookSuperfatOils.reduce((sum, o) => sum + Number(o.percent), 0);
+    expect(total).toBeLessThanOrEqual(100);
+    expect(s.postCookSuperfatOils[0].percent).toBe('60');
+    expect(s.postCookSuperfatOils[1].percent).toBe('40');
+  });
+});
