@@ -200,6 +200,41 @@ describe('intended-use dilution targets', () => {
     ).toBeTruthy();
   });
 
+  it('does not go silent in gradual mode either, for the identical reason ratio needed fixing', () => {
+    // Task 9 (2026-08-12-whole-app-review-fixes), found while fixing ratio's version of this
+    // above: the exceeds-solution rejection has been excluded from gradual mode since before
+    // this plan began (gradual has no target either — it WRITES the concentration from the
+    // pot and the water recorded, the same reason ratio was excluded), so the suppression
+    // this pins for ratio was already vacuous for gradual too, and stayed vacuous through
+    // Task 1 because that task's own guard only named 'ratio'. Same fixture as the ratio
+    // case above — a saved 50% target whose 2,400 g solution a 3,000 g reading exceeds —
+    // with dilutionMode swapped and the ratio-only props (waterPasteRatio,
+    // onWaterPasteRatioChange) replaced by gradual's own (gradualWaterGrams,
+    // onGradualWaterChange).
+    render(
+      <DilutionPanel
+        {...BASE}
+        soapConcentrationPercent="50"
+        dilution={{
+          anhydrousGrams: 1200, solutionGrams: 2400, totalWaterGrams: 1200,
+          dilutionWaterGrams: 1200, glycerinGrams: 110, soapConcentrationPercent: 50,
+          targetExceedsPaste: false,
+        }}
+        measuredPasteGrams="3000"
+        cookWaterGrams={400}
+        wholeBatchPasteGrams={1600}
+        dilutionMode="gradual"
+        gradualWaterGrams="2000"
+        onDilutionModeChange={() => {}}
+        onGradualWaterChange={() => {}}
+      />,
+    );
+    expect(screen.queryAllByRole('alert')).toHaveLength(1);
+    expect(
+      screen.getByText(/above what even a coconut-heavy recipe can fully dissolve/i),
+    ).toBeTruthy();
+  });
+
   it('does not offer a hair use', () => {
     render30('12');
     expect(screen.queryByText(/^shampoo/i)).toBeNull();

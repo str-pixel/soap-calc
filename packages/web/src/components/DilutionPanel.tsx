@@ -2086,24 +2086,38 @@ export function DilutionPanel({
               describes the target, not an amount. The claim and its wording are the old
               overflow tail's, unchanged.
 
-              NOT ratio mode's exceeds-solution rejection, though: Task 1
+              NOT ratio or gradual mode's exceeds-solution rejection, though: Task 1
               (2026-08-12-whole-app-review-fixes) stopped that alert rendering in ratio mode
               (a claim about a target ratio mode is not aiming at), so it no longer "owns the
               screen" there — the subsumption this suppression practices requires the
               stronger verdict to actually be on screen, and in ratio mode it is not. Left
-              unguarded, a maker whose SAVED target sits above the solubility ceiling (the
-              persisted soapConcentrationPercent, which the printed batch sheet still uses
-              until the ratio is touched — see ratioNotAppliedYet above) got told nothing at
-              all: not this sentence, suppressed by a flag whose own alert had gone silent,
-              and not ratio's "lands at N%" readout either, which speaks only to the ratio's
-              own concentration, never the saved target's. Gradual mode's identical
-              exceeds-solution exclusion (two paragraphs above) has the same gap at this same
-              line — untouched here because this task's brief scoped the question to ratio;
-              flagged in its report rather than changed blind. */}
+              unguarded there, a maker whose SAVED target sits above the solubility ceiling
+              (the persisted soapConcentrationPercent, which the printed batch sheet still
+              uses until the ratio is touched — see ratioNotAppliedYet above) got told
+              nothing at all: not this sentence, suppressed by a flag whose own alert had
+              gone silent, and not ratio's "lands at N%" readout either, which speaks only to
+              the ratio's own concentration, never the saved target's.
+
+              Task 9 (2026-08-12-whole-app-review-fixes) added gradual to the same exclusion:
+              gradual's own exceeds-solution alert has been silent since before this plan
+              began (two paragraphs above — gradual WRITES the concentration from the pot and
+              the water recorded, so it has no target for that alert to be about either), and
+              this suppression was keyed to the FLAG rather than to the stronger alert's own
+              rendering, same as ratio's gap. Task 1 found this while fixing ratio's version
+              and deliberately left it — untested, out of scope for that task, flagged in its
+              report instead of changed blind. Confirmed here rather than assumed: gradual
+              derives its saved percentage from what was actually poured, but that derivation
+              runs on the CURRENT record, and a saved target left over from a prior recipe or
+              a not-yet-applied edit (ratioNotAppliedYet's gradual counterpart) can still sit
+              above the ceiling while gradual's own alert stays silent about it — so a maker
+              in gradual mode can be misled by the missing warning exactly as one in ratio
+              mode was. */}
           {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent)) &&
             !dilution.targetExceedsPaste &&
             !pasteAlreadyPastTarget &&
-            !((measurementRejection?.exceedsSolution ?? false) && dilutionMode !== 'ratio') && (
+            !((measurementRejection?.exceedsSolution ?? false) &&
+              dilutionMode !== 'ratio' &&
+              dilutionMode !== 'gradual') && (
               <p className="results-hint" role="alert">
                 This target is above what even a coconut-heavy recipe can fully dissolve.
               </p>
