@@ -369,13 +369,47 @@ export function postCookSuperfatAllocated(oils: PostCookSuperfatOil[]): number {
   }, 0);
 }
 
+// The resolved total is bound STRAIGHT into an <input type="number"> (SuperfatWaterPanel's
+// budget field), and that element renders NOTHING for a value outside the input's own number
+// form: a stored ' 12.34 ' or '+12.34' — reachable from a hand-edited or foreign recipe file
+// — left the field empty while the allocation note beside it still printed "12.3%", the
+// two-figures-for-one-quantity shape this codebase keeps paying for. Verified in Chromium
+// and jsdom alike. So the string is trimmed, and anything still not in that form is replaced
+// by the parsed number's own canonical text. Deliberately NOT rounded: a renderable '12.34'
+// passes through digit for digit — preserving what the maker typed is the whole point of
+// keeping this a passthrough (see the doc comment below).
+//
+// The pattern is HTML's own "valid floating-point number" production, which is what the
+// value-sanitization step tests the field against. Engines are inconsistent at the edges
+// (Chromium shows '.5', the production does not admit it), so the stricter production is the
+// one worth canonicalizing to: '.5' becomes '0.5', which every engine renders and which
+// stands for the same figure.
+const INPUT_NUMBER_FORM = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/;
+function inputRenderableTotal(raw: string): string {
+  const trimmed = raw.trim().slice(0, MAX_SETTING_FIELD_LENGTH);
+  return INPUT_NUMBER_FORM.test(trimmed) ? trimmed : String(Number(trimmed));
+}
+
 /** Normalize the post-cook superfat total (the budget/ceiling the oils allocate within).
  * Resolution order: an explicit stored total → the legacy single `postCookSuperfatPercent`
- * → the allocated sum (pre-total recipes from the multi-oil era). Never below the allocated
- * sum, so the budget-≥-allocation invariant always holds on load.
+ * → the allocated sum (pre-total recipes from the multi-oil era), then clamped into [0, 100]
+ * — the same range SuperfatWaterPanel's setPcsfTotal enforces on a TYPED total, because a
+ * clamp is only worth what the loosest way in respects. A budget over 100 is not merely
+ * cosmetic: the per-row headroom is `Math.min(100, total − others)`, so a loaded 500% budget
+ * hands EVERY row a full 100 to spend, two rows of 100 read "200% of 500% allocated · 300%
+ * left", and the next save/load rewrites row 2 to '0' (capAllocatedSum) — the app accepting
+ * a number and then losing it. Negatives have no typed string worth keeping and fall to the
+ * allocated-sum branch below, which floors them at 0.
  *
- * A winning stored/legacy total is returned exactly as saved (only length-capped, same as
- * settingString's other fields) — this runs on every draft load, export and import, so it is
+ * The floor at the allocated sum is a FLOOR ON THE FIGURE, printed at one decimal: rows of
+ * 6.17 + 6.17 with no stored total yield '12.3', a hair under the 12.34 they allocate. Both
+ * round to the same 12.3 in the panel's readout, so nothing on screen contradicts itself,
+ * but the stored budget can sit a rounding step below the allocation — do not read this as
+ * an exact budget-≥-allocation invariant.
+ *
+ * A winning stored/legacy total keeps its own digits — only length-capped (same as
+ * settingString's other fields) and put in a form the budget field can render (see
+ * inputRenderableTotal above) — this runs on every draft load, export and import, so it is
  * stored state, not a printed readout, and must not reshape what the maker typed (a typed
  * '12.34' silently becoming '12.3' on the next reload). Nothing downstream needs it
  * pre-rounded: SuperfatWaterPanel binds this string straight into an editable number input
@@ -395,18 +429,18 @@ function normalizePostCookSuperfatTotal(
   const raw = (partial as { postCookSuperfatTotalPercent?: unknown } | undefined)
     ?.postCookSuperfatTotalPercent;
   const legacy = partial?.postCookSuperfatPercent;
-  let total: number;
   let stored: string;
   if (typeof raw === 'string' && raw.trim() !== '' && Number.isFinite(Number(raw)) && Number(raw) >= 0) {
-    total = Number(raw);
-    stored = raw.slice(0, MAX_SETTING_FIELD_LENGTH);
+    stored = inputRenderableTotal(raw);
   } else if (typeof legacy === 'string' && Number.isFinite(Number(legacy)) && Number(legacy) > 0) {
-    total = Number(legacy);
-    stored = legacy.slice(0, MAX_SETTING_FIELD_LENGTH);
+    stored = inputRenderableTotal(legacy);
   } else {
-    total = allocated;
     stored = formatInputNumber(allocated, 1);
   }
+  // Read back off the resolved string, not the raw one, so the ceiling and the floor both
+  // judge the value that will actually be stored (the length cap can shorten a long one).
+  const total = Number(stored);
+  if (total > 100) return '100';
   return total < allocated ? formatInputNumber(allocated, 1) : stored;
 }
 

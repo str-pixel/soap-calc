@@ -233,6 +233,39 @@ describe('postCookSuperfat settings', () => {
     expect(s.postCookSuperfatTotalPercent).toBe('12.37');
   });
 
+  // The typed total is clamped to 100 in the UI (setPcsfTotal); the LOADED one has to be
+  // too, or the clamp is only as good as the path the value came in on. It is not cosmetic:
+  // the per-row headroom is Math.min(100, total − others), so a 500% budget hands EVERY row a
+  // full 100 to spend — two rows of 100 then read "200% of 500% allocated · 300% left", and
+  // the next save/load quietly rewrites row 2 to '0' (capAllocatedSum), losing a number the
+  // app had accepted.
+  it('clamps a stored total above 100 on load, not only below 0', () => {
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: '500' }).postCookSuperfatTotalPercent,
+    ).toBe('100');
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: '150' }).postCookSuperfatTotalPercent,
+    ).toBe('100');
+    // The floor half already worked and must keep working: a negative total has no typed
+    // string worth preserving, so it falls to the allocated sum (0 with no oils).
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: '-20' }).postCookSuperfatTotalPercent,
+    ).toBe('0');
+  });
+
+  // SuperfatWaterPanel binds this string straight into an <input type="number">, which
+  // renders NOTHING for a value that is not in the input's own number form — a stored
+  // ' 12.34 ' or '+12.34' leaves the budget field blank while the allocation note beside it
+  // still prints "12.3%". Reachable from a hand-edited or foreign recipe file.
+  it('stores a total the number input can actually render (trimmed, no leading +)', () => {
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: ' 12.34 ' }).postCookSuperfatTotalPercent,
+    ).toBe('12.34');
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: '+12.34' }).postCookSuperfatTotalPercent,
+    ).toBe('12.34');
+  });
+
   it('migrates the legacy single percent into the total budget', () => {
     const s = normalizeSettings({
       postCookSuperfatPercent: '6',

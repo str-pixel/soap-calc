@@ -3,7 +3,7 @@ import { afterEach, expect, test } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { useState } from 'react';
 import { SuperfatWaterPanel } from './SuperfatWaterPanel';
-import { DEFAULT_SETTINGS, type RecipeSettings } from '../lib/recipe';
+import { DEFAULT_SETTINGS, normalizeSettings, type RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 
 afterEach(cleanup);
@@ -170,12 +170,55 @@ test('an explicitly typed 0 total DOES trim the oil rows to 0, unlike a negative
   expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('0');
 });
 
-test('a row still caps at 100 even when an imported recipe left the total budget unclamped', () => {
-  // normalizePostCookSuperfatOils clamps each OIL row on load, but not the TOTAL itself
-  // (normalizePostCookSuperfatTotal only floors it at the allocated sum — no ceiling), so an
-  // imported/loaded recipe can genuinely carry e.g. postCookSuperfatTotalPercent: '500'. The
-  // row-level ceiling in updatePcsfOil is what stops a row from riding that unclamped budget
-  // past 100, independent of setPcsfTotal (which never runs in this scenario) ever clamping it.
+test('a loaded total renders in the budget field instead of blanking it', () => {
+  // The stored total reaches this field verbatim — that is the point of keeping the maker's
+  // own precision — so whatever normalizeSettings hands back has to be a value an
+  // <input type="number"> will display. It shows NOTHING for ' 12.34 ' (Chromium and jsdom
+  // agree), which left the budget blank while the allocation note beside it still printed
+  // "12.3%": one quantity, two figures, and the editable one missing.
+  render(
+    <Harness
+      process="hp"
+      initial={normalizeSettings({ postCookSuperfatTotalPercent: ' 12.34 ' })}
+    />,
+  );
+  expect((screen.getByLabelText('Post-cook superfat total %') as HTMLInputElement).value).toBe(
+    '12.34',
+  );
+  expect(screen.getByText('12.3% unallocated')).toBeTruthy();
+});
+
+test('a loaded 500% budget cannot hand two rows 100% each', () => {
+  // What the missing load-time ceiling actually cost: the per-row headroom is
+  // Math.min(100, total − others), so an unclamped 500 gave every row a full 100 to spend.
+  // Both rows took 100 and the note read "200% of 500% allocated · 300% left" — a budget the
+  // maker cannot type, an allocation the calc will not honour, and a row 2 that the next
+  // save/load silently rewrote to '0'.
+  render(
+    <Harness
+      process="hp"
+      initial={normalizeSettings({
+        postCookSuperfatTotalPercent: '500',
+        postCookSuperfatOils: [
+          { oilId: 'olive-oil', percent: '' },
+          { oilId: 'shea-butter', percent: '' },
+        ],
+      })}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText('Post-cook superfat % 1'), { target: { value: '100' } });
+  fireEvent.change(screen.getByLabelText('Post-cook superfat % 2'), { target: { value: '100' } });
+  expect((screen.getByLabelText('Post-cook superfat % 2') as HTMLInputElement).value).toBe('0');
+  expect(screen.getByText('100% of 100% allocated')).toBeTruthy();
+  expect(screen.queryByText(/500%/)).toBeNull();
+});
+
+test('a row still caps at 100 even when the total budget somehow exceeds it', () => {
+  // Both entry points now clamp the budget to 100 — setPcsfTotal for a typed one,
+  // normalizePostCookSuperfatTotal for a loaded/imported one — so this state is constructed
+  // directly rather than loaded. The row-level ceiling in updatePcsfOil is the independent
+  // second line: a row's OWN percent must not pass 100 (parsePercentOfOil's ceiling, over
+  // which it returns null and the lye reserve silently becomes 0) whatever the budget says.
   render(
     <Harness
       process="hp"
