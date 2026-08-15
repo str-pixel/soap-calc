@@ -485,6 +485,28 @@ export function DilutionPanel({
         cookWaterGrams,
       )
     : null;
+  // Whether the exceeds-solution refusal is ACTUALLY ON SCREEN, not merely flagged. The two
+  // mode exclusions are the paragraph's own (see its full reasoning where it renders): every
+  // clause of it is about a TARGET the paste cannot reach, and neither derived mode is aiming
+  // at one. Named here because two places need the answer and they must never drift: the
+  // paragraph itself, and the solubility ceiling below, whose suppression is subsumption —
+  // it stands down only while a stronger claim about the same target is on screen, so it has
+  // to ask whether this one renders rather than whether the rule fired.
+  const exceedsSolutionAlert =
+    (measurementRejection?.exceedsSolution ?? false) &&
+    dilutionMode !== 'ratio' &&
+    dilutionMode !== 'gradual';
+  // Whether the reading has an explanation on screen AT ALL. The rejection rules are mutually
+  // exclusive (see measuredPasteRejectionFor's own sweep), and the first three render their
+  // paragraph in every mode — only the exceeds-solution one is mode-gated, so only it can
+  // leave `rejected` true with nothing said. exceedsRemainingCeiling is absent because this
+  // panel declares every reading as the whole batch (MEASURED_PASTE_IS_REMAINING), which is
+  // the same reason no branch renders it above.
+  const measurementRejectionAlert =
+    exceedsSolutionAlert ||
+    (measurementRejection?.nonPositive ?? false) ||
+    (measurementRejection?.subTenthPrecision ?? false) ||
+    (measurementRejection?.belowSolids ?? false);
   // Ratio mode (LS:1534): weigh the paste, then add water at 1:1 / 2:1 / 3:1 by weight.
   // Prefer a valid MEASURED paste — the reference's ratio method is applied to a weighed
   // paste. Otherwise pasteGrams is anhydrousGrams + the paste's TRUE water — not
@@ -878,6 +900,24 @@ export function DilutionPanel({
     !measuredPasteValid &&
     computedPasteGrams !== null &&
     computedPasteGrams > dilution.solutionGrams;
+  // The water-only twin of that verdict — targetExceedsPaste's own alert — as a RENDER
+  // CONDITION rather than as the flag. Every clause is that paragraph's own and keeps its own
+  // reasoning where it renders; what this name buys is that the solubility ceiling below can
+  // ask whether the paragraph is on screen instead of whether the flag is set. The two answer
+  // differently, which is the whole reason this exists: a valid reading suppresses the
+  // paragraph by design and leaves the flag standing.
+  //
+  // Whole-batch only, like the sibling above and for a plainer reason than either of theirs:
+  // it lives inside the batch-scope block. In Custom amount the child says the same thing in
+  // its own words (PortionDilutionResults' pasteAlreadyThinner), which is why the ceiling's
+  // suppression reads that too rather than this alone.
+  const pasteAlreadyThinnerAlert =
+    dilution !== null &&
+    dilutionScope === 'batch' &&
+    dilution.targetExceedsPaste &&
+    !measuredPasteValid &&
+    !(measurementRejection?.rejected ?? false) &&
+    (unknownLiquidGrams === 0 || overDilutionCertain);
   // ── The alternative-liquid paragraph, and the portion-scope note the child carries ──
   // Three hints used to render as separate paragraphs — the head start, the can't-tell
   // hedge, the undeclared-liquid floor — and a split-liquid recipe could stack all three
@@ -927,6 +967,34 @@ export function DilutionPanel({
     !overDilutionCertain &&
     !portionOwnsUndeclaredLiquidHedge &&
     !measuredPasteValid;
+  // ── Is targetExceedsPaste SPOKEN FOR: does anything on screen answer for the flag? ──
+  // The solubility ceiling below stands down for it, and a suppression that is subsumption
+  // has to ask about a rendering, not about a flag. The flag has four voices and they are
+  // gated apart from each other, so no single one of them is the answer:
+  //
+  //   Whole batch, nothing wrong with the reading  → the alert above (pasteAlreadyThinnerAlert)
+  //   Custom amount, same state                    → the child says it (pasteAlreadyThinner)
+  //   an undeclared liquid makes it unassertable   → the can't-tell hedge instead (cantTellGate)
+  //   the reading was refused                      → that refusal's own paragraph instead
+  //
+  // The disjunction is what makes this safe in BOTH directions. Keyed on the flag, the
+  // ceiling went silent in the one state where the flag has no voice at all — a VALID
+  // reading, which suppresses the alert by design (a measurement outranks the assumed cook
+  // water the flag is derived from) and suppresses the hedge and the child with it. Keyed on
+  // any single voice, it would have stacked a second paragraph onto the other three.
+  //
+  // The rejection clause reads the alert, not `rejected`: the exceeds-solution paragraph is
+  // excluded from ratio and gradual (it is a claim about a target neither mode is aiming
+  // at), so in those modes a refused reading can leave the flag with no voice either — the
+  // same hole one state over, and the ceiling speaks there too.
+  const overDilutionSpokenFor =
+    pasteAlreadyThinnerAlert ||
+    (portionState?.pasteAlreadyThinner ?? false) ||
+    cantTellGate ||
+    (dilution !== null &&
+      dilution.targetExceedsPaste &&
+      !measuredPasteValid &&
+      measurementRejectionAlert);
   // The floor/same-either-way clause: only when a positive floor exists (when the target
   // already exceeds the paste, the hedge owns the message — rendering this too repeated
   // "declare its % water" verbatim and printed a vacuous "0 g is the LEAST you will
@@ -1387,7 +1455,10 @@ export function DilutionPanel({
           {/* CONCENTRATION MODE ONLY (dilutionMode === 'concentration' is the only remaining
               case once gradual and ratio are both excluded — see each exclusion below). Every
               clause of this paragraph is about a TARGET the paste cannot reach, and only
-              concentration mode is aiming at one.
+              concentration mode is aiming at one. The gate itself is `exceedsSolutionAlert`,
+              named where the rejection is computed: the solubility ceiling below stands down
+              for this paragraph, so it has to read the same answer this site does rather than
+              re-derive the two exclusions and drift from them.
 
               NOT IN GRADUAL MODE, where this paragraph has no subject. Gradual has no target:
               the saved percentage is this mode's own OUTPUT, written from the pot and the
@@ -1414,38 +1485,36 @@ export function DilutionPanel({
               directly above the paste-basis caveat that calls the SAME reading "more
               accurate" than the recipe's computed paste — one paragraph calling the number
               suspect, the next calling it the better one. */}
-          {measurementRejection.exceedsSolution &&
-            dilutionMode !== 'gradual' &&
-            dilutionMode !== 'ratio' && (
-              <p className="results-hint" role="alert">
-                Your paste already weighs more than the{' '}
-                {formatWeight(dilution.solutionGrams, 'g')} this target dilutes to, so
-                it cannot be diluted to{' '}
-                {formatConcentrationPercent(dilution.soapConcentrationPercent)}% at all —{' '}
-                {/* Only one control is ever on screen here now: dilutionMode is always
-                    'concentration' inside this branch (ratio and gradual are both excluded
-                    above), so the remedy names the concentration field unconditionally. It
-                    used to branch on dilutionMode === 'ratio' to name the ratio input
-                    instead — dead since ratio stopped reaching this paragraph at all. */}
-                lower the target concentration above (more water)
-                {/* The measurement clause now names the specific mistake, because this branch
-                    is where that mistake lands. Offering the crockpot shortcut in the ratio
-                    caveat made "forgot to subtract the empty pot" reachable, and a
-                    forgotten subtraction always overshoots — an empty crockpot's 2-4 kg on top
-                    of the paste is heavier than the solution, so it trips THIS rule and never
-                    the solids floor (which only fires on a reading that is too light, and
-                    whose "check the scale was tared" remedy stays right for the mistake it
-                    does catch). Left generic, the leading remedy told a maker carrying 3 kg of
-                    stoneware to add more water, which would have compounded the error. Named
-                    second, after the control-based remedy, because a reading really can be
-                    correct and the target really can be out of reach. Still worth naming here
-                    even though the field that takes the reading is mode-independent — a
-                    maker can carry the crockpot habit into concentration mode from a session
-                    that started in ratio mode, where the shortcut is actually offered. */}
-                , or check the measurement — if you weighed the crockpot, subtract the empty
-                pot&apos;s own weight.
-              </p>
-            )}
+          {exceedsSolutionAlert && (
+            <p className="results-hint" role="alert">
+              Your paste already weighs more than the{' '}
+              {formatWeight(dilution.solutionGrams, 'g')} this target dilutes to, so
+              it cannot be diluted to{' '}
+              {formatConcentrationPercent(dilution.soapConcentrationPercent)}% at all —{' '}
+              {/* Only one control is ever on screen here now: dilutionMode is always
+                  'concentration' inside this branch (ratio and gradual are both excluded
+                  above), so the remedy names the concentration field unconditionally. It
+                  used to branch on dilutionMode === 'ratio' to name the ratio input
+                  instead — dead since ratio stopped reaching this paragraph at all. */}
+              lower the target concentration above (more water)
+              {/* The measurement clause now names the specific mistake, because this branch
+                  is where that mistake lands. Offering the crockpot shortcut in the ratio
+                  caveat made "forgot to subtract the empty pot" reachable, and a
+                  forgotten subtraction always overshoots — an empty crockpot's 2-4 kg on top
+                  of the paste is heavier than the solution, so it trips THIS rule and never
+                  the solids floor (which only fires on a reading that is too light, and
+                  whose "check the scale was tared" remedy stays right for the mistake it
+                  does catch). Left generic, the leading remedy told a maker carrying 3 kg of
+                  stoneware to add more water, which would have compounded the error. Named
+                  second, after the control-based remedy, because a reading really can be
+                  correct and the target really can be out of reach. Still worth naming here
+                  even though the field that takes the reading is mode-independent — a
+                  maker can carry the crockpot habit into concentration mode from a session
+                  that started in ratio mode, where the shortcut is actually offered. */}
+              , or check the measurement — if you weighed the crockpot, subtract the empty
+              pot&apos;s own weight.
+            </p>
+          )}
         </>
       )}
       {/* Paste stores better than diluted soap — it keeps sealed, refrigerates and freezes —
@@ -2029,16 +2098,19 @@ export function DilutionPanel({
                   branch already applied while this one did not, so a mis-tared reading
                   stacked two role="alert" paragraphs here and one there, and the second
                   asserted a verdict derived from the very assumed cook water the rejected
-                  reading was contesting. Both scopes answer this state the same way now. */}
-              {dilution.targetExceedsPaste &&
-                !measuredPasteValid &&
-                !(measurementRejection?.rejected ?? false) &&
-                (unknownLiquidGrams === 0 || overDilutionCertain) && (
-                  <p className="results-hint" role="alert">
-                    The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
-                    only lowers the concentration further.
-                  </p>
-                )}
+                  reading was contesting. Both scopes answer this state the same way now.
+
+                  The clauses live in `pasteAlreadyThinnerAlert` (beside pasteAlreadyPastTarget,
+                  with the scope gate this block applies) because the solubility ceiling below
+                  stands down for this paragraph. Two sites, one answer: keyed on the flag
+                  instead, that suppression fired in states where every one of these clauses
+                  had already silenced this alert. */}
+              {pasteAlreadyThinnerAlert && (
+                <p className="results-hint" role="alert">
+                  The paste is already more dilute than {formatConcentrationPercent(dilution.soapConcentrationPercent)}% — adding water
+                  only lowers the concentration further.
+                </p>
+              )}
               {/* The sibling above answers the water-only form of this state; this one
                   answers the form only the corrected pot can see — see
                   pasteAlreadyPastTarget for the predicate, the gating and why the two can
@@ -2078,20 +2150,27 @@ export function DilutionPanel({
               It is a role="alert", which the prose budget exempts by design — the budget
               tests count non-alert paragraphs, and the alert channel is governed by the
               panel's own no-stacking rule instead, kept here by suppression: when a
-              stronger verdict about this same target already owns the screen —
-              targetExceedsPaste (the FLAG, not its render: its hedged can't-tell state is
-              already questioning the target), the corrected-pot verdict, or an
-              exceeds-solution rejection — this stays silent, exactly the subsumption
-              those alerts already practice on one another. Renders in both scopes: it
-              describes the target, not an amount. The claim and its wording are the old
-              overflow tail's, unchanged.
+              stronger verdict about this same target already owns the screen — whatever is
+              answering for targetExceedsPaste (overDilutionSpokenFor: the alert, the child's
+              Custom-amount wording of it, the hedged can't-tell state that questions the
+              target instead, or the refusal of the reading that displaces all three), the
+              corrected-pot verdict, or an exceeds-solution rejection — this stays silent,
+              exactly the subsumption those alerts already practice on one another. Renders
+              in both scopes: it describes the target, not an amount. The claim and its
+              wording are the old overflow tail's, unchanged.
+
+              EVERY clause asks whether the verdict it defers to is on screen, never whether
+              its flag is set, and that is the whole of this suppression's licence. A
+              subsumption is worth having only while the thing doing the subsuming is
+              actually being said.
 
               NOT ratio or gradual mode's exceeds-solution rejection, though: Task 1
               (2026-08-12-whole-app-review-fixes) stopped that alert rendering in ratio mode
               (a claim about a target ratio mode is not aiming at), so it no longer "owns the
               screen" there — and THAT clause, the rejection one, is keyed to the stronger
-              alert's own rendering: a subsumption is only worth having while the verdict
-              doing the subsuming is actually on screen, and in ratio mode it is not. Left
+              alert's own rendering (`exceedsSolutionAlert`, the same const that site renders
+              on): a subsumption is only worth having while the verdict doing the subsuming is
+              actually on screen, and in ratio mode it is not. Left
               unguarded there, a maker whose SAVED target sits above the solubility ceiling
               (the persisted soapConcentrationPercent, which the printed batch sheet still
               uses until the ratio is touched — see ratioNotAppliedYet above) got told
@@ -2114,27 +2193,32 @@ export function DilutionPanel({
               in gradual mode can be misled by the missing warning exactly as one in ratio
               mode was.
 
-              That render-keying reaches the rejection clause ONLY. The first clause is
-              still the flag, !dilution.targetExceedsPaste, exactly as the paragraph above
-              says it is — and the gap between those two paragraphs is a live hole, not a
-              wording slip. The sibling alert that flag speaks for is itself suppressed by a
-              VALID paste reading (a measurement outranks the assumed cook water the flag is
-              derived from — see its own comment above), while this suppression goes on
-              reading the flag, so nothing takes the silenced alert's place. Reproduced,
-              not assumed: anhydrous 1,200 g, cook water 1,400 g, target 50% →
+              Task 12 (2026-08-12-whole-app-review-fixes) closed the last one, the FIRST
+              clause, which was still `!dilution.targetExceedsPaste` — the flag, not its
+              render — while the alert that flag speaks for is itself suppressed by a VALID
+              paste reading (a measurement outranks the assumed cook water the flag is derived
+              from; see its own comment above, and keep that suppression — it is right). The
+              two answers disagreed, and the state between them said nothing at all.
+              Reproduced, not assumed: anhydrous 1,200 g, cook water 1,400 g, target 50% →
               targetExceedsPaste true; with a valid 2,000 g reading in the field this panel
-              renders ZERO alerts, at a target ten points above the 40% no recipe dissolves
-              past (LS_MINIMUM_DILUTION_GUIDE's highest ceiling). Clear the reading and the
-              paste alert returns. Task 1 hit this and left it deliberately — untested, out
-              of scope there, flagged in its report rather than changed blind — and that
-              judgement stands until this is picked up on purpose, with tests. Known, live
-              and deliberately unaddressed — this comment does not get to imply otherwise. */}
+              rendered ZERO alerts, at a target ten points above the 40% no recipe dissolves
+              past (LS_MINIMUM_DILUTION_GUIDE's highest ceiling) — in all three modes and in
+              both scopes. Clearing the reading brought the paste alert back, which is what
+              made it a suppression bug rather than a missing sentence. Task 1 hit this while
+              fixing ratio's version, judged it untested and out of scope, and flagged it
+              rather than changing it blind; this is that deferred change, with the matrix of
+              alert counts its report asked for.
+
+              The fix is a disjunction, not a swap, and that matters: `overDilutionSpokenFor`
+              (see its derivation) asks whether ANY of the flag's four voices is on screen.
+              Testing `!measuredPasteValid` alone would have closed this hole by opening the
+              opposite one — a second paragraph stacked on the rejection alert and on the
+              can't-tell hedge, which are exactly the states this alert already stands down
+              for. */}
           {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent)) &&
-            !dilution.targetExceedsPaste &&
+            !overDilutionSpokenFor &&
             !pasteAlreadyPastTarget &&
-            !((measurementRejection?.exceedsSolution ?? false) &&
-              dilutionMode !== 'ratio' &&
-              dilutionMode !== 'gradual') && (
+            !exceedsSolutionAlert && (
               <p className="results-hint" role="alert">
                 This target is above what even a coconut-heavy recipe can fully dissolve.
               </p>

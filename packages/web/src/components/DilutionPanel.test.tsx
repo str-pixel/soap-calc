@@ -30,6 +30,22 @@ const BASE = {
   onDilutionScopeChange: () => {},
 };
 
+// The alert channel is where this panel's one-verdict-per-target rule is enforced, so
+// several tests below count and IDENTIFY paragraphs rather than asserting a single string:
+// the same state can regress in two opposite directions — nothing said, or two paragraphs
+// saying it — and only a count that names what it counted tells those apart.
+const alertTexts = () =>
+  screen.queryAllByRole('alert').map((a) => a.textContent!.replace(/\s+/g, ' '));
+const SOLUBILITY_CEILING = /above what even a coconut-heavy recipe can fully dissolve/i;
+// Everything this panel says to refuse a READING or a target outright, as opposed to the
+// solubility sentence, which describes the target and refuses nothing.
+const refusalAlerts = () =>
+  alertTexts().filter((t) =>
+    /cannot be diluted to|already weighs more than|cannot be all of the paste|more than zero|thousands separator|already more dilute/i.test(
+      t,
+    ),
+  );
+
 test('renders the dilution figures', () => {
   render(<DilutionPanel dilution={RESULT} soapConcentrationPercent="30" onSoapConcentrationChange={() => {}} weightUnit="g" />);
   expect(screen.getByText('Dilution water to add')).toBeTruthy();
@@ -149,9 +165,11 @@ describe('intended-use dilution targets', () => {
     // warnings, defended by a claim ("the summary already says no common use calls for N%")
     // that is false exactly here. The warning is a role="alert" — outside the prose budget
     // by the budget describe's own counting rule, and INSIDE the panel's one-verdict-per-
-    // target rule: when targetExceedsPaste, the corrected-pot verdict or an exceeds-
-    // solution rejection already owns the target, this stays silent (those states assert
-    // something strictly stronger about the same target).
+    // target rule: when something on screen is already answering for targetExceedsPaste, or
+    // the corrected-pot verdict or an exceeds-solution rejection is, this stays silent
+    // (those states assert something strictly stronger about the same target). Each of those
+    // is asked as a RENDERING, not as a flag — see the Task 12 describe below for what the
+    // difference was worth.
     render30('45');
     const summary = screen.getByText(/at 45% this suits/i);
     expect(summary.textContent?.toLowerCase()).toContain('dish soap');
@@ -233,6 +251,179 @@ describe('intended-use dilution targets', () => {
     expect(
       screen.getByText(/above what even a coconut-heavy recipe can fully dissolve/i),
     ).toBeTruthy();
+  });
+
+  // ── Task 12 (2026-08-12-whole-app-review-fixes): the last flag-keyed clause ──
+  // The suppression above stands down for a STRONGER VERDICT about the same target. Its
+  // first clause read the raw targetExceedsPaste flag, but that flag's own alert is
+  // suppressed by a valid paste reading — a measurement outranks the assumed cook water the
+  // flag is derived from — so a reading silenced the verdict and the flag went on silencing
+  // this sentence, leaving nothing at all on screen at a target ten points past what
+  // dissolves. The cases below pin both directions: the sentence speaks wherever nothing
+  // else does, and stays silent wherever something else already does.
+  describe('the solubility ceiling, when the alert its suppression defers to is silent', () => {
+    // Built by core rather than hand-written so the flag under test is core's own verdict:
+    // 1,200 g of anhydrous soap cooked in 1,400 g of water at a saved 50% target makes a
+    // 2,400 g solution holding 1,200 g of water, and 1,200 < 1,400 is targetExceedsPaste.
+    // 50% is ten points above LS_MINIMUM_DILUTION_GUIDE's highest ceiling (40%,
+    // coconut-heavy), so the solubility sentence is true of this target in every state
+    // below — no reading about a pot can make an undissolvable target dissolvable.
+    const OVER_CEILING = calculateDilution({
+      anhydrousGrams: 1200,
+      cookWaterGrams: 1400,
+      kohGrams: 240,
+      naohGrams: 0,
+      soapConcentrationPercent: 50,
+    })!;
+    // A possible pot, and therefore an ACCEPTED reading: above the 1,200 g solids floor
+    // (no split liquid, so the floor is the anhydrous soap) and under the 2,400 g solution.
+    // Deliberately none of the fixture's other figures — 1,200 / 1,400 / 2,400 / 2,600 are
+    // all distinct from it and from each other, so no assertion below can pass by matching
+    // the wrong quantity.
+    const VALID_READING = '2000';
+    const MODE_PROPS = {
+      concentration: {},
+      ratio: { waterPasteRatio: '2', onWaterPasteRatioChange: () => {} },
+      gradual: { gradualWaterGrams: '500', onGradualWaterChange: () => {} },
+    } as const;
+    const renderOverCeiling = (
+      mode: keyof typeof MODE_PROPS,
+      props: Partial<ComponentProps<typeof DilutionPanel>> = {},
+    ) =>
+      render(
+        <DilutionPanel
+          {...BASE}
+          soapConcentrationPercent="50"
+          dilution={OVER_CEILING}
+          cookWaterGrams={1400}
+          wholeBatchPasteGrams={2600}
+          dilutionMode={mode}
+          onDilutionModeChange={() => {}}
+          {...MODE_PROPS[mode]}
+          {...props}
+        />,
+      );
+    const CEILING = SOLUBILITY_CEILING;
+    const PASTE_ALREADY_THINNER = /the paste is already more dilute than 50%/i;
+
+    it('is the fixture the flag is actually set on, and the reading is actually accepted', () => {
+      // The positive control for everything below: without core's flag there is no
+      // suppression to test, and without an ACCEPTED reading the state under test is the
+      // rejected one instead. The paste-basis hint renders only on measuredPasteValid, and
+      // it quotes the reading, so it witnesses both halves.
+      expect(OVER_CEILING.targetExceedsPaste).toBe(true);
+      renderOverCeiling('concentration', { measuredPasteGrams: VALID_READING });
+      expect(screen.getByText(/uses your measured paste \(2,000 g\)/i)).toBeTruthy();
+    });
+
+    for (const mode of ['concentration', 'ratio', 'gradual'] as const) {
+      it(`speaks in ${mode} mode when a valid reading has silenced the alert it defers to`, () => {
+        // THE DEFECT. The reading is accepted, so the "already more dilute" alert stands
+        // down by design (a measurement outranks the flag) — and the ceiling sentence used
+        // to stand down with it, keyed on the flag rather than on that alert's rendering.
+        renderOverCeiling(mode, { measuredPasteGrams: VALID_READING });
+        const alerts = alertTexts();
+        expect(alerts).toHaveLength(1);
+        expect(alerts[0]).toMatch(CEILING);
+      });
+
+      it(`still yields to the alert it defers to in ${mode} mode, with the reading cleared`, () => {
+        // The other direction, and the reproduction's own control: clear the field and the
+        // stronger verdict is back on screen, so this sentence must not stack a second
+        // paragraph on top of it.
+        renderOverCeiling(mode, { measuredPasteGrams: '' });
+        const alerts = alertTexts();
+        expect(alerts).toHaveLength(1);
+        expect(alerts[0]).toMatch(PASTE_ALREADY_THINNER);
+        expect(alerts[0]).not.toMatch(CEILING);
+      });
+
+      it(`still yields to a rejection alert in ${mode} mode`, () => {
+        // 900 g is below the 1,200 g of soap the batch makes, so the reading is rejected and
+        // owns the screen in every mode (the solids floor is mode-independent). The flag's
+        // own alert excludes a rejected reading for that reason; this sentence must not
+        // take the vacated slot.
+        renderOverCeiling(mode, { measuredPasteGrams: '900' });
+        const alerts = alertTexts();
+        expect(alerts).toHaveLength(1);
+        expect(alerts[0]).toMatch(/cannot be all of the paste/i);
+      });
+
+      it(`still yields to the can't-tell hedge in ${mode} mode`, () => {
+        // An undeclared alternative liquid makes the flag's own verdict unassertable, so the
+        // hedge renders in its place — a paragraph, not an alert. It is still a claim about
+        // whether this target is reachable, so the ceiling sentence stays out of its way and
+        // the alert count stays at zero.
+        renderOverCeiling(mode, { measuredPasteGrams: '', unknownLiquidGrams: 300 });
+        expect(alertTexts()).toHaveLength(0);
+        expect(screen.getByText(/can't tell whether 50% is reachable/i)).toBeTruthy();
+      });
+    }
+
+    it('speaks in ratio mode when even the rejection alert is silent', () => {
+      // The same hole, one state over: 3,000 g exceeds the 2,400 g solution, but that
+      // rejection's alert is excluded from ratio mode (ratio is not aiming at the saved
+      // target), and the flag's own alert excludes every rejected reading. Nothing renders
+      // for either, so the ceiling sentence is the only thing left that can speak.
+      renderOverCeiling('ratio', { measuredPasteGrams: '3000' });
+      const alerts = alertTexts();
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0]).toMatch(CEILING);
+    });
+
+    it('speaks in Custom amount scope, where the flag has no alert of its own at all', () => {
+      // The "already more dilute" alert is Whole-batch only; in Custom amount the child says
+      // it instead, and with a valid reading the child sizes a portion and says nothing. The
+      // target is still ten points past the ceiling.
+      renderOverCeiling('concentration', {
+        measuredPasteGrams: VALID_READING,
+        dilutionScope: 'portion',
+        targetMl: '500',
+      });
+      const alerts = alertTexts();
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0]).toMatch(CEILING);
+    });
+
+    it('still yields to the child that says it in Custom amount scope', () => {
+      // No reading: PortionDilutionResults refuses the portion in its own words ("no
+      // dilution water to divide up"), which is the same verdict the shell's alert makes in
+      // Whole batch. One verdict per target across the scope seam, so no alert here.
+      renderOverCeiling('concentration', {
+        measuredPasteGrams: '',
+        dilutionScope: 'portion',
+        targetMl: '500',
+      });
+      expect(alertTexts()).toHaveLength(0);
+      expect(screen.getByText(/no dilution water to divide up/i)).toBeTruthy();
+    });
+
+    it('stays silent for a target the guide says is dissolvable, flag or no flag', () => {
+      // The control that keeps the fix from degenerating into "always render": 1,200 g of
+      // soap cooked in 3,000 g of water at 30% is the same targetExceedsPaste state — 2,800
+      // g of total water against 3,000 g of cook water — but 30% is inside every recipe
+      // type's solubility ceiling, so this sentence is not true and must not appear.
+      const UNDER_CEILING = calculateDilution({
+        anhydrousGrams: 1200,
+        cookWaterGrams: 3000,
+        kohGrams: 240,
+        naohGrams: 0,
+        soapConcentrationPercent: 30,
+      })!;
+      expect(UNDER_CEILING.targetExceedsPaste).toBe(true);
+      render(
+        <DilutionPanel
+          {...BASE}
+          soapConcentrationPercent="30"
+          dilution={UNDER_CEILING}
+          cookWaterGrams={3000}
+          wholeBatchPasteGrams={4200}
+          measuredPasteGrams="3500"
+        />,
+      );
+      expect(alertTexts()).toHaveLength(0);
+      expect(screen.queryByText(CEILING)).toBeNull();
+    });
   });
 
   it('does not offer a hair use', () => {
@@ -1021,19 +1212,32 @@ describe('ratio mode counts from the pot, not from the target it is about to rep
     // very same reading more accurate than the recipe's computed paste. Nothing about the
     // basis is weakened: the tests above still prove the reading is what gets multiplied and
     // what gets written back (25.8%, not the computed pot's 25.0%).
+    //
+    // Task 12 narrowed the assertion from "no alert at all" to "no refusal". The bare
+    // count also pinned the SOLUBILITY CEILING's silence, which this test never argued for
+    // and which was a defect: this fixture's saved target is 80%, twice the 40% no recipe
+    // dissolves past, and that sentence was suppressed by the raw targetExceedsPaste flag
+    // while the alert that flag speaks for was suppressed by the reading. Nothing here is
+    // weakened — the refusal this test is about is still asserted absent, by name.
     render(<DilutionPanel {...PAST_TARGET} />);
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(refusalAlerts()).toEqual([]);
+    expect(alertTexts()).toEqual([expect.stringMatching(SOLUBILITY_CEILING)]);
   });
 
   it('a reading UNDER that ceiling is untouched — both gates agree there', () => {
     // The control for the three above: same fixture, a 1,450 g reading that clears the
     // ceiling too. 1,450 x 2 = 2,900 g, and nothing about this case ever depended on which
     // gate chose the basis.
+    //
+    // Same Task 12 narrowing, and this is the reproduction's own state: an ACCEPTED reading,
+    // which suppresses the "already more dilute" alert by design and used to take the
+    // solubility sentence down with it — leaving an 80% target with nothing said about it.
     render(<DilutionPanel {...PAST_TARGET} measuredPasteGrams="1450" />);
     expect(screen.getByText('Water to add at this ratio').nextElementSibling!.textContent).toBe(
       '2,900 g',
     );
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(refusalAlerts()).toEqual([]);
+    expect(alertTexts()).toEqual([expect.stringMatching(SOLUBILITY_CEILING)]);
   });
 });
 
