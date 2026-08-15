@@ -7,6 +7,7 @@ import {
 import type { AdditiveStage, DoseBasis, DoseUnit, GelMode, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
 import { defaultVariantFor, isProcessVariantId, processForLyeType, type ProcessVariantId } from './process';
+import { formatInputNumber } from './format';
 
 export type { WeightUnit };
 
@@ -371,7 +372,21 @@ export function postCookSuperfatAllocated(oils: PostCookSuperfatOil[]): number {
 /** Normalize the post-cook superfat total (the budget/ceiling the oils allocate within).
  * Resolution order: an explicit stored total → the legacy single `postCookSuperfatPercent`
  * → the allocated sum (pre-total recipes from the multi-oil era). Never below the allocated
- * sum, so the budget-≥-allocation invariant always holds on load. */
+ * sum, so the budget-≥-allocation invariant always holds on load.
+ *
+ * A winning stored/legacy total is returned exactly as saved (only length-capped, same as
+ * settingString's other fields) — this runs on every draft load, export and import, so it is
+ * stored state, not a printed readout, and must not reshape what the maker typed (a typed
+ * '12.34' silently becoming '12.3' on the next reload). Nothing downstream needs it
+ * pre-rounded: SuperfatWaterPanel binds this string straight into an editable number input
+ * (exact fidelity is what that field wants), and separately derives its own rounded "X% of
+ * Y% allocated" readout from a parsed Number via its own formatTotal/roundPct — display
+ * rounding that already lives at the display, per format.ts's convention.
+ *
+ * Only the allocated-sum fallback below has no typed string to preserve — it's a number
+ * derived from summing the oils' own percents — so formatting it (via format.ts, the shared
+ * home for this kind of rounding) is fair game, and also flushes summing float noise (e.g.
+ * 0.1 + 0.2) out of what gets stored. */
 function normalizePostCookSuperfatTotal(
   partial: (Partial<RecipeSettings> & { postCookSuperfatPercent?: unknown }) | undefined,
   oils: PostCookSuperfatOil[],
@@ -381,16 +396,18 @@ function normalizePostCookSuperfatTotal(
     ?.postCookSuperfatTotalPercent;
   const legacy = partial?.postCookSuperfatPercent;
   let total: number;
+  let stored: string;
   if (typeof raw === 'string' && raw.trim() !== '' && Number.isFinite(Number(raw)) && Number(raw) >= 0) {
     total = Number(raw);
+    stored = raw.slice(0, MAX_SETTING_FIELD_LENGTH);
   } else if (typeof legacy === 'string' && Number.isFinite(Number(legacy)) && Number(legacy) > 0) {
     total = Number(legacy);
+    stored = legacy.slice(0, MAX_SETTING_FIELD_LENGTH);
   } else {
     total = allocated;
+    stored = formatInputNumber(allocated, 1);
   }
-  total = Math.max(total, allocated);
-  // Whole numbers print bare; keep one decimal otherwise.
-  return Number.isInteger(total) ? String(total) : String(Math.round(total * 10) / 10);
+  return total < allocated ? formatInputNumber(allocated, 1) : stored;
 }
 
 const WATER_MODES = ['percent_of_oils', 'lye_concentration', 'lye_water_ratio'] as const;

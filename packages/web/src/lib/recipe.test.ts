@@ -221,6 +221,18 @@ describe('postCookSuperfat settings', () => {
     expect(s.postCookSuperfatTotalPercent).toBe('4');
   });
 
+  // normalizeSettings runs on every draft load, export and import — a display rule baked in
+  // here would silently reshape what the maker typed on every cycle, not just once.
+  it('keeps the exact total the maker typed, not rounded to one decimal', () => {
+    const s = normalizeSettings({ postCookSuperfatTotalPercent: '12.34' });
+    expect(s.postCookSuperfatTotalPercent).toBe('12.34');
+  });
+
+  it('keeps a typed total needing rounding-up too (not just rounding-down)', () => {
+    const s = normalizeSettings({ postCookSuperfatTotalPercent: '12.37' });
+    expect(s.postCookSuperfatTotalPercent).toBe('12.37');
+  });
+
   it('migrates the legacy single percent into the total budget', () => {
     const s = normalizeSettings({
       postCookSuperfatPercent: '6',

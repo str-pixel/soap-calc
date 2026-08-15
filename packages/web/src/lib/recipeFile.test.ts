@@ -188,6 +188,18 @@ describe('recipeFile', () => {
     ]);
   });
 
+  // normalizeSettings (called by both serialize and parse) must not round the total to one
+  // decimal — that's a display rule, not a storage rule, and this field is stored state.
+  it('round-trips a post-cook superfat total at its typed precision, unrounded', () => {
+    const lines = createStarterLines();
+    const settings = { ...DEFAULT_SETTINGS, postCookSuperfatTotalPercent: '12.34' };
+    const payload = serializeRecipeFile('HP with PCSF total', lines, settings, [], 'hp');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.postCookSuperfatTotalPercent).toBe('12.34');
+  });
+
   it('accepts a hand-edited numeric additive amount', () => {
     const payload = {
       version: 2,
