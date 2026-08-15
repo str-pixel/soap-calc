@@ -275,13 +275,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 // A row's percent, clamped into [0, 100] — a recipe file (hand-edited, imported, or from a
-// stale save) can carry any string, so this is the load-time half of the guard; the UI's
-// live-typing half is SuperfatWaterPanel's setPcsfTotal/updatePcsfOil. Blank/non-numeric
-// text passes through unclamped (nothing to clamp; downstream parsing already treats it as
-// absent). A finite number outside the range snaps to the nearest bound: parsePercentOfOil
-// (core) REJECTS — returns null, not a clamped value — for anything over 100, so an
-// unclamped '200' row would silently contribute 0 to the subtract-mode lye reserve instead
-// of the (visibly clamped) percent the panel shows as allocated.
+// stale save) can carry any string, so this is the load-time half of the guard. It is the
+// only half that clamps BOTH sides: live typing goes through SuperfatWaterPanel's
+// updatePcsfOil, whose headroom bounds a row from above and lets a negative stand as typed
+// (see there). Blank/non-numeric text passes through unclamped (nothing to clamp; downstream
+// parsing already treats it as absent). A finite number outside the range snaps to the
+// nearest bound: parsePercentOfOil (core) REJECTS — returns null, not a clamped value — for
+// anything over 100, so an unclamped '200' row would silently contribute 0 to the
+// subtract-mode lye reserve instead of the (visibly clamped) percent the panel shows as
+// allocated.
 function clampPostCookSuperfatPercent(percent: string): string {
   const n = Number(percent);
   if (!Number.isFinite(n)) return percent;

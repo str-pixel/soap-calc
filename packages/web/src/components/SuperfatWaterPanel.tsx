@@ -30,13 +30,15 @@ const posNum = (s: string): number => {
   const n = Number(s);
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
-// A typed post-cook superfat percent (row or total), clamped into [0, 100]. The <input
-// max={...}> on these fields is an HTML hint only — it does not stop a value from being
-// typed or pasted — so this is the actual enforcement. Matters beyond cosmetics: core's
-// parsePercentOfOil REJECTS (returns null) anything over 100 rather than clamping it, so an
-// unclamped out-of-range row (e.g. a mistyped '200' for '20') would silently contribute 0 to
-// the subtract-mode lye reserve while the panel still showed it as allocated. Blank/invalid
-// text passes through unclamped — it's mid-edit, not an out-of-range number.
+// A typed post-cook superfat TOTAL, clamped into [0, 100]. setPcsfTotal is its only caller
+// — the oil rows are bounded separately, by updatePcsfOil's headroom, and only on the high
+// side (see there); this is not their guard, in either direction. The <input max={...}> on
+// the field is an HTML hint only — it does not stop a value from being typed or pasted — so
+// this is the actual enforcement. Matters beyond cosmetics: the rows' headroom is derived
+// FROM this budget, so a mistyped '500' for '50' would hand every row a full 100 to spend
+// and let the rows sum past 100 — which the lye math then has to clamp at 99 to keep
+// cookFactor positive (see useRecipeViewModel), reserving a figure the panel never showed.
+// Blank/invalid text passes through unclamped — it's mid-edit, not an out-of-range number.
 const clampPct = (value: string): string => {
   const n = Number(value);
   if (!Number.isFinite(n)) return value;
@@ -187,9 +189,15 @@ export function SuperfatWaterPanel({
           0,
         );
         const budget = Math.max(0, Number(s.postCookSuperfatTotalPercent) || 0);
-        // Capped at 100 in addition to the budget: the budget itself is clamped to 100 by
-        // setPcsfTotal below, but a row's OWN percent still must not exceed 100 (parsePercentOfOil's
-        // ceiling) regardless of what the budget carries — see clampPct.
+        // Capped at 100 in addition to the budget: the budget is itself clamped to 100 on
+        // both ways in (setPcsfTotal below for a typed one, normalizePostCookSuperfatTotal
+        // for a loaded one), but a row's OWN percent still must not exceed 100
+        // (parsePercentOfOil's ceiling) whatever the budget carries. This headroom is the
+        // whole of a row's bounding — updatePcsfOil never calls clampPct — and it bounds the
+        // HIGH side only: a negative typed into a row is stored exactly as typed, the field
+        // shows the -50, and parsePercentOfOil rejects it so the reserve and the allocation
+        // note both count it as nothing. A figure on screen that nothing counts, and known:
+        // clamping a row's low side is a behaviour change no test stands behind yet.
         const headroom = Math.min(100, Math.max(0, roundPct(budget - others)));
         const typed = patch.percent ?? '';
         const n = Number(typed);

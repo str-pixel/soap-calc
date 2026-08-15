@@ -114,7 +114,7 @@ export default function App() {
   // sees every path that changes the recipe.
   //
   // Keyed on the oils' CONTENT, not `lines`' array identity: switching process tabs
-  // reloads the OTHER process's own draft via loadWorkspace → loadDraft → JSON.parse,
+  // reloads the OTHER process's own draft via loadWorkspace → loadDraftSlot → JSON.parse,
   // and JSON.parse allocates a fresh array every time even when the bytes are identical.
   // A round trip back to an unchanged Liquid soap recipe would then present a new `lines`
   // reference for byte-identical oils and wipe the measurement for no real edit — silently

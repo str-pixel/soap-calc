@@ -166,7 +166,7 @@ describe('App process switch', () => {
     expect((measuredInput as HTMLInputElement).value).toBe('1500');
 
     // Switching away and back reloads the Liquid Soap workspace's own draft via
-    // loadWorkspace → loadDraft → JSON.parse, which allocates a brand-new `lines` array
+    // loadWorkspace → loadDraftSlot → JSON.parse, which allocates a brand-new `lines` array
     // even though the oils themselves never changed. That must not read as an oils edit.
     await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));

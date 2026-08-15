@@ -12,7 +12,7 @@ import { isProcessId, processForLyeType, type ProcessId } from './process';
 const LEGACY_DRAFT_KEY = 'soap-calc:draft';
 const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
 // v3: NaOH purity '100' in older drafts is migrated to the current default (see
-// migrateSettings). Version list accepted by loadDraft must include every older version.
+// migrateSettings). Version list accepted by loadDraftSlot must include every older version.
 const STORAGE_VERSION = 3;
 const READABLE_VERSIONS = [1, 2, STORAGE_VERSION];
 
@@ -174,7 +174,12 @@ export function loadDraftSlot(process: ProcessId): DraftSlot {
   }
 }
 
-/** The draft alone, for the callers that have nothing to say about an unreadable slot. */
+/** The draft alone, without the slot's unreadable flag. TEST-ONLY: the app's one caller
+ * (useRecipeStorage's loadWorkspace) reads loadDraftSlot directly now, and production code
+ * must keep doing so — dropping the flag drops the one thing that separates "nothing was
+ * saved here" from "something was saved here that we had to set aside", which is exactly
+ * what the maker has to be told. Kept anyway because ~40 test references load a slot through
+ * it, and one wrapper is a better seam than teaching each of them to destructure. */
 export function loadDraft(process: ProcessId): LoadedDraft | null {
   return loadDraftSlot(process).draft;
 }
@@ -225,7 +230,7 @@ export function migrateLegacyDraft(): void {
     } catch {
       // fall through to the validity gate below
     }
-    // Migrate only what loadDraft could actually read back. An unparseable or
+    // Migrate only what loadDraftSlot could actually read back. An unparseable or
     // structurally alien legacy payload stays under its own key — copying it into a
     // per-process slot would get it rejected by the version gate and then destroyed
     // by the first autosave, instead of merely ignored.

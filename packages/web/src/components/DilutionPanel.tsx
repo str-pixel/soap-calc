@@ -2089,8 +2089,9 @@ export function DilutionPanel({
               NOT ratio or gradual mode's exceeds-solution rejection, though: Task 1
               (2026-08-12-whole-app-review-fixes) stopped that alert rendering in ratio mode
               (a claim about a target ratio mode is not aiming at), so it no longer "owns the
-              screen" there — the subsumption this suppression practices requires the
-              stronger verdict to actually be on screen, and in ratio mode it is not. Left
+              screen" there — and THAT clause, the rejection one, is keyed to the stronger
+              alert's own rendering: a subsumption is only worth having while the verdict
+              doing the subsuming is actually on screen, and in ratio mode it is not. Left
               unguarded there, a maker whose SAVED target sits above the solubility ceiling
               (the persisted soapConcentrationPercent, which the printed batch sheet still
               uses until the ratio is touched — see ratioNotAppliedYet above) got told
@@ -2111,7 +2112,23 @@ export function DilutionPanel({
               a not-yet-applied edit (ratioNotAppliedYet's gradual counterpart) can still sit
               above the ceiling while gradual's own alert stays silent about it — so a maker
               in gradual mode can be misled by the missing warning exactly as one in ratio
-              mode was. */}
+              mode was.
+
+              That render-keying reaches the rejection clause ONLY. The first clause is
+              still the flag, !dilution.targetExceedsPaste, exactly as the paragraph above
+              says it is — and the gap between those two paragraphs is a live hole, not a
+              wording slip. The sibling alert that flag speaks for is itself suppressed by a
+              VALID paste reading (a measurement outranks the assumed cook water the flag is
+              derived from — see its own comment above), while this suppression goes on
+              reading the flag, so nothing takes the silenced alert's place. Reproduced,
+              not assumed: anhydrous 1,200 g, cook water 1,400 g, target 50% →
+              targetExceedsPaste true; with a valid 2,000 g reading in the field this panel
+              renders ZERO alerts, at a target ten points above the 40% no recipe dissolves
+              past (LS_MINIMUM_DILUTION_GUIDE's highest ceiling). Clear the reading and the
+              paste alert returns. Task 1 hit this and left it deliberately — untested, out
+              of scope there, flagged in its report rather than changed blind — and that
+              judgement stands until this is picked up on purpose, with tests. Known, live
+              and deliberately unaddressed — this comment does not get to imply otherwise. */}
           {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent)) &&
             !dilution.targetExceedsPaste &&
             !pasteAlreadyPastTarget &&
