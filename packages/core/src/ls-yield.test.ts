@@ -70,11 +70,12 @@ describe('lsPartialDilution', () => {
   });
 
   it('refuses a non-finite raw batch field that the null guards further down cannot catch', () => {
-    // `potAnhydrousGrams === null` (:201) can't catch this: NaN !== null. And
-    // `batchWaterGrams < 0` (:238) can't either: NaN < 0 is false. A NaN in any of these
-    // three raw batch fields must be stopped here, at the top, or it rides ordinary
-    // arithmetic all the way to the return value — see the next test for what that looks
-    // like when it isn't stopped.
+    // `potAnhydrousGrams === null` can't catch this: in whole-batch mode potAnhydrousGrams
+    // is a bare `batch.anhydrousGrams` assignment that never reaches
+    // lsPotAnhydrousShare's own null check, and NaN !== null anyway. `batchWaterGrams < 0`
+    // can't catch it either: NaN < 0 is false. A NaN in any of these three raw batch fields
+    // must be stopped here, at the top, or it rides ordinary arithmetic all the way to the
+    // return value — see the next tests for what that looks like when it isn't stopped.
     expect(lsPartialDilution({ ...BATCH, anhydrousGrams: Number.NaN }, 1941.7)).toBeNull();
     expect(lsPartialDilution({ ...BATCH, totalWaterGrams: Number.NaN }, 1941.7)).toBeNull();
     expect(lsPartialDilution({ ...BATCH, dilutionWaterGrams: Number.NaN }, 1941.7)).toBeNull();
@@ -88,6 +89,23 @@ describe('lsPartialDilution', () => {
     expect(
       lsPartialDilution({ ...BATCH, dilutionWaterGrams: Number.POSITIVE_INFINITY }, 1941.7),
     ).toBeNull();
+  });
+
+  it('refuses a negative anhydrousGrams — a batch with no soap is corrupt, not a valid share of one', () => {
+    // Not caught by the NaN-only guard above (a negative number is finite) and not caught
+    // by lsPotAnhydrousShare's <= 0 check either — in whole-batch mode potAnhydrousGrams is
+    // a bare assignment that never routes through that function at all. Needs its own <= 0
+    // floor at the top, matching every sibling anhydrousGrams check in this file.
+    expect(lsPartialDilution({ ...BATCH, anhydrousGrams: -500 }, 1941.7)).toBeNull();
+  });
+
+  it('refuses a negative totalWaterGrams — the same wrong-predicted-paste symptom as Infinity, reached by a negative instead', () => {
+    // totalWaterGrams(-500) - dilutionWaterGrams(2400) = -2900, and the existing
+    // Math.max(0, ...) clamp turns that into 0 exactly as it did for an infinite
+    // dilutionWaterGrams, so predictedPasteGrams becomes anhydrousGrams alone (1,200 g)
+    // instead of the correct 1,600 g — the identical wrong-but-finite number, reached
+    // through the other side of the same subtraction.
+    expect(lsPartialDilution({ ...BATCH, totalWaterGrams: -500 }, 1941.7)).toBeNull();
   });
 });
 
