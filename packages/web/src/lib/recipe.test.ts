@@ -266,6 +266,124 @@ describe('postCookSuperfat settings', () => {
     ).toBe('12.34');
   });
 
+  // The 200-char cap used to .slice() the string, and the slice can land INSIDE an exponent:
+  // the remainder parses to NaN and the canonical text of NaN is the literal 'NaN' — exactly
+  // the shape this canonicalizer exists to keep out of the budget field. It renders nothing,
+  // and it walks past BOTH guards below, because every comparison against NaN is false: not
+  // > 100, not < allocated. Field blank, allocation note still printing a figure — one
+  // quantity, two figures, and the editable one missing.
+  it('refuses a total it cannot store rather than canonicalizing it to NaN', () => {
+    const capSplitsExponent = `0.${'0'.repeat(196)}5e100`; // 203 chars, really 5e-97
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: capSplitsExponent })
+        .postCookSuperfatTotalPercent,
+    ).toBe('0');
+    // Refusal means "no usable stored total", so the rest of the chain still runs and the
+    // allocated-sum floor still holds — a 'NaN' would have sailed straight past it.
+    expect(
+      normalizeSettings({
+        postCookSuperfatTotalPercent: capSplitsExponent,
+        postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '4' }],
+      }).postCookSuperfatTotalPercent,
+    ).toBe('4');
+  });
+
+  // .slice() only loses precision when what sits past char 200 is fractional digits. When
+  // MAGNITUDE lives out there — leading zeros, or an exponent — truncating changes the
+  // figure. Both of these reach the app through the budget field itself: Number() of each is
+  // in range, so clampPct and the input's own sanitizer accept the paste, and the loss shows
+  // up only on the next load. A number too long to store is refused, not rewritten.
+  it('refuses an over-length total instead of slicing its magnitude away', () => {
+    const zeroPadded = `${'0'.repeat(250)}12.34`; // Number is 12.34; 200 chars of it are zeros
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: zeroPadded }).postCookSuperfatTotalPercent,
+    ).toBe('0');
+    const exponentCut = `1${'0'.repeat(300)}e-300`; // Number is 1; cut to 200 chars it is 1e199
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: exponentCut }).postCookSuperfatTotalPercent,
+    ).toBe('0');
+    // Not a hardcoded zero: refusal drops into the chain, which floors at the allocated sum.
+    expect(
+      normalizeSettings({
+        postCookSuperfatTotalPercent: zeroPadded,
+        postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '4' }],
+      }).postCookSuperfatTotalPercent,
+    ).toBe('4');
+  });
+
+  // The property both defects broke. normalizeSettings runs on every draft load, export and
+  // import, so a total that changes between load 1 and load 2 is a figure the app is still
+  // quietly editing after it accepted it ('NaN' → '0' being the worst case: the maker's
+  // number becomes nothing at all, one reload later).
+  it('resolves the total idempotently, awkward inputs included', () => {
+    const inputs = [
+      `0.${'0'.repeat(196)}5e100`,
+      `${'0'.repeat(250)}12.34`,
+      `1${'0'.repeat(300)}e-300`,
+      'Infinity',
+      '1e309',
+      '12.34',
+      '.5',
+      ' 12.34 ',
+      '500',
+    ];
+    for (const raw of inputs) {
+      const once = normalizeSettings({
+        postCookSuperfatTotalPercent: raw,
+      }).postCookSuperfatTotalPercent;
+      const twice = normalizeSettings({
+        postCookSuperfatTotalPercent: once,
+      }).postCookSuperfatTotalPercent;
+      expect([raw, twice]).toEqual([raw, once]);
+    }
+  });
+
+  // Task 6's precision guarantee, restated against the refusing canonicalizer: a total short
+  // enough to store keeps its digits exactly, and is not routed through Number()'s canonical
+  // text (which would still print these three unchanged — but '0.125' is here so a future
+  // "just round it" edit has to fail a test).
+  it('still passes a storable typed total through digit for digit', () => {
+    for (const typed of ['12.34', '12.37', '0.125']) {
+      expect(
+        normalizeSettings({ postCookSuperfatTotalPercent: typed }).postCookSuperfatTotalPercent,
+      ).toBe(typed);
+    }
+  });
+
+  // The bound opposite the '500' → '100' ceiling, pinned deliberately rather than by accident:
+  // a total with no finite double has no figure to clamp, so it is refused like any other
+  // unstorable one and the chain resolves the budget instead. Clamping it to '100' would
+  // invent the largest budget the app allows out of a file that named no number at all.
+  it('drops a non-finite total into the resolution chain, not onto the 100 ceiling', () => {
+    for (const overflow of ['Infinity', '1e309']) {
+      expect(
+        normalizeSettings({ postCookSuperfatTotalPercent: overflow }).postCookSuperfatTotalPercent,
+      ).toBe('0');
+      expect(
+        normalizeSettings({
+          postCookSuperfatTotalPercent: overflow,
+          postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '4' }],
+        }).postCookSuperfatTotalPercent,
+      ).toBe('4');
+    }
+  });
+
+  // An unstorable stored total is "no stored total", so the fall-through has to reach the
+  // legacy field the same way an absent one does — otherwise refusing to mangle a junk value
+  // would cost the maker the migration their real number was waiting on.
+  // No postCookSuperfatOilId here, deliberately: with one, the legacy pair migrates into an
+  // oils row and the allocated-sum FLOOR would produce '6' on its own, so the assertion could
+  // not tell the legacy branch from the floor. Without it there is no row, the allocated sum
+  // is 0, and only the legacy branch can yield '6'.
+  it('falls through to the legacy percent when the stored total is unstorable', () => {
+    const s = normalizeSettings({
+      postCookSuperfatTotalPercent: `${'0'.repeat(250)}12.34`,
+      postCookSuperfatPercent: '6',
+    } as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatOils).toEqual([]);
+    expect(s.postCookSuperfatTotalPercent).toBe('6');
+  });
+
   it('migrates the legacy single percent into the total budget', () => {
     const s = normalizeSettings({
       postCookSuperfatPercent: '6',

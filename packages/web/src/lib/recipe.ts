@@ -376,20 +376,44 @@ export function postCookSuperfatAllocated(oils: PostCookSuperfatOil[]): number {
 // form: a stored ' 12.34 ' or '+12.34' — reachable from a hand-edited or foreign recipe file
 // — left the field empty while the allocation note beside it still printed "12.3%", the
 // two-figures-for-one-quantity shape this codebase keeps paying for. Verified in Chromium
-// and jsdom alike. So the string is trimmed, and anything still not in that form is replaced
-// by the parsed number's own canonical text. Deliberately NOT rounded: a renderable '12.34'
-// passes through digit for digit — preserving what the maker typed is the whole point of
-// keeping this a passthrough (see the doc comment below).
+// and jsdom alike. So the string is trimmed, and anything still not in that form is offered
+// the parsed number's own canonical text instead. Deliberately NOT rounded: a renderable
+// '12.34' passes through digit for digit — preserving what the maker typed is the whole point
+// of keeping this a passthrough (see the doc comment below).
 //
 // The pattern is HTML's own "valid floating-point number" production, which is what the
 // value-sanitization step tests the field against. Engines are inconsistent at the edges
 // (Chromium shows '.5', the production does not admit it), so the stricter production is the
 // one worth canonicalizing to: '.5' becomes '0.5', which every engine renders and which
 // stands for the same figure.
+//
+// null means "no total I can store", and it is what makes the rest of that true: the string
+// this returns is ALWAYS renderable. Two ways to earn a null, both of them cases where the
+// earlier truncate-and-coerce version handed back a figure nobody typed:
+//
+//   - Longer than the field cap. Cutting a number only costs precision while what sits past
+//     char 200 is fractional digits; when MAGNITUDE lives out there, cutting changes the
+//     figure. 250 leading zeros before '12.34' cut down to 200 zeros — 12.34 stored as 0 —
+//     and '1' + 300 zeros + 'e-300' (value 1) cut to 1e199, which the ceiling below then
+//     read as an over-100 budget and clamped to '100'. Both paste into the budget field and
+//     pass its sanitizer and clampPct, so this is not a hand-edited-file-only shape. A
+//     number too long to store is refused, not rewritten into a shorter, different one.
+//   - A canonical text that is still outside the form. String(Number(x)) is the literal
+//     'NaN' for anything that does not parse — and the cut above can land inside an exponent
+//     and produce exactly that. 'NaN' is the very thing this function exists to keep out: it
+//     renders as an EMPTY field, and it slips past both of normalizePostCookSuperfatTotal's
+//     guards untouched, because every comparison against NaN is false. So the fallback is
+//     re-tested rather than trusted.
+//
+// Refusing is safe to do bluntly: a null drops into the same resolution chain an absent total
+// uses, and that chain floors at the allocated sum — so it can never cost a row its percent.
 const INPUT_NUMBER_FORM = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/;
-function inputRenderableTotal(raw: string): string {
-  const trimmed = raw.trim().slice(0, MAX_SETTING_FIELD_LENGTH);
-  return INPUT_NUMBER_FORM.test(trimmed) ? trimmed : String(Number(trimmed));
+function inputRenderableTotal(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (trimmed.length > MAX_SETTING_FIELD_LENGTH) return null;
+  if (INPUT_NUMBER_FORM.test(trimmed)) return trimmed;
+  const canonical = String(Number(trimmed));
+  return INPUT_NUMBER_FORM.test(canonical) ? canonical : null;
 }
 
 /** Normalize the post-cook superfat total (the budget/ceiling the oils allocate within).
@@ -403,20 +427,31 @@ function inputRenderableTotal(raw: string): string {
  * a number and then losing it. Negatives have no typed string worth keeping and fall to the
  * allocated-sum branch below, which floors them at 0.
  *
+ * A total with NO finite double — 'Infinity', or '1e309', which overflows to it — falls that
+ * same way, to the chain, rather than onto the 100 ceiling '500' meets. Kept deliberately,
+ * not left alone: there is no finite figure inside it to clamp, so '100' would be a budget
+ * this code invented rather than one the file expressed, and the chain's floor already stops
+ * the fall at whatever the rows allocate. It is also the only self-consistent answer, since
+ * 'Infinity' can never satisfy INPUT_NUMBER_FORM whatever the gates do — clamping '1e309'
+ * would hand two strings with one and the same double value two different budgets.
+ *
  * The floor at the allocated sum is a FLOOR ON THE FIGURE, printed at one decimal: rows of
  * 6.17 + 6.17 with no stored total yield '12.3', a hair under the 12.34 they allocate. Both
  * round to the same 12.3 in the panel's readout, so nothing on screen contradicts itself,
  * but the stored budget can sit a rounding step below the allocation — do not read this as
  * an exact budget-≥-allocation invariant.
  *
- * A winning stored/legacy total keeps its own digits — only length-capped (same as
- * settingString's other fields) and put in a form the budget field can render (see
- * inputRenderableTotal above) — this runs on every draft load, export and import, so it is
- * stored state, not a printed readout, and must not reshape what the maker typed (a typed
- * '12.34' silently becoming '12.3' on the next reload). Nothing downstream needs it
- * pre-rounded: SuperfatWaterPanel binds this string straight into an editable number input
- * (exact fidelity is what that field wants), and separately derives its own rounded "X% of
- * Y% allocated" readout from a parsed Number via its own formatTotal/roundPct — display
+ * A stored/legacy total only wins if inputRenderableTotal can return it in a form the budget
+ * field renders — its own digits where they already are one (the common case), Number's
+ * canonical text where they are not, and NOTHING at all where neither is available. Unlike
+ * settingString's other fields it is not length-capped but length-REFUSED: a total we would
+ * have to cut is one we would be storing as a different number, and a refusal falls to the
+ * next branch exactly as an absent total does. This runs on every draft load, export and
+ * import, so it is stored state, not a printed readout, and must not reshape what the maker
+ * typed (a typed '12.34' silently becoming '12.3' on the next reload). Nothing downstream
+ * needs it pre-rounded: SuperfatWaterPanel binds this string straight into an editable number
+ * input (exact fidelity is what that field wants), and separately derives its own rounded
+ * "X% of Y% allocated" readout from a parsed Number via its own formatTotal/roundPct — display
  * rounding that already lives at the display, per format.ts's convention.
  *
  * Only the allocated-sum fallback below has no typed string to preserve — it's a number
@@ -431,16 +466,20 @@ function normalizePostCookSuperfatTotal(
   const raw = (partial as { postCookSuperfatTotalPercent?: unknown } | undefined)
     ?.postCookSuperfatTotalPercent;
   const legacy = partial?.postCookSuperfatPercent;
-  let stored: string;
+  // Sequential, not else-if: a candidate that inputRenderableTotal refuses is no candidate at
+  // all, so it hands the next branch the same turn an absent field would. The isFinite gates
+  // are what keep 'Infinity'/'1e309' out of `total` below, where they would clear the ceiling.
+  let stored: string | null = null;
   if (typeof raw === 'string' && raw.trim() !== '' && Number.isFinite(Number(raw)) && Number(raw) >= 0) {
     stored = inputRenderableTotal(raw);
-  } else if (typeof legacy === 'string' && Number.isFinite(Number(legacy)) && Number(legacy) > 0) {
-    stored = inputRenderableTotal(legacy);
-  } else {
-    stored = formatInputNumber(allocated, 1);
   }
+  if (stored === null && typeof legacy === 'string' && Number.isFinite(Number(legacy)) && Number(legacy) > 0) {
+    stored = inputRenderableTotal(legacy);
+  }
+  if (stored === null) stored = formatInputNumber(allocated, 1);
   // Read back off the resolved string, not the raw one, so the ceiling and the floor both
-  // judge the value that will actually be stored (the length cap can shorten a long one).
+  // judge the value that will actually be stored — which, after a refusal, is a figure from a
+  // different branch entirely. Finite by construction: every branch above is renderable.
   const total = Number(stored);
   if (total > 100) return '100';
   return total < allocated ? formatInputNumber(allocated, 1) : stored;
