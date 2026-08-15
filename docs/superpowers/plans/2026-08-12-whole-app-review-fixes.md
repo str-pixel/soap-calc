@@ -176,3 +176,35 @@ The two guards that look like they cover it do not: `potAnhydrousGrams === null`
 - `npm run test:e2e -w @soap-calc/web` — 91/91.
 - **Every task has a test that was seen failing before its fix.** Eight defects survived 1,345 tests; a fix whose test was never RED has not been demonstrated.
 - Task 1 and Task 2 additionally verified by rendering/executing the maker-visible result, not only by unit assertion.
+
+---
+
+### Task 9: Gradual mode shows no warning at all above the solubility ceiling
+
+**Added during execution of Task 1**, which is how it surfaced: fixing ratio's version of this
+exposed that gradual has the same hole, and two independent renders confirmed it on `main`.
+
+With a saved target above the solubility ceiling and a paste reading heavier than that
+target's solution, `dilutionMode="gradual"` renders **zero alerts** — verified by rendering
+all three modes side by side against one fixture (50% saved target, 40% ceiling, 3,000 g
+reading, 2,400 g solution):
+
+```text
+concentration → 1 alert (the primary exceeds-solution alert)
+ratio         → 1 alert (the solubility-ceiling sentence, after Task 1)
+gradual       → 0 alerts
+```
+
+Gradual was excluded from the primary alert before this plan began, and the suppression at
+`DilutionPanel.tsx:2070` evaluates identically for gradual before and after Task 1 — so this
+is shipped behaviour, not something Task 1 caused.
+
+**Files:** `packages/web/src/components/DilutionPanel.tsx` (`:2070`), its test.
+
+- [ ] **Step 1: Failing test** — the three-mode fixture above, asserting gradual warns about a
+  target above the solubility ceiling. Reuse Task 1's fixture rather than inventing one.
+- [ ] **Step 2: RED.**
+- [ ] **Step 3:** Apply the same treatment Task 1 gave ratio at `:2070`. Confirm by rendering
+  that concentration mode's subsumption still holds — it must keep showing exactly one alert,
+  not two.
+- [ ] **Step 4:** Full suite + e2e. Commit: `fix(ls): gradual warns when the target is past what will dissolve`
