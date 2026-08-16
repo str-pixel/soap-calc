@@ -208,3 +208,42 @@ is shipped behaviour, not something Task 1 caused.
   that concentration mode's subsumption still holds — it must keep showing exactly one alert,
   not two.
 - [ ] **Step 4:** Full suite + e2e. Commit: `fix(ls): gradual warns when the target is past what will dissolve`
+
+---
+
+## Execution record (added 2026-08-15, after the branch completed)
+
+The step checkboxes above are left as written; execution was tracked in the SDD ledger
+(`.superpowers/sdd/2026-08-12-whole-app-review-fixes/progress.md`, untracked) with each
+task implemented and adversarially reviewed by separate subagents. All nine tasks landed,
+and six more grew out of review findings — each with its own reviewed commit.
+
+**The nine planned tasks:**
+
+| Task | Commit | |
+|---|---|---|
+| 1 | `5338853` | ratio no longer aims at the target the alert is about |
+| 2 | `cb664ff` + `a264e06` | PCSF clamp (and the row-wiping regression it briefly introduced) |
+| 3 | `6fac8e7` | row caps reach the arrays nested in settings |
+| 4 | `3343758` | fragrance dosed against the post-dilution solution |
+| 5 | `fd3cd22` | two controls say what they show |
+| 6 | `d6cb6c4` | a stored figure keeps the maker's precision |
+| 7 | `eee4a41` | an unreadable draft is spoken for |
+| 8 | `04139e9` + `2787039` | lsPartialDilution refuses what it cannot compute |
+| 9 | `506dbef` | gradual warns past the solubility ceiling |
+
+**Found by reviewing the above (tasks 10–15):**
+
+| Task | Commit | |
+|---|---|---|
+| 10 | `8cfb025` + `db454f1` | PCSF budget clamped on load; comments made true |
+| 11 | `72705d4` | the canonicalizer refuses instead of rewriting |
+| 12 | `a0fe3fc` | the last suppression keyed on a flag instead of a verdict |
+| 13 | `7f003d5` | pins for the disjuncts a green suite would let you delete |
+| 14 | `30da903` + `7acb560` | user decisions: rejections don't silence the ceiling; fixture E hole |
+| 15 | `8d087d2` | "kept" is only said when the backup slot holds it |
+
+Open items that deliberately did not land here are listed at the end of the ledger:
+the two aria-label mismatches (decided: follow-up branch), the fixture E rejection-voice
+binary, cantTellGate's uncertainty-silences-certainty, the fixture E same-claim doubling,
+the import-path unreadable-draft destruction, and the absent recovery UI for the backup slot.
