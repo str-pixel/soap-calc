@@ -250,6 +250,109 @@ describe('"kept" is only said when the backup slot actually holds it', () => {
   });
 });
 
+describe('an import keeps the draft it replaces', () => {
+  // handleImportFile writes the imported recipe onto the target process slot. An
+  // unreadable draft sitting there is the same one-copy work the load paths (mount,
+  // setProcess) back up and speak for — the import path must run the same discipline,
+  // or a file-chooser click destroys it with no backup and no sentence. The two
+  // sentences share the prefix "Your saved recipe could not be read", so each test
+  // asserts a clause the other does not contain — /kept unchanged/ vs
+  // /could not be set aside/ — and reads the backup slot's actual bytes.
+  const fromTheFuture = JSON.stringify({
+    version: 99,
+    name: 'Written by a newer build',
+    lines: [],
+    settings: {},
+  });
+
+  const importTargetingHp = JSON.stringify({
+    version: 2,
+    process: 'hp',
+    name: 'Incoming import',
+    lines: [],
+    settings: DEFAULT_SETTINGS,
+  });
+
+  // Same jsdom limitation as the flush test above: mock the minimal File shape.
+  async function importOntoHp(result: { current: ReturnType<typeof useRecipeStorage> }) {
+    const file = { text: () => Promise.resolve(importTargetingHp) } as unknown as File;
+    await act(async () => {
+      result.current.handleImportFile(file);
+      // Let the file.text() promise (and its .then chain) drain before asserting.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  }
+
+  it('backs up an unreadable draft in the target slot and says kept, not the routine confirmation', async () => {
+    localStorage.setItem('soap-calc:draft:hp', fromTheFuture);
+    const { result } = renderHook(() => useRecipeStorage()); // opens on cp, whose slot is empty
+    expect(result.current.saveMessage).toBeNull();
+    await importOntoHp(result);
+    // The rescue, in bytes: the displaced draft verbatim in the backup slot, the
+    // imported recipe (not the v99 payload) in the live slot.
+    expect(localStorage.getItem('soap-calc:draft:hp:unreadable')).toBe(fromTheFuture);
+    expect(loadDraft('hp')?.name).toBe('Incoming import');
+    expect(result.current.recipeName).toBe('Incoming import');
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept unchanged/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/could not be set aside/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/Imported/));
+  });
+
+  it('says the draft could not be set aside when an older backup already occupies the slot', async () => {
+    localStorage.setItem('soap-calc:draft:hp:unreadable', 'an earlier unreadable payload');
+    localStorage.setItem('soap-calc:draft:hp', fromTheFuture);
+    const { result } = renderHook(() => useRecipeStorage());
+    await importOntoHp(result);
+    // First writer wins: the earlier occupant keeps the backup slot, byte-untouched.
+    expect(localStorage.getItem('soap-calc:draft:hp:unreadable')).toBe(
+      'an earlier unreadable payload',
+    );
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/could not be set aside/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/kept unchanged/));
+  });
+
+  it('a readable target slot imports exactly as today: the confirmation, no backup writes', async () => {
+    saveDraft('hp', 'Readable HP draft', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    const { result } = renderHook(() => useRecipeStorage());
+    await importOntoHp(result);
+    expect(localStorage.getItem('soap-calc:draft:hp:unreadable')).toBeNull();
+    expect(loadDraft('hp')?.name).toBe('Incoming import');
+    expect(result.current.saveMessage).toEqual(
+      expect.stringMatching(/Imported “Incoming import” as hot process/),
+    );
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/could not be read/));
+  });
+
+  it('yields the one message slot to the storage-full warning when both fire at once', async () => {
+    // Storage that refuses every write: the flush and the imported save both fail AND
+    // the target slot is unreadable (its backup write fails too, so the verdict would
+    // be not-kept). One flash slot, so this must be a decision, not an ordering
+    // accident — the storage-full warning names the action (export) that protects the
+    // work existing only in memory, while the unreadable draft still sits in its live
+    // slot, which the same failing writes cannot overwrite.
+    const store = new Map<string, string>([['soap-calc:draft:hp', fromTheFuture]]);
+    vi.stubGlobal('localStorage', {
+      get length() {
+        return store.size;
+      },
+      clear: () => store.clear(),
+      getItem: (key: string) => store.get(key) ?? null,
+      key: (index: number) => [...store.keys()][index] ?? null,
+      removeItem: (key: string) => store.delete(key),
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+    } as unknown as Storage);
+
+    const { result } = renderHook(() => useRecipeStorage());
+    await importOntoHp(result);
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/storage is full/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/could not be read/));
+    // And the failing writes could not destroy the draft either: still in its live slot.
+    expect(localStorage.getItem('soap-calc:draft:hp')).toBe(fromTheFuture);
+  });
+});
+
 describe('import flush freshness (deep-review)', () => {
   it('flushes the workspace as it is when the file resolves, not as it was when import started', async () => {
     const { result } = renderHook(() => useRecipeStorage());

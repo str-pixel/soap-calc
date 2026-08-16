@@ -227,6 +227,13 @@ export function useRecipeStorage() {
           importedSettings,
         );
         const importedAdditives = recipeAdditivesFromFile(parsed.data.additives);
+        // Read the target slot BEFORE any of the import's writes can land on it (the
+        // flush below hits the same slot on a same-process import; the imported save
+        // always does): an unreadable draft sitting there is the one copy of that
+        // work, and loadDraftSlot is what parks it in the backup slot and hands back
+        // the kept/not-kept verdict — the same discipline the load paths run. Without
+        // this, a file-chooser click destroys it with no backup and no sentence.
+        const targetSlot = loadDraftSlot(nextProcess);
         // Flush the outgoing process's in-memory workspace first, mirroring setProcess:
         // without this, edits made just before an import (still pending the autosave
         // debounce) would be silently discarded when the state below swaps process.
@@ -246,14 +253,24 @@ export function useRecipeStorage() {
           importedSettings,
           importedAdditives,
         );
-        // Fold any write failure into the final message so it isn't overwritten by the
-        // success flash — storage full means neither the previous nor imported recipe persisted.
         const routing = importRoutingSuffix(parsed.data.processSource, nextProcess);
-        flashSaveMessage(
-          flushedOutgoing && savedImported
-            ? `Imported “${parsed.data.name}”${routing}`
-            : `Imported “${parsed.data.name}”${routing} — but storage is full, so changes may not persist. Export to keep a copy.`,
-        );
+        // Three candidate messages, one flash slot — choose rather than let call order
+        // decide, same as setProcess's collision above. The storage-full warning wins
+        // outright: the flushed and imported work exists only in memory, export is the
+        // action that saves it, and the same failing writes could not overwrite the
+        // unreadable draft's live slot either. Next, the kept/not-kept verdict outranks
+        // the routine confirmation: the import's success is already visible in the
+        // swapped-in workspace, while the displaced draft has no other voice — dropping
+        // its sentence is how it vanishes silently.
+        if (!flushedOutgoing || !savedImported) {
+          flashSaveMessage(
+            `Imported “${parsed.data.name}”${routing} — but storage is full, so changes may not persist. Export to keep a copy.`,
+          );
+        } else if (targetSlot.unreadable) {
+          flashSaveMessage(unreadableDraftMessage(targetSlot.kept));
+        } else {
+          flashSaveMessage(`Imported “${parsed.data.name}”${routing}`);
+        }
       })
       .catch(() => {
         if (importTokenRef.current !== token) return;
