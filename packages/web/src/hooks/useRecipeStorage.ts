@@ -53,7 +53,7 @@ function starterSettings(process: ProcessId): RecipeSettings {
 }
 
 function loadWorkspace(process: ProcessId) {
-  const { draft, unreadable } = loadDraftSlot(process);
+  const { draft, unreadable, kept } = loadDraftSlot(process);
   const settings = draft
     ? // Saved drafts carry their own provenance (see normalizeSettings for how a legacy
       // draft with no provenance field is resolved).
@@ -68,16 +68,32 @@ function loadWorkspace(process: ProcessId) {
     // first render, where flashSaveMessage does not exist yet. Both call sites decide
     // for themselves when to say it.
     unreadable,
+    kept,
   };
 }
 
-/** Said when a draft failed the version gate or was corrupt: it has been parked at
- * `<draftKey>:unreadable` (see recipeStorage) and this workspace is a fresh starter.
- * The sentence has to carry the rescue, not just the failure — a maker who reads only
- * "could not read your saved recipe" concludes the work is gone and stops looking, when
- * in fact it is still on disk and a build that can read it would get it back. */
-const UNREADABLE_DRAFT_MESSAGE =
+/** Said when a draft failed the version gate or was corrupt AND the backup slot at
+ * `<draftKey>:unreadable` (see recipeStorage) really holds it. The sentence has to
+ * carry the rescue, not just the failure — a maker who reads only "could not read your
+ * saved recipe" concludes the work is gone and stops looking. "Kept" is all it promises:
+ * nothing in the app reads that backup slot back (a restore affordance is an open item),
+ * so once the maker's first edit lands on the live key, not even a build that could read
+ * the payload will show it again — recovery means digging it out by hand. */
+const UNREADABLE_DRAFT_KEPT_MESSAGE =
   'Your saved recipe could not be read — it has been kept unchanged in this browser, and a starter recipe loaded in its place.';
+
+/** Said when the backup did NOT take today's payload (loadDraftSlot's `kept` false):
+ * claiming "kept unchanged" then would name a rescue that never happened. The sentence
+ * names the first-writer-wins cause — an earlier unreadable draft occupying the slot —
+ * because that is the reachable one; a failed backup write (the only other way `kept`
+ * comes back false, effectively unreachable at these sizes) shares this sentence rather
+ * than growing a third variant for a cause it cannot name. */
+const UNREADABLE_DRAFT_NOT_KEPT_MESSAGE =
+  'Your saved recipe could not be read, and this browser was already holding an earlier unreadable one — so it could not be set aside. A starter recipe loaded in its place.';
+
+function unreadableDraftMessage(kept: boolean): string {
+  return kept ? UNREADABLE_DRAFT_KEPT_MESSAGE : UNREADABLE_DRAFT_NOT_KEPT_MESSAGE;
+}
 
 /** Flash display time scaled to reading length. The old flat 2000 ms erased the 25-word
  * import-refusal copy before anyone could read it; ~50 ms/char tracks reading speed with
@@ -129,7 +145,8 @@ export function useRecipeStorage() {
   // flashSaveMessage or any state existed — so an unreadable draft found there is
   // reported from here, on mount, rather than from loadWorkspace itself.
   useEffect(() => {
-    if (initial.current?.ws.unreadable) flashSaveMessage(UNREADABLE_DRAFT_MESSAGE);
+    const ws = initial.current?.ws;
+    if (ws?.unreadable) flashSaveMessage(unreadableDraftMessage(ws.kept));
   }, []);
 
   function flashSaveMessage(message: string) {
@@ -156,11 +173,12 @@ export function useRecipeStorage() {
     // Both can be true at once (storage full AND the incoming slot unreadable) and
     // flashSaveMessage is a single slot, so choose rather than let call order decide:
     // the failed flush is about work that exists only in memory and is about to be
-    // lost, while the unreadable draft is already safe on disk.
+    // lost, while the unreadable draft still sits in its live slot — which the same
+    // failing writes cannot overwrite.
     if (!flushed) {
       flashSaveMessage('Could not save the current recipe before switching — export it to avoid losing changes.');
     } else if (ws.unreadable) {
-      flashSaveMessage(UNREADABLE_DRAFT_MESSAGE);
+      flashSaveMessage(unreadableDraftMessage(ws.kept));
     }
   }
 

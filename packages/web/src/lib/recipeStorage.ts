@@ -94,14 +94,22 @@ export function linesFromSaved(saved: unknown[]): RecipeLine[] {
   return lines.length > 0 ? lines : createStarterLines();
 }
 
-function backupUnreadableDraft(process: ProcessId, raw: string): void {
+/** Parks the payload at `<draftKey>:unreadable` and reports whether that slot now holds
+ * it. First writer wins: an occupied slot is never overwritten, so a SECOND unreadable
+ * draft (rollback → backup written → roll forward → save → rollback again) is
+ * deliberately NOT preserved — and the caller's message says "kept", so the verdict has
+ * to come back out or that sentence overpromises. Compare content, not presence: an
+ * identical payload already in the slot is the same bytes, the same rescue, an honest
+ * "kept". False also covers the backup write itself failing (quota/blocked) — same
+ * honest answer, though at a few KB against a ~5 MB quota it is effectively unreachable. */
+function backupUnreadableDraft(process: ProcessId, raw: string): boolean {
   const backupKey = `${draftKey(process)}:unreadable`;
   try {
-    if (localStorage.getItem(backupKey) === null) {
-      safeSetItem(backupKey, raw);
-    }
+    const existing = localStorage.getItem(backupKey);
+    return existing === null ? safeSetItem(backupKey, raw) : existing === raw;
   } catch {
-    // best effort only
+    // Storage we cannot even read preserved nothing — do not claim it did.
+    return false;
   }
 }
 
@@ -137,22 +145,27 @@ export type LoadedDraft = {
 /** What the slot held. `unreadable` separates "nothing was saved here" from "something
  * was saved here that we had to set aside": both yield a null draft and a starter
  * workspace, but only the second is a thing the maker has to be told, or their work
- * simply appears to have vanished. See useRecipeStorage for who says it. */
-export type DraftSlot = { draft: LoadedDraft | null; unreadable: boolean };
+ * simply appears to have vanished. `kept` qualifies the telling: true only when the
+ * backup slot actually holds this payload (just written, or already holding the same
+ * bytes). The backup is first-writer-wins, so an older occupant leaves today's draft
+ * unpreserved — and the message must not say "kept" then. Always false when
+ * `unreadable` is false: nothing needed keeping. See useRecipeStorage for who says it. */
+export type DraftSlot = { draft: LoadedDraft | null; unreadable: boolean; kept: boolean };
 
 export function loadDraftSlot(process: ProcessId): DraftSlot {
   let raw: string | null = null;
   try {
     raw = localStorage.getItem(draftKey(process));
-    if (!raw) return { draft: null, unreadable: false };
+    if (!raw) return { draft: null, unreadable: false, kept: false };
     const data = JSON.parse(raw) as DraftPayload;
     if (!READABLE_VERSIONS.includes(data.version) || !Array.isArray(data.lines)) {
       // Preserve what we can't read: returning null seeds a starter workspace whose
       // first autosave overwrites this slot ~500ms later. A future-version draft
       // (app rollback) or corrupted payload is parked in a backup slot instead of
-      // being destroyed. First writer wins — don't churn the backup on every load.
-      backupUnreadableDraft(process, raw);
-      return { draft: null, unreadable: true };
+      // being destroyed. First writer wins — don't churn the backup on every load —
+      // so `kept` carries out whether the slot really took (or already held) THIS
+      // payload, and the message downstream picks its sentence by it.
+      return { draft: null, unreadable: true, kept: backupUnreadableDraft(process, raw) };
     }
     return {
       draft: {
@@ -162,15 +175,19 @@ export function loadDraftSlot(process: ProcessId): DraftSlot {
         settings: migrateSettings(normalizeSettings(data.settings), data.version),
       },
       unreadable: false,
+      kept: false,
     };
   } catch {
     // JSON.parse-throwing corruption (truncated write) must be preserved the same
     // way as a parseable-but-invalid payload — this catch is the common corruption
     // path, and returning bare null here lets the seeding autosave destroy it.
-    if (raw !== null) backupUnreadableDraft(process, raw);
     // Throwing with no raw in hand is storage itself being unavailable (private mode),
     // not a draft we set aside — there is no rescued recipe to announce.
-    return { draft: null, unreadable: raw !== null };
+    return {
+      draft: null,
+      unreadable: raw !== null,
+      kept: raw !== null && backupUnreadableDraft(process, raw),
+    };
   }
 }
 

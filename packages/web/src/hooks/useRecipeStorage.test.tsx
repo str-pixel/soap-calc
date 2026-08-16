@@ -210,6 +210,46 @@ describe('an unreadable draft is spoken for, not silently replaced', () => {
   });
 });
 
+describe('"kept" is only said when the backup slot actually holds it', () => {
+  // The backup is first-writer-wins: a second unreadable draft is NOT preserved when an
+  // older one already occupies `<key>:unreadable`. The two sentences share the prefix
+  // "Your saved recipe could not be read", so each test asserts a clause the other
+  // sentence does not contain — /kept unchanged/ vs /could not be set aside/.
+  const fromTheFuture = JSON.stringify({
+    version: 99,
+    name: 'Written by a newer build',
+    lines: [],
+    settings: {},
+  });
+
+  it('says the draft could not be set aside when an older backup already occupies the slot', () => {
+    localStorage.setItem('soap-calc:draft:cp:unreadable', 'an earlier unreadable payload');
+    localStorage.setItem('soap-calc:draft:cp', fromTheFuture);
+    const { result } = renderHook(() => useRecipeStorage());
+    expect(result.current.recipeName).toBe('Starter recipe');
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/could not be set aside/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/kept unchanged/));
+  });
+
+  it('still says kept when the backup already holds the identical payload — same bytes, same rescue', () => {
+    localStorage.setItem('soap-calc:draft:cp:unreadable', fromTheFuture);
+    localStorage.setItem('soap-calc:draft:cp', fromTheFuture);
+    const { result } = renderHook(() => useRecipeStorage());
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept unchanged/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/could not be set aside/));
+  });
+
+  it('the not-kept sentence reaches the process-switch site too', () => {
+    localStorage.setItem('soap-calc:draft:ls:unreadable', 'an earlier unreadable payload');
+    localStorage.setItem('soap-calc:draft:ls', fromTheFuture);
+    const { result } = renderHook(() => useRecipeStorage()); // opens on cp, whose slot is empty
+    expect(result.current.saveMessage).toBeNull();
+    act(() => result.current.setProcess('ls'));
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/could not be set aside/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/kept unchanged/));
+  });
+});
+
 describe('import flush freshness (deep-review)', () => {
   it('flushes the workspace as it is when the file resolves, not as it was when import started', async () => {
     const { result } = renderHook(() => useRecipeStorage());
