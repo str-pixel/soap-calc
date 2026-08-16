@@ -261,11 +261,14 @@ describe('intended-use dilution targets', () => {
     // claim about the READING, and the flag it would otherwise stand in for is not set, so
     // nothing on screen is answering for this target and both paragraphs belong here.
     //
-    // Pinned because the rejection disjunct of `overDilutionSpokenFor` is gated on
-    // `dilution.targetExceedsPaste` and nothing else in this file exercises that gate from
-    // the FALSE side. Drop it and a reading refused for its own reasons silences a sentence
-    // about the target — the two alerts here collapse to one — in exactly the state where
-    // the target has no other voice.
+    // Pinned as the flag-FALSE anchor of the 2026-08-16 decision: a refusal about the
+    // READING must never silence a sentence about the target. (When first written this
+    // exercised the `targetExceedsPaste` gate on `overDilutionSpokenFor`'s rejection
+    // disjunct from the FALSE side; that disjunct is gone — the flag-TRUE side now shows
+    // the same pair, in the rewritten "speaks beside a rejection alert" loop below.)
+    // Re-add any rejection-keyed suppression that no target verdict gates and the two
+    // alerts here collapse to one — in exactly the state where the target has no other
+    // voice.
     render(
       <DilutionPanel
         {...BASE}
@@ -373,15 +376,23 @@ describe('intended-use dilution targets', () => {
         expect(alerts[0]).not.toMatch(CEILING);
       });
 
-      it(`still yields to a rejection alert in ${mode} mode`, () => {
-        // 900 g is below the 1,200 g of soap the batch makes, so the reading is rejected and
-        // owns the screen in every mode (the solids floor is mode-independent). The flag's
-        // own alert excludes a rejected reading for that reason; this sentence must not
-        // take the vacated slot.
+      it(`speaks beside a rejection alert in ${mode} mode — a refusal about the reading is no verdict about the target`, () => {
+        // REWRITTEN BY DECISION (2026-08-16, Task 14) from "still yields to a rejection
+        // alert": this case used to pin exactly one alert, because a rejection disjunct in
+        // `overDilutionSpokenFor` let ANY refusal of the reading silence the ceiling when
+        // the flag was set. The user decided only a verdict about the TARGET may do that.
+        // 900 g is below the 1,200 g of soap the batch makes, so the refusal says the
+        // reading "cannot be all of the paste" — a claim about the scale, with nothing in
+        // it about what a 50% target can dissolve — and the ceiling now speaks beside it,
+        // exactly as the flag-FALSE side always has ("speaks alongside a refusal that is
+        // only about the reading", above). The exact pair, in document order: the refusal
+        // beside the field it describes, the ceiling below the figures — and never the
+        // same claim twice.
         renderOverCeiling(mode, { measuredPasteGrams: '900' });
-        const alerts = alertTexts();
-        expect(alerts).toHaveLength(1);
-        expect(alerts[0]).toMatch(/cannot be all of the paste/i);
+        expect(alertTexts()).toEqual([
+          expect.stringMatching(/cannot be all of the paste/i),
+          expect.stringMatching(CEILING),
+        ]);
       });
 
       it(`still yields to the can't-tell hedge in ${mode} mode`, () => {
@@ -412,8 +423,8 @@ describe('intended-use dilution targets', () => {
       // by mutating the source. The exceeds-solution paragraph is excluded from gradual for
       // the same reason it is excluded from ratio (gradual WRITES the concentration from the
       // pot and the water recorded; it is not aiming at the saved target), so
-      // `measurementRejectionAlert` is false here and the flag's fourth voice is silent
-      // alongside its other three.
+      // `exceedsSolutionAlert` — the one refusal the ceiling still stands down for, read by
+      // the ceiling's own clause — is false here, and every voice of the flag is silent too.
       renderOverCeiling('gradual', { measuredPasteGrams: '3000' });
       expect(alertTexts()).toEqual([expect.stringMatching(CEILING)]);
     });
