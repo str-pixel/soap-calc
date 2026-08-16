@@ -488,10 +488,12 @@ export function DilutionPanel({
   // Whether the exceeds-solution refusal is ACTUALLY ON SCREEN, not merely flagged. The two
   // mode exclusions are the paragraph's own (see its full reasoning where it renders): every
   // clause of it is about a TARGET the paste cannot reach, and neither derived mode is aiming
-  // at one. Named here because two places need the answer and they must never drift: the
-  // paragraph itself, and the solubility ceiling below, whose suppression is subsumption —
-  // it stands down only while a stronger claim about the same target is on screen, so it has
-  // to ask whether this one renders rather than whether the rule fired.
+  // at one. Named here because three places need the answer and they must never drift: the
+  // paragraph itself; the solubility ceiling below, whose suppression is subsumption — it
+  // stands down only while a stronger claim about the same target is on screen, so it has
+  // to ask whether this one renders rather than whether the rule fired; and the
+  // corrected-pot alert's render condition (pasteAlreadyPastTargetAlert), which yields to
+  // this paragraph on the same must-be-on-screen discipline.
   const exceedsSolutionAlert =
     (measurementRejection?.exceedsSolution ?? false) &&
     dilutionMode !== 'ratio' &&
@@ -870,9 +872,14 @@ export function DilutionPanel({
   // Suppressed by a VALID measurement, exactly as the targetExceedsPaste alert below is:
   // the measured-paste guards already refuse a reading heavier than the solution (with their
   // own alert), so a reading that survives them leaves solutionGrams - measured >= 0 and no
-  // clamp to explain. A REJECTED reading is NOT suppressed: the row falls back to the
-  // recipe's own clamped figure in that case, and the rejection alert speaks only about the
-  // reading — it never accounts for the zero underneath it.
+  // clamp to explain. A reading refused by the READING-ONLY rules (belowSolids,
+  // nonPositive, subTenthPrecision) does NOT suppress the predicate or its paragraph: the
+  // row falls back to the recipe's own clamped figure in that case, and those refusals
+  // speak only about the reading — they never account for the zero underneath. The
+  // exceeds-solution refusal is the exception (decided 2026-08-16, second round): it DOES
+  // account for it — a paste already heavier than the solution is precisely why there is
+  // no water to add — so the RENDER condition below stands down while that paragraph is on
+  // screen. The predicate itself stays refusal-blind; the yield lives at the render.
   //
   // Flat, with no overDilutionCertain hedge: this verdict reduces to
   // wholeBatchPasteGrams > solutionGrams, and BOTH sides of that are fixed whatever the
@@ -922,7 +929,21 @@ export function DilutionPanel({
   // and the solubility ceiling's suppression (pasteAlreadyPastTargetSpokenFor below) read
   // one answer and cannot drift — the ceiling used to read the bare predicate here, and the
   // pair of them held together only by coincidence of this component and the child agreeing.
-  const pasteAlreadyPastTargetAlert = dilutionScope === 'batch' && pasteAlreadyPastTarget;
+  //
+  // The third clause is a yield (decided 2026-08-16, second round): when the
+  // exceeds-solution rejection is on screen it names the maker's own typed figure against
+  // the very solution this verdict compares the corrected pot to, so it already explains
+  // the 0 g row — two verdicts about one target are one verdict too many, and the
+  // rejection, which quotes the reading the maker just took, wins. Keyed on that
+  // paragraph's RENDER (exceedsSolutionAlert), never on the rejection's flag: in ratio and
+  // gradual the flag can be true while the paragraph is excluded from the mode, and a
+  // flag-keyed yield would have silenced this alert over a screen that says nothing — the
+  // shape this project has paid for four times. Where the refusal on screen is
+  // reading-only (belowSolids, nonPositive, subTenthPrecision) the two still stack: those
+  // refusals say nothing about the target, and this paragraph is the only account of the
+  // 0 g underneath them.
+  const pasteAlreadyPastTargetAlert =
+    dilutionScope === 'batch' && pasteAlreadyPastTarget && !exceedsSolutionAlert;
   // ── The alternative-liquid paragraph, and the portion-scope note the child carries ──
   // Three hints used to render as separate paragraphs — the head start, the can't-tell
   // hedge, the undeclared-liquid floor — and a split-liquid recipe could stack all three
@@ -2163,23 +2184,30 @@ export function DilutionPanel({
                   answers the form only the corrected pot can see — see
                   pasteAlreadyPastTarget for the predicate, the gating and why the two can
                   never both fire. The gate here is pasteAlreadyPastTargetAlert (the
-                  predicate plus this block's own scope), named where the predicate lives so
-                  the solubility ceiling below reads the same answer this site renders on;
-                  the computedPasteGrams recheck only narrows the type for the quoted
-                  figure — the predicate already required it. The two figures are quoted
-                  because the claim is a comparison, and the row it explains prints a bare
-                  "0 g".
+                  predicate, this block's own scope, and standing down while the
+                  exceeds-solution rejection renders — see the const for the decided
+                  yield), named where the predicate lives so the solubility ceiling below
+                  reads the same answer this site renders on; the computedPasteGrams
+                  recheck only narrows the type for the quoted figure — the predicate
+                  already required it. The two figures are quoted because the claim is a
+                  comparison, and the row it explains prints a bare "0 g".
 
                   The closing "weigh the paste" clause is dropped once a reading has been
-                  REJECTED, which is the one state where this alert stacks on another: the
-                  maker has just weighed the paste, and telling them to do the thing they
-                  did — under a figure of the recipe's own that sits above their reading in
-                  the field — is the sort of instruction that reads as the app not having
-                  noticed. Only the clause goes. The verdict still holds and still needs
-                  saying, because the row underneath fell back to the recipe's own clamped
-                  figure when the reading was refused; and the pairing itself is right for
-                  belowSolids and nonPositive, where the first alert is about the reading and
-                  this one is the only account of the 0 g. */}
+                  REJECTED, which is the one kind of state where this alert stacks on
+                  another: the maker has just weighed the paste, and telling them to do the
+                  thing they did — under a figure of the recipe's own that sits above their
+                  reading in the field — is the sort of instruction that reads as the app
+                  not having noticed. Only the clause goes. The verdict still holds and
+                  still needs saying, because the row underneath fell back to the recipe's
+                  own clamped figure when the reading was refused. The pairing is right for
+                  the reading-only refusals — belowSolids, nonPositive, subTenthPrecision —
+                  where the first alert is about the reading and this one is the only
+                  account of the 0 g; and those are now the ONLY refusals it pairs with.
+                  The exceeds-solution rejection never reaches this paragraph any more (the
+                  render const above yields to it, decided 2026-08-16, second round): that
+                  rejection quotes the maker's own reading against the same solution this
+                  verdict counts from, so it is the account of the 0 g, and printing this
+                  one beside it was two verdicts about one target. */}
               {pasteAlreadyPastTargetAlert && computedPasteGrams !== null && (
                 <p className="results-hint" role="alert">
                   The paste is already more dilute than {refusalWording.named}: it weighs{' '}

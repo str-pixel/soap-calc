@@ -615,6 +615,22 @@ describe('intended-use dilution targets', () => {
         expect.stringMatching(SOLUBILITY_CEILING),
       ]);
     });
+
+    it('the corrected-pot paragraph yields to the exceeds-solution rejection — two verdicts about one target are one too many', () => {
+      // DECIDED 2026-08-16 (second round). Same fixture, concentration mode, Whole batch:
+      // a 3,000 g reading exceeds the 2,400 g solution, so the exceeds-solution rejection
+      // renders — and it names the maker's own typed figure against the very solution this
+      // verdict compares the corrected pot against. The corrected-pot paragraph's account
+      // of the 0 g row is redundant there (the rejection already explains the state), so
+      // it yields: one verdict about this target, not two. The ceiling stays down as well,
+      // held by its own `!exceedsSolutionAlert` clause rather than by the yielded
+      // paragraph — which is why this asserts the exact singleton and not a mere absence.
+      // The yield is keyed on the rejection's RENDER (`exceedsSolutionAlert`), never its
+      // flag: in ratio mode the flag is true while the paragraph is excluded, and the
+      // Whole-batch test above pins that the corrected-pot alert still speaks there.
+      renderPastTargetPot('concentration', { measuredPasteGrams: '3000' });
+      expect(alertTexts()).toEqual([expect.stringMatching(/already weighs more than/i)]);
+    });
   });
 
   it('does not offer a hair use', () => {
@@ -2075,11 +2091,19 @@ describe('the measurement feedback follows the measured-paste input, not the sco
   });
 
   it('stops telling a maker who just weighed the paste to weigh the paste', () => {
-    // A rejected reading is the only state where this alert stacks on another, and it is
-    // the one where its closing remedy is already spent: the maker weighed the pot, the
-    // reading was refused above, and "or weigh the paste above" sends them back to do it
-    // again. The verdict itself stays — the row fell back to the recipe's own clamped
+    // A rejected reading is the only kind of state where this alert stacks on another, and
+    // it is the one where its closing remedy is already spent: the maker weighed the pot,
+    // the reading was refused above, and "or weigh the paste above" sends them back to do
+    // it again. The verdict itself stays — the row fell back to the recipe's own clamped
     // figure precisely BECAUSE the reading was refused, so it still needs accounting for.
+    //
+    // REWRITTEN (2026-08-16, second round) to stack on a READING-ONLY refusal: the stacked
+    // arm used to use 1,950 g (exceeds-solution), and that pairing is gone by decision —
+    // the corrected-pot paragraph now yields to the exceeds-solution rejection, which
+    // already accounts for the 0 g row (see "the corrected-pot paragraph yields" in the
+    // ceiling describes). 1,000 g is under this pot's 1,600 g solids floor instead: a
+    // refusal about the scale, which says nothing about the 0 g underneath, so the
+    // pairing — and the dropped clause this test is about — lives on exactly there.
     const props = {
       ...BASE,
       dilution: {
@@ -2097,11 +2121,12 @@ describe('the measurement feedback follows the measured-paste input, not the sco
       targetMl: '',
     };
 
-    // Rejected (1,950 g is heavier than the 1,900 g solution): two alerts, and the second
-    // ends at the remedy.
-    render(<DilutionPanel {...props} measuredPasteGrams="1950" />);
+    // Rejected (1,000 g is under the 1,600 g of soap and solids the pot holds): two
+    // alerts, and the second ends at the remedy.
+    render(<DilutionPanel {...props} measuredPasteGrams="1000" />);
     const stacked = screen.getAllByRole('alert').map((n) => n.textContent!.replace(/\s+/g, ' '));
     expect(stacked).toHaveLength(2);
+    expect(stacked.some((t) => /cannot be all of the paste/i.test(t))).toBe(true);
     const verdict = stacked.find((t) => t.includes('it weighs 2,000 g'))!;
     expect(verdict).toContain('Lower the target concentration above (more water) until the paste can reach it.');
     expect(verdict).not.toMatch(/weigh the paste above/i);
