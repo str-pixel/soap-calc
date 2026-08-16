@@ -589,18 +589,27 @@ describe('intended-use dilution targets', () => {
       expect(screen.getByText(/no dilution water to divide up/i)).toBeTruthy();
     });
 
-    it('still yields to a refusal that DOES render — the ceiling may take only the silent cells', () => {
-      // 900 g is under the 1,500 g solids floor, and that refusal renders in every mode and
-      // both scopes — so this cell was never silent, and commit 1's decision does not reach
-      // it: that decision is about targetExceedsPaste's suppression, and nobody decided the
-      // corrected-pot verdict's cells may go from one alert to two. The refusal keeps the
-      // screen; the count stays exactly one.
+    it('speaks beside a refusal that DOES render — a refusal about the reading does not speak for the corrected pot either', () => {
+      // REWRITTEN BY DECISION (2026-08-16, second round) from "still yields to a refusal
+      // that DOES render": this case used to pin exactly one alert, because a rejection
+      // disjunct in `pasteAlreadyPastTargetSpokenFor` — kept for one round as the
+      // not-yet-decided side — let any rendering refusal silence the ceiling wherever the
+      // corrected-pot predicate held. The user decided the same rule reaches this side:
+      // only a verdict about the TARGET may silence the target's warning. 900 g is under
+      // the 1,500 g solids floor — a claim about the scale, with nothing in it about what
+      // a 50% target can dissolve — so the ceiling now speaks beside it, exactly the pair
+      // the targetExceedsPaste side shows ("speaks beside a rejection alert", above). The
+      // exact pair, in document order: the refusal beside the field it describes, the
+      // ceiling below the figures — and never the same claim twice.
       renderPastTargetPot('ratio', {
         measuredPasteGrams: '900',
         dilutionScope: 'portion',
         targetMl: '500',
       });
-      expect(alertTexts()).toEqual([expect.stringMatching(/cannot be all of the paste/i)]);
+      expect(alertTexts()).toEqual([
+        expect.stringMatching(/cannot be all of the paste/i),
+        expect.stringMatching(SOLUBILITY_CEILING),
+      ]);
     });
   });
 
