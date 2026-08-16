@@ -2945,8 +2945,10 @@ describe('copy that a previous round rewrote, pinned so it cannot drift back', (
         onWaterPasteRatioChange={() => {}}
       />,
     );
-    // Today both render: the target-based rejection sits directly above the caveat that
-    // calls the very same reading more accurate than the recipe's computed paste.
+    // Before Task 1 both rendered: the target-based rejection sat directly above the caveat
+    // that calls the very same reading more accurate than the recipe's computed paste — one
+    // paragraph calling the number suspect, the next calling it the better one. Only the
+    // caveat remains; the rejection is the thing this test pins absent.
     expect(screen.queryByText(/cannot be diluted to/i)).toBeNull();
     expect(screen.getByText(/measurement is more accurate/i)).toBeTruthy();
     // The positive: ratio mode's own readout still tells the truth about where 2:1 actually
