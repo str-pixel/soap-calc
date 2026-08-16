@@ -323,6 +323,27 @@ describe('an import keeps the draft it replaces', () => {
     expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/could not be read/));
   });
 
+  it('rescues a same-process slot too — the flush lands on the very key being read', async () => {
+    // Every other test here imports cross-process, where the outgoing flush writes a
+    // DIFFERENT slot and the read's placement is indifferent. Same-process is the case
+    // the read-before-flush ordering exists for: the flush writes draftKey(ws.process),
+    // which IS the import's target key when ws.process === nextProcess. Read after the
+    // flush and the slot holds the flush's bytes — the unreadable payload is destroyed
+    // with no backup and no sentence, the exact defect this discipline closes. Review
+    // of this task proved the whole suite stayed green with the read moved below the
+    // flush; this test is the pin.
+    localStorage.setItem('soap-calc:active-process', 'hp');
+    const { result } = renderHook(() => useRecipeStorage()); // mounts ON hp, slot empty
+    // A second writer (another tab, a rollback) parks a future-version draft in the
+    // SAME slot after mount — the state a same-process import walks into.
+    localStorage.setItem('soap-calc:draft:hp', fromTheFuture);
+    await importOntoHp(result);
+    expect(localStorage.getItem('soap-calc:draft:hp:unreadable')).toBe(fromTheFuture);
+    expect(loadDraft('hp')?.name).toBe('Incoming import');
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept unchanged/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/Imported/));
+  });
+
   it('yields the one message slot to the storage-full warning when both fire at once', async () => {
     // Storage that refuses every write: the flush and the imported save both fail AND
     // the target slot is unreadable (its backup write fails too, so the verdict would
