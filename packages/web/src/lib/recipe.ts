@@ -7,6 +7,7 @@ import {
 import type { AdditiveStage, DoseBasis, DoseUnit, GelMode, TarLyeTreatment, WaterMode } from '@soap-calc/core';
 import { isWeightUnit, type WeightUnit } from './weightUnits';
 import { defaultVariantFor, isProcessVariantId, processForLyeType, type ProcessVariantId } from './process';
+import { formatInputNumber } from './format';
 
 export type { WeightUnit };
 
@@ -186,9 +187,23 @@ export function normalizeSplitLiquidRow(
   };
 }
 
+/** Import/load cap on the settings-nested row-list arrays (split liquids here,
+ * post-cook superfat oils below), mirroring recipeFile.ts's MAX_RECIPE_LINES: real recipes
+ * carry a handful of extra liquids/oils, not thousands — without a cap, a malformed/hostile
+ * settings blob builds an unbounded array + one React row each and hangs the tab. These
+ * arrive a level down inside `settings`, so recipeFile.ts's own `lines`/`additives` caps
+ * (which reject the whole file) never see them: every load path — file import, a corrupted
+ * localStorage draft, and the in-app workspace load — funnels through normalizeSettings
+ * instead, which is why the cap lives here rather than in the file parser. Truncated, not
+ * rejected — same as MAX_FIELD_LENGTH's per-string truncation — so a recipe the app itself
+ * exported still imports. 50, mirroring MAX_RECIPE_ADDITIVES: these lists are additive-like
+ * (a handful of optional rows), not primary-ingredient-like (MAX_RECIPE_LINES' 100). */
+const MAX_SPLIT_LIQUID_ROWS = 50;
+
 /** Normalize the alternative-liquid rows, migrating the singleton `splitLiquid` shape
  * (enabled → one row, disabled → none). A stored list wins over the legacy field. Only one
- * 'rest' row can exist (it consumes the remainder); later ones demote to percent_of_oils. */
+ * 'rest' row can exist (it consumes the remainder); later ones demote to percent_of_oils.
+ * The list is capped at MAX_SPLIT_LIQUID_ROWS rows (see its doc comment). */
 export function normalizeSplitLiquids(
   partial:
     | (Partial<RecipeSettings> & { splitLiquids?: unknown; splitLiquid?: unknown })
@@ -198,7 +213,10 @@ export function normalizeSplitLiquids(
   const list = (partial as { splitLiquids?: unknown } | null | undefined)?.splitLiquids;
   let rows: SplitLiquidRow[];
   if (Array.isArray(list)) {
-    rows = list.filter(isRecord).map((row) => normalizeSplitLiquidRow(row as Partial<SplitLiquidRow>));
+    rows = list
+      .slice(0, MAX_SPLIT_LIQUID_ROWS)
+      .filter(isRecord)
+      .map((row) => normalizeSplitLiquidRow(row as Partial<SplitLiquidRow>));
   } else {
     const legacy = (partial as { splitLiquid?: unknown } | null | undefined)?.splitLiquid;
     if (isRecord(legacy) && legacy.enabled === true) {
@@ -256,9 +274,61 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+// A row's percent, clamped into [0, 100] — a recipe file (hand-edited, imported, or from a
+// stale save) can carry any string, so this is the load-time half of the guard. It is the
+// only half that clamps BOTH sides: live typing goes through SuperfatWaterPanel's
+// updatePcsfOil, whose headroom bounds a row from above and lets a negative stand as typed
+// (see there). Blank/non-numeric text passes through unclamped (nothing to clamp; downstream
+// parsing already treats it as absent). A finite number outside the range snaps to the
+// nearest bound: parsePercentOfOil (core) REJECTS — returns null, not a clamped value — for
+// anything over 100, so an unclamped '200' row would silently contribute 0 to the
+// subtract-mode lye reserve instead of the (visibly clamped) percent the panel shows as
+// allocated.
+function clampPostCookSuperfatPercent(percent: string): string {
+  const n = Number(percent);
+  if (!Number.isFinite(n)) return percent;
+  if (n > 100) return '100';
+  if (n < 0) return '0';
+  return percent;
+}
+
+/** Import/load cap on the post-cook superfat oil list — same reasoning as
+ * MAX_SPLIT_LIQUID_ROWS above (see its doc comment): a settings-nested array that
+ * recipeFile.ts's own caps never see, truncated rather than rejected, capped at 50 to match
+ * MAX_RECIPE_ADDITIVES' "handful of optional rows" magnitude. */
+const MAX_POST_COOK_SUPERFAT_OILS = 50;
+
+// clampPostCookSuperfatPercent bounds each row into [0, 100] but says nothing about the
+// RUNNING SUM across rows — an imported file's rows can each be individually legal yet sum
+// past 100. That is not just cosmetic: SuperfatWaterPanel's setPcsfTotal only trims the oil
+// rows when the typed total is BELOW the allocated sum (see its own comment), so an
+// allocated sum already over 100 lets a typed total anywhere up to 100 slip past without
+// ever trimming the oils back down — a self-correction gap that normal in-app editing can
+// never trigger, because updatePcsfOil's headroom already keeps the running sum at or under
+// 100 on every keystroke. Capping the sum here at load time closes the gap by keeping that
+// state unreachable in the first place. Later rows lose ground first (order-preserving,
+// same rule as normalizeSplitLiquids' one-rest-row demotion).
+function capAllocatedSum(oils: PostCookSuperfatOil[]): PostCookSuperfatOil[] {
+  let runningSum = 0;
+  return oils.map((oil) => {
+    const n = Number(oil.percent);
+    if (!Number.isFinite(n) || n <= 0) return oil;
+    const headroom = Math.max(0, 100 - runningSum);
+    if (n <= headroom) {
+      runningSum += n;
+      return oil;
+    }
+    runningSum = 100;
+    return { ...oil, percent: String(headroom) };
+  });
+}
+
 /** Normalize the post-cook superfat oils, migrating the pre-multi-oil single-field shape
  * (`postCookSuperfatPercent` + `postCookSuperfatOilId`) into a one-row list. A stored list
- * wins over the legacy fields; each row keeps its raw input string percent. */
+ * wins over the legacy fields; each row keeps its raw input string percent, clamped into
+ * [0, 100] — see clampPostCookSuperfatPercent — the list itself is capped at
+ * MAX_POST_COOK_SUPERFAT_OILS rows, and the running sum of percents is capped at 100 — see
+ * capAllocatedSum. */
 export function normalizePostCookSuperfatOils(
   partial: Partial<RecipeSettings> & {
     postCookSuperfatPercent?: unknown;
@@ -267,15 +337,17 @@ export function normalizePostCookSuperfatOils(
 ): PostCookSuperfatOil[] {
   const list = (partial as { postCookSuperfatOils?: unknown }).postCookSuperfatOils;
   if (Array.isArray(list)) {
-    return list
+    const rows = list
+      .slice(0, MAX_POST_COOK_SUPERFAT_OILS)
       .filter(
         (row): row is Record<string, unknown> =>
           isRecord(row) && typeof row.oilId === 'string' && row.oilId !== '',
       )
       .map((row) => ({
         oilId: row.oilId as string,
-        percent: typeof row.percent === 'string' ? row.percent : '',
+        percent: clampPostCookSuperfatPercent(typeof row.percent === 'string' ? row.percent : ''),
       }));
+    return capAllocatedSum(rows);
   }
   // Legacy single-oil shape → one row, only when it carried a real, non-zero percent.
   const legacyOilId = partial.postCookSuperfatOilId;
@@ -286,7 +358,7 @@ export function normalizePostCookSuperfatOils(
     typeof legacyPercent === 'string' &&
     Number(legacyPercent) > 0
   ) {
-    return [{ oilId: legacyOilId, percent: legacyPercent }];
+    return [{ oilId: legacyOilId, percent: clampPostCookSuperfatPercent(legacyPercent) }];
   }
   return [];
 }
@@ -299,10 +371,93 @@ export function postCookSuperfatAllocated(oils: PostCookSuperfatOil[]): number {
   }, 0);
 }
 
+// The resolved total is bound STRAIGHT into an <input type="number"> (SuperfatWaterPanel's
+// budget field), and that element renders NOTHING for a value outside the input's own number
+// form: a stored ' 12.34 ' or '+12.34' — reachable from a hand-edited or foreign recipe file
+// — left the field empty while the allocation note beside it still printed "12.3%", the
+// two-figures-for-one-quantity shape this codebase keeps paying for. Verified in Chromium
+// and jsdom alike. So the string is trimmed, and anything still not in that form is offered
+// the parsed number's own canonical text instead. Deliberately NOT rounded: a renderable
+// '12.34' passes through digit for digit — preserving what the maker typed is the whole point
+// of keeping this a passthrough (see the doc comment below).
+//
+// The pattern is HTML's own "valid floating-point number" production, which is what the
+// value-sanitization step tests the field against. Engines are inconsistent at the edges
+// (Chromium shows '.5', the production does not admit it), so the stricter production is the
+// one worth canonicalizing to: '.5' becomes '0.5', which every engine renders and which
+// stands for the same figure.
+//
+// null means "no total I can store", and it is what makes the rest of that true: the string
+// this returns is ALWAYS renderable. Two ways to earn a null, both of them cases where the
+// earlier truncate-and-coerce version handed back a figure nobody typed:
+//
+//   - Longer than the field cap. Cutting a number only costs precision while what sits past
+//     char 200 is fractional digits; when MAGNITUDE lives out there, cutting changes the
+//     figure. 250 leading zeros before '12.34' cut down to 200 zeros — 12.34 stored as 0 —
+//     and '1' + 300 zeros + 'e-300' (value 1) cut to 1e199, which the ceiling below then
+//     read as an over-100 budget and clamped to '100'. Both paste into the budget field and
+//     pass its sanitizer and clampPct, so this is not a hand-edited-file-only shape. A
+//     number too long to store is refused, not rewritten into a shorter, different one.
+//   - A canonical text that is still outside the form. String(Number(x)) is the literal
+//     'NaN' for anything that does not parse — and the cut above can land inside an exponent
+//     and produce exactly that. 'NaN' is the very thing this function exists to keep out: it
+//     renders as an EMPTY field, and it slips past both of normalizePostCookSuperfatTotal's
+//     guards untouched, because every comparison against NaN is false. So the fallback is
+//     re-tested rather than trusted.
+//
+// Refusing is safe to do bluntly: a null drops into the same resolution chain an absent total
+// uses, and that chain floors at the allocated sum — so it can never cost a row its percent.
+const INPUT_NUMBER_FORM = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/;
+function inputRenderableTotal(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (trimmed.length > MAX_SETTING_FIELD_LENGTH) return null;
+  if (INPUT_NUMBER_FORM.test(trimmed)) return trimmed;
+  const canonical = String(Number(trimmed));
+  return INPUT_NUMBER_FORM.test(canonical) ? canonical : null;
+}
+
 /** Normalize the post-cook superfat total (the budget/ceiling the oils allocate within).
  * Resolution order: an explicit stored total → the legacy single `postCookSuperfatPercent`
- * → the allocated sum (pre-total recipes from the multi-oil era). Never below the allocated
- * sum, so the budget-≥-allocation invariant always holds on load. */
+ * → the allocated sum (pre-total recipes from the multi-oil era), then clamped into [0, 100]
+ * — the same range SuperfatWaterPanel's setPcsfTotal enforces on a TYPED total, because a
+ * clamp is only worth what the loosest way in respects. A budget over 100 is not merely
+ * cosmetic: the per-row headroom is `Math.min(100, total − others)`, so a loaded 500% budget
+ * hands EVERY row a full 100 to spend, two rows of 100 read "200% of 500% allocated · 300%
+ * left", and the next save/load rewrites row 2 to '0' (capAllocatedSum) — the app accepting
+ * a number and then losing it. Negatives have no typed string worth keeping and fall to the
+ * allocated-sum branch below, which floors them at 0.
+ *
+ * A total with NO finite double — 'Infinity', or '1e309', which overflows to it — falls that
+ * same way, to the chain, rather than onto the 100 ceiling '500' meets. Kept deliberately,
+ * not left alone: there is no finite figure inside it to clamp, so '100' would be a budget
+ * this code invented rather than one the file expressed, and the chain's floor already stops
+ * the fall at whatever the rows allocate. It is also the only self-consistent answer, since
+ * 'Infinity' can never satisfy INPUT_NUMBER_FORM whatever the gates do — clamping '1e309'
+ * would hand two strings with one and the same double value two different budgets.
+ *
+ * The floor at the allocated sum is a FLOOR ON THE FIGURE, printed at one decimal: rows of
+ * 6.17 + 6.17 with no stored total yield '12.3', a hair under the 12.34 they allocate. Both
+ * round to the same 12.3 in the panel's readout, so nothing on screen contradicts itself,
+ * but the stored budget can sit a rounding step below the allocation — do not read this as
+ * an exact budget-≥-allocation invariant.
+ *
+ * A stored/legacy total only wins if inputRenderableTotal can return it in a form the budget
+ * field renders — its own digits where they already are one (the common case), Number's
+ * canonical text where they are not, and NOTHING at all where neither is available. Unlike
+ * settingString's other fields it is not length-capped but length-REFUSED: a total we would
+ * have to cut is one we would be storing as a different number, and a refusal falls to the
+ * next branch exactly as an absent total does. This runs on every draft load, export and
+ * import, so it is stored state, not a printed readout, and must not reshape what the maker
+ * typed (a typed '12.34' silently becoming '12.3' on the next reload). Nothing downstream
+ * needs it pre-rounded: SuperfatWaterPanel binds this string straight into an editable number
+ * input (exact fidelity is what that field wants), and separately derives its own rounded
+ * "X% of Y% allocated" readout from a parsed Number via its own formatTotal/roundPct — display
+ * rounding that already lives at the display, per format.ts's convention.
+ *
+ * Only the allocated-sum fallback below has no typed string to preserve — it's a number
+ * derived from summing the oils' own percents — so formatting it (via format.ts, the shared
+ * home for this kind of rounding) is fair game, and also flushes summing float noise (e.g.
+ * 0.1 + 0.2) out of what gets stored. */
 function normalizePostCookSuperfatTotal(
   partial: (Partial<RecipeSettings> & { postCookSuperfatPercent?: unknown }) | undefined,
   oils: PostCookSuperfatOil[],
@@ -311,17 +466,23 @@ function normalizePostCookSuperfatTotal(
   const raw = (partial as { postCookSuperfatTotalPercent?: unknown } | undefined)
     ?.postCookSuperfatTotalPercent;
   const legacy = partial?.postCookSuperfatPercent;
-  let total: number;
+  // Sequential, not else-if: a candidate that inputRenderableTotal refuses is no candidate at
+  // all, so it hands the next branch the same turn an absent field would. The isFinite gates
+  // are what keep 'Infinity'/'1e309' out of `total` below, where they would clear the ceiling.
+  let stored: string | null = null;
   if (typeof raw === 'string' && raw.trim() !== '' && Number.isFinite(Number(raw)) && Number(raw) >= 0) {
-    total = Number(raw);
-  } else if (typeof legacy === 'string' && Number.isFinite(Number(legacy)) && Number(legacy) > 0) {
-    total = Number(legacy);
-  } else {
-    total = allocated;
+    stored = inputRenderableTotal(raw);
   }
-  total = Math.max(total, allocated);
-  // Whole numbers print bare; keep one decimal otherwise.
-  return Number.isInteger(total) ? String(total) : String(Math.round(total * 10) / 10);
+  if (stored === null && typeof legacy === 'string' && Number.isFinite(Number(legacy)) && Number(legacy) > 0) {
+    stored = inputRenderableTotal(legacy);
+  }
+  if (stored === null) stored = formatInputNumber(allocated, 1);
+  // Read back off the resolved string, not the raw one, so the ceiling and the floor both
+  // judge the value that will actually be stored — which, after a refusal, is a figure from a
+  // different branch entirely. Finite by construction: every branch above is renderable.
+  const total = Number(stored);
+  if (total > 100) return '100';
+  return total < allocated ? formatInputNumber(allocated, 1) : stored;
 }
 
 const WATER_MODES = ['percent_of_oils', 'lye_concentration', 'lye_water_ratio'] as const;

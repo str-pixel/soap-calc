@@ -3,7 +3,7 @@ import { afterEach, expect, test } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { useState } from 'react';
 import { SuperfatWaterPanel } from './SuperfatWaterPanel';
-import { DEFAULT_SETTINGS, type RecipeSettings } from '../lib/recipe';
+import { DEFAULT_SETTINGS, normalizeSettings, type RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 
 afterEach(cleanup);
@@ -136,6 +136,101 @@ test('an oil % is capped at the remaining budget (sum can never exceed the total
   expect((screen.getByLabelText('Post-cook superfat % 2') as HTMLInputElement).value).toBe('2');
   // Row 1 is untouched (siblings are independent, never rescaled).
   expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('3');
+});
+
+test('typing 200 into the post-cook superfat total clamps to 100, not left uncapped', () => {
+  // A mistyped 200 (meaning 20) must not be reachable: budgeting more than 100% of the
+  // recipe's own oil as a reserve is nonsensical, and an unclamped total inflates the
+  // per-row headroom too (letting a row itself go over 100%, which the lye math then
+  // silently drops to a zero reserve — see useRecipeViewModel).
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  fireEvent.change(screen.getByLabelText('Post-cook superfat total %'), { target: { value: '200' } });
+  expect((screen.getByLabelText('Post-cook superfat total %') as HTMLInputElement).value).toBe('100');
+  // The allocation note must never claim a 200% budget either.
+  expect(screen.queryByText(/200%/)).toBeNull();
+});
+
+test('a negative total floors to 0 for storage but does not wipe the oil rows (typo protection)', () => {
+  // A stray negative keystroke is a typo, not "set the budget to zero" — the trim-to-fit
+  // branch (which proportionally shrinks every row to match a lowered total) must not
+  // trigger off the floored value, or the maker's already-typed row gets silently discarded.
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  fireEvent.change(screen.getByLabelText('Post-cook superfat total %'), { target: { value: '-5' } });
+  expect((screen.getByLabelText('Post-cook superfat total %') as HTMLInputElement).value).toBe('0');
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('5');
+});
+
+test('an explicitly typed 0 total DOES trim the oil rows to 0, unlike a negative typo', () => {
+  // The sibling case to the negative-typo test above: typing an actual 0 is an intentional
+  // "no PCSF budget" and the pre-existing proportional-trim behavior correctly zeroes the
+  // rows to match — pinned explicitly so the two cases don't get conflated again.
+  render(<Harness process="hp" initial={ONE_PCSF} />);
+  fireEvent.change(screen.getByLabelText('Post-cook superfat total %'), { target: { value: '0' } });
+  expect((screen.getByLabelText('Post-cook superfat total %') as HTMLInputElement).value).toBe('0');
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('0');
+});
+
+test('a loaded total renders in the budget field instead of blanking it', () => {
+  // The stored total reaches this field verbatim — that is the point of keeping the maker's
+  // own precision — so whatever normalizeSettings hands back has to be a value an
+  // <input type="number"> will display. It shows NOTHING for ' 12.34 ' (Chromium and jsdom
+  // agree), which left the budget blank while the allocation note beside it still printed
+  // "12.3%": one quantity, two figures, and the editable one missing.
+  render(
+    <Harness
+      process="hp"
+      initial={normalizeSettings({ postCookSuperfatTotalPercent: ' 12.34 ' })}
+    />,
+  );
+  expect((screen.getByLabelText('Post-cook superfat total %') as HTMLInputElement).value).toBe(
+    '12.34',
+  );
+  expect(screen.getByText('12.3% unallocated')).toBeTruthy();
+});
+
+test('a loaded 500% budget cannot hand two rows 100% each', () => {
+  // What the missing load-time ceiling actually cost: the per-row headroom is
+  // Math.min(100, total − others), so an unclamped 500 gave every row a full 100 to spend.
+  // Both rows took 100 and the note read "200% of 500% allocated · 300% left" — a budget the
+  // maker cannot type, an allocation the calc will not honour, and a row 2 that the next
+  // save/load silently rewrote to '0'.
+  render(
+    <Harness
+      process="hp"
+      initial={normalizeSettings({
+        postCookSuperfatTotalPercent: '500',
+        postCookSuperfatOils: [
+          { oilId: 'olive-oil', percent: '' },
+          { oilId: 'shea-butter', percent: '' },
+        ],
+      })}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText('Post-cook superfat % 1'), { target: { value: '100' } });
+  fireEvent.change(screen.getByLabelText('Post-cook superfat % 2'), { target: { value: '100' } });
+  expect((screen.getByLabelText('Post-cook superfat % 2') as HTMLInputElement).value).toBe('0');
+  expect(screen.getByText('100% of 100% allocated')).toBeTruthy();
+  expect(screen.queryByText(/500%/)).toBeNull();
+});
+
+test('a row still caps at 100 even when the total budget somehow exceeds it', () => {
+  // Both entry points now clamp the budget to 100 — setPcsfTotal for a typed one,
+  // normalizePostCookSuperfatTotal for a loaded/imported one — so this state is constructed
+  // directly rather than loaded. The row-level ceiling in updatePcsfOil is the independent
+  // second line: a row's OWN percent must not pass 100 (parsePercentOfOil's ceiling, over
+  // which it returns null and the lye reserve silently becomes 0) whatever the budget says.
+  render(
+    <Harness
+      process="hp"
+      initial={{
+        postCookSuperfatTotalPercent: '500',
+        postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '' }],
+      }}
+    />,
+  );
+  const row = screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement;
+  fireEvent.change(row, { target: { value: '400' } });
+  expect((screen.getByLabelText('Post-cook superfat % 1') as HTMLInputElement).value).toBe('100');
 });
 
 test('lowering the total below the allocated sum trims the oils to fit', () => {

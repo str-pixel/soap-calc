@@ -186,8 +186,14 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'trace',
     processOverrides: {
       // LS doses fragrance as a concentration in the finished solution, 3% max — well
-      // below bar-soap oil-weight percentages.
-      ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution' },
+      // below bar-soap oil-weight percentages. A solution basis presupposes a solution:
+      // that mass does not exist until after dilution, so the stage must move to
+      // after_cook alongside it — CP/HP's trace stage would price the dose against soap
+      // that isn't there yet. All four LS procedures (CPLS, LTLS, HTLS, 30-minute HTLS)
+      // place fragrance after the soap reaches its finished, diluted consistency, because
+      // these oils separate and cloud the soap if added earlier (LS:2164, 2288, 2520, 2878;
+      // clouding risk noted at LS:2953).
+      ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution', defaultStage: 'after_cook' },
     },
   },
   {

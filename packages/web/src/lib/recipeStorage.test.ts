@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS, createEmptyAdditives, createStarterLines, normalizeSe
 import {
   loadActiveProcess,
   loadDraft,
+  loadDraftSlot,
   migrateLegacyDraft,
   saveActiveProcess,
   saveDraft,
@@ -318,6 +319,62 @@ describe('unparseable-draft backup (second wave)', () => {
     localStorage.setItem('soap-calc:draft:cp', '{truncated mid-wri');
     expect(loadDraft('cp')).toBeNull();
     expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe('{truncated mid-wri');
+  });
+});
+
+describe('the slot verdict: kept only when the backup actually holds the payload', () => {
+  // First-writer-wins means a SECOND unreadable draft (rollback → backup written → roll
+  // forward → save a future-version draft → rollback again) is deliberately not preserved.
+  // The slot must say so, or the caller's "kept unchanged" sentence overpromises.
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createStorage());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const future = JSON.stringify({ version: 99, name: 'from the future', lines: [], settings: {} });
+
+  it('kept when the backup slot was empty and the write landed', () => {
+    localStorage.setItem('soap-calc:draft:cp', future);
+    expect(loadDraftSlot('cp')).toEqual({ draft: null, unreadable: true, kept: true });
+  });
+
+  it('NOT kept when a different, older backup already occupies the slot', () => {
+    localStorage.setItem('soap-calc:draft:cp:unreadable', 'an earlier unreadable payload');
+    localStorage.setItem('soap-calc:draft:cp', future);
+    expect(loadDraftSlot('cp')).toEqual({ draft: null, unreadable: true, kept: false });
+    // The verdict reports first-writer-wins; it must not change it.
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe('an earlier unreadable payload');
+  });
+
+  it('kept when the backup already holds the identical payload — same bytes, same rescue', () => {
+    localStorage.setItem('soap-calc:draft:cp:unreadable', future);
+    localStorage.setItem('soap-calc:draft:cp', future);
+    expect(loadDraftSlot('cp')).toEqual({ draft: null, unreadable: true, kept: true });
+  });
+
+  it('NOT kept when the backup write itself fails', () => {
+    const store = new Map<string, string>([['soap-calc:draft:cp', future]]);
+    vi.stubGlobal('localStorage', {
+      get length() {
+        return store.size;
+      },
+      clear: () => store.clear(),
+      getItem: (key: string) => store.get(key) ?? null,
+      key: (index: number) => [...store.keys()][index] ?? null,
+      removeItem: (key: string) => store.delete(key),
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+    } as unknown as Storage);
+    expect(loadDraftSlot('cp')).toEqual({ draft: null, unreadable: true, kept: false });
+  });
+
+  it('carries the same verdict through the JSON.parse-throwing path', () => {
+    localStorage.setItem('soap-calc:draft:cp:unreadable', 'an earlier unreadable payload');
+    localStorage.setItem('soap-calc:draft:cp', '{truncated mid-wri');
+    expect(loadDraftSlot('cp')).toEqual({ draft: null, unreadable: true, kept: false });
   });
 });
 

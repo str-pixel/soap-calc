@@ -203,12 +203,23 @@ export function useRecipeViewModel({
     splitOverride?.settingsForCalc ?? previewSettings,
     process,
   );
-  // Gate on parsePercentOfOil (caps each row at 100, matching computePostCookSuperfat) so the
-  // lye reduction and the "reserved" PCSF line can never diverge at an out-of-range percent.
+  // parsePercentOfOil REJECTS (returns null, NOT a clamped value) anything over 100 — so an
+  // out-of-range single row must never reach this reduce, or "?? 0" would read it as an
+  // unset row and silently reserve nothing while the panel still shows it as allocated. The
+  // HIGH side is closed upstream, not here: SuperfatWaterPanel's updatePcsfOil caps a typed
+  // row at its headroom, which is itself capped at 100, and normalizePostCookSuperfatOils
+  // (lib/recipe.ts) clamps a loaded/imported row into [0, 100] (a saved file can carry any
+  // string). The low side is NOT symmetrical: nothing clamps a NEGATIVE typed into a row, so
+  // '-50' does reach this reduce and parsePercentOfOil returns null for it too. Here that is
+  // the right answer — a negative reserve is meaningless, and 0 is what no row at all would
+  // give — but it is a fallback doing the work, not an invariant: the panel goes on showing
+  // that -50 in its field while its allocation note counts nothing for it. Blank and
+  // non-numeric percents land on the same 0 for the same reason.
   // Subtract mode reserves EVERY post-cook oil from the recipe, so sum their percents — and,
-  // unlike a single row, the SUM can exceed 100 (e.g. 3 rows at 50%), so clamp the total to
-  // just under 100. Reserving 100%+ of saponification is nonsensical; the clamp keeps
-  // cookFactor in (0,1] rather than driving the scaled lye to zero or negative.
+  // unlike a single row, the SUM can still exceed 100 (e.g. 3 rows at 50%, each individually
+  // in range), so clamp the total to just under 100. Reserving 100%+ of saponification is
+  // nonsensical; the clamp keeps cookFactor in (0,1] rather than driving the scaled lye to
+  // zero or negative.
   const pcsfSubtractPercent = Math.min(
     99,
     previewSettings.postCookSuperfatOils.reduce(

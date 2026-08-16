@@ -221,6 +221,169 @@ describe('postCookSuperfat settings', () => {
     expect(s.postCookSuperfatTotalPercent).toBe('4');
   });
 
+  // normalizeSettings runs on every draft load, export and import — a display rule baked in
+  // here would silently reshape what the maker typed on every cycle, not just once.
+  it('keeps the exact total the maker typed, not rounded to one decimal', () => {
+    const s = normalizeSettings({ postCookSuperfatTotalPercent: '12.34' });
+    expect(s.postCookSuperfatTotalPercent).toBe('12.34');
+  });
+
+  it('keeps a typed total needing rounding-up too (not just rounding-down)', () => {
+    const s = normalizeSettings({ postCookSuperfatTotalPercent: '12.37' });
+    expect(s.postCookSuperfatTotalPercent).toBe('12.37');
+  });
+
+  // The typed total is clamped to 100 in the UI (setPcsfTotal); the LOADED one has to be
+  // too, or the clamp is only as good as the path the value came in on. It is not cosmetic:
+  // the per-row headroom is Math.min(100, total − others), so a 500% budget hands EVERY row a
+  // full 100 to spend — two rows of 100 then read "200% of 500% allocated · 300% left", and
+  // the next save/load quietly rewrites row 2 to '0' (capAllocatedSum), losing a number the
+  // app had accepted.
+  it('clamps a stored total above 100 on load, not only below 0', () => {
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: '500' }).postCookSuperfatTotalPercent,
+    ).toBe('100');
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: '150' }).postCookSuperfatTotalPercent,
+    ).toBe('100');
+    // The floor half already worked and must keep working: a negative total has no typed
+    // string worth preserving, so it falls to the allocated sum (0 with no oils).
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: '-20' }).postCookSuperfatTotalPercent,
+    ).toBe('0');
+  });
+
+  // SuperfatWaterPanel binds this string straight into an <input type="number">, which
+  // renders NOTHING for a value that is not in the input's own number form — a stored
+  // ' 12.34 ' or '+12.34' leaves the budget field blank while the allocation note beside it
+  // still prints "12.3%". Reachable from a hand-edited or foreign recipe file.
+  it('stores a total the number input can actually render (trimmed, no leading +)', () => {
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: ' 12.34 ' }).postCookSuperfatTotalPercent,
+    ).toBe('12.34');
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: '+12.34' }).postCookSuperfatTotalPercent,
+    ).toBe('12.34');
+  });
+
+  // The 200-char cap used to .slice() the string, and the slice can land INSIDE an exponent:
+  // the remainder parses to NaN and the canonical text of NaN is the literal 'NaN' — exactly
+  // the shape this canonicalizer exists to keep out of the budget field. It renders nothing,
+  // and it walks past BOTH guards below, because every comparison against NaN is false: not
+  // > 100, not < allocated. Field blank, allocation note still printing a figure — one
+  // quantity, two figures, and the editable one missing.
+  it('refuses a total it cannot store rather than canonicalizing it to NaN', () => {
+    const capSplitsExponent = `0.${'0'.repeat(196)}5e100`; // 203 chars, really 5e-97
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: capSplitsExponent })
+        .postCookSuperfatTotalPercent,
+    ).toBe('0');
+    // Refusal means "no usable stored total", so the rest of the chain still runs and the
+    // allocated-sum floor still holds — a 'NaN' would have sailed straight past it.
+    expect(
+      normalizeSettings({
+        postCookSuperfatTotalPercent: capSplitsExponent,
+        postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '4' }],
+      }).postCookSuperfatTotalPercent,
+    ).toBe('4');
+  });
+
+  // .slice() only loses precision when what sits past char 200 is fractional digits. When
+  // MAGNITUDE lives out there — leading zeros, or an exponent — truncating changes the
+  // figure. Both of these reach the app through the budget field itself: Number() of each is
+  // in range, so clampPct and the input's own sanitizer accept the paste, and the loss shows
+  // up only on the next load. A number too long to store is refused, not rewritten.
+  it('refuses an over-length total instead of slicing its magnitude away', () => {
+    const zeroPadded = `${'0'.repeat(250)}12.34`; // Number is 12.34; 200 chars of it are zeros
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: zeroPadded }).postCookSuperfatTotalPercent,
+    ).toBe('0');
+    const exponentCut = `1${'0'.repeat(300)}e-300`; // Number is 1; cut to 200 chars it is 1e199
+    expect(
+      normalizeSettings({ postCookSuperfatTotalPercent: exponentCut }).postCookSuperfatTotalPercent,
+    ).toBe('0');
+    // Not a hardcoded zero: refusal drops into the chain, which floors at the allocated sum.
+    expect(
+      normalizeSettings({
+        postCookSuperfatTotalPercent: zeroPadded,
+        postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '4' }],
+      }).postCookSuperfatTotalPercent,
+    ).toBe('4');
+  });
+
+  // The property both defects broke. normalizeSettings runs on every draft load, export and
+  // import, so a total that changes between load 1 and load 2 is a figure the app is still
+  // quietly editing after it accepted it ('NaN' → '0' being the worst case: the maker's
+  // number becomes nothing at all, one reload later).
+  it('resolves the total idempotently, awkward inputs included', () => {
+    const inputs = [
+      `0.${'0'.repeat(196)}5e100`,
+      `${'0'.repeat(250)}12.34`,
+      `1${'0'.repeat(300)}e-300`,
+      'Infinity',
+      '1e309',
+      '12.34',
+      '.5',
+      ' 12.34 ',
+      '500',
+    ];
+    for (const raw of inputs) {
+      const once = normalizeSettings({
+        postCookSuperfatTotalPercent: raw,
+      }).postCookSuperfatTotalPercent;
+      const twice = normalizeSettings({
+        postCookSuperfatTotalPercent: once,
+      }).postCookSuperfatTotalPercent;
+      expect([raw, twice]).toEqual([raw, once]);
+    }
+  });
+
+  // Task 6's precision guarantee, restated against the refusing canonicalizer: a total short
+  // enough to store keeps its digits exactly, and is not routed through Number()'s canonical
+  // text (which would still print these three unchanged — but '0.125' is here so a future
+  // "just round it" edit has to fail a test).
+  it('still passes a storable typed total through digit for digit', () => {
+    for (const typed of ['12.34', '12.37', '0.125']) {
+      expect(
+        normalizeSettings({ postCookSuperfatTotalPercent: typed }).postCookSuperfatTotalPercent,
+      ).toBe(typed);
+    }
+  });
+
+  // The bound opposite the '500' → '100' ceiling, pinned deliberately rather than by accident:
+  // a total with no finite double has no figure to clamp, so it is refused like any other
+  // unstorable one and the chain resolves the budget instead. Clamping it to '100' would
+  // invent the largest budget the app allows out of a file that named no number at all.
+  it('drops a non-finite total into the resolution chain, not onto the 100 ceiling', () => {
+    for (const overflow of ['Infinity', '1e309']) {
+      expect(
+        normalizeSettings({ postCookSuperfatTotalPercent: overflow }).postCookSuperfatTotalPercent,
+      ).toBe('0');
+      expect(
+        normalizeSettings({
+          postCookSuperfatTotalPercent: overflow,
+          postCookSuperfatOils: [{ oilId: 'shea-butter', percent: '4' }],
+        }).postCookSuperfatTotalPercent,
+      ).toBe('4');
+    }
+  });
+
+  // An unstorable stored total is "no stored total", so the fall-through has to reach the
+  // legacy field the same way an absent one does — otherwise refusing to mangle a junk value
+  // would cost the maker the migration their real number was waiting on.
+  // No postCookSuperfatOilId here, deliberately: with one, the legacy pair migrates into an
+  // oils row and the allocated-sum FLOOR would produce '6' on its own, so the assertion could
+  // not tell the legacy branch from the floor. Without it there is no row, the allocated sum
+  // is 0, and only the legacy branch can yield '6'.
+  it('falls through to the legacy percent when the stored total is unstorable', () => {
+    const s = normalizeSettings({
+      postCookSuperfatTotalPercent: `${'0'.repeat(250)}12.34`,
+      postCookSuperfatPercent: '6',
+    } as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatOils).toEqual([]);
+    expect(s.postCookSuperfatTotalPercent).toBe('6');
+  });
+
   it('migrates the legacy single percent into the total budget', () => {
     const s = normalizeSettings({
       postCookSuperfatPercent: '6',
@@ -543,5 +706,56 @@ describe('gradual dilution water', () => {
   it('coerces junk to the default rather than throwing', () => {
     const s = normalizeSettings({ gradualWaterGrams: 12 } as unknown as Partial<RecipeSettings>);
     expect(s.gradualWaterGrams).toBe('12'); // settingString coerces a finite number
+  });
+});
+
+// settings.splitLiquids and settings.postCookSuperfatOils are the same shape as
+// recipeFile.ts's `lines`/`additives` (a hostile/malformed array building one React row
+// each), but they arrive a level down inside `settings` and every load path — file import,
+// a localStorage draft, and the in-app workspace load — funnels through normalizeSettings,
+// not recipeFile.ts's own array caps. Without a cap here, a 50,000-row settings blob (well
+// under recipeFile.ts's 1 MB byte cap) sails through where a 101-line `lines` array is
+// refused outright.
+describe('row-list caps on settings-nested arrays (unbounded-import guard)', () => {
+  it('caps a huge splitLiquids array instead of building all 50,000 rows', () => {
+    const huge = Array.from({ length: 50_000 }, (_, i) => ({
+      key: `k${i}`,
+      presetKey: '',
+      name: `liquid ${i}`,
+      customWaterPercent: '',
+      sizeMode: 'percent_of_oils',
+      amount: '1',
+      addAt: 'trace',
+    }));
+    const rows = normalizeSplitLiquids({ splitLiquids: huge } as never);
+    expect(rows.length).toBeLessThanOrEqual(50);
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it('caps a huge postCookSuperfatOils array instead of building all 50,000 rows', () => {
+    const huge = Array.from({ length: 50_000 }, () => ({ oilId: 'olive-oil', percent: '0.001' }));
+    const s = normalizeSettings({
+      postCookSuperfatOils: huge,
+    } as unknown as Partial<RecipeSettings>);
+    expect(s.postCookSuperfatOils.length).toBeLessThanOrEqual(50);
+    expect(s.postCookSuperfatOils.length).toBeGreaterThan(0);
+  });
+
+  it('caps the running sum of post-cook superfat percents at 100, even though every row is individually legal', () => {
+    // Each row alone passes clampPostCookSuperfatPercent's [0,100] check, but the sum
+    // (120) does not — this is the state that defeats SuperfatWaterPanel's setPcsfTotal
+    // self-correction (its trim-to-fit branch only fires when the typed total is BELOW
+    // the allocated sum, so an allocated sum already over 100 lets a typed total up to
+    // 100 slip past without ever trimming the oils back down).
+    const s = normalizeSettings({
+      postCookSuperfatOils: [
+        { oilId: 'olive-oil', percent: '60' },
+        { oilId: 'shea-butter', percent: '60' },
+      ],
+    });
+    const total = s.postCookSuperfatOils.reduce((sum, o) => sum + Number(o.percent), 0);
+    expect(total).toBeLessThanOrEqual(100);
+    expect(s.postCookSuperfatOils[0].percent).toBe('60');
+    expect(s.postCookSuperfatOils[1].percent).toBe('40');
   });
 });

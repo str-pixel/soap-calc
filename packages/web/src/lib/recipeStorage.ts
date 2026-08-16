@@ -12,7 +12,7 @@ import { isProcessId, processForLyeType, type ProcessId } from './process';
 const LEGACY_DRAFT_KEY = 'soap-calc:draft';
 const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
 // v3: NaOH purity '100' in older drafts is migrated to the current default (see
-// migrateSettings). Version list accepted by loadDraft must include every older version.
+// migrateSettings). Version list accepted by loadDraftSlot must include every older version.
 const STORAGE_VERSION = 3;
 const READABLE_VERSIONS = [1, 2, STORAGE_VERSION];
 
@@ -94,14 +94,22 @@ export function linesFromSaved(saved: unknown[]): RecipeLine[] {
   return lines.length > 0 ? lines : createStarterLines();
 }
 
-function backupUnreadableDraft(process: ProcessId, raw: string): void {
+/** Parks the payload at `<draftKey>:unreadable` and reports whether that slot now holds
+ * it. First writer wins: an occupied slot is never overwritten, so a SECOND unreadable
+ * draft (rollback → backup written → roll forward → save → rollback again) is
+ * deliberately NOT preserved — and the caller's message says "kept", so the verdict has
+ * to come back out or that sentence overpromises. Compare content, not presence: an
+ * identical payload already in the slot is the same bytes, the same rescue, an honest
+ * "kept". False also covers the backup write itself failing (quota/blocked) — same
+ * honest answer, though at a few KB against a ~5 MB quota it is effectively unreachable. */
+function backupUnreadableDraft(process: ProcessId, raw: string): boolean {
   const backupKey = `${draftKey(process)}:unreadable`;
   try {
-    if (localStorage.getItem(backupKey) === null) {
-      safeSetItem(backupKey, raw);
-    }
+    const existing = localStorage.getItem(backupKey);
+    return existing === null ? safeSetItem(backupKey, raw) : existing === raw;
   } catch {
-    // best effort only
+    // Storage we cannot even read preserved nothing — do not claim it did.
+    return false;
   }
 }
 
@@ -127,38 +135,70 @@ function migrateSettings(settings: RecipeSettings, version: number): RecipeSetti
   return settings;
 }
 
-export function loadDraft(process: ProcessId): {
+export type LoadedDraft = {
   name: string;
   lines: RecipeLine[];
   additives: AdditiveLine[];
   settings: RecipeSettings;
-} | null {
+};
+
+/** What the slot held. `unreadable` separates "nothing was saved here" from "something
+ * was saved here that we had to set aside": both yield a null draft and a starter
+ * workspace, but only the second is a thing the maker has to be told, or their work
+ * simply appears to have vanished. `kept` qualifies the telling: true only when the
+ * backup slot actually holds this payload (just written, or already holding the same
+ * bytes). The backup is first-writer-wins, so an older occupant leaves today's draft
+ * unpreserved — and the message must not say "kept" then. Always false when
+ * `unreadable` is false: nothing needed keeping. See useRecipeStorage for who says it. */
+export type DraftSlot = { draft: LoadedDraft | null; unreadable: boolean; kept: boolean };
+
+export function loadDraftSlot(process: ProcessId): DraftSlot {
   let raw: string | null = null;
   try {
     raw = localStorage.getItem(draftKey(process));
-    if (!raw) return null;
+    if (!raw) return { draft: null, unreadable: false, kept: false };
     const data = JSON.parse(raw) as DraftPayload;
     if (!READABLE_VERSIONS.includes(data.version) || !Array.isArray(data.lines)) {
       // Preserve what we can't read: returning null seeds a starter workspace whose
       // first autosave overwrites this slot ~500ms later. A future-version draft
       // (app rollback) or corrupted payload is parked in a backup slot instead of
-      // being destroyed. First writer wins — don't churn the backup on every load.
-      backupUnreadableDraft(process, raw);
-      return null;
+      // being destroyed. First writer wins — don't churn the backup on every load —
+      // so `kept` carries out whether the slot really took (or already held) THIS
+      // payload, and the message downstream picks its sentence by it.
+      return { draft: null, unreadable: true, kept: backupUnreadableDraft(process, raw) };
     }
     return {
-      name: typeof data.name === 'string' && data.name ? data.name : 'Untitled recipe',
-      lines: linesFromSaved(data.lines),
-      additives: additivesFromSaved(data.additives),
-      settings: migrateSettings(normalizeSettings(data.settings), data.version),
+      draft: {
+        name: typeof data.name === 'string' && data.name ? data.name : 'Untitled recipe',
+        lines: linesFromSaved(data.lines),
+        additives: additivesFromSaved(data.additives),
+        settings: migrateSettings(normalizeSettings(data.settings), data.version),
+      },
+      unreadable: false,
+      kept: false,
     };
   } catch {
     // JSON.parse-throwing corruption (truncated write) must be preserved the same
     // way as a parseable-but-invalid payload — this catch is the common corruption
     // path, and returning bare null here lets the seeding autosave destroy it.
-    if (raw !== null) backupUnreadableDraft(process, raw);
-    return null;
+    // Throwing with no raw in hand is storage itself being unavailable (private mode),
+    // not a draft we set aside — there is no rescued recipe to announce.
+    return {
+      draft: null,
+      unreadable: raw !== null,
+      kept: raw !== null && backupUnreadableDraft(process, raw),
+    };
   }
+}
+
+/** The draft alone, without the slot's unreadable flag. TEST-ONLY: the app's one caller
+ * (useRecipeStorage's loadWorkspace) reads loadDraftSlot directly now, and production code
+ * must keep doing so — dropping the flag drops the one thing that separates "nothing was
+ * saved here" from "something was saved here that we had to set aside", which is exactly
+ * what the maker has to be told. Kept anyway because ~40 test references load a slot through
+ * it, and one wrapper is a better seam than teaching each of them to destructure. */
+export function loadDraft(process: ProcessId): LoadedDraft | null {
+  return loadDraftSlot(process).draft;
 }
 
 /** Returns false when the write failed (e.g. quota exceeded or storage blocked in
@@ -207,7 +247,7 @@ export function migrateLegacyDraft(): void {
     } catch {
       // fall through to the validity gate below
     }
-    // Migrate only what loadDraft could actually read back. An unparseable or
+    // Migrate only what loadDraftSlot could actually read back. An unparseable or
     // structurally alien legacy payload stays under its own key — copying it into a
     // per-process slot would get it rejected by the version gate and then destroyed
     // by the first autosave, instead of merely ignored.

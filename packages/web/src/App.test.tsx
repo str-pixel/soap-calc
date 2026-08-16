@@ -166,7 +166,7 @@ describe('App process switch', () => {
     expect((measuredInput as HTMLInputElement).value).toBe('1500');
 
     // Switching away and back reloads the Liquid Soap workspace's own draft via
-    // loadWorkspace → loadDraft → JSON.parse, which allocates a brand-new `lines` array
+    // loadWorkspace → loadDraftSlot → JSON.parse, which allocates a brand-new `lines` array
     // even though the oils themselves never changed. That must not read as an oils edit.
     await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
@@ -690,5 +690,29 @@ describe('a mode the maker chose survives the arrivals a record used to override
     expect(
       (screen.getByRole('radio', { name: 'Target concentration' }) as HTMLInputElement).checked,
     ).toBe(true);
+  });
+});
+
+describe('a recipe we cannot read is not a recipe we lost', () => {
+  it('says the unreadable draft was kept, instead of opening silently on the starter', () => {
+    // A draft written by a newer build (the maker rolled the app back) fails the
+    // READABLE_VERSIONS gate: it is parked at `<key>:unreadable` and no draft comes back,
+    // seeding the starter. Nothing read that backup key and nothing mentioned it, so the maker
+    // met a generic 1,000 g recipe where their work was — and the starter's first autosave
+    // landed on the live key ~500 ms later.
+    localStorage.setItem(
+      'soap-calc:draft:cp',
+      JSON.stringify({ version: 99, name: 'Written by a newer build', lines: [], settings: {} }),
+    );
+    render(<App />);
+
+    // The starter really is what loaded — the message is the only thing standing between
+    // that and a silent swap.
+    expect((screen.getByLabelText('Recipe name') as HTMLInputElement).value).toBe('Starter recipe');
+    const status = screen.getByText(/could not be read/i);
+    expect(status.getAttribute('role')).toBe('status');
+    // "Could not read your saved recipe" alone reads as "your work is gone" and stops a
+    // maker looking. The sentence has to carry the rescue, not just the failure.
+    expect(status.textContent).toMatch(/kept/i);
   });
 });

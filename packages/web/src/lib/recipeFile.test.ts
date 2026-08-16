@@ -188,6 +188,18 @@ describe('recipeFile', () => {
     ]);
   });
 
+  // normalizeSettings (called by both serialize and parse) must not round the total to one
+  // decimal — that's a display rule, not a storage rule, and this field is stored state.
+  it('round-trips a post-cook superfat total at its typed precision, unrounded', () => {
+    const lines = createStarterLines();
+    const settings = { ...DEFAULT_SETTINGS, postCookSuperfatTotalPercent: '12.34' };
+    const payload = serializeRecipeFile('HP with PCSF total', lines, settings, [], 'hp');
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.postCookSuperfatTotalPercent).toBe('12.34');
+  });
+
   it('accepts a hand-edited numeric additive amount', () => {
     const payload = {
       version: 2,
@@ -259,6 +271,46 @@ describe('recipeFile', () => {
       ok: false,
       error: 'Too many oils in recipe file',
     });
+  });
+
+  it('caps huge settings-nested splitLiquids/postCookSuperfatOils on import instead of rejecting (truncate, not reject)', () => {
+    // Unlike `lines`/`additives` (rejected outright over their caps), settings.splitLiquids
+    // and settings.postCookSuperfatOils arrive a level down inside `settings` and go through
+    // normalizeSettings, which truncates rather than refuses — a self-export must still
+    // import even if some other bug bloated one of these arrays. 200 rows (well past any
+    // sane cap) rather than the 50,000 used in recipe.test.ts's direct unit tests: at 50,000
+    // rows this payload alone would trip MAX_RECIPE_FILE_BYTES first and mask the array cap
+    // this test is actually checking.
+    const payload = {
+      version: 2,
+      name: 'Huge nested arrays',
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [],
+      settings: {
+        ...DEFAULT_SETTINGS,
+        splitLiquids: Array.from({ length: 200 }, (_, i) => ({
+          key: `k${i}`,
+          presetKey: '',
+          name: `liquid ${i}`,
+          customWaterPercent: '',
+          sizeMode: 'percent_of_oils',
+          amount: '1',
+          addAt: 'trace',
+        })),
+        postCookSuperfatOils: Array.from({ length: 200 }, () => ({
+          oilId: 'olive-oil',
+          percent: '0.001',
+        })),
+      },
+      exportedAt: new Date().toISOString(),
+    };
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings.splitLiquids.length).toBeLessThanOrEqual(50);
+    expect(parsed.data.settings.postCookSuperfatOils.length).toBeLessThanOrEqual(50);
+    expect(parsed.data.settings.splitLiquids.length).toBeGreaterThan(0);
+    expect(parsed.data.settings.postCookSuperfatOils.length).toBeGreaterThan(0);
   });
 
   it('rejects a file whose raw text exceeds the size cap', () => {

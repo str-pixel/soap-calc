@@ -6,6 +6,7 @@ import {
   createStarterLines,
   DEFAULT_SETTINGS,
   createEmptyAdditives,
+  normalizePostCookSuperfatOils,
   type AdditiveLine,
   type RecipeSettings,
 } from '../lib/recipe';
@@ -119,6 +120,30 @@ test('subtract clamps a summed PCSF total past 100% so the lye never zeroes out'
   // (append × 0.01) rather than collapsing to zero.
   expect(subtract.result.lyeWeightGrams).toBeGreaterThan(0);
   expect(subtract.result.lyeWeightGrams).toBeCloseTo(append.result.lyeWeightGrams * 0.01, 4);
+});
+
+test('a single mistyped row over 100% (e.g. 200 for 20) still reserves lye, not silently nothing', () => {
+  // parsePercentOfOil REJECTS (returns null) anything over 100 rather than clamping it, so
+  // an unclamped '200' row would contribute 0 to the reserve — same lye as no PCSF at all —
+  // while the panel still showed it as fully allocated. normalizePostCookSuperfatOils is the
+  // guard that must close that gap for a loaded/imported recipe (a saved file can carry any
+  // string); this proves data that has passed through it can't reproduce the zero-reserve bug.
+  let withOver: any;
+  let withNone: any;
+  const oils = normalizePostCookSuperfatOils({
+    postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '200' }],
+  });
+  probe(
+    (vm) => { withOver = vm; },
+    { postCookSuperfatOils: oils, postCookSuperfatMethod: 'subtract' },
+    'hp',
+  );
+  probe(
+    (vm) => { withNone = vm; },
+    { postCookSuperfatOils: [], postCookSuperfatMethod: 'subtract' },
+    'hp',
+  );
+  expect(withOver.result.lyeWeightGrams).not.toBeCloseTo(withNone.result.lyeWeightGrams);
 });
 
 test('dilution: computed for LS, null for CP, null (no crash) for an empty LS recipe', () => {

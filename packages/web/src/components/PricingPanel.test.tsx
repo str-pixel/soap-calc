@@ -6,6 +6,9 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { DEFAULT_PRICING_PROFILE } from '../lib/pricingProfile';
 import type { RecipePricingContext } from '../lib/recipePricing';
 import { PricingPanel } from './PricingPanel';
+// Shared with DilutionPanel.test.tsx / SoapingTemperaturePanel.test.tsx — see that helper's
+// doc comment for the accessible-name precedence it implements.
+import { accessibleNameOf } from '../testing/accessibleName';
 
 afterEach(cleanup);
 
@@ -100,5 +103,20 @@ describe('PricingPanel', () => {
   it('hides the cost breakdown while prices are incomplete', () => {
     render(<PricingPanel context={context} profile={DEFAULT_PRICING_PROFILE} onProfileChange={() => {}} />);
     expect(screen.queryByTestId('pricing-breakdown')).toBeNull();
+  });
+
+  it("the output-unit and price-lever selects' accessible names contain their visible captions (Label-in-Name — WCAG 2.5.3)", () => {
+    // Before this fix these read "Output unit" and "Pricing lever" — names that share no
+    // words with the "Price per" / "Price from" captions actually on screen, so neither
+    // voice control ("click Price per") nor a screen reader announcing the visible caption
+    // could find them. Locate each control by its caption (unaffected by the aria-label
+    // fix) rather than by the old/new aria-label text, so the same test is meaningful both
+    // red and green.
+    render(<PricingPanel context={context} profile={DEFAULT_PRICING_PROFILE} onProfileChange={() => {}} />);
+    for (const caption of ['Price per', 'Price from']) {
+      const select = screen.getByText(caption).querySelector('select');
+      expect(select, `no <select> under the "${caption}" label`).toBeTruthy();
+      expect(accessibleNameOf(select as HTMLElement)).toContain(caption);
+    }
   });
 });

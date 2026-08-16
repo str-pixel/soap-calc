@@ -30,6 +30,22 @@ const posNum = (s: string): number => {
   const n = Number(s);
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
+// A typed post-cook superfat TOTAL, clamped into [0, 100]. setPcsfTotal is its only caller
+// — the oil rows are bounded separately, by updatePcsfOil's headroom, and only on the high
+// side (see there); this is not their guard, in either direction. The <input max={...}> on
+// the field is an HTML hint only — it does not stop a value from being typed or pasted — so
+// this is the actual enforcement. Matters beyond cosmetics: the rows' headroom is derived
+// FROM this budget, so a mistyped '500' for '50' would hand every row a full 100 to spend
+// and let the rows sum past 100 — which the lye math then has to clamp at 99 to keep
+// cookFactor positive (see useRecipeViewModel), reserving a figure the panel never showed.
+// Blank/invalid text passes through unclamped — it's mid-edit, not an out-of-range number.
+const clampPct = (value: string): string => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return value;
+  if (n > 100) return '100';
+  if (n < 0) return '0';
+  return value;
+};
 
 // Plain-language descriptions of the two post-cook superfat methods (original wording).
 const PCSF_METHOD_HELP: Record<'append' | 'subtract', string> = {
@@ -173,7 +189,16 @@ export function SuperfatWaterPanel({
           0,
         );
         const budget = Math.max(0, Number(s.postCookSuperfatTotalPercent) || 0);
-        const headroom = Math.max(0, roundPct(budget - others));
+        // Capped at 100 in addition to the budget: the budget is itself clamped to 100 on
+        // both ways in (setPcsfTotal below for a typed one, normalizePostCookSuperfatTotal
+        // for a loaded one), but a row's OWN percent still must not exceed 100
+        // (parsePercentOfOil's ceiling) whatever the budget carries. This headroom is the
+        // whole of a row's bounding — updatePcsfOil never calls clampPct — and it bounds the
+        // HIGH side only: a negative typed into a row is stored exactly as typed, the field
+        // shows the -50, and parsePercentOfOil rejects it so the reserve and the allocation
+        // note both count it as nothing. A figure on screen that nothing counts, and known:
+        // clamping a row's low side is a behaviour change no test stands behind yet.
+        const headroom = Math.min(100, Math.max(0, roundPct(budget - others)));
         const typed = patch.percent ?? '';
         const n = Number(typed);
         // Empty/invalid stays as typed (mid-edit); a valid over-budget number clamps.
@@ -196,12 +221,26 @@ export function SuperfatWaterPanel({
   // Editing the TOTAL budget: if it drops below what's already allocated, trim the oils to
   // fit by scaling them proportionally (the one action that moves the oil numbers — like the
   // recipe's Total-oil field). Raising it just opens headroom; the oils stay put.
-  const setPcsfTotal = (value: string) =>
+  const setPcsfTotal = (rawValue: string) =>
     setSettings((s) => {
+      // value is clamped for STORAGE (also keeps updatePcsfOil's headroom, which reads this
+      // same field back, from inflating past 100). The trim-to-fit branch below is gated on
+      // the RAW typed number instead, not this clamped one: a negative keystroke floors to
+      // '0' for storage, but must not be read as "the maker set the budget to zero" and
+      // wipe every row's percent — that's real data loss over a typo. A genuinely typed 0
+      // (or any real number below what's allocated) still trims; only the floor-from-negative
+      // case is excluded, via the rawNext >= 0 gate below.
+      const value = clampPct(rawValue);
+      const rawNext = Number(rawValue);
       const allocated = postCookSuperfatAllocated(s.postCookSuperfatOils);
-      const next = Number(value);
-      if (value.trim() !== '' && Number.isFinite(next) && next >= 0 && next < allocated && allocated > 0) {
-        const factor = next / allocated;
+      if (
+        rawValue.trim() !== '' &&
+        Number.isFinite(rawNext) &&
+        rawNext >= 0 &&
+        rawNext < allocated &&
+        allocated > 0
+      ) {
+        const factor = Number(value) / allocated;
         return {
           ...s,
           postCookSuperfatTotalPercent: value,

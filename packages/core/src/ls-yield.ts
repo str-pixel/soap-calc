@@ -160,6 +160,32 @@ export function lsPartialDilution(
   densityGPerMl: number = LS_SOLUTION_DENSITY_G_PER_ML,
 ): LsPartialDilution | null {
   if (!Number.isFinite(targetVolumeMl) || targetVolumeMl <= 0) return null;
+  // anhydrousGrams, totalWaterGrams and dilutionWaterGrams feed potAnhydrousGrams and
+  // batchWaterGrams below through plain arithmetic — addition, subtraction, Math.max — which
+  // propagates a bad value as an ordinary-looking number rather than throwing. The guards
+  // further down cannot be trusted to catch it: in whole-batch mode (the common path)
+  // `potAnhydrousGrams` is a bare `batch.anhydrousGrams` assignment that never reaches
+  // {@link lsPotAnhydrousShare}'s own `<= 0` check, and `batchWaterGrams < 0` can't catch a
+  // NaN at all (NaN < 0 is false). Only checking these three here, before any of them is
+  // used, stops both.
+  //
+  // anhydrousGrams and totalWaterGrams are rejected at <= 0, matching every sibling check in
+  // this file — including {@link lsPotAnhydrousShare}'s own check on the identically-named
+  // anhydrousGrams — because a batch with no soap or no water isn't a real batch, it's
+  // corrupt input. Both a NaN AND a merely-negative value need this: a negative
+  // totalWaterGrams (e.g. -500, still finite) reaches the same
+  // `Math.max(0, totalWaterGrams - dilutionWaterGrams)` clamp two lines below that an
+  // infinite dilutionWaterGrams did, and the subtraction goes negative and gets clamped to 0
+  // either way — silently producing the same wrong predictedPasteGrams (1,200 instead of
+  // 1,600) with no NaN in sight. Finiteness alone would have missed this.
+  //
+  // dilutionWaterGrams alone stays finiteness-only, not <= 0: 0 is a legitimate, documented
+  // state here (the targetExceedsPaste clamp elsewhere in this codebase pins it to exactly
+  // 0 when the target is below the paste already in hand), so rejecting it would refuse a
+  // real caller, not just corrupt input.
+  if (!Number.isFinite(batch.anhydrousGrams) || batch.anhydrousGrams <= 0) return null;
+  if (!Number.isFinite(batch.totalWaterGrams) || batch.totalWaterGrams <= 0) return null;
+  if (!Number.isFinite(batch.dilutionWaterGrams)) return null;
   const fullVolumeMl = lsFinishedVolumeMl(batch.solutionGrams, densityGPerMl);
   if (fullVolumeMl === null) return null;
   // Paste is what sits in the pot before dilution water. Computed, that is the anhydrous

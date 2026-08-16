@@ -134,7 +134,13 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
             <input
               className="slider-field__value"
               type="number"
-              aria-label="Soaping temperature"
+              // Superset of the visible caption ("Starting temperature") plus the unit, the
+              // same pattern SliderField uses ("Superfat" -> "Superfat %") — Label-in-Name
+              // (WCAG 2.5.3) requires the accessible name to contain what's on screen. This
+              // used to read "Soaping temperature", copied from the panel's own <h2> title
+              // rather than this field's caption; the two shared no words, so "click
+              // Starting temperature" (voice control) found nothing.
+              aria-label="Starting temperature °C"
               min={fToC(range.minF)}
               max={fToC(range.maxF)}
               step={1}
