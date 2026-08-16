@@ -398,13 +398,17 @@ describe('intended-use dilution targets', () => {
         ]);
       });
 
-      it(`still yields to the can't-tell hedge in ${mode} mode`, () => {
-        // An undeclared alternative liquid makes the flag's own verdict unassertable, so the
-        // hedge renders in its place — a paragraph, not an alert. It is still a claim about
-        // whether this target is reachable, so the ceiling sentence stays out of its way and
-        // the alert count stays at zero.
+      it(`speaks beside the can't-tell hedge in ${mode} mode — an uncertainty about the batch is not a verdict about the target`, () => {
+        // REWRITTEN BY DECISION (2026-08-16, second round) from "still yields to the
+        // can't-tell hedge": this case used to pin zero alerts, because a `cantTellGate`
+        // disjunct in `overDilutionSpokenFor` counted the hedge as a voice for the target.
+        // The user decided it is not one: the hedge says the BATCH's water is unknowable —
+        // whether 50% is reachable with an undeclared liquid in the pot — while the
+        // ceiling sentence is about the SAVED target, which no liquid moves. Both true,
+        // both render: the ceiling as the one alert, the hedge as the plain paragraph it
+        // has always been.
         renderOverCeiling(mode, { measuredPasteGrams: '', unknownLiquidGrams: 300 });
-        expect(alertTexts()).toHaveLength(0);
+        expect(alertTexts()).toEqual([expect.stringMatching(CEILING)]);
         expect(screen.getByText(/can't tell whether 50% is reachable/i)).toBeTruthy();
       });
     }
