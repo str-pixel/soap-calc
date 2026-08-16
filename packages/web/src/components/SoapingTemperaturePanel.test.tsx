@@ -54,6 +54,20 @@ test("the temperature field's accessible name contains its visible caption, not 
   expect(accessibleNameOf(input)).toContain(caption);
 });
 
+test("the gel-phase select's accessible name contains its visible caption, not a prefix of it (Label-in-Name — WCAG 2.5.3)", () => {
+  // Opposite direction from the temperature field's old defect: there the aria-label shared
+  // no words with the caption; here it was "Gel phase" — a PREFIX of the "Gel phase plan"
+  // caption. WCAG 2.5.3 requires the caption to appear in the name, not the name in the
+  // caption, so "click Gel phase plan" (voice control) still misses. Locate the select
+  // through its caption span rather than the aria-label under test, and read the caption
+  // off the DOM so this can't go stale if the copy changes.
+  renderPanel();
+  const captionEl = screen.getByText('Gel phase plan');
+  const select = captionEl.closest('label')?.querySelector('select');
+  expect(select, 'no <select> under the "Gel phase plan" caption').toBeTruthy();
+  expect(accessibleNameOf(select as HTMLElement)).toContain(captionEl.textContent!.trim());
+});
+
 test('the band note follows the temperature: slowed at 95, accelerated at 150', () => {
   const { unmount } = renderPanel({ soapingTempF: '95' });
   expect(screen.getByText(/Slower trace/i)).toBeTruthy();

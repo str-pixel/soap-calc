@@ -241,7 +241,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
                   onChange={(e) =>
                     setSettings((s) => ({ ...s, gelMode: e.target.value as GelMode }))
                   }
-                  aria-label="Gel phase"
+                  aria-label="Gel phase plan"
                 >
                   <option value="none">None (prevented — e.g. refrigerated)</option>
                   <option value="natural">Natural (uninsulated loaf)</option>

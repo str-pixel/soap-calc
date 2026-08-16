@@ -104,7 +104,7 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
           Packaging cost (per {profile.outputUnit})
           <input
             className="input"
-            aria-label="Packaging cost"
+            aria-label={`Packaging cost (per ${profile.outputUnit})`}
             inputMode="decimal"
             value={profile.packagingPerUnit}
             onChange={(e) => setField({ packagingPerUnit: e.target.value })}
