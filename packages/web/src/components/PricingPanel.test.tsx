@@ -119,4 +119,23 @@ describe('PricingPanel', () => {
       expect(accessibleNameOf(select as HTMLElement)).toContain(caption);
     }
   });
+
+  it("the packaging-cost input's accessible name contains its visible caption, unit suffix included (Label-in-Name — WCAG 2.5.3)", () => {
+    // The caption is dynamic — "Packaging cost (per kg)" / "(per lb)" — but the aria-label
+    // was the static prefix "Packaging cost", so the name never contained the words on
+    // screen. Rendered with the NON-default unit ('lb'; the default is 'kg', and "lb"
+    // appears nowhere else in the caption) so this asserts the name tracks the live unit:
+    // a hardcoded "(per kg)" would pass under the default profile and prove nothing.
+    render(
+      <PricingPanel
+        context={context}
+        profile={{ ...DEFAULT_PRICING_PROFILE, outputUnit: 'lb' }}
+        onProfileChange={() => {}}
+      />,
+    );
+    const caption = 'Packaging cost (per lb)';
+    const input = screen.getByText(caption).querySelector('input');
+    expect(input, `no <input> under the "${caption}" label`).toBeTruthy();
+    expect(accessibleNameOf(input as HTMLElement)).toContain(caption);
+  });
 });
