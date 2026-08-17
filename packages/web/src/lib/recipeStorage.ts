@@ -159,12 +159,14 @@ export function loadDraftSlot(process: ProcessId): DraftSlot {
     if (!raw) return { draft: null, unreadable: false, kept: false };
     const data = JSON.parse(raw) as DraftPayload;
     if (!READABLE_VERSIONS.includes(data.version) || !Array.isArray(data.lines)) {
-      // Preserve what we can't read: returning null seeds a starter workspace whose
-      // first autosave overwrites this slot ~500ms later. A future-version draft
-      // (app rollback) or corrupted payload is parked in a backup slot instead of
-      // being destroyed. First writer wins — don't churn the backup on every load —
-      // so `kept` carries out whether the slot really took (or already held) THIS
-      // payload, and the message downstream picks its sentence by it.
+      // Preserve what we can't read: returning null seeds a starter workspace, and the
+      // maker's first EDIT overwrites this slot — the autosave debounce is dirty-gated
+      // on a mount-time snapshot (useRecipeAutosave), so loading alone rewrites
+      // nothing, but the first edit's save lands over this payload whenever it comes.
+      // A future-version draft (app rollback) or corrupted payload is parked in a
+      // backup slot instead of being left to that. First writer wins — don't churn the
+      // backup on every load — so `kept` carries out whether the slot really took (or
+      // already held) THIS payload, and the message downstream picks its sentence by it.
       return { draft: null, unreadable: true, kept: backupUnreadableDraft(process, raw) };
     }
     return {

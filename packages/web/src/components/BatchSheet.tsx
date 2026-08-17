@@ -560,11 +560,20 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               correctedDilutionWaterGrams clamps and "Dilution water to add" above prints
               "0 g". Printed bare, that reads as a batch needing nothing.
 
-              Same predicate and same gating as the panel's — see its comment for why
-              !targetExceedsPaste is load-bearing (this strictly subsumes that flag), why a
-              valid measurement suppresses it, and why no undeclared-liquid hedge belongs on
-              it. Unreachable without a corrected paste basis, which is why the branch below
-              reads data.wholeBatchPasteGrams directly. */}
+              Same predicate as the panel's, and the same core gating — see its comment for
+              why !targetExceedsPaste is load-bearing (this strictly subsumes that flag),
+              why a valid measurement suppresses it, and why no undeclared-liquid hedge
+              belongs on it. NOT the same render condition any more: the panel's alert
+              yields to the exceeds-solution rejection (its `!exceedsSolutionAlert` clause,
+              decided 2026-08-16, second round) because that refusal renders in its place
+              and already accounts for the 0 g row. This sheet prints no rejection
+              paragraphs, so there is nothing on the page for this note to yield to —
+              copying the yield would leave the printed "0 g" bare in exactly the state
+              the note exists to explain. (A reading that trips that rejection is not
+              measuredPasteValid, so the clause below keeps this note on the sheet there;
+              the divergence is deliberate, not drift.) Unreachable without a corrected
+              paste basis, which is why the branch below reads data.wholeBatchPasteGrams
+              directly. */}
           {!dilution.targetExceedsPaste &&
           !measuredPasteValid &&
           correctedPasteBasis &&

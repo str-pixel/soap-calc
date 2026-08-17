@@ -637,6 +637,31 @@ describe('intended-use dilution targets', () => {
       ]);
     });
 
+    it('three distinct claims may stack: the reading refused, the ask refused, the target above the ceiling', () => {
+      // DECIDED 2026-08-17 (the code-review round): this composition is intended, and this
+      // test stops it being an accident of gate order. Custom amount, concentration mode,
+      // three independent things wrong at once — a 900 g reading under the 1,500 g solids
+      // floor (a claim about the SCALE), an amount asked to the hundredth of a millilitre
+      // (a claim about the ASK's typed string), and a saved 50% target above what any
+      // recipe dissolves (a claim about the TARGET). No two are about the same thing, so
+      // the panel's one-verdict-per-target rule suppresses none of them: the ceiling
+      // renders because every voice it defers to is silent here (the corrected-pot alert
+      // is Whole-batch only, the child's wording needs an unrejected reading, and the
+      // exceeds-solution refusal did not fire), and neither refusal replaces the other.
+      // Exactly three, in document order — each beside the thing it describes — and never
+      // the same claim twice.
+      renderPastTargetPot('concentration', {
+        measuredPasteGrams: '900',
+        dilutionScope: 'portion',
+        targetMl: '500.25',
+      });
+      expect(alertTexts()).toEqual([
+        expect.stringMatching(/cannot be all of the paste/i),
+        expect.stringMatching(/received 500\.25 ml/i),
+        expect.stringMatching(SOLUBILITY_CEILING),
+      ]);
+    });
+
     it('the corrected-pot paragraph yields to the exceeds-solution rejection — two verdicts about one target are one too many', () => {
       // DECIDED 2026-08-16 (second round). Same fixture, concentration mode, Whole batch:
       // a 3,000 g reading exceeds the 2,400 g solution, so the exceeds-solution rejection
