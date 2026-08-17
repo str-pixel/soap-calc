@@ -822,6 +822,12 @@ export function DilutionPanel({
           measuredPasteGrams: measuredPasteGrams ?? '',
           wholeBatchPasteGrams,
           cookWaterGrams,
+          // The same two values forwarded to the child itself, so the helper's
+          // verdict-vs-hedge fork (pasteAlreadyThinnerWorded) answers for the branch the
+          // child really renders. Omitted, the helper defaults to "knowable" and would
+          // report the verdict worded while the child was hedging.
+          unknownLiquidGrams,
+          overDilutionCertain,
         })
       : null;
   const portionOnScreen = portionState?.portion != null;
@@ -999,7 +1005,7 @@ export function DilutionPanel({
   // gated apart from each other, so no single one of them is the answer:
   //
   //   Whole batch, nothing wrong with the reading  → the alert above (pasteAlreadyThinnerAlert)
-  //   Custom amount, same state                    → the child says it (pasteAlreadyThinner)
+  //   Custom amount, same state                    → the child words it (pasteAlreadyThinnerWorded)
   //
   // The disjunction is what makes this safe in BOTH directions. Keyed on the flag, the
   // ceiling went silent in the one state where the flag has no voice at all — a VALID
@@ -1029,9 +1035,20 @@ export function DilutionPanel({
   // moves it. An uncertainty about the batch is not a verdict about the target: both are
   // true, and both render. The hedge stays a plain paragraph, so those cells still show
   // exactly one alert.
+  //
+  // AND THAT RULE REACHES THE CHILD'S HEDGE TOO (decided 2026-08-17, the code-review
+  // round; the second disjunct read `portionState?.pasteAlreadyThinner` — the child's
+  // FLAG — until then). The flag is also true in the undeclared-liquid uncertain state,
+  // where what the child renders is its own can't-tell hedge ("No portion can be sized
+  // yet…"), not its wording of the verdict — so Whole batch showed ceiling + hedge while
+  // Custom amount, one radio over, showed nothing at all: the user's decision applied to
+  // one side of the scope seam. The disjunct now reads `pasteAlreadyThinnerWorded`, the
+  // helper's own name for "the verdict branch is what renders" (resolved beside the flag
+  // in portionDilutionFor, read by the child's render and by this line, so the two cannot
+  // fork) — the child's voice counts exactly when the child is saying the verdict.
   const overDilutionSpokenFor =
     pasteAlreadyThinnerAlert ||
-    (portionState?.pasteAlreadyThinner ?? false);
+    (portionState?.pasteAlreadyThinnerWorded ?? false);
   // ── Is the corrected-pot verdict (pasteAlreadyPastTarget) SPOKEN FOR? ── The sibling
   // question to the one above, for the ceiling's second clause, which used to read the bare
   // predicate. That predicate is scope-blind while its alert is batch-only, and the child's
@@ -2302,11 +2319,13 @@ export function DilutionPanel({
               Testing `!measuredPasteValid` alone would have closed this hole by opening the
               opposite one — a second paragraph stacked on the batch alert or the child's
               wording, each a state this sentence stands down for. (The voice list has
-              shrunk twice since: a rejection alert stopped counting with the 2026-08-16
-              decision — a refusal about the reading does not speak for the target — and
-              the can't-tell hedge stopped counting with that decision's second round,
-              which ruled an uncertainty about the batch no verdict about the target
-              either. See the derivation's own comment for both.)
+              shrunk three times since: a rejection alert stopped counting with the
+              2026-08-16 decision — a refusal about the reading does not speak for the
+              target — the can't-tell hedge stopped counting with that decision's second
+              round, which ruled an uncertainty about the batch no verdict about the
+              target either, and the child's voice narrowed from its flag to its worded
+              verdict on 2026-08-17, when the same rule reached the child's own hedge.
+              See the derivation's own comment for all three.)
 
               Task 14 (2026-08-12-whole-app-review-fixes) closed the corrected-pot clause
               the same way — the last clause still reading a bare predicate. That predicate

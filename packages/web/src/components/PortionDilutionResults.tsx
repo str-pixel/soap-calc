@@ -104,9 +104,17 @@ export function portionDilutionFor({
   measuredPasteGrams,
   wholeBatchPasteGrams,
   cookWaterGrams,
+  unknownLiquidGrams = 0,
+  overDilutionCertain = false,
 }: Pick<
   PortionDilutionResultsProps,
-  'dilution' | 'targetMl' | 'measuredPasteGrams' | 'wholeBatchPasteGrams' | 'cookWaterGrams'
+  | 'dilution'
+  | 'targetMl'
+  | 'measuredPasteGrams'
+  | 'wholeBatchPasteGrams'
+  | 'cookWaterGrams'
+  | 'unknownLiquidGrams'
+  | 'overDilutionCertain'
 >) {
   // The physical-impossibility rules — below the anhydrous solids, heavier than the target
   // solution (and, for a declaration this UI no longer offers, a remainder heavier than the
@@ -134,6 +142,26 @@ export function portionDilutionFor({
   // one, so it is excluded here too.
   const pasteAlreadyThinner =
     dilution.targetExceedsPaste && !hasValidMeasurement && !measurementRejected;
+  // Whether the paste really is thinner than the target is a claim about the recipe's
+  // ASSUMED water content, so an alternative liquid with no declared % water makes it
+  // unknowable — the same certainty test the shell's own over-dilution alert uses, and the
+  // printed sheet with it. Without this, Custom amount scope stated the verdict flat while
+  // the shell two paragraphs below said it could not be told: one panel, one state, two
+  // opposite answers. Only the WORDING turns on this; pasteAlreadyThinner still suppresses
+  // the portion either way, because the clamped figures it would be computed from are
+  // unusable regardless of what the liquid turns out to contain.
+  const overDilutionKnowable = unknownLiquidGrams === 0 || overDilutionCertain;
+  // Does this component actually WORD the over-dilution verdict — as opposed to holding
+  // the flag while rendering its can't-tell hedge instead? Resolved here, beside the flag,
+  // for the same reason the flag itself is (two surfaces reading one verdict can never
+  // contradict each other): DilutionPanel's `overDilutionSpokenFor` counts the child's
+  // voice among the voices the solubility ceiling stands down for, and it used to read the
+  // bare flag — true in the undeclared-liquid uncertain state, where what renders below is
+  // the hedge, not the verdict (decided 2026-08-17, the code-review round: the child's
+  // hedge is not a verdict about the target either). The render below and the shell both
+  // read THIS name, so the shell can never believe the verdict was worded while the hedge
+  // was what the maker saw.
+  const pasteAlreadyThinnerWorded = pasteAlreadyThinner && overDilutionKnowable;
   // The "Amount to make (ml)" field has the measured-paste field's own comma trap: a typed
   // thousands separator commits as a decimal point (1,200 ml → 1.200), and the ask arrives
   // a thousand times too small. Core is right to compute a 1.2 ml portion — a tiny ask is a
@@ -194,6 +222,7 @@ export function portionDilutionFor({
   return {
     measured,
     pasteAlreadyThinner,
+    pasteAlreadyThinnerWorded,
     unmeasuredPasteAlreadyThinner,
     targetMlSubTenthPrecision,
     portion,
@@ -233,14 +262,21 @@ export function PortionDilutionResults({
   ratioNotAppliedYet = false,
   altLiquidNote = '',
 }: PortionDilutionResultsProps) {
-  const { measured, pasteAlreadyThinner, unmeasuredPasteAlreadyThinner, portion } =
-    portionDilutionFor({
-      dilution,
-      targetMl,
-      measuredPasteGrams,
-      wholeBatchPasteGrams,
-      cookWaterGrams,
-    });
+  const {
+    measured,
+    pasteAlreadyThinner,
+    pasteAlreadyThinnerWorded,
+    unmeasuredPasteAlreadyThinner,
+    portion,
+  } = portionDilutionFor({
+    dilution,
+    targetMl,
+    measuredPasteGrams,
+    wholeBatchPasteGrams,
+    cookWaterGrams,
+    unknownLiquidGrams,
+    overDilutionCertain,
+  });
   // What the recipe predicted, for the drift readout. NOT portion.predictedPasteGrams:
   // that figure is anhydrous + max(0, totalWater - dilutionWater), and dilutionWater is
   // ZEROED by the targetExceedsPaste clamp — so predictedPasteGrams silently loses the
@@ -300,15 +336,6 @@ export function PortionDilutionResults({
     if (altLiquidNote) statusClauses.push(altLiquidNote);
   }
 
-  // Whether the paste really is thinner than the target is a claim about the recipe's
-  // ASSUMED water content, so an alternative liquid with no declared % water makes it
-  // unknowable — the same certainty test the shell's own over-dilution alert uses, and the
-  // printed sheet with it. Without this, Custom amount scope stated the verdict flat while
-  // the shell two paragraphs below said it could not be told: one panel, one state, two
-  // opposite answers. Only the WORDING turns on this; pasteAlreadyThinner still suppresses
-  // the portion either way, because the clamped figures it would be computed from are
-  // unusable regardless of what the liquid turns out to contain.
-  const overDilutionKnowable = unknownLiquidGrams === 0 || overDilutionCertain;
   // Both refusals below used to say "the target above" and "set a target", which names a
   // field ratio mode does not show — its inputs are the ratio, the measured paste and the
   // amount. See dilutionTargetWording for the full reasoning, including why an unapplied
@@ -325,9 +352,15 @@ export function PortionDilutionResults({
           takes the KNOWABLE branch unconditionally — the two are mutually exclusive (see its
           own derivation), and unlike targetExceedsPaste it is not a water-derived claim at
           all: it compares solutionGrams against the pot's whole mass, and both are fixed
-          however the undeclared liquid's water turns out to be split. */}
+          however the undeclared liquid's water turns out to be split.
+
+          The fork below is the helper's `pasteAlreadyThinnerWorded`, not a knowability test
+          re-derived here: the shell's solubility ceiling counts this paragraph's KNOWABLE
+          branch as a voice for the target and stands down for it — so which branch renders
+          and which branch the shell believes rendered have to be one answer, read from one
+          name (see the derivation in portionDilutionFor for the seam this closed). */}
       {(pasteAlreadyThinner || unmeasuredPasteAlreadyThinner) &&
-        (overDilutionKnowable || unmeasuredPasteAlreadyThinner ? (
+        (pasteAlreadyThinnerWorded || unmeasuredPasteAlreadyThinner ? (
           <p className="results-hint">
             The paste is already more dilute than {dilutionTargetNamed}, so there is no
             dilution water to divide up. {dilutionTargetRemedy} until the paste can reach it,

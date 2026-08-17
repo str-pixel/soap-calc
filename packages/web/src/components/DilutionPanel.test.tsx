@@ -480,6 +480,31 @@ describe('intended-use dilution targets', () => {
       expect(screen.getByText(/no dilution water to divide up/i)).toBeTruthy();
     });
 
+    for (const mode of ['concentration', 'ratio'] as const) {
+      it(`speaks beside the child's hedge in ${mode} + Custom amount — the child's hedge is not a verdict about the target either`, () => {
+        // DECIDED 2026-08-17 (the code-review round): the second-round rule — an
+        // uncertainty about the batch is not a verdict about the target — extends to the
+        // child's voice. `overDilutionSpokenFor` counted `portionState.pasteAlreadyThinner`,
+        // the child's FLAG, which is also true in this state — an undeclared liquid and no
+        // reading — where what the child renders is its can't-tell hedge ("No portion can
+        // be sized yet…"), not its wording of the verdict. So one radio flip gave opposite
+        // answers: Whole batch showed ceiling + hedge (the batch-scope test above), Custom
+        // amount showed ZERO alerts under the same 50% target. The child's voice now counts
+        // only when the child actually words the verdict; beside its hedge the ceiling
+        // speaks, exactly as it does beside the shell's own hedge one radio over. Gradual
+        // has no cell here — the child does not render in that mode, and its twin is
+        // pinned above ("speaks in Custom amount scope in gradual mode").
+        renderOverCeiling(mode, {
+          measuredPasteGrams: '',
+          unknownLiquidGrams: 300,
+          dilutionScope: 'portion',
+          targetMl: '500',
+        });
+        expect(alertTexts()).toEqual([expect.stringMatching(CEILING)]);
+        expect(screen.getByText(/no portion can be sized yet/i)).toBeTruthy();
+      });
+    }
+
     it('stays silent for a target the guide says is dissolvable, flag or no flag', () => {
       // The control that keeps the fix from degenerating into "always render": 1,200 g of
       // soap cooked in 3,000 g of water at 30% is the same targetExceedsPaste state — 2,800
