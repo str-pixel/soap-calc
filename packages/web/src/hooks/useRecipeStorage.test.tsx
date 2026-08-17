@@ -345,10 +345,13 @@ describe('an import keeps the draft it replaces', () => {
     // DIFFERENT slot and the read's placement is indifferent. Same-process is the case
     // the read-before-flush ordering exists for: the flush writes draftKey(ws.process),
     // which IS the import's target key when ws.process === nextProcess. Read after the
-    // flush and the slot holds the flush's bytes — the unreadable payload is destroyed
-    // with no backup and no sentence, the exact defect this discipline closes. Review
-    // of this task proved the whole suite stayed green with the read moved below the
-    // flush; this test is the pin.
+    // flush and the slot holds the flush's bytes — the verdict is gone and no sentence
+    // is said, the exact defect this discipline closes. (The BYTES half of this pin is
+    // now double-covered: saveDraft itself parks an unreadable occupant before
+    // overwriting, so a reorder would still back the payload up — but silently. The
+    // message asserts below are what still catch it.) Review of the original task
+    // proved the whole suite stayed green with the read moved below the flush; this
+    // test is the pin.
     localStorage.setItem('soap-calc:active-process', 'hp');
     const { result } = renderHook(() => useRecipeStorage()); // mounts ON hp, slot empty
     // A second writer (another tab, a rollback) parks a future-version draft in the
@@ -409,6 +412,48 @@ describe('an import keeps the draft it replaces', () => {
     expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/could not be read/));
     // And the failing writes could not destroy the draft either: still in its live slot.
     expect(localStorage.getItem('soap-calc:draft:hp')).toBe(fromTheFuture);
+  });
+});
+
+describe('no writer may destroy what it cannot read', () => {
+  it("a cross-process import's outgoing flush parks the second writer's draft instead of destroying it", async () => {
+    // Mount on cp with an empty slot; a second writer (another tab, a rollback build)
+    // then parks a future-version draft in draft:cp. A cross-process import's OUTGOING
+    // flush writes that same slot — and the import's own read/verdict is about the
+    // TARGET slot (hp), so no sentence will ever speak for cp here. The rescue at the
+    // point of overwrite (saveDraft itself) is the only thing standing between this
+    // payload and silent destruction.
+    const fromTheFuture = JSON.stringify({
+      version: 99,
+      name: 'Written by a newer build',
+      lines: [],
+      settings: {},
+    });
+    const { result } = renderHook(() => useRecipeStorage()); // mounts on cp, slot empty
+    localStorage.setItem('soap-calc:draft:cp', fromTheFuture);
+
+    const importTargetingHp = JSON.stringify({
+      version: 2,
+      process: 'hp',
+      name: 'Incoming import',
+      lines: [],
+      settings: DEFAULT_SETTINGS,
+    });
+    const file = { text: () => Promise.resolve(importTargetingHp) } as unknown as File;
+    await act(async () => {
+      result.current.handleImportFile(file);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // The rescue in bytes: the displaced payload verbatim in cp's backup slot, while the
+    // flush still landed (the outgoing workspace's bytes hold the live slot) and the
+    // import proceeded routinely onto its clean target slot.
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe(fromTheFuture);
+    expect(loadDraft('cp')?.name).toBe('Starter recipe');
+    expect(loadDraft('hp')?.name).toBe('Incoming import');
+    expect(result.current.saveMessage).toEqual(
+      expect.stringMatching(/Imported “Incoming import” as hot process/),
+    );
   });
 });
 

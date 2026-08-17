@@ -245,9 +245,11 @@ export function useRecipeStorage() {
         // Read the target slot BEFORE any of the import's writes can land on it (the
         // flush below hits the same slot on a same-process import; the imported save
         // always does): an unreadable draft sitting there is the one copy of that
-        // work, and loadDraftSlot is what parks it in the backup slot and hands back
-        // the kept/not-kept verdict — the same discipline the load paths run. Without
-        // this, a file-chooser click destroys it with no backup and no sentence.
+        // work, and loadDraftSlot is what hands back the kept/not-kept verdict — the
+        // same discipline the load paths run. The BYTES no longer depend on this
+        // ordering (saveDraft itself parks an unreadable occupant before overwriting),
+        // but the sentence does: read after the writes and the slot holds the import's
+        // own bytes, the verdict is gone, and the rescue happens without a word.
         const targetSlot = loadDraftSlot(nextProcess);
         // Flush the outgoing process's in-memory workspace first, mirroring setProcess:
         // without this, edits made just before an import (still pending the autosave

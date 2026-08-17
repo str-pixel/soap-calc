@@ -378,6 +378,84 @@ describe('the slot verdict: kept only when the backup actually holds the payload
   });
 });
 
+describe('saveDraft refuses to destroy an unreadable occupant', () => {
+  // Every write into a draft slot funnels through saveDraft — the autosave debounce, the
+  // pagehide flush, setProcess's and the import's outgoing flushes — and any of them can
+  // land on a slot where a SECOND writer (another tab, a rollback build) parked a payload
+  // this build cannot read. That occupant is the one copy of that work; the load paths'
+  // rescue discipline (park at `<key>:unreadable`, first writer wins) has to hold at the
+  // point of overwrite itself, or every writer that never called loadDraftSlot destroys
+  // it silently. saveDraft only parks — sentences stay the speaking callers' job, and its
+  // boolean stays the WRITE's success.
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createStorage());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const future = JSON.stringify({ version: 99, name: 'from the future', lines: [], settings: {} });
+
+  it('parks a future-version occupant in the backup slot before overwriting it', () => {
+    localStorage.setItem('soap-calc:draft:cp', future);
+    const saved = saveDraft('cp', 'New work', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    expect(saved).toBe(true);
+    // The rescue in bytes: the occupant verbatim in the backup slot, the write landed.
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe(future);
+    expect(loadDraft('cp')?.name).toBe('New work');
+  });
+
+  it('parks a JSON.parse-throwing occupant (truncated write) the same way', () => {
+    localStorage.setItem('soap-calc:draft:cp', '{truncated mid-wri');
+    const saved = saveDraft('cp', 'New work', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    expect(saved).toBe(true);
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe('{truncated mid-wri');
+    expect(loadDraft('cp')?.name).toBe('New work');
+  });
+
+  it('relies on first-writer-wins: an earlier backup occupant is not overwritten', () => {
+    // One parking policy, backupUnreadableDraft's: a second unreadable draft is
+    // deliberately not preserved when an older one already holds the backup slot.
+    // The guard must not grow a second policy that churns the slot.
+    localStorage.setItem('soap-calc:draft:cp:unreadable', 'an earlier unreadable payload');
+    localStorage.setItem('soap-calc:draft:cp', future);
+    const saved = saveDraft('cp', 'New work', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    expect(saved).toBe(true);
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBe('an earlier unreadable payload');
+    expect(loadDraft('cp')?.name).toBe('New work');
+  });
+
+  it('does not park a readable occupant — routine saves write no backup', () => {
+    saveDraft('cp', 'First save', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    saveDraft('cp', 'Second save', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    expect(localStorage.getItem('soap-calc:draft:cp:unreadable')).toBeNull();
+    expect(loadDraft('cp')?.name).toBe('Second save');
+  });
+
+  it('keeps the return contract: false is the WRITE failing, and the occupant survives it', () => {
+    // Storage that refuses every write: the park fails AND the overwrite fails. The
+    // boolean must report the write (callers' storage-full warnings depend on exactly
+    // that), and the occupant is not destroyed — it still sits in its live slot, which
+    // the same failing writes cannot overwrite.
+    const store = new Map<string, string>([['soap-calc:draft:cp', future]]);
+    vi.stubGlobal('localStorage', {
+      get length() {
+        return store.size;
+      },
+      clear: () => store.clear(),
+      getItem: (key: string) => store.get(key) ?? null,
+      key: (index: number) => [...store.keys()][index] ?? null,
+      removeItem: (key: string) => store.delete(key),
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+    } as unknown as Storage);
+    const saved = saveDraft('cp', 'New work', createStarterLines(), DEFAULT_SETTINGS, createEmptyAdditives());
+    expect(saved).toBe(false);
+    expect(store.get('soap-calc:draft:cp')).toBe(future);
+  });
+});
+
 describe('flashDurationMs', () => {
   it('keeps the old floor for short confirmations and scales for long copy', async () => {
     const { flashDurationMs } = await import('../hooks/useRecipeStorage');
