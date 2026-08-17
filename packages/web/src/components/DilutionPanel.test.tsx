@@ -413,28 +413,24 @@ describe('intended-use dilution targets', () => {
       });
     }
 
-    it('speaks in ratio mode when even the rejection alert is silent', () => {
-      // The same hole, one state over: 3,000 g exceeds the 2,400 g solution, but that
-      // rejection's alert is excluded from ratio mode (ratio is not aiming at the saved
-      // target), and the flag's own alert excludes every rejected reading. Nothing renders
-      // for either, so the ceiling sentence is the only thing left that can speak.
-      renderOverCeiling('ratio', { measuredPasteGrams: '3000' });
-      const alerts = alertTexts();
-      expect(alerts).toHaveLength(1);
-      expect(alerts[0]).toMatch(CEILING);
-    });
-
-    it('speaks in gradual mode when even the rejection alert is silent', () => {
-      // Task 13: the gradual twin of the case immediately above, and the cell the fix moved
-      // that had no test of its own — ratio's version was pinned, gradual's was reached only
-      // by mutating the source. The exceeds-solution paragraph is excluded from gradual for
-      // the same reason it is excluded from ratio (gradual WRITES the concentration from the
-      // pot and the water recorded; it is not aiming at the saved target), so
-      // `exceedsSolutionAlert` — the one refusal the ceiling still stands down for, read by
-      // the ceiling's own clause — is false here, and every voice of the flag is silent too.
-      renderOverCeiling('gradual', { measuredPasteGrams: '3000' });
-      expect(alertTexts()).toEqual([expect.stringMatching(CEILING)]);
-    });
+    for (const mode of ['ratio', 'gradual'] as const) {
+      it(`yields in ${mode} mode to the alert the unrenderable rejection no longer silences`, () => {
+        // REWRITTEN BY DECISION (2026-08-17, the code-review round) from "speaks in
+        // ${mode} mode when even the rejection alert is silent": this cell used to be
+        // VOICELESS — 3,000 g exceeds the 2,400 g solution, that rejection's paragraph is
+        // excluded from the mode (neither derived mode is aiming at the saved target),
+        // and the flag's own alert excluded every rejected reading through the raw
+        // `rejected` flag — so the ceiling was the only thing left that could speak, and
+        // this test pinned exactly that (Task 9 for ratio, Task 13 for gradual). The
+        // user then decided a rejected reading only silences what its refusal can
+        // replace: with the refusal unrenderable here, the "already more dilute" alert
+        // returns — and the ceiling stands down for it, the same yield it has always
+        // practiced for that alert one reading over (the reading-cleared case above).
+        // The exact singleton pins both halves: the alert speaks, and nothing doubles.
+        renderOverCeiling(mode, { measuredPasteGrams: '3000' });
+        expect(alertTexts()).toEqual([expect.stringMatching(PASTE_ALREADY_THINNER)]);
+      });
+    }
 
     it('speaks in Custom amount scope, where the flag has no alert of its own at all', () => {
       // The "already more dilute" alert is Whole-batch only; in Custom amount the child says
@@ -1449,11 +1445,21 @@ describe('ratio mode counts from the pot, not from the target it is about to rep
     // count also pinned the SOLUBILITY CEILING's silence, which this test never argued for
     // and which was a defect: this fixture's saved target is 80%, twice the 40% no recipe
     // dissolves past, and that sentence was suppressed by the raw targetExceedsPaste flag
-    // while the alert that flag speaks for was suppressed by the reading. Nothing here is
-    // weakened — the refusal this test is about is still asserted absent, by name.
+    // while the alert that flag speaks for was suppressed by the reading.
+    //
+    // The 2026-08-17 decision (a rejected reading only silences what its refusal can
+    // replace) moved this cell once more: the exceeds-solution refusal cannot render in
+    // ratio mode, so it no longer silences the flag's own "already more dilute" alert —
+    // which is a claim about the SAVED 80% target, true off the maker's own reading
+    // (1,550 g already exceeds the 1,500 g that target dilutes to), not a refusal of the
+    // reading this test forbids. The ceiling now yields to that alert exactly as it does
+    // in every other state where the alert renders. The refusal this test is about is
+    // still asserted absent BY NAME — the exact-singleton assertion alone would go
+    // vacuous about it, since the alert set changed.
     render(<DilutionPanel {...PAST_TARGET} />);
-    expect(refusalAlerts()).toEqual([]);
-    expect(alertTexts()).toEqual([expect.stringMatching(SOLUBILITY_CEILING)]);
+    expect(screen.queryByText(/already weighs more than/i)).toBeNull();
+    expect(screen.queryByText(/cannot be diluted to/i)).toBeNull();
+    expect(alertTexts()).toEqual([expect.stringMatching(/already more dilute than 80%/i)]);
   });
 
   it('a reading UNDER that ceiling is untouched — both gates agree there', () => {
@@ -2395,7 +2401,106 @@ describe('the measurement feedback follows the measured-paste input, not the sco
   });
 });
 
+describe('a rejected reading only silences what its refusal can replace', () => {
+  // DECIDED 2026-08-17 (the code-review round). `pasteAlreadyThinnerAlert` excluded every
+  // REJECTED reading through the raw `measurementRejection.rejected` flag — but the
+  // exclusion's whole licence is that the refusal paragraph renders in the alert's place
+  // ("gets its own alert above instead"), and the exceeds-solution refusal is excluded
+  // from ratio and gradual mode. There the flag was true, the paragraph was not on
+  // screen, and a maker whose paste reading already exceeds the saved target's solution
+  // saw NOTHING about a target the batch is already past. The clause is now keyed on the
+  // refusals' own render conditions — the three reading-only rules render on their bare
+  // flags in every mode and both scopes, so those still suppress everywhere; the
+  // exceeds-solution rule suppresses only through `exceedsSolutionAlert`, the same const
+  // its paragraph renders on.
+  //
+  // Built by core: 1,200 g of anhydrous soap cooked in 3,000 g of water at a saved 30%
+  // target makes a 4,000 g solution holding 2,800 g of water, and 2,800 < 3,000 is
+  // targetExceedsPaste. 30% sits under every solubility ceiling, so the ceiling sentence
+  // cannot cover for the missing alert in any cell here — silence is silence. A 4,500 g
+  // reading exceeds the 4,000 g solution; every figure distinct (1,200 / 3,000 / 4,000 /
+  // 4,200 / 4,500), so no assertion below can pass by matching the wrong quantity.
+  const UNDER_CEILING_OVER = calculateDilution({
+    anhydrousGrams: 1200,
+    cookWaterGrams: 3000,
+    kohGrams: 240,
+    naohGrams: 0,
+    soapConcentrationPercent: 30,
+  })!;
+  const MODE_ON = {
+    concentration: {},
+    ratio: { dilutionMode: 'ratio', waterPasteRatio: '2', onWaterPasteRatioChange: () => {} },
+    gradual: { dilutionMode: 'gradual', gradualWaterGrams: '500', onGradualWaterChange: () => {} },
+  } as const;
+  const renderUnderCeiling = (
+    mode: keyof typeof MODE_ON,
+    props: Partial<ComponentProps<typeof DilutionPanel>> = {},
+  ) =>
+    render(
+      <DilutionPanel
+        {...BASE}
+        soapConcentrationPercent="30"
+        dilution={UNDER_CEILING_OVER}
+        cookWaterGrams={3000}
+        wholeBatchPasteGrams={4200}
+        dilutionScope="batch"
+        targetMl=""
+        onDilutionModeChange={() => {}}
+        {...MODE_ON[mode]}
+        {...props}
+      />,
+    );
+  const ALREADY_MORE_DILUTE = /already more dilute than 30%/i;
 
+  it('is the fixture the flag is set on, with the alert as the only voice absent a reading', () => {
+    // The positive control, and the reproduction's own second half: clear the field and
+    // the alert is on screen — which is what makes the cells below a suppression bug
+    // rather than a missing feature.
+    expect(UNDER_CEILING_OVER.targetExceedsPaste).toBe(true);
+    expect(UNDER_CEILING_OVER.solutionGrams).toBe(4000);
+    renderUnderCeiling('ratio', { measuredPasteGrams: '' });
+    expect(alertTexts()).toEqual([expect.stringMatching(ALREADY_MORE_DILUTE)]);
+  });
+
+  for (const mode of ['ratio', 'gradual'] as const) {
+    it(`the alert returns in ${mode} mode, where the refusal that silenced it cannot render`, () => {
+      // THE HOLE (pre-existing on main, PR #162; verified by rendering). A 4,500 g
+      // reading exceeds the 4,000 g solution, so `rejected` is true — but that refusal's
+      // paragraph is excluded from this mode (it is a claim about a target the mode is
+      // not aiming at), so the flag silenced this alert over a screen that said nothing:
+      // zero alerts, at a target the batch is already past, with the ceiling unable to
+      // cover (30% dissolves). A refusal that cannot render cannot replace what it
+      // silences, so the alert speaks.
+      renderUnderCeiling(mode, { measuredPasteGrams: '4500' });
+      expect(alertTexts()).toEqual([expect.stringMatching(ALREADY_MORE_DILUTE)]);
+    });
+
+    it(`a refusal that DOES render still silences it in ${mode} mode — the reading-only rules render everywhere`, () => {
+      // The other direction, per refusal kind: belowSolids (900 g under the 1,200 g
+      // floor), nonPositive, and the sub-tenth fingerprint all render their paragraphs in
+      // every mode — so each replaces the alert exactly as before, one paragraph for one
+      // reading, never the verdict stacked on the refusal.
+      for (const [reading, refusal] of [
+        ['900', /cannot be all of the paste/i],
+        ['0', /more than zero/i],
+        ['1480.25', /thousands separator/i],
+      ] as const) {
+        renderUnderCeiling(mode, { measuredPasteGrams: reading });
+        expect(alertTexts()).toEqual([expect.stringMatching(refusal)]);
+        cleanup();
+      }
+    });
+  }
+
+  it('still stands down in concentration mode, where the exceeds-solution refusal renders and replaces it', () => {
+    // The mode that keeps the old behavior, and the pin on the `!exceedsSolutionAlert`
+    // term: the refusal names the maker's own 4,500 g against the same 4,000 g solution
+    // this verdict counts from, so it owns the screen — exactly one alert, and it is the
+    // refusal, not the verdict, and never both.
+    renderUnderCeiling('concentration', { measuredPasteGrams: '4500' });
+    expect(alertTexts()).toEqual([expect.stringMatching(/already weighs more than/i)]);
+  });
+});
 
 describe('figures that belong to one scope stay in that scope; caveats that describe the recipe do not', () => {
   it('does not print the whole-batch ratio pour figure in Custom amount scope', () => {

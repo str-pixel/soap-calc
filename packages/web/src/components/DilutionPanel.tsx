@@ -506,7 +506,11 @@ export function DilutionPanel({
   // idling as a drift hazard: it re-read three raw flags in parallel with the render sites,
   // so any future mode gate on one of those paragraphs would have had to be mirrored here by
   // hand or the two answers forked. noUnusedLocals would have forced the deletion anyway;
-  // this is it done on purpose, with the reasoning written down.
+  // this is it done on purpose, with the reasoning written down. The question has since
+  // found one new consumer — pasteAlreadyThinnerAlert's rejection yield (decided
+  // 2026-08-17) — which carries the four render conditions inline at its own clause, with
+  // the same drift warning written there; a single consumer does not earn the shared const
+  // back, and the hazard is no smaller for being named.
   // Ratio mode (LS:1534): weigh the paste, then add water at 1:1 / 2:1 / 3:1 by weight.
   // Prefer a valid MEASURED paste — the reference's ratio method is applied to a weighed
   // paste. Otherwise pasteGrams is anhydrousGrams + the paste's TRUE water — not
@@ -920,14 +924,33 @@ export function DilutionPanel({
   //
   // Whole-batch only, like the sibling above and for a plainer reason than either of theirs:
   // it lives inside the batch-scope block. In Custom amount the child says the same thing in
-  // its own words (PortionDilutionResults' pasteAlreadyThinner), which is why the ceiling's
-  // suppression reads that too rather than this alone.
+  // its own words (PortionDilutionResults' pasteAlreadyThinnerWorded), which is why the
+  // ceiling's suppression reads that too rather than this alone.
+  //
+  // A REJECTED reading stands this alert down only while its refusal is actually ON
+  // SCREEN (decided 2026-08-17, the code-review round; the clause read the raw
+  // `measurementRejection.rejected` flag before that). The refusal's licence to replace
+  // this verdict is that it renders in the verdict's place — and the exceeds-solution
+  // paragraph is excluded from ratio and gradual mode, so in those modes the flag was
+  // true while the screen said NOTHING: a maker whose reading already exceeds the saved
+  // target's solution got neither the refusal nor this alert, at a target the batch is
+  // already past — the flag-keyed shape this project has paid for five times. The three
+  // reading-only rules (nonPositive, subTenthPrecision, belowSolids) render on their bare
+  // flags in every mode and both scopes, so for them the flag IS the paragraph's render
+  // condition — the terms below track those render sites, and must follow if one of them
+  // ever grows a mode gate of its own. The exceeds-solution term is `exceedsSolutionAlert`,
+  // the same const its paragraph renders on. (The fifth rule, exceedsRemainingCeiling, has
+  // no paragraph in this panel and cannot fire while every reading is declared whole-batch
+  // — a refusal that cannot render cannot replace this alert, so it takes no term.)
   const pasteAlreadyThinnerAlert =
     dilution !== null &&
     dilutionScope === 'batch' &&
     dilution.targetExceedsPaste &&
     !measuredPasteValid &&
-    !(measurementRejection?.rejected ?? false) &&
+    !(measurementRejection?.nonPositive ?? false) &&
+    !(measurementRejection?.subTenthPrecision ?? false) &&
+    !(measurementRejection?.belowSolids ?? false) &&
+    !exceedsSolutionAlert &&
     (unknownLiquidGrams === 0 || overDilutionCertain);
   // The corrected-pot alert's RENDER CONDITION, on the same discipline as the sibling
   // above: the predicate has no dilutionScope term, but its paragraph lives inside the
@@ -2179,12 +2202,16 @@ export function DilutionPanel({
                   valid measurement outranks the flag, so suppress this alert rather than assert
                   "already more dilute" beside a water figure the measurement just produced.
 
-                  A REJECTED measurement is excluded for the same reason and gets its own
-                  alert above instead — the exclusion PortionDilutionResults' matching
-                  branch already applied while this one did not, so a mis-tared reading
-                  stacked two role="alert" paragraphs here and one there, and the second
-                  asserted a verdict derived from the very assumed cook water the rejected
-                  reading was contesting. Both scopes answer this state the same way now.
+                  A REJECTED measurement is excluded only while its refusal actually
+                  renders in this alert's place (decided 2026-08-17 — see the render
+                  const's own comment; the exclusion read the raw `rejected` flag before
+                  that, and in ratio and gradual an exceeds-solution reading silenced this
+                  paragraph while its own refusal was mode-excluded, leaving the screen
+                  saying nothing). Where a refusal IS on screen the exclusion holds for
+                  the original reason: a mis-tared reading used to stack two role="alert"
+                  paragraphs here and one in Custom amount, and the second asserted a
+                  verdict derived from the very assumed cook water the rejected reading
+                  was contesting. One paragraph per reading, in both scopes.
 
                   The clauses live in `pasteAlreadyThinnerAlert` (beside pasteAlreadyPastTarget,
                   with the scope gate this block applies) because the solubility ceiling below
