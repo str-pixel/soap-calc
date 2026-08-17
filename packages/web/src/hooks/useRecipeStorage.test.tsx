@@ -172,6 +172,10 @@ describe('an unreadable draft is spoken for, not silently replaced', () => {
     // exists — the message has to arrive from a mount effect, so it is present here.
     expect(result.current.recipeName).toBe('Starter recipe');
     expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept/i));
+    // On a load path a starter really did load in the slot's place — the closing
+    // clause must say that, not borrow the import path's ending.
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/starter recipe loaded/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/imported recipe loaded/));
   });
 
   it('tells the maker who reaches one by switching process', () => {
@@ -181,6 +185,8 @@ describe('an unreadable draft is spoken for, not silently replaced', () => {
     expect(result.current.saveMessage).toBeNull();
     act(() => result.current.setProcess('ls'));
     expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept/i));
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/starter recipe loaded/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/imported recipe loaded/));
   });
 
   it('yields the one message slot to the flush failure when both fire at once', () => {
@@ -229,6 +235,9 @@ describe('"kept" is only said when the backup slot actually holds it', () => {
     expect(result.current.recipeName).toBe('Starter recipe');
     expect(result.current.saveMessage).toEqual(expect.stringMatching(/could not be set aside/));
     expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/kept unchanged/));
+    // The not-kept load sentence closes the same way: a starter loaded, not an import.
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/starter recipe loaded/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/imported recipe loaded/));
   });
 
   it('still says kept when the backup already holds the identical payload — same bytes, same rescue', () => {
@@ -296,6 +305,11 @@ describe('an import keeps the draft it replaces', () => {
     expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept unchanged/));
     expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/could not be set aside/));
     expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/Imported/));
+    // The closing clause tells the truth about THIS path: the imported recipe loaded
+    // in the slot's place — "a starter recipe loaded" is the load paths' ending and
+    // is false here (it also reads as the import having failed).
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/imported recipe loaded/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/starter recipe loaded/));
   });
 
   it('says the draft could not be set aside when an older backup already occupies the slot', async () => {
@@ -309,6 +323,9 @@ describe('an import keeps the draft it replaces', () => {
     );
     expect(result.current.saveMessage).toEqual(expect.stringMatching(/could not be set aside/));
     expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/kept unchanged/));
+    // Same truth in the not-kept closing clause: the imported recipe loaded, no starter.
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/imported recipe loaded/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/starter recipe loaded/));
   });
 
   it('a readable target slot imports exactly as today: the confirmation, no backup writes', async () => {
@@ -342,6 +359,27 @@ describe('an import keeps the draft it replaces', () => {
     expect(loadDraft('hp')?.name).toBe('Incoming import');
     expect(result.current.saveMessage).toEqual(expect.stringMatching(/kept unchanged/));
     expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/Imported/));
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/imported recipe loaded/));
+    expect(result.current.saveMessage).not.toEqual(expect.stringMatching(/starter recipe loaded/));
+  });
+
+  it('mount and a same-process import speak two different sentences about one slot', async () => {
+    // The duplicate-sentence finding, retired: mount onto an unreadable slot flashes the
+    // load-path kept sentence; a same-process import then overwrites that same slot and
+    // used to flash the identical sentence again — a stuck repeat, with nothing saying
+    // the import landed. The closing clause is the part that differs: what actually
+    // loaded in the slot's place.
+    localStorage.setItem('soap-calc:active-process', 'hp');
+    localStorage.setItem('soap-calc:draft:hp', fromTheFuture);
+    const { result } = renderHook(() => useRecipeStorage()); // mounts ON hp, slot unreadable
+    const atMount = result.current.saveMessage;
+    expect(atMount).toEqual(expect.stringMatching(/starter recipe loaded/));
+    await importOntoHp(result);
+    // The rescue in bytes, unchanged by the copy: backup verbatim, imported live.
+    expect(localStorage.getItem('soap-calc:draft:hp:unreadable')).toBe(fromTheFuture);
+    expect(loadDraft('hp')?.name).toBe('Incoming import');
+    expect(result.current.saveMessage).toEqual(expect.stringMatching(/imported recipe loaded/));
+    expect(result.current.saveMessage).not.toBe(atMount);
   });
 
   it('yields the one message slot to the storage-full warning when both fire at once', async () => {

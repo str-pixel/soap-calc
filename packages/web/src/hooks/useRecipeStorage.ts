@@ -95,6 +95,21 @@ function unreadableDraftMessage(kept: boolean): string {
   return kept ? UNREADABLE_DRAFT_KEPT_MESSAGE : UNREADABLE_DRAFT_NOT_KEPT_MESSAGE;
 }
 
+/** The import-path variants: same failure, same kept/not-kept semantics as the two
+ * sentences above — ONLY the closing clause differs, because on this path it is the
+ * imported recipe (not a starter) that loaded in the slot's place. Reusing the load-path
+ * sentences here closed on a falsehood, and by displacing the "Imported …" confirmation
+ * it read as the import having failed. */
+const UNREADABLE_DRAFT_KEPT_IMPORT_MESSAGE =
+  'Your saved recipe could not be read — it has been kept unchanged in this browser, and the imported recipe loaded in its place.';
+
+const UNREADABLE_DRAFT_NOT_KEPT_IMPORT_MESSAGE =
+  'Your saved recipe could not be read, and this browser was already holding an earlier unreadable one — so it could not be set aside. The imported recipe loaded in its place.';
+
+function unreadableDraftImportMessage(kept: boolean): string {
+  return kept ? UNREADABLE_DRAFT_KEPT_IMPORT_MESSAGE : UNREADABLE_DRAFT_NOT_KEPT_IMPORT_MESSAGE;
+}
+
 /** Flash display time scaled to reading length. The old flat 2000 ms erased the 25-word
  * import-refusal copy before anyone could read it; ~50 ms/char tracks reading speed with
  * the old floor kept for short confirmations. Exported for tests. */
@@ -267,7 +282,7 @@ export function useRecipeStorage() {
             `Imported “${parsed.data.name}”${routing} — but storage is full, so changes may not persist. Export to keep a copy.`,
           );
         } else if (targetSlot.unreadable) {
-          flashSaveMessage(unreadableDraftMessage(targetSlot.kept));
+          flashSaveMessage(unreadableDraftImportMessage(targetSlot.kept));
         } else {
           flashSaveMessage(`Imported “${parsed.data.name}”${routing}`);
         }
