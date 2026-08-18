@@ -113,6 +113,24 @@ function backupUnreadableDraft(process: ProcessId, raw: string): boolean {
   }
 }
 
+/** The one version/shape gate a stored payload must pass to load. Shared by
+ * loadDraftSlot (deciding whether to hand the draft back) and saveDraft's guard
+ * (deciding whether the occupant it is about to overwrite needs parking) so the two
+ * judgments can never drift apart. */
+function isReadablePayload(data: DraftPayload): boolean {
+  return READABLE_VERSIONS.includes(data.version) && Array.isArray(data.lines);
+}
+
+/** saveDraft's occupant check: unreadable means the same thing at the point of
+ * overwrite as at load time — fails the gate above, or does not parse at all. */
+function isUnreadableOccupant(raw: string): boolean {
+  try {
+    return !isReadablePayload(JSON.parse(raw) as DraftPayload);
+  } catch {
+    return true;
+  }
+}
+
 /** True when a draft (readable or not) occupies the slot. Used by the autosave
  * flush: writing into an EMPTY slot can never clobber newer data, so a clean tab
  * may safely re-persist its workspace after external deletion/eviction. */
@@ -158,13 +176,15 @@ export function loadDraftSlot(process: ProcessId): DraftSlot {
     raw = localStorage.getItem(draftKey(process));
     if (!raw) return { draft: null, unreadable: false, kept: false };
     const data = JSON.parse(raw) as DraftPayload;
-    if (!READABLE_VERSIONS.includes(data.version) || !Array.isArray(data.lines)) {
-      // Preserve what we can't read: returning null seeds a starter workspace whose
-      // first autosave overwrites this slot ~500ms later. A future-version draft
-      // (app rollback) or corrupted payload is parked in a backup slot instead of
-      // being destroyed. First writer wins — don't churn the backup on every load —
-      // so `kept` carries out whether the slot really took (or already held) THIS
-      // payload, and the message downstream picks its sentence by it.
+    if (!isReadablePayload(data)) {
+      // Preserve what we can't read: returning null seeds a starter workspace, and the
+      // maker's first EDIT overwrites this slot — the autosave debounce is dirty-gated
+      // on a mount-time snapshot (useRecipeAutosave), so loading alone rewrites
+      // nothing, but the first edit's save lands over this payload whenever it comes.
+      // A future-version draft (app rollback) or corrupted payload is parked in a
+      // backup slot instead of being left to that. First writer wins — don't churn the
+      // backup on every load — so `kept` carries out whether the slot really took (or
+      // already held) THIS payload, and the message downstream picks its sentence by it.
       return { draft: null, unreadable: true, kept: backupUnreadableDraft(process, raw) };
     }
     return {
@@ -210,6 +230,26 @@ export function saveDraft(
   settings: RecipeSettings,
   additives: AdditiveLine[] = createEmptyAdditives(),
 ): boolean {
+  // No writer may destroy what it cannot read. Every write into a draft slot funnels
+  // through here — the autosave debounce, the pagehide flush, setProcess's and the
+  // import's outgoing flushes — and any of them can land on a slot where a SECOND
+  // writer (another tab, a rollback build) parked a payload this build cannot read.
+  // That occupant is the one copy of that work, so park it before overwriting, at the
+  // point of overwrite itself; callers that never read the slot get the rescue anyway.
+  // backupUnreadableDraft stays the one parking policy (first writer wins, idempotent
+  // on identical bytes), so a slot loadDraftSlot already parked is not parked twice.
+  // Its verdict is deliberately dropped here: this function's boolean is the WRITE's
+  // success — callers' storage-full logic depends on exactly that — and sentences stay
+  // the speaking callers' job, read via loadDraftSlot. The guard only removes the
+  // ability to destroy; it says nothing.
+  try {
+    const occupant = localStorage.getItem(draftKey(process));
+    if (occupant !== null && isUnreadableOccupant(occupant)) {
+      backupUnreadableDraft(process, occupant);
+    }
+  } catch {
+    // getItem itself threw: storage is unavailable, and the write below reports that.
+  }
   const payload: DraftPayload = {
     version: STORAGE_VERSION,
     name,

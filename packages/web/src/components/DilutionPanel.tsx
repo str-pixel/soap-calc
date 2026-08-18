@@ -488,28 +488,29 @@ export function DilutionPanel({
   // Whether the exceeds-solution refusal is ACTUALLY ON SCREEN, not merely flagged. The two
   // mode exclusions are the paragraph's own (see its full reasoning where it renders): every
   // clause of it is about a TARGET the paste cannot reach, and neither derived mode is aiming
-  // at one. Named here because two places need the answer and they must never drift: the
-  // paragraph itself, and the solubility ceiling below, whose suppression is subsumption —
-  // it stands down only while a stronger claim about the same target is on screen, so it has
-  // to ask whether this one renders rather than whether the rule fired.
+  // at one. Named here because three places need the answer and they must never drift: the
+  // paragraph itself; the solubility ceiling below, whose suppression is subsumption — it
+  // stands down only while a stronger claim about the same target is on screen, so it has
+  // to ask whether this one renders rather than whether the rule fired; and the
+  // corrected-pot alert's render condition (pasteAlreadyPastTargetAlert), which yields to
+  // this paragraph on the same must-be-on-screen discipline.
   const exceedsSolutionAlert =
     (measurementRejection?.exceedsSolution ?? false) &&
     dilutionMode !== 'ratio' &&
     dilutionMode !== 'gradual';
-  // Whether the reading has an explanation on screen AT ALL. The rejection rules are mutually
-  // exclusive (see measuredPasteRejectionFor's own sweep), and the first three render their
-  // paragraph in every mode and both scopes — only the exceeds-solution one is mode-gated, so
-  // only it can leave `rejected` true with nothing said. exceedsRemainingCeiling is absent
-  // because this panel declares every reading as the whole batch (MEASURED_PASTE_IS_REMAINING),
-  // which is the same reason no branch renders it above. Its one consumer is the corrected-pot
-  // verdict's spoken-for disjunction below (pasteAlreadyPastTargetSpokenFor) — NOT
-  // targetExceedsPaste's, which deliberately dropped its rejection voice (decided 2026-08-16;
-  // see overDilutionSpokenFor).
-  const measurementRejectionAlert =
-    exceedsSolutionAlert ||
-    (measurementRejection?.nonPositive ?? false) ||
-    (measurementRejection?.subTenthPrecision ?? false) ||
-    (measurementRejection?.belowSolids ?? false);
+  // There is deliberately NO "is any rejection paragraph on screen" const here any more. One
+  // existed (measurementRejectionAlert, the disjunction of the four rules' render conditions)
+  // for exactly one consumer: the corrected-pot verdict's spoken-for disjunction kept a
+  // refusal as a third voice for one round. That voice is gone (decided 2026-08-16, second
+  // round — see pasteAlreadyPastTargetSpokenFor), and the const went with it rather than
+  // idling as a drift hazard: it re-read three raw flags in parallel with the render sites,
+  // so any future mode gate on one of those paragraphs would have had to be mirrored here by
+  // hand or the two answers forked. noUnusedLocals would have forced the deletion anyway;
+  // this is it done on purpose, with the reasoning written down. The question has since
+  // found one new consumer — pasteAlreadyThinnerAlert's rejection yield (decided
+  // 2026-08-17) — which carries the four render conditions inline at its own clause, with
+  // the same drift warning written there; a single consumer does not earn the shared const
+  // back, and the hazard is no smaller for being named.
   // Ratio mode (LS:1534): weigh the paste, then add water at 1:1 / 2:1 / 3:1 by weight.
   // Prefer a valid MEASURED paste — the reference's ratio method is applied to a weighed
   // paste. Otherwise pasteGrams is anhydrousGrams + the paste's TRUE water — not
@@ -825,6 +826,12 @@ export function DilutionPanel({
           measuredPasteGrams: measuredPasteGrams ?? '',
           wholeBatchPasteGrams,
           cookWaterGrams,
+          // The same two values forwarded to the child itself, so the helper's
+          // verdict-vs-hedge fork (pasteAlreadyThinnerWorded) answers for the branch the
+          // child really renders. Omitted, the helper defaults to "knowable" and would
+          // report the verdict worded while the child was hedging.
+          unknownLiquidGrams,
+          overDilutionCertain,
         })
       : null;
   const portionOnScreen = portionState?.portion != null;
@@ -875,9 +882,14 @@ export function DilutionPanel({
   // Suppressed by a VALID measurement, exactly as the targetExceedsPaste alert below is:
   // the measured-paste guards already refuse a reading heavier than the solution (with their
   // own alert), so a reading that survives them leaves solutionGrams - measured >= 0 and no
-  // clamp to explain. A REJECTED reading is NOT suppressed: the row falls back to the
-  // recipe's own clamped figure in that case, and the rejection alert speaks only about the
-  // reading — it never accounts for the zero underneath it.
+  // clamp to explain. A reading refused by the READING-ONLY rules (belowSolids,
+  // nonPositive, subTenthPrecision) does NOT suppress the predicate or its paragraph: the
+  // row falls back to the recipe's own clamped figure in that case, and those refusals
+  // speak only about the reading — they never account for the zero underneath. The
+  // exceeds-solution refusal is the exception (decided 2026-08-16, second round): it DOES
+  // account for it — a paste already heavier than the solution is precisely why there is
+  // no water to add — so the RENDER condition below stands down while that paragraph is on
+  // screen. The predicate itself stays refusal-blind; the yield lives at the render.
   //
   // Flat, with no overDilutionCertain hedge: this verdict reduces to
   // wholeBatchPasteGrams > solutionGrams, and BOTH sides of that are fixed whatever the
@@ -912,14 +924,33 @@ export function DilutionPanel({
   //
   // Whole-batch only, like the sibling above and for a plainer reason than either of theirs:
   // it lives inside the batch-scope block. In Custom amount the child says the same thing in
-  // its own words (PortionDilutionResults' pasteAlreadyThinner), which is why the ceiling's
-  // suppression reads that too rather than this alone.
+  // its own words (PortionDilutionResults' pasteAlreadyThinnerWorded), which is why the
+  // ceiling's suppression reads that too rather than this alone.
+  //
+  // A REJECTED reading stands this alert down only while its refusal is actually ON
+  // SCREEN (decided 2026-08-17, the code-review round; the clause read the raw
+  // `measurementRejection.rejected` flag before that). The refusal's licence to replace
+  // this verdict is that it renders in the verdict's place — and the exceeds-solution
+  // paragraph is excluded from ratio and gradual mode, so in those modes the flag was
+  // true while the screen said NOTHING: a maker whose reading already exceeds the saved
+  // target's solution got neither the refusal nor this alert, at a target the batch is
+  // already past — the flag-keyed shape this project has paid for five times. The three
+  // reading-only rules (nonPositive, subTenthPrecision, belowSolids) render on their bare
+  // flags in every mode and both scopes, so for them the flag IS the paragraph's render
+  // condition — the terms below track those render sites, and must follow if one of them
+  // ever grows a mode gate of its own. The exceeds-solution term is `exceedsSolutionAlert`,
+  // the same const its paragraph renders on. (The fifth rule, exceedsRemainingCeiling, has
+  // no paragraph in this panel and cannot fire while every reading is declared whole-batch
+  // — a refusal that cannot render cannot replace this alert, so it takes no term.)
   const pasteAlreadyThinnerAlert =
     dilution !== null &&
     dilutionScope === 'batch' &&
     dilution.targetExceedsPaste &&
     !measuredPasteValid &&
-    !(measurementRejection?.rejected ?? false) &&
+    !(measurementRejection?.nonPositive ?? false) &&
+    !(measurementRejection?.subTenthPrecision ?? false) &&
+    !(measurementRejection?.belowSolids ?? false) &&
+    !exceedsSolutionAlert &&
     (unknownLiquidGrams === 0 || overDilutionCertain);
   // The corrected-pot alert's RENDER CONDITION, on the same discipline as the sibling
   // above: the predicate has no dilutionScope term, but its paragraph lives inside the
@@ -927,7 +958,21 @@ export function DilutionPanel({
   // and the solubility ceiling's suppression (pasteAlreadyPastTargetSpokenFor below) read
   // one answer and cannot drift — the ceiling used to read the bare predicate here, and the
   // pair of them held together only by coincidence of this component and the child agreeing.
-  const pasteAlreadyPastTargetAlert = dilutionScope === 'batch' && pasteAlreadyPastTarget;
+  //
+  // The third clause is a yield (decided 2026-08-16, second round): when the
+  // exceeds-solution rejection is on screen it names the maker's own typed figure against
+  // the very solution this verdict compares the corrected pot to, so it already explains
+  // the 0 g row — two verdicts about one target are one verdict too many, and the
+  // rejection, which quotes the reading the maker just took, wins. Keyed on that
+  // paragraph's RENDER (exceedsSolutionAlert), never on the rejection's flag: in ratio and
+  // gradual the flag can be true while the paragraph is excluded from the mode, and a
+  // flag-keyed yield would have silenced this alert over a screen that says nothing — the
+  // shape this project has paid for four times. Where the refusal on screen is
+  // reading-only (belowSolids, nonPositive, subTenthPrecision) the two still stack: those
+  // refusals say nothing about the target, and this paragraph is the only account of the
+  // 0 g underneath them.
+  const pasteAlreadyPastTargetAlert =
+    dilutionScope === 'batch' && pasteAlreadyPastTarget && !exceedsSolutionAlert;
   // ── The alternative-liquid paragraph, and the portion-scope note the child carries ──
   // Three hints used to render as separate paragraphs — the head start, the can't-tell
   // hedge, the undeclared-liquid floor — and a split-liquid recipe could stack all three
@@ -979,20 +1024,19 @@ export function DilutionPanel({
     !measuredPasteValid;
   // ── Is targetExceedsPaste SPOKEN FOR: does anything on screen answer for the flag? ──
   // The solubility ceiling below stands down for it, and a suppression that is subsumption
-  // has to ask about a rendering, not about a flag. The flag has three voices and they are
+  // has to ask about a rendering, not about a flag. The flag has two voices and they are
   // gated apart from each other, so no single one of them is the answer:
   //
   //   Whole batch, nothing wrong with the reading  → the alert above (pasteAlreadyThinnerAlert)
-  //   Custom amount, same state                    → the child says it (pasteAlreadyThinner)
-  //   an undeclared liquid makes it unassertable   → the can't-tell hedge instead (cantTellGate)
+  //   Custom amount, same state                    → the child words it (pasteAlreadyThinnerWorded)
   //
   // The disjunction is what makes this safe in BOTH directions. Keyed on the flag, the
   // ceiling went silent in the one state where the flag has no voice at all — a VALID
   // reading, which suppresses the alert by design (a measurement outranks the assumed cook
   // water the flag is derived from) and suppresses the hedge and the child with it. Keyed on
-  // any single voice, it would have stacked a second paragraph onto the other two.
+  // one voice alone, it would have stacked a second paragraph onto the other.
   //
-  // A REFUSED reading is deliberately NOT a voice (decided 2026-08-16; a fourth disjunct,
+  // A REFUSED reading is deliberately NOT a voice (decided 2026-08-16; a disjunct,
   // `targetExceedsPaste && !measuredPasteValid && measurementRejectionAlert`, used to sit
   // here). This suppression's licence is a stronger claim about the SAME target, and the
   // reading-only refusals — "cannot be all of the paste", not a positive weight, typed-
@@ -1003,13 +1047,31 @@ export function DilutionPanel({
   // still silences the ceiling through the ceiling's own `!exceedsSolutionAlert` clause,
   // which asks about that paragraph's rendering with no flag attached; a
   // `targetExceedsPaste && exceedsSolutionAlert` disjunct here would be strictly subsumed
-  // by it, so no rejection clause remains rather than a dead one being kept. (The
-  // can't-tell hedge above IS still a voice even over a refused reading — an uncertainty
-  // silencing a certainty, raised in the same review and left undecided, so left.)
+  // by it, so no rejection clause remains rather than a dead one being kept.
+  //
+  // NEITHER IS THE CAN'T-TELL HEDGE, any longer (decided 2026-08-16, second round; a
+  // `cantTellGate` disjunct sat here from the day this const was named, and the "left
+  // undecided, so left" note it carried now has its decision). The hedge is a claim about
+  // the BATCH's water — can't tell whether N% is REACHABLE while an undeclared liquid
+  // hides how much of the pot is already water. The ceiling sentence is a fact about the
+  // SAVED TARGET — N% is above what any recipe dissolves — and no liquid, declared or not,
+  // moves it. An uncertainty about the batch is not a verdict about the target: both are
+  // true, and both render. The hedge stays a plain paragraph, so those cells still show
+  // exactly one alert.
+  //
+  // AND THAT RULE REACHES THE CHILD'S HEDGE TOO (decided 2026-08-17, the code-review
+  // round; the second disjunct read `portionState?.pasteAlreadyThinner` — the child's
+  // FLAG — until then). The flag is also true in the undeclared-liquid uncertain state,
+  // where what the child renders is its own can't-tell hedge ("No portion can be sized
+  // yet…"), not its wording of the verdict — so Whole batch showed ceiling + hedge while
+  // Custom amount, one radio over, showed nothing at all: the user's decision applied to
+  // one side of the scope seam. The disjunct now reads `pasteAlreadyThinnerWorded`, the
+  // helper's own name for "the verdict branch is what renders" (resolved beside the flag
+  // in portionDilutionFor, read by the child's render and by this line, so the two cannot
+  // fork) — the child's voice counts exactly when the child is saying the verdict.
   const overDilutionSpokenFor =
     pasteAlreadyThinnerAlert ||
-    (portionState?.pasteAlreadyThinner ?? false) ||
-    cantTellGate;
+    (portionState?.pasteAlreadyThinnerWorded ?? false);
   // ── Is the corrected-pot verdict (pasteAlreadyPastTarget) SPOKEN FOR? ── The sibling
   // question to the one above, for the ceiling's second clause, which used to read the bare
   // predicate. That predicate is scope-blind while its alert is batch-only, and the child's
@@ -1017,26 +1079,31 @@ export function DilutionPanel({
   // reading — so in Custom amount, with a reading whose refusal is excluded from the mode
   // (exceeds-solution in ratio), every voice was gated off at once and the predicate went
   // on silencing the ceiling over a screen that said NOTHING. Decided 2026-08-16: keyed on
-  // renderings, so only the genuinely silent cells gain the ceiling.
+  // renderings, so only the genuinely silent cells gain the ceiling. The verdict has
+  // exactly two voices:
   //
   //   Whole batch                       → the corrected-pot alert (pasteAlreadyPastTargetAlert)
   //   Custom amount, unrejected reading → the child says it (unmeasuredPasteAlreadyThinner)
-  //   the reading was refused, audibly  → that refusal's own paragraph instead
   //
   // No hedge row: this verdict is liquid-invariant (see the predicate's own comment).
   //
-  // The rejection voice IS kept here, unlike overDilutionSpokenFor's just above, and the
-  // asymmetry is deliberate rather than an oversight: the 2026-08-16 decision was about
-  // targetExceedsPaste's suppression only, and nobody decided the corrected-pot cells where
-  // a refusal really is on screen may go from one alert to two — so those keep today's
-  // count, and only the three-voices-silent cells change (0 → 1). Gated on the predicate,
-  // or any refusal anywhere would silence a ceiling this verdict never spoke for — the
-  // exact shape the decision above just removed (its flag-FALSE anchor test pins this gate
-  // too).
+  // A REFUSED reading is not a voice here any more than it is above (decided 2026-08-16,
+  // second round; a third disjunct, `pasteAlreadyPastTarget && measurementRejectionAlert`,
+  // sat here for one round on the ground that the first decision covered only
+  // targetExceedsPaste's suppression). The decision now reaches this side too, and it is
+  // the same rule: only a verdict about the TARGET may silence the target's warning. The
+  // reading-only refusals say nothing about what this target can dissolve, so in Custom
+  // amount — where neither remaining voice can render beside a refusal — the ceiling now
+  // speaks beside them, the exact pair the targetExceedsPaste side already shows. In Whole
+  // batch nothing changes: the corrected-pot alert itself renders beside the refusal, and
+  // the first disjunct already answers. The one refusal that IS about the target —
+  // exceeds-solution — still silences the ceiling through the ceiling's own
+  // `!exceedsSolutionAlert` clause, which asks about that paragraph's rendering with no
+  // flag attached; so once again no rejection clause remains rather than a dead one being
+  // kept.
   const pasteAlreadyPastTargetSpokenFor =
     pasteAlreadyPastTargetAlert ||
-    (portionState?.unmeasuredPasteAlreadyThinner ?? false) ||
-    (pasteAlreadyPastTarget && measurementRejectionAlert);
+    (portionState?.unmeasuredPasteAlreadyThinner ?? false);
   // The floor/same-either-way clause: only when a positive floor exists (when the target
   // already exceeds the paste, the hedge owns the message — rendering this too repeated
   // "declare its % water" verbatim and printed a vacuous "0 g is the LEAST you will
@@ -2135,12 +2202,16 @@ export function DilutionPanel({
                   valid measurement outranks the flag, so suppress this alert rather than assert
                   "already more dilute" beside a water figure the measurement just produced.
 
-                  A REJECTED measurement is excluded for the same reason and gets its own
-                  alert above instead — the exclusion PortionDilutionResults' matching
-                  branch already applied while this one did not, so a mis-tared reading
-                  stacked two role="alert" paragraphs here and one there, and the second
-                  asserted a verdict derived from the very assumed cook water the rejected
-                  reading was contesting. Both scopes answer this state the same way now.
+                  A REJECTED measurement is excluded only while its refusal actually
+                  renders in this alert's place (decided 2026-08-17 — see the render
+                  const's own comment; the exclusion read the raw `rejected` flag before
+                  that, and in ratio and gradual an exceeds-solution reading silenced this
+                  paragraph while its own refusal was mode-excluded, leaving the screen
+                  saying nothing). Where a refusal IS on screen the exclusion holds for
+                  the original reason: a mis-tared reading used to stack two role="alert"
+                  paragraphs here and one in Custom amount, and the second asserted a
+                  verdict derived from the very assumed cook water the rejected reading
+                  was contesting. One paragraph per reading, in both scopes.
 
                   The clauses live in `pasteAlreadyThinnerAlert` (beside pasteAlreadyPastTarget,
                   with the scope gate this block applies) because the solubility ceiling below
@@ -2157,23 +2228,30 @@ export function DilutionPanel({
                   answers the form only the corrected pot can see — see
                   pasteAlreadyPastTarget for the predicate, the gating and why the two can
                   never both fire. The gate here is pasteAlreadyPastTargetAlert (the
-                  predicate plus this block's own scope), named where the predicate lives so
-                  the solubility ceiling below reads the same answer this site renders on;
-                  the computedPasteGrams recheck only narrows the type for the quoted
-                  figure — the predicate already required it. The two figures are quoted
-                  because the claim is a comparison, and the row it explains prints a bare
-                  "0 g".
+                  predicate, this block's own scope, and standing down while the
+                  exceeds-solution rejection renders — see the const for the decided
+                  yield), named where the predicate lives so the solubility ceiling below
+                  reads the same answer this site renders on; the computedPasteGrams
+                  recheck only narrows the type for the quoted figure — the predicate
+                  already required it. The two figures are quoted because the claim is a
+                  comparison, and the row it explains prints a bare "0 g".
 
                   The closing "weigh the paste" clause is dropped once a reading has been
-                  REJECTED, which is the one state where this alert stacks on another: the
-                  maker has just weighed the paste, and telling them to do the thing they
-                  did — under a figure of the recipe's own that sits above their reading in
-                  the field — is the sort of instruction that reads as the app not having
-                  noticed. Only the clause goes. The verdict still holds and still needs
-                  saying, because the row underneath fell back to the recipe's own clamped
-                  figure when the reading was refused; and the pairing itself is right for
-                  belowSolids and nonPositive, where the first alert is about the reading and
-                  this one is the only account of the 0 g. */}
+                  REJECTED, which is the one kind of state where this alert stacks on
+                  another: the maker has just weighed the paste, and telling them to do the
+                  thing they did — under a figure of the recipe's own that sits above their
+                  reading in the field — is the sort of instruction that reads as the app
+                  not having noticed. Only the clause goes. The verdict still holds and
+                  still needs saying, because the row underneath fell back to the recipe's
+                  own clamped figure when the reading was refused. The pairing is right for
+                  the reading-only refusals — belowSolids, nonPositive, subTenthPrecision —
+                  where the first alert is about the reading and this one is the only
+                  account of the 0 g; and those are now the ONLY refusals it pairs with.
+                  The exceeds-solution rejection never reaches this paragraph any more (the
+                  render const above yields to it, decided 2026-08-16, second round): that
+                  rejection quotes the maker's own reading against the same solution this
+                  verdict counts from, so it is the account of the 0 g, and printing this
+                  one beside it was two verdicts about one target. */}
               {pasteAlreadyPastTargetAlert && computedPasteGrams !== null && (
                 <p className="results-hint" role="alert">
                   The paste is already more dilute than {refusalWording.named}: it weighs{' '}
@@ -2198,14 +2276,18 @@ export function DilutionPanel({
               tests count non-alert paragraphs, and the alert channel is governed by the
               panel's own no-stacking rule instead, kept here by suppression: when a
               stronger verdict about this same target already owns the screen — whatever is
-              answering for targetExceedsPaste (overDilutionSpokenFor: the alert, the child's
-              Custom-amount wording of it, or the hedged can't-tell state that questions the
-              target instead), whatever is answering for the corrected-pot verdict
-              (pasteAlreadyPastTargetSpokenFor), or an exceeds-solution rejection — this
-              stays silent, exactly the subsumption those alerts already practice on one
-              another. A refusal of the READING is not on that list (decided 2026-08-16): it
-              is a claim about the scale, not about this target, so the ceiling speaks
-              beside it — two alerts, two different claims. Renders
+              answering for targetExceedsPaste (overDilutionSpokenFor: the alert, or the
+              child's Custom-amount wording of it), whatever is answering for the
+              corrected-pot verdict (pasteAlreadyPastTargetSpokenFor), or an
+              exceeds-solution rejection — this stays silent, exactly the subsumption those
+              alerts already practice on one another. A refusal of the READING is not on
+              that list (decided 2026-08-16): it is a claim about the scale, not about this
+              target, so the ceiling speaks beside it — two alerts, two different claims.
+              Neither is the can't-tell hedge (decided 2026-08-16, second round): it
+              questions whether the BATCH can reach N% with an undeclared liquid in the
+              pot, while this sentence is about the saved target, which no liquid moves —
+              an uncertainty about the batch is not a verdict about the target, so the two
+              render together, one alert beside one plain paragraph. Renders
               in both scopes: it describes the target, not an amount. The claim and its
               wording are the old overflow tail's, unchanged.
 
@@ -2262,11 +2344,15 @@ export function DilutionPanel({
               The fix is a disjunction, not a swap, and that matters: `overDilutionSpokenFor`
               (see its derivation) asks whether ANY of the flag's voices is on screen.
               Testing `!measuredPasteValid` alone would have closed this hole by opening the
-              opposite one — a second paragraph stacked on the can't-tell hedge, which is
-              exactly a state this alert already stands down for. (A rejection alert used to
-              be a fourth voice on that list; since the 2026-08-16 decision a refusal about
-              the reading no longer counts as speaking for the target — see the derivation's
-              own comment.)
+              opposite one — a second paragraph stacked on the batch alert or the child's
+              wording, each a state this sentence stands down for. (The voice list has
+              shrunk three times since: a rejection alert stopped counting with the
+              2026-08-16 decision — a refusal about the reading does not speak for the
+              target — the can't-tell hedge stopped counting with that decision's second
+              round, which ruled an uncertainty about the batch no verdict about the
+              target either, and the child's voice narrowed from its flag to its worded
+              verdict on 2026-08-17, when the same rule reached the child's own hedge.
+              See the derivation's own comment for all three.)
 
               Task 14 (2026-08-12-whole-app-review-fixes) closed the corrected-pot clause
               the same way — the last clause still reading a bare predicate. That predicate
@@ -2275,10 +2361,12 @@ export function DilutionPanel({
               with a rejected reading whose refusal is excluded from the mode (a 3,000 g
               reading in ratio, against a 2,400 g solution from a 2,500 g corrected pot)
               rendered NOTHING at all: no figures, no refusal, no ceiling. The clause now
-              reads pasteAlreadyPastTargetSpokenFor — the alert, the child's wording, or a
-              refusal that actually renders (see that derivation for why the rejection voice
-              is kept THERE and not in overDilutionSpokenFor) — so only the cells where
-              every voice is silent gain this sentence. */}
+              reads pasteAlreadyPastTargetSpokenFor — the alert, or the child's wording of
+              the verdict. A refusal that actually renders was a third voice there for one
+              round and is gone (decided 2026-08-16, second round): a refusal about the
+              reading does not speak for the corrected pot either, so the Custom-amount
+              cells where only a refusal renders now show refusal + ceiling — the same pair
+              as the targetExceedsPaste side, by the same rule. */}
           {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent)) &&
             !overDilutionSpokenFor &&
             !pasteAlreadyPastTargetSpokenFor &&

@@ -95,6 +95,21 @@ function unreadableDraftMessage(kept: boolean): string {
   return kept ? UNREADABLE_DRAFT_KEPT_MESSAGE : UNREADABLE_DRAFT_NOT_KEPT_MESSAGE;
 }
 
+/** The import-path variants: same failure, same kept/not-kept semantics as the two
+ * sentences above — ONLY the closing clause differs, because on this path it is the
+ * imported recipe (not a starter) that loaded in the slot's place. Reusing the load-path
+ * sentences here closed on a falsehood, and by displacing the "Imported …" confirmation
+ * it read as the import having failed. */
+const UNREADABLE_DRAFT_KEPT_IMPORT_MESSAGE =
+  'Your saved recipe could not be read — it has been kept unchanged in this browser, and the imported recipe loaded in its place.';
+
+const UNREADABLE_DRAFT_NOT_KEPT_IMPORT_MESSAGE =
+  'Your saved recipe could not be read, and this browser was already holding an earlier unreadable one — so it could not be set aside. The imported recipe loaded in its place.';
+
+function unreadableDraftImportMessage(kept: boolean): string {
+  return kept ? UNREADABLE_DRAFT_KEPT_IMPORT_MESSAGE : UNREADABLE_DRAFT_NOT_KEPT_IMPORT_MESSAGE;
+}
+
 /** Flash display time scaled to reading length. The old flat 2000 ms erased the 25-word
  * import-refusal copy before anyone could read it; ~50 ms/char tracks reading speed with
  * the old floor kept for short confirmations. Exported for tests. */
@@ -227,6 +242,15 @@ export function useRecipeStorage() {
           importedSettings,
         );
         const importedAdditives = recipeAdditivesFromFile(parsed.data.additives);
+        // Read the target slot BEFORE any of the import's writes can land on it (the
+        // flush below hits the same slot on a same-process import; the imported save
+        // always does): an unreadable draft sitting there is the one copy of that
+        // work, and loadDraftSlot is what hands back the kept/not-kept verdict — the
+        // same discipline the load paths run. The BYTES no longer depend on this
+        // ordering (saveDraft itself parks an unreadable occupant before overwriting),
+        // but the sentence does: read after the writes and the slot holds the import's
+        // own bytes, the verdict is gone, and the rescue happens without a word.
+        const targetSlot = loadDraftSlot(nextProcess);
         // Flush the outgoing process's in-memory workspace first, mirroring setProcess:
         // without this, edits made just before an import (still pending the autosave
         // debounce) would be silently discarded when the state below swaps process.
@@ -246,14 +270,24 @@ export function useRecipeStorage() {
           importedSettings,
           importedAdditives,
         );
-        // Fold any write failure into the final message so it isn't overwritten by the
-        // success flash — storage full means neither the previous nor imported recipe persisted.
         const routing = importRoutingSuffix(parsed.data.processSource, nextProcess);
-        flashSaveMessage(
-          flushedOutgoing && savedImported
-            ? `Imported “${parsed.data.name}”${routing}`
-            : `Imported “${parsed.data.name}”${routing} — but storage is full, so changes may not persist. Export to keep a copy.`,
-        );
+        // Three candidate messages, one flash slot — choose rather than let call order
+        // decide, same as setProcess's collision above. The storage-full warning wins
+        // outright: the flushed and imported work exists only in memory, export is the
+        // action that saves it, and the same failing writes could not overwrite the
+        // unreadable draft's live slot either. Next, the kept/not-kept verdict outranks
+        // the routine confirmation: the import's success is already visible in the
+        // swapped-in workspace, while the displaced draft has no other voice — dropping
+        // its sentence is how it vanishes silently.
+        if (!flushedOutgoing || !savedImported) {
+          flashSaveMessage(
+            `Imported “${parsed.data.name}”${routing} — but storage is full, so changes may not persist. Export to keep a copy.`,
+          );
+        } else if (targetSlot.unreadable) {
+          flashSaveMessage(unreadableDraftImportMessage(targetSlot.kept));
+        } else {
+          flashSaveMessage(`Imported “${parsed.data.name}”${routing}`);
+        }
       })
       .catch(() => {
         if (importTokenRef.current !== token) return;
