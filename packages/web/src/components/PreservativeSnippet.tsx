@@ -207,7 +207,7 @@ export function PreservativeSnippet({
       </label>
       {tier === 'impossible' && (
         <p className="results-hint" role="alert">
-          A dose must be 100% or less of the finished product.
+          A dose must be less than 100% of the finished product.
         </p>
       )}
       {preservative && tier === 'above-max' && (

@@ -188,7 +188,18 @@ test('an under-dose is flagged as a plain note, not an alert', () => {
 test('a dose over 100% is refused outright — no figure, because it is not a dose', () => {
   render(<Harness finishedGrams={4000} />);
   fireEvent.change(doseInput(), { target: { value: '150' } });
-  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+  expect(screen.getByRole('alert').textContent).toContain('less than 100%');
+  expect(screen.queryByText('Preservative to add')).toBeNull();
+});
+
+test('a dose of exactly 100% is refused in the same words as over-100 — the formula divides by zero, not by a hair', () => {
+  // lsPreservativeDoseTier moves 'impossible' to pct >= 100 (spec §3: the w/w formula
+  // diverges at 100), so "100% or less" was self-refuting the moment 100 itself became
+  // impossible — the copy has to say "less than 100%" for the boundary to be a true
+  // statement of its own rule.
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(doseInput(), { target: { value: '100' } });
+  expect(screen.getByRole('alert').textContent).toContain('less than 100%');
   expect(screen.queryByText('Preservative to add')).toBeNull();
 });
 
@@ -198,7 +209,7 @@ test('an impossible dose does not fall back to the enter-oils hint', () => {
   // render just because the dose itself is refused.
   render(<Harness finishedGrams={4000} />);
   fireEvent.change(doseInput(), { target: { value: '150' } });
-  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+  expect(screen.getByRole('alert').textContent).toContain('less than 100%');
   expect(screen.queryByText('Preservative to add')).toBeNull();
   expect(screen.queryByText(/Enter oils and a dilution target/)).toBeNull();
 });
@@ -285,7 +296,7 @@ test('a custom dose still computes, and still refuses the impossible', () => {
   expect(screen.getByText('61 g')).toBeTruthy();
   expect(screen.queryByRole('alert')).toBeNull();     // no ceiling to breach
   fireEvent.change(doseInput(), { target: { value: '150' } });
-  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+  expect(screen.getByRole('alert').textContent).toContain('less than 100%');
 });
 
 test('Custom… suppresses product facts but never scope facts', () => {
