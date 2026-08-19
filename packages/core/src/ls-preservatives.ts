@@ -236,5 +236,8 @@ export function lsPreservativeDoseTier(
 export function preservativeDoseGrams(basisGrams: number, pct: number): number {
   if (!Number.isFinite(basisGrams) || basisGrams <= 0) return 0;
   if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) return 0;
-  return (basisGrams * pct) / (100 - pct);
+  // Ratio first: basisGrams * pct can overflow to Infinity for a finite basis near
+  // Number.MAX_VALUE — the one non-finite the input guards cannot catch. The ratio is
+  // always modest (pct < 100), so multiplying by it last keeps a finite basis finite.
+  return basisGrams * (pct / (100 - pct));
 }

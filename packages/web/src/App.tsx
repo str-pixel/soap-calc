@@ -798,7 +798,7 @@ export default function App() {
         </p>
       </footer>
 
-      <BatchSheet data={vm.batchSheetData} preservativeDoseGrams={preservativeDoseGramsValue} />
+      <BatchSheet data={vm.batchSheetData} />
     </div>
   );
 }
