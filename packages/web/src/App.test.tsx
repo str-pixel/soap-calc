@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { preservativeDoseGrams } from '@soap-calc/core';
 import App from './App';
 
 // Node 22+ defines its own (experimental, file-backed) global `localStorage` getter
@@ -269,29 +270,32 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     await userEvent.type(screen.getByLabelText('Amount to make (ml)'), '250');
 
     // 250 ml at the solution density core uses (1.03 g/ml) is 257.5 g, whatever the recipe
-    // is — the portion's own finished solution, not a share of the batch's.
-    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('258 g');
+    // is — the portion's own finished solution, not a share of the batch's. The row is the
+    // INCLUSIVE figure (fix 3): 257.5 + the 1% w/w dose (2.6 g) → 260 g.
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('260 g');
     expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
-    // …and the dose follows it: 1% of 257.5 g. The batch's own 1% dose is >10 g, so this
+    // …and the dose follows it: 1% w/w of 257.5 g. The batch's own dose is >10 g, so this
     // assertion fails the moment the base reverts to the batch.
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(2.6, 1);
   });
 
-  it('Whole batch scope is unchanged: the base is the batch, and it matches the panel', async () => {
+  it('Whole batch scope is unchanged: the base is the batch, and the row is the basis plus the dose', async () => {
     const snippet = await openSnippet();
     const base = grams(figure(snippet, '≈ Finished product (whole batch)'));
+    const dose = grams(figure(snippet, 'Preservative to add'));
     const dilutionPanel = screen
       .getByRole('heading', { name: 'Dilution' })
       .closest('section') as HTMLElement;
     // The starter recipe has no additives, so bottledSolutionGrams === dilution.solutionGrams
-    // — the snippet's dosing BASIS still matches the panel's chemistry-only "Finished
-    // solution" row exactly (neither is touched by the inclusive-figure wiring below; see
-    // the next test for the row that DOES change).
+    // — the panel's chemistry-only "Finished solution" row is the snippet's dosing BASIS,
+    // never printed as-is (fix 3): the snippet's own "≈ Finished product" row is that basis
+    // PLUS the dose, the same inclusive figure the panel's own same-named row would quote.
     const solution = grams(
       within(dilutionPanel).getByText('Finished solution').nextElementSibling!.textContent!,
     );
-    expect(base).toBeCloseTo(solution, 0);
-    expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(base * 0.01, 0);
+    expect(base).toBeCloseTo(solution + dose, 0);
+    // Exact w/w by construction: dose / finished is exactly 0.01, whichever mass "base" is.
+    expect(dose).toBeCloseTo(base * 0.01, 0);
   });
 
   it('an untouched preservative default adds no mass to the bottle — a suggestion, not an ingredient (fix 2)', async () => {
@@ -310,11 +314,13 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(grams(figure(snippet, 'Preservative to add'))).toBeGreaterThan(0);
   });
 
-  it('the bottle the maker weighs is the basis plus the dose it was promised, once chosen (spec §3)', async () => {
-    // THE SAFETY PIN for the inclusive figure, now scoped by fix 2: the row below only
-    // carries the dose once `preservativeSetByUser` is true. Touch the controls without
-    // changing the choice — switch away and back — so the flag flips true while the product
-    // and its 1% default dose land exactly where they started.
+  it('the bottle the maker weighs is the basis plus the dose it was promised, once chosen (spec §3, fix 2 + fix 3)', async () => {
+    // THE SAFETY PIN for the inclusive figure. Fix 2 scopes it: the panel's row only carries
+    // the dose once `preservativeSetByUser` is true. Touch the controls without changing the
+    // choice — switch away and back — so the flag flips true while the product and its 1%
+    // default dose land exactly where they started. Fix 3 makes the snippet's OWN row quote
+    // that same inclusive figure — one name, one mass — so the two are no longer merely
+    // related by "+dose", they are the SAME number.
     const snippet = await openSnippet();
     const summary = screen
       .getByRole('heading', { name: 'Preservative' })
@@ -324,16 +330,18 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     await userEvent.selectOptions(picker, 'liquid-germall-plus');
     await userEvent.selectOptions(picker, 'suttocide-a');
 
-    const base = grams(figure(snippet, '≈ Finished product (whole batch)'));
+    const inclusive = grams(figure(snippet, '≈ Finished product (whole batch)'));
     const dose = grams(figure(snippet, 'Preservative to add'));
     const dilutionPanel = screen
       .getByRole('heading', { name: 'Dilution' })
       .closest('section') as HTMLElement;
     const finishedProductRow = within(dilutionPanel).getByText('≈ Finished product');
     const finished = grams(finishedProductRow.nextElementSibling!.textContent!);
-    expect(finished).toBeCloseTo(base + dose, 1);
-    // Exact w/w: the typed 1% is true of the BOTTLE (base + dose), never of the base alone
-    // — dose / finished is exactly 0.01, not the ~0.0099 a naive basis-only % would give.
+    // One name, one mass (fix 3): the snippet's own row and the panel's are the same figure.
+    expect(finished).toBe(inclusive);
+    // And that figure is the preservative-free basis plus the dose (spec §3) — never the
+    // basis alone. Exact w/w: the typed 1% is true of the BOTTLE, so dose / finished is
+    // exactly 0.01, not the ~0.0099 a naive basis-only % would give.
     expect(dose / finished).toBeCloseTo(0.01, 4);
   });
 
@@ -376,9 +384,13 @@ describe('the preservative dose is a % of what the maker is actually making', ()
       .getByText('Finished so far (this jar)')
       .nextElementSibling!.textContent!.trim();
     expect(jar).toBe('1,300 g');
-    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe(jar);
+    // The snippet's own row is the INCLUSIVE figure (fix 3: the jar plus the dose it
+    // implies), not a bare echo of the panel's basis-only jar readout — but it is still the
+    // jar the maker actually recorded that is being dosed, not the 2,060 g the stale amount
+    // implies: 1,300 + the 1% w/w dose (13 g) → 1,313 g.
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('1,313 g');
     expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
-    // 1% of 1,300 g. The 2,060 g the stale amount implies would print 21 g here.
+    // 1% w/w of 1,300 g. The 2,060 g the stale amount implies would print 21 g here.
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(13, 0);
   });
 
@@ -399,8 +411,9 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     await userEvent.type(screen.getByLabelText('Paste weighed out (g)'), '1700');
     await userEvent.type(screen.getByLabelText('Water added so far (g)'), '300');
 
-    // 1,700 g of paste plus 300 g of water, and 1% of it.
-    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('2,000 g');
+    // 1,700 g of paste plus 300 g of water is a 2,000 g jar; the row is that basis PLUS the
+    // 1% w/w dose (fix 3) — 2,000 + 20 → 2,020 g.
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('2,020 g');
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(20, 0);
   });
 
@@ -493,9 +506,11 @@ describe('Whole batch + Gradual: one batch has one finished mass', () => {
     fireEvent.change(water, { target: { value: '0' } });
 
     expect(potRow(panel)).toBe('1,400 g');
-    // ONE mass, on one screen: what the panel says is in the pot is what the snippet says it
-    // is dosing. The 1,666 g computed pot is what this printed before.
-    expect(row(snippet, '≈ Finished product (whole batch)')).toBe(potRow(panel));
+    // What the panel says is in the pot is what the snippet DOSES — the pot, never the
+    // 1,666 g computed pot this printed before. The snippet's own row is the INCLUSIVE
+    // figure (fix 3: the pot plus its own advisory dose, 1,400 + 14 → 1,414 g), so it is no
+    // longer a bare echo of the pot text, but it is still built from the same 1,400 g.
+    expect(row(snippet, '≈ Finished product (whole batch)')).toBe('1,414 g');
     // …and the volume the maker sizes bottles from follows it — but only once the maker has
     // actually chosen a preservative (fix 2: `preservativeSetByUser`). The starter recipe's
     // default 1% Suttocide A is an un-chosen suggestion, so it adds no mass here: the plain
@@ -560,14 +575,23 @@ describe('Whole batch + Gradual: one batch has one finished mass', () => {
       );
       if (clamped) continue;
       checked += 1;
-      if (potRow(panel) !== row(snippet, '≈ Finished product (whole batch)')) {
-        split.push(`${reading} g: pot ${potRow(panel)} vs ${row(snippet, '≈ Finished product (whole batch)')}`);
+      // The snippet's own row is the INCLUSIVE figure (fix 3: pot + the 1% w/w dose), no
+      // longer a bare echo of the pot text — so the invariant this sweep protects is that
+      // the snippet's BASIS tracks the same pot the panel shows (never a different,
+      // recipe-predicted one), not that the two printed strings are identical. Recomputed
+      // from the panel's own (already-rounded) pot reading, so a whole gram of independent
+      // rounding on each side of the +1% is expected slack, not a real disagreement.
+      const potNum = num(potRow(panel));
+      const expectedInclusive = potNum + preservativeDoseGrams(potNum, 1);
+      const snippetNum = num(row(snippet, '≈ Finished product (whole batch)'));
+      if (Math.abs(snippetNum - expectedInclusive) > 1.5) {
+        split.push(`${reading} g: pot ${potRow(panel)} → expected ~${expectedInclusive.toFixed(1)} g, snippet said ${row(snippet, '≈ Finished product (whole batch)')}`);
       }
     }
     // The sweep has to have swept something — a helper that silently found no rows would
     // otherwise pass this test with an empty list.
     expect(checked).toBeGreaterThan(300);
-    expect(split, `${split.length} readings show two masses for one batch`).toEqual([]);
+    expect(split, `${split.length} readings show the snippet basing its dose on a different pot than the panel's`).toEqual([]);
   }, 60000);
 });
 

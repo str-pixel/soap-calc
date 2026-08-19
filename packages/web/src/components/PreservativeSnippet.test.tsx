@@ -86,10 +86,14 @@ test('the dose is seeded with the default and computes grams from the finished m
   render(<Harness finishedGrams={4000} />);
   expect(doseInput().value).toBe('1');
   expect(screen.getByText('Preservative to add')).toBeTruthy();
-  // 1% of 4,000 g finished product
+  // 1% w/w of a 4,000 g basis: dose = 4,000 × 1/99 = 40.40… → 40 g
   expect(screen.getByText('40 g')).toBeTruthy();
   expect(screen.getByText('≈ Finished product (whole batch)')).toBeTruthy();
-  expect(screen.getByText('4,000 g')).toBeTruthy();
+  // The row is the INCLUSIVE figure (basis + dose = 4,000 + 40.40… → 4,040 g), the same
+  // number the panel's own same-named row quotes — one name, one mass (fix 3). The bare
+  // 4,000 g basis is never shown; it stays internal, feeding the dose math only.
+  expect(screen.getByText('4,040 g')).toBeTruthy();
+  expect(screen.queryByText('4,000 g')).toBeNull();
 });
 
 test('the base row names the scope it came from, and the portion scope is a different mass', () => {
