@@ -298,20 +298,25 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(dose).toBeCloseTo(base * 0.01, 0);
   });
 
-  it('an untouched preservative default adds no mass to the bottle — a suggestion, not an ingredient (fix 2)', async () => {
-    // The starter recipe carries the real, legal Suttocide A default (recipe.ts:165-168),
-    // but `preservativeSetByUser` starts false — nobody has chosen it. The panel's own
-    // "≈ Finished product" row stays hidden (no extras on the starter recipe, so basis ===
-    // solution exactly, same as it always has been for an unmodified LS recipe): the row
-    // must not appear just because a default dose exists to compute from.
+  it('the seeded default weighs what it says, chosen or not — one mass under one name', async () => {
+    // The starter recipe carries the real, legal Suttocide A default (recipe.ts:165-168)
+    // with `preservativeSetByUser` still false. Liquid soap is water-based and needs a
+    // preservative, so that seed is the app's RECOMMENDATION and the snippet shows its
+    // grams unconditionally — therefore the mass wiring must count it too. Gating the mass
+    // on the flag once made the panel print 4,000 g beside the snippet's 4,040 g under the
+    // identical name "≈ Finished product"; this pins the correction from both sides.
     const snippet = await openSnippet();
+    const dose = grams(figure(snippet, 'Preservative to add'));
+    expect(dose).toBeGreaterThan(0);
     const dilutionPanel = screen
       .getByRole('heading', { name: 'Dilution' })
       .closest('section') as HTMLElement;
-    expect(within(dilutionPanel).queryByText('≈ Finished product')).toBeNull();
-    // The snippet's own advisory dose still computes — it is not gated on the choice, only
-    // the mass wiring is.
-    expect(grams(figure(snippet, 'Preservative to add'))).toBeGreaterThan(0);
+    // The row now appears for the starter recipe: the dose makes the bottled mass exceed
+    // the chemistry-only solution, which is exactly what that row exists to report.
+    const panelFinished = grams(figure(dilutionPanel, '≈ Finished product'));
+    const snippetFinished = grams(figure(snippet, '≈ Finished product (whole batch)'));
+    expect(panelFinished).toBeGreaterThan(0);
+    expect(panelFinished).toBeCloseTo(snippetFinished, 0);
   });
 
   it('the bottle the maker weighs is the basis plus the dose it was promised, once chosen (spec §3, fix 2 + fix 3)', async () => {
@@ -511,12 +516,11 @@ describe('Whole batch + Gradual: one batch has one finished mass', () => {
     // figure (fix 3: the pot plus its own advisory dose, 1,400 + 14 → 1,414 g), so it is no
     // longer a bare echo of the pot text, but it is still built from the same 1,400 g.
     expect(row(snippet, '≈ Finished product (whole batch)')).toBe('1,414 g');
-    // …and the volume the maker sizes bottles from follows it — but only once the maker has
-    // actually chosen a preservative (fix 2: `preservativeSetByUser`). The starter recipe's
-    // default 1% Suttocide A is an un-chosen suggestion, so it adds no mass here: the plain
-    // 1,359 ml the pot alone gives, not the 1,373 ml the dose would add — see the next test
-    // for the mass actually landing once the maker has chosen.
-    expect(row(panel, '≈ Finished volume')).toBe('1,359 ml');
+    // …and the volume the maker sizes bottles from follows it, dose included: the seeded 1%
+    // Suttocide A is the app's recommendation for a water-based product and weighs what the
+    // snippet says it does, chosen or not — (1,400 + 1,400x1/99) / 1.03 = 1,373 ml, not the
+    // 1,359 ml the pot alone would give.
+    expect(row(panel, '≈ Finished volume')).toBe('1,373 ml');
     // The snippet's OWN advisory dose is unaffected by the flag — it always shows the maker
     // a worked example from the typed %, gated on neither the tier nor the choice: 1,400×1/99
     // ≈ 14 g. It is the mass that bottles that follows the choice, not this figure.

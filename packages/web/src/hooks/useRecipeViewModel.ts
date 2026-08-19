@@ -122,9 +122,9 @@ export type RecipeViewModel = {
    * %. The one figure the ≈ Finished product row and the printed sheet's finished figure
    * quote, and what `lsFinishedVolumeMl` converts — see finishedProductGramsFor. Equals
    * `preservativeDosingBasisGrams` exactly when no preservative is dosed, OR when
-   * `settings.preservativeSetByUser` is false — an un-chosen default is a suggestion, not
-   * an ingredient, and adds no mass here even though the snippet shows a worked-example
-   * dose for it. Null outside LS / before a dilution exists. */
+   * (tier 'none' or 'impossible'). The seeded default counts like any other — it is the
+   * recommendation the snippet already prices on screen. Null outside LS / before a
+   * dilution exists. */
   finishedProductGrams: number | null;
   /** The best-known WHOLE-BATCH paste mass — anhydrousGrams + cookWaterGrams, corrected
    * for an alternative liquid's non-water solids. Feeds PortionDilutionResults' remaining-mode
@@ -800,26 +800,24 @@ export function useRecipeViewModel({
   // preservativeDosingBasisGramsFor for the rule and for why its fallback arm, dead on this
   // path, is still owed to the component-level callers.
   const preservativeDosingBasisGrams = preservativeDosingBasisGramsFor(bottledSolutionGrams, dilution);
-  // The dose itself, gated as the Preservative snippet gates its own figure
-  // (PreservativeSnippet.tsx's `grams` — basis present, tier neither 'none' nor
-  // 'impossible') PLUS `preservativeSetByUser`. That flag is the ruled addition: the three
-  // preservative fields default to a real, legal Suttocide A dose so the snippet always
-  // opens with a complete worked example (recipe.ts:165-168), but a maker who never touched
-  // the picker, the custom name or the dose has not chosen a preservative — it is a
-  // suggestion, not an ingredient, and must add NO mass to what the batch bottles, prints
-  // or prices. The snippet's OWN advisory figure is deliberately unaffected by this flag —
-  // see PreservativeSnippet.tsx's `grams`, computed from the typed dose regardless — this
-  // predicate only gates the MASS WIRING: finishedProductGrams below, and (by differencing
-  // it against preservativeDosingBasisGrams) App's copy for the panel/sheet prop. This is
-  // the one place the whole-batch predicate is evaluated; App never re-tests the tier.
   const preservative = lsPreservativeById(previewSettings.preservativeId);
   const preservativeDoseTier = lsPreservativeDoseTier(
     Number(previewSettings.preservativeDosePct),
     preservative,
   );
+  // The dose itself, gated exactly as the Preservative snippet gates its own figure
+  // (PreservativeSnippet.tsx's `grams` — basis present, tier neither 'none' nor
+  // 'impossible'), so the screen and the mass never disagree about whether a dose exists.
+  // Deliberately NOT gated on preservativeSetByUser. Liquid soap is water-based and needs
+  // a preservative, which is why one is seeded rather than left blank: the default is the
+  // app's recommendation, not a placeholder. A recommendation the maker can see on screen
+  // ("Preservative to add: 40 g") must weigh what it says everywhere — in this mass, on the
+  // printed sheet, in the volume — or the same batch carries two finished masses under one
+  // name depending on which panel you read. Gating this briefly did the opposite: it fixed
+  // the sheet by making the on-screen dose weightless. If a maker wants none, the picker
+  // offers None; silence is not that choice.
   const preservativeDoseGramsValue =
     preservativeDosingBasisGrams !== null &&
-    previewSettings.preservativeSetByUser &&
     preservativeDoseTier !== 'none' &&
     preservativeDoseTier !== 'impossible'
       ? preservativeDoseGrams(preservativeDosingBasisGrams, Number(previewSettings.preservativeDosePct))
