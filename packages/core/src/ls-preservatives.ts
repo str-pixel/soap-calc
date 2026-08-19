@@ -202,6 +202,7 @@ export function lsPreservativeById(id: string): LsPreservative | undefined {
  * ORDER MATTERS. 'none' first, so a half-typed field ('', '-', '0.') raises nothing.
  * Then 'impossible', which outranks 'above-max': more preservative than finished product
  * is not a ceiling breach to warn about, it is a number that is not a dose.
+ * At exactly 100 the w/w formula divides by zero — 100 is not a dose either.
  *
  * There is deliberately no 'above-typical' tier. Every shipped entry's typicalHigh IS its
  * maxPct (pinned by a test in this file's suite), so the band between them is empty and
@@ -212,17 +213,28 @@ export function lsPreservativeDoseTier(
   preservative?: LsPreservative,
 ): LsPreservativeDoseTier {
   if (!Number.isFinite(pct) || pct <= 0) return 'none';
-  if (pct > 100) return 'impossible';
+  if (pct >= 100) return 'impossible';
   if (!preservative) return 'unrated';
   if (pct > preservative.maxPct) return 'above-max';
   if (pct < preservative.typicalPctRange[0]) return 'below-typical';
   return 'typical';
 }
 
-/** Grams of preservative (as supplied) for a finished-product mass at a % w/w dose.
- * Non-finite or negative inputs yield 0 — a bench figure must never print NaN. */
-export function preservativeDoseGrams(finishedGrams: number, pct: number): number {
-  if (!Number.isFinite(finishedGrams) || finishedGrams <= 0) return 0;
-  if (!Number.isFinite(pct) || pct <= 0) return 0;
-  return (finishedGrams * pct) / 100;
+/** Grams of preservative (as supplied) for a preservative-free dosing basis at a % w/w dose
+ * of the finished product *including the preservative*.
+ *
+ * The typed % is true of the bottle — the finished liquid including the dose itself —
+ * not of the liquid before dosing. The parameter is the preservative-FREE dosing basis.
+ * Algebraically: dose = pct% of (basis + dose), which rearranges to:
+ *   dose = basis × pct / (100 − pct)
+ *
+ * Cite: spec §3, decision 5.
+ *
+ * Non-finite or negative inputs yield 0; pct >= 100 yields 0 (the formula diverges at
+ * 100 — 100% can never be a dose, as the dose itself must have mass). A bench figure
+ * must never print NaN. */
+export function preservativeDoseGrams(basisGrams: number, pct: number): number {
+  if (!Number.isFinite(basisGrams) || basisGrams <= 0) return 0;
+  if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) return 0;
+  return (basisGrams * pct) / (100 - pct);
 }
