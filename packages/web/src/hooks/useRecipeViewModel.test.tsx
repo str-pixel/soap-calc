@@ -256,13 +256,20 @@ test('bottledSolutionGrams counts additive grams on top of the dilution solution
   );
   expect(vm.dilution).not.toBeNull();
   expect(vm.bottledSolutionGrams).toBeCloseTo(vm.dilution.solutionGrams + 10);
-  // …and finishedProductGrams is that same figure, never the bare solution: it is the one
-  // the ≈ Finished product row, the printed sheet and the preservative dose all read, so a
-  // fall-through to solutionGrams here would dose 4,000 g of a 4,010 g bottle.
-  expect(vm.finishedProductGrams).toBe(vm.bottledSolutionGrams);
+  // …and preservativeDosingBasisGrams is that same figure, never the bare solution: it is
+  // the preservative-free mass the ≈ Finished product row and the printed sheet's dosing
+  // both start from, so a fall-through to solutionGrams here would size a 4,000 g basis for
+  // a 4,010 g bottle.
+  expect(vm.preservativeDosingBasisGrams).toBe(vm.bottledSolutionGrams);
+  // …and finishedProductGrams (spec §3) is THAT basis plus the dose itself — the starter
+  // recipe carries the default 1% Suttocide A dose, computed w/w as basis × 1/99 — never
+  // the bare basis, or the ≈ Finished product row and lsFinishedVolumeMl would under-report
+  // what the bottle actually weighs by the dose that goes into it.
+  expect(vm.finishedProductGrams).toBeCloseTo(vm.bottledSolutionGrams + vm.bottledSolutionGrams / 99);
+  expect(vm.finishedProductGrams).toBeGreaterThan(vm.bottledSolutionGrams);
 });
 
-test('finishedProductGrams exists exactly when a dilution does — the ?? fallback is unreachable here', () => {
+test('finishedProductGrams and preservativeDosingBasisGrams exist exactly when a dilution does — the ?? fallback is unreachable here', () => {
   // The resolver's second arm (dilution.solutionGrams) is kept for component-level callers
   // that pass a dilution and no bottled figure. On the view-model path it cannot fire:
   // bottledSolutionGrams is computed as `dilution && result ? … : null`, and dilution is
@@ -272,12 +279,17 @@ test('finishedProductGrams exists exactly when a dilution does — the ?? fallba
   probe((v) => { ls = v; }, { lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
   expect(ls.dilution).not.toBeNull();
   expect(ls.bottledSolutionGrams).not.toBeNull();
-  expect(ls.finishedProductGrams).toBe(ls.bottledSolutionGrams);
+  expect(ls.preservativeDosingBasisGrams).toBe(ls.bottledSolutionGrams);
+  // finishedProductGrams (spec §3) is the basis plus the default 1% Suttocide A dose (w/w:
+  // basis × 1/99) — strictly greater than the basis, never the basis itself.
+  expect(ls.finishedProductGrams).toBeCloseTo(ls.bottledSolutionGrams + ls.bottledSolutionGrams / 99);
+  expect(ls.finishedProductGrams).toBeGreaterThan(ls.bottledSolutionGrams);
 
   let cp: any;
   probe((v) => { cp = v; }, {}, 'cp');
   expect(cp.dilution).toBeNull();
   expect(cp.bottledSolutionGrams).toBeNull();
+  expect(cp.preservativeDosingBasisGrams).toBeNull();
   expect(cp.finishedProductGrams).toBeNull();
 });
 

@@ -152,7 +152,9 @@ test('a dose above an EU ceiling is NOT clamped — the alert names the EU, the 
   const alert = screen.getByRole('alert');
   expect(alert.textContent).toContain('1%');
   expect(alert.textContent).toContain('EU legal maximum');
-  expect(screen.getByText('80 g')).toBeTruthy();   // 2% of 4,000 g — the typed dose
+  // 2% w/w of a 4,000 g basis: dose = basis × pct/(100−pct) = 4,000 × 2/98 = 81.63… → 82 g
+  // (spec §3, decision 5 — the typed % is true of the bottle, not of the basis alone).
+  expect(screen.getByText('82 g')).toBeTruthy();
   expect(screen.queryByText('40 g')).toBeNull();   // never the old clamped 1%
 });
 
@@ -279,7 +281,8 @@ test('a custom dose still computes, and still refuses the impossible', () => {
   render(<Harness finishedGrams={4000} />);
   fireEvent.change(picker(), { target: { value: '' } });
   fireEvent.change(doseInput(), { target: { value: '1.5' } });
-  expect(screen.getByText('60 g')).toBeTruthy();      // 1.5% of 4,000 g
+  // 1.5% w/w of a 4,000 g basis: dose = 4,000 × 1.5/98.5 = 60.91… → 61 g (spec §3).
+  expect(screen.getByText('61 g')).toBeTruthy();
   expect(screen.queryByRole('alert')).toBeNull();     // no ceiling to breach
   fireEvent.change(doseInput(), { target: { value: '150' } });
   expect(screen.getByRole('alert').textContent).toContain('100% or less');

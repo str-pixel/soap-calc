@@ -8,11 +8,14 @@ import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
 type PreservativeSnippetProps = {
-  /** The finished, ready-for-use mass the dose is a % of — THE MASS OF WHAT THE MAKER IS
-   * ACTUALLY MAKING, which is whatever the Dilution panel's scope toggle says it is. In
-   * Whole batch that is the batch's finished product (lib/calculateAdditives'
-   * finishedProductGramsFor, the same figure the panel's own row quotes); in Custom amount
-   * it is the PORTION's own finished solution. It is emphatically NOT always the batch:
+  /** The PRESERVATIVE-FREE mass the dose is a % of — THE MASS OF WHAT THE MAKER IS ACTUALLY
+   * MAKING, which is whatever the Dilution panel's scope toggle says it is, before the dose
+   * itself is added in. In Whole batch that is the batch's own dosing basis
+   * (lib/calculateAdditives' preservativeDosingBasisGramsFor) — deliberately NOT the figure
+   * the panel's own ≈ Finished product row quotes, which is this basis PLUS the dose
+   * (finishedProductGramsFor) and would double-count if fed back in here; in Custom amount
+   * it is the PORTION's own finished solution, likewise preservative-free. It is emphatically
+   * NOT always the batch:
    * this prop used to be handed the batch's mass in both scopes, so a 250 ml draw off a
    * 4 kg batch was told to weigh in the batch's 40 g of Suttocide — about 16% w/w in that
    * bottle, sixteen times the EU ceiling. App resolves it; `basisScope` says which of the

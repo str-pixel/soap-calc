@@ -20,7 +20,7 @@ import {
   formatBatchSheetProperty,
   formatBatchWeight,
 } from '../lib/batchSheet';
-import { preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
+import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
@@ -37,11 +37,24 @@ import {
 
 type BatchSheetProps = {
   data: BatchSheetData | null;
+  /** The whole-batch preservative dose, in grams — App's own copy of the same figure the
+   * on-screen Preservative snippet already resolved, so the sheet's finished-product row
+   * can quote the mass the bottle actually weighs (spec §3: dosing basis + the dose) rather
+   * than the preservative-free basis alone. Defaulted to 0 so every caller that predates
+   * the dose split — including this file's own tests, which build `data` directly and never
+   * pass this prop — keeps seeing exactly the basis it always has:
+   * `finishedProductGramsFor(basis, 0) === basis`. Destructured under an alias below: the
+   * name matches core's `preservativeDoseGrams` function, already imported for the printed
+   * dose row's own (basis-only, unaffected) computation. */
+  preservativeDoseGrams?: number;
 };
 
 // memo: `data` is a stable view-model memo output; this print-only tree is large,
 // so skip re-rendering it on unrelated keystrokes.
-export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
+export const BatchSheet = memo(function BatchSheet({
+  data,
+  preservativeDoseGrams: injectedPreservativeDoseGrams = 0,
+}: BatchSheetProps) {
   const [printedAt, setPrintedAt] = useState(() => new Date().toLocaleString());
   // The sheet's data is memoized long before the user hits Print, so a baked-in
   // timestamp would show generation time. beforeprint fires ahead of the print
@@ -167,12 +180,21 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // bottled, not only the chemistry-only solution above: bottledSolutionGrams adds in
   // additives, append-mode post-cook oil, and split-liquid solids, and is bigger than
   // dilution.solutionGrams whenever any of those are present (mirrors DilutionPanel's
-  // own bottledGrams/showBottledRow). lsFinishedVolumeMl is the same core helper the
-  // on-screen panel uses — never recomputed here.
+  // own preservativeDosingBasis/bottledGrams). lsFinishedVolumeMl is the same core helper
+  // the on-screen panel uses — never recomputed here.
   // The shared resolution (lib/calculateAdditives), not a hand-written ?? chain: the sheet
-  // is the page carried to the bench, so its finished-product figure must be the one the
-  // screen quotes — and the one the preservative dose is a percentage of.
-  const bottledGrams = preservativeDosingBasisGramsFor(bottledSolutionGrams, dilution);
+  // is the page carried to the bench, so its dosing basis must be the one the screen
+  // quotes — and the one the preservative dose is a percentage of. Preservative-free; see
+  // bottledGrams below for what the finished-product row and volume actually render.
+  const preservativeDosingBasisGrams = preservativeDosingBasisGramsFor(bottledSolutionGrams, dilution);
+  // What the bottle actually weighs (spec §3): the basis plus the dose App resolved for it
+  // — the same figure the on-screen panel's own bottledGrams now renders, so sheet and
+  // panel cannot drift. Equals the basis exactly when preservativeDoseGrams is 0 (its
+  // default), so every caller that predates the dose split sees byte-identical figures.
+  const bottledGrams = finishedProductGramsFor(
+    preservativeDosingBasisGrams,
+    injectedPreservativeDoseGrams,
+  );
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
@@ -180,9 +202,9 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // THE SHEET IS A BATCH DOCUMENT. It prints the batch's dose and says so — never the
   // Dilution panel's Custom amount portion. `dilutionScope` is session-only state that no
   // recipe file records, so a sheet that mirrored it would print one mass before a reload
-  // and another after. bottledGrams is finishedProductGramsFor(...), the same expression
-  // behind vm.finishedProductGrams that App hands the snippet in batch scope, so sheet and
-  // panel cannot drift.
+  // and another after. preservativeDosingBasisGrams is preservativeDosingBasisGramsFor(...),
+  // the same expression behind vm.preservativeDosingBasisGrams that App hands the snippet
+  // in batch scope, so sheet, panel and snippet cannot drift on what the dose is a % of.
   const preservative = lsPreservativeById(settings.preservativeId);
   const preservativeDosePct = Number(settings.preservativeDosePct);
   const preservativeTier = lsPreservativeDoseTier(preservativeDosePct, preservative);
@@ -248,11 +270,11 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
       ? gradualPasteBasisGrams + gradualWaterRecordedGrams
       : null;
   const preservativeGrams =
-    bottledGrams !== null &&
+    preservativeDosingBasisGrams !== null &&
     settings.preservativeSetByUser &&
     preservativeTier !== 'none' &&
     preservativeTier !== 'impossible'
-      ? preservativeDoseGrams(bottledGrams, preservativeDosePct)
+      ? preservativeDoseGrams(preservativeDosingBasisGrams, preservativeDosePct)
       : null;
   // Named locals so the row's <dd> isn't packing six things and two inline ternaries.
   // Both always end their own sentence with a period — the base note used to end bare

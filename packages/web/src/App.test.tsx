@@ -283,14 +283,37 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     const dilutionPanel = screen
       .getByRole('heading', { name: 'Dilution' })
       .closest('section') as HTMLElement;
-    // The starter recipe has no additives, so the panel shows no separate ≈ Finished
-    // product row — its Finished solution row IS the finished product, and that is the
-    // number the snippet must be dosing.
+    // The starter recipe has no additives, so bottledSolutionGrams === dilution.solutionGrams
+    // — the snippet's dosing BASIS still matches the panel's chemistry-only "Finished
+    // solution" row exactly (neither is touched by the inclusive-figure wiring below; see
+    // the next test for the row that DOES change).
     const solution = grams(
       within(dilutionPanel).getByText('Finished solution').nextElementSibling!.textContent!,
     );
     expect(base).toBeCloseTo(solution, 0);
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(base * 0.01, 0);
+  });
+
+  it('the bottle the maker weighs is the basis plus the dose it was promised (spec §3)', async () => {
+    // THE SAFETY PIN for the inclusive figure. Before this wiring, `finishedGrams` fed to
+    // the panel's own row was the preservative-free basis, so a maker reading "≈ Finished
+    // product" and packaging to it left the dose's own mass unaccounted for — a bottle
+    // that in fact weighs base + dose, labelled as though it weighed base alone. The panel's
+    // row was ALSO hidden for the starter recipe (no extras, so basis === solution exactly);
+    // the default 1% Suttocide A dose alone is now enough to show it (spec §3's accepted
+    // consequence: the row is effectively always on for an LS recipe carrying a dose).
+    const snippet = await openSnippet();
+    const base = grams(figure(snippet, '≈ Finished product (whole batch)'));
+    const dose = grams(figure(snippet, 'Preservative to add'));
+    const dilutionPanel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    const finishedProductRow = within(dilutionPanel).getByText('≈ Finished product');
+    const finished = grams(finishedProductRow.nextElementSibling!.textContent!);
+    expect(finished).toBeCloseTo(base + dose, 1);
+    // Exact w/w: the typed 1% is true of the BOTTLE (base + dose), never of the base alone
+    // — dose / finished is exactly 0.01, not the ~0.0099 a naive basis-only % would give.
+    expect(dose / finished).toBeCloseTo(0.01, 4);
   });
 
   it('a Custom amount larger than the batch names itself the whole batch', async () => {
@@ -452,11 +475,14 @@ describe('Whole batch + Gradual: one batch has one finished mass', () => {
     // ONE mass, on one screen: what the panel says is in the pot is what the snippet says it
     // is dosing. The 1,666 g computed pot is what this printed before.
     expect(row(snippet, '≈ Finished product (whole batch)')).toBe(potRow(panel));
-    // …and the volume the maker sizes bottles from follows it: 1,400 / 1.03 = 1,359 ml, not
-    // the 1,618 ml the computed pot implies.
-    expect(row(panel, '≈ Finished volume')).toBe('1,359 ml');
-    // The dose is the harm. At the default 1% of finished product that is 14 g; against the
-    // computed pot it was 17 g — 1.19% of the batch actually in front of the maker.
+    // …and the volume the maker sizes bottles from follows it: the finished mass now
+    // INCLUDES the preservative dose (spec §3) — (1,400 + 1,400×1/99) / 1.03 ≈ 1,373 ml —
+    // not the plain 1,359 ml the pot alone would give, and not the 1,618 ml the computed
+    // pot implies.
+    expect(row(panel, '≈ Finished volume')).toBe('1,373 ml');
+    // The dose is the harm. At the default 1% w/w of finished product that is 1,400×1/99 ≈
+    // 14 g; against the computed pot it was 17 g — 1.19% of the batch actually in front of
+    // the maker.
     expect(num(row(snippet, 'Preservative to add'))).toBeCloseTo(14, 0);
   });
 
