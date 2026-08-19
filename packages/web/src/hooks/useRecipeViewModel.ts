@@ -12,6 +12,7 @@ import {
   preservativeDosingBasisGramsFor,
   splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
+import { resolveDilution } from '../lib/resolveDilution';
 import type { CureEstimate } from '../lib/cureEstimate';
 import { ls30MinPackagePresent } from '../lib/ls30Min';
 import { computeWorkability } from '../lib/workabilityInput';
@@ -464,6 +465,25 @@ export function useRecipeViewModel({
     const splitLiquidSolidsGrams = Math.max(0, (splitLiquidGrams ?? 0) - splitLiquidPasteWater);
     return dilution.anhydrousGrams + cookWaterGrams + splitLiquidSolidsGrams;
   }, [dilution, cookWaterGrams, splitLiquidGrams, splitLiquidPasteWater]);
+  // The spec §1 plan-else-record resolution (docs/superpowers/specs/2026-08-19-dilution-plan-
+  // record-design.md §1) — computed here, now that wholeBatchPasteGrams exists, so the record
+  // arm's pot (weighedOrComputedPotGramsFor) can see the same corrected basis every other
+  // dilution consumer does. PHASE 1: only `.plan` is exposed below (the vm's `dilution` field),
+  // which is the identical `dilution` object reference — byte-identical behaviour. `.governs`
+  // and `.record` are computed in full but reach nothing user-visible yet; Phase 2a is what
+  // flips consumers onto the resolved arm.
+  const resolvedDilution = useMemo(
+    () =>
+      resolveDilution({
+        dilution,
+        gradualWaterGrams: settings.gradualWaterGrams,
+        anhydrousGrams: dilution?.anhydrousGrams ?? 0,
+        wholeBatchPasteGrams,
+        cookWaterGrams,
+        measuredPasteGrams,
+      }),
+    [dilution, settings.gradualWaterGrams, wholeBatchPasteGrams, cookWaterGrams, measuredPasteGrams],
+  );
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
   // survives. Sized against the base (saponification) lye, then folded into the result so
   // every downstream surface — concentration, steps, sheet — quotes the adjusted figures.
@@ -986,7 +1006,10 @@ export function useRecipeViewModel({
     fattyAcids,
     insights,
     lyeLabel,
-    dilution,
+    // resolvedDilution.plan is the identical `dilution` object reference (Phase 1 passthrough
+    // — see resolveDilution's own doc comment). Byte-identical behaviour until Phase 2a flips
+    // this to the resolved arm.
+    dilution: resolvedDilution.plan,
     neutralization,
     pcsfIsExtra,
     extrasGrams,
