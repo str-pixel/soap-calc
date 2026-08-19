@@ -74,9 +74,21 @@ Research (verified against the source and the code at `7d17e9f`):
   (e.g. `33.85`) displays as-is with no preset highlighted — expected, not a bug.
 - *Record row:* "Water added so far (g)" + readout ("finished so far", derived %).
 
+While the record governs, the results grid follows it: "Finished so far" and the
+inclusive ≈ Finished product / volume rows are record figures; the plan's
+"Dilution water to add" / "Finished solution" rows stay rendered **labelled as plan**
+(the batch-scope twin of the portion rule below) — three masses may be on screen only
+because each carries its name.
+
 **Custom amount:** the same two-row shape — plan sizing (amount to make → paste to weigh /
 water to add; today's `lsPartialDilution` math) and the jar record (paste weighed out +
-water added). The plan grid stays rendered beside a filled jar record, labelled as plan;
+water added). **The batch record participates nowhere in portion scope** — sizing, jar
+share basis, dose, ceiling and uses are jar-else-plan, never jar-else-batch-record
+(decision 8's "records lead wherever they exist" is scoped: each record leads in its own
+scope). The portion-scope ceiling/uses read the jar's resolved % when the jar governs,
+with the record-arm wording from §4. The jar's anhydrous share remains a share of the
+paste pot, as today — a live batch record does not re-base it; the two records describe
+alternative framings and only one governs per scope. The plan grid stays rendered beside a filled jar record, labelled as plan;
 the jar governs only dose/finished figures. Precedence in portion scope: jar record with
 both figures → jar; else plan sizing. The old jar echo of the "saved target" is replaced
 by copy that names the plan % as *the plan* (the reassurance framing dies with the
@@ -94,7 +106,14 @@ mode-specific notes), both write-back effects and their touched/not-applied/clam
 Every consumer reads resolved figures. Specifically:
 
 - `vm.dilution` becomes the plan arm; `computeBottledSolutionGrams` gains an explicit
-  record arm: `pot + recordWater + extras`.
+  record arm: `pot + recordWater + (extras − the split-liquid mass the pot already
+  holds)`. The record-arm pot (weighed reading or solids-aware corrected basis) already
+  contains a split liquid's water AND solids, while `extrasGrams` carries the liquid's
+  whole mass — the naive `pot + recordWater + extras` double-counts it (verified:
+  4,700 g vs the correct 4,400 g on a 300 g-glycerin recipe; this generalizes
+  `splitLiquidInBaseGrams`, `calculateAdditives.ts:257-259`, and is the same
+  priced-a-solids'-worth-heavy bug that function's doc records fixing). Water-only
+  subtraction on the bare anhydrous+cook fallback pot.
 - The two % readers that bypass `dilution` today — `lsDilutionUsesFor` and the solubility
   ceiling check (`DilutionPanel.tsx:409, 2370`) — read the resolved %.
 - `overDilutionCertain` and every other plan-claim is gated on plan-governs.
@@ -122,13 +141,30 @@ flags (this file has paid five times). Conversion table:
 |---|---|
 | `exceedsSolutionAlert` excludes ratio/gradual modes | renders only when plan governs |
 | `pasteAlreadyPastTarget` excludes gradual | plan-governs only |
-| solubility ceiling reads raw setting | reads resolved %; suppression structure unchanged |
+| solubility ceiling reads raw setting | reads resolved %; suppression structure unchanged. **Record-arm wording changes**: it may not say "this target" (the record arm has no target) — it describes the batch: "The batch so far is at N% — above what any recipe fully dissolves; keep adding water." |
 | BatchSheet's three verdict notes lean on write-back having aligned target≈record | gated on plan-governs |
 | gradual/ratio "not applied yet" notes | deleted (nothing to apply) |
 
+**Interpolation rule:** every % interpolated into record-governed copy is the resolved %.
+Two sites today read `dilution.soapConcentrationPercent` for caption text
+(`DilutionPanel.tsx:2391, 2394`) while the uses matcher (`:409`) will read the resolved
+figure — implemented literally, that prints "No common use calls for 30%" against a
+46.2% match. Both must read the resolved %.
+
+**Plan figures while the record governs:** the plan % input and any plan rows kept by
+§2 render with an explicit plan label; when the plan is unreachable (pot > plan solution
+or `targetExceedsPaste`) a **non-alert, plan-labelled caption** accompanies the plan
+figures — gating the plan-claims must not resurrect a bare, unexplained "0 g". The
+sheet's "That record makes … is what the saved N% target implies instead" contrast copy
+survives deliberately — it is a labelled plan-vs-record comparison, not the §2
+"reassurance framing".
+
 Evidence bar: the alert matrix (fixtures × record-presence × readings × scope × liquid
-states) captured before/after; changed cells must be exactly the record-semantics cells;
-zero same-claim doubling anywhere.
+states) captured before/after; changed cells must be exactly (a) the record-semantics
+cells and (b) today's mode-suppressed no-record cells that legitimately gain plan-claim
+alerts — mode is not an axis of the after-matrix, so the projection is: collapse today's
+three modes to record-present/absent by the mode's own governing figure, then compare.
+Zero same-claim doubling anywhere.
 
 Accepted trade, written down: with records leading, a mis-tared crockpot reading plus a
 record rescales finished mass and the capped dose with only the solids floor and the
