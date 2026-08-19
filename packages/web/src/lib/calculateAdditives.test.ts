@@ -4,6 +4,7 @@ import {
   computePostCookSuperfat,
   computeRecipeAdditives,
   finishedProductGramsFor,
+  preservativeDosingBasisGramsFor,
   splitLiquidWaterFraction,
   splitLiquidWaterInputState,
 } from './calculateAdditives';
@@ -291,7 +292,7 @@ describe('computeBottledSolutionGrams', () => {
   });
 });
 
-describe('finishedProductGramsFor', () => {
+describe('preservativeDosingBasisGramsFor', () => {
   // One rule, three readers (the Dilution panel's ≈ Finished product row, the printed
   // sheet's, and the Preservative snippet's dose base) — it used to be the same `??` chain
   // written out three times, and one of those readers multiplies it by a % with a legal
@@ -307,26 +308,43 @@ describe('finishedProductGramsFor', () => {
   };
 
   it('prefers the bottled figure, which counts the extras that ride into the bottle', () => {
-    expect(finishedProductGramsFor(4120, dilution)).toBe(4120);
+    expect(preservativeDosingBasisGramsFor(4120, dilution)).toBe(4120);
   });
 
   it('falls back to the solution for a caller that has no bottled figure', () => {
     // Unreachable from the view model (bottledSolutionGrams is null exactly when dilution
     // is) but live for the component-level callers that pass a dilution and nothing else —
     // both DilutionPanel and BatchSheet default the bottled prop to null.
-    expect(finishedProductGramsFor(null, dilution)).toBe(4000);
-    expect(finishedProductGramsFor(undefined, dilution)).toBe(4000);
+    expect(preservativeDosingBasisGramsFor(null, dilution)).toBe(4000);
+    expect(preservativeDosingBasisGramsFor(undefined, dilution)).toBe(4000);
   });
 
   it('is null with neither — nothing to dose or to convert to a volume', () => {
-    expect(finishedProductGramsFor(null, null)).toBeNull();
-    expect(finishedProductGramsFor(undefined, undefined)).toBeNull();
+    expect(preservativeDosingBasisGramsFor(null, null)).toBeNull();
+    expect(preservativeDosingBasisGramsFor(undefined, undefined)).toBeNull();
   });
 
   it('keeps a real zero rather than falling through it', () => {
     // ?? and not ||: a 0 g bottled figure is an answer, and falling through to a nonzero
     // solution would quote a mass the batch does not have.
-    expect(finishedProductGramsFor(0, dilution)).toBe(0);
+    expect(preservativeDosingBasisGramsFor(0, dilution)).toBe(0);
+  });
+});
+
+describe('finishedProductGramsFor', () => {
+  // The inclusive figure (spec §3): the dosing basis plus whatever preservative is dosed
+  // against it. Equals the basis exactly when there is no preservative dose, so recipes
+  // without one see no change from this split.
+  it('adds the preservative dose to the dosing basis', () => {
+    expect(finishedProductGramsFor(2400, 12.06)).toBeCloseTo(2412.06, 2);
+  });
+
+  it('is null when the dosing basis is null — nothing to add to', () => {
+    expect(finishedProductGramsFor(null, 12.06)).toBeNull();
+  });
+
+  it('equals the dosing basis exactly when no preservative is dosed', () => {
+    expect(finishedProductGramsFor(2400, 0)).toBe(2400);
   });
 });
 

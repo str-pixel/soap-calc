@@ -260,7 +260,7 @@ export function computeBottledSolutionGrams(input: {
 }
 
 /**
- * The finished, ready-for-use mass of the WHOLE batch: the bottled figure when there is
+ * The preservative-free dosing basis of the WHOLE batch: the bottled figure when there is
  * one, else the dilution's own solution. Three surfaces quote this number — the Dilution
  * panel's ≈ Finished product row, the printed sheet's, and the Preservative snippet's
  * batch-scope dose base — and they wrote the same `??` chain out three times. It lives here
@@ -286,11 +286,22 @@ export function computeBottledSolutionGrams(input: {
  * line as a preservative (there is no preservative entry at all — such a line is always a
  * free-text custom one), so this function cannot tell which grams are the double count.
  */
-export function finishedProductGramsFor(
+export function preservativeDosingBasisGramsFor(
   bottledSolutionGrams: number | null | undefined,
   dilution: Pick<DilutionResult, 'solutionGrams'> | null | undefined,
 ): number | null {
   return bottledSolutionGrams ?? dilution?.solutionGrams ?? null;
+}
+
+/** The finished, ready-for-use mass INCLUDING the preservative (spec §3): what the
+ * bottle weighs and what the volume row converts. Equals the dosing basis exactly when
+ * no preservative is dosed, so recipes without one see no change. */
+export function finishedProductGramsFor(
+  dosingBasisGrams: number | null,
+  preservativeDoseGrams: number,
+): number | null {
+  if (dosingBasisGrams === null) return null;
+  return dosingBasisGrams + Math.max(0, preservativeDoseGrams);
 }
 
 /** The post-cook superfat: one or more oils added after cook/dilution with no lye effect.

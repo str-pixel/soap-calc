@@ -8,7 +8,7 @@ import {
   computeExtrasGrams,
   computePostCookSuperfat,
   computeRecipeAdditives,
-  finishedProductGramsFor,
+  preservativeDosingBasisGramsFor,
   splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
 import type { CureEstimate } from '../lib/cureEstimate';
@@ -768,7 +768,7 @@ export function useRecipeViewModel({
   // The same mass under one name for every surface that quotes it — see
   // finishedProductGramsFor for the rule and for why its fallback arm, dead on this path,
   // is still owed to the component-level callers.
-  const finishedProductGrams = finishedProductGramsFor(bottledSolutionGrams, dilution);
+  const finishedProductGrams = preservativeDosingBasisGramsFor(bottledSolutionGrams, dilution);
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
   // see normalizeSettingsWithinProcess) before resolving the profile.
   const profile = isProcessVariantId(settings.processVariant)

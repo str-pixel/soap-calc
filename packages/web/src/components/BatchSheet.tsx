@@ -20,7 +20,7 @@ import {
   formatBatchSheetProperty,
   formatBatchWeight,
 } from '../lib/batchSheet';
-import { finishedProductGramsFor } from '../lib/calculateAdditives';
+import { preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
@@ -172,7 +172,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // The shared resolution (lib/calculateAdditives), not a hand-written ?? chain: the sheet
   // is the page carried to the bench, so its finished-product figure must be the one the
   // screen quotes — and the one the preservative dose is a percentage of.
-  const bottledGrams = finishedProductGramsFor(bottledSolutionGrams, dilution);
+  const bottledGrams = preservativeDosingBasisGramsFor(bottledSolutionGrams, dilution);
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
   const showBottledRow =
     dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
