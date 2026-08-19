@@ -47,9 +47,17 @@ Research (verified against the source and the code at `7d17e9f`):
 - **Record:** `settings.gradualWaterGrams` (batch); session `portionPasteGrams` /
   `portionWaterGrams` (jar). Code never derives state from them into the plan.
 - **Resolution rule** (one function, new, in `packages/web/src/lib/`):
-  a record parseable and > 0 (`parseGradualWaterRecordGrams`; blank ≠ zero) → record arm;
-  else plan arm. Record arm's pot is `weighedOrComputedPotGramsFor` (target-independent).
+  a record *present* → record arm; else plan arm. "Present" follows
+  `parseGradualWaterRecordGrams`'s documented contract exactly: non-blank and ≥ 0 —
+  **zero is a record** (the pot before any water is Gradual's own starting entry, LS:1531).
+  A 0 g record therefore takes the record arm: the batch that exists is the undiluted
+  paste, and every figure — including the dose basis — describes it. The sheet's record
+  rows print whatever record the rule reads; they can never disagree. The parser is
+  unchanged. Record arm's pot is `weighedOrComputedPotGramsFor` (target-independent).
   The derived % readout is unclamped and display-only.
+  The portion jar's precedence (jar-with-both-figures → jar) lives *inside* this one
+  function as a scope parameter — decision 2's "one rule feeds every consumer" has one
+  reading and one home.
 - No schema change: no new fields, `RECIPE_FILE_VERSION` stays 2, exports round-trip
   against old builds unchanged.
 
@@ -58,7 +66,9 @@ Research (verified against the source and the code at `7d17e9f`):
 **Whole batch:**
 
 - *Plan row:* target % input; presets 1:1/2:1/2.5:1/3:1 as **one-shot setters** — a click
-  computes `anhydrous/(pot×(1+r))·100` from the pot at click time, rounded to 1 dp,
+  computes `anhydrous/(pot×(1+r))·100` from the pot at click time — the pot being
+  `weighedOrComputedPotGramsFor` (the panel's `potBasis`), the same pot ratio mode counts
+  from today — rounded to 1 dp,
   clamped [1,99], written into the % field; it does not track later pot changes (the
   caption pattern "2:1 → 28.6%" says what it did). A stale gradual-written plan value
   (e.g. `33.85`) displays as-is with no preset highlighted — expected, not a bug.
@@ -95,8 +105,13 @@ Every consumer reads resolved figures. Specifically:
   (the formula diverges at 100); the snippet's over-100 copy changes accordingly.
   Consequence, accepted: the bottled row is effectively always shown for LS recipes with
   a preservative dose.
-- **Additive `'solution'` dosing** uses the resolved solution (decision 7). Additive
-  grams flow into batch weight and pricing as today.
+- **Additive `'solution'` dosing** uses the resolved *solution*, defined extras-free and
+  preservative-free in both arms (decision 7): plan arm = `dilution.solutionGrams`
+  (today's basis); record arm = pot + record water, **extras excluded**. The bottled
+  figure (which includes extras) is explicitly NOT the basis — additive grams are extras,
+  and dosing against a figure containing them is the circular double-count
+  `calculateAdditives.ts:279-287` already warns about. Additive grams flow into batch
+  weight and pricing as today.
 
 ## 4. Alert conversion (the correctness-critical part)
 
@@ -130,19 +145,28 @@ of this today).
   `correctedPotGramsFor`, the `gradualWaterGrams` threading through
   `correctedDilutionWaterGrams` / `computeBottledSolutionGrams`.
 - Remaining-mode code, **UI and core**: `MEASURED_PASTE_IS_REMAINING`,
-  `exceedsRemainingCeiling`, all `isRemaining` params, and `lsPartialDilution`'s
-  remaining branch (`ls-yield.ts:129-157, 204-258`) with its ~10 tests.
+  `exceedsRemainingCeiling`, all `isRemaining` params, and in `ls-yield.ts` the
+  `measuredPasteIsRemaining` field (`:130-140`) plus the remaining arms inside
+  `:204-258` (~9 tests). Surviving explicitly: `measuredPasteGrams`,
+  `wholeBatchPasteGrams`, the unmeasured-pot `pasteGrams` block (`:228-251`), and
+  `lsPotAnhydrousShare` with its 5 tests (the weighed-jar caller keeps it live).
 - `LS_SHAMPOO_NOT_RECOMMENDED` — its rationale (deliberate absence of a shampoo row)
   moves into a comment on `LS_DILUTION_TARGETS`.
 
 ## 6. Phases
 
-1. **Foundations, behaviour-preserving except the dose:** preservative w/w + the
-   dosing/display figure split + `impossible` tier guard; the resolution function
-   extracted and wired to reproduce current behaviour exactly (plan arm only); test-suite
-   prep. The only intended figure changes are the w/w dose deltas.
-2. **The atom:** surface swap, write-back removal, record-first cutover, alert
-   conversion, portion mirror. One commit series, one matrix, one review.
+1. **Foundations:** preservative w/w + the dosing/display figure split + `impossible`
+   tier guard; the resolution function extracted and wired to reproduce current behaviour
+   exactly (plan arm only); test-suite prep. Intended deltas, all dose-driven but each a
+   distinct visible change: the dose grams themselves, the ≈ Finished product row and the
+   sheet's finished figure (now inclusive), `lsFinishedVolumeMl`, and bottled-row
+   visibility (effectively always-on with a dose). Everything else byte-identical.
+2. **The atom, with one legal internal seam.** The forbidden boundary (rule cut over
+   while write-back lives) exists only in batch scope — the jar never had a write-back.
+   So: **2a** (atomic): batch-scope surface swap, write-back removal, record-first
+   cutover, batch + sheet alert conversion — one commit series, one matrix. **2b**:
+   portion mirror (two-row shape, jar precedence, plan-beside-jar labelling, portion
+   alert cells) — reads the phase-1 function, crosses no forbidden line.
 3. **Deletions** (section 5) + test retirements.
 
 Each phase gates on `npm test` + e2e and gets an adversarial review. Phase boundaries
@@ -154,11 +178,14 @@ cut anywhere else (stress-review, Surface 8).
 - Blast radius (measured by describe-block reading): retire ~85–105 (mode mechanics,
   write-back, restore, widening, remaining) with an explicit list; rewrite ~90–110
   (surviving claims reworded; RED both directions each); ~180–200 untouched.
-- New: resolution-rule unit tests; w/w dose tests incl. `pct >= 100`; record-leads matrix
-  cells; portion plan-beside-jar labelling; pinned-gram updates
-  (`ls-preservatives.test.ts:104-118` figures become 10.10 / 20.10 etc.).
-- e2e: dose-linearity and gradual-reload specs expected to survive; the
-  `finished×0.01` comparison must be re-verified against the inclusive figure.
+- New: resolution-rule unit tests (incl. the zero-record rule); w/w dose tests incl.
+  `pct >= 100`; record-leads matrix cells; portion plan-beside-jar labelling;
+  pinned-gram updates (`ls-preservatives.test.ts:104-118` figures become 10.10 / 20.10;
+  `App.test.tsx:280-294`'s finished≈solution equality and dose≈1%×base both break in
+  phase 1 and are rewritten against the split figures).
+- e2e: the two gradual specs' *claims* survive but their scripts drive the deleted mode
+  radio and must be rewritten; the dose-linearity spec survives; under w/w the
+  `finished×0.01` comparison holds exactly against the inclusive figure.
 
 ## Out of scope (recorded follow-ups)
 
