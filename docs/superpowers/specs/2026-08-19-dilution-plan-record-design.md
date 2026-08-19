@@ -124,6 +124,14 @@ Every consumer reads resolved figures. Specifically:
   (the formula diverges at 100); the snippet's over-100 copy changes accordingly.
   Consequence, accepted: the bottled row is effectively always shown for LS recipes with
   a preservative dose.
+  **Mid-pour companion dose (decided):** while a record governs and its water is below
+  the plan's dilution water, the snippet shows a second, plan-labelled figure beside the
+  governing dose — "at your N% plan: X g" — computed by the same w/w formula against the
+  plan's dosing basis. Two different quantities, each named (the dose for the batch that
+  exists vs the dose at plan completion); the labelled pair prevents the invisible
+  under-dose a maker hits by weighing the preservative early and diluting on
+  (26.3 g at 0 g poured vs 40.4 g at a 30% plan on the reference batch). The companion
+  disappears once record water reaches the plan's.
 - **Additive `'solution'` dosing** uses the resolved *solution*, defined extras-free and
   preservative-free in both arms (decision 7): plan arm = `dilution.solutionGrams`
   (today's basis); record arm = pot + record water, **extras excluded**. The bottled
