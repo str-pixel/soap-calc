@@ -380,7 +380,7 @@ export default function App() {
   // the name was not, which is the same failure the basisScope prop was added to prevent,
   // wearing the opposite face: `finishedGrams` and `basisScope` must move together.
   const preservativeBasis = useMemo((): { grams: number | null; scope: DilutionScope } => {
-    if (dilutionScope !== 'portion') return { grams: vm.finishedProductGrams, scope: 'batch' };
+    if (dilutionScope !== 'portion') return { grams: vm.preservativeDosingBasisGrams, scope: 'batch' };
     if (!vm.dilution) return { grams: null, scope: 'portion' };
     if (dilutionMode === 'gradual') {
       return {
@@ -422,9 +422,28 @@ export default function App() {
     portionWaterGrams,
     vm.cookWaterGrams,
     vm.dilution,
-    vm.finishedProductGrams,
+    vm.preservativeDosingBasisGrams,
     vm.wholeBatchPasteGrams,
   ]);
+
+  // The dose alone, in grams — App threads this to the panel and the sheet so the MASS they
+  // add to what bottles, prints and prices matches what the vm resolved for the whole batch
+  // (batch scope; Custom amount's own dose stays the snippet's problem, not this prop's —
+  // see preservativeBasis above for why the two scopes cannot share a mass). Derived by
+  // differencing the vm's two batch-scope fields rather than re-testing the snippet's tier
+  // predicate here: vm.finishedProductGrams is exactly
+  // preservativeDosingBasisGrams + max(0, dose) once `preservativeSetByUser` is true, and
+  // equal to the basis otherwise (fix 2: a suggestion is not an ingredient), so the
+  // subtraction recovers the dose OR zero without a second copy of that gate (see
+  // useRecipeViewModel's own comment on it). This can therefore read LOWER than the
+  // snippet's own "Preservative to add" figure — the snippet always shows the maker a worked
+  // example from the typed dose, gated on neither the tier nor the flag; only the mass that
+  // actually bottles follows the flag. Both vm fields are null together outside LS / before
+  // a dilution exists, hence 0.
+  const preservativeDoseGramsValue =
+    vm.finishedProductGrams !== null && vm.preservativeDosingBasisGrams !== null
+      ? vm.finishedProductGrams - vm.preservativeDosingBasisGrams
+      : 0;
 
   // Extracted so The Numbers reads identically in both the Recipe and Pricing views:
   // the pricing calculator needs the same batch figures it prices, so both share one
@@ -732,6 +751,7 @@ export default function App() {
                 }
                 onMeasuredPasteGramsChange={setMeasuredPasteGrams}
                 wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
+                preservativeDoseGrams={preservativeDoseGramsValue}
               />
             )}
             {processOffers(process, 'neutralize') && vm.neutralization && (

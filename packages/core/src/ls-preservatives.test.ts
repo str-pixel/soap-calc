@@ -102,12 +102,19 @@ describe('the preservative table', () => {
 });
 
 describe('preservativeDoseGrams', () => {
-  test('is % w/w of the finished mass: 1% of 1,000 g is 10 g', () => {
-    expect(preservativeDoseGrams(1000, 1)).toBe(10);
+  test('w/w: the typed % is true of the finished product INCLUDING the dose (spec §3, decision 5)', () => {
+    expect(preservativeDoseGrams(1000, 1)).toBeCloseTo(10.10101, 4);   // was 10
+    expect(preservativeDoseGrams(4000, 0.5)).toBeCloseTo(20.10050, 4); // was 20
   });
 
-  test('0.5% of a 4,000 g diluted batch is 20 g', () => {
-    expect(preservativeDoseGrams(4000, 0.5)).toBe(20);
+  test('algebraic identity: dose = pct% of (basis + dose), exactly', () => {
+    const dose = preservativeDoseGrams(2400, 0.5);
+    expect(dose / (2400 + dose)).toBeCloseTo(0.005, 10);
+  });
+
+  test('the formula diverges at 100 — refuse, do not explode (spec §3)', () => {
+    expect(preservativeDoseGrams(1000, 100)).toBe(0);
+    expect(preservativeDoseGrams(1000, 150)).toBe(0);
   });
 
   test('refuses junk with 0, never NaN: non-finite or negative inputs', () => {
@@ -153,13 +160,14 @@ describe('lsPreservativeDoseTier', () => {
     expect(lsPreservativeDoseTier(101, suttocide)).toBe('impossible');
     // 150 is also far above suttocide's 1.0 ceiling; impossible still wins.
     expect(lsPreservativeDoseTier(150, suttocide)).toBe('impossible');
-    expect(lsPreservativeDoseTier(100, suttocide)).toBe('above-max'); // exactly 100 is a dose
+    expect(lsPreservativeDoseTier(100, suttocide)).toBe('impossible');   // was 'above-max' at exactly 100
   });
 
   test('with no preservative (a custom entry) only the arithmetic tiers are reachable', () => {
     expect(lsPreservativeDoseTier(1)).toBe('unrated');
     expect(lsPreservativeDoseTier(0.001)).toBe('unrated');
-    expect(lsPreservativeDoseTier(100)).toBe('unrated');
+    expect(lsPreservativeDoseTier(99.9)).toBe('unrated');
+    expect(lsPreservativeDoseTier(100)).toBe('impossible');   // was 'unrated' at exactly 100
     expect(lsPreservativeDoseTier(101)).toBe('impossible');
     expect(lsPreservativeDoseTier(0)).toBe('none');
     expect(lsPreservativeDoseTier(NaN)).toBe('none');

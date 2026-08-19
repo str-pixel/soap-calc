@@ -86,10 +86,14 @@ test('the dose is seeded with the default and computes grams from the finished m
   render(<Harness finishedGrams={4000} />);
   expect(doseInput().value).toBe('1');
   expect(screen.getByText('Preservative to add')).toBeTruthy();
-  // 1% of 4,000 g finished product
+  // 1% w/w of a 4,000 g basis: dose = 4,000 × 1/99 = 40.40… → 40 g
   expect(screen.getByText('40 g')).toBeTruthy();
   expect(screen.getByText('≈ Finished product (whole batch)')).toBeTruthy();
-  expect(screen.getByText('4,000 g')).toBeTruthy();
+  // The row is the INCLUSIVE figure (basis + dose = 4,000 + 40.40… → 4,040 g), the same
+  // number the panel's own same-named row quotes — one name, one mass (fix 3). The bare
+  // 4,000 g basis is never shown; it stays internal, feeding the dose math only.
+  expect(screen.getByText('4,040 g')).toBeTruthy();
+  expect(screen.queryByText('4,000 g')).toBeNull();
 });
 
 test('the base row names the scope it came from, and the portion scope is a different mass', () => {
@@ -152,7 +156,9 @@ test('a dose above an EU ceiling is NOT clamped — the alert names the EU, the 
   const alert = screen.getByRole('alert');
   expect(alert.textContent).toContain('1%');
   expect(alert.textContent).toContain('EU legal maximum');
-  expect(screen.getByText('80 g')).toBeTruthy();   // 2% of 4,000 g — the typed dose
+  // 2% w/w of a 4,000 g basis: dose = basis × pct/(100−pct) = 4,000 × 2/98 = 81.63… → 82 g
+  // (spec §3, decision 5 — the typed % is true of the bottle, not of the basis alone).
+  expect(screen.getByText('82 g')).toBeTruthy();
   expect(screen.queryByText('40 g')).toBeNull();   // never the old clamped 1%
 });
 
@@ -186,7 +192,18 @@ test('an under-dose is flagged as a plain note, not an alert', () => {
 test('a dose over 100% is refused outright — no figure, because it is not a dose', () => {
   render(<Harness finishedGrams={4000} />);
   fireEvent.change(doseInput(), { target: { value: '150' } });
-  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+  expect(screen.getByRole('alert').textContent).toContain('less than 100%');
+  expect(screen.queryByText('Preservative to add')).toBeNull();
+});
+
+test('a dose of exactly 100% is refused in the same words as over-100 — the formula divides by zero, not by a hair', () => {
+  // lsPreservativeDoseTier moves 'impossible' to pct >= 100 (spec §3: the w/w formula
+  // diverges at 100), so "100% or less" was self-refuting the moment 100 itself became
+  // impossible — the copy has to say "less than 100%" for the boundary to be a true
+  // statement of its own rule.
+  render(<Harness finishedGrams={4000} />);
+  fireEvent.change(doseInput(), { target: { value: '100' } });
+  expect(screen.getByRole('alert').textContent).toContain('less than 100%');
   expect(screen.queryByText('Preservative to add')).toBeNull();
 });
 
@@ -196,7 +213,7 @@ test('an impossible dose does not fall back to the enter-oils hint', () => {
   // render just because the dose itself is refused.
   render(<Harness finishedGrams={4000} />);
   fireEvent.change(doseInput(), { target: { value: '150' } });
-  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+  expect(screen.getByRole('alert').textContent).toContain('less than 100%');
   expect(screen.queryByText('Preservative to add')).toBeNull();
   expect(screen.queryByText(/Enter oils and a dilution target/)).toBeNull();
 });
@@ -279,10 +296,11 @@ test('a custom dose still computes, and still refuses the impossible', () => {
   render(<Harness finishedGrams={4000} />);
   fireEvent.change(picker(), { target: { value: '' } });
   fireEvent.change(doseInput(), { target: { value: '1.5' } });
-  expect(screen.getByText('60 g')).toBeTruthy();      // 1.5% of 4,000 g
+  // 1.5% w/w of a 4,000 g basis: dose = 4,000 × 1.5/98.5 = 60.91… → 61 g (spec §3).
+  expect(screen.getByText('61 g')).toBeTruthy();
   expect(screen.queryByRole('alert')).toBeNull();     // no ceiling to breach
   fireEvent.change(doseInput(), { target: { value: '150' } });
-  expect(screen.getByRole('alert').textContent).toContain('100% or less');
+  expect(screen.getByRole('alert').textContent).toContain('less than 100%');
 });
 
 test('Custom… suppresses product facts but never scope facts', () => {

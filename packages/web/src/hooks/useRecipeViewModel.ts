@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lsMethodForTemp, lyeSolutionWaterStatus, parsePercentOfOil, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
+import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lsMethodForTemp, lsPreservativeById, lsPreservativeDoseTier, lyeSolutionWaterStatus, parsePercentOfOil, preservativeDoseGrams, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
 import type { DilutionResult, LsMethodInfo, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { budgetSizingAvailable, resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
@@ -9,8 +9,10 @@ import {
   computePostCookSuperfat,
   computeRecipeAdditives,
   finishedProductGramsFor,
+  preservativeDosingBasisGramsFor,
   splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
+import { resolveDilution } from '../lib/resolveDilution';
 import type { CureEstimate } from '../lib/cureEstimate';
 import { ls30MinPackagePresent } from '../lib/ls30Min';
 import { computeWorkability } from '../lib/workabilityInput';
@@ -109,10 +111,20 @@ export type RecipeViewModel = {
    * exceeds it) plus additives, append-mode PCSF oil, and split-liquid solids. Null
    * outside LS / before a dilution exists. See computeBottledSolutionGrams. */
   bottledSolutionGrams: number | null;
-  /** The finished, ready-for-use mass of the WHOLE batch: `bottledSolutionGrams` when there
-   * is one, else the dilution's own solution. The one figure the ≈ Finished product row,
-   * the printed sheet and the Preservative snippet's batch-scope dose base all quote — see
-   * finishedProductGramsFor. Null outside LS / before a dilution exists. */
+  /** The preservative-free dosing basis of the WHOLE batch: `bottledSolutionGrams` when
+   * there is one, else the dilution's own solution. The Preservative snippet's batch-scope
+   * dose base (never the inclusive figure below — dosing against a mass that already
+   * contains the dose is the circular double-count the two figures exist to separate) — see
+   * preservativeDosingBasisGramsFor. Null outside LS / before a dilution exists. */
+  preservativeDosingBasisGrams: number | null;
+  /** The finished, ready-for-use mass of the WHOLE batch INCLUDING the preservative dose
+   * (spec §3): `preservativeDosingBasisGrams` plus the dose computed from it at the typed
+   * %. The one figure the ≈ Finished product row and the printed sheet's finished figure
+   * quote, and what `lsFinishedVolumeMl` converts — see finishedProductGramsFor. Equals
+   * `preservativeDosingBasisGrams` exactly when no preservative is dosed, OR when
+   * `settings.preservativeSetByUser` is false — an un-chosen default is a suggestion, not
+   * an ingredient, and adds no mass here even though the snippet shows a worked-example
+   * dose for it. Null outside LS / before a dilution exists. */
   finishedProductGrams: number | null;
   /** The best-known WHOLE-BATCH paste mass — anhydrousGrams + cookWaterGrams, corrected
    * for an alternative liquid's non-water solids. Feeds PortionDilutionResults' remaining-mode
@@ -455,6 +467,25 @@ export function useRecipeViewModel({
     const splitLiquidSolidsGrams = Math.max(0, (splitLiquidGrams ?? 0) - splitLiquidPasteWater);
     return dilution.anhydrousGrams + cookWaterGrams + splitLiquidSolidsGrams;
   }, [dilution, cookWaterGrams, splitLiquidGrams, splitLiquidPasteWater]);
+  // The spec §1 plan-else-record resolution (docs/superpowers/specs/2026-08-19-dilution-plan-
+  // record-design.md §1) — computed here, now that wholeBatchPasteGrams exists, so the record
+  // arm's pot (weighedOrComputedPotGramsFor) can see the same corrected basis every other
+  // dilution consumer does. PHASE 1: only `.plan` is exposed below (the vm's `dilution` field),
+  // which is the identical `dilution` object reference — byte-identical behaviour. `.governs`
+  // and `.record` are computed in full but reach nothing user-visible yet; Phase 2a is what
+  // flips consumers onto the resolved arm.
+  const resolvedDilution = useMemo(
+    () =>
+      resolveDilution({
+        dilution,
+        gradualWaterGrams: settings.gradualWaterGrams,
+        anhydrousGrams: dilution?.anhydrousGrams ?? 0,
+        wholeBatchPasteGrams,
+        cookWaterGrams,
+        measuredPasteGrams,
+      }),
+    [dilution, settings.gradualWaterGrams, wholeBatchPasteGrams, cookWaterGrams, measuredPasteGrams],
+  );
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
   // survives. Sized against the base (saponification) lye, then folded into the result so
   // every downstream surface — concentration, steps, sheet — quotes the adjusted figures.
@@ -765,10 +796,41 @@ export function useRecipeViewModel({
           gradualWaterGrams: settings.gradualWaterGrams,
         })
       : null;
-  // The same mass under one name for every surface that quotes it — see
-  // finishedProductGramsFor for the rule and for why its fallback arm, dead on this path,
-  // is still owed to the component-level callers.
-  const finishedProductGrams = finishedProductGramsFor(bottledSolutionGrams, dilution);
+  // The preservative-free basis under one name for every surface that quotes it — see
+  // preservativeDosingBasisGramsFor for the rule and for why its fallback arm, dead on this
+  // path, is still owed to the component-level callers.
+  const preservativeDosingBasisGrams = preservativeDosingBasisGramsFor(bottledSolutionGrams, dilution);
+  // The dose itself, gated as the Preservative snippet gates its own figure
+  // (PreservativeSnippet.tsx's `grams` — basis present, tier neither 'none' nor
+  // 'impossible') PLUS `preservativeSetByUser`. That flag is the ruled addition: the three
+  // preservative fields default to a real, legal Suttocide A dose so the snippet always
+  // opens with a complete worked example (recipe.ts:165-168), but a maker who never touched
+  // the picker, the custom name or the dose has not chosen a preservative — it is a
+  // suggestion, not an ingredient, and must add NO mass to what the batch bottles, prints
+  // or prices. The snippet's OWN advisory figure is deliberately unaffected by this flag —
+  // see PreservativeSnippet.tsx's `grams`, computed from the typed dose regardless — this
+  // predicate only gates the MASS WIRING: finishedProductGrams below, and (by differencing
+  // it against preservativeDosingBasisGrams) App's copy for the panel/sheet prop. This is
+  // the one place the whole-batch predicate is evaluated; App never re-tests the tier.
+  const preservative = lsPreservativeById(previewSettings.preservativeId);
+  const preservativeDoseTier = lsPreservativeDoseTier(
+    Number(previewSettings.preservativeDosePct),
+    preservative,
+  );
+  const preservativeDoseGramsValue =
+    preservativeDosingBasisGrams !== null &&
+    previewSettings.preservativeSetByUser &&
+    preservativeDoseTier !== 'none' &&
+    preservativeDoseTier !== 'impossible'
+      ? preservativeDoseGrams(preservativeDosingBasisGrams, Number(previewSettings.preservativeDosePct))
+      : 0;
+  // The whole batch's finished, ready-for-use mass INCLUDING the dose (spec §3) — what the
+  // bottle actually weighs, and what the ≈ Finished product row, the printed sheet and
+  // lsFinishedVolumeMl now quote. See finishedProductGramsFor.
+  const finishedProductGrams = finishedProductGramsFor(
+    preservativeDosingBasisGrams,
+    preservativeDoseGramsValue,
+  );
   // Guard against a carried-forward-but-stale processVariant (Wave A defensive pattern —
   // see normalizeSettingsWithinProcess) before resolving the profile.
   const profile = isProcessVariantId(settings.processVariant)
@@ -954,11 +1016,15 @@ export function useRecipeViewModel({
     fattyAcids,
     insights,
     lyeLabel,
-    dilution,
+    // resolvedDilution.plan is the identical `dilution` object reference (Phase 1 passthrough
+    // — see resolveDilution's own doc comment). Byte-identical behaviour until Phase 2a flips
+    // this to the resolved arm.
+    dilution: resolvedDilution.plan,
     neutralization,
     pcsfIsExtra,
     extrasGrams,
     bottledSolutionGrams,
+    preservativeDosingBasisGrams,
     finishedProductGrams,
     wholeBatchPasteGrams,
     batchWeightWithExtras,

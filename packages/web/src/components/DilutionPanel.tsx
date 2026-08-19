@@ -9,7 +9,7 @@ import {
   lsPotAnhydrousShare,
   type DilutionResult,
 } from '@soap-calc/core';
-import { finishedProductGramsFor } from '../lib/calculateAdditives';
+import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { formatWeight } from '../lib/weightUnits';
 import {
@@ -166,6 +166,13 @@ type DilutionPanelProps = {
    * unmaintainable. (Twenty when this note was written, and it stayed at "twenty" while
    * gradual mode added five more — count them here before quoting a number.) */
   preservativeSlot?: ReactNode;
+  /** The whole-batch preservative dose, in grams — App's own copy of the same figure the
+   * Preservative snippet (inside `preservativeSlot`) already resolved, so the ≈ Finished
+   * product row can quote the mass the bottle actually weighs (spec §3: dosing basis + the
+   * dose) rather than the preservative-free basis alone. Defaulted to 0 so every caller
+   * that predates the dose split — including this file's own tests — keeps seeing exactly
+   * the basis it always has: `finishedProductGramsFor(basis, 0) === basis`. */
+  preservativeDoseGrams?: number;
 };
 
 export type PortionGradualState = {
@@ -377,6 +384,7 @@ export function DilutionPanel({
   onTargetMlChange,
   wholeBatchPasteGrams,
   preservativeSlot,
+  preservativeDoseGrams = 0,
 }: DilutionPanelProps) {
   // Set only by the ratio input's own onChange below — never by mode entry — so the
   // write-back effect further down can require a real edit before touching the saved
@@ -1183,8 +1191,13 @@ export function DilutionPanel({
   const portionAltLiquidNote = portionAltLiquidClauses.join(' ');
   // One shared rule (lib/calculateAdditives) rather than a fourth hand-written ?? chain:
   // the Preservative snippet doses against this same figure, so "what the finished product
-  // weighs" must not be able to mean two things in one column.
-  const bottledGrams = finishedProductGramsFor(bottledSolutionGrams, dilution);
+  // weighs" must not be able to mean two things in one column. This is the preservative-
+  // FREE basis — never shown on its own; see bottledGrams below for what actually renders.
+  const preservativeDosingBasis = preservativeDosingBasisGramsFor(bottledSolutionGrams, dilution);
+  // What the bottle actually weighs (spec §3): the basis plus the dose App resolved for it.
+  // Equals the basis exactly when preservativeDoseGrams is 0 (its default), so every caller
+  // that predates the dose split sees byte-identical figures.
+  const bottledGrams = finishedProductGramsFor(preservativeDosingBasis, preservativeDoseGrams);
   // Every other figure here is mass. Volume is what tells a maker whether their dilution
   // vessel and packaging are big enough — so the density bridge is shown here rather than
   // left implicit.

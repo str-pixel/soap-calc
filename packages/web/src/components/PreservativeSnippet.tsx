@@ -8,15 +8,22 @@ import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 
 type PreservativeSnippetProps = {
-  /** The finished, ready-for-use mass the dose is a % of — THE MASS OF WHAT THE MAKER IS
-   * ACTUALLY MAKING, which is whatever the Dilution panel's scope toggle says it is. In
-   * Whole batch that is the batch's finished product (lib/calculateAdditives'
-   * finishedProductGramsFor, the same figure the panel's own row quotes); in Custom amount
-   * it is the PORTION's own finished solution. It is emphatically NOT always the batch:
+  /** The PRESERVATIVE-FREE mass the dose is a % of — THE MASS OF WHAT THE MAKER IS ACTUALLY
+   * MAKING, which is whatever the Dilution panel's scope toggle says it is, before the dose
+   * itself is added in. In Whole batch that is the batch's own dosing basis
+   * (lib/calculateAdditives' preservativeDosingBasisGramsFor) — deliberately NOT the figure
+   * the panel's own ≈ Finished product row quotes, which is this basis PLUS the dose
+   * (finishedProductGramsFor); in Custom amount it is the PORTION's own finished solution,
+   * likewise preservative-free. It is emphatically NOT always the batch:
    * this prop used to be handed the batch's mass in both scopes, so a 250 ml draw off a
    * 4 kg batch was told to weigh in the batch's 40 g of Suttocide — about 16% w/w in that
    * bottle, sixteen times the EU ceiling. App resolves it; `basisScope` says which of the
    * two it resolved, and the two must move together.
+   *
+   * DOSE MATH ONLY — never printed as-is. The "≈ Finished product" row below prints this
+   * basis PLUS the dose (the same inclusive figure the panel's own same-named row quotes;
+   * one name, one mass), so a maker reading either row sees the mass the bottle actually
+   * weighs, never the preservative-free mass this prop is named for. See `grams` below.
    *
    * Null whenever there is no such mass — no oils/outside LS, or a Custom amount with no
    * usable portion (nothing asked for yet, a refused paste reading, a paste already
@@ -204,7 +211,7 @@ export function PreservativeSnippet({
       </label>
       {tier === 'impossible' && (
         <p className="results-hint" role="alert">
-          A dose must be 100% or less of the finished product.
+          A dose must be less than 100% of the finished product.
         </p>
       )}
       {preservative && tier === 'above-max' && (
@@ -230,28 +237,31 @@ export function PreservativeSnippet({
                 <dt>Preservative to add</dt>
                 <dd>{formatWeight(grams, weightUnit)}</dd>
               </div>
-              {/* The mass the % is a percentage OF, beside the dose it explains — and
-                  NAMED for which of the two masses it is, in the scope toggle's own words
-                  ("Whole batch" / "Custom amount"), because they are different numbers and
-                  the dose follows whichever is in play. */}
+              {/* The mass the bottle actually weighs — basis PLUS the dose, the same
+                  INCLUSIVE figure the panel's own same-named row quotes (fix 3: one name,
+                  one mass; `finishedGrams` itself stays the preservative-free basis, fed
+                  ONLY into the dose math above). NAMED for which of the two scopes it is,
+                  in the scope toggle's own words ("Whole batch" / "Custom amount"), because
+                  they are different numbers and the dose follows whichever is in play. */}
               <div className="results-grid__item">
                 <dt>≈ Finished product ({basisScope === 'portion' ? 'custom amount' : 'whole batch'})</dt>
-                <dd>{formatWeight(finishedGrams, weightUnit)}</dd>
+                <dd>{formatWeight(finishedGrams + grams, weightUnit)}</dd>
               </div>
             </dl>
           )}
           {/* STAGE + BASIS, one paragraph: when to add it (after dilution, cooled —
               LS:2520; the supplier's own °C where one is published), and what the % is
               of (EU Annex V maxima are % w/w of the finished, ready-for-use product —
-              for liquid soap, the diluted solution above). */}
+              for liquid soap, the diluted solution above — the row's own inclusive mass).
+              NOT "computed from": the dose is computed from the preservative-free basis,
+              which this paragraph never shows; the % is simply TRUE OF the row above. */}
           <p className="results-hint">
             Add after dilution, once the soap has cooled
             {preservative?.addBelowC != null
               ? ` — below ${preservative.addBelowC} °C for ${preservative.label}`
               : ''}
             . Doses and legal maxima are % of the finished, ready-to-use product, which
-            for liquid soap is the diluted solution — the mass this figure is computed
-            from.
+            for liquid soap is the diluted solution — the mass this figure is true of.
           </p>
         </>
       ) : basisScope === 'portion' ? (

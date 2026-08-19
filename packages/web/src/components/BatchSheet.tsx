@@ -20,7 +20,7 @@ import {
   formatBatchSheetProperty,
   formatBatchWeight,
 } from '../lib/batchSheet';
-import { finishedProductGramsFor } from '../lib/calculateAdditives';
+import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
@@ -167,22 +167,20 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // bottled, not only the chemistry-only solution above: bottledSolutionGrams adds in
   // additives, append-mode post-cook oil, and split-liquid solids, and is bigger than
   // dilution.solutionGrams whenever any of those are present (mirrors DilutionPanel's
-  // own bottledGrams/showBottledRow). lsFinishedVolumeMl is the same core helper the
-  // on-screen panel uses — never recomputed here.
+  // own preservativeDosingBasis/bottledGrams). lsFinishedVolumeMl is the same core helper
+  // the on-screen panel uses — never recomputed here.
   // The shared resolution (lib/calculateAdditives), not a hand-written ?? chain: the sheet
-  // is the page carried to the bench, so its finished-product figure must be the one the
-  // screen quotes — and the one the preservative dose is a percentage of.
-  const bottledGrams = finishedProductGramsFor(bottledSolutionGrams, dilution);
-  const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
-  const showBottledRow =
-    dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
+  // is the page carried to the bench, so its dosing basis must be the one the screen
+  // quotes — and the one the preservative dose is a percentage of. Preservative-free; see
+  // bottledGrams below for what the finished-product row and volume actually render.
+  const preservativeDosingBasisGrams = preservativeDosingBasisGramsFor(bottledSolutionGrams, dilution);
 
   // THE SHEET IS A BATCH DOCUMENT. It prints the batch's dose and says so — never the
   // Dilution panel's Custom amount portion. `dilutionScope` is session-only state that no
   // recipe file records, so a sheet that mirrored it would print one mass before a reload
-  // and another after. bottledGrams is finishedProductGramsFor(...), the same expression
-  // behind vm.finishedProductGrams that App hands the snippet in batch scope, so sheet and
-  // panel cannot drift.
+  // and another after. preservativeDosingBasisGrams is preservativeDosingBasisGramsFor(...),
+  // the same expression behind vm.preservativeDosingBasisGrams that App hands the snippet
+  // in batch scope, so sheet, panel and snippet cannot drift on what the dose is a % of.
   const preservative = lsPreservativeById(settings.preservativeId);
   const preservativeDosePct = Number(settings.preservativeDosePct);
   const preservativeTier = lsPreservativeDoseTier(preservativeDosePct, preservative);
@@ -248,12 +246,22 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
       ? gradualPasteBasisGrams + gradualWaterRecordedGrams
       : null;
   const preservativeGrams =
-    bottledGrams !== null &&
+    preservativeDosingBasisGrams !== null &&
     settings.preservativeSetByUser &&
     preservativeTier !== 'none' &&
     preservativeTier !== 'impossible'
-      ? preservativeDoseGrams(bottledGrams, preservativeDosePct)
+      ? preservativeDoseGrams(preservativeDosingBasisGrams, preservativeDosePct)
       : null;
+  // What the bottle actually weighs (spec §3): the basis plus the dose. Fed from
+  // preservativeGrams above — the sheet's ONE dose figure — not from a prop, so the
+  // printed dose row and the printed mass cannot disagree even in a test that builds
+  // `data` directly: a fixture either doses both or neither. (A prop carried this value
+  // briefly; a caller omitting it could print a dose beside a preservative-free mass —
+  // two sources for one quantity, the exact drift this file exists to prevent.)
+  const bottledGrams = finishedProductGramsFor(preservativeDosingBasisGrams, preservativeGrams ?? 0);
+  const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
+  const showBottledRow =
+    dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
   // Named locals so the row's <dd> isn't packing six things and two inline ternaries.
   // Both always end their own sentence with a period — the base note used to end bare
   // ("...once cooled" with no full stop) and only gained one when the ceiling note was
