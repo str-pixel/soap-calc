@@ -61,9 +61,15 @@ export type ResolvedDilution = {
  * a value fit to be written back anywhere (decision 2, above).
  *
  * `record` is null whenever a record is present but nothing can be computed FROM it — no
- * `dilution` to derive `anhydrousGrams` from, or no resolvable pot at all. This never happens
- * on a real batch (a gradual record only exists once a dilution does), but keeps this function
- * total rather than throwing on a caller mid-edit.
+ * `dilution` to derive `anhydrousGrams` from, or no resolvable pot at all. THE NULL-`dilution`
+ * CASE IS REAL, NOT HYPOTHETICAL (spec decision 8): a recipe can carry a leftover
+ * `gradualWaterGrams` beside a state where `dilution` is null — a process that doesn't offer
+ * dilution, or an invalid target % — and decision 8 says records lead wherever they exist.
+ * There `governs` is still `'record'` (a record's presence is judged on the record alone,
+ * never on whether a plan exists to pair it with), but both `plan` and `record` come back
+ * null: `weighedOrComputedPotGramsFor` refuses to name a pot with no dilution to anchor it, so
+ * nothing here fabricates one. A Phase 2a caller must read `governs === 'record' && record ===
+ * null` as "nothing to show yet", not as an error.
  */
 export function resolveDilution(args: {
   dilution: DilutionResult | null;

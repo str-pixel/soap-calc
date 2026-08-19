@@ -54,4 +54,38 @@ describe('resolveDilution', () => {
   it('blank is NOT a record; separators are refused by the parser', () => {
     expect(resolveDilution({ ...same, gradualWaterGrams: ' ' }).governs).toBe('plan');
   });
+
+  // spec decision 8: a leftover gradualWaterGrams record can survive beside a state where
+  // `dilution` is null (a process that doesn't offer dilution, or an invalid target %) — this
+  // is real, not hypothetical. Pinning what the implementation actually does there: governs
+  // still reads 'record' off the record alone, but with no plan to anchor a pot,
+  // weighedOrComputedPotGramsFor refuses to fabricate one, so both plan and record come back
+  // null rather than inventing a figure.
+  it('a record survives a null dilution (spec decision 8) — nothing is fabricated', () => {
+    const r = resolveDilution({
+      dilution: null,
+      gradualWaterGrams: '1400',
+      anhydrousGrams: 1200,
+      wholeBatchPasteGrams: 2600,
+      cookWaterGrams: 1400,
+      measuredPasteGrams: '',
+    });
+    expect(r.governs).toBe('record');
+    expect(r.plan).toBeNull();
+    expect(r.record).toBeNull();
+  });
+
+  it('a zero record survives a null dilution too — still no fabricated pot', () => {
+    const r0 = resolveDilution({
+      dilution: null,
+      gradualWaterGrams: '0',
+      anhydrousGrams: 1200,
+      wholeBatchPasteGrams: 2600,
+      cookWaterGrams: 1400,
+      measuredPasteGrams: '',
+    });
+    expect(r0.governs).toBe('record');
+    expect(r0.plan).toBeNull();
+    expect(r0.record).toBeNull();
+  });
 });
