@@ -294,15 +294,36 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(base * 0.01, 0);
   });
 
-  it('the bottle the maker weighs is the basis plus the dose it was promised (spec §3)', async () => {
-    // THE SAFETY PIN for the inclusive figure. Before this wiring, `finishedGrams` fed to
-    // the panel's own row was the preservative-free basis, so a maker reading "≈ Finished
-    // product" and packaging to it left the dose's own mass unaccounted for — a bottle
-    // that in fact weighs base + dose, labelled as though it weighed base alone. The panel's
-    // row was ALSO hidden for the starter recipe (no extras, so basis === solution exactly);
-    // the default 1% Suttocide A dose alone is now enough to show it (spec §3's accepted
-    // consequence: the row is effectively always on for an LS recipe carrying a dose).
+  it('an untouched preservative default adds no mass to the bottle — a suggestion, not an ingredient (fix 2)', async () => {
+    // The starter recipe carries the real, legal Suttocide A default (recipe.ts:165-168),
+    // but `preservativeSetByUser` starts false — nobody has chosen it. The panel's own
+    // "≈ Finished product" row stays hidden (no extras on the starter recipe, so basis ===
+    // solution exactly, same as it always has been for an unmodified LS recipe): the row
+    // must not appear just because a default dose exists to compute from.
     const snippet = await openSnippet();
+    const dilutionPanel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    expect(within(dilutionPanel).queryByText('≈ Finished product')).toBeNull();
+    // The snippet's own advisory dose still computes — it is not gated on the choice, only
+    // the mass wiring is.
+    expect(grams(figure(snippet, 'Preservative to add'))).toBeGreaterThan(0);
+  });
+
+  it('the bottle the maker weighs is the basis plus the dose it was promised, once chosen (spec §3)', async () => {
+    // THE SAFETY PIN for the inclusive figure, now scoped by fix 2: the row below only
+    // carries the dose once `preservativeSetByUser` is true. Touch the controls without
+    // changing the choice — switch away and back — so the flag flips true while the product
+    // and its 1% default dose land exactly where they started.
+    const snippet = await openSnippet();
+    const summary = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('summary') as HTMLElement;
+    await userEvent.click(summary);
+    const picker = screen.getByLabelText('Which preservative') as HTMLSelectElement;
+    await userEvent.selectOptions(picker, 'liquid-germall-plus');
+    await userEvent.selectOptions(picker, 'suttocide-a');
+
     const base = grams(figure(snippet, '≈ Finished product (whole batch)'));
     const dose = grams(figure(snippet, 'Preservative to add'));
     const dilutionPanel = screen
@@ -475,14 +496,42 @@ describe('Whole batch + Gradual: one batch has one finished mass', () => {
     // ONE mass, on one screen: what the panel says is in the pot is what the snippet says it
     // is dosing. The 1,666 g computed pot is what this printed before.
     expect(row(snippet, '≈ Finished product (whole batch)')).toBe(potRow(panel));
+    // …and the volume the maker sizes bottles from follows it — but only once the maker has
+    // actually chosen a preservative (fix 2: `preservativeSetByUser`). The starter recipe's
+    // default 1% Suttocide A is an un-chosen suggestion, so it adds no mass here: the plain
+    // 1,359 ml the pot alone gives, not the 1,373 ml the dose would add — see the next test
+    // for the mass actually landing once the maker has chosen.
+    expect(row(panel, '≈ Finished volume')).toBe('1,359 ml');
+    // The snippet's OWN advisory dose is unaffected by the flag — it always shows the maker
+    // a worked example from the typed %, gated on neither the tier nor the choice: 1,400×1/99
+    // ≈ 14 g. It is the mass that bottles that follows the choice, not this figure.
+    expect(num(row(snippet, 'Preservative to add'))).toBeCloseTo(14, 0);
+  });
+
+  it('once the maker has chosen a preservative, the mass it doses actually bottles', async () => {
+    // The inclusive counterpart to the test above: the same 1,400 g / 0 g record, but with
+    // the preservative controls touched — switch away and back so `preservativeSetByUser`
+    // flips true while the product and its 1% default dose land exactly where they started.
+    // This reproduces the original bug's fixture: against the computed 1,666 g pot the dose
+    // would have been 17 g, 1.19% of the 1,400 g batch actually on the scale.
+    const { panel, snippet, paste, water } = await gradualLs();
+    const summary = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('summary') as HTMLElement;
+    await userEvent.click(summary);
+    const picker = screen.getByLabelText('Which preservative') as HTMLSelectElement;
+    await userEvent.selectOptions(picker, 'liquid-germall-plus');
+    await userEvent.selectOptions(picker, 'suttocide-a');
+
+    fireEvent.change(paste, { target: { value: '1400' } });
+    fireEvent.change(water, { target: { value: '0' } });
+
+    expect(potRow(panel)).toBe('1,400 g');
     // …and the volume the maker sizes bottles from follows it: the finished mass now
     // INCLUDES the preservative dose (spec §3) — (1,400 + 1,400×1/99) / 1.03 ≈ 1,373 ml —
     // not the plain 1,359 ml the pot alone would give, and not the 1,618 ml the computed
     // pot implies.
     expect(row(panel, '≈ Finished volume')).toBe('1,373 ml');
-    // The dose is the harm. At the default 1% w/w of finished product that is 1,400×1/99 ≈
-    // 14 g; against the computed pot it was 17 g — 1.19% of the batch actually in front of
-    // the maker.
     expect(num(row(snippet, 'Preservative to add'))).toBeCloseTo(14, 0);
   });
 
