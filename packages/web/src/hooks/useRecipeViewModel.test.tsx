@@ -968,3 +968,56 @@ test('…but a deficit that survives the most generous assumption is still state
     expect(vm.lyeWaterShortfallCertain && vm.lyeWaterUnverifiable).toBe(false);
   }
 });
+
+test('a record governs the bottled mass, and gates the plan-claim overDilutionCertain', () => {
+  // Phase 2a. `dilution` stays the plan arm, but everything DERIVED for the bottle follows
+  // the record (spec §3): bottledSolutionGrams becomes pot + recorded water + the extras the
+  // pot does not already hold. And `overDilutionCertain` is a claim about a TARGET the paste
+  // has already passed — a plan claim — so it is false whenever a record governs.
+  let plan: any;
+  let record: any;
+  probe((vm) => { plan = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '' }, 'ls');
+  probe((vm) => { record = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '500' }, 'ls');
+
+  expect(record.dilutionGoverns).toBe('record');
+  expect(record.dilutionRecord.finishedGrams).toBeCloseTo(
+    record.dilutionRecord.potGrams + 500,
+    6,
+  );
+  // The bottle is what is in the pot, not what the 30% target predicts.
+  expect(record.bottledSolutionGrams).toBeCloseTo(record.dilutionRecord.finishedGrams, 6);
+  expect(record.bottledSolutionGrams).toBeLessThan(plan.bottledSolutionGrams);
+  // The dosing basis and the finished mass follow it, so the dose is a % of what exists.
+  expect(record.preservativeDosingBasisGrams).toBeCloseTo(record.bottledSolutionGrams, 6);
+  expect(record.finishedProductGrams).toBeGreaterThan(record.preservativeDosingBasisGrams);
+});
+
+test('overDilutionCertain is a plan claim and stands down while a record governs', () => {
+  // A target above what the paste's own water allows — targetExceedsPaste, certain across
+  // the undeclared range — is a verdict about the PLAN. With a record in hand the batch that
+  // exists is what every figure describes, and the plan verdict has no subject.
+  const over = { soapConcentrationPercent: '85' } as const;
+  let planArm: any;
+  let recordArm: any;
+  probe((vm) => { planArm = vm; }, { ...over, gradualWaterGrams: '' }, 'ls');
+  probe((vm) => { recordArm = vm; }, { ...over, gradualWaterGrams: '0' }, 'ls');
+  expect(planArm.overDilutionCertain).toBe(true);
+  expect(recordArm.overDilutionCertain).toBe(false);
+});
+
+test('governs "record" with no record figures is "nothing to show yet", never an error', () => {
+  // The pinned Task-1 contract, now that it is user-visible: a recipe can carry a leftover
+  // gradualWaterGrams beside a target calculateDilution refuses (0 is outside its 1-99%
+  // range), so `dilution` is null and the record arm has no pot to count from. The vm must
+  // report governs 'record' with a null record and null downstream figures — not throw, and
+  // not fabricate a plan.
+  let vm: any;
+  probe((v) => { vm = v; }, { soapConcentrationPercent: '0', gradualWaterGrams: '500' }, 'ls');
+  expect(vm.dilution).toBeNull();
+  expect(vm.dilutionGoverns).toBe('record');
+  expect(vm.dilutionRecord).toBeNull();
+  expect(vm.bottledSolutionGrams).toBeNull();
+  expect(vm.preservativeDosingBasisGrams).toBeNull();
+  expect(vm.finishedProductGrams).toBeNull();
+  expect(vm.overDilutionCertain).toBe(false);
+});

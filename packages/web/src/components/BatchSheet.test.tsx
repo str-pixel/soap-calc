@@ -836,17 +836,23 @@ test('a measured paste that outranks targetExceedsPaste also suppresses the prin
   expect(screen.queryByText(/already more dilute/i)).toBeNull();
 });
 
-describe('the ratio block and the printed sheet pour one figure (split-liquid recipe)', () => {
+describe('the panel and the printed sheet pour one figure (split-liquid recipe)', () => {
   // A split-liquid LS batch: 1,200 g anhydrous, 400 g lye water, and 900 g of an
   // alternative liquid declared at 50% water — 450 g of water (so 850 g of cook water)
   // and 450 g of NON-water solids, real mass sitting in the pot that the recipe's own
   // water-only arithmetic never counts. The pot therefore holds 2,500 g of paste.
   //
-  // At 2:1 the ratio block pours 2,500 × 2 = 5,000 g, landing at 1,200 / 7,500 = 16.0%
-  // soap — the exact figure the panel's write-back persists. Read back at 16%,
-  // calculateDilution answers 7,500 − 1,200 − 850 = 5,450 g, because its own solution is
-  // anhydrous + water with no room for the solids. The 450 g gap is exactly those solids,
-  // and it is the difference between the screen and the page taken to the bench.
+  // The 16% plan is what a 2:1 preset writes for that pot (2,500 x 3 = 7,500 g of solution,
+  // 1,200 / 7,500 = 16.0%). Read back at 16%, calculateDilution answers 7,500 - 1,200 - 850 =
+  // 5,450 g, because its own solution is anhydrous + water with no room for the solids. The
+  // 450 g gap is exactly those solids, and it is the difference between the screen and the
+  // page taken to the bench — 5,000 g is what the corrected pot really needs.
+  //
+  // REWRITTEN FROM 'the ratio block and the printed sheet pour one figure': the ratio block
+  // was a second water row rendered beside the grid's, and the parity it needed proving
+  // against the sheet was between THREE figures. There is one pour row now, so the claim is
+  // the plain one — the screen and the bench page print the same corrected figure — and the
+  // 5,000 g it must be is stated absolutely on both sides.
   const RATIO_SPLIT_DILUTION = {
     anhydrousGrams: 1200,
     solutionGrams: 7500,
@@ -858,26 +864,24 @@ describe('the ratio block and the printed sheet pour one figure (split-liquid re
   };
   const WHOLE_BATCH_PASTE_GRAMS = 2500;
 
-  function ratioPanelFigure(): string {
+  function panelPourFigure(): string {
     render(
       <DilutionPanel
         dilution={RATIO_SPLIT_DILUTION}
         soapConcentrationPercent="16"
         onSoapConcentrationChange={() => {}}
         weightUnit="g"
-        dilutionMode="ratio"
-        waterPasteRatio="2"
         cookWaterGrams={850}
         wholeBatchPasteGrams={WHOLE_BATCH_PASTE_GRAMS}
       />,
     );
-    const figure = screen.getByText('Water to add at this ratio').nextElementSibling!.textContent!;
+    const figure = screen.getByText('Dilution water to add').nextElementSibling!.textContent!;
     cleanup();
     return figure;
   }
 
-  test('the sheet prints the same water the ratio block does', () => {
-    const panelFigure = ratioPanelFigure();
+  test('the sheet prints the same water the panel does', () => {
+    const panelFigure = panelPourFigure();
     // Stated absolutely as well as relatively: an equality alone would also pass if both
     // surfaces regressed to the same wrong number.
     expect(panelFigure).toBe('5,000 g');
@@ -893,7 +897,7 @@ describe('the ratio block and the printed sheet pour one figure (split-liquid re
     expect(sheetFigure).toBe(panelFigure);
   });
 
-  test('the concentration grid prints it too — one number, whichever mode chose it', () => {
+  test('the grid prints it under a record too — the plan row keeps its own figure', () => {
     render(
       <DilutionPanel
         dilution={RATIO_SPLIT_DILUTION}
@@ -902,9 +906,15 @@ describe('the ratio block and the printed sheet pour one figure (split-liquid re
         weightUnit="g"
         cookWaterGrams={850}
         wholeBatchPasteGrams={WHOLE_BATCH_PASTE_GRAMS}
+        gradualWaterGrams="1000"
+        onGradualWaterChange={() => {}}
       />,
     );
-    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('5,000 g');
+    // Labelled as plan (spec §2), and unchanged by the record beside it: the pour is what
+    // the plan still asks for, and a record does not move it.
+    expect(
+      screen.getByText('Dilution water to add (plan)').nextElementSibling!.textContent,
+    ).toBe('5,000 g');
   });
 
   test('a recipe with no split liquid is untouched: no corrected basis, the recipe figure stands', () => {
@@ -1180,7 +1190,6 @@ describe('the sheet records the water actually poured', () => {
         soapConcentrationPercent="30"
         onSoapConcentrationChange={() => {}}
         weightUnit="g"
-        dilutionMode="gradual"
         gradualWaterGrams="0"
         measuredPasteGrams="4500"
         cookWaterGrams={382}
@@ -1213,13 +1222,12 @@ describe('the sheet records the water actually poured', () => {
   });
 
   test('a leftover record does not widen the paste ceiling for a target it never wrote', () => {
-    // The batch-sheet defect this branch closed once, reachable again through a field nothing
-    // clears when the maker leaves Gradual. `gradualWaterGrams` is recipe state and
-    // `dilutionMode` is not, so "a record exists" was still true after recording 2,000 g,
-    // switching to Target concentration and typing 30% — and a 4,060 g reading (the loaded
-    // crockpot) sits inside the widened band around this fixture's 4,059 g solution. The pot
-    // became the reading, and "Dilution water to add" printed a bare "0 g" on the page carried
-    // to the bench.
+    // The batch-sheet defect this branch closed once, reachable through a field nothing
+    // clears. `gradualWaterGrams` is recipe state, so "a record exists" is still true after
+    // recording 2,000 g and then typing 30% into the plan by hand — and a 4,060 g reading (the
+    // loaded crockpot) sits inside the widened band around this fixture's 4,059 g solution.
+    // The pot became the reading, and "Dilution water to add" printed a bare "0 g" on the page
+    // carried to the bench.
     //
     // 4,060 g of paste plus the 2,000 g recorded is 6,060 g, which is 20.1% soap and not the
     // 30% in force, so this record cannot have written this target: the reading is simply past
@@ -1268,5 +1276,71 @@ describe('the sheet records the water actually poured', () => {
     );
     expect(screen.queryByText(/Water actually added/)).toBeNull();
     expect(screen.queryByText(/That record makes/)).toBeNull();
+  });
+});
+
+describe('the printed sheet: a plan verdict needs a plan to govern (spec §4)', () => {
+  // The three verdict notes lean on the write-back having aligned target ≈ record. Without
+  // one they are claims about a target the maker is not aiming at any more, printed beside
+  // the record rows that say what the batch actually is. They are plan-governs only now.
+  const OVER = {
+    dilutionOverride: {
+      anhydrousGrams: 1218, solutionGrams: 1433, totalWaterGrams: 215,
+      dilutionWaterGrams: 0, glycerinGrams: 107, soapConcentrationPercent: 85,
+      targetExceedsPaste: true,
+    },
+    overDilutionCertain: true,
+  };
+
+  it('prints "already more dilute" while the plan governs', () => {
+    render(<BatchSheet data={lsSheetData(OVER)} />);
+    expect(screen.getByText(/already more dilute than 85%/i)).toBeTruthy();
+  });
+
+  it('prints nothing of the kind once a record governs', () => {
+    render(
+      <BatchSheet
+        data={lsSheetData({ ...OVER, preservative: { gradualWaterGrams: '0' } })}
+      />,
+    );
+    expect(screen.queryByText(/already more dilute/i)).toBeNull();
+    // The record rows are what speak instead.
+    expect(screen.getByText('Water actually added')).toBeTruthy();
+  });
+
+  it('drops the corrected-pot verdict and the can\'t-tell hedge under a record too', () => {
+    const PAST = {
+      dilutionOverride: {
+        anhydrousGrams: 1218, solutionGrams: 1900, totalWaterGrams: 682,
+        dilutionWaterGrams: 282, glycerinGrams: 107, soapConcentrationPercent: 64.1,
+        targetExceedsPaste: false,
+      },
+      cookWaterGrams: 400,
+      wholeBatchPasteGrams: 2200,
+    };
+    render(<BatchSheet data={lsSheetData(PAST)} />);
+    expect(screen.getByText(/there is no dilution water to add/i)).toBeTruthy();
+    cleanup();
+    render(
+      <BatchSheet data={lsSheetData({ ...PAST, preservative: { gradualWaterGrams: '600' } })} />,
+    );
+    expect(screen.queryByText(/there is no dilution water to add/i)).toBeNull();
+    cleanup();
+    const HEDGE = {
+      dilutionOverride: {
+        anhydrousGrams: 1218, solutionGrams: 1433, totalWaterGrams: 215,
+        dilutionWaterGrams: 0, glycerinGrams: 107, soapConcentrationPercent: 85,
+        targetExceedsPaste: true,
+      },
+      unknownLiquidGrams: 900,
+      overDilutionCertain: false,
+    };
+    render(<BatchSheet data={lsSheetData(HEDGE)} />);
+    expect(screen.getByText(/Can.t tell whether 85% is reachable/i)).toBeTruthy();
+    cleanup();
+    render(
+      <BatchSheet data={lsSheetData({ ...HEDGE, preservative: { gradualWaterGrams: '600' } })} />,
+    );
+    expect(screen.queryByText(/Can.t tell whether/i)).toBeNull();
   });
 });

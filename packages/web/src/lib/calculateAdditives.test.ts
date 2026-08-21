@@ -611,3 +611,59 @@ describe('process scoping reaches the computation, not just the picker', () => {
     expect(computeRecipeAdditives([line('glycerin')], basis)).toHaveLength(1);
   });
 });
+
+describe('computeBottledSolutionGrams: the record arm (spec §3)', () => {
+  // With a record governing, the bottled mass is what is IN THE POT — the pot the record
+  // counts from plus the water actually poured — not the target's own solution. The extras
+  // term has to net out whatever of the split liquid that pot already holds, or the liquid
+  // is priced twice.
+  const GLYCERIN = {
+    // 300 g anhydrous soap, 400 g of lye water, and 300 g of glycerin (waterFraction 0, so
+    // all of it is solids and none of it is cook water).
+    dilution: {
+      anhydrousGrams: 1200,
+      solutionGrams: 4000,
+      totalWaterGrams: 2800,
+      dilutionWaterGrams: 2400,
+      glycerinGrams: 110,
+      soapConcentrationPercent: 30,
+      targetExceedsPaste: false,
+    },
+    cookWaterGrams: 400,
+    extrasGrams: 300,
+    splitLiquidPasteWaterGrams: 0,
+    wholeBatchPasteGrams: 1900,
+  };
+
+  it('is pot + recorded water + the extras the pot does not already hold', () => {
+    // The pot (1,900 g) already contains the glycerin's whole 300 g — it is a solids-aware
+    // corrected basis — so the extras term contributes nothing. 1,900 + 2,500 = 4,400 g.
+    // The naive pot + record + extras prices 4,700 g: the glycerin, twice.
+    expect(
+      computeBottledSolutionGrams({
+        ...GLYCERIN,
+        record: { potGrams: 1900, waterGrams: 2500 },
+      }),
+    ).toBeCloseTo(4400, 6);
+  });
+
+  it('subtracts the liquid\'s WATER only from a bare anhydrous + cook-water pot', () => {
+    // With no corrected basis there are no solids to net out — the pot is anhydrous + cook
+    // water and holds the liquid's water alone. 1,600 + 2,500 + (300 - 100) = 4,300 g.
+    expect(
+      computeBottledSolutionGrams({
+        ...GLYCERIN,
+        splitLiquidPasteWaterGrams: 100,
+        wholeBatchPasteGrams: null,
+        record: { potGrams: 1600, waterGrams: 2500 },
+      }),
+    ).toBeCloseTo(4300, 6);
+  });
+
+  it('leaves the plan arm exactly as it was when no record is passed', () => {
+    expect(computeBottledSolutionGrams(GLYCERIN)).toBeCloseTo(
+      computeBottledSolutionGrams({ ...GLYCERIN, record: null }),
+      6,
+    );
+  });
+});

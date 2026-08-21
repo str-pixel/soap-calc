@@ -43,14 +43,17 @@ type PortionDilutionResultsProps = {
    * 0–100% water range, so it can be stated as fact after all. */
   overDilutionCertain?: boolean;
   /** Which control the maker is choosing the dilution with, so a refusal here can name
-   * something that is actually on screen. Structurally DilutionPanel's own DilutionMode,
-   * spelled out rather than imported to keep the type dependency one-way (the panel
-   * imports this module). Defaults to the panel's own default. */
+   * something that is actually on screen.
+   *
+   * DEAD SINCE PHASE 2A, and kept for Phase 3 to delete with the rest of the ratio-mode
+   * plumbing (spec §5). There is one control now — the plan's % field, on screen in every
+   * state — so DilutionPanel no longer passes either of these and both defaults apply. They
+   * stay rather than being half-removed here: the wording helper below is the shared one, and
+   * deleting a parameter is a change to the copy of every caller, which is a phase of its
+   * own. */
   dilutionMode?: 'concentration' | 'ratio';
-  /** True while ratio mode is showing a ratio the write-back has not applied — see
-   * DilutionPanel's own `ratioNotAppliedYet`. Everything here is computed from the SAVED
-   * target in that state, so a refusal must not name the ratio's own concentration as the
-   * thing the paste is past. */
+  /** True while a ratio the write-back has not applied is on screen. See `dilutionMode`
+   * immediately above: dead since Phase 2a, Phase 3's to remove. */
   ratioNotAppliedYet?: boolean;
   /** The alternative-liquid caveats in their PORTION wordings, composed by DilutionPanel's
    * shell — where the batch wordings of the same clauses live, so the two scopes cannot
@@ -68,12 +71,19 @@ type PortionDilutionResultsProps = {
  * the maker to do about it. Exported so DilutionPanel's Whole-batch twin of the same
  * refusal words it identically — the two describe one state and used to drift apart.
  *
- * Ratio mode shows no concentration field at all, so "the target above" / "set a target"
- * named a control that is not on screen; and while the ratio is not applied yet, every
- * figure here still runs on the SAVED target, so naming the ratio's own concentration would
- * be wrong in the other direction. The remedy is the same action either way — editing the
- * ratio both applies it and widens it — and points the same way as the exceeds-solution
+ * Ratio mode showed no concentration field at all, so "the target above" / "set a target"
+ * named a control that was not on screen; and while the ratio was not applied yet, every
+ * figure here still ran on the SAVED target, so naming the ratio's own concentration would
+ * have been wrong in the other direction. The remedy is the same action either way — editing
+ * the ratio both applies it and widens it — and points the same way as the exceeds-solution
  * alert: the paste is past the target, so it takes MORE water.
+ *
+ * BOTH CALLERS PASS THE 'concentration' ARM SINCE PHASE 2A. The mode is gone and the plan's %
+ * field is on screen in every state, so the ratio arm below is unreachable from the app; it
+ * survives with its parameters for Phase 3 to delete (spec §5). What the function is still
+ * FOR is that DilutionPanel's Whole-batch twin of this refusal and this component's own
+ * Custom-amount wording of it come from one place — the two describe one state and used to
+ * drift apart.
  */
 export function dilutionTargetWording(
   dilutionMode: 'concentration' | 'ratio',

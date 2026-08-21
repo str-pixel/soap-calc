@@ -243,10 +243,11 @@ export function parseGradualWaterRecordGrams(
  *
  * WHAT IT DELIBERATELY OMITS is `measurementExceedsSolution`, and the omission is the whole
  * point. "Heavier than the whole solution this target dilutes to" is a claim about a
- * TARGET; the two derived dilution modes do not have one. Ratio mode multiplies the pot it
- * is given, and Gradual mode DERIVES the target from the pot plus the water recorded — so
- * for gradual, `dilution.solutionGrams` is downstream of its own write-back, and letting it
- * pick the basis closed a feedback loop that hung the app:
+ * TARGET, and the two callers that come here are not aiming at one: a ratio preset
+ * multiplies the pot it is given at the moment of the click, and the RECORD arm derives its
+ * own concentration from the pot plus the water recorded. A % derived from a pot chosen by
+ * that same % is circular — and while gradual mode WROTE its derivation into the recipe, the
+ * circularity was a live feedback loop that hung the app:
  *
  *   basis = the weighed pot → write round2(100 × anhydrous ÷ pot) → solutionGrams is now
  *   anhydrous ÷ that percent, which lands a hair BELOW the pot whenever the 2 dp rounding
@@ -254,19 +255,21 @@ export function parseGradualWaterRecordGrams(
  *   the ceiling rejects the reading → basis flips to the computed pot → a different percent
  *   → solutionGrams clears the reading again → the ceiling accepts it → forever.
  *
- * Ratio mode never showed it because its water is `paste × ratio > 0`, so its solution
- * always clears the reading comfortably; gradual's own first record is the pot before any
- * water at all (LS:1531), where solution and reading are the same number by construction.
+ * Nothing writes that derivation any more (Phase 2a), so the loop is gone — but the reason
+ * the basis must stay target-independent is not, and it is the sentence above the loop
+ * rather than the loop itself. The record's own first entry is the pot before any water at
+ * all (LS:1531), where solution and reading are the same number by construction, so the
+ * circularity is at its sharpest in the state the reference starts from.
  *
  * The ceiling is not weakened anywhere it means something. {@link measuredPasteIsValidFor}
  * still applies it exactly for the portion and for the copy that speaks in the maker's voice
  * about a reading; {@link measuredPasteRejectionFor} still reports it; and the batch pour,
  * the printed sheet's pour and the bottled mass apply it through
- * {@link correctedPotGramsFor}, which — on a recipe carrying a gradual record, and only there
- * — widens it by exactly that write-back's rounding and no further, so a target a record
- * itself produced cannot refuse that record, while a reading past the target for any other
- * reason is still ignored. Only the choice of WHICH POT the derived modes count from drops it
- * altogether, and that is what is decided here.
+ * {@link correctedPotGramsFor}, which — on a recipe carrying a record, and only there —
+ * widens it by exactly that rounding and no further, so a target a record's own arithmetic
+ * reaches cannot refuse that record, while a reading past the target for any other reason is
+ * still ignored. Only the choice of WHICH POT the presets and the record arm count from drops
+ * it altogether, and that is what is decided here.
  */
 export function measuredPasteDescribesPotFor(
   measuredPasteGrams: string | undefined,
@@ -622,10 +625,18 @@ export function measuredPasteRejectionFor(
 }
 
 /**
- * Half of the last digit `gradualDilutionFrom` (core) rounds its written percentage to, and
- * therefore the most a recorded percent can differ from the record it was derived from.
- * DilutionPanel's own `gradualNotAppliedYet` threshold is this same number for the same
- * reason; both have to move if core's rounding ever does.
+ * Half of the last digit `gradualDilutionFrom` (core) rounds `writeBackPercent` to, and
+ * therefore the most a percent DERIVED FROM a record could differ from the record itself.
+ *
+ * DEAD MACHINERY, kept until Phase 3 (spec §5 lists it for deletion by name). Nothing derives
+ * `settings.soapConcentrationPercent` from a record any more — Phase 2a deleted both
+ * write-back effects and decision 2 forbids their return — so the widening this constant
+ * bounds can no longer be EARNED by a record that wrote the target. It is inert rather than
+ * wrong: {@link measuredCouldHaveWrittenTarget} still only widens where a record's own
+ * arithmetic happens to reach the plan in force, which is now a coincidence instead of a
+ * consequence, and the widening is bounded by exactly this rounding either way. Everything
+ * below that speaks of "the write-back" is describing why the bound is what it is, not a
+ * mechanism the app still has.
  */
 const GRADUAL_WRITE_BACK_ROUNDING = 0.005;
 
@@ -643,14 +654,17 @@ const GRADUAL_WRITE_BACK_ROUNDING = 0.005;
  * is this bound, closed-form and tight — not a tolerance chosen to make a case pass. It is
  * ATTAINED at W = 0, so the comparison sits exactly on the boundary and has to be exact there.
  *
- * THE RECORDED WATER IS IN THE COMPARISON, and that is what keeps the widening tied to the
- * target this record wrote rather than to the mere existence of a record. `gradualWaterGrams`
- * is RECIPE state and nothing clears it when the maker leaves Gradual, while `dilutionMode` is
- * session state this module cannot see — so "a record exists" was satisfied by a leftover 2,000
- * g pour sitting beside a target the maker typed by hand, and the widened branch applied to a
- * target that record demonstrably did not write. Asking whether M + W could have produced p
- * answers the question the widening's whole argument is about, and answers it from the record
- * itself. In practice this confines the widening to W = 0 and its immediate neighbourhood,
+ * THE RECORDED WATER IS IN THE COMPARISON, and that is what keeps the widening tied to a
+ * target this record COULD have written rather than to the mere existence of a record.
+ * `gradualWaterGrams` is RECIPE state and nothing clears it, so "a record exists" was
+ * satisfied by a leftover 2,000 g pour sitting beside a target the maker typed by hand, and
+ * the widened branch applied to a target that record demonstrably did not write. Asking
+ * whether M + W could have produced p answers the question the widening's whole argument is
+ * about, and answers it from the record itself. (Since Phase 2a nothing writes a target from
+ * a record at all — see GRADUAL_WRITE_BACK_ROUNDING — so the answer is never "and therefore
+ * it did"; the comparison survives as the bound it always was, and this branch is Phase 3's
+ * to remove.) In practice this confines the widening to W = 0 and its immediate
+ * neighbourhood,
  * which is the only place it was ever reachable: with real water in the record the solution the
  * record wrote is the pot PLUS that water, so the reading is under `solutionGrams` by the whole
  * pour and the pre-existing ceiling takes it without any widening at all.
@@ -676,8 +690,9 @@ const GRADUAL_WRITE_BACK_ROUNDING = 0.005;
  * "Water actually added" and "That record makes …" rows, which print off this same record.
  *
  * The signal is `settings.gradualWaterGrams` — RECIPE state, saved with the file and reaching
- * every caller including the sheet — and never the session-only `dilutionMode`, which the
- * sheet cannot see and a reload discards. It is read through
+ * every caller including the sheet — and never a session-only mode, which the sheet could not
+ * see and a reload discarded. (There is no mode at all since Phase 2a; the rule that a
+ * recipe-state signal is the only one every surface can read outlived it.) It is read through
  * {@link parseGradualWaterRecordGrams}, the same predicate the panel and the sheet use to
  * decide a record exists, so the widening cannot apply to a record no surface is showing —
  * a swallowed thousands separator included, which is refused there and so cannot buy a
@@ -726,21 +741,27 @@ function measuredCouldHaveWrittenTarget(
  * computeBottledSolutionGrams' base.
  *
  * It is {@link measuredPasteDescribesPotFor}'s three pot rules, plus a ceiling that is
- * `solutionGrams` widened by {@link measuredCouldHaveWrittenTarget} WHERE A GRADUAL RECORD
- * ADDS UP TO THIS TARGET and left exactly as it was everywhere else — and that widening is the
- * whole of this function's reason to exist. {@link measuredPasteIsValidFor} compares the
- * reading against `solutionGrams` exactly, and in gradual mode `solutionGrams` is anhydrous ÷
- * the percent the panel's own record just wrote: with no water recorded the pot IS the
- * finished mass, so the two are the same number up to 2 dp of rounding, and about half of the
- * readings in the window land the solution a hair below the reading. Deciding the pot there
- * split the panel from the mass it doses — a weighed 1,405 g pot against a 1,600 g computed
- * one had the panel print 1,405 g while the bottled figure came back 1,600 g, giving one batch
- * two masses, a finished volume from the larger, and a preservative dose (legally capped, EU
- * Annex V) taken against it: on the app's own starter recipe a 1,400 g pot was dosed at 1% of
- * 1,666 g, which is 1.19% of what the maker had. 213 of the 433 whole-gram readings between
- * the solids floor and the computed pot landed in it, with nothing on screen naming the
- * split — the exceeds-solution alert is suppressed in gradual mode precisely because it is a
- * rounding artifact there.
+ * `solutionGrams` widened by {@link measuredCouldHaveWrittenTarget} WHERE A RECORD'S OWN
+ * ARITHMETIC REACHES THIS TARGET and left exactly as it was everywhere else — and that
+ * widening was this function's original reason to exist. {@link measuredPasteIsValidFor}
+ * compares the reading against `solutionGrams` exactly, and while gradual mode WROTE the
+ * target, `solutionGrams` was anhydrous ÷ the percent the panel's own record had just
+ * produced: with no water recorded the pot IS the finished mass, so the two were the same
+ * number up to 2 dp of rounding, and about half of the readings in the window landed the
+ * solution a hair below the reading. Deciding the pot there split the panel from the mass it
+ * doses — a weighed 1,405 g pot against a 1,600 g computed one had the panel print 1,405 g
+ * while the bottled figure came back 1,600 g, giving one batch two masses, a finished volume
+ * from the larger, and a preservative dose (legally capped, EU Annex V) taken against it: on
+ * the app's own starter recipe a 1,400 g pot was dosed at 1% of 1,666 g, which is 1.19% of
+ * what the maker had. 213 of the 433 whole-gram readings between the solids floor and the
+ * computed pot landed in it, with nothing on screen naming the split.
+ *
+ * PHASE 2A CLOSED THAT SPLIT FROM THE OTHER END, which is why the widening is now dead rather
+ * than merely narrow: with a record governing, the bottled mass comes from the record arm's
+ * own pot (`computeBottledSolutionGrams`' `record` argument, fed from `resolveDilution`) and
+ * never from this function at all — so the two figures come from one resolution by
+ * construction. This ceiling is left for the PLAN arm, where it always belonged, and the
+ * widened branch is Phase 3's to delete (spec §5).
  *
  * THE CEILING IS NOT DROPPED, only widened to exactly the rounding, and the difference
  * matters. A reading past `solutionGrams` by more than any rounding could explain is the
@@ -770,18 +791,19 @@ function measuredCouldHaveWrittenTarget(
  * printed BatchSheet's, and computeBottledSolutionGrams (from the view model) — all pass the
  * recipe's own field, so the pot is chosen once for the pour, the paper and the dose.
  *
- * A CROCKPOT MIS-READING IS ABSORBED IN GRADUAL MODE, BY DESIGN, and it is worth saying so
- * where a reader would otherwise assume this ceiling is a defence against it in every mode. A
- * 4,500 g reading of a loaded crockpot with 0 g of water recorded writes its OWN target
- * (round2(100·anhydrous/4,500)) — so `solutionGrams` becomes 4,500 g, the reading sits inside
- * this ceiling honestly, and the pot, the bottle and the preservative dose are all taken
- * against 4,500 g with no alert anywhere (DilutionPanel suppresses the exceeds-solution
- * paragraph in gradual mode, because there the target is that mode's own output). That is
- * inherent to a mode whose basis must be target-independent — the alternative is the render
- * loop {@link measuredPasteDescribesPotFor} documents — and not something this ceiling can
- * recover: with the target derived from the reading, no target-based rule can contradict it.
- * The rules that still bite in gradual mode are the pot's own (the solids floor and the
- * precision fingerprint), which is why the reading is judged by them there.
+ * A CROCKPOT MIS-READING IS ABSORBED UNDER A RECORD, BY DESIGN, and it is worth saying so
+ * where a reader would otherwise assume this ceiling is a defence against it everywhere. The
+ * record arm's own pot is {@link weighedOrComputedPotGramsFor}'s — target-independent, three
+ * rules about the pot and no ceiling at all — so a 4,500 g reading of a loaded crockpot is
+ * what "Finished so far", the bottle and the preservative dose are all taken against, with no
+ * alert anywhere (DilutionPanel's exceeds-solution paragraph is plan-governs only, because
+ * the record arm is not aiming at a target). That is inherent to an arm whose basis must be
+ * target-independent — the alternative is the circularity
+ * {@link measuredPasteDescribesPotFor} documents — and not something this ceiling can
+ * recover. The rules that still bite under a record are the pot's own (the solids floor and
+ * the precision fingerprint), which is why the reading is judged by them there. What this
+ * ceiling still protects is the PLAN's pour and the plan-arm bottled mass, where a target
+ * really is what the reading is being measured against.
  *
  * `fromMeasurement` is not a convenience: computeBottledSolutionGrams has to know whether
  * the pot it is pricing is the one the MAKER weighed — a weighed pot already contains an
@@ -952,25 +974,30 @@ export function weighedOrComputedPotGramsFor(
  * MEASUREMENT (none here). Both surfaces now carry a branch keyed on the clamp's own
  * condition instead — DilutionPanel's pasteAlreadyPastTarget and BatchSheet's twin of it.
  * Any new surface pouring this figure owes the maker the same account; the clamp fires
- * exactly when the pot outweighs solutionGrams. (Gradual mode renders no pour row of its own
- * — it has no target for one to answer — so the only zero it prints is the sheet's, and the
- * sheet carries the same branches: a weighed 1,400 g pot with no water recorded prints "0 g"
- * beside the sheet's own "The paste is already more dilute than 87.3%" and its
- * "That record makes 1,400 g".)
+ * exactly when the pot outweighs solutionGrams.
+ *
+ * BOTH OF THOSE BRANCHES ARE PLAN-GOVERNS ONLY SINCE PHASE 2A (spec §4: a verdict about a
+ * target has no subject while a record governs), so the account under a record is a different
+ * one and is owed just as hard: DilutionPanel prints a plan-labelled caption beside the row,
+ * and the printed sheet keeps its "Water actually added" / "That record makes …" rows. A
+ * weighed 1,400 g pot with no water recorded still prints "0 g" here; what stands beside it
+ * is the record, not the verdict.
  *
  * WHICH POT, AND WHY IT IS NOT {@link measuredPasteIsValidFor}'s CHOICE — that gate compares
- * the reading against solutionGrams exactly, and in gradual mode solutionGrams is the panel's
- * own write-back rounded to 2 dp, so it lands under the reading about half the time. The pot
- * is chosen by {@link correctedPotGramsFor} instead, whose ceiling is solutionGrams widened by
- * exactly that rounding WHEREVER A GRADUAL RECORD EXISTS: see it for the bound, the proof that
- * it is tight, and the split it closed downstream in computeBottledSolutionGrams. The figure
+ * the reading against solutionGrams exactly, and for a plan that came from a record (gradual
+ * mode wrote them; a saved recipe can still carry one) solutionGrams is that derivation
+ * rounded to 2 dp, so it lands under the reading about half the time. The pot is chosen by
+ * {@link correctedPotGramsFor} instead, whose ceiling is solutionGrams widened by exactly
+ * that rounding WHEREVER A RECORD EXISTS: see it for the bound, the proof that it is tight,
+ * and the split it closed downstream in computeBottledSolutionGrams (a split Phase 2a has
+ * since closed at its source, by giving that function a record arm of its own). The figure
  * here is unchanged for every reading either gate accepts, and for every reading past the
  * widened ceiling (still the corrected pot, still the recipe's own answer to a crockpot-sized
  * mis-reading). It moves only inside the rounding window, and only for a recipe carrying a
  * record — where it becomes 0 rather than a pour measured against a pot the maker's own scale
  * contradicts, and where the sheet's "Water actually added" / "That record makes …" rows are
- * on the page to account for that 0. With no record the widening is not in force at all, so
- * concentration and ratio mode pour exactly what they poured before it existed.
+ * on the page to account for that 0. With no record the widening is not in force at all, so a
+ * plan-governed batch pours exactly what it poured before the widening existed.
  *
  * `isRemaining` refuses the reading in {@link correctedPotGramsFor}, so this row falls back to
  * the corrected pot for one. Both UI callers pass {@link MEASURED_PASTE_IS_REMAINING}, so that

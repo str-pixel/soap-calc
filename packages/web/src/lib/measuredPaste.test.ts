@@ -965,14 +965,15 @@ describe('parseGradualWaterRecordGrams — is there a record, and is it a scale 
   });
 });
 
-describe('the widened ceiling belongs to the target THIS record wrote', () => {
+describe('the widened ceiling belongs to a target THIS record could have written', () => {
   // The licence is not "a recipe carries a record somewhere" — `settings.gradualWaterGrams` is
-  // recipe state that nothing clears when the maker leaves Gradual, while `dilutionMode` is
-  // session state no consumer of this module can see. So the question the bound asks has to be
-  // answerable from the record itself: could a pot of `measured` grams, plus the water this
-  // record names, have written the target now in force?
+  // recipe state that nothing clears, and since Phase 2a nothing derives the target from it at
+  // all. So the question the bound asks has to be answerable from the record itself: could a
+  // pot of `measured` grams, plus the water this record names, have produced the target now in
+  // force? (The widening is dead machinery now — see GRADUAL_WRITE_BACK_ROUNDING, and spec §5,
+  // which lists it for deletion in Phase 3 — but while it is here it must stay this narrow.)
   it('refuses the widening for a target a leftover record cannot have written', () => {
-    // Record 2,000 g, then switch to Target concentration and type 30%: 4,000.6 g of paste
+    // Record 2,000 g beside a hand-typed 30%: 4,000.6 g of paste
     // plus 2,000 g of water is 6,000.6 g, which is 20.0% soap and not the 30% in force. The
     // reading is simply past the target, which is the app's own named mistake — the recipe's
     // computed pot answers, exactly as it does with no record at all.

@@ -207,6 +207,13 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // whether the paste ceiling behind "Dilution water to add" was widened at all.
   const gradualWaterRecordedGrams =
     parseGradualWaterRecordGrams(settings.gradualWaterGrams) ?? null;
+  // WHICH ARM GOVERNS, in the sheet's own terms (spec §1). Identical to
+  // `resolveDilution(...).governs === 'plan'` by construction: that rule's ONLY test for a
+  // record's presence is this same parser on this same field, so the page and the screen
+  // cannot disagree about which arm is speaking. Named rather than spelled out at each of the
+  // three notes below, so a future note cannot be added on the flag while its neighbours read
+  // the arm.
+  const planGoverns = gradualWaterRecordedGrams === null;
   // What that record MADE, which is the other half of the line spec §4 asks this sheet to
   // carry: paste + water, from the same two figures the panel adds up, so the page taken to
   // the bench states the mass that exists rather than only the water that went into it.
@@ -262,8 +269,18 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // two sources for one quantity, the exact drift this file exists to prevent.)
   const bottledGrams = finishedProductGramsFor(preservativeDosingBasisGrams, preservativeGrams ?? 0);
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
+  // Compared against the finished mass the page ALREADY prints under whichever arm governs —
+  // "That record makes …" when a record does, else the "Finished solution" row. Keyed on
+  // solutionGrams alone, a record mid-pour (whose bottle is lighter than the plan's solution)
+  // hid this row while "≈ Finished volume" below went on converting it, leaving a millilitre
+  // figure on the bench page derived from a mass nothing on it stated. Same rule, same
+  // reasoning, as DilutionPanel's own showBottledRow.
+  const governingFinishedGrams = gradualFinishedGrams ?? dilution?.solutionGrams ?? null;
   const showBottledRow =
-    dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
+    dilution !== null &&
+    bottledGrams !== null &&
+    governingFinishedGrams !== null &&
+    bottledGrams > governingFinishedGrams + 0.5;
   // Named locals so the row's <dd> isn't packing six things and two inline ternaries.
   // Both always end their own sentence with a period — the base note used to end bare
   // ("...once cooled" with no full stop) and only gained one when the ceiling note was
@@ -563,7 +580,19 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               already dilute enough when it still needs hundreds of grams of water. Mirrors
               DilutionPanel's can't-tell branch instead of the floor caveat below. A valid
               measured paste outranks the flag outright (Task 5) — see dilutionWaterGramsPrinted
-              above — so both branches below are suppressed the same way DilutionPanel does. */}
+              above — so both branches below are suppressed the same way DilutionPanel does.
+
+              ALL THREE NOTES BELOW ARE PLAN-GOVERNS ONLY (spec §4: "BatchSheet's three verdict
+              notes lean on write-back having aligned target ≈ record → gated on
+              plan-governs"). Each is a verdict about a TARGET — the paste has passed it, the
+              pot outweighs its solution, or an undeclared liquid makes it unknowable — and
+              while they were true of every record too, that was only because the record wrote
+              the target it is being judged against. Nothing writes it now, so under a record
+              these would print a verdict about a number the maker has stopped aiming at,
+              directly beside the two rows that say what the batch actually is ("Water actually
+              added", "That record makes …"). Those rows, and the contrast copy on the second
+              of them, are what speaks for a record page (spec §4 keeps them deliberately: a
+              labelled plan-vs-record comparison is not the reassurance framing §2 retires). */}
           {/* The sheet is the page carried to the bench, so the state DilutionPanel's
               pasteAlreadyPastTarget alert explains on screen has to be explained here too:
               the corrected pot outweighs the whole solution its soap makes at the target, so
@@ -584,7 +613,8 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               the divergence is deliberate, not drift.) Unreachable without a corrected
               paste basis, which is why the branch below reads data.wholeBatchPasteGrams
               directly. */}
-          {!dilution.targetExceedsPaste &&
+          {planGoverns &&
+          !dilution.targetExceedsPaste &&
           !measuredPasteValid &&
           correctedPasteBasis &&
           (data.wholeBatchPasteGrams as number) > dilution.solutionGrams ? (
@@ -598,7 +628,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               the cook boils off water this figure still counts.
             </p>
           ) : null}
-          {dilution.targetExceedsPaste && !measuredPasteValid && data.overDilutionCertain ? (
+          {planGoverns && dilution.targetExceedsPaste && !measuredPasteValid && data.overDilutionCertain ? (
             // Certain across the unknown's whole 0-100% range — state the fact, exactly as
             // the panel does; hedging here made the two surfaces disagree for one recipe.
             <p className="batch-sheet__note">
@@ -607,7 +637,8 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               lowers the concentration further.
             </p>
           ) : null}
-          {data.unknownLiquidGrams &&
+          {planGoverns &&
+          data.unknownLiquidGrams &&
           dilution.targetExceedsPaste &&
           !measuredPasteValid &&
           !data.overDilutionCertain ? (

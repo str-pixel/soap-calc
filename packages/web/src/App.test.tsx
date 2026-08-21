@@ -177,60 +177,44 @@ describe('App process switch', () => {
   });
 });
 
-describe('the seeded ratio preset applies from the path the app actually opens on', () => {
-  // App seeds waterPasteRatio to '2' and the saved target to 30%, so entering ratio mode
-  // renders 2:1 ALREADY CHECKED beside "Not applied yet: every figure below — and the printed
-  // batch sheet — still uses your saved 30% target". Both of these drive
-  // the real App rather than the panel in isolation, because the seeding is App's and the
-  // bug only exists at those seeded values: DilutionPanel's own tests have to be handed the
-  // state that App creates for free.
+describe('a ratio preset applies from the path the app actually opens on', () => {
+  // App used to seed waterPasteRatio to '2' beside a saved 30% target, so entering ratio mode
+  // rendered 2:1 ALREADY CHECKED — and re-asserting a checked radio fires no `change` event,
+  // so the one move the screen invited was inert. Both cases here drove the real App rather
+  // than the panel in isolation, because the seeding was App's and the bug only existed at
+  // those seeded values.
   //
-  // 1,200 g of anhydrous soap is not what the starter recipe makes, so the exact landing
-  // percentage is read off the app rather than hardcoded — what is asserted is that the
-  // saved target MOVED to whatever the ratio lands at, and that the split note cleared.
-  async function enterRatioMode() {
+  // The mode, the seed and the radios are all gone (spec §2: the presets are one-shot
+  // buttons, and nothing claims one of them describes the current plan). What is left of
+  // that pair is the claim underneath: from the state the app actually opens in, pressing a
+  // preset moves the saved target. Driven through App, still, because the plan value it
+  // writes over is App's own seed.
+  it('moves the saved target from the seeded state, by mouse and by keyboard alike', async () => {
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
     const panel = screen
       .getByRole('heading', { name: 'Dilution' })
       .closest('section') as HTMLElement;
-    const savedTarget = (
-      within(panel).getByLabelText('Target soap concentration percent') as HTMLInputElement
-    ).value;
-    await userEvent.click(within(panel).getByLabelText('Water : paste ratio'));
-    const preset = within(panel).getByRole('radio', { name: '2:1' }) as HTMLInputElement;
-    // The whole premise: the preset the maker would reach for is already selected, and the
-    // panel is telling them nothing below it has been applied.
-    expect(preset.checked).toBe(true);
-    expect(within(panel).getByText(/Not applied yet/i)).toBeTruthy();
-    return { panel, preset, savedTarget };
-  }
+    const targetField = () =>
+      within(panel).getByLabelText('Target soap concentration percent') as HTMLInputElement;
+    const seeded = targetField().value;
 
-  async function assertApplied(panel: HTMLElement, savedTarget: string) {
-    expect(within(panel).queryByText(/Not applied yet/i)).toBeNull();
-    await userEvent.click(within(panel).getByLabelText('Target concentration'));
-    const applied = (
-      within(panel).getByLabelText('Target soap concentration percent') as HTMLInputElement
-    ).value;
-    expect(applied).not.toBe(savedTarget);
-    expect(Number(applied)).toBeGreaterThan(0);
-  }
+    await userEvent.click(within(panel).getByRole('button', { name: '2:1' }));
+    const afterClick = targetField().value;
+    expect(afterClick).not.toBe(seeded);
+    expect(Number(afterClick)).toBeGreaterThan(0);
+    // And it says what it did, in the caption pattern §2 names.
+    expect(within(panel).getByText(new RegExp(`2:1 → ${afterClick}%`))).toBeTruthy();
 
-  it('applies when the already-checked preset is clicked', async () => {
-    const { panel, preset, savedTarget } = await enterRatioMode();
-    await userEvent.click(preset);
-    await assertApplied(panel, savedTarget);
-  });
-
-  it('applies when the already-checked preset is activated with Space', async () => {
-    // fireEvent, not userEvent.keyboard(' '): jsdom synthesises a `click` on a checked radio
-    // where Chromium (censused) fires only keydown and keyup, so a userEvent-driven Space
-    // would go through the onClick handler and prove nothing about the keyboard path.
-    const { panel, preset, savedTarget } = await enterRatioMode();
+    // The keyboard path. A button is activated by Space and Enter natively, which is what
+    // retires the three-handler machinery the radio group needed to be operable at all.
+    const preset = within(panel).getByRole('button', { name: '3:1' });
     preset.focus();
-    fireEvent.keyDown(preset, { key: ' ', code: 'Space' });
-    fireEvent.keyUp(preset, { key: ' ', code: 'Space' });
-    await assertApplied(panel, savedTarget);
+    await userEvent.keyboard('{ }');
+    const afterSpace = targetField().value;
+    expect(afterSpace).not.toBe(afterClick);
+    expect(Number(afterSpace)).toBeGreaterThan(0);
+    expect(within(panel).getByText(new RegExp(`3:1 → ${afterSpace}%`))).toBeTruthy();
   });
 });
 
@@ -366,7 +350,7 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
   });
 
-  it('Custom amount + Gradual doses the jar that was recorded, not a target-derived one', async () => {
+  it('a recorded jar is what Custom amount doses, not a target-derived portion', async () => {
     // THE SAFETY PIN for the worst version of this bug. Custom amount resolved its dose
     // through the "Amount to make (ml)" field — the one input Gradual takes off the panel —
     // so a recorded 1,300 g jar was dosed against a portion sized from a stale amount, and
@@ -374,9 +358,11 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     // actually has, past the EU ceiling for several listed preservatives.
     const snippet = await openSnippet();
     await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
-    // The stale amount that used to drive the dose in this mode.
+    // The stale amount that used to drive the dose. It is still on screen until the jar
+    // resolves, which is what makes this the live version of the bug rather than a museum
+    // piece: both ways of describing one jar are reachable at once, and the recorded one
+    // wins (spec §2's portion precedence).
     await userEvent.type(screen.getByLabelText('Amount to make (ml)'), '2000');
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
     await userEvent.type(screen.getByLabelText('Paste weighed out (g)'), '400');
     await userEvent.type(screen.getByLabelText('Water added so far (g)'), '900');
 
@@ -399,7 +385,7 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(13, 0);
   });
 
-  it('Custom amount + Gradual doses a jar the weighed pot can actually hold', async () => {
+  it('doses a jar the weighed pot can actually hold', async () => {
     // The jar is a share of the batch's paste, and which batch that is decides whether a jar
     // exists at all: with the basis fixed to the recipe's PREDICTION, a maker whose cook lost
     // nothing — 1,800 g on the scale against a 1,666 g predicted pot — was told a 1,700 g jar
@@ -412,7 +398,6 @@ describe('the preservative dose is a % of what the maker is actually making', ()
       '1800',
     );
     await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
     await userEvent.type(screen.getByLabelText('Paste weighed out (g)'), '1700');
     await userEvent.type(screen.getByLabelText('Water added so far (g)'), '300');
 
@@ -422,17 +407,17 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(20, 0);
   });
 
-  it('Custom amount + Gradual asks for the fields it actually doses from', async () => {
-    // With nothing recorded there is no jar to dose — and the ask has to name the two
-    // fields on screen, not the "Amount to make" input this mode removes. That hint was the
-    // normal state of the snippet in gradual mode, since nothing ever fills that field in.
+  it('asks for the fields it actually doses from, once a jar record is started', async () => {
+    // With a jar HALF recorded there is no jar to dose — and the ask has to name the two
+    // fields the maker is filling in, not the "Amount to make" input they are not using.
+    // (The mode gate this replaces made the record the assumption for the whole screen; the
+    // maker's own first keystroke is what says it now.)
     const snippet = await openSnippet();
     await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
+    await userEvent.type(screen.getByLabelText('Paste weighed out (g)'), '400');
     expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
     expect(within(snippet).getByText(/paste weighed out and the water added so far/i)).toBeTruthy();
     expect(within(snippet).queryByText(/Enter an Amount to make/i)).toBeNull();
-    expect(screen.queryByLabelText('Amount to make (ml)')).toBeNull();
   });
 
   it('an unsized Custom amount falls back to the hint, never to the batch', async () => {
@@ -447,7 +432,7 @@ describe('the preservative dose is a % of what the maker is actually making', ()
   });
 });
 
-describe('Whole batch + Gradual: one batch has one finished mass', () => {
+describe('Whole batch, with a record: one batch has one finished mass', () => {
   // THE SAFETY PIN for the split that no gradual test could see, because none of them ever
   // rendered a finished-product figure at all: `bottledSolutionGrams` only exists on the
   // <App/> path (useRecipeViewModel computes it), and every component-level gradual test
@@ -468,7 +453,6 @@ describe('Whole batch + Gradual: one batch has one finished mass', () => {
   async function gradualLs() {
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
     const panel = screen
       .getByRole('heading', { name: 'Dilution' })
       .closest('section') as HTMLElement;
@@ -569,15 +553,13 @@ describe('Whole batch + Gradual: one batch has one finished mass', () => {
     let checked = 0;
     for (let reading = Math.ceil(anhydrous) + 1; reading <= computedPot; reading += 1) {
       fireEvent.change(paste, { target: { value: String(reading) } });
-      // Skip the readings the WRITE-BACK's own [1, 99] clamp moves: a pot that light is over
-      // 99% soap, so the saved target is capped below what was recorded and the app really is
-      // pricing a different (heavier) solution than the record describes. The panel says so
-      // in an alert of its own, which is the account this test is looking for everywhere
-      // else; see the residual-fix report for why that corner is left as the clamp's.
-      const clamped = Array.from(panel.querySelectorAll('[role="alert"]')).some((a) =>
-        /outside the 1–99% range/.test(a.textContent ?? ''),
-      );
-      if (clamped) continue;
+      // NOTHING TO SKIP ANY MORE. This sweep used to step over the readings the write-back's
+      // own [1, 99] clamp moved: a pot that light is over 99% soap, so the saved target was
+      // capped below what the record described and the app really was pricing a heavier
+      // solution than the pot on the scale. With no write-back the record governs at its own
+      // unclamped concentration in every one of those readings, and the bottled mass follows
+      // the pot throughout — so the corner the clamp used to own is simply gone, and the
+      // sweep covers the whole window.
       checked += 1;
       // The snippet's own row is the INCLUSIVE figure (fix 3: pot + the 1% w/w dose), no
       // longer a bare echo of the pot text — so the invariant this sweep protects is that
@@ -599,13 +581,20 @@ describe('Whole batch + Gradual: one batch has one finished mass', () => {
   }, 60000);
 });
 
-describe('the dilution mode follows the recipe that arrives, in both directions', () => {
-  // A recorded gradual dilution reopens in Gradual mode, because the water is recipe state
-  // and the mode is not — without that, the record survives a reload and has nowhere to
-  // appear. But the same key (workspaceGeneration) also fires on New recipe and on import,
-  // and the effect only ever SET gradual: starting a new recipe after opening one with a
-  // record left the panel in Gradual, with an empty field, no dilution rows, and a mode
-  // restored for a record that no longer exists.
+describe('a record arriving with a recipe needs no session state to appear in', () => {
+  // RETIRED WITH THE MODE-RESTORE EFFECT (spec §5), and this describe is what its whole
+  // existence was for. `dilutionMode` was session state and the recorded water was recipe
+  // state, so a record survived a reload and had nowhere to appear: the panel came back in
+  // Concentration mode with the field that shows the record off screen entirely. The effect
+  // that restored Gradual then had to be taught three more things — to leave Gradual when a
+  // recipe arrived WITHOUT a record, to leave the OTHER two modes alone on a process-tab
+  // round trip (which bumps the same key), and to stop re-imposing Gradual on every such trip
+  // once the maker had answered for that record (`gradualModeChoiceRef`) — sixty lines of
+  // arbitration, all of it about which mode a maker should be in.
+  //
+  // There is no mode. The record's field is on the whole-batch screen in every state, so a
+  // record appears the moment its recipe does, and there is nothing for an arrival to impose
+  // or a maker to be pinned into. The four cases collapse to the two claims underneath them.
   async function ls() {
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
@@ -616,51 +605,77 @@ describe('the dilution mode follows the recipe that arrives, in both directions'
     await userEvent.click(screen.getByRole('menuitem', { name: 'New recipe' }));
   }
 
-  it('a new recipe leaves Gradual behind with the record it belonged to', async () => {
+  it('shows a recorded pour the moment its recipe reloads, with no mode to restore', async () => {
     await ls();
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
-    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
-    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(true);
-
-    await chooseNewRecipe();
-
-    // Back to the panel's own default, exactly as a cold start opens.
-    expect((screen.getByRole('radio', { name: 'Target concentration' }) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(false);
-    expect(screen.getByLabelText('Target soap concentration percent')).toBeTruthy();
-    expect(screen.queryByLabelText('Water added so far (g)')).toBeNull();
-  });
-
-  it('a process-tab round trip keeps the mode the maker chose', async () => {
-    // workspaceGeneration bumps on a process switch as well as on New/import
-    // (useRecipeStorage's setProcess), so a flat reset to the default here charged a maker
-    // for glancing at another tab: choose Water : paste ratio, look at Cold process, come
-    // back, and the panel had silently returned to Target concentration with the ratio's own
-    // figures gone from the screen. Only Gradual is stale-able by an arriving recipe.
-    await ls();
-    await userEvent.click(screen.getByRole('radio', { name: 'Water : paste ratio' }));
-    expect((screen.getByRole('radio', { name: 'Water : paste ratio' }) as HTMLInputElement).checked).toBe(true);
-
-    await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
-    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-
-    expect((screen.getByRole('radio', { name: 'Water : paste ratio' }) as HTMLInputElement).checked).toBe(true);
-    expect(screen.getByLabelText('Water to paste ratio')).toBeTruthy();
-  });
-
-  it('a recipe that HAS a record still opens in Gradual', async () => {
-    // The direction that already worked, pinned so the reset above cannot swallow it: the
-    // record is saved with the recipe and autosaved back on reload.
-    await ls();
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
     await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
     // The autosave debounce (500 ms) is what makes this a reload rather than a re-render:
     // the record has to be in storage before the second mount reads it.
     await new Promise((resolve) => setTimeout(resolve, 700));
     cleanup();
     render(<App />);
-    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(true);
     expect(screen.getByLabelText('Water added so far (g)')).toHaveProperty('value', '1500');
+    // ...and it GOVERNS, which is the half the old restore effect could only approximate by
+    // putting the maker in the right mode.
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    expect(within(panel).getByText(/Finished so far/)).toBeTruthy();
+    expect(within(panel).getByText('Dilution water to add (plan)')).toBeTruthy();
+  });
+
+  it('a new recipe leaves the record behind, and the panel with it', async () => {
+    await ls();
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
+    expect(screen.getByLabelText('Water added so far (g)')).toHaveProperty('value', '1500');
+
+    await chooseNewRecipe();
+
+    // The field is still there — it always is — and it is empty, so the plan governs again.
+    expect(screen.getByLabelText('Water added so far (g)')).toHaveProperty('value', '');
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    expect(within(panel).queryByText(/Finished so far/)).toBeNull();
+    expect(within(panel).getByText('Dilution water to add')).toBeTruthy();
+  });
+
+  it('a process-tab round trip costs the maker nothing they typed', async () => {
+    // workspaceGeneration bumps on a process switch as well as on New/import
+    // (useRecipeStorage's setProcess), and the restore effect treated every bump as a recipe
+    // arriving with a record to answer for — charging a maker for glancing at another tab, in
+    // one direction or the other depending on how it was written. With nothing to restore,
+    // the round trip is inert: the plan the maker typed and the record they poured both come
+    // back exactly as they were.
+    await ls();
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
+    await userEvent.clear(screen.getByLabelText('Target soap concentration percent'));
+    await userEvent.type(screen.getByLabelText('Target soap concentration percent'), '25');
+
+    await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+
+    expect(screen.getByLabelText('Target soap concentration percent')).toHaveProperty('value', '25');
+    expect(screen.getByLabelText('Water added so far (g)')).toHaveProperty('value', '1500');
+  });
+
+  it('a record no surface would show governs nothing, and pins the maker nowhere', async () => {
+    // RETIRED-AND-KEPT: 'does not pin the maker into Gradual for a record no surface would
+    // show'. '-100' is not a pour, and the shared parser says so — no sheet rows, no derived
+    // percentage, no widened ceiling. The restore effect asked its own `.trim() !== ''`
+    // instead, so this reopened in Gradual on every reload: a field the app refuses, and no
+    // figures. There is no mode to be pinned into now, and the claim underneath is that the
+    // ONE predicate decides: a refused record leaves the plan governing.
+    await ls();
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '-100');
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    cleanup();
+    render(<App />);
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    expect(screen.getByLabelText('Water added so far (g)')).toHaveProperty('value', '-100');
+    expect(within(panel).queryByText(/Finished so far/)).toBeNull();
+    expect(within(panel).getByText('Dilution water to add')).toBeTruthy();
   });
 });
 
@@ -724,77 +739,11 @@ describe('the preservative sits inside the panel it doses against', () => {
   });
 });
 
-describe('a mode the maker chose survives the arrivals a record used to override', () => {
-  // workspaceGeneration bumps on a PROCESS TAB SWITCH as well as on load/import/new
-  // (useRecipeStorage's setProcess), and the restore effect treated every bump as a recipe
-  // arriving with a record to answer for. The reverse direction was already fixed for exactly
-  // this reason ("a process-tab round trip keeps the mode the maker chose"); the forward one
-  // charged the same glance to anyone who had recorded water.
-  async function ls() {
-    render(<App />);
-    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-  }
-
-  async function processRoundTrip() {
-    await userEvent.click(screen.getByRole('tab', { name: /cold process/i }));
-    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-  }
-
-  it('keeps Target concentration after a tab round trip, with the record still on the recipe', async () => {
-    await ls();
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
-    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
-    // Leaving Gradual to type an exact target is the whole reason the other two modes exist.
-    await userEvent.click(screen.getByRole('radio', { name: 'Target concentration' }));
-    await userEvent.clear(screen.getByLabelText('Target soap concentration percent'));
-    await userEvent.type(screen.getByLabelText('Target soap concentration percent'), '25');
-
-    await processRoundTrip();
-
-    expect(
-      (screen.getByRole('radio', { name: 'Target concentration' }) as HTMLInputElement).checked,
-    ).toBe(true);
-    // The field the maker was typing into is still the one on screen — the complaint the
-    // effect's own comment raises about the other direction, in this one.
-    expect(screen.getByLabelText('Target soap concentration percent')).toHaveProperty(
-      'value',
-      '25',
-    );
-  });
-
-  it('still restores Gradual when the RECORD is the thing that changed', async () => {
-    // The choice is answered to one record. A recipe arriving with a different one is a new
-    // question, and the record has nowhere to appear unless the mode moves.
-    await ls();
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
-    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
-    await userEvent.click(screen.getByRole('radio', { name: 'Target concentration' }));
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    cleanup();
-    // A reload restores the record the maker opted out of, and the mode with it: the ref that
-    // remembers the choice is session state, exactly like the mode itself.
-    render(<App />);
-    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(true);
-  });
-
-  it('does not pin the maker into Gradual for a record no surface would show', async () => {
-    // '-100' is not a pour, and the shared parser says so — no sheet rows, no derived
-    // percentage, no widened ceiling. The mode restore asked its own `.trim() !== ''` instead,
-    // so this reopened in Gradual on every reload: a field the app refuses, and no figures.
-    await ls();
-    await userEvent.click(screen.getByRole('radio', { name: /Gradual/ }));
-    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '-100');
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    cleanup();
-    render(<App />);
-    expect((screen.getByRole('radio', { name: /Gradual/ }) as HTMLInputElement).checked).toBe(
-      false,
-    );
-    expect(
-      (screen.getByRole('radio', { name: 'Target concentration' }) as HTMLInputElement).checked,
-    ).toBe(true);
-  });
-});
+// RETIRED: 'a mode the maker chose survives the arrivals a record used to override' (three
+// cases). Every one of them arbitrated between a mode the restore effect wanted to impose and
+// a mode the maker had picked — the `gradualModeChoiceRef` machinery. There is no mode and no
+// effect, so there is nothing to arbitrate; the surviving claims (a record appears on reload,
+// a tab round trip costs nothing, a refused record governs nothing) are the describe above.
 
 describe('a recipe we cannot read is not a recipe we lost', () => {
   it('says the unreadable draft was kept, instead of opening silently on the starter', () => {

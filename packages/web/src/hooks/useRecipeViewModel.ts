@@ -80,8 +80,8 @@ export type RecipeViewModel = {
    * figures are a lower bound, not a measurement — the UI must say so. */
   unknownLiquidGrams: number;
   /** The paste's true water (lye water + split-liquid water), independent of the
-   * targetExceedsPaste clamp on dilutionWaterGrams. Feeds the Dilution panel's ratio-input
-   * mode: pasteGrams = anhydrousGrams + cookWaterGrams. */
+   * targetExceedsPaste clamp on dilutionWaterGrams. Feeds every pot resolution's fallback:
+   * pasteGrams = anhydrousGrams + cookWaterGrams. */
   cookWaterGrams: number;
   /** True when an in-lye liquid's water content is undeclared, so the 1:1 dissolution
    * floor cannot be checked either way. */
@@ -90,7 +90,9 @@ export type RecipeViewModel = {
    * the deficit is a fact rather than an artefact of excluding it. */
   lyeWaterShortfallCertain: boolean;
   /** True when the paste is over the target concentration regardless of what the undeclared
-   * liquid turns out to contain — the verdict is a fact, not an assumption. */
+   * liquid turns out to contain — the verdict is a fact, not an assumption. A PLAN CLAIM
+   * (spec §3): false whenever a record governs, because the record arm is not aiming at a
+   * target for the paste to have passed. */
   overDilutionCertain: boolean;
   fixedBatchExtrasGrams: number;
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
@@ -105,9 +107,11 @@ export type RecipeViewModel = {
   lyeLabel: string;
   dilution: DilutionResult | null;
   /** Which arm — plan or record — governs, per resolveDilution's spec §1 rule: `'record'`
-   * iff a record is present (non-blank, ≥ 0 — zero is a record), else `'plan'`. PHASE 1:
-   * computed, exposed, but read by nothing user-visible yet; `dilution` above still returns
-   * the plan arm regardless of which one governs (Phase 2a is what flips consumers over). */
+   * iff a record is present (non-blank, ≥ 0 — zero is a record), else `'plan'`. `dilution`
+   * above is the PLAN arm whichever one governs — the plan's own figures never stop being
+   * computed, because §2 keeps them on screen labelled as plan. What follows the record is
+   * everything DERIVED for the batch that exists: `bottledSolutionGrams`, the dosing basis,
+   * the finished mass and the volume below, plus every plan-claim gate on the surfaces. */
   dilutionGoverns: ResolvedDilution['governs'];
   /** The record arm's figures — pot, water, finished mass, derived % — or null when either
    * no record is present or a record is present but nothing can be computed from it yet
@@ -118,9 +122,11 @@ export type RecipeViewModel = {
   neutralization: NeutralizationResult | null;
   pcsfIsExtra: boolean;
   extrasGrams: number;
-  /** The mass the LS batch actually bottles: solution base (real paste when the target
-   * exceeds it) plus additives, append-mode PCSF oil, and split-liquid solids. Null
-   * outside LS / before a dilution exists. See computeBottledSolutionGrams. */
+  /** The mass the LS batch actually bottles. PLAN ARM: solution base (real paste when the
+   * target exceeds it) plus additives, append-mode PCSF oil, and split-liquid solids. RECORD
+   * ARM (spec §3, whenever `dilutionGoverns` is 'record'): the record's own pot plus the water
+   * poured, plus the extras that pot does not already hold. Null outside LS / before a
+   * dilution exists. See computeBottledSolutionGrams. */
   bottledSolutionGrams: number | null;
   /** The preservative-free dosing basis of the WHOLE batch: `bottledSolutionGrams` when
    * there is one, else the dilution's own solution. The Preservative snippet's batch-scope
@@ -348,8 +354,8 @@ export function useRecipeViewModel({
   // in (every split-liquid stage is pre-cook, so that water is already in the pot when
   // dilution starts). Deliberately NOT derived as totalWaterGrams - dilutionWaterGrams:
   // calculateDilution clamps dilutionWaterGrams to 0 when targetExceedsPaste, which would
-  // erase this. Exposed on the return object — the Dilution panel's ratio-input mode needs
-  // it (pasteGrams = anhydrousGrams + cookWaterGrams) and cannot reconstruct it from
+  // erase this. Exposed on the return object — every pot resolution needs it
+  // (pasteGrams = anhydrousGrams + cookWaterGrams) and cannot reconstruct it from
   // finalResult, since this deliberately reads the base result (see dilution below).
   const cookWaterGrams = useMemo(
     () => (result ? result.waterWeightGrams + splitLiquidPasteWater : 0),
@@ -388,17 +394,6 @@ export function useRecipeViewModel({
       previewSettings.superfatPercent,
     ],
   );
-  // Is the "already more dilute than the target" verdict CERTAIN, or could declaring the
-  // unknown liquid's water content overturn it? Certain when the paste's water exceeds the
-  // target even if every undeclared gram brought NO water at all — the most favourable case
-  // for reaching the target. Suppressing the verdict on the mere presence of an unknown
-  // dropped a warning that was provably right across the whole 0-100% range.
-  const overDilutionCertain = useMemo(() => {
-    if (!dilution || !result || !dilution.targetExceedsPaste) return false;
-    const declaredCookWater =
-      result.waterWeightGrams + (splitLiquidPasteWater - unknownLiquidGrams);
-    return dilution.totalWaterGrams < declaredCookWater;
-  }, [dilution, result, splitLiquidPasteWater, unknownLiquidGrams]);
   const neutralization = useMemo(
     () =>
       processOffers(process, 'neutralize') && result
@@ -463,8 +458,8 @@ export function useRecipeViewModel({
   const splitLiquidGrams =
     resolvedSplit && resolvedSplit.totalGrams > 0 ? resolvedSplit.totalGrams : null;
   // The best-known WHOLE-BATCH paste mass — corrects the recipe's own water-only figure
-  // (anhydrousGrams + cookWaterGrams, the same expression DilutionPanel's ratio mode
-  // already uses) for an alternative liquid's non-water solids: real mass sitting in the
+  // (anhydrousGrams + cookWaterGrams, the same expression DilutionPanel's own pot resolution
+  // falls back to) for an alternative liquid's non-water solids: real mass sitting in the
   // pot that a water-only figure structurally misses (splitLiquidPasteWater is only the
   // liquid's WATER fraction; splitLiquidGrams is its total mass, so the difference is its
   // solids). Feeds PortionDilutionResults' remaining-mode ceiling/composition basis (see
@@ -497,6 +492,31 @@ export function useRecipeViewModel({
       }),
     [dilution, settings.gradualWaterGrams, wholeBatchPasteGrams, cookWaterGrams, measuredPasteGrams],
   );
+  // Is the "already more dilute than the target" verdict CERTAIN, or could declaring the
+  // unknown liquid's water content overturn it? Certain when the paste's water exceeds the
+  // target even if every undeclared gram brought NO water at all — the most favourable case
+  // for reaching the target. Suppressing the verdict on the mere presence of an unknown
+  // dropped a warning that was provably right across the whole 0-100% range.
+  //
+  // A PLAN CLAIM, so it stands down while a RECORD governs (spec §3: "overDilutionCertain and
+  // every other plan-claim is gated on plan-governs"). Every clause of it is about a TARGET
+  // the paste has already passed, and the record arm has no target — the batch that exists is
+  // what every figure describes, and its own concentration is printed beside them. Gated here
+  // rather than at each of the three surfaces that read it (the panel's alert, the printed
+  // sheet's note, the panel's hedge exclusion) so one answer reaches all of them; the panel's
+  // own alert carries the plan-governs term too, because with no undeclared liquid its other
+  // clauses do not consult this flag at all.
+  //
+  // Computed AFTER resolveDilution deliberately: the gate reads that one resolution rather
+  // than re-parsing settings.gradualWaterGrams, which is how three copies of "is there a
+  // record" came to disagree once before.
+  const overDilutionCertain = useMemo(() => {
+    if (resolvedDilution.governs === 'record') return false;
+    if (!dilution || !result || !dilution.targetExceedsPaste) return false;
+    const declaredCookWater =
+      result.waterWeightGrams + (splitLiquidPasteWater - unknownLiquidGrams);
+    return dilution.totalWaterGrams < declaredCookWater;
+  }, [resolvedDilution, dilution, result, splitLiquidPasteWater, unknownLiquidGrams]);
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
   // survives. Sized against the base (saponification) lye, then folded into the result so
   // every downstream surface — concentration, steps, sheet — quotes the adjusted figures.
@@ -803,8 +823,16 @@ export function useRecipeViewModel({
           wholeBatchPasteGrams,
           // And the same gradual record they read, which is what decides whether the paste
           // ceiling was widened — so this prices the pot those two surfaces pour against
-          // rather than one chosen by a different rule.
+          // rather than one chosen by a different rule. Plan arm only; with a record the arm
+          // below chooses the pot from the record itself.
           gradualWaterGrams: settings.gradualWaterGrams,
+          // THE RESOLUTION'S OWN ANSWER, not a second reading of the same field (spec §1:
+          // one function feeds every consumer). Non-null exactly when the record governs, so
+          // this prices the batch that exists — the pot plus the water actually poured — and
+          // the panel's "Finished so far" row and this mass come from one object.
+          // `governs === 'record'` with a null record is "nothing to show yet", and it can
+          // only happen where `dilution` is null, which this branch has already excluded.
+          record: resolvedDilution.governs === 'record' ? resolvedDilution.record : null,
         })
       : null;
   // The preservative-free basis under one name for every surface that quotes it — see

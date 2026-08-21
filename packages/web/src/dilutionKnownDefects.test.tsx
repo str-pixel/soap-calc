@@ -71,8 +71,9 @@ function viewModelFor(
   return captured!;
 }
 
-/** Exactly App.tsx's own DilutionPanel wiring, in the default (Whole batch, target
- * concentration) state — so what these tests read is what the maker reads. */
+/** Exactly App.tsx's own DilutionPanel wiring, in the default (Whole batch, nothing
+ * recorded — so the plan governs) state — so what these tests read is what the maker
+ * reads. */
 function renderPanel(
   vm: RecipeViewModel,
   soapConcentrationPercent: string,
@@ -89,8 +90,6 @@ function renderPanel(
       overDilutionCertain={vm.overDilutionCertain}
       bottledSolutionGrams={vm.bottledSolutionGrams}
       cookWaterGrams={vm.cookWaterGrams}
-      dilutionMode="concentration"
-      waterPasteRatio="2"
       measuredPasteGrams={measuredPasteGrams}
       dilutionScope="batch"
       targetMl=""
@@ -98,8 +97,7 @@ function renderPanel(
       onMeasuredPasteGramsChange={() => {}}
       onDilutionScopeChange={() => {}}
       onTargetMlChange={() => {}}
-      onDilutionModeChange={() => {}}
-      onWaterPasteRatioChange={() => {}}
+      onGradualWaterChange={() => {}}
     />,
   );
 }
@@ -240,8 +238,6 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
         overDilutionCertain={vm.overDilutionCertain}
         bottledSolutionGrams={vm.bottledSolutionGrams}
         cookWaterGrams={vm.cookWaterGrams}
-        dilutionMode="concentration"
-        waterPasteRatio="2"
         measuredPasteGrams=""
         dilutionScope="portion"
         targetMl="500"
@@ -249,8 +245,7 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
         onMeasuredPasteGramsChange={() => {}}
         onDilutionScopeChange={() => {}}
         onTargetMlChange={() => {}}
-        onDilutionModeChange={() => {}}
-        onWaterPasteRatioChange={() => {}}
+        onGradualWaterChange={() => {}}
       />,
     );
     expect(
