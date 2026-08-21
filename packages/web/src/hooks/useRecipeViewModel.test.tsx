@@ -167,6 +167,29 @@ test('dilution: computed for LS, null for CP, null (no crash) for an empty LS re
   expect(empty.dilution).toBeNull();
 });
 
+test('dilutionGoverns/dilutionRecord: blank record is the plan arm; a 0 g record still governs, and dilution stays the plan object', () => {
+  // Spec §1's resolution rule, exposed on the vm (Task 1): a blank gradualWaterGrams is no
+  // record at all ('plan', record null); '0' IS a record (ZERO IS A RECORD — the pot before
+  // any water is poured is Gradual's own starting entry) and must govern with waterGrams: 0,
+  // not be mistaken for "blank". `dilution` itself is unchanged by this task — still the plan
+  // arm — consumers move onto the resolved arm in Task 2.
+  let blank: any;
+  let zero: any;
+  probe((vm) => { blank = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '' }, 'ls');
+  probe((vm) => { zero = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '0' }, 'ls');
+
+  expect(blank.dilutionGoverns).toBe('plan');
+  expect(blank.dilutionRecord).toBeNull();
+  expect(blank.dilution).not.toBeNull();
+
+  expect(zero.dilutionGoverns).toBe('record');
+  expect(zero.dilutionRecord).not.toBeNull();
+  expect(zero.dilutionRecord.waterGrams).toBe(0);
+  // dilution keeps returning the plan arm in this task.
+  expect(zero.dilution).not.toBeNull();
+  expect(zero.dilution).toEqual(blank.dilution);
+});
+
 test('LS lye excess computes neutralization and disables PCSF-subtract', () => {
   let withSubtract: any;
   let withAppend: any;

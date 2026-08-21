@@ -12,7 +12,7 @@ import {
   preservativeDosingBasisGramsFor,
   splitLiquidWaterFraction } from '../lib/calculateAdditives';
 import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEstimate';
-import { resolveDilution } from '../lib/resolveDilution';
+import { resolveDilution, type ResolvedDilution } from '../lib/resolveDilution';
 import type { CureEstimate } from '../lib/cureEstimate';
 import { ls30MinPackagePresent } from '../lib/ls30Min';
 import { computeWorkability } from '../lib/workabilityInput';
@@ -104,6 +104,17 @@ export type RecipeViewModel = {
   insights: ReturnType<typeof useFormulationInsights>['insights'];
   lyeLabel: string;
   dilution: DilutionResult | null;
+  /** Which arm — plan or record — governs, per resolveDilution's spec §1 rule: `'record'`
+   * iff a record is present (non-blank, ≥ 0 — zero is a record), else `'plan'`. PHASE 1:
+   * computed, exposed, but read by nothing user-visible yet; `dilution` above still returns
+   * the plan arm regardless of which one governs (Phase 2a is what flips consumers over). */
+  dilutionGoverns: ResolvedDilution['governs'];
+  /** The record arm's figures — pot, water, finished mass, derived % — or null when either
+   * no record is present or a record is present but nothing can be computed from it yet
+   * (no dilution to anchor it, or no resolvable pot). `dilutionGoverns === 'record' &&
+   * dilutionRecord === null` is "nothing to show yet", never an error — see
+   * resolveDilution's own doc comment. */
+  dilutionRecord: ResolvedDilution['record'];
   neutralization: NeutralizationResult | null;
   pcsfIsExtra: boolean;
   extrasGrams: number;
@@ -1018,6 +1029,10 @@ export function useRecipeViewModel({
     // — see resolveDilution's own doc comment). Byte-identical behaviour until Phase 2a flips
     // this to the resolved arm.
     dilution: resolvedDilution.plan,
+    // Which arm governs, and the record arm's own figures — computed by the same memo,
+    // exposed starting this task; see the type's doc comments above for what each means.
+    dilutionGoverns: resolvedDilution.governs,
+    dilutionRecord: resolvedDilution.record,
     neutralization,
     pcsfIsExtra,
     extrasGrams,
