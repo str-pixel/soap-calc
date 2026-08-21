@@ -887,10 +887,13 @@ export function DilutionPanel({
   // PLAN-GOVERNS ONLY, like its sibling and for the same reason (spec §3: "overDilutionCertain
   // and every other plan-claim is gated on plan-governs"). "The paste is already more dilute
   // than N%" names the PLAN's N and asserts that adding water only takes the batch further
-  // from it; a record arm is not travelling toward it. The gate is here as well as on
-  // `overDilutionCertain` in the view model, and both are load-bearing: with no undeclared
-  // liquid the last clause below never consults that flag at all, so gating the flag alone
-  // would have left this paragraph rendering on every ordinary over-dilute recipe.
+  // from it; a record arm is not travelling toward it.
+  //
+  // THIS LINE IS WHERE THAT GATE LIVES, and it is the only place it can. The view model's
+  // `overDilutionCertain` is ungated (see its memo — gating it there leaked the batch record
+  // into portion scope), and it would not have been enough anyway: with no undeclared liquid
+  // the last clause below never consults that flag at all, so a flag-side gate would have left
+  // this paragraph rendering on every ordinary over-dilute recipe.
   const pasteAlreadyThinnerAlert =
     dilution !== null &&
     dilutionScope === 'batch' &&
@@ -968,20 +971,28 @@ export function DilutionPanel({
   // clause in favour of a child that had already been suppressed, so the warning appeared on
   // NEITHER surface and an undeclared liquid went unmentioned. Pinned by a test.
   //
-  // SUPPRESSED UNDER A BATCH RECORD, and that gate arrived WITH the view model's own
-  // (spec §3). This clause consumes `overDilutionCertain`, which the view model makes false
-  // whenever the batch's record governs — so left ungated it would print "can't tell whether
-  // 85% is reachable" in exactly the cells where the app can tell perfectly well and used to
-  // say so. The plan row it hedges over is still on screen there, and it is not left bare:
-  // the plan-labelled caption under the grid accounts for the 0 g (spec §4).
+  // SUPPRESSED UNDER A BATCH RECORD (spec §3, and §4's rule that a plan claim has no subject
+  // while a record governs). "Can't tell whether 85% is REACHABLE" is a question about the
+  // plan and about nothing else; the record arm is not travelling toward it. The plan row it
+  // hedges over is still on screen there, and it is not left bare — the plan-labelled caption
+  // under the grid accounts for the 0 g (spec §4).
   //
   // KEYED ON `batchRecord`, NOT on `planGoverns`, and the difference is the scope seam. This
   // clause renders in BOTH scopes, and in Custom amount `planGoverns` answers for the JAR —
   // so keying on it would silence the hedge for a recorded jar, in a scope where nothing else
   // says it (the child that owns the message elsewhere does not render for a governing jar).
   // An undeclared liquid would have gone unmentioned on both surfaces, which is the exact
-  // defect the regression pin below this clause's own sibling exists for. `batchRecord` is
-  // null in portion scope by construction, so Custom amount behaves exactly as it always has.
+  // defect the regression pin below this clause's own sibling exists for.
+  //
+  // AND THE GATE IS THE WHOLE OF WHAT THIS CLAUSE READS ABOUT THE RECORD. `overDilutionCertain`
+  // is deliberately UNGATED in the view model (see its memo): it is a fact about the recipe,
+  // and it is read in portion scope too — by this clause and by the `overDilutionCertain` prop
+  // forwarded to PortionDilutionResults, which decides whether the child asserts the verdict
+  // or hedges over it. Gating it there made a whole-batch record flip a Custom amount screen
+  // from the assertion to the hedge and resurrect the solubility ceiling on top, in a scope
+  // that does not even show the field. With it ungated, `batchRecord === null` is the only
+  // record term on this line and it is null in portion scope by construction — so Custom
+  // amount really does behave exactly as it always has, term by term.
   const cantTellGate =
     dilution !== null &&
     batchRecord === null &&

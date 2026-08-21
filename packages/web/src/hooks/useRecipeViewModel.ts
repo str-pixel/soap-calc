@@ -90,9 +90,11 @@ export type RecipeViewModel = {
    * the deficit is a fact rather than an artefact of excluding it. */
   lyeWaterShortfallCertain: boolean;
   /** True when the paste is over the target concentration regardless of what the undeclared
-   * liquid turns out to contain — the verdict is a fact, not an assumption. A PLAN CLAIM
-   * (spec §3): false whenever a record governs, because the record arm is not aiming at a
-   * target for the paste to have passed. */
+   * liquid turns out to contain — the verdict is a fact, not an assumption. A fact about the
+   * RECIPE, and deliberately NOT gated on which arm governs: the plan-claim suppression
+   * spec §3 asks for lives at the surfaces that make the claim (DilutionPanel's `planGoverns`,
+   * BatchSheet's), because this field is also read in portion scope, where the batch record
+   * must not reach. See the memo for the leak that taught it. */
   overDilutionCertain: boolean;
   fixedBatchExtrasGrams: number;
   postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
@@ -394,6 +396,36 @@ export function useRecipeViewModel({
       previewSettings.superfatPercent,
     ],
   );
+  // Is the "already more dilute than the target" verdict CERTAIN, or could declaring the
+  // unknown liquid's water content overturn it? Certain when the paste's water exceeds the
+  // target even if every undeclared gram brought NO water at all — the most favourable case
+  // for reaching the target. Suppressing the verdict on the mere presence of an unknown
+  // dropped a warning that was provably right across the whole 0-100% range.
+  //
+  // NOT GATED ON WHICH ARM GOVERNS, and that is a correction to Phase 2a's first shape rather
+  // than an oversight. This is a fact about the RECIPE — whether the paste's own DECLARED
+  // water already exceeds what the target allows — and it does not stop being true because a
+  // maker wrote down what they poured. Which arm governs decides which claims a SURFACE may
+  // make, and that is where the plan-claim gate belongs: DilutionPanel's `planGoverns` and
+  // BatchSheet's each carry it, on the four paragraphs that actually assert something about
+  // the target.
+  //
+  // GATING IT HERE LEAKED THE BATCH RECORD INTO PORTION SCOPE, which spec §2 forbids in as
+  // many words ("the batch record participates nowhere in portion scope"). Two Custom-amount
+  // consumers read this one field — the panel's own can't-tell hedge, and the
+  // `overDilutionCertain` prop it forwards to PortionDilutionResults, which decides whether
+  // the child ASSERTS the verdict or hedges over it — so a whole-batch record, a field Custom
+  // amount does not even show, turned "the paste is already more dilute than the target" into
+  // "can't tell whether 85% is reachable" and, because the ceiling stands down only for the
+  // child's WORDED verdict, resurrected the solubility alert on top of it. Three paragraphs'
+  // difference, driven by a record about a different scope; 56 portion cells in the review's
+  // sweep. Pinned by dilutionKnownDefects' own describe.
+  const overDilutionCertain = useMemo(() => {
+    if (!dilution || !result || !dilution.targetExceedsPaste) return false;
+    const declaredCookWater =
+      result.waterWeightGrams + (splitLiquidPasteWater - unknownLiquidGrams);
+    return dilution.totalWaterGrams < declaredCookWater;
+  }, [dilution, result, splitLiquidPasteWater, unknownLiquidGrams]);
   const neutralization = useMemo(
     () =>
       processOffers(process, 'neutralize') && result
@@ -492,31 +524,6 @@ export function useRecipeViewModel({
       }),
     [dilution, settings.gradualWaterGrams, wholeBatchPasteGrams, cookWaterGrams, measuredPasteGrams],
   );
-  // Is the "already more dilute than the target" verdict CERTAIN, or could declaring the
-  // unknown liquid's water content overturn it? Certain when the paste's water exceeds the
-  // target even if every undeclared gram brought NO water at all — the most favourable case
-  // for reaching the target. Suppressing the verdict on the mere presence of an unknown
-  // dropped a warning that was provably right across the whole 0-100% range.
-  //
-  // A PLAN CLAIM, so it stands down while a RECORD governs (spec §3: "overDilutionCertain and
-  // every other plan-claim is gated on plan-governs"). Every clause of it is about a TARGET
-  // the paste has already passed, and the record arm has no target — the batch that exists is
-  // what every figure describes, and its own concentration is printed beside them. Gated here
-  // rather than at each of the three surfaces that read it (the panel's alert, the printed
-  // sheet's note, the panel's hedge exclusion) so one answer reaches all of them; the panel's
-  // own alert carries the plan-governs term too, because with no undeclared liquid its other
-  // clauses do not consult this flag at all.
-  //
-  // Computed AFTER resolveDilution deliberately: the gate reads that one resolution rather
-  // than re-parsing settings.gradualWaterGrams, which is how three copies of "is there a
-  // record" came to disagree once before.
-  const overDilutionCertain = useMemo(() => {
-    if (resolvedDilution.governs === 'record') return false;
-    if (!dilution || !result || !dilution.targetExceedsPaste) return false;
-    const declaredCookWater =
-      result.waterWeightGrams + (splitLiquidPasteWater - unknownLiquidGrams);
-    return dilution.totalWaterGrams < declaredCookWater;
-  }, [resolvedDilution, dilution, result, splitLiquidPasteWater, unknownLiquidGrams]);
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
   // survives. Sized against the base (saponification) lye, then folded into the result so
   // every downstream surface — concentration, steps, sheet — quotes the adjusted figures.

@@ -992,17 +992,32 @@ test('a record governs the bottled mass, and gates the plan-claim overDilutionCe
   expect(record.finishedProductGrams).toBeGreaterThan(record.preservativeDosingBasisGrams);
 });
 
-test('overDilutionCertain is a plan claim and stands down while a record governs', () => {
-  // A target above what the paste's own water allows — targetExceedsPaste, certain across
-  // the undeclared range — is a verdict about the PLAN. With a record in hand the batch that
-  // exists is what every figure describes, and the plan verdict has no subject.
+test('overDilutionCertain is a fact about the recipe, and a record does not move it', () => {
+  // A target above what the paste's own water allows — targetExceedsPaste, certain across the
+  // undeclared range — is a verdict about the PLAN, and the surfaces that ASSERT it stand down
+  // while a record governs. But the flag itself must not: it says whether the paste's declared
+  // water already exceeds what the target allows, and writing down what you poured does not
+  // change that.
+  //
+  // GATING IT HERE WAS PHASE 2A'S FIRST SHAPE AND IT LEAKED. Two Custom-amount consumers read
+  // this one field — DilutionPanel's own can't-tell hedge and the `overDilutionCertain` prop
+  // it forwards to PortionDilutionResults — so a WHOLE-BATCH record turned a Custom amount
+  // screen from "the paste is already more dilute than the target" into "can't tell whether
+  // 85% is reachable" and resurrected the solubility ceiling behind it, in a scope that does
+  // not show the field at all. Spec §2: the batch record participates nowhere in portion
+  // scope. The plan-claim gate lives at the four paragraphs that make the claim instead —
+  // DilutionPanel's `planGoverns`, BatchSheet's — each pinned in its own file, and the portion
+  // cells are pinned end-to-end in dilutionKnownDefects.
   const over = { soapConcentrationPercent: '85' } as const;
   let planArm: any;
   let recordArm: any;
   probe((vm) => { planArm = vm; }, { ...over, gradualWaterGrams: '' }, 'ls');
-  probe((vm) => { recordArm = vm; }, { ...over, gradualWaterGrams: '0' }, 'ls');
+  probe((vm) => { recordArm = vm; }, { ...over, gradualWaterGrams: '2000' }, 'ls');
   expect(planArm.overDilutionCertain).toBe(true);
-  expect(recordArm.overDilutionCertain).toBe(false);
+  expect(recordArm.overDilutionCertain).toBe(true);
+  // …and the record really is governing, so this is the flag surviving the arm rather than
+  // the fixture failing to reach it.
+  expect(recordArm.dilutionGoverns).toBe('record');
 });
 
 test('governs "record" with no record figures is "nothing to show yet", never an error', () => {
