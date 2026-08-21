@@ -206,8 +206,12 @@ describe('a ratio preset applies from the path the app actually opens on', () =>
     // And it says what it did, in the caption pattern §2 names.
     expect(within(panel).getByText(new RegExp(`2:1 → ${afterClick}%`))).toBeTruthy();
 
-    // The keyboard path. A button is activated by Space and Enter natively, which is what
-    // retires the three-handler machinery the radio group needed to be operable at all.
+    // The keyboard path. In a real browser a button is activated by Space and Enter
+    // natively — that guarantee is what retires the three-handler machinery the radio
+    // group needed to be operable at all, and the exploratory e2e spec exercises it
+    // against real Chromium. Here, jsdom provides no native activation: userEvent
+    // synthesizes the click for Space/Enter, so this test pins the handler's behaviour,
+    // not the browser's.
     const preset = within(panel).getByRole('button', { name: '3:1' });
     preset.focus();
     await userEvent.keyboard('{ }');
