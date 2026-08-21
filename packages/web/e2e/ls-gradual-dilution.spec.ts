@@ -1,15 +1,20 @@
 import { test, expect, type Page } from '@playwright/test';
 
 /**
- * Browser guard for Gradual dilution (LS only) — the reference's own first method
+ * Browser guard for the DILUTION RECORD (LS only) — the reference's own first method
  * (LS:1531): add water in increments until the consistency is right, so the finished mass
  * cannot be predicted, only recorded.
  *
  * What this proves that the unit tests cannot: the whole chain is really connected in a
- * running browser. Recording water derives a concentration, that concentration is written
- * into the recipe's saved target, the dilution recomputes from it, and the preservative
- * dose — which is a % of the finished mass — follows. Every link in that chain is mocked
- * or stubbed somewhere in the jsdom suite.
+ * running browser. Recording water makes the record govern, every batch figure follows it,
+ * and the preservative dose — which is a % of the finished mass — follows with them. Every
+ * link in that chain is mocked or stubbed somewhere in the jsdom suite.
+ *
+ * The scripts below used to open with a click on the "Gradual" mode radio, because the water
+ * field was only on screen in that mode. There is no mode and no radio (spec §2): the field
+ * is part of the whole-batch surface, so the record is typed straight in. The claims are
+ * unchanged — with one addition each, since the chain's middle link changed: what the record
+ * reaches is no longer the saved TARGET (nothing writes it now) but the figures themselves.
  */
 
 const weightInputs = (page: Page) => page.locator('input[aria-label^="Weight in"]');
@@ -39,14 +44,20 @@ test('the dose follows the water you recorded, not the target you left behind', 
   const doseAtTarget = await gramsOf(snippet, 'Preservative to add');
   expect(doseAtTarget).toBeGreaterThan(0);
 
-  // Switch to Gradual and record markedly LESS water than the 30% target assumes.
-  await page.getByRole('radio', { name: /Gradual/ }).click();
+  const plan = page.getByLabel('Target soap concentration percent');
+  const plannedTarget = await plan.inputValue();
+
+  // Record markedly LESS water than the 30% plan assumes.
   const water = page.getByLabel('Water added so far (g)', { exact: true });
   await water.fill('500');
   await water.blur();
 
-  // The panel states what is in the pot, from the raw inputs.
+  // The panel states what is in the pot, from the raw inputs — and the plan's own rows stay
+  // on screen beside it, carrying the word "plan" (spec §2).
   await expect(page.getByText(/Finished so far/)).toBeVisible();
+  await expect(page.getByText('Dilution water to add (plan)')).toBeVisible();
+  // And nothing wrote the plan: decision 2's "no write-back, ever", in a real browser.
+  expect(await plan.inputValue()).toBe(plannedTarget);
 
   // And the dose follows it DOWN — a smaller bottle needs less preservative. This is the
   // link that matters: it can only hold if the recorded water reached the dose basis.
@@ -64,11 +75,14 @@ test('the recorded water survives a reload, because it is part of the recipe', a
   page,
 }) => {
   await freshLsRecipe(page);
-  await page.getByRole('radio', { name: /Gradual/ }).click();
   const water = page.getByLabel('Water added so far (g)', { exact: true });
   await water.fill('1500');
   await water.blur();
 
   await page.reload();
+  // No mode to restore: the field is on screen in every state, so the record appears the
+  // moment its recipe does — which is the sixty-line restore effect's whole job, done by the
+  // surface instead.
   await expect(page.getByLabel('Water added so far (g)', { exact: true })).toHaveValue('1500');
+  await expect(page.getByText(/Finished so far/)).toBeVisible();
 });

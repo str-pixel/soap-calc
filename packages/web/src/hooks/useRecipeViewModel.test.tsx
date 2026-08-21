@@ -167,6 +167,29 @@ test('dilution: computed for LS, null for CP, null (no crash) for an empty LS re
   expect(empty.dilution).toBeNull();
 });
 
+test('dilutionGoverns/dilutionRecord: blank record is the plan arm; a 0 g record still governs, and dilution stays the plan object', () => {
+  // Spec §1's resolution rule, exposed on the vm (Task 1): a blank gradualWaterGrams is no
+  // record at all ('plan', record null); '0' IS a record (ZERO IS A RECORD — the pot before
+  // any water is poured is Gradual's own starting entry) and must govern with waterGrams: 0,
+  // not be mistaken for "blank". `dilution` itself is unchanged by this task — still the plan
+  // arm — consumers move onto the resolved arm in Task 2.
+  let blank: any;
+  let zero: any;
+  probe((vm) => { blank = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '' }, 'ls');
+  probe((vm) => { zero = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '0' }, 'ls');
+
+  expect(blank.dilutionGoverns).toBe('plan');
+  expect(blank.dilutionRecord).toBeNull();
+  expect(blank.dilution).not.toBeNull();
+
+  expect(zero.dilutionGoverns).toBe('record');
+  expect(zero.dilutionRecord).not.toBeNull();
+  expect(zero.dilutionRecord.waterGrams).toBe(0);
+  // dilution keeps returning the plan arm in this task.
+  expect(zero.dilution).not.toBeNull();
+  expect(zero.dilution).toEqual(blank.dilution);
+});
+
 test('LS lye excess computes neutralization and disables PCSF-subtract', () => {
   let withSubtract: any;
   let withAppend: any;
@@ -944,4 +967,74 @@ test('…but a deficit that survives the most generous assumption is still state
     // Exactly one of the two states, never both — that pairing was the contradiction.
     expect(vm.lyeWaterShortfallCertain && vm.lyeWaterUnverifiable).toBe(false);
   }
+});
+
+test('a record governs the bottled mass, the dosing basis and the finished product', () => {
+  // Phase 2a. `dilution` stays the plan arm, but everything DERIVED for the bottle follows
+  // the record (spec §3): bottledSolutionGrams becomes pot + recorded water + the extras the
+  // pot does not already hold, and the preservative's dosing basis and finished-product
+  // figure follow that mass in turn — a % of what is actually in the pot, never of what the
+  // target predicts. (`overDilutionCertain`'s own gating is the next test's claim, not this
+  // one's — this test asserts nothing about that flag.)
+  let plan: any;
+  let record: any;
+  probe((vm) => { plan = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '' }, 'ls');
+  probe((vm) => { record = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '500' }, 'ls');
+
+  expect(record.dilutionGoverns).toBe('record');
+  expect(record.dilutionRecord.finishedGrams).toBeCloseTo(
+    record.dilutionRecord.potGrams + 500,
+    6,
+  );
+  // The bottle is what is in the pot, not what the 30% target predicts.
+  expect(record.bottledSolutionGrams).toBeCloseTo(record.dilutionRecord.finishedGrams, 6);
+  expect(record.bottledSolutionGrams).toBeLessThan(plan.bottledSolutionGrams);
+  // The dosing basis and the finished mass follow it, so the dose is a % of what exists.
+  expect(record.preservativeDosingBasisGrams).toBeCloseTo(record.bottledSolutionGrams, 6);
+  expect(record.finishedProductGrams).toBeGreaterThan(record.preservativeDosingBasisGrams);
+});
+
+test('overDilutionCertain is a fact about the recipe, and a record does not move it', () => {
+  // A target above what the paste's own water allows — targetExceedsPaste, certain across the
+  // undeclared range — is a verdict about the PLAN, and the surfaces that ASSERT it stand down
+  // while a record governs. But the flag itself must not: it says whether the paste's declared
+  // water already exceeds what the target allows, and writing down what you poured does not
+  // change that.
+  //
+  // GATING IT HERE WAS PHASE 2A'S FIRST SHAPE AND IT LEAKED. Two Custom-amount consumers read
+  // this one field — DilutionPanel's own can't-tell hedge and the `overDilutionCertain` prop
+  // it forwards to PortionDilutionResults — so a WHOLE-BATCH record turned a Custom amount
+  // screen from "the paste is already more dilute than the target" into "can't tell whether
+  // 85% is reachable" and resurrected the solubility ceiling behind it, in a scope that does
+  // not show the field at all. Spec §2: the batch record participates nowhere in portion
+  // scope. The plan-claim gate lives at the four paragraphs that make the claim instead —
+  // DilutionPanel's `planGoverns`, BatchSheet's — each pinned in its own file, and the portion
+  // cells are pinned end-to-end in dilutionKnownDefects.
+  const over = { soapConcentrationPercent: '85' } as const;
+  let planArm: any;
+  let recordArm: any;
+  probe((vm) => { planArm = vm; }, { ...over, gradualWaterGrams: '' }, 'ls');
+  probe((vm) => { recordArm = vm; }, { ...over, gradualWaterGrams: '2000' }, 'ls');
+  expect(planArm.overDilutionCertain).toBe(true);
+  expect(recordArm.overDilutionCertain).toBe(true);
+  // …and the record really is governing, so this is the flag surviving the arm rather than
+  // the fixture failing to reach it.
+  expect(recordArm.dilutionGoverns).toBe('record');
+});
+
+test('governs "record" with no record figures is "nothing to show yet", never an error', () => {
+  // The pinned Task-1 contract, now that it is user-visible: a recipe can carry a leftover
+  // gradualWaterGrams beside a target calculateDilution refuses (0 is outside its 1-99%
+  // range), so `dilution` is null and the record arm has no pot to count from. The vm must
+  // report governs 'record' with a null record and null downstream figures — not throw, and
+  // not fabricate a plan.
+  let vm: any;
+  probe((v) => { vm = v; }, { soapConcentrationPercent: '0', gradualWaterGrams: '500' }, 'ls');
+  expect(vm.dilution).toBeNull();
+  expect(vm.dilutionGoverns).toBe('record');
+  expect(vm.dilutionRecord).toBeNull();
+  expect(vm.bottledSolutionGrams).toBeNull();
+  expect(vm.preservativeDosingBasisGrams).toBeNull();
+  expect(vm.finishedProductGrams).toBeNull();
+  expect(vm.overDilutionCertain).toBe(false);
 });

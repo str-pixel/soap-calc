@@ -392,47 +392,53 @@ test.describe('liquid soap', () => {
     await expect(section).toContainText(/ : 1/);
   });
 
-  // The one bug in this feature that jsdom cannot see. A component test drives synthetic
-  // events, and jsdom synthesises a `click` when Space is pressed on an ALREADY-CHECKED radio
-  // where Chromium fires only keydown and keyup — so the unit pins for this are written with
-  // fireEvent to imitate the real sequence, and these two are here to check that imitation
-  // against the browser itself. Censused in Chromium, listeners on raw inputs:
-  //   checked + click → click | checked + Space → keydown, keyup (nothing else)
-  //   unchecked + Space → keydown, keyup, click, input, change
-  test('the already-checked ratio preset applies from the keyboard, on the seeded path', async ({ page }) => {
-    // App opens ratio mode with waterPasteRatio '2' and the saved target still in force, so
-    // 2:1 is already selected beside "Not applied yet" — and re-asserting a checked radio
-    // fires no change event. Recovery meant picking another preset and coming back.
+  // THE PRESETS, in a real browser. Two cases stood here, and both were about a RADIO group:
+  // re-asserting an already-checked radio fires no `change` event, so the one move the seeded
+  // screen invited was inert (by mouse until an onClick was added, by keyboard until a
+  // Space-gated onKeyUp was), and an ungated keyup would have applied a ratio the moment the
+  // group was tabbed into. They lived in e2e because jsdom synthesises a `click` on a checked
+  // radio where Chromium fires only keydown and keyup — so the unit pins had to imitate the
+  // real sequence, and these checked the imitation against the browser itself.
+  //
+  // The presets are BUTTONS now (spec §2): they do something once and stop, and nothing
+  // claims one of them describes the current plan. Both claims survive and both still need a
+  // real browser, for the same reason — jsdom does not implement a button's own
+  // Space/Enter-to-click behaviour, so only Chromium can prove the keyboard path works and
+  // that arriving by Tab does nothing.
+  test('a preset applies from the keyboard, on the path the app actually opens on', async ({ page }) => {
     const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
-    const saved = await section.getByLabel('Target soap concentration percent').inputValue();
-    await section.getByLabel('Water : paste ratio').click();
-    const preset = section.getByRole('radio', { name: '2:1' });
-    await expect(preset).toBeChecked();
-    await expect(section).toContainText(/Not applied yet/);
+    const target = section.getByLabel('Target soap concentration percent');
+    const seeded = await target.inputValue();
+    const preset = section.getByRole('button', { name: '2:1' });
 
     // Keyboard only — no click anywhere in this test.
     await preset.focus();
     await page.keyboard.press(' ');
-
-    await expect(section).not.toContainText(/Not applied yet/);
-    await section.getByLabel('Target concentration').click();
-    expect(await section.getByLabel('Target soap concentration percent').inputValue()).not.toBe(saved);
+    const applied = await target.inputValue();
+    expect(applied).not.toBe(seeded);
+    expect(Number(applied)).toBeGreaterThan(0);
+    // And it says what it did.
+    await expect(section).toContainText(`2:1 → ${applied}%`);
   });
 
   test('tabbing into the preset group applies nothing', async ({ page }) => {
-    // The other half of the Space handler: focus arrives by Tab and the Tab KEYUP lands on
-    // the newly focused element, so an ungated keyup would write a ratio back on arrival —
-    // the "entering ratio mode rewrites your typed target" bug in a new costume.
+    // The other half: focus arrives by Tab and the Tab KEYUP lands on the newly focused
+    // element, so a keyup-driven control would write a plan the maker never picked — the
+    // "entering ratio mode rewrites your typed target" bug in a new costume.
     const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
-    await section.getByLabel('Water : paste ratio').click();
-    await expect(section).toContainText(/Not applied yet/);
-    const preset = section.getByRole('radio', { name: '2:1' });
+    const target = section.getByLabel('Target soap concentration percent');
+    const seeded = await target.inputValue();
+    const preset = section.getByRole('button', { name: '2:1' });
+    // Tab in from the plan field the presets sit under, rather than from wherever the page
+    // happens to open focus — the point is the ARRIVAL, not how many stops away it is.
+    await target.focus();
     for (let i = 0; i < 12; i++) {
       await page.keyboard.press('Tab');
       if (await preset.evaluate((el) => el === document.activeElement)) break;
     }
     await expect(preset).toBeFocused();
-    await expect(section).toContainText(/Not applied yet/);
+    expect(await target.inputValue()).toBe(seeded);
+    await expect(section).not.toContainText('→');
   });
 
   test('inline radio labels lay out circle-beside-text, not stacked', async ({ page }) => {
@@ -442,8 +448,12 @@ test.describe('liquid soap', () => {
     // while .field's later 0.3rem gap overrode the 0.5rem .field--inline declared at the
     // same single-class specificity. The compound .field.field--inline rule fixes both;
     // assert the computed result so neither regression can come back silently.
+    //
+    // Read off the SCOPE radio now. It used to be read off the dilution-mode radio, which is
+    // gone; the scope radio is the same .field--inline shape in the same panel, and it is the
+    // only radio group left there — so the rule this pins is unchanged and still covered.
     const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
-    const modeLabel = section.locator('label.field--inline').filter({ hasText: 'Water : paste ratio' });
+    const modeLabel = section.locator('label.field--inline').filter({ hasText: 'Whole batch' });
     const style = await modeLabel.evaluate((el) => {
       const cs = getComputedStyle(el);
       return { flexDirection: cs.flexDirection, gap: cs.gap };

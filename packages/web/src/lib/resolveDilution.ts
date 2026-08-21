@@ -22,10 +22,13 @@ import { parseGradualWaterRecordGrams, weighedOrComputedPotGramsFor } from './me
  * `dilution` argument, so a caller reading `.plan` sees exactly what `calculateDilution`
  * produced, untouched by whatever the record says.
  *
- * PHASE 1: every consumer reads only `.plan` (byte-identical to today's `calculateDilution`
- * result — see the `.toBe(plan)` identity this module is tested against). `.governs` and
- * `.record` are computed in full but wired to nothing user-visible yet; Phase 2a is what flips
- * consumers onto the resolved arm.
+ * THE STANDING STATE, past Phase 2a: consumers read the RESOLVED figures, not `.plan` alone
+ * — bottledSolutionGrams, the preservative's dosing basis and the finished-product mass all
+ * follow whichever arm `.governs` names (see useRecipeViewModel.ts, and
+ * useRecipeViewModel.test.tsx's own pin on it). `.governs` and `.record` are themselves
+ * exposed off the view model as `dilutionGoverns` / `dilutionRecord`, consumed today by that
+ * test file; wiring a record's OWN figure into the preservative dose — the companion-dose
+ * work — is Phase 2b's, not yet done.
  *
  * This module never calls `calculateDilution` itself — the plan arm is a bare passthrough of
  * the caller-supplied `dilution` (which the caller already produced by calling it), so `.plan`

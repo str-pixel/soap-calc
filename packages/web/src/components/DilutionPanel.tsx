@@ -1,8 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   LS_DILUTION_TARGETS,
   LS_SOLUTION_DENSITY_G_PER_ML,
-  gradualDilutionFrom,
   lsConcentrationAboveAllMinimums,
   lsDilutionUsesFor,
   lsFinishedVolumeMl,
@@ -10,7 +9,8 @@ import {
   type DilutionResult,
 } from '@soap-calc/core';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
-import { formatConcentrationPercent, formatGrams } from '../lib/format';
+import { formatConcentrationPercent } from '../lib/format';
+import { resolveDilution } from '../lib/resolveDilution';
 import { formatWeight } from '../lib/weightUnits';
 import {
   MEASURED_PASTE_IS_REMAINING,
@@ -19,7 +19,6 @@ import {
   hasCorrectedPasteBasis,
   measuredPasteIsValidFor,
   measuredPasteRejectionFor,
-  parseGradualWaterRecordGrams,
   parseMeasuredPasteGrams,
   subTenthPrecisionFingerprint,
   weighedOrComputedPotGramsFor,
@@ -31,11 +30,15 @@ import {
   portionDilutionFor,
 } from './PortionDilutionResults';
 
-export type DilutionMode = 'concentration' | 'ratio' | 'gradual';
-
 /** The water:paste ratios the reference actually prints, all of them WATER : PASTE by
- * weight — the same direction the field label states, and the direction the reference's own
+ * weight — the same direction the caption states, and the direction the reference's own
  * worked example confirms (32 oz of paste at 2:1 takes 64 oz of water, LS:1534).
+ *
+ * ONE-SHOT SETTERS FOR THE PLAN, not a mode (spec §2). A click computes what that ratio
+ * lands at for the pot AT CLICK TIME and writes it into the target % field; nothing
+ * subscribes to the pot afterwards, so a later measurement moves the pot and leaves the plan
+ * exactly where the maker left it. That is the whole difference from the mode this replaces,
+ * which re-derived and rewrote the target on every render while it was live.
  *
  * 1:1 is offered as a place to begin and add to rather than a destination (LS:1534); 2:1 and
  * 3:1 are the range makers start from depending on the recipe (LS:1534); 2.5:1 comes off the
@@ -46,9 +49,31 @@ export type DilutionMode = 'concentration' | 'ratio' | 'gradual';
  * starting points, not as the only legal values, and a maker who has recorded what their own
  * recipe took must still be able to type it.
  *
- * Strings rather than numbers because they are written straight back into the ratio input's
- * own string state, and '2.5' must reach it as typed. */
+ * Strings rather than numbers because the label a click reports back ("2.5:1 → 21.3%") has to
+ * read as the maker picked it, and Number('2.5').toString() would be fine while '2.0' would
+ * not — the list is the copy as much as it is the arithmetic. */
 const LS_WATER_PASTE_RATIO_PRESETS = ['1', '2', '2.5', '3'] as const;
+
+/**
+ * What a ratio preset writes into the plan's target % (spec §2), for the pot in force at the
+ * moment of the click: `anhydrous / (pot × (1 + r)) × 100`, rounded to 1 dp and clamped into
+ * calculateDilution's own (0, 100) exclusive range as [1, 99] — the same bounds the % input
+ * declares.
+ *
+ * The clamp is not cosmetic: an extreme ratio on a small pot can round to 0.0 or 100.0, and
+ * writing THAT would send `dilution` upstream to null and vanish the panel the maker would
+ * need in order to recover. The caption reports the clamped figure, so what is on screen is
+ * always what was written.
+ *
+ * A pure function of its two arguments, exported to nothing: there is no state here, no
+ * effect, and no subscription to the pot. It runs once per click and never again, which is
+ * what makes "it does not track later pot changes" structural rather than a promise.
+ */
+function ratioPresetPercent(anhydrousGrams: number, potGrams: number, ratio: number): number {
+  const solutionGrams = potGrams * (1 + ratio);
+  const percent = (anhydrousGrams / solutionGrams) * 100;
+  return Math.min(99, Math.max(1, Math.round(percent * 10) / 10));
+}
 
 export type DilutionScope = 'batch' | 'portion';
 
@@ -80,7 +105,8 @@ type DilutionPanelProps = {
    * dilution figures themselves stay chemistry-only. */
   bottledSolutionGrams?: number | null;
   /** The paste's true water (lye water + split-liquid water) — see useRecipeViewModel's
-   * cookWaterGrams. Ratio mode needs the real paste mass (anhydrousGrams + this), not
+   * cookWaterGrams. The pot the presets multiply and the record arm sums with is the real
+   * paste mass (anhydrousGrams + this), not
    * dilution.totalWaterGrams - dilutionWaterGrams, which the targetExceedsPaste clamp can
    * zero out.
    *
@@ -95,24 +121,17 @@ type DilutionPanelProps = {
    * is entirely a zero-water alternative liquid — and the two must not collapse. The
    * arithmetic sites coalesce to 0 for themselves. */
   cookWaterGrams?: number;
-  /** Which way the maker is arriving at the dilution. Two of the three CHOOSE a number and
-   * let the app find the water: a target concentration (the default, and what the reference
-   * calls out at LS:1536), or a water:paste ratio by weight (LS:1534 — 1:1 / 2:1 / 3:1).
-   * The third runs the other way round: 'gradual' RECORDS the water actually poured
-   * (LS:1531) and derives the concentration from it, which is why it has no target field of
-   * its own and why copy written for the other two must not name one while it is chosen.
-   * Session-local UI state, not a recipe setting — though the water gradual records is
-   * recipe state (`gradualWaterGrams`), so App restores this mode when a record arrives. */
-  dilutionMode?: DilutionMode;
-  onDilutionModeChange?: (mode: DilutionMode) => void;
-  /** Water:paste ratio by weight, as typed (e.g. "2" for 2:1). */
-  waterPasteRatio?: string;
-  onWaterPasteRatioChange?: (value: string) => void;
-  /** Water actually poured in so far, in grams, as typed — Gradual Dilution's own record
+  /** THE RECORD (spec §1): water actually poured in so far, in grams, as typed
    * (LS:1531: add water in increments and record how much). Empty means "nothing typed
    * yet", not zero: zero is itself a legitimate reading (the pot before any water at all),
-   * so the two must never collapse to the same value — see the parsing next to `gradual`
-   * below. */
+   * so the two must never collapse to the same value — see `resolved` below, and
+   * parseGradualWaterRecordGrams' own ZERO IS A RECORD note.
+   *
+   * Independent state from `soapConcentrationPercent` above, and that independence is
+   * structural now: nothing in this file derives one from the other in either direction
+   * (decision 2, "no write-back, ever"). What a record DOES is govern — every figure derived
+   * for the batch follows it while it is present, and the plan's own rows stay on screen
+   * carrying the word "plan". */
   gradualWaterGrams?: string;
   onGradualWaterChange?: (value: string) => void;
   /** Gradual Dilution's own two figures, but for ONE JAR in Custom amount scope rather
@@ -162,9 +181,10 @@ type DilutionPanelProps = {
    * Preservative snippet here so the dose sits with the mass it is a percentage of —
    * structurally, not by convention. Deliberately a node and not the snippet's own props:
    * this panel has no reason to know what a preservative is, and threading its other nine
-   * through a component that already takes twenty-six is how a panel becomes
+   * through a component that already takes twenty-three is how a panel becomes
    * unmaintainable. (Twenty when this note was written, and it stayed at "twenty" while
-   * gradual mode added five more — count them here before quoting a number.) */
+   * gradual mode added five more, then at "twenty-six" while this task removed four —
+   * count them here before quoting a number.) */
   preservativeSlot?: ReactNode;
   /** The whole-batch preservative dose, in grams — App's own copy of the same figure the
    * Preservative snippet (inside `preservativeSlot`) already resolved, so the ≈ Finished
@@ -201,17 +221,18 @@ export type PortionGradualState = {
 };
 
 /**
- * Gradual dilution for ONE JAR in Custom amount scope, resolved once here so the panel's
- * readout and App's preservative dose can never disagree about whether a jar exists or what
- * it weighs — the same shape, and the same reason, as portionDilutionFor.
+ * THE JAR'S OWN RECORD, for Custom amount scope — the portion's twin of the whole batch's
+ * `gradualWaterGrams`, resolved once here so the panel's readout and App's preservative dose
+ * can never disagree about whether a jar exists or what it weighs (the same shape, and the
+ * same reason, as portionDilutionFor).
  *
  * The dose is why this is exported. In Custom amount the preservative is a % of the PORTION,
- * and App resolved that portion through portionDilutionFor — which sizes a jar from the
- * "Amount to make (ml)" field that gradual mode removes from the screen. So with a jar
+ * and App resolves that portion through portionDilutionFor — which sizes a jar from the
+ * "Amount to make (ml)" field a governing jar removes from the screen. So with a jar
  * recorded, the dose was a percentage of a target-derived mass the maker never asked for
  * (21 g of preservative into a 1,300 g jar: 1.6%, past the EU ceiling for several listed
- * products, in the mode built to stop exactly that), and with the amount blank there was no
- * dose at all and the snippet asked for a control that is not on screen.
+ * products, in the one place built to stop exactly that), and with the amount blank there was
+ * no dose at all and the snippet asked for a control the maker was not using.
  *
  * The jar's soap comes from core's lsPotAnhydrousShare — the paste is homogeneous, so a
  * weighed-out jar carries its share of the batch's anhydrous soap. That share is all this
@@ -224,13 +245,17 @@ export type PortionGradualState = {
  * shared resolution every other derived figure counts from (lib/measuredPaste's
  * weighedOrComputedPotGramsFor). It used to be the recipe's prediction alone, which reported a
  * concentration for a jar nobody has: a 1,600 g computed pot that came off the cook at 1,400 g
- * makes a 400 g jar 58.0% soap, and the panel printed 50.75% — in the one mode built to report
- * what actually exists. The same basis carries the refusal, so "more paste than the batch
- * holds" can no longer quote a bound the maker's own scale contradicts.
+ * makes a 400 g jar 58.0% soap, and the panel printed 50.75% — for the one figure on screen
+ * that is supposed to report what actually exists. The same basis carries the refusal, so
+ * "more paste than the batch holds" can no longer quote a bound the maker's own scale
+ * contradicts.
  *
  * WHAT NO CALLER MAY DO WITH THIS is feed it to onSoapConcentrationChange. A jar diluted
  * thinner than the batch has not redefined the recipe — see the prohibition inside the
  * component — and exporting the resolution does not export permission to write it back.
+ * (Nothing in this file writes the plan from any record any more, so the prohibition that
+ * was once special to the jar is now the rule for both. It stays stated here because this
+ * function is EXPORTED, and an exported resolution travels further than the rule around it.)
  */
 export function portionGradualFor({
   dilution,
@@ -317,7 +342,8 @@ export function portionGradualFor({
 }
 
 /**
- * The swallowed-thousands-separator refusal, for the three GRAM fields gradual mode added:
+ * The swallowed-thousands-separator refusal, for the three GRAM fields the record surfaces
+ * added:
  * the whole batch's "Water added so far", and a jar's "Paste weighed out" / "Water added so
  * far" in Custom amount. One component, so three fields cannot come to explain one mistake
  * three ways — the measured-paste field and "Amount to make (ml)" keep their own wordings,
@@ -366,10 +392,6 @@ export function DilutionPanel({
   // The two arithmetic sites below coalesce for themselves; the four guard call sites pass
   // this straight through.
   cookWaterGrams,
-  dilutionMode = 'concentration',
-  onDilutionModeChange,
-  waterPasteRatio = '',
-  onWaterPasteRatioChange,
   gradualWaterGrams = '',
   onGradualWaterChange,
   portionPasteGrams = '',
@@ -386,35 +408,72 @@ export function DilutionPanel({
   preservativeSlot,
   preservativeDoseGrams = 0,
 }: DilutionPanelProps) {
-  // Set only by the ratio input's own onChange below — never by mode entry — so the
-  // write-back effect further down can require a real edit before touching the saved
-  // target. See that effect's comment for the bug this guards against.
-  const [ratioTouched, setRatioTouched] = useState(false);
-  // Gradual's own touched flag, same discipline as ratioTouched immediately above and for
-  // the identical reason (see the reset effect right below, and the write-back effect
-  // further down): set only by the water-added field's own onChange, never by entering the
-  // mode, so a derived value is never written until the maker has actually typed something.
-  const [gradualTouched, setGradualTouched] = useState(false);
-  // Review round 2, finding 1: a touch from an EARLIER visit to ratio mode must not carry
-  // forward — otherwise: edit the ratio once (writes back, say 25%); switch to
-  // concentration mode and type an exact target directly (say 40%); switch back to ratio
-  // mode WITHOUT touching the ratio field again — the write-back effect's
-  // `ratioTouched && dilutionMode === 'ratio'` guard was still satisfied by the earlier
-  // touch, so it fired on re-entry alone and silently reverted the typed 40% back to 25%,
-  // with no visual difference and no undo. Resetting on every mode change means each entry
-  // into ratio mode needs its own explicit edit before anything is written again.
-  useEffect(() => {
-    setRatioTouched(false);
-    // Gradual is a second derived mode sharing this machinery, and the bug above is not
-    // ratio-specific: leaving gradual to type an exact target on Target concentration, then
-    // returning to gradual WITHOUT retyping the water, must not re-fire gradual's own
-    // write-back and revert the typed value either. Same reset, same reason.
-    setGradualTouched(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dilutionMode]);
-  // Which intended uses the current target suits — the dilution figure is the one number
-  // with no chemistry to pin it, so the guidance is by product, not by recipe.
-  const suitedUses = lsDilutionUsesFor(Number(soapConcentrationPercent));
+  // WHAT THE LAST PRESET CLICK DID, so the caption can say it ("2:1 → 25%"). Session state
+  // in this component, and deliberately not a selection: presets do not track the pot (see
+  // LS_WATER_PASTE_RATIO_PRESETS), so nothing here may re-derive a "current" ratio from the
+  // plan % and highlight it. A stale plan value — a 33.85 left behind by the write-back this
+  // task deletes — therefore displays as-is with no preset marked, which is the expected
+  // reading of it and not a bug.
+  //
+  // NO EFFECT CLEARS IT. The caption's own render condition below compares this against the
+  // plan % currently on the field, so typing over the preset's figure retires the caption on
+  // the next render with nothing to schedule, nothing to reset on a prop change, and no
+  // second write. Every previous version of "remember what this control did" in this file was
+  // an effect, and every one of them wrote a value back.
+  const [presetApplied, setPresetApplied] = useState<{ ratio: string; percent: number } | null>(
+    null,
+  );
+  // THE RESOLUTION (spec §1), computed from the same five inputs the view model hands
+  // `resolveDilution` — `dilution`, the record, the anhydrous soap, the corrected paste, the
+  // cook water and the reading — so the arm this panel renders and the arm the view model
+  // prices, doses and prints are the same answer by construction rather than by convention.
+  // It is the one function, called twice with identical arguments, never a second copy of the
+  // rule: a fourth "is there a record" predicate is exactly how the panel and the printed
+  // sheet came to disagree about whether a record existed once before.
+  //
+  // Called here rather than threaded as two more props because the alternative is a prop pair
+  // a caller could contradict — every one of this component's twenty-odd existing tests
+  // constructs its own props, and a `dilutionGoverns` that disagreed with the
+  // `gradualWaterGrams` beside it would render a panel the app can never produce.
+  const resolved = resolveDilution({
+    dilution,
+    gradualWaterGrams,
+    anhydrousGrams: dilution?.anhydrousGrams ?? 0,
+    // `?? null` for the resolution's narrower signature — the panel's prop is optional and
+    // `undefined` means exactly what `null` does to hasCorrectedPasteBasis: no corrected
+    // basis, fall back to the recipe's water-only pot. Same for the cook water, whose `?? 0`
+    // is the arithmetic sites' own coalesce (the guard call sites still pass it through
+    // undefined, which is how lib/measuredPaste tells "unknown" from "zero").
+    wholeBatchPasteGrams: wholeBatchPasteGrams ?? null,
+    cookWaterGrams: cookWaterGrams ?? 0,
+    measuredPasteGrams,
+  });
+  // THE WHOLE BATCH'S RECORD, and the scope gate is part of its definition rather than of
+  // its twenty consumers: **the batch record participates nowhere in portion scope**
+  // (spec §2, verbatim — "each record leads in its own scope"). Custom amount's own record is
+  // the jar's two fields, resolved separately below; a batch record reaching into portion
+  // sizing, its ceiling, its uses or its refusals would be the cross-scope leak that rule
+  // exists to forbid, and gating it here makes that structural instead of twenty remembered
+  // clauses.
+  //
+  // Non-null exactly when there is something to SHOW: `governs === 'record'` with a null
+  // record is "nothing to show yet" (resolveDilution's pinned contract), and it can only
+  // arise where `dilution` itself is null — every consumer below already sits inside a
+  // `dilution &&` branch, so the two are equivalent there and neither is an error.
+  const batchRecord =
+    dilutionScope === 'batch' && resolved.governs === 'record' ? resolved.record : null;
+  // THE RESOLVED % — the one figure every piece of record-governed copy interpolates
+  // (spec §4's interpolation rule). Implemented literally without this, the uses matcher read
+  // the resolved figure while the caption beside it read the plan, printing "No common use
+  // calls for 30%" against a 46.2% match.
+  const resolvedConcentrationPercent = batchRecord
+    ? batchRecord.concentrationPercent
+    : Number(soapConcentrationPercent);
+  // Which intended uses the CURRENT batch suits — the dilution figure is the one number
+  // with no chemistry to pin it, so the guidance is by product, not by recipe. Reads the
+  // resolved %, never the raw setting: with a record in the pot the question a maker is
+  // asking is what they have, not what they were aiming at.
+  const suitedUses = lsDilutionUsesFor(resolvedConcentrationPercent);
   // Same guards PortionDilutionResults applies to the identical measurement: below the anhydrous
   // soap it cannot be a whole-batch paste, above the target solution there is no water left
   // to add. Both accept the boundary. A measured paste that survives these WINS over the
@@ -424,12 +483,16 @@ export function DilutionPanel({
   // speak in the maker's voice about a reading the exceeds-solution alert would otherwise be
   // refusing.
   //
-  // TWO OTHER QUESTIONS have their own gates, and neither is this one. Which POT the derived
-  // modes count from is potBasis just below. Which pot the batch POUR and
+  // TWO OTHER QUESTIONS have their own gates, and neither is this one. Which POT the RECORD
+  // arm and the ratio presets count from is potBasis just below. Which pot the batch POUR and
   // the bottled mass are measured against is lib/measuredPaste's correctedPotGramsFor — this
-  // ceiling widened by exactly the gradual write-back's own rounding where the recipe's record
-  // adds up to the target in force, so a target this record itself produced cannot refuse the
-  // record, and this ceiling unchanged everywhere else; see that function.
+  // ceiling widened by exactly gradualDilutionFrom's own 2 dp rounding where the recipe's
+  // record adds up to the target in force, and this ceiling unchanged everywhere else; see
+  // that function. (The widening now has no write-back to defend, since nothing derives the
+  // plan from the record any more; it is dead machinery whose removal is Phase 3's, listed in
+  // the spec's §5. It is inert rather than wrong: it can only widen the ceiling for a record
+  // whose own arithmetic reaches the plan in force, which is a coincidence now instead of a
+  // consequence.)
   const measuredPasteValid =
     dilution !== null &&
     measuredPasteIsValidFor(
@@ -439,17 +502,24 @@ export function DilutionPanel({
       wholeBatchPasteGrams,
       cookWaterGrams,
     );
-  // WHICH POT THE DERIVED MODES COUNT FROM, and the one question a target must not answer.
-  // lib/measuredPaste's target-independent resolution: the reading wins when it parses, is not
-  // finer than a scale reads, and is not below the batch's own non-evaporable mass — the three
-  // rules that describe the POT — and otherwise the recipe's computed pot answers. It
-  // deliberately does not ask whether the reading is heavier than the
-  // solution the saved target dilutes to, because ratio mode has no target and gradual mode
-  // DERIVES one from this very basis: letting that ceiling choose the basis closed a live
-  // render loop (weighed pot + zero water → write a percent → the solution it implies lands
-  // a hair under the reading → reject → computed pot → a different percent → accept →
-  // forever). See weighedOrComputedPotGramsFor and measuredPasteDescribesPotFor for the full
-  // account and the swept numbers.
+  // WHICH POT THE RECORD ARM AND THE PRESETS COUNT FROM, and the one question a target must
+  // not answer. lib/measuredPaste's target-independent resolution: the reading wins when it
+  // parses, is not finer than a scale reads, and is not below the batch's own non-evaporable
+  // mass — the three rules that describe the POT — and otherwise the recipe's computed pot
+  // answers. It deliberately does not ask whether the reading is heavier than the solution
+  // the plan dilutes to, because neither consumer is aiming at that target: a preset
+  // multiplies whatever pot it is given at the moment of the click, and the record arm
+  // DERIVES its own concentration from this very basis. Letting that ceiling choose the basis
+  // closed a live render loop while the derivation was written back (weighed pot + zero water
+  // → write a percent → the solution it implies lands a hair under the reading → reject →
+  // computed pot → a different percent → accept → forever). The write-back is gone and the
+  // loop with it, but the reason the basis must stay target-independent is not: a % derived
+  // from a pot chosen by that same % is circular whether or not anything persists it. See
+  // weighedOrComputedPotGramsFor and measuredPasteDescribesPotFor for the full account.
+  //
+  // It is the same call resolveDilution makes for the record arm's pot, with the same four
+  // arguments, so `potBasis.grams` and `record.potGrams` are one figure — the presets and the
+  // record cannot count from different pots.
   //
   // Resolved in lib/measuredPaste rather than here so the printed BatchSheet's "That record
   // makes" row reaches the identical figure by CALLING the same function, instead of importing
@@ -471,13 +541,6 @@ export function DilutionPanel({
   // Only meaningful when measuredPasteValid / measuredPasteDescribesPot —
   // parseMeasuredPasteGrams then always succeeds.
   const measuredPasteNum = parseMeasuredPasteGrams(measuredPasteGrams) ?? NaN;
-  // Is there a reading in the field at all — accepted or not? Only the ratio caveat below
-  // asks, and only to decide whether to close with "weigh the paste". A reading this row cannot
-  // use (a rejected one) still leaves the ratio running on the computed paste, so the caveat's
-  // VERDICT holds either way; what would not hold is telling a maker who has just been to the
-  // scale to go to the scale. Every such reading already has its own rejection alert on
-  // screen explaining it.
-  const pasteReadingEntered = (measuredPasteGrams ?? '').trim() !== '';
   // The measured-paste INPUT lives in this shell and is visible in BOTH scopes, so its
   // feedback has to be here too: the three rejection alerts used to render only inside
   // PortionDilutionResults, which appears in Custom amount scope alone — leaving the
@@ -493,19 +556,83 @@ export function DilutionPanel({
         cookWaterGrams,
       )
     : null;
-  // Whether the exceeds-solution refusal is ACTUALLY ON SCREEN, not merely flagged. The two
-  // mode exclusions are the paragraph's own (see its full reasoning where it renders): every
-  // clause of it is about a TARGET the paste cannot reach, and neither derived mode is aiming
-  // at one. Named here because three places need the answer and they must never drift: the
-  // paragraph itself; the solubility ceiling below, whose suppression is subsumption — it
-  // stands down only while a stronger claim about the same target is on screen, so it has
-  // to ask whether this one renders rather than whether the rule fired; and the
-  // corrected-pot alert's render condition (pasteAlreadyPastTargetAlert), which yields to
-  // this paragraph on the same must-be-on-screen discipline.
-  const exceedsSolutionAlert =
-    (measurementRejection?.exceedsSolution ?? false) &&
-    dilutionMode !== 'ratio' &&
-    dilutionMode !== 'gradual';
+  // Gradual Dilution, for a JAR in Custom amount scope rather than the whole batch — and
+  // THE CENTRAL PROHIBITION this task exists to enforce: this concentration is NEVER
+  // written to settings.soapConcentrationPercent. `gradual` immediately above IS the
+  // recipe's own record — whole-batch gradual legitimately redefines the recipe's target,
+  // because the batch IS the recipe. A maker who dilutes ONE JAR thinner than the batch
+  // has not redefined the recipe, so `portionGradual` below reaches only the readouts
+  // further down; no effect anywhere in this file reads it, and none may be added that
+  // does (a regression test asserts on the onSoapConcentrationChange spy itself, not on a
+  // rendered figure — the damage is the write, not the display). The prohibition travels
+  // with the exported resolution: App's only use of it is the preservative dose, which is a
+  // percentage of the jar and never a write into the recipe's target.
+  //
+  // Resolved by portionGradualFor (module scope, above) rather than inline, so App can ask
+  // the SAME question for the preservative dose — in Custom amount the dose is a % of the
+  // jar, and it used to be a % of a target-derived portion the maker never asked for. The
+  // jar's own soap comes from core's lsPotAnhydrousShare there; see that function and
+  // portionGradualFor's own doc for why it no longer travels through lsPartialDilution.
+  //
+  // Null outside Custom amount, which every consumer of it below already gates on: a jar is a
+  // claim about what Custom amount is showing, and resolving one for a screen that shows no
+  // jar invites a future reader to consume it from a state where the two fields behind it are
+  // stale session values. Its sibling `portionState` is null there for the sharper version of
+  // the same reason — see it.
+  //
+  // THE MODE TERM THIS CLAUSE USED TO CARRY was the panel's only way into the jar, and the
+  // mode is gone. Its replacement is the jar's OWN record (spec §4's conversion rule: every
+  // mode gate becomes a record-presence gate, and each record leads in its own scope — the
+  // BATCH record participates nowhere here). The two fields are rendered in Custom amount
+  // unconditionally now, because a field behind a gate the maker cannot open is a field that
+  // does not exist; `hasBothFigures` is what decides whether the jar GOVERNS, which is the
+  // question every consumer below actually asks. Every jar figure, refusal and wording is
+  // unchanged — only the way in is. Portion scope's own two-row shape, its plan-beside-jar
+  // labelling and its alert cells are Phase 2b (spec §6).
+  const portionGradualState =
+    dilutionScope === 'portion'
+      ? portionGradualFor({
+          dilution,
+          portionPasteGrams,
+          portionWaterGrams,
+          measuredPasteGrams,
+          wholeBatchPasteGrams,
+          cookWaterGrams,
+        })
+      : null;
+  const portionGradual = portionGradualState?.jar ?? null;
+  // DOES THE JAR GOVERN in Custom amount — the portion scope's own twin of `planGoverns`
+  // above, and the exact predicate the deleted mode gate used to stand in for. Both figures
+  // present (paste > 0, water >= 0, neither a swallowed separator) means the maker has
+  // described this jar by record, so the jar's figures answer and the plan's sizing grid
+  // stands down, exactly as Custom amount + Gradual did. Anything less is plan sizing, which
+  // is what an untouched Custom amount screen has always shown.
+  const portionJarGoverns = portionGradualState?.hasBothFigures ?? false;
+  // DOES THE PLAN GOVERN THE SCOPE ON SCREEN — the one predicate every plan-CLAIM below is
+  // gated on (spec §3: "overDilutionCertain and every other plan-claim is gated on
+  // plan-governs"; spec §4's conversion table, which turns each of this file's old mode
+  // exclusions into exactly this).
+  //
+  // SCOPE-AWARE, because "the plan governs" is a question about the scope the maker is
+  // looking at and each record leads in its own (spec §2). In Whole batch that is the batch
+  // record; in Custom amount it is the JAR's, and the batch record is invisible there by
+  // construction (see batchRecord above). Written as the batch record alone, a whole-batch
+  // record would have silenced Custom amount's own refusals about a jar it says nothing
+  // about — the cross-scope leak in its most damaging direction, since those refusals are
+  // what stop a mis-typed jar being dosed.
+  const planGoverns = dilutionScope === 'batch' ? batchRecord === null : !portionJarGoverns;
+  // Whether the exceeds-solution refusal is ACTUALLY ON SCREEN, not merely flagged. The
+  // plan-governs exclusion is the paragraph's own (see its full reasoning where it renders):
+  // every clause of it is about a TARGET the paste cannot reach, and the record arm is not
+  // aiming at one — spec §4's conversion of the two mode exclusions this clause used to
+  // carry, which said the same thing about the two modes that had no target. Named here
+  // because three places need the answer and they must never drift: the paragraph itself; the
+  // solubility ceiling below, whose suppression is subsumption — it stands down only while a
+  // stronger claim about the same target is on screen, so it has to ask whether this one
+  // renders rather than whether the rule fired; and the corrected-pot alert's render
+  // condition (pasteAlreadyPastTargetAlert), which yields to this paragraph on the same
+  // must-be-on-screen discipline.
+  const exceedsSolutionAlert = (measurementRejection?.exceedsSolution ?? false) && planGoverns;
   // There is deliberately NO "is any rejection paragraph on screen" const here any more. One
   // existed (measurementRejectionAlert, the disjunction of the four rules' render conditions)
   // for exactly one consumer: the corrected-pot verdict's spoken-for disjunction kept a
@@ -519,14 +646,6 @@ export function DilutionPanel({
   // 2026-08-17) — which carries the four render conditions inline at its own clause, with
   // the same drift warning written there; a single consumer does not earn the shared const
   // back, and the hazard is no smaller for being named.
-  // Ratio mode (LS:1534): weigh the paste, then add water at 1:1 / 2:1 / 3:1 by weight.
-  // Prefer a valid MEASURED paste — the reference's ratio method is applied to a weighed
-  // paste. Otherwise pasteGrams is anhydrousGrams + the paste's TRUE water — not
-  // dilution.totalWaterGrams - dilutionWaterGrams, which the targetExceedsPaste clamp on
-  // dilutionWaterGrams can zero out (see DilutionPanelProps.cookWaterGrams and
-  // PortionDilutionResults' identical trap).
-  const ratioNum = Number(waterPasteRatio);
-  const ratioValid = Number.isFinite(ratioNum) && ratioNum > 0;
   // The corrected whole-batch paste when the view model has one — the same basis
   // measuredPasteRejectionFor judges a reading against (its wholeBatchPasteBasis), and the
   // same one forwarded to PortionDilutionResults. anhydrousGrams +
@@ -549,23 +668,18 @@ export function DilutionPanel({
   // surface ends up counting an alternative liquid's solids while its neighbour does not.
   const correctedPasteBasis = hasCorrectedPasteBasis(wholeBatchPasteGrams);
   const computedPasteGrams = computedPotGramsFor(dilution, wholeBatchPasteGrams, cookWaterGrams);
-  // The pot ratio mode multiplies, and gradual sums with the record below: the reading when it
+  // The pot a preset multiplies, and the pot the record arm sums with: the reading when it
   // describes a possible POT, else the recipe's own computed pot. One resolution
-  // (weighedOrComputedPotGramsFor, above), shared with the jar in Custom amount and with the
-  // printed sheet, so no two surfaces can answer this question differently.
+  // (weighedOrComputedPotGramsFor, above), shared with resolveDilution's record arm, with the
+  // jar in Custom amount and with the printed sheet, so no two surfaces can answer this
+  // question differently.
   //
-  // The gate there is deliberately NOT measuredPasteValid, which both modes used until the
-  // loop above forced the split: that one also asks whether the reading is heavier than the
-  // solution the SAVED TARGET dilutes to, and neither derived mode has a target — ratio
-  // multiplies whatever pot it is given, and gradual writes the target this expression
-  // produces. A basis chosen by a figure downstream of itself is not a basis. The batch pour
-  // one screen below still answers to a ceiling, because solutionGrams − measured really does
-  // have to be a pour it can print — but to correctedPotGramsFor's, which is this ceiling
-  // widened by the write-back's own rounding for a record that adds up to the target, so the
-  // pour and the bottled mass count from the same pot this line does whenever the target IS
-  // this record's, and only then. That agreement is the point:
-  // while they disagreed, the panel printed "Finished so far (weighed) 1,405 g" beside a
-  // 1,600 g finished product with a legally-capped preservative dose taken against the second.
+  // The gate there is deliberately NOT measuredPasteValid: that one also asks whether the
+  // reading is heavier than the solution the PLAN dilutes to, and neither consumer here is
+  // aiming at that target — a preset multiplies whatever pot it is given, and the record arm
+  // derives its own concentration from this expression. A basis chosen by a figure downstream
+  // of itself is not a basis. The batch pour one screen below still answers to a ceiling,
+  // because solutionGrams − measured really does have to be a pour it can print.
   //
   // wholeBatchPasteGrams (anhydrousGrams + cookWaterGrams + splitLiquidSolidsGrams,
   // computed in the view model) is a PREDICTION and is never corrected by a measured
@@ -575,75 +689,12 @@ export function DilutionPanel({
   // reference has the maker weigh the paste; a valid measurement is direct evidence
   // against the prediction and always outranks it.
   const pasteGrams = potBasis?.grams ?? null;
-  // Gradual Dilution (LS:1531): the maker records water actually poured, and the
-  // concentration is DERIVED from that record rather than targeted — the opposite
-  // direction from concentration and ratio mode, which both choose a number and let the
-  // app find the water. Counts from `pasteGrams` immediately above — the pot the maker
-  // weighed when that reading describes a possible pot, else the recipe's computed one —
-  // exactly the basis ratio mode already prefers a reading over, so gradual and ratio can
-  // never disagree about which pot they are pouring into. The readout below names which of
-  // the two it used ("weighed" / "computed"), the same discipline basisScope's "(whole
-  // batch)" / "(custom amount)" labels already practice for naming a figure's basis.
-  //
-  // '' parses to NaN, never to 0: gradualDilutionFrom's zero is a legitimate reading (the
-  // pot before any water — Gradual Dilution's own starting point), so an EMPTY field must
-  // not collapse to the same result as a typed "0", or the readout and write-back would
-  // fire before the maker had recorded anything at all. Through the shared parser, which
-  // answers that same "is there a record" question for the printed sheet's two record rows
-  // and for the paste ceiling behind the pour row (lib/measuredPaste) — NaN for "no record"
-  // because that is what core's gradualDilutionFrom refuses, so this reads identically to
-  // the hand-written parse it replaces (a negative is not a pour either way: the parser
-  // returns undefined, core rejects it).
-  const gradualWaterNum = parseGradualWaterRecordGrams(gradualWaterGrams) ?? NaN;
-  // Why that parse came back empty, when it did: the shared parser refuses a record carrying
+  // WHY THE RECORD CAME BACK EMPTY, when it did: the shared parser refuses a record carrying
   // a swallowed thousands separator (a typed 2,000 commits as '2.000'), which is what stops
-  // 2 g of water writing a target, printing on the sheet and widening the paste ceiling. The
-  // FIELD is here, so the refusal has to be explained here — read from the same fingerprint
-  // the parser applies, never a second copy of the rule.
+  // 2 g of water governing the batch, printing on the sheet and widening the paste ceiling.
+  // The FIELD is here, so the refusal has to be explained here — read from the same
+  // fingerprint the parser applies, never a second copy of the rule.
   const gradualWaterSubTenthPrecision = subTenthPrecisionFingerprint(gradualWaterGrams);
-  const gradual =
-    dilution && pasteGrams !== null
-      ? gradualDilutionFrom({
-          pasteGrams,
-          anhydrousGrams: dilution.anhydrousGrams,
-          waterAddedGrams: gradualWaterNum,
-        })
-      : null;
-  // Gradual Dilution, for a JAR in Custom amount scope rather than the whole batch — and
-  // THE CENTRAL PROHIBITION this task exists to enforce: this concentration is NEVER
-  // written to settings.soapConcentrationPercent. `gradual` immediately above IS the
-  // recipe's own record — whole-batch gradual legitimately redefines the recipe's target,
-  // because the batch IS the recipe. A maker who dilutes ONE JAR thinner than the batch
-  // has not redefined the recipe, so `portionGradual` below reaches only the readouts
-  // further down; no effect anywhere in this file reads it, and none may be added that
-  // does (a regression test asserts on the onSoapConcentrationChange spy itself, not on a
-  // rendered figure — the damage is the write, not the display). The prohibition travels
-  // with the exported resolution: App's only use of it is the preservative dose, which is a
-  // percentage of the jar and never a write into the recipe's target.
-  //
-  // Resolved by portionGradualFor (module scope, above) rather than inline, so App can ask
-  // the SAME question for the preservative dose — in Custom amount the dose is a % of the
-  // jar, and it used to be a % of a target-derived portion the maker never asked for. The
-  // jar's own soap comes from core's lsPotAnhydrousShare there; see that function and
-  // portionGradualFor's own doc for why it no longer travels through lsPartialDilution.
-  //
-  // Null outside its own scope+mode, which every consumer of it below already gates on: a jar
-  // is a claim about what Custom amount + Gradual is showing, and resolving one for a screen
-  // that shows no jar invites a future reader to consume it from a state where the two fields
-  // behind it are stale session values. Its sibling `portionState` is null there for the
-  // sharper version of the same reason — see it.
-  const portionGradualState =
-    dilutionScope === 'portion' && dilutionMode === 'gradual'
-      ? portionGradualFor({
-          dilution,
-          portionPasteGrams,
-          portionWaterGrams,
-          measuredPasteGrams,
-          wholeBatchPasteGrams,
-          cookWaterGrams,
-        })
-      : null;
-  const portionGradual = portionGradualState?.jar ?? null;
   // The correction computedPasteGrams carries over the recipe's own water-only figure —
   // an alternative liquid's non-water solids. Derived from that same basis rather than
   // taken as a prop so it can never disagree with the paste the figures are computed from;
@@ -656,146 +707,36 @@ export function DilutionPanel({
     dilution && computedPasteGrams !== null
       ? Math.max(0, computedPasteGrams - (dilution.anhydrousGrams + (cookWaterGrams ?? 0)))
       : 0;
-  const ratioWaterGrams =
-    dilution && pasteGrams !== null && ratioValid ? pasteGrams * ratioNum : null;
-  const ratioSolutionGrams =
-    pasteGrams !== null && ratioWaterGrams !== null ? pasteGrams + ratioWaterGrams : null;
-  // The true derived concentration — shown as-is in the "lands at" readout below, however
-  // extreme, so the panel never lies about what the ratio implies.
-  const ratioConcentrationPercent =
-    dilution && ratioSolutionGrams !== null && ratioSolutionGrams > 0
-      ? (dilution.anhydrousGrams / ratioSolutionGrams) * 100
-      : null;
-  const roundedRatioConcentrationPercent =
-    ratioConcentrationPercent !== null ? Math.round(ratioConcentrationPercent * 10) / 10 : null;
-  // calculateDilution only accepts (0, 100) exclusive (see the concentration field's own
-  // min={1} max={99}). An extreme ratio can round the true value to 0.0 or 100.0 — writing
-  // THAT back would send `dilution` upstream to null, which vanishes this entire ratio UI
-  // (it is gated on `dilution`) with no way to recover except switching modes. Clamping
-  // what gets WRITTEN — never the readout above, which keeps telling the truth — keeps a
-  // legal concentration flowing at all times.
-  const clampedRatioConcentrationPercent =
-    roundedRatioConcentrationPercent !== null
-      ? Math.min(99, Math.max(1, roundedRatioConcentrationPercent))
-      : null;
-  const ratioWriteBackClamped =
-    roundedRatioConcentrationPercent !== null &&
-    clampedRatioConcentrationPercent !== roundedRatioConcentrationPercent;
-  // The write-back below waits for a real edit to the ratio (ratioTouched — see its own
-  // comment), so entering ratio mode leaves the saved target in force. That is deliberate
-  // and must stay: entering and leaving the mode used to rewrite a typed target with no
-  // undo. What it left unsaid is the split it creates — the ratio block above answers for
-  // the ratio while every row below, and the printed sheet, still answer for the saved
-  // target. Three disagreeing figures on one screen (3,200 g at the ratio, a 4,000 g
-  // solution at the saved 30%, 2,400 g on the sheet) and nothing saying they are answers to
-  // different questions. Naming the split is the fix; writing back on entry is not.
-  const persistedTargetPercent = Number(soapConcentrationPercent);
-  const ratioNotAppliedYet =
-    dilutionMode === 'ratio' &&
-    !ratioTouched &&
-    clampedRatioConcentrationPercent !== null &&
-    Number.isFinite(persistedTargetPercent) &&
-    // The write-back rounds to 0.1 before writing, so anything closer than half of that is
-    // the same target and there is no split to report.
-    Math.abs(clampedRatioConcentrationPercent - persistedTargetPercent) >= 0.05;
-  // The ratio is an alternative way to CHOOSE the concentration, not a parallel result:
-  // vm.dilution, PortionDilutionResults and the printed BatchSheet all read the
-  // persisted concentration, so without this write-back the app would show the ratio's own
-  // water figure here beside a different figure everywhere else. soapConcentrationPercent IS
-  // a dep (despite being what this writes) so an EXTERNAL change to it — opening a recipe
-  // file while ratio mode is active, which can replace the target without touching
-  // dilutionMode/waterPasteRatio/cookWaterGrams — still re-syncs: otherwise the imported
-  // value would sit on screen while this panel's own "lands at X% soap" readout kept
-  // speaking of the old ratio-derived number. This does NOT reintroduce a write loop:
-  // clampedRatioConcentrationPercent is computed from the ratio inputs and dilution alone,
-  // never from soapConcentrationPercent, so re-running this effect after ITS OWN write
-  // always recomputes the identical string and calls onSoapConcentrationChange with a
-  // no-op value — React bails out of re-rendering on an unchanged state value, so the
-  // dependency does not cycle. onSoapConcentrationChange itself stays excluded (a fresh
-  // function every render, unrelated to the derived value).
+  // THE RECORD ARM'S OWN FIGURES, and the whole of what replaces the two write-back effects
+  // that stood here. `resolved` (above) holds them: the pot — weighed when the reading
+  // describes a possible one, else the recipe's computed pot — plus the water the maker
+  // actually poured, and the concentration that falls out of the two. UNROUNDED and
+  // UNCLAMPED, because it is a readout and never a value fit to be written anywhere: the
+  // clamp that used to bound it existed only to keep a write legal.
   //
-  // Gated on ratioTouched: App seeds waterPasteRatio to a default ('2') that exists before
-  // the maker has ever looked at ratio mode, so entering it (or leaving and re-entering)
-  // with no edit used to fire this write-back anyway — silently rewriting a saved target
-  // that came from opening a recipe file, with no undo (undo/redo only wraps oil-line
-  // edits) and no visual difference from a figure the maker actually typed. Requiring an
-  // explicit edit to the ratio input first (see its onChange below) makes entering and
-  // leaving ratio mode alone a no-op, while a real edit still writes back exactly as
-  // before — including the external-resync behavior described above, since ratioTouched
-  // stays true once set.
-  useEffect(() => {
-    if (ratioTouched && dilutionMode === 'ratio' && clampedRatioConcentrationPercent !== null) {
-      onSoapConcentrationChange(String(clampedRatioConcentrationPercent));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ratioTouched, dilutionMode, clampedRatioConcentrationPercent, soapConcentrationPercent]);
-  // The PRIMITIVE gradual writes, hoisted out of the object so the effect below can depend
-  // on it directly. gradualDilutionFrom returns a fresh object every call (no useMemo — see
-  // `gradual`'s own comment), so `gradual` itself is a new reference on every render;
-  // useEffect compares dependencies by reference, so listing the object would re-fire the
-  // effect on every re-render while touched, not only when the derived percentage actually
-  // changes — and since the effect calls onSoapConcentrationChange, which (in App) always
-  // spreads a new settings object, App re-renders, this component is rebuilt, `gradual` is
-  // a new reference with identical values, and the effect fires again: an unbounded render
-  // loop from the first keystroke. Depending on this primitive instead is what makes React
-  // bail out on an unchanged value — the same property ratio's own effect comment names,
-  // which only holds for primitives, not for a freshly-allocated object.
-  const gradualWriteBack = gradual?.writeBackPercent ?? null;
-  // Gradual's twin of ratioNotAppliedYet above, and it exists for the identical reason: the
-  // write-back waits for a real edit to the water field (gradualTouched — see its own
-  // comment), so entering gradual mode leaves the saved target in force and the panel shows
-  // TWO masses for one batch. Record 2,000 g, switch to Target concentration, type 50%,
-  // switch back: the re-entry guard correctly declines to rewrite, and the screen then reads
-  // "Finished so far 3,666 g" above a 2,444 g finished product and a preservative dose that
-  // is a percentage of the second one. Nothing said they were answers to different
-  // questions — the exact split ratio's own clause was written to name, reintroduced
-  // unnamed. Naming it is the fix here too; writing back on entry is not (it reverts a typed
-  // target with no undo, which is the bug gradualTouched exists for).
-  //
-  // Whole-batch scope only: portion gradual never writes back at all — a jar diluted thinner
-  // has not redefined the recipe — and its own readout already echoes the saved target
-  // read-only, which says the same thing in the place it belongs.
-  //
-  // The 0.005 threshold is half of the write-back's own 2 dp rounding (ratio's is 0.05 for
-  // its 1 dp), so anything closer than that IS the saved target and there is no split.
-  const gradualNotAppliedYet =
-    dilutionMode === 'gradual' &&
-    dilutionScope === 'batch' &&
-    !gradualTouched &&
-    gradualWriteBack !== null &&
-    Number.isFinite(persistedTargetPercent) &&
-    Math.abs(gradualWriteBack - persistedTargetPercent) >= 0.005;
-  // Gradual's write-back, mirroring ratio's immediately above: same touched-gate (see
-  // gradualTouched's own comment — entering a derived mode must not write anything on its
-  // own) and the same target field. Unlike ratio's effect this does NOT list
-  // soapConcentrationPercent as a dependency: gradualWriteBack is derived from the paste
-  // basis, the recorded water and the batch's anhydrous soap, and none of those reads the
-  // persisted target — so there is nothing here an external change to that target would
-  // need to resync.
-  //
-  // THAT INDEPENDENCE IS LOAD-BEARING, and this comment asserted it for a while before it
-  // was true. gradualWriteBack reaches back through `gradual` → `pasteGrams`, and while
-  // that selection ran on measuredPasteValid it consulted dilution.solutionGrams — which is
-  // anhydrous ÷ the persisted target, i.e. the figure this effect writes. With a weighed pot
-  // and no water recorded the two are the same number up to 2 dp of rounding, so the ceiling
-  // flipped on the panel's own output and the write-back oscillated without settling: 223 of
-  // 445 whole-gram readings in one swept window, and a hung tab through <App/>. The basis
-  // now runs on measuredPasteDescribesPot, which asks only about the pot; see its comment
-  // above and lib/measuredPaste's measuredPasteDescribesPotFor. If a future edit puts
-  // anything target-derived back into this chain, this effect loops again.
-  useEffect(() => {
-    if (gradualTouched && dilutionMode === 'gradual' && gradualWriteBack !== null) {
-      onSoapConcentrationChange(String(gradualWriteBack));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gradualTouched, dilutionMode, gradualWriteBack]);
+  // WHAT IS GONE HERE, and why none of it can come back (decision 2, "no write-back, ever"):
+  //   - both useEffects that called onSoapConcentrationChange with a derived percentage;
+  //   - ratioTouched / gradualTouched and the mode-change effect that reset them, which
+  //     existed only because entering a derived mode used to rewrite a typed target;
+  //   - ratioNotAppliedYet / gradualNotAppliedYet, whose whole subject was the gap between a
+  //     derived figure and a plan it had not been written into — spec §4 deletes them,
+  //     because with the plan rows labelled as plan there is nothing left unapplied;
+  //   - the [1, 99] write-back clamps and their two alerts.
+  // The plan is now what the maker typed or what a preset click wrote, and nothing else ever
+  // touches it. That is a property of this file having no path from a record to
+  // onSoapConcentrationChange at all, not of a guard that could be loosened.
+
   // The measurement corrects the BATCH figure the same way it already corrects the portion
   // in PortionDilutionResults — shared with the printed BatchSheet so both surfaces always agree.
   // wholeBatchPasteGrams is passed for the second correction the helper applies: without it
   // this row derived its water from calculateDilution's anhydrous + water pot while the
-  // ratio block above derived its own from computedPasteGrams, which counts an alternative
-  // liquid's solids. Two figures on one screen, differing by exactly those solids (5,000 g
-  // at the ratio against 5,450 g here and on the printed sheet). Same basis both ways now.
+  // preset arithmetic above derives its own from computedPasteGrams, which counts an
+  // alternative liquid's solids. Two figures on one screen, differing by exactly those solids
+  // (5,000 g in the panel against 5,450 g on the printed sheet). Same basis both ways now.
+  //
+  // A PLAN FIGURE, whichever arm governs: it is what the plan still asks the maker to pour,
+  // and §2 keeps it on screen under a plan label while a record governs rather than hiding
+  // it. Nothing about it changes with the record — only the word "(plan)" beside it.
   const batchDilutionWaterGrams = dilution
     ? correctedDilutionWaterGrams(
         dilution,
@@ -819,15 +760,17 @@ export function DilutionPanel({
   // portionOwnsUndeclaredLiquidHedge, which suppresses the shell's copy of a hedge the child
   // is already printing in its own words.
   //
-  // NULL IN GRADUAL MODE, and in whole-batch scope, because the child that answers for it is
-  // not on screen in either. `targetMl` is App session state that survives a mode switch, so
-  // in gradual it holds a figure from whatever mode came before — the child was suppressed for
-  // exactly that reason, while these two derived verdicts went on keying on it. The density
-  // caveat then printed "Volume assumes ~1.03 g/ml" beside no millilitre figure at all (the
-  // state its own comment says it exists to prevent), and the hedge the child was no longer
-  // rendering was suppressed here as though it were.
+  // NULL WHILE A JAR RECORD GOVERNS, and in whole-batch scope, because the child that answers
+  // for it is not on screen in either. `targetMl` is App session state that survives
+  // everything, so with a jar recorded it holds a figure from before — the child is
+  // suppressed for exactly that reason, and while these two derived verdicts went on keying
+  // on it the density caveat printed "Volume assumes ~1.03 g/ml" beside no millilitre figure
+  // at all (the state its own comment says it exists to prevent), and the hedge the child was
+  // no longer rendering was suppressed here as though it were. The clause is the mode gate's
+  // record-keyed replacement and answers exactly where the mode gate did: a jar with both
+  // figures is what used to be Custom amount + Gradual.
   const portionState =
-    dilution && dilutionScope === 'portion' && dilutionMode !== 'gradual'
+    dilution && dilutionScope === 'portion' && !portionJarGoverns
       ? portionDilutionFor({
           dilution,
           targetMl,
@@ -854,25 +797,16 @@ export function DilutionPanel({
   // the shell's caveat exactly as before. Same duplication the sibling floor hint below
   // already avoids inside this shell; this is that rule applied across the scope seam.
   const portionOwnsUndeclaredLiquidHedge = portionState?.pasteAlreadyThinner ?? false;
-  // dilutionTargetWording and PortionDilutionResults are typed against the narrower
-  // 'concentration' | 'ratio' union on purpose — see dilutionTargetWording's own doc
-  // comment: the type dependency stays one-way, this component imports theirs, not the
-  // reverse, so they cannot import DilutionMode back.
-  //
-  // NEITHER CONSUMER IS REACHABLE IN GRADUAL MODE ANY MORE, so the mapping below no longer
-  // decides anything, and that is deliberate rather than lucky. PortionDilutionResults does
-  // not render in gradual (a stale `targetMl` was otherwise putting its whole target-derived
-  // grid on screen beside the jar's own recorded figures), and the one refusal that words
-  // itself through dilutionTargetWording — pasteAlreadyPastTarget — is suppressed in gradual
-  // too, because it explains a "Dilution water to add" row that mode does not print and its
-  // remedy named the concentration field that mode does not show. A mapping of gradual onto
-  // 'concentration' can only ever produce copy naming a control gradual removed; keeping the
-  // narrowing means the type system still forces a decision here if a future consumer needs
-  // one, instead of quietly inheriting concentration mode's wording.
-  const narrowDilutionMode = dilutionMode === 'gradual' ? 'concentration' : dilutionMode;
   // Shared with PortionDilutionResults so this shell's Whole-batch twin of that refusal and
   // the child's own Custom-amount wording of it can never name different controls.
-  const refusalWording = dilutionTargetWording(narrowDilutionMode, ratioNotAppliedYet);
+  //
+  // ONE ARGUMENT PAIR NOW, because there is one control: the % field is on screen in every
+  // state this refusal can render in, so the remedy always names it. The helper keeps both of
+  // its parameters and its 'ratio' arm — deleting them is Phase 3's (spec §5) — and both
+  // callers pass the same constants, so neither surface can word the remedy for a control the
+  // panel no longer has. PortionDilutionResults' own defaults are these values, which is why
+  // it is no longer handed them at the call site below.
+  const refusalWording = dilutionTargetWording('concentration', false);
   // The Whole-batch twin of PortionDilutionResults' unmeasuredPasteAlreadyThinner, and the
   // exact condition under which correctedDilutionWaterGrams' clamp fires: the corrected pot
   // outweighs the whole solution its own soap makes at the target, so the batch row prints
@@ -908,17 +842,16 @@ export function DilutionPanel({
   // and back, and never moves this sum. No collision with the "can't tell whether X% is
   // reachable" hedge either — that one is gated on targetExceedsPaste, which is false here.
   //
-  // NOT IN GRADUAL MODE. This alert exists to account for a "0 g" in the "Dilution water to
-  // add" row, and gradual mode does not render that row at all (see its own gate below —
-  // gradual has no persisted target for it to answer). What is left is a paragraph whose
-  // remedy names the concentration field gradual removes from the panel, whose closing
-  // clause tells a maker to weigh the paste they may have just weighed, and whose quoted
-  // figure is the COMPUTED pot even when gradual is counting from the weighed one — three
-  // claims about a screen that is not there. Reachable, too: after a record writes back, the
-  // saved target is the record's own, and a pot heavier than the reading satisfies this.
+  // PLAN-GOVERNS ONLY (spec §4's conversion of this alert's old gradual-mode exclusion). Every
+  // clause of it is a claim about a TARGET: the pot outweighs the solution THAT TARGET makes,
+  // so THAT TARGET has no water left to add, and the remedy is to lower it. A record arm has
+  // no target — the batch is what it is, its own concentration is printed beside it, and the
+  // plan's pour row is on screen labelled as plan with its own figure intact. Stating this
+  // verdict there would be a verdict about a number the maker has stopped aiming at, quoting
+  // the COMPUTED pot beside a record counting from the weighed one.
   const pasteAlreadyPastTarget =
     dilution !== null &&
-    dilutionMode !== 'gradual' &&
+    planGoverns &&
     !dilution.targetExceedsPaste &&
     !measuredPasteValid &&
     computedPasteGrams !== null &&
@@ -939,20 +872,32 @@ export function DilutionPanel({
   // SCREEN (decided 2026-08-17, the code-review round; the clause read the raw
   // `measurementRejection.rejected` flag before that). The refusal's licence to replace
   // this verdict is that it renders in the verdict's place — and the exceeds-solution
-  // paragraph is excluded from ratio and gradual mode, so in those modes the flag was
-  // true while the screen said NOTHING: a maker whose reading already exceeds the saved
-  // target's solution got neither the refusal nor this alert, at a target the batch is
+  // paragraph is now plan-governs only, so under a record the flag could be
+  // true while the screen said NOTHING: a maker whose reading already exceeds the plan's
+  // solution would get neither the refusal nor this alert, at a plan the batch is
   // already past — the flag-keyed shape this project has paid for five times. The three
   // reading-only rules (nonPositive, subTenthPrecision, belowSolids) render on their bare
-  // flags in every mode and both scopes, so for them the flag IS the paragraph's render
+  // flags in both scopes and under either arm, so for them the flag IS the paragraph's render
   // condition — the terms below track those render sites, and must follow if one of them
-  // ever grows a mode gate of its own. The exceeds-solution term is `exceedsSolutionAlert`,
+  // ever grows a gate of its own. The exceeds-solution term is `exceedsSolutionAlert`,
   // the same const its paragraph renders on. (The fifth rule, exceedsRemainingCeiling, has
   // no paragraph in this panel and cannot fire while every reading is declared whole-batch
   // — a refusal that cannot render cannot replace this alert, so it takes no term.)
+  //
+  // PLAN-GOVERNS ONLY, like its sibling and for the same reason (spec §3: "overDilutionCertain
+  // and every other plan-claim is gated on plan-governs"). "The paste is already more dilute
+  // than N%" names the PLAN's N and asserts that adding water only takes the batch further
+  // from it; a record arm is not travelling toward it.
+  //
+  // THIS LINE IS WHERE THAT GATE LIVES, and it is the only place it can. The view model's
+  // `overDilutionCertain` is ungated (see its memo — gating it there leaked the batch record
+  // into portion scope), and it would not have been enough anyway: with no undeclared liquid
+  // the last clause below never consults that flag at all, so a flag-side gate would have left
+  // this paragraph rendering on every ordinary over-dilute recipe.
   const pasteAlreadyThinnerAlert =
     dilution !== null &&
     dilutionScope === 'batch' &&
+    planGoverns &&
     dilution.targetExceedsPaste &&
     !measuredPasteValid &&
     !(measurementRejection?.nonPositive ?? false) &&
@@ -972,10 +917,12 @@ export function DilutionPanel({
   // the very solution this verdict compares the corrected pot to, so it already explains
   // the 0 g row — two verdicts about one target are one verdict too many, and the
   // rejection, which quotes the reading the maker just took, wins. Keyed on that
-  // paragraph's RENDER (exceedsSolutionAlert), never on the rejection's flag: in ratio and
-  // gradual the flag can be true while the paragraph is excluded from the mode, and a
+  // paragraph's RENDER (exceedsSolutionAlert), never on the rejection's flag: under a record
+  // the flag can be true while the paragraph is plan-governs-gated off, and a
   // flag-keyed yield would have silenced this alert over a screen that says nothing — the
-  // shape this project has paid for four times. Where the refusal on screen is
+  // shape this project has paid for four times. (It cannot bite here today, because this
+  // alert is itself plan-governs only — but the two gates are independent, and the discipline
+  // is what stops the next one from being written flag-first.) Where the refusal on screen is
   // reading-only (belowSolids, nonPositive, subTenthPrecision) the two still stack: those
   // refusals say nothing about the target, and this paragraph is the only account of the
   // 0 g underneath them.
@@ -1014,17 +961,41 @@ export function DilutionPanel({
   // hundreds of grams of water. A valid whole-batch reading settles the question (the
   // over-dilution alert above is gated the same way and for the same reason), and in
   // Custom amount the child's own suppressed-portion hedge says the same thing with the
-  // missing figures explained, so it owns the message there — EXCEPT in gradual, where that
-  // child does not render at all. `portionState` is resolved only for portion + non-gradual
-  // for exactly that reason, so `portionOwnsUndeclaredLiquidHedge` is false there and this
-  // shell clause speaks instead.
+  // missing figures explained, so it owns the message there — EXCEPT while a JAR RECORD
+  // governs, where that child does not render at all. `portionState` is resolved only where
+  // the child renders for exactly that reason, so `portionOwnsUndeclaredLiquidHedge` is false
+  // there and this shell clause speaks instead.
   //
-  // It did not always. While `portionState` was still computed from a stale `targetMl` in
-  // gradual too, `pasteAlreadyThinner` could be true — suppressing this clause in favour of
-  // a child that had already been suppressed, so the warning appeared on NEITHER surface and
-  // an undeclared liquid went unmentioned. Pinned by a test.
+  // It did not always. While `portionState` was still computed from a stale `targetMl` in the
+  // state the child was suppressed in, `pasteAlreadyThinner` could be true — suppressing this
+  // clause in favour of a child that had already been suppressed, so the warning appeared on
+  // NEITHER surface and an undeclared liquid went unmentioned. Pinned by a test.
+  //
+  // SUPPRESSED UNDER A BATCH RECORD (spec §3, and §4's rule that a plan claim has no subject
+  // while a record governs). "Can't tell whether 85% is REACHABLE" is a question about the
+  // plan and about nothing else; the record arm is not travelling toward it. The plan row it
+  // hedges over is still on screen there, and it is not left bare — the plan-labelled caption
+  // under the grid accounts for the 0 g (spec §4).
+  //
+  // KEYED ON `batchRecord`, NOT on `planGoverns`, and the difference is the scope seam. This
+  // clause renders in BOTH scopes, and in Custom amount `planGoverns` answers for the JAR —
+  // so keying on it would silence the hedge for a recorded jar, in a scope where nothing else
+  // says it (the child that owns the message elsewhere does not render for a governing jar).
+  // An undeclared liquid would have gone unmentioned on both surfaces, which is the exact
+  // defect the regression pin below this clause's own sibling exists for.
+  //
+  // AND THE GATE IS THE WHOLE OF WHAT THIS CLAUSE READS ABOUT THE RECORD. `overDilutionCertain`
+  // is deliberately UNGATED in the view model (see its memo): it is a fact about the recipe,
+  // and it is read in portion scope too — by this clause and by the `overDilutionCertain` prop
+  // forwarded to PortionDilutionResults, which decides whether the child asserts the verdict
+  // or hedges over it. Gating it there made a whole-batch record flip a Custom amount screen
+  // from the assertion to the hedge and resurrect the solubility ceiling on top, in a scope
+  // that does not even show the field. With it ungated, `batchRecord === null` is the only
+  // record term on this line and it is null in portion scope by construction — so Custom
+  // amount really does behave exactly as it always has, term by term.
   const cantTellGate =
     dilution !== null &&
+    batchRecord === null &&
     dilution.targetExceedsPaste &&
     unknownLiquidGrams > 0 &&
     !overDilutionCertain &&
@@ -1202,253 +1173,161 @@ export function DilutionPanel({
   // vessel and packaging are big enough — so the density bridge is shown here rather than
   // left implicit.
   const finishedVolumeMl = bottledGrams !== null ? lsFinishedVolumeMl(bottledGrams) : null;
-  // Show the product mass whenever it differs from the solution row, so the finished
-  // VOLUME below (derived from it, not from the solution) reconciles with what is above it.
+  // The finished mass the grid already states under whichever arm governs — the record's
+  // "Finished so far", else the plan's "Finished solution". The bottled row exists to show a
+  // mass the grid does NOT already have, so the comparison has to be against the figure
+  // actually on screen: keyed on `dilution.solutionGrams` under a record, a bottle lighter
+  // than the plan's solution (which is every mid-pour batch) hid the row while the volume row
+  // below went on converting it, leaving a millilitre figure derived from a mass nothing on
+  // screen stated.
+  const governingFinishedGrams = batchRecord
+    ? batchRecord.finishedGrams
+    : (dilution?.solutionGrams ?? null);
+  // Show the product mass whenever it differs from that row, so the finished VOLUME below
+  // (derived from it, not from the solution) reconciles with what is above it.
   const showBottledRow =
-    dilution !== null && bottledGrams !== null && bottledGrams > dilution.solutionGrams + 0.5;
+    dilution !== null &&
+    bottledGrams !== null &&
+    governingFinishedGrams !== null &&
+    bottledGrams > governingFinishedGrams + 0.5;
   return (
     <section className="panel panel--nested">
       <div className="panel__head">
         <div>
           <h2 className="panel__title">Dilution</h2>
-          {/* Names what the panel does in ALL THREE modes. "Water to add to reach a target
-              soap concentration" described two of them and contradicted the third: gradual
-              is the mode with no target, where the water is the maker's own record and the
-              concentration is what comes out. */}
+          {/* Names the two things the panel holds. It used to name three MODES, which is
+              exactly what this surface stopped having: a plan (a target, reached by typing it
+              or by taking one of the reference's ratios as a starting point) and a record
+              (the water actually poured). Neither excludes the other, so the subtitle is an
+              "and" rather than an "or". */}
           <p className="panel__subtitle">
-            Water and soap concentration — from a target, a ratio, or what you actually
-            poured
+            Your plan for the dilution, and the record of what you actually poured
           </p>
         </div>
       </div>
-      {/* Three ways to arrive at the same pair of figures — two that choose a number and
-          let the app find the water (LS:1534 ratio, LS:1536 concentration), and one that
-          records the water and derives the number (LS:1531 gradual). Concentration is the
-          default, and switching never clears another mode's input, since each is its own
-          bit of App state. */}
-      <div className="dilution-mode-toggle" role="radiogroup" aria-label="Dilution input mode">
-        <label className="field field--inline">
-          <input
-            type="radio"
-            name="dilutionMode"
-            checked={dilutionMode === 'concentration'}
-            onChange={() => onDilutionModeChange?.('concentration')}
-          />
-          <span>Target concentration</span>
-        </label>
-        <label className="field field--inline">
-          <input
-            type="radio"
-            name="dilutionMode"
-            checked={dilutionMode === 'ratio'}
-            onChange={() => onDilutionModeChange?.('ratio')}
-          />
-          <span>Water : paste ratio</span>
-        </label>
-        <label className="field field--inline">
-          <input
-            type="radio"
-            name="dilutionMode"
-            checked={dilutionMode === 'gradual'}
-            onChange={() => onDilutionModeChange?.('gradual')}
-          />
-          <span>Gradual — record what you added</span>
-        </label>
+      {/* ── THE PLAN ROW (spec §2) ─────────────────────────────────────────────────────────
+          The target % the maker is aiming at, and the reference's four starting ratios as
+          one-shot setters for it. Visible in both scopes and in every state, because it is
+          the recipe's own field: the mode radio that used to hide it behind "Target
+          concentration" is gone, and with it the states where copy pointed at a control the
+          screen did not have. */}
+      <label className="field">
+        <span>Target soap concentration (%)</span>
+        <input
+          type="number"
+          className="input input--number"
+          min={1}
+          max={99}
+          step={1}
+          value={soapConcentrationPercent}
+          onChange={(e) => onSoapConcentrationChange(e.target.value)}
+          aria-label="Target soap concentration percent"
+        />
+      </label>
+      {/* BUTTONS, not radios, and that is the whole design of them (spec §2). A radio group
+          claims one of its options describes the current state; these do not — they DO
+          something and stop. Nothing here re-derives a "current" ratio from the plan %, so a
+          value that matches no preset (a hand-typed 34%, or a 33.85 left behind by the
+          write-back this task deleted) simply leaves the group unmarked, which is the honest
+          reading of it.
+
+          It also retires an entire class of bug this file paid for twice: while these were
+          radios, re-asserting an ALREADY-CHECKED one fired no change event, so the obvious
+          remedy was inert by mouse and by keyboard and three handlers had to be hung on each
+          input to recover it (the Chromium event census that comment carried is no longer
+          needed — a button fires click for mouse, Space and Enter alike). And a Tab keyup
+          landing on a freshly focused radio could apply a ratio the maker never picked; a
+          button cannot be activated by arriving at it.
+
+          The legend keeps owning the DIRECTION: these read "2:1", and the same tokens mean
+          water:lye elsewhere in the app, so the group never restates the relationship on its
+          own. Neither name says "common" — "the most common ratios used are 1:1, 2:1 and 3:1"
+          is said of water:LYE (LS:1500), a different quantity at a different stage. What the
+          reference does say about these is that they are where makers begin (LS:1534), which
+          is what the legend says. */}
+      <div
+        className="dilution-mode-toggle"
+        role="group"
+        aria-label="Starting points for the water to paste ratio"
+      >
+        <span className="dilution-toggle__legend">Starting points</span>
+        {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            className="dilution-preset"
+            // Disabled with no pot to multiply: there is no percentage for the click to
+            // write, and a control that does nothing when pressed is worse than one that
+            // says it cannot. `dilution` null is "no oils yet", which the panel's own ask at
+            // the bottom already explains.
+            disabled={dilution === null || pasteGrams === null}
+            onClick={() => {
+              if (!dilution || pasteGrams === null) return;
+              const percent = ratioPresetPercent(
+                dilution.anhydrousGrams,
+                pasteGrams,
+                Number(preset),
+              );
+              setPresetApplied({ ratio: preset, percent });
+              onSoapConcentrationChange(String(percent));
+            }}
+          >
+            {preset}:1
+          </button>
+        ))}
       </div>
-      {dilutionMode === 'ratio' ? (
+      {/* WHAT THE CLICK DID, and nothing more: the ratio the maker picked and the percentage
+          it wrote. Not a <p className="results-hint"> on purpose — this is a caption on the
+          control directly above it, not state feedback about the batch, and the prose budget
+          counts hint paragraphs.
+
+          Its render condition is the caption's own retirement: it compares what the preset
+          wrote against what is on the field NOW, so typing over the figure drops the caption
+          on the very next render — no effect, no reset, no second write. 0.05 is half the
+          preset's own 1 dp rounding, so anything closer IS the figure it wrote. */}
+      {presetApplied !== null &&
+        Math.abs(Number(soapConcentrationPercent) - presetApplied.percent) < 0.05 && (
+          <p className="dilution-preset-caption">
+            {presetApplied.ratio}:1 → {formatConcentrationPercent(presetApplied.percent)}%
+          </p>
+        )}
+      {/* ── THE RECORD ROW (spec §2) ───────────────────────────────────────────────────────
+          The water actually poured into the whole batch (LS:1531: add water in increments and
+          record how much). Beside the plan rather than instead of it: the mode radio made
+          these two mutually exclusive, which is what put one batch's figures on two screens
+          the maker had to switch between to compare.
+
+          WHOLE BATCH ONLY, because `settings.gradualWaterGrams` is the whole batch's record.
+          Custom amount's own record is the jar's two fields below, and each record leads in
+          its own scope — the batch record participates nowhere in portion scope (spec §2).
+
+          No "type something here" prompt beside it any more. That prompt existed to explain a
+          MODE that showed nothing until a number arrived; a labelled, empty field on a screen
+          full of plan figures explains itself, and an always-on paragraph would have spent a
+          third of the panel's prose budget in every single state. The claim it carried worth
+          keeping — that 0 g is a record and is where the record starts — is reference prose
+          true in every state, so it moved into the collapsed Dilution notes at the bottom,
+          which is exactly what that <details> is for. */}
+      {dilutionScope === 'batch' && (
         <>
           <label className="field">
-            <span>Water : paste ratio (by weight)</span>
+            <span>Water added so far (g)</span>
             <input
               type="number"
               className="input input--number"
-              min={0.5}
-              step={0.5}
-              value={waterPasteRatio}
-              onChange={(e) => {
-                setRatioTouched(true);
-                onWaterPasteRatioChange?.(e.target.value);
-              }}
-              aria-label="Water to paste ratio"
+              min={0}
+              value={gradualWaterGrams}
+              onChange={(e) => onGradualWaterChange?.(e.target.value)}
+              aria-label="Water added so far (g)"
             />
           </label>
-          {/* Same radio-group shape (and same visible legend) as the other groups in this
-              panel, for the same reason: bare "1:1 2:1" options beside a number field
-              say nothing about what they set. The label above keeps owning the DIRECTION —
-              these read "2:1", and the same tokens mean water:lye elsewhere in the app, so
-              the group never restates the relationship on its own.
-
-              Neither name says "common" any more, visible or accessible. "The most common
-              ratios used are 1:1, 2:1 and 3:1" is said of water:LYE (LS:1500) — the same
-              three numerals, but a different quantity measured at a different stage of the
-              process. Nothing calls a water:PASTE ratio common, so a water:paste group
-              claiming it was citing the wrong thing to both audiences at once. What the
-              reference does say about these is that they are where makers begin (LS:1534),
-              which is what the legend now says. The group's accessible name leads with the
-              visible caption verbatim, so Label-in-Name holds.
-
-              No colon after the legend: BatchBasics — which owns the app's weight-unit
-              selector — punctuates its own field captions without one, and this caption
-              follows suit. */}
-          <div
-            className="dilution-mode-toggle"
-            role="radiogroup"
-            aria-label="Starting points for the water to paste ratio"
-          >
-            <span className="dilution-toggle__legend">Starting points</span>
-            {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => {
-              // A pick is an edit to the ratio, exactly as typing is, so it sets the same
-              // ratioTouched gate the write-back effect below requires. Without it a preset
-              // would move the readout while every figure underneath — and the printed sheet
-              // — stayed on the saved target, which is the split the "Not applied yet" note
-              // exists to report.
-              //
-              // THREE handlers reach it, because no one event covers the case that matters.
-              // An event census in Chromium, listeners on the raw inputs:
-              //
-              //   checked   + click  → click
-              //   checked   + Space  → keydown, keyup                    ← and nothing else
-              //   unchecked + Space  → keydown, keyup, click, input, change
-              //   arrow to sibling   → keydown, click(sibling), keyup(sibling)
-              //
-              // `change` alone misses every row but the third: App seeds waterPasteRatio to
-              // '2' and a 30% target, so entering ratio mode shows 2:1 ALREADY CHECKED beside
-              // "Not applied yet: … still uses your saved 30% target", and
-              // re-asserting a checked radio changes no checkedness. The one obvious remedy
-              // was inert — by mouse until `click` was added, and by keyboard until `keyup`
-              // was. Recovery meant picking another preset and coming back.
-              //
-              // ONE function, not three copies, so "they must all do the same thing" is
-              // structural rather than a promise: on a real change two or three of them fire
-              // in the same interaction, which is only safe because this is idempotent —
-              // setRatioTouched(true) twice is once, and onWaterPasteRatioChange with the same
-              // string is a no-op re-render React bails out of. Anything stateful added here
-              // (a toggle, a counter, logging) would fire an unpredictable number of times.
-              //
-              // keyup rather than keydown: it is where the browser's own activation lands
-              // (census row 3 — keyup precedes the synthetic click), and keydown repeats while
-              // the key is held. Gated hard on Space because focus arrives by Tab and the Tab
-              // KEYUP lands on the newly focused element — an ungated keyup would write a
-              // ratio back the moment the group was tabbed into, which is the round-2 bug
-              // (entering ratio mode rewriting a typed target with no user action) in a new
-              // costume. Space is a pick; arriving is not.
-              const applyPreset = () => {
-                setRatioTouched(true);
-                onWaterPasteRatioChange?.(preset);
-              };
-              return (
-                <label className="field field--inline" key={preset}>
-                  <input
-                    type="radio"
-                    name="waterPasteRatioPreset"
-                    // Compared as a NUMBER, not as the string: '2', '2.0' and a typed '2' are
-                    // one ratio, and the input's own step can produce any of them. A ratio
-                    // that matches no preset — the reference prints four, not an exhaustive
-                    // list — simply leaves the group unselected rather than snapping the
-                    // maker's own figure to a nearby one.
-                    checked={ratioValid && ratioNum === Number(preset)}
-                    onChange={applyPreset}
-                    onClick={applyPreset}
-                    onKeyUp={(e) => {
-                      // 'Spacebar' is the legacy spelling; ' ' is what every current browser
-                      // and both test drivers send.
-                      if (e.key === ' ' || e.key === 'Spacebar') applyPreset();
-                    }}
-                  />
-                  <span>{preset}:1</span>
-                </label>
-              );
-            })}
-          </div>
-          {/* The prose that used to sit here moved under the prose budget (at most two
-              inline hint paragraphs per state): the ratio-preset guidance ("Some makers
-              start at 1:1…") is always-true reference and lives in the collapsed notes
-              <details> at the bottom of the panel, with its sourcing comment; the
-              weigh-your-paste caveat is state-specific and rides the "lands at" readout
-              below the ratio's own water figure, one paragraph per state instead of three
-              stacked here. */}
+          {/* Refused, there is no record at all: nothing governs, the sheet prints no record
+              rows, and the batch goes on describing the plan — so the field that took the
+              number owes the account of why. */}
+          {gradualWaterSubTenthPrecision && (
+            <SwallowedSeparatorAlert typed={gradualWaterGrams} />
+          )}
         </>
-      ) : dilutionMode === 'gradual' ? (
-        dilutionScope === 'portion' ? (
-          <>
-            {/* Session-local in App (portionPasteGrams/portionWaterGrams), NOT
-                settings.gradualWaterGrams — that field is the WHOLE BATCH's own record,
-                and Gradual legitimately writes ITS derived percentage back into the
-                recipe's saved target below. A jar weighed out here is a bench figure,
-                like portionTargetMl and measuredPasteGrams beside it, and must never
-                dirty the saved recipe — see `portionGradual`'s own comment above for the
-                prohibition this enforces. */}
-            <label className="field">
-              <span>Paste weighed out (g)</span>
-              <input
-                type="number"
-                className="input input--number"
-                min={1}
-                value={portionPasteGrams}
-                onChange={(e) => onPortionPasteChange?.(e.target.value)}
-                aria-label="Paste weighed out (g)"
-              />
-            </label>
-            {/* Beside the field it describes, exactly as the measured-paste refusals sit
-                beside theirs. The verdict is portionGradualFor's, so this alert, the jar's
-                figures and App's preservative dose can never disagree about whether the
-                reading is usable. */}
-            {portionGradualState?.pasteSubTenthPrecision && (
-              <SwallowedSeparatorAlert typed={portionPasteGrams} />
-            )}
-            <label className="field">
-              <span>Water added so far (g)</span>
-              <input
-                type="number"
-                className="input input--number"
-                min={0}
-                value={portionWaterGrams}
-                onChange={(e) => onPortionWaterChange?.(e.target.value)}
-                aria-label="Water added so far (g)"
-              />
-            </label>
-            {portionGradualState?.waterSubTenthPrecision && (
-              <SwallowedSeparatorAlert typed={portionWaterGrams} />
-            )}
-          </>
-        ) : (
-          <>
-            <label className="field">
-              <span>Water added so far (g)</span>
-              <input
-                type="number"
-                className="input input--number"
-                min={0}
-                value={gradualWaterGrams}
-                onChange={(e) => {
-                  setGradualTouched(true);
-                  onGradualWaterChange?.(e.target.value);
-                }}
-                aria-label="Water added so far (g)"
-              />
-            </label>
-            {/* The record the whole mode runs on: refused, there is no derived percentage,
-                nothing is written back, and the sheet prints no record rows — so the field
-                that took the number owes the account of why. */}
-            {gradualWaterSubTenthPrecision && (
-              <SwallowedSeparatorAlert typed={gradualWaterGrams} />
-            )}
-          </>
-        )
-      ) : (
-        <label className="field">
-          <span>Target soap concentration (%)</span>
-          <input
-            type="number"
-            className="input input--number"
-            min={1}
-            max={99}
-            step={1}
-            value={soapConcentrationPercent}
-            onChange={(e) => onSoapConcentrationChange(e.target.value)}
-            aria-label="Target soap concentration percent"
-          />
-        </label>
       )}
       <label className="field">
         {/* Grams regardless of the app-wide unit: this is a scale reading the maker takes at
@@ -1574,50 +1453,33 @@ export function DilutionPanel({
                 paste: this field takes the batch&apos;s full paste weight.
               </p>
             ))}
-          {/* CONCENTRATION MODE ONLY (dilutionMode === 'concentration' is the only remaining
-              case once gradual and ratio are both excluded — see each exclusion below). Every
-              clause of this paragraph is about a TARGET the paste cannot reach, and only
-              concentration mode is aiming at one. The gate itself is `exceedsSolutionAlert`,
-              named where the rejection is computed: the solubility ceiling below stands down
-              for this paragraph, so it has to read the same answer this site does rather than
-              re-derive the two exclusions and drift from them.
+          {/* PLAN-GOVERNS ONLY (spec §4). Every clause of this paragraph is about a TARGET the
+              paste cannot reach, and only a plan is aiming at one. The gate itself is
+              `exceedsSolutionAlert`, named where the rejection is computed: the solubility
+              ceiling below stands down for this paragraph, so it has to read the same answer
+              this site does rather than re-derive the exclusion and drift from it.
 
-              NOT IN GRADUAL MODE, where this paragraph has no subject. Gradual has no target:
-              the saved percentage is this mode's own OUTPUT, written from the pot and the
-              water recorded. Two consequences, both of them wrong on screen. The remedy named
-              a concentration field that gradual takes off the panel — the exact bug
-              dilutionTargetWording was written to fix for ratio. And the verdict itself
-              becomes a rounding artifact: with a weighed pot and no water yet, the written
-              percent is anhydrous ÷ that pot at 2 dp, so solutionGrams lands within a gram
-              of the reading and half the time a hair under it — printing "your paste already
-              weighs more than the 1,404.99 g this target dilutes to" directly above the
-              panel's own "Finished so far (weighed) 1,405 g". The pot's own rules
-              (nonPositive, subTenthPrecision, belowSolids) all still render here in gradual
-              mode, and they are exactly the rules that decide gradual's basis — so in that
-              mode the alerts and the figures now answer to the same three questions.
-
-              NOT IN RATIO MODE either, for the identical reason (Task 1,
-              2026-08-12-whole-app-review-fixes): ratio multiplies whatever pot it is given —
-              see weighedOrComputedPotGramsFor, whose basis choice deliberately dropped this
-              same ceiling, because a target-derived bound has no business choosing the basis
-              for a mode that has no target — and WRITES the concentration that lands on, so
-              "cannot be diluted to 30% at all" is a claim about a target ratio mode is not
-              aiming at. Ratio's own "lands at N%" readout below already tells the truth about
-              where the reading actually lands, whatever that is. Left in, this paragraph sat
-              directly above the paste-basis caveat that calls the SAME reading "more
-              accurate" than the recipe's computed paste — one paragraph calling the number
-              suspect, the next calling it the better one. */}
+              NOT UNDER A RECORD, where this paragraph has no subject. The record arm has no
+              target: the concentration on screen is DERIVED from the pot and the water poured.
+              Two consequences, both of them wrong. The remedy names the plan field, which is a
+              control the maker is no longer steering by. And the verdict itself can be a
+              rounding artifact for any recipe whose plan came from a record — with a weighed
+              pot and no water yet, a plan of anhydrous ÷ that pot at 2 dp puts solutionGrams
+              within a gram of the reading and half the time a hair under it, printing "your
+              paste already weighs more than the 1,404.99 g this target dilutes to" directly
+              above the panel's own "Finished so far (weighed) 1,405 g". The pot's own rules
+              (nonPositive, subTenthPrecision, belowSolids) all still render here under a
+              record, and they are exactly the rules that decide the record's basis — so the
+              alerts and the figures answer to the same three questions. */}
           {exceedsSolutionAlert && (
             <p className="results-hint" role="alert">
               Your paste already weighs more than the{' '}
               {formatWeight(dilution.solutionGrams, 'g')} this target dilutes to, so
               it cannot be diluted to{' '}
               {formatConcentrationPercent(dilution.soapConcentrationPercent)}% at all —{' '}
-              {/* Only one control is ever on screen here now: dilutionMode is always
-                  'concentration' inside this branch (ratio and gradual are both excluded
-                  above), so the remedy names the concentration field unconditionally. It
-                  used to branch on dilutionMode === 'ratio' to name the ratio input
-                  instead — dead since ratio stopped reaching this paragraph at all. */}
+              {/* The target field is on screen in every state this paragraph can render in
+                  — it is the plan row at the top of the panel, no longer hidden behind a
+                  mode — so the remedy names it unconditionally. */}
               lower the target concentration above (more water)
               {/* The measurement clause now names the specific mistake, because this branch
                   is where that mistake lands. Offering the crockpot shortcut in the ratio
@@ -1630,9 +1492,9 @@ export function DilutionPanel({
                   stoneware to add more water, which would have compounded the error. Named
                   second, after the control-based remedy, because a reading really can be
                   correct and the target really can be out of reach. Still worth naming here
-                  even though the field that takes the reading is mode-independent — a
-                  maker can carry the crockpot habit into concentration mode from a session
-                  that started in ratio mode, where the shortcut is actually offered. */}
+                  even though the field that takes the reading is one field for the whole
+                  panel: the crockpot shortcut is named in the notes at the bottom, and a
+                  maker who followed it there can arrive at this paragraph. */}
               , or check the measurement — if you weighed the crockpot, subtract the empty
               pot&apos;s own weight.
             </p>
@@ -1662,12 +1524,20 @@ export function DilutionPanel({
           <span>Custom amount</span>
         </label>
       </div>
-      {/* Gradual asks for the paste actually weighed out and the water actually poured,
-          not a TARGET volume to size a portion to — those two new fields render above,
-          in the mode-selection block, in place of this one. Showing both at once would
-          offer two unrelated ways to describe the same jar; gradual's own workflow (LS:1531)
-          has no "amount to make" step at all. */}
-      {dilutionScope === 'portion' && dilutionMode !== 'gradual' && (
+      {/* CUSTOM AMOUNT'S TWO WAYS TO DESCRIBE ONE JAR, and they stay mutually exclusive:
+          size a jar from a target volume, or record the jar you actually weighed out and
+          poured. Recording it wins — a record leads in its own scope (spec §2) — so the
+          "Amount to make (ml)" field steps aside once both jar figures are present, exactly
+          as it did when the mode radio decided this. Showing both at once would offer two
+          unrelated ways to describe the same jar, and the record's own workflow (LS:1531) has
+          no "amount to make" step at all.
+
+          PORTION SCOPE IS OTHERWISE UNTOUCHED BY THIS TASK. Its two-row shape, the plan grid
+          rendered beside a filled jar and labelled as plan, and its own alert cells are Phase
+          2b (spec §6). What changed here is only the way in: the jar's two fields were
+          reachable through the deleted mode radio and are now simply on the Custom amount
+          screen, which is the smallest edit that keeps them reachable at all. */}
+      {dilutionScope === 'portion' && !portionJarGoverns && (
         <>
           <label className="field">
             <span>Amount to make (ml)</span>
@@ -1703,225 +1573,109 @@ export function DilutionPanel({
           )}
         </>
       )}
-      {dilutionMode === 'ratio' && !ratioValid && (
-        <p className="results-hint">
-          Enter a water:paste ratio greater than zero (e.g. 2 for 2:1) to see the water this
-          adds.
-        </p>
+      {/* THE JAR'S OWN RECORD — session-local in App (portionPasteGrams/portionWaterGrams),
+          NOT settings.gradualWaterGrams, which is the WHOLE BATCH's record. A jar weighed out
+          here is a bench figure, like portionTargetMl and measuredPasteGrams beside it, and
+          must never dirty the saved recipe — see `portionGradualFor`'s own comment for the
+          prohibition this enforces, which the removal of every write-back has now made
+          structural for the batch record too. */}
+      {dilutionScope === 'portion' && (
+        <>
+          <label className="field">
+            <span>Paste weighed out (g)</span>
+            <input
+              type="number"
+              className="input input--number"
+              min={1}
+              value={portionPasteGrams}
+              onChange={(e) => onPortionPasteChange?.(e.target.value)}
+              aria-label="Paste weighed out (g)"
+            />
+          </label>
+          {/* Beside the field it describes, exactly as the measured-paste refusals sit
+              beside theirs. The verdict is portionGradualFor's, so this alert, the jar's
+              figures and App's preservative dose can never disagree about whether the
+              reading is usable. */}
+          {portionGradualState?.pasteSubTenthPrecision && (
+            <SwallowedSeparatorAlert typed={portionPasteGrams} />
+          )}
+          <label className="field">
+            <span>Water added so far (g)</span>
+            <input
+              type="number"
+              className="input input--number"
+              min={0}
+              value={portionWaterGrams}
+              onChange={(e) => onPortionWaterChange?.(e.target.value)}
+              aria-label="Water added so far (g)"
+            />
+          </label>
+          {portionGradualState?.waterSubTenthPrecision && (
+            <SwallowedSeparatorAlert typed={portionWaterGrams} />
+          )}
+        </>
       )}
-      {/* A WHOLE-BATCH pour figure, so it belongs to whole-batch scope only. Ungated it
-          printed the batch's water in the same primary emphasis as the portion's own water
-          figure directly below — several times larger, with nothing to say which one to
-          pour — and, when a measurement made the portion unreachable, printed a live water
-          figure immediately above an alert saying there was no water to add. The "lands at
-          X% soap" readout and the 1–99% clamp alert below stay in BOTH scopes: they
-          describe the target the ratio chooses, not an amount to pour. */}
-      {dilutionScope === 'batch' &&
-        dilutionMode === 'ratio' &&
-        ratioConcentrationPercent !== null &&
-        ratioWaterGrams !== null && (
-          <dl className="results-grid">
-            <div className="results-grid__item results-grid__item--primary">
-              <dt>Water to add at this ratio</dt>
-              <dd>{formatWeight(ratioWaterGrams, weightUnit)}</dd>
-            </div>
-          </dl>
-        )}
-      {/* Gradual's own figure, whole-batch scope only — mirroring the ratio grid above.
-          paste + water, from the RAW INPUTS, never dilution.solutionGrams: that field is
-          still the old PREDICTION (4,000 g in the fixture this guards), and gradual exists
-          precisely because the maker stopped predicting and started measuring what they
-          actually poured (3,600 g in the same fixture). Printing the prediction here would
-          quietly resurrect it under a new label. */}
-      {dilutionScope === 'batch' && dilutionMode === 'gradual' && gradual !== null && (
+      {/* THE RECORD'S OWN FIGURE, whole-batch scope only. paste + water, from the RAW INPUTS
+          and the resolution's own pot — never dilution.solutionGrams, which is still the
+          PLAN's prediction (4,000 g in the fixture this guards) while the record says what is
+          actually in the pot (3,600 g in the same fixture). Printing the prediction here would
+          quietly resurrect it under a new label; the plan's own figure keeps its own row
+          below, under its own name. */}
+      {dilutionScope === 'batch' && batchRecord !== null && (
         <dl className="results-grid">
           <div className="results-grid__item results-grid__item--primary">
             {/* Names which pot this sum counts from — the same discipline basisScope's
                 "(whole batch)" / "(custom amount)" labels already practice for a figure's
                 basis, one parenthetical rather than a paragraph. wholeBatchPasteGrams is a
                 computed PREDICTION and is never corrected by a measured reading (see
-                pasteGrams' own comment above), so this is the one place gradual has to say
+                pasteGrams' own comment above), so this is the one place the record has to say
                 which of the two it actually poured into.
 
-                "weighed", not "measured": the field just above this row is already titled
-                "Measured paste weight" and is visible in every mode, so a second "measured"
-                here would be a second, unrelated match for the same word on one screen —
-                confusing for a reader, and literally ambiguous for a query that finds text
-                by content (DilutionPanel.test's own `getByText(/measured/i)` pins this: it
-                is answered by that field's label, and must stay the ONLY thing on screen
-                that reads that way). "Weighed" says the identical thing — it is the verb
-                this task's own brief uses for the same act ("the pot the maker actually
-                weighed") — without competing with the field's name for it. */}
-            {/* Named off the SAME gate that chose the basis (measuredPasteDescribesPot),
+                "weighed", not "measured": the field above is already titled "Measured paste
+                weight", so a second "measured" here would be a second, unrelated match for
+                the same word on one screen — confusing for a reader, and literally ambiguous
+                for a query that finds text by content (DilutionPanel.test's own
+                `getByText(/measured/i)` pins this: it is answered by that field's label, and
+                must stay the ONLY thing on screen that reads that way).
+
+                Named off the SAME gate that chose the basis (measuredPasteDescribesPot),
                 never off measuredPasteValid: this label's whole job is to say which of the
                 two pots the sum counts from, so a label answering a different question than
                 the selection would be a lie about the figure beside it. */}
             <dt>Finished so far ({measuredPasteDescribesPot ? 'weighed' : 'computed'})</dt>
-            <dd>{formatWeight(gradual.finishedGrams, weightUnit)}</dd>
+            <dd>{formatWeight(batchRecord.finishedGrams, weightUnit)}</dd>
           </div>
         </dl>
       )}
-      {/* THE ratio paragraph — one per state, under the prose budget. It owns everything
-          the ratio has to say about itself: the readout (the true derived concentration,
-          however extreme, so the panel never lies about what the ratio implies), the
-          not-applied split, and the paste-basis caveat. These used to be three stacked
-          paragraphs; each clause keeps its old gate, so no state gains or loses a claim —
-          only the paragraph breaks between them are gone.
+      {/* THE RECORD'S READOUT — the derived concentration, at the 2 dp gradualDilutionFrom
+          rounds to, however extreme, so this never lies about what the record implies.
+          Unclamped and display-only (decision 2): the [1, 99] clamp that used to bound it
+          existed only to keep a write legal, and there is no write.
 
-          NOT-APPLIED CLAUSE (formerly its own note below the clamp alert). The write-back
-          waits for a real edit to the ratio (ratioTouched — see its own comment), so
-          entering ratio mode leaves the saved target in force. That is deliberate and must
-          stay: entering and leaving the mode used to rewrite a typed target with no undo.
-          What it left unsaid is the split it creates — this readout answers for the ratio
-          while every row below, and the printed sheet, still answer for the saved target.
-          Three disagreeing figures on one screen and nothing saying they are answers to
-          different questions. Naming the split is the fix; writing back on entry is not.
-          The clause names the action WITHOUT promising a destination, because the obvious
-          single edit does not reach the figure quoted here: from an untouched 2:1 at a
-          saved 30%, taking the ratio input's own step to 2.5 applies 21.4% — landing on
-          the 25% needs a round trip (2 → 2.5 → 2), since the write-back only fires once
-          the field has been touched. The ratio's own figure needs no restating inside the
-          clause: it is the bolded readout starting this same paragraph, so the two roles
-          (saved target in force, ratio's figure not) cannot be swapped by rewording one
-          of them.
-
-          PASTE-BASIS CLAUSE (formerly the caveat above the presets, and — in batch scope
-          with a measurement — the grid hint below the main grid). The reference attaches
-          the estimate warning to its ratio rows and to no concentration row (LS:2172,
-          repeated at LS:2294): those water figures are estimates, and the paste has to be
-          weighed first because the cook evaporates water. LS:1534 makes the same demand
-          as a precondition of the method — knowing the paste's starting weight is step
-          one of it. Once a reading is accepted the caveat is discharged, and saying so is
-          the point: the instruction is the part that must not survive its own remedy.
-
-          WHAT GETS WEIGHED IS THE PASTE. Both of the reference's routes to that number
-          yield paste and never pot + paste: put the paste on a tared scale (LS:1534), or —
-          the crockpot shortcut, which exists precisely so the paste need not be turned out
-          of the pot — weigh the loaded crockpot and SUBTRACT the empty one (LS:1538, with
-          LS:1536 advising you weigh and mark your crockpots before you ever start). This
-          once closed with "Weigh the pot and enter it as Measured paste weight below",
-          which is the shortcut with its subtraction deleted: a maker who followed it
-          literally typed a figure carrying an empty crockpot's 2-4 kg, and the ratio
-          multiplied that mass straight into the dilution water. If a future edit names the
-          pot again it owes the subtraction in the same breath — DilutionPanel.test pins
-          both halves. ("above", not "below": the field sits above this paragraph now.)
-
-          WHICH WORDING, BY SCOPE. In batch scope a valid reading takes the old grid
-          hint's wording, naming the row it corrected ("Water to add at this ratio above")
-          — in ratio mode the main grid's own "Dilution water to add" row is suppressed,
-          so the row must be named, not pointed at. In portion scope the same reading
-          takes the discharged wording, which is the only thing on that screen saying the
-          caveat is met. With no valid reading, both scopes carry the estimate caveat; the
-          weighing instruction drops once a reading is on the field unused (rejected, with
-          its own alert) — telling a maker who has just been to the scale to go to the
-          scale is the one thing this must not do. The whole paragraph is gated on the
-          derived concentration, which requires a valid ratio: with the field empty this
-          said "A ratio is only as exact as the paste it multiplies, and this one runs
-          on…" directly above "Enter a water:paste ratio greater than zero" — a sentence
-          about a ratio that does not exist. */}
-      {dilutionMode === 'ratio' && ratioConcentrationPercent !== null && (
+          Whole-batch scope only — the jar's own mirror of this readout is below, gated the
+          other way. Ungating it would show the whole-batch record (settings.gradualWaterGrams,
+          recipe state) as if it described the jar currently on screen. */}
+      {dilutionScope === 'batch' && batchRecord !== null && (
         <p className="results-hint">
           <strong>
-            {waterPasteRatio}:1 water:paste lands at{' '}
-            {formatConcentrationPercent(ratioConcentrationPercent)}% soap.
+            The batch so far is at{' '}
+            {formatConcentrationPercent(batchRecord.concentrationPercent, 2)}% soap.
           </strong>
-          {ratioNotAppliedYet && (
-            <>
-              {' '}
-              Not applied yet: every figure below — and the printed batch sheet — still uses
-              your saved {formatConcentrationPercent(persistedTargetPercent)}% target.
-              Editing the ratio applies whatever it then lands at.
-            </>
-          )}{' '}
-          {/* The paste-basis clause follows the basis GATE (measuredPasteDescribesPot), not
-              the target-derived one: the ratio above multiplies whichever pot pasteGrams
-              chose, so "uses your measured paste" has to be true of that choice. */}
-          {measuredPasteDescribesPot
-            ? dilutionScope === 'batch'
-              ? `Water to add at this ratio above uses your measured paste (${formatWeight(measuredPasteNum, 'g')}), not the recipe's computed paste — the cook boils off water the recipe still counts, and no figure on paper knows how much yours drove off, so the measurement is more accurate.`
-              : `You have weighed the paste (${formatWeight(measuredPasteNum, 'g')}), so this ratio is taken against what the pot really holds rather than an estimate — the water your cook drove off is already counted.`
-            : `A ratio is only as exact as the paste it multiplies, and this one runs on the recipe's computed paste: the cook drives off water the recipe still counts, and only your scale knows how much.${pasteReadingEntered ? '' : " Weigh the paste and enter it as Measured paste weight above — or weigh the loaded crockpot and subtract the empty pot's own weight."}`}
         </p>
       )}
-      {dilutionMode === 'ratio' &&
-        ratioWriteBackClamped &&
-        roundedRatioConcentrationPercent !== null &&
-        clampedRatioConcentrationPercent !== null && (
-          <p className="results-hint" role="alert">
-            At {waterPasteRatio}:1 this ratio implies{' '}
-            {formatConcentrationPercent(roundedRatioConcentrationPercent)}% soap — outside the
-            1–99% range the calculator can target, so{' '}
-            {formatConcentrationPercent(clampedRatioConcentrationPercent)}%{' '}
-            {/* The tense follows the WRITE-BACK, not the clamp. Untouched, nothing has been
-                written — the saved target is still what every figure below runs on, which is
-                exactly what the not-applied note underneath says — so "is used instead" put a
-                flat contradiction two paragraphs apart on one screen. Only the wording is
-                conditional; the clamp itself is unchanged and still bounds every write. */}
-            {ratioTouched ? 'is' : 'would be'} used instead.{' '}
-            {roundedRatioConcentrationPercent < 1
-              ? 'Lower the ratio (less water) to land inside that range directly.'
-              : 'Raise the ratio (more water) to land inside that range directly.'}
-          </p>
-        )}
-      {/* Gradual's own readout — the true derived concentration, at the 2 dp
-          gradualDilutionFrom rounds to (not ratio's 1 dp: see that function's own doc for
-          why gradual needs the extra digit), however extreme, so this never lies about
-          what the record implies. Whole-batch scope only — the same scoping the "Finished
-          so far" grid above already carries, and the portion's own mirror of this readout
-          is below, gated the other way. Ungating this would show a stale whole-batch
-          record (settings.gradualWaterGrams, recipe state) as if it described the jar
-          currently on screen the moment BOTH figures exist at once. */}
-      {dilutionScope === 'batch' && dilutionMode === 'gradual' && gradual !== null && (
-        <p className="results-hint">
-          <strong>
-            That lands at {formatConcentrationPercent(gradual.concentrationPercent, 2)}% soap.
-          </strong>
-          {/* THE NOT-APPLIED CLAUSE — ratio's, in gradual's words, for the same split and
-              with the same shape (see gradualNotAppliedYet). It names what is still running
-              on the saved target rather than restating this paragraph's own bolded figure,
-              so the two roles cannot be swapped by rewording one of them; and it names the
-              action without promising a destination, because what gets written is this
-              record rounded to 2 dp, not the figure quoted for the saved target. */}
-          {gradualNotAppliedYet && (
-            <>
-              {' '}
-              Not applied yet: every figure below — the preservative dose, and the printed
-              batch sheet — still uses your saved{' '}
-              {formatConcentrationPercent(persistedTargetPercent)}% target. Editing the water
-              added applies what this record lands at.
-            </>
-          )}
-        </p>
-      )}
-      {/* The clamp notice, same shape as ratio's immediately above: calculateDilution only
-          accepts (0, 100) exclusive, so an extreme record could otherwise write back a
-          concentration that nulls `dilution` and vanishes this whole panel. What is WRITTEN
-          is clamped to [1, 99] (gradualDilutionFrom itself); the readout above stays
-          unclamped and keeps telling the truth, so this note points back at it rather than
-          restating the figure. Tense follows the write-back, not the clamp, exactly as
-          ratio's does: untouched, nothing has been written yet. Whole-batch only, for the
-          same reason as the readout immediately above. */}
-      {dilutionScope === 'batch' && dilutionMode === 'gradual' && gradual !== null && gradual.clamped && (
-        <p className="results-hint" role="alert">
-          That is outside the 1–99% range the calculator can target, so the saved target{' '}
-          {gradualTouched ? 'is' : 'would be'} capped at{' '}
-          {formatGrams(gradual.writeBackPercent, 0)}%.
-        </p>
-      )}
-      {/* Gradual's own figures for a JAR in Custom amount scope — the mirror of the two
-          blocks above, but reading `portionGradual` instead of `gradual`, and
-          deliberately never fed to onSoapConcentrationChange anywhere in this file: see
-          `portionGradual`'s own comment for why a jar's figure must never redefine the
-          recipe's saved target.
+      {/* THE JAR'S own figures in Custom amount scope — the mirror of the two
+          blocks above, but reading `portionGradual` instead of `batchRecord`, and deliberately
+          never fed to onSoapConcentrationChange anywhere in this file: see
+          `portionGradualFor`'s own comment for why a jar's figure must never redefine the
+          recipe's plan.
 
           Named "(this jar)" rather than "(custom amount)": the scope toggle's own
           "Custom amount" label, a few lines above and always on screen, already owns
           that exact string, and repeating it here would leave two on-screen elements
           answering "which one names Custom amount" with no way to tell them apart — the
           same collision basisScope's own "(whole batch)"/"(custom amount)" wording is
-          careful never to create twice on one screen. "This jar" says the same thing the
-          rest of this feature's own brief does throughout. */}
-      {dilutionScope === 'portion' && dilutionMode === 'gradual' && portionGradual !== null && (
+          careful never to create twice on one screen. */}
+      {dilutionScope === 'portion' && portionGradual !== null && (
         <>
           <dl className="results-grid">
             <div className="results-grid__item results-grid__item--primary">
@@ -1936,11 +1690,11 @@ export function DilutionPanel({
             </strong>{' '}
             {/* THE PROHIBITION, on screen: a jar diluted thinner than the batch has not
                 redefined the recipe, so this figure is read-only reporting and never a
-                write-back — unlike whole-batch Gradual above, which legitimately writes
-                its own derived percentage into the recipe's saved target because the
-                batch IS the recipe. The saved target is echoed here, read-only, so a
-                maker comparing the two figures can see for themselves that diluting this
-                one jar left it untouched. */}
+                write-back. The plan is echoed here, read-only, so a maker comparing the two
+                figures can see for themselves that diluting this one jar left it untouched.
+                (Nothing in this file writes the plan from any record any more — the batch's
+                own record stopped doing it in this task — so the echo now says of the jar
+                what is true of every record here.) */}
             Your recipe&apos;s saved target is unchanged at{' '}
             <input
               type="number"
@@ -1953,10 +1707,9 @@ export function DilutionPanel({
           </p>
           {/* The alternative-liquid caveats in their portion wordings — including the
               load-bearing "Top up with plain distilled water only", the only sentence in
-              the app telling a maker not to keep topping up with milk or juice. Gradual is
-              a way of RECORDING a dilution, not a reason for that instruction to lapse, and
-              this note used to reach the screen only through PortionDilutionResults, which
-              gradual mode stopped rendering — so choosing Gradual silently dropped it. */}
+              the app telling a maker not to keep topping up with milk or juice. Recording a
+              dilution is not a reason for that instruction to lapse, and this note reaches
+              the screen only through PortionDilutionResults, which a governing jar replaces. */}
           {portionAltLiquidNote !== '' && (
             <p className="results-hint">{portionAltLiquidNote}</p>
           )}
@@ -1980,27 +1733,24 @@ export function DilutionPanel({
             out of it, or clear the field.
           </p>
         )}
-      {/* Spec §7: with the record incomplete, gradual is inert and the panel ASKS for the
-          figures rather than showing nothing at all — ratio mode's own "Enter a
-          water:paste ratio greater than zero" is the same courtesy for the same state. Zero
-          is named as legitimate on purpose: the pot before any water is Gradual's own
-          starting record (LS:1531), and an empty field is not that.
-          NOT while a field is refused: a maker who typed 2,000 and had it read as 2.000 has
-          entered something, and asking them to enter it is the one answer that does not name
-          the mistake. The refusal beside the field owns that state. */}
-      {dilution &&
-        dilutionMode === 'gradual' &&
-        dilutionScope === 'batch' &&
-        gradual === null &&
-        !gradualWaterSubTenthPrecision && (
-          <p className="results-hint">
-            Enter the water you have added so far to see what it lands at — 0 g counts, and is
-            where the record starts.
-          </p>
-        )}
+      {/* The jar's own ask, for a HALF-FILLED record: one field typed, the other not, so the
+          jar cannot be resolved and nothing on screen would otherwise say why. Zero is named
+          as legitimate on purpose — the pot before any water is the record's own starting
+          entry (LS:1531), and an empty field is not that.
+
+          NOT for an untouched pair, which is every default Custom amount screen: those two
+          fields are labelled, visible and empty, the plan sizing grid is answering beside
+          them, and an unprompted paragraph asking for them would spend half the panel's prose
+          budget in the commonest state there is. The batch record's own version of this ask
+          is retired entirely for the same reason — see the record row above.
+
+          NOT while a field is refused either: a maker who typed 2,000 and had it read as
+          2.000 has entered something, and asking them to enter it is the one answer that does
+          not name the mistake. The refusal beside the field owns that state. */}
       {dilution &&
         portionGradualState !== null &&
         !portionGradualState.hasBothFigures &&
+        (portionPasteGrams.trim() !== '' || portionWaterGrams.trim() !== '') &&
         !portionGradualState.pasteSubTenthPrecision &&
         !portionGradualState.waterSubTenthPrecision && (
           <p className="results-hint">
@@ -2008,62 +1758,53 @@ export function DilutionPanel({
             of water counts, and is where the record starts.
           </p>
         )}
-      {/* The not-applied note that used to render here on its own is now a clause of the
-          ratio paragraph above — same gate, same claims, one paragraph fewer. */}
       {dilution ? (
         <>
           {dilutionScope === 'batch' ? (
             <>
               <dl className="results-grid">
-                {/* Ratio mode's own block above already owns the water-to-add figure ("Water to
-                    add at this ratio"). This row reads whatever concentration is currently
-                    PERSISTED — the write-back only narrows toward the ratio's figure, closing to
-                    within 0.1% at best, and can diverge by orders of magnitude once the 1-99%
-                    clamp kicks in — so showing both bare water figures at once would leave the
-                    maker guessing which one to actually pour. Suppress this row in ratio mode and
-                    let the ratio block be the sole source for that number; every other row here
-                    (paste, solution, total water, glycerin, volume) still reflects the applied
-                    concentration and carries no such competing figure — in ratio mode.
+                {/* THE PLAN'S POUR, and it stays on screen under a record — LABELLED (spec
+                    §2: "the plan's 'Dilution water to add' / 'Finished solution' rows stay
+                    rendered labelled as plan … three masses may be on screen only because
+                    each carries its name").
 
-                    Gradual mode is excluded too, and for a sharper reason than a competing
-                    figure: this row derives from the PERSISTED target, and gradual mode has no
-                    target — the concentration is DERIVED from the water the maker already typed
-                    into "Water added so far" (see `gradual`'s own comment). Before that
-                    write-back settles this printed a stale figure left over from whatever mode
-                    came before (a 30% target's 2,500 g beside gradual's own 3,500 g "Finished so
-                    far", on the same screen, for the same pour); once it has settled it can only
-                    restate the water already recorded, relabelled. Task 4's own basis label on
-                    "Finished so far" (measured/computed) is the one place gradual needs to say
-                    which paste it counted from — this row's identical-sounding hint one
-                    paragraph below would have said it a second time, of a figure that no longer
-                    exists in this mode. */}
-                {dilutionMode === 'concentration' && (
-                  <div className="results-grid__item results-grid__item--primary">
-                    <dt>Dilution water to add</dt>
-                    <dd>{formatWeight(batchDilutionWaterGrams, weightUnit)}</dd>
-                  </div>
-                )}
+                    The mode this replaces suppressed the row instead, and the suppression was
+                    the wrong half of the fix: the mode hid this row because it was a stale
+                    target's figure sitting unnamed beside a record's own mass (a 30% target's
+                    2,500 g beside "Finished so far 3,500 g", for the same pour), and the fix
+                    for an unnamed figure is a name. Hiding it also took away the one thing a
+                    mid-pour maker actually wants — how much more the plan says to add — at
+                    exactly the moment they are pouring.
+
+                    Primary emphasis only while the plan governs: with a record in the pot the
+                    figure the maker is acting on is the record's, and two primary figures in
+                    one grid is the "which of these do I pour" problem in a new costume. */}
+                <div
+                  className={
+                    planGoverns
+                      ? 'results-grid__item results-grid__item--primary'
+                      : 'results-grid__item'
+                  }
+                >
+                  <dt>{planGoverns ? 'Dilution water to add' : 'Dilution water to add (plan)'}</dt>
+                  <dd>{formatWeight(batchDilutionWaterGrams, weightUnit)}</dd>
+                </div>
                 <div className="results-grid__item">
                   <dt>Paste (anhydrous)</dt>
                   <dd>{formatWeight(dilution.anhydrousGrams, weightUnit)}</dd>
                 </div>
-                {/* Gradual's own grid above already owns the finished-mass figure ("Finished so
-                    far") — paste + water from the raw inputs, not this row's solutionGrams
-                    (anhydrous ÷ the PERSISTED target). Once the write-back has settled the two
-                    agree up to gradualDilutionFrom's 2 dp rounding, and a few-gram mismatch from
-                    that rounding would read as an error rather than as the harmless rounding it
-                    is. Same PRINCIPLE as "Dilution water to add" above, one row over — don't
-                    print two figures answering the same question — even though the reason each
-                    one collides is different (that row is stale-target vs. record; this one is
-                    mass vs. mass): showing both mass figures at once leaves the maker guessing
-                    which is the real one, so gradual mode suppresses this and lets its own grid
-                    be the sole source. */}
-                {dilutionMode !== 'gradual' && (
-                  <div className="results-grid__item">
-                    <dt>Finished solution</dt>
-                    <dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd>
-                  </div>
-                )}
+                {/* THE PLAN'S FINISHED MASS, kept and labelled for the same reason as the
+                    pour row above, and it is the sharper case of the two: the record's grid
+                    already prints "Finished so far", so under a record there really are two
+                    masses for one batch on one screen. That is exactly the state §2 legislates
+                    for — they are answers to different questions (what the batch weighs now,
+                    what it will weigh at the plan) and the word "(plan)" is what makes them
+                    readable side by side. Suppressing this row was how the mode hid the
+                    question instead of answering it. */}
+                <div className="results-grid__item">
+                  <dt>{planGoverns ? 'Finished solution' : 'Finished solution (plan)'}</dt>
+                  <dd>{formatWeight(dilution.solutionGrams, weightUnit)}</dd>
+                </div>
                 {/* The water the finished solution actually holds, which is NOT
                     calculateDilution's totalWaterGrams once an alternative liquid puts
                     non-water solids in the pot. Core works from soap + water alone, so its
@@ -2139,16 +1880,14 @@ export function DilutionPanel({
                   </div>
                 )}
               </dl>
-              {/* Concentration mode only: in ratio mode the same sentence is a clause of
-                  the ratio paragraph above the grid, naming "Water to add at this ratio"
-                  (the main grid's own "Dilution water to add" row is suppressed there, so
-                  "above" would land on Total water/Glycerin — neither of which is
-                  measurement-corrected). In gradual mode the row itself is gone too (see
-                  its own gate above — gradual has no persisted target for it to correct),
-                  so this sentence would point "above" at nothing; gradual's own basis
-                  label on "Finished so far" (Task 4: "measured" / "computed") is where
-                  that mode says which paste it counted from instead. One paragraph per
-                  state either way.
+              {/* PLAN-GOVERNS ONLY. The sentence explains the PLAN's pour row — "Dilution
+                  water above" — and under a record that row is one of two water figures on
+                  screen and no longer the one the maker is acting on. The record's own basis
+                  label on "Finished so far" ("weighed" / "computed") is where the record says
+                  which paste it counted from instead, so neither state loses the claim and
+                  neither carries it twice. It also keeps the busiest record state inside the
+                  prose budget: the record's readout plus an alternative-liquid caveat is
+                  already two paragraphs.
 
                   The reading itself is quoted in GRAMS, like the three rejection
                   thresholds above and for the same reason: it is the number the maker
@@ -2161,7 +1900,36 @@ export function DilutionPanel({
                   in c1dc31d, when the batch row started deriving its water from that
                   pot, and stayed stale here while the same sentence was fixed in Custom
                   amount. Evaporation is what a measurement still buys. */}
-              {measuredPasteValid && dilutionMode === 'concentration' && (
+              {/* THE PLAN-LABELLED CAPTION FOR AN UNREACHABLE PLAN (spec §4, verbatim: "when
+                  the plan is unreachable … a non-alert, plan-labelled caption accompanies the
+                  plan figures — gating the plan-claims must not resurrect a bare, unexplained
+                  '0 g'").
+
+                  Every paragraph that used to account for that zero — the two over-dilute
+                  verdicts and the undeclared-liquid hedge — is a claim about a TARGET and is
+                  plan-governs only now. Without this, a record would have left the plan's
+                  water row printing a bare "0 g" with nothing on screen saying why, which is
+                  the precise state correctedDilutionWaterGrams' own doc warns every new
+                  consumer of that figure about.
+
+                  KEYED ON THE ROW'S OWN PRINTED FIGURE, not on the two predicates behind it.
+                  The caption exists to explain a zero that is actually on screen, so the thing
+                  it must agree with is the render — the same discipline every suppression in
+                  this file keys on, for the fifth time. (0.5 g is the gram formatter's own
+                  rounding: anything under it prints as "0 g".)
+
+                  A CAPTION, not a hint: it is a note on the row directly above it, not state
+                  feedback about the batch, so it is deliberately not .results-hint — the class
+                  the prose budget counts. The record's own readout and an alternative-liquid
+                  caveat already spend that budget in this exact state. */}
+              {batchRecord !== null && batchDilutionWaterGrams <= 0.5 && (
+                <p className="dilution-plan-caption">
+                  Plan: at {formatConcentrationPercent(dilution.soapConcentrationPercent)}% this
+                  batch&apos;s soap makes {formatWeight(dilution.solutionGrams, weightUnit)}, which
+                  the paste already reaches — so the plan&apos;s water row above reads 0 g.
+                </p>
+              )}
+              {measuredPasteValid && planGoverns && (
                 <p className="results-hint">
                   Dilution water above uses your measured paste ({formatWeight(measuredPasteNum, 'g')}
                   ), not the recipe&apos;s computed paste — the cook boils off water the recipe
@@ -2174,20 +1942,25 @@ export function DilutionPanel({
             /* unknownLiquidGrams/overDilutionCertain are forwarded for one reason: the
                over-dilution verdict is only assertable when the undeclared liquid cannot
                change it — the same test this shell's own alert below applies — so the two
-               can never print opposite verdicts on one screen. dilutionMode is forwarded
-               for a sibling reason: the child's refusals name a remedy, and which control
-               that is depends on the mode chosen up here — it has no other way to know
-               whether a concentration field is even on screen. */
-            /* NOT in gradual mode. Hiding the "Amount to make (ml)" INPUT was not enough:
-               `targetMl` is App session state that survives a mode switch, so a maker who
-               sized a jar in Concentration mode and then chose Gradual kept this entire grid
-               on screen — "Paste to weigh out", "Water to add", "Makes" — every figure sized
-               from the recipe's SAVED TARGET, sitting unlabelled beside the jar's own
-               recorded figures and disagreeing with them. That is precisely the "two
-               unrelated ways to describe the same jar" the mode-selection comment above
-               claims to prevent; suppressing the input alone left the stale state's
-               downstream effect untouched. Gradual's own jar readout replaces this block. */
-            dilutionMode !== 'gradual' && (
+               can never print opposite verdicts on one screen.
+
+               `dilutionMode` and `ratioNotAppliedYet` are NOT forwarded any more: the child
+               defaults them to 'concentration' and false, which is what the panel now always
+               is — one plan field, always on screen, so the child's refusals can only ever
+               name that one control. Its 'ratio' arm survives untouched for Phase 3 to
+               delete (spec §5) rather than being half-removed here.
+
+               NOT WHILE A JAR RECORD GOVERNS. Hiding the "Amount to make (ml)" INPUT is not
+               enough: `targetMl` is App session state that survives everything, so a maker
+               who sized a jar and then recorded the one they actually weighed kept this
+               entire grid on screen — "Paste to weigh out", "Water to add", "Makes" — every
+               figure sized from the PLAN, sitting unlabelled beside the jar's own recorded
+               figures and disagreeing with them. That is precisely the "two unrelated ways to
+               describe the same jar" the scope block above claims to prevent; suppressing the
+               input alone leaves the stale state's downstream effect untouched. The jar's own
+               readout replaces this block. (Phase 2b is what brings it back beside the jar
+               under a plan label, which is §2's end state for this scope.) */
+            !portionJarGoverns && (
               <PortionDilutionResults
                 dilution={dilution}
                 weightUnit={weightUnit}
@@ -2197,8 +1970,6 @@ export function DilutionPanel({
                 cookWaterGrams={cookWaterGrams}
                 unknownLiquidGrams={unknownLiquidGrams}
                 overDilutionCertain={overDilutionCertain}
-                dilutionMode={narrowDilutionMode}
-                ratioNotAppliedYet={ratioNotAppliedYet}
                 altLiquidNote={portionAltLiquidNote}
               />
             )
@@ -2309,34 +2080,16 @@ export function DilutionPanel({
               subsumption is worth having only while the thing doing the subsuming is
               actually being said.
 
-              NOT ratio or gradual mode's exceeds-solution rejection, though: Task 1
-              (2026-08-12-whole-app-review-fixes) stopped that alert rendering in ratio mode
-              (a claim about a target ratio mode is not aiming at), so it no longer "owns the
-              screen" there — and THAT clause, the exceeds-solution one, is keyed to the
-              stronger alert's own rendering (`exceedsSolutionAlert`, the same const that
-              site renders on): a subsumption is only worth having while the verdict doing
-              the subsuming is actually on screen, and in ratio mode it is not. Left
-              unguarded there, a maker whose SAVED target sits above the solubility ceiling
-              (the persisted soapConcentrationPercent, which the printed batch sheet still
-              uses until the ratio is touched — see ratioNotAppliedYet above) got told
-              nothing at all: not this sentence, suppressed by a flag whose own alert had
-              gone silent, and not ratio's "lands at N%" readout either, which speaks only to
-              the ratio's own concentration, never the saved target's.
-
-              Task 9 (2026-08-12-whole-app-review-fixes) added gradual to the same exclusion:
-              gradual's own exceeds-solution alert has been silent since before this plan
-              began (two paragraphs above — gradual WRITES the concentration from the pot and
-              the water recorded, so it has no target for that alert to be about either), and
-              this suppression was keyed to the FLAG rather than to the stronger alert's own
-              rendering, same as ratio's gap. Task 1 found this while fixing ratio's version
-              and deliberately left it — untested, out of scope for that task, flagged in its
-              report instead of changed blind. Confirmed here rather than assumed: gradual
-              derives its saved percentage from what was actually poured, but that derivation
-              runs on the CURRENT record, and a saved target left over from a prior recipe or
-              a not-yet-applied edit (ratioNotAppliedYet's gradual counterpart) can still sit
-              above the ceiling while gradual's own alert stays silent about it — so a maker
-              in gradual mode can be misled by the missing warning exactly as one in ratio
-              mode was.
+              THE THREE SUPPRESSING VERDICTS ARE ALL PLAN-GOVERNS ONLY NOW, and each clause
+              below still reads that verdict's own RENDER rather than its flag — which is the
+              only reason this sentence does not go silent under a record. Tasks 1 and 9 of
+              2026-08-12-whole-app-review-fixes each found the flag-keyed version of exactly
+              this: a mode-suppressed exceeds-solution rejection whose FLAG went on silencing
+              this alert, leaving a maker whose target sits above the solubility ceiling told
+              nothing at all. The mode exclusions became plan-governs gates in this task, and
+              the render-keyed clauses carried over unchanged, so the same protection holds
+              against the new gate for free. Written flag-first, the record cells would have
+              lost the ceiling the same way the ratio and gradual cells did.
 
               Task 12 (2026-08-12-whole-app-review-fixes) closed the last one, the FIRST
               clause, which was still `!dilution.targetExceedsPaste` — the flag, not its
@@ -2371,21 +2124,38 @@ export function DilutionPanel({
               the same way — the last clause still reading a bare predicate. That predicate
               is scope-blind while its alert renders in Whole batch only, and the child's
               wording of the same verdict requires an unrejected reading, so Custom amount
-              with a rejected reading whose refusal is excluded from the mode (a 3,000 g
-              reading in ratio, against a 2,400 g solution from a 2,500 g corrected pot)
-              rendered NOTHING at all: no figures, no refusal, no ceiling. The clause now
-              reads pasteAlreadyPastTargetSpokenFor — the alert, or the child's wording of
-              the verdict. A refusal that actually renders was a third voice there for one
-              round and is gone (decided 2026-08-16, second round): a refusal about the
-              reading does not speak for the corrected pot either, so the Custom-amount
-              cells where only a refusal renders now show refusal + ceiling — the same pair
-              as the targetExceedsPaste side, by the same rule. */}
-          {lsConcentrationAboveAllMinimums(Number(soapConcentrationPercent)) &&
+              with a rejected reading whose refusal was excluded (a 3,000 g reading against a
+              2,400 g solution from a 2,500 g corrected pot) rendered NOTHING at all: no
+              figures, no refusal, no ceiling. The clause now reads
+              pasteAlreadyPastTargetSpokenFor — the alert, or the child's wording of the
+              verdict. A refusal that actually renders was a third voice there for one round
+              and is gone (decided 2026-08-16, second round): a refusal about the reading does
+              not speak for the corrected pot either, so the Custom-amount cells where only a
+              refusal renders now show refusal + ceiling — the same pair as the
+              targetExceedsPaste side, by the same rule.
+
+              THE FIGURE IT IS ASKED OF IS THE RESOLVED % (spec §4), never the raw setting.
+              A batch is above the ceiling because of what is in the pot, and with a record in
+              hand what is in the pot is the record's own concentration: a 30% plan with 900 g
+              poured onto a 1,600 g pot is a 48% batch, and reading the setting here would
+              have printed nothing at all for it while the uses summary beside it said "No
+              common use calls for 48%".
+
+              AND THE RECORD ARM SAYS IT DIFFERENTLY, because it may not say "this target" —
+              the record arm has no target (spec §4's conversion table, verbatim). It
+              describes the batch and names the remedy the batch actually has, which is the
+              one thing a mid-pour maker is already holding: more water. The plan arm's
+              wording is unchanged, down to the word. */}
+          {lsConcentrationAboveAllMinimums(resolvedConcentrationPercent) &&
             !overDilutionSpokenFor &&
             !pasteAlreadyPastTargetSpokenFor &&
             !exceedsSolutionAlert && (
               <p className="results-hint" role="alert">
-                This target is above what even a coconut-heavy recipe can fully dissolve.
+                {batchRecord
+                  ? `The batch so far is at ${formatConcentrationPercent(
+                      batchRecord.concentrationPercent,
+                    )}% — above what any recipe fully dissolves; keep adding water.`
+                  : 'This target is above what even a coconut-heavy recipe can fully dissolve.'}
               </p>
             )}
           {/* THE alternative-liquid paragraph — one per state. An alternative liquid is a
@@ -2398,13 +2168,18 @@ export function DilutionPanel({
           {shellAltLiquidClauses.length > 0 && (
             <p className="results-hint">{shellAltLiquidClauses.join(' ')}</p>
           )}
+          {/* THE RESOLVED % IN BOTH HALVES OF THIS SUMMARY (spec §4's interpolation rule).
+              The matcher above (suitedUses) reads the resolved figure, so these two captions
+              must read it too — implemented literally with `dilution.soapConcentrationPercent`
+              here, the summary printed "No common use calls for 30%" against a 46.2% match:
+              a sentence naming one number and reporting another's verdict. */}
           <details className="results-hint dilution-uses">
             <summary>
               {suitedUses.length > 0
-                ? `At ${formatConcentrationPercent(dilution.soapConcentrationPercent)}% this suits ${suitedUses
+                ? `At ${formatConcentrationPercent(resolvedConcentrationPercent)}% this suits ${suitedUses
                     .map((u) => u.label.toLowerCase())
                     .join(', ')}`
-                : `No common use calls for ${formatConcentrationPercent(dilution.soapConcentrationPercent)}% — see the usual targets`}
+                : `No common use calls for ${formatConcentrationPercent(resolvedConcentrationPercent)}% — see the usual targets`}
             </summary>
             <dl className="dilution-uses__list">
               {LS_DILUTION_TARGETS.map((t) => (
@@ -2432,18 +2207,19 @@ export function DilutionPanel({
           </details>
         </>
       ) : (
-        /* The ask names a control that is on screen in the mode the maker is actually in.
-           "a target concentration (1–99%)" is the concentration field's own caption, and
-           that field is only rendered in concentration mode — in ratio and gradual mode it
-           is replaced by the ratio input or the water-record field, so the sentence sent a
-           maker looking for something the mode had removed. The requirement itself is real
-           in all three (calculateDilution refuses a target outside 1–99%, and both derived
-           modes still need a live `dilution` to count anhydrous soap from), so the wording
-           points at the mode radio above rather than dropping the clause. */
+        /* ONE WORDING, because there is one control: "a target concentration (1–99%)" is the
+           plan field's own caption and that field is on screen in every state now. The
+           branch that used to sit here existed only because ratio and gradual mode replaced
+           that field with their own, so the sentence could send a maker looking for
+           something the mode had removed.
+
+           IT ALSO COVERS "governs record, record null" — the resolution's pinned contract
+           (resolveDilution's own doc): a recipe carrying a leftover water record beside a
+           target calculateDilution refuses has a record governing and nothing to compute
+           from it, which is "nothing to show yet", not an error. What that maker needs is
+           this exact sentence, and they get it. */
         <p className="results-hint">
-          {dilutionMode === 'concentration'
-            ? 'Enter oils and a target concentration (1–99%) to compute dilution.'
-            : 'Enter oils to compute dilution — and, under Target concentration above, a starting target between 1 and 99%.'}
+          Enter oils and a target concentration (1–99%) to compute dilution.
         </p>
       )}
       {/* THE COLLAPSED NOTES — where the prose budget sends reference prose. The rule
@@ -2454,21 +2230,22 @@ export function DilutionPanel({
           click away. Everything in this block keeps its exact wording and its own
           gate from the inline site it left — moving prose must not move claims.
 
-          OUTSIDE the dilution ? branch on purpose. Ratio mode's presets render before a
-          recipe exists (App seeds the ratio input, so switching modes first is a real
-          path), and the guidance accounting for those presets has to be reachable in
-          that state too — inside the branch, "Some makers start at 1:1…" vanished
-          exactly where the presets stood unexplained, the copy-points-at-nothing class
-          the presets' own comment warns about. Every paragraph in here carries its own
-          gate, and none needs a dilution: the density caveat's finishedVolumeMl is
-          null-safe and simply gates it off while there is nothing to convert. */}
+          OUTSIDE the dilution ? branch on purpose. The ratio presets render before a
+          recipe exists (disabled, but on screen and captioned), and the guidance accounting
+          for them has to be reachable in that state too — inside the branch, "Some makers
+          start at 1:1…" vanished exactly where the presets stood unexplained, the
+          copy-points-at-nothing class the presets' own comment warns about. Every paragraph
+          in here carries its own gate, and none needs a dilution: the density caveat's
+          finishedVolumeMl is null-safe and simply gates it off while there is nothing to
+          convert. */}
       <details className="results-hint dilution-notes">
         <summary>Dilution notes</summary>
         {/* This paragraph owns the RATIOS and nothing else. Three sentences, three claims.
-            It renders in ratio mode only — the presets it accounts for are ratio mode's —
-            and moved here from directly under those presets: it is true whatever state
-            the ratio is in, which is what made it budget-exempt reference. The claims
-            are AUDITED and the wording is pinned — movable, not rewordable.
+            It renders unconditionally now, because the presets it accounts for do: the mode
+            gate it carried was the ratio MODE's, and the presets are part of the plan row in
+            every state. It moved here from directly under those presets because it is true
+            whatever state the plan is in, which is what made it budget-exempt reference. The
+            claims are AUDITED and the wording is pinned — movable, not rewordable.
             1. ATTRIBUTED, not universal: the reference says some makers begin at 1:1 and
                others at 2:1 or 3:1 depending on the recipe (LS:1534). It never says
                everyone starts at 1:1, and its own beginner table does not offer 1:1 at
@@ -2485,8 +2262,8 @@ export function DilutionPanel({
                castile-calibrated CHOICE for exactly the recipe class that needs the most
                water, not an interpolation — and denying it starting-point status also
                fought this group's own "Starting points" legend.
-               No figure is quoted in the copy on purpose: the live "lands at" readout
-               above these notes prints what 2.5:1 lands at for THIS recipe, which is
+               No figure is quoted in the copy on purpose: the preset's own caption at the
+               top of the panel prints what 2.5:1 lands at for THIS recipe, which is
                21.3% only for the book's paste-to-anhydrous ratio and drifts with the
                lye-water concentration. A fixed "21%" here would have argued with a live
                figure on the same screen.
@@ -2514,14 +2291,60 @@ export function DilutionPanel({
             directly below (see its comment) — the two used to render as stacked hints on
             one ratio + whole batch screen.
             No source is named in the visible text, here or anywhere in this panel. */}
-        {dilutionMode === 'ratio' && (
-          <p>
-            Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
-            comes off a castile dilution table, the more dilute of its two ratio rows. The
-            recipe&apos;s own minimum sets how little water you can use — below it, some
-            paste stays undissolved.
-          </p>
-        )}
+        <p>
+          Some makers start at 1:1, others at 2:1 or 3:1, depending on the recipe; 2.5:1
+          comes off a castile dilution table, the more dilute of its two ratio rows. The
+          recipe&apos;s own minimum sets how little water you can use — below it, some
+          paste stays undissolved.
+        </p>
+        {/* THE ESTIMATE CAVEAT AND THE TWO WAYS TO WEIGH A PASTE, both of which used to ride
+            the ratio mode's own paragraph and would otherwise have gone with it. Neither is
+            state feedback — they are true of every plan figure on this panel until a reading
+            is on the field — so they belong here, where they do not count against the prose
+            budget and are one click away.
+            1. THE ESTIMATE CLAIM is the reference's own, attached to its ratio rows and to no
+               concentration row (LS:2172, repeated at LS:2294): those water figures are
+               estimates, and the paste has to be weighed first because the cook evaporates
+               water. LS:1534 makes the same demand as a precondition of the method — knowing
+               the paste's starting weight is step one of it. It reaches further than the
+               ratios here, because a preset is only one way into the plan %: every
+               target-derived figure on this panel counts from the same pot.
+            2. WHAT GETS WEIGHED IS THE PASTE. Both of the reference's routes to that number
+               yield paste and never pot + paste: put the paste on a tared scale (LS:1534),
+               or — the crockpot shortcut, which exists precisely so the paste need not be
+               turned out of the pot — weigh the loaded crockpot and SUBTRACT the empty one
+               (LS:1538, with LS:1536 advising you weigh and mark your crockpots before you
+               ever start). This once closed with "Weigh the pot and enter it as Measured
+               paste weight below", which is the shortcut with its subtraction deleted: a
+               maker who followed it literally typed a figure carrying an empty crockpot's
+               2-4 kg, and it went straight into the dilution water. If a future edit names
+               the pot again it owes the subtraction in the same breath — DilutionPanel.test
+               pins both halves. ("above", not "below": the field sits above these notes.)
+            The DISCHARGE of this caveat stays inline where it belongs — "Dilution water above
+            uses your measured paste (…)" renders once a reading is accepted, which is the one
+            part of this that is state feedback rather than reference. */}
+        <p>
+          A dilution figure is only as exact as the paste it counts from, and until you weigh
+          one that is the recipe&apos;s computed paste: the cook drives off water the recipe
+          still counts, and only your scale knows how much. Put the paste on a tared scale, or
+          weigh the loaded crockpot and subtract the empty pot&apos;s own weight, and enter it
+          as Measured paste weight above.
+        </p>
+        {/* ZERO IS A RECORD, and this is where that claim lives now. It used to be the tail
+            of an inline prompt beside the water field ("0 g counts, and is where the record
+            starts") which rendered whenever that field was empty — an always-on paragraph in
+            the panel's commonest state, spending a third of the prose budget to explain a
+            mode that no longer exists. The claim itself is reference: the pot before any
+            water at all is the reference's own starting entry (LS:1531), true in every state,
+            which is precisely what these notes are for. The parser it describes is
+            unchanged (lib/measuredPaste's parseGradualWaterRecordGrams: non-blank and >= 0),
+            and it is what decides that a 0 g record governs — so a maker who reads this and
+            types 0 gets exactly what it promises. */}
+        <p>
+          Recording 0 g counts: it is where the record starts, and the batch it describes is
+          the undiluted paste. An empty field is not the same thing — it means nothing has
+          been recorded yet, and the figures stay with your plan.
+        </p>
         {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance (in ratio
           mode, the note above) used to
           say it too — in words, without figures — so in ratio + whole batch the same
@@ -2627,7 +2450,7 @@ export function DilutionPanel({
           moved back the next day. Structure now enforces what a comment used to ask for.
 
           A node rather than the snippet's own props: this component already takes
-          twenty-six besides this one and has no reason to learn what a preservative is. */}
+          twenty-three besides this one and has no reason to learn what a preservative is. */}
       {preservativeSlot}
     </section>
   );

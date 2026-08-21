@@ -124,6 +124,15 @@ Every consumer reads resolved figures. Specifically:
   (the formula diverges at 100); the snippet's over-100 copy changes accordingly.
   Consequence, accepted: the bottled row is effectively always shown for LS recipes with
   a preservative dose.
+  **The seeded default counts (decided 2026-08-20, PR #166).** Liquid soap is water-based
+  and needs a preservative, so one is seeded rather than left blank: that default is the
+  app's recommendation, not a placeholder. Its dose therefore weighs what the snippet says
+  it does whether or not the maker has confirmed it — in the finished mass, the volume and
+  the printed sheet, which names the product whose grams its mass carries. No figure is
+  gated on `preservativeSetByUser`; the snippet's gate and the view model's are the same
+  predicate on the same basis (basis present, tier neither 'none' nor 'impossible'), so the
+  screen and the mass can never disagree about whether a dose exists. Gating the mass on
+  that flag briefly produced two finished masses under one name and was reversed.
   **Mid-pour companion dose (decided):** while a record governs and its water is below
   the plan's dilution water, the snippet shows a second, plan-labelled figure beside the
   governing dose — "at your N% plan: X g" — computed by the same w/w formula against the

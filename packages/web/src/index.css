@@ -2442,7 +2442,9 @@ a:hover {
   }
 }
 
-/* Dilution: choose by target concentration or by water:paste ratio. */
+/* Dilution: the scope toggle, and the ratio presets that set the plan %. One class for
+   both because they are the same shape — a captioned row of small controls — and it long
+   predates the mode radio it was named for. */
 .dilution-mode-toggle {
   display: flex;
   flex-wrap: wrap;
@@ -2457,6 +2459,46 @@ a:hover {
   font-size: 0.85rem;
   color: var(--text-muted);
   align-self: center;
+}
+
+/* The ratio presets (spec §2). BUTTONS, not radios: they do something once and stop, and
+   nothing on screen claims one of them describes the current plan — see the group's own
+   comment in DilutionPanel. Styled as small, quiet actions rather than as a segmented
+   control, so they do not read as a selection. */
+.dilution-preset {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.dilution-preset:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.dilution-preset:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* What the last preset click wrote ("2:1 → 25%"). A caption on the control above it, not
+   state feedback about the batch — which is why it is deliberately NOT .results-hint: that
+   class is what the panel's prose budget counts. */
+.dilution-preset-caption {
+  margin: -0.5rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* A plan-labelled note on a plan row (spec §4) — same reasoning as .dilution-preset-caption
+   above: a caption on the figure directly above it, deliberately not .results-hint, which is
+   the class the panel's prose budget counts. */
+.dilution-plan-caption {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 /* Dilution: intended-use targets. Collapsed by default — it is reference, not a control. */

@@ -6,7 +6,6 @@ import { CpExtrasPanel } from './components/CpExtrasPanel';
 import {
   DilutionPanel,
   portionGradualFor,
-  type DilutionMode,
   type DilutionScope,
 } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
@@ -31,7 +30,6 @@ import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { useRecipeViewModel } from './hooks/useRecipeViewModel';
 import { useUndoShortcut } from './hooks/useUndoShortcut';
-import { parseGradualWaterRecordGrams } from './lib/measuredPaste';
 import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
 import type { PricingProfile } from './lib/pricingProfile';
@@ -142,26 +140,21 @@ export default function App() {
     }
     prevProcessOilsRef.current = { process, oilsSignature };
   }, [process, oilsSignature]);
-  // Which way the maker is choosing the dilution target: a soap concentration (the
-  // default — LS:1536, and what the persisted settings.soapConcentrationPercent already
-  // is), a water:paste ratio by weight (LS:1534), or Gradual Dilution — recording the water
-  // actually poured in and letting the concentration fall out of that (also LS:1531).
-  // Session-local like the portion inputs above, not a recipe setting — the persisted
-  // concentration is still the one figure every downstream consumer (vm.dilution,
-  // DilutionPanel, BatchSheet) reads; ratio and gradual only ever write into it via
-  // DilutionPanel's onSoapConcentrationChange. waterPasteRatio below is session-local for
-  // the same reason; gradualWaterGrams is the one exception — it is recipe state
-  // (settings.gradualWaterGrams, RecipeSettings' own field), because it is also the basis
-  // of a preservative dose that is itself recipe state and must survive a reload.
-  const [dilutionMode, setDilutionMode] = useState<DilutionMode>('concentration');
-  // The mode the MAKER picked, and the record that was on the recipe when they picked it —
-  // the one thing the restore effect below cannot read off state, since a mode set by that
-  // effect and a mode set by a click are the same value afterwards. A ref rather than state:
-  // nothing renders from it, and it must not be a dependency of anything.
-  const gradualModeChoiceRef = useRef<{ record: number | undefined } | null>(
-    null,
-  );
-  const [waterPasteRatio, setWaterPasteRatio] = useState('2');
+  // THERE IS NO DILUTION MODE ANY MORE, and this is where two pieces of session state and a
+  // sixty-line restore effect used to live (spec §5, and the deletion Phase 2a exists to
+  // make). `dilutionMode` and `waterPasteRatio` were session-local choices about HOW to
+  // arrive at settings.soapConcentrationPercent, and the effect below them restored Gradual
+  // whenever a recipe carrying a water record arrived — because that record had nowhere to
+  // appear otherwise, the field being off screen in the other two modes.
+  //
+  // All three are answered structurally now: the panel holds one plan field and one record
+  // field, both always on screen in whole-batch scope, and which of them GOVERNS is
+  // resolveDilution's answer to the recipe's own data (spec §1). A record arriving with a
+  // recipe therefore appears the moment the recipe does, with no session state to restore it
+  // into and nothing to fight a maker who chose otherwise — the tab-switch round trips
+  // `gradualModeChoiceRef` existed to arbitrate cannot happen, because there is no mode for
+  // an arrival to impose. `settings.gradualWaterGrams` remains recipe state, as it always
+  // was.
   // "Dilute it all" vs "make just this much now" — a decision about the session, not the
   // recipe, so it lives here rather than in settings. Defaults to the whole batch.
   const [dilutionScope, setDilutionScope] = useState<DilutionScope>('batch');
@@ -193,67 +186,6 @@ export default function App() {
     workspaceGeneration,
   );
   const weightUnit = settings.weightUnit;
-  // A recorded gradual dilution reopens in Gradual mode. `dilutionMode` is session state
-  // and the recorded water is recipe state, so without this the water survives a reload
-  // and then has nowhere to appear: the panel comes back in Concentration mode and the
-  // field that shows the record is not on screen at all. A figure the maker is promised
-  // will "always be shown" cannot be reachable only by remembering which mode wrote it.
-  //
-  // Keyed on workspaceGeneration — load, import, new recipe, undo of a load — so it
-  // restores the recorded state exactly when a recipe arrives, and never fights a maker
-  // who deliberately switches modes afterwards.
-  //
-  // BOTH DIRECTIONS, because that key covers arrivals with no record as well as arrivals
-  // with one: workspaceGeneration also bumps on New recipe and on import
-  // (useRecipeStorage's own handlers). One-way, opening a recipe that recorded water and
-  // then starting a new one left the panel in Gradual with an empty field, no dilution rows
-  // and no figure anywhere — a mode restored for a record that no longer exists.
-  //
-  // The reverse direction leaves Gradual and NOTHING ELSE. A flat reset to 'concentration'
-  // was the obvious one-liner and cost a mode the maker chose: workspaceGeneration also
-  // bumps on a PROCESS TAB SWITCH (useRecipeStorage's setProcess), so a maker working in
-  // Water:paste ratio who looked at the Cold process tab and came back was put in Target
-  // concentration — session state nobody asked to lose. Only Gradual can be left stale by an
-  // arriving recipe, because it is the only mode whose figures come from a record the recipe
-  // carries; ratio's and concentration's inputs are session-local and remain exactly as
-  // valid for the workspace that just arrived. So the reset target is the panel's own
-  // default only for the mode that has to move.
-  //
-  // AND THE FORWARD DIRECTION COSTS THE SAME MAKER THE SAME GLANCE, which is what
-  // `gradualModeChoiceRef` below answers. That tab switch is a workspace arrival like any
-  // other, so with a record on the recipe this effect re-imposed Gradual on every one of
-  // them: record the water, switch to Target concentration to type an exact 25%, look at the
-  // Cold process tab, come back — and the panel is in Gradual again with the target field
-  // gone, which is the complaint above in the other direction. The restore is for a record
-  // the maker has not yet had a chance to answer for; once they have chosen a mode WITH THAT
-  // RECORD in hand, that choice is what the arriving workspace should find. A different
-  // record — an import, a new recipe, the same file with more water poured — is a new
-  // question and restores as before. (Two recipes carrying the identical record keep the
-  // choice, which is the one case this cannot tell apart, and the mode is a radio the maker
-  // can see and move.)
-  //
-  // Read through the shared parser rather than a bare `.trim() !== ''`, because "is there a
-  // record" has exactly one answer in this app: the sheet's record rows, the panel's own
-  // derivation and the widened paste ceiling all ask lib/measuredPaste. A fourth copy here
-  // meant junk and a negative — and, since the parser learned the swallowed-separator
-  // fingerprint, a typo'd '2.000' — counted as a record for the MODE while every surface
-  // that would have shown it said there was none: the panel pinned to Gradual on every
-  // reload, showing a field it refuses and no figures at all.
-  const gradualRecordGrams = parseGradualWaterRecordGrams(settings.gradualWaterGrams);
-  useEffect(() => {
-    const choice = gradualModeChoiceRef.current;
-    const chosenForThisRecord = choice !== null && choice.record === gradualRecordGrams;
-    setDilutionMode((current) =>
-      gradualRecordGrams !== undefined
-        ? chosenForThisRecord
-          ? current
-          : 'gradual'
-        : current === 'gradual'
-          ? 'concentration'
-          : current,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceGeneration]);
   // The mold sizer stores its bar weight as a raw display string interpreted in the
   // current unit; convert it on unit change (like recipe weights) so "120 g" doesn't
   // silently become "120 oz".
@@ -362,17 +294,34 @@ export default function App() {
   // That understates the portion's finished mass slightly, which understates the dose —
   // toward, never past, the ceiling.
   //
-  // CUSTOM AMOUNT + GRADUAL IS ITS OWN JAR, and dosing it through portionDilutionFor was
-  // the worst version of this bug rather than a variant of it. That resolution sizes a jar
-  // from "Amount to make (ml)" — the one input gradual mode takes OFF the panel, replacing
-  // it with the paste weighed out and the water poured. So a maker who recorded a 1,300 g
-  // jar was told to weigh in 21 g of preservative: 1.6% of what they actually made, past
-  // the EU ceiling for several listed products, in the mode built to keep the dose on the
-  // mass that really exists. And with the amount blank — the normal state, since nothing
-  // fills it in that mode — there was no dose at all, under a hint asking for a control
-  // that is not on screen. portionGradualFor is the panel's OWN resolution of the jar,
-  // imported for the same reason portionDilutionFor is: the dose and the figures beside it
-  // cannot then disagree about whether a jar exists or what it weighs.
+  // A RECORDED JAR IS ITS OWN JAR, and dosing it through portionDilutionFor was the worst
+  // version of this bug rather than a variant of it. That resolution sizes a jar from
+  // "Amount to make (ml)", which is the input a recorded jar replaces. So a maker who
+  // recorded a 1,300 g jar was told to weigh in 21 g of preservative: 1.6% of what they
+  // actually made, past the EU ceiling for several listed products, in the one place built to
+  // keep the dose on the mass that really exists. And with the amount blank — the normal
+  // state for a maker who is recording rather than sizing — there was no dose at all, under a
+  // hint asking for a control that is not on screen. portionGradualFor is the panel's OWN
+  // resolution of the jar, imported for the same reason portionDilutionFor is: the dose and
+  // the figures beside it cannot then disagree about whether a jar exists or what it weighs.
+  //
+  // THE GATE IS THE JAR'S OWN RECORD, not a mode (spec §4's conversion rule) — and it is
+  // `hasBothFigures`, the same verdict the panel's `portionJarGoverns` reads, never `jar`
+  // truthiness. The two are NOT the same test: `jar` is also null when both figures are
+  // present but the paste weighed out is heavier than the whole batch's own paste
+  // (pasteExceedsBatch), and there the panel does not fall through to plan sizing either —
+  // it stands the grid down (`portionJarGoverns` is `hasBothFigures`, not `jar`) and shows no
+  // jar figure, because the paste reading it would size from is refused. Keying this branch
+  // on `jar` alone used to fall through to `portionDilutionFor` in exactly that state: a
+  // paste heavier than the batch with a stale "Amount to make (ml)" still on screen dosed a
+  // plan-sized portion while the panel rendered neither the plan grid nor a jar — a mass
+  // nowhere on screen. Reading `hasBothFigures` here too means the dose, the figures and the
+  // suppression move together because all three are read off the SAME two verdicts,
+  // portionGradualFor's own, rather than this branch re-deriving its own test from `jar`
+  // truthiness. Falling through to plan sizing is portion scope's own precedence only when
+  // `hasBothFigures` is false (spec §2: jar record with both figures → jar; else plan
+  // sizing), and it is what the mode gate could not express: choosing Gradual with the two
+  // fields empty used to mean "no dose at all".
   // Returns the mass AND the scope that mass is actually in — never the scope the toggle
   // is set to. A Custom amount larger than the batch CLAMPS to the whole batch, and the
   // panel says so twice ("more than the batch holds", "100% of the batch"); labelling the
@@ -382,24 +331,26 @@ export default function App() {
   const preservativeBasis = useMemo((): { grams: number | null; scope: DilutionScope } => {
     if (dilutionScope !== 'portion') return { grams: vm.preservativeDosingBasisGrams, scope: 'batch' };
     if (!vm.dilution) return { grams: null, scope: 'portion' };
-    if (dilutionMode === 'gradual') {
-      return {
-        scope: 'portion',
-        grams: (
-        portionGradualFor({
-          dilution: vm.dilution,
-          portionPasteGrams,
-          portionWaterGrams,
-          // The jar is a share of the pot the maker WEIGHED when there is a reading for it,
-          // exactly as the panel's own readout is — the same argument as passing it to
-          // portionDilutionFor below. Omitted, this dosed a jar sized from the recipe's
-          // prediction while the figure beside it on screen came off the scale.
-          measuredPasteGrams,
-          wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
-          cookWaterGrams: vm.cookWaterGrams,
-        }).jar?.finishedGrams ?? null),
-      };
-    }
+    const jarState = portionGradualFor({
+      dilution: vm.dilution,
+      portionPasteGrams,
+      portionWaterGrams,
+      // The jar is a share of the pot the maker WEIGHED when there is a reading for it,
+      // exactly as the panel's own readout is — the same argument as passing it to
+      // portionDilutionFor below. Omitted, this dosed a jar sized from the recipe's
+      // prediction while the figure beside it on screen came off the scale.
+      measuredPasteGrams,
+      wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
+      cookWaterGrams: vm.cookWaterGrams,
+    });
+    if (jarState.jar) return { grams: jarState.jar.finishedGrams, scope: 'portion' };
+    // hasBothFigures true with jar still null is the paste-exceeds-batch refusal (or its
+    // sibling, no batch paste to be a share of) — the panel's OWN suppression predicate
+    // (portionJarGoverns) fires here too, standing the plan grid down and printing no jar
+    // figure. Falling through to portionDilutionFor in that state dosed the PLAN's sizing
+    // portion off a stale "Amount to make (ml)" while the screen showed neither the grid
+    // nor a jar — see this function's own comment above for the reading that exposed it.
+    if (jarState.hasBothFigures) return { grams: null, scope: 'portion' };
     const { portion } = portionDilutionFor({
       dilution: vm.dilution,
       targetMl: portionTargetMl,
@@ -414,7 +365,6 @@ export default function App() {
       scope: portion?.clamped ? 'batch' : 'portion',
     };
   }, [
-    dilutionMode,
     dilutionScope,
     measuredPasteGrams,
     portionPasteGrams,
@@ -697,16 +647,6 @@ export default function App() {
                 overDilutionCertain={vm.overDilutionCertain}
                 bottledSolutionGrams={vm.bottledSolutionGrams}
                 cookWaterGrams={vm.cookWaterGrams}
-                dilutionMode={dilutionMode}
-                // Records WHAT the maker chose and WHICH record was on the recipe when they
-                // chose it, so the restore effect above can tell a mode it imposed from a
-                // mode they picked. See that effect for the tab-switch round trip this fixes.
-                onDilutionModeChange={(mode) => {
-                  gradualModeChoiceRef.current = { record: gradualRecordGrams };
-                  setDilutionMode(mode);
-                }}
-                waterPasteRatio={waterPasteRatio}
-                onWaterPasteRatioChange={setWaterPasteRatio}
                 gradualWaterGrams={settings.gradualWaterGrams}
                 onGradualWaterChange={(value) =>
                   setSettings({ ...settings, gradualWaterGrams: value })
@@ -731,10 +671,16 @@ export default function App() {
                     <PreservativeSnippet
                       finishedGrams={preservativeBasis.grams}
                       basisScope={preservativeBasis.scope}
-                      /* Moves with preservativeBasis' own gradual branch above: the two
-                         answer one question (which jar, and how the maker described it), so
-                         the empty state asks for the fields that actually resolve it. */
-                      portionIsRecorded={dilutionMode === 'gradual'}
+                      /* Moves with preservativeBasis' own jar branch above: the two answer
+                         one question (which jar, and how the maker described it), so the
+                         empty state asks for the fields that actually resolve it. The mode
+                         that used to answer it is gone, and both jar fields are on the Custom
+                         amount screen — so what says "this maker is RECORDING a jar" is that
+                         they have started one. With both fields untouched the maker is
+                         sizing, and the ask names "Amount to make" as it always did. */
+                      portionIsRecorded={
+                        portionPasteGrams.trim() !== '' || portionWaterGrams.trim() !== ''
+                      }
                       weightUnit={weightUnit}
                       preservativeId={settings.preservativeId}
                       onPreservativeIdChange={(preservativeId) =>

@@ -117,6 +117,12 @@ export function computeExtrasGrams(
  * computeExtrasGrams so "what counts as an extra" and "what rides through to the bottle"
  * are one tested rule set.
  *
+ * TWO ARMS, chosen by the caller's `record` argument and never by a second reading of the
+ * recipe's fields (spec §1's resolution rule has exactly one home — `lib/resolveDilution` —
+ * and the view model hands this function that function's answer). The RECORD arm is
+ * documented at the branch itself; everything below describes the PLAN arm, which is
+ * unchanged.
+ *
  * Base: the pot's real paste — the whole-batch reading when `correctedPotGramsFor` (the
  * shared pot choice) takes it, else the recipe's own
  * anhydrous + cook water — plus whatever water is still needed to reach the target. That
@@ -188,8 +194,15 @@ export function computeBottledSolutionGrams(input: {
    * same rule. Leaving it out would price the bottle off the recipe's computed pot for a
    * gradual record the two other surfaces are counting from — the exact split this branch
    * closed. Optional, and absent it is the unwidened ceiling, which is what a caller with no
-   * record wants. */
+   * record wants. PLAN ARM ONLY: with `record` supplied the pot comes from the record itself
+   * and no ceiling is consulted at all (see `record` below). */
   gradualWaterGrams?: string;
+  /** THE RECORD ARM (spec §3). Non-null exactly when `resolveDilution` says the record
+   * governs — the caller passes `resolvedDilution.record`, never a second derivation of it,
+   * so the mass this prices and the mass the panel prints as "Finished so far" come from one
+   * resolution. Null (or omitted) is the plan arm, byte-identical to before this parameter
+   * existed. */
+  record?: { potGrams: number; waterGrams: number } | null;
 }): number {
   const {
     dilution,
@@ -200,7 +213,42 @@ export function computeBottledSolutionGrams(input: {
     measuredPasteIsRemaining,
     wholeBatchPasteGrams,
     gradualWaterGrams,
+    record,
   } = input;
+  // The alternative liquid's non-water solids — needed by BOTH arms, off the same corrected
+  // basis `correctedDilutionWaterGrams` subtracts from solutionGrams, never re-derived from
+  // the split-liquid rows, so this and the water figure the panel prints can never disagree
+  // about the same pot. Zero without a corrected basis, exactly as the water correction is: a
+  // caller that supplies none cannot know the solids are there, and both paths then fall back
+  // to the pre-correction formula together.
+  const splitLiquidSolidsGrams = hasCorrectedPasteBasis(wholeBatchPasteGrams)
+    ? Math.max(0, wholeBatchPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
+    : 0;
+  if (record) {
+    // THE RECORD ARM: what is in the pot, not what the target predicts. The pot is
+    // `resolveDilution`'s own — `weighedOrComputedPotGramsFor`, the reading when it describes
+    // a possible pot, else the recipe's solids-aware corrected basis — plus the water the
+    // maker actually poured. No ceiling is consulted, deliberately: the record derives its own
+    // concentration from this pot, so a target-derived bound on it would let an output pick
+    // its own input (the render loop measuredPasteDescribesPotFor documents).
+    //
+    // THE EXTRAS TERM IS WHERE THE DOUBLE COUNT LIVES, and it is the same one the plan arm's
+    // `splitLiquidInBaseGrams` closes — generalized, because BOTH of this arm's pots already
+    // hold the whole liquid. A weighed pot holds it because the maker put the pot with the
+    // liquid in it on the scale; the corrected basis holds it because it is anhydrous + cook
+    // water + those very solids. So the term to net out is the liquid's water AND its solids,
+    // where the plan arm nets water alone on its unmeasured path. Verified on a 300 g-glycerin
+    // recipe (waterFraction 0, so all 300 g are solids): a 1,900 g pot with 2,500 g recorded
+    // bottles 4,400 g, and the naive `pot + record + extras` prices 4,700 — the glycerin
+    // twice, which is the priced-a-solids'-worth-heavy bug the plan arm's own note records
+    // fixing. Only the bare anhydrous + cook-water fallback pot (no corrected basis at all)
+    // nets the water alone, and `splitLiquidSolidsGrams` is already 0 there.
+    return (
+      record.potGrams +
+      record.waterGrams +
+      Math.max(0, extrasGrams - (splitLiquidPasteWaterGrams + splitLiquidSolidsGrams))
+    );
+  }
   // THE SAME POT the water term below is measured against, from the same call, so this base
   // and that subtraction can never describe different batches. Both corrected-basis figures
   // go into the gate, not only into the water term: the paste floor counts an alternative
@@ -240,15 +288,6 @@ export function computeBottledSolutionGrams(input: {
       cookWaterGrams,
       gradualWaterGrams,
     );
-  // The alternative liquid's non-water solids, off the same corrected basis
-  // correctedDilutionWaterGrams subtracts from solutionGrams — never re-derived from the
-  // split-liquid rows, so this and the water figure the panel prints can never disagree
-  // about the same pot. Zero without a corrected basis, exactly as the water correction is:
-  // a caller that supplies none cannot know the solids are there, and both paths then fall
-  // back to the pre-correction formula together.
-  const splitLiquidSolidsGrams = hasCorrectedPasteBasis(wholeBatchPasteGrams)
-    ? Math.max(0, wholeBatchPasteGrams - (dilution.anhydrousGrams + cookWaterGrams))
-    : 0;
   // What the base ALREADY holds of the split liquid, and the whole difference between the
   // two paths. Unmeasured, the base is built from anhydrous + cookWaterGrams, so it carries
   // the liquid's water only and the extras term has to put its solids back. Measured, the

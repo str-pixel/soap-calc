@@ -71,8 +71,9 @@ function viewModelFor(
   return captured!;
 }
 
-/** Exactly App.tsx's own DilutionPanel wiring, in the default (Whole batch, target
- * concentration) state — so what these tests read is what the maker reads. */
+/** Exactly App.tsx's own DilutionPanel wiring, in the default (Whole batch, nothing
+ * recorded — so the plan governs) state — so what these tests read is what the maker
+ * reads. */
 function renderPanel(
   vm: RecipeViewModel,
   soapConcentrationPercent: string,
@@ -89,8 +90,6 @@ function renderPanel(
       overDilutionCertain={vm.overDilutionCertain}
       bottledSolutionGrams={vm.bottledSolutionGrams}
       cookWaterGrams={vm.cookWaterGrams}
-      dilutionMode="concentration"
-      waterPasteRatio="2"
       measuredPasteGrams={measuredPasteGrams}
       dilutionScope="batch"
       targetMl=""
@@ -98,8 +97,7 @@ function renderPanel(
       onMeasuredPasteGramsChange={() => {}}
       onDilutionScopeChange={() => {}}
       onTargetMlChange={() => {}}
-      onDilutionModeChange={() => {}}
-      onWaterPasteRatioChange={() => {}}
+      onGradualWaterChange={() => {}}
     />,
   );
 }
@@ -240,8 +238,6 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
         overDilutionCertain={vm.overDilutionCertain}
         bottledSolutionGrams={vm.bottledSolutionGrams}
         cookWaterGrams={vm.cookWaterGrams}
-        dilutionMode="concentration"
-        waterPasteRatio="2"
         measuredPasteGrams=""
         dilutionScope="portion"
         targetMl="500"
@@ -249,8 +245,7 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
         onMeasuredPasteGramsChange={() => {}}
         onDilutionScopeChange={() => {}}
         onTargetMlChange={() => {}}
-        onDilutionModeChange={() => {}}
-        onWaterPasteRatioChange={() => {}}
+        onGradualWaterChange={() => {}}
       />,
     );
     expect(
@@ -617,5 +612,165 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
     expect(screen.queryAllByRole('alert').length).toBe(0);
     expect(rowText('Dilution water to add')).toBe('2,301 g'); // 4,051 − 1,750
     expect(hintTexts().some((t) => /uses your measured paste/i.test(t))).toBe(true);
+  });
+});
+
+describe('the batch record participates nowhere in portion scope (spec §2)', () => {
+  // THE LEAK PHASE 2A OPENED AND THIS CLOSES. `overDilutionCertain` is a fact about the RECIPE
+  // — does the paste's own declared water already exceed what the target allows, whatever the
+  // undeclared liquid turns out to contain — and Phase 2a gated it in the view model on the
+  // BATCH record governing. Every consumer of that one field then read the batch record,
+  // including the two that live in Custom amount: this panel's own can't-tell hedge, and the
+  // `overDilutionCertain` prop it forwards to PortionDilutionResults, which is what decides
+  // whether the child ASSERTS the verdict or hedges over it.
+  //
+  // So a whole-batch record — a field Custom amount does not even show — flipped a Custom
+  // amount screen from "the paste is already more dilute than the target" to "can't tell
+  // whether N% is reachable", and, because the ceiling stands down only for the child's
+  // WORDED verdict, resurrected the solubility alert on top. Three paragraphs' difference,
+  // driven by a record about a different scope.
+  //
+  // A CUSTOM LIQUID WITH NO DECLARED % WATER is what makes `unknownLiquidGrams` non-zero, and
+  // an 85% target is what makes the verdict CERTAIN: the solution holds ~215 g of water
+  // against 330 g of lye water alone, so the paste is past the target even if every
+  // undeclared gram brought none. Certain is the only state the leak is visible in — with the
+  // verdict uncertain both sides hedge already.
+  const UNDECLARED_900: SplitLiquidRow = {
+    key: 'u1', presetKey: '', name: 'Something home-made', customWaterPercent: '',
+    sizeMode: 'grams', amount: '900', addAt: 'lye',
+  };
+  const SETTINGS = {
+    lyeType: 'koh' as const,
+    soapConcentrationPercent: '85',
+    splitLiquids: [UNDECLARED_900],
+  };
+  const CERTAIN_VERDICT =
+    /The paste is already more dilute than the target above, so there is no dilution water to divide up/;
+  const HEDGE = /Can't tell whether 85% is reachable/;
+
+  /** App's own Custom amount wiring, from the real view model. */
+  function renderPortion(gradualWaterGrams: string, jar?: { paste: string; water: string }) {
+    const vm = viewModelFor({ ...SETTINGS, gradualWaterGrams });
+    render(
+      <DilutionPanel
+        dilution={vm.dilution}
+        soapConcentrationPercent={SETTINGS.soapConcentrationPercent}
+        onSoapConcentrationChange={() => {}}
+        weightUnit="g"
+        altLiquidWaterGrams={vm.splitLiquidPasteWater}
+        unknownLiquidGrams={vm.unknownLiquidGrams}
+        overDilutionCertain={vm.overDilutionCertain}
+        bottledSolutionGrams={vm.bottledSolutionGrams}
+        cookWaterGrams={vm.cookWaterGrams}
+        measuredPasteGrams=""
+        dilutionScope="portion"
+        targetMl="500"
+        portionPasteGrams={jar?.paste ?? ''}
+        portionWaterGrams={jar?.water ?? ''}
+        wholeBatchPasteGrams={vm.wholeBatchPasteGrams}
+        onMeasuredPasteGramsChange={() => {}}
+        onDilutionScopeChange={() => {}}
+        onTargetMlChange={() => {}}
+        onGradualWaterChange={() => {}}
+        onPortionPasteChange={() => {}}
+        onPortionWaterChange={() => {}}
+      />,
+    );
+    return vm;
+  }
+
+  it('is the fixture the verdict is CERTAIN on, so the leak has something to flip', () => {
+    // The positive control. Without certainty every assertion below is vacuous: an uncertain
+    // verdict hedges on both sides of the fix.
+    const vm = viewModelFor(SETTINGS);
+    expect(vm.dilution!.targetExceedsPaste).toBe(true);
+    expect(vm.unknownLiquidGrams).toBeGreaterThan(0);
+    expect(vm.overDilutionCertain).toBe(true);
+  });
+
+  it('keeps that certainty while a batch record governs — it is a fact about the recipe', () => {
+    // The field itself. Which ARM governs decides which claims a SURFACE may make; it does not
+    // change whether the paste's declared water exceeds the target. Gating it here made one
+    // recipe carry two answers depending on a field in another scope.
+    expect(viewModelFor({ ...SETTINGS, gradualWaterGrams: '2000' }).overDilutionCertain).toBe(true);
+  });
+
+  it('asserts the verdict in Custom amount, batch record or not', () => {
+    for (const record of ['', '0', '2000']) {
+      renderPortion(record);
+      const hints = hintTexts();
+      expect(hints.some((t) => CERTAIN_VERDICT.test(t)), `record=${record || '(none)'}`).toBe(true);
+      expect(hints.some((t) => HEDGE.test(t)), `record=${record || '(none)'}`).toBe(false);
+      cleanup();
+    }
+  });
+
+  it('does not resurrect the solubility ceiling in Custom amount for a batch record', () => {
+    // The ceiling stands down for the child's WORDED verdict (overDilutionSpokenFor). Hedge
+    // the child and the ceiling comes back — so the leak cost this screen a third paragraph,
+    // on top of swapping the first two.
+    for (const record of ['', '0', '2000']) {
+      renderPortion(record);
+      // Asserted as the empty alert channel rather than as "no ceiling": the resurrection is
+      // a paragraph APPEARING, so anything that appears here is the defect.
+      expect(
+        screen.queryAllByRole('alert').map((a) => a.textContent ?? ''),
+        `record=${record || '(none)'}`,
+      ).toEqual([]);
+      cleanup();
+    }
+  });
+
+  it("does not put the shell's hedge on a screen where a jar governs, either", () => {
+    // The sharpest cell, and the one the entry-point rewrite makes reachable: with a jar
+    // recorded, PortionDilutionResults does not render at all, so the shell's own can't-tell
+    // clause is the only thing that could speak — and it consumes this same flag. A batch
+    // record made it speak, about a plan the jar is not being measured against.
+    for (const record of ['', '0', '2000']) {
+      renderPortion(record, { paste: '400', water: '900' });
+      const hints = hintTexts();
+      expect(hints.some((t) => HEDGE.test(t)), `record=${record || '(none)'}`).toBe(false);
+      expect(screen.getByText(/Finished so far \(this jar\)/)).toBeTruthy();
+      cleanup();
+    }
+  });
+
+  it('leaves Whole batch gated where the gating belongs — at the surfaces', () => {
+    // The other direction, so the fix is not "ungate everything": the plan-claim suppression
+    // is real and stays, it is simply keyed at the two surfaces that make the claim
+    // (DilutionPanel's own `planGoverns`, BatchSheet's) rather than at a shared field every
+    // scope reads. Same recipe, Whole batch: the verdict with no record, silence with one.
+    const vm = viewModelFor(SETTINGS);
+    renderPanel(vm, SETTINGS.soapConcentrationPercent);
+    expect(screen.getByText(/already more dilute than 85%/i)).toBeTruthy();
+    cleanup();
+    const withRecord = viewModelFor({ ...SETTINGS, gradualWaterGrams: '2000' });
+    render(
+      <DilutionPanel
+        dilution={withRecord.dilution}
+        soapConcentrationPercent={SETTINGS.soapConcentrationPercent}
+        onSoapConcentrationChange={() => {}}
+        weightUnit="g"
+        altLiquidWaterGrams={withRecord.splitLiquidPasteWater}
+        unknownLiquidGrams={withRecord.unknownLiquidGrams}
+        overDilutionCertain={withRecord.overDilutionCertain}
+        bottledSolutionGrams={withRecord.bottledSolutionGrams}
+        cookWaterGrams={withRecord.cookWaterGrams}
+        measuredPasteGrams=""
+        dilutionScope="batch"
+        targetMl=""
+        gradualWaterGrams="2000"
+        wholeBatchPasteGrams={withRecord.wholeBatchPasteGrams}
+        onMeasuredPasteGramsChange={() => {}}
+        onDilutionScopeChange={() => {}}
+        onTargetMlChange={() => {}}
+        onGradualWaterChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/already more dilute/i)).toBeNull();
+    // …and the hedge does not take its place: the plan's zero is accounted for by the
+    // plan-labelled caption instead (spec §4).
+    expect(hintTexts().some((t) => HEDGE.test(t))).toBe(false);
+    expect(screen.getByText(/^Plan: at 85%/)).toBeTruthy();
   });
 });
