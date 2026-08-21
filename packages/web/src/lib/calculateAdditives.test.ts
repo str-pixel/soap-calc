@@ -618,8 +618,8 @@ describe('computeBottledSolutionGrams: the record arm (spec §3)', () => {
   // term has to net out whatever of the split liquid that pot already holds, or the liquid
   // is priced twice.
   const GLYCERIN = {
-    // 300 g anhydrous soap, 400 g of lye water, and 300 g of glycerin (waterFraction 0, so
-    // all of it is solids and none of it is cook water).
+    // 1,200 g anhydrous soap, 400 g of cook water, and 300 g of glycerin (waterFraction 0,
+    // so all 300 g are solids and none of it is cook water) — a 1,900 g corrected pot.
     dilution: {
       anhydrousGrams: 1200,
       solutionGrams: 4000,

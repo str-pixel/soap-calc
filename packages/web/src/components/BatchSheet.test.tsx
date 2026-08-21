@@ -437,9 +437,11 @@ function lsSheetData(extra: {
   bottledSolutionGrams?: number | null;
   /** Overrides the fixture's own 'g' below — it is spread after it. */
   weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
-  /** Merged into the fixture's settings — for the preservative row, whose four fields
-   * live in RecipeSettings and do not affect calculateRecipe. */
-  preservative?: Partial<
+  /** Merged into the fixture's settings. Originally only the preservative row's four
+   * RecipeSettings fields travelled here; the record tests reuse the channel for
+   * `gradualWaterGrams`, so the name says what it is — a settings override — rather than
+   * naming one consumer. None of these fields affect calculateRecipe. */
+  settingsOverride?: Partial<
     Pick<
       import('../lib/recipe').RecipeSettings,
       | 'preservativeId'
@@ -450,9 +452,9 @@ function lsSheetData(extra: {
     >
   >;
 }) {
-  const { targetExceedsPaste, dilutionOverride, preservative, ...rest } = extra;
+  const { targetExceedsPaste, dilutionOverride, settingsOverride, ...rest } = extra;
   const lines = createStarterLines();
-  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const, ...preservative };
+  const settings = { ...DEFAULT_SETTINGS, lyeType: 'koh' as const, ...settingsOverride };
   const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
   if (!result || !displayTotals) throw new Error('expected a valid calculation');
 
@@ -618,7 +620,7 @@ test('…while a gradual record keeps the widening, and its rows account for the
       data={lsSheetData({
         measuredPasteGrams: '4059.6',
         wholeBatchPasteGrams: 1600,
-        preservative: { gradualWaterGrams: '0' },
+        settingsOverride: { gradualWaterGrams: '0' },
       })}
     />,
   );
@@ -949,7 +951,7 @@ test('printed Neutralize section shows the stearic-acid alternative and its cann
 
 test('prints the preservative dose against the whole batch, and names the scope', () => {
   render(<BatchSheet data={lsSheetData({
-    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '1', preservativeSetByUser: true },
+    settingsOverride: { preservativeId: 'suttocide-a', preservativeDosePct: '1', preservativeSetByUser: true },
   })} />);
   const row = screen.getByText('Preservative').closest('div')!;
   expect(row.textContent).toContain('Suttocide A');
@@ -961,7 +963,7 @@ test('prints the preservative dose against the whole batch, and names the scope'
 
 test('a blank custom name still prints a headed row', () => {
   render(<BatchSheet data={lsSheetData({
-    preservative: {
+    settingsOverride: {
       preservativeId: '',
       preservativeCustomName: '',
       preservativeDosePct: '1',
@@ -974,7 +976,7 @@ test('a blank custom name still prints a headed row', () => {
 
 test('a typed custom name reaches the sheet, not just the blank fallback', () => {
   render(<BatchSheet data={lsSheetData({
-    preservative: {
+    settingsOverride: {
       preservativeId: '',
       preservativeCustomName: 'Optiphen Plus',
       preservativeDosePct: '1',
@@ -987,21 +989,21 @@ test('a typed custom name reaches the sheet, not just the blank fallback', () =>
 
 test('no dose, no row', () => {
   render(<BatchSheet data={lsSheetData({
-    preservative: { preservativeDosePct: '', preservativeSetByUser: true },
+    settingsOverride: { preservativeDosePct: '', preservativeSetByUser: true },
   })} />);
   expect(screen.queryByText('Preservative')).toBeNull();
 });
 
 test('an impossible dose prints no row either', () => {
   render(<BatchSheet data={lsSheetData({
-    preservative: { preservativeDosePct: '150', preservativeSetByUser: true },
+    settingsOverride: { preservativeDosePct: '150', preservativeSetByUser: true },
   })} />);
   expect(screen.queryByText('Preservative')).toBeNull();
 });
 
 test('an over-ceiling dose prints its caveat; the formaldehyde note stays off the sheet', () => {
   render(<BatchSheet data={lsSheetData({
-    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '2', preservativeSetByUser: true },
+    settingsOverride: { preservativeId: 'suttocide-a', preservativeDosePct: '2', preservativeSetByUser: true },
   })} />);
   expect(screen.getByText(/above the EU legal maximum/i)).toBeTruthy();
   expect(screen.queryByText(/releases formaldehyde/i)).toBeNull();
@@ -1012,7 +1014,7 @@ test('the printed dose is the batch figure — the sheet has no portion scope to
   // must be no way to make it track a Custom-amount portion instead.
   render(<BatchSheet data={lsSheetData({
     bottledSolutionGrams: 2000,
-    preservative: { preservativeId: 'suttocide-a', preservativeDosePct: '1', preservativeSetByUser: true },
+    settingsOverride: { preservativeId: 'suttocide-a', preservativeDosePct: '1', preservativeSetByUser: true },
   })} />);
   expect(screen.getByText('Preservative').closest('div')!.textContent).toContain('20 g');
 });
@@ -1024,7 +1026,7 @@ test('the row prints for the seeded default too — the sheet names what its mas
   // the page could not account for; a bench sheet that carries the grams must name them.
   // The row reads as the recommendation it is — product, dose and stage all stated.
   render(<BatchSheet data={lsSheetData({
-    preservative: {
+    settingsOverride: {
       preservativeId: 'suttocide-a',
       preservativeDosePct: '1',
       preservativeSetByUser: false,
@@ -1035,7 +1037,7 @@ test('the row prints for the seeded default too — the sheet names what its mas
 
 test('the row prints once the maker has chosen', () => {
   render(<BatchSheet data={lsSheetData({
-    preservative: {
+    settingsOverride: {
       preservativeId: 'suttocide-a',
       preservativeDosePct: '1',
       preservativeSetByUser: true,
@@ -1048,7 +1050,7 @@ test('a below-50°C stage note prints for a preservative that actually carries o
   // Every other sheet test uses suttocide-a, whose addBelowC is null, so the addBelowC
   // arm of the stage note has never rendered in this file. Liquid Germall Plus's is 50.
   render(<BatchSheet data={lsSheetData({
-    preservative: {
+    settingsOverride: {
       preservativeId: 'liquid-germall-plus',
       preservativeDosePct: '0.5',
       preservativeSetByUser: true,
@@ -1068,7 +1070,7 @@ describe('the sheet records the water actually poured', () => {
     render(
       <BatchSheet
         data={lsSheetData({
-          preservative: { gradualWaterGrams: '2000' },
+          settingsOverride: { gradualWaterGrams: '2000' },
           wholeBatchPasteGrams: 1600,
           cookWaterGrams: 382,
         })}
@@ -1089,7 +1091,7 @@ describe('the sheet records the water actually poured', () => {
     render(
       <BatchSheet
         data={lsSheetData({
-          preservative: { gradualWaterGrams: '2000' },
+          settingsOverride: { gradualWaterGrams: '2000' },
           wholeBatchPasteGrams: 1600,
           cookWaterGrams: 382,
         })}
@@ -1107,7 +1109,7 @@ describe('the sheet records the water actually poured', () => {
     render(
       <BatchSheet
         data={lsSheetData({
-          preservative: { gradualWaterGrams: '2000' },
+          settingsOverride: { gradualWaterGrams: '2000' },
           wholeBatchPasteGrams: 1600,
           cookWaterGrams: 382,
           measuredPasteGrams: '1500',
@@ -1132,13 +1134,13 @@ describe('the sheet records the water actually poured', () => {
     // saved target implies, "Water actually added" is what went in the pot. A sheet that
     // showed one as the other would be the paper version of the confusion this whole
     // feature exists to remove.
-    render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: '2000' } })} />);
+    render(<BatchSheet data={lsSheetData({ settingsOverride: { gradualWaterGrams: '2000' } })} />);
     expect(screen.getByText('Dilution water to add')).toBeTruthy();
     expect(screen.getByText(/Water actually added/)).toBeTruthy();
   });
 
   test('ignores a blank or unparseable record rather than printing a bare row', () => {
-    render(<BatchSheet data={lsSheetData({ preservative: { gradualWaterGrams: 'abc' } })} />);
+    render(<BatchSheet data={lsSheetData({ settingsOverride: { gradualWaterGrams: 'abc' } })} />);
     expect(screen.queryByText(/Water actually added/)).toBeNull();
   });
 
@@ -1150,7 +1152,7 @@ describe('the sheet records the water actually poured', () => {
     render(
       <BatchSheet
         data={lsSheetData({
-          preservative: { gradualWaterGrams: '0' },
+          settingsOverride: { gradualWaterGrams: '0' },
           wholeBatchPasteGrams: 1600,
           cookWaterGrams: 382,
         })}
@@ -1206,7 +1208,7 @@ describe('the sheet records the water actually poured', () => {
       <BatchSheet
         data={lsSheetData({
           dilutionOverride: gradualDilution,
-          preservative: { gradualWaterGrams: '0' },
+          settingsOverride: { gradualWaterGrams: '0' },
           measuredPasteGrams: '4500',
           wholeBatchPasteGrams: 1600,
           cookWaterGrams: 382,
@@ -1235,7 +1237,7 @@ describe('the sheet records the water actually poured', () => {
     render(
       <BatchSheet
         data={lsSheetData({
-          preservative: { gradualWaterGrams: '2000' },
+          settingsOverride: { gradualWaterGrams: '2000' },
           measuredPasteGrams: '4060',
           wholeBatchPasteGrams: 1600,
           cookWaterGrams: 382,
@@ -1254,7 +1256,7 @@ describe('the sheet records the water actually poured', () => {
     render(
       <BatchSheet
         data={lsSheetData({
-          preservative: { gradualWaterGrams: '2.000' },
+          settingsOverride: { gradualWaterGrams: '2.000' },
           wholeBatchPasteGrams: 1600,
           cookWaterGrams: 382,
         })}
@@ -1268,7 +1270,7 @@ describe('the sheet records the water actually poured', () => {
     render(
       <BatchSheet
         data={lsSheetData({
-          preservative: { gradualWaterGrams: '-100' },
+          settingsOverride: { gradualWaterGrams: '-100' },
           wholeBatchPasteGrams: 1600,
           cookWaterGrams: 382,
         })}
@@ -1300,7 +1302,7 @@ describe('the printed sheet: a plan verdict needs a plan to govern (spec §4)', 
   it('prints nothing of the kind once a record governs', () => {
     render(
       <BatchSheet
-        data={lsSheetData({ ...OVER, preservative: { gradualWaterGrams: '0' } })}
+        data={lsSheetData({ ...OVER, settingsOverride: { gradualWaterGrams: '0' } })}
       />,
     );
     expect(screen.queryByText(/already more dilute/i)).toBeNull();
@@ -1322,7 +1324,7 @@ describe('the printed sheet: a plan verdict needs a plan to govern (spec §4)', 
     expect(screen.getByText(/there is no dilution water to add/i)).toBeTruthy();
     cleanup();
     render(
-      <BatchSheet data={lsSheetData({ ...PAST, preservative: { gradualWaterGrams: '600' } })} />,
+      <BatchSheet data={lsSheetData({ ...PAST, settingsOverride: { gradualWaterGrams: '600' } })} />,
     );
     expect(screen.queryByText(/there is no dilution water to add/i)).toBeNull();
     cleanup();
@@ -1339,7 +1341,7 @@ describe('the printed sheet: a plan verdict needs a plan to govern (spec §4)', 
     expect(screen.getByText(/Can.t tell whether 85% is reachable/i)).toBeTruthy();
     cleanup();
     render(
-      <BatchSheet data={lsSheetData({ ...HEDGE, preservative: { gradualWaterGrams: '600' } })} />,
+      <BatchSheet data={lsSheetData({ ...HEDGE, settingsOverride: { gradualWaterGrams: '600' } })} />,
     );
     expect(screen.queryByText(/Can.t tell whether/i)).toBeNull();
   });
