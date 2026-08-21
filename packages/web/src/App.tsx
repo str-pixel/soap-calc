@@ -434,11 +434,14 @@ export default function App() {
   // predicate here: vm.finishedProductGrams is exactly
   // preservativeDosingBasisGrams + max(0, dose), so the subtraction recovers the dose OR
   // zero (when the tier refuses one) without a second copy of that gate (see
-  // useRecipeViewModel's own comment on it). This can therefore read LOWER than the
-  // snippet's own "Preservative to add" figure — the snippet always shows the maker a worked
-  // example from the typed dose, gated on neither the tier nor the flag; only the mass that
-  // actually bottles follows the flag. Both vm fields are null together outside LS / before
-  // a dilution exists, hence 0.
+  // useRecipeViewModel's own comment on it). In batch scope this EQUALS the snippet's own
+  // "Preservative to add" figure exactly: both start from preservativeDosingBasisGrams and
+  // both refuse a dose on the same two tiers ('none', 'impossible') — one basis, one
+  // predicate, so the screen and the mass cannot disagree about whether a dose exists. It
+  // is deliberately NOT gated on preservativeSetByUser: the seeded default is the app's
+  // recommendation for a water-based product and weighs what the snippet says it does,
+  // chosen or not. Gating it once produced two finished masses under one name. Both vm
+  // fields are null together outside LS / before a dilution exists, hence 0.
   const preservativeDoseGramsValue =
     vm.finishedProductGrams !== null && vm.preservativeDosingBasisGrams !== null
       ? vm.finishedProductGrams - vm.preservativeDosingBasisGrams
