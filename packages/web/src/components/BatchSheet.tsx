@@ -186,13 +186,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   const preservativeTier = lsPreservativeDoseTier(preservativeDosePct, preservative);
   const preservativeName =
     preservative?.label ?? (settings.preservativeCustomName.trim() || 'Custom preservative');
-  // Gated on preservativeSetByUser as well as the tier: the three fields default to a real,
-  // legal Suttocide A dose so the snippet always opens with a complete worked example, but
-  // printing that unrequested default onto every liquid-soap sheet — including recipes
-  // saved before this flag existed — would name a specific commercial product the maker
-  // never chose. Only once the maker has touched the picker, the custom name or the dose
-  // does the row print; the snippet itself is unaffected and still opens showing the anchor
-  // choice.
+  // The three preservative fields default to a real, legal Suttocide A dose
+  // (recipe.ts:165-168) because liquid soap is water-based and needs one — that seed is the
+  // app's recommendation, not a placeholder. The sheet prints it like any other line: its
+  // grams are inside the bottled mass below, and a bench page must name what its mass
+  // carries. Suppressing this row while folding in its weight printed a figure the page
+  // could not account for.
   // Blank is the ordinary case (no gradual record) and must print nothing; junk (and a
   // negative, which is not a pour) must also print nothing rather than a bare row with an
   // empty or impossible figure.
@@ -245,9 +244,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     gradualWaterRecordedGrams !== null && gradualPasteBasisGrams !== null
       ? gradualPasteBasisGrams + gradualWaterRecordedGrams
       : null;
+  // Same predicate as the view model's dose (see its comment): no preservativeSetByUser
+  // gate. This one figure feeds both the printed row below and the bottled mass above, so
+  // the sheet cannot print a mass that includes a preservative it does not name — the
+  // defect that suppressing this row while folding in its grams produced.
   const preservativeGrams =
     preservativeDosingBasisGrams !== null &&
-    settings.preservativeSetByUser &&
     preservativeTier !== 'none' &&
     preservativeTier !== 'impossible'
       ? preservativeDoseGrams(preservativeDosingBasisGrams, preservativeDosePct)

@@ -261,26 +261,14 @@ test('bottledSolutionGrams counts additive grams on top of the dilution solution
   // both start from, so a fall-through to solutionGrams here would size a 4,000 g basis for
   // a 4,010 g bottle.
   expect(vm.preservativeDosingBasisGrams).toBe(vm.bottledSolutionGrams);
-  // …and finishedProductGrams (spec §3) is that basis plus the dose ONLY once the maker has
-  // chosen a preservative (preservativeSetByUser). The probe above never touches the
-  // picker, the custom name or the dose, so the starter recipe's default 1% Suttocide A is
-  // still an un-chosen suggestion — it adds no mass here, and finishedProductGrams is byte-
-  // identical to the basis (fix 2: a suggestion is not an ingredient).
-  expect(vm.finishedProductGrams).toBe(vm.bottledSolutionGrams);
-
-  // Once the maker sets the flag, the same recipe's finishedProductGrams picks up the dose.
-  let vmSet: any;
-  probe(
-    (v) => { vmSet = v; },
-    { lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2', preservativeSetByUser: true },
-    'ls',
-    undefined,
-    [{ key: 'g1', catalogId: 'guar', name: 'Guar gum', amount: '1', unit: 'percent', basis: 'oil', addAt: 'after_cook' } as any],
+  // …and finishedProductGrams (spec §3) is that basis plus the dose. The seeded 1%
+  // Suttocide A counts whether or not the maker has confirmed it: it is the app's
+  // recommendation for a water-based product, its grams show on screen, and a mass the
+  // maker can see must weigh the same in every figure.
+  expect(vm.finishedProductGrams).toBeCloseTo(
+    vm.bottledSolutionGrams + vm.bottledSolutionGrams / 99,
+    6,
   );
-  expect(vmSet.finishedProductGrams).toBeCloseTo(
-    vmSet.bottledSolutionGrams + vmSet.bottledSolutionGrams / 99,
-  );
-  expect(vmSet.finishedProductGrams).toBeGreaterThan(vmSet.bottledSolutionGrams);
 });
 
 test('finishedProductGrams and preservativeDosingBasisGrams exist exactly when a dilution does — the ?? fallback is unreachable here', () => {
@@ -294,11 +282,13 @@ test('finishedProductGrams and preservativeDosingBasisGrams exist exactly when a
   expect(ls.dilution).not.toBeNull();
   expect(ls.bottledSolutionGrams).not.toBeNull();
   expect(ls.preservativeDosingBasisGrams).toBe(ls.bottledSolutionGrams);
-  // finishedProductGrams (spec §3) equals the basis exactly here: the probe never sets
-  // preservativeSetByUser, so the default 1% Suttocide A is an un-chosen suggestion (fix 2)
-  // and adds no mass — see the dedicated 'un-chosen preservative default' test above for the
-  // named claim, and 'once the maker sets the preservative' for the inclusive counterpart.
-  expect(ls.finishedProductGrams).toBe(ls.bottledSolutionGrams);
+  // finishedProductGrams (spec §3) is the basis plus the seeded default's w/w dose — the
+  // recommendation weighs what it says; see the 'weighs what it says, chosen or not' test
+  // above for the named claim.
+  expect(ls.finishedProductGrams).toBeCloseTo(
+    ls.bottledSolutionGrams + ls.bottledSolutionGrams / 99,
+    6,
+  );
 
   let cp: any;
   probe((v) => { cp = v; }, {}, 'cp');
@@ -308,17 +298,22 @@ test('finishedProductGrams and preservativeDosingBasisGrams exist exactly when a
   expect(cp.finishedProductGrams).toBeNull();
 });
 
-test('an un-chosen preservative default adds no mass anywhere — a suggestion, not an ingredient', () => {
+test('the seeded preservative weighs what it says, chosen or not — a recommendation is real', () => {
   // DEFAULT_SETTINGS carries preservativeSetByUser: false alongside the real, legal
-  // Suttocide A default (recipe.ts:165-168) — a worked example the snippet opens showing,
-  // not a maker's choice. The dose gate (the vm's ONE predicate for the whole-batch dose)
-  // must follow the flag, so a recipe nobody has touched bottles, prints and prices at
-  // exactly its preservative-free figures — byte-identical to preservativeDosingBasisGrams.
+  // Suttocide A default (recipe.ts:165-168). Liquid soap is water-based and needs a
+  // preservative, so that default is the app's RECOMMENDATION, not a placeholder — and the
+  // snippet shows its grams on screen unconditionally. The dose gate therefore does NOT
+  // read the flag: a mass the maker can see must weigh the same everywhere, or one batch
+  // carries two finished masses under one name. Gating it briefly made the on-screen dose
+  // weightless; this pins the correction. A maker who wants none picks None.
   let ls: any;
   probe((v) => { ls = v; }, { lyeType: 'koh', waterMode: 'lye_water_ratio', lyeWaterRatio: '2' }, 'ls');
   expect(ls.dilution).not.toBeNull();
   expect(ls.preservativeDosingBasisGrams).not.toBeNull();
-  expect(ls.finishedProductGrams).toBe(ls.preservativeDosingBasisGrams);
+  // Inclusive by exactly the w/w dose: basis x 1/99 at the seeded 1%.
+  const dose = ls.preservativeDosingBasisGrams / 99;
+  expect(ls.finishedProductGrams).toBeCloseTo(ls.preservativeDosingBasisGrams + dose, 6);
+  expect(ls.finishedProductGrams).toBeGreaterThan(ls.preservativeDosingBasisGrams);
 });
 
 test('once the maker sets the preservative, the dose is back in the finished figure', () => {

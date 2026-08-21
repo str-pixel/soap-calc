@@ -791,11 +791,13 @@ test('prints the bottled mass and finished volume — not just the chemistry-onl
   // The sheet is the page taken to the bench: the dilution.solutionGrams row is
   // chemistry-only and is SMALLER than what actually gets bottled whenever there is
   // append-mode post-cook oil or split-liquid solids (see bottledSolutionGrams on the view
-  // model). 4,515 g bottled ÷ 1.03 g/ml = 4,383 ml, computed via the same core helper the
-  // on-screen panel uses (lsFinishedVolumeMl), not recomputed here.
+  // model). The printed mass is the INCLUSIVE finished product (spec §3), so it carries the
+  // seeded preservative's w/w dose too: 4,515 + 4,515/99 = 4,560.6 g, and
+  // 4,560.6 ÷ 1.03 g/ml = 4,428 ml, computed via the same core helper the on-screen panel
+  // uses (lsFinishedVolumeMl), not recomputed here.
   render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515 })} />);
-  expect(screen.getByText('4,515 g')).toBeTruthy();
-  expect(screen.getByText('4,383 ml')).toBeTruthy();
+  expect(screen.getByText('4,561 g')).toBeTruthy();
+  expect(screen.getByText('4,428 ml')).toBeTruthy();
 });
 
 test('omits the bottled-mass row when it matches the chemistry-only solution (nothing to add)', () => {
@@ -1005,11 +1007,12 @@ test('the printed dose is the batch figure — the sheet has no portion scope to
   expect(screen.getByText('Preservative').closest('div')!.textContent).toContain('20 g');
 });
 
-test('the row prints only once the maker has actually chosen — a valid dose is not enough', () => {
-  // RecipeSettings defaults preservativeId/preservativeDosePct to a real, legal Suttocide A
-  // dose so the snippet always opens complete — but a maker who never opened the snippet
-  // (or a recipe saved before this flag existed) must not have that default choice printed
-  // onto the sheet as an instruction naming a specific commercial product.
+test('the row prints for the seeded default too — the sheet names what its mass includes', () => {
+  // The bottled mass this sheet prints INCLUDES the seeded preservative's grams (the vm and
+  // this file compute that dose from the same predicate, which does not read
+  // preservativeSetByUser). Suppressing the row while folding in its weight printed a mass
+  // the page could not account for; a bench sheet that carries the grams must name them.
+  // The row reads as the recommendation it is — product, dose and stage all stated.
   render(<BatchSheet data={lsSheetData({
     preservative: {
       preservativeId: 'suttocide-a',
@@ -1017,7 +1020,7 @@ test('the row prints only once the maker has actually chosen — a valid dose is
       preservativeSetByUser: false,
     },
   })} />);
-  expect(screen.queryByText('Preservative')).toBeNull();
+  expect(screen.getByText('Preservative')).toBeTruthy();
 });
 
 test('the row prints once the maker has chosen', () => {
