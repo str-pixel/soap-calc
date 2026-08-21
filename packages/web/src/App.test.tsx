@@ -407,6 +407,38 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(20, 0);
   });
 
+  it('a jar too heavy for the batch doses nothing, not the plan sizing grid', async () => {
+    // THE DIVERGENCE the jar-truthiness gate missed. The panel suppresses the plan sizing
+    // grid and the jar readout on `hasBothFigures` (DilutionPanel.tsx's `portionJarGoverns`),
+    // not on whether a jar actually resolved — and the two disagree exactly here: both
+    // fields are typed (so `hasBothFigures` is true) but the paste weighed out is heavier
+    // than the whole batch's own paste, so `portionGradualFor` refuses the jar (`jar` is
+    // null). Keying App's dose on `jar` truthiness alone fell through to
+    // `portionDilutionFor`, which sized a portion from the stale "Amount to make (ml)" still
+    // on screen — a plan-sized dose while the panel showed neither the plan grid nor a jar,
+    // a mass nowhere on screen. 4,000 g of paste against this recipe's ~1,666 g whole batch
+    // paste is the refusal; 250 ml stale in "Amount to make" is what the plan sizing used to
+    // dose instead.
+    const snippet = await openSnippet();
+    const dilutionPanel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom amount' }));
+    await userEvent.type(screen.getByLabelText('Amount to make (ml)'), '250');
+    await userEvent.type(screen.getByLabelText('Paste weighed out (g)'), '4000');
+    await userEvent.type(screen.getByLabelText('Water added so far (g)'), '300');
+
+    // The panel's own refusal is on screen — this is live, not a museum piece.
+    expect(
+      within(dilutionPanel).getByText(/more paste than the batch holds/i),
+    ).toBeTruthy();
+    // No dose figure renders anywhere: not the plan-sized portion the stale amount implies,
+    // and not a jar figure either — there is no mass on screen for either to be a % of.
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('');
+    expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
+    expect(figure(snippet, 'Preservative to add')).toBe('');
+  });
+
   it('asks for the fields it actually doses from, once a jar record is started', async () => {
     // With a jar HALF recorded there is no jar to dose — and the ask has to name the two
     // fields the maker is filling in, not the "Amount to make" input they are not using.

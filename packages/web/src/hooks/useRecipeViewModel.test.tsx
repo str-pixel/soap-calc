@@ -969,11 +969,13 @@ test('…but a deficit that survives the most generous assumption is still state
   }
 });
 
-test('a record governs the bottled mass, and gates the plan-claim overDilutionCertain', () => {
+test('a record governs the bottled mass, the dosing basis and the finished product', () => {
   // Phase 2a. `dilution` stays the plan arm, but everything DERIVED for the bottle follows
   // the record (spec §3): bottledSolutionGrams becomes pot + recorded water + the extras the
-  // pot does not already hold. And `overDilutionCertain` is a claim about a TARGET the paste
-  // has already passed — a plan claim — so it is false whenever a record governs.
+  // pot does not already hold, and the preservative's dosing basis and finished-product
+  // figure follow that mass in turn — a % of what is actually in the pot, never of what the
+  // target predicts. (`overDilutionCertain`'s own gating is the next test's claim, not this
+  // one's — this test asserts nothing about that flag.)
   let plan: any;
   let record: any;
   probe((vm) => { plan = vm; }, { soapConcentrationPercent: '30', gradualWaterGrams: '' }, 'ls');

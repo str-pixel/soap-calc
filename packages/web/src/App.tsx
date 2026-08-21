@@ -305,14 +305,23 @@ export default function App() {
   // resolution of the jar, imported for the same reason portionDilutionFor is: the dose and
   // the figures beside it cannot then disagree about whether a jar exists or what it weighs.
   //
-  // THE GATE IS THE JAR'S OWN RECORD, not a mode (spec §4's conversion rule). `jar` is
-  // non-null exactly when portionGradualFor found both figures usable, which is the same
-  // predicate the panel renders the jar's readout on and the same one that stands the plan
-  // sizing grid down — so the dose, the figures and the suppression move together by
-  // construction. Falling through to plan sizing when there is no jar is portion scope's own
-  // precedence (spec §2: jar record with both figures → jar; else plan sizing), and it is
-  // what the mode gate could not express: choosing Gradual with the two fields empty used to
-  // mean "no dose at all".
+  // THE GATE IS THE JAR'S OWN RECORD, not a mode (spec §4's conversion rule) — and it is
+  // `hasBothFigures`, the same verdict the panel's `portionJarGoverns` reads, never `jar`
+  // truthiness. The two are NOT the same test: `jar` is also null when both figures are
+  // present but the paste weighed out is heavier than the whole batch's own paste
+  // (pasteExceedsBatch), and there the panel does not fall through to plan sizing either —
+  // it stands the grid down (`portionJarGoverns` is `hasBothFigures`, not `jar`) and shows no
+  // jar figure, because the paste reading it would size from is refused. Keying this branch
+  // on `jar` alone used to fall through to `portionDilutionFor` in exactly that state: a
+  // paste heavier than the batch with a stale "Amount to make (ml)" still on screen dosed a
+  // plan-sized portion while the panel rendered neither the plan grid nor a jar — a mass
+  // nowhere on screen. Reading `hasBothFigures` here too means the dose, the figures and the
+  // suppression move together because all three are read off the SAME two verdicts,
+  // portionGradualFor's own, rather than this branch re-deriving its own test from `jar`
+  // truthiness. Falling through to plan sizing is portion scope's own precedence only when
+  // `hasBothFigures` is false (spec §2: jar record with both figures → jar; else plan
+  // sizing), and it is what the mode gate could not express: choosing Gradual with the two
+  // fields empty used to mean "no dose at all".
   // Returns the mass AND the scope that mass is actually in — never the scope the toggle
   // is set to. A Custom amount larger than the batch CLAMPS to the whole batch, and the
   // panel says so twice ("more than the batch holds", "100% of the batch"); labelling the
@@ -322,7 +331,7 @@ export default function App() {
   const preservativeBasis = useMemo((): { grams: number | null; scope: DilutionScope } => {
     if (dilutionScope !== 'portion') return { grams: vm.preservativeDosingBasisGrams, scope: 'batch' };
     if (!vm.dilution) return { grams: null, scope: 'portion' };
-    const jar = portionGradualFor({
+    const jarState = portionGradualFor({
       dilution: vm.dilution,
       portionPasteGrams,
       portionWaterGrams,
@@ -333,8 +342,15 @@ export default function App() {
       measuredPasteGrams,
       wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
       cookWaterGrams: vm.cookWaterGrams,
-    }).jar;
-    if (jar) return { grams: jar.finishedGrams, scope: 'portion' };
+    });
+    if (jarState.jar) return { grams: jarState.jar.finishedGrams, scope: 'portion' };
+    // hasBothFigures true with jar still null is the paste-exceeds-batch refusal (or its
+    // sibling, no batch paste to be a share of) — the panel's OWN suppression predicate
+    // (portionJarGoverns) fires here too, standing the plan grid down and printing no jar
+    // figure. Falling through to portionDilutionFor in that state dosed the PLAN's sizing
+    // portion off a stale "Amount to make (ml)" while the screen showed neither the grid
+    // nor a jar — see this function's own comment above for the reading that exposed it.
+    if (jarState.hasBothFigures) return { grams: null, scope: 'portion' };
     const { portion } = portionDilutionFor({
       dilution: vm.dilution,
       targetMl: portionTargetMl,
