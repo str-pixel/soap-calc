@@ -30,9 +30,10 @@ import {
  * — bottledSolutionGrams, the preservative's dosing basis and the finished-product mass all
  * follow whichever arm `.governs` names (see useRecipeViewModel.ts, and
  * useRecipeViewModel.test.tsx's own pin on it). `.governs` and `.record` are themselves
- * exposed off the view model as `dilutionGoverns` / `dilutionRecord`, consumed today by that
- * test file; wiring a record's OWN figure into the preservative dose — the companion-dose
- * work — is Phase 2b's, not yet done.
+ * exposed off the view model as `dilutionGoverns` / `dilutionRecord`, consumed today by
+ * App.tsx's own mid-pour companion-dose memo — the record's own water gates whether the
+ * plan-arm dose renders beside the governing one (spec §3), so both fields have a
+ * user-visible consumer beyond that test file.
  *
  * This module never calls `calculateDilution` itself — the plan arm is a bare passthrough of
  * the caller-supplied `dilution` (which the caller already produced by calling it), so `.plan`

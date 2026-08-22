@@ -26,8 +26,10 @@ import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { useRecipeViewModel } from './hooks/useRecipeViewModel';
 import { useUndoShortcut } from './hooks/useUndoShortcut';
+import { computeBottledSolutionGrams, preservativeDosingBasisGramsFor } from './lib/calculateAdditives';
 import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
+import { correctedDilutionWaterGrams, MEASURED_PASTE_IS_REMAINING } from './lib/measuredPaste';
 import type { PricingProfile } from './lib/pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
 import { processOffers } from './lib/process';
@@ -391,30 +393,72 @@ export default function App() {
   // 30% plan on the reference batch — spec §3's own illustration of the invisible
   // under-dose this line exists to prevent).
   //
-  // Read directly off `vm.dilution` — always the PLAN arm, whichever one governs (see
-  // `dilutionGoverns`'s own doc comment on the view model) — rather than through
-  // `preservativeDosingBasisGramsFor`: that helper's whole job is to prefer a bottled
-  // figure when one exists, and in record scope the bottled figure IS the record's own
-  // mass (spec §3's "bottledSolutionGrams... RECORD ARM"). Reusing it here with a null
-  // bottled argument would coincidentally reduce to the same `dilution.solutionGrams`
-  // fallback today, but it borrows a helper built to prefer the record for the one figure
-  // that must, by construction, never contain it — reading the plan's own field directly
-  // says that on its face instead of relying on an argument nobody re-reads meaning "never
-  // the record".
+  // BOTH FIGURES BELOW ARE THE PLAN ARM AS THE SCREEN ITSELF SHOWS IT — the controller
+  // ruling (a Phase 2b review finding): "the plan's dilution water" means the figure the
+  // panel's own "(plan)" row prints, not the bare, unmeasured `dilution.dilutionWaterGrams`.
+  // A weighed pot lighter than the recipe's own computed one (evaporation) corrects that
+  // row's water UPWARD — probe-confirmed: 1,400 g weighed pot against a 1,667 g computed
+  // one moves the plan row from 2,407 g to 2,674 g — and a record between those two
+  // boundaries (2,500 g) is still short of the row the maker is looking at, even though it
+  // already clears the raw figure this memo used to compare against. Comparing against the
+  // raw figure stranded the companion for exactly that evaporation window.
+  //
+  // `correctedPlanWaterGrams` below is `correctedDilutionWaterGrams` called with the IDENTICAL
+  // arguments DilutionPanel's own plan row uses (DilutionPanel.tsx's `batchDilutionWaterGrams`,
+  // "Dilution water to add (plan)") — shared derivation, never re-derived with different
+  // args, which is the exact drift shape this project kills.
+  //
+  // The dosing basis is the plan-arm figure `preservativeDosingBasisGramsFor` would hand the
+  // snippet if the plan governed — bottled, extras-net — not the bare `dilution.solutionGrams`
+  // this memo used to return: a solution-dosed additive or a split liquid moves the bottled
+  // figure away from the bare solution, and the companion's basis has to be the one the
+  // plan-governed snippet would actually dose against. `computeBottledSolutionGrams` is
+  // called with `record: null` to force the plan arm regardless of which arm actually
+  // governs today — the same "plan arm, unconditionally" contract `vm.dilution` itself
+  // carries per the paragraph above.
   //
   // Non-null exactly when App decides the companion belongs on screen (batch scope only —
   // Custom amount's own dose is the snippet's problem, same precedent as `preservativeBasis`
   // above): a record governs, that record actually resolved to figures (not the `null`
   // "nothing to show yet" state 2a's own contract reserves), and the record's own water is
-  // STRICTLY below the plan's own dilution water (the controller ruling: at or past it the
-  // two doses coincide within rounding and the companion is noise, not signal).
+  // STRICTLY below the plan row's own (corrected) water (the controller ruling: at or past
+  // it the two doses coincide within rounding and the companion is noise, not signal).
   const planDosingBasisGrams = useMemo((): number | null => {
     if (dilutionScope !== 'batch') return null;
     if (vm.dilutionGoverns !== 'record') return null;
     if (vm.dilutionRecord === null || vm.dilution === null) return null;
-    if (!(vm.dilutionRecord.waterGrams < vm.dilution.dilutionWaterGrams)) return null;
-    return vm.dilution.solutionGrams;
-  }, [dilutionScope, vm.dilution, vm.dilutionGoverns, vm.dilutionRecord]);
+    const correctedPlanWaterGrams = correctedDilutionWaterGrams(
+      vm.dilution,
+      measuredPasteGrams,
+      MEASURED_PASTE_IS_REMAINING,
+      vm.wholeBatchPasteGrams,
+      vm.cookWaterGrams,
+      settings.gradualWaterGrams,
+    );
+    if (!(vm.dilutionRecord.waterGrams < correctedPlanWaterGrams)) return null;
+    const planBottledSolutionGrams = computeBottledSolutionGrams({
+      dilution: vm.dilution,
+      cookWaterGrams: vm.cookWaterGrams,
+      extrasGrams: vm.extrasGrams,
+      splitLiquidPasteWaterGrams: vm.splitLiquidPasteWater,
+      measuredPasteGrams,
+      wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
+      gradualWaterGrams: settings.gradualWaterGrams,
+      record: null,
+    });
+    return preservativeDosingBasisGramsFor(planBottledSolutionGrams, vm.dilution);
+  }, [
+    dilutionScope,
+    vm.dilution,
+    vm.dilutionGoverns,
+    vm.dilutionRecord,
+    measuredPasteGrams,
+    vm.wholeBatchPasteGrams,
+    vm.cookWaterGrams,
+    settings.gradualWaterGrams,
+    vm.extrasGrams,
+    vm.splitLiquidPasteWater,
+  ]);
 
   // The dose alone, in grams — App threads this to the panel and the sheet so the MASS they
   // add to what bottles, prints and prices matches what the vm resolved for the whole batch

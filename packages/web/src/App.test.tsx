@@ -677,6 +677,42 @@ describe('the mid-pour companion dose (spec §3)', () => {
     fireEvent.change(water, { target: { value: String(planWater + 500) } });
     expect(row(snippet, 'At the plan')).toBe('');
   });
+
+  it("compares the record against the plan row's OWN corrected water, not the raw plan figure the screen shows nowhere (spec §3 controller ruling)", async () => {
+    // A weighed pot LIGHTER than the recipe's own computed pot (evaporation) corrects the
+    // panel's "(plan)" dilution-water row UPWARD — probe-confirmed on this fixture: raw
+    // (unmeasured) plan water 2,407 g, corrected (1,400 g weighed pot) plan water 2,674 g,
+    // same 4,074 g solution both ways. A 2,500 g record sits BETWEEN those two figures: the
+    // batch has not yet reached the plan's own (corrected) water, so the companion belongs
+    // on screen — but the memo at HEAD compares against the raw 2,407 g instead, which the
+    // screen prints nowhere, and 2,500 g already clears that raw figure, so the companion
+    // goes missing for exactly the evaporation mass.
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+
+    await userEvent.type(
+      screen.getByLabelText('Measured paste weight — the whole batch (g, optional)'),
+      '1400',
+    );
+
+    const water = screen.getByLabelText('Water added so far (g)');
+    fireEvent.change(water, { target: { value: '2500' } });
+
+    // The screen's own plan row is the corrected figure — confirms the fixture landed in
+    // the accepted-reading window between the raw and corrected boundaries, not merely
+    // asserting a number this test invented.
+    const correctedPlanWater = num(row(panel, 'Dilution water to add (plan)'));
+    expect(correctedPlanWater).toBeCloseTo(2674, 0);
+    expect(correctedPlanWater).toBeGreaterThan(2500);
+
+    expect(row(snippet, 'At the plan')).toMatch(/^at your 1% plan: /);
+  });
 });
 
 describe('a record arriving with a recipe needs no session state to appear in', () => {

@@ -477,7 +477,8 @@ export function DilutionPanel({
   // `resolved.governs === 'record'` for a portion-scope call (see resolveDilution's own doc:
   // the two are never a second predicate, they are the same one read two ways). Every jar
   // figure, refusal and wording is unchanged — only the way in is. Portion scope's own
-  // two-row shape, its plan-beside-jar labelling and its alert cells are Phase 2b (spec §6).
+  // two-row shape, its plan-beside-jar labelling and its alert cells are delivered (spec §6,
+  // Phase 2b) — this component is that delivery.
   const portionJarValidity = dilutionScope === 'portion' ? resolved.jar : null;
   const portionGradual = dilutionScope === 'portion' ? resolved.record : null;
   // DOES THE JAR GOVERN in Custom amount — the portion scope's own twin of `planGoverns`

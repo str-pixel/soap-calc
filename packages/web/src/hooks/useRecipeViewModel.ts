@@ -490,10 +490,13 @@ export function useRecipeViewModel({
   // The spec §1 plan-else-record resolution (docs/superpowers/specs/2026-08-19-dilution-plan-
   // record-design.md §1) — computed here, now that wholeBatchPasteGrams exists, so the record
   // arm's pot (weighedOrComputedPotGramsFor) can see the same corrected basis every other
-  // dilution consumer does. PHASE 1: only `.plan` is exposed below (the vm's `dilution` field),
-  // which is the identical `dilution` object reference — byte-identical behaviour. `.governs`
-  // and `.record` are computed in full but reach nothing user-visible yet; Phase 2a is what
-  // flips consumers onto the resolved arm.
+  // dilution consumer does. `.governs` and `.record` are consumed below by every resolved
+  // figure this hook exposes — bottledSolutionGrams, the preservative's dosing basis, the
+  // additive solution-dose basis 25 lines down, and (via `dilutionGoverns`/`dilutionRecord`)
+  // App's own mid-pour companion memo. `dilution` itself (the vm's exposed field) stays the
+  // bare `.plan` passthrough — the identical object reference `calculateDilution` produced —
+  // because the plan is what every plan-labelled row on screen names itself as; see this
+  // file's own doc comment on `dilution` below for why that never flips to the resolved arm.
   const resolvedDilution = useMemo(
     () =>
       resolveDilution({
@@ -1073,9 +1076,12 @@ export function useRecipeViewModel({
     fattyAcids,
     insights,
     lyeLabel,
-    // resolvedDilution.plan is the identical `dilution` object reference (Phase 1 passthrough
-    // — see resolveDilution's own doc comment). Byte-identical behaviour until Phase 2a flips
-    // this to the resolved arm.
+    // resolvedDilution.plan is the identical `dilution` object reference (a bare passthrough
+    // — see resolveDilution's own doc comment). This never flips to the resolved arm, by
+    // design: `dilution` is the PLAN arm whichever one governs (see this type's own doc
+    // comment on `dilution` above), because §2 keeps the plan's own figures on screen
+    // labelled as plan even while a record governs. Every DERIVED figure — bottledSolutionGrams,
+    // the dosing basis, the finished mass — reads the resolved arm instead; see `dilutionGoverns`.
     dilution: resolvedDilution.plan,
     // Which arm governs, and the record arm's own figures — computed by the same memo,
     // exposed starting this task; see the type's doc comments above for what each means.
