@@ -586,6 +586,44 @@ export function DilutionPanel({
     dilution && computedPasteGrams !== null
       ? Math.max(0, computedPasteGrams - (dilution.anhydrousGrams + (cookWaterGrams ?? 0)))
       : 0;
+  // THE PLAUSIBILITY NOTE (carried from PR #167 review triage, Dilution Phase 2b task 4). The
+  // record arm's own pot is target-independent by design — measuredPasteDescribesPotFor has
+  // no ceiling at all, and cannot get one without reopening the render loop its own doc
+  // describes (a % derived from a pot chosen by that same %). So a maker who left the empty
+  // crockpot on the scale, or read a kitchen scale in the wrong unit, gets no alert from the
+  // pot's own rules — the reading parses, clears the solids floor, is not finer than a scale
+  // reads — and there is no ceiling here to catch it either. This is the one TARGET-FREE
+  // sanity check the triage still allows: a QUESTION, never a verdict, so it is a plain
+  // paragraph, not a role="alert" — see its render site below.
+  //
+  // THE THRESHOLD IS A RULING, not a figure this codebase derives from any source (the
+  // reference names no such bound): tune PASTE_PLAUSIBILITY_MULTIPLIER if a better one turns
+  // up. Nothing else on this panel depends on this exact number, so it costs nothing to be
+  // wrong in either direction — a hint that appears a little early or a little late moves no
+  // figure anywhere on screen.
+  //
+  // COMPARED AGAINST computedPasteGrams (computedPotGramsFor's own figure), never against
+  // pasteGrams (the resolved WEIGHED-OR-computed basis): "the paste this recipe makes" is a
+  // claim about the recipe's own oils and cook water, corrected for an alternative liquid's
+  // solids exactly as every other surface on this branch corrects it — not about whichever
+  // pot the record happens to be counting from at the moment, which is what pasteGrams would
+  // silently become the instant the reading itself was the implausible one.
+  //
+  // RENDER-KEYED against every refusal paragraph above, not against measurementRejection's
+  // raw flags: `measuredPasteDescribesPot` is already false whenever nonPositive,
+  // subTenthPrecision or belowSolids would render — measuredPasteDescribesPotFor shares
+  // exactly those three rules (parse, precision, solids floor), so a refused reading can
+  // never also be "the weighed pot" this note is about. And exceedsSolutionAlert cannot
+  // render here at all: its render condition is `planGoverns`, which is false whenever
+  // `batchRecord` is non-null (the gate this hint renders under, below) — a refusal about the
+  // reading already has a voice, and this hint is for an ACCEPTED but implausible one.
+  const PASTE_PLAUSIBILITY_MULTIPLIER = 2;
+  const pasteReadingImplausible =
+    measuredPasteDescribesPot &&
+    computedPasteGrams !== null &&
+    computedPasteGrams > 0 &&
+    pasteGrams !== null &&
+    pasteGrams > PASTE_PLAUSIBILITY_MULTIPLIER * computedPasteGrams;
   // THE RECORD ARM'S OWN FIGURES, and the whole of what replaces the two write-back effects
   // that stood here. `resolved` (above) holds them: the pot — weighed when the reading
   // describes a possible one, else the recipe's computed pot — plus the water the maker
@@ -1566,6 +1604,17 @@ export function DilutionPanel({
             The batch so far is at{' '}
             {formatConcentrationPercent(batchRecord.concentrationPercent, 2)}% soap.
           </strong>
+        </p>
+      )}
+      {/* THE PLAUSIBILITY NOTE — see pasteReadingImplausible's own comment above for the
+          threshold, the basis it is compared against and why the suppression needs no extra
+          flag here. Beside the record readout it questions, not beside the field itself: this
+          is a claim about the reading in light of the recipe, which is only knowable once the
+          record readout above has resolved which pot is in force. */}
+      {dilutionScope === 'batch' && batchRecord !== null && pasteReadingImplausible && (
+        <p className="results-hint">
+          That reading is more than twice the paste this recipe makes — check the scale was
+          tared.
         </p>
       )}
       {/* THE JAR'S own figures in Custom amount scope — the mirror of the two

@@ -3618,6 +3618,59 @@ describe('gradual dilution — recording the water actually poured', () => {
   });
 });
 
+describe('the plausibility note — a weighed pot twice the paste this recipe makes', () => {
+  // Carried from PR #167 review triage (Dilution Phase 2b, task 4). The record arm is
+  // deliberately target-independent (measuredPasteDescribesPotFor has no ceiling — see its
+  // own doc for the render loop a ceiling here would reopen), so a maker who left the
+  // crockpot on the scale, or read a kitchen scale in the wrong unit, gets no alert from the
+  // pot's own rules (the reading parses, clears the solids floor, is not finer than a scale
+  // reads) and no ceiling to catch it either. This is the target-FREE sanity note the triage
+  // still allows: a non-alert hint, not a verdict.
+  //
+  // Fixture: anhydrous 1,000 g, cook water 300 g, no split liquid, so the recipe's own
+  // computed pot (computedPotGramsFor) is exactly 1,300 g — the "paste this recipe makes".
+  // 2,730 g is 2.1x that; 2,470 g is 1.9x. Neither figure coincides with anhydrous (1,000),
+  // cook water (300), the computed pot (1,300) or the solution (4,000), so no assertion below
+  // can pass by matching the wrong quantity.
+  const RECORD_PLAUSIBILITY = {
+    ...BASE,
+    dilution: {
+      anhydrousGrams: 1000, solutionGrams: 4000, totalWaterGrams: 3000,
+      dilutionWaterGrams: 2700, glycerinGrams: 100, soapConcentrationPercent: 25,
+      targetExceedsPaste: false,
+    },
+    soapConcentrationPercent: '25',
+    cookWaterGrams: 300,
+    wholeBatchPasteGrams: 1300,
+    gradualWaterGrams: '0',
+    onGradualWaterChange: () => {},
+  };
+  const HINT = /more than twice the paste this recipe makes/i;
+
+  it('a reading more than twice the computed pot earns the hint', () => {
+    render(<DilutionPanel {...RECORD_PLAUSIBILITY} measuredPasteGrams="2730" />);
+    const hint = screen.getByText(HINT);
+    expect(hint).toBeTruthy();
+    // A QUESTION, not a verdict: never role="alert".
+    expect(hint.closest('[role="alert"]')).toBeNull();
+  });
+
+  it('a reading under twice the computed pot earns nothing', () => {
+    render(<DilutionPanel {...RECORD_PLAUSIBILITY} measuredPasteGrams="2470" />);
+    expect(screen.queryByText(HINT)).toBeNull();
+  });
+
+  it('a reading the belowSolids refusal already rejects earns no hint either', () => {
+    // 900 g is under the 1,000 g anhydrous floor (no split liquid, so the floor is the
+    // anhydrous soap alone) — a refused reading already has a voice, so the plausibility
+    // note stands down. Render-keyed: the refusal alert is asserted present, not assumed.
+    render(<DilutionPanel {...RECORD_PLAUSIBILITY} measuredPasteGrams="900" />);
+    const alerts = screen.getAllByRole('alert').map((a) => a.textContent ?? '');
+    expect(alerts.some((a) => /cannot be all of the paste/i.test(a))).toBe(true);
+    expect(screen.queryByText(HINT)).toBeNull();
+  });
+});
+
 describe('a record beside a plan it does not match: both figures, both named', () => {
   // RETIRED WITH THE WRITE-BACK, REPLACED BY THE LABEL. This describe pinned the "Not applied
   // yet" clause: with the write-back waiting for a touch, a record could sit on screen beside
