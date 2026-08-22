@@ -64,6 +64,22 @@ type PortionDilutionResultsProps = {
    * its own under the panel's prose budget (at most two inline hint paragraphs per state).
    * Empty means the recipe has no alternative liquid, or nothing about it needs saying. */
   altLiquidNote?: string;
+  /** THE JAR GOVERNS (spec §2, phase 2b): a jar record with both figures is on screen beside
+   * this grid, governing the dose and the finished figures. This grid keeps rendering
+   * regardless — "the plan grid stays rendered beside a filled jar record, labelled as
+   * plan" — so the caller passes this through rather than this component re-deriving its own
+   * copy of `portionJarGoverns` (DilutionPanel's own name for the identical
+   * `resolveDilution`-governs question). `false` (the default) is every pre-2b caller and
+   * every state where no jar governs: the primary row keeps its bare name, exactly as before.
+   *
+   * Only the PRIMARY row ("Water to add") gains the "(plan)" suffix, mirroring the batch
+   * scope's own granularity (spec §2's "Dilution water to add" / "Finished solution" — the
+   * two rows a record's own figures could be mistaken for). The other rows here — paste to
+   * weigh out, the volume, the fraction, the ratio — have no jar-resolved counterpart of the
+   * same name anywhere on this screen (the jar's own readout is a finished mass and a
+   * concentration, never a volume or a fraction), so there is nothing for them to be
+   * confused with; labelling them too would be noise past the point of disambiguation. */
+  jarGoverns?: boolean;
 };
 
 /**
@@ -271,6 +287,7 @@ export function PortionDilutionResults({
   dilutionMode = 'concentration',
   ratioNotAppliedYet = false,
   altLiquidNote = '',
+  jarGoverns = false,
 }: PortionDilutionResultsProps) {
   const {
     measured,
@@ -307,8 +324,24 @@ export function PortionDilutionResults({
   // shell, where it could print beside no figures at all) the alternative-liquid caveats.
   // Every clause keeps its old gate and its old wording; only the paragraph breaks between
   // them are gone.
+  //
+  // SUPPRESSED WHOLESALE WHILE A JAR GOVERNS (Phase 2b): this grid now renders beside a
+  // governing jar (spec §2), which already spends the budget on its own two paragraphs — the
+  // jar's own readout-plus-plan-echo, and (when the recipe has one) the alternative-liquid
+  // caveat, which the shell renders DIRECTLY beside the jar's own figures whenever the jar
+  // resolves (DilutionPanel.tsx's own jar block) — the same `altLiquidNote` string this
+  // component still receives as a prop, unconditionally, from the identical shell computation.
+  // Gating this whole block on `!jarGoverns` is what stops the two from ever printing the
+  // SAME sentence twice: without it, `altLiquidNote` would ride both the jar's own paragraph
+  // and this one's `statusClauses`, on the one screen where both are on. A third paragraph of
+  // commentary about the PLAN figures — which paste basis they used, whether they clamped to
+  // the whole batch — would blow the budget on its own even without the duplicate, and none
+  // of it is what a maker beside a governing jar is acting on: the numbers stay (labelled as
+  // plan), the prose about their provenance stands down. Reads `jarGoverns`, the same prop
+  // that labels the primary row, so the grid and its own prose can never disagree about
+  // whether a jar is on screen.
   const statusClauses: string[] = [];
-  if (portion) {
+  if (portion && !jarGoverns) {
     // One wording, because there is one kind of pot: the batch. This used to branch on
     // the measured-paste declaration ("more than the remaining paste holds") — see
     // lib/measuredPaste's MEASURED_PASTE_IS_REMAINING for where that control went.
@@ -389,8 +422,17 @@ export function PortionDilutionResults({
       {portion && (
         <>
           <dl className="results-grid">
+            {/* LABELLED AS PLAN while a jar governs (spec §2, phase 2b) — the batch scope's
+                own idiom for the identical problem: this row and the jar's own "Finished so
+                far (this jar)" mass are two different answers to two different questions
+                (what the plan would size right now vs. what the jar actually holds), and the
+                word "(plan)" is what keeps them legible side by side rather than looking like
+                one figure disagreeing with itself. Primary emphasis is unconditional — unlike
+                the batch grid, this row does not lose it under a governing jar, because
+                nothing here ever takes over as a competing primary figure the way the
+                batch's own record row does. */}
             <div className="results-grid__item results-grid__item--primary">
-              <dt>Water to add</dt>
+              <dt>{jarGoverns ? 'Water to add (plan)' : 'Water to add'}</dt>
               <dd>{formatWeight(portion.waterGrams, weightUnit)}</dd>
             </div>
             <div className="results-grid__item">

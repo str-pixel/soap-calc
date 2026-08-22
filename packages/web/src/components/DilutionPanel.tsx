@@ -639,17 +639,19 @@ export function DilutionPanel({
   // portionOwnsUndeclaredLiquidHedge, which suppresses the shell's copy of a hedge the child
   // is already printing in its own words.
   //
-  // NULL WHILE A JAR RECORD GOVERNS, and in whole-batch scope, because the child that answers
-  // for it is not on screen in either. `targetMl` is App session state that survives
-  // everything, so with a jar recorded it holds a figure from before — the child is
-  // suppressed for exactly that reason, and while these two derived verdicts went on keying
-  // on it the density caveat printed "Volume assumes ~1.03 g/ml" beside no millilitre figure
-  // at all (the state its own comment says it exists to prevent), and the hedge the child was
-  // no longer rendering was suppressed here as though it were. The clause is the mode gate's
-  // record-keyed replacement and answers exactly where the mode gate did: a jar with both
-  // figures is what used to be Custom amount + Gradual.
+  // NULL IN WHOLE-BATCH SCOPE, because the child that answers for it is not on screen there.
+  // NO LONGER NULL WHILE A JAR RECORD GOVERNS (Phase 2b, spec §2: "the plan grid stays
+  // rendered beside a filled jar record, labelled as plan") — the child renders in every
+  // Custom amount state now, so this is computed for every one of them too, on the SAME
+  // `targetMl` a governing jar leaves untouched (it is App session state that survives
+  // everything, and always was: a jar being recorded is not a reason to stop sizing what the
+  // plan would take). What changed is not "does this compute", it is that the CHILD's own
+  // grid is no longer suppressed once it does — see the render site below, and see
+  // `overDilutionSpokenFor` / `pasteAlreadyPastTargetSpokenFor` for the one place a
+  // consumer of this const still has to ask "which subject is the ceiling about" before
+  // treating the child's plan-verdict as a voice for it.
   const portionState =
-    dilution && dilutionScope === 'portion' && !portionJarGoverns
+    dilution && dilutionScope === 'portion'
       ? portionDilutionFor({
           dilution,
           targetMl,
@@ -927,9 +929,22 @@ export function DilutionPanel({
   // helper's own name for "the verdict branch is what renders" (resolved beside the flag
   // in portionDilutionFor, read by the child's render and by this line, so the two cannot
   // fork) — the child's voice counts exactly when the child is saying the verdict.
+  //
+  // `governingRecord === null` GUARDS THE DISJUNCT (Phase 2b): the child's own plan-verdict
+  // is ALWAYS about the PLAN's saved target — `dilution.targetExceedsPaste`, computed with
+  // no reference to any jar — because the grid it belongs to now renders beside a governing
+  // jar too (spec §2), not only while the plan governs. The ceiling this const suppresses is
+  // NOT always about the plan any more: with a jar governing and resolved, it is about the
+  // JAR's own %, a different subject the child's paragraph says nothing about — two true,
+  // independent claims, and subsuming one with the other would be exactly the flag-vs-render
+  // confusion this project has paid for repeatedly, just turned sideways (right render, wrong
+  // subject, instead of wrong render). `governingRecord === null` is precisely "the ceiling
+  // is evaluating the plan too" — true with no jar, AND true in the one jar-governing cell
+  // where nothing resolves (pasteExceedsBatch: `resolvedConcentrationPercent` itself falls
+  // back to the plan there, so the child's plan-voice is a legitimate subsuming voice again).
   const overDilutionSpokenFor =
     pasteAlreadyThinnerAlert ||
-    (portionState?.pasteAlreadyThinnerWorded ?? false);
+    (governingRecord === null && (portionState?.pasteAlreadyThinnerWorded ?? false));
   // ── Is the corrected-pot verdict (pasteAlreadyPastTarget) SPOKEN FOR? ── The sibling
   // question to the one above, for the ceiling's second clause, which used to read the bare
   // predicate. That predicate is scope-blind while its alert is batch-only, and the child's
@@ -959,9 +974,17 @@ export function DilutionPanel({
   // `!exceedsSolutionAlert` clause, which asks about that paragraph's rendering with no
   // flag attached; so once again no rejection clause remains rather than a dead one being
   // kept.
+  //
+  // `governingRecord === null` GUARDS THIS DISJUNCT TOO, for the identical reason as its
+  // sibling above: `unmeasuredPasteAlreadyThinner` is a claim about the PLAN's corrected pot
+  // vs. the PLAN's own solution, with no jar in it anywhere, and the child that carries it
+  // now renders beside a governing jar as well as without one. Ungated, a governing, resolved
+  // jar's own over-ceiling reading would go silent because an unrelated plan-verdict happened
+  // to render in the same grid — two different subjects, and only one of them should be able
+  // to stand this sentence down.
   const pasteAlreadyPastTargetSpokenFor =
     pasteAlreadyPastTargetAlert ||
-    (portionState?.unmeasuredPasteAlreadyThinner ?? false);
+    (governingRecord === null && (portionState?.unmeasuredPasteAlreadyThinner ?? false));
   // The floor/same-either-way clause: only when a positive floor exists (when the target
   // already exceeds the paste, the hedge owns the message — rendering this too repeated
   // "declare its % water" verbatim and printed a vacuous "0 g is the LEAST you will
@@ -1411,11 +1434,14 @@ export function DilutionPanel({
           unrelated ways to describe the same jar, and the record's own workflow (LS:1531) has
           no "amount to make" step at all.
 
-          PORTION SCOPE IS OTHERWISE UNTOUCHED BY THIS TASK. Its two-row shape, the plan grid
-          rendered beside a filled jar and labelled as plan, and its own alert cells are Phase
-          2b (spec §6). What changed here is only the way in: the jar's two fields were
-          reachable through the deleted mode radio and are now simply on the Custom amount
-          screen, which is the smallest edit that keeps them reachable at all. */}
+          THIS GATE IS UNCHANGED BY THE PLAN GRID'S OWN UNHIDING, BELOW — this is the
+          "Amount to make (ml)" INPUT, which is the OTHER way to describe a jar, and spec §2
+          keeps those two mutually exclusive regardless of what the results grid shows: a
+          jar record and a target volume are two different ways to size the SAME field's
+          worth of intent, and letting both stay editable at once is the state this whole
+          block prevents. The plan grid's own visibility, immediately below, answers a
+          different question — spec §2's "the plan grid stays rendered beside a filled jar
+          record, labelled as plan" — and unhiding it here does not reopen this one. */}
       {dilutionScope === 'portion' && !portionJarGoverns && (
         <>
           <label className="field">
@@ -1851,29 +1877,34 @@ export function DilutionPanel({
                name that one control. Its 'ratio' arm survives untouched for Phase 3 to
                delete (spec §5) rather than being half-removed here.
 
-               NOT WHILE A JAR RECORD GOVERNS. Hiding the "Amount to make (ml)" INPUT is not
-               enough: `targetMl` is App session state that survives everything, so a maker
-               who sized a jar and then recorded the one they actually weighed kept this
-               entire grid on screen — "Paste to weigh out", "Water to add", "Makes" — every
-               figure sized from the PLAN, sitting unlabelled beside the jar's own recorded
-               figures and disagreeing with them. That is precisely the "two unrelated ways to
-               describe the same jar" the scope block above claims to prevent; suppressing the
-               input alone leaves the stale state's downstream effect untouched. The jar's own
-               readout replaces this block. (Phase 2b is what brings it back beside the jar
-               under a plan label, which is §2's end state for this scope.) */
-            !portionJarGoverns && (
-              <PortionDilutionResults
-                dilution={dilution}
-                weightUnit={weightUnit}
-                targetMl={targetMl}
-                measuredPasteGrams={measuredPasteGrams ?? ''}
-                wholeBatchPasteGrams={wholeBatchPasteGrams}
-                cookWaterGrams={cookWaterGrams}
-                unknownLiquidGrams={unknownLiquidGrams}
-                overDilutionCertain={overDilutionCertain}
-                altLiquidNote={portionAltLiquidNote}
-              />
-            )
+               RENDERS BESIDE A GOVERNING JAR NOW (Phase 2b, spec §2: "the plan grid stays
+               rendered beside a filled jar record, labelled as plan; the jar governs only
+               dose/finished figures"). It used to stand down here instead, on the reasoning
+               that `targetMl` is App session state that survives everything, so a maker who
+               sized a jar and then recorded the one they actually weighed kept this entire
+               grid on screen — "Paste to weigh out", "Water to add", "Makes" — every figure
+               sized from the PLAN, sitting UNLABELLED beside the jar's own recorded figures
+               and looking like it disagreed with them. The spec's answer to that is the
+               label, not suppression: the batch scope already proves three masses can share
+               one screen once each carries its name (§2's own words), and hiding this grid
+               took away the one thing a maker sizing a NEW portion of the same batch still
+               wants — what the plan says to weigh out — at exactly the moment a jar happens
+               to be recorded too. `jarGoverns` is what buys the label without reopening the
+               old defect: it is the SAME `portionJarGoverns` the shell computes for its own
+               gates, so the grid and the jar can never disagree about whose figures are
+               whose. */
+            <PortionDilutionResults
+              dilution={dilution}
+              weightUnit={weightUnit}
+              targetMl={targetMl}
+              measuredPasteGrams={measuredPasteGrams ?? ''}
+              wholeBatchPasteGrams={wholeBatchPasteGrams}
+              cookWaterGrams={cookWaterGrams}
+              unknownLiquidGrams={unknownLiquidGrams}
+              overDilutionCertain={overDilutionCertain}
+              altLiquidNote={portionAltLiquidNote}
+              jarGoverns={portionJarGoverns}
+            />
           )}
           {/* The add-in-stages technique note (LS:1531) and the density caveat used to
               render here as loose paragraphs in every state; both are always-true reference

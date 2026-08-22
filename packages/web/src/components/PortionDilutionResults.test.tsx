@@ -470,3 +470,47 @@ describe('an amount asked to the hundredth of a millilitre is a swallowed comma,
     expect(screen.getByText('Paste to weigh out')).toBeTruthy();
   });
 });
+
+describe('jarGoverns: the plan grid stays on screen beside a filled jar record, labelled as plan (spec §2, phase 2b)', () => {
+  // DEFAULT FALSE, and every test above this describe block relies on that default: the
+  // primary row's bare name and the status paragraph's own prose are what every pre-2b
+  // caller already gets, unchanged.
+  test('the default renders the bare row name and the status paragraph', () => {
+    render(<PortionDilutionResults {...PROPS} targetMl="1000" />);
+    expect(screen.getByText('Water to add')).toBeTruthy();
+    expect(screen.queryByText('Water to add (plan)')).toBeNull();
+    // The estimate note is this fixture's own status clause (no measured paste supplied).
+    expect(screen.getByText(/treat it as an estimate/i)).toBeTruthy();
+  });
+
+  test('jarGoverns labels the primary row and drops the status paragraph, leaving the figures intact', () => {
+    render(<PortionDilutionResults {...PROPS} targetMl="1000" jarGoverns />);
+    // The figures are unchanged — same 1,000 ml ask, same 412 g / 618 g split as the
+    // default-false test above and the file's own opening test.
+    expect(screen.getByText('412 g')).toBeTruthy();
+    expect(screen.getByText(/^618 g/)).toBeTruthy();
+    // Labelled, not bare.
+    expect(screen.getByText('Water to add (plan)')).toBeTruthy();
+    expect(screen.queryByText('Water to add')).toBeNull();
+    // The commentary about the plan's own paste basis stands down — it would be a third
+    // inline paragraph beside the jar's own two (DilutionPanel's prose budget), and none of
+    // it is what a maker beside a governing jar is acting on.
+    expect(screen.queryByText(/treat it as an estimate/i)).toBeNull();
+  });
+
+  test('an alternative-liquid note is not printed twice: jarGoverns suppresses this component\'s own copy', () => {
+    // The shell (DilutionPanel.tsx) renders the identical note directly beside the jar's own
+    // figures whenever the jar resolves, so this component must not also ride it onto its
+    // own (otherwise-suppressed) status paragraph — the one path a caller could still reach
+    // by passing a non-empty `altLiquidNote` unconditionally, as DilutionPanel itself does.
+    render(
+      <PortionDilutionResults
+        {...PROPS}
+        targetMl="1000"
+        jarGoverns
+        altLiquidNote="Top up with plain distilled water only."
+      />,
+    );
+    expect(screen.queryByText(/Top up with plain distilled water only/)).toBeNull();
+  });
+});

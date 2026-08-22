@@ -3884,18 +3884,41 @@ describe('a recorded jar in Custom amount scope', () => {
     expect(screen.queryByText(/The batch so far is at/)).toBeNull();
   });
 
-  it('shows none of the plan-sized portion grid, even with a stale amount left behind', () => {
-    // The reachable path: size a jar by volume, then record the one you actually weighed out
-    // without clearing the amount. targetMl is App session state and survives everything, so
-    // the whole plan-derived grid would render beside the jar's own recorded figures — two
-    // unlabelled figure sets, disagreeing, describing the same jar. Hiding the input is not
-    // enough; the state's downstream effect has to go too.
+  it('shows the plan-sized portion grid too, labelled as plan, with a stale amount left behind', () => {
+    // REWRITTEN (review-fix round 1, spec §2: "the plan grid stays rendered beside a filled
+    // jar record, labelled as plan; the jar governs only dose/finished figures"). This used to
+    // pin the OPPOSITE claim — that the whole plan-derived grid stood down here, because
+    // `targetMl` is App session state that survives everything and a maker who sized a jar by
+    // volume, then recorded the one they actually weighed without clearing the amount, would
+    // otherwise see two UNLABELLED figure sets disagreeing about the same jar. The spec's
+    // answer to that state turned out to be the label, not suppression (the batch scope
+    // already proves three masses can share a screen once each carries its name) — so this is
+    // the reachable path the label was built for, not a state to hide.
+    //
+    // Three things in one cell, per the review's own ask: the grid renders, its primary row
+    // is plan-LABELLED, and the jar's own figures are what govern the dose/finished mass
+    // (spec §2's own division of labour, unchanged by this round).
     render(
       <DilutionPanel {...P} targetMl="1000" portionPasteGrams="400" portionWaterGrams="900" />,
     );
+    // THE JAR GOVERNS the dose/finished figures: 400 g of paste is a quarter of the 1,600 g
+    // batch (300 g anhydrous) plus 900 g water is 1,300 g at 23.08% soap — the same figure a
+    // caller of App's preservativeBasis memo would dose against, not the plan grid's own
+    // sizing below.
+    const jarRow = screen.getByText('Finished so far (this jar)').closest('div')!;
+    expect(jarRow.textContent).toContain('1,300 g');
     expect(screen.getByText(/23\.08% soap/)).toBeTruthy();
-    expect(screen.queryByText(/Paste to weigh out/i)).toBeNull();
-    expect(screen.queryByText(/^Makes$/i)).toBeNull();
+    // THE PLAN GRID IS PRESENT, sized from the stale `targetMl="1000"` exactly as it would be
+    // with no jar recorded — 1,000 ml at this recipe's 30% target is 412 g of paste and 618 g
+    // of water (core's own arithmetic, unchanged by a jar existing beside it).
+    const planWaterRow = screen.getByText('Water to add (plan)').closest('div')!;
+    expect(planWaterRow.textContent).toContain('618 g');
+    expect(screen.getByText('Paste to weigh out').closest('div')!.textContent).toContain('412 g');
+    expect(screen.getByText('Makes').closest('div')!.textContent).toContain('1,000 ml');
+    // AND PLAN-LABELLED: the primary row carries "(plan)" so the two figure sets — this one
+    // and the jar's own "Finished so far (this jar)" above — can never be mistaken for one
+    // disagreeing answer.
+    expect(screen.queryByText('Water to add')).toBeNull();
   });
 
   it("reports the jar's own figures, each named as the portion's", () => {
@@ -3955,6 +3978,23 @@ describe('a recorded jar in Custom amount scope', () => {
     // The bound the refusal actually applied, quoted rather than re-derived.
     expect(alert).toContain('1,600 g');
     expect(screen.queryByText(/Finished so far/)).toBeNull();
+  });
+
+  it('gains the plan-labelled grid here too, even though the jar itself is refused (review-fix round 1)', () => {
+    // THE AXIS BOTH EARLIER MATRICES MISSED: `portionJarGoverns` is `resolveDilution`'s
+    // `governs === 'record'`, which is true here (both jar figures typed) even though the
+    // jar's own arithmetic refuses (paste heavier than the batch) — the module's own doc
+    // calls this "governs a scope" and "has figures to show" being different questions. The
+    // plan grid's own gate is `dilutionScope === 'portion'` unconditionally now (spec §2), so
+    // it renders in EVERY portion-scope cell with a `dilution`, labelled as plan whenever
+    // `portionJarGoverns` — including this one, where the jar itself shows nothing. Nothing
+    // about the refusal alert or the missing jar readout changes; the grid is the only thing
+    // that moves in this cell.
+    render(<DilutionPanel {...P} targetMl="1000" portionPasteGrams="4000" portionWaterGrams="900" />);
+    expect(screen.getByRole('alert').textContent).toMatch(/more paste than the batch holds/i);
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+    expect(screen.getByText('Water to add (plan)')).toBeTruthy();
+    expect(screen.queryByText('Water to add')).toBeNull();
   });
 
   it("keeps the jar's own figures when the SAVED TARGET is past the batch's paste", () => {
@@ -4153,11 +4193,14 @@ describe('a jar is weighed out of the pot the maker weighed', () => {
 });
 
 describe('the density caveat needs a millilitre figure on screen', () => {
-  it('stays off in Custom amount with a recorded jar, where no volume is printed', () => {
-    // targetMl is App session state that survives everything, so a jar sized by volume leaves
-    // a live figure behind. A governing jar correctly suppresses the whole plan-sized grid —
-    // but the caveat explaining a gram→millilitre bridge kept keying on that stale amount,
-    // and printed beside no millilitre figure at all.
+  it('comes back on in Custom amount with a recorded jar, now that the plan grid renders its own volume beside it', () => {
+    // REWRITTEN (review-fix round 1, spec §2). This used to pin the opposite: "a governing jar
+    // correctly suppresses the whole plan-sized grid" — true in 2a/early 2b, false now that the
+    // grid renders beside a governing jar too (spec §2's own end state). `targetMl` is App
+    // session state that survives everything, so it still sizes a live "Makes" figure — the
+    // caveat's own gate (`portionOnScreen`, read off the identical `portionDilutionFor` call
+    // the grid renders from) was never wrong; what changed is that the grid it explains is
+    // back on screen for it to answer to.
     render(
       <DilutionPanel
         {...BASE}
@@ -4172,7 +4215,8 @@ describe('the density caveat needs a millilitre figure on screen', () => {
         portionWaterGrams="900"
       />,
     );
-    expect(screen.queryByText(/Volume assumes/)).toBeNull();
+    expect(screen.getByText('Makes').closest('div')!.textContent).toContain('ml');
+    expect(screen.getByText(/Volume assumes/)).toBeTruthy();
   });
 });
 
@@ -4192,13 +4236,18 @@ describe("the undeclared-liquid hedge is not lost between two suppressions", () 
 
   const HEDGE = /Can't tell whether .* is reachable/;
 
-  it('speaks in Custom amount with a recorded jar, where no child is there to say it', () => {
-    // REWRITTEN to the surface that replaced the mode. The state is the same one: Custom
-    // amount with PortionDilutionResults not rendering — it was gradual mode then, it is a
-    // governing jar now — and the clause that suppresses this hedge reads the child's own
-    // verdict. If it also read the jar's governance (or the batch's record), the hedge would
-    // vanish here with the child and an undeclared liquid would go unmentioned on BOTH
-    // surfaces, which is precisely what this pin exists to catch.
+  it('the CHILD speaks in its own words with a recorded jar, now that it renders there too', () => {
+    // REWRITTEN (review-fix round 1). Until now, PortionDilutionResults never rendered while
+    // a jar governed, so this pin asserted the SHELL's own wording (`HEDGE`, "Can't tell
+    // whether N% is reachable") had to carry the message — the state the pin's own history
+    // names: "no child is there to say it". Spec §2 (phase 2b) makes that premise false: the
+    // plan grid — and the hedge/verdict paragraph riding it — renders beside a governing jar
+    // now, in every state this grid renders in at all. The child says it in ITS OWN words
+    // again ("No portion can be sized yet…"), and `portionOwnsUndeclaredLiquidHedge`
+    // correctly stands the shell's copy down — this is the identical suppression the
+    // no-jar sibling test below already exercises, now reachable with a jar recorded too.
+    // What the pin still guards is the thing it always guarded: an undeclared liquid must
+    // never go unmentioned on BOTH surfaces at once.
     render(
       <DilutionPanel
         {...BASE}
@@ -4216,7 +4265,8 @@ describe("the undeclared-liquid hedge is not lost between two suppressions", () 
         onPortionWaterChange={() => {}}
       />,
     );
-    expect(screen.getByText(HEDGE)).toBeTruthy();
+    expect(screen.getByText(/no declared water content/i)).toBeTruthy();
+    expect(screen.queryByText(HEDGE)).toBeNull();
   });
 
   it('still lets the child own it in Custom amount with no jar recorded', () => {
