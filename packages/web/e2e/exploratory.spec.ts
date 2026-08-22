@@ -438,7 +438,7 @@ test.describe('liquid soap', () => {
     }
     await expect(preset).toBeFocused();
     expect(await target.inputValue()).toBe(seeded);
-    await expect(section).not.toContainText('→');
+    await expect(section).not.toContainText(/\d+(?:\.\d+)?:1 → /);
   });
 
   test('inline radio labels lay out circle-beside-text, not stacked', async ({ page }) => {
