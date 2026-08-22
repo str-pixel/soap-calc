@@ -88,4 +88,127 @@ describe('resolveDilution', () => {
     expect(r0.plan).toBeNull();
     expect(r0.record).toBeNull();
   });
+
+  it('a batch-scope call carries no jar verdict at all', () => {
+    expect(resolveDilution({ ...same, gradualWaterGrams: '900' }).jar).toBeNull();
+  });
+});
+
+describe('resolveDilution: the portion scope parameter (spec §1)', () => {
+  // The same fixture resolveDilution's own batch describe block uses (anhydrousGrams 1200,
+  // wholeBatchPasteGrams 2600) — reused here so a 200 g / 20 g jar lands at the exact 41.96%
+  // the brief's own worked example names, and the panel-level test for the same wiring can
+  // point at the identical figure.
+  const plan = calculateDilution({
+    anhydrousGrams: 1200,
+    cookWaterGrams: 1400,
+    kohGrams: 240,
+    naohGrams: 0,
+    soapConcentrationPercent: 30,
+    kohPurityPercent: 90,
+    naohPurityPercent: 97,
+    superfatPercent: 0,
+  });
+  const portionArgs = {
+    dilution: plan,
+    gradualWaterGrams: '',
+    anhydrousGrams: 1200,
+    wholeBatchPasteGrams: 2600,
+    cookWaterGrams: 1400,
+    measuredPasteGrams: '',
+    scope: 'portion' as const,
+  };
+
+  it('noJar: nothing typed, plan governs, no jar verdict', () => {
+    const r = resolveDilution({ ...portionArgs, jar: { pasteGrams: '', waterGrams: '' } });
+    expect(r.governs).toBe('plan');
+    expect(r.record).toBeNull();
+    expect(r.jar).toEqual({
+      hasBothFigures: false,
+      pasteExceedsBatch: false,
+      batchPasteGrams: 2600,
+      pasteSubTenthPrecision: false,
+      waterSubTenthPrecision: false,
+    });
+  });
+
+  it('halfJar: only one field typed, plan still governs', () => {
+    const r = resolveDilution({ ...portionArgs, jar: { pasteGrams: '200', waterGrams: '' } });
+    expect(r.governs).toBe('plan');
+    expect(r.record).toBeNull();
+    expect(r.jar!.hasBothFigures).toBe(false);
+  });
+
+  it('fullJar: both figures, the jar governs and resolves — 200 g paste + 20 g water at 41.96%', () => {
+    const r = resolveDilution({ ...portionArgs, jar: { pasteGrams: '200', waterGrams: '20' } });
+    expect(r.governs).toBe('record');
+    expect(r.record).toEqual({
+      potGrams: 200,
+      waterGrams: 20,
+      finishedGrams: 220,
+      concentrationPercent: expect.closeTo(41.9580, 3),
+    });
+    expect(r.jar).toEqual({
+      hasBothFigures: true,
+      pasteExceedsBatch: false,
+      batchPasteGrams: 2600,
+      pasteSubTenthPrecision: false,
+      waterSubTenthPrecision: false,
+    });
+  });
+
+  it('zero water is a legitimate jar reading, same rule as the batch record', () => {
+    const r = resolveDilution({ ...portionArgs, jar: { pasteGrams: '200', waterGrams: '0' } });
+    expect(r.governs).toBe('record');
+    expect(r.record!.finishedGrams).toBe(200);
+  });
+
+  it('pasteExceedsBatch: the jar governs, but nothing can be shown — the 2a cell', () => {
+    const r = resolveDilution({ ...portionArgs, jar: { pasteGrams: '3000', waterGrams: '20' } });
+    expect(r.governs).toBe('record');
+    expect(r.record).toBeNull();
+    expect(r.jar).toEqual({
+      hasBothFigures: true,
+      pasteExceedsBatch: true,
+      batchPasteGrams: 2600,
+      pasteSubTenthPrecision: false,
+      waterSubTenthPrecision: false,
+    });
+  });
+
+  it('a swallowed thousands separator refuses the jar, on either field', () => {
+    // The browser reads a typed comma as a decimal point before this function ever sees the
+    // string, so the fixture is the string AFTER that conversion (a typed 1,300 arrives as
+    // '1.300'), exactly as subTenthPrecisionFingerprint's own doc describes.
+    const pasteTyped = resolveDilution({
+      ...portionArgs,
+      jar: { pasteGrams: '1.300', waterGrams: '20' },
+    });
+    expect(pasteTyped.governs).toBe('plan');
+    expect(pasteTyped.jar).toEqual({
+      hasBothFigures: false,
+      pasteExceedsBatch: false,
+      batchPasteGrams: 2600,
+      pasteSubTenthPrecision: true,
+      waterSubTenthPrecision: false,
+    });
+    const waterTyped = resolveDilution({
+      ...portionArgs,
+      jar: { pasteGrams: '200', waterGrams: '2.000' },
+    });
+    expect(waterTyped.governs).toBe('plan');
+    expect(waterTyped.jar!.waterSubTenthPrecision).toBe(true);
+  });
+
+  it('the batch record never participates in portion scope', () => {
+    // A leftover whole-batch record beside an empty jar must not make the jar arm govern —
+    // spec §2's "the batch record participates nowhere in portion scope", enforced structurally
+    // by resolvePortionScope never reading `gradualWaterGrams` at all.
+    const r = resolveDilution({
+      ...portionArgs,
+      gradualWaterGrams: '900',
+      jar: { pasteGrams: '', waterGrams: '' },
+    });
+    expect(r.governs).toBe('plan');
+  });
 });

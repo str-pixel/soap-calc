@@ -5,7 +5,6 @@ import {
   lsConcentrationAboveAllMinimums,
   lsDilutionUsesFor,
   lsFinishedVolumeMl,
-  lsPotAnhydrousShare,
   type DilutionResult,
 } from '@soap-calc/core';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
@@ -195,151 +194,14 @@ type DilutionPanelProps = {
   preservativeDoseGrams?: number;
 };
 
-export type PortionGradualState = {
-  /** The jar's own two figures — null when they cannot be worked out. */
-  jar: { finishedGrams: number; concentrationPercent: number } | null;
-  /** Both fields hold a usable figure: paste > 0, water >= 0 (zero water is the pot before
-   * any water at all, which is Gradual's own starting record — LS:1531), and neither carries
-   * a swallowed thousands separator (the two flags below), which is a number but not a
-   * reading. False is what makes the panel ASK for the figures, so the two refusals below
-   * suppress that ask themselves — a maker who typed something needs the refusal, not a
-   * request to type it. */
-  hasBothFigures: boolean;
-  /** The paste weighed out is heavier than the whole batch's own paste — the single
-   * physical refusal, and the one the maker has to be told about (a typed 4000 for 400). */
-  pasteExceedsBatch: boolean;
-  /** The batch paste that refusal is judged against, so the alert quotes the bound that
-   * actually applied rather than re-deriving one. */
-  batchPasteGrams: number | null;
-  /** The jar's PASTE field carries a swallowed thousands separator (a typed 1,300 committed
-   * as '1.300'), so there is no jar — see the fields' own note in the component. */
-  pasteSubTenthPrecision: boolean;
-  /** The jar's WATER field carries one. Reported separately because the alert has to quote
-   * the field the maker typed into, and a jar can only be wrong one field at a time to a
-   * reader. */
-  waterSubTenthPrecision: boolean;
-};
-
-/**
- * THE JAR'S OWN RECORD, for Custom amount scope — the portion's twin of the whole batch's
- * `gradualWaterGrams`, resolved once here so the panel's readout and App's preservative dose
- * can never disagree about whether a jar exists or what it weighs (the same shape, and the
- * same reason, as portionDilutionFor).
- *
- * The dose is why this is exported. In Custom amount the preservative is a % of the PORTION,
- * and App resolves that portion through portionDilutionFor — which sizes a jar from the
- * "Amount to make (ml)" field a governing jar removes from the screen. So with a jar
- * recorded, the dose was a percentage of a target-derived mass the maker never asked for
- * (21 g of preservative into a 1,300 g jar: 1.6%, past the EU ceiling for several listed
- * products, in the one place built to stop exactly that), and with the amount blank there was
- * no dose at all and the snippet asked for a control the maker was not using.
- *
- * The jar's soap comes from core's lsPotAnhydrousShare — the paste is homogeneous, so a
- * weighed-out jar carries its share of the batch's anhydrous soap. That share is all this
- * needs, and it asks nothing about the recipe's target: an earlier version borrowed it from
- * lsPartialDilution, which also refuses whenever the SAVED TARGET implies a solution lighter
- * than the pot, so a low-water target silently blanked a readout that has nothing to do with
- * it. (Neither version re-derives the ratio here; see ls-yield's own warning.)
- *
- * THE BATCH IT IS A SHARE OF is the pot the maker WEIGHED when there is one, through the same
- * shared resolution every other derived figure counts from (lib/measuredPaste's
- * weighedOrComputedPotGramsFor). It used to be the recipe's prediction alone, which reported a
- * concentration for a jar nobody has: a 1,600 g computed pot that came off the cook at 1,400 g
- * makes a 400 g jar 58.0% soap, and the panel printed 50.75% — for the one figure on screen
- * that is supposed to report what actually exists. The same basis carries the refusal, so
- * "more paste than the batch holds" can no longer quote a bound the maker's own scale
- * contradicts.
- *
- * WHAT NO CALLER MAY DO WITH THIS is feed it to onSoapConcentrationChange. A jar diluted
- * thinner than the batch has not redefined the recipe — see the prohibition inside the
- * component — and exporting the resolution does not export permission to write it back.
- * (Nothing in this file writes the plan from any record any more, so the prohibition that
- * was once special to the jar is now the rule for both. It stays stated here because this
- * function is EXPORTED, and an exported resolution travels further than the rule around it.)
- */
-export function portionGradualFor({
-  dilution,
-  portionPasteGrams,
-  portionWaterGrams,
-  measuredPasteGrams,
-  wholeBatchPasteGrams,
-  cookWaterGrams,
-}: {
-  dilution: DilutionResult | null;
-  portionPasteGrams: string;
-  portionWaterGrams: string;
-  /** The maker's whole-batch scale reading, as typed — the pot this jar was weighed out of
-   * when it describes a possible one. Optional: absent, the batch basis is the recipe's own
-   * computed pot, which is what every caller predating the reading passes. */
-  measuredPasteGrams?: string;
-  wholeBatchPasteGrams?: number | null;
-  cookWaterGrams?: number;
-}): PortionGradualState {
-  // '' parses to NaN, never to 0 — an empty field is "nothing typed yet", not the
-  // legitimate zero-water reading. Same rule as gradualWaterNum in the batch scope.
-  const pasteNum = portionPasteGrams.trim() === '' ? NaN : Number(portionPasteGrams);
-  const waterNum = portionWaterGrams.trim() === '' ? NaN : Number(portionWaterGrams);
-  const batchPasteGrams =
-    weighedOrComputedPotGramsFor(dilution, measuredPasteGrams, wholeBatchPasteGrams, cookWaterGrams)
-      ?.grams ?? null;
-  // THE SWALLOWED SEPARATOR, on this mode's own two fields: `<input type="number">` reads a
-  // typed comma as a decimal point in every locale, so 1,300 g of paste commits as '1.300' and
-  // 2,000 g of water as '2.000'. Both parse to a perfectly finite, positive number, so nothing
-  // downstream can see the mistake — the jar simply becomes a thousand times smaller, and the
-  // preservative dose App takes from it (a % of a mass with a legal ceiling) shrinks with it.
-  // The fingerprint is the same one the measured-paste field and "Amount to make (ml)" are
-  // judged by, on the same reasoning: no scale weighing a jar reads finer than 0.1 g.
-  //
-  // Resolved here rather than in the component's render so the figures, the alerts and App's
-  // dose suppress together — the discipline portionDilutionFor's targetMlSubTenthPrecision
-  // already follows for its own field.
-  const pasteSubTenthPrecision = subTenthPrecisionFingerprint(portionPasteGrams);
-  const waterSubTenthPrecision = subTenthPrecisionFingerprint(portionWaterGrams);
-  const refusedByPrecision = pasteSubTenthPrecision || waterSubTenthPrecision;
-  const hasBothFigures =
-    !refusedByPrecision &&
-    Number.isFinite(pasteNum) &&
-    pasteNum > 0 &&
-    Number.isFinite(waterNum) &&
-    waterNum >= 0;
-  if (!dilution || !hasBothFigures || batchPasteGrams === null) {
-    return {
-      jar: null,
-      hasBothFigures,
-      pasteExceedsBatch: false,
-      batchPasteGrams,
-      pasteSubTenthPrecision,
-      waterSubTenthPrecision,
-    };
-  }
-  const potAnhydrousGrams = lsPotAnhydrousShare({
-    anhydrousGrams: dilution.anhydrousGrams,
-    wholeBatchPasteGrams: batchPasteGrams,
-    potPasteGrams: pasteNum,
-  });
-  if (potAnhydrousGrams === null) {
-    return {
-      jar: null,
-      hasBothFigures,
-      // Every other null from that helper needs a positive anhydrous soap and a positive
-      // batch paste, both of which a live `dilution` already guarantees, so the reading
-      // outweighing the batch is what is left — and it is the one a maker can act on.
-      pasteExceedsBatch: pasteNum > batchPasteGrams,
-      batchPasteGrams,
-      pasteSubTenthPrecision,
-      waterSubTenthPrecision,
-    };
-  }
-  const finishedGrams = pasteNum + waterNum;
-  return {
-    jar: { finishedGrams, concentrationPercent: (potAnhydrousGrams / finishedGrams) * 100 },
-    hasBothFigures,
-    pasteExceedsBatch: false,
-    batchPasteGrams,
-    pasteSubTenthPrecision,
-    waterSubTenthPrecision,
-  };
-}
+// THE JAR'S OWN RECORD, for Custom amount scope, is resolved now by `resolveDilution` itself
+// (lib/resolveDilution.ts's `scope: 'portion'` arm) rather than by a function local to this
+// component. It used to live here as `portionGradualFor` / `PortionGradualState`; absorbing it
+// into `resolveDilution` is what spec §1's scope parameter asks for — the jar precedence has
+// exactly one home, read identically by this panel (below) and by App's preservative dose,
+// rather than two copies of the same math that could drift apart. See that module's own doc
+// for the jar's full reasoning (the anhydrous share, the target-independent batch basis, the
+// write-back prohibition) — none of it moved, only its address did.
 
 /**
  * The swallowed-thousands-separator refusal, for the three GRAM fields the record surfaces
@@ -427,14 +289,22 @@ export function DilutionPanel({
   // `resolveDilution` — `dilution`, the record, the anhydrous soap, the corrected paste, the
   // cook water and the reading — so the arm this panel renders and the arm the view model
   // prices, doses and prints are the same answer by construction rather than by convention.
-  // It is the one function, called twice with identical arguments, never a second copy of the
-  // rule: a fourth "is there a record" predicate is exactly how the panel and the printed
-  // sheet came to disagree about whether a record existed once before.
+  // In Whole batch it is the one function, called twice with identical arguments, never a
+  // second copy of the rule: a fourth "is there a record" predicate is exactly how the panel
+  // and the printed sheet came to disagree about whether a record existed once before.
   //
   // Called here rather than threaded as two more props because the alternative is a prop pair
   // a caller could contradict — every one of this component's twenty-odd existing tests
   // constructs its own props, and a `dilutionGoverns` that disagreed with the
   // `gradualWaterGrams` beside it would render a panel the app can never produce.
+  //
+  // SCOPE-AWARE (spec §1's scope parameter, phase 2b): passing `dilutionScope` through and,
+  // in Custom amount, the jar's own two fields, is what absorbs the jar precedence into this
+  // one call — `resolved.governs` / `.record` / `.jar` answer for whichever scope is on
+  // screen, and App's own `preservativeBasis` reaches the identical verdict by making the
+  // identical call (see App.tsx). `gradualWaterGrams` is passed through unconditionally: the
+  // portion arm of `resolveDilution` never reads it (spec §2 — the batch record participates
+  // nowhere in portion scope), so there is nothing to gate here.
   const resolved = resolveDilution({
     dilution,
     gradualWaterGrams,
@@ -447,6 +317,11 @@ export function DilutionPanel({
     wholeBatchPasteGrams: wholeBatchPasteGrams ?? null,
     cookWaterGrams: cookWaterGrams ?? 0,
     measuredPasteGrams,
+    scope: dilutionScope,
+    jar:
+      dilutionScope === 'portion'
+        ? { pasteGrams: portionPasteGrams, waterGrams: portionWaterGrams }
+        : undefined,
   });
   // THE WHOLE BATCH'S RECORD, and the scope gate is part of its definition rather than of
   // its twenty consumers: **the batch record participates nowhere in portion scope**
@@ -462,12 +337,24 @@ export function DilutionPanel({
   // `dilution &&` branch, so the two are equivalent there and neither is an error.
   const batchRecord =
     dilutionScope === 'batch' && resolved.governs === 'record' ? resolved.record : null;
+  // THE GOVERNING RECORD FOR WHICHEVER SCOPE IS ON SCREEN — `batchRecord` above, scope-gated
+  // for the Whole-batch-only figures that read it by that name, and this scope-GENERAL
+  // twin for the two pieces of copy that must speak of whichever record actually governs:
+  // the batch's in Whole batch, the JAR's in Custom amount (spec §1's scope parameter — the
+  // jar precedence lives inside `resolveDilution` itself, so `resolved` already reflects
+  // whichever scope was passed to it above, and no second gate is needed here). Null exactly
+  // when the plan governs, OR when a record/jar governs the scope but nothing can be shown for
+  // it (resolveDilution's pinned "governs 'record', record null" contract — see its own doc).
+  const governingRecord = resolved.governs === 'record' ? resolved.record : null;
   // THE RESOLVED % — the one figure every piece of record-governed copy interpolates
   // (spec §4's interpolation rule). Implemented literally without this, the uses matcher read
   // the resolved figure while the caption beside it read the plan, printing "No common use
-  // calls for 30%" against a 46.2% match.
-  const resolvedConcentrationPercent = batchRecord
-    ? batchRecord.concentrationPercent
+  // calls for 30%" against a 46.2% match. Scope-general (`governingRecord`, not `batchRecord`)
+  // so the SAME bug in Custom amount is fixed the same way: a jar diluted onto a 30%-plan
+  // batch is its own concentration, not the plan's, and the ceiling/uses copy below must
+  // speak of the jar's own reading exactly as the batch paragraph already does.
+  const resolvedConcentrationPercent = governingRecord
+    ? governingRecord.concentrationPercent
     : Number(soapConcentrationPercent);
   // Which intended uses the CURRENT batch suits — the dilution figure is the one number
   // with no chemistry to pin it, so the guidance is by product, not by recipe. Reads the
@@ -568,46 +455,38 @@ export function DilutionPanel({
   // with the exported resolution: App's only use of it is the preservative dose, which is a
   // percentage of the jar and never a write into the recipe's target.
   //
-  // Resolved by portionGradualFor (module scope, above) rather than inline, so App can ask
-  // the SAME question for the preservative dose — in Custom amount the dose is a % of the
+  // Resolved by `resolved` (above) rather than by a second call or a local helper, so App can
+  // ask the SAME question for the preservative dose — in Custom amount the dose is a % of the
   // jar, and it used to be a % of a target-derived portion the maker never asked for. The
-  // jar's own soap comes from core's lsPotAnhydrousShare there; see that function and
-  // portionGradualFor's own doc for why it no longer travels through lsPartialDilution.
+  // jar's own soap comes from core's lsPotAnhydrousShare inside resolveDilution's portion arm;
+  // see that module's own doc for why it no longer travels through lsPartialDilution.
   //
-  // Null outside Custom amount, which every consumer of it below already gates on: a jar is a
-  // claim about what Custom amount is showing, and resolving one for a screen that shows no
-  // jar invites a future reader to consume it from a state where the two fields behind it are
-  // stale session values. Its sibling `portionState` is null there for the sharper version of
-  // the same reason — see it.
+  // Both null/false outside Custom amount, which every consumer of them below already gates
+  // on: a jar is a claim about what Custom amount is showing, and resolving one for a screen
+  // that shows no jar invites a future reader to consume it from a state where the two fields
+  // behind it are stale session values. Its sibling `portionState` is null there for the
+  // sharper version of the same reason — see it.
   //
   // THE MODE TERM THIS CLAUSE USED TO CARRY was the panel's only way into the jar, and the
   // mode is gone. Its replacement is the jar's OWN record (spec §4's conversion rule: every
   // mode gate becomes a record-presence gate, and each record leads in its own scope — the
   // BATCH record participates nowhere here). The two fields are rendered in Custom amount
   // unconditionally now, because a field behind a gate the maker cannot open is a field that
-  // does not exist; `hasBothFigures` is what decides whether the jar GOVERNS, which is the
-  // question every consumer below actually asks. Every jar figure, refusal and wording is
-  // unchanged — only the way in is. Portion scope's own two-row shape, its plan-beside-jar
-  // labelling and its alert cells are Phase 2b (spec §6).
-  const portionGradualState =
-    dilutionScope === 'portion'
-      ? portionGradualFor({
-          dilution,
-          portionPasteGrams,
-          portionWaterGrams,
-          measuredPasteGrams,
-          wholeBatchPasteGrams,
-          cookWaterGrams,
-        })
-      : null;
-  const portionGradual = portionGradualState?.jar ?? null;
+  // does not exist; `hasBothFigures` (on `resolved.jar`) is what decides whether the jar
+  // GOVERNS, which is the question every consumer below actually asks — and it IS
+  // `resolved.governs === 'record'` for a portion-scope call (see resolveDilution's own doc:
+  // the two are never a second predicate, they are the same one read two ways). Every jar
+  // figure, refusal and wording is unchanged — only the way in is. Portion scope's own
+  // two-row shape, its plan-beside-jar labelling and its alert cells are Phase 2b (spec §6).
+  const portionJarValidity = dilutionScope === 'portion' ? resolved.jar : null;
+  const portionGradual = dilutionScope === 'portion' ? resolved.record : null;
   // DOES THE JAR GOVERN in Custom amount — the portion scope's own twin of `planGoverns`
   // above, and the exact predicate the deleted mode gate used to stand in for. Both figures
   // present (paste > 0, water >= 0, neither a swallowed separator) means the maker has
   // described this jar by record, so the jar's figures answer and the plan's sizing grid
   // stands down, exactly as Custom amount + Gradual did. Anything less is plan sizing, which
   // is what an untouched Custom amount screen has always shown.
-  const portionJarGoverns = portionGradualState?.hasBothFigures ?? false;
+  const portionJarGoverns = dilutionScope === 'portion' && resolved.governs === 'record';
   // DOES THE PLAN GOVERN THE SCOPE ON SCREEN — the one predicate every plan-CLAIM below is
   // gated on (spec §3: "overDilutionCertain and every other plan-claim is gated on
   // plan-governs"; spec §4's conversion table, which turns each of this file's old mode
@@ -1576,7 +1455,7 @@ export function DilutionPanel({
       {/* THE JAR'S OWN RECORD — session-local in App (portionPasteGrams/portionWaterGrams),
           NOT settings.gradualWaterGrams, which is the WHOLE BATCH's record. A jar weighed out
           here is a bench figure, like portionTargetMl and measuredPasteGrams beside it, and
-          must never dirty the saved recipe — see `portionGradualFor`'s own comment for the
+          must never dirty the saved recipe — see resolveDilution's portion-arm doc for the
           prohibition this enforces, which the removal of every write-back has now made
           structural for the batch record too. */}
       {dilutionScope === 'portion' && (
@@ -1593,10 +1472,10 @@ export function DilutionPanel({
             />
           </label>
           {/* Beside the field it describes, exactly as the measured-paste refusals sit
-              beside theirs. The verdict is portionGradualFor's, so this alert, the jar's
-              figures and App's preservative dose can never disagree about whether the
-              reading is usable. */}
-          {portionGradualState?.pasteSubTenthPrecision && (
+              beside theirs. The verdict is resolveDilution's own (portion arm), so this alert,
+              the jar's figures and App's preservative dose can never disagree about whether
+              the reading is usable. */}
+          {portionJarValidity?.pasteSubTenthPrecision && (
             <SwallowedSeparatorAlert typed={portionPasteGrams} />
           )}
           <label className="field">
@@ -1610,7 +1489,7 @@ export function DilutionPanel({
               aria-label="Water added so far (g)"
             />
           </label>
-          {portionGradualState?.waterSubTenthPrecision && (
+          {portionJarValidity?.waterSubTenthPrecision && (
             <SwallowedSeparatorAlert typed={portionWaterGrams} />
           )}
         </>
@@ -1666,7 +1545,7 @@ export function DilutionPanel({
       {/* THE JAR'S own figures in Custom amount scope — the mirror of the two
           blocks above, but reading `portionGradual` instead of `batchRecord`, and deliberately
           never fed to onSoapConcentrationChange anywhere in this file: see
-          `portionGradualFor`'s own comment for why a jar's figure must never redefine the
+          resolveDilution's portion-arm doc for why a jar's figure must never redefine the
           recipe's plan.
 
           Named "(this jar)" rather than "(custom amount)": the scope toggle's own
@@ -1688,20 +1567,27 @@ export function DilutionPanel({
               That jar lands at{' '}
               {formatConcentrationPercent(portionGradual.concentrationPercent, 2)}% soap.
             </strong>{' '}
-            {/* THE PROHIBITION, on screen: a jar diluted thinner than the batch has not
-                redefined the recipe, so this figure is read-only reporting and never a
-                write-back. The plan is echoed here, read-only, so a maker comparing the two
-                figures can see for themselves that diluting this one jar left it untouched.
-                (Nothing in this file writes the plan from any record any more — the batch's
-                own record stopped doing it in this task — so the echo now says of the jar
-                what is true of every record here.) */}
-            Your recipe&apos;s saved target is unchanged at{' '}
+            {/* THE PLAN, NAMED AS THE PLAN (spec §2, verbatim: "the old jar echo of the
+                'saved target' is replaced by copy that names the plan % as the plan — the
+                reassurance framing dies with the write-back"). The retired wording ("Your
+                recipe's saved target is unchanged at N%") was written for a world where this
+                figure could still be overwritten BY a governing record, so what a maker
+                needed telling was that diluting this one jar had not done that. Nothing
+                writes it now — Whole batch's own record stopped doing it in task 2a, and a
+                portion jar never did — so there is nothing left to reassure anyone about.
+                What is left to say is what this number IS: the plan, read off the field at
+                the top of the panel and echoed here beside the jar's own reading, each
+                carrying its name (the same principle that keeps three masses legible on the
+                Whole-batch grid, spec §2's "each carries its name"). Still read-only, and for
+                the reason it always was: this figure is never derived FROM the jar, and an
+                editable-looking field beside a jar reading invited exactly that reading. */}
+            The plan is{' '}
             <input
               type="number"
               className="input input--number"
               value={soapConcentrationPercent}
               readOnly
-              aria-label="Recipe's saved target concentration — unchanged by this jar (%)"
+              aria-label="The plan's target concentration, beside this jar (%)"
             />
             %.
           </p>
@@ -1720,16 +1606,16 @@ export function DilutionPanel({
           the readout simply blanked: a typo (4000 for 400) removed every figure with no
           alert, while the measured-paste field one row up answers the same class of mistake
           with three. The bound quoted is the one the refusal actually applied
-          (portionGradualState.batchPasteGrams), not a figure re-derived here, for the same
+          (portionJarValidity.batchPasteGrams), not a figure re-derived here, for the same
           reason the rejection alerts quote measurementRejection's own thresholds.
 
           Grams, like those alerts and for the same reason: it is a bound on the number just
           typed into a grams-only field. */}
-      {portionGradualState?.pasteExceedsBatch &&
-        portionGradualState.batchPasteGrams !== null && (
+      {portionJarValidity?.pasteExceedsBatch &&
+        portionJarValidity.batchPasteGrams !== null && (
           <p className="results-hint" role="alert">
             That is more paste than the batch holds — all of it weighs{' '}
-            {formatWeight(portionGradualState.batchPasteGrams, 'g')}. Enter what you weighed
+            {formatWeight(portionJarValidity.batchPasteGrams, 'g')}. Enter what you weighed
             out of it, or clear the field.
           </p>
         )}
@@ -1748,11 +1634,11 @@ export function DilutionPanel({
           2.000 has entered something, and asking them to enter it is the one answer that does
           not name the mistake. The refusal beside the field owns that state. */}
       {dilution &&
-        portionGradualState !== null &&
-        !portionGradualState.hasBothFigures &&
+        portionJarValidity !== null &&
+        !portionJarValidity.hasBothFigures &&
         (portionPasteGrams.trim() !== '' || portionWaterGrams.trim() !== '') &&
-        !portionGradualState.pasteSubTenthPrecision &&
-        !portionGradualState.waterSubTenthPrecision && (
+        !portionJarValidity.pasteSubTenthPrecision &&
+        !portionJarValidity.waterSubTenthPrecision && (
           <p className="results-hint">
             Enter the paste you weighed out and the water you have added to it so far — 0 g
             of water counts, and is where the record starts.
@@ -1852,6 +1738,21 @@ export function DilutionPanel({
                     wholeBatchPasteGrams > solutionGrams, which is targetExceedsPaste or
                     pasteAlreadyPastTarget, and the one case that suppresses both is a
                     measurement the maker was shown a figure for. */}
+                {/* DECIDED HERE (carried item, resolving task-2a report item 4): Total water
+                    and Glycerin (retained), below, stay UNLABELLED under a record — no
+                    "(plan)" suffix — unlike the pour row above and the finished-solution row
+                    below. Both are recipe-level facts a record does not dispute: Total water
+                    is the paste's own water content (a property of the COOK, fixed the moment
+                    dilution starts) and Glycerin is retained from saponification, not added by
+                    dilution — neither arm has a competing claim about either figure the way
+                    the record's "Finished so far" competes with the plan's "Finished
+                    solution", or the record's own poured water competes with "Dilution water
+                    to add". Task 2a's own report flagged this as open; it stays resolved this
+                    way in Task 3 rather than revisited, because portion scope's own plan grid
+                    (PortionDilutionResults) has no equivalent rows to label either — a jar's
+                    own resolved figures are its finished mass and its %, never a paste-anhydrous
+                    or water-content row, so there is nothing on that screen for these two to
+                    disagree with. */}
                 <div className="results-grid__item">
                   <dt>Total water</dt>
                   <dd>
@@ -2145,15 +2046,35 @@ export function DilutionPanel({
               the record arm has no target (spec §4's conversion table, verbatim). It
               describes the batch and names the remedy the batch actually has, which is the
               one thing a mid-pour maker is already holding: more water. The plan arm's
-              wording is unchanged, down to the word. */}
+              wording is unchanged, down to the word.
+
+              PORTION SCOPE'S OWN RECORD IS THE JAR, not the batch (spec §2: each record leads
+              in its own scope; §4's wording adapted the same way, "the batch so far" →
+              "the jar so far"). `governingRecord` (not `batchRecord`) is what this clause reads
+              for both the gate above and the wording below, because it is scope-general by
+              construction — `resolved` already answers for whichever scope was passed to
+              resolveDilution (see that const's own comment) — so a jar recorded onto a
+              30%-plan Custom-amount screen speaks of ITS OWN concentration here exactly as a
+              900 g pour does on the Whole-batch screen, rather than falling back to the plan's
+              30% the way `batchRecord` alone would (that fallback is correct for `batchRecord`
+              — it is deliberately null outside Whole batch — it would just be the wrong
+              variable to read a portion-scope wording from). */}
           {lsConcentrationAboveAllMinimums(resolvedConcentrationPercent) &&
             !overDilutionSpokenFor &&
             !pasteAlreadyPastTargetSpokenFor &&
             !exceedsSolutionAlert && (
               <p className="results-hint" role="alert">
-                {batchRecord
-                  ? `The batch so far is at ${formatConcentrationPercent(
-                      batchRecord.concentrationPercent,
+                {governingRecord
+                  ? // The batch half of this sentence keeps its long-pinned ONE-decimal
+                    // precision (the "46.2%" / "48%" fixtures elsewhere in this describe block
+                    // are pinned at 1 dp); the jar half is NEW with this task and matches the
+                    // 2 dp every other jar readout on screen already uses ("That jar lands at
+                    // N.NN% soap.", a few lines above) — one precision per half, each
+                    // consistent with its own screen's other figures, rather than a precision
+                    // this sentence invents on its own.
+                    `${dilutionScope === 'batch' ? 'The batch' : 'The jar'} so far is at ${formatConcentrationPercent(
+                      governingRecord.concentrationPercent,
+                      dilutionScope === 'batch' ? 1 : 2,
                     )}% — above what any recipe fully dissolves; keep adding water.`
                   : 'This target is above what even a coconut-heavy recipe can fully dissolve.'}
               </p>

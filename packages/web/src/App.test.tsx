@@ -414,11 +414,12 @@ describe('the preservative dose is a % of what the maker is actually making', ()
 
   it('a jar too heavy for the batch doses nothing, not the plan sizing grid', async () => {
     // THE DIVERGENCE the jar-truthiness gate missed. The panel suppresses the plan sizing
-    // grid and the jar readout on `hasBothFigures` (DilutionPanel.tsx's `portionJarGoverns`),
-    // not on whether a jar actually resolved — and the two disagree exactly here: both
-    // fields are typed (so `hasBothFigures` is true) but the paste weighed out is heavier
-    // than the whole batch's own paste, so `portionGradualFor` refuses the jar (`jar` is
-    // null). Keying App's dose on `jar` truthiness alone fell through to
+    // grid and the jar readout on `governs === 'record'` (DilutionPanel.tsx's
+    // `portionJarGoverns`, resolveDilution.ts's portion arm since Phase 2b), not on whether a
+    // jar actually resolved — and the two disagree exactly here: both fields are typed (so
+    // `governs` is `'record'`) but the paste weighed out is heavier than the whole batch's own
+    // paste, so resolveDilution refuses the jar (`record` is null). Keying App's dose on the
+    // resolved `record`'s truthiness alone fell through to
     // `portionDilutionFor`, which sized a portion from the stale "Amount to make (ml)" still
     // on screen — a plan-sized dose while the panel showed neither the plan grid nor a jar,
     // a mass nowhere on screen. 4,000 g of paste against this recipe's ~1,666 g whole batch

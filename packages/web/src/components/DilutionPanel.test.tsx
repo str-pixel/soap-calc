@@ -466,18 +466,23 @@ describe('intended-use dilution targets', () => {
       // while nothing renders for it, so this cell falls back to ZERO alerts at a target ten
       // points past what any recipe dissolves.
       //
-      // The PLAN's wording, and that is deliberate rather than an oversight: the batch record
-      // participates nowhere in portion scope (spec §2), so what the ceiling reads here is the
-      // plan's own 50%. Portion scope's own record-arm ceiling is Phase 2b's (spec §6).
+      // THE JAR'S OWN WORDING (Phase 2b, spec §1/§4): the batch record participates nowhere
+      // in portion scope, but the JAR does — resolveDilution's portion arm makes the jar's
+      // own resolved % the figure this ceiling reads and names, never the plan's 50%. 2,000 g
+      // of paste is a 2,000/2,600 share of the 1,200 g anhydrous soap (923.08 g) plus 200 g of
+      // water is 2,200 g at 41.96% — above the ceiling on its OWN reading, distinct from the
+      // plan's 50% so no assertion below can pass by matching the wrong number.
       renderOverCeiling('plan', {
         measuredPasteGrams: '',
         dilutionScope: 'portion',
-        portionPasteGrams: '400',
-        portionWaterGrams: '900',
+        portionPasteGrams: '2000',
+        portionWaterGrams: '200',
         onPortionPasteChange: () => {},
         onPortionWaterChange: () => {},
       });
-      expect(alertTexts()).toEqual([expect.stringMatching(CEILING)]);
+      expect(alertTexts()).toEqual([
+        expect.stringMatching(/The jar so far is at 41\.96% — above what any recipe fully dissolves; keep adding water\./i),
+      ]);
     });
 
     it('still yields to the child that says it in Custom amount scope', () => {
@@ -594,24 +599,39 @@ describe('intended-use dilution targets', () => {
       expect(screen.getByText(/it weighs 2,500 g against the 2,400 g/i)).toBeTruthy();
     });
 
-    it('speaks in Custom amount with a recorded jar, when the refusal that would explain the screen cannot render', () => {
-      // THE HOLE (pre-existing; user decided 2026-08-16 to fix it on this branch), on the
-      // surface that replaced its mode. A 3,000 g whole-batch reading exceeds the 2,400 g
-      // solution, but that refusal is plan-governs only and a recorded jar governs Custom
-      // amount; the corrected-pot alert is Whole-batch only; and the child's own wording
-      // needs an unrejected reading and does not render for a governing jar at all. Three
-      // voices, all gated off at once — and keyed on the bare predicate the ceiling's clause
-      // would suppress here too, leaving NOTHING: no alert, no plan figures, no refusal, no
-      // ceiling. Keyed on renderings, the ceiling speaks.
+    it('the ceiling now answers for the JAR, and a 3,000 g reading genuinely leaves it nothing to say', () => {
+      // THE HOLE this cell used to demonstrate (pre-Phase-2b; user decided 2026-08-16 to fix
+      // it on this branch): a 3,000 g whole-batch reading exceeds the 2,400 g solution, but
+      // that refusal is plan-governs only and a recorded jar governs Custom amount; the
+      // corrected-pot alert is Whole-batch only; and the child's own wording needs an
+      // unrejected reading and does not render for a governing jar at all. Three voices, all
+      // gated off at once — and in 2a the ceiling was what filled the silence, because it
+      // spoke of the PLAN's 50%, which nothing here changes.
+      //
+      // PHASE 2B CHANGES WHAT THE CEILING SAYS, and this exact fixture is where that change
+      // produces a genuinely different, and correct, answer: the reading is a valid
+      // TARGET-INDEPENDENT pot basis (measuredPasteDescribesPotFor only checks the solids
+      // floor, never the solution ceiling — see that function's own doc — so 3,000 g stands
+      // even though it is heavier than the 2,400 g solution), which makes it the batch this
+      // jar is drawn FROM. 1,200 g of anhydrous soap over a 3,000 g pot is 40.0% AT the
+      // paste's own concentration, with zero water added — the guide's own ceiling, not
+      // above it — so no jar drawn from this pot, at any positive water, can ever exceed 40%
+      // either. The ceiling has nothing true left to say about a jar it is structurally
+      // incapable of finding over 40%, so it falls silent — correctly, not as a regression:
+      // the three other voices stay gated off for the same reasons as before, and the
+      // ceiling's own new voice (the jar's) has genuinely nothing to report here. 2,000 g
+      // paste / 100 g water is a 2,000/3,000 share of the 1,200 g anhydrous soap (800 g) over
+      // 2,100 g finished — 38.1%, comfortably under the guide's ceiling.
       renderPastTargetPot('plan', {
         measuredPasteGrams: '3000',
         dilutionScope: 'portion',
-        portionPasteGrams: '400',
-        portionWaterGrams: '900',
+        portionPasteGrams: '2000',
+        portionWaterGrams: '100',
         onPortionPasteChange: () => {},
         onPortionWaterChange: () => {},
       });
-      expect(alertTexts()).toEqual([expect.stringMatching(SOLUBILITY_CEILING)]);
+      expect(alertTexts()).toEqual([]);
+      expect(screen.getByText(/At 38\.1% this suits/)).toBeTruthy();
     });
 
     it('still yields to the corrected-pot alert in Whole batch, where the refusal is the one that renders', () => {
@@ -663,18 +683,22 @@ describe('intended-use dilution targets', () => {
       // a 50% target can dissolve — so the ceiling now speaks beside it, exactly the pair
       // the targetExceedsPaste side shows ("speaks beside a rejection alert", above). The
       // exact pair, in document order: the refusal beside the field it describes, the
-      // ceiling below the figures — and never the same claim twice.
+      // ceiling below the figures — and never the same claim twice. (Phase 2b: the ceiling's
+      // own wording is the JAR'S, same 2,000 g / 100 g jar as the sibling test above — 45.71%,
+      // distinct from the plan's 50%; the rejected 900 g reading is the WHOLE-BATCH measured
+      // paste field, unrelated to the jar, and is why the batch pot falls back to the
+      // recipe's own 2,500 g computed figure the jar's own share is still taken from.)
       renderPastTargetPot('plan', {
         measuredPasteGrams: '900',
         dilutionScope: 'portion',
-        portionPasteGrams: '400',
-        portionWaterGrams: '900',
+        portionPasteGrams: '2000',
+        portionWaterGrams: '100',
         onPortionPasteChange: () => {},
         onPortionWaterChange: () => {},
       });
       expect(alertTexts()).toEqual([
         expect.stringMatching(/cannot be all of the paste/i),
-        expect.stringMatching(SOLUBILITY_CEILING),
+        expect.stringMatching(/The jar so far is at 45\.71% — above what any recipe fully dissolves; keep adding water\./i),
       ]);
     });
 
@@ -3662,7 +3686,10 @@ describe('a record beside a plan it does not match: both figures, both named', (
       />,
     );
     expect(screen.queryByText(/Not applied yet/i)).toBeNull();
-    expect(screen.getByText(/saved target is unchanged/)).toBeTruthy();
+    // Phase 2b: the echo drops the "unchanged" reassurance framing and names the plan as
+    // the plan (spec §2) — there is nothing left to reassure about once neither record ever
+    // writes back.
+    expect(screen.getByText(/The plan is/)).toBeTruthy();
   });
 });
 
@@ -3912,8 +3939,8 @@ describe('a recorded jar in Custom amount scope', () => {
     // TWO controls hold that 30 now: the plan field at the top of the panel (editable) and
     // the read-only echo inside the jar's own paragraph, which is the one this test is
     // about — the echo exists to let a maker see for themselves that diluting one jar left
-    // the recipe alone.
-    const echo = screen.getByLabelText(/unchanged by this jar/i) as HTMLInputElement;
+    // the recipe alone (spec §2: the plan named as the plan, beside the jar).
+    const echo = screen.getByLabelText(/The plan's target concentration, beside this jar/i) as HTMLInputElement;
     expect(echo.value).toBe('30');
     expect(echo.readOnly).toBe(true);
   });
