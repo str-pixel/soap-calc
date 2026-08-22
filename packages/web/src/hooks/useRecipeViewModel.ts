@@ -445,7 +445,6 @@ export function useRecipeViewModel({
       previewSettings.naohPurityPercent,
     ],
   );
-  const solutionGrams = dilution?.solutionGrams ?? 0;
   // Effective soaping temperature: the stored setting clamped into the ACTIVE variant's
   // slider range (clamp-at-read — the setting itself is never rewritten; see
   // effectiveSoapingTempF). Everything downstream (insights, trace speed, batch sheet,
@@ -469,23 +468,6 @@ export function useRecipeViewModel({
       kohPurityPercent: Number(previewSettings.kohPurityPercent) || 100,
     }),
     [previewSettings.lyeType, previewSettings.kohBlendPercent, previewSettings.naohPurityPercent, previewSettings.kohPurityPercent],
-  );
-  const computedAdditives = useMemo(
-    () =>
-      computeRecipeAdditives(
-        additives,
-        {
-          oilGrams: totalOilGrams,
-          batchGrams: baseBatchGrams,
-          solutionGrams,
-        },
-        // Compensation is stage-aware inside computeRecipeAdditives (after_cook acid is
-        // never compensated, any process) — so the recipe context flows unconditionally.
-        acidLyeRecipe,
-        // …but process scoping IS withheld: a line the process doesn't offer is inert.
-        process,
-      ),
-    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe, process],
   );
   const splitLiquidGrams =
     resolvedSplit && resolvedSplit.totalGrams > 0 ? resolvedSplit.totalGrams : null;
@@ -523,6 +505,37 @@ export function useRecipeViewModel({
         measuredPasteGrams,
       }),
     [dilution, settings.gradualWaterGrams, wholeBatchPasteGrams, cookWaterGrams, measuredPasteGrams],
+  );
+  // Spec §3, decision 7: additive `'solution'` dosing follows the SAME resolution rule as the
+  // preservative — extras-free and preservative-free in BOTH arms. Plan arm =
+  // dilution.solutionGrams (today's basis, unchanged). Record arm = pot + record water,
+  // additive grams (extras) EXCLUDED — the bottled figure (which includes extras) is
+  // deliberately NOT the basis here: additive grams are extras, and dosing against a figure
+  // that already contains them is the circular double-count calculateAdditives.ts:279-287's
+  // own doc warns about (computeRecipeAdditives -> extrasGrams -> that same additive's grams).
+  // `resolvedDilution.record` is non-null exactly when a record governs AND has figures to
+  // show (resolveDilution's own contract); the "governs 'record' but nothing to show yet"
+  // state falls through to the plan arm here, same as every other consumer of this rule — a
+  // dose basis of 0 would zero every real dose rather than leaving today's plan-based one.
+  const solutionGrams = resolvedDilution.record
+    ? resolvedDilution.record.potGrams + resolvedDilution.record.waterGrams
+    : (dilution?.solutionGrams ?? 0);
+  const computedAdditives = useMemo(
+    () =>
+      computeRecipeAdditives(
+        additives,
+        {
+          oilGrams: totalOilGrams,
+          batchGrams: baseBatchGrams,
+          solutionGrams,
+        },
+        // Compensation is stage-aware inside computeRecipeAdditives (after_cook acid is
+        // never compensated, any process) — so the recipe context flows unconditionally.
+        acidLyeRecipe,
+        // …but process scoping IS withheld: a line the process doesn't offer is inert.
+        process,
+      ),
+    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe, process],
   );
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
   // survives. Sized against the base (saponification) lye, then folded into the result so
