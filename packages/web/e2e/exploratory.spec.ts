@@ -418,7 +418,7 @@ test.describe('liquid soap', () => {
     expect(applied).not.toBe(seeded);
     expect(Number(applied)).toBeGreaterThan(0);
     // And it says what it did.
-    await expect(section).toContainText(`2:1 → ${applied}%`);
+    await expect(section.locator('.dilution-preset-caption')).toContainText(`2:1 → ${applied}%`);
   });
 
   test('tabbing into the preset group applies nothing', async ({ page }) => {
@@ -438,7 +438,10 @@ test.describe('liquid soap', () => {
     }
     await expect(preset).toBeFocused();
     expect(await target.inputValue()).toBe(seeded);
-    await expect(section).not.toContainText(/\d+(?:\.\d+)?:1 → /);
+    // The caption is the only element carrying this class (DilutionPanel's preset
+    // caption), so counting it guards "no caption rendered" independent of wording —
+    // a reworded caption cannot make this assertion vacuously pass.
+    await expect(section.locator('.dilution-preset-caption')).toHaveCount(0);
   });
 
   test('inline radio labels lay out circle-beside-text, not stacked', async ({ page }) => {

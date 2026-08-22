@@ -9,7 +9,7 @@ import { DilutionPanel } from './DilutionPanel';
 import { buildBatchSheetData } from '../lib/batchSheet';
 import { computePostCookSuperfat } from '../lib/calculateAdditives';
 import { calculateRecipe } from '../lib/calculateRecipe';
-import { createStarterLines, DEFAULT_SETTINGS } from '../lib/recipe';
+import { type RecipeSettings, createStarterLines, DEFAULT_SETTINGS } from '../lib/recipe';
 
 afterEach(cleanup);
 
@@ -437,13 +437,12 @@ function lsSheetData(extra: {
   bottledSolutionGrams?: number | null;
   /** Overrides the fixture's own 'g' below — it is spread after it. */
   weightUnit?: 'g' | 'kg' | 'oz' | 'lb';
-  /** Merged into the fixture's settings. Originally only the preservative row's four
-   * RecipeSettings fields travelled here; the record tests reuse the channel for
-   * `gradualWaterGrams`, so the name says what it is — a settings override — rather than
-   * naming one consumer. None of these fields affect calculateRecipe. */
+  /** Merged into the fixture's settings (spread after `lyeType`). The Pick is the
+   * contract: only fields that do not affect calculateRecipe may travel here, or an
+   * override would silently invalidate every derived expectation in the fixture. */
   settingsOverride?: Partial<
     Pick<
-      import('../lib/recipe').RecipeSettings,
+      RecipeSettings,
       | 'preservativeId'
       | 'preservativeCustomName'
       | 'preservativeDosePct'
