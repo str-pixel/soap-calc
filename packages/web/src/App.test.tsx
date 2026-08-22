@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor, render, screen, within, cleanup, fireEvent } from '@testing-library/react';
+import { loadDraft } from './lib/recipeStorage';
 import userEvent from '@testing-library/user-event';
 import { preservativeDoseGrams } from '@soap-calc/core';
 import App from './App';
@@ -645,12 +646,15 @@ describe('a record arriving with a recipe needs no session state to appear in', 
     await ls();
     await userEvent.type(screen.getByLabelText('Water added so far (g)'), '1500');
     // The autosave debounce (500 ms) is what makes this a reload rather than a re-render:
-    // the record has to be in storage before the second mount reads it. Wait for the
-    // persisted value, not a fixed sleep — a loaded runner can stretch the debounce past
-    // any margin a sleep picks.
-    await waitFor(() => {
-      expect(JSON.parse(localStorage.getItem('soap-calc:draft:ls') ?? '{}').settings?.gradualWaterGrams).toBe('1500');
-    });
+    // the record has to be in storage before the second mount reads it. Wait on the exact
+    // condition under test — a second mount can read it back — through loadDraft, the seam
+    // recipeStorage keeps for tests, so the key and payload shape have one owner. The
+    // explicit timeout is what actually outlasts a loaded runner: waitFor's 1 s default
+    // left only 500 ms of headroom over the debounce, the same cliff the old sleep had.
+    await waitFor(
+      () => expect(loadDraft('ls')?.settings.gradualWaterGrams).toBe('1500'),
+      { timeout: 5000 },
+    );
     cleanup();
     render(<App />);
     expect(screen.getByLabelText('Water added so far (g)')).toHaveProperty('value', '1500');
@@ -707,11 +711,11 @@ describe('a record arriving with a recipe needs no session state to appear in', 
     // ONE predicate decides: a refused record leaves the plan governing.
     await ls();
     await userEvent.type(screen.getByLabelText('Water added so far (g)'), '-100');
-    // Same condition-based wait as the reload test above: the refused record still
-    // persists (storage keeps what the maker typed), so wait for it rather than sleeping.
-    await waitFor(() => {
-      expect(JSON.parse(localStorage.getItem('soap-calc:draft:ls') ?? '{}').settings?.gradualWaterGrams).toBe('-100');
-    });
+    // Storage keeps even a refused value — the record field persists what the maker typed.
+    await waitFor(
+      () => expect(loadDraft('ls')?.settings.gradualWaterGrams).toBe('-100'),
+      { timeout: 5000 },
+    );
     cleanup();
     render(<App />);
     const panel = screen
