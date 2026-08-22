@@ -618,6 +618,66 @@ describe('Whole batch, with a record: one batch has one finished mass', () => {
   }, 60000);
 });
 
+describe('the mid-pour companion dose (spec §3)', () => {
+  // THE SAFETY PIN for the invisible under-dose: a maker who weighs the preservative
+  // against the batch that exists TODAY (0 g poured, or any partial pour) sees only the
+  // governing figure unless the snippet also shows what the SAME batch will need once
+  // diluted on to the plan. `finishedGrams` and `planDosingBasisGrams` are two different
+  // quantities — the dose for the batch that exists vs the dose at plan completion — and
+  // this pins that App wires the second one in, gated on the controller's own STRICT rule
+  // (`record.waterGrams < dilution.dilutionWaterGrams`), not merely "a record exists".
+  function row(root: HTMLElement, label: string): string {
+    const item = Array.from(root.querySelectorAll('.results-grid__item')).find(
+      (el) => el.querySelector('dt')?.textContent?.trim() === label,
+    );
+    return item?.querySelector('dd')?.textContent?.trim() ?? '';
+  }
+
+  function num(text: string): number {
+    return Number(text.replace(/[^\d.]/g, ''));
+  }
+
+  // The companion's own text embeds a SECOND number (the dose %, e.g. "1%") ahead of the
+  // grams figure — `num` above would concatenate the two digit runs into nonsense (e.g.
+  // "1% plan: 41 g" → 141). This pulls only the trailing weight.
+  function companionGrams(text: string): number {
+    return Number((text.match(/([\d,.]+)\s*\S+$/)?.[1] ?? '').replace(/,/g, ''));
+  }
+
+  it('shows a plan-labelled companion once a record governs, and retires it once the record reaches the plan', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+
+    // Read the plan's own figures BEFORE any record exists — with no record the plan
+    // governs and its rows still carry their bare (unlabelled) names (spec §2/§4).
+    const planWater = num(row(panel, 'Dilution water to add'));
+    const planSolution = num(row(panel, 'Finished solution'));
+    expect(planWater).toBeGreaterThan(0);
+    const expectedCompanion = preservativeDoseGrams(planSolution, 1);
+
+    const water = screen.getByLabelText('Water added so far (g)');
+    // 0 g poured is a record (LS:1531: the pot before any water at all is Gradual's own
+    // starting entry) — the record now governs, and its water (0) is strictly below the
+    // plan's own dilution water, so the companion belongs on screen.
+    fireEvent.change(water, { target: { value: '0' } });
+    const companionText = row(snippet, 'At the plan');
+    expect(companionText).toMatch(/^at your 1% plan: /);
+    expect(companionGrams(companionText)).toBeCloseTo(expectedCompanion, 0);
+
+    // Past the plan's own dilution water the two doses coincide within rounding — the
+    // controller ruling is STRICT (record.waterGrams < dilution.dilutionWaterGrams), so
+    // the companion retires rather than repeating a number the governing row already shows.
+    fireEvent.change(water, { target: { value: String(planWater + 500) } });
+    expect(row(snippet, 'At the plan')).toBe('');
+  });
+});
+
 describe('a record arriving with a recipe needs no session state to appear in', () => {
   // RETIRED WITH THE MODE-RESTORE EFFECT (spec §5), and this describe is what its whole
   // existence was for. `dilutionMode` was session state and the recorded water was recipe

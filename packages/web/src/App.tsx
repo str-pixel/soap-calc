@@ -376,6 +376,40 @@ export default function App() {
     vm.wholeBatchPasteGrams,
   ]);
 
+  // THE MID-POUR COMPANION DOSE (spec §3, phase 2b task 1) — the safety item this phase
+  // exists to deliver first. While a record governs and its water is still below the
+  // plan's own dilution water, the preservative snippet shows a SECOND, plan-labelled
+  // figure beside the governing dose, so a maker who weighs the preservative against the
+  // batch that exists today (a partial pour, or none at all) is not left unaware that the
+  // same batch needs more once diluted on to the plan (26.3 g at 0 g poured vs 40.4 g at a
+  // 30% plan on the reference batch — spec §3's own illustration of the invisible
+  // under-dose this line exists to prevent).
+  //
+  // Read directly off `vm.dilution` — always the PLAN arm, whichever one governs (see
+  // `dilutionGoverns`'s own doc comment on the view model) — rather than through
+  // `preservativeDosingBasisGramsFor`: that helper's whole job is to prefer a bottled
+  // figure when one exists, and in record scope the bottled figure IS the record's own
+  // mass (spec §3's "bottledSolutionGrams... RECORD ARM"). Reusing it here with a null
+  // bottled argument would coincidentally reduce to the same `dilution.solutionGrams`
+  // fallback today, but it borrows a helper built to prefer the record for the one figure
+  // that must, by construction, never contain it — reading the plan's own field directly
+  // says that on its face instead of relying on an argument nobody re-reads meaning "never
+  // the record".
+  //
+  // Non-null exactly when App decides the companion belongs on screen (batch scope only —
+  // Custom amount's own dose is the snippet's problem, same precedent as `preservativeBasis`
+  // above): a record governs, that record actually resolved to figures (not the `null`
+  // "nothing to show yet" state 2a's own contract reserves), and the record's own water is
+  // STRICTLY below the plan's own dilution water (the controller ruling: at or past it the
+  // two doses coincide within rounding and the companion is noise, not signal).
+  const planDosingBasisGrams = useMemo((): number | null => {
+    if (dilutionScope !== 'batch') return null;
+    if (vm.dilutionGoverns !== 'record') return null;
+    if (vm.dilutionRecord === null || vm.dilution === null) return null;
+    if (!(vm.dilutionRecord.waterGrams < vm.dilution.dilutionWaterGrams)) return null;
+    return vm.dilution.solutionGrams;
+  }, [dilutionScope, vm.dilution, vm.dilutionGoverns, vm.dilutionRecord]);
+
   // The dose alone, in grams — App threads this to the panel and the sheet so the MASS they
   // add to what bottles, prints and prices matches what the vm resolved for the whole batch
   // (batch scope; Custom amount's own dose stays the snippet's problem, not this prop's —
@@ -670,6 +704,7 @@ export default function App() {
                   processOffers(process, 'preserve') ? (
                     <PreservativeSnippet
                       finishedGrams={preservativeBasis.grams}
+                      planDosingBasisGrams={planDosingBasisGrams}
                       basisScope={preservativeBasis.scope}
                       /* Moves with preservativeBasis' own jar branch above: the two answer
                          one question (which jar, and how the maker described it), so the
