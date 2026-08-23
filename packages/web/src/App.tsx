@@ -29,7 +29,7 @@ import { useUndoShortcut } from './hooks/useUndoShortcut';
 import { computeBottledSolutionGrams, preservativeDosingBasisGramsFor } from './lib/calculateAdditives';
 import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
-import { correctedDilutionWaterGrams, MEASURED_PASTE_IS_REMAINING } from './lib/measuredPaste';
+import { correctedDilutionWaterGrams } from './lib/measuredPaste';
 import type { PricingProfile } from './lib/pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
 import { processOffers } from './lib/process';
@@ -100,7 +100,7 @@ export default function App() {
   const [portionPasteGrams, setPortionPasteGrams] = useState('');
   const [portionWaterGrams, setPortionWaterGrams] = useState('');
   // Always the whole batch's paste: the declaration that used to sit beside the field is
-  // gone — see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING.
+  // gone.
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
   // A measurement describes one specific batch's paste; it must not survive an edit to the
   // recipe that batch was measured from, or the dilution figures keep using a paste weight
@@ -430,10 +430,8 @@ export default function App() {
     const correctedPlanWaterGrams = correctedDilutionWaterGrams(
       vm.dilution,
       measuredPasteGrams,
-      MEASURED_PASTE_IS_REMAINING,
       vm.wholeBatchPasteGrams,
       vm.cookWaterGrams,
-      settings.gradualWaterGrams,
     );
     if (!(vm.dilutionRecord.waterGrams < correctedPlanWaterGrams)) return null;
     const planBottledSolutionGrams = computeBottledSolutionGrams({
@@ -443,7 +441,6 @@ export default function App() {
       splitLiquidPasteWaterGrams: vm.splitLiquidPasteWater,
       measuredPasteGrams,
       wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
-      gradualWaterGrams: settings.gradualWaterGrams,
       record: null,
     });
     return preservativeDosingBasisGramsFor(planBottledSolutionGrams, vm.dilution);
@@ -455,7 +452,6 @@ export default function App() {
     measuredPasteGrams,
     vm.wholeBatchPasteGrams,
     vm.cookWaterGrams,
-    settings.gradualWaterGrams,
     vm.extrasGrams,
     vm.splitLiquidPasteWater,
   ]);

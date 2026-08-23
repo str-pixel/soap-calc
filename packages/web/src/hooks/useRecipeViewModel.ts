@@ -844,11 +844,6 @@ export function useRecipeViewModel({
           // Same corrected paste the panel's and the sheet's water figures are derived
           // from, so what this prices is what the maker is actually told to pour.
           wholeBatchPasteGrams,
-          // And the same gradual record they read, which is what decides whether the paste
-          // ceiling was widened — so this prices the pot those two surfaces pour against
-          // rather than one chosen by a different rule. Plan arm only; with a record the arm
-          // below chooses the pot from the record itself.
-          gradualWaterGrams: settings.gradualWaterGrams,
           // THE RESOLUTION'S OWN ANSWER, not a second reading of the same field (spec §1:
           // one function feeds every consumer). Non-null exactly when the record governs, so
           // this prices the batch that exists — the pot plus the water actually poured — and

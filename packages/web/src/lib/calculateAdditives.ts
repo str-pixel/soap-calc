@@ -167,18 +167,6 @@ export function computeBottledSolutionGrams(input: {
    * DilutionPanel and PortionDilutionResults read. Optional so callers/tests with no measurement
    * are unaffected. */
   measuredPasteGrams?: string;
-  /** True when `measuredPasteGrams` is what's LEFT after earlier dilutions, not the whole
-   * batch. A remaining reading describes a smaller pot, never the batch this function
-   * prices, so it must not feed the bottled base — same isRemaining gate
-   * `correctedDilutionWaterGrams` and DilutionPanel's batch row already apply.
-   *
-   * UNREACHABLE FROM THE UI: the declaration control is gone and every reading is the whole
-   * batch, so the view model no longer passes this and it defaults to undefined (falsy) —
-   * which is the value this path always had for a whole-batch reading, so nothing the app can
-   * produce behaves differently. Kept, with its gate and its test, for the reason on
-   * lib/measuredPaste's MEASURED_PASTE_IS_REMAINING: the refusal is what stops a remainder
-   * pricing a bottle it is not, and a direct consumer still needs it. */
-  measuredPasteIsRemaining?: boolean;
   /** The view model's corrected whole-batch paste (anhydrous + cook water + an alternative
    * liquid's non-water solids). Threaded through for one reason: it is what
    * `correctedDilutionWaterGrams` now subtracts from solutionGrams, so the water term below
@@ -188,15 +176,6 @@ export function computeBottledSolutionGrams(input: {
    * the water term is the recipe's own figure and this reduces to the previous formula
    * exactly. */
   wholeBatchPasteGrams?: number | null;
-  /** `settings.gradualWaterGrams` — the water the maker recorded pouring. Threaded through
-   * for one reason: it is what licenses the widened paste ceiling in `correctedPotGramsFor`,
-   * so the pot this prices and the pot the panel and the sheet pour against are chosen by the
-   * same rule. Leaving it out would price the bottle off the recipe's computed pot for a
-   * gradual record the two other surfaces are counting from — the exact split this branch
-   * closed. Optional, and absent it is the unwidened ceiling, which is what a caller with no
-   * record wants. PLAN ARM ONLY: with `record` supplied the pot comes from the record itself
-   * and no ceiling is consulted at all (see `record` below). */
-  gradualWaterGrams?: string;
   /** THE RECORD ARM (spec §3). Non-null exactly when `resolveDilution` says the record
    * governs — the caller passes `resolvedDilution.record`, never a second derivation of it,
    * so the mass this prices and the mass the panel prints as "Finished so far" come from one
@@ -210,9 +189,7 @@ export function computeBottledSolutionGrams(input: {
     extrasGrams,
     splitLiquidPasteWaterGrams,
     measuredPasteGrams,
-    measuredPasteIsRemaining,
     wholeBatchPasteGrams,
-    gradualWaterGrams,
     record,
   } = input;
   // The alternative liquid's non-water solids — needed by BOTH arms, off the same corrected
@@ -257,37 +234,14 @@ export function computeBottledSolutionGrams(input: {
   // it — otherwise this would price a bottle from a pot the maker is being told on screen
   // cannot exist.
   //
-  // correctedPotGramsFor, and never measuredPasteIsValidFor, which used to decide this: that
-  // gate compares the reading against solutionGrams exactly, and in gradual mode the saved
-  // target is what the panel's own record just wrote. A weighed pot with no water recorded
-  // lands solutionGrams a hair under the reading about half the time, and this fell back to
-  // the recipe's COMPUTED pot while DilutionPanel counted from the weighed one — "Finished so
-  // far (weighed) 1,405 g" beside a 1,600 g finished product, with the preservative's
-  // legally-capped % taken against the second. The pot choice widens that ceiling by exactly
-  // the write-back's own rounding and no further — and only where a gradual record exists to
-  // have written the target — so a reading past it (the loaded crockpot, 3 kg of stoneware
-  // included) is still refused here and this still prices the recipe's own pot, and a target
-  // the maker typed still holds the reading to solutionGrams exactly. See correctedPotGramsFor
-  // for the bound, why it is tight, and why the record is what licenses it.
-  const pot = correctedPotGramsFor(
-    dilution,
-    measuredPasteGrams,
-    measuredPasteIsRemaining,
-    wholeBatchPasteGrams,
-    cookWaterGrams,
-    gradualWaterGrams,
-  );
+  // correctedPotGramsFor, which is measuredPasteIsValidFor's own ceiling exactly: a reading
+  // past solutionGrams (the loaded crockpot, 3 kg of stoneware included) is refused here and
+  // this prices the recipe's own pot instead.
+  const pot = correctedPotGramsFor(dilution, measuredPasteGrams, wholeBatchPasteGrams, cookWaterGrams);
   const measuredPaste = pot?.fromMeasurement ? pot.grams : undefined;
   const base =
     (measuredPaste ?? dilution.anhydrousGrams + cookWaterGrams) +
-    correctedDilutionWaterGrams(
-      dilution,
-      measuredPasteGrams,
-      measuredPasteIsRemaining,
-      wholeBatchPasteGrams,
-      cookWaterGrams,
-      gradualWaterGrams,
-    );
+    correctedDilutionWaterGrams(dilution, measuredPasteGrams, wholeBatchPasteGrams, cookWaterGrams);
   // What the base ALREADY holds of the split liquid, and the whole difference between the
   // two paths. Unmeasured, the base is built from anhydrous + cookWaterGrams, so it carries
   // the liquid's water only and the extras term has to put its solids back. Measured, the

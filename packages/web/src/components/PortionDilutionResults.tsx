@@ -1,10 +1,6 @@
 import { lsPartialDilution, type DilutionResult } from '@soap-calc/core';
 import { formatWeight } from '../lib/weightUnits';
-import {
-  MEASURED_PASTE_IS_REMAINING,
-  measuredPasteRejectionFor,
-  subTenthPrecisionFingerprint,
-} from '../lib/measuredPaste';
+import { measuredPasteRejectionFor, subTenthPrecisionFingerprint } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 
 type PortionDilutionResultsProps = {
@@ -15,8 +11,7 @@ type PortionDilutionResultsProps = {
   targetMl: string;
   /** The maker's scale reading for the paste, in grams — always the WHOLE batch. There used
    * to be a declaration beside the field letting the maker call it "what's left after earlier
-   * dilutions" instead; it is gone (see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING for
-   * why, and for where the remaining-mode arithmetic still lives). */
+   * dilutions" instead; it is gone, and so is the remaining-mode arithmetic it used to feed. */
   measuredPasteGrams: string;
   /** The best-known WHOLE-BATCH paste mass (see useRecipeViewModel) — corrects the
    * recipe's own water-only predicted figure for an alternative liquid's non-water
@@ -143,17 +138,15 @@ export function portionDilutionFor({
   | 'overDilutionCertain'
 >) {
   // The physical-impossibility rules — below the anhydrous solids, heavier than the target
-  // solution (and, for a declaration this UI no longer offers, a remainder heavier than the
-  // whole batch ever was) — live in lib/measuredPaste, together with the long record of the
-  // bug each one closed. The measured-paste INPUT is in DilutionPanel's shell, where it is
-  // visible in BOTH dilution scopes, and so are the alerts that reject a reading: this
-  // component only renders in Custom amount scope, so alerts kept here were unreachable in
-  // the default one. Reading the verdict from the same helper the shell uses means the two
-  // can never disagree about whether a reading is usable.
+  // solution — live in lib/measuredPaste, together with the long record of the bug each one
+  // closed. The measured-paste INPUT is in DilutionPanel's shell, where it is visible in BOTH
+  // dilution scopes, and so are the alerts that reject a reading: this component only renders
+  // in Custom amount scope, so alerts kept here were unreachable in the default one. Reading
+  // the verdict from the same helper the shell uses means the two can never disagree about
+  // whether a reading is usable.
   const rejection = measuredPasteRejectionFor(
     measuredPasteGrams,
     dilution,
-    MEASURED_PASTE_IS_REMAINING,
     wholeBatchPasteGrams,
     cookWaterGrams,
   );
@@ -205,11 +198,9 @@ export function portionDilutionFor({
   // pot's own soap makes at the target (ls-yield's `potSolutionGrams - pasteGrams < 0`); with
   // a whole-batch reading that pot IS the recipe's, so the test reduces to
   // solutionGrams < measured — which is exactly `exceedsSolution`, so the reading was already
-  // rejected and `hasValidMeasurement` is false. The condition was only reachable through an
-  // accepted "what's left" reading, whose own pot is a share of the batch's: that declaration
-  // is gone (see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING), and the paragraph that
-  // explained it went with it rather than sit here unrenderable. The unmeasured twin below is
-  // still live and still needed.
+  // rejected and `hasValidMeasurement` is false. The remaining-paste declaration this condition
+  // used to be reachable through, and core's own remaining-mode arithmetic behind it, are both
+  // gone (Phase 3, spec §5). The unmeasured twin below is still live and still needed.
   //
   // The UNMEASURED twin, and the other way core can refuse. Once core sizes an unmeasured pot
   // from the corrected basis rather than the water-only predictedPasteGrams (so Custom amount
@@ -236,9 +227,6 @@ export function portionDilutionFor({
           {
             ...dilution,
             measuredPasteGrams: hasValidMeasurement ? measured : undefined,
-            // Left at core's own default (undefined = whole batch). Core's remaining-mode
-            // arithmetic is intact and tested there; nothing in this app declares a
-            // remainder — see lib/measuredPaste's MEASURED_PASTE_IS_REMAINING.
             // Same corrected basis the UI's own ceiling check above uses, so core's
             // composition ratio and this component's rejection never disagree.
             wholeBatchPasteGrams: wholeBatchPasteGrams ?? undefined,
@@ -343,8 +331,8 @@ export function PortionDilutionResults({
   const statusClauses: string[] = [];
   if (portion && !jarGoverns) {
     // One wording, because there is one kind of pot: the batch. This used to branch on
-    // the measured-paste declaration ("more than the remaining paste holds") — see
-    // lib/measuredPaste's MEASURED_PASTE_IS_REMAINING for where that control went.
+    // the measured-paste declaration ("more than the remaining paste holds"); that control,
+    // and the wording it branched to, are gone (Phase 3, spec §5).
     if (portion.clamped) {
       statusClauses.push(
         'That is more than the batch holds — the figures above are the whole batch.',

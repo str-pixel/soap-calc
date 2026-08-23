@@ -12,7 +12,6 @@ import { formatConcentrationPercent } from '../lib/format';
 import { resolveDilution } from '../lib/resolveDilution';
 import { formatWeight } from '../lib/weightUnits';
 import {
-  MEASURED_PASTE_IS_REMAINING,
   computedPotGramsFor,
   correctedDilutionWaterGrams,
   hasCorrectedPasteBasis,
@@ -373,22 +372,10 @@ export function DilutionPanel({
   // TWO OTHER QUESTIONS have their own gates, and neither is this one. Which POT the RECORD
   // arm and the ratio presets count from is potBasis just below. Which pot the batch POUR and
   // the bottled mass are measured against is lib/measuredPaste's correctedPotGramsFor — this
-  // ceiling widened by exactly gradualDilutionFrom's own 2 dp rounding where the recipe's
-  // record adds up to the target in force, and this ceiling unchanged everywhere else; see
-  // that function. (The widening now has no write-back to defend, since nothing derives the
-  // plan from the record any more; it is dead machinery whose removal is Phase 3's, listed in
-  // the spec's §5. It is inert rather than wrong: it can only widen the ceiling for a record
-  // whose own arithmetic reaches the plan in force, which is a coincidence now instead of a
-  // consequence.)
+  // same ceiling, exactly.
   const measuredPasteValid =
     dilution !== null &&
-    measuredPasteIsValidFor(
-      measuredPasteGrams,
-      dilution,
-      MEASURED_PASTE_IS_REMAINING,
-      wholeBatchPasteGrams,
-      cookWaterGrams,
-    );
+    measuredPasteIsValidFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams);
   // WHICH POT THE RECORD ARM AND THE PRESETS COUNT FROM, and the one question a target must
   // not answer. lib/measuredPaste's target-independent resolution: the reading wins when it
   // parses, is not finer than a scale reads, and is not below the batch's own non-evaporable
@@ -416,8 +403,8 @@ export function DilutionPanel({
   // The reading is still judged against the ceiling everywhere the ceiling means something:
   // measuredPasteValid above (the portion, and the copy that speaks for a reading) keeps it
   // exactly, the rejection alerts below keep it exactly, and the batch pour and the bottled
-  // mass keep it widened by the write-back's own rounding wherever the record adds up to the
-  // target (correctedPotGramsFor). Only the basis this line chooses drops it altogether.
+  // mass keep it exactly too (correctedPotGramsFor). Only the basis this line chooses drops it
+  // altogether.
   const potBasis = weighedOrComputedPotGramsFor(
     dilution,
     measuredPasteGrams,
@@ -435,13 +422,7 @@ export function DilutionPanel({
   // figure that had silently ignored it. Same helper PortionDilutionResults reads, so the
   // panel and the portion figures can never disagree about whether a reading is usable.
   const measurementRejection = dilution
-    ? measuredPasteRejectionFor(
-        measuredPasteGrams,
-        dilution,
-        MEASURED_PASTE_IS_REMAINING,
-        wholeBatchPasteGrams,
-        cookWaterGrams,
-      )
+    ? measuredPasteRejectionFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams)
     : null;
   // Gradual Dilution, for a JAR in Custom amount scope rather than the whole batch — and
   // THE CENTRAL PROHIBITION this task exists to enforce: this concentration is NEVER
@@ -571,9 +552,9 @@ export function DilutionPanel({
   const pasteGrams = potBasis?.grams ?? null;
   // WHY THE RECORD CAME BACK EMPTY, when it did: the shared parser refuses a record carrying
   // a swallowed thousands separator (a typed 2,000 commits as '2.000'), which is what stops
-  // 2 g of water governing the batch, printing on the sheet and widening the paste ceiling.
-  // The FIELD is here, so the refusal has to be explained here — read from the same
-  // fingerprint the parser applies, never a second copy of the rule.
+  // 2 g of water governing the batch and printing on the sheet. The FIELD is here, so the
+  // refusal has to be explained here — read from the same fingerprint the parser applies,
+  // never a second copy of the rule.
   const gradualWaterSubTenthPrecision = subTenthPrecisionFingerprint(gradualWaterGrams);
   // The correction computedPasteGrams carries over the recipe's own water-only figure —
   // an alternative liquid's non-water solids. Derived from that same basis rather than
@@ -656,20 +637,7 @@ export function DilutionPanel({
   // and §2 keeps it on screen under a plan label while a record governs rather than hiding
   // it. Nothing about it changes with the record — only the word "(plan)" beside it.
   const batchDilutionWaterGrams = dilution
-    ? correctedDilutionWaterGrams(
-        dilution,
-        measuredPasteGrams,
-        MEASURED_PASTE_IS_REMAINING,
-        wholeBatchPasteGrams,
-        cookWaterGrams,
-        // The record is what licenses the widened paste ceiling that helper judges the
-        // reading against (lib/measuredPaste's correctedPotGramsFor). Passed here so this
-        // row, the printed sheet's twin of it and the bottled mass all choose the pot by one
-        // rule; without it this row would pour against solutionGrams exactly while the
-        // bottled figure counted from the weighed pot, which is the split the ceiling exists
-        // to close.
-        gradualWaterGrams,
-      )
+    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, wholeBatchPasteGrams, cookWaterGrams)
     : 0;
   // Asked of the same helper PortionDilutionResults itself renders from, so the shell can
   // never believe something about Custom amount that Custom amount does not show. The
@@ -800,9 +768,7 @@ export function DilutionPanel({
   // flags in both scopes and under either arm, so for them the flag IS the paragraph's render
   // condition — the terms below track those render sites, and must follow if one of them
   // ever grows a gate of its own. The exceeds-solution term is `exceedsSolutionAlert`,
-  // the same const its paragraph renders on. (The fifth rule, exceedsRemainingCeiling, has
-  // no paragraph in this panel and cannot fire while every reading is declared whole-batch
-  // — a refusal that cannot render cannot replace this alert, so it takes no term.)
+  // the same const its paragraph renders on.
   //
   // PLAN-GOVERNS ONLY, like its sibling and for the same reason (spec §3: "overDilutionCertain
   // and every other plan-claim is gated on plan-governs"). "The paste is already more dilute
@@ -1326,11 +1292,9 @@ export function DilutionPanel({
           quoting "less than the 2.65 lb of soap this batch makes" beside a typed 900 made
           them convert before they could check the claim.
 
-          There is no branch here for `exceedsRemainingCeiling`: that rule only ever fires on a
-          reading declared as what's LEFT after earlier dilutions, and this panel declares every
-          reading as the whole batch (MEASURED_PASTE_IS_REMAINING). The rule and its arithmetic
-          stay in lib/measuredPaste for direct consumers; the paragraph is gone because it could
-          never render, and its remedy named a control that no longer exists. */}
+          There is no branch here for a remaining-paste ceiling: this panel always treats a
+          reading as the whole batch, and the remaining-mode declaration and its arithmetic are
+          gone (Phase 3, spec §5) with the control that used to make that declaration. */}
       {dilution && measurementRejection && (
         <>
           {measurementRejection.nonPositive && (

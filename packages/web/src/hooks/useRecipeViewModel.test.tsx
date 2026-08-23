@@ -795,7 +795,6 @@ test('the real view model pours one water figure into both dilution scopes', () 
   const batchWaterGrams = correctedDilutionWaterGrams(
     vm.dilution,
     '',
-    false,
     vm.wholeBatchPasteGrams,
   );
   const portion = lsPartialDilution(
@@ -833,7 +832,7 @@ test('the printed sheet is handed the corrected paste, and the bottled mass is p
   expect(vm.batchSheetData.wholeBatchPasteGrams).toBeCloseTo(vm.wholeBatchPasteGrams, 6);
   // Same figure the sheet will print, and it is NOT the recipe's own water-only one.
   expect(
-    correctedDilutionWaterGrams(vm.dilution, '', false, vm.batchSheetData.wholeBatchPasteGrams),
+    correctedDilutionWaterGrams(vm.dilution, '', vm.batchSheetData.wholeBatchPasteGrams),
   ).toBeCloseTo(vm.dilution.dilutionWaterGrams - solidsGrams, 6);
 
   // The bottled mass is priced from the same corrected water: the pot finishes at
@@ -869,7 +868,7 @@ test('and so is the dilution water derived from it — the undeclared-liquid cav
           }],
         },
         'ls');
-      return correctedDilutionWaterGrams(vm.dilution, '', false, vm.wholeBatchPasteGrams);
+      return correctedDilutionWaterGrams(vm.dilution, '', vm.wholeBatchPasteGrams);
     });
     // Control first: the UNCORRECTED figure is what actually moved, so the equality below
     // is a property of the correction and not of the fixture standing still.
