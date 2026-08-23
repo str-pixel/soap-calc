@@ -278,8 +278,12 @@ export function PreservativeSnippet({
                   wording avoids. */}
               {planGrams !== null && (
                 <div className="results-grid__item">
-                  <dt>At the plan</dt>
-                  <dd>{`at your ${typedPct}% plan: ${formatWeight(planGrams, weightUnit)}`}</dd>
+                  {/* The dt carries the whole plan phrase so a screen reader announces it
+                      once ("At your 1% plan: 40 g"), and the dd is a bare weight like every
+                      other row's. Still no "Preservative to add" substring — the e2e
+                      strict-mode locator concern stays addressed. */}
+                  <dt>{`At your ${typedPct}% plan`}</dt>
+                  <dd>{formatWeight(planGrams, weightUnit)}</dd>
                 </div>
               )}
               {/* The mass the bottle actually weighs — basis PLUS the dose, the same

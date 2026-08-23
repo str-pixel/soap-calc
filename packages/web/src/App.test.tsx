@@ -42,6 +42,18 @@ afterEach(() => {
   cleanup();
 });
 
+// Shared by the preservative and gradual describes below — one copy, module scope.
+function row(root: HTMLElement, label: string): string {
+  const item = Array.from(root.querySelectorAll('.results-grid__item')).find(
+    (el) => el.querySelector('dt')?.textContent?.trim() === label,
+  );
+  return item?.querySelector('dd')?.textContent?.trim() ?? '';
+}
+
+function num(text: string): number {
+  return Number(text.replace(/[^\d.]/g, ''));
+}
+
 describe('App process switch', () => {
   it('switches the lye options when the Liquid Soap tab is chosen', async () => {
     render(<App />);
@@ -506,16 +518,6 @@ describe('Whole batch, with a record: one batch has one finished mass', () => {
   }
 
   /** The value cell of a results-grid row inside `root`, as text ("1,400 g"), or ''. */
-  function row(root: HTMLElement, label: string): string {
-    const item = Array.from(root.querySelectorAll('.results-grid__item')).find(
-      (el) => el.querySelector('dt')?.textContent?.trim() === label,
-    );
-    return item?.querySelector('dd')?.textContent?.trim() ?? '';
-  }
-
-  function num(text: string): number {
-    return Number(text.replace(/[^\d.]/g, ''));
-  }
 
   /** Gradual's own mass row, under whichever basis label the panel chose. */
   function potRow(panel: HTMLElement): string {
@@ -627,16 +629,6 @@ describe('the mid-pour companion dose (spec §3)', () => {
   // quantities — the dose for the batch that exists vs the dose at plan completion — and
   // this pins that App wires the second one in, gated on the controller's own STRICT rule
   // (`record.waterGrams < dilution.dilutionWaterGrams`), not merely "a record exists".
-  function row(root: HTMLElement, label: string): string {
-    const item = Array.from(root.querySelectorAll('.results-grid__item')).find(
-      (el) => el.querySelector('dt')?.textContent?.trim() === label,
-    );
-    return item?.querySelector('dd')?.textContent?.trim() ?? '';
-  }
-
-  function num(text: string): number {
-    return Number(text.replace(/[^\d.]/g, ''));
-  }
 
   // The companion's own text embeds a SECOND number (the dose %, e.g. "1%") ahead of the
   // grams figure — `num` above would concatenate the two digit runs into nonsense (e.g.
@@ -667,15 +659,17 @@ describe('the mid-pour companion dose (spec §3)', () => {
     // starting entry) — the record now governs, and its water (0) is strictly below the
     // plan's own dilution water, so the companion belongs on screen.
     fireEvent.change(water, { target: { value: '0' } });
-    const companionText = row(snippet, 'At the plan');
-    expect(companionText).toMatch(/^at your 1% plan: /);
+    // The plan phrase lives in the dt now (one announcement, bare-weight dd — the
+    // review's a11y point); the row helper keys on the dt, so the label IS the assertion.
+    const companionText = row(snippet, 'At your 1% plan');
+    expect(companionText).toMatch(/^\d/);
     expect(companionGrams(companionText)).toBeCloseTo(expectedCompanion, 0);
 
     // Past the plan's own dilution water the two doses coincide within rounding — the
     // controller ruling is STRICT (record.waterGrams < dilution.dilutionWaterGrams), so
     // the companion retires rather than repeating a number the governing row already shows.
     fireEvent.change(water, { target: { value: String(planWater + 500) } });
-    expect(row(snippet, 'At the plan')).toBe('');
+    expect(row(snippet, 'At your 1% plan')).toBe('');
   });
 
   it("compares the record against the plan row's OWN corrected water, not the raw plan figure the screen shows nowhere (spec §3 controller ruling)", async () => {
@@ -711,7 +705,7 @@ describe('the mid-pour companion dose (spec §3)', () => {
     expect(correctedPlanWater).toBeCloseTo(2674, 0);
     expect(correctedPlanWater).toBeGreaterThan(2500);
 
-    expect(row(snippet, 'At the plan')).toMatch(/^at your 1% plan: /);
+    expect(row(snippet, 'At your 1% plan')).toMatch(/^\d/);
   });
 });
 

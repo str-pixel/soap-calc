@@ -330,11 +330,15 @@ test('a plan-labelled companion dose renders beside the governing one, from its 
   render(<Harness finishedGrams={2600} planDosingBasisGrams={4000} />);
   expect(screen.getByText('Preservative to add')).toBeTruthy();
   expect(screen.getByText('26 g')).toBeTruthy();
-  expect(screen.getByText('at your 1% plan: 40 g')).toBeTruthy();
+  // dt carries the plan phrase, dd the bare weight — announced once, read as
+  // "At your 1% plan: 40 g".
+  expect(screen.getByText('At your 1% plan')).toBeTruthy();
+  const companionItem = screen.getByText('At your 1% plan').closest('.results-grid__item')!;
+  expect(companionItem.querySelector('dd')?.textContent).toBe('40 g');
 });
 
 test('with no plan basis to show, the companion renders nothing — it never falls back to the governing basis', () => {
   render(<Harness finishedGrams={2600} planDosingBasisGrams={null} />);
   expect(screen.getByText('26 g')).toBeTruthy();
-  expect(screen.queryByText(/at your .*% plan:/)).toBeNull();
+  expect(screen.queryByText(/At your .*% plan/)).toBeNull();
 });

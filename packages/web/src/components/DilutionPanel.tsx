@@ -881,10 +881,11 @@ export function DilutionPanel({
   // hundreds of grams of water. A valid whole-batch reading settles the question (the
   // over-dilution alert above is gated the same way and for the same reason), and in
   // Custom amount the child's own suppressed-portion hedge says the same thing with the
-  // missing figures explained, so it owns the message there — EXCEPT while a JAR RECORD
-  // governs, where that child does not render at all. `portionState` is resolved only where
-  // the child renders for exactly that reason, so `portionOwnsUndeclaredLiquidHedge` is false
-  // there and this shell clause speaks instead.
+  // missing figures explained, so it owns the message there — INCLUDING while a jar record
+  // governs: since the plan grid came back beside the jar (spec §2, phase 2b), the child
+  // renders in every Custom amount state, `portionOwnsUndeclaredLiquidHedge` can be true
+  // there, and this shell clause stands down to it. Pinned by the hedge tests in this
+  // file's portion describes.
   //
   // It did not always. While `portionState` was still computed from a stale `targetMl` in the
   // state the child was suppressed in, `pasteAlreadyThinner` could be true — suppressing this
@@ -1670,8 +1671,10 @@ export function DilutionPanel({
           {/* The alternative-liquid caveats in their portion wordings — including the
               load-bearing "Top up with plain distilled water only", the only sentence in
               the app telling a maker not to keep topping up with milk or juice. Recording a
-              dilution is not a reason for that instruction to lapse, and this note reaches
-              the screen only through PortionDilutionResults, which a governing jar replaces. */}
+              dilution is not a reason for that instruction to lapse. The child renders
+              beside a governing jar now (spec §2) but suppresses its own copy of these
+              caveats through `jarGoverns` — so this jar-block note is still the one home
+              of the sentence in that state, not a duplicate. */}
           {portionAltLiquidNote !== '' && (
             <p className="results-hint">{portionAltLiquidNote}</p>
           )}
