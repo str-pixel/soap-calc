@@ -707,6 +707,62 @@ describe('the mid-pour companion dose (spec §3)', () => {
 
     expect(row(snippet, 'At your 1% plan')).toMatch(/^\d/);
   });
+
+  it('renders even where a leftover record coincidentally reproduces the typed target within the old rounding bound (Phase 3, decision 8)', async () => {
+    // THE COINCIDENCE CORNER a review found reachable through this exact wiring, not just a
+    // hand-built lib fixture: on the LS tab's default 30% target, anhydrousGrams is
+    // ≈1,222.133 g, so solutionGrams ≈4,073.778 g and the OLD widened ceiling — solutionGrams
+    // stretched by the gradual write-back's own 2 dp rounding, 100·anhydrous/(30 − 0.005) —
+    // reached ≈4,074.457 g: a ≈0.68 g band (probe-confirmed, matching the module doc's own
+    // "0.68 g at 30%" estimate). A weighed reading of 4,074.2 g sits inside it, and a '0'
+    // record (the pot before any water at all, LS:1531) is exactly the state whose own
+    // arithmetic reproduces 30.00% from that reading within the old tolerance — the
+    // "coincidental match" the deleted widening existed to absorb.
+    //
+    // BEFORE (measuredPaste.ts pre-Phase-3, HEAD~1): the widening accepted 4,074.2 g as the
+    // pot, so `correctedDilutionWaterGrams` clamped to 0 g — the panel's "Dilution water to
+    // add (plan)" row printed "0 g", and the companion-dose memo's STRICT gate
+    // (`record.waterGrams < correctedPlanWaterGrams`, i.e. `0 < 0`) was FALSE, so "At your 1%
+    // plan" stayed off screen — an invisible under-dose (spec §3's own hazard) for a batch
+    // that has not actually reached the plan.
+    //
+    // AFTER (this deletion): the reading is refused by the same unwidened ceiling
+    // `measuredPasteIsValidFor` already applies everywhere else, so the plan row falls back to
+    // the recipe's own computed pot (anhydrous + cook water, ≈1,666.4 g here, no split
+    // liquid) — the IDENTICAL figure a plain unmeasured reading already gets (decision 8: the
+    // widening's old licence is decision 8 reversed, so the corrected behaviour is the
+    // no-record twin's own decided figure, not a regression: ≈2,407 g, the same "Dilution
+    // water to add" this recipe shows with nothing typed into either field at all).
+    // `correctedPlanWaterGrams` is now ≈2,407 g, so `0 < 2,407` is TRUE and the companion
+    // renders. This is a recorded BEHAVIOUR CHANGE at this corner, not a byte-identical
+    // no-op — pinned here on the decided (post-deletion) side.
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+
+    await userEvent.type(
+      screen.getByLabelText('Measured paste weight — the whole batch (g, optional)'),
+      '4074.2',
+    );
+    const water = screen.getByLabelText('Water added so far (g)');
+    fireEvent.change(water, { target: { value: '0' } });
+
+    // The plan row lands on the no-record twin's own figure — not the widened "0 g" the old
+    // ceiling would have printed for this exact reading.
+    const correctedPlanWater = num(row(panel, 'Dilution water to add (plan)'));
+    expect(correctedPlanWater).toBeCloseTo(2407, 0);
+    expect(correctedPlanWater).toBeGreaterThan(2000);
+
+    // THE DECIDED SIDE: the companion renders, because the record's 0 g is strictly below the
+    // plan's own (now non-zero) corrected water — the invisible-under-dose gate spec §3 exists
+    // to close, and the exact case the old widening used to leave open.
+    expect(row(snippet, 'At your 1% plan')).toMatch(/^\d/);
+  });
 });
 
 describe('a record arriving with a recipe needs no session state to appear in', () => {

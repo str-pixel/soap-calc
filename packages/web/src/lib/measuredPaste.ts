@@ -164,11 +164,11 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
 /**
  * Parses `settings.gradualWaterGrams` — the water the maker recorded pouring — into a finite,
  * NON-NEGATIVE gram figure, or undefined when there is no record. The one place the app
- * decides whether a gradual record EXISTS, which every surface that asks the question reads:
- * the printed sheet's two record rows, DilutionPanel's own derivation, and
- * {@link resolveDilution}'s decision about which arm governs. Separate copies of the same
- * predicate is exactly how the panel and the sheet came to disagree about whether a record
- * existed once before (the `> 0` gate that dropped a 0 g record from the paper alone).
+ * decides whether a gradual record EXISTS, which three surfaces now ask: the printed sheet's
+ * two record rows, DilutionPanel's own derivation, and {@link correctedPotGramsFor}'s decision
+ * about whether the widened ceiling has been earned. Three copies of the same predicate is
+ * exactly how the panel and the sheet came to disagree about whether a record existed once
+ * before (the `> 0` gate that dropped a 0 g record from the paper alone).
  *
  * `>= 0`, unlike {@link parseMeasuredPasteGrams}'s `> 0`: ZERO IS A RECORD. The pot before any
  * water at all is Gradual Dilution's own starting entry (LS:1531) and it writes a target like
@@ -186,9 +186,10 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * V) off a batch 2.25x lighter than the one on the bench.
  *
  * Refused HERE rather than at the panel because this is the one place the app decides a record
- * exists: a reading no scale produced must not be showing on the sheet or deciding which arm
- * governs, and those surfaces have no other predicate to ask. The panel renders the alert (it
- * owns the field), reading the same fingerprint directly.
+ * exists: a reading no scale produced must not be showing on the sheet, licensing the widened
+ * ceiling in {@link correctedPotGramsFor}, or pinning the maker into the mode that reads it,
+ * and those three surfaces have no other predicate to ask. The panel renders the alert (it owns
+ * the field), reading the same fingerprint directly.
  *
  * A single decimal stays a record — a scale really does read to 0.1 g — and '0.00' is zero
  * however it was typed, which is where the record starts, so the fingerprint's own `> 0` gate
