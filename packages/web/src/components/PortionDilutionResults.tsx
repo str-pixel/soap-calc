@@ -16,7 +16,7 @@ type PortionDilutionResultsProps = {
   /** The best-known WHOLE-BATCH paste mass (see useRecipeViewModel) — corrects the
    * recipe's own water-only predicted figure for an alternative liquid's non-water
    * solids, which are real mass sitting in the pot the recipe never counts. Used as the
-   * ceiling/composition basis for a remaining-mode measurement in place of the
+   * ceiling/composition basis for a measured reading in place of the
    * uncorrected figure when available, so core and this UI check agree. Falls back to the
    * recipe-computed figure when absent (a recipe with no split liquid, or data built
    * before this field existed). */
@@ -37,19 +37,6 @@ type PortionDilutionResultsProps = {
   /** True when the over-dilution verdict holds across the undeclared liquid's whole
    * 0–100% water range, so it can be stated as fact after all. */
   overDilutionCertain?: boolean;
-  /** Which control the maker is choosing the dilution with, so a refusal here can name
-   * something that is actually on screen.
-   *
-   * DEAD SINCE PHASE 2A, and kept for Phase 3 to delete with the rest of the ratio-mode
-   * plumbing (spec §5). There is one control now — the plan's % field, on screen in every
-   * state — so DilutionPanel no longer passes either of these and both defaults apply. They
-   * stay rather than being half-removed here: the wording helper below is the shared one, and
-   * deleting a parameter is a change to the copy of every caller, which is a phase of its
-   * own. */
-  dilutionMode?: 'concentration' | 'ratio';
-  /** True while a ratio the write-back has not applied is on screen. See `dilutionMode`
-   * immediately above: dead since Phase 2a, Phase 3's to remove. */
-  ratioNotAppliedYet?: boolean;
   /** The alternative-liquid caveats in their PORTION wordings, composed by DilutionPanel's
    * shell — where the batch wordings of the same clauses live, so the two scopes cannot
    * drift apart — and rendered here as part of this component's own status paragraph.
@@ -82,31 +69,17 @@ type PortionDilutionResultsProps = {
  * the maker to do about it. Exported so DilutionPanel's Whole-batch twin of the same
  * refusal words it identically — the two describe one state and used to drift apart.
  *
- * Ratio mode showed no concentration field at all, so "the target above" / "set a target"
- * named a control that was not on screen; and while the ratio was not applied yet, every
- * figure here still ran on the SAVED target, so naming the ratio's own concentration would
- * have been wrong in the other direction. The remedy is the same action either way — editing
- * the ratio both applies it and widens it — and points the same way as the exceeds-solution
- * alert: the paste is past the target, so it takes MORE water.
- *
- * BOTH CALLERS PASS THE 'concentration' ARM SINCE PHASE 2A. The mode is gone and the plan's %
- * field is on screen in every state, so the ratio arm below is unreachable from the app; it
- * survives with its parameters for Phase 3 to delete (spec §5). What the function is still
- * FOR is that DilutionPanel's Whole-batch twin of this refusal and this component's own
- * Custom-amount wording of it come from one place — the two describe one state and used to
- * drift apart.
+ * There used to be a second mode here — a water:paste ratio in place of the % field, with
+ * its own "not applied yet" state — and this function branched on which one was showing, so
+ * a refusal could name a control that was actually on screen. That mode is gone (Phase 2a
+ * removed it from the panel; Phase 3 removed the parameters here, spec §5): there is one
+ * control now, the plan's % field, on screen in every state, so there is one wording to give.
+ * What the function is still FOR is that DilutionPanel's Whole-batch twin of this refusal and
+ * this component's own Custom-amount wording of it come from one place — the two describe one
+ * state and used to drift apart.
  */
-export function dilutionTargetWording(
-  dilutionMode: 'concentration' | 'ratio',
-  ratioNotAppliedYet: boolean,
-): { named: string; remedy: string } {
-  if (dilutionMode !== 'ratio') {
-    return { named: 'the target above', remedy: 'Lower the target concentration above (more water)' };
-  }
-  return {
-    named: ratioNotAppliedYet ? 'your saved target above' : 'the concentration this ratio lands at',
-    remedy: 'Raise the water:paste ratio above (more water)',
-  };
+export function dilutionTargetWording(): { named: string; remedy: string } {
+  return { named: 'the target above', remedy: 'Lower the target concentration above (more water)' };
 }
 
 /**
@@ -272,8 +245,6 @@ export function PortionDilutionResults({
   cookWaterGrams,
   unknownLiquidGrams = 0,
   overDilutionCertain = false,
-  dilutionMode = 'concentration',
-  ratioNotAppliedYet = false,
   altLiquidNote = '',
   jarGoverns = false,
 }: PortionDilutionResultsProps) {
@@ -306,12 +277,13 @@ export function PortionDilutionResults({
   const driftGrams = portion?.pasteMeasured ? measured - portion.wholeBatchPasteGrams : 0;
 
   // THE portion status paragraph — one per rendered portion, under the panel's prose
-  // budget (at most two inline hint paragraphs per state; DilutionPanel's ratio paragraph
-  // can be on screen beside this one, and nothing else may be). Its clauses used to be up
-  // to three stacked paragraphs — the clamp note, the drift-or-estimate note, and (in the
-  // shell, where it could print beside no figures at all) the alternative-liquid caveats.
-  // Every clause keeps its old gate and its old wording; only the paragraph breaks between
-  // them are gone.
+  // budget (at most two inline hint paragraphs per state; ratio mode used to contribute a
+  // second one here, but it is gone, so this component's own paragraph is the only
+  // non-alert hint on the Custom amount screen now). Its clauses used to be up to three
+  // stacked paragraphs — the clamp note, the drift-or-estimate note, and (in the shell,
+  // where it could print beside no figures at all) the alternative-liquid caveats. Every
+  // clause keeps its old gate and its old wording; only the paragraph breaks between them
+  // are gone.
   //
   // SUPPRESSED WHOLESALE WHILE A JAR GOVERNS (Phase 2b): this grid now renders beside a
   // governing jar (spec §2), which already spends the budget on its own two paragraphs — the
@@ -367,14 +339,10 @@ export function PortionDilutionResults({
     if (altLiquidNote) statusClauses.push(altLiquidNote);
   }
 
-  // Both refusals below used to say "the target above" and "set a target", which names a
-  // field ratio mode does not show — its inputs are the ratio, the measured paste and the
-  // amount. See dilutionTargetWording for the full reasoning, including why an unapplied
-  // ratio must not be named as the target these figures were computed against.
-  const { named: dilutionTargetNamed, remedy: dilutionTargetRemedy } = dilutionTargetWording(
-    dilutionMode,
-    ratioNotAppliedYet,
-  );
+  // Both refusals below name the target above and remedy it with "lower the target
+  // concentration above". See dilutionTargetWording for why the wording is centralized here
+  // rather than written out twice.
+  const { named: dilutionTargetNamed, remedy: dilutionTargetRemedy } = dilutionTargetWording();
   return (
     <>
       {/* unmeasuredPasteAlreadyThinner rides this paragraph rather than earning one of its

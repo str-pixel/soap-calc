@@ -273,7 +273,7 @@ export function DilutionPanel({
   // in this component, and deliberately not a selection: presets do not track the pot (see
   // LS_WATER_PASTE_RATIO_PRESETS), so nothing here may re-derive a "current" ratio from the
   // plan % and highlight it. A stale plan value — a 33.85 left behind by the write-back this
-  // task deletes — therefore displays as-is with no preset marked, which is the expected
+  // task deleted — therefore displays as-is with no preset marked, which is the expected
   // reading of it and not a bug.
   //
   // NO EFFECT CLEARS IT. The caption's own render condition below compares this against the
@@ -618,7 +618,7 @@ export function DilutionPanel({
   //   - ratioTouched / gradualTouched and the mode-change effect that reset them, which
   //     existed only because entering a derived mode used to rewrite a typed target;
   //   - ratioNotAppliedYet / gradualNotAppliedYet, whose whole subject was the gap between a
-  //     derived figure and a plan it had not been written into — spec §4 deletes them,
+  //     derived figure and a plan it had not been written into — spec §4 deleted them,
   //     because with the plan rows labelled as plan there is nothing left unapplied;
   //   - the [1, 99] write-back clamps and their two alerts.
   // The plan is now what the maker typed or what a preset click wrote, and nothing else ever
@@ -688,13 +688,11 @@ export function DilutionPanel({
   // Shared with PortionDilutionResults so this shell's Whole-batch twin of that refusal and
   // the child's own Custom-amount wording of it can never name different controls.
   //
-  // ONE ARGUMENT PAIR NOW, because there is one control: the % field is on screen in every
-  // state this refusal can render in, so the remedy always names it. The helper keeps both of
-  // its parameters and its 'ratio' arm — deleting them is Phase 3's (spec §5) — and both
-  // callers pass the same constants, so neither surface can word the remedy for a control the
-  // panel no longer has. PortionDilutionResults' own defaults are these values, which is why
-  // it is no longer handed them at the call site below.
-  const refusalWording = dilutionTargetWording('concentration', false);
+  // NO ARGUMENTS: there is one control now, the % field, on screen in every state this
+  // refusal can render in, so there is one wording to give and the helper takes nothing to
+  // pick it. Both callers reading a parameterless function is what keeps them from ever
+  // wording the remedy for a control the panel no longer has.
+  const refusalWording = dilutionTargetWording();
   // The Whole-batch twin of PortionDilutionResults' unmeasuredPasteAlreadyThinner, and the
   // exact condition under which correctedDilutionWaterGrams' clamp fires: the corrected pot
   // outweighs the whole solution its own soap makes at the target, so the batch row prints
@@ -1888,11 +1886,10 @@ export function DilutionPanel({
                change it — the same test this shell's own alert below applies — so the two
                can never print opposite verdicts on one screen.
 
-               `dilutionMode` and `ratioNotAppliedYet` are NOT forwarded any more: the child
-               defaults them to 'concentration' and false, which is what the panel now always
-               is — one plan field, always on screen, so the child's refusals can only ever
-               name that one control. Its 'ratio' arm survives untouched for Phase 3 to
-               delete (spec §5) rather than being half-removed here.
+               There is no `dilutionMode` or `ratioNotAppliedYet` to forward any more (Phase
+               3, spec §5, deleted them along with the child's ratio arm): one plan field is
+               on screen in every state, so the child's refusals can only ever name that one
+               control, and it names it unconditionally.
 
                RENDERS BESIDE A GOVERNING JAR NOW (Phase 2b, spec §2: "the plan grid stays
                rendered beside a filled jar record, labelled as plan; the jar governs only
@@ -2314,14 +2311,16 @@ export function DilutionPanel({
           the undiluted paste. An empty field is not the same thing — it means nothing has
           been recorded yet, and the figures stay with your plan.
         </p>
-        {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance (in ratio
-          mode, the note above) used to
+        {/* THE SOLE OWNER of "which oils set the minimum". The ratio guidance (the note
+          above, back when it was gated to ratio mode) used to
           say it too — in words, without figures — so in ratio + whole batch the same
           claim rendered twice on one screen; this one carries the numbers (LS:1603:
           coconut to 40%, castile 25%; LS:1605: most combination recipes 25-35%), so it
           keeps the claim and the other drops it.
-          It also renders in BOTH modes and BOTH scopes, where the ratio note is
-          ratio-only — so ceding the claim here widens its reach rather than narrowing it.
+          It also rendered in BOTH modes and BOTH scopes, where the ratio note was
+          ratio-only — so ceding the claim here widened its reach rather than narrowing it.
+          Ratio mode is gone now (Phase 2a) and the note above renders unconditionally too,
+          so today the two simply agree rather than compete for the claim.
           Moved into these collapsed notes under the prose budget — MINUS its old
           overflow tail: everything left is a property of recipe classes, not of the
           state on screen, and the states it used to stack in (the ratio paragraph plus

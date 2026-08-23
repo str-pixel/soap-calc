@@ -191,10 +191,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // What that record MADE, which is the other half of the line spec §4 asks this sheet to
   // carry: paste + water, from the same two figures the panel adds up, so the page taken to
   // the bench states the mass that exists rather than only the water that went into it.
-  // Deliberately NOT a second row in the list: "Finished solution" is already
-  // there, the write-back makes the two agree to within a gram, and two near-identical
-  // masses in one column read as an error. It rides the note below instead, where it can be
-  // named as the record's own.
+  // USED TO mean no second row here at all: "Finished solution" was already there, and the
+  // write-back (now gone — decision 2, "no write-back, ever") kept the two within a gram of
+  // each other, so a second near-identical mass in one column would have read as an error.
+  // Once the write-back was killed for good the two could no longer be counted on to agree,
+  // which is why spec §4 promoted the record's own finished mass to its own row below
+  // ("That record makes") instead of leaving it riding a note.
   //
   // ONE CALL, to the resolution the panel's own "Finished so far" counts from
   // (lib/measuredPaste's weighedOrComputedPotGramsFor): the pot the maker weighed when that
@@ -491,10 +493,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 much water you started with and how much additional water you added"). It sits
                 beside "Dilution water to add" deliberately and is NAMED against it: that row
                 is what the saved target implies, this one is what was actually poured. They
-                are usually close, because recording the water writes its own concentration
-                back into the target — but they answer different questions, and a sheet that
-                let one stand in for the other would be the paper version of the confusion
-                this feature exists to remove. Absent entirely when nothing was recorded. */}
+                used to be usually close, back when recording the water wrote its own
+                concentration back into the target — decision 2 killed that write-back for
+                good, so today the two can differ by a lot. They answer different questions
+                either way, and a sheet that let one stand in for the other would be the paper
+                version of the confusion this feature exists to remove. Absent entirely when
+                nothing was recorded. */}
             {gradualWaterRecordedGrams !== null && (
               <div>
                 <dt>Water actually added</dt>
@@ -502,14 +506,15 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               </div>
             )}
             {/* Which row answers which question, said out loud rather than left to two
-                labels that both read as "water for this batch". They are usually within a
-                gram of each other, because recording the water writes its own concentration
-                back into the target — but they are not the same claim, and while a record
-                sits beside a target it has not been applied to they can be hundreds of
-                grams apart with nothing on the page distinguishing them. The finished mass
-                the record produced rides here too (spec §4), where it is named as the
-                record's own and cannot be mistaken for the target-derived "Finished
-                solution" row above. */}
+                labels that both read as "water for this batch". They used to be usually
+                within a gram of each other, back when recording the water wrote its own
+                concentration back into the target — decision 2 killed that write-back for
+                good ("no write-back, ever"), so today they are not the same claim and are
+                never structurally close: a record and the saved target are independent, and
+                can differ by hundreds of grams with nothing on the page distinguishing them
+                if this row were missing. The finished mass the record produced rides here too
+                (spec §4), where it is named as the record's own and cannot be mistaken for
+                the target-derived "Finished solution" row above. */}
             {gradualWaterRecordedGrams !== null && gradualFinishedGrams !== null && (
               <div>
                 <dt>That record makes</dt>

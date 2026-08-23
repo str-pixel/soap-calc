@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { useRecipeViewModel } from './useRecipeViewModel';
 import {
@@ -12,7 +12,21 @@ import {
 } from '../lib/recipe';
 import { processProfileById, type ProcessId } from '../lib/process';
 import { correctedDilutionWaterGrams } from '../lib/measuredPaste';
-import { lsFinishedVolumeMl, lsPartialDilution } from '@soap-calc/core';
+import { lsFinishedVolumeMl, lsPartialDilution, gradualDilutionFrom } from '@soap-calc/core';
+
+// Wraps the real gradualDilutionFrom by default (every other test in this file calls the
+// genuine implementation, untouched) — only the 2b-deferred-pin test below overrides it, and
+// restores the real implementation in a `finally` so it never leaks into a later test.
+// Needed because that pin's own state (a record present, `dilution` genuinely non-null, but
+// `gradualDilutionFrom` rejecting) is not reachable through this hook's real wiring: whenever
+// `dilution` is non-null, calculateDilution has already guaranteed anhydrousGrams > 0, and the
+// record arm's own computed pot is anhydrousGrams + non-negative cook water — never
+// non-positive — so gradualDilutionFrom can never actually reject there. Mocking it is what
+// stands in for that otherwise-unreachable "adjacent" state.
+vi.mock('@soap-calc/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@soap-calc/core')>();
+  return { ...actual, gradualDilutionFrom: vi.fn(actual.gradualDilutionFrom) };
+});
 
 afterEach(cleanup);
 
@@ -1074,4 +1088,46 @@ test('a solution-dosed additive doses the record when one governs; the plan-gove
     6,
   );
   expect(recordLine.grams).not.toBeCloseTo(0.02 * record.dilution.solutionGrams, 1);
+});
+
+test('the additive solution basis falls to the plan figure, not 0, when a record governs with a gradual rejection behind it (2b deferred pin)', () => {
+  // `governs === 'record'` with `record === null` (see the "nothing to show yet" test above)
+  // has two distinct causes inside resolveDilution: `pot === null` (that test's own fixture —
+  // `dilution` itself is null, decision 8) and `gradualDilutionFrom` rejecting with `dilution`
+  // still very much non-null (e.g. a non-positive pot). Through this hook's real wiring the
+  // second cause cannot actually fire: whenever `dilution` is non-null, calculateDilution has
+  // already guaranteed its anhydrousGrams > 0, and the record arm's own pot
+  // (weighedOrComputedPotGramsFor) is that same anhydrousGrams plus a non-negative cook
+  // water — never non-positive — so gradualDilutionFrom has nothing to reject. The mock above
+  // stands in for that otherwise-unreachable "adjacent" state so this pin can still exercise
+  // the one line it protects: useRecipeViewModel's `solutionGrams = resolvedDilution.record ?
+  // ... : (dilution?.solutionGrams ?? 0)`. A record governing with nothing to show must still
+  // dose the 'solution'-basis additive off the PLAN's own solutionGrams — a bare `0` fallback
+  // would drop `basisWeight <= 0` in calculateAdditives.ts and silently remove the line
+  // instead of leaving today's plan-based dose.
+  const GUAR_LINE: AdditiveLine = {
+    key: 'guar-1', catalogId: 'guar', name: 'Guar gum',
+    amount: '2', basis: 'solution', unit: 'percent', addAt: 'after_cook',
+  };
+  const mocked = vi.mocked(gradualDilutionFrom);
+  const original = mocked.getMockImplementation();
+  mocked.mockImplementation(() => null);
+  try {
+    let vm: any;
+    probe(
+      (v) => { vm = v; },
+      { soapConcentrationPercent: '30', gradualWaterGrams: '500' },
+      'ls', undefined, [GUAR_LINE],
+    );
+    // The state this pin is about: a real plan, a record that governs, nothing to show for it.
+    expect(vm.dilution).not.toBeNull();
+    expect(vm.dilutionGoverns).toBe('record');
+    expect(vm.dilutionRecord).toBeNull();
+    // The pin itself: the additive still doses off the plan's solutionGrams.
+    const guarLine = vm.computedAdditives.find((a: any) => a.catalogId === 'guar');
+    expect(guarLine).toBeDefined();
+    expect(guarLine.grams).toBeCloseTo(0.02 * vm.dilution.solutionGrams, 6);
+  } finally {
+    mocked.mockImplementation(original!);
+  }
 });

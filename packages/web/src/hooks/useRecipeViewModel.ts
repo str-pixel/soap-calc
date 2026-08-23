@@ -146,7 +146,7 @@ export type RecipeViewModel = {
    * dilution exists. */
   finishedProductGrams: number | null;
   /** The best-known WHOLE-BATCH paste mass — anhydrousGrams + cookWaterGrams, corrected
-   * for an alternative liquid's non-water solids. Feeds PortionDilutionResults' remaining-mode
+   * for an alternative liquid's non-water solids. Feeds PortionDilutionResults' measured-reading
    * ceiling/composition basis. Null before a dilution exists. */
   wholeBatchPasteGrams: number | null;
   batchWeightWithExtras: number;
@@ -476,7 +476,7 @@ export function useRecipeViewModel({
   // falls back to) for an alternative liquid's non-water solids: real mass sitting in the
   // pot that a water-only figure structurally misses (splitLiquidPasteWater is only the
   // liquid's WATER fraction; splitLiquidGrams is its total mass, so the difference is its
-  // solids). Feeds PortionDilutionResults' remaining-mode ceiling/composition basis (see
+  // solids). Feeds PortionDilutionResults' measured-reading ceiling/composition basis (see
   // lsPartialDilution's wholeBatchPasteGrams param) — without this, a legitimate remaining
   // reading above the water-only figure was falsely rejected on any split-liquid recipe,
   // and the composition it derived understated the pot's true paste mass. Null before a

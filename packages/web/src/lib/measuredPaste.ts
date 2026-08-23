@@ -164,11 +164,13 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
 /**
  * Parses `settings.gradualWaterGrams` — the water the maker recorded pouring — into a finite,
  * NON-NEGATIVE gram figure, or undefined when there is no record. The one place the app
- * decides whether a gradual record EXISTS, which three surfaces now ask: the printed sheet's
- * two record rows, DilutionPanel's own derivation, and {@link correctedPotGramsFor}'s decision
- * about whether the widened ceiling has been earned. Three copies of the same predicate is
- * exactly how the panel and the sheet came to disagree about whether a record existed once
- * before (the `> 0` gate that dropped a 0 g record from the paper alone).
+ * decides whether a gradual record EXISTS, asked today by the printed sheet's two record rows
+ * and by `resolveDilution`'s own governs decision — the one place DilutionPanel's batch scope
+ * and the view model's every downstream consumer now share it, rather than each keeping their
+ * own copy. Two copies of the same predicate (sheet, panel) is exactly how they once came to
+ * disagree about whether a record existed at all (the `> 0` gate that dropped a 0 g record from
+ * the paper alone); {@link correctedPotGramsFor} used to be a third copy, behind the widened
+ * ceiling — gone along with the write-back that earned it (Phase 3, spec §5).
  *
  * `>= 0`, unlike {@link parseMeasuredPasteGrams}'s `> 0`: ZERO IS A RECORD. The pot before any
  * water at all is Gradual Dilution's own starting entry (LS:1531) and it writes a target like
@@ -180,16 +182,21 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * ({@link subTenthPrecisionFingerprint} — see it for the raw-string-not-float design). The
  * water goes on the same scale the paste does, so two or more typed decimal digits are the
  * same impossibility here: `<input type="number">` commits a typed 2,000 as '2.000' in every
- * locale, and 2 g of water on a 1,600 g pot derives 74.9% instead of 33.8% — a percentage this
- * mode WRITES into `settings.soapConcentrationPercent`, so it would size the finished mass, the
- * printed sheet's "Water actually added" row and a legally capped preservative dose (EU Annex
- * V) off a batch 2.25x lighter than the one on the bench.
+ * locale, and 2 g of water on a 1,600 g pot derives 74.9% instead of 33.8%. That used to be a
+ * percentage the mode WROTE into `settings.soapConcentrationPercent` (decision 2's write-back,
+ * gone since Phase 2a) — sizing the finished mass, the printed sheet's "Water actually added"
+ * row and a legally capped preservative dose (EU Annex V) off a batch 2.25x lighter than the
+ * one on the bench. Today the same bad percentage would only reach the record's own display
+ * (`resolveDilution`'s `concentrationPercent`), but a display the maker weighed nothing to
+ * justify is still not something to show.
  *
  * Refused HERE rather than at the panel because this is the one place the app decides a record
- * exists: a reading no scale produced must not be showing on the sheet, licensing the widened
- * ceiling in {@link correctedPotGramsFor}, or pinning the maker into the mode that reads it,
- * and those three surfaces have no other predicate to ask. The panel renders the alert (it owns
- * the field), reading the same fingerprint directly.
+ * exists: a reading no scale produced must not be showing on the sheet or driving what
+ * `resolveDilution` reports as the record's own concentration — the only predicate either
+ * surface has to ask. It used to gate two more consequences that are gone now: licensing a
+ * widened ceiling in {@link correctedPotGramsFor}, and pinning the maker into the mode the
+ * write-back read it back into (both retired with the write-back itself, decision 2, Phase 2a).
+ * The panel renders the alert (it owns the field), reading the same fingerprint directly.
  *
  * A single decimal stays a record — a scale really does read to 0.1 g — and '0.00' is zero
  * however it was typed, which is where the record starts, so the fingerprint's own `> 0` gate
@@ -510,7 +517,8 @@ export function measuredPasteRejectionFor(
  * one resolution by construction, and nothing derives a target from a record any more (Phase
  * 2a deleted the write-back, decision 2 forbids its return). The widening had nothing left to
  * earn: it could only still fire where a record's own arithmetic happened to reach an
- * unrelated, hand-typed target by coincidence, which is why Phase 3 deletes it (spec §5) —
+ * unrelated, hand-typed target by coincidence, which is why nothing here widens the ceiling
+ * any more (Phase 3, spec §5) —
  * this ceiling is `measuredPasteIsValidFor`'s exactly, for the PLAN arm, where it always
  * belonged.
  *
@@ -598,14 +606,16 @@ export function computedPotGramsFor(
  * a jar's share of the batch came to be taken from the prediction while every batch-scope figure
  * beside it preferred the scale.
  *
- * IT IS TARGET-INDEPENDENT, AND THAT IS NOT AN OVERSIGHT — it is the property gradual's
- * write-back needs, and the reason this is not {@link correctedPotGramsFor}. The gate is
- * {@link measuredPasteDescribesPotFor}: parse, precision, solids floor, and NO ceiling. Ratio
- * mode has no target to compare a reading against, and gradual DERIVES its target from the pot
- * this function returns — so a ceiling here would let the panel's own output choose the panel's
- * input, which is the render loop measuredPasteDescribesPotFor documents in full. A reading past
- * what the saved target can hold is still refused everywhere a TARGET is what the reading is
- * being measured against: the pour, the bottled mass and the dose all go through
+ * IT IS TARGET-INDEPENDENT, AND THAT IS NOT AN OVERSIGHT — it is the property the record arm's
+ * derivation needs, and the reason this is not {@link correctedPotGramsFor}. The gate is
+ * {@link measuredPasteDescribesPotFor}: parse, precision, solids floor, and NO ceiling. A ratio
+ * preset has no target to compare a reading against, and the record arm still DERIVES its own
+ * concentration from the pot this function returns — so a ceiling here would let the panel's
+ * own output choose the panel's input, the same render loop measuredPasteDescribesPotFor
+ * documents in full (a live hang, back when that derivation was written into the recipe;
+ * display-only now, decision 2, but the circularity a ceiling would reintroduce is identical).
+ * A reading past what the saved target can hold is still refused everywhere a TARGET is what
+ * the reading is being measured against: the pour, the bottled mass and the dose all go through
  * correctedPotGramsFor, whose ceiling is solutionGrams exactly.
  *
  * So the two functions ANSWER DIFFERENT QUESTIONS and are expected to differ — "what does this
@@ -661,12 +671,13 @@ export function weighedOrComputedPotGramsFor(
  *    `wholeBatchPasteGrams` is supplied. calculateDilution works from anhydrous + water
  *    alone, so its dilutionWaterGrams is solutionGrams - anhydrous - cookWater — it leaves
  *    the solids out of the pot entirely and prescribes water for a paste lighter than the
- *    one on the scale. DilutionPanel's ratio mode already derives its pour from the
- *    corrected paste (pasteGrams x ratio), so before this the ratio block and every
+ *    one on the scale. DilutionPanel's now-deleted ratio mode used to derive its pour from
+ *    the corrected paste (pasteGrams x ratio), so before this fix the ratio block and every
  *    concentration-derived surface disagreed by exactly the solids: 5,000 g on screen
  *    against 5,450 g on the batch sheet for a 900 g liquid at 50% water. Subtracting the
- *    corrected paste from the same solutionGrams is the ratio block's own basis, so the
- *    two now land on one number.
+ *    corrected paste from the same solutionGrams was that block's own basis, so the two
+ *    landed on one number — every other consumer of this correction keeps it now that the
+ *    block itself is gone.
  *
  * Both rules are ONE subtraction from ONE pot — `solutionGrams - the pot`, where the pot is
  * {@link correctedPotGramsFor}'s (the reading when it describes a possible one, else the
