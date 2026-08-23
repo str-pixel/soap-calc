@@ -30,6 +30,24 @@ type PreservativeSnippetProps = {
    * thinner than the target). Null renders the hint for that state; it must never quietly
    * fall back to the batch, which is the bug above wearing a different hat. */
   finishedGrams: number | null;
+  /** The PLAN arm's own preservative-free basis — the mid-pour companion dose (spec §3).
+   * App hands this down non-null exactly when it has decided the companion belongs on
+   * screen: batch scope, a record governing, and that record's own water still strictly
+   * below the plan's own dilution water (App's own comparison; this component trusts the
+   * verdict rather than re-deriving it). Null hides the line outright — it never falls
+   * back to `finishedGrams`, which would silently reprint the governing dose under a
+   * second label.
+   *
+   * Renders as a second, plan-labelled figure beside the governing dose: "at your N% plan:
+   * X g", computed by the SAME w/w formula (`preservativeDoseGrams`) against THIS basis
+   * instead of `finishedGrams` — the dose for the batch that exists (the governing row)
+   * beside the dose at plan completion (this one), so a maker who weighs a preservative
+   * against 0 g poured is not left unaware that the same batch needs more once diluted on
+   * (spec's own illustration: 26.3 g at 0 g poured vs 40.4 g at a 30% plan on the reference
+   * batch — the invisible under-dose this line exists to prevent).
+   *
+   * DOSE MATH ONLY, exactly like `finishedGrams` itself — never printed bare. */
+  planDosingBasisGrams?: number | null;
   /** Which scope `finishedGrams` was resolved in, so the base row can NAME the mass it
    * quotes and the empty-state hint can ask for the right thing. Passed independently of
    * `finishedGrams` because it is still the answer when that is null. Defaults to 'batch',
@@ -82,6 +100,7 @@ type PreservativeSnippetProps = {
  */
 export function PreservativeSnippet({
   finishedGrams,
+  planDosingBasisGrams = null,
   basisScope = 'batch',
   portionIsRecorded = false,
   weightUnit,
@@ -105,6 +124,15 @@ export function PreservativeSnippet({
   const grams =
     finishedGrams !== null && tier !== 'none' && tier !== 'impossible'
       ? preservativeDoseGrams(finishedGrams, doseNum)
+      : null;
+  // The mid-pour companion (spec §3): the SAME w/w formula, against the PLAN's basis
+  // instead of the governing one — gated on the same two refusal tiers as `grams` above, so
+  // a dose the maker cannot legally weigh in shows no companion either. `planDosingBasisGrams`
+  // is App's own verdict on whether the companion belongs on screen at all (null hides it);
+  // this line only ever computes a figure FROM a basis App already decided to show.
+  const planGrams =
+    planDosingBasisGrams != null && tier !== 'none' && tier !== 'impossible'
+      ? preservativeDoseGrams(planDosingBasisGrams, doseNum)
       : null;
   const [typicalLow, typicalHigh] = preservative?.typicalPctRange ?? [0, 0];
   return (
@@ -236,6 +264,28 @@ export function PreservativeSnippet({
                 <dt>Preservative to add</dt>
                 <dd>{formatWeight(grams, weightUnit)}</dd>
               </div>
+              {/* THE MID-POUR COMPANION (spec §3) — beside the governing dose, not instead of
+                  it: two different quantities, each named (the dose for the batch that exists
+                  vs the dose at plan completion), so a maker who weighed the governing figure
+                  early is not left unaware the same batch needs more once diluted on.
+                  Plan-labelled in the panel's own spirit (a distinct "at the plan" label,
+                  echoing DilutionPanel's "(plan)" suffix idiom) — but deliberately NOT the
+                  governing dt's own text plus a suffix: this row renders BESIDE that one, in
+                  the same details, and e2e's ls-gradual-dilution.spec.ts reads the governing
+                  figure by filtering `.results-grid__item` on `hasText: 'Preservative to
+                  add'` — a dt that merely appended "(plan)" to that phrase would still contain
+                  it as a substring and match both rows, exactly the strict-mode violation this
+                  wording avoids. */}
+              {planGrams !== null && (
+                <div className="results-grid__item">
+                  {/* The dt carries the whole plan phrase so a screen reader announces it
+                      once ("At your 1% plan: 40 g"), and the dd is a bare weight like every
+                      other row's. Still no "Preservative to add" substring — the e2e
+                      strict-mode locator concern stays addressed. */}
+                  <dt>{`At your ${typedPct}% plan`}</dt>
+                  <dd>{formatWeight(planGrams, weightUnit)}</dd>
+                </div>
+              )}
               {/* The mass the bottle actually weighs — basis PLUS the dose, the same
                   INCLUSIVE figure the panel's own same-named row quotes (fix 3: one name,
                   one mass; `finishedGrams` itself stays the preservative-free basis, fed

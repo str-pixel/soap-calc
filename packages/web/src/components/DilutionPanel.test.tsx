@@ -466,18 +466,23 @@ describe('intended-use dilution targets', () => {
       // while nothing renders for it, so this cell falls back to ZERO alerts at a target ten
       // points past what any recipe dissolves.
       //
-      // The PLAN's wording, and that is deliberate rather than an oversight: the batch record
-      // participates nowhere in portion scope (spec §2), so what the ceiling reads here is the
-      // plan's own 50%. Portion scope's own record-arm ceiling is Phase 2b's (spec §6).
+      // THE JAR'S OWN WORDING (Phase 2b, spec §1/§4): the batch record participates nowhere
+      // in portion scope, but the JAR does — resolveDilution's portion arm makes the jar's
+      // own resolved % the figure this ceiling reads and names, never the plan's 50%. 2,000 g
+      // of paste is a 2,000/2,600 share of the 1,200 g anhydrous soap (923.08 g) plus 200 g of
+      // water is 2,200 g at 41.96% — above the ceiling on its OWN reading, distinct from the
+      // plan's 50% so no assertion below can pass by matching the wrong number.
       renderOverCeiling('plan', {
         measuredPasteGrams: '',
         dilutionScope: 'portion',
-        portionPasteGrams: '400',
-        portionWaterGrams: '900',
+        portionPasteGrams: '2000',
+        portionWaterGrams: '200',
         onPortionPasteChange: () => {},
         onPortionWaterChange: () => {},
       });
-      expect(alertTexts()).toEqual([expect.stringMatching(CEILING)]);
+      expect(alertTexts()).toEqual([
+        expect.stringMatching(/The jar so far is at 41\.96% — above what any recipe fully dissolves; keep adding water\./i),
+      ]);
     });
 
     it('still yields to the child that says it in Custom amount scope', () => {
@@ -594,24 +599,39 @@ describe('intended-use dilution targets', () => {
       expect(screen.getByText(/it weighs 2,500 g against the 2,400 g/i)).toBeTruthy();
     });
 
-    it('speaks in Custom amount with a recorded jar, when the refusal that would explain the screen cannot render', () => {
-      // THE HOLE (pre-existing; user decided 2026-08-16 to fix it on this branch), on the
-      // surface that replaced its mode. A 3,000 g whole-batch reading exceeds the 2,400 g
-      // solution, but that refusal is plan-governs only and a recorded jar governs Custom
-      // amount; the corrected-pot alert is Whole-batch only; and the child's own wording
-      // needs an unrejected reading and does not render for a governing jar at all. Three
-      // voices, all gated off at once — and keyed on the bare predicate the ceiling's clause
-      // would suppress here too, leaving NOTHING: no alert, no plan figures, no refusal, no
-      // ceiling. Keyed on renderings, the ceiling speaks.
+    it('the ceiling now answers for the JAR, and a 3,000 g reading genuinely leaves it nothing to say', () => {
+      // THE HOLE this cell used to demonstrate (pre-Phase-2b; user decided 2026-08-16 to fix
+      // it on this branch): a 3,000 g whole-batch reading exceeds the 2,400 g solution, but
+      // that refusal is plan-governs only and a recorded jar governs Custom amount; the
+      // corrected-pot alert is Whole-batch only; and the child's own wording needs an
+      // unrejected reading and does not render for a governing jar at all. Three voices, all
+      // gated off at once — and in 2a the ceiling was what filled the silence, because it
+      // spoke of the PLAN's 50%, which nothing here changes.
+      //
+      // PHASE 2B CHANGES WHAT THE CEILING SAYS, and this exact fixture is where that change
+      // produces a genuinely different, and correct, answer: the reading is a valid
+      // TARGET-INDEPENDENT pot basis (measuredPasteDescribesPotFor only checks the solids
+      // floor, never the solution ceiling — see that function's own doc — so 3,000 g stands
+      // even though it is heavier than the 2,400 g solution), which makes it the batch this
+      // jar is drawn FROM. 1,200 g of anhydrous soap over a 3,000 g pot is 40.0% AT the
+      // paste's own concentration, with zero water added — the guide's own ceiling, not
+      // above it — so no jar drawn from this pot, at any positive water, can ever exceed 40%
+      // either. The ceiling has nothing true left to say about a jar it is structurally
+      // incapable of finding over 40%, so it falls silent — correctly, not as a regression:
+      // the three other voices stay gated off for the same reasons as before, and the
+      // ceiling's own new voice (the jar's) has genuinely nothing to report here. 2,000 g
+      // paste / 100 g water is a 2,000/3,000 share of the 1,200 g anhydrous soap (800 g) over
+      // 2,100 g finished — 38.1%, comfortably under the guide's ceiling.
       renderPastTargetPot('plan', {
         measuredPasteGrams: '3000',
         dilutionScope: 'portion',
-        portionPasteGrams: '400',
-        portionWaterGrams: '900',
+        portionPasteGrams: '2000',
+        portionWaterGrams: '100',
         onPortionPasteChange: () => {},
         onPortionWaterChange: () => {},
       });
-      expect(alertTexts()).toEqual([expect.stringMatching(SOLUBILITY_CEILING)]);
+      expect(alertTexts()).toEqual([]);
+      expect(screen.getByText(/At 38\.1% this suits/)).toBeTruthy();
     });
 
     it('still yields to the corrected-pot alert in Whole batch, where the refusal is the one that renders', () => {
@@ -663,18 +683,22 @@ describe('intended-use dilution targets', () => {
       // a 50% target can dissolve — so the ceiling now speaks beside it, exactly the pair
       // the targetExceedsPaste side shows ("speaks beside a rejection alert", above). The
       // exact pair, in document order: the refusal beside the field it describes, the
-      // ceiling below the figures — and never the same claim twice.
+      // ceiling below the figures — and never the same claim twice. (Phase 2b: the ceiling's
+      // own wording is the JAR'S, same 2,000 g / 100 g jar as the sibling test above — 45.71%,
+      // distinct from the plan's 50%; the rejected 900 g reading is the WHOLE-BATCH measured
+      // paste field, unrelated to the jar, and is why the batch pot falls back to the
+      // recipe's own 2,500 g computed figure the jar's own share is still taken from.)
       renderPastTargetPot('plan', {
         measuredPasteGrams: '900',
         dilutionScope: 'portion',
-        portionPasteGrams: '400',
-        portionWaterGrams: '900',
+        portionPasteGrams: '2000',
+        portionWaterGrams: '100',
         onPortionPasteChange: () => {},
         onPortionWaterChange: () => {},
       });
       expect(alertTexts()).toEqual([
         expect.stringMatching(/cannot be all of the paste/i),
-        expect.stringMatching(SOLUBILITY_CEILING),
+        expect.stringMatching(/The jar so far is at 45\.71% — above what any recipe fully dissolves; keep adding water\./i),
       ]);
     });
 
@@ -3594,6 +3618,59 @@ describe('gradual dilution — recording the water actually poured', () => {
   });
 });
 
+describe('the plausibility note — a weighed pot twice the paste this recipe makes', () => {
+  // Carried from PR #167 review triage (Dilution Phase 2b, task 4). The record arm is
+  // deliberately target-independent (measuredPasteDescribesPotFor has no ceiling — see its
+  // own doc for the render loop a ceiling here would reopen), so a maker who left the
+  // crockpot on the scale, or read a kitchen scale in the wrong unit, gets no alert from the
+  // pot's own rules (the reading parses, clears the solids floor, is not finer than a scale
+  // reads) and no ceiling to catch it either. This is the target-FREE sanity note the triage
+  // still allows: a non-alert hint, not a verdict.
+  //
+  // Fixture: anhydrous 1,000 g, cook water 300 g, no split liquid, so the recipe's own
+  // computed pot (computedPotGramsFor) is exactly 1,300 g — the "paste this recipe makes".
+  // 2,730 g is 2.1x that; 2,470 g is 1.9x. Neither figure coincides with anhydrous (1,000),
+  // cook water (300), the computed pot (1,300) or the solution (4,000), so no assertion below
+  // can pass by matching the wrong quantity.
+  const RECORD_PLAUSIBILITY = {
+    ...BASE,
+    dilution: {
+      anhydrousGrams: 1000, solutionGrams: 4000, totalWaterGrams: 3000,
+      dilutionWaterGrams: 2700, glycerinGrams: 100, soapConcentrationPercent: 25,
+      targetExceedsPaste: false,
+    },
+    soapConcentrationPercent: '25',
+    cookWaterGrams: 300,
+    wholeBatchPasteGrams: 1300,
+    gradualWaterGrams: '0',
+    onGradualWaterChange: () => {},
+  };
+  const HINT = /more than twice the paste this recipe makes/i;
+
+  it('a reading more than twice the computed pot earns the hint', () => {
+    render(<DilutionPanel {...RECORD_PLAUSIBILITY} measuredPasteGrams="2730" />);
+    const hint = screen.getByText(HINT);
+    expect(hint).toBeTruthy();
+    // A QUESTION, not a verdict: never role="alert".
+    expect(hint.closest('[role="alert"]')).toBeNull();
+  });
+
+  it('a reading under twice the computed pot earns nothing', () => {
+    render(<DilutionPanel {...RECORD_PLAUSIBILITY} measuredPasteGrams="2470" />);
+    expect(screen.queryByText(HINT)).toBeNull();
+  });
+
+  it('a reading the belowSolids refusal already rejects earns no hint either', () => {
+    // 900 g is under the 1,000 g anhydrous floor (no split liquid, so the floor is the
+    // anhydrous soap alone) — a refused reading already has a voice, so the plausibility
+    // note stands down. Render-keyed: the refusal alert is asserted present, not assumed.
+    render(<DilutionPanel {...RECORD_PLAUSIBILITY} measuredPasteGrams="900" />);
+    const alerts = screen.getAllByRole('alert').map((a) => a.textContent ?? '');
+    expect(alerts.some((a) => /cannot be all of the paste/i.test(a))).toBe(true);
+    expect(screen.queryByText(HINT)).toBeNull();
+  });
+});
+
 describe('a record beside a plan it does not match: both figures, both named', () => {
   // RETIRED WITH THE WRITE-BACK, REPLACED BY THE LABEL. This describe pinned the "Not applied
   // yet" clause: with the write-back waiting for a touch, a record could sit on screen beside
@@ -3662,7 +3739,10 @@ describe('a record beside a plan it does not match: both figures, both named', (
       />,
     );
     expect(screen.queryByText(/Not applied yet/i)).toBeNull();
-    expect(screen.getByText(/saved target is unchanged/)).toBeTruthy();
+    // Phase 2b: the echo drops the "unchanged" reassurance framing and names the plan as
+    // the plan (spec §2) — there is nothing left to reassure about once neither record ever
+    // writes back.
+    expect(screen.getByText(/The plan is/)).toBeTruthy();
   });
 });
 
@@ -3857,18 +3937,41 @@ describe('a recorded jar in Custom amount scope', () => {
     expect(screen.queryByText(/The batch so far is at/)).toBeNull();
   });
 
-  it('shows none of the plan-sized portion grid, even with a stale amount left behind', () => {
-    // The reachable path: size a jar by volume, then record the one you actually weighed out
-    // without clearing the amount. targetMl is App session state and survives everything, so
-    // the whole plan-derived grid would render beside the jar's own recorded figures — two
-    // unlabelled figure sets, disagreeing, describing the same jar. Hiding the input is not
-    // enough; the state's downstream effect has to go too.
+  it('shows the plan-sized portion grid too, labelled as plan, with a stale amount left behind', () => {
+    // REWRITTEN (review-fix round 1, spec §2: "the plan grid stays rendered beside a filled
+    // jar record, labelled as plan; the jar governs only dose/finished figures"). This used to
+    // pin the OPPOSITE claim — that the whole plan-derived grid stood down here, because
+    // `targetMl` is App session state that survives everything and a maker who sized a jar by
+    // volume, then recorded the one they actually weighed without clearing the amount, would
+    // otherwise see two UNLABELLED figure sets disagreeing about the same jar. The spec's
+    // answer to that state turned out to be the label, not suppression (the batch scope
+    // already proves three masses can share a screen once each carries its name) — so this is
+    // the reachable path the label was built for, not a state to hide.
+    //
+    // Three things in one cell, per the review's own ask: the grid renders, its primary row
+    // is plan-LABELLED, and the jar's own figures are what govern the dose/finished mass
+    // (spec §2's own division of labour, unchanged by this round).
     render(
       <DilutionPanel {...P} targetMl="1000" portionPasteGrams="400" portionWaterGrams="900" />,
     );
+    // THE JAR GOVERNS the dose/finished figures: 400 g of paste is a quarter of the 1,600 g
+    // batch (300 g anhydrous) plus 900 g water is 1,300 g at 23.08% soap — the same figure a
+    // caller of App's preservativeBasis memo would dose against, not the plan grid's own
+    // sizing below.
+    const jarRow = screen.getByText('Finished so far (this jar)').closest('div')!;
+    expect(jarRow.textContent).toContain('1,300 g');
     expect(screen.getByText(/23\.08% soap/)).toBeTruthy();
-    expect(screen.queryByText(/Paste to weigh out/i)).toBeNull();
-    expect(screen.queryByText(/^Makes$/i)).toBeNull();
+    // THE PLAN GRID IS PRESENT, sized from the stale `targetMl="1000"` exactly as it would be
+    // with no jar recorded — 1,000 ml at this recipe's 30% target is 412 g of paste and 618 g
+    // of water (core's own arithmetic, unchanged by a jar existing beside it).
+    const planWaterRow = screen.getByText('Water to add (plan)').closest('div')!;
+    expect(planWaterRow.textContent).toContain('618 g');
+    expect(screen.getByText('Paste to weigh out').closest('div')!.textContent).toContain('412 g');
+    expect(screen.getByText('Makes').closest('div')!.textContent).toContain('1,000 ml');
+    // AND PLAN-LABELLED: the primary row carries "(plan)" so the two figure sets — this one
+    // and the jar's own "Finished so far (this jar)" above — can never be mistaken for one
+    // disagreeing answer.
+    expect(screen.queryByText('Water to add')).toBeNull();
   });
 
   it("reports the jar's own figures, each named as the portion's", () => {
@@ -3912,8 +4015,8 @@ describe('a recorded jar in Custom amount scope', () => {
     // TWO controls hold that 30 now: the plan field at the top of the panel (editable) and
     // the read-only echo inside the jar's own paragraph, which is the one this test is
     // about — the echo exists to let a maker see for themselves that diluting one jar left
-    // the recipe alone.
-    const echo = screen.getByLabelText(/unchanged by this jar/i) as HTMLInputElement;
+    // the recipe alone (spec §2: the plan named as the plan, beside the jar).
+    const echo = screen.getByLabelText(/The plan's target concentration, beside this jar/i) as HTMLInputElement;
     expect(echo.value).toBe('30');
     expect(echo.readOnly).toBe(true);
   });
@@ -3928,6 +4031,23 @@ describe('a recorded jar in Custom amount scope', () => {
     // The bound the refusal actually applied, quoted rather than re-derived.
     expect(alert).toContain('1,600 g');
     expect(screen.queryByText(/Finished so far/)).toBeNull();
+  });
+
+  it('gains the plan-labelled grid here too, even though the jar itself is refused (review-fix round 1)', () => {
+    // THE AXIS BOTH EARLIER MATRICES MISSED: `portionJarGoverns` is `resolveDilution`'s
+    // `governs === 'record'`, which is true here (both jar figures typed) even though the
+    // jar's own arithmetic refuses (paste heavier than the batch) — the module's own doc
+    // calls this "governs a scope" and "has figures to show" being different questions. The
+    // plan grid's own gate is `dilutionScope === 'portion'` unconditionally now (spec §2), so
+    // it renders in EVERY portion-scope cell with a `dilution`, labelled as plan whenever
+    // `portionJarGoverns` — including this one, where the jar itself shows nothing. Nothing
+    // about the refusal alert or the missing jar readout changes; the grid is the only thing
+    // that moves in this cell.
+    render(<DilutionPanel {...P} targetMl="1000" portionPasteGrams="4000" portionWaterGrams="900" />);
+    expect(screen.getByRole('alert').textContent).toMatch(/more paste than the batch holds/i);
+    expect(screen.queryByText(/Finished so far/)).toBeNull();
+    expect(screen.getByText('Water to add (plan)')).toBeTruthy();
+    expect(screen.queryByText('Water to add')).toBeNull();
   });
 
   it("keeps the jar's own figures when the SAVED TARGET is past the batch's paste", () => {
@@ -4126,11 +4246,14 @@ describe('a jar is weighed out of the pot the maker weighed', () => {
 });
 
 describe('the density caveat needs a millilitre figure on screen', () => {
-  it('stays off in Custom amount with a recorded jar, where no volume is printed', () => {
-    // targetMl is App session state that survives everything, so a jar sized by volume leaves
-    // a live figure behind. A governing jar correctly suppresses the whole plan-sized grid —
-    // but the caveat explaining a gram→millilitre bridge kept keying on that stale amount,
-    // and printed beside no millilitre figure at all.
+  it('comes back on in Custom amount with a recorded jar, now that the plan grid renders its own volume beside it', () => {
+    // REWRITTEN (review-fix round 1, spec §2). This used to pin the opposite: "a governing jar
+    // correctly suppresses the whole plan-sized grid" — true in 2a/early 2b, false now that the
+    // grid renders beside a governing jar too (spec §2's own end state). `targetMl` is App
+    // session state that survives everything, so it still sizes a live "Makes" figure — the
+    // caveat's own gate (`portionOnScreen`, read off the identical `portionDilutionFor` call
+    // the grid renders from) was never wrong; what changed is that the grid it explains is
+    // back on screen for it to answer to.
     render(
       <DilutionPanel
         {...BASE}
@@ -4145,7 +4268,8 @@ describe('the density caveat needs a millilitre figure on screen', () => {
         portionWaterGrams="900"
       />,
     );
-    expect(screen.queryByText(/Volume assumes/)).toBeNull();
+    expect(screen.getByText('Makes').closest('div')!.textContent).toContain('ml');
+    expect(screen.getByText(/Volume assumes/)).toBeTruthy();
   });
 });
 
@@ -4165,13 +4289,18 @@ describe("the undeclared-liquid hedge is not lost between two suppressions", () 
 
   const HEDGE = /Can't tell whether .* is reachable/;
 
-  it('speaks in Custom amount with a recorded jar, where no child is there to say it', () => {
-    // REWRITTEN to the surface that replaced the mode. The state is the same one: Custom
-    // amount with PortionDilutionResults not rendering — it was gradual mode then, it is a
-    // governing jar now — and the clause that suppresses this hedge reads the child's own
-    // verdict. If it also read the jar's governance (or the batch's record), the hedge would
-    // vanish here with the child and an undeclared liquid would go unmentioned on BOTH
-    // surfaces, which is precisely what this pin exists to catch.
+  it('the CHILD speaks in its own words with a recorded jar, now that it renders there too', () => {
+    // REWRITTEN (review-fix round 1). Until now, PortionDilutionResults never rendered while
+    // a jar governed, so this pin asserted the SHELL's own wording (`HEDGE`, "Can't tell
+    // whether N% is reachable") had to carry the message — the state the pin's own history
+    // names: "no child is there to say it". Spec §2 (phase 2b) makes that premise false: the
+    // plan grid — and the hedge/verdict paragraph riding it — renders beside a governing jar
+    // now, in every state this grid renders in at all. The child says it in ITS OWN words
+    // again ("No portion can be sized yet…"), and `portionOwnsUndeclaredLiquidHedge`
+    // correctly stands the shell's copy down — this is the identical suppression the
+    // no-jar sibling test below already exercises, now reachable with a jar recorded too.
+    // What the pin still guards is the thing it always guarded: an undeclared liquid must
+    // never go unmentioned on BOTH surfaces at once.
     render(
       <DilutionPanel
         {...BASE}
@@ -4189,7 +4318,8 @@ describe("the undeclared-liquid hedge is not lost between two suppressions", () 
         onPortionWaterChange={() => {}}
       />,
     );
-    expect(screen.getByText(HEDGE)).toBeTruthy();
+    expect(screen.getByText(/no declared water content/i)).toBeTruthy();
+    expect(screen.queryByText(HEDGE)).toBeNull();
   });
 
   it('still lets the child own it in Custom amount with no jar recorded', () => {

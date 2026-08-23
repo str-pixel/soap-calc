@@ -445,7 +445,6 @@ export function useRecipeViewModel({
       previewSettings.naohPurityPercent,
     ],
   );
-  const solutionGrams = dilution?.solutionGrams ?? 0;
   // Effective soaping temperature: the stored setting clamped into the ACTIVE variant's
   // slider range (clamp-at-read — the setting itself is never rewritten; see
   // effectiveSoapingTempF). Everything downstream (insights, trace speed, batch sheet,
@@ -470,23 +469,6 @@ export function useRecipeViewModel({
     }),
     [previewSettings.lyeType, previewSettings.kohBlendPercent, previewSettings.naohPurityPercent, previewSettings.kohPurityPercent],
   );
-  const computedAdditives = useMemo(
-    () =>
-      computeRecipeAdditives(
-        additives,
-        {
-          oilGrams: totalOilGrams,
-          batchGrams: baseBatchGrams,
-          solutionGrams,
-        },
-        // Compensation is stage-aware inside computeRecipeAdditives (after_cook acid is
-        // never compensated, any process) — so the recipe context flows unconditionally.
-        acidLyeRecipe,
-        // …but process scoping IS withheld: a line the process doesn't offer is inert.
-        process,
-      ),
-    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe, process],
-  );
   const splitLiquidGrams =
     resolvedSplit && resolvedSplit.totalGrams > 0 ? resolvedSplit.totalGrams : null;
   // The best-known WHOLE-BATCH paste mass — corrects the recipe's own water-only figure
@@ -508,10 +490,13 @@ export function useRecipeViewModel({
   // The spec §1 plan-else-record resolution (docs/superpowers/specs/2026-08-19-dilution-plan-
   // record-design.md §1) — computed here, now that wholeBatchPasteGrams exists, so the record
   // arm's pot (weighedOrComputedPotGramsFor) can see the same corrected basis every other
-  // dilution consumer does. PHASE 1: only `.plan` is exposed below (the vm's `dilution` field),
-  // which is the identical `dilution` object reference — byte-identical behaviour. `.governs`
-  // and `.record` are computed in full but reach nothing user-visible yet; Phase 2a is what
-  // flips consumers onto the resolved arm.
+  // dilution consumer does. `.governs` and `.record` are consumed below by every resolved
+  // figure this hook exposes — bottledSolutionGrams, the preservative's dosing basis, the
+  // additive solution-dose basis 25 lines down, and (via `dilutionGoverns`/`dilutionRecord`)
+  // App's own mid-pour companion memo. `dilution` itself (the vm's exposed field) stays the
+  // bare `.plan` passthrough — the identical object reference `calculateDilution` produced —
+  // because the plan is what every plan-labelled row on screen names itself as; see this
+  // file's own doc comment on `dilution` below for why that never flips to the resolved arm.
   const resolvedDilution = useMemo(
     () =>
       resolveDilution({
@@ -523,6 +508,37 @@ export function useRecipeViewModel({
         measuredPasteGrams,
       }),
     [dilution, settings.gradualWaterGrams, wholeBatchPasteGrams, cookWaterGrams, measuredPasteGrams],
+  );
+  // Spec §3, decision 7: additive `'solution'` dosing follows the SAME resolution rule as the
+  // preservative — extras-free and preservative-free in BOTH arms. Plan arm =
+  // dilution.solutionGrams (today's basis, unchanged). Record arm = pot + record water,
+  // additive grams (extras) EXCLUDED — the bottled figure (which includes extras) is
+  // deliberately NOT the basis here: additive grams are extras, and dosing against a figure
+  // that already contains them is the circular double-count calculateAdditives.ts:279-287's
+  // own doc warns about (computeRecipeAdditives -> extrasGrams -> that same additive's grams).
+  // `resolvedDilution.record` is non-null exactly when a record governs AND has figures to
+  // show (resolveDilution's own contract); the "governs 'record' but nothing to show yet"
+  // state falls through to the plan arm here, same as every other consumer of this rule — a
+  // dose basis of 0 would zero every real dose rather than leaving today's plan-based one.
+  const solutionGrams = resolvedDilution.record
+    ? resolvedDilution.record.potGrams + resolvedDilution.record.waterGrams
+    : (dilution?.solutionGrams ?? 0);
+  const computedAdditives = useMemo(
+    () =>
+      computeRecipeAdditives(
+        additives,
+        {
+          oilGrams: totalOilGrams,
+          batchGrams: baseBatchGrams,
+          solutionGrams,
+        },
+        // Compensation is stage-aware inside computeRecipeAdditives (after_cook acid is
+        // never compensated, any process) — so the recipe context flows unconditionally.
+        acidLyeRecipe,
+        // …but process scoping IS withheld: a line the process doesn't offer is inert.
+        process,
+      ),
+    [additives, totalOilGrams, baseBatchGrams, solutionGrams, acidLyeRecipe, process],
   );
   // Acid liquids (vinegar) consume lye; compensate automatically so the stated superfat
   // survives. Sized against the base (saponification) lye, then folded into the result so
@@ -1060,9 +1076,12 @@ export function useRecipeViewModel({
     fattyAcids,
     insights,
     lyeLabel,
-    // resolvedDilution.plan is the identical `dilution` object reference (Phase 1 passthrough
-    // — see resolveDilution's own doc comment). Byte-identical behaviour until Phase 2a flips
-    // this to the resolved arm.
+    // resolvedDilution.plan is the identical `dilution` object reference (a bare passthrough
+    // — see resolveDilution's own doc comment). This never flips to the resolved arm, by
+    // design: `dilution` is the PLAN arm whichever one governs (see this type's own doc
+    // comment on `dilution` above), because §2 keeps the plan's own figures on screen
+    // labelled as plan even while a record governs. Every DERIVED figure — bottledSolutionGrams,
+    // the dosing basis, the finished mass — reads the resolved arm instead; see `dilutionGoverns`.
     dilution: resolvedDilution.plan,
     // Which arm governs, and the record arm's own figures — computed by the same memo,
     // exposed starting this task; see the type's doc comments above for what each means.

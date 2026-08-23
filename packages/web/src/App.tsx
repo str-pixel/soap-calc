@@ -3,11 +3,7 @@ import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
-import {
-  DilutionPanel,
-  portionGradualFor,
-  type DilutionScope,
-} from './components/DilutionPanel';
+import { DilutionPanel, type DilutionScope } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
 import { NeutralizePanel } from './components/NeutralizePanel';
@@ -30,12 +26,15 @@ import { useRecipeInputs } from './hooks/useRecipeInputs';
 import { useRecipeStorage } from './hooks/useRecipeStorage';
 import { useRecipeViewModel } from './hooks/useRecipeViewModel';
 import { useUndoShortcut } from './hooks/useUndoShortcut';
+import { computeBottledSolutionGrams, preservativeDosingBasisGramsFor } from './lib/calculateAdditives';
 import { convertBarWeightBetweenUnits } from './lib/moldSizer';
 import { loadMoldSizerInput, saveMoldSizerInput } from './lib/moldSizerStorage';
+import { correctedDilutionWaterGrams, MEASURED_PASTE_IS_REMAINING } from './lib/measuredPaste';
 import type { PricingProfile } from './lib/pricingProfile';
 import { loadPricingProfile, savePricingProfile } from './lib/pricingStorage';
 import { processOffers } from './lib/process';
 import { buildRecipePricingContext } from './lib/recipePricing';
+import { resolveDilution } from './lib/resolveDilution';
 
 const VIEW_STORAGE_KEY = 'soap-calc:view';
 
@@ -301,27 +300,32 @@ export default function App() {
   // actually made, past the EU ceiling for several listed products, in the one place built to
   // keep the dose on the mass that really exists. And with the amount blank — the normal
   // state for a maker who is recording rather than sizing — there was no dose at all, under a
-  // hint asking for a control that is not on screen. portionGradualFor is the panel's OWN
-  // resolution of the jar, imported for the same reason portionDilutionFor is: the dose and
-  // the figures beside it cannot then disagree about whether a jar exists or what it weighs.
+  // hint asking for a control that is not on screen. `resolveDilution`'s `scope: 'portion'`
+  // arm is the panel's OWN resolution of the jar (spec §1's scope parameter absorbed what used
+  // to be DilutionPanel.tsx's `portionGradualFor`), called here with the identical arguments
+  // the panel itself passes, for the same reason `portionDilutionFor` below is imported rather
+  // than re-derived: the dose and the figures beside it cannot then disagree about whether a
+  // jar exists or what it weighs.
   //
   // THE GATE IS THE JAR'S OWN RECORD, not a mode (spec §4's conversion rule) — and it is
-  // `hasBothFigures`, the same verdict the panel's `portionJarGoverns` reads, never `jar`
-  // truthiness. The two are NOT the same test: `jar` is also null when both figures are
-  // present but the paste weighed out is heavier than the whole batch's own paste
-  // (pasteExceedsBatch), and there the panel does not fall through to plan sizing either —
-  // it stands the grid down (`portionJarGoverns` is `hasBothFigures`, not `jar`) and shows no
-  // jar figure, because the paste reading it would size from is refused. Keying this branch
-  // on `jar` alone used to fall through to `portionDilutionFor` in exactly that state: a
-  // paste heavier than the batch with a stale "Amount to make (ml)" still on screen dosed a
-  // plan-sized portion while the panel rendered neither the plan grid nor a jar — a mass
-  // nowhere on screen. Reading `hasBothFigures` here too means the dose, the figures and the
-  // suppression move together because all three are read off the SAME two verdicts,
-  // portionGradualFor's own, rather than this branch re-deriving its own test from `jar`
-  // truthiness. Falling through to plan sizing is portion scope's own precedence only when
-  // `hasBothFigures` is false (spec §2: jar record with both figures → jar; else plan
-  // sizing), and it is what the mode gate could not express: choosing Gradual with the two
-  // fields empty used to mean "no dose at all".
+  // `resolved.governs === 'record'`, the same verdict the panel's `portionJarGoverns` reads
+  // (both are literally `resolveDilution`'s own `governs`, read off the identical call — see
+  // that module's doc: "governs" IS "hasBothFigures" in portion scope, not a second predicate
+  // beside it). The two are NOT the same test as `resolved.record` truthiness: `record` is
+  // also null when both figures are present but the paste weighed out is heavier than the
+  // whole batch's own paste (`resolved.jar.pasteExceedsBatch`), and there the panel does not
+  // fall through to plan sizing either — it stands the grid down (`portionJarGoverns` is
+  // `governs === 'record'`, not `record !== null`) and shows no jar figure, because the paste
+  // reading it would size from is refused. Keying this branch on `record` alone used to fall
+  // through to `portionDilutionFor` in exactly that state: a paste heavier than the batch with
+  // a stale "Amount to make (ml)" still on screen dosed a plan-sized portion while the panel
+  // rendered neither the plan grid nor a jar — a mass nowhere on screen. Reading `governs`
+  // here too means the dose, the figures and the suppression move together because all three
+  // are read off the SAME verdict, resolveDilution's own, rather than this branch re-deriving
+  // its own test from `record` truthiness. Falling through to plan sizing is portion scope's
+  // own precedence only when the jar does not govern (spec §2: jar record with both figures →
+  // jar; else plan sizing), and it is what the mode gate could not express: choosing Gradual
+  // with the two fields empty used to mean "no dose at all".
   // Returns the mass AND the scope that mass is actually in — never the scope the toggle
   // is set to. A Custom amount larger than the batch CLAMPS to the whole batch, and the
   // panel says so twice ("more than the batch holds", "100% of the batch"); labelling the
@@ -331,26 +335,30 @@ export default function App() {
   const preservativeBasis = useMemo((): { grams: number | null; scope: DilutionScope } => {
     if (dilutionScope !== 'portion') return { grams: vm.preservativeDosingBasisGrams, scope: 'batch' };
     if (!vm.dilution) return { grams: null, scope: 'portion' };
-    const jarState = portionGradualFor({
+    const resolved = resolveDilution({
       dilution: vm.dilution,
-      portionPasteGrams,
-      portionWaterGrams,
+      gradualWaterGrams: '',
+      anhydrousGrams: vm.dilution.anhydrousGrams,
+      wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
+      cookWaterGrams: vm.cookWaterGrams,
       // The jar is a share of the pot the maker WEIGHED when there is a reading for it,
       // exactly as the panel's own readout is — the same argument as passing it to
       // portionDilutionFor below. Omitted, this dosed a jar sized from the recipe's
       // prediction while the figure beside it on screen came off the scale.
       measuredPasteGrams,
-      wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
-      cookWaterGrams: vm.cookWaterGrams,
+      scope: 'portion',
+      jar: { pasteGrams: portionPasteGrams, waterGrams: portionWaterGrams },
     });
-    if (jarState.jar) return { grams: jarState.jar.finishedGrams, scope: 'portion' };
-    // hasBothFigures true with jar still null is the paste-exceeds-batch refusal (or its
-    // sibling, no batch paste to be a share of) — the panel's OWN suppression predicate
-    // (portionJarGoverns) fires here too, standing the plan grid down and printing no jar
-    // figure. Falling through to portionDilutionFor in that state dosed the PLAN's sizing
-    // portion off a stale "Amount to make (ml)" while the screen showed neither the grid
-    // nor a jar — see this function's own comment above for the reading that exposed it.
-    if (jarState.hasBothFigures) return { grams: null, scope: 'portion' };
+    if (resolved.governs === 'record') {
+      // `record` is null exactly when the jar governs but nothing can be shown for it — the
+      // paste-exceeds-batch refusal (or its sibling, no batch paste to be a share of) — the
+      // panel's OWN suppression predicate (`portionJarGoverns`) fires here too, standing the
+      // plan grid down and printing no jar figure. Falling through to `portionDilutionFor` in
+      // that state dosed the PLAN's sizing portion off a stale "Amount to make (ml)" while the
+      // screen showed neither the grid nor a jar — see this function's own comment above for
+      // the reading that exposed it.
+      return { grams: resolved.record?.finishedGrams ?? null, scope: 'portion' };
+    }
     const { portion } = portionDilutionFor({
       dilution: vm.dilution,
       targetMl: portionTargetMl,
@@ -374,6 +382,82 @@ export default function App() {
     vm.dilution,
     vm.preservativeDosingBasisGrams,
     vm.wholeBatchPasteGrams,
+  ]);
+
+  // THE MID-POUR COMPANION DOSE (spec §3, phase 2b task 1) — the safety item this phase
+  // exists to deliver first. While a record governs and its water is still below the
+  // plan's own dilution water, the preservative snippet shows a SECOND, plan-labelled
+  // figure beside the governing dose, so a maker who weighs the preservative against the
+  // batch that exists today (a partial pour, or none at all) is not left unaware that the
+  // same batch needs more once diluted on to the plan (26.3 g at 0 g poured vs 40.4 g at a
+  // 30% plan on the reference batch — spec §3's own illustration of the invisible
+  // under-dose this line exists to prevent).
+  //
+  // BOTH FIGURES BELOW ARE THE PLAN ARM AS THE SCREEN ITSELF SHOWS IT — the controller
+  // ruling (a Phase 2b review finding): "the plan's dilution water" means the figure the
+  // panel's own "(plan)" row prints, not the bare, unmeasured `dilution.dilutionWaterGrams`.
+  // A weighed pot lighter than the recipe's own computed one (evaporation) corrects that
+  // row's water UPWARD — probe-confirmed: 1,400 g weighed pot against a 1,667 g computed
+  // one moves the plan row from 2,407 g to 2,674 g — and a record between those two
+  // boundaries (2,500 g) is still short of the row the maker is looking at, even though it
+  // already clears the raw figure this memo used to compare against. Comparing against the
+  // raw figure stranded the companion for exactly that evaporation window.
+  //
+  // `correctedPlanWaterGrams` below is `correctedDilutionWaterGrams` called with the IDENTICAL
+  // arguments DilutionPanel's own plan row uses (DilutionPanel.tsx's `batchDilutionWaterGrams`,
+  // "Dilution water to add (plan)") — shared derivation, never re-derived with different
+  // args, which is the exact drift shape this project kills.
+  //
+  // The dosing basis is the plan-arm figure `preservativeDosingBasisGramsFor` would hand the
+  // snippet if the plan governed — bottled, extras-net — not the bare `dilution.solutionGrams`
+  // this memo used to return: a solution-dosed additive or a split liquid moves the bottled
+  // figure away from the bare solution, and the companion's basis has to be the one the
+  // plan-governed snippet would actually dose against. `computeBottledSolutionGrams` is
+  // called with `record: null` to force the plan arm regardless of which arm actually
+  // governs today — the same "plan arm, unconditionally" contract `vm.dilution` itself
+  // carries per the paragraph above.
+  //
+  // Non-null exactly when App decides the companion belongs on screen (batch scope only —
+  // Custom amount's own dose is the snippet's problem, same precedent as `preservativeBasis`
+  // above): a record governs, that record actually resolved to figures (not the `null`
+  // "nothing to show yet" state 2a's own contract reserves), and the record's own water is
+  // STRICTLY below the plan row's own (corrected) water (the controller ruling: at or past
+  // it the two doses coincide within rounding and the companion is noise, not signal).
+  const planDosingBasisGrams = useMemo((): number | null => {
+    if (dilutionScope !== 'batch') return null;
+    if (vm.dilutionGoverns !== 'record') return null;
+    if (vm.dilutionRecord === null || vm.dilution === null) return null;
+    const correctedPlanWaterGrams = correctedDilutionWaterGrams(
+      vm.dilution,
+      measuredPasteGrams,
+      MEASURED_PASTE_IS_REMAINING,
+      vm.wholeBatchPasteGrams,
+      vm.cookWaterGrams,
+      settings.gradualWaterGrams,
+    );
+    if (!(vm.dilutionRecord.waterGrams < correctedPlanWaterGrams)) return null;
+    const planBottledSolutionGrams = computeBottledSolutionGrams({
+      dilution: vm.dilution,
+      cookWaterGrams: vm.cookWaterGrams,
+      extrasGrams: vm.extrasGrams,
+      splitLiquidPasteWaterGrams: vm.splitLiquidPasteWater,
+      measuredPasteGrams,
+      wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
+      gradualWaterGrams: settings.gradualWaterGrams,
+      record: null,
+    });
+    return preservativeDosingBasisGramsFor(planBottledSolutionGrams, vm.dilution);
+  }, [
+    dilutionScope,
+    vm.dilution,
+    vm.dilutionGoverns,
+    vm.dilutionRecord,
+    measuredPasteGrams,
+    vm.wholeBatchPasteGrams,
+    vm.cookWaterGrams,
+    settings.gradualWaterGrams,
+    vm.extrasGrams,
+    vm.splitLiquidPasteWater,
   ]);
 
   // The dose alone, in grams — App threads this to the panel and the sheet so the MASS they
@@ -670,6 +754,7 @@ export default function App() {
                   processOffers(process, 'preserve') ? (
                     <PreservativeSnippet
                       finishedGrams={preservativeBasis.grams}
+                      planDosingBasisGrams={planDosingBasisGrams}
                       basisScope={preservativeBasis.scope}
                       /* Moves with preservativeBasis' own jar branch above: the two answer
                          one question (which jar, and how the maker described it), so the

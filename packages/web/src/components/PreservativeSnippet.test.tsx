@@ -18,11 +18,13 @@ afterEach(cleanup);
 // guards App's wiring; see the reseed-on-pick test in App.test.tsx for that.
 function Harness({
   finishedGrams = 4000,
+  planDosingBasisGrams,
   basisScope,
   portionIsRecorded,
   weightUnit = 'g',
 }: {
   finishedGrams?: number | null;
+  planDosingBasisGrams?: number | null;
   basisScope?: 'batch' | 'portion';
   portionIsRecorded?: boolean;
   weightUnit?: WeightUnit;
@@ -33,6 +35,7 @@ function Harness({
   return (
     <PreservativeSnippet
       finishedGrams={finishedGrams}
+      planDosingBasisGrams={planDosingBasisGrams}
       basisScope={basisScope}
       portionIsRecorded={portionIsRecorded}
       weightUnit={weightUnit}
@@ -317,4 +320,25 @@ test('switching back from Custom… to a product restores its own default dose',
   fireEvent.change(picker(), { target: { value: 'glydant-plus' } });
   expect(doseInput().value).toBe('0.36');
   expect(screen.getByText(/DMDM hydantoin/)).toBeTruthy();
+});
+
+test('a plan-labelled companion dose renders beside the governing one, from its own basis (spec §3)', () => {
+  // Fixture bases chosen so the two doses cannot coincide (2,600 vs 4,000 g — the
+  // governing figure is the record's own pot, the companion is the plan's dosing basis).
+  // Default Suttocide 1%: 2,600 × 1/99 = 26.26… (governing, → "26 g"); 4,000 × 1/99 =
+  // 40.40… (companion, → "40 g").
+  render(<Harness finishedGrams={2600} planDosingBasisGrams={4000} />);
+  expect(screen.getByText('Preservative to add')).toBeTruthy();
+  expect(screen.getByText('26 g')).toBeTruthy();
+  // dt carries the plan phrase, dd the bare weight — announced once, read as
+  // "At your 1% plan: 40 g".
+  expect(screen.getByText('At your 1% plan')).toBeTruthy();
+  const companionItem = screen.getByText('At your 1% plan').closest('.results-grid__item')!;
+  expect(companionItem.querySelector('dd')?.textContent).toBe('40 g');
+});
+
+test('with no plan basis to show, the companion renders nothing — it never falls back to the governing basis', () => {
+  render(<Harness finishedGrams={2600} planDosingBasisGrams={null} />);
+  expect(screen.getByText('26 g')).toBeTruthy();
+  expect(screen.queryByText(/At your .*% plan/)).toBeNull();
 });

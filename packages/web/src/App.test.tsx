@@ -42,6 +42,18 @@ afterEach(() => {
   cleanup();
 });
 
+// Shared by the preservative and gradual describes below — one copy, module scope.
+function row(root: HTMLElement, label: string): string {
+  const item = Array.from(root.querySelectorAll('.results-grid__item')).find(
+    (el) => el.querySelector('dt')?.textContent?.trim() === label,
+  );
+  return item?.querySelector('dd')?.textContent?.trim() ?? '';
+}
+
+function num(text: string): number {
+  return Number(text.replace(/[^\d.]/g, ''));
+}
+
 describe('App process switch', () => {
   it('switches the lye options when the Liquid Soap tab is chosen', async () => {
     render(<App />);
@@ -414,11 +426,12 @@ describe('the preservative dose is a % of what the maker is actually making', ()
 
   it('a jar too heavy for the batch doses nothing, not the plan sizing grid', async () => {
     // THE DIVERGENCE the jar-truthiness gate missed. The panel suppresses the plan sizing
-    // grid and the jar readout on `hasBothFigures` (DilutionPanel.tsx's `portionJarGoverns`),
-    // not on whether a jar actually resolved — and the two disagree exactly here: both
-    // fields are typed (so `hasBothFigures` is true) but the paste weighed out is heavier
-    // than the whole batch's own paste, so `portionGradualFor` refuses the jar (`jar` is
-    // null). Keying App's dose on `jar` truthiness alone fell through to
+    // grid and the jar readout on `governs === 'record'` (DilutionPanel.tsx's
+    // `portionJarGoverns`, resolveDilution.ts's portion arm since Phase 2b), not on whether a
+    // jar actually resolved — and the two disagree exactly here: both fields are typed (so
+    // `governs` is `'record'`) but the paste weighed out is heavier than the whole batch's own
+    // paste, so resolveDilution refuses the jar (`record` is null). Keying App's dose on the
+    // resolved `record`'s truthiness alone fell through to
     // `portionDilutionFor`, which sized a portion from the stale "Amount to make (ml)" still
     // on screen — a plan-sized dose while the panel showed neither the plan grid nor a jar,
     // a mass nowhere on screen. 4,000 g of paste against this recipe's ~1,666 g whole batch
@@ -505,16 +518,6 @@ describe('Whole batch, with a record: one batch has one finished mass', () => {
   }
 
   /** The value cell of a results-grid row inside `root`, as text ("1,400 g"), or ''. */
-  function row(root: HTMLElement, label: string): string {
-    const item = Array.from(root.querySelectorAll('.results-grid__item')).find(
-      (el) => el.querySelector('dt')?.textContent?.trim() === label,
-    );
-    return item?.querySelector('dd')?.textContent?.trim() ?? '';
-  }
-
-  function num(text: string): number {
-    return Number(text.replace(/[^\d.]/g, ''));
-  }
 
   /** Gradual's own mass row, under whichever basis label the panel chose. */
   function potRow(panel: HTMLElement): string {
@@ -616,6 +619,94 @@ describe('Whole batch, with a record: one batch has one finished mass', () => {
     expect(checked).toBeGreaterThan(300);
     expect(split, `${split.length} readings show the snippet basing its dose on a different pot than the panel's`).toEqual([]);
   }, 60000);
+});
+
+describe('the mid-pour companion dose (spec §3)', () => {
+  // THE SAFETY PIN for the invisible under-dose: a maker who weighs the preservative
+  // against the batch that exists TODAY (0 g poured, or any partial pour) sees only the
+  // governing figure unless the snippet also shows what the SAME batch will need once
+  // diluted on to the plan. `finishedGrams` and `planDosingBasisGrams` are two different
+  // quantities — the dose for the batch that exists vs the dose at plan completion — and
+  // this pins that App wires the second one in, gated on the controller's own STRICT rule
+  // (`record.waterGrams < dilution.dilutionWaterGrams`), not merely "a record exists".
+
+  // The companion's own text embeds a SECOND number (the dose %, e.g. "1%") ahead of the
+  // grams figure — `num` above would concatenate the two digit runs into nonsense (e.g.
+  // "1% plan: 41 g" → 141). This pulls only the trailing weight.
+  function companionGrams(text: string): number {
+    return Number((text.match(/([\d,.]+)\s*\S+$/)?.[1] ?? '').replace(/,/g, ''));
+  }
+
+  it('shows a plan-labelled companion once a record governs, and retires it once the record reaches the plan', async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+
+    // Read the plan's own figures BEFORE any record exists — with no record the plan
+    // governs and its rows still carry their bare (unlabelled) names (spec §2/§4).
+    const planWater = num(row(panel, 'Dilution water to add'));
+    const planSolution = num(row(panel, 'Finished solution'));
+    expect(planWater).toBeGreaterThan(0);
+    const expectedCompanion = preservativeDoseGrams(planSolution, 1);
+
+    const water = screen.getByLabelText('Water added so far (g)');
+    // 0 g poured is a record (LS:1531: the pot before any water at all is Gradual's own
+    // starting entry) — the record now governs, and its water (0) is strictly below the
+    // plan's own dilution water, so the companion belongs on screen.
+    fireEvent.change(water, { target: { value: '0' } });
+    // The plan phrase lives in the dt now (one announcement, bare-weight dd — the
+    // review's a11y point); the row helper keys on the dt, so the label IS the assertion.
+    const companionText = row(snippet, 'At your 1% plan');
+    expect(companionText).toMatch(/^\d/);
+    expect(companionGrams(companionText)).toBeCloseTo(expectedCompanion, 0);
+
+    // Past the plan's own dilution water the two doses coincide within rounding — the
+    // controller ruling is STRICT (record.waterGrams < dilution.dilutionWaterGrams), so
+    // the companion retires rather than repeating a number the governing row already shows.
+    fireEvent.change(water, { target: { value: String(planWater + 500) } });
+    expect(row(snippet, 'At your 1% plan')).toBe('');
+  });
+
+  it("compares the record against the plan row's OWN corrected water, not the raw plan figure the screen shows nowhere (spec §3 controller ruling)", async () => {
+    // A weighed pot LIGHTER than the recipe's own computed pot (evaporation) corrects the
+    // panel's "(plan)" dilution-water row UPWARD — probe-confirmed on this fixture: raw
+    // (unmeasured) plan water 2,407 g, corrected (1,400 g weighed pot) plan water 2,674 g,
+    // same 4,074 g solution both ways. A 2,500 g record sits BETWEEN those two figures: the
+    // batch has not yet reached the plan's own (corrected) water, so the companion belongs
+    // on screen — but the memo at HEAD compares against the raw 2,407 g instead, which the
+    // screen prints nowhere, and 2,500 g already clears that raw figure, so the companion
+    // goes missing for exactly the evaporation mass.
+    render(<App />);
+    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
+    const panel = screen
+      .getByRole('heading', { name: 'Dilution' })
+      .closest('section') as HTMLElement;
+    const snippet = screen
+      .getByRole('heading', { name: 'Preservative' })
+      .closest('details') as HTMLElement;
+
+    await userEvent.type(
+      screen.getByLabelText('Measured paste weight — the whole batch (g, optional)'),
+      '1400',
+    );
+
+    const water = screen.getByLabelText('Water added so far (g)');
+    fireEvent.change(water, { target: { value: '2500' } });
+
+    // The screen's own plan row is the corrected figure — confirms the fixture landed in
+    // the accepted-reading window between the raw and corrected boundaries, not merely
+    // asserting a number this test invented.
+    const correctedPlanWater = num(row(panel, 'Dilution water to add (plan)'));
+    expect(correctedPlanWater).toBeCloseTo(2674, 0);
+    expect(correctedPlanWater).toBeGreaterThan(2500);
+
+    expect(row(snippet, 'At your 1% plan')).toMatch(/^\d/);
+  });
 });
 
 describe('a record arriving with a recipe needs no session state to appear in', () => {

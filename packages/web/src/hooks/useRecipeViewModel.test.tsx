@@ -1038,3 +1038,41 @@ test('governs "record" with no record figures is "nothing to show yet", never an
   expect(vm.finishedProductGrams).toBeNull();
   expect(vm.overDilutionCertain).toBe(false);
 });
+
+test('a solution-dosed additive doses the record when one governs; the plan-governed dose is unchanged (control)', () => {
+  // Spec §3, decision 7: the 'solution' dose basis is extras-free and preservative-free in
+  // BOTH arms. Plan arm = dilution.solutionGrams (today's basis, unchanged — the control
+  // below). Record arm = pot + record water, with additive grams (extras) excluded — dosing
+  // against a figure that already contains extras is the circular double-count
+  // calculateAdditives.ts's own doc warns about.
+  const GUAR_LINE: AdditiveLine = {
+    key: 'guar-1', catalogId: 'guar', name: 'Guar gum',
+    amount: '2', basis: 'solution', unit: 'percent', addAt: 'after_cook',
+  };
+  let plan: any;
+  let record: any;
+  probe(
+    (vm) => { plan = vm; },
+    { soapConcentrationPercent: '30', gradualWaterGrams: '' },
+    'ls', undefined, [GUAR_LINE],
+  );
+  probe(
+    (vm) => { record = vm; },
+    { soapConcentrationPercent: '30', gradualWaterGrams: '500' },
+    'ls', undefined, [GUAR_LINE],
+  );
+
+  expect(record.dilutionGoverns).toBe('record');
+  const planLine = plan.computedAdditives.find((a: any) => a.catalogId === 'guar');
+  const recordLine = record.computedAdditives.find((a: any) => a.catalogId === 'guar');
+
+  // Control: plan-governed dose is unchanged — 2% of the plan's own solutionGrams.
+  expect(planLine.grams).toBeCloseTo(0.02 * plan.dilution.solutionGrams, 6);
+
+  // The record governs: the dose follows pot + record water, not the plan's target solution.
+  expect(recordLine.grams).toBeCloseTo(
+    0.02 * (record.dilutionRecord.potGrams + record.dilutionRecord.waterGrams),
+    6,
+  );
+  expect(recordLine.grams).not.toBeCloseTo(0.02 * record.dilution.solutionGrams, 1);
+});
