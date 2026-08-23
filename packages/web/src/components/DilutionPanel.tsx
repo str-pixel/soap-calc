@@ -171,7 +171,7 @@ type DilutionPanelProps = {
   onTargetMlChange?: (value: string) => void;
   /** The best-known WHOLE-BATCH paste mass (see useRecipeViewModel) — passed straight
    * through to PortionDilutionResults, which needs it for the same corrected
-   * ceiling/composition basis the batch row's own measured-paste guards use. With
+   * composition basis the batch row's own measured-paste guards use. With
    * `cookWaterGrams` it also fixes the FLOOR under a measured paste: the two identify the
    * alternative liquid's solids, and solids do not boil off. */
   wholeBatchPasteGrams?: number | null;
