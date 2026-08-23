@@ -194,8 +194,9 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * exists: a reading no scale produced must not be showing on the sheet or driving what
  * `resolveDilution` reports as the record's own concentration — the only predicate either
  * surface has to ask. It used to gate two more consequences that are gone now: licensing a
- * widened ceiling in {@link correctedPotGramsFor}, and pinning the maker into the mode the
- * write-back read it back into (both retired with the write-back itself, decision 2, Phase 2a).
+ * widened ceiling in {@link correctedPotGramsFor} (the widening itself retired in Phase 3,
+ * spec §5), and pinning the maker into the mode the write-back read it back into (retired
+ * with the write-back itself, decision 2, Phase 2a).
  * The panel renders the alert (it owns the field), reading the same fingerprint directly.
  *
  * A single decimal stays a record — a scale really does read to 0.1 g — and '0.00' is zero
@@ -306,7 +307,8 @@ export function measuredPasteIsValidFor(
 /**
  * Everything a surface needs to say about a measured-paste reading: which of the three
  * physical-impossibility rules it broke, whether it is usable at all, and the whole-batch
- * paste mass the solution ceiling was checked against.
+ * paste mass a caller's belowSolids/already-more-dilute copy quotes as what the recipe
+ * predicts.
  */
 export type MeasuredPasteRejection = {
   /** The field holds a number that is not a weight at all — zero or negative. Exclusive of
@@ -365,10 +367,11 @@ export type MeasuredPasteRejection = {
  * beside the alert paragraphs.
  *
  * `wholeBatchPasteGrams` is the view model's corrected whole-batch paste mass; omit it and
- * the ceiling falls back to the recipe's own water-only predicted figure, exactly as core
- * does when its matching param is omitted. `cookWaterGrams` is the recipe's own cook water,
- * needed alongside it for the solids floor alone (see {@link solidsFloorGramsFor}) — it is
- * NOT part of the ceiling, and does not touch `wholeBatchPasteBasis`.
+ * both the solids floor and the reported `wholeBatchPasteBasis` fall back to the recipe's
+ * own water-only predicted figure, exactly as core does when its matching param is omitted.
+ * `cookWaterGrams` is the recipe's own cook water, needed alongside it for the solids floor
+ * alone (see {@link solidsFloorGramsFor}) — it plays no other role here, and does not touch
+ * `wholeBatchPasteBasis`.
  */
 export function measuredPasteRejectionFor(
   measuredPasteGrams: string | undefined,
@@ -388,11 +391,12 @@ export function measuredPasteRejectionFor(
   // Review round 3: predictedPasteGrams structurally misses an alternative liquid's
   // non-water solids (real mass sitting in the pot), so the TRUE whole-batch paste is
   // heavier than predictedPasteGrams whenever the recipe has a split liquid. The corrected
-  // figure (wholeBatchPasteGrams, from the view model) is used for the ceiling below —
-  // and passed straight through to lsPartialDilution for the composition ratio too, so
-  // the UI's own rejection and core's arithmetic always agree on the same basis. Falls
-  // back to the uncorrected predictedPasteGrams (round 2's basis) when absent — the exact
-  // same fallback core itself applies when its own wholeBatchPasteGrams param is omitted.
+  // figure (wholeBatchPasteGrams, from the view model) is reported below as
+  // `wholeBatchPasteBasis` — and passed straight through to lsPartialDilution for the
+  // composition ratio too, so the UI's own report and core's arithmetic always agree on
+  // the same basis. Falls back to the uncorrected predictedPasteGrams (round 2's basis)
+  // when absent — the exact same fallback core itself applies when its own
+  // wholeBatchPasteGrams param is omitted.
   const wholeBatchPasteBasis = hasCorrectedPasteBasis(wholeBatchPasteGrams)
     ? wholeBatchPasteGrams
     : predictedPasteGrams;

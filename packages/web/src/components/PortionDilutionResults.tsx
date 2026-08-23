@@ -16,7 +16,7 @@ type PortionDilutionResultsProps = {
   /** The best-known WHOLE-BATCH paste mass (see useRecipeViewModel) — corrects the
    * recipe's own water-only predicted figure for an alternative liquid's non-water
    * solids, which are real mass sitting in the pot the recipe never counts. Used as the
-   * ceiling/composition basis for a measured reading in place of the
+   * floor/composition basis for a measured reading in place of the
    * uncorrected figure when available, so core and this UI check agree. Falls back to the
    * recipe-computed figure when absent (a recipe with no split liquid, or data built
    * before this field existed). */
