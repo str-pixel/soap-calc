@@ -24,6 +24,13 @@ export type LsDilutionTarget = {
   note?: string;
 };
 
+/**
+ * No "shampoo" entry here, and deliberately so: liquid soap is not recommended for hair — the
+ * alkaline pH roughens the cuticle — so a shampoo dilution target is absent rather than merely
+ * unlisted. The panel says so in prose, directly under its render of this list
+ * (DilutionPanel.tsx's collapsed uses note, "Liquid soap itself, thickened or not, is not
+ * recommended for hair").
+ */
 export const LS_DILUTION_TARGETS: readonly LsDilutionTarget[] = [
   { key: 'baby', label: 'Baby or gentle soap', low: 10, high: 15 },
   { key: 'face', label: 'Face soap', low: 10, high: 15 },
@@ -101,10 +108,3 @@ export function lsConcentrationAboveAllMinimums(soapConcentrationPercent: number
   if (!Number.isFinite(soapConcentrationPercent)) return false;
   return soapConcentrationPercent > LS_MINIMUM_DILUTION_GUIDE[0].maxSoapPercent;
 }
-
-/**
- * Liquid soap is not recommended for hair: the alkaline pH roughens the cuticle, which is
- * why a "shampoo" dilution target is deliberately absent from LS_DILUTION_TARGETS rather
- * than merely unlisted.
- */
-export const LS_SHAMPOO_NOT_RECOMMENDED = true;

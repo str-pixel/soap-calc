@@ -45,7 +45,7 @@ export type LsPartialDilution = {
    * when no corrected basis is available — do not re-derive a "predicted paste" from
    * totalWaterGrams/dilutionWaterGrams elsewhere; it will silently reproduce this trap. */
   predictedPasteGrams: number;
-  /** The basis actually used for the remaining-mode composition ratio and its ceiling:
+  /** The basis actually used for the unmeasured pot's paste (see `pasteGrams` above):
    * `batch.wholeBatchPasteGrams` when the caller supplied one (corrects predictedPasteGrams
    * for an alternative liquid's non-water solids), else predictedPasteGrams unchanged. So
    * callers can show what the measurement was actually checked/derived against without
@@ -53,17 +53,10 @@ export type LsPartialDilution = {
   wholeBatchPasteGrams: number;
   /** True when more was asked for than the batch holds, so the figures are the whole batch. */
   clamped: boolean;
-  /** The pot's own anhydrous soap — the recipe's whole `anhydrousGrams` in whole-batch mode,
-   * or (with a measured, REMAINING reading) that reading's proportional share of it:
-   * `measured × anhydrousGrams / wholeBatchPasteGrams`, since the paste is homogeneous — the
-   * same arithmetic `measuredPasteIsRemaining`'s own doc above derives. Exposed as its own
-   * field, independent of `fraction`: unlike pasteGrams/waterGrams/solutionGrams above, this
-   * is the FULL pot's anhydrous share, not a fraction-scaled slice of it, because a caller
-   * asking "what does this measured pot itself contain" (e.g. a jar with its own recorded
-   * water, deriving ITS OWN concentration rather than a share of what the recipe's target
-   * would want) has no target volume to scale by. Reusing this field is what keeps the
-   * ratio in one place; re-deriving `measured × anhydrousGrams / wholeBatchPasteGrams` at a
-   * second call site is the same trap `predictedPasteGrams`' own doc warns against above. */
+  /** The pot's own anhydrous soap — the recipe's whole `anhydrousGrams`. This function's pot
+   * is always the whole batch; a caller asking what a jar holding only PART of the paste
+   * itself contains (deriving ITS OWN concentration, not a share of what the recipe's
+   * target wants) reads {@link lsPotAnhydrousShare} directly instead. */
   potAnhydrousGrams: number;
 };
 
@@ -74,9 +67,10 @@ export type LsPartialDilution = {
  * heavier than the whole batch's paste ever was (solids and the water already in the paste
  * do not appear from nowhere; the boundary, pot === batch, is a legitimate share of 1).
  *
- * This IS {@link lsPartialDilution}'s remaining-mode arithmetic, extracted rather than
- * copied: that function calls this one, so there is still exactly one derivation of the
- * ratio and one ceiling under it — the trap `predictedPasteGrams` warns about above.
+ * Used to be {@link lsPartialDilution}'s remaining-mode arithmetic, extracted rather than
+ * copied so there was exactly one derivation of the ratio and one ceiling under it. That mode
+ * is gone from lsPartialDilution now — its pot is always the whole batch — so this function's
+ * only remaining consumer is the UI's own weighed-jar caller below.
  *
  * Extracted because the UI has a caller that needs the share and NOTHING else:
  * DilutionPanel's Custom-amount Gradual mode, where the maker weighs a jar out and records
@@ -117,43 +111,28 @@ export function lsPartialDilution(
     totalWaterGrams: number;
     dilutionWaterGrams: number;
     solutionGrams: number;
-    /** The maker's own scale reading for the paste — the WHOLE batch by default, or what's
-     * LEFT after earlier dilutions when {@link measuredPasteIsRemaining} is set. Preferred
-     * over the computed figure whenever it is available, because a computed paste cannot be
-     * right: the cook boils off water the recipe still counts, and nothing on paper knows
-     * how much a particular cook drove off. The reference weighs the paste for exactly this
-     * reason. (An alternative liquid's non-water solids were the OTHER half of that claim
-     * until {@link wholeBatchPasteGrams} started carrying them into the computed paste too —
-     * see its own note. A caller that supplies no corrected basis still misses them.)
-     * Ignored when non-finite or ≤ 0. */
+    /** The maker's own scale reading for the whole batch's paste. Preferred over the
+     * computed figure whenever it is available, because a computed paste cannot be right:
+     * the cook boils off water the recipe still counts, and nothing on paper knows how much
+     * a particular cook drove off. The reference weighs the paste for exactly this reason.
+     * (An alternative liquid's non-water solids were the OTHER half of that claim until
+     * {@link wholeBatchPasteGrams} started carrying them into the computed paste too — see
+     * its own note. A caller that supplies no corrected basis still misses them.) Ignored
+     * when non-finite or ≤ 0. */
     measuredPasteGrams?: number;
-    /** True when {@link measuredPasteGrams} is what is LEFT after part of the batch was
-     * already diluted away, not the whole batch. "Measured paste is lighter than
-     * predicted" has two indistinguishable explanations — evaporation during the cook (same
-     * soap, less water: MORE concentrated), or part of the batch already gone (composition
-     * unchanged, just less of it) — so this must be told apart rather than assumed. The
-     * paste is homogeneous, so the pot's own anhydrous soap is a proportional share of the
-     * measurement (measured × anhydrousGrams / predictedPasteGrams) rather than the
-     * recipe's whole anhydrousGrams — and unlike the whole-batch case, there is no
-     * anhydrous floor to enforce: any positive remainder is legitimate. Ignored without a
-     * measurement. */
-    measuredPasteIsRemaining?: boolean;
     /** The best-known WHOLE-BATCH paste mass, when available — corrects
      * predictedPasteGrams for mass it structurally misses. predictedPasteGrams counts only
      * the WATER fraction of an alternative liquid (anhydrousGrams + cookWaterGrams); the
      * liquid's non-water solids are real mass sitting in the pot the recipe never counts,
      * so for a split-liquid recipe the TRUE whole-batch paste is heavier than
-     * predictedPasteGrams. Used for BOTH the remaining-mode composition ratio and its
-     * ceiling — a too-light basis both rejects legitimate remaining readings above it AND
-     * (via that same basis feeding the composition ratio) overstates the pot's soap
-     * fraction. Falls back to predictedPasteGrams when omitted, non-finite, or ≤ 0, so
-     * every caller that doesn't know about split-liquid solids is unaffected.
+     * predictedPasteGrams. Falls back to predictedPasteGrams when omitted, non-finite, or
+     * ≤ 0, so every caller that doesn't know about split-liquid solids is unaffected.
      *
-     * Consumed in remaining mode AND as the UNMEASURED paste itself (see pasteGrams below):
-     * an undivided pot really does hold anhydrous + cook water + those solids, so sizing an
-     * unmeasured portion off predictedPasteGrams poured water for a lighter paste than the
-     * one on the bench — and disagreed with the whole-batch row, which subtracts this same
-     * corrected figure from solutionGrams. A MEASUREMENT still outranks both. */
+     * Consumed as the UNMEASURED paste itself (see pasteGrams below): an undivided pot
+     * really does hold anhydrous + cook water + those solids, so sizing an unmeasured
+     * portion off predictedPasteGrams poured water for a lighter paste than the one on the
+     * bench — and disagreed with the whole-batch row, which subtracts this same corrected
+     * figure from solutionGrams. A MEASUREMENT still outranks both. */
     wholeBatchPasteGrams?: number;
   },
   targetVolumeMl: number,
@@ -163,11 +142,10 @@ export function lsPartialDilution(
   // anhydrousGrams, totalWaterGrams and dilutionWaterGrams feed potAnhydrousGrams and
   // batchWaterGrams below through plain arithmetic — addition, subtraction, Math.max — which
   // propagates a bad value as an ordinary-looking number rather than throwing. The guards
-  // further down cannot be trusted to catch it: in whole-batch mode (the common path)
-  // `potAnhydrousGrams` is a bare `batch.anhydrousGrams` assignment that never reaches
-  // {@link lsPotAnhydrousShare}'s own `<= 0` check, and `batchWaterGrams < 0` can't catch a
-  // NaN at all (NaN < 0 is false). Only checking these three here, before any of them is
-  // used, stops both.
+  // further down cannot be trusted to catch it: `potAnhydrousGrams` is a bare
+  // `batch.anhydrousGrams` assignment with no `<= 0` check of its own, and `batchWaterGrams
+  // < 0` can't catch a NaN at all (NaN < 0 is false). Only checking these three here, before
+  // any of them is used, stops both.
   //
   // anhydrousGrams and totalWaterGrams are rejected at <= 0, matching every sibling check in
   // this file — including {@link lsPotAnhydrousShare}'s own check on the identically-named
@@ -201,30 +179,10 @@ export function lsPartialDilution(
   // existing caller that never supplies wholeBatchPasteGrams is byte-identical to round 2.
   const wholeBatchPasteGrams =
     wb !== undefined && Number.isFinite(wb) && wb > 0 ? wb : predictedPasteGrams;
-  const isRemaining = pasteMeasured && batch.measuredPasteIsRemaining === true;
-  // The pot's own anhydrous soap: the recipe's whole anhydrousGrams in whole-batch mode, or
-  // — with a measured, REMAINING reading — that reading's proportional share of it, since
-  // the paste is homogeneous. Both the share and its ceiling come from
-  // {@link lsPotAnhydrousShare}, which owns that one derivation for this function and for
-  // the UI's own weighed-jar caller.
-  //
-  // A remainder cannot weigh more than the whole batch's own paste ever did — solids and
-  // the water already in the paste don't appear from nowhere. Left unguarded, a bogus
-  // "remaining" reading heavier than the true whole-batch paste scaled to a pot anhydrous
-  // bigger than the entire batch's own anhydrous soap: physically impossible input,
-  // confidently wrong output. Rejected (null share → null result) before any arithmetic runs
-  // on it. Checked against wholeBatchPasteGrams (the corrected basis), not the raw
-  // predictedPasteGrams — round 2's version of this guard rejected legitimate remaining
-  // readings above predictedPasteGrams whenever the recipe used a split liquid, since
-  // predictedPasteGrams structurally undercounts the liquid's own solids.
-  const potAnhydrousGrams = isRemaining
-    ? lsPotAnhydrousShare({
-        anhydrousGrams: batch.anhydrousGrams,
-        wholeBatchPasteGrams,
-        potPasteGrams: m as number,
-      })
-    : batch.anhydrousGrams;
-  if (potAnhydrousGrams === null) return null;
+  // The pot's own anhydrous soap: the recipe's whole anhydrousGrams. This function's pot is
+  // always the whole batch; the UI's own weighed-jar caller reads {@link lsPotAnhydrousShare}
+  // directly for a jar holding only part of the paste.
+  const potAnhydrousGrams = batch.anhydrousGrams;
   // Measured wins outright — the scale is the only figure that can see cook evaporation.
   // Unmeasured, the pot is the corrected whole-batch basis, NOT predictedPasteGrams: an
   // alternative liquid's non-water solids are real mass sitting in it, so the water-only
@@ -249,33 +207,17 @@ export function lsPartialDilution(
   // answer for them — a pot already past its target has no water to divide up, which is the
   // same refusal the measured branch has always given for the same physical situation.
   const pasteGrams = pasteMeasured ? (m as number) : wholeBatchPasteGrams;
-  // Whole-batch (default): the pot holds all the recipe's anhydrous soap, and the target
-  // solution is the recipe's own fixed solutionGrams. Remaining: the pot's own anhydrous
-  // soap (potAnhydrousGrams above) — and therefore its own target solution — is a
-  // proportional share of the measurement rather than the recipe's whole-batch figures.
-  const potSolutionGrams = isRemaining
-    ? potAnhydrousGrams * (batch.solutionGrams / batch.anhydrousGrams)
-    : batch.solutionGrams;
-  // The pot's solution is fixed by its own target concentration, so the water to add is
-  // whatever the paste does NOT already supply. Without a measurement this is identical to
-  // the recipe's own dilutionWaterGrams; with one it absorbs the difference, which is what
-  // makes a measured paste self-correcting.
-  const batchWaterGrams = potSolutionGrams - pasteGrams;
+  // The pot holds all the recipe's anhydrous soap, and the target solution is the recipe's
+  // own fixed solutionGrams. The water to add is whatever the paste does NOT already
+  // supply. Without a measurement this is identical to the recipe's own dilutionWaterGrams;
+  // with one it absorbs the difference, which is what makes a measured paste self-correcting.
+  const batchWaterGrams = batch.solutionGrams - pasteGrams;
   if (batchWaterGrams < 0) return null; // paste is already thinner than the target
-  // "Amount to make" must make that amount: the requested volume is a share of what THIS
-  // POT can achieve, not the recipe's original output. In whole-batch mode the pot IS the
-  // batch, so this is fullVolumeMl unchanged (byte-identical to before). In remaining mode
-  // the pot is smaller than the original recipe (part of it was already diluted away), so
-  // its own achievable volume is smaller too — using the recipe's fullVolumeMl here (an
-  // earlier, incorrect version of this fix) understated the achievable fraction and made
-  // "Makes" print less than what was actually asked for (1,200 ml asked, ~1,078 ml shown).
-  const potFullVolumeMl = isRemaining
-    ? lsFinishedVolumeMl(potSolutionGrams, densityGPerMl)
-    : fullVolumeMl;
-  if (potFullVolumeMl === null) return null; // degenerate pot (potSolutionGrams <= 0)
-  const clamped = targetVolumeMl > potFullVolumeMl;
-  const fraction = clamped ? 1 : targetVolumeMl / potFullVolumeMl;
-  const solutionGrams = potSolutionGrams * fraction;
+  // "Amount to make" must make that amount: the requested volume is a share of what the
+  // batch can achieve.
+  const clamped = targetVolumeMl > fullVolumeMl;
+  const fraction = clamped ? 1 : targetVolumeMl / fullVolumeMl;
+  const solutionGrams = batch.solutionGrams * fraction;
   return {
     fraction,
     pasteGrams: pasteGrams * fraction,

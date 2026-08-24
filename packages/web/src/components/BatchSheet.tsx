@@ -26,7 +26,6 @@ import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
 import {
-  MEASURED_PASTE_IS_REMAINING,
   correctedDilutionWaterGrams,
   hasCorrectedPasteBasis,
   measuredPasteIsValidFor,
@@ -113,28 +112,17 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // The verdict this sheet's own COPY answers to, and DilutionPanel's `measuredPasteValid`
   // exactly: it gates the "Dilution water above uses the measured paste weight" note below
   // and — per Task 5 — OUTRANKS targetExceedsPaste there, since that flag is derived from the
-  // recipe's ASSUMED cook water and the measurement is direct evidence against it. The
-  // printed water FIGURE has its own, slightly wider gate inside correctedDilutionWaterGrams
-  // (lib/measuredPaste's correctedPotGramsFor), so a gradual record whose own 2 dp write-back
-  // left the solution a hair under the pot is not refused by a target it produced; the two
-  // gates differ only inside that rounding, and only where the record's own paste and water
-  // add up to the target in force — which is below the resolution of anything this note says,
-  // and is a state where the record rows below speak for the figure anyway.
+  // recipe's ASSUMED cook water and the measurement is direct evidence against it. The printed
+  // water FIGURE goes through the identical ceiling inside correctedDilutionWaterGrams
+  // (lib/measuredPaste's correctedPotGramsFor), so the two never disagree about whether a
+  // reading is usable.
   //
   // The corrected basis and the cook water go into the gate too, not only into the water
   // figure below: the floor under a reading counts an alternative liquid's solids, and
   // the sheet is the page carried to the bench — it must refuse exactly what the panel
   // refuses, or the two would disagree about whether the maker's own reading was usable.
-  // Which is also why the declaration argument is the same constant the panel passes: one
-  // reading, one meaning, both surfaces.
   const measuredPasteValid = dilution
-    ? measuredPasteIsValidFor(
-        measuredPasteGrams,
-        dilution,
-        MEASURED_PASTE_IS_REMAINING,
-        data.wholeBatchPasteGrams,
-        data.cookWaterGrams,
-      )
+    ? measuredPasteIsValidFor(measuredPasteGrams, dilution, data.wholeBatchPasteGrams, data.cookWaterGrams)
     : false;
   // wholeBatchPasteGrams is the second correction the shared helper applies: an alternative
   // liquid's non-water solids are real mass in the pot that calculateDilution's
@@ -148,20 +136,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // floor itself rather than written out a sixth time.
   const correctedPasteBasis = hasCorrectedPasteBasis(data.wholeBatchPasteGrams);
   const dilutionWaterGramsPrinted = dilution
-    ? correctedDilutionWaterGrams(
-        dilution,
-        measuredPasteGrams,
-        MEASURED_PASTE_IS_REMAINING,
-        data.wholeBatchPasteGrams,
-        data.cookWaterGrams,
-        // The gradual record, which is what licenses the widened paste ceiling inside that
-        // helper — and the reason this sheet can print a "0 g" pour without a note beside it
-        // and still be honest: a record is exactly the state in which the two rows below
-        // ("Water actually added", "That record makes …") are on the page to say where the
-        // water went. Without one the widening is off and the pour is the recipe's own
-        // figure, which the notes further down already know how to explain.
-        settings.gradualWaterGrams,
-      )
+    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, data.wholeBatchPasteGrams, data.cookWaterGrams)
     : 0;
   // The sheet is the page taken to the bench, so it must carry what actually gets
   // bottled, not only the chemistry-only solution above: bottledSolutionGrams adds in
@@ -203,8 +178,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // this read `> 0` the page taken to the bench dropped both rows for exactly that record, so
   // a maker who had recorded the starting weight found the screen and the paper disagreeing
   // about whether a record existed. That is why the predicate is now shared rather than
-  // written out here: the same answer decides these two rows, the panel's own derivation, and
-  // whether the paste ceiling behind "Dilution water to add" was widened at all.
+  // written out here: the same answer decides these two rows and the panel's own derivation.
   const gradualWaterRecordedGrams =
     parseGradualWaterRecordGrams(settings.gradualWaterGrams) ?? null;
   // WHICH ARM GOVERNS, in the sheet's own terms (spec §1). Identical to
@@ -217,10 +191,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // What that record MADE, which is the other half of the line spec §4 asks this sheet to
   // carry: paste + water, from the same two figures the panel adds up, so the page taken to
   // the bench states the mass that exists rather than only the water that went into it.
-  // Deliberately NOT a second row in the list: "Finished solution" is already
-  // there, the write-back makes the two agree to within a gram, and two near-identical
-  // masses in one column read as an error. It rides the note below instead, where it can be
-  // named as the record's own.
+  // USED TO mean no second row here at all: "Finished solution" was already there, and the
+  // write-back (now gone — decision 2, "no write-back, ever") kept the two within a gram of
+  // each other, so a second near-identical mass in one column would have read as an error.
+  // Once the write-back was killed for good the two could no longer be counted on to agree,
+  // which is why spec §4 promoted the record's own finished mass to its own row below
+  // ("That record makes") instead of leaving it riding a note.
   //
   // ONE CALL, to the resolution the panel's own "Finished so far" counts from
   // (lib/measuredPaste's weighedOrComputedPotGramsFor): the pot the maker weighed when that
@@ -517,10 +493,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 much water you started with and how much additional water you added"). It sits
                 beside "Dilution water to add" deliberately and is NAMED against it: that row
                 is what the saved target implies, this one is what was actually poured. They
-                are usually close, because recording the water writes its own concentration
-                back into the target — but they answer different questions, and a sheet that
-                let one stand in for the other would be the paper version of the confusion
-                this feature exists to remove. Absent entirely when nothing was recorded. */}
+                used to be usually close, back when recording the water wrote its own
+                concentration back into the target — decision 2 killed that write-back for
+                good, so today the two can differ by a lot. They answer different questions
+                either way, and a sheet that let one stand in for the other would be the paper
+                version of the confusion this feature exists to remove. Absent entirely when
+                nothing was recorded. */}
             {gradualWaterRecordedGrams !== null && (
               <div>
                 <dt>Water actually added</dt>
@@ -528,14 +506,15 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               </div>
             )}
             {/* Which row answers which question, said out loud rather than left to two
-                labels that both read as "water for this batch". They are usually within a
-                gram of each other, because recording the water writes its own concentration
-                back into the target — but they are not the same claim, and while a record
-                sits beside a target it has not been applied to they can be hundreds of
-                grams apart with nothing on the page distinguishing them. The finished mass
-                the record produced rides here too (spec §4), where it is named as the
-                record's own and cannot be mistaken for the target-derived "Finished
-                solution" row above. */}
+                labels that both read as "water for this batch". They used to be usually
+                within a gram of each other, back when recording the water wrote its own
+                concentration back into the target — decision 2 killed that write-back for
+                good ("no write-back, ever"), so today they are not the same claim and are
+                never structurally close: a record and the saved target are independent, and
+                can differ by hundreds of grams with nothing on the page distinguishing them
+                if this row were missing. The finished mass the record produced rides here too
+                (spec §4), where it is named as the record's own and cannot be mistaken for
+                the target-derived "Finished solution" row above. */}
             {gradualWaterRecordedGrams !== null && gradualFinishedGrams !== null && (
               <div>
                 <dt>That record makes</dt>

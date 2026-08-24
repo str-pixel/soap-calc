@@ -373,11 +373,11 @@ describe('DEFECT 2 (fixed, was pre-existing): a measured paste no longer over-co
       wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
     };
     const withCorrection = computeBottledSolutionGrams({
-      ...args, measuredPasteGrams: MEASURED, measuredPasteIsRemaining: false,
+      ...args, measuredPasteGrams: MEASURED,
     });
     const withoutCorrection = computeBottledSolutionGrams({
       ...args, wholeBatchPasteGrams: undefined,
-      measuredPasteGrams: MEASURED, measuredPasteIsRemaining: false,
+      measuredPasteGrams: MEASURED,
     });
     // FIXED: the correction bites here too — the uncorrected call is the old, heavy answer.
     expect(withoutCorrection - withCorrection).toBeCloseTo(64, 3);

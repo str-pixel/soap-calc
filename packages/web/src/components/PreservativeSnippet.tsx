@@ -144,8 +144,8 @@ export function PreservativeSnippet({
         <h2 className="panel__title">Preservative</h2>
       </summary>
       <p className="panel__subtitle">
-        Grams to weigh into the finished, diluted soap — saved with the recipe, never
-        counted in the batch or lye figures
+        Grams to weigh into the finished, diluted soap — saved with the recipe and counted
+        in the finished product above, never in the batch or lye figures
       </p>
       {/* THE NEED PARAGRAPH — why this snippet exists, in the book's logic and this
           app's words. Diluted vs paste is a WATER story, not a pH story: dilution lifts

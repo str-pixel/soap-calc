@@ -138,14 +138,12 @@ describe('an undeclared alternative liquid makes "already more dilute" unknowabl
   });
 });
 
-describe('a refusal names a control the current mode actually shows', () => {
-  // Both refusal paragraphs pointed at "the target above" and told the maker to "set a
-  // target". In ratio mode the panel above shows a water:paste ratio, the measured paste
-  // and the amount — no concentration field at all, so the remedy named a control that is
-  // not on screen. DilutionPanel's own exceeds-solution alert already branches this way
-  // ("raise the water:paste ratio above" / "lower the target concentration above"), and
-  // the direction is the same one: the paste is past the target, so it takes MORE water —
-  // a wider ratio, or a lower concentration.
+describe('a refusal names the one control on screen', () => {
+  // There used to be a second mode here — a water:paste ratio in place of the % field —
+  // and this refusal had to pick which control to name depending on which one was showing
+  // (Phase 2a removed the mode from the panel; Phase 3 removed dilutionTargetWording's
+  // parameters that used to select between them, spec §5). One control now, the plan's %
+  // field, on screen in every state, so there is one name and one remedy to give, always.
   const OVER = {
     ...RESULT,
     dilutionWaterGrams: 0,
@@ -153,50 +151,17 @@ describe('a refusal names a control the current mode actually shows', () => {
     targetExceedsPaste: true,
   };
 
-  test('the computed-paste refusal points at the ratio in ratio mode', () => {
-    render(<PortionDilutionResults {...PROPS} dilution={OVER} dilutionMode="ratio" />);
-    const refusal = screen.getByText(/no dilution water to divide up/i);
-    expect(refusal.textContent).toMatch(/water:paste ratio/i);
-    expect(refusal.textContent).not.toMatch(/target concentration/i);
-  });
-
-  test('…and at the concentration field in concentration mode', () => {
+  test('the computed-paste refusal points at the target concentration field', () => {
     render(<PortionDilutionResults {...PROPS} dilution={OVER} />);
     const refusal = screen.getByText(/no dilution water to divide up/i);
     expect(refusal.textContent).toMatch(/target concentration/i);
-    expect(refusal.textContent).not.toMatch(/water:paste ratio/i);
   });
 
-  test('an unapplied ratio is not named as the target the figures ran on', () => {
-    // While the write-back has not fired, everything here is still computed from the SAVED
-    // target — the panel's own "Not applied yet" note says so three paragraphs up. Naming
-    // "the concentration this ratio lands at" pointed the refusal at a number that governs
-    // nothing on screen yet. The remedy is unchanged: editing the ratio both applies it and
-    // widens it.
-    expect(dilutionTargetWording('ratio', true)).toEqual({
-      named: 'your saved target above',
-      remedy: 'Raise the water:paste ratio above (more water)',
-    });
-    expect(dilutionTargetWording('ratio', false).named).toBe('the concentration this ratio lands at');
-    // Concentration mode has the field on screen and is unaffected by the ratio's state.
-    expect(dilutionTargetWording('concentration', true)).toEqual({
+  test('dilutionTargetWording names the target and its remedy unconditionally', () => {
+    expect(dilutionTargetWording()).toEqual({
       named: 'the target above',
       remedy: 'Lower the target concentration above (more water)',
     });
-  });
-
-  test('the rendered refusal follows that wording', () => {
-    render(
-      <PortionDilutionResults
-        {...PROPS}
-        dilution={OVER}
-        dilutionMode="ratio"
-        ratioNotAppliedYet
-      />,
-    );
-    const refusal = screen.getByText(/no dilution water to divide up/i);
-    expect(refusal.textContent).toMatch(/your saved target above/i);
-    expect(refusal.textContent).not.toMatch(/this ratio lands at/i);
   });
 });
 

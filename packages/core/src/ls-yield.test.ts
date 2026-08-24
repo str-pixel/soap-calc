@@ -164,135 +164,6 @@ describe('lsPartialDilution with a measured paste weight', () => {
   });
 });
 
-describe('lsPartialDilution with a remaining (already-drawn-down) paste measurement', () => {
-  // Worked example from the user-flow review: 1,000 g anhydrous, 600 g cook water (1,600 g
-  // predicted whole-batch paste), target 33% soap. 300 ml was already drawn and diluted
-  // away earlier, leaving 1,437 g of paste in the pot — still the SAME composition, just
-  // less of it.
-  //
-  // CORRECTION: an earlier version of this test expected 524 g of water here. That figure
-  // came from scaling the requested volume against the ORIGINAL RECIPE's full achievable
-  // volume (fullVolumeMl ≈ 2,942 ml) — the same fraction whole-batch mode uses. It is
-  // wrong: "Amount to make (ml)" must make that amount, and 524 g of water only reaches
-  // ~1,078 ml, not the 1,200 ml asked for. The pot no longer holds the whole recipe (part
-  // of it was already diluted away), so its OWN achievable volume is smaller
-  // (≈2,642 ml) — the fraction must be taken against THAT, not the original recipe's.
-  // Do not restore 524/650 as the expectation here.
-  const anhydrousGrams = 1000;
-  const cookWaterGrams = 600;
-  const targetConcentration = 0.33;
-  const predictedPasteGrams = anhydrousGrams + cookWaterGrams; // 1,600
-  const solutionGrams = anhydrousGrams / targetConcentration; // 3,030.303...
-  const dilutionWaterGrams = solutionGrams - predictedPasteGrams;
-  const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
-  const BATCH = { anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams };
-
-  it('scales the pot from the measurement itself, not the recipe anhydrous, when the paste is what is left', () => {
-    // pot anhydrous = 1,437 × (1,000/1,600) = 898 g; pot solution at 33% = 898/0.33 =
-    // 2,722 g → 2,643 ml achievable. Asking for 1,200 ml of that: fraction = 1,200/2,643 =
-    // 0.454 → 653 g paste, 583 g water (653 + 583 = 1,236 g → 1,200 ml; 408/1,236 = 33.0%).
-    const r = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
-      1200,
-    );
-    expect(r).not.toBeNull();
-    if (!r) return;
-    expect(r.pasteGrams).toBeCloseTo(653, 0);
-    expect(r.waterGrams).toBeCloseTo(583, 0);
-  });
-
-  it('"Makes" equals the amount actually asked for, once unclamped — the whole point of "Amount to make"', () => {
-    const r = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
-      1200,
-    );
-    expect(r).not.toBeNull();
-    if (!r) return;
-    expect(r.volumeMl).toBeCloseTo(1200, 0);
-    expect(r.clamped).toBe(false);
-  });
-
-  it('clamps on the REMAINING paste\'s own achievable volume (~2,642 ml), not the original recipe\'s (~2,942 ml)', () => {
-    // 2,800 ml exceeds what 1,437 g of remaining paste can ever make (≈2,642 ml) but is
-    // still less than what the ORIGINAL, undrawn batch could have made (≈2,942 ml) — a
-    // fraction taken against the wrong (recipe) volume would wrongly report this as
-    // unclamped. The clamped figures must be the whole remaining pot: all 1,437 g of
-    // paste, and the water needed to dilute exactly that (2,722 − 1,437 ≈ 1,285 g).
-    const r = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
-      2800,
-    );
-    expect(r).not.toBeNull();
-    if (!r) return;
-    expect(r.clamped).toBe(true);
-    expect(r.fraction).toBe(1);
-    expect(r.pasteGrams).toBeCloseTo(1437, 0);
-    expect(r.waterGrams).toBeCloseTo(1285, 0);
-  });
-
-  it('the same reading produces the wrong (whole-batch) figure when NOT declared remaining — the bug this guards against', () => {
-    const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1437 }, 1200);
-    expect(r).not.toBeNull();
-    if (!r) return;
-    expect(r.waterGrams).toBeCloseTo(650, 0);
-  });
-
-  it('accepts a remaining measurement below the recipe anhydrous floor — the remainder no longer holds the whole batch', () => {
-    // 1,437 g is itself below the FULL anhydrous+cook-water paste of a bigger batch in
-    // this case anhydrousGrams (1,000) is still below 1,437, so use a reading that is
-    // below anhydrousGrams directly to prove there is no floor in remaining mode.
-    const r = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 500, measuredPasteIsRemaining: true },
-      200,
-    );
-    expect(r).not.toBeNull();
-  });
-
-  it('is byte-identical to whole-batch mode when measuredPasteIsRemaining is omitted or false', () => {
-    const withFlagFalse = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: false }, 1200);
-    const withoutFlag = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1437 }, 1200);
-    expect(withFlagFalse).toEqual(withoutFlag);
-  });
-
-  it('rejects a remaining reading heavier than the whole batch\'s own predicted paste — a remainder cannot exceed the whole', () => {
-    // Review round 2, finding 2: predicted whole-batch paste here is 1,600 g
-    // (anhydrousGrams 1,000 + cookWaterGrams 600). A "remaining" reading of 3,000 g would
-    // otherwise be accepted and scale to a pot anhydrous of 3,000 × (1,000/1,600) =
-    // 1,875 g — MORE soap than the entire batch ever contained. Physically impossible
-    // input must not reach the arithmetic at all.
-    const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: 3000, measuredPasteIsRemaining: true }, 1200);
-    expect(r).toBeNull();
-  });
-
-  it('accepts a remaining reading exactly at the predicted whole-batch paste (the boundary)', () => {
-    const r = lsPartialDilution({ ...BATCH, measuredPasteGrams: predictedPasteGrams, measuredPasteIsRemaining: true }, 1200);
-    expect(r).not.toBeNull();
-  });
-
-  it("exposes the pot's own anhydrous share directly, independent of the requested volume", () => {
-    // Same pot as the very first test above: 1,437 g of remaining paste carries
-    // 1,437 × (1,000/1,600) ≈ 898 g of anhydrous soap. Unlike pasteGrams/waterGrams/
-    // solutionGrams, this field is not scaled by `fraction` — it is the pot's FULL
-    // anhydrous content, so two different requested volumes on the same pot must report
-    // the identical figure. A caller deriving a measured jar's OWN concentration (not a
-    // share of what the recipe's target wants from it) reads this rather than
-    // re-deriving `measured × anhydrousGrams / wholeBatchPasteGrams` itself.
-    const small = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
-      1200,
-    );
-    const large = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 1437, measuredPasteIsRemaining: true },
-      2800,
-    );
-    expect(small).not.toBeNull();
-    expect(large).not.toBeNull();
-    if (!small || !large) return;
-    expect(small.potAnhydrousGrams).toBeCloseTo(898, 0);
-    expect(large.potAnhydrousGrams).toBeCloseTo(898, 0);
-  });
-});
-
 describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid solids)', () => {
   // Review round 3: predictedPasteGrams (anhydrousGrams + cookWaterGrams) counts only the
   // WATER fraction of an alternative liquid — its non-water solids are real mass sitting
@@ -320,39 +191,7 @@ describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid soli
   const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
   const BATCH = { anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams };
 
-  it('accepts an honest remaining reading (1,620 g) that the uncorrected 1,600 g ceiling would have falsely rejected', () => {
-    const r = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 1620, measuredPasteIsRemaining: true, wholeBatchPasteGrams },
-      1000,
-    );
-    expect(r).not.toBeNull();
-  });
-
-  it('derives the composition from the TRUE basis (~1,700 g), not the water-only 1,600 g — a lower soap fraction', () => {
-    // waterPasteRatio is portion-invariant (scales with fraction), so it isolates the
-    // composition basis from the requested-volume arithmetic. The corrected (1,700 g)
-    // basis gives ~0.783:1; the uncorrected (1,600 g) basis would give ~0.894:1 — using
-    // the wrong basis overstates the pot's soap fraction.
-    const r = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 1620, measuredPasteIsRemaining: true, wholeBatchPasteGrams },
-      1000,
-    );
-    expect(r).not.toBeNull();
-    if (!r) return;
-    expect(r.waterPasteRatio).toBeCloseTo(0.783, 2);
-    expect(r.waterPasteRatio).not.toBeCloseTo(0.894, 2);
-    expect(r.wholeBatchPasteGrams).toBe(1700);
-  });
-
-  it('still rejects a reading above the TRUE whole-batch paste — the ceiling follows the corrected basis, not just loosens', () => {
-    const r = lsPartialDilution(
-      { ...BATCH, measuredPasteGrams: 3000, measuredPasteIsRemaining: true, wholeBatchPasteGrams },
-      1000,
-    );
-    expect(r).toBeNull();
-  });
-
-  describe('and no measurement at all — the pot still holds the solids', () => {
+  describe('the pot still holds the solids, measured or not', () => {
     // The unmeasured pot really is anhydrous + cook water + the liquid's solids, which is
     // what wholeBatchPasteGrams resolves to. Using predictedPasteGrams here left the portion
     // pouring water for a paste 100 g lighter than the one in the pot, so Custom amount and
@@ -389,15 +228,6 @@ describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid soli
     });
   });
 
-  it('falls back to predictedPasteGrams (byte-identical to round 2) when wholeBatchPasteGrams is omitted — a no-split-liquid recipe', () => {
-    const withoutBasis = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1620, measuredPasteIsRemaining: true }, 1000);
-    // 1,620 g exceeds the uncorrected 1,600 g predicted paste, so without the corrected
-    // basis this is (correctly, for a NO-split-liquid recipe) still rejected.
-    expect(withoutBasis).toBeNull();
-    const atPredicted = lsPartialDilution({ ...BATCH, measuredPasteGrams: 1600, measuredPasteIsRemaining: true }, 1000);
-    expect(atPredicted).not.toBeNull();
-    expect(atPredicted?.wholeBatchPasteGrams).toBe(predictedPasteGrams);
-  });
 });
 
 describe('lsPotAnhydrousShare — the soap in one weighed pot', () => {
@@ -432,8 +262,9 @@ describe('lsPotAnhydrousShare — the soap in one weighed pot', () => {
     // recorded concentration has nothing to do with either, so it must not inherit them.
     const share = lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 });
     expect(share).toBeCloseTo(300, 9);
-    // The same pot, against a recipe whose target is so low-water that lsPartialDilution
-    // refuses it (solution 1,500 g < the 1,600 g pot).
+    // A DIFFERENT scenario on the same recipe — a whole-batch reading of 1,600 g against a
+    // target so low-water that lsPartialDilution refuses it (solution 1,500 g < the
+    // 1,600 g pot) — to show that refusal has no bearing on the (unrelated) share above.
     const refused = lsPartialDilution(
       {
         anhydrousGrams: 1200,
@@ -441,28 +272,11 @@ describe('lsPotAnhydrousShare — the soap in one weighed pot', () => {
         dilutionWaterGrams: 0,
         solutionGrams: 1500,
         wholeBatchPasteGrams: 1600,
-        measuredPasteGrams: 400,
-        measuredPasteIsRemaining: true,
+        measuredPasteGrams: 1600,
       },
       1000,
     );
     expect(refused).toBeNull();
     expect(lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 })).toBeCloseTo(share as number, 9);
-  });
-
-  it('is the very arithmetic lsPartialDilution reports, not a second copy of it', () => {
-    // One derivation: potAnhydrousGrams comes back through this function, so a change to
-    // the ratio or its ceiling cannot move one caller without the other.
-    const r = lsPartialDilution(
-      {
-        anhydrousGrams: 1200, totalWaterGrams: 2800, dilutionWaterGrams: 2400, solutionGrams: 4000,
-        wholeBatchPasteGrams: 1600, measuredPasteGrams: 400, measuredPasteIsRemaining: true,
-      },
-      500,
-    );
-    expect(r?.potAnhydrousGrams).toBeCloseTo(
-      lsPotAnhydrousShare({ ...BATCH, potPasteGrams: 400 }) as number,
-      9,
-    );
   });
 });

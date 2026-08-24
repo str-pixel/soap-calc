@@ -146,8 +146,8 @@ export type RecipeViewModel = {
    * dilution exists. */
   finishedProductGrams: number | null;
   /** The best-known WHOLE-BATCH paste mass — anhydrousGrams + cookWaterGrams, corrected
-   * for an alternative liquid's non-water solids. Feeds PortionDilutionResults' remaining-mode
-   * ceiling/composition basis. Null before a dilution exists. */
+   * for an alternative liquid's non-water solids. Feeds PortionDilutionResults' measured-reading
+   * floor/composition basis. Null before a dilution exists. */
   wholeBatchPasteGrams: number | null;
   batchWeightWithExtras: number;
   liveOilBatchFraction: number | null;
@@ -476,12 +476,13 @@ export function useRecipeViewModel({
   // falls back to) for an alternative liquid's non-water solids: real mass sitting in the
   // pot that a water-only figure structurally misses (splitLiquidPasteWater is only the
   // liquid's WATER fraction; splitLiquidGrams is its total mass, so the difference is its
-  // solids). Feeds PortionDilutionResults' remaining-mode ceiling/composition basis (see
-  // lsPartialDilution's wholeBatchPasteGrams param) — without this, a legitimate remaining
-  // reading above the water-only figure was falsely rejected on any split-liquid recipe,
-  // and the composition it derived understated the pot's true paste mass. Null before a
-  // dilution exists; equals the water-only figure exactly (no correction) when there is no
-  // split liquid, so a no-split-liquid recipe's behaviour is unchanged.
+  // solids). Feeds PortionDilutionResults' measured-reading floor/composition basis (see
+  // lsPartialDilution's wholeBatchPasteGrams param) — without this, a reading below the
+  // batch's true solids floor cleared it anyway on any split-liquid recipe (the same
+  // anhydrous-only floor solidsFloorGramsFor's own doc describes), and the composition it
+  // derived understated the pot's true paste mass. Null before a dilution exists; equals
+  // the water-only figure exactly (no correction) when there is no split liquid, so a
+  // no-split-liquid recipe's behaviour is unchanged.
   const wholeBatchPasteGrams = useMemo(() => {
     if (!dilution) return null;
     const splitLiquidSolidsGrams = Math.max(0, (splitLiquidGrams ?? 0) - splitLiquidPasteWater);
@@ -844,11 +845,6 @@ export function useRecipeViewModel({
           // Same corrected paste the panel's and the sheet's water figures are derived
           // from, so what this prices is what the maker is actually told to pour.
           wholeBatchPasteGrams,
-          // And the same gradual record they read, which is what decides whether the paste
-          // ceiling was widened — so this prices the pot those two surfaces pour against
-          // rather than one chosen by a different rule. Plan arm only; with a record the arm
-          // below chooses the pot from the record itself.
-          gradualWaterGrams: settings.gradualWaterGrams,
           // THE RESOLUTION'S OWN ANSWER, not a second reading of the same field (spec §1:
           // one function feeds every consumer). Non-null exactly when the record governs, so
           // this prices the batch that exists — the pot plus the water actually poured — and

@@ -609,11 +609,16 @@ test('…and answers identically just past that band, so the band leaves no seam
   );
 });
 
-test('…while a gradual record keeps the widening, and its rows account for the 0 g', () => {
-  // The other side of the same rule, at the surface the finding was found on. With a record
-  // in hand the widening is earned — the saved 30% is what that record wrote — so the pour
-  // clamps to "0 g", and the two rows gradual prints are the account the bare figure lacked:
-  // what went in the pot, and what it made.
+test('a record in hand does not widen the pour’s own ceiling (Phase 3: the widening is gone)', () => {
+  // A weighed pot whose reading is a hair inside where the write-back's own rounding used to
+  // widen the ceiling — 4,059.6 g against a 4,059 g solution, with a 0 g record that would
+  // once have licensed it. That widening is gone (spec §5): the pour row falls back to the
+  // recipe's own computed pot exactly as it does with no record at all (its twin above,
+  // '…and never prints that note…'), while the record's own rows ("Water actually added",
+  // "That record makes") still print from the separate, target-independent resolution
+  // (weighedOrComputedPotGramsFor) — the two questions this row and those rows answer were
+  // never the same one, and the deletion only removes the coincidence that used to make the
+  // pour's own figure agree with it.
   render(
     <BatchSheet
       data={lsSheetData({
@@ -624,10 +629,9 @@ test('…while a gradual record keeps the widening, and its rows account for the
     />,
   );
   const pour = screen.getByText('Dilution water to add').nextElementSibling!;
-  expect(pour.textContent).toContain('0 g');
+  expect(pour.textContent).toContain('2,459 g');
   expect(screen.getByText(/Water actually added/).closest('div')!.textContent).toContain('0 g');
-  // The weighed pot plus nothing — the sheet's own rounding, off the reading the widening let
-  // it keep.
+  // The weighed pot plus nothing — the record's own basis is unaffected by the pour's ceiling.
   expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('4,060 g');
 });
 

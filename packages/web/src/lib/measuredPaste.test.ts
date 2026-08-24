@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateDilution, type DilutionResult } from '@soap-calc/core';
+import type { DilutionResult } from '@soap-calc/core';
 import {
   computedPotGramsFor,
   correctedDilutionWaterGrams,
@@ -72,128 +72,66 @@ describe('correctedDilutionWaterGrams', () => {
     // uncorrected 2,400 g would land the batch 450 g past its target, and disagree with the
     // ratio block, which has always poured off the real paste.
     it('subtracts the corrected paste from the same solutionGrams the ratio block uses', () => {
-      expect(correctedDilutionWaterGrams(DILUTION, '', false, 2050)).toBe(1950);
+      expect(correctedDilutionWaterGrams(DILUTION, '', 2050)).toBe(1950);
     });
 
     it('is exactly the recipe figure when there is nothing to correct', () => {
       // No split liquid: the corrected paste IS anhydrous + cook water (1,600 g), so this
       // reduces to dilutionWaterGrams with no special case.
-      expect(correctedDilutionWaterGrams(DILUTION, '', false, 1600)).toBe(2400);
+      expect(correctedDilutionWaterGrams(DILUTION, '', 1600)).toBe(2400);
       // …and an absent/unusable basis takes the same path it always did.
-      expect(correctedDilutionWaterGrams(DILUTION, '', false, null)).toBe(2400);
-      expect(correctedDilutionWaterGrams(DILUTION, '', false, 0)).toBe(2400);
-      expect(correctedDilutionWaterGrams(DILUTION, '', false, Number.NaN)).toBe(2400);
+      expect(correctedDilutionWaterGrams(DILUTION, '', null)).toBe(2400);
+      expect(correctedDilutionWaterGrams(DILUTION, '', 0)).toBe(2400);
+      expect(correctedDilutionWaterGrams(DILUTION, '', Number.NaN)).toBe(2400);
     });
 
     it('never returns a negative pour when the corrected paste is past the target solution', () => {
       // Reachable with targetExceedsPaste still FALSE: the flag is computed from water
       // alone, so a large low-water liquid can push the real paste over the solution while
       // the recipe believes there is water left to add.
-      expect(correctedDilutionWaterGrams(DILUTION, '', false, 4500)).toBe(0);
+      expect(correctedDilutionWaterGrams(DILUTION, '', 4500)).toBe(0);
     });
 
     it('is outranked by a valid measurement — the scale beats both computed bases', () => {
-      expect(correctedDilutionWaterGrams(DILUTION, '1480', false, 2050)).toBe(2520);
+      expect(correctedDilutionWaterGrams(DILUTION, '1480', 2050)).toBe(2520);
     });
-
-    it('still ignores a remaining-declared reading, and corrects the batch figure anyway', () => {
-      // A "what's left" reading describes a smaller pot, so it cannot correct this BATCH
-      // row — but the solids correction is a property of the recipe and still applies.
-      expect(correctedDilutionWaterGrams(DILUTION, '1480', true, 2050)).toBe(1950);
-    });
-  });
-});
-
-describe('measuredPasteIsValidFor with a remaining-paste declaration', () => {
-  it('is never valid FOR THE BATCH ROW when the measurement is what is left, not the whole batch', () => {
-    // 1,480 g is otherwise a perfectly valid whole-batch reading (between the 1,200 g
-    // floor and the 4,000 g ceiling) — but a remaining-paste reading is not the batch,
-    // and this helper backs the BATCH row (DilutionPanel, BatchSheet), not the portion.
-    expect(measuredPasteIsValidFor('1480', DILUTION, true)).toBe(false);
-  });
-
-  it('is unaffected — still whatever it was before — when isRemaining is omitted or false', () => {
-    expect(measuredPasteIsValidFor('1480', DILUTION)).toBe(true);
-    expect(measuredPasteIsValidFor('1480', DILUTION, false)).toBe(true);
   });
 });
 
 describe('measuredPasteRejectionFor', () => {
-  // One source for the three rejection rules, so the shell that owns the INPUT and the
+  // One source for the two rejection rules, so the shell that owns the INPUT and the
   // portion results that consume the reading can never disagree about whether it is usable.
   it('rejects a whole-batch reading below the anhydrous solids floor, naming which rule fired', () => {
-    const rejection = measuredPasteRejectionFor('900', DILUTION, false);
+    const rejection = measuredPasteRejectionFor('900', DILUTION);
     expect(rejection.belowSolids).toBe(true);
     expect(rejection.exceedsSolution).toBe(false);
-    expect(rejection.exceedsRemainingCeiling).toBe(false);
     expect(rejection.rejected).toBe(true);
     expect(rejection.accepted).toBe(false);
   });
 
-  it('does not apply the solids floor to a reading declared as what is left', () => {
-    // The whole point of the declaration: what remains after an earlier dilution can
-    // legitimately weigh less than the recipe's whole anhydrous soap.
-    const rejection = measuredPasteRejectionFor('900', DILUTION, true);
-    expect(rejection.belowSolids).toBe(false);
-    expect(rejection.rejected).toBe(false);
-    expect(rejection.accepted).toBe(true);
+  it('rejects a WHOLE-BATCH reading heavier than the target solution', () => {
+    expect(measuredPasteRejectionFor('4100', DILUTION).exceedsSolution).toBe(true);
   });
 
-  it('rejects a WHOLE-BATCH reading heavier than the target solution, and refuses a remainder as a remainder', () => {
-    expect(measuredPasteRejectionFor('4100', DILUTION, false).exceedsSolution).toBe(true);
-    // The same 4,100 g declared "what's left". solutionGrams is anhydrous ÷ the target —
-    // what the WHOLE batch's soap makes at that concentration — so it is not a bound on a
-    // remainder, and the paragraph it drives ("lower the target concentration") answers a
-    // mistake nobody made here. The ceiling that IS about a remainder owns it alone: 4,100 g
-    // is more than the 1,600 g pot it would have to have come out of.
-    const remaining = measuredPasteRejectionFor('4100', DILUTION, true);
-    expect(remaining.exceedsSolution).toBe(false);
-    expect(remaining.exceedsRemainingCeiling).toBe(true);
-    // The verdict does not move — only which rule, and so which paragraph, owns it.
-    expect(remaining.rejected).toBe(true);
-    expect(remaining.accepted).toBe(false);
-  });
-
-  it('accepts a remainder above the solution but within the pot it came out of', () => {
-    // The one case the two possible suppression scopes disagree about:
-    // solutionGrams < measured <= wholeBatchPasteBasis. It needs a corrected pot heavier
-    // than the solution (4,500 g against DILUTION's 4,000 g — a big low-water alternative
-    // liquid), because the water-only fallback basis can never exceed solutionGrams.
-    //
-    // BEFORE: exceedsSolution fired alone, so `rejected` was true and the panel printed
-    // "your paste already weighs more than the 4,000 g this target dilutes to … lower the
-    // target concentration" — a refusal of a reading that is entirely possible (4,200 g
-    // really can be left of a 4,500 g pot). AFTER: no rule fires, because none of them is
-    // about this. What is out of reach is the TARGET, and by an inequality that does not
-    // mention the reading at all — see the invariant asserted below, and the surfaces that
-    // own it (PortionDilutionResults' measuredPasteAlreadyThinner, DilutionPanel's
-    // pasteAlreadyPastTarget twin).
-    const rejection = measuredPasteRejectionFor('4200', DILUTION, true, 4500);
-    expect(rejection.exceedsSolution).toBe(false);
-    expect(rejection.exceedsRemainingCeiling).toBe(false);
-    expect(rejection.rejected).toBe(false);
-    expect(rejection.accepted).toBe(true);
-    // …and it still cannot correct the BATCH row, which is a separate gate and unmoved.
-    expect(measuredPasteIsValidFor('4200', DILUTION, true, 4500)).toBe(false);
-    expect(correctedDilutionWaterGrams(DILUTION, '4200', true, 4500)).toBe(0);
-  });
-
-  it('rejects a remaining reading above the whole-batch ceiling and reports the basis it used', () => {
-    // Predicted whole-batch paste: 1,200 anhydrous + (2,800 − 2,400) water already in the
-    // paste = 1,600 g.
-    const rejection = measuredPasteRejectionFor('2000', DILUTION, true);
-    expect(rejection.exceedsRemainingCeiling).toBe(true);
-    expect(rejection.wholeBatchPasteBasis).toBe(1600);
-    // The boundary is accepted.
-    expect(measuredPasteRejectionFor('1600', DILUTION, true).exceedsRemainingCeiling).toBe(false);
+  it('rejects a reading above the solution even against a corrected pot heavier than it', () => {
+    // solutionGrams < measured <= wholeBatchPasteBasis (4,500 g against DILUTION's 4,000 g
+    // — a big low-water alternative liquid). Whole-batch mode has exactly one ceiling now
+    // that the remaining-mode declaration is gone: exceedsSolution owns every reading past
+    // the target's own solution, whatever the corrected pot weighs.
+    const rejection = measuredPasteRejectionFor('4200', DILUTION, 4500);
+    expect(rejection.exceedsSolution).toBe(true);
+    expect(rejection.rejected).toBe(true);
+    expect(rejection.accepted).toBe(false);
+    // …and it cannot correct the BATCH row's pour: the pot falls back to the corrected
+    // basis (4,500 g), already past solutionGrams, so the pour clamps to 0.
+    expect(correctedDilutionWaterGrams(DILUTION, '4200', 4500)).toBe(0);
   });
 
   it('prefers a supplied corrected whole-batch basis over the water-only predicted figure', () => {
     // An alternative liquid's non-water solids are real mass the recipe never counts, so a
-    // 1,650 g remainder is honest on a recipe whose true paste weighed 1,700 g.
-    const rejection = measuredPasteRejectionFor('1650', DILUTION, true, 1700);
+    // 1,650 g reading is honest on a recipe whose true paste weighed 1,700 g.
+    const rejection = measuredPasteRejectionFor('1650', DILUTION, 1700);
     expect(rejection.wholeBatchPasteBasis).toBe(1700);
-    expect(rejection.exceedsRemainingCeiling).toBe(false);
     expect(rejection.accepted).toBe(true);
   });
 
@@ -202,49 +140,47 @@ describe('measuredPasteRejectionFor', () => {
     // rejected. See the nonPositive describe below for why, and for the distinction from
     // the blank field, where Number('') is also 0.
     for (const value of ['', '   ', undefined, 'abc']) {
-      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      const rejection = measuredPasteRejectionFor(value, DILUTION);
       expect(rejection.rejected).toBe(false);
       expect(rejection.accepted).toBe(false);
     }
-    expect(measuredPasteRejectionFor('', DILUTION, false).hasMeasurement).toBe(false);
+    expect(measuredPasteRejectionFor('', DILUTION).hasMeasurement).toBe(false);
   });
 
   it('accepts a usable whole-batch reading and hands back the parsed grams', () => {
-    const rejection = measuredPasteRejectionFor('1480', DILUTION, false);
+    const rejection = measuredPasteRejectionFor('1480', DILUTION);
     expect(rejection.accepted).toBe(true);
     expect(rejection.measuredGrams).toBe(1480);
   });
 });
 
 describe('a reading that is not a weight at all', () => {
-  // belowSolids and exceedsRemainingCeiling both self-disabled via `measured > 0`, and
-  // `accepted` requires it too, so a typed -500 produced {rejected: false, accepted: false}
-  // — no alert anywhere, and the batch row quietly falling back to the recipe's computed
-  // figure with a physically impossible number still on screen above it. min={1} on a
-  // type="number" input is only enforced on submit, and this form has no submit, so it is
-  // typeable. Those `> 0` guards were written to exempt the BLANK field (Number('') === 0),
-  // which hasMeasurement already covers.
-  it('rejects zero and negative readings under either declaration', () => {
-    for (const isRemaining of [false, true]) {
-      for (const value of ['0', '-500', '-0.5']) {
-        const rejection = measuredPasteRejectionFor(value, DILUTION, isRemaining);
-        expect(rejection.nonPositive).toBe(true);
-        expect(rejection.rejected).toBe(true);
-        expect(rejection.accepted).toBe(false);
-      }
+  // belowSolids is self-disabled via `measured > 0`, and `accepted` requires it too, so a
+  // typed -500 produced {rejected: false, accepted: false} — no alert anywhere, and the
+  // batch row quietly falling back to the recipe's computed figure with a physically
+  // impossible number still on screen above it. min={1} on a type="number" input is only
+  // enforced on submit, and this form has no submit, so it is typeable. That `> 0` guard was
+  // written to exempt the BLANK field (Number('') === 0), which hasMeasurement already
+  // covers.
+  it('rejects zero and negative readings', () => {
+    for (const value of ['0', '-500', '-0.5']) {
+      const rejection = measuredPasteRejectionFor(value, DILUTION);
+      expect(rejection.nonPositive).toBe(true);
+      expect(rejection.rejected).toBe(true);
+      expect(rejection.accepted).toBe(false);
     }
   });
 
   it('does not fire on a blank field, where Number() is also 0', () => {
     for (const value of ['', '   ', undefined]) {
-      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      const rejection = measuredPasteRejectionFor(value, DILUTION);
       expect(rejection.nonPositive).toBe(false);
       expect(rejection.rejected).toBe(false);
     }
   });
 
   it('does not fire on an unparseable field', () => {
-    const rejection = measuredPasteRejectionFor('abc', DILUTION, false);
+    const rejection = measuredPasteRejectionFor('abc', DILUTION);
     expect(rejection.nonPositive).toBe(false);
     expect(rejection.rejected).toBe(false);
   });
@@ -253,18 +189,16 @@ describe('a reading that is not a weight at all', () => {
     // A negative reading is trivially below the anhydrous floor too; without the existing
     // `> 0` guard on belowSolids they would both fire and the shell would render two
     // paragraphs for one reading.
-    const rejection = measuredPasteRejectionFor('-500', DILUTION, false);
+    const rejection = measuredPasteRejectionFor('-500', DILUTION);
     expect(rejection.belowSolids).toBe(false);
     expect(rejection.exceedsSolution).toBe(false);
-    expect(rejection.exceedsRemainingCeiling).toBe(false);
   });
 
   it('leaves every positive reading exactly as it was', () => {
-    expect(measuredPasteRejectionFor('1480', DILUTION, false).nonPositive).toBe(false);
-    expect(measuredPasteRejectionFor('1480', DILUTION, false).accepted).toBe(true);
-    expect(measuredPasteRejectionFor('900', DILUTION, false).belowSolids).toBe(true);
-    expect(measuredPasteRejectionFor('4100', DILUTION, false).exceedsSolution).toBe(true);
-    expect(measuredPasteRejectionFor('2000', DILUTION, true).exceedsRemainingCeiling).toBe(true);
+    expect(measuredPasteRejectionFor('1480', DILUTION).nonPositive).toBe(false);
+    expect(measuredPasteRejectionFor('1480', DILUTION).accepted).toBe(true);
+    expect(measuredPasteRejectionFor('900', DILUTION).belowSolids).toBe(true);
+    expect(measuredPasteRejectionFor('4100', DILUTION).exceedsSolution).toBe(true);
   });
 });
 
@@ -277,40 +211,35 @@ describe('a reading finer than the scale reads', () => {
   // of these by accident — 1.222 g is below the anhydrous soap — with an alert blaming the
   // scale's tare, the wrong diagnosis; an artifact above the floor (1480,25 → 1480.25) was
   // silently ACCEPTED, and every surface poured from it.
-  it('rejects a reading with two or more typed decimal digits, under either declaration', () => {
-    for (const isRemaining of [false, true]) {
-      for (const value of ['1.222', '1480.25', '1480.50', '0.15']) {
-        const rejection = measuredPasteRejectionFor(value, DILUTION, isRemaining);
-        expect(rejection.subTenthPrecision).toBe(true);
-        expect(rejection.rejected).toBe(true);
-        expect(rejection.accepted).toBe(false);
-      }
+  it('rejects a reading with two or more typed decimal digits', () => {
+    for (const value of ['1.222', '1480.25', '1480.50', '0.15']) {
+      const rejection = measuredPasteRejectionFor(value, DILUTION);
+      expect(rejection.subTenthPrecision).toBe(true);
+      expect(rejection.rejected).toBe(true);
+      expect(rejection.accepted).toBe(false);
     }
   });
 
   it('judges the typed string, never the float', () => {
     // 1480.50 parses to exactly the float 1480.5 parses to — but a scale doesn't print
     // trailing zeros, and two typed decimals are the trap's shape whatever they round to.
-    expect(measuredPasteRejectionFor('1480.50', DILUTION, false).subTenthPrecision).toBe(true);
-    expect(measuredPasteRejectionFor('1480.5', DILUTION, false).subTenthPrecision).toBe(false);
-    expect(measuredPasteRejectionFor('1480.5', DILUTION, false).accepted).toBe(true);
+    expect(measuredPasteRejectionFor('1480.50', DILUTION).subTenthPrecision).toBe(true);
+    expect(measuredPasteRejectionFor('1480.5', DILUTION).subTenthPrecision).toBe(false);
+    expect(measuredPasteRejectionFor('1480.5', DILUTION).accepted).toBe(true);
   });
 
-  it('owns the verdict alone — the floor and both ceilings defer to it', () => {
-    // 0.15 is far below the floor, 4100.25 above the solution, 2000.25 above a remaining
-    // basis: each magnitude rule would fire, and each stands down, because a bound on a
-    // number that is not a scale reading answers the wrong question — and its remedy
-    // (re-tare, lower the target) is no help against a swallowed separator.
-    const below = measuredPasteRejectionFor('0.15', DILUTION, false);
+  it('owns the verdict alone — the floor and ceiling both defer to it', () => {
+    // 0.15 is far below the floor, 4100.25 above the solution: each magnitude rule would
+    // fire, and each stands down, because a bound on a number that is not a scale reading
+    // answers the wrong question — and its remedy (re-tare, lower the target) is no help
+    // against a swallowed separator.
+    const below = measuredPasteRejectionFor('0.15', DILUTION);
     expect(below.subTenthPrecision).toBe(true);
     expect(below.belowSolids).toBe(false);
-    const above = measuredPasteRejectionFor('4100.25', DILUTION, false);
+    const above = measuredPasteRejectionFor('4100.25', DILUTION);
     expect(above.subTenthPrecision).toBe(true);
     expect(above.exceedsSolution).toBe(false);
-    const remaining = measuredPasteRejectionFor('2000.25', DILUTION, true);
-    expect(remaining.subTenthPrecision).toBe(true);
-    expect(remaining.exceedsRemainingCeiling).toBe(false);
-    for (const rejection of [below, above, remaining]) {
+    for (const rejection of [below, above]) {
       expect(rejection.rejected).toBe(true);
       expect(rejection.accepted).toBe(false);
     }
@@ -320,7 +249,7 @@ describe('a reading finer than the scale reads', () => {
     // A typed -0.55 or 0.00 is refused as a non-weight, whose remedy (enter what the scale
     // reads, or clear the field) subsumes this rule's; two paragraphs would say less.
     for (const value of ['-0.55', '0.00']) {
-      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      const rejection = measuredPasteRejectionFor(value, DILUTION);
       expect(rejection.nonPositive).toBe(true);
       expect(rejection.subTenthPrecision).toBe(false);
       expect(rejection.rejected).toBe(true);
@@ -329,15 +258,15 @@ describe('a reading finer than the scale reads', () => {
 
   it('does not fire on blank, unparseable, or tenth-and-coarser readings', () => {
     for (const value of ['', '   ', undefined, 'abc', '1.2.3', '1.23.4', '1480', '1480.5', '900', '4100']) {
-      const rejection = measuredPasteRejectionFor(value, DILUTION, false);
+      const rejection = measuredPasteRejectionFor(value, DILUTION);
       expect(rejection.subTenthPrecision).toBe(false);
     }
     // '1.23.4' carries two decimal digits but parses to NaN — junk stays junk, no rule
     // fires, no crash.
-    expect(measuredPasteRejectionFor('1.23.4', DILUTION, false).rejected).toBe(false);
+    expect(measuredPasteRejectionFor('1.23.4', DILUTION).rejected).toBe(false);
     // …and the readings the magnitude rules own still land exactly where they did.
-    expect(measuredPasteRejectionFor('900', DILUTION, false).belowSolids).toBe(true);
-    expect(measuredPasteRejectionFor('4100', DILUTION, false).exceedsSolution).toBe(true);
+    expect(measuredPasteRejectionFor('900', DILUTION).belowSolids).toBe(true);
+    expect(measuredPasteRejectionFor('4100', DILUTION).exceedsSolution).toBe(true);
   });
 
   it('judges scientific notation by its typed decimal digits, not its magnitude', () => {
@@ -347,10 +276,10 @@ describe('a reading finer than the scale reads', () => {
     // here — while 1.25e3 carries two and is refused, whatever it multiplies out to. A
     // scale prints neither exponents nor hundredths; the typed characters are what this
     // rule reads, by design.
-    const plain = measuredPasteRejectionFor('2e3', DILUTION, false);
+    const plain = measuredPasteRejectionFor('2e3', DILUTION);
     expect(plain.subTenthPrecision).toBe(false);
     expect(plain.accepted).toBe(true);
-    const mantissa = measuredPasteRejectionFor('1.25e3', DILUTION, false);
+    const mantissa = measuredPasteRejectionFor('1.25e3', DILUTION);
     expect(mantissa.subTenthPrecision).toBe(true);
     expect(mantissa.rejected).toBe(true);
   });
@@ -361,7 +290,7 @@ describe('a reading finer than the scale reads', () => {
     // pour. A refused reading must not correct any of them.
     expect(measuredPasteIsValidFor('1480.25', DILUTION)).toBe(false);
     expect(correctedDilutionWaterGrams(DILUTION, '1480.25')).toBe(2400); // the recipe's own figure
-    expect(correctedDilutionWaterGrams(DILUTION, '1480.25', false, 2050)).toBe(1950); // the corrected pot
+    expect(correctedDilutionWaterGrams(DILUTION, '1480.25', 2050)).toBe(1950); // the corrected pot
     // …while the tenth-precision reading it shadows still outranks both, exactly as before.
     expect(measuredPasteIsValidFor('1480.5', DILUTION)).toBe(true);
     expect(correctedDilutionWaterGrams(DILUTION, '1480.5')).toBe(4000 - 1480.5);
@@ -383,7 +312,7 @@ describe('the paste floor counts solids that cannot boil off', () => {
   it('rejects a whole-batch reading between the anhydrous soap and the real floor', () => {
     // 1,400 g clears the old floor by 200 g and is still 250 g short of the pot's own
     // undissolvable contents.
-    const rejection = measuredPasteRejectionFor('1400', DILUTION, false, POT, COOK_WATER);
+    const rejection = measuredPasteRejectionFor('1400', DILUTION, POT, COOK_WATER);
     expect(rejection.belowSolids).toBe(true);
     expect(rejection.rejected).toBe(true);
     expect(rejection.accepted).toBe(false);
@@ -392,12 +321,12 @@ describe('the paste floor counts solids that cannot boil off', () => {
   });
 
   it('accepts the floor exactly, and rejects a hair below it', () => {
-    expect(measuredPasteRejectionFor(String(FLOOR), DILUTION, false, POT, COOK_WATER).accepted).toBe(true);
+    expect(measuredPasteRejectionFor(String(FLOOR), DILUTION, POT, COOK_WATER).accepted).toBe(true);
     // A tenth of a gram — the finest reading a paste scale produces, so the finest string
     // the floor can ever be asked about: anything finer is subTenthPrecision's, not this
     // rule's (this used to probe FLOOR − 0.001, a string no scale can type any more).
     expect(
-      measuredPasteRejectionFor(String(FLOOR - 0.1), DILUTION, false, POT, COOK_WATER).belowSolids,
+      measuredPasteRejectionFor(String(FLOOR - 0.1), DILUTION, POT, COOK_WATER).belowSolids,
     ).toBe(true);
   });
 
@@ -406,7 +335,7 @@ describe('the paste floor counts solids that cannot boil off', () => {
     // lighter than the computed 2,050 g pot is the expected, meaningful reading. Extending
     // the floor to cook water would reject exactly these.
     for (const reading of ['2049', '1800', '1651', String(FLOOR)]) {
-      const rejection = measuredPasteRejectionFor(reading, DILUTION, false, POT, COOK_WATER);
+      const rejection = measuredPasteRejectionFor(reading, DILUTION, POT, COOK_WATER);
       expect(rejection.belowSolids).toBe(false);
       expect(rejection.accepted).toBe(true);
     }
@@ -415,11 +344,11 @@ describe('the paste floor counts solids that cannot boil off', () => {
   it('leaves the floor at the anhydrous soap when there are no solids to count', () => {
     // A recipe with no split liquid: the corrected pot IS anhydrous + cook water, so the
     // solids term is exactly zero and every reading down to 1,200 g is still accepted.
-    const rejection = measuredPasteRejectionFor('1300', DILUTION, false, 1600, COOK_WATER);
+    const rejection = measuredPasteRejectionFor('1300', DILUTION, 1600, COOK_WATER);
     expect(rejection.solidsFloorGrams).toBe(DILUTION.anhydrousGrams);
     expect(rejection.accepted).toBe(true);
-    expect(measuredPasteRejectionFor('1200', DILUTION, false, 1600, COOK_WATER).accepted).toBe(true);
-    expect(measuredPasteRejectionFor('1199', DILUTION, false, 1600, COOK_WATER).belowSolids).toBe(true);
+    expect(measuredPasteRejectionFor('1200', DILUTION, 1600, COOK_WATER).accepted).toBe(true);
+    expect(measuredPasteRejectionFor('1199', DILUTION, 1600, COOK_WATER).belowSolids).toBe(true);
   });
 
   it('falls back to the anhydrous floor when either half of the corrected basis is missing', () => {
@@ -435,7 +364,7 @@ describe('the paste floor counts solids that cannot boil off', () => {
       [POT, Number.NaN],
       [POT, null],
     ] as const) {
-      const rejection = measuredPasteRejectionFor('1400', DILUTION, false, args[0], args[1]);
+      const rejection = measuredPasteRejectionFor('1400', DILUTION, args[0], args[1]);
       expect(rejection.solidsFloorGrams).toBe(DILUTION.anhydrousGrams);
       expect(rejection.belowSolids).toBe(false);
       expect(rejection.accepted).toBe(true);
@@ -445,7 +374,7 @@ describe('the paste floor counts solids that cannot boil off', () => {
     // water) has cook water 0 and a pot that is nothing but soap and solids. Treating that 0
     // as "unknown" would drop the floor back to the anhydrous soap on exactly the recipe
     // whose solids are largest.
-    const noCookWater = measuredPasteRejectionFor('1300', DILUTION, false, 1600, 0);
+    const noCookWater = measuredPasteRejectionFor('1300', DILUTION, 1600, 0);
     expect(noCookWater.solidsFloorGrams).toBe(1600);
     expect(noCookWater.belowSolids).toBe(true);
   });
@@ -456,7 +385,7 @@ describe('the paste floor counts solids that cannot boil off', () => {
     // a pot lighter than its own soap plus water — would otherwise make the solids negative
     // and take the original anhydrous guard away with it, so a 100 g reading on a
     // 1,200 g-soap batch would sail through.
-    const rejection = measuredPasteRejectionFor('100', DILUTION, false, 1300, COOK_WATER);
+    const rejection = measuredPasteRejectionFor('100', DILUTION, 1300, COOK_WATER);
     expect(rejection.solidsFloorGrams).toBe(DILUTION.anhydrousGrams);
     expect(rejection.belowSolids).toBe(true);
   });
@@ -472,28 +401,19 @@ describe('the paste floor counts solids that cannot boil off', () => {
       dilutionWaterGrams: 0, glycerinGrams: 100, soapConcentrationPercent: 80,
       targetExceedsPaste: true,
     };
-    const rejection = measuredPasteRejectionFor('1250', CLAMPED, false, 1200 + 700, 700);
+    const rejection = measuredPasteRejectionFor('1250', CLAMPED, 1200 + 700, 700);
     expect(rejection.solidsFloorGrams).toBe(1200);
     expect(rejection.belowSolids).toBe(false);
     expect(rejection.accepted).toBe(true);
   });
 
-  it('leaves a remaining-declared reading alone — the floor is a whole-batch rule', () => {
-    // What's left after an earlier dilution can legitimately weigh less than the batch's own
-    // solids; raising the floor must not take that away.
-    const rejection = measuredPasteRejectionFor('1400', DILUTION, true, POT, COOK_WATER);
-    expect(rejection.belowSolids).toBe(false);
-    expect(rejection.accepted).toBe(true);
-  });
-
-  it('moves the ceiling and the remaining-mode basis not at all', () => {
+  it('moves the ceiling and wholeBatchPasteBasis not at all', () => {
     // Only the floor changes: the solution ceiling and wholeBatchPasteBasis answer the same
     // way with the cook water supplied as without it.
     for (const cook of [COOK_WATER, undefined]) {
-      expect(measuredPasteRejectionFor('4100', DILUTION, false, POT, cook).exceedsSolution).toBe(true);
-      expect(measuredPasteRejectionFor('4000', DILUTION, false, POT, cook).exceedsSolution).toBe(false);
-      expect(measuredPasteRejectionFor('2100', DILUTION, true, POT, cook).exceedsRemainingCeiling).toBe(true);
-      expect(measuredPasteRejectionFor('2050', DILUTION, true, POT, cook).wholeBatchPasteBasis).toBe(POT);
+      expect(measuredPasteRejectionFor('4100', DILUTION, POT, cook).exceedsSolution).toBe(true);
+      expect(measuredPasteRejectionFor('4000', DILUTION, POT, cook).exceedsSolution).toBe(false);
+      expect(measuredPasteRejectionFor('2050', DILUTION, POT, cook).wholeBatchPasteBasis).toBe(POT);
     }
   });
 
@@ -502,13 +422,13 @@ describe('the paste floor counts solids that cannot boil off', () => {
     // computeBottledSolutionGrams; correctedDilutionWaterGrams is the figure all three pour.
     // A reading the rejection verdict refuses must stop feeding them, and the pour must fall
     // back to the corrected pot rather than to the reading.
-    expect(measuredPasteIsValidFor('1400', DILUTION, false, POT, COOK_WATER)).toBe(false);
-    expect(correctedDilutionWaterGrams(DILUTION, '1400', false, POT, COOK_WATER)).toBe(
+    expect(measuredPasteIsValidFor('1400', DILUTION, POT, COOK_WATER)).toBe(false);
+    expect(correctedDilutionWaterGrams(DILUTION, '1400', POT, COOK_WATER)).toBe(
       DILUTION.solutionGrams - POT, // 1,950 — the unmeasured corrected pour, not 4,000 − 1,400
     );
     // …and an accepted reading still outranks both computed bases, exactly as before.
-    expect(measuredPasteIsValidFor('1700', DILUTION, false, POT, COOK_WATER)).toBe(true);
-    expect(correctedDilutionWaterGrams(DILUTION, '1700', false, POT, COOK_WATER)).toBe(2300);
+    expect(measuredPasteIsValidFor('1700', DILUTION, POT, COOK_WATER)).toBe(true);
+    expect(correctedDilutionWaterGrams(DILUTION, '1700', POT, COOK_WATER)).toBe(2300);
   });
 
   it('makes a live pour beside an unreachable target impossible, not merely absent', () => {
@@ -523,10 +443,10 @@ describe('the paste floor counts solids that cannot boil off', () => {
       targetExceedsPaste: true,
     };
     for (let reading = 1; reading <= 2000; reading++) {
-      expect(measuredPasteIsValidFor(String(reading), OVER, false, 1930, 330)).toBe(false);
+      expect(measuredPasteIsValidFor(String(reading), OVER, 1930, 330)).toBe(false);
     }
     // The old floor accepted 301 of them, every one physically impossible.
-    expect(measuredPasteIsValidFor('1400', OVER, false, 1930)).toBe(true);
+    expect(measuredPasteIsValidFor('1400', OVER, 1930)).toBe(true);
   });
 
   it('gives a reading in the gap ONE refusal — the ceiling\'s — when the floor outruns it', () => {
@@ -547,7 +467,7 @@ describe('the paste floor counts solids that cannot boil off', () => {
       totalWaterGrams: 1215.33 / 0.78 - 1215.33, dilutionWaterGrams: 1215.33 / 0.78 - 1215.33 - 330,
       glycerinGrams: 400, soapConcentrationPercent: 78, targetExceedsPaste: false,
     };
-    const rejection = measuredPasteRejectionFor('1580', GLYCERIN, false, 1215.33 + 330 + 400, 330);
+    const rejection = measuredPasteRejectionFor('1580', GLYCERIN, 1215.33 + 330 + 400, 330);
     expect(rejection.solidsFloorGrams).toBeCloseTo(1615.33, 2);
     expect(GLYCERIN.solutionGrams).toBeLessThan(rejection.solidsFloorGrams);
     // The ceiling wins: it is the rule whose remedy answers the mistake being made.
@@ -559,29 +479,14 @@ describe('the paste floor counts solids that cannot boil off', () => {
     expect(rejection.accepted).toBe(false);
   });
 
-  it('sets exactly one rule flag per reading, under either declaration, with no exceptions', () => {
+  it('sets exactly one rule flag per reading, with no exceptions', () => {
     // The exclusivity the module's doc asserts, swept rather than argued: the surfaces render
-    // the four rules as four independent `&&` branches, so a reading that sets two flags puts
-    // two paragraphs on screen. Each rule is checked at every boundary of every other, on
+    // the two rules as independent `&&` branches, so a reading that sets two flags puts two
+    // paragraphs on screen. Each rule is checked at every boundary of every other, on
     // recipes with no solids, ordinary solids, and solids past the target's whole allowance.
-    //
-    // This sweep used to carry ONE asserted exception — exceedsSolution was not gated on the
-    // declaration and exceedsRemainingCeiling did not exclude it, so a REMAINING reading
-    // above both the solution and the pot set both flags and the panel stacked two
-    // paragraphs, the wrong advice first. Closing it meant moving the remaining-mode ceiling,
-    // which is what `!isRemaining` on exceedsSolution now does. The exception is gone rather
-    // than narrowed: ANY pair showing up here is a regression.
-    let accepted = 0;
     for (const [anhydrous, targetPct, cook, solids] of [
       [1200, 30, 400, 0], [1200, 30, 400, 450], [1200, 80, 330, 400],
       [1215.33, 78, 330, 400], [1215.33, 65, 330, 400], [500, 50, 100, 900],
-      // The last four already put the pot above the whole target solution, which is the only
-      // shape in which a remaining reading can sit above solutionGrams and still be within
-      // the pot — and so the only one where suppressing exceedsSolution for the whole
-      // declaration differs from suppressing it only alongside exceedsRemainingCeiling. The
-      // invariant asserted on that class below is checked against them; a recipe added here
-      // purely to reach it would be dead weight (one was, and was removed after a mutation
-      // run showed nothing depended on it).
     ] as const) {
       const solutionGrams = anhydrous / (targetPct / 100);
       const d: DilutionResult = {
@@ -593,43 +498,21 @@ describe('the paste floor counts solids that cannot boil off', () => {
       const pot = anhydrous + cook + solids;
       for (const bound of [anhydrous, anhydrous + solids, solutionGrams, pot]) {
         for (const delta of [-1, -0.01, 0, 0.01, 1]) {
-          for (const isRemaining of [false, true]) {
-            // The ±0.01 deltas (and every non-integer bound String()ed) now double as the
-            // precision rule's own sweep: those strings carry two or more decimal digits,
-            // so subTenthPrecision claims them and every magnitude rule must stand down —
-            // exactly the exclusivity this loop exists to prove.
-            const r = measuredPasteRejectionFor(String(bound + delta), d, isRemaining, pot, cook);
-            const fired = [
-              r.nonPositive, r.subTenthPrecision, r.belowSolids, r.exceedsSolution,
-              r.exceedsRemainingCeiling,
-            ].filter(Boolean).length;
-            // One reading, one refusal — under BOTH declarations now.
-            expect(fired).toBeLessThanOrEqual(1);
-            // …and the flags still add up to the verdict, so exclusivity is never bought by
-            // dropping a refusal on the floor.
-            expect(r.rejected).toBe(fired >= 1);
-            // The one thing the remaining declaration's narrower ceiling lets through: a
-            // remainder above the whole batch's target solution. It is only ever accepted
-            // where the pot itself outweighs that solution — a remainder's own solution is
-            // measured x solutionGrams / basis, short of the reading precisely when
-            // basis > solutionGrams — so core's `potSolutionGrams - pasteGrams < 0` refuses
-            // every reading in this class and nothing can silently compute from it. (No UI
-            // surface reaches this: the declaration control is gone and every reading is a
-            // whole-batch one. The property is asserted for the direct consumers the rule is
-            // kept for — see MEASURED_PASTE_IS_REMAINING.)
-            if (r.accepted && isRemaining && r.measuredGrams > solutionGrams) {
-              accepted++;
-              expect(r.wholeBatchPasteBasis).toBeGreaterThan(solutionGrams);
-              expect(r.measuredGrams * (solutionGrams / r.wholeBatchPasteBasis)).toBeLessThan(
-                r.measuredGrams,
-              );
-            }
-          }
+          // The ±0.01 deltas (and every non-integer bound String()ed) now double as the
+          // precision rule's own sweep: those strings carry two or more decimal digits,
+          // so subTenthPrecision claims them and every magnitude rule must stand down —
+          // exactly the exclusivity this loop exists to prove.
+          const r = measuredPasteRejectionFor(String(bound + delta), d, pot, cook);
+          const fired = [
+            r.nonPositive, r.subTenthPrecision, r.belowSolids, r.exceedsSolution,
+          ].filter(Boolean).length;
+          expect(fired).toBeLessThanOrEqual(1);
+          // …and the flags still add up to the verdict, so exclusivity is never bought by
+          // dropping a refusal on the floor.
+          expect(r.rejected).toBe(fired >= 1);
         }
       }
     }
-    // That class is reachable, so the invariant above is not vacuous.
-    expect(accepted).toBeGreaterThan(0);
   });
 });
 
@@ -656,20 +539,9 @@ describe('subTenthPrecisionFingerprint — the swallowed-separator test, exporte
   it('is the identical verdict measuredPasteRejectionFor reaches, so the two can never drift', () => {
     for (const raw of ['1.222', '1480.25', '1480.5', '1480', '2e3', '1.25e3', '-0.55', '1.23.4', '']) {
       expect(subTenthPrecisionFingerprint(raw)).toBe(
-        measuredPasteRejectionFor(raw, DILUTION, false).subTenthPrecision,
+        measuredPasteRejectionFor(raw, DILUTION).subTenthPrecision,
       );
     }
-  });
-});
-
-describe('correctedDilutionWaterGrams with a remaining-paste declaration', () => {
-  it('falls back to the recipe-computed figure — a remaining-paste reading must not correct the BATCH row', () => {
-    expect(correctedDilutionWaterGrams(DILUTION, '1480', true)).toBe(2400);
-  });
-
-  it('is unaffected — still corrects — when isRemaining is omitted or false', () => {
-    expect(correctedDilutionWaterGrams(DILUTION, '1480')).toBe(2520);
-    expect(correctedDilutionWaterGrams(DILUTION, '1480', false)).toBe(2520);
   });
 });
 
@@ -721,7 +593,7 @@ describe('measuredPasteDescribesPotFor — the pot’s own rules, with no target
 
 describe('correctedPotGramsFor — one pot for the pour and for what gets bottled', () => {
   it('prefers the reading whenever it describes a possible pot', () => {
-    expect(correctedPotGramsFor(DILUTION, '1480', false, 1600, 400)).toEqual({
+    expect(correctedPotGramsFor(DILUTION, '1480', 1600, 400)).toEqual({
       grams: 1480,
       fromMeasurement: true,
     });
@@ -729,11 +601,11 @@ describe('correctedPotGramsFor — one pot for the pour and for what gets bottle
 
   it('falls back to the corrected pot when the reading does not describe one', () => {
     // Below the solids floor, and a swallowed separator: neither is a pot.
-    expect(correctedPotGramsFor(DILUTION, '900', false, 1600, 400)).toEqual({
+    expect(correctedPotGramsFor(DILUTION, '900', 1600, 400)).toEqual({
       grams: 1600,
       fromMeasurement: false,
     });
-    expect(correctedPotGramsFor(DILUTION, '1480.25', false, 1600, 400)).toEqual({
+    expect(correctedPotGramsFor(DILUTION, '1480.25', 1600, 400)).toEqual({
       grams: 1600,
       fromMeasurement: false,
     });
@@ -744,192 +616,31 @@ describe('correctedPotGramsFor — one pot for the pour and for what gets bottle
     expect(correctedPotGramsFor(DILUTION, '900')).toBeNull();
   });
 
-  it('refuses a remaining reading, which is not the whole batch’s pot', () => {
-    expect(correctedPotGramsFor(DILUTION, '1480', true, 1600, 400)).toEqual({
+  it('falls back to the corrected pot for a reading past the target’s own solution', () => {
+    // The crockpot mistake: 4,500 g against a 4,000 g solution at 30% is 500 g over. Every
+    // target-derived figure must go on ignoring it — the panel's own alert tells the maker to
+    // subtract the empty pot — so this falls back to the recipe's computed pot.
+    expect(correctedPotGramsFor(DILUTION, '4500', 1600, 400)).toEqual({
       grams: 1600,
       fromMeasurement: false,
     });
-  });
-
-  it('takes a reading its own write-back rounded the target down from', () => {
-    // THE SPLIT this function exists for. A weighed 1,405 g pot with no water recorded writes
-    // round2(120000/1405) = 85.41%, and 1,200 / 0.8541 is 1,404.9877 g — a hair UNDER the
-    // reading. measuredPasteIsValidFor refuses it there, which is how the panel came to count
-    // from 1,405 g while the bottled figure fell back to the computed 1,600 g pot.
-    //
-    // '0' is that record — the pot before any water at all (LS:1531), which is what wrote
-    // 85.41% — and it is the argument that licenses the widening. Stated rather than assumed:
-    // the widened ceiling belongs to a target a record produced, and this scenario is exactly
-    // one of those.
-    const at8541: DilutionResult = {
-      ...DILUTION,
-      solutionGrams: 1200 / 0.8541,
-      soapConcentrationPercent: 85.41,
-    };
-    expect(measuredPasteIsValidFor('1405', at8541, false, 1600, 400)).toBe(false);
-    expect(correctedPotGramsFor(at8541, '1405', false, 1600, 400, '0')).toEqual({
-      grams: 1405,
-      fromMeasurement: true,
-    });
-    // …and the recipe's own saved target answers identically for the same pot, which is the
-    // agreement the whole feature turns on. Under solutionGrams the widening never comes into
-    // it, so this arm holds with or without the record.
-    const at30 = { ...DILUTION, solutionGrams: 4000, soapConcentrationPercent: 30 };
-    expect(correctedPotGramsFor(at30, '1405', false, 1600, 400, '0')?.grams).toBe(1405);
-    expect(correctedPotGramsFor(at30, '1405', false, 1600, 400)?.grams).toBe(1405);
-  });
-
-  it('still refuses a reading past the target by more than any rounding explains', () => {
-    // The crockpot mistake: 4,500 g against a 4,000 g solution at 30% is 500 g over, where
-    // the write-back's 2 dp rounding could account for at most 4,000 x 0.005/30 = 0.67 g.
-    // Every target-derived figure must go on ignoring it — the panel's own alert tells the
-    // maker to subtract the empty pot — so this falls back to the recipe's computed pot.
-    // With a record and without: 500 g is past the ceiling either way.
-    expect(correctedPotGramsFor(DILUTION, '4500', false, 1600, 400, '0')).toEqual({
-      grams: 1600,
-      fromMeasurement: false,
-    });
-    expect(correctedPotGramsFor(DILUTION, '4500', false, 1600, 400)).toEqual({
-      grams: 1600,
-      fromMeasurement: false,
-    });
-    // The bound, at both edges: 4,000.6 g is inside the rounding window, 4,000.8 g is not.
-    // (Neither is typable at a scale's precision — this is the boundary, not a use case.)
-    expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400, '0')?.fromMeasurement).toBe(
-      true,
-    );
-    expect(correctedPotGramsFor(DILUTION, '4000.8', false, 1600, 400, '0')?.fromMeasurement).toBe(
-      false,
-    );
-  });
-
-  it('widens the ceiling only for a recipe that carries a gradual record', () => {
-    // THE LICENCE FOR THE WIDENING IS THE RECORD, and nothing else. Everything the bound
-    // argues is about a target the app WROTE from a pot; where the maker typed 30%
-    // themselves, or a ratio produced it, a reading past solutionGrams is the app's own named
-    // mistake and the pre-existing ceiling stands. Applied unconditionally it reached the
-    // printed batch sheet, where a reading inside the band clamped "Dilution water to add" to
-    // "0 g" with no note beside it — measuredPasteIsValidFor still refused the reading, so the
-    // measured-paste note stayed off, and the already-more-dilute note keys on the computed
-    // pot, which is under the solution. See BatchSheet.test's own pins.
-    for (const noRecord of [undefined, '', '   ', 'abc', '-100']) {
-      expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400, noRecord)).toEqual({
-        grams: 1600,
-        fromMeasurement: false,
-      });
-    }
-    // A 0 g record is a record — the pot before any water is where gradual's own record
-    // starts — so it licenses the widening exactly as a poured figure does. However it is
-    // typed, and whatever whitespace the field carries.
-    for (const record of ['0', '0.0', ' 0 ', '0.00']) {
-      expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400, record)).toEqual({
-        grams: 4000.6,
-        fromMeasurement: true,
-      });
-    }
-    // A record of 250 g used to license it too, on the argument that the bound held for any
-    // W. It does — but "the bound holds" is not "this record wrote this target", and the
-    // licence has to be the second: 4,000.6 g of paste with 250 g of water poured into it is
-    // 17.0% soap, not the 30% in force, so this pairing is a leftover record beside a target
-    // the maker typed. See "the widened ceiling belongs to the target THIS record wrote".
-    expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400, ' 250 ')).toEqual({
-      grams: 1600,
-      fromMeasurement: false,
-    });
-  });
-
-  it('is identical with and without a record for every reading under the solution', () => {
-    // The band is the ONLY place the record can change an answer: at or below solutionGrams
-    // both ceilings accept, above the widened bound both refuse. So concentration and ratio
-    // mode are restored byte-for-byte, and gradual keeps what it had.
-    for (const raw of ['1200', '1480', '2500', '3999.5', '4000', '4500', '9000']) {
-      expect(correctedPotGramsFor(DILUTION, raw, false, 1600, 400)).toEqual(
-        correctedPotGramsFor(DILUTION, raw, false, 1600, 400, '0'),
-      );
-    }
+    // The boundary is accepted, exactly at solutionGrams and not a hair past it.
+    expect(correctedPotGramsFor(DILUTION, '4000', 1600, 400)?.fromMeasurement).toBe(true);
+    expect(correctedPotGramsFor(DILUTION, '4000.1', 1600, 400)?.fromMeasurement).toBe(false);
   });
 });
 
 describe('correctedDilutionWaterGrams past the target’s own solution', () => {
-  it('pours nothing for a pot its own record put a hair over the solution', () => {
-    // The gradual state: the pot IS the finished soap, so there is nothing left to add. This
-    // used to fall through to the corrected-pot branch, which answers 0 here as well
-    // (1,404.99 − 1,600 clamps) — the figure only moves where the computed pot is LIGHTER
-    // than the solution, and it moves toward the pot the maker weighed. '0' is the record
-    // that wrote 85.41% and licenses the widening; the second case is the one the record
-    // actually moves, and it needs it.
-    const at8541: DilutionResult = {
-      ...DILUTION,
-      solutionGrams: 1200 / 0.8541,
-      soapConcentrationPercent: 85.41,
-    };
-    expect(correctedDilutionWaterGrams(at8541, '1405', false, 1600, 400, '0')).toBe(0);
-    expect(correctedDilutionWaterGrams(at8541, '1405', false, 1300, 400, '0')).toBe(0);
-  });
-
-  it('is unchanged for a reading past the widened ceiling — the recipe answers, not the scale', () => {
-    // 4,000 − 1,600: the recipe's own computed pot, exactly as before. A crockpot-sized
-    // reading must not be able to zero the pour, record or no record.
-    expect(correctedDilutionWaterGrams(DILUTION, '4500', false, 1600, 400, '0')).toBe(2400);
-    expect(correctedDilutionWaterGrams(DILUTION, '4500', false, 1600, 400)).toBe(2400);
-  });
-
-  it('pours the recipe’s own figure inside the band when no record widened the target', () => {
-    // The batch-sheet defect at its source: 4,000.6 g is inside the widened band, so with the
-    // widening unconditional this clamped to 0 — a bare pour figure on the page carried to the
-    // bench, with every note that could have explained it keyed on the other gate. In
-    // concentration and ratio mode the target was not written from a pot, so the reading is
-    // simply over it and the recipe's computed pot answers: 4,000 − 1,600.
-    expect(correctedDilutionWaterGrams(DILUTION, '4000.6', false, 1600, 400)).toBe(2400);
-    // …and with the record, which is the state the sheet prints its two record rows for, the
-    // clamp is right and stays.
-    expect(correctedDilutionWaterGrams(DILUTION, '4000.6', false, 1600, 400, '0')).toBe(0);
+  it('is unchanged for a reading past the ceiling — the recipe answers, not the scale', () => {
+    // 4,000 − 1,600: the recipe's own computed pot. A crockpot-sized reading must not be
+    // able to zero the pour.
+    expect(correctedDilutionWaterGrams(DILUTION, '4500', 1600, 400)).toBe(2400);
   });
 
   it('is unchanged for every reading the target can still take water to reach', () => {
-    // The clamp is a no-op under solutionGrams, which is where the two gates agree — so this
-    // change moves nothing for any reading the old gate accepted.
     for (const raw of ['1200', '1480', '2500', '3999.5', '4000']) {
-      expect(correctedDilutionWaterGrams(DILUTION, raw, false, 1600, 400)).toBe(
-        4000 - Number(raw),
-      );
+      expect(correctedDilutionWaterGrams(DILUTION, raw, 1600, 400)).toBe(4000 - Number(raw));
     }
-  });
-});
-
-describe('the widened ceiling is exact at the boundary it attains', () => {
-  // The bound is ATTAINED, not approached: equality holds exactly when the write-back's
-  // rounding went up by the full half-cent and no water was recorded. So the comparison
-  // sits on the boundary, and a form that inherits solutionGrams' own division error
-  // refuses a record the reading itself produced — silently restoring the two-masses bug
-  // the ceiling exists to prevent. Found by sweep at ~1 in 21,000 readings; zero on the
-  // starter recipe, which is why nothing caught it.
-  //
-  // 105 g anhydrous in a 224 g pot is exactly 46.875%, which round2 takes UP to 46.88 —
-  // the exact half-cent tie.
-  const tie = calculateDilution({
-    anhydrousGrams: 105,
-    cookWaterGrams: 0,
-    kohGrams: 20,
-    naohGrams: 0,
-    soapConcentrationPercent: 46.88,
-  })!;
-
-  it("accepts the reading that wrote this very target", () => {
-    // '0' is the record that wrote it: 224 g of pot and no water at all. The widening is
-    // licensed by that record, so the boundary case is stated with it in hand — which is the
-    // only state the app can reach it in.
-    const pot = correctedPotGramsFor(tie, '224', false, 224, 0, '0');
-    expect(pot).not.toBeNull();
-    expect(pot!.fromMeasurement).toBe(true);
-    expect(pot!.grams).toBe(224);
-  });
-
-  it('still refuses a reading genuinely past the widened bound', () => {
-    // 224 g is the heaviest pot that can write 46.88%; 260 g is well past it and must fall
-    // back to the computed pot rather than being absorbed by a loose tolerance.
-    const pot = correctedPotGramsFor(tie, '260', false, 224, 0, '0');
-    expect(pot!.fromMeasurement).toBe(false);
   });
 });
 
@@ -965,44 +676,6 @@ describe('parseGradualWaterRecordGrams — is there a record, and is it a scale 
   });
 });
 
-describe('the widened ceiling belongs to a target THIS record could have written', () => {
-  // The licence is not "a recipe carries a record somewhere" — `settings.gradualWaterGrams` is
-  // recipe state that nothing clears, and since Phase 2a nothing derives the target from it at
-  // all. So the question the bound asks has to be answerable from the record itself: could a
-  // pot of `measured` grams, plus the water this record names, have produced the target now in
-  // force? (The widening is dead machinery now — see GRADUAL_WRITE_BACK_ROUNDING, and spec §5,
-  // which lists it for deletion in Phase 3 — but while it is here it must stay this narrow.)
-  it('refuses the widening for a target a leftover record cannot have written', () => {
-    // Record 2,000 g beside a hand-typed 30%: 4,000.6 g of paste
-    // plus 2,000 g of water is 6,000.6 g, which is 20.0% soap and not the 30% in force. The
-    // reading is simply past the target, which is the app's own named mistake — the recipe's
-    // computed pot answers, exactly as it does with no record at all.
-    expect(correctedPotGramsFor(DILUTION, '4000.6', false, 1600, 400, '2000')).toEqual({
-      grams: 1600,
-      fromMeasurement: false,
-    });
-    expect(correctedDilutionWaterGrams(DILUTION, '4000.6', false, 1600, 400, '2000')).toBe(2400);
-  });
-
-  it('still takes the reading that wrote the target, water and all', () => {
-    // The state the widening exists for: a weighed 1,405 g pot with NO water recorded writes
-    // round2(120000/1405) = 85.41%, whose solution (1,404.99 g) lands a hair under the reading.
-    const at8541: DilutionResult = {
-      ...DILUTION,
-      solutionGrams: 1200 / 0.8541,
-      soapConcentrationPercent: 85.41,
-    };
-    expect(correctedPotGramsFor(at8541, '1405', false, 1600, 400, '0')?.fromMeasurement).toBe(true);
-    // With water in the record the widening is not needed and never bites: the solution the
-    // record writes is the pot PLUS that water, so the reading is under it by the whole pour.
-    // 1,400 g of paste and 200 g of water writes round2(120000/1600) = 75%, a 1,600 g solution.
-    const at75: DilutionResult = { ...DILUTION, solutionGrams: 1600, soapConcentrationPercent: 75 };
-    expect(correctedPotGramsFor(at75, '1400', false, 1600, 400, '200')).toEqual({
-      grams: 1400,
-      fromMeasurement: true,
-    });
-  });
-});
 
 describe('one pot resolution for the derived modes, shared by every surface', () => {
   // The panel's gradual/ratio basis and the printed sheet's "That record makes" row used to
@@ -1025,14 +698,14 @@ describe('one pot resolution for the derived modes, shared by every surface', ()
     expect(weighedOrComputedPotGramsFor(null, '1400', 1600, 400)).toBeNull();
   });
 
-  it('is TARGET-INDEPENDENT, unlike correctedPotGramsFor — the property the write-back needs', () => {
+  it('is TARGET-INDEPENDENT, unlike correctedPotGramsFor — the property gradual needs', () => {
     // A crockpot-sized reading is absorbed here and refused there, and the difference is the
-    // point: this basis is what gradual's own write-back is derived from, so a target-derived
+    // point: this basis is what gradual's own record is derived from, so a target-derived
     // ceiling on it would let the panel's output choose the panel's input (the render loop
     // measuredPasteDescribesPotFor documents). The pour and the bottled mass are measured
     // AGAINST a target, so they keep the ceiling.
     expect(weighedOrComputedPotGramsFor(DILUTION, '4500', 1600, 400)?.grams).toBe(4500);
-    expect(correctedPotGramsFor(DILUTION, '4500', false, 1600, 400, '0')?.grams).toBe(1600);
+    expect(correctedPotGramsFor(DILUTION, '4500', 1600, 400)?.grams).toBe(1600);
   });
 
   it('falls back to the recipe’s own anhydrous + cook water with no corrected basis', () => {
