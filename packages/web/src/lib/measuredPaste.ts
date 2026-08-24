@@ -83,7 +83,7 @@ export function hasCorrectedPasteBasis(
  *
  * The shared entry point every surface must go through is {@link measuredPasteRejectionFor}
  * (or {@link measuredPasteIsValidFor} for the yes/no form). This predicate answers only one
- * of the three rules and carries none of the conditions the callers need — it says nothing
+ * of the rules and carries none of the conditions the callers need — it says nothing
  * about blank/unparseable input. Its doc used to claim it was "shared by
  * PortionDilutionResults and DilutionPanel", which is how the rejection alerts came to be
  * rendered from one surface only and vanished from the default dilution scope.
@@ -305,7 +305,7 @@ export function measuredPasteIsValidFor(
 }
 
 /**
- * Everything a surface needs to say about a measured-paste reading: which of the three
+ * Everything a surface needs to say about a measured-paste reading: which of the two
  * physical-impossibility rules it broke, whether it is usable at all, and the whole-batch
  * paste mass a caller's belowSolids/already-more-dilute copy quotes as what the recipe
  * predicts.
@@ -333,7 +333,7 @@ export type MeasuredPasteRejection = {
    * among those it always wins — but it defers to `subTenthPrecision`, which is not a
    * magnitude claim at all. */
   exceedsSolution: boolean;
-  /** Any of the three above fired. */
+  /** Any of the four above fired. */
   rejected: boolean;
   /** There is a usable reading AND nothing rejected it — safe to compute from. */
   accepted: boolean;
@@ -362,7 +362,7 @@ export type MeasuredPasteRejection = {
  * measured-paste INPUT lives in DilutionPanel's shell, visible in both dilution scopes,
  * while PortionDilutionResults consumes the same reading to decide whether to compute a
  * portion from it — so both read the verdict from here rather than each deciding for
- * itself. The three rules and the reasons they exist are documented on the branches below;
+ * itself. The rules and the reasons they exist are documented on the branches below;
  * they were moved here verbatim from PortionDilutionResults, where they used to live
  * beside the alert paragraphs.
  *

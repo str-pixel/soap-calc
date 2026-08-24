@@ -191,7 +191,7 @@ describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid soli
   const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
   const BATCH = { anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams };
 
-  describe('and no measurement at all — the pot still holds the solids', () => {
+  describe('the pot still holds the solids, measured or not', () => {
     // The unmeasured pot really is anhydrous + cook water + the liquid's solids, which is
     // what wholeBatchPasteGrams resolves to. Using predictedPasteGrams here left the portion
     // pouring water for a paste 100 g lighter than the one in the pot, so Custom amount and

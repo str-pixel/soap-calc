@@ -259,7 +259,7 @@ test('the copy owns the two framing claims: why a preservative, and that nothing
   expect(screen.getByText(/whatever its pH/i)).toBeTruthy();
   expect(screen.getByText(/near the dryness that stops growth/i)).toBeTruthy();
   // saved with the recipe, but never counted in the oil, lye or batch arithmetic
-  expect(screen.getByText(/never counted in the batch or lye figures/i)).toBeTruthy();
+  expect(screen.getByText(/never in the batch or lye figures/i)).toBeTruthy();
 });
 
 test('grams follow the app-wide weight unit', () => {
