@@ -198,6 +198,12 @@ test('every boxless figure field fits the values this app actually holds', async
   // used to clip. A fixed width can, and the starter recipe's own total oil is 1,000 g —
   // four digits — with kg/oz modes adding a decimal point on top. Measured, not eyeballed:
   // a clipped input still reports its full value, so only scrollWidth catches this.
+  //
+  // WHICH ROW GUARDS WHAT. "1234.5" is the width guard: it needs 67px and overflowed the old
+  // 3.6rem field outright. "1000" guards the width and the SPIN BUTTONS together — the digits
+  // alone fit 3.6rem (57px of 58px), and it only clipped because the spinners were eating the
+  // rest, which is the combination that actually shipped. Re-narrowing the field fails the
+  // first; letting the spinners back fails the second.
   const fits = async (sel: string, value: string) => {
     const el = page.locator(sel).first();
     await el.fill(value);

@@ -1229,18 +1229,16 @@ details[open] > .disclosure__summary::before {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text);
+  /* No spinners. They ate a third of a field this narrow — with them, a four-digit weight
+     clipped even at a width the digits alone fit — and they are chrome on a rule whose whole
+     point is to be bare. .slider-field__value suppresses them for the same reason. */
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
 /* A five-digit batch paste weight. */
 .figure-field--wide.input {
   width: 6rem;
-}
-
-/* No spinners. They eat a third of a field this narrow, and they are chrome on a rule whose
-   whole point is to be bare — .slider-field__value suppresses them for the same reason. */
-.figure-field.input {
-  appearance: textfield;
-  -moz-appearance: textfield;
 }
 
 .figure-field.input::-webkit-outer-spin-button,
@@ -2588,7 +2586,9 @@ details[open] > .disclosure__summary::before {
    figures under them. Two things were needed for that:
    a FIXED last track — these are separate grids, so an `auto` column sizes to each one's own
    content ("Sets" at 0.62rem against "36.7%" at 0.85rem mono), which put the header 40px
-   inside the figures; 3.6rem fits "100.0%", the longest the 1–99 clamp and 1 dp can make.
+   inside the figures. 3.6rem fits "99.9%" — ratioPresetPercent clamps to 1–99 and rounds to
+   1 dp, so that is the longest figure it can produce; measured, "100.0%" fits too, which is
+   the headroom if that clamp is ever relaxed.
    And the same inset on both: the row bleeds 0.35rem each side so its hover band runs past
    the text, and the header has to bleed with it. A <button> is shrink-to-fit even as a grid,
    so the width is explicit — dropping it made the row narrower than its own parent. */
