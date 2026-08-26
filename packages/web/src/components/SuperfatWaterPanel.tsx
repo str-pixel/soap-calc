@@ -366,7 +366,7 @@ export function SuperfatWaterPanel({
                 <span className="pcsf__pct">
                   <input
                     type="number"
-                    className="input input--number"
+                    className="input figure-field"
                     aria-label={`Post-cook superfat % ${i + 1}`}
                     min={0}
                     max={50}
@@ -374,7 +374,7 @@ export function SuperfatWaterPanel({
                     value={row.percent}
                     onChange={(e) => updatePcsfOil(i, { percent: e.target.value })}
                   />
-                  <span className="slider-field__unit">%</span>
+                  %
                 </span>
                 <button
                   type="button"

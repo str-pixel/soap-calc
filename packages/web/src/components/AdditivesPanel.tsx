@@ -274,22 +274,38 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     />
                   </label>
                 )}
+                {/* The × sits on the ingredient, matching the oil rows in the panel above:
+                    the control that removes a line belongs beside the line it removes. */}
+                <button
+                  type="button"
+                  className="btn btn--icon"
+                  onClick={() => removeLine(line.key)}
+                  aria-label={`Remove ${rowName}`}
+                >
+                  ×
+                </button>
+                </div>
+                {/* The amount is a figure, so it takes the figure treatment — the same one
+                    an oil's weight takes one panel up. Dose mode and stage are enums and
+                    keep their boxes; the ink rule is reserved for numerics. */}
+                <div className="additive-list__amount">
+                  <label className="recipe-table__figure">
+                    Amount
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      max={line.unit === 'ppt' ? 1000 : 100}
+                      step={0.1}
+                      placeholder={line.unit === 'ppt' ? 'ppt' : '%'}
+                      value={line.amount}
+                      onChange={(e) => updateLine(line.key, { amount: e.target.value })}
+                      aria-label={`Amount for ${rowName}`}
+                    />
+                    {line.unit === 'ppt' ? 'ppt' : '%'}
+                  </label>
                 </div>
                 <div className="additive-list__dose">
-                <label className="field field--compact">
-                  <span className="sr-only">Amount</span>
-                  <input
-                    type="number"
-                    className="input input--number"
-                    min={0}
-                    max={line.unit === 'ppt' ? 1000 : 100}
-                    step={0.1}
-                    placeholder={line.unit === 'ppt' ? 'ppt' : '%'}
-                    value={line.amount}
-                    onChange={(e) => updateLine(line.key, { amount: e.target.value })}
-                    aria-label={`Amount for ${rowName}`}
-                  />
-                </label>
                 <label className="field">
                   <span className="sr-only">Dose mode</span>
                   <select
@@ -327,17 +343,10 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                 </label>
                 </div>
                 <div className="additive-list__foot">
+                <span className="micro-label">Adds</span>
                 <div className="additive-list__grams" aria-live="polite">
                   {row ? formatWeight(row.grams, weightUnit) : '—'}
                 </div>
-                <button
-                  type="button"
-                  className="btn btn--icon"
-                  onClick={() => removeLine(line.key)}
-                  aria-label={`Remove ${rowName}`}
-                >
-                  ×
-                </button>
                 </div>
                 {amountInvalid && (
                   <p className="additive-list__hint" role="alert">

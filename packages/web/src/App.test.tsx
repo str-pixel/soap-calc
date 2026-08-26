@@ -216,8 +216,13 @@ describe('a ratio preset applies from the path the app actually opens on', () =>
     const afterClick = targetField().value;
     expect(afterClick).not.toBe(seeded);
     expect(Number(afterClick)).toBeGreaterThan(0);
-    // And it says what it did, in the caption pattern §2 names.
-    expect(within(panel).getByText(new RegExp(`2:1 → ${afterClick}%`))).toBeTruthy();
+    // And the row said so BEFORE the press: the figure on the control is the figure it wrote.
+    // (This replaces a caption that reported the same thing afterwards, for one preset.)
+    expect(
+      within(panel)
+        .getByRole('button', { name: /^2:1\b/ })
+        .querySelector('.dilution-preset__sets')!.textContent,
+    ).toBe(`${afterClick}%`);
 
     // The keyboard path. In a real browser a button is activated by Space and Enter
     // natively — that guarantee is what retires the three-handler machinery the radio
@@ -231,7 +236,11 @@ describe('a ratio preset applies from the path the app actually opens on', () =>
     const afterSpace = targetField().value;
     expect(afterSpace).not.toBe(afterClick);
     expect(Number(afterSpace)).toBeGreaterThan(0);
-    expect(within(panel).getByText(new RegExp(`3:1 → ${afterSpace}%`))).toBeTruthy();
+    expect(
+      within(panel)
+        .getByRole('button', { name: /^3:1\b/ })
+        .querySelector('.dilution-preset__sets')!.textContent,
+    ).toBe(`${afterSpace}%`);
   });
 });
 

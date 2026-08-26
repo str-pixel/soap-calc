@@ -143,14 +143,27 @@ export function RecipeOilsPanel({
                   </label>
                 )}
               </div>
-              <div className="recipe-table__controls">
-                <label className="recipe-table__num">
-                  <span className="recipe-table__num-label">
-                    Weight ({weightUnitConfig.short})
-                  </span>
+              <button
+                type="button"
+                className="btn btn--icon recipe-table__remove"
+                onClick={() => inputs.removeLine(line.key)}
+                aria-label={`Remove ${oilName}`}
+                disabled={lines.length <= 1}
+              >
+                ×
+              </button>
+              {/* Both figures stay editable and bidirectional — typing a percent still
+                  recomputes grams and vice versa. The visible label is the bare word
+                  "Weight", and the accessible name CONTAINS it (Label-in-Name, WCAG 2.5.3),
+                  which is why it reads "Weight in g for Olive Oil" rather than naming the
+                  oil first. The unit glyph after the field is part of the label, not a
+                  figure, so it keeps the micro-label type. */}
+              <div className="recipe-table__figures">
+                <label className="recipe-table__figure">
+                  Weight
                   <input
                     type="number"
-                    className="input input--number"
+                    className="input figure-field"
                     min={0}
                     step={weightUnitConfig.inputStep}
                     value={getDraft(
@@ -162,12 +175,13 @@ export function RecipeOilsPanel({
                     onKeyDown={commitOnEnter}
                     aria-label={`Weight in ${weightUnitConfig.short} for ${oilName}`}
                   />
+                  {weightUnitConfig.short}
                 </label>
-                <label className="recipe-table__num recipe-table__pct">
-                  <span className="recipe-table__num-label">%</span>
+                <label className="recipe-table__figure">
+                  Percent
                   <input
                     type="number"
-                    className="input input--number"
+                    className="input figure-field"
                     min={0}
                     max={100}
                     step={0.1}
@@ -180,16 +194,8 @@ export function RecipeOilsPanel({
                     onKeyDown={commitOnEnter}
                     aria-label={`Percent for ${oilName}`}
                   />
+                  %
                 </label>
-                <button
-                  type="button"
-                  className="btn btn--icon recipe-table__remove"
-                  onClick={() => inputs.removeLine(line.key)}
-                  aria-label={`Remove ${oilName}`}
-                  disabled={lines.length <= 1}
-                >
-                  ×
-                </button>
               </div>
             </div>
           );

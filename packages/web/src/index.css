@@ -706,15 +706,17 @@ details[open] > .disclosure__summary::before {
   min-width: 0;
 }
 
+/* The third {ingredient, number, remove} row in the app — same figure treatment. */
 .pcsf__pct {
   display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
+  align-items: baseline;
+  gap: 0.35rem;
   flex: 0 0 auto;
-}
-
-.pcsf__pct .input {
-  width: 4.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--label);
 }
 
 .pcsf__method-help {
@@ -1072,37 +1074,45 @@ details[open] > .disclosure__summary::before {
    the Formula column gets (a half-width cell clips them in the 2-column app layout). */
 .additive-list__names {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr auto;
   gap: 0.55rem;
+  align-items: end;
+}
+
+/* The × belongs on the ingredient, not down beside the computed grams. */
+.additive-list__names .btn--icon {
+  align-self: center;
+}
+
+/* The amount lifts out of the dose grid onto its own labelled figure line, so a number in
+   this panel is treated exactly as a number in the Formula panel directly above it. */
+.additive-list__amount {
+  display: flex;
+  align-items: baseline;
+  gap: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--label);
 }
 
 /* Amount + dose mode share a line; stage gets its own — keeps each select wide enough
    for its longest option ("ppt of solution", "In lye water") at any column width. */
 .additive-list__dose {
   display: grid;
-  grid-template-columns: 4.5rem 1fr;
-  grid-template-areas:
-    'amount mode'
-    'stage  stage';
+  grid-template-columns: 1fr;
   gap: 0.55rem;
 }
 
-.additive-list__dose > :nth-child(1) {
-  grid-area: amount;
-}
-
-.additive-list__dose > :nth-child(2) {
-  grid-area: mode;
-}
-
-.additive-list__dose > :nth-child(3) {
-  grid-area: stage;
-}
-
+/* Holds only the computed grams now, so it gets a label rather than a bare number. */
 .additive-list__foot {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 0.9rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
 }
 
 .additive-list__names .field,
@@ -1185,6 +1195,39 @@ details[open] > .disclosure__summary::before {
   resize: vertical;
   min-height: 4.5rem;
   width: 100%;
+}
+
+/* THE BOXLESS FIGURE FIELD. An editable number on a 1.5px ink rule instead of inside a
+   bordered box: a six-oil recipe was eighteen input boxes stacked down the Formula column.
+   The rule reads as a slot waiting for a value, and 1.5px is deliberate — it matches the
+   disclosure chevron and the radar polygon, where a 1px hairline would read as incidental
+   text decoration and disappear.
+   Keeps .input alongside it so focus and disabled behaviour still come from there.
+   Reserved for NUMERICS. Text and enum inputs keep the box; the rule is what says
+   "a figure goes here". */
+.figure-field.input {
+  width: 3.6rem;
+  border: none;
+  border-bottom: 1.5px solid var(--text);
+  border-radius: var(--radius);
+  background: transparent;
+  padding: 0 0.4rem 0.15rem;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* Four digits and a thousands separator (a measured paste weight). */
+.figure-field--wide.input {
+  width: 4.8rem;
+}
+
+.figure-field.input:focus {
+  border-color: transparent;
+  border-bottom-color: var(--accent);
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
@@ -1314,16 +1357,20 @@ details[open] > .disclosure__summary::before {
   gap: 0;
 }
 
-/* Each row stacks: the oil name gets its own full-width line (so even the longest names
-   show in full), with the weight/%/remove controls on a labeled line below. */
+/* THE INGREDIENT LINE. The oil and the control that deletes it share the top row; its two
+   figures sit on a labelled line beneath, spanning both columns.
+   The × used to live at the end of the NUMBERS row — the control that removes an ingredient,
+   nowhere near the ingredient — and it forced a third grid column that squeezed both fields. */
 .recipe-table__row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  padding: 0.8rem 0.15rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.5rem;
+  align-items: baseline;
+  padding: 0.7rem 0.15rem;
   border-bottom: 1px solid var(--border);
 }
 
+/* The ingredient itself: the picker, plus the tar-lye choice when that oil brings one. */
 .recipe-table__oil {
   display: flex;
   flex-direction: column;
@@ -1331,32 +1378,29 @@ details[open] > .disclosure__summary::before {
   min-width: 0;
 }
 
-.recipe-table__controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 0.6rem 0.75rem;
-  align-items: end;
+.recipe-table__remove {
+  align-self: center;
 }
 
-.recipe-table__num {
+/* A labelled figure line. Shared shape with .additive-list__amount and .pcsf__pct so a
+   number does not change treatment between the three panels of one column. */
+.recipe-table__figures {
+  grid-column: 1 / -1;
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-}
-
-.recipe-table__num-label {
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 1.1rem;
   font-family: var(--font-mono);
   font-size: var(--label-size);
-  font-weight: 500;
   letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
-  white-space: nowrap;
 }
 
-.recipe-table__remove {
-  align-self: end;
+.recipe-table__figure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
 }
 
 .recipe-table__foot {
@@ -2501,65 +2545,91 @@ details[open] > .disclosure__summary::before {
    nothing on screen claims one of them describes the current plan — see the group's own
    comment in DilutionPanel. Styled as small, quiet actions rather than as a segmented
    control, so they do not read as a selection. */
-/* Square hairline on a transparent ground. It was a 999px pill until the button grew a
-   second line, then "a modest radius" — but a modest radius is exactly the rounded
-   container the system rules out, and the documented exceptions are pills, the round
-   InfoTip and round dots. Square still reads as a quiet action rather than a segmented
-   choice, which was the point of dropping the pill. */
+/* THE STARTING POINTS, as a list rather than a chip row. Three things were wrong with the
+   chips: a 0.7rem radius against --radius: 0; the ratio set in Archivo with tabular-nums,
+   which does nothing because Archivo has no tabular figures to align; and — the real one —
+   a caption that reported what a preset had set only AFTER it was clicked, for one preset.
+   The question a maker actually has ("which of these lands me at 25%?") was the one thing
+   the control hid. Every row now carries its own answer, so the caption is gone.
+
+   Deliberately not a segmented selection: these write a value once and stop, which is why
+   they are buttons and not radios. A figure list reads as reference you can act on, and it
+   reuses the row idiom already used twice in this same column (.results-recipe__row,
+   .results-workability__rows > div). */
+.dilution-presets {
+  margin-bottom: 0.75rem;
+}
+
+.dilution-presets__head,
 .dilution-preset {
-  font: inherit;
-  font-size: 0.85rem;
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--hairline);
+  display: grid;
+  grid-template-columns: 3.4rem 1fr auto;
+  gap: 0.75rem;
+}
+
+.dilution-presets__head {
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--label);
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 0.4rem;
+}
+
+.dilution-preset {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
   border-radius: var(--radius);
   background: transparent;
-  color: var(--text);
+  text-align: left;
+  align-items: baseline;
+  padding: 0.55rem 0.35rem;
+  margin: 0 -0.35rem;
+  font: inherit;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.05rem;
+  transition: background 0.15s;
 }
-/* Mono, so the tabular figures actually align "1:1" under "2.5:1" — Archivo has no tabular
-   figures, so the tabular-nums here was declaring an intent the face could not honour. */
-.dilution-preset__ratio {
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-}
-/* What the ratio makes. Smaller at full --text-muted, never dimmed with opacity: this is
-   live text a maker reads before choosing, and 0.75 opacity puts #666 on #f0f0f0 under the
-   4.5:1 AA floor (the same trap the intended-use ratios fell into). */
-.dilution-preset__uses {
-  font-size: 0.7rem;
-  line-height: 1.25;
-  color: var(--text-muted);
-  /* A ratio can land inside four bands at once (the 10–15% cluster, five at exactly 15%),
-     and every match is named. Without a cap that one button stretches the whole row; with
-     it the names wrap and the four buttons keep their shape. */
-  max-width: 9rem;
-  text-align: center;
-}
+
 .dilution-preset:hover:not(:disabled) {
-  border-color: var(--accent);
+  background: var(--accent-tint);
 }
+
 .dilution-preset:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-/* What the last preset click wrote ("2:1 → 25%"). A caption on the control above it, not
-   state feedback about the batch — which is why it is deliberately NOT .results-hint: that
-   class is what the panel's prose budget counts. */
-.dilution-preset-caption {
-  margin: -0.5rem 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+.dilution-preset__ratio {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 
-/* A plan-labelled note on a plan row (spec §4) — same reasoning as .dilution-preset-caption
-   above: a caption on the figure directly above it, deliberately not .results-hint, which is
-   the class the panel's prose budget counts. */
+/* The row's primary text now, not a caption squeezed inside a chip — so it comes up from
+   0.7rem/--text-muted. The old 9rem cap and centring go with the chip: the grid column
+   handles width, and a multi-band match wraps naturally in a full-width cell.
+   Still never dimmed with opacity; see the AA note that decision came from. */
+.dilution-preset__uses {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+}
+
+.dilution-preset__sets {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  text-align: right;
+}
+
+/* A plan-labelled note on a plan row (spec §4): a caption on the figure directly above it,
+   deliberately NOT .results-hint, which is the class the panel's prose budget counts. (The
+   preset caption that used to share this reasoning is gone — every preset row states its own
+   figure before the click now, so there is nothing left to report afterwards.) */
 .dilution-plan-caption {
   margin: 0.25rem 0 0.75rem;
   font-size: 0.85rem;

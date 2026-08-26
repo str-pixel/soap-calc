@@ -978,7 +978,7 @@ describe('a starting point says what it starts', () => {
     expect(preset('1:1')).not.toContain('dish soap');
   });
 
-  it('shows the ratio alone when it lands in no common use', () => {
+  it('names no use when the ratio lands in no common band, but still states its figure', () => {
     // A 400 g pot of soap in 1,200 g of paste is 33.3%; at 3:1 the solution is 4,800 g and
     // the target 8.3% — below every band in the list, so there is no name to give.
     renderPanel({
@@ -989,7 +989,10 @@ describe('a starting point says what it starts', () => {
       },
       cookWaterGrams: 800,
     });
-    expect(preset('3:1')).toBe('3:1');
+    const row = screen.getByRole('button', { name: /^3:1\b/ });
+    expect(row.querySelector('.dilution-preset__uses')!.textContent).toBe('');
+    // The figure is not conditional on a band matching — it is what the press will write.
+    expect(row.querySelector('.dilution-preset__sets')!.textContent).toMatch(/^\d/);
   });
 });
 
@@ -3334,15 +3337,24 @@ describe("the plan row offers the reference's own starting ratios", () => {
     expect(onSoapConcentrationChange).not.toHaveBeenCalled();
   });
 
-  it('says what the click did, and retires the caption when the plan moves off it', () => {
-    // The caption pattern §2 names ("2:1 → 28.6%"), and its own retirement: it compares what
-    // the preset wrote against what is on the field NOW, so typing over the figure drops it
-    // on the next render. No effect, no reset, no second write.
-    const { rerender } = render(<DilutionPanel {...PRESET_BASE} soapConcentrationPercent="25" />);
-    fireEvent.click(screen.getByRole('button', { name: /^2:1\b/ }));
-    expect(screen.getByText('2:1 → 25%')).toBeTruthy();
-    rerender(<DilutionPanel {...PRESET_BASE} soapConcentrationPercent="40" />);
-    expect(screen.queryByText(/→/)).toBeNull();
+  it('states the figure it will write BEFORE the click, and then writes exactly it', () => {
+    // REPLACES a caption test. There was a "2:1 → 25%" line that appeared after a press and
+    // reported one preset's figure; the question a maker has is which preset lands where,
+    // and that was the one thing the control hid until pressed. Every row carries its own
+    // figure now, so the promise is checkable against the press.
+    const onSoapConcentrationChange = vi.fn();
+    render(
+      <DilutionPanel
+        {...PRESET_BASE}
+        soapConcentrationPercent="25"
+        onSoapConcentrationChange={onSoapConcentrationChange}
+      />,
+    );
+    const row = screen.getByRole('button', { name: /^2:1\b/ });
+    const promised = row.querySelector('.dilution-preset__sets')!.textContent!;
+    expect(promised).toMatch(/^\d/); // a real figure, before anything is pressed
+    fireEvent.click(row);
+    expect(onSoapConcentrationChange).toHaveBeenCalledWith(promised.replace('%', ''));
   });
 
   /** The one paragraph of ratio guidance, however it is worded. Selected STRUCTURALLY — the
@@ -4616,10 +4628,13 @@ describe('one dilution surface: a plan and a record', () => {
     expect(onSoapConcentrationChange).not.toHaveBeenCalled();
   });
 
-  it('says what the preset did, in the caption pattern the spec names', () => {
+  it('spells the whole sentence into each preset\'s accessible name', () => {
+    // A screen reader gets no column context from a visual header row, so the ratio, and the
+    // figure the press will write, both ride the button's own name.
     render(<DilutionPanel {...PLAN30} soapConcentrationPercent="25" />);
-    fireEvent.click(screen.getByRole('button', { name: /^2:1\b/ }));
-    expect(screen.getByText(/2:1 → 25%/)).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: /^2:1 — sets soap concentration to \d/ }),
+    ).toBeTruthy();
   });
 
   it('never writes the plan % on its own — not on mount, not on a record, not on a reading', () => {

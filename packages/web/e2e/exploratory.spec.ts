@@ -423,8 +423,11 @@ test.describe('liquid soap', () => {
     const applied = await target.inputValue();
     expect(applied).not.toBe(seeded);
     expect(Number(applied)).toBeGreaterThan(0);
-    // And it says what it did.
-    await expect(section.locator('.dilution-preset-caption')).toContainText(`2:1 → ${applied}%`);
+    // And the row said so before the press — the caption that used to report it afterwards
+    // is gone, because every row now states its own figure up front.
+    await expect(
+      section.getByRole('button', { name: /^2:1\b/ }).locator('.dilution-preset__sets'),
+    ).toHaveText(`${applied}%`);
   });
 
   test('tabbing into the preset group applies nothing', async ({ page }) => {

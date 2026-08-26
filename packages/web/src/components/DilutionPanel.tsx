@@ -330,21 +330,10 @@ export function DilutionPanel({
   preservativeSlot,
   preservativeDoseGrams = 0,
 }: DilutionPanelProps) {
-  // WHAT THE LAST PRESET CLICK DID, so the caption can say it ("2:1 → 25%"). Session state
-  // in this component, and deliberately not a selection: presets do not track the pot (see
-  // LS_WATER_PASTE_RATIO_PRESETS), so nothing here may re-derive a "current" ratio from the
-  // plan % and highlight it. A stale plan value — a 33.85 left behind by the write-back this
-  // task deleted — therefore displays as-is with no preset marked, which is the expected
-  // reading of it and not a bug.
-  //
-  // NO EFFECT CLEARS IT. The caption's own render condition below compares this against the
-  // plan % currently on the field, so typing over the preset's figure retires the caption on
-  // the next render with nothing to schedule, nothing to reset on a prop change, and no
-  // second write. Every previous version of "remember what this control did" in this file was
-  // an effect, and every one of them wrote a value back.
-  const [presetApplied, setPresetApplied] = useState<{ ratio: string; percent: number } | null>(
-    null,
-  );
+  // NO "WHAT THE LAST CLICK DID" STATE. There used to be a caption reporting the figure a
+  // preset had written ("2:1 → 25%") — after the press, for one preset. Every row states its
+  // own figure before the press now, which is the question a maker actually has, so the
+  // caption and the session state behind it are both gone.
   // The intended-use bands stand open (see the <details> below for why). Held here, outside
   // the `dilution ?` branch that renders them, so a maker's own collapse survives the
   // UNMOUNT that emptying the target field causes — not the re-render, which would not have
@@ -1221,71 +1210,62 @@ export function DilutionPanel({
           reference does say about these is that they are where makers begin (LS:1534), which
           is what the legend says. */}
       <div
-        className="dilution-mode-toggle"
+        className="dilution-presets"
         role="group"
         aria-label="Starting points for the water to paste ratio"
       >
         <span className="dilution-toggle__legend">Starting points</span>
-        {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            className="dilution-preset"
-            // Disabled with no pot to multiply: there is no percentage for the click to
-            // write, and a control that does nothing when pressed is worse than one that
-            // says it cannot. `dilution` null is "no oils yet", which the panel's own ask at
-            // the bottom already explains.
-            disabled={dilution === null || pasteGrams === null}
-            onClick={() => {
-              if (!dilution || pasteGrams === null) return;
-              const percent = ratioPresetPercent(
-                dilution.anhydrousGrams,
-                pasteGrams,
-                Number(preset),
-              );
-              setPresetApplied({ ratio: preset, percent });
-              onSoapConcentrationChange(String(percent));
-            }}
-          >
-            <span className="dilution-preset__ratio">{preset}:1</span>
-            {(() => {
-              // WHAT THIS RATIO MAKES, named from the same bands the list below states — so
-              // the choice reads as a product rather than as a quantity of water. Computed
-              // from the pot in force, exactly as the list's ratios are, so weighing the
-              // paste moves the names with the arithmetic instead of leaving a label
-              // describing a batch that is no longer on the bench.
-              //
-              // Silent where the ratio lands outside every band: there is no name to give,
-              // and inventing one ("very dilute") would be this panel asserting a use the
-              // reference does not list.
-              if (dilution === null || pasteGrams === null) return null;
-              const uses = lsDilutionUsesFor(
-                ratioPresetPercent(dilution.anhydrousGrams, pasteGrams, Number(preset)),
-              );
-              return uses.length > 0 ? (
-                <span className="dilution-preset__uses">
-                  {uses.map((u) => u.label.toLowerCase()).join(', ')}
-                </span>
-              ) : null;
-            })()}
-          </button>
-        ))}
+        {/* aria-hidden, because a screen reader gets no column context from a visual header
+            row — each button carries the whole sentence in its own accessible name instead. */}
+        <div className="dilution-presets__head" aria-hidden="true">
+          {/* "Suits", not the handoff's "Makes": this panel already labels a figure Makes —
+              the portion's finished mass in PortionDilutionResults — and two different
+              quantities under one word in one panel is ambiguous for a reader before it is
+              ambiguous for a test. "Suits" is also the word the summary below already uses
+              ("At 26% this suits body wash, hand soap"). */}
+          <span>Ratio</span>
+          <span>Suits</span>
+          <span style={{ textAlign: 'right' }}>Sets</span>
+        </div>
+        {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => {
+          // ONE DERIVATION for the label and the click, so the row cannot promise a figure
+          // the press does not write. Null with no pot: there is nothing to multiply.
+          const percent =
+            dilution === null || pasteGrams === null
+              ? null
+              : ratioPresetPercent(dilution.anhydrousGrams, pasteGrams, Number(preset));
+          // WHAT THIS RATIO MAKES, named from the same bands the list below states, so the
+          // choice reads as a product rather than as a quantity of water. Computed from the
+          // pot in force, so weighing the paste moves the names with the arithmetic instead
+          // of leaving a label describing a batch no longer on the bench. Silent where the
+          // ratio lands outside every band — inventing a name would assert a use the
+          // reference does not list.
+          const uses = percent === null ? [] : lsDilutionUsesFor(percent);
+          const sets = percent === null ? '—' : `${formatConcentrationPercent(percent)}%`;
+          return (
+            <button
+              key={preset}
+              type="button"
+              className="dilution-preset"
+              // Disabled with no pot to multiply: a control that does nothing when pressed is
+              // worse than one that says it cannot. `dilution` null is "no oils yet", which
+              // the panel's own ask at the bottom already explains.
+              disabled={percent === null}
+              onClick={() => {
+                if (percent === null) return;
+                onSoapConcentrationChange(String(percent));
+              }}
+              aria-label={`${preset}:1 — sets soap concentration to ${sets}`}
+            >
+              <span className="dilution-preset__ratio">{preset}:1</span>
+              <span className="dilution-preset__uses">
+                {uses.map((u) => u.label.toLowerCase()).join(', ')}
+              </span>
+              <span className="dilution-preset__sets">{sets}</span>
+            </button>
+          );
+        })}
       </div>
-      {/* WHAT THE CLICK DID, and nothing more: the ratio the maker picked and the percentage
-          it wrote. Not a <p className="results-hint"> on purpose — this is a caption on the
-          control directly above it, not state feedback about the batch, and the prose budget
-          counts hint paragraphs.
-
-          Its render condition is the caption's own retirement: it compares what the preset
-          wrote against what is on the field NOW, so typing over the figure drops the caption
-          on the very next render — no effect, no reset, no second write. 0.05 is half the
-          preset's own 1 dp rounding, so anything closer IS the figure it wrote. */}
-      {presetApplied !== null &&
-        Math.abs(Number(soapConcentrationPercent) - presetApplied.percent) < 0.05 && (
-          <p className="dilution-preset-caption">
-            {presetApplied.ratio}:1 → {formatConcentrationPercent(presetApplied.percent)}%
-          </p>
-        )}
       {/* ── THE RECORD ROW (spec §2) ───────────────────────────────────────────────────────
           The water actually poured into the whole batch (LS:1531: add water in increments and
           record how much). Beside the plan rather than instead of it: the mode radio made
@@ -1359,9 +1339,11 @@ export function DilutionPanel({
             match the words on screen. One string now serves both, so they cannot drift: edit
             the span and the accessible name follows. The selectors moved instead. */}
         <span>Measured paste weight — the whole batch (g, optional)</span>
+        {/* An editable figure, so it takes the figure treatment the ingredient rows use —
+            leaving it boxed put two answers to the same question in one column. */}
         <input
           type="number"
-          className="input input--number"
+          className="input figure-field figure-field--wide"
           min={1}
           step={10}
           value={measuredPasteGrams ?? ''}
