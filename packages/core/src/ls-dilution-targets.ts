@@ -40,7 +40,10 @@ export const LS_DILUTION_TARGETS: readonly LsDilutionTarget[] = [
     label: 'Foaming dispenser',
     low: 10,
     high: 15,
-    note: 'For an average recipe — a coconut-heavy soap is naturally thinner and can run higher.',
+    // Own words. An earlier wording tracked the reference's sentence closely enough to
+    // share a four-word run with it ("naturally thinner and can"); the rule is to ship the
+    // idea and the numbers, never the phrasing.
+    note: 'Assumes a typical blend. A coconut-heavy paste pours thin by itself, so it will take less water than this.',
   },
   { key: 'body-wash', label: 'Body wash', low: 10, high: 35 },
   // "Hand soap", not "general hand soap": every row here is soap, so the qualifier only

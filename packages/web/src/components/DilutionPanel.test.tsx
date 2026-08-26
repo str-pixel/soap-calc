@@ -804,28 +804,45 @@ describe('each intended use carries the water:paste ratio that reaches it', () =
 
   it('states the ratio range beside the percentage range', () => {
     renderPanel();
-    // Ascending by ratio, which inverts the percentages: more water is a thinner soap.
-    expect(useRow('Hand soap')).toContain('1.5:1 – 4:1');
+    expect(useRow('Hand soap')).toContain('4:1 – 1.5:1');
+  });
+
+  it('runs the two ranges in the SAME direction, so the ends can be read off each other', () => {
+    // The one way this row can lie. More water makes a thinner soap, so the ratio scale runs
+    // opposite to the percentage scale — and printed smallest-ratio-first the row said
+    // "15–30% soap · 1.5:1 – 4:1", inviting the reader to pair 15% with 1.5:1 when 15% is
+    // in fact the 4:1 end. Nothing on screen corrected them. The ratios are ordered to
+    // match the percentages now: first with first, last with last.
+    renderPanel();
+    const row = useRow('Hand soap');
+    const [pctLow, pctHigh] = [15, 30];
+    const [first, second] = row.match(/([\d.]+):1 – ([\d.]+):1/)!.slice(1).map(Number);
+    // 1,200 g anhydrous in a 1,600 g pot: 15% needs a 8,000 g solution (6,400 g of water,
+    // 4:1); 30% needs 4,000 g (2,400 g, 1.5:1).
+    const ratioFor = (pct: number) => (1200 / (pct / 100) - 1600) / 1600;
+    expect(first).toBeCloseTo(ratioFor(pctLow), 1);
+    expect(second).toBeCloseTo(ratioFor(pctHigh), 1);
+    expect(first).toBeGreaterThan(second); // ratio falls as the target concentration rises
   });
 
   it('reaches the 10–15% uses no preset button can', () => {
     renderPanel();
     // The whole point of showing both scales: 1:1 through 3:1 cannot get here, and until the
     // ratio was on the row nothing on screen said what could.
-    expect(useRow('Baby or gentle soap')).toContain('4:1 – 6.5:1');
+    expect(useRow('Baby or gentle soap')).toContain('6.5:1 – 4:1');
   });
 
   it('prints a sub-1 ratio honestly where the use wants less water than paste', () => {
     renderPanel();
     // Dish soap at 45% is a 2,667 g solution from a 1,600 g pot — 1,067 g of water, 0.7:1.
-    expect(useRow('Dish soap')).toContain('0.7:1 – 1.1:1');
+    expect(useRow('Dish soap')).toContain('1.1:1 – 0.7:1');
   });
 
   it('takes the pot from the scale when a measurement describes one', () => {
     // A weighed 2,000 g pot, not the recipe's computed 1,600 g: at 30% the same 4,000 g
     // solution now needs 2,000 g of water, so hand soap's tight end moves 1.5:1 → 1:1.
     renderPanel({ measuredPasteGrams: '2000', wholeBatchPasteGrams: 1600 });
-    expect(useRow('Hand soap')).toContain('1:1 – 3:1');
+    expect(useRow('Hand soap')).toContain('3:1 – 1:1');
   });
 
   it('names the band without the filler word — the list is all soap', () => {

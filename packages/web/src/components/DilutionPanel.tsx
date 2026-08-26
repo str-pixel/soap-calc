@@ -109,20 +109,29 @@ function formatWaterPasteRatio(ratio: number): string {
   return `${Math.round(ratio * 10) / 10}:1`;
 }
 
-/** A use's whole band as ratios, ascending — which INVERTS the percentages, because more
- * water is a thinner soap. Null when either end is out of reach, rather than a half-range
- * the maker would have to know to distrust. */
+/** A use's whole band as ratios, IN THE SAME ORDER AS ITS PERCENTAGES — the band's low
+ * percentage first, so a reader can take the two ranges end for end.
+ *
+ * That means the ratios run downwards, because more water makes a thinner soap: 10% is the
+ * 6.3:1 end and 15% is the 3.9:1 end. Printed the other way round — smallest ratio first,
+ * which reads more naturally as a range on its own — the row said "10–15% soap · 3.9:1 –
+ * 6.3:1" and quietly invited the maker to pair 10% with 3.9:1, which is the opposite of
+ * true. A descending range is the smaller surprise, and it is the one that can be read
+ * straight across.
+ *
+ * Null when either end is out of reach, rather than a half-range the maker would have to
+ * know to distrust. */
 function ratioRangeLabelFor(
   anhydrousGrams: number,
   potGrams: number,
   target: LsDilutionTarget,
 ): string | null {
-  const tightest = ratioForConcentration(anhydrousGrams, potGrams, target.high);
-  const loosest = ratioForConcentration(anhydrousGrams, potGrams, target.low);
-  if (tightest === null || loosest === null) return null;
-  return tightest === loosest
-    ? formatWaterPasteRatio(tightest)
-    : `${formatWaterPasteRatio(tightest)} – ${formatWaterPasteRatio(loosest)}`;
+  const atLowPercent = ratioForConcentration(anhydrousGrams, potGrams, target.low);
+  const atHighPercent = ratioForConcentration(anhydrousGrams, potGrams, target.high);
+  if (atLowPercent === null || atHighPercent === null) return null;
+  return atLowPercent === atHighPercent
+    ? formatWaterPasteRatio(atLowPercent)
+    : `${formatWaterPasteRatio(atLowPercent)} – ${formatWaterPasteRatio(atHighPercent)}`;
 }
 
 export type DilutionScope = 'batch' | 'portion';
