@@ -53,6 +53,7 @@
   --bg: #f0f0f0; /* paper */
   --surface: #f0f0f0; /* paper — panels are flat, not cards */
   --surface-2: #e4e4e4; /* tinted ground: the results column, filled chips */
+  --field: #ffffff; /* input/listbox ground — the affordance that says "type here" */
   --text: #111111; /* ink */
   --text-strong: #333333;
   --text-figure: #4d4d4d;
@@ -66,6 +67,7 @@
   --accent-hover: #a30716;
   --accent-soft: rgb(212 11 30 / 13%);
   --accent-tint: rgb(212 11 30 / 8%);
+  --accent-band: rgb(212 11 30 / 28%); /* meter target band — the third accent tint */
   --border: #d7d7d7; /* row hairlines */
   --hairline: #c6c6c6; /* figure-list hairline */
   --error: #b42318;
@@ -74,6 +76,11 @@
   --warn-bg: #f3ead9;
   --radius: 0;
   --shadow: none;
+
+  /* THE micro-label, one size and one tracking. Emphasis on a label comes from colour
+     (--label · --text-figure · --warn), never from a half-step of size. */
+  --label-size: 0.62rem;
+  --label-track: 0.14em;
 
   font-family: var(--font-ui);
   line-height: 1.5;
@@ -151,6 +158,54 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* The one micro-label. Every tracked uppercase mono label in the app is this size and
+   this tracking; the eight near-miss variants that preceded it distinguished nothing. */
+.micro-label {
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+/* The one disclosure summary: native marker off, chevron drawn, rotating on open. Lifted
+   verbatim out of .settings-advanced__summary, which was already correct while four other
+   <details> kept the browser triangle — the only glyph in the app nobody chose.
+   A step up from the micro-label at 0.66/0.12 on purpose: these are controls, not labels. */
+.disclosure__summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--label);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  user-select: none;
+}
+
+.disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure__summary::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+details[open] > .disclosure__summary::before {
+  transform: rotate(45deg);
+}
+
 /* Full-bleed broadsheet: no max-width wrapper; each region owns its gutter. */
 .app {
   max-width: none;
@@ -203,8 +258,8 @@ a:hover {
 .masthead__eyebrow {
   margin: 0.3rem 0 0;
   font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.12em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
 }
@@ -299,15 +354,15 @@ a:hover {
 }
 
 .process-tabs__variant {
-  border: 1px solid #c9c9c9;
+  border: 1px solid var(--hairline);
   background: transparent;
   color: var(--label);
   font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   border-radius: 999px;
-  padding: 0.28rem 0.65rem;
+  padding: 0.28rem 0.7rem;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -338,26 +393,28 @@ a:hover {
   box-shadow: none;
 }
 
-.recipe-toolbar__name {
-  flex: 1 1 10rem;
-  min-width: 8rem;
-  max-width: 26rem;
-  margin: 0;
+/* Its own labelled row under the process bar, left-aligned at every width. */
+.recipe-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  border-top: 1px solid var(--hairline);
+  padding-top: 0.7rem;
 }
 
 .recipe-toolbar__name-input.input {
   width: 100%;
-  text-align: right;
+  text-align: left;
   border: none;
   border-bottom: 1px solid transparent;
   background: transparent;
   font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: 1.25rem;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: normal;
   color: var(--text);
   padding: 0.2rem 0;
-  border-radius: 0;
+  border-radius: var(--radius);
 }
 
 .recipe-toolbar__name-input.input:focus {
@@ -385,22 +442,12 @@ a:hover {
   position: relative;
 }
 
+/* Composes .btn; only the chevron layout is its own. */
 .actions-menu__trigger {
   appearance: none;
-  border: 1px solid var(--text);
-  background: transparent;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 0.45rem 0.9rem;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .actions-menu__trigger:hover,
@@ -511,9 +558,42 @@ a:hover {
 }
 
 /* Tinted ground — carried by whichever column is the visual middle: The Bar in the Recipe
-   view, the batch-cost/results column in the Pricing view. Tint a whole column, not cards. */
+   view, the batch-cost/results column in the Pricing view. Tint a whole column, not cards.
+   WHICH IS WHY IT SWITCHES OFF BELOW TWO COLUMNS: stacked, a tinted column is not a column
+   at all, it is a full-width grey block between two paper blocks — precisely the card the
+   system forbids. Below the threshold the separating job passes to a hairline rule. */
 .col--tinted {
-  background: var(--surface-2);
+  background: transparent;
+}
+
+@media (min-width: 42rem) {
+  .col--tinted {
+    background: var(--surface-2);
+  }
+}
+
+@media (max-width: 41.99rem) {
+  .col > .panel + .panel {
+    border-top: 1px solid var(--hairline);
+    padding-top: 1.1rem;
+  }
+}
+
+/* The middle gutter step. There was one breakpoint at 700px, so every width from tablet to
+   desktop kept the full 2.4rem gutters on two cramped columns. */
+@media (min-width: 42rem) and (max-width: 63.99rem) {
+  .col {
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+
+  .col:first-child {
+    padding-left: 2rem;
+  }
+
+  .col:last-child {
+    padding-right: 2rem;
+  }
 }
 
 /* Desktop (≥3 columns): show the comp's reading order — inputs · The Bar · The Numbers — by
@@ -646,7 +726,7 @@ a:hover {
   width: 1.9rem;
   height: 1.9rem;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--field);
   color: var(--text-muted);
   cursor: pointer;
   line-height: 1;
@@ -657,19 +737,10 @@ a:hover {
   border-color: var(--warn);
 }
 
+/* Composes .btn — "+ Add oil" is a mono uppercase label like every other button now,
+   rather than the one outlined control in the app set in Archivo. */
 .pcsf__add {
   align-self: flex-start;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-  padding: 0.35rem 0.7rem;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.pcsf__add:hover {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 /* Signal-styled range slider: thin ink/hairline track, accent fill + thumb, editable
@@ -805,8 +876,8 @@ a:hover {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
 }
@@ -867,41 +938,11 @@ a:hover {
   padding-top: 0.85rem;
 }
 
-.settings-advanced__summary {
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--label);
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  user-select: none;
-}
-
-.settings-advanced__summary::-webkit-details-marker {
-  display: none;
-}
-
-.settings-advanced__summary::before {
-  content: '';
-  width: 0.4rem;
-  height: 0.4rem;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
-  transition: transform 0.15s;
-}
-
+/* Type, marker and chevron all come from .disclosure__summary now — this was the one
+   correct copy, and the shared class is it, lifted verbatim. Only the open spacing is
+   local. */
 .settings-advanced[open] .settings-advanced__summary {
   margin-bottom: 0.85rem;
-}
-
-.settings-advanced[open] .settings-advanced__summary::before {
-  transform: rotate(45deg);
 }
 
 /* ── Troubleshooting disclosure ───────────────────────────────────────── */
@@ -921,74 +962,28 @@ a:hover {
   padding-top: 0;
 }
 
+/* The one summary that keeps its own type: it is a QUESTION the maker is reading
+   ("Why did my batter seize?"), not a label naming a section, so it stays Archivo 0.9/600
+   in ink while taking the marker, chevron and rotation from .disclosure__summary. */
 .troubleshooting-entry__summary {
-  cursor: pointer;
+  font-family: var(--font-ui);
   font-size: 0.9rem;
   font-weight: 600;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  user-select: none;
-}
-
-.troubleshooting-entry__summary::-webkit-details-marker {
-  display: none;
-}
-
-.troubleshooting-entry__summary::before {
-  content: '';
-  width: 0.4rem;
-  height: 0.4rem;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
-  transition: transform 0.15s;
-  flex-shrink: 0;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
 }
 
 .troubleshooting-entry[open] .troubleshooting-entry__summary {
   margin-bottom: 0.4rem;
 }
 
-.troubleshooting-entry[open] .troubleshooting-entry__summary::before {
-  transform: rotate(45deg);
-}
-
 /* ── Preservative snippet ─────────────────────────────────────────────── */
 /* A collapsed <details> that is itself a nested panel: closed, one titled line on the
    panel surface; open, a panel like its siblings. Same chevron treatment as the app's
    other disclosures (.settings-advanced / .troubleshooting-entry). */
-.preservative__summary {
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  user-select: none;
-}
-
-.preservative__summary::-webkit-details-marker {
-  display: none;
-}
-
-.preservative__summary::before {
-  content: '';
-  width: 0.4rem;
-  height: 0.4rem;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
-  transition: transform 0.15s;
-  flex-shrink: 0;
-}
-
 .preservative[open] .preservative__summary {
   margin-bottom: 0.35rem;
-}
-
-.preservative[open] .preservative__summary::before {
-  transform: rotate(45deg);
 }
 
 /* ── Split-liquid ─────────────────────────────────────────────────────── */
@@ -1042,15 +1037,16 @@ a:hover {
   color: var(--text-muted);
 }
 
+/* A flat caution band, matching .message-list exactly: no border, no radius. The ground
+   colour carries the severity, which is what the semantic pairs were defined for — and the
+   6px corner this used to have was the only non-pill radius in the app. */
 .split-liquid-warning {
   grid-column: 1 / -1;
   margin: 0;
-  padding: 0.5rem 0.75rem;
+  padding: 0.65rem 0.85rem;
   font-size: 0.85rem;
   color: var(--warn);
   background: var(--warn-bg);
-  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
-  border-radius: 6px;
 }
 
 /* ── Additives ────────────────────────────────────────────────────────── */
@@ -1140,7 +1136,7 @@ a:hover {
 
 .additive-list__hazard {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: var(--label-size);
   color: var(--text-muted);
   background: var(--surface-2);
   padding: 0.1rem 0.4rem;
@@ -1168,10 +1164,10 @@ a:hover {
 
 .input {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   border-radius: 0;
   padding: 0.5rem 0.65rem;
-  background: #fff;
+  background: var(--field);
   color: var(--text);
 }
 
@@ -1192,15 +1188,20 @@ a:hover {
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
+/* THE outlined button. The actions trigger, the property toggle and the add-oil control
+   were all this same object — a hairline rectangle that inverts on hover — each restating
+   it at its own size, tracking, padding and border. They compose this now. The weight and
+   0.12em come from .actions-menu__trigger, which had the fuller spec. */
 .btn {
   border: 1px solid var(--text);
   background: transparent;
   color: var(--text);
-  border-radius: 0;
-  padding: 0.42rem 0.8rem;
+  border-radius: var(--radius);
+  padding: 0.42rem 0.9rem;
   font-family: var(--font-mono);
   font-size: 0.64rem;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -1346,9 +1347,9 @@ a:hover {
 
 .recipe-table__num-label {
   font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-size: var(--label-size);
   font-weight: 500;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
   white-space: nowrap;
@@ -1365,8 +1366,8 @@ a:hover {
   gap: 1rem;
   padding: 0.9rem 0.15rem 0;
   font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.12em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   font-weight: 600;
   color: var(--text-figure);
@@ -1387,11 +1388,17 @@ a:hover {
   margin: 0.55rem 0 0;
 }
 
-.recipe-table__hint {
+/* The three inline notes (here, .mold-sizer__hint, .pricing-hint) were one object at
+   three specs — mono 0.66/.04, Archivo 0.82, Archivo 0.8. They are the quietest rung of the
+   severity ladder: inline note, then caution band, then blocking band. */
+.inline-note {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  color: var(--label);
+}
+
+.inline-note--warn {
   color: var(--warn);
 }
 
@@ -1427,7 +1434,7 @@ a:hover {
   border: 1px solid var(--border);
   border-radius: 0;
   padding: 0.25rem 0.4rem;
-  background: #fff;
+  background: var(--field);
   font-size: 0.8rem;
 }
 
@@ -1488,10 +1495,10 @@ a:hover {
 
 .oil-picker__input {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   border-radius: 0;
   padding: 0.5rem 0.65rem;
-  background: #fff;
+  background: var(--field);
 }
 
 .oil-picker__input:focus {
@@ -1507,7 +1514,7 @@ a:hover {
   margin: 0;
   padding: 0.35rem;
   list-style: none;
-  background: #fff;
+  background: var(--field);
   border: 1px solid var(--text);
   border-radius: 0;
   box-shadow: none;
@@ -1558,9 +1565,9 @@ a:hover {
   flex-shrink: 0;
   margin-top: 0.1rem;
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: var(--label-size);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--label-track);
   color: var(--text-muted);
   background: var(--surface-2);
   padding: 0.1rem 0.4rem;
@@ -1583,7 +1590,7 @@ a:hover {
   padding: 0.65rem 0.75rem;
   font-size: 0.85rem;
   color: var(--text-muted);
-  background: #fff;
+  background: var(--field);
   border: 1px solid var(--text);
   border-radius: 0;
   box-shadow: none;
@@ -1662,8 +1669,8 @@ a:hover {
 
 .results-additives dt {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.06em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
 }
@@ -1817,22 +1824,29 @@ a:hover {
 
 .recipe-indexes dt {
   font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
 }
 
+/* Mono, like every other figure. Archivo display weight is the HERO's exception and the
+   hero's alone; at 1.7rem/800 the INS and iodine indexes read as a second hero standing
+   beside the number that actually matters. Still the largest figures in The Bar, plainly
+   below the lye number. */
 .recipe-indexes dd {
-  margin: 0.15rem 0 0;
-  font-family: var(--font-ui);
-  font-size: 1.7rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  margin: 0.2rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 1.45rem;
+  font-weight: 500;
+  letter-spacing: normal;
   font-variant-numeric: tabular-nums;
+  color: var(--text-figure);
 }
 
+/* Its own line under the figure, not trailing after it. */
 .recipe-indexes__range {
+  display: block;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 400;
@@ -1863,9 +1877,9 @@ a:hover {
   background: var(--warn-bg);
   color: var(--warn);
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: var(--label-size);
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
 }
 
@@ -1917,8 +1931,8 @@ a:hover {
 
 .property-bars__status {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.14em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--warn);
 }
@@ -1945,17 +1959,19 @@ a:hover {
 }
 
 .property-meter__band--target {
-  background: rgb(212 11 30 / 28%);
+  background: var(--accent-band);
 }
 
-/* Vertical capsule marker — where this recipe lands on the 0–100 track. Taller than
-   the track so it reads as a slider handle riding over the shaded range. */
+/* A plotted position on the 0–100 track: an ink dot with a paper ring. It was a 7x17
+   capsule at 4px, which read as a draggable slider handle on what is a READOUT — and 4px
+   is neither of the two radius exceptions (pills and round dots). Out of range it turns
+   accent; the shape never changes. */
 .property-meter__marker {
   position: absolute;
   top: 50%;
-  width: 7px;
-  height: 17px;
-  border-radius: 4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
   background: var(--text);
   border: 2px solid var(--bg);
   transform: translate(-50%, -50%);
@@ -1982,7 +1998,7 @@ a:hover {
   position: absolute;
   top: 0;
   left: 0;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
 }
@@ -2006,8 +2022,8 @@ a:hover {
   gap: 0.35rem 0.75rem;
   margin: 0.85rem 0 0;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.04em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   color: var(--label);
 }
 
@@ -2047,28 +2063,30 @@ a:hover {
 }
 
 /* ── Property view toggle (Radar / Bars) ──────────────────────────────── */
+/* AN UNDERLINE SWITCH, not a mode switch. Ink fill is how the app says "this is the mode
+   you are in" — the process tabs. This is a caption-scale view switch INSIDE one panel, and
+   filling it with ink put it at the same volume as the process it sits under, so nothing on
+   screen said which switch was the big one. Underlined micro-label, subordinate by design. */
 .property-view-toggle {
   display: flex;
+  align-items: baseline;
+  gap: 1.1rem;
   margin: 0 0 1.4rem;
 }
 
 .property-view-toggle__tab {
   appearance: none;
-  border: 1px solid var(--text);
+  border: none;
   background: transparent;
-  color: var(--text-strong);
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 0.42rem 1rem;
+  padding: 0 0 0.2rem;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.property-view-toggle__tab + .property-view-toggle__tab {
-  margin-left: -1px;
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--label);
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .property-view-toggle__tab:hover:not(.property-view-toggle__tab--active) {
@@ -2076,8 +2094,8 @@ a:hover {
 }
 
 .property-view-toggle__tab--active {
-  background: var(--text);
-  color: var(--bg);
+  color: var(--text);
+  border-bottom-color: var(--accent);
 }
 
 /* ── Messages / insights ──────────────────────────────────────────────── */
@@ -2122,13 +2140,11 @@ a:hover {
 .message-list__item--info {
   background: var(--surface-2);
   color: var(--text);
-  border-left: 2px solid var(--accent);
 }
 
 .message-list__item--warn {
   background: var(--warn-bg);
   color: var(--warn);
-  border-left: 2px solid var(--warn);
 }
 
 .process-guide__stages {
@@ -2162,15 +2178,11 @@ a:hover {
   font-size: 0.9rem;
 }
 
-.mold-sizer__hint {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--warn);
-}
+
 
 .mold-sizer__hint--full {
   grid-column: 1 / -1;
-  color: var(--text-muted);
+  color: var(--label);
 }
 
 /* ── Pricing & profit ─────────────────────────────────────────────────── */
@@ -2179,15 +2191,7 @@ a:hover {
 }
 
 .pricing-details summary {
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--label);
   margin-bottom: 0.6rem;
-  user-select: none;
 }
 
 .pricing-row {
@@ -2198,21 +2202,39 @@ a:hover {
   margin-bottom: 0.4rem;
 }
 
+/* TWO specs across the row, not four: Archivo for the material's name, mono for every
+   figure and input beside it. The four cells used to be 0.85 Archivo, 0.78 mono, 0.9 mono
+   and 0.8 Archivo, which made one row read as four unrelated kinds of thing. */
 .pricing-row__name {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   overflow-wrap: anywhere;
 }
 
 .pricing-row__unit {
-  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
 }
 
 .pricing-row__grams {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: 0.85rem;
+  color: var(--text-figure);
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* One header naming the columns once. Its analogue in the Formula column labels every
+   numeric cell; here the price and unit columns were unlabelled, so what a number meant
+   depended on remembering a header that did not exist. */
+.pricing-row--head {
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--label);
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.55rem;
 }
 
 .pricing-row__price {
@@ -2256,8 +2278,6 @@ a:hover {
 
 .pricing-hint {
   margin: 0.5rem 0 0;
-  font-size: 0.8rem;
-  color: var(--warn);
 }
 
 .pricing-breakdown {
@@ -2300,9 +2320,6 @@ a:hover {
     justify-content: flex-start;
   }
 
-  .recipe-toolbar__name-input.input {
-    text-align: left;
-  }
 
   .settings-grid,
   .results-grid,
@@ -2338,7 +2355,7 @@ a:hover {
 
 .batch-sheet__meta {
   font-size: 0.85rem;
-  color: #444;
+  color: var(--text-figure);
 }
 
 .batch-sheet__section {
@@ -2348,7 +2365,7 @@ a:hover {
 .batch-sheet__section h2 {
   font-size: 0.95rem;
   margin-bottom: 0.35rem;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--hairline);
   padding-bottom: 0.15rem;
 }
 
@@ -2360,7 +2377,7 @@ a:hover {
 
 .batch-sheet__table th,
 .batch-sheet__table td {
-  border: 1px solid #ccc;
+  border: 1px solid var(--hairline);
   padding: 0.3rem 0.45rem;
   text-align: left;
 }
@@ -2398,7 +2415,7 @@ a:hover {
 }
 
 .batch-sheet__list--error {
-  color: #8b1a1a;
+  color: var(--error);
 }
 
 .batch-sheet__note {
@@ -2416,7 +2433,7 @@ a:hover {
 .batch-sheet__footer {
   margin-top: 1.25rem;
   font-size: 0.75rem;
-  color: #555;
+  color: var(--text-figure);
 }
 
 @media print {
@@ -2465,16 +2482,18 @@ a:hover {
    nothing on screen claims one of them describes the current plan — see the group's own
    comment in DilutionPanel. Styled as small, quiet actions rather than as a segmented
    control, so they do not read as a selection. */
+/* Square hairline on a transparent ground. It was a 999px pill until the button grew a
+   second line, then "a modest radius" — but a modest radius is exactly the rounded
+   container the system rules out, and the documented exceptions are pills, the round
+   InfoTip and round dots. Square still reads as a quiet action rather than a segmented
+   choice, which was the point of dropping the pill. */
 .dilution-preset {
   font: inherit;
   font-size: 0.85rem;
-  padding: 0.3rem 0.7rem;
-  border: 1px solid var(--border);
-  /* Was a 999px pill, when the label was a bare "2:1". Now that the button carries the use
-     its ratio lands in, it is two stacked lines and a stadium shape would bow out around
-     them; a modest radius keeps the same quiet, non-segmented reading. */
-  border-radius: 0.7rem;
-  background: var(--surface);
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--text);
   cursor: pointer;
   display: flex;
@@ -2482,9 +2501,11 @@ a:hover {
   align-items: center;
   gap: 0.05rem;
 }
-/* Tabular figures so "1:1", "2.5:1" and "3:1" align down the row rather than drifting with
-   the width of each glyph. */
+/* Mono, so the tabular figures actually align "1:1" under "2.5:1" — Archivo has no tabular
+   figures, so the tabular-nums here was declaring an intent the face could not honour. */
 .dilution-preset__ratio {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
 }
 /* What the ratio makes. Smaller at full --text-muted, never dimmed with opacity: this is
@@ -2526,57 +2547,66 @@ a:hover {
   color: var(--text-muted);
 }
 
-/* Dilution: intended-use targets. Collapsed by default — it is reference, not a control. */
-.dilution-uses > summary {
-  cursor: pointer;
-}
-/* GUIDANCE, NOT THIS BATCH'S FIGURES. The bands stand open now, which puts advice on the
-   same screen as the recipe's own numbers — so the block is set apart the way the panel's
-   figures never are: its own tinted ground, an accent rule down the edge, and a legend that
-   says outright what it is. A maker scanning the panel should be able to tell at a glance
-   which numbers came from their oils and which are suggestions. */
+/* GUIDANCE, NOT THIS BATCH'S FIGURES — carried by a hairline rule and a labelled legend,
+   which is the device .results-recipe and .results-workability already use twice in this
+   same column. It was briefly a tinted, rounded box with a left stripe: a card, a
+   card-scale tint and an accent rule at once, in an app whose panels are flat by rule.
+   The separation was the point and it survives; the box was never what carried it. */
 .dilution-suggestions {
-  margin: 1rem 0 0.5rem;
-  padding: 0.7rem 0.9rem;
-  background: var(--surface-2);
-  border-left: 3px solid var(--border);
-  border-radius: 0.4rem;
+  margin: 1.6rem 0 0.5rem;
+  padding: 0.85rem 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  border-radius: var(--radius);
 }
 .dilution-suggestions__legend {
-  margin: 0 0 0.35rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.02em;
+  margin: 0 0 0.7rem;
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
-  color: var(--text-muted);
-}
-/* The summary is this block's title now that it opens by default, so it carries the block's
-   weight rather than a disclosure's. */
-.dilution-suggestions .dilution-uses > summary {
-  font-weight: 600;
+  color: var(--label);
 }
 .dilution-uses__list {
   margin: 0.5rem 0 0;
 }
+/* The same row as the figure lists directly above it (.results-recipe__row). */
 .dilution-uses__row {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.15rem 0;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
 }
-.dilution-uses__row dt,
+.dilution-uses__row:last-child {
+  border-bottom: none;
+}
+.dilution-uses__row dt {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+}
 .dilution-uses__row dd {
   margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-figure);
+  font-variant-numeric: tabular-nums;
 }
-.dilution-uses__row--match dt,
-.dilution-uses__row--match dd {
+/* The band the current target falls in, at ink weight — the one row the maker is looking
+   for. The legend above still states these are suggestions, so the emphasis is safe. */
+.dilution-uses__row--match dt {
+  color: var(--text);
   font-weight: 600;
+}
+.dilution-uses__row--match dd {
+  color: var(--text);
+  font-weight: 500;
 }
 
 /* Dilution: collapsed reference notes — where the prose budget sends always-true
    guidance. Same treatment as the intended-use targets above: reference, not a control. */
-.dilution-notes > summary {
-  cursor: pointer;
-}
 .dilution-notes > p {
   margin: 0.5rem 0 0;
 }

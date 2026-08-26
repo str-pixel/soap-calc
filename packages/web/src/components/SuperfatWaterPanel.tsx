@@ -389,7 +389,7 @@ export function SuperfatWaterPanel({
 
             <button
               type="button"
-              className="pcsf__add"
+              className="btn pcsf__add"
               aria-label="Add post-cook superfat oil"
               onClick={addPcsfOil}
             >

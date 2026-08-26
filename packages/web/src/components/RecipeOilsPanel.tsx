@@ -218,7 +218,7 @@ export function RecipeOilsPanel({
           <div className="recipe-table__reconcile">
             {/* Only the status text is a live region — the button must not be part of the
                 announcement, or it re-announces the control on every total change. */}
-            <p className="recipe-table__hint" role="status">
+            <p className="inline-note inline-note--warn" role="status">
               Oils total {formatRecipePercentTotal(lineTotals.totalPercent)} — aim for 100%.
             </p>
             {/* One-tap reconcile for gram-first entry: adopt the current oil weights as the

@@ -2241,7 +2241,7 @@ export function DilutionPanel({
               open={usesOpen}
               onToggle={(e) => setUsesOpen((e.currentTarget as HTMLDetailsElement).open)}
             >
-              <summary>
+              <summary className="disclosure__summary">
                 {suitedUses.length > 0
                   ? `At ${formatConcentrationPercent(resolvedConcentrationPercent)}% this suits ${suitedUses
                       .map((u) => u.label.toLowerCase())
@@ -2330,7 +2330,7 @@ export function DilutionPanel({
           finishedVolumeMl is null-safe and simply gates it off while there is nothing to
           convert. */}
       <details className="results-hint dilution-notes">
-        <summary>Dilution notes</summary>
+        <summary className="disclosure__summary">Dilution notes</summary>
         {/* This paragraph owns the RATIOS and nothing else. Three sentences, three claims.
             It renders unconditionally now, because the presets it accounts for do: the mode
             gate it carried was the ratio MODE's, and the presets are part of the plan row in

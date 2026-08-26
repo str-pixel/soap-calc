@@ -89,7 +89,7 @@ export function MoldSizerPanel({
               <span>Cylinder</span>
             </label>
           </div>
-          <p className="mold-sizer__hint mold-sizer__hint--full">
+          <p className="inline-note mold-sizer__hint--full">
             For irregular molds, fill with water and measure volume, or weigh a test pour.
           </p>
           {input.moldShape === 'cylinder' ? (
@@ -174,7 +174,7 @@ export function MoldSizerPanel({
               onChange={(e) => onChange({ ...input, wasteFactorPercent: e.target.value })}
             />
           </label>
-          <p className="mold-sizer__hint mold-sizer__hint--full">
+          <p className="inline-note mold-sizer__hint--full">
             Typical shrinkage or trimming allowance is 5–10%. Leave at 0 if the mold size already
             accounts for it.
           </p>
@@ -215,7 +215,7 @@ export function MoldSizerPanel({
               onChange={(e) => onChange({ ...input, wasteFactorPercent: e.target.value })}
             />
           </label>
-          <p className="mold-sizer__hint mold-sizer__hint--full">
+          <p className="inline-note mold-sizer__hint--full">
             Typical shrinkage or trimming allowance is 5–10%. Leave at 0 if the mold size already
             accounts for it.
           </p>
@@ -223,7 +223,7 @@ export function MoldSizerPanel({
       )}
 
       {wasteFactorExceedsMax(input.wasteFactorPercent) && (
-        <p className="mold-sizer__hint" role="alert">
+        <p className="inline-note inline-note--warn" role="alert">
           Shrinkage / waste % above {MAX_WASTE_FACTOR_PERCENT} isn&apos;t supported — lower it
           to see a suggestion.
         </p>
@@ -242,7 +242,7 @@ export function MoldSizerPanel({
             </span>
           </p>
           {applicableOilGrams <= 0 ? (
-            <p className="mold-sizer__hint">Suggested oil weight is too small to apply.</p>
+            <p className="inline-note inline-note--warn">Suggested oil weight is too small to apply.</p>
           ) : (
             <button
               type="button"

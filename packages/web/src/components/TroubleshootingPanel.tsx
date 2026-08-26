@@ -19,7 +19,7 @@ export function TroubleshootingPanel({ process }: TroubleshootingPanelProps) {
       <div className="troubleshooting-list">
         {entries.map((entry) => (
           <details className="troubleshooting-entry" key={entry.symptom}>
-            <summary className="troubleshooting-entry__summary">{entry.symptom}</summary>
+            <summary className="disclosure__summary troubleshooting-entry__summary">{entry.symptom}</summary>
             <p className="results-hint">
               <strong>Cause:</strong> {entry.cause}
             </p>

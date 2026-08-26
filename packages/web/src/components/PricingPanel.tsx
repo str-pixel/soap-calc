@@ -78,12 +78,23 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
       );
 
   return (
-    <section className="panel">
+    /* panel--results: this panel presents results, and the class is what turns the hero
+       figure below accent — the same treatment the Recipe view's required-lye number gets,
+       for the same reason. Its other declarations are no-ops over .panel. */
+    <section className="panel panel--results">
       <h2 className="panel__title">Pricing &amp; profit</h2>
       <p className="panel__subtitle">Batch cost and a suggested price from materials, labour, and overhead</p>
 
       <details className="pricing-details" open>
-        <summary>Materials</summary>
+        <summary className="disclosure__summary">Materials</summary>
+        {/* aria-hidden: every input in the rows below already carries its own aria-label
+            ("Price for Olive oil"), so the visible header must not add a second name. */}
+        <div className="pricing-row pricing-row--head" aria-hidden="true">
+          <span>Material</span>
+          <span style={{ textAlign: 'right' }}>Weight</span>
+          <span style={{ textAlign: 'right' }}>Price</span>
+          <span>Per</span>
+        </div>
         {context.oilLines.map((o) =>
           <div key={o.key}>
             {priceRow(o.name, o.grams, bookEntry(profile.oilPrices, o.oilId), (patch) => setEntry('oilPrices', o.oilId, patch))}
@@ -111,14 +122,14 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
           />
         </label>
         {incomplete && (
-          <p className="pricing-hint" data-testid="price-incomplete">
+          <p className="inline-note inline-note--warn pricing-hint" data-testid="price-incomplete">
             Enter a price for every material — oils, additives, and the lye — for an accurate cost.
           </p>
         )}
       </details>
 
       <details className="pricing-details">
-        <summary>Labour &amp; overhead</summary>
+        <summary className="disclosure__summary">Labour &amp; overhead</summary>
         <div className="settings-grid">
           <label className="field">
             Labour (minutes per batch)
@@ -202,13 +213,39 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
           )}
         </div>
 
-        <dl className="pricing-results">
-          <dt>Cost per {profile.outputUnit}</dt><dd data-testid="cost-per-unit">{money(result.costPerUnit)}</dd>
-          <dt>Cost per batch</dt><dd>{money(result.cogsBatch)}</dd>
-          <dt>Suggested price per {profile.outputUnit}</dt><dd>{money(result.suggestedPricePerUnit)}</dd>
-          <dt>Profit per {profile.outputUnit}</dt><dd>{money(result.profitPerUnit)}</dd>
-          <dt>Margin</dt><dd>{pct(result.marginPercent)}</dd>
-          <dt>Markup</dt><dd>{pct(result.markupPercent)}</dd>
+        {/* The app's figure list, not a second one. This was .pricing-results: sentence-case
+            Archivo labels and right-aligned figures with no colour declared, so the money
+            figures inherited full ink and were the only figures in the app darker than
+            --text-figure. .results-grid already pairs a micro-label with a mono figure,
+            handles tabular figures and collapses to one column at 700px.
+
+            The suggested price is the HERO. Every figure sat at 0.95rem before, which made
+            "markup" exactly as loud as the number the whole panel exists to produce. */}
+        <dl className="results-grid">
+          <div className="results-grid__item results-grid__item--primary">
+            <dt>Suggested price per {profile.outputUnit}</dt>
+            <dd>{money(result.suggestedPricePerUnit)}</dd>
+          </div>
+          <div className="results-grid__item">
+            <dt>Cost per {profile.outputUnit}</dt>
+            <dd data-testid="cost-per-unit">{money(result.costPerUnit)}</dd>
+          </div>
+          <div className="results-grid__item">
+            <dt>Cost per batch</dt>
+            <dd>{money(result.cogsBatch)}</dd>
+          </div>
+          <div className="results-grid__item">
+            <dt>Profit per {profile.outputUnit}</dt>
+            <dd>{money(result.profitPerUnit)}</dd>
+          </div>
+          <div className="results-grid__item">
+            <dt>Margin</dt>
+            <dd>{pct(result.marginPercent)}</dd>
+          </div>
+          <div className="results-grid__item">
+            <dt>Markup</dt>
+            <dd>{pct(result.markupPercent)}</dd>
+          </div>
         </dl>
         {breakdown && (
           <p className="pricing-breakdown" data-testid="pricing-breakdown">{breakdown}</p>

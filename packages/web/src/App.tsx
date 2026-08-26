@@ -587,17 +587,6 @@ export default function App() {
           />
 
           <div className="recipe-toolbar">
-          <label className="recipe-toolbar__name">
-            <span className="sr-only">Recipe name</span>
-            <input
-              type="text"
-              className="input recipe-toolbar__name-input"
-              value={recipeName}
-              onChange={(e) => setRecipeName(e.target.value)}
-              placeholder="Recipe name"
-            />
-          </label>
-
           <div className="recipe-toolbar__actions">
             <ActionsMenu
               onNew={inputs.handleNewRecipe}
@@ -630,6 +619,26 @@ export default function App() {
           )}
           </div>
         </div>
+
+        {/* THE RECIPE NAME, out of the masthead's right-hand stack. It was Archivo 700 at
+            1.25rem, right-aligned directly beneath the right-aligned tagline — two similar
+            Archivo lines stacking into one ambiguous block, at a size that is not a step in
+            the type scale. Left-aligned under its own micro-label now, at a size that is.
+
+            aria-label keeps the spoken name "Recipe name" while the visible antecedent
+            reads "Recipe": Label-in-Name (WCAG 2.5.3) wants the accessible name to CONTAIN
+            the visible text, which it does. Same pattern as PricingPanel's "Price per". */}
+        <label className="recipe-name">
+          <span className="micro-label">Recipe</span>
+          <input
+            type="text"
+            className="input recipe-toolbar__name-input"
+            aria-label="Recipe name"
+            value={recipeName}
+            onChange={(e) => setRecipeName(e.target.value)}
+            placeholder="Recipe name"
+          />
+        </label>
       </header>
 
       {view === 'recipe' ? (

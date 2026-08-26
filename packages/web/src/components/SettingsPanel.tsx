@@ -189,7 +189,7 @@ export function SettingsPanel({
       </div>
 
       <details className="settings-advanced">
-        <summary className="settings-advanced__summary">Advanced</summary>
+        <summary className="disclosure__summary settings-advanced__summary">Advanced</summary>
 
         <MoldSizerPanel
           input={moldSizerInput}

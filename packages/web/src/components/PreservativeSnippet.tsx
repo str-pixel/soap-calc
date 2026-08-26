@@ -140,7 +140,7 @@ export function PreservativeSnippet({
       {/* An h2 inside the summary keeps this titled like its sibling panels (same
           heading level and .panel__title look) while the whole line stays the
           disclosure control. */}
-      <summary className="preservative__summary">
+      <summary className="disclosure__summary preservative__summary">
         <h2 className="panel__title">Preservative</h2>
       </summary>
       <p className="panel__subtitle">

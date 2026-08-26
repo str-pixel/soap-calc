@@ -118,7 +118,7 @@ export function ActionsMenu({ onNew, onExport, onPrint, onImport, canPrint }: Ac
       <button
         ref={triggerRef}
         type="button"
-        className={`actions-menu__trigger${open ? ' actions-menu__trigger--open' : ''}`}
+        className={`btn actions-menu__trigger${open ? ' actions-menu__trigger--open' : ''}`}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? 'actions-menu-list' : undefined}
