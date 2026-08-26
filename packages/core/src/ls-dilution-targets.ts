@@ -28,8 +28,9 @@ export type LsDilutionTarget = {
  * No "shampoo" entry here, and deliberately so: liquid soap is not recommended for hair — the
  * alkaline pH roughens the cuticle — so a shampoo dilution target is absent rather than merely
  * unlisted. The panel says so in prose, directly under its render of this list
- * (DilutionPanel.tsx's collapsed uses note, "Liquid soap itself, thickened or not, is not
- * recommended for hair").
+ * (DilutionPanel.tsx's suggested-targets note, "Liquid soap itself, thickened or not, is not
+ * recommended for hair"). That note stands open on the panel now, so the absence is answered
+ * on screen rather than behind a disclosure.
  */
 export const LS_DILUTION_TARGETS: readonly LsDilutionTarget[] = [
   { key: 'baby', label: 'Baby or gentle soap', low: 10, high: 15 },

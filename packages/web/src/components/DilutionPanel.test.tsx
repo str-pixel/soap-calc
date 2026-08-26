@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { type ComponentProps } from 'react';
 import { DilutionPanel } from './DilutionPanel';
 import { calculateDilution, type DilutionResult } from '@soap-calc/core';
@@ -843,22 +843,49 @@ describe('each intended use carries the water:paste ratio that reaches it', () =
     expect(list.open).toBe(true);
   });
 
-  it('stays shut once the maker shuts it, through the re-render a keystroke causes', () => {
-    // The panel re-renders on every keystroke in the target field. A bare `open` attribute
-    // would reassert itself; the maker's own collapse has to outlive it.
-    const { rerender } = renderPanel();
-    const list = document.querySelector('details.dilution-uses') as HTMLDetailsElement;
-    fireEvent.click(list.querySelector('summary')!);
-    expect(list.open).toBe(false);
-    rerender(
+  it('stays shut once the maker shuts it, across the unmount an emptied target causes', async () => {
+    // The list lives inside the panel's `dilution ? … : …` branch, so clearing the target
+    // field nulls `dilution` and UNMOUNTS it. A bare `open` attribute comes back open on the
+    // remount, throwing away a collapse the maker chose; the state outside the branch is
+    // what survives it.
+    //
+    // An earlier version of this test rerendered with a different percentage and claimed to
+    // pin the same thing. It pinned nothing: React never rewrites an unchanged `open` prop,
+    // and jsdom fires `toggle` on a timeout this test did not await, so it passed with the
+    // state deleted entirely. Verified by deleting it — hence the remount, and the await.
+    const panel = (props: Record<string, unknown> = {}) => (
       <DilutionPanel
         {...POT}
-        soapConcentrationPercent="31"
+        soapConcentrationPercent="30"
         onSoapConcentrationChange={() => {}}
         weightUnit="g"
-      />,
+        {...props}
+      />
     );
-    expect((document.querySelector('details.dilution-uses') as HTMLDetailsElement).open).toBe(false);
+    const { rerender } = render(panel());
+    const list = () => document.querySelector('details.dilution-uses') as HTMLDetailsElement | null;
+    fireEvent.click(list()!.querySelector('summary')!);
+    await waitFor(() => expect(list()!.open).toBe(false));
+
+    rerender(panel({ dilution: null }));
+    expect(list()).toBeNull(); // genuinely unmounted, not merely hidden
+    rerender(panel());
+    expect(list()!.open).toBe(false);
+  });
+
+  it('reads as a suggestion, in its own region rather than loose among the figures', () => {
+    renderPanel();
+    const region = screen.getByRole('region', { name: /suggested/i });
+    expect(region.querySelector('details.dilution-uses')).toBeTruthy();
+    expect(region.textContent).toContain('Hand soap');
+  });
+
+  it('does not invite a click to reveal what is already on screen', () => {
+    renderPanel({ soapConcentrationPercent: '55', dilution: { ...POT.dilution, soapConcentrationPercent: 55 } });
+    // The no-match summary used to end "— see the usual targets", written when the table it
+    // pointed at was collapsed behind it. The table is two lines below now.
+    const summary = screen.getByText(/no common use calls for 55%/i);
+    expect(summary.textContent).not.toMatch(/see the usual targets/i);
   });
 
   it('offers no ratio for a use this paste cannot reach', () => {

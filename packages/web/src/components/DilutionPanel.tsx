@@ -336,9 +336,10 @@ export function DilutionPanel({
   const [presetApplied, setPresetApplied] = useState<{ ratio: string; percent: number } | null>(
     null,
   );
-  // The intended-use bands stand open (see the <details> below for why). Held here rather
-  // than left to the DOM so a maker's own collapse survives the re-render every keystroke in
-  // the target field causes.
+  // The intended-use bands stand open (see the <details> below for why). Held here, outside
+  // the `dilution ?` branch that renders them, so a maker's own collapse survives the
+  // UNMOUNT that emptying the target field causes — not the re-render, which would not have
+  // disturbed a bare attribute at all.
   const [usesOpen, setUsesOpen] = useState(true);
   // THE RESOLUTION (spec §1), computed from the same five inputs the view model hands
   // `resolveDilution` — `dilution`, the record, the anhydrous soap, the corrected paste, the
@@ -2225,60 +2226,76 @@ export function DilutionPanel({
               speak in. Behind a summary the correlation between the two was reachable only by
               a maker who already suspected it was there.
 
-              State, not a bare `open` attribute: this panel re-renders on every keystroke in
-              the target field, and a maker who shuts the list has to have it stay shut. */}
-          <details
-            className="results-hint dilution-uses"
-            open={usesOpen}
-            onToggle={(e) => setUsesOpen((e.currentTarget as HTMLDetailsElement).open)}
-          >
-            <summary>
-              {suitedUses.length > 0
-                ? `At ${formatConcentrationPercent(resolvedConcentrationPercent)}% this suits ${suitedUses
-                    .map((u) => u.label.toLowerCase())
-                    .join(', ')}`
-                : `No common use calls for ${formatConcentrationPercent(resolvedConcentrationPercent)}% — see the usual targets`}
-            </summary>
-            <dl className="dilution-uses__list">
-              {LS_DILUTION_TARGETS.map((t) => (
-                <div
-                  key={t.key}
-                  className={
-                    suitedUses.some((u) => u.key === t.key)
-                      ? 'dilution-uses__row dilution-uses__row--match'
-                      : 'dilution-uses__row'
-                  }
-                >
-                  <dt>{t.label}</dt>
-                  <dd>
-                    {t.low === t.high ? `${t.low}%` : `${t.low}–${t.high}%`} soap
-                    {(() => {
-                      // The ratio the "Starting points" buttons above speak in, for the pot
-                      // in force — so a maker can see that 1:1 is the dish-soap end and that
-                      // the 10–15% uses are past every button on offer.
-                      //
-                      // Set in the row's own type, not dimmed: this is a pour figure, the
-                      // same band the percentage beside it states, and the maker acts on it.
-                      // It was briefly opacity: 0.75, which composited #666 on #f0f0f0 down
-                      // to 3.07:1 — under AA at this size, and the only opacity in the
-                      // stylesheet not on a disabled control. The "·" carries the separation.
-                      const ratios =
-                        pasteGrams === null
-                          ? null
-                          : ratioRangeLabelFor(dilution.anhydrousGrams, pasteGrams, t);
-                      return ratios ? ` · ${ratios}` : null;
-                    })()}
-                    {t.note ? <span className="results-excluded"> {t.note}</span> : null}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <p>
-              Diluting further and thickening with salt is the cheaper way to a thick soap —
-              water costs a fraction of what the oils did. Liquid soap itself, thickened or
-              not, is not recommended for hair.
+              State, not a bare `open` attribute — but NOT because a re-render would reset it
+              (React leaves an unchanged `open` prop alone, so a plain attribute survives
+              every keystroke here). Because this whole block sits inside the `dilution ?`
+              branch: emptying the target field nulls `dilution` and UNMOUNTS the list, and a
+              bare attribute would bring it back open over a collapse the maker chose. The
+              state lives outside the branch, so it outlives the unmount. */}
+          <section className="dilution-suggestions" aria-label="Suggested dilution targets">
+            <p className="dilution-suggestions__legend">
+              Suggested targets — guidance, not part of the recipe
             </p>
-          </details>
+            <details
+              className="results-hint dilution-uses"
+              open={usesOpen}
+              onToggle={(e) => setUsesOpen((e.currentTarget as HTMLDetailsElement).open)}
+            >
+              <summary>
+                {suitedUses.length > 0
+                  ? `At ${formatConcentrationPercent(resolvedConcentrationPercent)}% this suits ${suitedUses
+                      .map((u) => u.label.toLowerCase())
+                      .join(', ')}`
+                  : // No "— see the usual targets" any more: that pointed at a table this
+                    // summary used to hide, and the table is now printed directly below it.
+                    `No common use calls for ${formatConcentrationPercent(resolvedConcentrationPercent)}%`}
+              </summary>
+              <dl className="dilution-uses__list">
+                {LS_DILUTION_TARGETS.map((t) => (
+                  <div
+                    key={t.key}
+                    className={
+                      suitedUses.some((u) => u.key === t.key)
+                        ? 'dilution-uses__row dilution-uses__row--match'
+                        : 'dilution-uses__row'
+                    }
+                  >
+                    <dt>{t.label}</dt>
+                    <dd>
+                      {t.low === t.high ? `${t.low}%` : `${t.low}–${t.high}%`} soap
+                      {(() => {
+                        // The ratio the "Starting points" buttons above speak in, for the pot
+                        // in force — so a maker can see that 1:1 is the dish-soap end and that
+                        // the 10–15% uses are past every button on offer.
+                        //
+                        // Set in the row's own type, not dimmed: this is a pour figure, the
+                        // same band the percentage beside it states, and the maker acts on it.
+                        // It was briefly opacity: 0.75, which composited #666 on #f0f0f0 down
+                        // to 3.07:1 — under AA at this size, and the only opacity in the
+                        // stylesheet not on a disabled control. The "·" carries the separation.
+                        const ratios =
+                          pasteGrams === null
+                            ? null
+                            : ratioRangeLabelFor(dilution.anhydrousGrams, pasteGrams, t);
+                        return ratios ? ` · ${ratios}` : null;
+                      })()}
+                      {t.note ? <span className="results-excluded"> {t.note}</span> : null}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {/* Always true, and now always visible — which is what the prose budget files
+                  behind a disclosure. It keeps its place because the region around it is
+                  marked as guidance rather than as this batch's figures: the budget exists so
+                  advice cannot be mistaken for feedback about the state, and the legend above
+                  does that job here where the disclosure used to. */}
+              <p>
+                Diluting further and thickening with salt is the cheaper way to a thick soap —
+                water costs a fraction of what the oils did. Liquid soap itself, thickened or
+                not, is not recommended for hair.
+              </p>
+            </details>
+          </section>
         </>
       ) : (
         /* ONE WORDING, because there is one control: "a target concentration (1–99%)" is the

@@ -2494,6 +2494,11 @@ a:hover {
   font-size: 0.7rem;
   line-height: 1.25;
   color: var(--text-muted);
+  /* A ratio can land inside four bands at once (the 10–15% cluster, five at exactly 15%),
+     and every match is named. Without a cap that one button stretches the whole row; with
+     it the names wrap and the four buttons keep their shape. */
+  max-width: 9rem;
+  text-align: center;
 }
 .dilution-preset:hover:not(:disabled) {
   border-color: var(--accent);
@@ -2524,6 +2529,30 @@ a:hover {
 /* Dilution: intended-use targets. Collapsed by default — it is reference, not a control. */
 .dilution-uses > summary {
   cursor: pointer;
+}
+/* GUIDANCE, NOT THIS BATCH'S FIGURES. The bands stand open now, which puts advice on the
+   same screen as the recipe's own numbers — so the block is set apart the way the panel's
+   figures never are: its own tinted ground, an accent rule down the edge, and a legend that
+   says outright what it is. A maker scanning the panel should be able to tell at a glance
+   which numbers came from their oils and which are suggestions. */
+.dilution-suggestions {
+  margin: 1rem 0 0.5rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface-2);
+  border-left: 3px solid var(--border);
+  border-radius: 0.4rem;
+}
+.dilution-suggestions__legend {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+/* The summary is this block's title now that it opens by default, so it carries the block's
+   weight rather than a disclosure's. */
+.dilution-suggestions .dilution-uses > summary {
+  font-weight: 600;
 }
 .dilution-uses__list {
   margin: 0.5rem 0 0;
