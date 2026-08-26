@@ -189,3 +189,77 @@ test('no rounded corners survive outside the documented exceptions', async ({ pa
 
   expect(problems, 'browser complaints while auditing radii').toEqual([]);
 });
+
+test('every boxless figure field fits the values this app actually holds', async ({ page }) => {
+  const problems = watchForErrors(page);
+  await page.goto('/');
+
+  // The ink rule replaced a bordered box that was width:100% in a 1fr column, so nothing
+  // used to clip. A fixed width can, and the starter recipe's own total oil is 1,000 g —
+  // four digits — with kg/oz modes adding a decimal point on top. Measured, not eyeballed:
+  // a clipped input still reports its full value, so only scrollWidth catches this.
+  const fits = async (sel: string, value: string) => {
+    const el = page.locator(sel).first();
+    await el.fill(value);
+    return el.evaluate((n: HTMLInputElement) => ({ c: n.clientWidth, s: n.scrollWidth }));
+  };
+
+  for (const [sel, value] of [
+    ['input[aria-label^="Weight in"]', '1000'],
+    ['input[aria-label^="Weight in"]', '1234.5'],
+    ['input[aria-label^="Percent for"]', '100'],
+  ] as const) {
+    const m = await fits(sel, value);
+    expect(m.s, `${sel} clips "${value}" (${m.s}px of content in ${m.c}px)`).toBeLessThanOrEqual(m.c);
+  }
+
+  // Spin buttons steal width from a field this narrow and read as chrome on a rule that is
+  // meant to be bare — .slider-field__value already suppresses them for the same reason.
+  const spin = await page
+    .locator('input[aria-label^="Weight in"]')
+    .first()
+    .evaluate((n) => getComputedStyle(n).appearance);
+  expect(spin, 'the boxless figure should not carry spinners').toBe('textfield');
+
+  expect(problems, 'browser complaints while measuring figure fields').toEqual([]);
+});
+
+test('a brand-new additive keeps its remove control on the ingredient line', async ({ page }) => {
+  const problems = watchForErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: /^\+ Add$/ }).first().click();
+
+  // A new line has no catalog entry yet, so it shows the custom Name field — a THIRD child
+  // in the row's grid. Auto-placement put [type | Name] on row 1 and dropped the × to row 2
+  // at the left edge, which is the state a maker meets every time they press Add.
+  const names = page.locator('.additive-list__names').last();
+  await names.scrollIntoViewIfNeeded();
+  const geom = await names.evaluate((el) => {
+    const kids = Array.from(el.children).map((c) => c.getBoundingClientRect());
+    const btn = el.querySelector('button')!.getBoundingClientRect();
+    const select = el.querySelector('select')!.getBoundingClientRect();
+    return { btnY: Math.round(btn.y), selectY: Math.round(select.y),
+             btnX: Math.round(btn.x), selectX: Math.round(select.x), n: kids.length };
+  });
+  expect(geom.n, 'the custom-name field makes this a three-child row').toBe(3);
+  expect(Math.abs(geom.btnY - geom.selectY), 'the × shares the type row').toBeLessThanOrEqual(20);
+  expect(geom.btnX, 'the × sits to the RIGHT of the type select').toBeGreaterThan(geom.selectX);
+
+  expect(problems, 'browser complaints on a new additive row').toEqual([]);
+});
+
+test('the preset rows line up with the header that names their columns', async ({ page }) => {
+  const problems = watchForErrors(page);
+  await page.goto('/');
+  await page.getByRole('tab', { name: /liquid soap/i }).click();
+
+  const head = (await page.locator('.dilution-presets__head span').last().boundingBox())!;
+  const cell = (await page.locator('.dilution-preset__sets').first().boundingBox())!;
+  expect(
+    Math.abs(head.x + head.width - (cell.x + cell.width)),
+    'the SETS header and the figures under it must share a right edge',
+  ).toBeLessThanOrEqual(1);
+
+  expect(problems, 'browser complaints on the preset list').toEqual([]);
+});
+

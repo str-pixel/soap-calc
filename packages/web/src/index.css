@@ -1084,6 +1084,12 @@ details[open] > .disclosure__summary::before {
   align-self: center;
 }
 
+/* A custom additive has no catalog name, so it types one — on its own full-width row under
+   the type select, rather than as a third cell fighting the × for row one. */
+.additive-list__custom-name {
+  grid-column: 1 / -1;
+}
+
 /* The amount lifts out of the dose grid onto its own labelled figure line, so a number in
    this panel is treated exactly as a number in the Formula panel directly above it. */
 .additive-list__amount {
@@ -1206,7 +1212,12 @@ details[open] > .disclosure__summary::before {
    Reserved for NUMERICS. Text and enum inputs keep the box; the rule is what says
    "a figure goes here". */
 .figure-field.input {
-  width: 3.6rem;
+  /* Sized for what this app actually holds, not for the mockup's three-digit sample: the
+     starter recipe's own total oil is 1,000 g, and kg/oz modes add a decimal point on top
+     ("1234.5"). At 3.6rem a four-digit weight silently CLIPPED — the value was still there,
+     still submitted, just not readable. A bordered box never had the problem because it was
+     width:100% in its own column; a fixed width has to earn it. */
+  width: 5.2rem;
   border: none;
   border-bottom: 1.5px solid var(--text);
   border-radius: var(--radius);
@@ -1220,9 +1231,22 @@ details[open] > .disclosure__summary::before {
   color: var(--text);
 }
 
-/* Four digits and a thousands separator (a measured paste weight). */
+/* A five-digit batch paste weight. */
 .figure-field--wide.input {
-  width: 4.8rem;
+  width: 6rem;
+}
+
+/* No spinners. They eat a third of a field this narrow, and they are chrome on a rule whose
+   whole point is to be bare — .slider-field__value suppresses them for the same reason. */
+.figure-field.input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.figure-field.input::-webkit-outer-spin-button,
+.figure-field.input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .figure-field.input:focus {
@@ -2560,25 +2584,40 @@ details[open] > .disclosure__summary::before {
   margin-bottom: 0.75rem;
 }
 
+/* THE HEADER AND THE ROWS MUST BE THE SAME BOX, or the columns it names drift from the
+   figures under them. Two things were needed for that:
+   a FIXED last track — these are separate grids, so an `auto` column sizes to each one's own
+   content ("Sets" at 0.62rem against "36.7%" at 0.85rem mono), which put the header 40px
+   inside the figures; 3.6rem fits "100.0%", the longest the 1–99 clamp and 1 dp can make.
+   And the same inset on both: the row bleeds 0.35rem each side so its hover band runs past
+   the text, and the header has to bleed with it. A <button> is shrink-to-fit even as a grid,
+   so the width is explicit — dropping it made the row narrower than its own parent. */
 .dilution-presets__head,
 .dilution-preset {
   display: grid;
-  grid-template-columns: 3.4rem 1fr auto;
+  grid-template-columns: 3.4rem 1fr 3.6rem;
   gap: 0.75rem;
+  width: calc(100% + 0.7rem);
+  margin-inline: -0.35rem;
+  padding-inline: 0.35rem;
 }
 
 .dilution-presets__head {
   font-family: var(--font-mono);
+  padding-bottom: 0.4rem;
   font-size: var(--label-size);
   letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
   border-bottom: 1px solid var(--hairline);
-  padding-bottom: 0.4rem;
 }
 
 .dilution-preset {
-  width: 100%;
+  /* No width: 100%. Paired with the negative margin below it made the row 100% of the
+     parent shifted left, so the hover band bled past the left edge and stopped short of the
+     right one — the SETS figures ended 11px inside the header naming them. A block-level
+     button fills the parent on its own, and the negative margin then bleeds both sides
+     equally, which is what the inset padding is for. */
   appearance: none;
   border: 0;
   border-bottom: 1px solid var(--border);
@@ -2586,8 +2625,7 @@ details[open] > .disclosure__summary::before {
   background: transparent;
   text-align: left;
   align-items: baseline;
-  padding: 0.55rem 0.35rem;
-  margin: 0 -0.35rem;
+  padding-block: 0.55rem;
   font: inherit;
   cursor: pointer;
   transition: background 0.15s;

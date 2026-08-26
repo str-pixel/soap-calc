@@ -1255,7 +1255,13 @@ export function DilutionPanel({
                 if (percent === null) return;
                 onSoapConcentrationChange(String(percent));
               }}
-              aria-label={`${preset}:1 — sets soap concentration to ${sets}`}
+              // With no oils there is no figure to promise, and "sets soap concentration
+              // to —" is not a sentence. The row is disabled in that state anyway.
+              aria-label={
+                percent === null
+                  ? `${preset}:1 water to paste`
+                  : `${preset}:1 — sets soap concentration to ${sets}`
+              }
             >
               <span className="dilution-preset__ratio">{preset}:1</span>
               <span className="dilution-preset__uses">

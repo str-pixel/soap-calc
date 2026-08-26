@@ -261,8 +261,23 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     ))}
                   </select>
                 </label>
+                {/* The × sits on the ingredient, matching the oil rows in the panel above:
+                    the control that removes a line belongs beside the line it removes.
+                    DIRECTLY AFTER THE TYPE SELECT, so grid auto-placement keeps it in row
+                    one. Placed after the custom-name field it took the second cell of row
+                    one instead, dropping the × to a row of its own at the left edge — the
+                    state every newly added additive is in, since a new line has no catalog
+                    entry and therefore always shows that field. */}
+                <button
+                  type="button"
+                  className="btn btn--icon"
+                  onClick={() => removeLine(line.key)}
+                  aria-label={`Remove ${rowName}`}
+                >
+                  ×
+                </button>
                 {showNameField && (
-                  <label className="field">
+                  <label className="field additive-list__custom-name">
                     <span className="sr-only">Name</span>
                     <input
                       type="text"
@@ -274,16 +289,6 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     />
                   </label>
                 )}
-                {/* The × sits on the ingredient, matching the oil rows in the panel above:
-                    the control that removes a line belongs beside the line it removes. */}
-                <button
-                  type="button"
-                  className="btn btn--icon"
-                  onClick={() => removeLine(line.key)}
-                  aria-label={`Remove ${rowName}`}
-                >
-                  ×
-                </button>
                 </div>
                 {/* The amount is a figure, so it takes the figure treatment — the same one
                     an oil's weight takes one panel up. Dose mode and stage are enums and
@@ -297,7 +302,8 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                       min={0}
                       max={line.unit === 'ppt' ? 1000 : 100}
                       step={0.1}
-                      placeholder={line.unit === 'ppt' ? 'ppt' : '%'}
+                      // No placeholder: the unit is a visible suffix after the field now, so
+                      // a "%" ghost inside an empty one just read "% %".
                       value={line.amount}
                       onChange={(e) => updateLine(line.key, { amount: e.target.value })}
                       aria-label={`Amount for ${rowName}`}
