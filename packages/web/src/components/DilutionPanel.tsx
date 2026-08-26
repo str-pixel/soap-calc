@@ -2219,13 +2219,17 @@ export function DilutionPanel({
                       // The ratio the "Starting points" buttons above speak in, for the pot
                       // in force — so a maker can see that 1:1 is the dish-soap end and that
                       // the 10–15% uses are past every button on offer.
+                      //
+                      // Set in the row's own type, not dimmed: this is a pour figure, the
+                      // same band the percentage beside it states, and the maker acts on it.
+                      // It was briefly opacity: 0.75, which composited #666 on #f0f0f0 down
+                      // to 3.07:1 — under AA at this size, and the only opacity in the
+                      // stylesheet not on a disabled control. The "·" carries the separation.
                       const ratios =
                         pasteGrams === null
                           ? null
                           : ratioRangeLabelFor(dilution.anhydrousGrams, pasteGrams, t);
-                      return ratios ? (
-                        <span className="dilution-uses__ratio"> · {ratios}</span>
-                      ) : null;
+                      return ratios ? ` · ${ratios}` : null;
                     })()}
                     {t.note ? <span className="results-excluded"> {t.note}</span> : null}
                   </dd>

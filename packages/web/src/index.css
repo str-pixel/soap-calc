@@ -2522,11 +2522,6 @@ a:hover {
 .dilution-uses__row--match dd {
   font-weight: 600;
 }
-/* The same band as a water:paste ratio — the scale the "Starting points" buttons speak in.
-   Secondary to the percentage it restates, never its own column. */
-.dilution-uses__ratio {
-  opacity: 0.75;
-}
 
 /* Dilution: collapsed reference notes — where the prose budget sends always-true
    guidance. Same treatment as the intended-use targets above: reference, not a control. */
