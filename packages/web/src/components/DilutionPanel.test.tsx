@@ -767,6 +767,84 @@ describe('intended-use dilution targets', () => {
   });
 });
 
+describe('each intended use carries the water:paste ratio that reaches it', () => {
+  // The two scales the panel offers were derived from different places and never met: the
+  // "Starting points" buttons are water:paste ratios, the uses list is % soap, and a maker
+  // reading one had no way to see where the other landed. Same pot for both, so each use can
+  // state its own starting point.
+  //
+  // 1,200 g anhydrous + 400 g cook water = a 1,600 g pot, the fixture this file already uses
+  // for the preset arithmetic. At 15% the solution is 8,000 g, so 6,400 g of water — 4:1. At
+  // 30% it is 4,000 g, so 2,400 g — 1.5:1. General hand soap is 15–30%, so it spans them.
+  const POT = {
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
+      dilutionWaterGrams: 2400, glycerinGrams: 100, soapConcentrationPercent: 30,
+      targetExceedsPaste: false,
+    },
+    cookWaterGrams: 400,
+  };
+
+  const renderPanel = (props: Record<string, unknown> = {}) =>
+    render(
+      <DilutionPanel
+        {...POT}
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={() => {}}
+        weightUnit="g"
+        {...props}
+      />,
+    );
+
+  /** The <dd> beside a use's label in the collapsed reference list. */
+  const useRow = (label: string): string => {
+    const dt = screen.getByText(label);
+    return dt.parentElement?.querySelector('dd')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+  };
+
+  it('states the ratio range beside the percentage range', () => {
+    renderPanel();
+    // Ascending by ratio, which inverts the percentages: more water is a thinner soap.
+    expect(useRow('General hand soap')).toContain('1.5:1 – 4:1');
+  });
+
+  it('reaches the 10–15% uses no preset button can', () => {
+    renderPanel();
+    // The whole point of showing both scales: 1:1 through 3:1 cannot get here, and until the
+    // ratio was on the row nothing on screen said what could.
+    expect(useRow('Baby or gentle soap')).toContain('4:1 – 6.5:1');
+  });
+
+  it('prints a sub-1 ratio honestly where the use wants less water than paste', () => {
+    renderPanel();
+    // Dish soap at 45% is a 2,667 g solution from a 1,600 g pot — 1,067 g of water, 0.7:1.
+    expect(useRow('Dish soap')).toContain('0.7:1 – 1.1:1');
+  });
+
+  it('takes the pot from the scale when a measurement describes one', () => {
+    // A weighed 2,000 g pot, not the recipe's computed 1,600 g: at 30% the same 4,000 g
+    // solution now needs 2,000 g of water, so hand soap's tight end moves 1.5:1 → 1:1.
+    renderPanel({ measuredPasteGrams: '2000', wholeBatchPasteGrams: 1600 });
+    expect(useRow('General hand soap')).toContain('1:1 – 3:1');
+  });
+
+  it('offers no ratio for a use this paste cannot reach', () => {
+    // A 1,200 g pot holding only 400 g of soap is already 33.3% — thinner than dish soap's
+    // whole 35–45% band, so there is no amount of water that reaches it. A ratio would have
+    // to be negative, and a negative pour is not an instruction.
+    renderPanel({
+      dilution: {
+        anhydrousGrams: 400, solutionGrams: 1333, totalWaterGrams: 933,
+        dilutionWaterGrams: 133, glycerinGrams: 40, soapConcentrationPercent: 30,
+        targetExceedsPaste: false,
+      },
+      cookWaterGrams: 800,
+    });
+    expect(useRow('Dish soap')).toContain('35–45% soap');
+    expect(useRow('Dish soap')).not.toMatch(/:1/);
+  });
+});
+
 test('unknown-liquid hints never repeat "declare its % water" on one screen', () => {
   // targetExceedsPaste + unknown + not-certain: the can't-tell hint covers the message,
   // and dilutionWaterGrams is 0 — so the floor hint would be vacuous AND a verbatim repeat.

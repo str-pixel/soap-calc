@@ -6,6 +6,7 @@ import {
   lsDilutionUsesFor,
   lsFinishedVolumeMl,
   type DilutionResult,
+  type LsDilutionTarget,
 } from '@soap-calc/core';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent } from '../lib/format';
@@ -71,6 +72,57 @@ function ratioPresetPercent(anhydrousGrams: number, potGrams: number, ratio: num
   const solutionGrams = potGrams * (1 + ratio);
   const percent = (anhydrousGrams / solutionGrams) * 100;
   return Math.min(99, Math.max(1, Math.round(percent * 10) / 10));
+}
+
+/**
+ * THE OTHER DIRECTION of the same conversion, for the intended-use list: the water:paste
+ * ratio that reaches a target concentration, for the pot in force. Kept beside
+ * {@link ratioPresetPercent} because the two are inverses and a change to the pot arithmetic
+ * has to land on both — the buttons write a percentage from a ratio, this reads a ratio back
+ * out of a percentage, and a maker comparing them is entitled to one answer.
+ *
+ * Null where no ratio can be quoted: a non-positive pot (nothing to pour water onto) and,
+ * the case that actually happens, a target the paste is ALREADY thinner than — a 1,200 g pot
+ * holding 400 g of soap is 33.3% and no amount of water reaches dish soap's 35%. The water
+ * figure goes negative there, and a negative pour is not an instruction.
+ *
+ * Live, unlike the preset buttons: these track the pot, so weighing the paste moves them.
+ * That is the difference between a readout and a decision — the buttons write a value the
+ * maker then owns, this list only ever describes what is currently true.
+ */
+function ratioForConcentration(
+  anhydrousGrams: number,
+  potGrams: number,
+  percent: number,
+): number | null {
+  if (!(potGrams > 0) || !(percent > 0)) return null;
+  const solutionGrams = (anhydrousGrams / percent) * 100;
+  const waterGrams = solutionGrams - potGrams;
+  if (!Number.isFinite(waterGrams) || waterGrams < 0) return null;
+  return waterGrams / potGrams;
+}
+
+/** One decimal, trailing zero trimmed, so the figure a maker reads here is spelled exactly
+ * as the preset buttons spell it ("4:1", never "4.0:1") — the two scales are only
+ * comparable if they are written the same way. */
+function formatWaterPasteRatio(ratio: number): string {
+  return `${Math.round(ratio * 10) / 10}:1`;
+}
+
+/** A use's whole band as ratios, ascending — which INVERTS the percentages, because more
+ * water is a thinner soap. Null when either end is out of reach, rather than a half-range
+ * the maker would have to know to distrust. */
+function ratioRangeLabelFor(
+  anhydrousGrams: number,
+  potGrams: number,
+  target: LsDilutionTarget,
+): string | null {
+  const tightest = ratioForConcentration(anhydrousGrams, potGrams, target.high);
+  const loosest = ratioForConcentration(anhydrousGrams, potGrams, target.low);
+  if (tightest === null || loosest === null) return null;
+  return tightest === loosest
+    ? formatWaterPasteRatio(tightest)
+    : `${formatWaterPasteRatio(tightest)} – ${formatWaterPasteRatio(loosest)}`;
 }
 
 export type DilutionScope = 'batch' | 'portion';
@@ -2163,6 +2215,18 @@ export function DilutionPanel({
                   <dt>{t.label}</dt>
                   <dd>
                     {t.low === t.high ? `${t.low}%` : `${t.low}–${t.high}%`} soap
+                    {(() => {
+                      // The ratio the "Starting points" buttons above speak in, for the pot
+                      // in force — so a maker can see that 1:1 is the dish-soap end and that
+                      // the 10–15% uses are past every button on offer.
+                      const ratios =
+                        pasteGrams === null
+                          ? null
+                          : ratioRangeLabelFor(dilution.anhydrousGrams, pasteGrams, t);
+                      return ratios ? (
+                        <span className="dilution-uses__ratio"> · {ratios}</span>
+                      ) : null;
+                    })()}
                     {t.note ? <span className="results-excluded"> {t.note}</span> : null}
                   </dd>
                 </div>
