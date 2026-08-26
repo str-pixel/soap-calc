@@ -277,7 +277,7 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
     expect(text).toContain('Dilution water to add0 g');
     // FIXED: exactly one note, quoting the same two figures the panel does. The sheet has
     // no dilution-mode toggle, so it names the concentration outright where the panel
-    // defers to dilutionTargetWording.
+    // defers to DILUTION_TARGET_WORDING.
     const notes = dilutionSection.querySelectorAll('.batch-sheet__note');
     expect(notes.length).toBe(1);
     const note = notes[0]!.textContent!.replace(/\s+/g, ' ');

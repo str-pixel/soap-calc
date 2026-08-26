@@ -1110,7 +1110,6 @@ test('the additive solution basis falls to the plan figure, not 0, when a record
     amount: '2', basis: 'solution', unit: 'percent', addAt: 'after_cook',
   };
   const mocked = vi.mocked(gradualDilutionFrom);
-  const original = mocked.getMockImplementation();
   mocked.mockImplementation(() => null);
   try {
     let vm: any;
@@ -1128,6 +1127,8 @@ test('the additive solution basis falls to the plan figure, not 0, when a record
     expect(guarLine).toBeDefined();
     expect(guarLine.grams).toBeCloseTo(0.02 * vm.dilution.solutionGrams, 6);
   } finally {
-    mocked.mockImplementation(original!);
+    // mockReset restores the implementation passed to vi.fn(impl) — the genuine
+    // gradualDilutionFrom the module mock's factory wrapped (documented Vitest contract).
+    mocked.mockReset();
   }
 });

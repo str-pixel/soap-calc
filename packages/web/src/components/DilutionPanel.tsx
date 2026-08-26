@@ -13,9 +13,9 @@ import { resolveDilution } from '../lib/resolveDilution';
 import { formatWeight } from '../lib/weightUnits';
 import {
   computedPotGramsFor,
-  correctedDilutionWaterGrams,
+  correctedPotGramsFor,
+  dilutionWaterGramsForPot,
   hasCorrectedPasteBasis,
-  measuredPasteIsValidFor,
   measuredPasteRejectionFor,
   parseMeasuredPasteGrams,
   subTenthPrecisionFingerprint,
@@ -23,8 +23,8 @@ import {
 } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
 import {
+  DILUTION_TARGET_WORDING,
   PortionDilutionResults,
-  dilutionTargetWording,
   portionDilutionFor,
 } from './PortionDilutionResults';
 
@@ -370,12 +370,16 @@ export function DilutionPanel({
   // refusing.
   //
   // TWO OTHER QUESTIONS have their own gates, and neither is this one. Which POT the RECORD
-  // arm and the ratio presets count from is potBasis just below. Which pot the batch POUR and
-  // the bottled mass are measured against is lib/measuredPaste's correctedPotGramsFor — this
-  // same ceiling, exactly.
-  const measuredPasteValid =
-    dilution !== null &&
-    measuredPasteIsValidFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams);
+  // arm and the ratio presets count from is potBasis just below. Which pot the batch POUR is
+  // measured against is correctedPot here — resolved ONCE, with the batch row below
+  // subtracting this same pot (dilutionWaterGramsForPot), so the verdict the copy speaks and
+  // the figure the row pours cannot drift. The bottled mass runs the same gate inside
+  // computeBottledSolutionGrams.
+  const correctedPot =
+    dilution !== null
+      ? correctedPotGramsFor(dilution, measuredPasteGrams, wholeBatchPasteGrams, cookWaterGrams)
+      : null;
+  const measuredPasteValid = correctedPot?.fromMeasurement ?? false;
   // WHICH POT THE RECORD ARM AND THE PRESETS COUNT FROM, and the one question a target must
   // not answer. lib/measuredPaste's target-independent resolution: the reading wins when it
   // parses, is not finer than a scale reads, and is not below the batch's own non-evaporable
@@ -627,18 +631,17 @@ export function DilutionPanel({
 
   // The measurement corrects the BATCH figure the same way it already corrects the portion
   // in PortionDilutionResults — shared with the printed BatchSheet so both surfaces always agree.
-  // wholeBatchPasteGrams is passed for the second correction the helper applies: without it
-  // this row derived its water from calculateDilution's anhydrous + water pot while the
-  // preset arithmetic above derives its own from computedPasteGrams, which counts an
-  // alternative liquid's solids. Two figures on one screen, differing by exactly those solids
-  // (5,000 g in the panel against 5,450 g on the printed sheet). Same basis both ways now.
+  // wholeBatchPasteGrams went into correctedPot above for the second correction the helper
+  // applies: without it this row derived its water from calculateDilution's anhydrous + water
+  // pot while the preset arithmetic above derives its own from computedPasteGrams, which
+  // counts an alternative liquid's solids. Two figures on one screen, differing by exactly
+  // those solids (5,000 g in the panel against 5,450 g on the printed sheet). Same basis both
+  // ways now.
   //
   // A PLAN FIGURE, whichever arm governs: it is what the plan still asks the maker to pour,
   // and §2 keeps it on screen under a plan label while a record governs rather than hiding
   // it. Nothing about it changes with the record — only the word "(plan)" beside it.
-  const batchDilutionWaterGrams = dilution
-    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, wholeBatchPasteGrams, cookWaterGrams)
-    : 0;
+  const batchDilutionWaterGrams = dilution ? dilutionWaterGramsForPot(dilution, correctedPot) : 0;
   // Asked of the same helper PortionDilutionResults itself renders from, so the shell can
   // never believe something about Custom amount that Custom amount does not show. The
   // portion figures are still the child's to render; the shell reads this verdict for two
@@ -688,13 +691,13 @@ export function DilutionPanel({
   // Shared with PortionDilutionResults so this shell's Whole-batch twin of that refusal and
   // the child's own Custom-amount wording of it can never name different controls.
   //
-  // NO ARGUMENTS: there is one control now, the % field, on screen in every state this
-  // refusal can render in, so there is one wording to give and the helper takes nothing to
-  // pick it. Both callers reading a parameterless function is what keeps them from ever
-  // wording the remedy for a control the panel no longer has.
-  const refusalWording = dilutionTargetWording();
+  // A CONSTANT, NOT A CALL: there is one control now, the % field, on screen in every state
+  // this refusal can render in, so there is one wording to give and nothing left to decide.
+  // Both callers reading one constant is what keeps them from ever wording the remedy for a
+  // control the panel no longer has.
+  const refusalWording = DILUTION_TARGET_WORDING;
   // The Whole-batch twin of PortionDilutionResults' unmeasuredPasteAlreadyThinner, and the
-  // exact condition under which correctedDilutionWaterGrams' clamp fires: the corrected pot
+  // exact condition under which dilutionWaterGramsForPot's clamp fires: the corrected pot
   // outweighs the whole solution its own soap makes at the target, so the batch row prints
   // "0 g". That zero is honest — there really is no water to add — but until this branch
   // existed nothing on screen said so, while Custom amount, one radio away, refused the same

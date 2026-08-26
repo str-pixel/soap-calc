@@ -53,11 +53,6 @@ export type LsPartialDilution = {
   wholeBatchPasteGrams: number;
   /** True when more was asked for than the batch holds, so the figures are the whole batch. */
   clamped: boolean;
-  /** The pot's own anhydrous soap — the recipe's whole `anhydrousGrams`. This function's pot
-   * is always the whole batch; a caller asking what a jar holding only PART of the paste
-   * itself contains (deriving ITS OWN concentration, not a share of what the recipe's
-   * target wants) reads {@link lsPotAnhydrousShare} directly instead. */
-  potAnhydrousGrams: number;
 };
 
 /**
@@ -87,7 +82,7 @@ export function lsPotAnhydrousShare(input: {
   anhydrousGrams: number;
   /** The whole batch's paste — the corrected, solids-aware figure where the caller has one. */
   wholeBatchPasteGrams: number;
-  /** The pot on the scale: a weighed-out jar, or what is left after earlier dilutions. */
+  /** The pot on the scale: a weighed-out jar. */
   potPasteGrams: number;
 }): number | null {
   const { anhydrousGrams, wholeBatchPasteGrams, potPasteGrams } = input;
@@ -104,6 +99,10 @@ export function lsPotAnhydrousShare(input: {
  * Everything scales linearly with the share of the batch taken, so the target volume simply
  * sets the fraction. Note the volume→fraction step carries the density estimate; the
  * resulting paste and water are exact masses for that fraction.
+ *
+ * This function's pot is always the WHOLE batch. A caller asking what a jar holding only
+ * PART of the paste itself contains (deriving ITS OWN concentration, not a share of what
+ * the recipe's target wants) reads {@link lsPotAnhydrousShare} directly instead.
  */
 export function lsPartialDilution(
   batch: {
@@ -139,13 +138,12 @@ export function lsPartialDilution(
   densityGPerMl: number = LS_SOLUTION_DENSITY_G_PER_ML,
 ): LsPartialDilution | null {
   if (!Number.isFinite(targetVolumeMl) || targetVolumeMl <= 0) return null;
-  // anhydrousGrams, totalWaterGrams and dilutionWaterGrams feed potAnhydrousGrams and
-  // batchWaterGrams below through plain arithmetic — addition, subtraction, Math.max — which
-  // propagates a bad value as an ordinary-looking number rather than throwing. The guards
-  // further down cannot be trusted to catch it: `potAnhydrousGrams` is a bare
-  // `batch.anhydrousGrams` assignment with no `<= 0` check of its own, and `batchWaterGrams
-  // < 0` can't catch a NaN at all (NaN < 0 is false). Only checking these three here, before
-  // any of them is used, stops both.
+  // anhydrousGrams, totalWaterGrams and dilutionWaterGrams feed batchWaterGrams and the
+  // paste figures below through plain arithmetic — addition, subtraction, Math.max — which
+  // propagates a bad value as an ordinary-looking number rather than throwing. The guard
+  // further down cannot be trusted to catch it: `batchWaterGrams < 0` can't catch a NaN at
+  // all (NaN < 0 is false). Only checking these three here, before any of them is used,
+  // stops both.
   //
   // anhydrousGrams and totalWaterGrams are rejected at <= 0, matching every sibling check in
   // this file — including {@link lsPotAnhydrousShare}'s own check on the identically-named
@@ -179,10 +177,6 @@ export function lsPartialDilution(
   // existing caller that never supplies wholeBatchPasteGrams is byte-identical to round 2.
   const wholeBatchPasteGrams =
     wb !== undefined && Number.isFinite(wb) && wb > 0 ? wb : predictedPasteGrams;
-  // The pot's own anhydrous soap: the recipe's whole anhydrousGrams. This function's pot is
-  // always the whole batch; the UI's own weighed-jar caller reads {@link lsPotAnhydrousShare}
-  // directly for a jar holding only part of the paste.
-  const potAnhydrousGrams = batch.anhydrousGrams;
   // Measured wins outright — the scale is the only figure that can see cook evaporation.
   // Unmeasured, the pot is the corrected whole-batch basis, NOT predictedPasteGrams: an
   // alternative liquid's non-water solids are real mass sitting in it, so the water-only
@@ -229,6 +223,5 @@ export function lsPartialDilution(
     predictedPasteGrams,
     wholeBatchPasteGrams,
     clamped,
-    potAnhydrousGrams,
   };
 }

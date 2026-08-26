@@ -99,8 +99,7 @@ export default function App() {
   // because the batch is the recipe. A jar diluted thinner has not redefined it.
   const [portionPasteGrams, setPortionPasteGrams] = useState('');
   const [portionWaterGrams, setPortionWaterGrams] = useState('');
-  // Always the whole batch's paste: the declaration that used to sit beside the field is
-  // gone.
+  // Always the whole batch's paste.
   const [measuredPasteGrams, setMeasuredPasteGrams] = useState('');
   // A measurement describes one specific batch's paste; it must not survive an edit to the
   // recipe that batch was measured from, or the dilution figures keep using a paste weight

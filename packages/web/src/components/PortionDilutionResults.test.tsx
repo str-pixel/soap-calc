@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import { PortionDilutionResults, dilutionTargetWording, portionDilutionFor } from './PortionDilutionResults';
+import { PortionDilutionResults, portionDilutionFor } from './PortionDilutionResults';
 import type { DilutionResult } from '@soap-calc/core';
 
 afterEach(cleanup);
@@ -141,9 +141,10 @@ describe('an undeclared alternative liquid makes "already more dilute" unknowabl
 describe('a refusal names the one control on screen', () => {
   // There used to be a second mode here — a water:paste ratio in place of the % field —
   // and this refusal had to pick which control to name depending on which one was showing
-  // (Phase 2a removed the mode from the panel; Phase 3 removed dilutionTargetWording's
+  // (Phase 2a removed the mode from the panel; Phase 3 removed the wording helper's
   // parameters that used to select between them, spec §5). One control now, the plan's %
-  // field, on screen in every state, so there is one name and one remedy to give, always.
+  // field, on screen in every state, so there is one name and one remedy to give, always —
+  // DILUTION_TARGET_WORDING is a constant.
   const OVER = {
     ...RESULT,
     dilutionWaterGrams: 0,
@@ -155,13 +156,6 @@ describe('a refusal names the one control on screen', () => {
     render(<PortionDilutionResults {...PROPS} dilution={OVER} />);
     const refusal = screen.getByText(/no dilution water to divide up/i);
     expect(refusal.textContent).toMatch(/target concentration/i);
-  });
-
-  test('dilutionTargetWording names the target and its remedy unconditionally', () => {
-    expect(dilutionTargetWording()).toEqual({
-      named: 'the target above',
-      remedy: 'Lower the target concentration above (more water)',
-    });
   });
 });
 

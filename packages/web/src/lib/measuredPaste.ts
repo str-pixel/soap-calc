@@ -505,8 +505,8 @@ export function measuredPasteRejectionFor(
  * through it DilutionPanel's pour row and the printed BatchSheet's) and
  * computeBottledSolutionGrams' base.
  *
- * It is {@link measuredPasteDescribesPotFor}'s three pot rules, plus the `solutionGrams`
- * ceiling {@link measuredPasteIsValidFor} applies — exactly, with no widening. A gradual
+ * The accept-gate IS {@link measuredPasteIsValidFor} — one call, not a parallel copy, so a
+ * rule added there reaches this pot by construction. No widening on top of it. A gradual
  * record's own 2 dp write-back used to round `solutionGrams` a hair under a weighed pot with
  * no water recorded (gradual's own opening state, LS:1531), which split the panel from the
  * mass it doses — a weighed 1,405 g pot against a 1,600 g computed one had the panel print
@@ -553,11 +553,13 @@ export function correctedPotGramsFor(
   wholeBatchPasteGrams?: number | null,
   cookWaterGrams?: number | null,
 ): { grams: number; fromMeasurement: boolean } | null {
+  // Parsed here solely to supply the returned grams (and narrow the type for it); the
+  // VERDICT — including its own parse of the same string — is measuredPasteIsValidFor's
+  // alone, so the accept-gate stays one call.
   const measured = parseMeasuredPasteGrams(measuredPasteGrams);
   if (
     measured !== undefined &&
-    measuredPasteDescribesPotFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams) &&
-    !measurementExceedsSolution(measured, dilution)
+    measuredPasteIsValidFor(measuredPasteGrams, dilution, wholeBatchPasteGrams, cookWaterGrams)
   ) {
     return { grams: measured, fromMeasurement: true };
   }
@@ -728,6 +730,27 @@ export function correctedDilutionWaterGrams(
   // rejection alert names, or this row would pour from a reading the panel is refusing one
   // paragraph above.
   const pot = correctedPotGramsFor(dilution, measuredPasteGrams, wholeBatchPasteGrams, cookWaterGrams);
+  return dilutionWaterGramsForPot(dilution, pot);
+}
+
+/**
+ * The subtraction {@link correctedDilutionWaterGrams} makes, split out for callers that
+ * already hold a resolved pot (computeBottledSolutionGrams' base, DilutionPanel's and
+ * BatchSheet's batch row beside their validity verdict). Handing the pot in here means the
+ * paste verdict and the water term come from ONE resolution, not two argument lists kept in
+ * step by hand. A null pot falls back to the recipe's own figure, exactly as the wrapper
+ * above always has.
+ *
+ * THE POT MUST BE {@link correctedPotGramsFor}'s — the plan-arm pot, ceiling included.
+ * {@link weighedOrComputedPotGramsFor}'s record-arm pot has the identical `{ grams }` shape
+ * to the type checker but is DELIBERATELY ceiling-free (its doc says why); feeding it here
+ * would price a pour from a reading the plan arm refuses — the crockpot mis-reading this
+ * ceiling exists to keep out of the plan's subtraction.
+ */
+export function dilutionWaterGramsForPot(
+  dilution: DilutionResult,
+  pot: { grams: number } | null,
+): number {
   if (pot === null) return dilution.dilutionWaterGrams;
   return Math.max(0, dilution.solutionGrams - pot.grams);
 }

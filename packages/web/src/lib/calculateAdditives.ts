@@ -11,8 +11,8 @@ import {
 } from '@soap-calc/core';
 import type { AcidLyeRecipe, DilutionResult } from '@soap-calc/core';
 import {
-  correctedDilutionWaterGrams,
   correctedPotGramsFor,
+  dilutionWaterGramsForPot,
   hasCorrectedPasteBasis,
 } from './measuredPaste';
 import type { AdditiveLine, RecipeSettings, SplitLiquidSettings } from './recipe';
@@ -126,9 +126,10 @@ export function computeExtrasGrams(
  * Base: the pot's real paste — the whole-batch reading when `correctedPotGramsFor` (the
  * shared pot choice) takes it, else the recipe's own
  * anhydrous + cook water — plus whatever water is still needed to reach the target. That
- * water figure is `correctedDilutionWaterGrams`, the SAME measurement-aware
- * function the Dilution panel's own water row already uses (Task 5: a measurement outranks
- * the targetExceedsPaste clamp), measured against the SAME pot, so this and that row never
+ * water figure is `dilutionWaterGramsForPot` fed the pot already resolved for the paste
+ * term — the very subtraction `correctedDilutionWaterGrams` (the Dilution panel's own water
+ * row, Task 5: a measurement outranks the targetExceedsPaste clamp) makes, measured against
+ * the SAME pot from the SAME resolution, so this and that row never
  * disagree about what actually gets bottled. With no measurement this reduces exactly to the
  * old formula: unmeasured
  * paste + dilution.dilutionWaterGrams, which is dilution.solutionGrams when the clamp never
@@ -147,7 +148,7 @@ export function computeExtrasGrams(
  * also touching solutionGrams would be easy to mistake for a double count.
  *
  * "Counted ONCE" holds on BOTH paths, which took a second correction to make true. A
- * whole-batch reading the pot gate accepts makes correctedDilutionWaterGrams return
+ * whole-batch reading the pot gate accepts makes the water term come back as
  * max(0, solutionGrams - measured), so the base is max(measured, solutionGrams) — the target's
  * own solution for any reading the target can still take water to reach, and the weighed pot
  * itself for one already past it. Either way the solids are already
@@ -168,8 +169,9 @@ export function computeBottledSolutionGrams(input: {
    * are unaffected. */
   measuredPasteGrams?: string;
   /** The view model's corrected whole-batch paste (anhydrous + cook water + an alternative
-   * liquid's non-water solids). Threaded through for one reason: it is what
-   * `correctedDilutionWaterGrams` now subtracts from solutionGrams, so the water term below
+   * liquid's non-water solids). Threaded through for one reason: it is the pot the water
+   * subtraction from solutionGrams is measured against (the same one
+   * `correctedDilutionWaterGrams` resolves), so the water term below
    * must be the same one the panel and the sheet pour. Leaving it out here would have this
    * function price a bottle from more water than the maker is told to add — overstating the
    * batch by the solids, which then arrive again through `extrasGrams`. Optional: absent,
@@ -193,7 +195,7 @@ export function computeBottledSolutionGrams(input: {
     record,
   } = input;
   // The alternative liquid's non-water solids — needed by BOTH arms, off the same corrected
-  // basis `correctedDilutionWaterGrams` subtracts from solutionGrams, never re-derived from
+  // basis the water subtraction from solutionGrams is measured against, never re-derived from
   // the split-liquid rows, so this and the water figure the panel prints can never disagree
   // about the same pot. Zero without a corrected basis, exactly as the water correction is: a
   // caller that supplies none cannot know the solids are there, and both paths then fall back
@@ -241,7 +243,7 @@ export function computeBottledSolutionGrams(input: {
   const measuredPaste = pot?.fromMeasurement ? pot.grams : undefined;
   const base =
     (measuredPaste ?? dilution.anhydrousGrams + cookWaterGrams) +
-    correctedDilutionWaterGrams(dilution, measuredPasteGrams, wholeBatchPasteGrams, cookWaterGrams);
+    dilutionWaterGramsForPot(dilution, pot);
   // What the base ALREADY holds of the split liquid, and the whole difference between the
   // two paths. Unmeasured, the base is built from anhydrous + cookWaterGrams, so it carries
   // the liquid's water only and the extras term has to put its solids back. Measured, the

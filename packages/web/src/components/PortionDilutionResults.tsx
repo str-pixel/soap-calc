@@ -70,17 +70,18 @@ type PortionDilutionResultsProps = {
  * refusal words it identically — the two describe one state and used to drift apart.
  *
  * There used to be a second mode here — a water:paste ratio in place of the % field, with
- * its own "not applied yet" state — and this function branched on which one was showing, so
- * a refusal could name a control that was actually on screen. That mode is gone (Phase 2a
- * removed it from the panel; Phase 3 removed the parameters here, spec §5): there is one
- * control now, the plan's % field, on screen in every state, so there is one wording to give.
- * What the function is still FOR is that DilutionPanel's Whole-batch twin of this refusal and
- * this component's own Custom-amount wording of it come from one place — the two describe one
- * state and used to drift apart.
+ * its own "not applied yet" state — and this was a function that branched on which one was
+ * showing, so a refusal could name a control that was actually on screen. That mode is gone
+ * (Phase 2a removed it from the panel; Phase 3 removed the parameters, spec §5): there is one
+ * control now, the plan's % field, on screen in every state, so there is one wording to give
+ * and nothing left to decide — a constant, not a call. What it is still FOR is that
+ * DilutionPanel's Whole-batch twin of this refusal and this component's own Custom-amount
+ * wording of it come from one place — the two describe one state and used to drift apart.
  */
-export function dilutionTargetWording(): { named: string; remedy: string } {
-  return { named: 'the target above', remedy: 'Lower the target concentration above (more water)' };
-}
+export const DILUTION_TARGET_WORDING = {
+  named: 'the target above',
+  remedy: 'Lower the target concentration above (more water)',
+} as const;
 
 /**
  * The portion this component would render — null when either of the two verdicts below
@@ -340,9 +341,9 @@ export function PortionDilutionResults({
   }
 
   // Both refusals below name the target above and remedy it with "lower the target
-  // concentration above". See dilutionTargetWording for why the wording is centralized here
-  // rather than written out twice.
-  const { named: dilutionTargetNamed, remedy: dilutionTargetRemedy } = dilutionTargetWording();
+  // concentration above". See DILUTION_TARGET_WORDING for why the wording is centralized
+  // here rather than written out twice.
+  const { named: dilutionTargetNamed, remedy: dilutionTargetRemedy } = DILUTION_TARGET_WORDING;
   return (
     <>
       {/* unmeasuredPasteAlreadyThinner rides this paragraph rather than earning one of its

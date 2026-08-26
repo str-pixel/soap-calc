@@ -47,10 +47,6 @@ describe('lsPartialDilution', () => {
     expect(r.solutionGrams).toBeCloseTo(2000, 0);
     expect(r.volumeMl).toBeCloseTo(1941.7, 0);
     expect(r.clamped).toBe(false);
-    // Whole-batch mode: the pot's own anhydrous IS the recipe's whole anhydrousGrams, and —
-    // unlike pasteGrams/waterGrams/solutionGrams just above — untouched by the half-volume
-    // fraction this test asked for.
-    expect(r.potAnhydrousGrams).toBe(1200);
   });
 
   it('clamps to the whole batch when more is asked for than exists', () => {
@@ -70,12 +66,11 @@ describe('lsPartialDilution', () => {
   });
 
   it('refuses a non-finite raw batch field that the null guards further down cannot catch', () => {
-    // `potAnhydrousGrams === null` can't catch this: in whole-batch mode potAnhydrousGrams
-    // is a bare `batch.anhydrousGrams` assignment that never reaches
-    // lsPotAnhydrousShare's own null check, and NaN !== null anyway. `batchWaterGrams < 0`
-    // can't catch it either: NaN < 0 is false. A NaN in any of these three raw batch fields
-    // must be stopped here, at the top, or it rides ordinary arithmetic all the way to the
-    // return value — see the next tests for what that looks like when it isn't stopped.
+    // `batchWaterGrams < 0` can't catch this: NaN < 0 is false, and the raw fields never
+    // route through lsPotAnhydrousShare's own null check. A NaN in any of these three raw
+    // batch fields must be stopped here, at the top, or it rides ordinary arithmetic all the
+    // way to the return value — see the next tests for what that looks like when it isn't
+    // stopped.
     expect(lsPartialDilution({ ...BATCH, anhydrousGrams: Number.NaN }, 1941.7)).toBeNull();
     expect(lsPartialDilution({ ...BATCH, totalWaterGrams: Number.NaN }, 1941.7)).toBeNull();
     expect(lsPartialDilution({ ...BATCH, dilutionWaterGrams: Number.NaN }, 1941.7)).toBeNull();
@@ -93,9 +88,9 @@ describe('lsPartialDilution', () => {
 
   it('refuses a negative anhydrousGrams — a batch with no soap is corrupt, not a valid share of one', () => {
     // Not caught by the NaN-only guard above (a negative number is finite) and not caught
-    // by lsPotAnhydrousShare's <= 0 check either — in whole-batch mode potAnhydrousGrams is
-    // a bare assignment that never routes through that function at all. Needs its own <= 0
-    // floor at the top, matching every sibling anhydrousGrams check in this file.
+    // by lsPotAnhydrousShare's <= 0 check either — lsPartialDilution never routes its batch
+    // fields through that function at all. Needs its own <= 0 floor at the top, matching
+    // every sibling anhydrousGrams check in this file.
     expect(lsPartialDilution({ ...BATCH, anhydrousGrams: -500 }, 1941.7)).toBeNull();
   });
 
@@ -165,14 +160,12 @@ describe('lsPartialDilution with a measured paste weight', () => {
 });
 
 describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid solids)', () => {
-  // Review round 3: predictedPasteGrams (anhydrousGrams + cookWaterGrams) counts only the
-  // WATER fraction of an alternative liquid — its non-water solids are real mass sitting
-  // in the pot the recipe never counts (see ls-yield.ts, DilutionPanel.tsx,
-  // PortionDilutionResults.tsx, all verbatim on this point). So for a split-liquid recipe the
-  // TRUE whole-batch paste is structurally heavier than predictedPasteGrams, and round 2's
-  // ceiling (which used predictedPasteGrams) both rejected legitimate remaining readings
-  // above it AND (via the same basis feeding the composition ratio) understated the pot's
-  // true paste mass, overstating its soap fraction.
+  // predictedPasteGrams (anhydrousGrams + cookWaterGrams) counts only the WATER fraction of
+  // an alternative liquid — its non-water solids are real mass sitting in the pot the recipe
+  // never counts (see ls-yield.ts, DilutionPanel.tsx, PortionDilutionResults.tsx, all
+  // verbatim on this point). So for a split-liquid recipe the TRUE whole-batch paste is
+  // structurally heavier than predictedPasteGrams, and a pot sized from the water-only
+  // figure poured water for a paste lighter than the one on the bench.
   //
   // Fixture: 1,000 g anhydrous, 500 g lye water, 200 g split liquid at 50% water
   // (100 g water, 100 g solids). cookWaterGrams = 500 + 100 = 600, so
@@ -191,43 +184,40 @@ describe('lsPartialDilution with a wholeBatchPasteGrams basis (split-liquid soli
   const totalWaterGrams = cookWaterGrams + dilutionWaterGrams;
   const BATCH = { anhydrousGrams, totalWaterGrams, dilutionWaterGrams, solutionGrams };
 
-  describe('the pot still holds the solids, measured or not', () => {
-    // The unmeasured pot really is anhydrous + cook water + the liquid's solids, which is
-    // what wholeBatchPasteGrams resolves to. Using predictedPasteGrams here left the portion
-    // pouring water for a paste 100 g lighter than the one in the pot, so Custom amount and
-    // Whole batch printed different figures for the same undivided batch.
-    it('takes the paste (and therefore the water) from the corrected basis', () => {
-      const r = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams }, 99_000);
-      expect(r).not.toBeNull();
-      if (!r) return;
-      expect(r.clamped).toBe(true); // the whole batch, so no fraction to reason about
-      expect(r.pasteGrams).toBeCloseTo(1700, 6);
-      expect(r.waterGrams).toBeCloseTo(solutionGrams - 1700, 6);
-    });
-
-    it('is unchanged when no corrected basis is supplied', () => {
-      const r = lsPartialDilution(BATCH, 99_000);
-      expect(r?.pasteGrams).toBeCloseTo(predictedPasteGrams, 6);
-      expect(r?.waterGrams).toBeCloseTo(dilutionWaterGrams, 6);
-    });
-
-    it('is unchanged when there is no split liquid — the two bases are the same figure', () => {
-      // A recipe with no alternative liquid has no solids, so the view model's corrected
-      // basis IS anhydrous + cook water. Supplying it must therefore change nothing.
-      const noSolids = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams: predictedPasteGrams }, 99_000);
-      const withoutBasis = lsPartialDilution(BATCH, 99_000);
-      expect(noSolids?.pasteGrams).toBeCloseTo(withoutBasis!.pasteGrams, 9);
-      expect(noSolids?.waterGrams).toBeCloseTo(withoutBasis!.waterGrams, 9);
-    });
-
-    it('is still outranked by a measurement — the scale beats both computed bases', () => {
-      const r = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams, measuredPasteGrams: 1750 }, 99_000);
-      expect(r?.pasteMeasured).toBe(true);
-      expect(r?.pasteGrams).toBeCloseTo(1750, 6);
-      expect(r?.waterGrams).toBeCloseTo(solutionGrams - 1750, 6);
-    });
+  // The unmeasured pot really is anhydrous + cook water + the liquid's solids, which is
+  // what wholeBatchPasteGrams resolves to. Using predictedPasteGrams here left the portion
+  // pouring water for a paste 100 g lighter than the one in the pot, so Custom amount and
+  // Whole batch printed different figures for the same undivided batch.
+  it('takes the paste (and therefore the water) from the corrected basis', () => {
+    const r = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams }, 99_000);
+    expect(r).not.toBeNull();
+    if (!r) return;
+    expect(r.clamped).toBe(true); // the whole batch, so no fraction to reason about
+    expect(r.pasteGrams).toBeCloseTo(1700, 6);
+    expect(r.waterGrams).toBeCloseTo(solutionGrams - 1700, 6);
   });
 
+  it('is unchanged when no corrected basis is supplied', () => {
+    const r = lsPartialDilution(BATCH, 99_000);
+    expect(r?.pasteGrams).toBeCloseTo(predictedPasteGrams, 6);
+    expect(r?.waterGrams).toBeCloseTo(dilutionWaterGrams, 6);
+  });
+
+  it('is unchanged when there is no split liquid — the two bases are the same figure', () => {
+    // A recipe with no alternative liquid has no solids, so the view model's corrected
+    // basis IS anhydrous + cook water. Supplying it must therefore change nothing.
+    const noSolids = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams: predictedPasteGrams }, 99_000);
+    const withoutBasis = lsPartialDilution(BATCH, 99_000);
+    expect(noSolids?.pasteGrams).toBeCloseTo(withoutBasis!.pasteGrams, 9);
+    expect(noSolids?.waterGrams).toBeCloseTo(withoutBasis!.waterGrams, 9);
+  });
+
+  it('is still outranked by a measurement — the scale beats both computed bases', () => {
+    const r = lsPartialDilution({ ...BATCH, wholeBatchPasteGrams, measuredPasteGrams: 1750 }, 99_000);
+    expect(r?.pasteMeasured).toBe(true);
+    expect(r?.pasteGrams).toBeCloseTo(1750, 6);
+    expect(r?.waterGrams).toBeCloseTo(solutionGrams - 1750, 6);
+  });
 });
 
 describe('lsPotAnhydrousShare — the soap in one weighed pot', () => {

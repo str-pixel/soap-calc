@@ -26,9 +26,9 @@ import { splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
 import {
-  correctedDilutionWaterGrams,
+  correctedPotGramsFor,
+  dilutionWaterGramsForPot,
   hasCorrectedPasteBasis,
-  measuredPasteIsValidFor,
   parseGradualWaterRecordGrams,
   parseMeasuredPasteGrams,
   weighedOrComputedPotGramsFor,
@@ -113,17 +113,18 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // exactly: it gates the "Dilution water above uses the measured paste weight" note below
   // and — per Task 5 — OUTRANKS targetExceedsPaste there, since that flag is derived from the
   // recipe's ASSUMED cook water and the measurement is direct evidence against it. The printed
-  // water FIGURE goes through the identical ceiling inside correctedDilutionWaterGrams
-  // (lib/measuredPaste's correctedPotGramsFor), so the two never disagree about whether a
-  // reading is usable.
+  // water FIGURE below subtracts this SAME resolved pot (dilutionWaterGramsForPot): one
+  // resolution feeds the note's verdict and the figure, so the two cannot disagree about
+  // whether a reading is usable.
   //
   // The corrected basis and the cook water go into the gate too, not only into the water
   // figure below: the floor under a reading counts an alternative liquid's solids, and
   // the sheet is the page carried to the bench — it must refuse exactly what the panel
   // refuses, or the two would disagree about whether the maker's own reading was usable.
-  const measuredPasteValid = dilution
-    ? measuredPasteIsValidFor(measuredPasteGrams, dilution, data.wholeBatchPasteGrams, data.cookWaterGrams)
-    : false;
+  const correctedPot = dilution
+    ? correctedPotGramsFor(dilution, measuredPasteGrams, data.wholeBatchPasteGrams, data.cookWaterGrams)
+    : null;
+  const measuredPasteValid = correctedPot?.fromMeasurement ?? false;
   // wholeBatchPasteGrams is the second correction the shared helper applies: an alternative
   // liquid's non-water solids are real mass in the pot that calculateDilution's
   // anhydrous + water arithmetic never counts, so the recipe's own dilutionWaterGrams
@@ -135,9 +136,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // four-clause predicate is lib/measuredPaste's, shared with the panel and with the paste
   // floor itself rather than written out a sixth time.
   const correctedPasteBasis = hasCorrectedPasteBasis(data.wholeBatchPasteGrams);
-  const dilutionWaterGramsPrinted = dilution
-    ? correctedDilutionWaterGrams(dilution, measuredPasteGrams, data.wholeBatchPasteGrams, data.cookWaterGrams)
-    : 0;
+  const dilutionWaterGramsPrinted = dilution ? dilutionWaterGramsForPot(dilution, correctedPot) : 0;
   // The sheet is the page taken to the bench, so it must carry what actually gets
   // bottled, not only the chemistry-only solution above: bottledSolutionGrams adds in
   // additives, append-mode post-cook oil, and split-liquid solids, and is bigger than
@@ -575,7 +574,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           {/* The sheet is the page carried to the bench, so the state DilutionPanel's
               pasteAlreadyPastTarget alert explains on screen has to be explained here too:
               the corrected pot outweighs the whole solution its soap makes at the target, so
-              correctedDilutionWaterGrams clamps and "Dilution water to add" above prints
+              dilutionWaterGramsForPot clamps and "Dilution water to add" above prints
               "0 g". Printed bare, that reads as a batch needing nothing.
 
               Same predicate as the panel's, and the same core gating — see its comment for
