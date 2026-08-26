@@ -42,7 +42,9 @@ export const LS_DILUTION_TARGETS: readonly LsDilutionTarget[] = [
     note: 'For an average recipe — a coconut-heavy soap is naturally thinner and can run higher.',
   },
   { key: 'body-wash', label: 'Body wash', low: 10, high: 35 },
-  { key: 'hand', label: 'General hand soap', low: 15, high: 30 },
+  // "Hand soap", not "general hand soap": every row here is soap, so the qualifier only
+  // separated this band from the others by being vaguer than them. The key stays `hand`.
+  { key: 'hand', label: 'Hand soap', low: 15, high: 30 },
   { key: 'mechanic', label: 'Mechanic or gardener soap', low: 30, high: 35 },
   {
     key: 'dish',

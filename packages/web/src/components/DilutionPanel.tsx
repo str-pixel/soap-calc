@@ -336,6 +336,10 @@ export function DilutionPanel({
   const [presetApplied, setPresetApplied] = useState<{ ratio: string; percent: number } | null>(
     null,
   );
+  // The intended-use bands stand open (see the <details> below for why). Held here rather
+  // than left to the DOM so a maker's own collapse survives the re-render every keystroke in
+  // the target field causes.
+  const [usesOpen, setUsesOpen] = useState(true);
   // THE RESOLUTION (spec §1), computed from the same five inputs the view model hands
   // `resolveDilution` — `dilution`, the record, the anhydrous soap, the corrected paste, the
   // cook water and the reading — so the arm this panel renders and the arm the view model
@@ -1233,7 +1237,27 @@ export function DilutionPanel({
               onSoapConcentrationChange(String(percent));
             }}
           >
-            {preset}:1
+            <span className="dilution-preset__ratio">{preset}:1</span>
+            {(() => {
+              // WHAT THIS RATIO MAKES, named from the same bands the list below states — so
+              // the choice reads as a product rather than as a quantity of water. Computed
+              // from the pot in force, exactly as the list's ratios are, so weighing the
+              // paste moves the names with the arithmetic instead of leaving a label
+              // describing a batch that is no longer on the bench.
+              //
+              // Silent where the ratio lands outside every band: there is no name to give,
+              // and inventing one ("very dilute") would be this panel asserting a use the
+              // reference does not list.
+              if (dilution === null || pasteGrams === null) return null;
+              const uses = lsDilutionUsesFor(
+                ratioPresetPercent(dilution.anhydrousGrams, pasteGrams, Number(preset)),
+              );
+              return uses.length > 0 ? (
+                <span className="dilution-preset__uses">
+                  {uses.map((u) => u.label.toLowerCase()).join(', ')}
+                </span>
+              ) : null;
+            })()}
           </button>
         ))}
       </div>
@@ -2194,7 +2218,20 @@ export function DilutionPanel({
               must read it too — implemented literally with `dilution.soapConcentrationPercent`
               here, the summary printed "No common use calls for 30%" against a 46.2% match:
               a sentence naming one number and reporting another's verdict. */}
-          <details className="results-hint dilution-uses">
+          {/* OPEN BY DEFAULT, unlike the reference notes below it. The prose budget files
+              always-true prose behind a disclosure because it does not answer anything about
+              the state on screen; these bands do — they are what the target above is being
+              chosen AGAINST, and the ratios beside them are the scale the preset buttons
+              speak in. Behind a summary the correlation between the two was reachable only by
+              a maker who already suspected it was there.
+
+              State, not a bare `open` attribute: this panel re-renders on every keystroke in
+              the target field, and a maker who shuts the list has to have it stay shut. */}
+          <details
+            className="results-hint dilution-uses"
+            open={usesOpen}
+            onToggle={(e) => setUsesOpen((e.currentTarget as HTMLDetailsElement).open)}
+          >
             <summary>
               {suitedUses.length > 0
                 ? `At ${formatConcentrationPercent(resolvedConcentrationPercent)}% this suits ${suitedUses

@@ -132,7 +132,7 @@ describe('intended-use dilution targets', () => {
     render30('30');
     // 30% is the top of hand soap, the bottom of mechanic, and inside body wash.
     const summary = screen.getByText(/at 30% this suits/i);
-    expect(summary.textContent?.toLowerCase()).toContain('general hand soap');
+    expect(summary.textContent?.toLowerCase()).toContain('hand soap');
     expect(summary.textContent?.toLowerCase()).toContain('mechanic');
   });
 
@@ -775,7 +775,7 @@ describe('each intended use carries the water:paste ratio that reaches it', () =
   //
   // 1,200 g anhydrous + 400 g cook water = a 1,600 g pot, the fixture this file already uses
   // for the preset arithmetic. At 15% the solution is 8,000 g, so 6,400 g of water — 4:1. At
-  // 30% it is 4,000 g, so 2,400 g — 1.5:1. General hand soap is 15–30%, so it spans them.
+  // 30% it is 4,000 g, so 2,400 g — 1.5:1. Hand soap is 15–30%, so it spans them.
   const POT = {
     dilution: {
       anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
@@ -805,7 +805,7 @@ describe('each intended use carries the water:paste ratio that reaches it', () =
   it('states the ratio range beside the percentage range', () => {
     renderPanel();
     // Ascending by ratio, which inverts the percentages: more water is a thinner soap.
-    expect(useRow('General hand soap')).toContain('1.5:1 – 4:1');
+    expect(useRow('Hand soap')).toContain('1.5:1 – 4:1');
   });
 
   it('reaches the 10–15% uses no preset button can', () => {
@@ -825,7 +825,40 @@ describe('each intended use carries the water:paste ratio that reaches it', () =
     // A weighed 2,000 g pot, not the recipe's computed 1,600 g: at 30% the same 4,000 g
     // solution now needs 2,000 g of water, so hand soap's tight end moves 1.5:1 → 1:1.
     renderPanel({ measuredPasteGrams: '2000', wholeBatchPasteGrams: 1600 });
-    expect(useRow('General hand soap')).toContain('1:1 – 3:1');
+    expect(useRow('Hand soap')).toContain('1:1 – 3:1');
+  });
+
+  it('names the band without the filler word — the list is all soap', () => {
+    renderPanel();
+    expect(screen.getByText('Hand soap')).toBeTruthy();
+    expect(screen.queryByText('General hand soap')).toBeNull();
+  });
+
+  it('stands open, so the bands are readable without a click', () => {
+    renderPanel();
+    // The correlation between the two scales is the point of the block; behind a disclosure
+    // most makers never see it. Reference that answers "what am I aiming at" is not the
+    // always-true prose the budget files away.
+    const list = document.querySelector('details.dilution-uses') as HTMLDetailsElement;
+    expect(list.open).toBe(true);
+  });
+
+  it('stays shut once the maker shuts it, through the re-render a keystroke causes', () => {
+    // The panel re-renders on every keystroke in the target field. A bare `open` attribute
+    // would reassert itself; the maker's own collapse has to outlive it.
+    const { rerender } = renderPanel();
+    const list = document.querySelector('details.dilution-uses') as HTMLDetailsElement;
+    fireEvent.click(list.querySelector('summary')!);
+    expect(list.open).toBe(false);
+    rerender(
+      <DilutionPanel
+        {...POT}
+        soapConcentrationPercent="31"
+        onSoapConcentrationChange={() => {}}
+        weightUnit="g"
+      />,
+    );
+    expect((document.querySelector('details.dilution-uses') as HTMLDetailsElement).open).toBe(false);
   });
 
   it('offers no ratio for a use this paste cannot reach', () => {
@@ -842,6 +875,77 @@ describe('each intended use carries the water:paste ratio that reaches it', () =
     });
     expect(useRow('Dish soap')).toContain('35–45% soap');
     expect(useRow('Dish soap')).not.toMatch(/:1/);
+  });
+});
+
+describe('a starting point says what it starts', () => {
+  // The other half of the correlation. A bare "2:1" is a quantity of water; what a maker is
+  // choosing is a PRODUCT, and until the button said so the only way to find out was to
+  // click it and read the percentage back off the field.
+  //
+  // 1,200 g anhydrous + 400 g cook water = a 1,600 g pot. 1:1 makes a 3,200 g solution —
+  // 37.5% soap, inside dish and laundry's 35–45%. 2:1 makes 4,800 g — 25%, inside body
+  // wash's 10–35% and hand soap's 15–30%.
+  const POT = {
+    dilution: {
+      anhydrousGrams: 1200, solutionGrams: 4000, totalWaterGrams: 2800,
+      dilutionWaterGrams: 2400, glycerinGrams: 100, soapConcentrationPercent: 30,
+      targetExceedsPaste: false,
+    },
+    cookWaterGrams: 400,
+  };
+
+  const renderPanel = (props: Record<string, unknown> = {}) =>
+    render(
+      <DilutionPanel
+        {...POT}
+        soapConcentrationPercent="30"
+        onSoapConcentrationChange={() => {}}
+        weightUnit="g"
+        {...props}
+      />,
+    );
+
+  /** A preset button's whole label, ratio line and name line together. */
+  const preset = (ratio: string): string =>
+    screen
+      .getByRole('button', { name: new RegExp(`^${ratio.replace('.', '\\.')}\\b`) })
+      .textContent?.replace(/\s+/g, ' ')
+      .trim() ?? '';
+
+  it('names every use the ratio lands in', () => {
+    renderPanel();
+    expect(preset('1:1')).toContain('dish soap, laundry soap');
+    expect(preset('2:1')).toContain('body wash, hand soap');
+  });
+
+  it('keeps the ratio itself as the button\'s heading', () => {
+    renderPanel();
+    // The reference's own vocabulary stays primary: the name explains the ratio, the ratio
+    // is still what the maker picked.
+    expect(preset('2:1').startsWith('2:1')).toBe(true);
+  });
+
+  it('follows the pot when the paste is weighed', () => {
+    // A weighed 2,400 g pot: 1:1 now makes 4,800 g — 25% soap, which is body wash and hand
+    // soap, not the dish soap the recipe's lighter computed pot put it in.
+    renderPanel({ measuredPasteGrams: '2400', wholeBatchPasteGrams: 1600 });
+    expect(preset('1:1')).toContain('body wash, hand soap');
+    expect(preset('1:1')).not.toContain('dish soap');
+  });
+
+  it('shows the ratio alone when it lands in no common use', () => {
+    // A 400 g pot of soap in 1,200 g of paste is 33.3%; at 3:1 the solution is 4,800 g and
+    // the target 8.3% — below every band in the list, so there is no name to give.
+    renderPanel({
+      dilution: {
+        anhydrousGrams: 400, solutionGrams: 1333, totalWaterGrams: 933,
+        dilutionWaterGrams: 133, glycerinGrams: 40, soapConcentrationPercent: 30,
+        targetExceedsPaste: false,
+      },
+      cookWaterGrams: 800,
+    });
+    expect(preset('3:1')).toBe('3:1');
   });
 });
 
@@ -980,7 +1084,9 @@ describe('a ratio preset multiplies the pot the rest of the panel already knows 
         onSoapConcentrationChange={onSoapConcentrationChange}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: preset }));
+    // Prefix, not the whole name: a preset button's accessible name now carries the uses its
+    // ratio lands in ("2:1 body wash, hand soap"), which is what a screen reader should hear.
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${preset.replace('.', '\\.')}\\b`) }));
     return onSoapConcentrationChange;
   };
 
@@ -1082,7 +1188,7 @@ describe('a ratio preset multiplies the pot the rest of the panel already knows 
     render(
       <DilutionPanel {...BASE} dilution={null} onSoapConcentrationChange={onSoapConcentrationChange} />,
     );
-    const preset = screen.getByRole('button', { name: '2:1' });
+    const preset = screen.getByRole('button', { name: /^2:1\b/ });
     expect((preset as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(preset);
     expect(onSoapConcentrationChange).not.toHaveBeenCalled();
@@ -1257,7 +1363,7 @@ describe('a preset counts from the pot, not from the plan it is about to overwri
     // would have written 25.0% — a hundred grams of water apart at the bench.
     const onSoapConcentrationChange = vi.fn();
     render(<DilutionPanel {...PAST_TARGET} onSoapConcentrationChange={onSoapConcentrationChange} />);
-    fireEvent.click(screen.getByRole('button', { name: '2:1' }));
+    fireEvent.click(screen.getByRole('button', { name: /^2:1\b/ }));
     expect(onSoapConcentrationChange).toHaveBeenCalledWith('25.8');
     expect(onSoapConcentrationChange).not.toHaveBeenCalledWith('25');
   });
@@ -1299,7 +1405,7 @@ describe('a preset counts from the pot, not from the plan it is about to overwri
         onSoapConcentrationChange={onSoapConcentrationChange}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: '2:1' }));
+    fireEvent.click(screen.getByRole('button', { name: /^2:1\b/ }));
     expect(onSoapConcentrationChange).toHaveBeenCalledWith('27.6');
     expect(refusalAlerts()).toEqual([]);
     expect(alertTexts()).toEqual([expect.stringMatching(SOLUBILITY_CEILING)]);
@@ -3114,7 +3220,12 @@ describe("the plan row offers the reference's own starting ratios", () => {
 
   it('offers the four printed ratios without taking away the typed target', () => {
     render(<DilutionPanel {...PRESET_BASE} />);
-    for (const name of PRESETS) expect(screen.getByRole('button', { name })).toBeTruthy();
+    // Prefix-matched: each button's accessible name now continues into the uses its ratio
+    // lands in, which is what the correlation is for and what a screen reader should hear.
+    for (const name of PRESETS)
+      expect(
+        screen.getByRole('button', { name: new RegExp(`^${name.replace('.', '\\.')}\\b`) }),
+      ).toBeTruthy();
     // A maker who has recorded what their own recipe took must still be able to type it.
     expect(screen.getByLabelText('Target soap concentration percent')).toBeTruthy();
   });
@@ -3150,7 +3261,7 @@ describe("the plan row offers the reference's own starting ratios", () => {
         onSoapConcentrationChange={onSoapConcentrationChange}
       />,
     );
-    const preset = screen.getByRole('button', { name: '2:1' });
+    const preset = screen.getByRole('button', { name: /^2:1\b/ });
     // The plan ALREADY reads 25%, which is exactly what 2:1 lands at — the state the radio
     // could not be re-activated in. It still applies.
     fireEvent.click(preset);
@@ -3170,7 +3281,7 @@ describe("the plan row offers the reference's own starting ratios", () => {
     // that would change it.
     const onSoapConcentrationChange = vi.fn();
     render(<DilutionPanel {...PRESET_BASE} onSoapConcentrationChange={onSoapConcentrationChange} />);
-    const preset = screen.getByRole('button', { name: '2:1' });
+    const preset = screen.getByRole('button', { name: /^2:1\b/ });
     preset.focus();
     for (const key of ['Tab', 'ArrowDown', 'Enter', ' ', 'a']) {
       fireEvent.keyDown(preset, { key });
@@ -3184,7 +3295,7 @@ describe("the plan row offers the reference's own starting ratios", () => {
     // the preset wrote against what is on the field NOW, so typing over the figure drops it
     // on the next render. No effect, no reset, no second write.
     const { rerender } = render(<DilutionPanel {...PRESET_BASE} soapConcentrationPercent="25" />);
-    fireEvent.click(screen.getByRole('button', { name: '2:1' }));
+    fireEvent.click(screen.getByRole('button', { name: /^2:1\b/ }));
     expect(screen.getByText('2:1 → 25%')).toBeTruthy();
     rerender(<DilutionPanel {...PRESET_BASE} soapConcentrationPercent="40" />);
     expect(screen.queryByText(/→/)).toBeNull();
@@ -3291,7 +3402,7 @@ describe("the plan row offers the reference's own starting ratios", () => {
     // oz water, the table's own figure; 19.31 / 90.75) — inside the 20-30% band LS:2181
     // gives castile. So it is a castile-calibrated choice, and "a step between those two
     // rather than a starting point of its own" asserted the opposite of its only source.
-    expect(screen.getByRole('button', { name: '2.5:1' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^2\.5:1\b/ })).toBeTruthy();
     expect(text).toMatch(/2\.5:1/);
     expect(text).toMatch(/castile/i);
     expect(text).toMatch(/two ratio rows/i);
@@ -4060,7 +4171,7 @@ describe('a recorded jar in Custom amount scope', () => {
     // the match is ambiguous — but NOT, as an earlier version of this comment claimed,
     // against the recipe-target echo: that is a readOnly <input>, reachable by
     // getByDisplayValue and never by getByText. The real second match is the static
-    // dilution-uses table's "General hand soap: 15–30% soap" row, which renders
+    // dilution-uses table's "Hand soap: 15–30% soap" row, which renders
     // unconditionally. 900 lands the jar at 23.08% and matches exactly once.
     render(<DilutionPanel {...P} portionPasteGrams="400" portionWaterGrams="900" />);
     expect(screen.getByText('1,300 g')).toBeTruthy();
@@ -4446,7 +4557,7 @@ describe('one dilution surface: a plan and a record', () => {
     const { rerender } = render(
       <DilutionPanel {...PLAN30} onSoapConcentrationChange={onSoapConcentrationChange} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: '2:1' }));
+    fireEvent.click(screen.getByRole('button', { name: /^2:1\b/ }));
     expect(onSoapConcentrationChange).toHaveBeenCalledTimes(1);
     expect(onSoapConcentrationChange).toHaveBeenCalledWith('25');
 
@@ -4463,7 +4574,7 @@ describe('one dilution surface: a plan and a record', () => {
 
   it('says what the preset did, in the caption pattern the spec names', () => {
     render(<DilutionPanel {...PLAN30} soapConcentrationPercent="25" />);
-    fireEvent.click(screen.getByRole('button', { name: '2:1' }));
+    fireEvent.click(screen.getByRole('button', { name: /^2:1\b/ }));
     expect(screen.getByText(/2:1 → 25%/)).toBeTruthy();
   });
 

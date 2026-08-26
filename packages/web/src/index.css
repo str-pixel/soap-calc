@@ -2468,12 +2468,32 @@ a:hover {
 .dilution-preset {
   font: inherit;
   font-size: 0.85rem;
-  padding: 0.2rem 0.6rem;
+  padding: 0.3rem 0.7rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  /* Was a 999px pill, when the label was a bare "2:1". Now that the button carries the use
+     its ratio lands in, it is two stacked lines and a stadium shape would bow out around
+     them; a modest radius keeps the same quiet, non-segmented reading. */
+  border-radius: 0.7rem;
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+}
+/* Tabular figures so "1:1", "2.5:1" and "3:1" align down the row rather than drifting with
+   the width of each glyph. */
+.dilution-preset__ratio {
+  font-variant-numeric: tabular-nums;
+}
+/* What the ratio makes. Smaller at full --text-muted, never dimmed with opacity: this is
+   live text a maker reads before choosing, and 0.75 opacity puts #666 on #f0f0f0 under the
+   4.5:1 AA floor (the same trap the intended-use ratios fell into). */
+.dilution-preset__uses {
+  font-size: 0.7rem;
+  line-height: 1.25;
+  color: var(--text-muted);
 }
 .dilution-preset:hover:not(:disabled) {
   border-color: var(--accent);

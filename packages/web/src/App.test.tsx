@@ -212,7 +212,7 @@ describe('a ratio preset applies from the path the app actually opens on', () =>
       within(panel).getByLabelText('Target soap concentration percent') as HTMLInputElement;
     const seeded = targetField().value;
 
-    await userEvent.click(within(panel).getByRole('button', { name: '2:1' }));
+    await userEvent.click(within(panel).getByRole('button', { name: /^2:1\b/ }));
     const afterClick = targetField().value;
     expect(afterClick).not.toBe(seeded);
     expect(Number(afterClick)).toBeGreaterThan(0);
@@ -225,7 +225,7 @@ describe('a ratio preset applies from the path the app actually opens on', () =>
     // against real Chromium. Here, jsdom provides no native activation: userEvent
     // synthesizes the click for Space/Enter, so this test pins the handler's behaviour,
     // not the browser's.
-    const preset = within(panel).getByRole('button', { name: '3:1' });
+    const preset = within(panel).getByRole('button', { name: /^3:1\b/ });
     preset.focus();
     await userEvent.keyboard('{ }');
     const afterSpace = targetField().value;
