@@ -89,7 +89,7 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
         <summary className="disclosure__summary">Materials</summary>
         {/* aria-hidden: every input in the rows below already carries its own aria-label
             ("Price for Olive oil"), so the visible header must not add a second name. */}
-        <div className="pricing-row pricing-row--head" aria-hidden="true">
+        <div className="pricing-row--head" aria-hidden="true">
           <span>Material</span>
           <span style={{ textAlign: 'right' }}>Weight</span>
           <span style={{ textAlign: 'right' }}>Price</span>
@@ -222,7 +222,14 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
             The suggested price is the HERO. Every figure sat at 0.95rem before, which made
             "markup" exactly as loud as the number the whole panel exists to produce. */}
         <dl className="results-grid">
-          <div className="results-grid__item results-grid__item--primary">
+          <div
+            className={`results-grid__item results-grid__item--primary${
+              // No price yet: the em-dash placeholder set at hero scale paints as a solid
+              // accent bar rather than a figure. It keeps the hero's full-width slot so
+              // nothing jumps when a price arrives, but not the hero's type.
+              money(result.suggestedPricePerUnit) === '—' ? ' results-grid__item--blank' : ''
+            }`}
+          >
             <dt>Suggested price per {profile.outputUnit}</dt>
             <dd>{money(result.suggestedPricePerUnit)}</dd>
           </div>

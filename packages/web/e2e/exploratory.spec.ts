@@ -23,8 +23,14 @@ async function resultDd(page: Page, dtPattern: RegExp): Promise<string> {
   return (await dt.locator('xpath=following-sibling::dd[1]').innerText()).trim();
 }
 
+// The pricing outputs render through .results-grid now — the app's one figure list —
+// rather than a second idiom of their own. Scoped to the pricing panel because the
+// Pricing view also shows the Results panel, which uses the same class.
 async function pricingDd(page: Page, dtPattern: RegExp): Promise<string> {
-  const dt = page.locator('.pricing-results dt').filter({ hasText: dtPattern }).first();
+  const dt = page
+    .locator('.panel:has(> h2:text("Pricing & profit")) .results-grid dt')
+    .filter({ hasText: dtPattern })
+    .first();
   return (await dt.locator('xpath=following-sibling::dd[1]').innerText()).trim();
 }
 
@@ -707,7 +713,9 @@ test.describe('pricing & profit', () => {
     await first.fill('abc');
     await first.blur();
     await expect(page.getByTestId('price-incomplete')).toBeVisible();
-    await expect(page.locator('.pricing-results')).toContainText('—');
+    await expect(
+      page.locator('.panel:has(> h2:text("Pricing & profit")) .results-grid'),
+    ).toContainText('—');
   });
 
   test('labour and flat overhead increase batch cost by exact amounts', async ({ page }) => {
