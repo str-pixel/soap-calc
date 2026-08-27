@@ -269,3 +269,44 @@ test('the preset rows line up with the header that names their columns', async (
   expect(problems, 'browser complaints on the preset list').toEqual([]);
 });
 
+test('the Radar / Bars switch reads as a control, not as a caption', async ({ page }) => {
+  const problems = watchForErrors(page);
+  await page.goto('/');
+
+  // The panel opens on Bars, so the radar is only ever reached through this switch. The
+  // design pass demoted it from ink-filled segmented buttons to an underlined micro-label —
+  // correct in principle (ink fill belongs to the process switch it sits under) but taken to
+  // 0.62rem it became indistinguishable from the captions around it, and a whole view of the
+  // app went missing. "It is still in the DOM" is not the same as "a maker can find it".
+  const tab = page.getByRole('tab', { name: 'Radar' });
+  const label = await page
+    .locator('.micro-label, .results-grid dt')
+    .first()
+    .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  const style = await tab.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { size: parseFloat(s.fontSize), weight: s.fontWeight, color: s.color };
+  });
+  expect(
+    style.size,
+    `the switch is set at ${style.size}px against a ${label}px caption — it must outrank it`,
+  ).toBeGreaterThan(label);
+
+  // And the two states must be told apart by more than a 2px rule most people will not see.
+  const active = await page
+    .getByRole('tab', { name: 'Bars' })
+    .evaluate((el) => getComputedStyle(el).color);
+  expect(active, 'the selected view must differ in colour from the unselected one').not.toBe(
+    style.color,
+  );
+
+  // The thing it exists to reveal still arrives when pressed.
+  await tab.click();
+  const radar = await page
+    .locator('.property-radar')
+    .evaluate((el) => el.getBoundingClientRect().width);
+  expect(radar, 'the radar renders once its tab is chosen').toBeGreaterThan(100);
+
+  expect(problems, 'browser complaints on the properties switch').toEqual([]);
+});
+
