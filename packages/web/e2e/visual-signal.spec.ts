@@ -216,7 +216,13 @@ test('every boxless figure field fits the values this app actually holds', async
     ['input[aria-label^="Percent for"]', '100'],
   ] as const) {
     const m = await fits(sel, value);
-    expect(m.s, `${sel} clips "${value}" (${m.s}px of content in ${m.c}px)`).toBeLessThanOrEqual(m.c);
+    // ONE PIXEL OF GRACE, and exactly one. scrollWidth comes from the pixel-snapped overflow
+    // rect while clientWidth rounds the client box on its own, so a fractional-width field
+    // (5.2rem is 83.1875px) whose x lands on a half pixel reports scrollWidth = clientWidth + 1
+    // with nothing clipped — shifting the same box 0.5px flips it on and off, and Linux font
+    // metrics park it there in CI while macOS does not. The regressions these rows guard
+    // overflow by ~10px (the narrow field) and by a spinner's worth, never by one.
+    expect(m.s, `${sel} clips "${value}" (${m.s}px of content in ${m.c}px)`).toBeLessThanOrEqual(m.c + 1);
   }
 
   // Spin buttons steal width from a field this narrow and read as chrome on a rule that is
