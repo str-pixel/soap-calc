@@ -1154,6 +1154,140 @@ export function DilutionPanel({
     bottledGrams !== null &&
     governingFinishedGrams !== null &&
     bottledGrams > governingFinishedGrams + 0.5;
+  // THE STARTING POINTS, extracted so each scope can place them where they belong: in
+  // Whole batch they follow the scope switch (inputs -> reference -> figures); in Custom
+  // amount they wait until AFTER the jar's own input block — rendered between the scope
+  // switch and those fields, the strip interrupted the flow and the boundary sentence
+  // above it swept live inputs into "reference points".
+  const startingPoints = (
+    <>
+          {/* BUTTONS, not radios, and that is the whole design of them (spec §2). A radio group
+              claims one of its options describes the current state; these do not — they DO
+              something and stop. Nothing here re-derives a "current" ratio from the plan %, so a
+              value that matches no preset (a hand-typed 34%, or a 33.85 left behind by the
+              write-back this task deleted) simply leaves the group unmarked, which is the honest
+              reading of it.
+
+              It also retires an entire class of bug this file paid for twice: while these were
+              radios, re-asserting an ALREADY-CHECKED one fired no change event, so the obvious
+              remedy was inert by mouse and by keyboard and three handlers had to be hung on each
+              input to recover it (the Chromium event census that comment carried is no longer
+              needed — a button fires click for mouse, Space and Enter alike). And a Tab keyup
+              landing on a freshly focused radio could apply a ratio the maker never picked; a
+              button cannot be activated by arriving at it.
+
+              The legend keeps owning the DIRECTION: these read "2:1", and the same tokens mean
+              water:lye elsewhere in the app, so the group never restates the relationship on its
+              own. Neither name says "common" — "the most common ratios used are 1:1, 2:1 and 3:1"
+              is said of water:LYE (LS:1500), a different quantity at a different stage. What the
+              reference does say about these is that they are where makers begin (LS:1534), which
+              is what the legend says. */}
+          <div
+            className="dilution-presets"
+            role="group"
+            aria-label="Starting points for the water to paste ratio"
+          >
+            <span className="dilution-toggle__legend">Starting points</span>
+            {/* One bordered strip of four cells, each stating what pressing it does. No visual
+                header row any more: each cell stacks its own ratio, the % it sets, and what
+                that suits, so the columns a header would name no longer exist. NONE of the
+                cells is marked current — these write a value once and stop (see the group
+                comment above), so the strip never claims one of them describes the plan. */}
+            <div className="dilution-presets__strip">
+            {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => {
+              // ONE DERIVATION for the label and the click, so the row cannot promise a figure
+              // the press does not write. Null with no pot: there is nothing to multiply.
+              const percent =
+                dilution === null || pasteGrams === null
+                  ? null
+                  : ratioPresetPercent(dilution.anhydrousGrams, pasteGrams, Number(preset));
+              // WHAT THIS RATIO MAKES, named from the same bands the list below states, so the
+              // choice reads as a product rather than as a quantity of water. Computed from the
+              // pot in force, so weighing the paste moves the names with the arithmetic instead
+              // of leaving a label describing a batch no longer on the bench. Silent where the
+              // ratio lands outside every band — inventing a name would assert a use the
+              // reference does not list.
+              const uses = percent === null ? [] : lsDilutionUsesFor(percent);
+              const sets = percent === null ? '—' : `${formatConcentrationPercent(percent)}%`;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  className="dilution-preset"
+                  // Disabled with no pot to multiply: a control that does nothing when pressed is
+                  // worse than one that says it cannot. `dilution` null is "no oils yet", which
+                  // the panel's own ask at the bottom already explains.
+                  disabled={percent === null}
+                  onClick={() => {
+                    if (percent === null) return;
+                    onSoapConcentrationChange(String(percent));
+                  }}
+                  // With no oils there is no figure to promise, and "sets soap concentration
+                  // to —" is not a sentence. The row is disabled in that state anyway.
+                  aria-label={
+                    percent === null
+                      ? `${preset}:1 water to paste`
+                      : `${preset}:1 — sets soap concentration to ${sets}`
+                  }
+                >
+                  <span className="dilution-preset__ratio">{preset}:1</span>
+                  <span className="dilution-preset__sets">{sets}</span>
+                  {/* First words only in the cell — "body, hand" — the caption under the
+                      strip and the button's aria-label both carry the full product names. */}
+                  <span className="dilution-preset__uses">
+                    {uses.map((u) => u.label.toLowerCase().split(' ')[0]).join(', ')}
+                  </span>
+                </button>
+              );
+            })}
+            </div>
+            {/* One sentence naming what the endpoints make, since the cells abbreviate. Derived
+                from the same bands as the cells, so it cannot drift from them; silent when the
+                endpoint ratios land outside every band. */}
+            {(() => {
+              if (dilution === null || pasteGrams === null) return null;
+              const usesFor = (preset: string) =>
+                lsDilutionUsesFor(
+                  ratioPresetPercent(dilution.anhydrousGrams, pasteGrams, Number(preset)),
+                );
+              const first = LS_WATER_PASTE_RATIO_PRESETS[0];
+              const last = LS_WATER_PASTE_RATIO_PRESETS[LS_WATER_PASTE_RATIO_PRESETS.length - 1];
+              const firstUses = usesFor(first);
+              const lastUses = usesFor(last);
+              if (firstUses.length === 0 || lastUses.length === 0) return null;
+              const names = (u: ReturnType<typeof lsDilutionUsesFor>) => {
+                // Commas with ONE final "and": a 12.5% endpoint lands in four bands, and
+                // joining those with " and " alone read "baby or gentle soap and face soap
+                // and foaming dispenser and body wash".
+                const labels = u.map((x) => x.label.toLowerCase());
+                return labels.length > 1
+                  ? `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
+                  : labels[0];
+              };
+              return (
+                <p className="dilution-presets__caption">
+                  {first}:1 suits {names(firstUses)}; thinner ratios suit {names(lastUses)}.
+                </p>
+              );
+            })()}
+          </div>
+    </>
+  );
+
+  // THE HERO'S HONESTY GATE: is anything below contesting the plan the hero's figure
+  // serves? Each disjunct reads the SAME term its paragraph renders from (see those render
+  // sites), so this cannot drift into demoting a hero nothing disputes, or vice versa:
+  // a measured paste past the target's solution (exceedsSolutionAlert), a target the paste
+  // cannot reach, a paste already past the target (the honest 0 g), and the solubility
+  // ceiling. A contested hero keeps its figure — it is still the plan's own number — but
+  // drops the accent and points at the note, so the loudest thing on the panel is never an
+  // uncontradicted claim.
+  const heroContested =
+    exceedsSolutionAlert ||
+    (dilution?.targetExceedsPaste ?? false) ||
+    (dilutionScope === 'batch' && pasteAlreadyPastTarget) ||
+    lsConcentrationAboveAllMinimums(resolvedConcentrationPercent);
+
   return (
     <section className="panel panel--nested">
       <div className="panel__head">
@@ -1188,22 +1322,27 @@ export function DilutionPanel({
           legislates against. The caption states the claim's basis: which scope, and that
           nothing is poured yet (planGoverns in batch scope IS "no record"). */}
       {dilutionScope === 'batch' && dilution !== null && planGoverns && (
-        <div className="dilution-hero">
+        <div className={`dilution-hero${heroContested ? ' dilution-hero--contested' : ''}`}>
           <dl className="dilution-hero__item">
             <dt className="micro-label">Dilution water to add</dt>
             <dd className="dilution-hero__figure">
               {formatWeight(batchDilutionWaterGrams, weightUnit)}
             </dd>
           </dl>
-          <p className="dilution-hero__caption">Whole batch · nothing poured yet</p>
+          <p className="dilution-hero__caption">
+            {heroContested
+              ? 'Whole batch · check the note below before pouring'
+              : 'Whole batch · nothing poured yet'}
+          </p>
         </div>
       )}
       {/* ── THE PLAN ROW (spec §2) ─────────────────────────────────────────────────────────
-          The target % the maker is aiming at, and the reference's four starting ratios as
-          one-shot setters for it. Visible in both scopes and in every state, because it is
-          the recipe's own field: the mode radio that used to hide it behind "Target
-          concentration" is gone, and with it the states where copy pointed at a control the
-          screen did not have. */}
+          The target % the maker is aiming at. Visible in both scopes and in every state,
+          because it is the recipe's own field: the mode radio that used to hide it behind
+          "Target concentration" is gone, and with it the states where copy pointed at a
+          control the screen did not have. The reference's four starting ratios — one-shot
+          setters for this field — moved below the scope switch with the redesign; see
+          `startingPoints` above the return. */}
       <label className="dilution-row">
         <span className="dilution-row__label">Target soap concentration</span>
         <span className="dilution-row__value">
@@ -1443,8 +1582,13 @@ export function DilutionPanel({
           answers "dilute it all"; custom amount answers "make just this much now". */}
       {/* Radios styled as a segmented pair — semantics unchanged: this REALLY IS a
           selection (one scope is always in force), which is exactly what separates it from
-          the preset buttons above. The input fills its label invisibly, so the whole cell
-          is the radio's own hit target and label-based locators keep resolving to it. */}
+          the preset buttons. The input fills its label invisibly, so the whole cell is the
+          radio's own hit target and label-based locators keep resolving to it.
+
+          TEST AUTHORS: target these by accessible name (getByLabel('Custom amount')), never
+          by the span's text — the invisible input overlays the text, so a text-targeted
+          click reports "intercepts pointer events" and retries forever. Users are fine:
+          any click in the cell lands on the radio. */}
       <div className="dilution-row dilution-row--scope">
         <span className="dilution-row__label" aria-hidden="true">Scope</span>
         {/* "Scope — …" so the visible antecedent is contained in the group's accessible
@@ -1471,116 +1615,19 @@ export function DilutionPanel({
         </div>
       </div>
       {/* The boundary sentence (redesign): everything above this line is THIS batch's own
-          figures and record; everything the strip below offers is reference. Saying it once
-          here is what lets the strip sit this close to the record inputs without its
-          figures reading as more recipe state. */}
-      <p className="dilution-figures-note">
-        The figures above describe this batch. The targets below are reference points, not
-        part of the recipe.
-      </p>
-      {/* BUTTONS, not radios, and that is the whole design of them (spec §2). A radio group
-          claims one of its options describes the current state; these do not — they DO
-          something and stop. Nothing here re-derives a "current" ratio from the plan %, so a
-          value that matches no preset (a hand-typed 34%, or a 33.85 left behind by the
-          write-back this task deleted) simply leaves the group unmarked, which is the honest
-          reading of it.
-
-          It also retires an entire class of bug this file paid for twice: while these were
-          radios, re-asserting an ALREADY-CHECKED one fired no change event, so the obvious
-          remedy was inert by mouse and by keyboard and three handlers had to be hung on each
-          input to recover it (the Chromium event census that comment carried is no longer
-          needed — a button fires click for mouse, Space and Enter alike). And a Tab keyup
-          landing on a freshly focused radio could apply a ratio the maker never picked; a
-          button cannot be activated by arriving at it.
-
-          The legend keeps owning the DIRECTION: these read "2:1", and the same tokens mean
-          water:lye elsewhere in the app, so the group never restates the relationship on its
-          own. Neither name says "common" — "the most common ratios used are 1:1, 2:1 and 3:1"
-          is said of water:LYE (LS:1500), a different quantity at a different stage. What the
-          reference does say about these is that they are where makers begin (LS:1534), which
-          is what the legend says. */}
-      <div
-        className="dilution-presets"
-        role="group"
-        aria-label="Starting points for the water to paste ratio"
-      >
-        <span className="dilution-toggle__legend">Starting points</span>
-        {/* One bordered strip of four cells, each stating what pressing it does. No visual
-            header row any more: each cell stacks its own ratio, the % it sets, and what
-            that suits, so the columns a header would name no longer exist. NONE of the
-            cells is marked current — these write a value once and stop (see the group
-            comment above), so the strip never claims one of them describes the plan. */}
-        <div className="dilution-presets__strip">
-        {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => {
-          // ONE DERIVATION for the label and the click, so the row cannot promise a figure
-          // the press does not write. Null with no pot: there is nothing to multiply.
-          const percent =
-            dilution === null || pasteGrams === null
-              ? null
-              : ratioPresetPercent(dilution.anhydrousGrams, pasteGrams, Number(preset));
-          // WHAT THIS RATIO MAKES, named from the same bands the list below states, so the
-          // choice reads as a product rather than as a quantity of water. Computed from the
-          // pot in force, so weighing the paste moves the names with the arithmetic instead
-          // of leaving a label describing a batch no longer on the bench. Silent where the
-          // ratio lands outside every band — inventing a name would assert a use the
-          // reference does not list.
-          const uses = percent === null ? [] : lsDilutionUsesFor(percent);
-          const sets = percent === null ? '—' : `${formatConcentrationPercent(percent)}%`;
-          return (
-            <button
-              key={preset}
-              type="button"
-              className="dilution-preset"
-              // Disabled with no pot to multiply: a control that does nothing when pressed is
-              // worse than one that says it cannot. `dilution` null is "no oils yet", which
-              // the panel's own ask at the bottom already explains.
-              disabled={percent === null}
-              onClick={() => {
-                if (percent === null) return;
-                onSoapConcentrationChange(String(percent));
-              }}
-              // With no oils there is no figure to promise, and "sets soap concentration
-              // to —" is not a sentence. The row is disabled in that state anyway.
-              aria-label={
-                percent === null
-                  ? `${preset}:1 water to paste`
-                  : `${preset}:1 — sets soap concentration to ${sets}`
-              }
-            >
-              <span className="dilution-preset__ratio">{preset}:1</span>
-              <span className="dilution-preset__sets">{sets}</span>
-              {/* First words only in the cell — "body, hand" — the caption under the
-                  strip and the button's aria-label both carry the full product names. */}
-              <span className="dilution-preset__uses">
-                {uses.map((u) => u.label.toLowerCase().split(' ')[0]).join(', ')}
-              </span>
-            </button>
-          );
-        })}
-        </div>
-        {/* One sentence naming what the endpoints make, since the cells abbreviate. Derived
-            from the same bands as the cells, so it cannot drift from them; silent when the
-            endpoint ratios land outside every band. */}
-        {(() => {
-          if (dilution === null || pasteGrams === null) return null;
-          const usesFor = (preset: string) =>
-            lsDilutionUsesFor(
-              ratioPresetPercent(dilution.anhydrousGrams, pasteGrams, Number(preset)),
-            );
-          const first = LS_WATER_PASTE_RATIO_PRESETS[0];
-          const last = LS_WATER_PASTE_RATIO_PRESETS[LS_WATER_PASTE_RATIO_PRESETS.length - 1];
-          const firstUses = usesFor(first);
-          const lastUses = usesFor(last);
-          if (firstUses.length === 0 || lastUses.length === 0) return null;
-          const names = (u: ReturnType<typeof lsDilutionUsesFor>) =>
-            u.map((x) => x.label.toLowerCase()).join(' and ');
-          return (
-            <p className="dilution-presets__caption">
-              {first}:1 suits {names(firstUses)}; thinner ratios suit {names(lastUses)}.
-            </p>
-          );
-        })()}
-      </div>
+          figures and record; everything the strip below offers is reference. Whole batch
+          ONLY, with the strip: in Custom amount there are no batch figures above it, and
+          the elements below it are the jar's own INPUTS — the sentence labelled live
+          controls as reference and called the jar screen "this batch". */}
+      {dilutionScope === 'batch' && (
+        <>
+          <p className="dilution-figures-note">
+            The figures above describe this batch. The targets below are reference points,
+            not part of the recipe.
+          </p>
+          {startingPoints}
+        </>
+      )}
       {/* CUSTOM AMOUNT'S TWO WAYS TO DESCRIBE ONE JAR, and they stay mutually exclusive:
           size a jar from a target volume, or record the jar you actually weighed out and
           poured. Recording it wins — a record leads in its own scope (spec §2) — so the
@@ -1838,6 +1885,10 @@ export function DilutionPanel({
             of water counts, and is where the record starts.
           </p>
         )}
+      {/* Custom amount's turn for the strip: after the jar's inputs and record readout,
+          before the sizing figures — reference sits between the maker's own numbers and
+          the derived ones, never between a control and the fields it just revealed. */}
+      {dilutionScope === 'portion' && startingPoints}
       {dilution ? (
         <>
           {dilutionScope === 'batch' ? (

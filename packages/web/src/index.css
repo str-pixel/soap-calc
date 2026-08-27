@@ -2228,39 +2228,83 @@ details[open] > .disclosure__summary::before {
   border: 1px solid var(--accent);
 }
 
-/* The fatty list view: the same readings as the bars, one hairline row per group —
-   label, its typical range in passing, and the figure. The value/status spans reuse the
-   property-bars classes so a reading is styled identically whichever view shows it. */
-.fatty-list {
+/* The fatty column chart (the Bars view): ink columns on the paper ground, accent where
+   the group sits outside its band, the reading riding each column's top. Bottom-aligned
+   by the flex row, so no fixed chart height is needed — the tallest column sets it. */
+.fatty-chart {
   list-style: none;
-  margin: 0.9rem 0 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  margin: 1.3rem 0 0;
   padding: 0;
 }
 
-.fatty-list__row {
+.fatty-chart__col {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.45rem 0;
-  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
 }
 
-.fatty-list__row:last-child {
-  border-bottom: none;
+.fatty-chart__reading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  margin-bottom: 0.35rem;
+  text-align: center;
 }
 
-.fatty-list__label {
-  font-size: 0.9rem;
+/* Nine columns squeeze tighter than the verdict word — let it stand on one line and
+   bleed a few px over the column edge rather than stack "TOO / LOW". Readings sit at
+   different heights per column, so the bleed collides with nothing. */
+.fatty-chart__reading .property-bars__status {
+  white-space: nowrap;
+}
+
+.fatty-chart__bar {
+  position: relative;
+  width: 82%;
+  background: var(--text);
+}
+
+.fatty-chart__bar--outside {
+  background: var(--accent);
+}
+
+/* The dashed paper notch at every column's foot — it keeps a near-zero group's column
+   visible as a column rather than a stray sliver, and marks the shared baseline. */
+.fatty-chart__bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  border-top: 2px dashed var(--bg);
+}
+
+/* Per-column top borders join into the chart's one continuous baseline. */
+.fatty-chart__abbr {
+  width: 100%;
+  margin-top: 0;
+  border-top: 1.5px solid var(--text);
+  padding-top: 0.45rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--text-strong);
 }
 
-.fatty-list__typical {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: var(--label-size);
-  letter-spacing: 0.06em;
-  color: var(--caption);
-  white-space: nowrap;
+.fatty-chart__legend {
+  margin: 0.8rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .fatty-ratio {
@@ -2745,6 +2789,13 @@ details[open] > .disclosure__summary::before {
   line-height: 0.9;
   letter-spacing: -0.04em;
   color: var(--accent);
+}
+
+/* Contested: an alert below disputes the plan this figure serves, so the figure keeps
+   its place but yields the accent — the loudest thing on the panel must never be an
+   uncontradicted claim. */
+.dilution-hero--contested .dilution-hero__figure {
+  color: var(--text);
 }
 
 .dilution-hero__caption {

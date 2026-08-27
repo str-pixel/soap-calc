@@ -19,10 +19,29 @@ type FattyAcidPanelProps = {
 
 const SCALE_MAX = 100;
 
-// List first: the compact readout answers "what is this blend made of" in one column of
-// figures; the bars are the same numbers against their typical bands, a step down into
-// detail — the same list-before-detail order the redesign gave this panel's mock.
+// List first: the zoned-meter rows answer "where does each group sit against its band";
+// Bars is the mock's column chart — the same readings as heights, for the blend's shape
+// at a glance. (An earlier List was a text-only compact readout; the meters took its tab
+// when the chart arrived, since meter rows read as a list and the chart is the bars.)
 const FATTY_VIEWS: Array<'list' | 'bars'> = ['list', 'bars'];
+
+// Column abbreviations for the chart, per display-group key, with the legend line below
+// the chart expanding every one — the cell never stands alone.
+const FATTY_ABBR: Record<string, string> = {
+  lauricMyristic: 'Lau',
+  palmiticStearic: 'Pal',
+  oleic: 'Ole',
+  linoleic: 'Lin',
+  linolenic: 'Lnn',
+  ricinoleic: 'Ric',
+  otherSaturated: 'Osa',
+  otherUnsaturated: 'Oun',
+  trans: 'Trs',
+};
+
+// The tallest bar in the chart area, in px — every bar scales to the recipe's own largest
+// group rather than to a fixed 100, so a typical blend uses the full height.
+const CHART_BAR_MAX_PX = 150;
 
 /** Clamp a 0–100 percentage to a track position. */
 const pct = (n: number): number => Math.max(0, Math.min(100, n));
@@ -69,6 +88,44 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
   }
 
   const { saturated, unsaturated } = saturatedUnsaturatedRatio(result.profile);
+
+  // ONE derivation for both views (a review finding): the meters and the chart must state
+  // the same readings, so the values, bands, and verdicts are computed once and each view
+  // only decides how much geometry accompanies them.
+  const groups = FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
+    const guide = FORMULATION_FATTY_ACID_GUIDE[key];
+    const value = sumFattyAcids(result.profile!, acids);
+    const inBand = inGuideBand(value, guide.low, guide.high);
+    // Low-coverage values are already flagged as estimates (the "~" prefix); don't also
+    // mark them out-of-range — the guide band isn't a meaningful signal on partial data.
+    const outOfRange = !inBand && !lowCoverage;
+    return { key, guide, value, outOfRange };
+  });
+  const chartScaleMax = Math.max(...groups.map((g) => g.value), 1);
+
+  // The same accessible reading in both views — status verdict plus a role="meter" value —
+  // so switching views can never change what is claimed. `bare` drops the visible "%" in
+  // the chart (the columns' subtitle already says percent); the accessible name keeps it.
+  const reading = (g: (typeof groups)[number], bare: boolean) => (
+    <>
+      {g.outOfRange && (
+        <span className="property-bars__status">
+          {g.value < g.guide.low ? 'Too low' : 'Too high'}
+        </span>
+      )}
+      <span
+        className={`property-bars__value${g.outOfRange ? ' property-bars__value--outside' : ''}`}
+        role="meter"
+        aria-valuemin={0}
+        aria-valuemax={SCALE_MAX}
+        aria-valuenow={Math.round(g.value * 10) / 10}
+        aria-label={`${g.guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(g.value)}${g.outOfRange ? ' — outside typical range' : ''}`}
+      >
+        {lowCoverage ? '~' : ''}
+        {bare ? formatSoapPropertyPercent(g.value).replace('%', '') : formatSoapPropertyPercent(g.value)}
+      </span>
+    </>
+  );
 
   return (
     <section className="panel">
@@ -135,126 +192,103 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
         tabIndex={0}
       >
       {view === 'list' ? (
-        <ul className="fatty-list" aria-label="Recipe fatty acid groups">
-          {FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
-            const guide = FORMULATION_FATTY_ACID_GUIDE[key];
-            const value = sumFattyAcids(result.profile!, acids);
-            const inBand = inGuideBand(value, guide.low, guide.high);
-            const outOfRange = !inBand && !lowCoverage;
+        /* The zoned-meter rows: each group against its typical band, marker where the
+           recipe lands. This is the "list" — one labelled row per group. */
+        <ul className="property-bars" aria-label="Recipe fatty acid groups">
+          {groups.map((g) => {
+            // Scale row: render each boundary number that fits, and hide a Low/High caption
+            // when a fitting tick would otherwise collide with it (see CAPTION_ZONE). Both
+            // ends checked symmetrically so a left-hugging band (ricinoleic 4–7) yields
+            // Low, not High.
+            const lowFits = tickFits(g.guide.low);
+            const highFits = tickFits(g.guide.high);
+            const showLow =
+              !(lowFits && pct(g.guide.low) < CAPTION_ZONE) &&
+              !(highFits && pct(g.guide.high) < CAPTION_ZONE);
+            const showHigh =
+              !(highFits && pct(g.guide.high) > 100 - CAPTION_ZONE) &&
+              !(lowFits && pct(g.guide.low) > 100 - CAPTION_ZONE);
             return (
-              <li key={key} className="fatty-list__row">
-                <span className="fatty-list__label">{guide.label}</span>
-                <span className="fatty-list__typical">
-                  typical {formatPropertyRangePercent(guide.low, guide.high)}
-                </span>
-                <span className="property-bars__reading">
-                  {outOfRange && (
-                    <span className="property-bars__status">
-                      {value < guide.low ? 'Too low' : 'Too high'}
+              <li key={g.key} className="property-bars__row">
+                <div className="property-bars__label">
+                  <span>{g.guide.label}</span>
+                  <span className="property-bars__reading">{reading(g, false)}</span>
+                </div>
+                {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
+                    typical range, marker = where this recipe lands. Decorative — the
+                    value's role="meter" and the sr-only range text carry it for AT. */}
+                <div className="property-meter" aria-hidden="true">
+                  <span
+                    className="property-meter__band property-meter__band--suggested"
+                    style={{
+                      left: `${pct(g.guide.low)}%`,
+                      width: `${pct(g.guide.high) - pct(g.guide.low)}%`,
+                    }}
+                  />
+                  <span
+                    className={`property-meter__marker${g.outOfRange ? ' property-meter__marker--outside' : ''}`}
+                    style={{ left: `${pct(g.value)}%` }}
+                  />
+                </div>
+                <div className="property-meter__scale" aria-hidden="true">
+                  {showLow && <span className="property-meter__extreme">Low</span>}
+                  {lowFits && (
+                    <span className="property-meter__tick" style={{ left: `${pct(g.guide.low)}%` }}>
+                      {Math.round(g.guide.low)}
                     </span>
                   )}
-                  <span
-                    className={`property-bars__value${outOfRange ? ' property-bars__value--outside' : ''}`}
-                    role="meter"
-                    aria-valuemin={0}
-                    aria-valuemax={SCALE_MAX}
-                    aria-valuenow={Math.round(value * 10) / 10}
-                    aria-label={`${guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}${outOfRange ? ' — outside typical range' : ''}`}
-                  >
-                    {lowCoverage ? '~' : ''}
-                    {formatSoapPropertyPercent(value)}
-                  </span>
-                </span>
+                  {highFits && (
+                    <span className="property-meter__tick" style={{ left: `${pct(g.guide.high)}%` }}>
+                      {Math.round(g.guide.high)}
+                    </span>
+                  )}
+                  {showHigh && (
+                    <span className="property-meter__extreme property-meter__extreme--high">High</span>
+                  )}
+                </div>
+                <p className="sr-only">
+                  Typical {formatPropertyRangePercent(g.guide.low, g.guide.high)}
+                </p>
               </li>
             );
           })}
         </ul>
       ) : (
-      <ul className="property-bars" aria-label="Recipe fatty acid groups">
-        {FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
-          const guide = FORMULATION_FATTY_ACID_GUIDE[key];
-          const value = sumFattyAcids(result.profile!, acids);
-          const inBand = inGuideBand(value, guide.low, guide.high);
-          // Low-coverage values are already flagged as estimates (the "~" prefix); don't also
-          // mark them out-of-range — the guide band isn't a meaningful signal on partial data.
-          const outOfRange = !inBand && !lowCoverage;
-
-          // Scale row: render each boundary number that fits, and hide a Low/High caption when a
-          // fitting tick would otherwise collide with it (see CAPTION_ZONE). Both ends checked
-          // symmetrically so a left-hugging band (ricinoleic 4–7) yields Low, not High.
-          const lowFits = tickFits(guide.low);
-          const highFits = tickFits(guide.high);
-          const showLow =
-            !(lowFits && pct(guide.low) < CAPTION_ZONE) &&
-            !(highFits && pct(guide.high) < CAPTION_ZONE);
-          const showHigh =
-            !(highFits && pct(guide.high) > 100 - CAPTION_ZONE) &&
-            !(lowFits && pct(guide.low) > 100 - CAPTION_ZONE);
-
-          return (
-            <li key={key} className="property-bars__row">
-              <div className="property-bars__label">
-                <span>{guide.label}</span>
-                <span className="property-bars__reading">
-                  {/* Non-color, real-text out-of-range signal (WCAG 1.4.1), the same verdict the
-                      bar-property rows use; the meter's aria-label below also names the status. */}
-                  {outOfRange && (
-                    <span className="property-bars__status">
-                      {value < guide.low ? 'Too low' : 'Too high'}
-                    </span>
-                  )}
-                  <span
-                    className={`property-bars__value${outOfRange ? ' property-bars__value--outside' : ''}`}
-                    role="meter"
-                    aria-valuemin={0}
-                    aria-valuemax={SCALE_MAX}
-                    aria-valuenow={Math.round(value * 10) / 10}
-                    aria-label={`${guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}${outOfRange ? ' — outside typical range' : ''}`}
-                  >
-                    {lowCoverage ? '~' : ''}
-                    {formatSoapPropertyPercent(value)}
-                  </span>
-                </span>
-              </div>
-              {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band = typical
-                  range, marker = where this recipe lands. Decorative — the value's role="meter"
-                  and the sr-only range text carry it for AT. */}
-              <div className="property-meter" aria-hidden="true">
+        /* The column chart (the redesign's Bars): the same readings as heights, scaled to
+           the recipe's own largest group. Verdict and figure ride each column's top; a
+           dashed paper notch marks every column's foot so the near-zero groups still show
+           where their bar stands. Cells abbreviate — the legend line expands every one. */
+        <>
+          <ul className="fatty-chart" aria-label="Recipe fatty acid groups">
+            {groups.map((g) => (
+              <li key={g.key} className="fatty-chart__col">
+                <span className="fatty-chart__reading">{reading(g, true)}</span>
                 <span
-                  className="property-meter__band property-meter__band--suggested"
+                  className={`fatty-chart__bar${g.outOfRange ? ' fatty-chart__bar--outside' : ''}`}
                   style={{
-                    left: `${pct(guide.low)}%`,
-                    width: `${pct(guide.high) - pct(guide.low)}%`,
+                    height: `${Math.max(Math.round((g.value / chartScaleMax) * CHART_BAR_MAX_PX), 3)}px`,
                   }}
+                  aria-hidden="true"
                 />
-                <span
-                  className={`property-meter__marker${outOfRange ? ' property-meter__marker--outside' : ''}`}
-                  style={{ left: `${pct(value)}%` }}
-                />
-              </div>
-              {/* Scale row: Low / High at the extremes, typical-range boundary numbers under the
-                  band edges. A caption yields to a boundary number that lands in its zone. */}
-              <div className="property-meter__scale" aria-hidden="true">
-                {showLow && <span className="property-meter__extreme">Low</span>}
-                {lowFits && (
-                  <span className="property-meter__tick" style={{ left: `${pct(guide.low)}%` }}>
-                    {Math.round(guide.low)}
-                  </span>
-                )}
-                {highFits && (
-                  <span className="property-meter__tick" style={{ left: `${pct(guide.high)}%` }}>
-                    {Math.round(guide.high)}
-                  </span>
-                )}
-                {showHigh && (
-                  <span className="property-meter__extreme property-meter__extreme--high">High</span>
-                )}
-              </div>
-              <p className="sr-only">Typical {formatPropertyRangePercent(guide.low, guide.high)}</p>
-            </li>
-          );
-        })}
-      </ul>
+                <span className="fatty-chart__abbr" aria-hidden="true">
+                  {FATTY_ABBR[g.key]}
+                </span>
+                <p className="sr-only">
+                  Typical {formatPropertyRangePercent(g.guide.low, g.guide.high)}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="fatty-chart__legend">
+            {groups
+              .map(
+                (g) =>
+                  `${FATTY_ABBR[g.key]} ${g.guide.label.replace(/\s*\(.*\)$/, '').toLowerCase()}`,
+              )
+              .join(' · ')}
+            .
+          </p>
+        </>
       )}
       </div>
 

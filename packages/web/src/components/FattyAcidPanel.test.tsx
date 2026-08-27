@@ -72,9 +72,9 @@ test('does not flag an in-range bar as outside range', () => {
   expect(oleicMeter.getAttribute('aria-label')).not.toMatch(/outside typical range/i);
 });
 
-// The redesign's List | Bars toggle. List leads (the compact readout), the bars are the
-// step down into detail — and the tabs carry full ARIA wiring like the properties switch.
-test('opens on the list view, and the Bars tab swaps in the zoned meters', () => {
+// The redesign's List | Bars toggle. List (default) is the zoned-meter rows; Bars is the
+// mock's column chart — and the tabs carry full ARIA wiring like the properties switch.
+test('opens on the meter list, and the Bars tab swaps in the column chart', () => {
   render(
     <FattyAcidPanel
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
@@ -87,19 +87,51 @@ test('opens on the list view, and the Bars tab swaps in the zoned meters', () =>
   // Roving tabindex: exactly the active tab is in the tab order.
   expect(listTab.tabIndex).toBe(0);
   expect(barsTab.tabIndex).toBe(-1);
-  // The list renders rows without meter tracks; the readings are all present.
-  expect(document.querySelector('.fatty-list')).not.toBeNull();
-  expect(document.querySelector('.property-meter')).toBeNull();
+  // List = the zoned meters, one row per group.
+  expect(document.querySelector('.property-meter')).not.toBeNull();
+  expect(document.querySelector('.fatty-chart')).toBeNull();
   expect(screen.getAllByRole('meter').length).toBeGreaterThanOrEqual(6);
 
   fireEvent.click(barsTab);
   expect(barsTab.getAttribute('aria-selected')).toBe('true');
-  expect(document.querySelector('.fatty-list')).toBeNull();
-  expect(document.querySelector('.property-meter')).not.toBeNull();
+  expect(document.querySelector('.property-meter')).toBeNull();
+  expect(document.querySelector('.fatty-chart')).not.toBeNull();
   // The panel is labelled by whichever tab is active.
   expect(document.getElementById('fatty-tabpanel')?.getAttribute('aria-labelledby')).toBe(
     'fatty-tab-bars',
   );
+});
+
+test('the chart scales columns to the largest group, colours verdicts, and explains its abbreviations', () => {
+  render(
+    <FattyAcidPanel
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+    />,
+  );
+  fireEvent.click(screen.getByRole('tab', { name: 'Bars' }));
+  const cols = Array.from(document.querySelectorAll('.fatty-chart__col'));
+  expect(cols.length).toBe(9);
+  const heightOf = (col: Element) =>
+    parseFloat((col.querySelector('.fatty-chart__bar') as HTMLElement).style.height);
+  // Oleic (41) is this profile's largest group — its column is the tallest, at full scale.
+  const byAbbr = (abbr: string) =>
+    cols.find((c) => c.querySelector('.fatty-chart__abbr')!.textContent === abbr)!;
+  const heights = cols.map(heightOf);
+  expect(heightOf(byAbbr('Ole'))).toBe(Math.max(...heights));
+  // Even a zero-value group keeps a visible stub — a column, not a missing entry.
+  expect(heightOf(byAbbr('Ric'))).toBeGreaterThan(0);
+  // Verdict colouring: trans (22 against 0–2) is out of range and carries the outside
+  // class; linoleic (11 against 7–14) is in range and does not.
+  expect(byAbbr('Trs').querySelector('.fatty-chart__bar--outside')).not.toBeNull();
+  expect(byAbbr('Lin').querySelector('.fatty-chart__bar--outside')).toBeNull();
+  // Every abbreviation the cells use is expanded once in the legend line.
+  const legend = document.querySelector('.fatty-chart__legend')!.textContent!;
+  for (const abbr of ['Lau', 'Pal', 'Ole', 'Lin', 'Lnn', 'Ric', 'Osa', 'Oun', 'Trs']) {
+    expect(legend).toContain(abbr);
+  }
+  expect(legend).toContain('Lau lauric + myristic');
+  expect(legend).toContain('Trs trans');
+  expect(legend).not.toContain('(');
 });
 
 test('the fatty view tabs traverse with arrow keys, starting from the list', () => {

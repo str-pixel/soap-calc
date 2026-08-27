@@ -4760,3 +4760,57 @@ test('the hero leads with the plan pour and its basis caption, and stands down u
   render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" />);
   expect(document.querySelector('.dilution-hero')).toBeNull();
 });
+
+// Review fixes on the redesign: the boundary prose and strip place per scope, and the
+// hero yields its accent whenever something below contests the plan.
+test('Custom amount: no batch boundary sentence, and the strip waits until after the jar inputs', () => {
+  render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" />);
+  // The sentence labelled the jar's own inputs as "reference points" and called the jar
+  // screen "this batch" — batch scope only now.
+  expect(screen.queryByText(/The figures above describe this batch/)).toBeNull();
+  // The strip still renders, but AFTER the jar's input block in document order, so the
+  // scope switch flows straight into the fields it reveals.
+  const strip = document.querySelector('.dilution-presets__strip')!;
+  expect(strip).not.toBeNull();
+  const jarInput = screen.getByLabelText('Amount to make (ml)');
+  expect(
+    jarInput.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
+    'the strip follows the jar inputs',
+  ).toBeTruthy();
+  cleanup();
+
+  // Whole batch keeps the sentence, ahead of the strip.
+  render(<DilutionPanel {...BASE} />);
+  const note = screen.getByText(/The figures above describe this batch/);
+  const batchStrip = document.querySelector('.dilution-presets__strip')!;
+  expect(note.compareDocumentPosition(batchStrip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('the hero yields its accent and points at the note when the plan is contested', () => {
+  // BASE's plan is 30% — uncontested: accent hero, pre-pour caption.
+  render(<DilutionPanel {...BASE} />);
+  expect(document.querySelector('.dilution-hero--contested')).toBeNull();
+  expect(screen.getByText('Whole batch · nothing poured yet')).toBeTruthy();
+  cleanup();
+
+  // 60% is above every recipe type's solubility ceiling — the alert renders below, and
+  // the hero must not stay the loudest uncontradicted claim on the panel.
+  render(<DilutionPanel {...BASE} soapConcentrationPercent="60" />);
+  expect(document.querySelector('.dilution-hero--contested')).not.toBeNull();
+  expect(screen.getByText('Whole batch · check the note below before pouring')).toBeTruthy();
+  expect(screen.queryByText('Whole batch · nothing poured yet')).toBeNull();
+});
+
+test('a many-band endpoint reads as a comma list with one final "and"', () => {
+  // A weighed 2,400 g pot puts 3:1 at 12.5% — inside FOUR bands. Joined with " and "
+  // alone this read "baby or gentle soap and face soap and foaming dispenser and body
+  // wash".
+  render(
+    <DilutionPanel {...BASE} measuredPasteGrams="2400" wholeBatchPasteGrams={1600} />,
+  );
+  expect(
+    screen.getByText(
+      /thinner ratios suit baby or gentle soap, face soap, foaming dispenser and body wash\./,
+    ),
+  ).toBeTruthy();
+});
