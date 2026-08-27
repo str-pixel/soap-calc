@@ -2235,7 +2235,9 @@ details[open] > .disclosure__summary::before {
   list-style: none;
   display: flex;
   align-items: flex-end;
-  gap: 3px;
+  /* No flex gap: the columns' spacing comes from the bars' own width, so the abbr cells
+     touch and their top borders really do join into one baseline (a gap notched it). */
+  gap: 0;
   margin: 1.3rem 0 0;
   padding: 0;
 }

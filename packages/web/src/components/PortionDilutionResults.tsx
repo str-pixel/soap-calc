@@ -195,7 +195,18 @@ export function portionDilutionFor({
     !pasteAlreadyThinner &&
     dilution.solutionGrams - rejection.wholeBatchPasteBasis < 0;
   const portion =
-    pasteAlreadyThinner || measurementRejected || unmeasuredPasteAlreadyThinner || targetMlSubTenthPrecision
+    // A rejected reading no longer suppresses the figures BY ITSELF: the batch scope's own
+    // precedent is that a refused reading falls back to the computed pot and the plan goes
+    // on being described, with the refusal beside the field owing the account — while this
+    // component answered the same state with an empty fragment (no figures, no line saying
+    // why; a maker mistyping the paste weight watched the whole sizing grid vanish). The
+    // rejection still suppresses WITH targetExceedsPaste, where the fallback figures would
+    // be computed from the clamp and are unusable — and there the refusal is on screen to
+    // answer for the missing grid.
+    pasteAlreadyThinner ||
+    (measurementRejected && dilution.targetExceedsPaste) ||
+    unmeasuredPasteAlreadyThinner ||
+    targetMlSubTenthPrecision
       ? null
       : lsPartialDilution(
           {

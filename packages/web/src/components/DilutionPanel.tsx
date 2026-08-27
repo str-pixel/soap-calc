@@ -1275,17 +1275,30 @@ export function DilutionPanel({
   );
 
   // THE HERO'S HONESTY GATE: is anything below contesting the plan the hero's figure
-  // serves? Each disjunct reads the SAME term its paragraph renders from (see those render
-  // sites), so this cannot drift into demoting a hero nothing disputes, or vice versa:
-  // a measured paste past the target's solution (exceedsSolutionAlert), a target the paste
-  // cannot reach, a paste already past the target (the honest 0 g), and the solubility
-  // ceiling. A contested hero keeps its figure — it is still the plan's own number — but
-  // drops the accent and points at the note, so the loudest thing on the panel is never an
+  // serves? RENDER-KEYED, disjunct by disjunct, per this file's own four-times-paid rule:
+  // the first draft read `dilution.targetExceedsPaste` — the flag — and a VALID measurement
+  // suppresses every voice that flag has (the measurement outranks the assumed cook water
+  // the flag is derived from), so the hero said "check the note below" over a screen that
+  // says nothing, in exactly the shape the flag-vs-render comments here warn about.
+  //   exceedsSolutionAlert          — the rejection's own paragraph (a render const);
+  //   overDilutionSpokenFor         — targetExceedsPaste's rendered voices (in batch, its
+  //                                   alert; the child term is null-scoped away here);
+  //   cantTellGate                  — the flag's hedge voice, when an undeclared liquid
+  //                                   makes the verdict unknowable (renders in the
+  //                                   alternative-liquid clauses);
+  //   pasteAlreadyPastTargetSpokenFor — the honest-0 g verdict's rendered voices;
+  //   the solubility ceiling FLAG   — safe bare: whenever it is true, either its own
+  //                                   sentence renders or one of the suppressors it stands
+  //                                   down for does, and every suppressor is already a
+  //                                   disjunct above.
+  // A contested hero keeps its figure — it is still the plan's own number — but drops the
+  // accent and points at the note, so the loudest thing on the panel is never an
   // uncontradicted claim.
   const heroContested =
     exceedsSolutionAlert ||
-    (dilution?.targetExceedsPaste ?? false) ||
-    (dilutionScope === 'batch' && pasteAlreadyPastTarget) ||
+    overDilutionSpokenFor ||
+    cantTellGate ||
+    pasteAlreadyPastTargetSpokenFor ||
     lsConcentrationAboveAllMinimums(resolvedConcentrationPercent);
 
   return (
@@ -1622,7 +1635,7 @@ export function DilutionPanel({
       {dilutionScope === 'batch' && (
         <>
           <p className="dilution-figures-note">
-            The figures above describe this batch. The targets below are reference points,
+            The figures above describe this batch. The starting points below are reference,
             not part of the recipe.
           </p>
           {startingPoints}

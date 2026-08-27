@@ -235,30 +235,38 @@ test('without a measurement the computed paste carries the evaporation caveat �
   expect(caveat.textContent).not.toMatch(/solids/i);
 });
 
-test('refuses a measurement below the anhydrous soap weight — not physically a paste', () => {
-  // The paste always contains all the anhydrous soap (1,200 g here); solids do not
-  // evaporate. A smaller reading is a mis-tare or a portion weight, and treating it as a
-  // batch produced confident nonsense ("1,599 g lighter — water lost to the cook").
-  // The alert that says so now renders beside the INPUT, in DilutionPanel's shell, so it
-  // reaches both scopes; this component only has to stop computing from the bad reading.
+// A REJECTED reading no longer takes the figures with it (a real maker's report: mistyping
+// the paste weight made the whole Custom-amount sizing grid vanish, while Whole batch kept
+// every figure). The batch precedent governs both scopes now: the refusal renders beside
+// the input, and the figures fall back to the computed pot — NEVER the bad reading, which
+// is what these two pin by comparing against the blank-field render.
+test('a measurement below the anhydrous soap weight is refused, and the figures fall back to the computed pot', () => {
+  const weigh = () =>
+    screen.getByText('Paste to weigh out').nextElementSibling!.textContent;
   const { rerender } = render(
-    <PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="900" />,
+    <PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="" />,
   );
-  expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
-  // Control: the refusal must be attributable to the READING. 1,480 g clears the same
-  // 1,200 g floor and computes, so the blank above is a decision, not a broken render.
+  const fromComputedPot = weigh();
+  // 900 g is below the 1,200 g anhydrous floor — refused. The grid stays, sized from the
+  // computed pot: byte-identical to the blank-field render, so the reading cannot have
+  // leaked into the arithmetic.
+  rerender(<PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="900" />);
+  expect(weigh()).toBe(fromComputedPot);
+  // Control: a VALID reading does move the figures — the fallback above was a decision
+  // about the rejected reading, not a measurement that never applies.
   rerender(<PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="1480" />);
-  expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+  expect(weigh()).not.toBe(fromComputedPot);
 });
 
-test('refuses a measured paste that exceeds the target solution — the alert for it lives beside the input', () => {
+test('a measured paste that exceeds the target solution is refused the same way — figures from the computed pot', () => {
+  const weigh = () =>
+    screen.getByText('Paste to weigh out').nextElementSibling!.textContent;
   const { rerender } = render(
-    <PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="4100" />,
+    <PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="" />,
   );
-  expect(screen.queryByText(/Paste to weigh out/)).toBeNull();
-  // Control, as above: 1,480 g sits under the same 4,000 g solution ceiling and computes.
-  rerender(<PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="1480" />);
-  expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+  const fromComputedPot = weigh();
+  rerender(<PortionDilutionResults {...PROPS} targetMl="1000" measuredPasteGrams="4100" />);
+  expect(weigh()).toBe(fromComputedPot);
 });
 
 describe('the drift note quotes the clamp-free whole-batch paste (Commit 2)', () => {

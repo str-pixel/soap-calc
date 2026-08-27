@@ -1712,8 +1712,10 @@ describe('the measurement feedback follows the measured-paste input, not the sco
       const alerts = screen.getAllByRole('alert');
       expect(alerts).toHaveLength(1);
       expect(alerts[0].textContent).toMatch(match);
-      // A rejected reading still suppresses the portion figures it would have driven.
-      expect(screen.queryByText('Paste to weigh out')).toBeNull();
+      // The figures stay, sized from the computed pot — the batch precedent: a refused
+      // reading falls back, and the refusal beside the field owes the account. (That the
+      // reading itself never drives them is pinned in PortionDilutionResults' own tests.)
+      expect(screen.getByText('Paste to weigh out')).toBeTruthy();
     });
   }
 
@@ -1805,19 +1807,18 @@ describe('the measurement feedback follows the measured-paste input, not the sco
       expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toBe('1,950 g');
     });
 
-    it('refuses it in Custom amount too, and sizes no portion from it', () => {
+    it('refuses it in Custom amount too, and sizes the portion from the computed pot instead', () => {
       render(
         <DilutionPanel {...BASE} {...WITH_SOLIDS} measuredPasteGrams="1500" dilutionScope="portion" targetMl="1000" />,
       );
       const alerts = screen.getAllByRole('alert');
       expect(alerts).toHaveLength(1);
       expect(alerts[0].textContent).toContain('1,650 g');
-      expect(screen.queryByText('Paste to weigh out')).toBeNull();
-      // The shell reads the same verdict for its density caveat, which explains a
-      // gram→millilitre bridge and so must not print with no millilitre figure beside it.
-      // It is the one thing that catches the shell keeping the old floor while the child
-      // uses the new one.
-      expect(screen.queryByText(/Volume assumes/i)).toBeNull();
+      // The refusal quotes the raised solids floor AND the figures stay on screen, sized
+      // from the computed pot — the shell's density caveat prints beside them, because
+      // there is a millilitre figure for it to explain again.
+      expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+      expect(screen.getByText(/Volume assumes/i)).toBeTruthy();
     });
 
     it('leaves a reading at or above the floor exactly as it was', () => {
@@ -2336,9 +2337,10 @@ describe('the measurement feedback follows the measured-paste input, not the sco
       // …not the tare-blame the floor used to answer with, nor any other rule's verdict.
       expect(alert).not.toMatch(/tared/i);
       expect(alert).not.toMatch(/cannot be all of the paste/i);
-      // A refused reading feeds nothing in this scope either.
+      // A refused reading feeds no figure — but no longer removes them: portion scope
+      // falls back to the computed pot like batch always did, so the grid stays.
       expect(screen.queryByText(/uses your measured paste/i)).toBeNull();
-      expect(screen.queryByText('Paste to weigh out')).toBeNull();
+      if (scope === 'portion') expect(screen.getByText('Paste to weigh out')).toBeTruthy();
       cleanup();
     }
   });
@@ -2705,10 +2707,11 @@ describe('figures that belong to one scope stay in that scope; caveats that desc
     expect(screen.queryByText(/the LEAST you will need/i)).toBeNull();
     cleanup();
 
-    // A rejected measurement suppresses the portion with the amount still filled in.
+    // A rejected measurement no longer removes the figures — they fall back to the
+    // computed pot — so there IS a water figure for the hint to bound, and both print.
     render(<DilutionPanel {...props} targetMl="1000" measuredPasteGrams="4500" />);
-    expect(screen.queryByText('Water to add')).toBeNull();
-    expect(screen.queryByText(/the LEAST you will need/i)).toBeNull();
+    expect(screen.getByText('Water to add')).toBeTruthy();
+    expect(screen.getByText(/the LEAST you will need/i)).toBeTruthy();
     cleanup();
 
     // Present as soon as there really is a water figure to bound.
@@ -3110,12 +3113,15 @@ describe('the density caveat needs a millilitre figure to explain', () => {
   // suppressed — a rejected measurement, or a target the paste is already thinner than —
   // so the caveat printed with no volume anywhere on screen: the exact case its own
   // comment says the gate prevents.
-  it('is absent in Custom amount scope when a rejected measurement suppressed the portion', () => {
+  it('prints beside the fallback-sized portion while a rejected reading stands', () => {
+    // A rejected reading used to suppress the portion, and this caveat with it; the
+    // figures fall back to the computed pot now, so the millilitre bridge it explains is
+    // on screen again and the caveat prints with it.
     render(
       <DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" measuredPasteGrams="4500" />,
     );
-    expect(screen.queryByText('Makes')).toBeNull();
-    expect(screen.queryByText(/1\.03 g\/ml/)).toBeNull();
+    expect(screen.getByText('Makes')).toBeTruthy();
+    expect(screen.getByText(/1\.03 g\/ml/)).toBeTruthy();
   });
 
   it('is absent in Custom amount scope when the paste is already thinner than the target', () => {
@@ -4813,4 +4819,46 @@ test('a many-band endpoint reads as a comma list with one final "and"', () => {
       /thinner ratios suit baby or gentle soap, face soap, foaming dispenser and body wash\./,
     ),
   ).toBeTruthy();
+});
+
+// The hero gate is RENDER-keyed, not flag-keyed — the state that proved the difference:
+// targetExceedsPaste true (from the ASSUMED cook water) while a VALID measurement outranks
+// it, silencing every voice the flag has. Flag-keyed, the hero said "check the note below"
+// over a screen that says nothing.
+test('a valid measurement that moots targetExceedsPaste leaves the hero uncontested', () => {
+  render(
+    <DilutionPanel
+      {...BASE}
+      dilution={{
+        anhydrousGrams: 1200, solutionGrams: 3428, totalWaterGrams: 2228,
+        dilutionWaterGrams: 0, glycerinGrams: 110, soapConcentrationPercent: 35,
+        targetExceedsPaste: true,
+      }}
+      soapConcentrationPercent="35"
+      cookWaterGrams={2500}
+      wholeBatchPasteGrams={3700}
+      measuredPasteGrams="3000"
+    />,
+  );
+  // Nothing below contests: no alerts, and the flag's own voices are all suppressed by
+  // the measurement.
+  expect(screen.queryAllByRole('alert')).toHaveLength(0);
+  expect(document.querySelector('.dilution-hero--contested')).toBeNull();
+  expect(screen.getByText('Whole batch · nothing poured yet')).toBeTruthy();
+  // And the demotion still works where a voice really renders (the ceiling test above
+  // pins that side), so this cannot pass by the gate being deleted.
+});
+
+// The report that exposed the rejected-reading suppression, as the maker met it: a
+// mistyped 400 g against a batch whose paste floor is far higher, Custom amount, a jar
+// being sized — and the entire sizing grid vanished with only the reading's refusal,
+// nowhere near the missing figures, saying anything at all.
+test('a refused reading in Custom amount keeps the sizing grid, from the computed pot', () => {
+  render(
+    <DilutionPanel {...BASE} dilutionScope="portion" targetMl="600" measuredPasteGrams="400" />,
+  );
+  expect(screen.getByRole('alert').textContent).toMatch(/cannot be all of the paste/i);
+  expect(screen.getByText('Paste to weigh out')).toBeTruthy();
+  expect(screen.getByText('Water to add')).toBeTruthy();
+  expect(screen.getByText('Makes')).toBeTruthy();
 });

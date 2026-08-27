@@ -26,8 +26,10 @@ const SCALE_MAX = 100;
 const FATTY_VIEWS: Array<'list' | 'bars'> = ['list', 'bars'];
 
 // Column abbreviations for the chart, per display-group key, with the legend line below
-// the chart expanding every one — the cell never stands alone.
-const FATTY_ABBR: Record<string, string> = {
+// the chart expanding every one — the cell never stands alone. Typed EXHAUSTIVELY against
+// the display groups: add a group in core without an abbreviation here and the build
+// fails, instead of the legend printing "undefined".
+const FATTY_ABBR: Record<(typeof FATTY_ACID_DISPLAY_GROUPS)[number]['key'], string> = {
   lauricMyristic: 'Lau',
   palmiticStearic: 'Pal',
   oleic: 'Ole',
