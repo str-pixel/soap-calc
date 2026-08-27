@@ -260,19 +260,35 @@ test('a brand-new additive keeps its remove control on the ingredient line', asy
   expect(problems, 'browser complaints on a new additive row').toEqual([]);
 });
 
-test('the preset rows line up with the header that names their columns', async ({ page }) => {
+test('the preset strip is four flush cells, and none of them claims to be current', async ({
+  page,
+}) => {
   const problems = watchForErrors(page);
   await page.goto('/');
   await page.getByRole('tab', { name: /liquid soap/i }).click();
 
-  const head = (await page.locator('.dilution-presets__head span').last().boundingBox())!;
-  const cell = (await page.locator('.dilution-preset__sets').first().boundingBox())!;
-  expect(
-    Math.abs(head.x + head.width - (cell.x + cell.width)),
-    'the SETS header and the figures under it must share a right edge',
-  ).toBeLessThanOrEqual(1);
+  const strip = page.locator('.dilution-presets__strip');
+  await strip.scrollIntoViewIfNeeded();
+  const geom = await strip.evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const cells = Array.from(el.querySelectorAll('.dilution-preset')).map((c) => {
+      const r = c.getBoundingClientRect();
+      const s = getComputedStyle(c);
+      return { x: r.x, right: r.right, y: r.y, bg: s.backgroundColor };
+    });
+    return { box: { x: box.x, right: box.right }, cells };
+  });
+  expect(geom.cells.length, 'four starting points').toBe(4);
+  // One row of equal cells: same top, and together they span the strip's full width.
+  for (const c of geom.cells) expect(Math.abs(c.y - geom.cells[0].y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geom.cells[0].x - (geom.box.x + 1))).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(geom.cells[3].right - (geom.box.right - 1))).toBeLessThanOrEqual(1.5);
+  // The spec's line the mock tried to cross: no cell is filled as "the current one".
+  // Every cell paints the same (transparent over the strip's field surface).
+  const backgrounds = new Set(geom.cells.map((c) => c.bg));
+  expect(backgrounds.size, 'no preset cell is highlighted as current').toBe(1);
 
-  expect(problems, 'browser complaints on the preset list').toEqual([]);
+  expect(problems, 'browser complaints on the preset strip').toEqual([]);
 });
 
 test('the Radar / Bars switch reads as a control, and actually switches', async ({ page }) => {

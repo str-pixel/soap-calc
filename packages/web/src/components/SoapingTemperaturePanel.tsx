@@ -100,10 +100,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
     <section className="panel">
       <div className="panel__head">
         <div>
-          {/* No panel__num: the 01–04 sequence is hardcoded across the numbered panels
-              (renumbering all of them for an insert is churn); the Superfat & water panel
-              set the unnumbered precedent. */}
-          <h2 className="panel__title">Soaping temperature</h2>
+          <h2 className="panel__title"><span className="panel__num" aria-hidden="true">04</span>Soaping temperature</h2>
           <p className="panel__subtitle">One starting temperature for oils and lye</p>
           {process === 'ls' && (
             // CPLS's melt step happens off this slider entirely; this line says so before

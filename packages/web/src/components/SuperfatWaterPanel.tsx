@@ -256,7 +256,7 @@ export function SuperfatWaterPanel({
 
   return (
     <section className="panel">
-      <h2 className="panel__title">Superfat &amp; water</h2>
+      <h2 className="panel__title"><span className="panel__num" aria-hidden="true">02</span>Superfat &amp; water</h2>
       <div className="numbers-inputs">
         <SliderField
           label="Superfat"

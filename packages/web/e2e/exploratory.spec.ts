@@ -461,11 +461,16 @@ test.describe('liquid soap', () => {
     // same single-class specificity. The compound .field.field--inline rule fixes both;
     // assert the computed result so neither regression can come back silently.
     //
-    // Read off the SCOPE radio now. It used to be read off the dilution-mode radio, which is
-    // gone; the scope radio is the same .field--inline shape in the same panel, and it is the
-    // only radio group left there — so the rule this pins is unchanged and still covered.
-    const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
-    const modeLabel = section.locator('label.field--inline').filter({ hasText: 'Whole batch' });
+    // Read off the MOLD SIZER's mode radio now. The scope radio this used to read became a
+    // segmented pair (no .field--inline any more), and the mold sizer — behind Settings'
+    // Advanced disclosure — holds the app's last .field--inline radios, so the rule this
+    // pins is unchanged and still covered.
+    const settings = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'Settings' }) })
+      .first();
+    await settings.getByText('Advanced', { exact: true }).click();
+    const modeLabel = settings.locator('label.field--inline').filter({ hasText: 'Mold volume' });
     const style = await modeLabel.evaluate((el) => {
       const cs = getComputedStyle(el);
       return { flexDirection: cs.flexDirection, gap: cs.gap };

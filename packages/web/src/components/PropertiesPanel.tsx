@@ -89,7 +89,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   return (
     <section className="panel">
       <h2 className="panel__title">
-        <span className="panel__num" aria-hidden="true">03</span>
+        <span className="panel__num" aria-hidden="true">06</span>
         {process === 'ls' ? 'Soap properties' : 'Bar properties'}
       </h2>
       <p className="panel__subtitle">

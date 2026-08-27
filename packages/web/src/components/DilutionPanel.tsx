@@ -1158,7 +1158,19 @@ export function DilutionPanel({
     <section className="panel panel--nested">
       <div className="panel__head">
         <div>
-          <h2 className="panel__title">Dilution</h2>
+          <h2 className="panel__title">
+            <span className="panel__num" aria-hidden="true">09</span>Dilution
+            {/* aria-hidden like the number: the target input below IS the accessible source
+                of this figure, and the heading's name stays "Dilution" for every locator
+                and screen-reader rotor that navigates by it. Shown only when the typed plan
+                parses — echoing "at NaN%" would be worse than silence. */}
+            {Number.isFinite(Number(soapConcentrationPercent)) &&
+              Number(soapConcentrationPercent) > 0 && (
+                <span className="panel__title-caption" aria-hidden="true">
+                  at {soapConcentrationPercent}%
+                </span>
+              )}
+          </h2>
           {/* Names the two things the panel holds. It used to name three MODES, which is
               exactly what this surface stopped having: a plan (a target, reached by typing it
               or by taking one of the reference's ratios as a starting point) and a record
@@ -1215,18 +1227,12 @@ export function DilutionPanel({
         aria-label="Starting points for the water to paste ratio"
       >
         <span className="dilution-toggle__legend">Starting points</span>
-        {/* aria-hidden, because a screen reader gets no column context from a visual header
-            row — each button carries the whole sentence in its own accessible name instead. */}
-        <div className="dilution-presets__head" aria-hidden="true">
-          {/* "Suits", not the handoff's "Makes": this panel already labels a figure Makes —
-              the portion's finished mass in PortionDilutionResults — and two different
-              quantities under one word in one panel is ambiguous for a reader before it is
-              ambiguous for a test. "Suits" is also the word the summary below already uses
-              ("At 26% this suits body wash, hand soap"). */}
-          <span>Ratio</span>
-          <span>Suits</span>
-          <span style={{ textAlign: 'right' }}>Sets</span>
-        </div>
+        {/* One bordered strip of four cells, each stating what pressing it does. No visual
+            header row any more: each cell stacks its own ratio, the % it sets, and what
+            that suits, so the columns a header would name no longer exist. NONE of the
+            cells is marked current — these write a value once and stop (see the group
+            comment above), so the strip never claims one of them describes the plan. */}
+        <div className="dilution-presets__strip">
         {LS_WATER_PASTE_RATIO_PRESETS.map((preset) => {
           // ONE DERIVATION for the label and the click, so the row cannot promise a figure
           // the press does not write. Null with no pot: there is nothing to multiply.
@@ -1264,13 +1270,14 @@ export function DilutionPanel({
               }
             >
               <span className="dilution-preset__ratio">{preset}:1</span>
+              <span className="dilution-preset__sets">{sets}</span>
               <span className="dilution-preset__uses">
                 {uses.map((u) => u.label.toLowerCase()).join(', ')}
               </span>
-              <span className="dilution-preset__sets">{sets}</span>
             </button>
           );
         })}
+        </div>
       </div>
       {/* ── THE RECORD ROW (spec §2) ───────────────────────────────────────────────────────
           The water actually poured into the whole batch (LS:1531: add water in increments and
@@ -1485,8 +1492,12 @@ export function DilutionPanel({
       {/* Paste stores better than diluted soap — it keeps sealed, refrigerates and freezes —
           so the common workflow is to cook one batch and draw it down over time. Whole batch
           answers "dilute it all"; custom amount answers "make just this much now". */}
+      {/* Radios styled as a segmented pair — semantics unchanged: this REALLY IS a
+          selection (one scope is always in force), which is exactly what separates it from
+          the preset buttons above. The input fills its label invisibly, so the whole cell
+          is the radio's own hit target and label-based locators keep resolving to it. */}
       <div className="dilution-mode-toggle" role="radiogroup" aria-label="How much of the batch to dilute">
-        <label className="field field--inline">
+        <label className="dilution-scope__option">
           <input
             type="radio"
             name="dilutionScope"
@@ -1495,7 +1506,7 @@ export function DilutionPanel({
           />
           <span>Whole batch</span>
         </label>
-        <label className="field field--inline">
+        <label className="dilution-scope__option">
           <input
             type="radio"
             name="dilutionScope"

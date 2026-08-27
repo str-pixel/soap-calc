@@ -508,7 +508,7 @@ test('renders the Full recipe list and process-aware Add-in-order steps', () => 
   );
   expect(screen.getByText('Full recipe')).toBeTruthy();
   expect(screen.getByText('Add in this order')).toBeTruthy();
-  // Itemized alkali by its full name (the grid uses the short "NaOH").
+  // Itemized alkali by its full name (the grid's hero pairs the short token with it: "NaOH — sodium hydroxide").
   expect(screen.getByText('Sodium hydroxide (NaOH)')).toBeTruthy();
   // CP build steps keep the lye-into-water safety note.
   expect(screen.getByText(/never the reverse/)).toBeTruthy();

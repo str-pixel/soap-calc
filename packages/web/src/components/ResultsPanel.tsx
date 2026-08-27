@@ -100,7 +100,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     return (
       <section className="panel panel--results" aria-live="polite">
         <h2 className="panel__title">
-          <span className="panel__num" aria-hidden="true">04</span>Results
+          <span className="panel__num" aria-hidden="true">08</span>Results
         </h2>
         <ul className="message-list message-list--error">
           {inputErrors.map((msg) => (
@@ -115,7 +115,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     return (
       <section className="panel panel--results" aria-live="polite">
         <h2 className="panel__title">
-          <span className="panel__num" aria-hidden="true">04</span>Results
+          <span className="panel__num" aria-hidden="true">08</span>Results
         </h2>
         <p className="results-hint">Enter oil weights to calculate lye and water.</p>
       </section>
@@ -204,7 +204,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   return (
     <section className="panel panel--results" aria-live="polite">
       <h2 className="panel__title">
-        <span className="panel__num" aria-hidden="true">04</span>Results
+        <span className="panel__num" aria-hidden="true">08</span>Results
       </h2>
 
       {hasLineErrors && (
@@ -244,7 +244,11 @@ export const ResultsPanel = memo(function ResultsPanel({
             </>
           ) : (
             <div className="results-grid__item results-grid__item--primary">
-              <dt>{lyeLabel}</dt>
+              {/* The hero label carries the chemical's full name: this is the figure a
+                  maker weighs caustic against, and "KOH" alone assumes the reader already
+                  keeps the two lyes straight. The dual-lye branch stays short — two heroes
+                  side by side have no room for it, and the blend line is the point there. */}
+              <dt>{lyeLabel === 'NaOH' ? 'NaOH — sodium hydroxide' : 'KOH — potassium hydroxide'}</dt>
               <dd>
                 {formatWeight(result.lyeWeightGrams, weightUnit)}
                 {hasLineErrors && <span className="results-partial"> (partial)</span>}
@@ -468,8 +472,11 @@ export const ResultsPanel = memo(function ResultsPanel({
       )}
 
       {!isEmpty && fullRecipe.length > 0 && (
-        <div className="results-recipe">
-          <div className="results-recipe__label">Full recipe</div>
+        /* Open by default: the list is the shopping/weighing manifest, not an aside — the
+           disclosure exists so a maker who has it memorized can fold it away, not to hide
+           it. defaultOpen (uncontrolled) so folding is remembered only per render session. */
+        <details className="results-recipe" open>
+          <summary className="disclosure__summary">Full recipe</summary>
           <dl className="results-recipe__list">
             {fullRecipe.map((item, index) => (
               <div key={`${item.name}-${index}`} className="results-recipe__row">
@@ -478,7 +485,7 @@ export const ResultsPanel = memo(function ResultsPanel({
               </div>
             ))}
           </dl>
-        </div>
+        </details>
       )}
 
       {!isEmpty && (

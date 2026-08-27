@@ -48,7 +48,7 @@ export function RecipeOilsPanel({
     <section className="panel">
       <div className="panel__head">
         <h2 className="panel__title">
-          <span className="panel__num" aria-hidden="true">01</span>Recipe oils
+          <span className="panel__num" aria-hidden="true">03</span>Recipe oils
         </h2>
         <div className="panel__head-actions">
           {/* onMouseDown preventDefault keeps focus in any active weight field, so clicking

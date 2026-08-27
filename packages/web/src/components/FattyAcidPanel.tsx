@@ -51,7 +51,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
   if (!result.profile) {
     return (
       <section className="panel">
-        <h2 className="panel__title">Fatty acid profile</h2>
+        <h2 className="panel__title"><span className="panel__num" aria-hidden="true">07</span>Fatty acid profile</h2>
         <p className="results-hint">
           Add triglyceride oils with fatty-acid data to see recipe totals.
         </p>
@@ -63,7 +63,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
 
   return (
     <section className="panel">
-      <h2 className="panel__title">Fatty acid profile</h2>
+      <h2 className="panel__title"><span className="panel__num" aria-hidden="true">07</span>Fatty acid profile</h2>
       <p className="panel__subtitle">Percent of oil weight</p>
 
       {partial && (

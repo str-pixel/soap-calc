@@ -221,56 +221,40 @@ details[open] > .disclosure__summary::before {
 .masthead {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.6rem 3rem 0;
+  gap: 1.3rem;
+  padding: 1.1rem 3rem 0;
 }
 
-.masthead__brand {
+/* View tabs left, small wordmark right, one hairline under both. The tabs' 2px active
+   underline overhangs the bar's own hairline (margin-bottom: -1px on the tab). */
+.topbar {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 2rem;
-  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
 }
 
 .masthead__logo {
   font-family: var(--font-ui);
   font-weight: 900;
   font-stretch: 120%;
-  font-size: clamp(2.6rem, 6.5vw, 4.2rem);
-  line-height: 0.82;
-  letter-spacing: -0.045em;
+  font-size: 1.15rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
   color: var(--text);
-}
-
-.masthead__meta {
-  text-align: right;
-}
-
-.masthead__tagline {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text-strong);
-}
-
-.masthead__eyebrow {
-  margin: 0.3rem 0 0;
-  font-family: var(--font-mono);
-  font-size: var(--label-size);
-  letter-spacing: var(--label-track);
-  text-transform: uppercase;
-  color: var(--label);
+  padding-bottom: 0.55rem;
+  white-space: nowrap;
 }
 
 /* ── Process / recipe bar ─────────────────────────────────────────────── */
 /* Top-level view switch (Recipe / Pricing). Underline-active "page tabs" — distinct
-   from the filled-ink process tabs so the two navs don't read as the same control. */
+   from the filled-ink process tabs so the two navs don't read as the same control.
+   The hairline they sit on belongs to .topbar. */
 .view-tabs {
   display: flex;
   gap: 1.8rem;
-  border-bottom: 1px solid var(--border);
 }
 
 .view-tabs__tab {
@@ -299,12 +283,21 @@ details[open] > .disclosure__summary::before {
   border-bottom-color: var(--accent);
 }
 
-.process-bar {
+/* Headline row: the recipe name (page headline) with its actions, process switch right. */
+.headline-bar {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1.2rem 2rem;
   flex-wrap: wrap;
+}
+
+.headline-bar__recipe {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.1rem;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .process-tabs-group {
@@ -384,37 +377,47 @@ details[open] > .disclosure__summary::before {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem 1.2rem;
-  flex: 1 1 22rem;
-  justify-content: flex-end;
-  padding: 0.35rem 0;
+  padding: 0 0 0.45rem;
   background: transparent;
   border: 0;
   border-radius: 0;
   box-shadow: none;
 }
 
-/* Its own labelled row under the process bar, left-aligned at every width. */
+/* Micro-label over a display-scale input: the recipe name is the page headline. */
 .recipe-name {
   display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  border-top: 1px solid var(--hairline);
-  padding-top: 0.7rem;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
 .recipe-toolbar__name-input.input {
-  width: 100%;
+  /* Fixed fallback width; field-sizing lets the box hug the typed name where supported. */
+  width: 17rem;
+  max-width: 100%;
   text-align: left;
   border: none;
-  border-bottom: 1px solid transparent;
+  border-bottom: 1.5px solid var(--text);
   background: transparent;
   font-family: var(--font-ui);
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: normal;
+  font-weight: 800;
+  font-stretch: 115%;
+  font-size: 1.9rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: var(--text);
-  padding: 0.2rem 0;
+  padding: 0 0 0.15rem;
   border-radius: var(--radius);
+}
+
+@supports (field-sizing: content) {
+  .recipe-toolbar__name-input.input {
+    field-sizing: content;
+    width: auto;
+    min-width: 11rem;
+    max-width: min(100%, 34rem);
+  }
 }
 
 .recipe-toolbar__name-input.input:focus {
@@ -429,12 +432,10 @@ details[open] > .disclosure__summary::before {
 }
 
 .recipe-toolbar__status {
-  flex: 1 1 100%;
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.78rem;
   color: var(--accent);
-  text-align: right;
 }
 
 /* ── Actions menu ─────────────────────────────────────────────────────── */
@@ -557,8 +558,9 @@ details[open] > .disclosure__summary::before {
   padding-right: 3rem;
 }
 
-/* Tinted ground — carried by whichever column is the visual middle: The Bar in the Recipe
-   view, the batch-cost/results column in the Pricing view. Tint a whole column, not cards.
+/* Tinted ground — carried by the results column in both views: The Numbers (with the
+   guidance panels) in the Recipe view, the batch-cost/results column in Pricing. Tint a
+   whole column, not cards.
    WHICH IS WHY IT SWITCHES OFF BELOW TWO COLUMNS: stacked, a tinted column is not a column
    at all, it is a full-width grey block between two paper blocks — precisely the card the
    system forbids. Below the threshold the separating job passes to a hairline rule. */
@@ -925,6 +927,19 @@ details[open] > .disclosure__summary::before {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text);
+}
+
+/* A live figure riding the title ("Dilution — at 36.7%"): mono and accent so it reads as
+   data beside the Archivo name, not as more name. */
+.panel__title-caption {
+  margin-left: 0.6rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
 }
 
 .panel__subtitle {
@@ -1772,7 +1787,6 @@ details[open] > .disclosure__summary::before {
   border-top: 1px solid var(--hairline);
 }
 
-.results-recipe__label,
 .results-steps__label {
   font-family: var(--font-mono);
   font-size: 0.62rem;
@@ -1780,6 +1794,12 @@ details[open] > .disclosure__summary::before {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--label);
+  margin-bottom: 0.7rem;
+}
+
+/* The list opens under a .disclosure__summary now; give the summary the same breathing
+   room the static label had. */
+.results-recipe > .disclosure__summary {
   margin-bottom: 0.7rem;
 }
 
@@ -2022,7 +2042,7 @@ details[open] > .disclosure__summary::before {
    stronger band = target, dot = current value. */
 .property-meter {
   position: relative;
-  height: 7px;
+  height: 10px;
   margin: 0.5rem 0 0.45rem;
   background: var(--border);
   overflow: visible;
@@ -2037,6 +2057,26 @@ details[open] > .disclosure__summary::before {
 
 .property-meter__band--suggested {
   background: var(--accent-soft);
+}
+
+/* The suggested range's edges, drawn as 1px ink ticks overhanging the track: the numbers
+   under the band name the bounds, and these mark exactly where on the track they sit. */
+.property-meter__band--suggested::before,
+.property-meter__band--suggested::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 1px;
+  background: var(--text);
+}
+
+.property-meter__band--suggested::before {
+  left: 0;
+}
+
+.property-meter__band--suggested::after {
+  right: 0;
 }
 
 .property-meter__band--target {
@@ -2082,11 +2122,19 @@ details[open] > .disclosure__summary::before {
   letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
+  /* Paper backing + stacking: a suggested range that starts near 0 or ends near 100 puts
+     its boundary number under LOW/HIGH, and the wordmark must win that collision legibly
+     rather than overprint. */
+  background: var(--bg);
+  z-index: 1;
+  padding-right: 3px;
 }
 
 .property-meter__extreme--high {
   left: auto;
   right: 0;
+  padding-right: 0;
+  padding-left: 3px;
 }
 
 .property-meter__tick {
@@ -2388,12 +2436,28 @@ details[open] > .disclosure__summary::before {
 
 /* ── Footer ───────────────────────────────────────────────────────────── */
 .footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  flex-wrap: wrap;
   font-family: var(--font-mono);
   font-size: 0.64rem;
   letter-spacing: 0.08em;
   color: var(--label);
   text-align: left;
   padding: 2.2rem 3rem 0;
+}
+
+.footer__wordmark {
+  font-family: var(--font-ui);
+  font-weight: 900;
+  font-stretch: 120%;
+  font-size: 0.85rem;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--text);
+  white-space: nowrap;
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────── */
@@ -2410,15 +2474,6 @@ details[open] > .disclosure__summary::before {
     padding-left: 1.25rem;
     padding-right: 1.25rem;
   }
-
-  .masthead__meta {
-    text-align: left;
-  }
-
-  .recipe-toolbar {
-    justify-content: flex-start;
-  }
-
 
   .settings-grid,
   .results-grid,
@@ -2558,14 +2613,63 @@ details[open] > .disclosure__summary::before {
   }
 }
 
-/* Dilution: the scope toggle, and the ratio presets that set the plan %. One class for
-   both because they are the same shape — a captioned row of small controls — and it long
-   predates the mode radio it was named for. */
+/* Dilution scope: radios drawn as a segmented pair, same idiom as .property-view-toggle —
+   because unlike the preset buttons this IS a selection, and the filled cell says which
+   scope is in force. */
 .dilution-mode-toggle {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+.dilution-scope__option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  padding: 0.34rem 0.85rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--label);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.dilution-scope__option + .dilution-scope__option {
+  margin-left: -1px;
+}
+
+/* The radio fills its cell invisibly: the whole cell is the hit target, focus and checked
+   state stay native, and label-based locators still resolve to a clickable input. */
+.dilution-scope__option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dilution-scope__option:has(input:checked) {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+  z-index: 1;
+}
+
+.dilution-scope__option:hover:not(:has(input:checked)) {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.dilution-scope__option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  z-index: 2;
 }
 
 /* Visible antecedent for a radio row whose options only make sense after a question
@@ -2579,70 +2683,43 @@ details[open] > .disclosure__summary::before {
 
 /* The ratio presets (spec §2). BUTTONS, not radios: they do something once and stop, and
    nothing on screen claims one of them describes the current plan — see the group's own
-   comment in DilutionPanel. Styled as small, quiet actions rather than as a segmented
-   control, so they do not read as a selection. */
-/* THE STARTING POINTS, as a list rather than a chip row. Three things were wrong with the
-   chips: a 0.7rem radius against --radius: 0; the ratio set in Archivo with tabular-nums,
-   which does nothing because Archivo has no tabular figures to align; and — the real one —
-   a caption that reported what a preset had set only AFTER it was clicked, for one preset.
-   The question a maker actually has ("which of these lands me at 25%?") was the one thing
-   the control hid. Every row now carries its own answer, so the caption is gone.
-
-   Deliberately not a segmented selection: these write a value once and stop, which is why
-   they are buttons and not radios. A figure list reads as reference you can act on, and it
-   reuses the row idiom already used twice in this same column (.results-recipe__row,
-   .results-workability__rows > div). */
+   comment in DilutionPanel. A bordered strip of four equal cells on the field surface,
+   each stacking its ratio, the % it sets, and what that suits. Deliberately NO filled
+   "current" cell: a highlight would re-derive a selection state these buttons were
+   specifically rebuilt not to claim (a hand-typed 34% matches no preset, and marking the
+   nearest one would be a lie). */
 .dilution-presets {
   margin-bottom: 0.75rem;
 }
 
-/* THE HEADER AND THE ROWS MUST BE THE SAME BOX, or the columns it names drift from the
-   figures under them. Two things were needed for that:
-   a FIXED last track — these are separate grids, so an `auto` column sizes to each one's own
-   content ("Sets" at 0.62rem against "36.7%" at 0.85rem mono), which put the header 40px
-   inside the figures. 3.6rem fits "99.9%" — ratioPresetPercent clamps to 1–99 and rounds to
-   1 dp, so that is the longest figure it can produce; measured, "100.0%" fits too, which is
-   the headroom if that clamp is ever relaxed.
-   And the same inset on both: the row bleeds 0.35rem each side so its hover band runs past
-   the text, and the header has to bleed with it. A <button> is shrink-to-fit even as a grid,
-   so the width is explicit — dropping it made the row narrower than its own parent. */
-.dilution-presets__head,
-.dilution-preset {
+.dilution-presets__strip {
   display: grid;
-  grid-template-columns: 3.4rem 1fr 3.6rem;
-  gap: 0.75rem;
-  width: calc(100% + 0.7rem);
-  margin-inline: -0.35rem;
-  padding-inline: 0.35rem;
-}
-
-.dilution-presets__head {
-  font-family: var(--font-mono);
-  padding-bottom: 0.4rem;
-  font-size: var(--label-size);
-  letter-spacing: var(--label-track);
-  text-transform: uppercase;
-  color: var(--label);
-  border-bottom: 1px solid var(--hairline);
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--border);
+  background: var(--field);
+  margin-top: 0.45rem;
 }
 
 .dilution-preset {
-  /* No width: 100%. Paired with the negative margin below it made the row 100% of the
-     parent shifted left, so the hover band bled past the left edge and stopped short of the
-     right one — the SETS figures ended 11px inside the header naming them. A block-level
-     button fills the parent on its own, and the negative margin then bleeds both sides
-     equally, which is what the inset padding is for. */
   appearance: none;
+  min-width: 0;
   border: 0;
-  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   border-radius: var(--radius);
   background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
   text-align: left;
-  align-items: baseline;
-  padding-block: 0.55rem;
+  padding: 0.55rem 0.65rem 0.5rem;
   font: inherit;
   cursor: pointer;
   transition: background 0.15s;
+}
+
+.dilution-preset:first-child {
+  border-left: 0;
 }
 
 .dilution-preset:hover:not(:disabled) {
@@ -2661,21 +2738,19 @@ details[open] > .disclosure__summary::before {
   color: var(--text);
 }
 
-/* The row's primary text now, not a caption squeezed inside a chip — so it comes up from
-   0.7rem/--text-muted. The old 9rem cap and centring go with the chip: the grid column
-   handles width, and a multi-band match wraps naturally in a full-width cell.
-   Still never dimmed with opacity; see the AA note that decision came from. */
-.dilution-preset__uses {
-  font-size: 0.9rem;
-  color: var(--text-strong);
-}
-
 .dilution-preset__sets {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
   color: var(--accent);
-  text-align: right;
+}
+
+/* What the cell's % suits, in the bands' own words. Muted colour, never dimmed with
+   opacity; see the AA note that decision came from. */
+.dilution-preset__uses {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-muted);
 }
 
 /* A plan-labelled note on a plan row (spec §4): a caption on the figure directly above it,

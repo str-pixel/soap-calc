@@ -159,7 +159,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
       <div className="panel__head">
         <div>
           <h2 className="panel__title">
-            <span className="panel__num" aria-hidden="true">02</span>Additives
+            <span className="panel__num" aria-hidden="true">05</span>Additives
           </h2>
           <p className="panel__subtitle">Dose per additive</p>
         </div>

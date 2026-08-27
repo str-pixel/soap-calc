@@ -546,99 +546,98 @@ export default function App() {
   return (
     <div className="app">
       <header className="masthead no-print">
-        <div className="masthead__brand">
+        {/* One compact bar: the view switch is the page's first control, so it leads; the
+            wordmark yields the corner and sits small at the right. The old poster-scale
+            logo + tagline stack spent the first 140px of every visit restating the app's
+            name; the credibility line lives in the footer, where it always also was. */}
+        <div className="topbar">
+          <nav className="view-tabs" role="tablist" aria-label="View">
+            {VIEWS.map((t) => {
+              const active = view === t.key;
+              return (
+                <button
+                  key={t.key}
+                  id={`view-tab-${t.key}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  aria-controls="view-panel"
+                  tabIndex={active ? 0 : -1}
+                  className={`view-tabs__tab${active ? ' view-tabs__tab--active' : ''}`}
+                  onClick={() => setView(t.key)}
+                  onKeyDown={handleViewKeyDown}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </nav>
           <h1 className="masthead__logo">Soap&nbsp;Calc</h1>
-          <div className="masthead__meta">
-            <p className="masthead__tagline">The soap calculator you actually understand.</p>
-            <p className="masthead__eyebrow">
-              Public SAP data · FNWL cross-check · ISO 3657 units
-            </p>
-          </div>
         </div>
 
-        <nav className="view-tabs" role="tablist" aria-label="View">
-          {VIEWS.map((t) => {
-            const active = view === t.key;
-            return (
-              <button
-                key={t.key}
-                id={`view-tab-${t.key}`}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                aria-controls="view-panel"
-                tabIndex={active ? 0 : -1}
-                className={`view-tabs__tab${active ? ' view-tabs__tab--active' : ''}`}
-                onClick={() => setView(t.key)}
-                onKeyDown={handleViewKeyDown}
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </nav>
+        {/* THE RECIPE NAME IS THE HEADLINE. With the wordmark demoted, the largest type on
+            the page is the name of the thing being made — the input doubles as the h1-scale
+            display line, with the actions beside it and the process switch holding the
+            right edge of the same row.
 
-        <div className="process-bar">
+            aria-label keeps the spoken name "Recipe name" while the visible antecedent
+            reads "Recipe": Label-in-Name (WCAG 2.5.3) wants the accessible name to CONTAIN
+            the visible text, which it does. Same pattern as PricingPanel's "Price per". */}
+        <div className="headline-bar">
+          <div className="headline-bar__recipe">
+            <label className="recipe-name">
+              <span className="micro-label">Recipe</span>
+              <input
+                type="text"
+                className="input recipe-toolbar__name-input"
+                aria-label="Recipe name"
+                value={recipeName}
+                onChange={(e) => setRecipeName(e.target.value)}
+                placeholder="Recipe name"
+              />
+            </label>
+
+            <div className="recipe-toolbar">
+              <div className="recipe-toolbar__actions">
+                <ActionsMenu
+                  onNew={inputs.handleNewRecipe}
+                  onExport={inputs.handleExportCommitted}
+                  onPrint={handlePrintBatchSheet}
+                  onImport={() => importInputRef.current?.click()}
+                  canPrint={!!vm.batchSheetData}
+                />
+              </div>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // Drafts are discarded only if the file parses — a refused import must
+                    // not cost in-progress typed edits (verified live at #148's review).
+                    handleImportFile(file, inputs.discardDrafts);
+                  }
+                  e.target.value = '';
+                }}
+              />
+
+              {saveMessage && (
+                <p className="recipe-toolbar__status" role="status">
+                  {saveMessage}
+                </p>
+              )}
+            </div>
+          </div>
+
           <ProcessTabs
             process={process}
             onChange={setProcess}
             processVariant={settings.processVariant}
             onVariantChange={(processVariant) => setSettings({ ...settings, processVariant })}
           />
-
-          <div className="recipe-toolbar">
-          <div className="recipe-toolbar__actions">
-            <ActionsMenu
-              onNew={inputs.handleNewRecipe}
-              onExport={inputs.handleExportCommitted}
-              onPrint={handlePrintBatchSheet}
-              onImport={() => importInputRef.current?.click()}
-              canPrint={!!vm.batchSheetData}
-            />
-          </div>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="application/json,.json"
-            className="sr-only"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                // Drafts are discarded only if the file parses — a refused import must
-                // not cost in-progress typed edits (verified live at #148's review).
-                handleImportFile(file, inputs.discardDrafts);
-              }
-              e.target.value = '';
-            }}
-          />
-
-          {saveMessage && (
-            <p className="recipe-toolbar__status" role="status">
-              {saveMessage}
-            </p>
-          )}
-          </div>
         </div>
-
-        {/* THE RECIPE NAME, out of the masthead's right-hand stack. It was Archivo 700 at
-            1.25rem, right-aligned directly beneath the right-aligned tagline — two similar
-            Archivo lines stacking into one ambiguous block, at a size that is not a step in
-            the type scale. Left-aligned under its own micro-label now, at a size that is.
-
-            aria-label keeps the spoken name "Recipe name" while the visible antecedent
-            reads "Recipe": Label-in-Name (WCAG 2.5.3) wants the accessible name to CONTAIN
-            the visible text, which it does. Same pattern as PricingPanel's "Price per". */}
-        <label className="recipe-name">
-          <span className="micro-label">Recipe</span>
-          <input
-            type="text"
-            className="input recipe-toolbar__name-input"
-            aria-label="Recipe name"
-            value={recipeName}
-            onChange={(e) => setRecipeName(e.target.value)}
-            placeholder="Recipe name"
-          />
-        </label>
       </header>
 
       {view === 'recipe' ? (
@@ -718,8 +717,10 @@ export default function App() {
             )}
           </div>
 
-          {/* Column 2 — The Numbers: the computed outputs and the knobs that drive them. */}
-          <div className="col col--numbers">
+          {/* Column 2 — The Numbers: the computed outputs, the knobs that drive them, and
+              the written guidance that interprets them. Tinted: this is the sheet the maker
+              reads results from, set off from the two working paper columns. */}
+          <div className="col col--numbers col--tinted">
             {resultsPanel}
 
             {processOffers(process, 'dilution') && (
@@ -794,17 +795,6 @@ export default function App() {
             {processOffers(process, 'neutralize') && vm.neutralization && (
               <NeutralizePanel neutralization={vm.neutralization} weightUnit={weightUnit} />
             )}
-          </div>
-
-          {/* Column 3 — The Bar: how the blend behaves, plus guidance. */}
-          <div className="col col--bar col--tinted">
-            <PropertiesPanel
-              result={vm.properties}
-              indexes={vm.indexes}
-              modeledOilIds={vm.fattyAcids.modeledOilIds}
-              process={process}
-            />
-            <FattyAcidPanel result={vm.fattyAcids} />
             <FormulationInsightsPanel insights={vm.insights} />
             <ProcessGuidePanel
               process={process}
@@ -813,6 +803,17 @@ export default function App() {
               ls30Min={vm.ls30Min}
             />
             <TroubleshootingPanel process={process} />
+          </div>
+
+          {/* Column 3 — The Bar: how the blend behaves. */}
+          <div className="col col--bar">
+            <PropertiesPanel
+              result={vm.properties}
+              indexes={vm.indexes}
+              modeledOilIds={vm.fattyAcids.modeledOilIds}
+              process={process}
+            />
+            <FattyAcidPanel result={vm.fattyAcids} />
           </div>
         </main>
       ) : (
@@ -833,6 +834,11 @@ export default function App() {
         <p>
           SAP from public FNWL chart with ISO 3657 conversion. Always verify with batch testing.
         </p>
+        {/* aria-hidden: the app's <h1> in the topbar already carries the name; a second
+            "Soap Calc" in the accessibility tree would be noise, not information. */}
+        <span className="footer__wordmark" aria-hidden="true">
+          Soap&nbsp;Calc
+        </span>
       </footer>
 
       <BatchSheet data={vm.batchSheetData} />
