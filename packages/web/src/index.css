@@ -231,7 +231,10 @@ details[open] > .disclosure__summary::before {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 2rem;
+  gap: 0.2rem 2rem;
+  /* Wrap, like the masthead row this replaced: on a narrow phone the tab labels must not
+     squeeze against the wordmark or push it off the edge. */
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--border);
 }
 
@@ -293,6 +296,8 @@ details[open] > .disclosure__summary::before {
 }
 
 .headline-bar__recipe {
+  /* Anchor for the transient save/import status below. */
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 1.1rem;
@@ -431,11 +436,18 @@ details[open] > .disclosure__summary::before {
   gap: 0.5rem;
 }
 
+/* Overlaid, not in flow: this message flashes for a moment, and an in-flow insert made
+   the whole header (and everything under it) jump twice — once appearing, once going.
+   It hangs just below the recipe row instead, over the layout's top padding. */
 .recipe-toolbar__status {
-  margin: 0;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin: 0.25rem 0 0;
   font-family: var(--font-mono);
   font-size: 0.78rem;
   color: var(--accent);
+  white-space: nowrap;
 }
 
 /* ── Actions menu ─────────────────────────────────────────────────────── */
@@ -572,6 +584,19 @@ details[open] > .disclosure__summary::before {
   .col--tinted {
     background: var(--surface-2);
   }
+
+  /* A nested panel's ground IS --surface-2, so inside a tinted column it vanishes into
+     the tint — and painting it paper instead would make a white card on grey, which the
+     system forbids. On the tint the nesting job passes to a hairline rule, the same
+     device the stacked layout uses below 42rem, and the inset padding goes with the
+     surface so the content aligns with the column like everything else on the tint. */
+  .col--tinted .panel--nested {
+    background: transparent;
+    padding: 0;
+    border-top: 1px solid var(--hairline);
+    padding-top: 1.2rem;
+    margin-top: 1.4rem;
+  }
 }
 
 @media (max-width: 41.99rem) {
@@ -631,11 +656,24 @@ details[open] > .disclosure__summary::before {
   padding: 0;
 }
 
-/* Section numbers (01–04) — aria-hidden in markup, so they don't alter heading names. */
+/* Section numbers (01–09) — aria-hidden in markup, so they don't alter heading names.
+   The sequence is hand-numbered across nine components in the THREE-COLUMN RECIPE VIEW'S
+   reading order (inputs · properties · results); renumbering means touching every one of
+   them, so weigh any panel insert against that churn. Hidden everywhere that order does
+   not exist: below 64rem the DOM renders The Numbers (08, 09) before The Bar (06, 07) —
+   deliberately, so the lye figures stack right under the inputs — and the Pricing view
+   shows the Results panel alone, where a lone "08" counts nothing. */
 .panel__num {
+  display: none;
   color: var(--accent);
   margin-right: 0.55rem;
   font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 64rem) {
+  .layout--recipe .panel__num {
+    display: inline;
+  }
 }
 
 /* Editable Superfat + Water knobs, grouped in their own Superfat & water panel. */
@@ -2449,6 +2487,26 @@ details[open] > .disclosure__summary::before {
   padding: 2.2rem 3rem 0;
 }
 
+.footer__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.footer__lines p {
+  margin: 0;
+}
+
+/* Brand voice, not provenance data — so it takes the UI face at reading case, one step
+   above the mono credibility line under it. */
+.footer__tagline {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--text-strong);
+}
+
 .footer__wordmark {
   font-family: var(--font-ui);
   font-weight: 900;
@@ -2672,13 +2730,13 @@ details[open] > .disclosure__summary::before {
   z-index: 2;
 }
 
-/* Visible antecedent for a radio row whose options only make sense after a question
-   ("2:1" — a ratio of what to what?). Matches .field--inline's own muted caption styling so
-   the group reads as one line rather than as a heading over it. */
+/* Visible antecedent for the preset strip, whose cells only make sense after a question
+   ("2:1" — a ratio of what to what?). Sits above the strip as a quiet caption, in the
+   muted styling the field labels around it use, so it never reads as a heading. */
 .dilution-toggle__legend {
+  display: block;
   font-size: 0.85rem;
   color: var(--text-muted);
-  align-self: center;
 }
 
 /* The ratio presets (spec §2). BUTTONS, not radios: they do something once and stop, and

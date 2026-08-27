@@ -549,7 +549,7 @@ export default function App() {
         {/* One compact bar: the view switch is the page's first control, so it leads; the
             wordmark yields the corner and sits small at the right. The old poster-scale
             logo + tagline stack spent the first 140px of every visit restating the app's
-            name; the credibility line lives in the footer, where it always also was. */}
+            name; the tagline and the credibility line both live in the footer now. */}
         <div className="topbar">
           <nav className="view-tabs" role="tablist" aria-label="View">
             {VIEWS.map((t) => {
@@ -831,9 +831,15 @@ export default function App() {
       )}
 
       <footer className="footer no-print">
-        <p>
-          SAP from public FNWL chart with ISO 3657 conversion. Always verify with batch testing.
-        </p>
+        {/* The tagline moved here from the old masthead with the wordmark's demotion — the
+            claim survives, it just no longer spends the first screenful making it. */}
+        <div className="footer__lines">
+          <p className="footer__tagline">The soap calculator you actually understand.</p>
+          <p>
+            SAP from public FNWL chart with ISO 3657 conversion. Always verify with batch
+            testing.
+          </p>
+        </div>
         {/* aria-hidden: the app's <h1> in the topbar already carries the name; a second
             "Soap Calc" in the accessibility tree would be noise, not information. */}
         <span className="footer__wordmark" aria-hidden="true">

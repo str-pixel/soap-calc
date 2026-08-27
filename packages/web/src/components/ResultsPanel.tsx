@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { batchWeightBreakdown, effectiveSuperfatPercent } from '@soap-calc/core';
 import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
@@ -19,7 +19,10 @@ import { InfoTip } from './InfoTip';
 type ResultsPanelProps = {
   result: LyeCalculationResult | null;
   inputErrors: string[];
-  lyeLabel: string;
+  /** Accepted but no longer read here: the hero dt derives its full-name label from
+   * lyeType instead. Kept so App and the tests' call sites stay untouched, and because
+   * the printed BatchSheet still takes the same view-model label. */
+  lyeLabel?: string;
   process: ProcessId;
   lyeType: 'naoh' | 'koh' | 'dual';
   kohBlendPercent?: string;
@@ -77,7 +80,6 @@ function waterFootnote(
 export const ResultsPanel = memo(function ResultsPanel({
   result,
   inputErrors,
-  lyeLabel,
   process,
   lyeType,
   kohBlendPercent,
@@ -96,6 +98,12 @@ export const ResultsPanel = memo(function ResultsPanel({
   labelWeight = null,
   totalOilGrams = 0,
 }: ResultsPanelProps) {
+  // Held in state, not on the element: a typing pause that momentarily lands the panel in
+  // an early-return branch (input error, emptied oils) unmounts the <details>, and an
+  // uncontrolled open attribute would spring a deliberately folded list back open on the
+  // way back. Same pattern as DilutionPanel's suggested-targets disclosure. Declared
+  // before the early returns because hooks must run on every render path.
+  const [fullRecipeOpen, setFullRecipeOpen] = useState(true);
   if (inputErrors.length) {
     return (
       <section className="panel panel--results" aria-live="polite">
@@ -246,9 +254,12 @@ export const ResultsPanel = memo(function ResultsPanel({
             <div className="results-grid__item results-grid__item--primary">
               {/* The hero label carries the chemical's full name: this is the figure a
                   maker weighs caustic against, and "KOH" alone assumes the reader already
-                  keeps the two lyes straight. The dual-lye branch stays short — two heroes
-                  side by side have no room for it, and the blend line is the point there. */}
-              <dt>{lyeLabel === 'NaOH' ? 'NaOH — sodium hydroxide' : 'KOH — potassium hydroxide'}</dt>
+                  keeps the two lyes straight. Keyed off lyeType, the typed prop that chose
+                  this branch — not a string-match on the display label, whose fallback arm
+                  would print "potassium hydroxide" for any label it didn't recognize. The
+                  dual-lye branch stays short — two heroes side by side have no room for
+                  it, and the blend line is the point there. */}
+              <dt>{lyeType === 'naoh' ? 'NaOH — sodium hydroxide' : 'KOH — potassium hydroxide'}</dt>
               <dd>
                 {formatWeight(result.lyeWeightGrams, weightUnit)}
                 {hasLineErrors && <span className="results-partial"> (partial)</span>}
@@ -474,8 +485,12 @@ export const ResultsPanel = memo(function ResultsPanel({
       {!isEmpty && fullRecipe.length > 0 && (
         /* Open by default: the list is the shopping/weighing manifest, not an aside — the
            disclosure exists so a maker who has it memorized can fold it away, not to hide
-           it. defaultOpen (uncontrolled) so folding is remembered only per render session. */
-        <details className="results-recipe" open>
+           it. */
+        <details
+          className="results-recipe"
+          open={fullRecipeOpen}
+          onToggle={(e) => setFullRecipeOpen((e.target as HTMLDetailsElement).open)}
+        >
           <summary className="disclosure__summary">Full recipe</summary>
           <dl className="results-recipe__list">
             {fullRecipe.map((item, index) => (

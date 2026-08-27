@@ -342,3 +342,93 @@ test('the Radar / Bars switch reads as a control, and actually switches', async 
   expect(problems, 'browser complaints on the properties switch').toEqual([]);
 });
 
+
+test('a nested panel on the tint is boxless — a hairline, not a card', async ({ page }) => {
+  const problems = watchForErrors(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+  await page.getByRole('tab', { name: /liquid soap/i }).click();
+
+  const dilution = page
+    .locator('section.panel--nested')
+    .filter({ has: page.getByRole('heading', { name: 'Dilution' }) });
+  await dilution.scrollIntoViewIfNeeded();
+  const colBg = await page
+    .locator('.col--numbers')
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  const nested = await dilution.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { bg: s.backgroundColor, borderTop: s.borderTopWidth, pad: s.paddingLeft };
+  });
+  expect(colBg, 'the results column is tinted').not.toBe('rgba(0, 0, 0, 0)');
+  // Its own --surface-2 ground would vanish into the tint (the grey-on-grey the review
+  // caught), and paper would make a white card on grey, which the system forbids. On the
+  // tint the nesting job passes to a hairline rule, and the inset padding goes with the
+  // surface so the content aligns with the column.
+  expect(nested.bg, 'no ground of its own on the tint').toBe('rgba(0, 0, 0, 0)');
+  expect(parseFloat(nested.borderTop), 'a hairline does the separating').toBeGreaterThanOrEqual(1);
+  expect(nested.pad, 'no leftover box inset').toBe('0px');
+
+  expect(problems, 'browser complaints on the tinted dilution panel').toEqual([]);
+});
+
+test('panel numbers appear only where the order they claim exists', async ({ page }) => {
+  const problems = watchForErrors(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+
+  // Three-column recipe view: the 01–09 sequence matches the visual reading order.
+  await expect(page.locator('.panel__num').filter({ hasText: '01' })).toBeVisible();
+
+  // Pricing shows the Results panel alone — a lone "08" counts nothing.
+  await page.getByRole('tab', { name: /pricing/i }).click();
+  for (const num of await page.locator('.panel__num').all()) await expect(num).toBeHidden();
+
+  // Below the three-column breakpoint the DOM deliberately renders The Numbers (08, 09)
+  // before The Bar (06, 07) so the lye figures stack under the inputs — the numbers would
+  // count 05 → 08 → 09 → 06 → 07, so they hide instead of lying about the order.
+  await page.getByRole('tab', { name: 'Recipe' }).click();
+  await page.setViewportSize({ width: 900, height: 1000 });
+  for (const num of await page.locator('.panel__num').all()) await expect(num).toBeHidden();
+
+  expect(problems, 'browser complaints across the numbering views').toEqual([]);
+});
+
+test('the save flash overlays the header instead of reflowing it', async ({ page }) => {
+  const problems = watchForErrors(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+
+  const tabsBox = () => page.locator('.process-tabs').boundingBox();
+  const mainBox = () => page.locator('main').boundingBox();
+  const before = (await tabsBox())!;
+  const mainBefore = (await mainBox())!;
+  // Export flashes "Recipe exported" — a real trigger, not a hoped-for autosave.
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: /actions/i }).click();
+  await page.getByRole('menuitem', { name: /export/i }).click();
+  await download;
+  const status = page.locator('.recipe-toolbar__status');
+  await expect(status, 'the flash must actually show for this test to mean anything').toBeVisible();
+  const after = (await tabsBox())!;
+  const mainAfter = (await mainBox())!;
+  expect(Math.abs(after.y - before.y), 'the process tabs hold still').toBeLessThanOrEqual(1);
+  expect(Math.abs(mainAfter.y - mainBefore.y), 'the content below holds still').toBeLessThanOrEqual(1);
+
+  expect(problems, 'browser complaints on the save flash').toEqual([]);
+});
+
+test('the topbar wraps on a phone instead of clipping', async ({ page }) => {
+  const problems = watchForErrors(page);
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto('/');
+
+  const clipped = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(clipped, 'no horizontal page scroll at 360px').toBeLessThanOrEqual(0);
+  const logo = (await page.locator('.masthead__logo').boundingBox())!;
+  expect(logo.x + logo.width, 'the wordmark stays inside the viewport').toBeLessThanOrEqual(360);
+
+  expect(problems, 'browser complaints at phone width').toEqual([]);
+});

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { ResultsPanel } from './ResultsPanel';
 import { calculateRecipe } from '../lib/calculateRecipe';
 import {
@@ -512,6 +512,57 @@ test('renders the Full recipe list and process-aware Add-in-order steps', () => 
   expect(screen.getByText('Sodium hydroxide (NaOH)')).toBeTruthy();
   // CP build steps keep the lye-into-water safety note.
   expect(screen.getByText(/never the reverse/)).toBeTruthy();
+});
+
+test('the hero label derives its chemical name from lyeType, not from the display label', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  // Adversarial label: if the dt string-matched lyeLabel, this render's fallback arm
+  // would print "potassium hydroxide" beside an NaOH weight — the wrong-chemical bug the
+  // review caught. The typed prop must win.
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="Lye"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      totalOilGrams={displayTotals?.recipeOilWeightGrams ?? 0}
+    />,
+  );
+  expect(screen.getByText('NaOH — sodium hydroxide')).toBeTruthy();
+  expect(screen.queryByText(/potassium hydroxide/)).toBeNull();
+});
+
+test('a folded Full recipe stays folded across an early-return remount', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const props = {
+    result,
+    inputErrors: [] as string[],
+    lyeLabel: 'NaOH',
+    process: 'cp' as const,
+    lyeType: 'naoh' as const,
+    displayTotals,
+    weightUnit: 'g' as const,
+    batchWeightWithExtras: displayTotals?.batchWeightGrams ?? 0,
+    totalOilGrams: displayTotals?.recipeOilWeightGrams ?? 0,
+  };
+  const { rerender } = render(<ResultsPanel {...props} />);
+  const details = () =>
+    screen.getByText('Full recipe').closest('details') as HTMLDetailsElement;
+  expect(details().open).toBe(true);
+  // Fold it the way the browser reports a fold: the element's open flips, then toggle fires.
+  details().open = false;
+  fireEvent(details(), new Event('toggle'));
+  expect(details().open).toBe(false);
+  // A transient input error swaps in the early-return branch and unmounts the <details>...
+  rerender(<ResultsPanel {...props} inputErrors={['Weight missing']} />);
+  expect(screen.queryByText('Full recipe')).toBeNull();
+  // ...and the way back must respect the fold, not spring it open (the uncontrolled-open bug).
+  rerender(<ResultsPanel {...props} />);
+  expect(details().open).toBe(false);
 });
 
 test('a recipe-derived cure model renders the two milestone rows instead of the fixed window', () => {
