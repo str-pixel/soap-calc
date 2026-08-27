@@ -298,10 +298,26 @@ test('the preset strip is four flush cells, and none of them claims to be curren
   for (const c of geom.cells) expect(Math.abs(c.y - geom.cells[0].y)).toBeLessThanOrEqual(1);
   expect(Math.abs(geom.cells[0].x - (geom.box.x + 1))).toBeLessThanOrEqual(1.5);
   expect(Math.abs(geom.cells[3].right - (geom.box.right - 1))).toBeLessThanOrEqual(1.5);
-  // The spec's line the mock tried to cross: no cell is filled as "the current one".
-  // Every cell paints the same (transparent over the strip's field surface).
+  // The spec's line the mock tried to cross: AT REST no cell is filled as "the current
+  // one". Every cell paints the same (transparent over the strip's field surface).
   const backgrounds = new Set(geom.cells.map((c) => c.bg));
   expect(backgrounds.size, 'no preset cell is highlighted as current').toBe(1);
+
+  // The mock's filled cell is the HOVER: ink ground, ratio inverting to paper. Transient,
+  // so it coexists with the at-rest rule above.
+  const first = page.locator('.dilution-preset').first();
+  await first.hover();
+  await page.waitForTimeout(250); // let the 0.15s background transition finish
+  const hovered = await first.evaluate((el) => ({
+    bg: getComputedStyle(el).backgroundColor,
+    ratio: getComputedStyle(el.querySelector('.dilution-preset__ratio')!).color,
+  }));
+  expect(hovered.bg, 'hover fills the cell ink').toBe('rgb(17, 17, 17)');
+  expect(hovered.ratio, 'the ratio inverts to paper').toBe('rgb(240, 240, 240)');
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(250);
+  const rested = await first.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(rested, 'and it clears on leave — a hover, never a claim').toBe('rgba(0, 0, 0, 0)');
 
   expect(problems, 'browser complaints on the preset strip').toEqual([]);
 });

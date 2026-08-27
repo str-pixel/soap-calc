@@ -2970,8 +2970,20 @@ details[open] > .disclosure__summary::before {
   border-left: 0;
 }
 
+/* Hover fills the cell ink, text inverting with it — the mock's filled cell is this
+   HOVER, not a selection: it clears on leave, so the strip still never claims one of its
+   cells describes the current plan (the at-rest no-highlight rule is pinned in e2e). The
+   sets % keeps its accent on the ink, as drawn. */
 .dilution-preset:hover:not(:disabled) {
-  background: var(--accent-tint);
+  background: var(--text);
+}
+
+.dilution-preset:hover:not(:disabled) .dilution-preset__ratio {
+  color: var(--bg);
+}
+
+.dilution-preset:hover:not(:disabled) .dilution-preset__uses {
+  color: var(--border);
 }
 
 .dilution-preset:disabled {
