@@ -355,6 +355,21 @@ export function SuperfatWaterPanel({
                 {pcsfRemaining > 0 && pcsfAllocated > 0 ? ` · ${formatTotal(pcsfRemaining)}% left` : ''}
               </span>
             </div>
+            {/* WHY A ROW WILL NOT TAKE A NUMBER. Each row is capped at the total minus the
+                other rows, so once the budget is spent every keystroke into another oil
+                lands as 0 — correct, and until now completely silent. The note above goes
+                quiet in this exact state too: its "· N% left" clause only renders while
+                there IS some left, so the moment the cap starts biting, the panel stops
+                mentioning the budget at all.
+                Names both ways out, because which one a maker wants depends on whether they
+                are adding a reserve or moving one. role="status", not "alert": nothing is
+                wrong, the panel is just explaining itself. */}
+            {pcsfTotal > 0 && pcsfRemaining === 0 && (
+              <p className="inline-note inline-note--warn" role="status">
+                All {formatTotal(pcsfTotal)}% is allocated. Raise the total above, or lower
+                another oil, to give this one a share.
+              </p>
+            )}
 
             {pcsfOils.map((row, i) => (
               <div className="pcsf__row" key={i}>

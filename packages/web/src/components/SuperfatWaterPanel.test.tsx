@@ -318,3 +318,45 @@ test('the post-cook superfat method toggles, defaulting to subtract', () => {
   fireEvent.change(select, { target: { value: 'append' } });
   expect((screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement).value).toBe('append');
 });
+
+test('says the budget is spent, instead of silently rewriting the row to 0', () => {
+  // REPORTED: "if superfat is 2 percent I can't add any number to second oil. there are no
+  // warnings that I have reached the 2% limit." The cap is right — the rows must not sum
+  // past the total — but it applied itself in silence: 1, 0.5 and 5 all landed as 0 with
+  // nothing on screen saying why. The allocation note went quiet in exactly that state too,
+  // because its "· N% left" clause is gated on there being some left.
+  render(
+    <Harness
+      process="ls"
+      initial={{
+        postCookSuperfatTotalPercent: '2',
+        postCookSuperfatOils: [
+          { oilId: 'olive-oil', percent: '2' },
+          { oilId: 'olive-oil', percent: '' },
+        ],
+      }}
+    />,
+  );
+  const row2 = () => screen.getByLabelText('Post-cook superfat % 2') as HTMLInputElement;
+  fireEvent.change(row2(), { target: { value: '1' } });
+  expect(row2().value, 'the cap itself still holds').toBe('0');
+
+  // The part that was missing: an explanation, naming the budget and both ways out of it.
+  const note = screen.getByText(/all 2% is allocated/i);
+  expect(note.textContent).toMatch(/raise the total|lower another/i);
+});
+
+test('the spent-budget notice clears as soon as there is headroom again', () => {
+  render(
+    <Harness
+      process="ls"
+      initial={{
+        postCookSuperfatTotalPercent: '2',
+        postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }],
+      }}
+    />,
+  );
+  expect(screen.getByText(/all 2% is allocated/i)).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Post-cook superfat % 1'), { target: { value: '1' } });
+  expect(screen.queryByText(/is allocated/i)).toBeNull();
+});
