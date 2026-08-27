@@ -30,8 +30,12 @@ const grams = (text: string) => Number((text.match(/^[\d,.]+/)?.[0] ?? '').repla
  * side), so a leading-number pattern alone would match whichever row comes first in the DOM
  * rather than this one specifically — the dedicated --primary class is what actually singles
  * it out. */
+// The plan's pour figure is the panel-top hero while the plan governs (the state this
+// spec drives), and a grid primary only under a record — match either home.
 const dilutionWaterDd = (page: Page) =>
-  dilutionPanel(page).locator('.results-grid__item--primary dd').first();
+  dilutionPanel(page)
+    .locator('.dilution-hero__figure, .results-grid__item--primary dd')
+    .first();
 
 async function freshLiquidSoap(page: Page) {
   await page.goto('/');

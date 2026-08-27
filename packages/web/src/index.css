@@ -2211,6 +2211,41 @@ details[open] > .disclosure__summary::before {
   border: 1px solid var(--accent);
 }
 
+/* The fatty list view: the same readings as the bars, one hairline row per group —
+   label, its typical range in passing, and the figure. The value/status spans reuse the
+   property-bars classes so a reading is styled identically whichever view shows it. */
+.fatty-list {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+}
+
+.fatty-list__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.fatty-list__row:last-child {
+  border-bottom: none;
+}
+
+.fatty-list__label {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+}
+
+.fatty-list__typical {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: 0.06em;
+  color: var(--caption);
+  white-space: nowrap;
+}
+
 .fatty-ratio {
   margin: 0.9rem 0 0;
   font-family: var(--font-mono);
@@ -2669,6 +2704,91 @@ details[open] > .disclosure__summary::before {
     max-width: none;
     padding: 0;
   }
+}
+
+/* The dilution hero: the panel's one product figure, stated first. Same face and accent
+   as the Results hero — it is the same kind of claim — with a mono caption naming its
+   basis (scope, and that nothing is poured yet). */
+.dilution-hero {
+  margin: 0.3rem 0 0.6rem;
+}
+
+.dilution-hero__item {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dilution-hero__figure {
+  font-family: var(--font-ui);
+  font-weight: 900;
+  font-stretch: 110%;
+  font-size: clamp(2.6rem, 7vw, 3.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+}
+
+.dilution-hero__caption {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Boxless figure rows (redesign): label left, underlined figure + unit right, one
+   hairline over each row. The same figure-field the ingredient rows use. */
+.dilution-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+.dilution-row__label {
+  font-size: 0.95rem;
+  color: var(--text-strong);
+}
+
+.dilution-row__hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.dilution-row__value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.dilution-row__unit {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--label);
+}
+
+.dilution-row--scope {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The plan/reference boundary sentence, and the caption expanding the strip's
+   abbreviated cells. Ordinary quiet prose, deliberately not .results-hint (the panel's
+   counted prose budget). */
+.dilution-figures-note {
+  margin: 0.9rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.dilution-presets__caption {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 /* Dilution scope: radios drawn as a segmented pair, same idiom as .property-view-toggle —

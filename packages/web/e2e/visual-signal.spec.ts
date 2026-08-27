@@ -301,8 +301,11 @@ test('the Radar / Bars switch reads as a control, and actually switches', async 
   // and the radar — reachable only through here — went missing for anyone who could not tell
   // it was a control. It is a segmented pair again. "It is still in the DOM" is not the same
   // as "a maker can find it", which is what these assertions are for.
-  const radarTab = page.getByRole('tab', { name: 'Radar' });
-  const barsTab = page.getByRole('tab', { name: 'Bars' });
+  // Scoped through the tablist name: the fatty panel carries its own "Bars" tab now, so a
+  // page-level tab locator is ambiguous.
+  const propertyTabs = page.getByRole('tablist', { name: 'Property display' });
+  const radarTab = propertyTabs.getByRole('tab', { name: 'Radar' });
+  const barsTab = propertyTabs.getByRole('tab', { name: 'Bars' });
   const read = (l: typeof radarTab) =>
     l.evaluate((el) => {
       const s = getComputedStyle(el);

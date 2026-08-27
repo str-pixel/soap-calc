@@ -959,8 +959,12 @@ describe('a starting point says what it starts', () => {
 
   it('names every use the ratio lands in', () => {
     renderPanel();
-    expect(preset('1:1')).toContain('dish soap, laundry soap');
-    expect(preset('2:1')).toContain('body wash, hand soap');
+    // First words in the cell ("dish, laundry") — the strip's caption sentence carries the
+    // full product names for the endpoint ratios, so the abbreviation never stands alone.
+    expect(preset('1:1')).toContain('dish, laundry');
+    expect(preset('2:1')).toContain('body, hand');
+    expect(screen.getByText(/1:1 suits dish soap and laundry soap/)).toBeTruthy();
+    expect(screen.getByText(/thinner ratios suit body wash and hand soap/)).toBeTruthy();
   });
 
   it('keeps the ratio itself as the button\'s heading', () => {
@@ -974,8 +978,8 @@ describe('a starting point says what it starts', () => {
     // A weighed 2,400 g pot: 1:1 now makes 4,800 g — 25% soap, which is body wash and hand
     // soap, not the dish soap the recipe's lighter computed pot put it in.
     renderPanel({ measuredPasteGrams: '2400', wholeBatchPasteGrams: 1600 });
-    expect(preset('1:1')).toContain('body wash, hand soap');
-    expect(preset('1:1')).not.toContain('dish soap');
+    expect(preset('1:1')).toContain('body, hand');
+    expect(preset('1:1')).not.toContain('dish');
   });
 
   it('names no use when the ratio lands in no common band, but still states its figure', () => {
@@ -1661,19 +1665,17 @@ describe('portion scope: the measured-paste input that used to live in PartialDi
             onGradualWaterChange={() => {}}
           />,
         );
-        expect(screen.getByText('Measured paste weight — the whole batch (g, optional)')).toBeTruthy();
-        // …and every user gets the same words. Read the visible label off the DOM rather
-        // than restating it, so this half cannot go stale when the copy changes: whatever
-        // the span says, the accessible name has to contain it.
-        //
-        // This replaces an "the aria-label is unchanged" clause, which pinned the wrong
-        // thing — it was satisfied precisely by the narrow aria-label that withheld "the
-        // whole batch" from screen-reader and voice-control users. A restored aria-label
-        // fails this, because aria-label WINS over the wrapping label and would no longer
-        // contain the span.
-        const visibleLabel = screen.getByText(/^Measured paste weight/).textContent!;
-        const input = screen.getByLabelText(visibleLabel);
+        // The redesign's row shortens the VISIBLE label; the full documented name — "the
+        // whole batch" disambiguation included — is the ACCESSIBLE name, so a screen-reader
+        // or voice user still hears which paste is wanted in every scope and mode.
+        const input = screen.getByLabelText('Measured paste weight — the whole batch (g, optional)');
+        // Label-in-Name: whatever the visible span says must be contained in that name.
+        const visibleLabel = screen.getByText(/^Measured paste/, { selector: '.dilution-row__label' })
+          .firstChild!.textContent!.trim();
         expect(accessibleNameOf(input).includes(visibleLabel)).toBe(true);
+        // And the on-screen antecedent that says WHICH paste — the Scope row's "Whole
+        // batch" — is visible in both scopes, which is what let the label shorten.
+        expect(screen.getByText('Whole batch')).toBeTruthy();
         cleanup();
       }
     }
@@ -4732,4 +4734,29 @@ describe('one dilution surface: a plan and a record', () => {
     render(<DilutionPanel {...PAST_TARGET} measuredPasteGrams="2500" gradualWaterGrams="500" />);
     expect(screen.queryByText(/this target dilutes to/)).toBeNull();
   });
+});
+
+// The redesign's hero: the plan's pour figure leads the panel — but only while the plan
+// governs the whole batch. Under a record, or in Custom amount, the hero stands down so
+// the panel never shows two lead figures for one pour.
+test('the hero leads with the plan pour and its basis caption, and stands down under a record', () => {
+  render(<DilutionPanel {...BASE} />);
+  const hero = document.querySelector('.dilution-hero');
+  expect(hero).not.toBeNull();
+  expect(hero!.textContent).toContain('Dilution water to add');
+  expect(hero!.textContent).toContain('Whole batch · nothing poured yet');
+  // The figure is the same derivation the grid used to print — RESULT's plan pour.
+  expect(hero!.querySelector('.dilution-hero__figure')!.textContent).toMatch(/g$/);
+  cleanup();
+
+  // A record in the pot: the record's own grid leads, the plan row returns to the grid
+  // labelled as plan, and the hero is gone.
+  render(<DilutionPanel {...BASE} gradualWaterGrams="500" onGradualWaterChange={() => {}} />);
+  expect(document.querySelector('.dilution-hero')).toBeNull();
+  expect(screen.getByText('Dilution water to add (plan)')).toBeTruthy();
+  cleanup();
+
+  // Custom amount: the jar's own child grid owns the figures there.
+  render(<DilutionPanel {...BASE} dilutionScope="portion" targetMl="1000" />);
+  expect(document.querySelector('.dilution-hero')).toBeNull();
 });

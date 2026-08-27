@@ -245,7 +245,12 @@ test.describe('recipe UI regressions', () => {
     // .property-bars__value resolves against the Fatty acid profile panel — which uses the
     // same class names and has its own coverage rules. Both assertions passed against that
     // panel while the behaviour they name had been deleted from this one.
-    await page.getByRole('tab', { name: 'Bars' }).click();
+    // Scoped through the tablist name: the fatty panel now has a "Bars" tab of its own,
+    // so a page-level tab locator matches two controls.
+    await page
+      .getByRole('tablist', { name: 'Property display' })
+      .getByRole('tab', { name: 'Bars' })
+      .click();
     const barProps = page.locator('#property-tabpanel');
     await expect(barProps.locator('.property-bars__value').first()).toContainText('~');
     await expect(barProps.locator('.property-bars__value--outside')).toHaveCount(0);

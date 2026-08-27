@@ -44,9 +44,11 @@ afterEach(() => {
 
 // Shared by the preservative and gradual describes below — one copy, module scope.
 function row(root: HTMLElement, label: string): string {
-  const item = Array.from(root.querySelectorAll('.results-grid__item')).find(
-    (el) => el.querySelector('dt')?.textContent?.trim() === label,
-  );
+  // .dilution-hero__item included: the dilution panel's plan pour is a panel-top hero
+  // (dt/dd in its own dl) while the plan governs, and a grid row only under a record.
+  const item = Array.from(
+    root.querySelectorAll('.results-grid__item, .dilution-hero__item'),
+  ).find((el) => el.querySelector('dt')?.textContent?.trim() === label);
   return item?.querySelector('dd')?.textContent?.trim() ?? '';
 }
 

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import {
   FATTY_ACID_DISPLAY_GROUPS,
   FORMULATION_FATTY_ACID_GUIDE,
@@ -9,6 +9,7 @@ import {
   sumFattyAcids,
 } from '@soap-calc/core';
 import type { RecipeFattyAcids } from '../lib/calculateFattyAcids';
+import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
 import { oilDisplayName } from '../lib/oilDisplay';
 import { ModeledOilsNote } from './ModeledOilsNote';
 
@@ -17,6 +18,11 @@ type FattyAcidPanelProps = {
 };
 
 const SCALE_MAX = 100;
+
+// List first: the compact readout answers "what is this blend made of" in one column of
+// figures; the bars are the same numbers against their typical bands, a step down into
+// detail — the same list-before-detail order the redesign gave this panel's mock.
+const FATTY_VIEWS: Array<'list' | 'bars'> = ['list', 'bars'];
 
 /** Clamp a 0–100 percentage to a track position. */
 const pct = (n: number): number => Math.max(0, Math.min(100, n));
@@ -42,6 +48,9 @@ function inGuideBand(value: number, low: number, high: number): boolean {
 // memo: `result` is a stable view-model memo output, so unrelated keystrokes
 // skip re-rendering this panel.
 export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcidPanelProps) {
+  const [view, setView] = useState<'list' | 'bars'>('list');
+  const viewActiveIndex = FATTY_VIEWS.indexOf(view);
+  const handleViewKeyDown = makeTabsKeyDownHandler(FATTY_VIEWS, viewActiveIndex, setView);
   const partial = result.profile ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.profile
@@ -83,6 +92,84 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           not only on the properties derived from them. */}
       <ModeledOilsNote oilIds={result.modeledOilIds} />
 
+      {/* Same tablist idiom as the properties panel's Radar/Bars switch, with its own ids
+          and an accessible name that keeps the two "Bars" tabs on this page apart — every
+          page-level locator must scope through the tablist name, never the bare tab. */}
+      <div className="property-view-toggle" role="tablist" aria-label="Fatty acid display">
+        <button
+          type="button"
+          role="tab"
+          id="fatty-tab-list"
+          aria-controls="fatty-tabpanel"
+          aria-selected={view === 'list'}
+          tabIndex={view === 'list' ? 0 : -1}
+          className={`property-view-toggle__tab${view === 'list' ? ' property-view-toggle__tab--active' : ''}`}
+          onClick={() => setView('list')}
+          onKeyDown={handleViewKeyDown}
+        >
+          List
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="fatty-tab-bars"
+          aria-controls="fatty-tabpanel"
+          aria-selected={view === 'bars'}
+          tabIndex={view === 'bars' ? 0 : -1}
+          className={`property-view-toggle__tab${view === 'bars' ? ' property-view-toggle__tab--active' : ''}`}
+          onClick={() => setView('bars')}
+          onKeyDown={handleViewKeyDown}
+        >
+          Bars
+        </button>
+      </div>
+
+      {/* Neither view holds focusable children, so the tabpanel itself stays reachable
+          (tabIndex 0) per the ARIA Tabs pattern. Both views render the SAME readings with
+          the same role="meter" values and out-of-range statuses — the toggle changes how
+          much geometry accompanies them, never what is claimed. */}
+      <div
+        role="tabpanel"
+        id="fatty-tabpanel"
+        aria-labelledby={`fatty-tab-${view}`}
+        tabIndex={0}
+      >
+      {view === 'list' ? (
+        <ul className="fatty-list" aria-label="Recipe fatty acid groups">
+          {FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
+            const guide = FORMULATION_FATTY_ACID_GUIDE[key];
+            const value = sumFattyAcids(result.profile!, acids);
+            const inBand = inGuideBand(value, guide.low, guide.high);
+            const outOfRange = !inBand && !lowCoverage;
+            return (
+              <li key={key} className="fatty-list__row">
+                <span className="fatty-list__label">{guide.label}</span>
+                <span className="fatty-list__typical">
+                  typical {formatPropertyRangePercent(guide.low, guide.high)}
+                </span>
+                <span className="property-bars__reading">
+                  {outOfRange && (
+                    <span className="property-bars__status">
+                      {value < guide.low ? 'Too low' : 'Too high'}
+                    </span>
+                  )}
+                  <span
+                    className={`property-bars__value${outOfRange ? ' property-bars__value--outside' : ''}`}
+                    role="meter"
+                    aria-valuemin={0}
+                    aria-valuemax={SCALE_MAX}
+                    aria-valuenow={Math.round(value * 10) / 10}
+                    aria-label={`${guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(value)}${outOfRange ? ' — outside typical range' : ''}`}
+                  >
+                    {lowCoverage ? '~' : ''}
+                    {formatSoapPropertyPercent(value)}
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
       <ul className="property-bars" aria-label="Recipe fatty acid groups">
         {FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
           const guide = FORMULATION_FATTY_ACID_GUIDE[key];
@@ -168,6 +255,8 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           );
         })}
       </ul>
+      )}
+      </div>
 
       <p className="fatty-ratio">
         Saturated {formatSoapPropertyPercent(saturated)} · Unsaturated{' '}
