@@ -42,6 +42,11 @@ test('renders scores as unitless numbers (no % on property rows)', () => {
   expect(screen.getByText('41')).toBeTruthy();
 });
 
+/** The panel opens on the radar, so every assertion about a BAR row selects Bars first.
+ *  The readings themselves are in the DOM either way (role=meter), but the visible rows,
+ *  their InfoTips and their out-of-range verdicts belong to the Bars view. */
+const showBars = () => fireEvent.click(screen.getByRole('tab', { name: 'Bars' }));
+
 test('flags an out-of-range score and suppresses it under low coverage', () => {
   const outOfRange = {
     properties: {
@@ -55,6 +60,7 @@ test('flags an out-of-range score and suppresses it under low coverage', () => {
   const { rerender, container } = render(
     <PropertiesPanel result={outOfRange.properties} indexes={outOfRange.indexes} modeledOilIds={[]} process="cp" />,
   );
+  showBars(); // survives the rerender below — the component is updated, not remounted
   expect(container.querySelectorAll('.property-bars__value--outside').length).toBeGreaterThan(0);
 
   rerender(
@@ -85,6 +91,7 @@ test('titles the panel per process: bar soap by default, soap for LS', () => {
 
 test('gives every property bar a guidance tooltip', () => {
   render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
+  showBars();
   // Derive the terms from the labels so a rename in core keeps this test honest.
   for (const term of Object.values(SOAP_PROPERTY_LABELS)) {
     expect(screen.getByRole('button', { name: `About ${term}` })).toBeTruthy();
@@ -93,6 +100,7 @@ test('gives every property bar a guidance tooltip', () => {
 
 test('notes that all soap cleans, via the cleansing row InfoTip guidance', () => {
   render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
+  showBars();
   expect(
     screen.getByText(/All soap cleans — a low cleansing score means gentler, not ineffective\./),
   ).toBeTruthy();
@@ -107,6 +115,7 @@ test('appends the LS solubility note to the cleansing guidance for LS process', 
       process="ls"
     />,
   );
+  showBars();
   expect(
     screen.getByText(/In liquid soap this tracks solubility\/how well it dilutes, not harshness\./),
   ).toBeTruthy();
@@ -131,12 +140,15 @@ test('renders no radar and a hint when there is no property data', () => {
   expect(screen.getByText(/Add triglyceride oils/i)).toBeTruthy();
 });
 
-test('defaults to the Bars view — meters visible, radar hidden', () => {
+test('defaults to the Radar view — chart visible, bars hidden', () => {
+  // The panel opened on Bars, which put its most legible view — the one that shows the whole
+  // blend's shape at a glance — behind a control the maker had to find first.
   const { container } = render(
     <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
-  expect(container.querySelector('.property-bars')).not.toBeNull();
-  expect(container.querySelector('.property-radar')).toBeNull();
+  expect(container.querySelector('.property-radar')).not.toBeNull();
+  expect(container.querySelector('.property-bars')).toBeNull();
+  // The readings stay reachable for assistive tech in either view.
   expect(screen.getByRole('meter', { name: /Hardness/i })).toBeTruthy();
 });
 
@@ -148,19 +160,19 @@ test('wires the toggle tabs to the tabpanel via aria-controls / aria-labelledby'
   expect(barsTab.getAttribute('aria-controls')).toBe('property-tabpanel');
   expect(radarTab.getAttribute('aria-controls')).toBe('property-tabpanel');
   expect(panel.id).toBe('property-tabpanel');
-  // Default view is Bars → the panel is labelled by the Bars tab.
-  expect(panel.getAttribute('aria-labelledby')).toBe(barsTab.id);
-  fireEvent.click(radarTab);
-  expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe(radarTab.id);
+  // Default view is Radar → the panel is labelled by the Radar tab.
+  expect(panel.getAttribute('aria-labelledby')).toBe(radarTab.id);
+  fireEvent.click(barsTab);
+  expect(screen.getByRole('tabpanel').getAttribute('aria-labelledby')).toBe(barsTab.id);
 });
 
-test('switching to Radar shows the chart and keeps the property readings for AT', () => {
+test('switching to Bars shows the meters and keeps the property readings for AT', () => {
   const { container } = render(
     <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
-  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
-  expect(container.querySelector('.property-radar')).not.toBeNull();
-  expect(container.querySelector('.property-bars')).toBeNull();
+  fireEvent.click(screen.getByRole('tab', { name: 'Bars' }));
+  expect(container.querySelector('.property-bars')).not.toBeNull();
+  expect(container.querySelector('.property-radar')).toBeNull();
   // Readings remain reachable via role=meter even though the visual bars are hidden.
   expect(screen.getByRole('meter', { name: /Hardness/i })).toBeTruthy();
 });
@@ -169,14 +181,15 @@ test('gives the active view-toggle tab tabIndex=0 and the other -1', () => {
   const { container } = render(
     <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
-  // Default view is Bars.
-  expect(screen.getByRole('tab', { name: 'Bars' }).getAttribute('tabindex')).toBe('0');
-  expect(screen.getByRole('tab', { name: 'Radar' }).getAttribute('tabindex')).toBe('-1');
+  // Default view is Radar.
+  expect(screen.getByRole('tab', { name: 'Radar' }).getAttribute('tabindex')).toBe('0');
+  expect(screen.getByRole('tab', { name: 'Bars' }).getAttribute('tabindex')).toBe('-1');
   expect(container).toBeTruthy();
 });
 
 test('ArrowLeft on the Bars tab moves the roving tabindex to Radar and switches the view', async () => {
   render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
+  showBars(); // the panel opens on Radar now, so start from the other end
   const bars = screen.getByRole('tab', { name: 'Bars' });
   bars.focus();
   await userEvent.keyboard('{ArrowLeft}');

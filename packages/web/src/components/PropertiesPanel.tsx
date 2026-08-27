@@ -70,7 +70,9 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   modeledOilIds,
   process,
 }: PropertiesPanelProps) {
-  const [view, setView] = useState<'bars' | 'radar'>('bars');
+  // Radar first: it shows the whole blend's shape in one read, which is what this panel is
+  // for. Bars are the same numbers laid out one per row, a step down into detail.
+  const [view, setView] = useState<'bars' | 'radar'>('radar');
   const modeled = modeledOilIds;
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.

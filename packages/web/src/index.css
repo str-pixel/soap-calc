@@ -2144,46 +2144,53 @@ details[open] > .disclosure__summary::before {
 }
 
 /* ── Property view toggle (Radar / Bars) ──────────────────────────────── */
-/* AN UNDERLINE SWITCH, not a mode switch — but a switch. Ink fill is how the app says
-   "this is the mode you are in" (the process tabs), and filling this with ink put a
-   panel-level view toggle at the same volume as the process it sits under. The demotion was
-   right; the SIZE was not. At the 0.62rem micro-label it was set in the same type as the
-   captions on either side of it, and the radar — reachable only through here, since the
-   panel opens on Bars — effectively vanished from the app.
-   It takes .view-tabs' vocabulary instead: the same underline-active idiom the app already
-   uses for a nav, one step down in scale. Subordinate to the process tabs (0.85rem, ink
-   filled) and to the view tabs (0.9rem), and unmistakably a control. */
+/* A SEGMENTED PAIR: the chosen view filled with ink, the other on paper behind a hairline.
+   This has been through three treatments. It began here; the design audit demoted it to an
+   underlined micro-label, on the principle that ink fill is how the app says "the mode you
+   are in" and a panel-level switch should not shout as loud as the process tabs above it.
+   Sound in principle, wrong in practice: at the micro-label size it was set in the same type
+   as the captions beside it, and the radar — which is only reachable through here — went
+   missing for a maker who could not tell it was a control at all.
+   Filled ink is unambiguous, and the two views are a genuine either/or, which is exactly
+   what a segmented pair says. It stays smaller and quieter than the process tabs (0.85rem
+   Archivo 800) by being mono at 0.7rem, so the hierarchy the audit was protecting survives
+   without costing the control its legibility. */
 .property-view-toggle {
   display: flex;
-  align-items: baseline;
-  gap: 1.1rem;
   margin: 0 0 1.4rem;
 }
 
 .property-view-toggle__tab {
   appearance: none;
-  border: none;
+  border: 1px solid var(--border);
   background: transparent;
-  padding: 0 0 0.2rem;
-  cursor: pointer;
-  font-family: var(--font-ui);
-  font-weight: 800;
-  font-stretch: 115%;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--label);
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  padding: 0.5rem 1.1rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+/* One shared edge where they meet, not two stacked borders. */
+.property-view-toggle__tab + .property-view-toggle__tab {
+  margin-left: -1px;
 }
 
 .property-view-toggle__tab:hover:not(.property-view-toggle__tab--active) {
-  color: var(--text);
+  border-color: var(--text);
 }
 
 .property-view-toggle__tab--active {
-  color: var(--text);
-  border-bottom-color: var(--accent);
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+  /* Above its neighbour so the filled edge is the one that shows. */
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Messages / insights ──────────────────────────────────────────────── */
