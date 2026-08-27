@@ -240,9 +240,15 @@ test.describe('recipe UI regressions', () => {
     await page.locator('.oil-picker__option').first().click();
     // Caption switches from "Based on" to "Estimated from"
     await expect(page.locator('.properties-coverage').first()).toContainText(/Estimated from 74% of recipe oils/i);
-    // Values are marked approximate and the red out-of-range flag is suppressed
-    await expect(page.locator('.property-bars__value').first()).toContainText('~');
-    await expect(page.locator('.property-bars__value--outside')).toHaveCount(0);
+    // Values are marked approximate and the red out-of-range flag is suppressed.
+    // SCOPED, and Bars selected first: the panel opens on the radar now, so an unscoped
+    // .property-bars__value resolves against the Fatty acid profile panel — which uses the
+    // same class names and has its own coverage rules. Both assertions passed against that
+    // panel while the behaviour they name had been deleted from this one.
+    await page.getByRole('tab', { name: 'Bars' }).click();
+    const barProps = page.locator('#property-tabpanel');
+    await expect(barProps.locator('.property-bars__value').first()).toContainText('~');
+    await expect(barProps.locator('.property-bars__value--outside')).toHaveCount(0);
   });
 
   test('autosave persists the committed weight, not a mid-typed value', async ({ page }) => {

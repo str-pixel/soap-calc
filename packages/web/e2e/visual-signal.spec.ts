@@ -269,41 +269,51 @@ test('the preset rows line up with the header that names their columns', async (
   expect(problems, 'browser complaints on the preset list').toEqual([]);
 });
 
-test('the Radar / Bars switch reads as a control, not as a caption', async ({ page }) => {
+test('the Radar / Bars switch reads as a control, and actually switches', async ({ page }) => {
   const problems = watchForErrors(page);
   await page.goto('/');
 
-  // The panel opens on Bars, so the radar is only ever reached through this switch. The
-  // design pass demoted it from ink-filled segmented buttons to an underlined micro-label —
-  // correct in principle (ink fill belongs to the process switch it sits under) but taken to
-  // 0.62rem it became indistinguishable from the captions around it, and a whole view of the
-  // app went missing. "It is still in the DOM" is not the same as "a maker can find it".
-  const tab = page.getByRole('tab', { name: 'Radar' });
-  const label = await page
+  // This control has been three things. It was a segmented pair; the design pass demoted it
+  // to an underlined micro-label, on the principle that ink fill belongs to the process
+  // switch it sits under; at 0.62rem that put it in the same type as the captions beside it
+  // and the radar — reachable only through here — went missing for anyone who could not tell
+  // it was a control. It is a segmented pair again. "It is still in the DOM" is not the same
+  // as "a maker can find it", which is what these assertions are for.
+  const radarTab = page.getByRole('tab', { name: 'Radar' });
+  const barsTab = page.getByRole('tab', { name: 'Bars' });
+  const read = (l: typeof radarTab) =>
+    l.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { size: parseFloat(s.fontSize), bg: s.backgroundColor, color: s.color };
+    });
+
+  const captionSize = await page
     .locator('.micro-label, .results-grid dt')
     .first()
     .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-  const style = await tab.evaluate((el) => {
-    const s = getComputedStyle(el);
-    return { size: parseFloat(s.fontSize), weight: s.fontWeight, color: s.color };
-  });
+  const selected = await read(radarTab); // the panel opens on the radar
   expect(
-    style.size,
-    `the switch is set at ${style.size}px against a ${label}px caption — it must outrank it`,
-  ).toBeGreaterThan(label);
+    selected.size,
+    `the switch is set at ${selected.size}px against a ${captionSize}px caption — it must outrank it`,
+  ).toBeGreaterThan(captionSize);
 
-  // And the two states must be told apart by more than a 2px rule most people will not see.
-  const active = await page
-    .getByRole('tab', { name: 'Bars' })
-    .evaluate((el) => getComputedStyle(el).color);
-  expect(active, 'the selected view must differ in colour from the unselected one').not.toBe(
-    style.color,
-  );
+  // Selected and unselected must be told apart by more than a rule most people will not see:
+  // one is filled with ink, the other sits on paper.
+  const unselected = await read(barsTab);
+  expect(selected.bg, 'the chosen view is filled').not.toBe(unselected.bg);
+  expect(selected.color, 'and its text inverts with the fill').not.toBe(unselected.color);
 
-  // The thing it exists to reveal still arrives when pressed.
-  await tab.click();
+  // IT MUST ACTUALLY SWITCH — both ways. Pressing the tab that is already active proves
+  // nothing: this assertion passed with the Radar button's onClick replaced by a no-op,
+  // because the radar was already on screen when it was pressed.
+  await barsTab.click();
+  await expect(page.locator('#property-tabpanel .property-radar')).toHaveCount(0);
+  await expect(page.locator('#property-tabpanel .property-bars')).toHaveCount(1);
+
+  await radarTab.click();
+  await expect(page.locator('#property-tabpanel .property-bars')).toHaveCount(0);
   const radar = await page
-    .locator('.property-radar')
+    .locator('#property-tabpanel .property-radar')
     .evaluate((el) => el.getBoundingClientRect().width);
   expect(radar, 'the radar renders once its tab is chosen').toBeGreaterThan(100);
 
