@@ -225,6 +225,21 @@ test('every boxless figure field fits the values this app actually holds', async
     expect(m.s, `${sel} clips "${value}" (${m.s}px of content in ${m.c}px)`).toBeLessThanOrEqual(m.c + 1);
   }
 
+  // THE RULE HUGS THE FIGURE (field-sizing): the underline is as long as the digits it
+  // holds, with a four-digit floor — "1000", the starter's own total oil — so short and
+  // empty values keep one stable width, and longer values grow the rule instead of
+  // clipping. A fixed width under a two-digit value claims figure that isn't there.
+  const widthAt = async (value: string) => {
+    const el = page.locator('input[aria-label^="Weight in"]').first();
+    await el.fill(value);
+    return el.evaluate((n) => n.getBoundingClientRect().width);
+  };
+  const atFloor = await widthAt('1000');
+  expect(await widthAt('45'), 'two digits sit at the four-digit floor').toBeCloseTo(atFloor, 1);
+  expect(await widthAt(''), 'an empty field keeps the floor').toBeCloseTo(atFloor, 1);
+  expect(await widthAt('1234.5'), 'a longer value grows the rule').toBeGreaterThan(atFloor + 5);
+  expect(atFloor, 'the floor is digit-sized, not the old fixed 5.2rem').toBeLessThan(60);
+
   // Spin buttons steal width from a field this narrow and read as chrome on a rule that is
   // meant to be bare — .slider-field__value already suppresses them for the same reason.
   const spin = await page

@@ -1265,17 +1265,16 @@ details[open] > .disclosure__summary::before {
    Reserved for NUMERICS. Text and enum inputs keep the box; the rule is what says
    "a figure goes here". */
 .figure-field.input {
-  /* Sized for what this app actually holds, not for the mockup's three-digit sample: the
-     starter recipe's own total oil is 1,000 g, and kg/oz modes add a decimal point on top
-     ("1234.5"). At 3.6rem a four-digit weight silently CLIPPED — the value was still there,
-     still submitted, just not readable. A bordered box never had the problem because it was
-     width:100% in its own column; a fixed width has to earn it. */
+  /* FALLBACK width, sized for what this app actually holds: the starter recipe's own
+     total oil is 1,000 g, and kg/oz modes add a decimal point on top ("1234.5"). At
+     3.6rem a four-digit weight silently CLIPPED. Where field-sizing is supported the
+     @supports block below replaces this with a content-hugging width instead. */
   width: 5.2rem;
   border: none;
   border-bottom: 1.5px solid var(--text);
   border-radius: var(--radius);
   background: transparent;
-  padding: 0 0.4rem 0.15rem;
+  padding: 0 0.2rem 0.15rem;
   text-align: right;
   font-family: var(--font-mono);
   font-size: 0.95rem;
@@ -1289,9 +1288,27 @@ details[open] > .disclosure__summary::before {
   -moz-appearance: textfield;
 }
 
-/* A five-digit batch paste weight. */
+/* A five-digit batch paste weight (fallback width, like the base rule's). */
 .figure-field--wide.input {
   width: 6rem;
+}
+
+/* THE RULE IS AS LONG AS THE FIGURE. A fixed width leaves a four-digit rule under a
+   two-digit value, claiming figure that isn't there; content sizing lets the underline
+   hug what is actually typed and GROW when a value outruns it. The floor is four tabular
+   digits — "1000", the starter recipe's own total oil — so short and empty fields keep a
+   stable, workable target instead of collapsing; ch is measured in this field's own mono
+   face, so the floor is exactly the digits it claims to hold (plus the side padding,
+   counted because .input is border-box). Progressive enhancement, same as the recipe-name
+   headline: browsers without field-sizing keep the fixed fallbacks above. */
+@supports (field-sizing: content) {
+  .figure-field.input,
+  .figure-field--wide.input {
+    field-sizing: content;
+    width: auto;
+    min-width: calc(4ch + 0.4rem);
+    max-width: 100%;
+  }
 }
 
 .figure-field.input::-webkit-outer-spin-button,
