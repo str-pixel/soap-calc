@@ -1305,9 +1305,13 @@ details[open] > .disclosure__summary::before {
 }
 
 /* ── The ledger ───────────────────────────────────────────────────────── */
-/* The settings dialect: label left, control right, rows split by hairlines. A row is a
+/* THE row dialect: label left, control right, rows split by hairlines. A row is a
    <label> when it holds one input (the whole row is the hit target) and a <div> when it
-   holds a radiogroup, which labels itself. */
+   holds a radiogroup, which labels itself. The dilution panel's rows are the SAME object
+   under their own name — grouped into every definition here so the dialect cannot fork —
+   with one deliberate structural difference: dilution rows are free-standing (alert
+   prose interleaves between them), so each draws its own rule ABOVE itself instead of
+   living in a .ledger container that opens the run. */
 .ledger {
   display: flex;
   flex-direction: column;
@@ -1317,23 +1321,34 @@ details[open] > .disclosure__summary::before {
 /* Rows may wrap: a segmented group is an unbreakable run of cells (nowrap by design),
    so on a narrow column it drops under its label instead of forcing overflow. The
    auto margins keep the control on the right edge whether or not it wrapped. */
-.ledger__row {
+.ledger__row,
+.dilution-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem 0.75rem;
   padding: 0.6rem 0;
-  border-bottom: 1px solid var(--hairline);
   margin: 0;
 }
 
+.ledger__row {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.dilution-row {
+  border-top: 1px solid var(--hairline);
+}
+
 .ledger__row > .seg,
-.ledger__row > .ledger__figure {
+.ledger__row > .ledger__figure,
+.dilution-row > .seg,
+.dilution-row > .dilution-row__value {
   margin-left: auto;
 }
 
-.ledger__label {
+.ledger__label,
+.dilution-row__label {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -1341,14 +1356,16 @@ details[open] > .disclosure__summary::before {
   color: var(--text-strong);
 }
 
-.ledger__figure {
+.ledger__figure,
+.dilution-row__value {
   display: inline-flex;
   align-items: baseline;
   gap: 0.3rem;
 }
 
 /* The unit lives OUTSIDE the rule — it names the figure, it is not part of it. */
-.ledger__unit {
+.ledger__unit,
+.dilution-row__unit {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -3060,41 +3077,17 @@ details[open] > .disclosure__summary::before {
 
 /* Boxless figure rows (redesign): label left, underlined figure + unit right, one
    hairline over each row. The same figure-field the ingredient rows use. */
-.dilution-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.6rem 0;
-  border-top: 1px solid var(--border);
-  margin: 0;
-}
-
-.dilution-row__label {
-  font-size: 0.95rem;
-  color: var(--text-strong);
-}
-
+/* .dilution-row and its label/value/unit are defined WITH the ledger family (see "The
+   ledger") — one dialect, two names. Only the dilution-specific bits live here. */
 .dilution-row__hint {
   color: var(--text-muted);
   font-size: 0.85rem;
 }
 
-.dilution-row__value {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4rem;
-}
-
-.dilution-row__unit {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--label);
-}
-
+/* The scope row closes its free-standing run: rule above from .dilution-row, rule below
+   from here. */
 .dilution-row--scope {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--hairline);
 }
 
 /* The plan/reference boundary sentence, and the caption expanding the strip's

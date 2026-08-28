@@ -8,6 +8,7 @@ import {
   wasteFactorExceedsMax } from '../lib/moldSizer';
 import { formatWeight, WEIGHT_UNITS } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
+import { LedgerRow } from './LedgerRow';
 import { SegRadioGroup } from './SegRadioGroup';
 
 type MoldSizerPanelProps = {
@@ -51,8 +52,8 @@ function DimField({
   );
 }
 
-/* No aria-label: the wrapping label's content — "Shrinkage / waste" plus the "%" unit —
- * IS the accessible name, so a rename can't strand screen readers on a stale string. */
+/* No aria-label: the row's content — "Shrinkage / waste" plus the "%" unit — IS the
+ * accessible name, so a rename can't strand screen readers on a stale string. */
 function ShrinkageRow({
   input,
   onChange,
@@ -61,21 +62,17 @@ function ShrinkageRow({
   onChange: (input: MoldSizerInput) => void;
 }) {
   return (
-    <label className="ledger__row">
-      <span className="ledger__label">Shrinkage / waste</span>
-      <span className="ledger__figure">
-        <input
-          type="number"
-          className="input figure-field"
-          min={0}
-          max={MAX_WASTE_FACTOR_PERCENT}
-          step={1}
-          value={input.wasteFactorPercent}
-          onChange={(e) => onChange({ ...input, wasteFactorPercent: e.target.value })}
-        />
-        <span className="ledger__unit">%</span>
-      </span>
-    </label>
+    <LedgerRow
+      label="Shrinkage / waste"
+      unit="%"
+      input={{
+        min: 0,
+        max: MAX_WASTE_FACTOR_PERCENT,
+        step: 1,
+        value: input.wasteFactorPercent,
+        onChange: (e) => onChange({ ...input, wasteFactorPercent: e.target.value }),
+      }}
+    />
   );
 }
 
@@ -202,34 +199,26 @@ export function MoldSizerPanel({
       <div className="ledger mold-sizer__ledger">
         {input.mode === 'bars' && (
           <>
-            <label className="ledger__row">
-              <span className="ledger__label">Number of bars</span>
-              <span className="ledger__figure">
-                <input
-                  type="number"
-                  className="input figure-field"
-                  min={1}
-                  step={1}
-                  value={input.barCount}
-                  onChange={(e) => onChange({ ...input, barCount: e.target.value })}
-                />
-              </span>
-            </label>
-            <label className="ledger__row">
-              <span className="ledger__label">Bar weight after cure</span>
-              <span className="ledger__figure">
-                <input
-                  type="number"
-                  className="input figure-field"
-                  aria-label={`Bar weight after cure (${unitShort})`}
-                  min={0}
-                  step={1}
-                  value={input.barWeight}
-                  onChange={(e) => onChange({ ...input, barWeight: e.target.value })}
-                />
-                <span className="ledger__unit">{unitShort}</span>
-              </span>
-            </label>
+            <LedgerRow
+              label="Number of bars"
+              input={{
+                min: 1,
+                step: 1,
+                value: input.barCount,
+                onChange: (e) => onChange({ ...input, barCount: e.target.value }),
+              }}
+            />
+            <LedgerRow
+              label="Bar weight after cure"
+              unit={unitShort}
+              input={{
+                'aria-label': `Bar weight after cure (${unitShort})`,
+                min: 0,
+                step: 1,
+                value: input.barWeight,
+                onChange: (e) => onChange({ ...input, barWeight: e.target.value }),
+              }}
+            />
           </>
         )}
         <ShrinkageRow input={input} onChange={onChange} />

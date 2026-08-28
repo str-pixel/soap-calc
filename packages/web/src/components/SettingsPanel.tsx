@@ -13,6 +13,7 @@ import { kohBlendRangeFor, processOffers } from '../lib/process';
 import type { ProcessId } from '../lib/process';
 import { BatchBasics } from './BatchBasics';
 import { InfoTip } from './InfoTip';
+import { LedgerRow } from './LedgerRow';
 import { MoldSizerPanel } from './MoldSizerPanel';
 import { SegRadioGroup } from './SegRadioGroup';
 
@@ -28,9 +29,9 @@ const LYE_SEG_CELLS: Record<LyeType, string> = {
   dual: 'NaOH + KOH',
 };
 
-/** A ledger row holding one numeric setting on an underline rule, unit suffix outside
- * the rule. The trailing "%" of a spec label becomes the suffix; the full label stays
- * the input's accessible name. */
+/** A ledger row holding one numeric setting from a settingsFields spec. The trailing
+ * "%" of a spec label becomes the unit suffix; the full label stays the input's
+ * accessible name. */
 function LedgerNumericField({
   spec,
   value,
@@ -43,27 +44,25 @@ function LedgerNumericField({
   // One derivation for both the row text and the InfoTip's glossary key — a second
   // regex here is how the two silently stop agreeing.
   const baseLabel = spec.label.replace(/\s*%$/, '');
-  const suffix = baseLabel === spec.label ? null : '%';
+  const suffix = baseLabel === spec.label ? undefined : '%';
   return (
-    <label className="ledger__row">
-      <span className="ledger__label">
-        {baseLabel}
-        {spec.help && <InfoTip term={baseLabel}>{spec.help}</InfoTip>}
-      </span>
-      <span className="ledger__figure">
-        <input
-          type="number"
-          className="input figure-field"
-          aria-label={spec.label}
-          min={spec.min}
-          max={spec.max}
-          step={spec.step}
-          value={value}
-          onChange={(e) => onValueChange(e.target.value)}
-        />
-        {suffix && <span className="ledger__unit">{suffix}</span>}
-      </span>
-    </label>
+    <LedgerRow
+      label={
+        <>
+          {baseLabel}
+          {spec.help && <InfoTip term={baseLabel}>{spec.help}</InfoTip>}
+        </>
+      }
+      unit={suffix}
+      input={{
+        'aria-label': spec.label,
+        min: spec.min,
+        max: spec.max,
+        step: spec.step,
+        value,
+        onChange: (e) => onValueChange(e.target.value),
+      }}
+    />
   );
 }
 
@@ -155,24 +154,19 @@ export function SettingsPanel({
         </div>
 
         {settings.lyeType === 'dual' && (
-          <label className="ledger__row">
-            <span className="ledger__label">KOH % of alkali</span>
-            <span className="ledger__figure">
-              <input
-                type="number"
-                className="input figure-field"
-                aria-label="KOH % of alkali (by weight)"
-                min={blendMin}
-                max={blendMax}
-                step={0.5}
-                value={settings.kohBlendPercent}
-                onChange={(e) =>
-                  setSettings((s) => ({ ...s, kohBlendPercent: e.target.value }))
-                }
-              />
-              <span className="ledger__unit">%</span>
-            </span>
-          </label>
+          <LedgerRow
+            label="KOH % of alkali"
+            unit="%"
+            input={{
+              'aria-label': 'KOH % of alkali (by weight)',
+              min: blendMin,
+              max: blendMax,
+              step: 0.5,
+              value: settings.kohBlendPercent,
+              onChange: (e) =>
+                setSettings((s) => ({ ...s, kohBlendPercent: e.target.value })),
+            }}
+          />
         )}
 
         {purityFieldsFor(settings.lyeType).map((spec) => (
@@ -185,38 +179,30 @@ export function SettingsPanel({
         ))}
 
         {processOffers(process, 'hpVessel') && (
-          <label className="ledger__row">
-            <span className="ledger__label">
-              Cook vessel volume
-              <InfoTip term="Cook vessel volume">
-                The hot-process cook expands (a thick, translucent "mashed potato" phase) before
-                settling — a vessel at least ~2× the batch volume (~3× for coconut-heavy
-                recipes) gives it room to expand without overflowing.
-              </InfoTip>
-            </span>
-            {/* The ≈-multiple stacks UNDER the figure, inside the row it annotates — as a
-                ledger sibling it would paint below the row's own hairline and read as a
-                caption for whatever follows. */}
-            <span className="ledger__figure ledger__figure--stacked">
-              <span className="ledger__figure">
-                <input
-                  type="number"
-                  className="input figure-field"
-                  aria-label="Cook vessel volume (L)"
-                  min={0}
-                  step={0.5}
-                  value={vesselVolumeLiters}
-                  onChange={(e) => onVesselVolumeLitersChange(e.target.value)}
-                />
-                <span className="ledger__unit">L</span>
-              </span>
-              {hpVesselMultiple !== undefined && (
-                <span className="ledger__note">
-                  ≈{hpVesselMultiple.toFixed(1)}× batch volume
-                </span>
-              )}
-            </span>
-          </label>
+          <LedgerRow
+            label={
+              <>
+                Cook vessel volume
+                <InfoTip term="Cook vessel volume">
+                  The hot-process cook expands (a thick, translucent "mashed potato" phase)
+                  before settling — a vessel at least ~2× the batch volume (~3× for
+                  coconut-heavy recipes) gives it room to expand without overflowing.
+                </InfoTip>
+              </>
+            }
+            unit="L"
+            note={
+              hpVesselMultiple !== undefined &&
+              `≈${hpVesselMultiple.toFixed(1)}× batch volume`
+            }
+            input={{
+              'aria-label': 'Cook vessel volume (L)',
+              min: 0,
+              step: 0.5,
+              value: vesselVolumeLiters,
+              onChange: (e) => onVesselVolumeLitersChange(e.target.value),
+            }}
+          />
         )}
       </div>
 

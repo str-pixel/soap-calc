@@ -2,6 +2,7 @@ import type { KeyboardEvent } from 'react';
 import type { RecipeInputs } from '../hooks/useRecipeInputs';
 import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import { gramsStringToInputDisplay, WEIGHT_UNIT_OPTIONS, WEIGHT_UNITS, type WeightUnit } from '../lib/weightUnits';
+import { LedgerRow } from './LedgerRow';
 import { SegRadioGroup } from './SegRadioGroup';
 
 const commitOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -53,56 +54,48 @@ export function BatchBasics({
       </div>
 
       {/* The panel's key figure: the number the whole recipe scales from, so it gets the
-          one louder rule (.figure-field--key). */}
-      <label className="ledger__row">
-        <span className="ledger__label">Total oil</span>
-        <span className="ledger__figure">
-          <input
-            type="number"
-            className="input figure-field figure-field--key"
-            aria-label={`Total oil (${weightUnitConfig.short})`}
-            min={0}
-            step={weightUnitConfig.inputStep}
-            value={getDraft(
-              inputs.batchInputId,
-              gramsStringToInputDisplay(previewState.batchOilGrams, weightUnit),
-            )}
-            onChange={(e) => inputs.handleBatchChange(e.target.value)}
-            onBlur={(e) => inputs.commitBatchInput(e.target.value)}
-            onKeyDown={commitOnEnter}
-          />
-          <span className="ledger__unit">{weightUnitConfig.short}</span>
-        </span>
-      </label>
+          one louder rule (emphasis → .figure-field--key). */}
+      <LedgerRow
+        label="Total oil"
+        unit={weightUnitConfig.short}
+        emphasis
+        input={{
+          'aria-label': `Total oil (${weightUnitConfig.short})`,
+          min: 0,
+          step: weightUnitConfig.inputStep,
+          value: getDraft(
+            inputs.batchInputId,
+            gramsStringToInputDisplay(previewState.batchOilGrams, weightUnit),
+          ),
+          onChange: (e) => inputs.handleBatchChange(e.target.value),
+          onBlur: (e) => inputs.commitBatchInput(e.target.value),
+          onKeyDown: commitOnEnter,
+        }}
+      />
 
-      <label className="ledger__row">
-        <span className="ledger__label">Total batch</span>
-        <span className="ledger__figure">
-          <input
-            type="number"
-            className="input figure-field"
-            aria-label={`Total batch in ${weightUnitConfig.short}`}
-            min={0}
-            step={weightUnitConfig.inputStep}
-            value={getDraft(
-              inputs.batchWeightInputId,
-              batchWeightWithExtras > 0
-                ? gramsStringToInputDisplay(String(batchWeightWithExtras), weightUnit)
-                : '',
-            )}
-            onChange={(e) => inputs.handleBatchWeightChange(e.target.value)}
-            onBlur={(e) =>
-              inputs.commitBatchWeightInput(e.target.value, {
-                currentBatchGrams: batchWeightWithExtras,
-                currentOilTotalGrams: recipeOilWeightGrams,
-                fixedExtrasGrams: fixedBatchExtrasGrams,
-              })
-            }
-            onKeyDown={commitOnEnter}
-          />
-          <span className="ledger__unit">{weightUnitConfig.short}</span>
-        </span>
-      </label>
+      <LedgerRow
+        label="Total batch"
+        unit={weightUnitConfig.short}
+        input={{
+          'aria-label': `Total batch in ${weightUnitConfig.short}`,
+          min: 0,
+          step: weightUnitConfig.inputStep,
+          value: getDraft(
+            inputs.batchWeightInputId,
+            batchWeightWithExtras > 0
+              ? gramsStringToInputDisplay(String(batchWeightWithExtras), weightUnit)
+              : '',
+          ),
+          onChange: (e) => inputs.handleBatchWeightChange(e.target.value),
+          onBlur: (e) =>
+            inputs.commitBatchWeightInput(e.target.value, {
+              currentBatchGrams: batchWeightWithExtras,
+              currentOilTotalGrams: recipeOilWeightGrams,
+              fixedExtrasGrams: fixedBatchExtrasGrams,
+            }),
+          onKeyDown: commitOnEnter,
+        }}
+      />
     </>
   );
 }
