@@ -2411,15 +2411,81 @@ details[open] > .disclosure__summary::before {
 /* The fatty column chart (the Bars view): ink columns on the paper ground, accent where
    the group sits outside its band, the reading riding each column's top. Bottom-aligned
    by the flex row, so no fixed chart height is needed — the tallest column sets it. */
-.fatty-chart {
+/* The mock's list view: one hairline row per group, name left, mono value right. The
+   last row keeps its underside bare — the panel's saturated/unsaturated line closes it. */
+.fatty-list {
   list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+.fatty-list__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.fatty-list__row:last-child {
+  border-bottom: none;
+}
+
+.fatty-list__name {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+}
+
+.fatty-list__reading {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.fatty-chart {
+  margin-top: 1.6rem;
+}
+
+/* The columns stand on a FIXED 3px-per-percent scale over an ink baseline, so a column's
+   height IS its reading. position + z-index:0 makes this its own stacking context: the
+   ::after reference rule can sit at z-index:-1 — under the bars, over the paper. */
+.fatty-chart__cols {
+  list-style: none;
+  position: relative;
+  z-index: 0;
   display: flex;
   align-items: flex-end;
-  /* No flex gap: the columns' spacing comes from the bars' own width, so the abbr cells
-     touch and their top borders really do join into one baseline (a gap notched it). */
-  gap: 0;
-  margin: 1.3rem 0 0;
+  gap: 12px;
+  min-height: 190px;
+  margin: 0;
   padding: 0;
+  border-bottom: 1.5px solid var(--text);
+}
+
+/* The dashed reference rule at 25% (75px on the 3px/% scale), its label on paper at the
+   right end — one calibration mark, not a grid. */
+.fatty-chart__cols::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 75px;
+  z-index: -1;
+  border-top: 1px dashed var(--hairline);
+}
+
+.fatty-chart__cols::before {
+  content: '25%';
+  position: absolute;
+  right: 0;
+  bottom: 79px;
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  color: var(--caption);
+  background: var(--bg);
+  padding-left: 4px;
 }
 
 .fatty-chart__col {
@@ -2436,20 +2502,29 @@ details[open] > .disclosure__summary::before {
   flex-direction: column;
   align-items: center;
   gap: 0.1rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 4px;
   text-align: center;
 }
 
-/* Nine columns squeeze tighter than the verdict word — let it stand on one line and
-   bleed a few px over the column edge rather than stack "TOO / LOW". Readings sit at
-   different heights per column, so the bleed collides with nothing. */
-.fatty-chart__reading .property-bars__status {
+/* Chart readings are the signal register, not the list's advisory one: a flagged column,
+   its figure, and its verdict all go accent-red, and the verdict drops to the mock's
+   0.56rem so it rides a narrow column without stacking "TOO / LOW". */
+.fatty-chart .property-bars__status {
+  color: var(--accent);
+  font-size: 0.56rem;
   white-space: nowrap;
 }
 
+.fatty-chart .property-bars__value {
+  font-size: 0.8rem;
+}
+
+.fatty-chart .property-bars__value--outside {
+  color: var(--accent);
+}
+
 .fatty-chart__bar {
-  position: relative;
-  width: 82%;
+  width: 100%;
   background: var(--text);
 }
 
@@ -2457,30 +2532,22 @@ details[open] > .disclosure__summary::before {
   background: var(--accent);
 }
 
-/* The dashed paper notch at every column's foot — it keeps a near-zero group's column
-   visible as a column rather than a stray sliver, and marks the shared baseline. */
-.fatty-chart__bar::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 2px;
-  border-top: 2px dashed var(--bg);
+/* Abbreviation cells below the baseline, one per column, sharing the columns' rhythm. */
+.fatty-chart__axis {
+  display: flex;
+  gap: 12px;
+  margin-top: 0.45rem;
 }
 
-/* Per-column top borders join into the chart's one continuous baseline. */
 .fatty-chart__abbr {
-  width: 100%;
-  margin-top: 0;
-  border-top: 1.5px solid var(--text);
-  padding-top: 0.45rem;
+  flex: 1;
+  min-width: 0;
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
-  color: var(--text-strong);
+  color: var(--label);
 }
 
 .fatty-chart__legend {
@@ -2542,6 +2609,18 @@ details[open] > .disclosure__summary::before {
 /* One shared edge where they meet, not two stacked borders. */
 .property-view-toggle__tab + .property-view-toggle__tab {
   margin-left: -1px;
+}
+
+/* In a panel head the toggle sits beside the title; the head's own margin is the gap. */
+.panel__head .property-view-toggle {
+  margin: 0;
+}
+
+/* The fatty panel's head toggle at the seg dialect's cell size — a step below the
+   properties panel's 0.7rem switch, because it shares a line with the title. */
+.property-view-toggle--compact .property-view-toggle__tab {
+  font-size: 0.62rem;
+  padding: 0.32rem 0.7rem;
 }
 
 .property-view-toggle__tab:hover:not(.property-view-toggle__tab--active) {
