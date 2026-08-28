@@ -8,15 +8,30 @@ import {
   lyeChoicesFor,
   LYE_TYPE_LABELS,
 } from '../lib/settingsFields';
+import type { LyeType } from '@soap-calc/core';
 import { kohBlendRangeFor, processOffers } from '../lib/process';
 import type { ProcessId } from '../lib/process';
 import { BatchBasics } from './BatchBasics';
 import { InfoTip } from './InfoTip';
 import { MoldSizerPanel } from './MoldSizerPanel';
+import { SegRadioGroup } from './SegRadioGroup';
 
 type FieldSpec = ReturnType<typeof purityFieldsFor>[number];
 
-function NumericSettingField({
+/* Cell text for the lye segmented group. The full LYE_TYPE_LABELS strings stay the
+ * accessible names; each cell is a leading substring of its name ('NaOH + KOH' ⊂
+ * 'NaOH + KOH blend'), so what a voice-control user reads off the screen matches what
+ * the control answers to (Label-in-Name). */
+const LYE_SEG_CELLS: Record<LyeType, string> = {
+  naoh: 'NaOH',
+  koh: 'KOH',
+  dual: 'NaOH + KOH',
+};
+
+/** A ledger row holding one numeric setting on an underline rule, unit suffix outside
+ * the rule. The trailing "%" of a spec label becomes the suffix; the full label stays
+ * the input's accessible name. */
+function LedgerNumericField({
   spec,
   value,
   onValueChange,
@@ -25,22 +40,29 @@ function NumericSettingField({
   value: string;
   onValueChange: (value: string) => void;
 }) {
+  // One derivation for both the row text and the InfoTip's glossary key — a second
+  // regex here is how the two silently stop agreeing.
+  const baseLabel = spec.label.replace(/\s*%$/, '');
+  const suffix = baseLabel === spec.label ? null : '%';
   return (
-    <label className="field">
-      <span>
-        {spec.label}
-        {spec.help && <InfoTip term={spec.label.replace(/\s*%$/, '')}>{spec.help}</InfoTip>}
+    <label className="ledger__row">
+      <span className="ledger__label">
+        {baseLabel}
+        {spec.help && <InfoTip term={baseLabel}>{spec.help}</InfoTip>}
       </span>
-      <input
-        type="number"
-        className="input"
-        aria-label={spec.label}
-        min={spec.min}
-        max={spec.max}
-        step={spec.step}
-        value={value}
-        onChange={(e) => onValueChange(e.target.value)}
-      />
+      <span className="ledger__figure">
+        <input
+          type="number"
+          className="input figure-field"
+          aria-label={spec.label}
+          min={spec.min}
+          max={spec.max}
+          step={spec.step}
+          value={value}
+          onChange={(e) => onValueChange(e.target.value)}
+        />
+        {suffix && <span className="ledger__unit">{suffix}</span>}
+      </span>
     </label>
   );
 }
@@ -105,54 +127,56 @@ export function SettingsPanel({
         Superfat and the water ratio sit in the Superfat&nbsp;&amp;&nbsp;water panel below.
       </p>
 
-      <BatchBasics
-        weightUnit={weightUnit}
-        previewState={previewState}
-        getDraft={getDraft}
-        inputs={inputs}
-        batchWeightWithExtras={batchWeightWithExtras}
-        recipeOilWeightGrams={recipeOilWeightGrams}
-        fixedBatchExtrasGrams={fixedBatchExtrasGrams}
-      />
-      <div className="settings-grid">
-        <label className="field">
-          <span>Lye type</span>
-          <select
-            className="input"
-            aria-label="Lye type"
+      <div className="ledger">
+        <BatchBasics
+          weightUnit={weightUnit}
+          previewState={previewState}
+          getDraft={getDraft}
+          inputs={inputs}
+          batchWeightWithExtras={batchWeightWithExtras}
+          recipeOilWeightGrams={recipeOilWeightGrams}
+          fixedBatchExtrasGrams={fixedBatchExtrasGrams}
+        />
+
+        <div className="ledger__row">
+          <span className="ledger__label">Lye type</span>
+          <SegRadioGroup
+            label="Lye type"
+            name="lye-type"
+            preserveCase
+            options={lyeChoicesFor(process).map((lye) => ({
+              value: lye,
+              cell: LYE_SEG_CELLS[lye],
+              name: LYE_TYPE_LABELS[lye],
+            }))}
             value={settings.lyeType}
-            onChange={(e) =>
-              setSettings((s) => ({
-                ...s,
-                lyeType: e.target.value as 'naoh' | 'koh' | 'dual',
-              }))
-            }
-          >
-            {lyeChoicesFor(process).map((lye) => (
-              <option key={lye} value={lye}>{LYE_TYPE_LABELS[lye]}</option>
-            ))}
-          </select>
-        </label>
+            onChange={(lye) => setSettings((s) => ({ ...s, lyeType: lye }))}
+          />
+        </div>
 
         {settings.lyeType === 'dual' && (
-          <label className="field">
-            <span>KOH % of alkali (by weight)</span>
-            <input
-              type="number"
-              className="input"
-              min={blendMin}
-              max={blendMax}
-              step={0.5}
-              value={settings.kohBlendPercent}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, kohBlendPercent: e.target.value }))
-              }
-            />
+          <label className="ledger__row">
+            <span className="ledger__label">KOH % of alkali</span>
+            <span className="ledger__figure">
+              <input
+                type="number"
+                className="input figure-field"
+                aria-label="KOH % of alkali (by weight)"
+                min={blendMin}
+                max={blendMax}
+                step={0.5}
+                value={settings.kohBlendPercent}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, kohBlendPercent: e.target.value }))
+                }
+              />
+              <span className="ledger__unit">%</span>
+            </span>
           </label>
         )}
 
         {purityFieldsFor(settings.lyeType).map((spec) => (
-          <NumericSettingField
+          <LedgerNumericField
             key={spec.key}
             spec={spec}
             value={settings[spec.key]}
@@ -161,29 +185,37 @@ export function SettingsPanel({
         ))}
 
         {processOffers(process, 'hpVessel') && (
-          <label className="field">
-            <span>
-              Cook vessel volume (L)
+          <label className="ledger__row">
+            <span className="ledger__label">
+              Cook vessel volume
               <InfoTip term="Cook vessel volume">
                 The hot-process cook expands (a thick, translucent "mashed potato" phase) before
                 settling — a vessel at least ~2× the batch volume (~3× for coconut-heavy
                 recipes) gives it room to expand without overflowing.
               </InfoTip>
             </span>
-            <input
-              type="number"
-              className="input input--number"
-              aria-label="Cook vessel volume (L)"
-              min={0}
-              step={0.5}
-              value={vesselVolumeLiters}
-              onChange={(e) => onVesselVolumeLitersChange(e.target.value)}
-            />
-            {hpVesselMultiple !== undefined && (
-              <span className="results-excluded">
-                ≈{hpVesselMultiple.toFixed(1)}× batch volume
+            {/* The ≈-multiple stacks UNDER the figure, inside the row it annotates — as a
+                ledger sibling it would paint below the row's own hairline and read as a
+                caption for whatever follows. */}
+            <span className="ledger__figure ledger__figure--stacked">
+              <span className="ledger__figure">
+                <input
+                  type="number"
+                  className="input figure-field"
+                  aria-label="Cook vessel volume (L)"
+                  min={0}
+                  step={0.5}
+                  value={vesselVolumeLiters}
+                  onChange={(e) => onVesselVolumeLitersChange(e.target.value)}
+                />
+                <span className="ledger__unit">L</span>
               </span>
-            )}
+              {hpVesselMultiple !== undefined && (
+                <span className="ledger__note">
+                  ≈{hpVesselMultiple.toFixed(1)}× batch volume
+                </span>
+              )}
+            </span>
           </label>
         )}
       </div>

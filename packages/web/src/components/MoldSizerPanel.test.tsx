@@ -16,9 +16,11 @@ test('defaults to the rectangular shape with length/width/height fields', () => 
       onApply={() => {}}
     />,
   );
-  expect(screen.getByText(/^Length/)).toBeTruthy();
-  expect(screen.getByText(/^Width/)).toBeTruthy();
-  expect(screen.queryByText(/^Radius/)).toBeNull();
+  // The dimension row shows single letters (L × W × H); the full names are the
+  // inputs' accessible names, so label queries are what pin the field set.
+  expect(screen.getByLabelText(/^Length/)).toBeTruthy();
+  expect(screen.getByLabelText(/^Width/)).toBeTruthy();
+  expect(screen.queryByLabelText(/^Radius/)).toBeNull();
 });
 
 test('switching to cylinder swaps in a radius field and drops width', () => {
@@ -51,8 +53,8 @@ test('shows radius and height inputs and computes a suggested weight for a cylin
       onApply={() => {}}
     />,
   );
-  expect(screen.getByText(/^Radius/)).toBeTruthy();
-  expect(screen.queryByText(/^Length/)).toBeNull();
+  expect(screen.getByLabelText(/^Radius/)).toBeTruthy();
+  expect(screen.queryByLabelText(/^Length/)).toBeNull();
   expect(screen.getByText(/Suggested oil weight/)).toBeTruthy();
 });
 

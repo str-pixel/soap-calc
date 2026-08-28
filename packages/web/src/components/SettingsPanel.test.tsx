@@ -40,13 +40,15 @@ function Harness({ process = 'cp' as ProcessId }: { process?: ProcessId } = {}) 
 
 test('dual lye type reveals the KOH blend field', () => {
   render(<Harness />);
-  fireEvent.change(screen.getByLabelText('Lye type'), { target: { value: 'dual' } });
+  // Lye type is a segmented radio group now; each cell's accessible name is the full
+  // LYE_TYPE_LABELS string the old <select>'s options carried.
+  fireEvent.click(screen.getByRole('radio', { name: 'NaOH + KOH blend' }));
   expect(screen.getByLabelText('KOH % of alkali (by weight)')).toBeTruthy();
 });
 
 test('NaOH purity field is driven by config with correct min/max/step', () => {
   render(<Harness />);
-  fireEvent.change(screen.getByLabelText('Lye type'), { target: { value: 'dual' } });
+  fireEvent.click(screen.getByRole('radio', { name: 'NaOH + KOH blend' }));
   const input = screen.getByLabelText('NaOH purity %') as HTMLInputElement;
   expect(input.getAttribute('min')).toBe('1');
   expect(input.getAttribute('max')).toBe('100');
@@ -80,15 +82,15 @@ const baseProps = {
 describe('SettingsPanel lye gating', () => {
   it('LS process offers only KOH and dual (no plain NaOH bar option)', () => {
     render(<SettingsPanel {...baseProps} process="ls" settings={{ ...DEFAULT_SETTINGS, lyeType: 'koh' }} />);
-    const select = screen.getByLabelText(/lye type/i);
-    const options = within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
+    const group = screen.getByRole('radiogroup', { name: 'Lye type' });
+    const options = within(group).getAllByRole('radio').map((o) => (o as HTMLInputElement).value);
     expect(options).toEqual(['koh', 'dual']);
   });
 
   it('CP process offers NaOH and dual', () => {
     render(<SettingsPanel {...baseProps} process="cp" settings={DEFAULT_SETTINGS} />);
-    const select = screen.getByLabelText(/lye type/i);
-    const options = within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
+    const group = screen.getByRole('radiogroup', { name: 'Lye type' });
+    const options = within(group).getAllByRole('radio').map((o) => (o as HTMLInputElement).value);
     expect(options).toEqual(['naoh', 'dual']);
   });
 });
@@ -169,7 +171,7 @@ test('batch basics (weight unit, total oil, total batch) render first in Setting
   expect(screen.getByLabelText('Weight unit')).toBeTruthy();
   expect(screen.getByLabelText(/Total oil \(g\)/)).toBeTruthy();
   expect(screen.getByLabelText(/Total batch in g/)).toBeTruthy();
-  // First field group in the panel is the batch basics, ahead of every other setting.
-  const firstField = panel.querySelector('.field, .slider-field')!;
-  expect(firstField.textContent).toContain('Weight unit');
+  // First ledger row in the panel is the batch basics, ahead of every other setting.
+  const firstRow = panel.querySelector('.ledger__row')!;
+  expect(firstRow.textContent).toContain('Weight unit');
 });

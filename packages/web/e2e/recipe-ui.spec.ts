@@ -7,7 +7,10 @@ import { test, expect, type Page } from '@playwright/test';
  */
 
 const weightInputs = (page: Page) => page.locator('input[aria-label^="Weight in"]');
-const unitSelect = (page: Page) => page.locator('select:has(option[value="lb"])').first();
+// The global weight-unit control is a segmented radio group; the accessible names carry
+// the full "Ounces (oz)" form the old <select>'s options did.
+const selectUnit = (page: Page, unit: 'g' | 'oz') =>
+  page.getByRole('radio', { name: unit === 'g' ? 'Grams (g)' : 'Ounces (oz)' }).check();
 const oilPickers = (page: Page) => page.locator('.oil-picker__input');
 const undoBtn = (page: Page) => page.getByRole('button', { name: 'Undo' });
 const redoBtn = (page: Page) => page.getByRole('button', { name: 'Redo' });
@@ -179,12 +182,12 @@ test.describe('recipe oils undo/redo', () => {
 test.describe('recipe UI regressions', () => {
   test('no-op focus/blur in oz does not drift stored gram weights', async ({ page }) => {
     await page.goto('/');
-    await unitSelect(page).selectOption('oz');
+    await selectUnit(page, 'oz');
     // focus a weight field and move focus away WITHOUT typing
     await weightInputs(page).first().focus();
     await weightInputs(page).nth(1).focus();
     // read the underlying grams by switching the display back to grams
-    await unitSelect(page).selectOption('g');
+    await selectUnit(page, 'g');
     const grams = await weightInputs(page).evaluateAll((els) =>
       (els as HTMLInputElement[]).map((e) => e.value),
     );

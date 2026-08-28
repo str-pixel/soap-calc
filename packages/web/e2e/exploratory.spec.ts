@@ -13,7 +13,11 @@ import { test, expect, type Page, type TestInfo } from '@playwright/test';
 
 const weightInputs = (page: Page) => page.locator('input[aria-label^="Weight in"]');
 const percentInputs = (page: Page) => page.locator('input[aria-label^="Percent for"]');
-const unitSelect = (page: Page) => page.locator('select:has(option[value="lb"])').first();
+// The global weight-unit control is a segmented radio group; each cell's accessible name
+// is the full "Grams (g)" form the old <select>'s options carried.
+const UNIT_RADIO_NAMES = { g: 'Grams (g)', kg: 'Kilograms (kg)', oz: 'Ounces (oz)', lb: 'Pounds (lb)' } as const;
+const selectUnit = (page: Page, unit: keyof typeof UNIT_RADIO_NAMES) =>
+  page.getByRole('radio', { name: UNIT_RADIO_NAMES[unit] }).check();
 const totalOilInput = (page: Page) => page.getByLabel(/^Total oil/);
 const oilPickers = (page: Page) => page.locator('.oil-picker__input');
 const processTab = (page: Page, name: RegExp) => page.getByRole('tab', { name });
@@ -182,8 +186,8 @@ test.describe('process/variant sweep', () => {
 
 test.describe('weight units', () => {
   test('g→kg→oz→lb→g round trip preserves stored grams', async ({ page }) => {
-    for (const u of ['kg', 'oz', 'lb', 'g']) {
-      await unitSelect(page).selectOption(u);
+    for (const u of ['kg', 'oz', 'lb', 'g'] as const) {
+      await selectUnit(page, u);
       await page.waitForTimeout(100);
       await expectNoJunkText(page);
     }
@@ -192,7 +196,7 @@ test.describe('weight units', () => {
   });
 
   test('oz display converts weights and results consistently', async ({ page }) => {
-    await unitSelect(page).selectOption('oz');
+    await selectUnit(page, 'oz');
     const w0 = parseFloat(await weightInputs(page).first().inputValue());
     expect(relClose(w0, 450 / 28.3495, 0.01, 0.05), `olive ${w0} oz vs ${450 / 28.3495}`).toBe(true);
     const oil = num(await resultDd(page, /^Oil weight/));
@@ -330,7 +334,7 @@ test.describe('settings validation & recovery', () => {
   });
 
   test('dual lye blend shows both alkalis summing to total', async ({ page }) => {
-    await page.getByLabel('Lye type').selectOption('dual');
+    await page.getByRole('radio', { name: 'NaOH + KOH blend' }).check();
     const blend = page.getByLabel('KOH % of alkali (by weight)');
     await blend.fill('30');
     await blend.blur();
@@ -453,30 +457,36 @@ test.describe('liquid soap', () => {
     await expect(section.locator('.dilution-preset-caption')).toHaveCount(0);
   });
 
-  test('inline radio labels lay out circle-beside-text, not stacked', async ({ page }) => {
-    // jsdom never computes stylesheets, so this pin has to live in e2e. The day-one bug:
-    // .field--inline set no flex-direction, so .field's column applied and every radio
-    // floated centered ABOVE its own label text — a detached circle over a row of words —
-    // while .field's later 0.3rem gap overrode the 0.5rem .field--inline declared at the
-    // same single-class specificity. The compound .field.field--inline rule fixes both;
-    // assert the computed result so neither regression can come back silently.
-    //
-    // Read off the MOLD SIZER's mode radio now. The scope radio this used to read became a
-    // segmented pair (no .field--inline any more), and the mold sizer — behind Settings'
-    // Advanced disclosure — holds the app's last .field--inline radios, so the rule this
-    // pins is unchanged and still covered.
+  test('segmented cells keep their radio inside the cell (whole cell is the hit target)', async ({ page }) => {
+    // jsdom never computes stylesheets, so this pin lives in e2e. Successor to the old
+    // .field--inline layout pin: the mold sizer's mode radios — the app's last
+    // .field--inline users — became a segmented pair, which retired that rule and its
+    // stacked-circle failure mode. The seg idiom's own silent failure is different: the
+    // invisible radio must FILL its cell (position:absolute + inset:0), or the hit target
+    // shrinks to a 0×0 point and only the text — not the cell — toggles the mode.
     const settings = page
       .locator('section')
       .filter({ has: page.getByRole('heading', { name: 'Settings' }) })
       .first();
     await settings.getByText('Advanced', { exact: true }).click();
-    const modeLabel = settings.locator('label.field--inline').filter({ hasText: 'Mold volume' });
-    const style = await modeLabel.evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return { flexDirection: cs.flexDirection, gap: cs.gap };
+    const cell = settings.locator('.seg__option').filter({ hasText: 'Mold volume' });
+    const geometry = await cell.evaluate((el) => {
+      const input = el.querySelector('input')!;
+      const cellBox = el.getBoundingClientRect();
+      const inputBox = input.getBoundingClientRect();
+      return {
+        cellWidth: cellBox.width,
+        widthDelta: Math.abs(cellBox.width - inputBox.width),
+        heightDelta: Math.abs(cellBox.height - inputBox.height),
+      };
     });
-    expect(style.flexDirection).toBe('row');
-    expect(style.gap).toBe('8px'); // 0.5rem — matches .field--checkbox, not .field's 0.3rem
+    // Guard the guard: a closed disclosure yields 0×0 rects whose deltas pass vacuously,
+    // so first prove the cell is actually laid out.
+    expect(geometry.cellWidth).toBeGreaterThan(0);
+    // The absolute input spans the label's padding box; the 1px border on each side is
+    // the only ground it cannot cover.
+    expect(geometry.widthDelta).toBeLessThanOrEqual(2);
+    expect(geometry.heightDelta).toBeLessThanOrEqual(2);
   });
 
   test('negative superfat triggers Neutralize panel with citric estimate', async ({ page }, testInfo) => {
@@ -806,13 +816,13 @@ test.describe('advanced settings', () => {
   });
 
   test('batch sizer bar mode suggests and applies oil weight', async ({ page }) => {
-    await page.getByText('Bar count', { exact: true }).click();
+    await page.getByRole('radio', { name: 'Bar count' }).check();
     await page.getByLabel(/Number of bars/).fill('10');
     // Renamed from "Finished bar weight": the field asks for the weight AFTER cure, and
     // bars mode now sizes the WET batch that cures to it.
     await page.getByLabel(/Bar weight after cure/).fill('100');
-    await page.getByLabel(/Shrinkage \/ waste %/).fill('5');
-    await page.getByLabel(/Shrinkage \/ waste %/).blur();
+    await page.getByLabel(/Shrinkage \/ waste/).fill('5');
+    await page.getByLabel(/Shrinkage \/ waste/).blur();
     await expect(page.getByText(/Suggested oil weight/)).toBeVisible();
     await page.getByRole('button', { name: 'Apply to batch' }).click();
     const total = parseFloat(await totalOilInput(page).inputValue());
@@ -827,7 +837,7 @@ test.describe('advanced settings', () => {
   });
 
   test('batch sizer mold mode with zero dimensions shows no apply', async ({ page }) => {
-    await page.getByText('Mold volume', { exact: true }).click();
+    await page.getByRole('radio', { name: 'Mold volume' }).check();
     for (const l of [/Length/, /Width/, /Height/]) {
       await page.getByLabel(l).fill('0');
       await page.getByLabel(l).blur();

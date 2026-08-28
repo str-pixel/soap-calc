@@ -28,6 +28,7 @@ import {
   PortionDilutionResults,
   portionDilutionFor,
 } from './PortionDilutionResults';
+import { SegRadioGroup } from './SegRadioGroup';
 
 /** The water:paste ratios the reference actually prints, all of them WATER : PASTE by
  * weight — the same direction the caption states, and the direction the reference's own
@@ -1593,39 +1594,23 @@ export function DilutionPanel({
       {/* Paste stores better than diluted soap — it keeps sealed, refrigerates and freezes —
           so the common workflow is to cook one batch and draw it down over time. Whole batch
           answers "dilute it all"; custom amount answers "make just this much now". */}
-      {/* Radios styled as a segmented pair — semantics unchanged: this REALLY IS a
+      {/* A segmented pair (SegRadioGroup) — semantics unchanged: this REALLY IS a
           selection (one scope is always in force), which is exactly what separates it from
-          the preset buttons. The input fills its label invisibly, so the whole cell is the
-          radio's own hit target and label-based locators keep resolving to it.
-
-          TEST AUTHORS: target these by accessible name (getByLabel('Custom amount')), never
-          by the span's text — the invisible input overlays the text, so a text-targeted
-          click reports "intercepts pointer events" and retries forever. Users are fine:
-          any click in the cell lands on the radio. */}
+          the preset buttons. Hit-target and locator rules live on the component. */}
       <div className="dilution-row dilution-row--scope">
         <span className="dilution-row__label" aria-hidden="true">Scope</span>
         {/* "Scope — …" so the visible antecedent is contained in the group's accessible
             name (Label-in-Name), with the question it labels kept for context. */}
-        <div className="dilution-mode-toggle" role="radiogroup" aria-label="Scope — how much of the batch to dilute">
-        <label className="dilution-scope__option">
-          <input
-            type="radio"
-            name="dilutionScope"
-            checked={dilutionScope === 'batch'}
-            onChange={() => onDilutionScopeChange?.('batch')}
-          />
-          <span>Whole batch</span>
-        </label>
-        <label className="dilution-scope__option">
-          <input
-            type="radio"
-            name="dilutionScope"
-            checked={dilutionScope === 'portion'}
-            onChange={() => onDilutionScopeChange?.('portion')}
-          />
-          <span>Custom amount</span>
-        </label>
-        </div>
+        <SegRadioGroup
+          label="Scope — how much of the batch to dilute"
+          name="dilutionScope"
+          options={[
+            { value: 'batch', cell: 'Whole batch' },
+            { value: 'portion', cell: 'Custom amount' },
+          ]}
+          value={dilutionScope}
+          onChange={(scope) => onDilutionScopeChange?.(scope)}
+        />
       </div>
       {/* The boundary sentence (redesign): everything above this line is THIS batch's own
           figures and record; everything the strip below offers is reference. Whole batch

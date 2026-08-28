@@ -60,21 +60,23 @@ describe('App process switch', () => {
   it('switches the lye options when the Liquid Soap tab is chosen', async () => {
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    const select = screen.getByLabelText(/lye type/i);
-    const options = within(select).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
+    const group = screen.getByRole('radiogroup', { name: 'Lye type' });
+    const options = within(group).getAllByRole('radio').map((o) => (o as HTMLInputElement).value);
     expect(options).toEqual(['koh', 'dual']);
   });
 
   it('keeps the global weight-unit selector\'s name unique app-wide on the Liquid Soap tab', async () => {
     // The dilution panel used to mount its own g/oz/lb switch, captioned "Weight unit" with
     // a qualified accessible name so this exact-string query stayed unambiguous. The switch
-    // is gone — the global selector is the only unit control — and Liquid Soap is the one
-    // process where the dilution panel is on screen, so this is where a resurrected local
-    // control would collide. getByLabelText throws on ambiguity, which is the pin.
+    // is gone — the global selector (now a segmented radio group) is the only unit control —
+    // and Liquid Soap is the one process where the dilution panel is on screen, so this is
+    // where a resurrected local control would collide. getByLabelText matches ANY element
+    // with the name — a select, a fieldset, anything — and throws on ambiguity, which is
+    // the pin; the role query alone would miss a duplicate that isn't a radiogroup.
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    const globalSelector = screen.getByLabelText('Weight unit');
-    expect(globalSelector.tagName).toBe('SELECT');
+    expect(screen.getByLabelText('Weight unit')).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'Weight unit' })).toBeTruthy();
   });
 
   it('the dilution figures follow the app-wide weight unit', async () => {
@@ -87,7 +89,7 @@ describe('App process switch', () => {
       within(panel).getByText('Dilution water to add').nextElementSibling!.textContent ?? '';
     expect(waterDd()).toContain(' g');
 
-    await userEvent.selectOptions(screen.getByLabelText('Weight unit'), 'oz');
+    await userEvent.click(screen.getByRole('radio', { name: 'Ounces (oz)' }));
     expect(waterDd()).toContain('oz');
     expect(waterDd()).not.toContain(' g');
   });
@@ -100,7 +102,7 @@ describe('App process switch', () => {
     // same unit, and this pins the agreement, not just the unit.
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    await userEvent.selectOptions(screen.getByLabelText('Weight unit'), 'kg');
+    await userEvent.click(screen.getByRole('radio', { name: 'Kilograms (kg)' }));
 
     const panel = screen.getByRole('heading', { name: 'Dilution' }).closest('section')!;
     const panelDd =

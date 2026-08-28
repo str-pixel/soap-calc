@@ -523,25 +523,6 @@ details[open] > .disclosure__summary::before {
   cursor: not-allowed;
 }
 
-/* Compound selector on purpose: every usage pairs both classes, and .field (later in
-   this file, same specificity alone) would otherwise win — its column direction is
-   exactly the day-one bug that floated each radio above its own label text, and its
-   0.3rem gap silently overrode the 0.5rem declared here. Row + 0.5rem matches
-   .field--checkbox, the one variant that always laid out correctly. */
-.field.field--inline {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-}
-
-.field--inline span {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
 /* ── Layout ───────────────────────────────────────────────────────────── */
 /* Three-column broadsheet: Formula · The Numbers (tinted) · The Bar. Columns fill the
    window and wrap gracefully to 2, then 1, on narrower viewports. */
@@ -1221,12 +1202,6 @@ details[open] > .disclosure__summary::before {
   color: var(--text-muted);
 }
 
-.field--checkbox {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .field--compact {
   font-size: 0.8rem;
 }
@@ -1320,6 +1295,194 @@ details[open] > .disclosure__summary::before {
 .figure-field.input:focus {
   border-color: transparent;
   border-bottom-color: var(--accent);
+}
+
+/* The key figure of a panel — Settings' Total oil, the number the recipe scales from.
+   One step up from the dialect's 0.95rem; the adaptive width above scales with it,
+   because its 4ch floor is measured in the field's own font. */
+.figure-field--key.input {
+  font-size: 1.15rem;
+}
+
+/* ── The ledger ───────────────────────────────────────────────────────── */
+/* The settings dialect: label left, control right, rows split by hairlines. A row is a
+   <label> when it holds one input (the whole row is the hit target) and a <div> when it
+   holds a radiogroup, which labels itself. */
+.ledger {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--hairline);
+}
+
+/* Rows may wrap: a segmented group is an unbreakable run of cells (nowrap by design),
+   so on a narrow column it drops under its label instead of forcing overflow. The
+   auto margins keep the control on the right edge whether or not it wrapped. */
+.ledger__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--hairline);
+  margin: 0;
+}
+
+.ledger__row > .seg,
+.ledger__row > .ledger__figure {
+  margin-left: auto;
+}
+
+.ledger__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--text-strong);
+}
+
+.ledger__figure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+/* The unit lives OUTSIDE the rule — it names the figure, it is not part of it. */
+.ledger__unit {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* A figure with an aside stacked under it, both on the row's right edge — the HP
+   vessel volume and its ≈-multiple readout. Inside the row on purpose: as a ledger
+   sibling the note would paint below the row's own hairline and read as a caption for
+   whatever follows. */
+.ledger__figure--stacked {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
+
+.ledger__note {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--label);
+}
+
+/* ── The segmented group ──────────────────────────────────────────────── */
+/* The dialect's enum control: radios drawn as adjoining cells, the checked one filled
+   with ink. THE general form — the dilution scope pair renders through it (via the
+   SegRadioGroup component); .property-view-toggle predates it and stays button-based
+   (a view switch, not a value), so it is styled separately on purpose. */
+.seg {
+  display: inline-flex;
+}
+
+/* Cells keep their own casing where uppercase would misspell them — NaOH is a chemical
+   name, not a label. */
+.seg--case .seg__option {
+  text-transform: none;
+}
+
+.seg__option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--hairline);
+  padding: 0.32rem 0.7rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--label);
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+/* One shared edge where cells meet, not two stacked borders. */
+.seg__option + .seg__option {
+  margin-left: -1px;
+}
+
+/* The radio fills its cell invisibly: the whole cell is the hit target, focus and checked
+   state stay native, and label-based locators still resolve to a clickable input. */
+.seg__option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.seg__option:has(input:checked) {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+  z-index: 1;
+}
+
+.seg__option:hover:not(:has(input:checked)) {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.seg__option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  z-index: 2;
+}
+
+/* ── The text pick ────────────────────────────────────────────────────── */
+/* The dialect's quieter either/or: bare mono words, the chosen one in ink on the accent
+   underline. For choices subordinate to a segmented group above them (mold shape and
+   cm/in sit under Mold volume / Bar count) — same radio-in-label mechanics as .seg. */
+.text-pick {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.9rem;
+}
+
+.text-pick__option {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--label);
+  cursor: pointer;
+  padding-bottom: 1px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  user-select: none;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.text-pick__option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.text-pick__option:has(input:checked) {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.text-pick__option:hover:not(:has(input:checked)) {
+  color: var(--text);
+}
+
+.text-pick__option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
@@ -2437,31 +2600,119 @@ details[open] > .disclosure__summary::before {
 }
 
 /* ── Mold sizer ───────────────────────────────────────────────────────── */
-.mold-sizer__modes {
-  display: flex;
+/* The head keeps title and mode segmented pair on one line where they fit; on a narrow
+   column the unbreakable seg wraps under the title rather than forcing overflow. The
+   subtitle reads under both, full width, so the caption never squeezes the control. */
+.mold-sizer .panel__head {
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.35rem;
 }
 
-.mold-sizer__grid {
+/* Shape and cm/in picks share one row over the dimension fields — both scope what those
+   fields mean, so they read together, split by the block's first hairline. */
+.mold-sizer__picks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem 1.5rem;
+  margin: 0.85rem 0 0.6rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.mold-sizer__dims {
+  margin-top: 0.85rem;
+}
+
+/* L × W × H on one wire: single-letter labels, × separators, the unit once at the end.
+   The full dimension names live on the inputs' aria-labels. */
+.dim-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.dim-row__field {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--label);
+  white-space: nowrap;
+}
+
+/* The label's tracking and uppercase are for its single letter — both inherit, and
+   .figure-field resets neither, so without this the dimension DIGITS would render
+   tracked (and under-fit the ch-measured width floor, which excludes letter-spacing). */
+.dim-row__field .input {
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.dim-row__sep {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--caption);
+}
+
+.dim-row__unit {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.mold-sizer__ledger {
+  margin-top: 0.85rem;
   margin-bottom: 0.5rem;
 }
 
+/* The block's answer: micro-label over the suggested weight, Apply beside it, split from
+   the inputs by the block's last hairline. */
 .mold-sizer__result {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.65rem;
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.65rem 0.9rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hairline);
 }
 
+.mold-sizer__figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.5rem;
+  margin-top: 0.25rem;
+  font-family: var(--font-ui);
+  font-weight: 900;
+  font-stretch: 110%;
+  font-size: 1.6rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
 
+/* The figure never breaks mid-number; the oil-share caption wraps under it when tight. */
+.mold-sizer__figure-value {
+  white-space: nowrap;
+}
 
-.mold-sizer__hint--full {
-  grid-column: 1 / -1;
-  color: var(--label);
+.mold-sizer__figure-caption {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-stretch: normal;
+  font-size: 0.72rem;
+  letter-spacing: normal;
+  color: var(--caption);
 }
 
 /* ── Pricing & profit ─────────────────────────────────────────────────── */
@@ -2861,64 +3112,8 @@ details[open] > .disclosure__summary::before {
   color: var(--text-muted);
 }
 
-/* Dilution scope: radios drawn as a segmented pair, same idiom as .property-view-toggle —
-   because unlike the preset buttons this IS a selection, and the filled cell says which
-   scope is in force. */
-.dilution-mode-toggle {
-  display: flex;
-  margin-bottom: 0.75rem;
-}
-
-.dilution-scope__option {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--border);
-  padding: 0.34rem 0.85rem;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--label);
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  user-select: none;
-}
-
-.dilution-scope__option + .dilution-scope__option {
-  margin-left: -1px;
-}
-
-/* The radio fills its cell invisibly: the whole cell is the hit target, focus and checked
-   state stay native, and label-based locators still resolve to a clickable input. */
-.dilution-scope__option input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.dilution-scope__option:has(input:checked) {
-  background: var(--text);
-  border-color: var(--text);
-  color: var(--bg);
-  z-index: 1;
-}
-
-.dilution-scope__option:hover:not(:has(input:checked)) {
-  color: var(--text);
-  border-color: var(--text);
-}
-
-.dilution-scope__option:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  z-index: 2;
-}
+/* The scope pair renders through the shared .seg idiom (SegRadioGroup) — the styles that
+   lived here were its verbatim twin and were folded into .seg. */
 
 /* Visible antecedent for the preset strip, whose cells only make sense after a question
    ("2:1" — a ratio of what to what?). Sits above the strip as a quiet caption, in the
