@@ -86,7 +86,15 @@ export function parsePercentInput(value: string): string | null {
   return value;
 }
 
-export function formatWeight(grams: number, unit: WeightUnit, digits?: number): string {
+/** The same figure as formatWeight, but with the unit kept apart from the digits — the
+ * dial dialect sets a unit smaller and muted beside its number, which a single joined
+ * string cannot express. formatWeight is this, joined by a space, so the two can never
+ * disagree about rounding. */
+export function formatWeightParts(
+  grams: number,
+  unit: WeightUnit,
+  digits?: number,
+): { value: string; unit: string } {
   const config = WEIGHT_UNITS[unit];
   const value = gramsToDisplayValue(grams, unit);
   // Magnitude-aware precision. displayDigits is tuned for batch-scale figures (0 in gram
@@ -99,8 +107,16 @@ export function formatWeight(grams: number, unit: WeightUnit, digits?: number): 
   const d =
     digits ??
     (value > 0 && value < 10 ? Math.max(config.displayDigits, 1) : config.displayDigits);
-  return `${value.toLocaleString('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: d,
-  })} ${config.short}`;
+  return {
+    value: value.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: d,
+    }),
+    unit: config.short,
+  };
+}
+
+export function formatWeight(grams: number, unit: WeightUnit, digits?: number): string {
+  const parts = formatWeightParts(grams, unit, digits);
+  return `${parts.value} ${parts.unit}`;
 }

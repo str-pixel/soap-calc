@@ -14,6 +14,17 @@ import { defaultsForProcess } from '../lib/process';
 import { useRecipeViewModel } from '../hooks/useRecipeViewModel';
 import { formatWeight } from '../lib/weightUnits';
 
+/** A dial reading renders its unit in a child span ("444" + "g"), so an element's OWN
+ * text nodes no longer spell the whole figure and getByText's default matcher misses it.
+ * Match on full text instead, returning the innermost element that carries it. */
+const figure = (text: string) =>
+  screen.getByText((_content, el) => {
+    if (!el) return false;
+    const whole = (t: Element | null) => (t?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    if (whole(el) !== text) return false;
+    return !Array.from(el.children).some((c) => whole(c) === text);
+  });
+
 afterEach(cleanup);
 
 test('an after-cook additive uses the process-aware label — LS shows "After dilution"', () => {
@@ -86,10 +97,10 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
   );
   // Shea Butter now appears in both the post-cook-superfat line and the Full recipe list.
   expect(screen.getAllByText(/Shea Butter/).length).toBeGreaterThan(0);
-  expect(screen.getByText('30 g')).toBeTruthy();
+  expect(figure('30 g')).toBeTruthy();
   // cook (5% default) compounded with post-cook (3%): 100×(1−0.95×0.97) = 7.85 → "7.9%"
   // (the reserve scales lye AFTER the main superfat; plain addition printed 8%).
-  expect(screen.getByText('7.9%')).toBeTruthy();
+  expect(figure('7.9%')).toBeTruthy();
 });
 
 test('a post-cook-superfat-only batch does not claim "additives" in the batch-weight note', () => {
@@ -128,7 +139,7 @@ test('subtract: PCSF labeled reserved + batch weight uses the vm value (not a lo
   );
   expect(screen.getByText(/reserved/i)).toBeTruthy();
   // The panel renders the vm's batch weight, not (full displayTotals batch + PCSF grams).
-  expect(screen.getByText('1,234 g')).toBeTruthy();
+  expect(figure('1,234 g')).toBeTruthy();
 });
 
 test('subtract + negative main superfat: no "reserved" label and no Total superfat row (cookFactor guard leaves lye untouched, so both would be false)', () => {
@@ -164,7 +175,7 @@ test('subtract + non-negative main superfat: "reserved" label and Total superfat
   // The total COMPOUNDS (core effectiveSuperfatPercent): 2% then a 5% reserve is
   // 100×(1−0.98×0.95) = 6.9%, not the 7.0% plain addition printed before — the insight
   // text and this row used to disagree about the same recipe (code-review 2026-08-01).
-  expect(screen.getByText('6.9%')).toBeTruthy();
+  expect(figure('6.9%')).toBeTruthy();
 });
 
 test('with no postCookSuperfat, no PCSF line or total-superfat line renders', () => {
@@ -225,7 +236,7 @@ test('CP shows a 4+ week cure and a reduced label weight', () => {
   expect(screen.getByText(/≈ 4\+ weeks/)).toBeTruthy();
   expect(screen.queryByText(/usable at unmold/i)).toBeNull();
   expect(screen.getByText(/est\. label weight/i)).toBeTruthy();
-  expect(screen.getByText(formatWeight(batchWeightWithExtras * 0.85, 'g'))).toBeTruthy();
+  expect(figure(formatWeight(batchWeightWithExtras * 0.85, 'g'))).toBeTruthy();
 });
 
 test('cure line and label-weight text are single-sourced from cureEstimate, not the process prop', () => {

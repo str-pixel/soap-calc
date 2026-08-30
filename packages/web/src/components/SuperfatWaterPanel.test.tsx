@@ -117,9 +117,11 @@ test('the post-cook superfat total is a single slider (not one per oil)', () => 
     />,
   );
   // One total slider drives the budget; the oil rows are plain number inputs, no per-oil
-  // sliders. Three range inputs total: Superfat, water, and the PCSF total (2 oils add none).
+  // sliders. TWO range inputs total: Superfat and the PCSF total (2 oils add none). The
+  // water method lost its slider in the dial redesign — it is a typed dial beside the
+  // grams it produces, so a third range here would mean the slider came back.
   expect(screen.getByLabelText('Post-cook superfat total %')).toBeTruthy();
-  expect(container.querySelectorAll('input[type="range"]').length).toBe(3);
+  expect(container.querySelectorAll('input[type="range"]').length).toBe(2);
 });
 
 test('an oil % is capped at the remaining budget (sum can never exceed the total)', () => {

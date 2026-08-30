@@ -11,7 +11,7 @@ import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculat
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidRow, WeightUnit } from '../lib/recipe';
 import { buildAddOrderSteps, buildFullRecipe } from '../lib/recipeSummary';
-import { formatWeight } from '../lib/weightUnits';
+import { formatWeight, formatWeightParts } from '../lib/weightUnits';
 import { formatWorkabilityRange } from '../lib/workabilityFormat';
 import { formatCureRange } from '../lib/cureFormat';
 import { InfoTip } from './InfoTip';
@@ -53,6 +53,42 @@ type ResultsPanelProps = {
   /** The vm's total oil weight in grams — used for the batch-weight breakdown readout. */
   totalOilGrams?: number;
 };
+
+/** One dial reading: digits, then the unit a step down and muted — the redesign's rule
+ * that a unit annotates a figure rather than being part of it.
+ *
+ * The pair is WRAPPED, and that wrapper is load-bearing. Several rows put a note beside
+ * the figure ("30 g (3% of oil)"), so without it no single element spells the reading:
+ * the dd would read "30 g (3% of oil)" and the bare digits "30". The wrapper keeps an
+ * element whose text is exactly "30 g", which is what a reader — and every getByText —
+ * looks for.
+ *
+ * `spaced` reproduces the app's own punctuation exactly: a weight is "30 g", a percent is
+ * "7.9%" with nothing between. Styling the unit must not silently rewrite the reading. */
+function Figure({
+  value,
+  unit,
+  spaced = true,
+}: {
+  value: string;
+  unit?: string;
+  spaced?: boolean;
+}) {
+  if (!unit) return <>{value}</>;
+  return (
+    <span className="results-grid__figure">
+      {value}
+      {spaced ? ' ' : ''}
+      <span className="results-grid__unit">{unit}</span>
+    </span>
+  );
+}
+
+/** A weight as a Figure, split by the same formatter formatWeight joins. */
+function Weight({ grams, unit }: { grams: number; unit: WeightUnit }) {
+  const parts = formatWeightParts(grams, unit);
+  return <Figure value={parts.value} unit={parts.unit} />;
+}
 
 // The cure/sequester window is behavior-only guidance built from several unverified
 // per-variant durations (see process.ts) — hedge it as an estimate rather than
@@ -234,20 +270,20 @@ export const ResultsPanel = memo(function ResultsPanel({
               <div className="results-grid__item results-grid__item--primary">
                 <dt>NaOH</dt>
                 <dd>
-                  {formatWeight(result.naohWeightGrams, weightUnit)}
+                  <Weight grams={result.naohWeightGrams} unit={weightUnit} />
                   {hasLineErrors && <span className="results-partial"> (partial)</span>}
                 </dd>
               </div>
               <div className="results-grid__item results-grid__item--primary">
                 <dt>KOH ({kohBlendPercent || '0'}% by weight)</dt>
                 <dd>
-                  {formatWeight(result.kohWeightGrams, weightUnit)}
+                  <Weight grams={result.kohWeightGrams} unit={weightUnit} />
                   {hasLineErrors && <span className="results-partial"> (partial)</span>}
                 </dd>
               </div>
               <div className="results-grid__item">
                 <dt>Total alkali</dt>
-                <dd>{formatWeight(result.lyeWeightGrams, weightUnit)}</dd>
+                <dd><Weight grams={result.lyeWeightGrams} unit={weightUnit} /></dd>
               </div>
             </>
           ) : (
@@ -261,7 +297,7 @@ export const ResultsPanel = memo(function ResultsPanel({
                   it, and the blend line is the point there. */}
               <dt>{lyeType === 'naoh' ? 'NaOH — sodium hydroxide' : 'KOH — potassium hydroxide'}</dt>
               <dd>
-                {formatWeight(result.lyeWeightGrams, weightUnit)}
+                <Weight grams={result.lyeWeightGrams} unit={weightUnit} />
                 {hasLineErrors && <span className="results-partial"> (partial)</span>}
               </dd>
             </div>
@@ -269,14 +305,14 @@ export const ResultsPanel = memo(function ResultsPanel({
           <div className="results-grid__item">
             <dt>Water</dt>
             <dd>
-              {formatWeight(result.waterWeightGrams, weightUnit)}
+              <Weight grams={result.waterWeightGrams} unit={weightUnit} />
               {waterNote && <span className="results-excluded">{waterNote}</span>}
             </dd>
           </div>
           <div className="results-grid__item">
             <dt>Oil weight</dt>
             <dd>
-              {formatWeight(recipeOilWeightGrams, weightUnit)}
+              <Weight grams={recipeOilWeightGrams} unit={weightUnit} />
               {excludedOilWeightGrams > 0 && (
                 <span className="results-excluded">
                   {' '}
@@ -288,7 +324,7 @@ export const ResultsPanel = memo(function ResultsPanel({
           <div className="results-grid__item">
             <dt>Batch weight</dt>
             <dd>
-              {formatWeight(displayedBatchWeight, weightUnit)}
+              <Weight grams={displayedBatchWeight} unit={weightUnit} />
               {extrasGrams > 0 && extrasNote && (
                 <span className="results-excluded"> (includes {extrasNote})</span>
               )}
@@ -296,7 +332,7 @@ export const ResultsPanel = memo(function ResultsPanel({
           </div>
           <div className="results-grid__item">
             <dt>Lye concentration</dt>
-            <dd>{formatGrams(result.lyeConcentrationPercent, 1)}%</dd>
+            <dd><Figure value={formatGrams(result.lyeConcentrationPercent, 1)} unit="%" spaced={false} /></dd>
           </div>
           <div className="results-grid__item">
             <dt>
@@ -306,13 +342,13 @@ export const ResultsPanel = memo(function ResultsPanel({
                 traces faster.
               </InfoTip>
             </dt>
-            <dd>{formatGrams(result.waterLyeRatio, 2)} : 1</dd>
+            <dd><Figure value={formatGrams(result.waterLyeRatio, 2)} unit=": 1" /></dd>
           </div>
           {showTotalLiquid && (
             <div className="results-grid__item">
               <dt>Total liquid</dt>
               <dd>
-                {formatWeight(totalLiquidGrams, weightUnit)}
+                <Weight grams={totalLiquidGrams} unit={weightUnit} />
                 <span className="results-excluded"> (water + alternative liquid)</span>
               </dd>
             </div>
@@ -340,7 +376,7 @@ export const ResultsPanel = memo(function ResultsPanel({
                 {!pcsfIsExtra ? ' · reserved, lye reduced' : ''}
               </dt>
               <dd>
-                {formatWeight(postCookSuperfat.grams, weightUnit)}
+                <Weight grams={postCookSuperfat.grams} unit={weightUnit} />
                 <span className="results-excluded">
                   {' '}
                   ({formatGrams(postCookSuperfat.percentOfOil, 1)}% of oil)
@@ -351,7 +387,7 @@ export const ResultsPanel = memo(function ResultsPanel({
           {postCookSuperfat && cookSuperfatPercent >= 0 && (
             <div className="results-grid__item">
               <dt>Total superfat</dt>
-              <dd>{formatGrams(totalSuperfatPercent, 1)}%</dd>
+              <dd><Figure value={formatGrams(totalSuperfatPercent, 1)} unit="%" spaced={false} /></dd>
             </div>
           )}
           {cureEstimate && !cureEstimate.model && (
@@ -388,7 +424,7 @@ export const ResultsPanel = memo(function ResultsPanel({
           {showLabelWeight && labelWeight !== null && (
             <div className="results-grid__item">
               <dt>Est. label weight (after {finishingLabel.toLowerCase()})</dt>
-              <dd>{formatWeight(labelWeight, weightUnit)}</dd>
+              <dd><Weight grams={labelWeight} unit={weightUnit} /></dd>
             </div>
           )}
         </dl>

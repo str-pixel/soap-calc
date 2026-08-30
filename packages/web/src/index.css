@@ -674,14 +674,68 @@ details[open] > .disclosure__summary::before {
   padding: 0 0.5rem;
 }
 
-/* The grams the chosen method comes to, stated under its field — mono, muted, quiet
-   enough to read as a consequence of the setting rather than a second control. */
-.numbers-inputs__water {
-  margin: -0.6rem 0 0;
+/* The method's setting and its result, side by side: the dial you turn on the left, the
+   grams it lands on stated at reading scale on the right. The help caption spans both. */
+.water-method {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 0.9rem;
+}
+
+.water-method__field,
+.water-method__result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.water-method__dial {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Single-number width: this dial holds "2.5" or "33.3", never a batch weight, so it is
+   sized for the value rather than stretched to the column. */
+.water-method__input.input {
+  width: 4.4rem;
+  text-align: center;
+}
+
+/* The unit reads at the digits' own weight here — ": 1" is half the statement, not an
+   annotation on it. */
+.water-method__unit {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.water-method__water {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-height: 40px;
+}
+
+.water-method__water-value {
+  font-family: var(--font-mono);
+  font-size: 1.9rem;
+  font-weight: 700;
+  font-synthesis: weight;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--text);
+}
+
+.water-method__water-unit {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
   color: var(--text-muted);
+}
+
+.water-method__help {
+  grid-column: 1 / -1;
 }
 
 /* The post-cook method chooser: same micro-label-over-seg shape as the water method. */
@@ -1970,6 +2024,16 @@ details[open] > .disclosure__summary::before {
   display: block;
 }
 
+/* THE UNIT IS NOT PART OF THE FIGURE. Mono 0.8rem muted beside digits at 1.15rem — the
+   dial recipe's own rule, which a single "444 g" string renders at one size and cannot
+   express. The wrapper stays plain inline so the space between them renders once and the
+   reading is still exactly "444 g" to any test or screen reader. */
+.results-grid__unit {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 .results-grid__item--primary dt {
   font-family: var(--font-mono);
   font-size: var(--label-size);
@@ -2000,6 +2064,12 @@ details[open] > .disclosure__summary::before {
 /* A HERO WITH NOTHING IN IT YET. An em-dash at hero scale is a solid bar the width of
    the column — it reads as a broken graphic, not as "no figure yet". Keeps the full-width
    slot so nothing jumps when a real figure arrives; drops only the display type. */
+/* On the hero the unit still steps down, but to 1rem — half of 2.15rem would read as a
+   footnote rather than the figure's own unit. */
+.results-grid__item--primary .results-grid__unit {
+  font-size: 1rem;
+}
+
 .results-grid__item--primary.results-grid__item--blank dd {
   font-size: 1.15rem;
   font-weight: 500;
@@ -2460,6 +2530,12 @@ details[open] > .disclosure__summary::before {
 .fatty-list__name {
   font-size: 0.88rem;
   color: var(--text-strong);
+}
+
+/* The list's verdict rides the accent, like the chart's — an out-of-range fatty acid is
+   the panel's own signal, not the amber caution the property meters use. */
+.fatty-list .property-bars__status {
+  color: var(--accent);
 }
 
 .fatty-list__reading {

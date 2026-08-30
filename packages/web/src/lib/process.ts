@@ -104,10 +104,13 @@ export type ProcessDefinition = {
 // Every process currently allows all three water modes — unlike lyeChoices, this list is
 // not yet gating anything (waterModeChoicesFor/SettingsPanel just echo it back). It's
 // infra-only for now: per-process water-mode restriction is deferred to a later spec.
+/* Ordered as the segmented control reads them, strongest relationship first: the ratio a
+ * maker sets against the lye, then the concentration that ratio implies, then the loosest
+ * framing (a share of oils). This is display order — no process restricts the set yet. */
 const ALL_WATER_MODES: WaterMode[] = [
-  'percent_of_oils',
-  'lye_concentration',
   'lye_water_ratio',
+  'lye_concentration',
+  'percent_of_oils',
 ];
 
 export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {

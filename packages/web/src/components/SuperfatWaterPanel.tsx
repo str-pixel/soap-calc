@@ -5,7 +5,7 @@ import { postCookSuperfatAllocated, type RecipeSettings, type WeightUnit } from 
 import { processOffers, type ProcessId } from '../lib/process';
 import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
 import { WATER_FIELDS, WATER_MODE_LABELS, waterModeChoicesFor } from '../lib/settingsFields';
-import { formatWeight } from '../lib/weightUnits';
+import { formatWeightParts } from '../lib/weightUnits';
 import { InfoTip } from './InfoTip';
 import { OilPicker } from './OilPicker';
 import { SegRadioGroup } from './SegRadioGroup';
@@ -27,14 +27,8 @@ const WATER_MODE_SEG_CELLS: Record<WaterMode, string> = {
 const waterModeRadioName = (mode: WaterMode): string =>
   `${WATER_MODE_LABELS[mode]} — water method`;
 
-// Upper bound for each water mode's drag slider — the typical working range, not the hard
-// input cap. The editable value readout keeps the field's real min/max, so out-of-range
-// values (and their validation) are still reachable by typing.
-const WATER_SLIDER_MAX: Record<WaterMode, number> = {
-  percent_of_oils: 100,
-  lye_concentration: 50,
-  lye_water_ratio: 5,
-};
+// (The water modes' slider bounds went with the slider: the water field is a dial now,
+// and a dial has no track to bound — the input keeps the field's real min/max.)
 
 // Whole numbers show bare (5, not 5.0); fractions keep one decimal.
 const formatTotal = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(1));
@@ -193,6 +187,12 @@ export function SuperfatWaterPanel({
   acidExtraLye,
 }: SuperfatWaterPanelProps) {
   const waterField = WATER_FIELDS[settings.waterMode];
+  // The label carries its unit ("Lye concentration %"); the dial shows that unit beside
+  // the digits instead, so the micro-label drops it. One derivation for both, or the two
+  // quietly stop agreeing — the same rule LedgerNumericField follows in Settings.
+  const waterFieldTerm = waterField.label.replace(/\s*%$/, '');
+  const waterFieldUnit = waterFieldTerm === waterField.label ? ': 1' : '%';
+  const waterParts = formatWeightParts(waterGrams, weightUnit, 0);
 
   const pcsfOils = settings.postCookSuperfatOils;
   const pcsfTotal = Math.max(0, Number(settings.postCookSuperfatTotalPercent) || 0);
@@ -313,33 +313,48 @@ export function SuperfatWaterPanel({
             onChange={(waterMode) => setSettings((s) => ({ ...s, waterMode }))}
           />
         </div>
-        <SliderField
-          label={waterField.label}
-          valueLabel={waterField.label}
-          unit={waterField.label.trim().endsWith('%') ? '%' : ''}
-          term={waterField.label.replace(/\s*%$/, '')}
-          help={waterField.help}
-          min={waterField.min}
-          max={'max' in waterField ? waterField.max : undefined}
-          step={waterField.step}
-          sliderMax={WATER_SLIDER_MAX[settings.waterMode]}
-          value={settings[waterField.key]}
-          onChange={(v) => {
-            const key = waterField.key;
-            setSettings((s) => ({ ...s, [key]: v }));
-          }}
-        />
-        {/* WHAT THE RATIO ACTUALLY COMES TO. All three methods set water indirectly — a
-            ratio, a concentration, a share of oils — so the panel states the grams they
-            land on, and the maker can read the method against its result without hunting
-            for it in Results. Passed in from the view model, never recomputed here: a
-            second derivation is how this line would start contradicting the panel it
-            sits above. */}
-        {waterGrams > 0 && (
-          <p className="numbers-inputs__water">
-            water {formatWeight(waterGrams, weightUnit)}
-          </p>
-        )}
+        {/* THE METHOD AND WHAT IT COMES TO, side by side. A slider was the wrong
+            instrument here: the value is a setting you dial in (2 : 1, 33%, 38% of oils),
+            and what a maker actually wants beside it is the grams of water it lands on —
+            so the setting is a dial and the result is the figure next to it, rather than a
+            drag track with the answer two panels away. Superfat keeps its slider; that one
+            IS a range you sweep.
+            The water grams come from the view model, never recomputed here: a second
+            derivation is how this figure would start contradicting Results. */}
+        <div className="water-method">
+          <div className="water-method__field">
+            <span className="micro-label">
+              {waterFieldTerm}
+              {waterField.help && <InfoTip term={waterFieldTerm}>{waterField.help}</InfoTip>}
+            </span>
+            <span className="water-method__dial">
+              <input
+                type="number"
+                className="input figure-field water-method__input"
+                aria-label={waterField.label}
+                min={waterField.min}
+                max={'max' in waterField ? waterField.max : undefined}
+                step={waterField.step}
+                value={settings[waterField.key]}
+                onChange={(e) => {
+                  const key = waterField.key;
+                  setSettings((s) => ({ ...s, [key]: e.target.value }));
+                }}
+              />
+              {waterFieldUnit && (
+                <span className="water-method__unit">{waterFieldUnit}</span>
+              )}
+            </span>
+          </div>
+          <div className="water-method__result">
+            <span className="micro-label">Water</span>
+            <span className="water-method__water">
+              <span className="water-method__water-value">{waterParts.value}</span>{' '}
+              <span className="water-method__water-unit">{waterParts.unit}</span>
+            </span>
+          </div>
+          {waterField.help && <p className="inline-note water-method__help">{waterField.help}</p>}
+        </div>
 
         {/* Split liquid — replaces part of the water with an alternative liquid (milk, beer,
             tea…), so it lives with the water controls. */}
