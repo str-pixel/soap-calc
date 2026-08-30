@@ -1644,17 +1644,24 @@ export function DilutionPanel({
           record, labelled as plan" — and unhiding it here does not reopen this one. */}
       {dilutionScope === 'portion' && !portionJarGoverns && (
         <>
-          <label className="field">
-            <span>Amount to make (ml)</span>
+          {/* A dial row like every other reading in this panel: the unit rides inside
+              the slab, so the visible label drops the "(ml)" it used to carry. The
+              accessible name keeps it — "Amount to make" is contained in "Amount to make (ml)",
+              so Label-in-Name still holds. */}
+          <label className="dilution-row">
+            <span className="dilution-row__label">Amount to make</span>
+            <span className="dilution-row__value">
             <input
               type="number"
-              className="input input--number"
+              className="input figure-field"
               min={1}
               step={10}
               value={targetMl}
               onChange={(e) => onTargetMlChange?.(e.target.value)}
               aria-label="Amount to make (ml)"
             />
+              <span className="dilution-row__unit" aria-hidden="true">ml</span>
+            </span>
           </label>
           {/* The measured-paste field's comma trap, on this field: a typed 1,200 commits as
               1.200 (the browser reads the comma as a decimal point, every locale), and the
@@ -1686,16 +1693,23 @@ export function DilutionPanel({
           structural for the batch record too. */}
       {dilutionScope === 'portion' && (
         <>
-          <label className="field">
-            <span>Paste weighed out (g)</span>
+          {/* A dial row like every other reading in this panel: the unit rides inside
+              the slab, so the visible label drops the "(g)" it used to carry. The
+              accessible name keeps it — "Paste weighed out" is contained in "Paste weighed out (g)",
+              so Label-in-Name still holds. */}
+          <label className="dilution-row">
+            <span className="dilution-row__label">Paste weighed out</span>
+            <span className="dilution-row__value">
             <input
               type="number"
-              className="input input--number"
+              className="input figure-field"
               min={1}
               value={portionPasteGrams}
               onChange={(e) => onPortionPasteChange?.(e.target.value)}
               aria-label="Paste weighed out (g)"
             />
+              <span className="dilution-row__unit" aria-hidden="true">g</span>
+            </span>
           </label>
           {/* Beside the field it describes, exactly as the measured-paste refusals sit
               beside theirs. The verdict is resolveDilution's own (portion arm), so this alert,
@@ -1704,16 +1718,23 @@ export function DilutionPanel({
           {portionJarValidity?.pasteSubTenthPrecision && (
             <SwallowedSeparatorAlert typed={portionPasteGrams} />
           )}
-          <label className="field">
-            <span>Water added so far (g)</span>
+          {/* A dial row like every other reading in this panel: the unit rides inside
+              the slab, so the visible label drops the "(g)" it used to carry. The
+              accessible name keeps it — "Water added so far" is contained in "Water added so far (g)",
+              so Label-in-Name still holds. */}
+          <label className="dilution-row">
+            <span className="dilution-row__label">Water added so far</span>
+            <span className="dilution-row__value">
             <input
               type="number"
-              className="input input--number"
+              className="input figure-field"
               min={0}
               value={portionWaterGrams}
               onChange={(e) => onPortionWaterChange?.(e.target.value)}
               aria-label="Water added so far (g)"
             />
+              <span className="dilution-row__unit" aria-hidden="true">g</span>
+            </span>
           </label>
           {portionJarValidity?.waterSubTenthPrecision && (
             <SwallowedSeparatorAlert typed={portionWaterGrams} />
