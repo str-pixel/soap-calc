@@ -1480,6 +1480,22 @@ details[open] > .disclosure__summary::before {
   outline: none;
 }
 
+/* The additive dose basis IS its amount's unit, so it sits inside the slab like one —
+   bare, mono, muted, content-width, with the figure keeping the flexible room. Boxed, it
+   read as a second control rather than as the tail of the figure's own sentence. */
+.ledger__figure .ledger__basis.input {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
 /* The unit lives INSIDE the slab — the dial reads "540 g" as one instrument. */
 .ledger__unit,
 .dilution-row__unit {
@@ -1762,11 +1778,26 @@ details[open] > .disclosure__summary::before {
 }
 
 /* Where the slab does not fill a ledger's fixed column, it sizes itself: wide enough to
-   seat "1234.5" plus its unit at the dial scale. The additive amount takes the same width
-   inside its own column, so a dose reads as the same instrument as an oil's weight. */
-.recipe-table__figure > .ledger__figure,
-.additive-list__amount .ledger__figure {
+   seat "1234.5" plus its unit at the dial scale. */
+.recipe-table__figure > .ledger__figure {
   width: 7.2rem;
+}
+
+/* The additive amount's slab FILLS its column instead of taking that fixed width: its
+   unit is the dose basis, and "ppt of solution" is far wider than a "g". At 7.2rem the
+   select ate the whole slab and the number field collapsed to ZERO width — invisible to
+   a maker and, measured, not clickable at all. Filling the column also lands its right
+   edge on the Add-at seg's, which is the row's stated rule. */
+.additive-list__amount .ledger__figure {
+  width: auto;
+}
+
+/* And the figure keeps a floor of its own, so no basis label can squeeze it away again:
+   enough for "1000" (the ppt maximum) at the dial scale. */
+.additive-list__amount .ledger__figure .figure-field.input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 3.4rem;
 }
 
 .recipe-table__foot {

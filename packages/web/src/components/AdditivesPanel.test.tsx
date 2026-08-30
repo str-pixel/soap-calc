@@ -604,3 +604,58 @@ describe('dose-basis seeding and display (LS audit)', () => {
     expect(screen.getByText(/crumbly/)).toBeTruthy();
   });
 });
+
+// The dose basis is the amount's UNIT, not a row of its own (reported as a control that
+// duplicated the Add-at seg; it never did — basis vs stage — but it was printing the unit
+// twice and reading as a second stage picker directly above the seg).
+describe('the dose basis rides the amount, one control per question', () => {
+  const line = makeLine({ key: 'd1', name: 'oat milk' });
+  const renderRow = (props = {}) =>
+    render(
+      <AdditivesPanel
+        additives={[line]}
+        computed={[makeComputed(line)]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+        {...props}
+      />,
+    );
+
+  it('puts the basis select inside the amount figure, with no Dose row left', () => {
+    renderRow();
+    const basis = screen.getByLabelText('Dose mode for oat milk');
+    const amount = screen.getByLabelText('Amount for oat milk');
+    // One dial: both controls share the amount slab.
+    const slab = amount.closest('.ledger__figure');
+    expect(slab).not.toBeNull();
+    expect(slab!.contains(basis)).toBe(true);
+    // And the standalone row that used to carry it is gone — no "Dose" label anywhere.
+    expect(screen.queryByText('Dose')).toBeNull();
+    // The unit is stated ONCE: the slab's static suffix went with the row.
+    expect(slab!.querySelector('.ledger__unit')).toBeNull();
+  });
+
+  it('still switches basis and unit together', () => {
+    const onChange = vi.fn();
+    renderRow({ onChange });
+    fireEvent.change(screen.getByLabelText('Dose mode for oat milk'), {
+      target: { value: 'ppt-of-nothing' },
+    });
+    expect(onChange).not.toHaveBeenCalled(); // an unknown mode writes nothing
+    fireEvent.change(screen.getByLabelText('Dose mode for oat milk'), {
+      target: { value: 'batch-ppt' },
+    });
+    expect(onChange).toHaveBeenCalledWith([
+      expect.objectContaining({ basis: 'batch', unit: 'ppt' }),
+    ]);
+  });
+
+  it('keeps the Add-at seg as the only control for the stage', () => {
+    renderRow();
+    // The two answer different questions and both survive: basis (what the % is of) and
+    // stage (where it goes). Removing either would cost a real choice.
+    expect(screen.getByLabelText('Dose mode for oat milk')).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'Add at for oat milk' })).toBeTruthy();
+  });
+});

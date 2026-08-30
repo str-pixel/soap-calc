@@ -345,6 +345,17 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     finding its own. The amount is a figure and takes the figure treatment,
                     the same one an oil's weight takes one panel up; dose and stage are enums
                     and keep their boxes, since the ink slab is reserved for numerics. */}
+                {/* ONE STATEMENT, not two rows. The amount and what it is a percentage
+                    OF — "5 % of oil" — are one claim, and splitting them across an AMOUNT
+                    row and a DOSE row printed the unit twice: the slab's own "%" suffix,
+                    then "% of oil" again underneath. It also left a lone select sitting
+                    directly above the Add-at seg, which read as a second, quieter way to
+                    say the same thing (reported as a duplicate control). It never was one
+                    — this picks the BASIS the amount is measured against (oil, batch, or
+                    the finished solution), the seg picks the STAGE it goes in, and the two
+                    are independent: 1% of oil can go into the lye water or at trace. The
+                    basis is the amount's unit now, so each question has exactly one
+                    control and the row states the whole dose in one line. */}
                 <label className="ledger__row additive-list__amount">
                   <span className="micro-label">Amount</span>
                   <span className="ledger__figure">
@@ -354,35 +365,33 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                       min={0}
                       max={line.unit === 'ppt' ? 1000 : 100}
                       step={0.1}
-                      // No placeholder: the unit is a visible suffix inside the slab now,
-                      // so a "%" ghost in an empty one just read "% %".
+                      // No placeholder: the unit is a visible suffix inside the slab, so a
+                      // "%" ghost in an empty one just read "% %".
                       value={line.amount}
                       onChange={(e) => updateLine(line.key, { amount: e.target.value })}
                       aria-label={`Amount for ${rowName}`}
                     />
-                    <span className="ledger__unit">{line.unit === 'ppt' ? 'ppt' : '%'}</span>
+                    {/* aria-label WINS over the wrapping <label>, so this still announces
+                        as "Dose mode for <additive>" — unchanged — while the visible
+                        "Amount" names the figure. The label's own control is still the
+                        input (first labelable descendant), so clicking "Amount" focuses
+                        the figure, not this. */}
+                    <select
+                      className="input ledger__basis"
+                      aria-label={`Dose mode for ${rowName}`}
+                      value={`${line.basis}-${line.unit}`}
+                      onChange={(e) => {
+                        const mode = DOSE_MODES.find((m) => m.value === e.target.value);
+                        if (mode) updateLine(line.key, { basis: mode.basis, unit: mode.unit });
+                      }}
+                    >
+                      {doseModeOptions.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
                   </span>
-                </label>
-                <label className="ledger__row">
-                  {/* Visible now, in the label column: the dose basis was the one control on
-                      the row with nothing but its own current value to say what it was. The
-                      aria-label stays per-row, so the accessible name is unchanged. */}
-                  <span className="micro-label">Dose</span>
-                  <select
-                    className="input"
-                    aria-label={`Dose mode for ${rowName}`}
-                    value={`${line.basis}-${line.unit}`}
-                    onChange={(e) => {
-                      const mode = DOSE_MODES.find((m) => m.value === e.target.value);
-                      if (mode) updateLine(line.key, { basis: mode.basis, unit: mode.unit });
-                    }}
-                  >
-                    {doseModeOptions.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
                 </label>
                 {/* A seg, not a dropdown: four stages worth comparing at a glance, and the
                     choice between them changes the soap rather than just the order of
