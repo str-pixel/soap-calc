@@ -190,6 +190,39 @@ describe('AdditivesPanel stage options', () => {
     }
   });
 
+  it('glycerin offers ONLY the after-dilution stage, and says where the cook\'s route is', () => {
+    // One ingredient, two controls, split by timing: the lye-phase dose is the
+    // split-liquid row (only there does its weight come off the dilution water), so the
+    // three cook-time stages are not on offer here at all.
+    render(
+      <AdditivesPanel
+        additives={[makeLine({ catalogId: 'glycerin', name: 'Glycerin', addAt: 'after_cook' })]}
+        computed={[makeComputed(makeLine({ catalogId: 'glycerin', addAt: 'after_cook' }))]}
+        weightUnit="g"
+        process="ls"
+        onChange={() => {}}
+      />,
+    );
+    // Stated, not offered: one option is not a choice, so there is no radio group at all.
+    expect(screen.queryByRole('radiogroup', { name: /^Add at for / })).toBeNull();
+    expect(screen.getByText('After dilution')).toBeTruthy();
+    expect(screen.getByText(/emollient and humectant only/i)).toBeTruthy();
+  });
+
+  it('a glycerin line saved at the lye stage keeps it — restricting an entry re-stages nothing', () => {
+    render(
+      <AdditivesPanel
+        additives={[makeLine({ catalogId: 'glycerin', name: 'Glycerin', addAt: 'lye' })]}
+        computed={[makeComputed(makeLine({ catalogId: 'glycerin', addAt: 'lye' }))]}
+        weightUnit="g"
+        process="ls"
+        onChange={() => {}}
+      />,
+    );
+    expect(stageValues()).toEqual(['after_cook', 'lye']);
+    expect(stageChecked()).toBe('lye');
+  });
+
   it('a line already set to after_cook under CP still offers it as a selected option (mismatched-select guard)', () => {
     render(
       <AdditivesPanel

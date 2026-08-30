@@ -32,6 +32,13 @@ export type AdditiveCatalogEntry = {
   defaultStage: AdditiveStage;
   /** Processes this additive is offered for; absent = all processes. */
   processes?: AdditiveProcess[];
+  /** Stages this additive may be dosed at; absent = every stage the process offers. Set
+   * it only where a stage would be WRONG rather than merely unusual — the panel drops
+   * the others from the picker, so a restriction here is a claim that the additive does
+   * not belong in the batch at that moment. A line already saved at a stage outside the
+   * list still renders it (the panel's mismatched-select guard), so restricting an entry
+   * never silently re-stages an existing recipe. */
+  stages?: AdditiveStage[];
   /** Per-process corrections (see AdditiveProcessOverride). Resolve with
    * effectiveCatalogEntry — never read typicalLow/High/defaultStage directly when a
    * process is in hand. */
@@ -39,6 +46,10 @@ export type AdditiveCatalogEntry = {
   /** Short behavior-only hazard/caution tags shown next to the additive (e.g. "can seize").
    * No source or dose-specific claim — just the known failure mode. */
   hazards?: string[];
+  /** One entry-specific paragraph shown under the row: what this additive does at the
+   * stage it is dosed at, or where its OTHER route lives when the app splits one
+   * ingredient across two controls. The app's own words — never reference prose. */
+  note?: string;
   /** Unit for typicalLow/typicalHigh (default 'percent'). Entries whose guidance is
    * parts-per-thousand MUST say so, or the UI renders a ppt range with a % sign —
    * a 10× dose overstatement. */
@@ -76,13 +87,26 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     },
   },
   {
-    // Glycerin — LS solvent and saponification/dilution accelerant, dosed into the lye
-    // solution as % of oils (source envelope 1–25%; 20–25% is the typical high-temp
-    // no-paste dose). The other mode — swapping 1–2 parts of the lye-solution water for
-    // glycerin — is the 'glycerin' split-liquid preset, not this entry. Excluded from the
-    // high_total_additives sum (a 20%+ solvent dose is deliberate, not an extras load).
-    // Solvent effect: expect less dilution water — glycerin_solvent_dilution advises; no
-    // numeric model exists.
+    // Glycerin, AFTER DILUTION ONLY. The source gives four timings — in the lye solution
+    // as a % of oils, as 1–2 parts of the lye solution in place of water, into the oils,
+    // and after the cook (LS:2597, LS:2602, LS:3023, LS:3028) — and the app splits them
+    // across two controls by what each one does to the arithmetic:
+    //
+    //   Before/during the cook  → the 'glycerin' SPLIT-LIQUID preset. It is part of the
+    //     lye solution: its mass joins the paste and comes off the dilution water, which
+    //     is the accounting the source prescribes (LS:2693, LS:2697, LS:3280). Measured:
+    //     200 g entered there takes the water to pour from 2506 g to 2306 g.
+    //   After the cook → THIS entry. Nothing is left to saponify and there is no lye
+    //     water for it to be part of, so its mass simply lands in the bottle and the
+    //     water to pour is unchanged — which is what an additive line already does.
+    //
+    // One ingredient, two non-overlapping routes, split by when it goes in. Dosing it
+    // here at the lye-phase 20–25% would have claimed a solvent load this stage cannot
+    // deliver (LS:2597 is explicit that glycerin at the dilution step does not affect
+    // saponification), so the range is the source's general envelope instead, 1–25%.
+    //
+    // NOT MODELLED: glycerin poured as part of the DILUTION LIQUID, where it would take
+    // the place of some water rather than add to it. `note` says so rather than pretend.
     //
     // LS-ONLY IS DELIBERATE (researched 2026-07-27; pinned by test). Bar soap already
     // makes its own glycerin — 0.77 g per g NaOH, ~7–12% of the finished bar — and adding
@@ -95,10 +119,12 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // CP/HP entry would advertise an LS dose for a different craft.
     id: 'glycerin',
     name: 'Glycerin',
-    typicalLow: 20,
+    typicalLow: 1,
     typicalHigh: 25,
-    defaultStage: 'lye',
+    defaultStage: 'after_cook',
+    stages: ['after_cook'],
     processes: ['ls'],
+    note: 'Here it is an emollient and humectant only — too late to speed the cook or the dilution. For the cook, add it with the liquids instead: swapping part of the lye water for it puts its weight in the paste and takes it off the dilution water. This line adds to the bottle rather than replacing water, so if you meant it as part of your dilution liquid, pour that much less.',
   },
   {
     // Sorbitol — sugar alcohol with a stronger lather effect than sucrose; same overheat

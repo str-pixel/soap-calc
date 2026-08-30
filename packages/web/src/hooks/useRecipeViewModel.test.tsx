@@ -706,6 +706,27 @@ test('unsized split-liquid rows get no vote in the advisories', () => {
   expect(codes(glycerinPlusBlank)).not.toContain('ls_split_liquid_not_dilution');
 });
 
+test('glycerin stirred into finished soap is not the cook\'s solvent', () => {
+  // The advisory it must not fire says the paste dissolves faster and the batch can reach
+  // its consistency before all the dilution water is in — a claim about the cook. After
+  // the dilution there is no paste and no water still to come. A line saved at the lye
+  // stage before the catalog entry was restricted really WAS the solvent, and keeps
+  // counting: this is a stage test, not a catalog-id test.
+  const codes = (vm: any) => vm.insights.map((i: any) => i.code);
+  const glycerinLine = (addAt: 'lye' | 'after_cook'): AdditiveLine => ({
+    key: 'g', catalogId: 'glycerin', name: 'Glycerin', amount: '20',
+    basis: 'oil', unit: 'percent', addAt,
+  });
+
+  let afterDilution: any;
+  let inLyeWater: any;
+  probe((vm) => { afterDilution = vm; }, { lyeType: 'koh' }, 'ls', undefined, [glycerinLine('after_cook')]);
+  probe((vm) => { inLyeWater = vm; }, { lyeType: 'koh' }, 'ls', undefined, [glycerinLine('lye')]);
+
+  expect(codes(afterDilution)).not.toContain('glycerin_solvent_dilution');
+  expect(codes(inLyeWater)).toContain('glycerin_solvent_dilution');
+});
+
 test('an undeclared in-lye liquid makes a shortfall unverifiable, not a pass', () => {
   // Budget sizing shrinks the plain water first, so excluding the undeclared liquid is what
   // leaves the solution short. With plenty of plain water there is no shortfall to qualify

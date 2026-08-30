@@ -239,6 +239,17 @@ export const AdditivesPanel = memo(function AdditivesPanel({
           {process === 'hp' ? ' cook' : ' no-paste cook'}.
         </p>
       )}
+      {process === 'ls' && (
+        // Same shape as the free-fatty-acid hint above: an ingredient whose main route is
+        // another control, named here so nobody hunts for it in this list. Glycerin for
+        // the cook is part of the lye solution, and only that route puts its weight in the
+        // paste and takes it off the dilution water.
+        <p className="results-hint">
+          Glycerin for the cook goes in with the liquids, not here — swap part of the lye water
+          for it under Water &amp; superfat. Entered there, its weight comes off the dilution
+          water; this list only doses it into finished soap.
+        </p>
+      )}
       {additives.length === 0 ? (
         <p className="results-hint">
           Optional extras (fragrance, sugar, clay, etc.) dosed per additive — not included in lye
@@ -264,9 +275,15 @@ export const AdditivesPanel = memo(function AdditivesPanel({
             // even when it falls outside this process's offered set (e.g. a stray
             // after_cook line viewed under CP) — otherwise the controlled <select> has
             // no matching <option> and silently falls back to a different value.
-            const stageOptions = offeredStages.includes(line.addAt)
-              ? offeredStages
-              : [...offeredStages, line.addAt];
+            // An entry may restrict its own stages (glycerin is after-dilution only — the
+            // cook's route is the split-liquid row). Intersect, never widen: a stage the
+            // process does not offer is not made available by an entry listing it.
+            const entryStages = entry?.stages
+              ? offeredStages.filter((stage) => entry.stages!.includes(stage))
+              : offeredStages;
+            const stageOptions = entryStages.includes(line.addAt)
+              ? entryStages
+              : [...entryStages, line.addAt];
             // Mismatched-select guard (dose mode): a stray `solution` line viewed
             // under CP/HP must still render its current option, even though
             // solution modes are otherwise LS-only — see stageOptions above.
@@ -400,6 +417,16 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     of picking rather than in a tooltip. */}
                 <div className="additive-list__stage">
                   <span className="micro-label">Add at</span>
+                  {/* One offered stage is not a choice: a seg of a single cell is a control
+                      that cannot do anything, and a radio group of one is a poor thing to
+                      hand a screen reader. Entries that restrict themselves to one stage
+                      (glycerin — the cook's route is the split-liquid row) state it
+                      instead, and the note underneath explains why it is the only one. */}
+                  {stageOptions.length === 1 ? (
+                    <p className="additive-list__stage-fixed">
+                      {additiveStageLabel(stageOptions[0], process)}
+                    </p>
+                  ) : (
                   <SegRadioGroup
                     label={`Add at for ${rowName}`}
                     name={`additive-stage-${line.key}`}
@@ -411,6 +438,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     value={line.addAt}
                     onChange={(addAt) => updateLine(line.key, { addAt })}
                   />
+                  )}
                   <p className="inline-note additive-list__stage-note">
                     {stageNote(line.addAt, process)}
                   </p>
@@ -440,6 +468,12 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     {entry.doseUnit === 'ppt' ? ' ppt' : '%'} of{' '}
                     {entry.doseBasis === 'solution' ? 'diluted solution' : 'oil weight'}
                   </p>
+                )}
+                {/* What this additive does HERE, and where its other route lives when one
+                    ingredient is split across two controls. Beneath the range, since the
+                    range is the thing a maker came to the row for. */}
+                {entry?.note && !isStrayEntry && (
+                  <p className="inline-note additive-list__note">{entry.note}</p>
                 )}
                 {!row && !processOffers(process, 'solutionDosing') && line.basis === 'solution' && line.amount !== '' &&
                   (parseDoseAmount(line.amount, line.unit) ?? 0) > 0 && (

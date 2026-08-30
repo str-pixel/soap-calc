@@ -1275,6 +1275,29 @@ details[open] > .disclosure__summary::before {
   color: var(--caption);
 }
 
+/* The stage an entry pins itself to — stated, not offered (see the single-option branch
+   in AdditivesPanel). Reads as the seg's selected cell would, minus the box: this is a
+   fact about the additive, not a control. */
+.additive-list__stage-fixed {
+  margin: 0;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* An entry's own paragraph — what it does at this stage, or where its other route lives.
+   Same voice as the stage note directly above it, since both answer "why here". */
+.additive-list__note {
+  margin: 0;
+  color: var(--caption);
+}
+
 .additive-list__hint {
   margin: 0;
   font-family: var(--font-mono);

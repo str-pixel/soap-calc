@@ -20,16 +20,31 @@ import {
 } from './useFormulationInsights';
 
 describe('totalAdditivePercentForInsights', () => {
-  it('excludes glycerin from the total (deliberate solvent dose, not extras)', () => {
+  it("excludes the COOK's glycerin from the total (deliberate solvent dose, not extras)", () => {
     const total = totalAdditivePercentForInsights(
       [
-        { catalogId: 'glycerin', grams: 220 },
+        { catalogId: 'glycerin', grams: 220, addAt: 'lye' },
         { catalogId: 'clay', grams: 10 },
       ],
       1000,
       [],
     );
     expect(total).toBeCloseTo(1, 5);
+  });
+
+  it('counts glycerin stirred into finished soap — nothing about it is solvent', () => {
+    // The mirror of the case above: after the cook there is no paste to dissolve and no
+    // lye water to be part of, so a quarter of the oil weight landing in the bottle is
+    // exactly the load this warning exists for.
+    const total = totalAdditivePercentForInsights(
+      [
+        { catalogId: 'glycerin', grams: 220, addAt: 'after_cook' },
+        { catalogId: 'clay', grams: 10 },
+      ],
+      1000,
+      [],
+    );
+    expect(total).toBeCloseTo(23, 5);
   });
 
   it('excludes split liquid added in lye water', () => {

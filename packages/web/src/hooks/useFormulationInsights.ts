@@ -10,26 +10,30 @@ import {
   type LyeCalculationResult,
   type RecipeFattyAcidResult,
   type RecipePropertiesResult,
+  type AdditiveStage,
 } from '@soap-calc/core';
 import { oilById } from '../lib/oils';
+import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
 export function totalAdditivePercentForInsights(
-  additives: Array<{ catalogId?: string; grams: number }>,
+  additives: Array<{ catalogId?: string; grams: number; addAt?: AdditiveStage }>,
   oilGrams: number,
   splitLiquidRows: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null }>,
 ): number {
   const additivePercent =
     oilGrams > 0
       ? additives.reduce(
-          // Glycerin is excluded: its LS dose (20–25% of oils) is a deliberate solvent
+          // The COOK's glycerin is excluded: its lye-phase dose is a deliberate solvent
           // load, not "extras" — counting it would make the ~10% high_total_additives
           // warning permanent for every glycerin-method recipe. Same shape as the
-          // excludeYogurt dedup on the sugar sum.
+          // excludeYogurt dedup on the sugar sum. Glycerin stirred into finished soap is
+          // the mirror case and DOES count: nothing about it is solvent, and a quarter of
+          // the oil weight landing in the bottle is exactly the load this warning is for.
           (sum, item) =>
-            item.catalogId === 'glycerin' ? sum : sum + (item.grams / oilGrams) * 100,
+            isCookGlycerin(item) ? sum : sum + (item.grams / oilGrams) * 100,
           0,
         )
       : 0;

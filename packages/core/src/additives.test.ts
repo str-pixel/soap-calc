@@ -380,10 +380,21 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
     expect(effectiveCatalogEntry(catalogEntryById('fragrance')!, 'cp').doseBasis).toBeUndefined();
   });
 
-  it('glycerin: LS-only, 20–25% of oils into the lye solution', () => {
+  it('glycerin: LS-only, after dilution only, at the general 1–25% envelope', () => {
+    // The lye-phase route (20–25% of oils, or 1–2 parts of the lye solution) is the
+    // split-liquid preset, not this entry: only there does the glycerin's mass join the
+    // paste and come off the dilution water, which is the accounting the source asks for.
+    // What is left for an additive line is the after-the-cook dose — no saponification to
+    // accelerate, no lye water to be part of — so the range is the general envelope and
+    // the stage list forbids the three cook-time stages outright.
     const g = catalogEntryById('glycerin');
-    expect([g?.typicalLow, g?.typicalHigh, g?.defaultStage, g?.processes]).toEqual([20, 25, 'lye', ['ls']]);
+    expect([g?.typicalLow, g?.typicalHigh, g?.defaultStage, g?.processes]).toEqual([
+      1, 25, 'after_cook', ['ls'],
+    ]);
+    expect(g?.stages).toEqual(['after_cook']);
     expect(g?.doseBasis).toBeUndefined(); // % of oil weight
+    // The row explains where the cook's glycerin went, in the app's own words.
+    expect(g?.note).toMatch(/lye water/i);
   });
 
   it('glycerin is never offered for CP or HP — the pickers, not just the scoping field', () => {

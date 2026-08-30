@@ -15,6 +15,7 @@ import { computeCureModel, estimateCure, labelWeightGrams } from '../lib/cureEst
 import { resolveDilution, type ResolvedDilution } from '../lib/resolveDilution';
 import type { CureEstimate } from '../lib/cureEstimate';
 import { ls30MinPackagePresent } from '../lib/ls30Min';
+import { isCookGlycerin } from '../lib/glycerinRoute';
 import { computeWorkability } from '../lib/workabilityInput';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
@@ -745,8 +746,10 @@ export function useRecipeViewModel({
     previewState.lines,
     previewSettings,
   );
-  // Glycerin as lye-solution solvent (split row) or LS additive — drives both the
-  // glycerin_solvent_dilution advisory below and the 30-min-package predicate (LS only).
+  // Glycerin as lye-solution solvent: a split row, or a legacy additive line staged before
+  // the cook (see isCookGlycerin — glycerin stirred into finished soap dissolves nothing
+  // and must not satisfy a solvent gate). Drives both the glycerin_solvent_dilution
+  // advisory below and the 30-min-package predicate (LS only).
   // Only rows that actually resolve to grams get a vote. An unsized row is the DEFAULT
   // state of a freshly added one, so counting it fired the solvent advisory the moment
   // someone clicked "+ Add liquid". `grams > 0` is load-bearing beyond the null check:
@@ -758,17 +761,17 @@ export function useRecipeViewModel({
         (preset?.flags.includes('solvent') ?? false) &&
         isAlternativeLiquidOfferedFor(preset!, process)
       );
-    }) || computedAdditives.some((a) => a.catalogId === 'glycerin');
+    }) || computedAdditives.some(isCookGlycerin);
   // Glycerin grams for the 30-min solvent-scale gate (sourced floor: >= 1x lye weight) —
-  // sized split-liquid glycerin rows plus the glycerin additive line, summed rather than
-  // unioned to a boolean since the source doses it by weight, not by presence.
+  // sized split-liquid glycerin rows plus any pre-cook glycerin additive line, summed
+  // rather than unioned to a boolean since the source doses it by weight, not by presence.
   const lsGlycerinGrams =
     sizedSplitRows.reduce(
       (sum, { row, grams }) => (row.presetKey === 'glycerin' ? sum + (grams ?? 0) : sum),
       0,
     ) +
     computedAdditives.reduce(
-      (sum, a) => (a.catalogId === 'glycerin' ? sum + a.grams : sum),
+      (sum, a) => (isCookGlycerin(a) ? sum + a.grams : sum),
       0,
     );
   // 30-min no-paste package: the IN-ZONE high-temp method only (never the gap — the
