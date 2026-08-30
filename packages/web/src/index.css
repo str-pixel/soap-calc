@@ -1259,9 +1259,16 @@ details[open] > .disclosure__summary::before {
   display: flex;
 }
 
+/* Cells wrap here, unlike everywhere else the seg is used: "After dilution" is the one
+   cell whose meaning lives in its preposition, so it is shown whole and takes two lines
+   rather than being cut back to a word that says the opposite. Wrapping also lets the
+   cells shrink to their longest WORD, so the strip fits a narrower column than before. */
 .additive-list__stage .seg__option {
   flex: 1 1 0;
-  padding: 0 0.4rem;
+  padding: 0.3rem 0.4rem;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .additive-list__stage-note {

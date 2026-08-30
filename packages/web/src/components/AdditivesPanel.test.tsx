@@ -162,6 +162,34 @@ describe('AdditivesPanel stage options', () => {
     expect(screen.getByRole('radio', { name: 'After dilution' })).toBeTruthy();
   });
 
+  it('the after-dilution CELL says "After dilution", not the bare step it comes after', () => {
+    // Abbreviated to its last word, the cell read "ADD AT … DILUTION" — which tells the
+    // maker to dose into the dilution water. The stage means the opposite: after the
+    // dilution, into finished soap (the reference doses water-dispersible shea butter,
+    // turkey red castor oil and extracts there — LS:3030, LS:3374, and the extracts entry
+    // "at the very end of the dilution process"). The preposition IS the instruction.
+    for (const [process, cell] of [
+      ['ls', 'After dilution'],
+      ['hp', 'After cook'],
+    ] as const) {
+      cleanup();
+      render(
+        <AdditivesPanel
+          additives={[makeLine({ addAt: 'after_cook' })]}
+          computed={[makeComputed(makeLine({ addAt: 'after_cook' }))]}
+          weightUnit="g"
+          process={process}
+          onChange={() => {}}
+        />,
+      );
+      // The span is aria-hidden (the input carries the name), so read the DOM text.
+      const span = screen
+        .getByRole('radiogroup', { name: /^Add at for / })
+        .querySelector('input[value="after_cook"]')!.parentElement!.querySelector('span')!;
+      expect(span.textContent).toBe(cell);
+    }
+  });
+
   it('a line already set to after_cook under CP still offers it as a selected option (mismatched-select guard)', () => {
     render(
       <AdditivesPanel

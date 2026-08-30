@@ -54,8 +54,13 @@ const BASE_STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
 
 /** Short cell text for the stage seg. Each is contained in its full stage label, which
  * stays the accessible name (Label-in-Name, WCAG 2.5.3) — four full labels side by side
- * would not fit the column. `after_cook`'s cell is derived, since its label is
- * process-dependent ("After cook" / "After dilution"). */
+ * would not fit the column. Dropping the preposition is safe for these four: under the
+ * "Add at" heading, LYE WATER / OILS / TRACE / TOP each name a place in the batch.
+ *
+ * `after_cook` is NOT in here — it names a MOMENT, and the preposition is the whole
+ * claim. Abbreviated to its last word it read "ADD AT … DILUTION", which says to dose
+ * into the dilution water; the stage means the opposite — after the dilution, into
+ * finished soap. It keeps its full label and wraps to two lines instead. */
 const ADDITIVE_STAGE_CELLS: Partial<Record<AdditiveStage, string>> = {
   lye: 'Lye water',
   oils: 'Oils',
@@ -68,7 +73,7 @@ const ADDITIVE_STAGE_CELLS: Partial<Record<AdditiveStage, string>> = {
  * order of operations, so both notes say why you would pick them. */
 const ADDITIVE_STAGE_NOTES: Record<AdditiveStage, string> = {
   lye: 'Dissolved in the lye water before it meets the oils. Chelators are made here — citric acid becomes citrate in the lye solution. A fresh lye solution is hot enough to brown sugars.',
-  oils: 'Stirred into the warm oils before the lye goes in. Preferred for sugar and salt, which brown less here than in the hot lye solution.',
+  oils: 'Stirred into the warm oils before the lye goes in. Preferred for sugar, which browns less here than in a hot lye solution; salt dissolves in either.',
   trace: 'Blended in once the batter has emulsified.',
   top: 'Onto the surface after pouring — decoration, not part of the batter.',
   after_cook: 'Stirred in after the cook, once saponification is finished.',
@@ -88,16 +93,11 @@ function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
   return processOffers(process, 'afterCookStage') ? [...base, 'after_cook'] : base;
 }
 
-/** The stage seg's cell text. after_cook takes the last word of its process-aware label
- * ("After dilution" → "Dilution"), so the cell stays contained in the name. */
+/** The stage seg's cell text. after_cook shows its process-aware label whole ("After
+ * cook" / "After dilution") — the cells wrap, so the word that carries the timing does
+ * not have to be dropped to make it fit. */
 function stageCell(stage: AdditiveStage, process: ProcessId): string {
-  const preset = ADDITIVE_STAGE_CELLS[stage];
-  if (preset) return preset;
-  const label = additiveStageLabel(stage, process);
-  const word = label.slice(label.lastIndexOf(' ') + 1);
-  // The seg uppercases cells anyway, but a bare "dilution" in the DOM reads as a typo
-  // beside "Lye water" and "Trace" — and outlives any change to that text-transform.
-  return word.charAt(0).toUpperCase() + word.slice(1);
+  return ADDITIVE_STAGE_CELLS[stage] ?? additiveStageLabel(stage, process);
 }
 
 /** The note for the selected stage. LS's after-cook step is the dilution, and what goes
