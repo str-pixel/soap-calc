@@ -48,6 +48,21 @@ function optionValues(select: HTMLElement): string[] {
     .map((o) => (o as HTMLOptionElement).value);
 }
 
+/** The stage control is a segmented radio group now, not a select — its values come off
+ * the radios, in DOM order, the way optionValues read a select's options. */
+const stageValues = (): string[] =>
+  Array.from(
+    screen.getByRole('radiogroup', { name: /^Add at for / }).querySelectorAll('input[type="radio"]'),
+  ).map((r) => (r as HTMLInputElement).value);
+
+const stageChecked = (): string | undefined =>
+  stageValues().find(
+    (v) =>
+      (screen
+        .getByRole('radiogroup', { name: /^Add at for / })
+        .querySelector(`input[value="${v}"]`) as HTMLInputElement).checked,
+  );
+
 describe('AdditivesPanel catalog picker', () => {
   it('renders all current unscoped catalog entries in the CP picker (no regression)', () => {
     render(
@@ -113,8 +128,7 @@ describe('AdditivesPanel stage options', () => {
         onChange={() => {}}
       />,
     );
-    const select = screen.getByLabelText('Add at');
-    expect(optionValues(select)).toEqual(['lye', 'oils', 'trace', 'top']);
+    expect(stageValues()).toEqual(['lye', 'oils', 'trace', 'top']);
   });
 
   it('HP renders 5 stage options, labeling after_cook as "After cook"', () => {
@@ -127,14 +141,12 @@ describe('AdditivesPanel stage options', () => {
         onChange={() => {}}
       />,
     );
-    const select = screen.getByLabelText('Add at');
-    expect(optionValues(select)).toEqual(['lye', 'oils', 'trace', 'top', 'after_cook']);
-    const options = within(select).getAllByRole('option');
-    const afterCook = options.find((o) => (o as HTMLOptionElement).value === 'after_cook');
-    expect(afterCook?.textContent).toBe('After cook');
+    expect(stageValues()).toEqual(['lye', 'oils', 'trace', 'top', 'after_cook']);
+    // The cell abbreviates; the accessible name is the full, process-aware label.
+    expect(screen.getByRole('radio', { name: 'After cook' })).toBeTruthy();
   });
 
-  it('LS renders 5 stage options, labeling after_cook as "After dilution"', () => {
+  it('LS drops the bar-soap "On top" stage and labels after_cook "After dilution"', () => {
     render(
       <AdditivesPanel
         additives={[makeLine()]}
@@ -144,11 +156,10 @@ describe('AdditivesPanel stage options', () => {
         onChange={() => {}}
       />,
     );
-    const select = screen.getByLabelText('Add at');
-    expect(optionValues(select)).toEqual(['lye', 'oils', 'trace', 'top', 'after_cook']);
-    const options = within(select).getAllByRole('option');
-    const afterCook = options.find((o) => (o as HTMLOptionElement).value === 'after_cook');
-    expect(afterCook?.textContent).toBe('After dilution');
+    // A bottle has no surface to decorate, and the reference rules out the additives the
+    // stage exists for (LS:3067), so liquid soap offers four stages, not five.
+    expect(stageValues()).toEqual(['lye', 'oils', 'trace', 'after_cook']);
+    expect(screen.getByRole('radio', { name: 'After dilution' })).toBeTruthy();
   });
 
   it('a line already set to after_cook under CP still offers it as a selected option (mismatched-select guard)', () => {
@@ -161,9 +172,8 @@ describe('AdditivesPanel stage options', () => {
         onChange={() => {}}
       />,
     );
-    const select = screen.getByLabelText('Add at') as HTMLSelectElement;
-    expect(select.value).toBe('after_cook');
-    expect(optionValues(select)).toEqual(['lye', 'oils', 'trace', 'top', 'after_cook']);
+    expect(stageChecked()).toBe('after_cook');
+    expect(stageValues()).toEqual(['lye', 'oils', 'trace', 'top', 'after_cook']);
   });
 
   it('selecting a stage calls onChange with the right value', () => {
@@ -177,7 +187,7 @@ describe('AdditivesPanel stage options', () => {
         onChange={onChange}
       />,
     );
-    fireEvent.change(screen.getByLabelText('Add at'), { target: { value: 'after_cook' } });
+    fireEvent.click(screen.getByRole('radio', { name: 'After cook' }));
     expect(onChange).toHaveBeenCalledTimes(1);
     const updated = onChange.mock.calls[0][0] as AdditiveLine[];
     expect(updated[0].addAt).toBe('after_cook');
@@ -370,7 +380,7 @@ describe('per-row accessible names (deep-review)', () => {
     expect(screen.getByLabelText('Amount for Sugar')).toBeTruthy();
     expect(screen.getByLabelText('Amount for oat milk')).toBeTruthy();
     expect(screen.getByLabelText('Dose mode for oat milk')).toBeTruthy();
-    expect(screen.getByLabelText('Add at for oat milk')).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'Add at for oat milk' })).toBeTruthy();
     expect(screen.getByLabelText('Remove oat milk')).toBeTruthy();
   });
 

@@ -18,6 +18,7 @@ import { newAdditiveKey } from '../lib/recipe';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
+import { SegRadioGroup } from './SegRadioGroup';
 
 type AdditivesPanelProps = {
   additives: AdditiveLine[];
@@ -51,12 +52,61 @@ function offeredDoseModesForProcess(process: ProcessId): typeof DOSE_MODES {
 
 const BASE_STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
 
-/** Stages offered in the per-line dropdown. CP has no cook/dilution step, so only
- * HP/LS offer the contextual after-cook stage. */
+/** Short cell text for the stage seg. Each is contained in its full stage label, which
+ * stays the accessible name (Label-in-Name, WCAG 2.5.3) — four full labels side by side
+ * would not fit the column. `after_cook`'s cell is derived, since its label is
+ * process-dependent ("After cook" / "After dilution"). */
+const ADDITIVE_STAGE_CELLS: Partial<Record<AdditiveStage, string>> = {
+  lye: 'Lye water',
+  oils: 'Oils',
+  trace: 'Trace',
+  top: 'Top',
+};
+
+/** What choosing this stage actually means, shown under the control for the selected one.
+ * The lye-vs-oils distinction is the one that changes the soap rather than just the
+ * order of operations, so both notes say why you would pick them. */
+const ADDITIVE_STAGE_NOTES: Record<AdditiveStage, string> = {
+  lye: 'Dissolved in the lye water before it meets the oils. Chelators are made here — citric acid becomes citrate in the lye solution. A fresh lye solution is hot enough to brown sugars.',
+  oils: 'Stirred into the warm oils before the lye goes in. Preferred for sugar and salt, which brown less here than in the hot lye solution.',
+  trace: 'Blended in once the batter has emulsified.',
+  top: 'Onto the surface after pouring — decoration, not part of the batter.',
+  after_cook: 'Stirred in after the cook, once saponification is finished.',
+};
+
+/** Stages offered per line. CP has no cook/dilution step, so only HP/LS offer the
+ * contextual after-cook stage.
+ *
+ * LIQUID SOAP DROPS "ON TOP". It is a bar-soap stage — you decorate the surface of a
+ * loaf — and a bottle has no surface to decorate. The reference rules out the additives
+ * the stage exists for ("dried herbs, dried flowers, sprinkles… simply shouldn't be used
+ * in liquid soap", LS:3067), and every "layer on top" in that text is unsaponified fat
+ * separating out: a defect to fix, not a stage to choose. */
 function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
-  return processOffers(process, 'afterCookStage')
-    ? [...BASE_STAGE_OPTIONS, 'after_cook']
-    : BASE_STAGE_OPTIONS;
+  const base =
+    process === 'ls' ? BASE_STAGE_OPTIONS.filter((s) => s !== 'top') : BASE_STAGE_OPTIONS;
+  return processOffers(process, 'afterCookStage') ? [...base, 'after_cook'] : base;
+}
+
+/** The stage seg's cell text. after_cook takes the last word of its process-aware label
+ * ("After dilution" → "Dilution"), so the cell stays contained in the name. */
+function stageCell(stage: AdditiveStage, process: ProcessId): string {
+  const preset = ADDITIVE_STAGE_CELLS[stage];
+  if (preset) return preset;
+  const label = additiveStageLabel(stage, process);
+  const word = label.slice(label.lastIndexOf(' ') + 1);
+  // The seg uppercases cells anyway, but a bare "dilution" in the DOM reads as a typo
+  // beside "Lye water" and "Trace" — and outlives any change to that text-transform.
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/** The note for the selected stage. LS's after-cook step is the dilution, and what goes
+ * in there is different enough from a bar soap's post-cook stir to say so. */
+function stageNote(stage: AdditiveStage, process: ProcessId): string {
+  if (stage === 'after_cook' && process === 'ls') {
+    return 'Stirred into the finished, diluted soap — where emollients and water-dispersible additives belong.';
+  }
+  return ADDITIVE_STAGE_NOTES[stage];
 }
 
 // memo: `computed` is a stable view-model memo output and `onChange` is a stable
@@ -332,23 +382,28 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     ))}
                   </select>
                 </label>
-                <label className="field">
-                  <span className="sr-only">Add at</span>
-                  <select
-                    className="input"
-                    aria-label={`Add at for ${rowName}`}
+                {/* A seg, not a dropdown: four stages worth comparing at a glance, and the
+                    choice between them changes the soap rather than just the order of
+                    work — a closed <select> hid both facts. The selected cell explains
+                    itself underneath, so the reason to pick one is on screen at the moment
+                    of picking rather than in a tooltip. */}
+                <div className="additive-list__stage">
+                  <span className="micro-label">Add at</span>
+                  <SegRadioGroup
+                    label={`Add at for ${rowName}`}
+                    name={`additive-stage-${line.key}`}
+                    options={stageOptions.map((stage) => ({
+                      value: stage,
+                      cell: stageCell(stage, process),
+                      name: additiveStageLabel(stage, process),
+                    }))}
                     value={line.addAt}
-                    onChange={(e) =>
-                      updateLine(line.key, { addAt: e.target.value as AdditiveStage })
-                    }
-                  >
-                    {stageOptions.map((stage) => (
-                      <option key={stage} value={stage}>
-                        {additiveStageLabel(stage, process)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    onChange={(addAt) => updateLine(line.key, { addAt })}
+                  />
+                  <p className="inline-note additive-list__stage-note">
+                    {stageNote(line.addAt, process)}
+                  </p>
+                </div>
                 </div>
                 <div className="additive-list__foot">
                 <span className="micro-label">Adds</span>

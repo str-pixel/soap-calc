@@ -599,16 +599,21 @@ test.describe('additives', () => {
     const row = page.locator('ul[aria-label="Recipe additives"] li').first();
     // CP: no solution modes, no after-cook stage
     await expect(row.getByLabel('Dose mode').locator('option', { hasText: /of solution/ })).toHaveCount(0);
-    await expect(row.getByLabel('Add at').locator('option', { hasText: /After (cook|dilution)/ })).toHaveCount(0);
+    // The stage picker is a seg now: assert on its radios, not a select's options.
+    await expect(row.getByRole('radio', { name: /After (cook|dilution)/ })).toHaveCount(0);
+    // CP keeps the bar-soap "On top" stage; liquid soap drops it below.
+    await expect(row.getByRole('radio', { name: 'On top' })).toHaveCount(1);
     await processTab(page, /Liquid soap/).click();
     await page.getByRole('button', { name: '+ Add', exact: true }).click();
     const lsRow = page.locator('ul[aria-label="Recipe additives"] li').first();
     await expect(lsRow.getByLabel('Dose mode').locator('option', { hasText: /% of solution/ })).toHaveCount(1);
-    await expect(lsRow.getByLabel('Add at').locator('option', { hasText: /After dilution/ })).toHaveCount(1);
+    await expect(lsRow.getByRole('radio', { name: 'After dilution' })).toHaveCount(1);
+    // A bottle has no surface to decorate (LS:3067) — the stage is not offered here.
+    await expect(lsRow.getByRole('radio', { name: 'On top' })).toHaveCount(0);
     await processTab(page, /Hot process/).click();
     await page.getByRole('button', { name: '+ Add', exact: true }).click();
     const hpRow = page.locator('ul[aria-label="Recipe additives"] li').first();
-    await expect(hpRow.getByLabel('Add at').locator('option', { hasText: /After cook/ })).toHaveCount(1);
+    await expect(hpRow.getByRole('radio', { name: 'After cook' })).toHaveCount(1);
   });
 
   test('lather support pack adds rows then disables itself', async ({ page }) => {

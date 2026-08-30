@@ -1259,6 +1259,28 @@ details[open] > .disclosure__summary::before {
   white-space: nowrap;
 }
 
+/* The stage picker: micro-label, the seg, and the selected cell's own explanation. Its
+   cells split the row evenly — four stages of equal standing, not one default and three
+   alternatives. */
+.additive-list__stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.additive-list__stage .seg {
+  display: flex;
+}
+
+.additive-list__stage .seg__option {
+  flex: 1 1 0;
+  padding: 0 0.4rem;
+}
+
+.additive-list__stage-note {
+  color: var(--caption);
+}
+
 .additive-list__hint {
   margin: 0;
   font-family: var(--font-mono);
