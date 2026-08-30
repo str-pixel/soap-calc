@@ -336,6 +336,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // 0.5 ppt (0.05% of oil) on its own — an order of magnitude below this range. Both
     // figures are legitimate: chelating out hard-water metals (this entry's job) wants
     // noticeably more EDTA than the minimum dose that, alone, stops orange spots.
+    //
+    // No LS figure to answer to, and deliberately so: the LS text names EDTA among the
+    // common chelators but sends every chelator other than the in-lye citrate route to
+    // its own supplier's rate (LS:3037). The range here is that supplier envelope.
     id: 'edta',
     name: 'EDTA',
     typicalLow: 0.1,
@@ -457,6 +461,12 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     // Hydroxyethylcellulose (HEC) — LS-only thickener, same after-dilution dosing as guar
     // (including the solution basis).
+    //
+    // SOURCED: 0.5–1%, added after the final dilution AND cooling. That passage lives only
+    // in the raw extraction, not the cleaned reading text (LS_full_text.txt p.449), so a
+    // search of the reading text alone reports HEC absent — it is not. The same page names
+    // Crothix and xanthan gum as further thickeners but gives them no dose, which is why
+    // neither is offered here.
     id: 'hec',
     name: 'Hydroxyethylcellulose (HEC)',
     typicalLow: 0.5,
@@ -468,6 +478,12 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     // Pearlizer (glycol stearate/distearate) — melted flakes, dosed as % of the finished
     // solution; some products go in at trace, most after cook/dilution.
+    //
+    // SOURCED, and the range is the source's own: the LS text puts pearlizing agents in at
+    // 2–10% of the total liquid soap solution, melted first (LS:3000). Its section is
+    // titled "Pearlizing Agent" and it spells the compound "glycerol stearate", which is
+    // why a search for "glycol stearate" or "pearlizer" finds nothing — a naming trap this
+    // audit fell into once already. The 2–10% and the solution basis below are that line.
     id: 'pearlizer',
     name: 'Pearlizer (glycol stearate)',
     typicalLow: 2,
