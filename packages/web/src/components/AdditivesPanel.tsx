@@ -179,6 +179,12 @@ export const AdditivesPanel = memo(function AdditivesPanel({
       if (existingIds.has(item.catalogId)) return [];
       const entry = catalogEntryById(item.catalogId);
       if (!entry) return [];
+      // A packed ingredient the ACTIVE PROCESS does not offer is skipped rather than
+      // added: the pack is a shortcut for picking lines by hand, and the picker would
+      // never offer this one here. Without this, restricting an entry to CP/HP (cetyl
+      // alcohol) makes the pack inject a line the panel immediately flags as a stray
+      // entry — a dead row, in the one flow that is supposed to be a single press.
+      if (!isAdditiveOfferedFor(entry, process)) return [];
       // Stage from the ingredient's own per-process default, not from the pack: the pack
       // says what and how much, the catalog says when, and only the catalog was audited
       // per process. Same resolution a hand-picked line gets from the type select below,

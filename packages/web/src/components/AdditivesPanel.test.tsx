@@ -728,6 +728,16 @@ describe('the lather support pack stages by process', () => {
     expect(applyPack('cp').get('sugar-sorbitol')!.addAt).toBe('trace');
   });
 
+  it('skips a packed ingredient the process does not offer, rather than adding a dead row', () => {
+    // Cetyl alcohol is CP/HP only (the LS source never names it), so the LS pack is two
+    // lines, not three — and critically not three-with-a-stray, which is what an unfiltered
+    // pack produces: a row the panel immediately marks "not used in liquid soap".
+    const cp = applyPack('cp');
+    expect([...cp.keys()].sort()).toEqual(['cetyl-alcohol', 'chelator', 'sugar-sorbitol']);
+    const ls = applyPack('ls');
+    expect([...ls.keys()].sort()).toEqual(['chelator', 'sugar-sorbitol']);
+  });
+
   it('gives every packed line the same stage a hand-pick would', () => {
     for (const process of ['cp', 'ls'] as const) {
       const packed = applyPack(process);

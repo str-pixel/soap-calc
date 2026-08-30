@@ -194,11 +194,22 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     },
   },
   {
+    // CP/HP ONLY. The LS text never names it — one of just two entries in this catalog
+    // that the liquid-soap source is silent on (titanium dioxide is the other), verified
+    // with a corrected search after an earlier one returned false zeros. Everything it
+    // does name for liquid soap it frames as water-soluble or water-dispersible, because
+    // that is what a clear, stable solution tolerates: the thickeners it gives are salt,
+    // guar and HEC (LS:3101, LS_full_text p.449), and where an oil-side ingredient is
+    // wanted it reaches for the water-dispersible form (turkey red, LS:1260; WD shea,
+    // LS:3030). A fatty alcohol dosed at trace is neither, and its 1–3% at trace here is
+    // pure CP inheritance — the class of default this audit exists to remove. Offering it
+    // in LS was never a decision anyone made.
     id: 'cetyl-alcohol',
     name: 'Cetyl alcohol',
     typicalLow: 1,
     typicalHigh: 3,
     defaultStage: 'trace',
+    processes: ['cp', 'hp'],
   },
   {
     // Oils stage per LS:2991 (see the clay entry below — one line covers both).
@@ -375,12 +386,20 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // Titanium dioxide — mineral whitener, dispersed into the oils before mixing.
+    // CP/HP ONLY, for the same reason as cetyl alcohol: absent from the LS text entirely.
+    // Note this is NOT "insoluble powders are wrong in liquid soap" — the source
+    // explicitly sanctions charcoal and clays there, into the oils at the very start, and
+    // says a more viscous solution slows their settling (LS:2991). It is narrower than
+    // that: those two earned their LS place from the source, and this one has nothing
+    // behind it but the CP colorant range. Its glycerin-river hazard is a MOLD-phase
+    // failure that cannot happen in a diluted soap, which is the tell.
     id: 'titanium-dioxide',
     name: 'Titanium dioxide',
     typicalLow: 0.1,
     typicalHigh: 1,
     defaultStage: 'oils',
     hazards: ['can glycerin-river at high water'],
+    processes: ['cp', 'hp'],
   },
   {
     // Eugenol — clove-derived aromatic used as a trace accelerant; dosed in parts-per-thousand,

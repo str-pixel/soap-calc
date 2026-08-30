@@ -607,3 +607,26 @@ describe('LS defaults answer to the liquid-soap source, not to CP by inheritance
     }
   });
 });
+
+describe('entries the LS source never names are not offered there', () => {
+  // The catalog is not bound to one book — BHT and ROE ship on an experiment's figures,
+  // and the app knowingly rejects that book's 1% BHT. So "absent from the source" is not
+  // by itself disqualifying. It is disqualifying HERE because these two had nothing else
+  // either: their LS ranges and stages were pure CP inheritance, never a decision.
+  it.each(['cetyl-alcohol', 'titanium-dioxide'])('%s is CP/HP only', (id) => {
+    const entry = catalogEntryById(id)!;
+    expect(isAdditiveOfferedFor(entry, 'ls')).toBe(false);
+    expect(isAdditiveOfferedFor(entry, 'cp')).toBe(true);
+    expect(isAdditiveOfferedFor(entry, 'hp')).toBe(true);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === id)).toBe(false);
+  });
+
+  // The counter-case, so this never generalises into "insoluble powders are wrong in
+  // liquid soap": the source puts charcoal and clays into the oils at the very start and
+  // says a more viscous solution slows their settling (LS:2991). They stay.
+  it.each(['charcoal', 'clay'])('%s keeps its sourced LS place', (id) => {
+    const entry = catalogEntryById(id)!;
+    expect(isAdditiveOfferedFor(entry, 'ls')).toBe(true);
+    expect(effectiveCatalogEntry(entry, 'ls').defaultStage).toBe('oils');
+  });
+});
