@@ -1651,15 +1651,15 @@ export function DilutionPanel({
           <label className="dilution-row">
             <span className="dilution-row__label">Amount to make</span>
             <span className="dilution-row__value">
-            <input
-              type="number"
-              className="input figure-field"
-              min={1}
-              step={10}
-              value={targetMl}
-              onChange={(e) => onTargetMlChange?.(e.target.value)}
-              aria-label="Amount to make (ml)"
-            />
+              <input
+                type="number"
+                className="input figure-field"
+                min={1}
+                step={10}
+                value={targetMl}
+                onChange={(e) => onTargetMlChange?.(e.target.value)}
+                aria-label="Amount to make (ml)"
+              />
               <span className="dilution-row__unit" aria-hidden="true">ml</span>
             </span>
           </label>
@@ -1700,14 +1700,14 @@ export function DilutionPanel({
           <label className="dilution-row">
             <span className="dilution-row__label">Paste weighed out</span>
             <span className="dilution-row__value">
-            <input
-              type="number"
-              className="input figure-field"
-              min={1}
-              value={portionPasteGrams}
-              onChange={(e) => onPortionPasteChange?.(e.target.value)}
-              aria-label="Paste weighed out (g)"
-            />
+              <input
+                type="number"
+                className="input figure-field"
+                min={1}
+                value={portionPasteGrams}
+                onChange={(e) => onPortionPasteChange?.(e.target.value)}
+                aria-label="Paste weighed out (g)"
+              />
               <span className="dilution-row__unit" aria-hidden="true">g</span>
             </span>
           </label>
@@ -1725,14 +1725,14 @@ export function DilutionPanel({
           <label className="dilution-row">
             <span className="dilution-row__label">Water added so far</span>
             <span className="dilution-row__value">
-            <input
-              type="number"
-              className="input figure-field"
-              min={0}
-              value={portionWaterGrams}
-              onChange={(e) => onPortionWaterChange?.(e.target.value)}
-              aria-label="Water added so far (g)"
-            />
+              <input
+                type="number"
+                className="input figure-field"
+                min={0}
+                value={portionWaterGrams}
+                onChange={(e) => onPortionWaterChange?.(e.target.value)}
+                aria-label="Water added so far (g)"
+              />
               <span className="dilution-row__unit" aria-hidden="true">g</span>
             </span>
           </label>
