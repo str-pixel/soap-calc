@@ -82,8 +82,15 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     processOverrides: {
       // An HP cook tolerates (and typically uses) more sugar than a CP mold; stage unchanged.
       hp: { typicalLow: 1, typicalHigh: 5 },
-      // LS doses sugar like HP but prefers the oils over the lye water (less browning).
-      ls: { typicalLow: 1, typicalHigh: 5, defaultStage: 'oils' },
+      // LS gives every sugar FORM one rate — table sugar, honey, molasses, sorbitol — at
+      // 1–6% of total oil weight, into the lye solution or the oils and before dilution
+      // (LS:1069); sorbitol and honey below carry the identical range for that reason.
+      // The stage is the sharper claim: the 30-HTLS chapter puts sugar directly in the
+      // oils rather than the lye solution, since a hot lye solution is what browns it
+      // (LS:2667) — and 3–5% is that chapter's own practice, a point inside this range
+      // rather than a competing one. The 5% ceiling this carried matched neither
+      // statement; it was HP's.
+      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
     },
   },
   {
@@ -141,7 +148,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     hazards: ['can tunnel/overheat'],
     processOverrides: {
       hp: { typicalLow: 1, typicalHigh: 5 },
-      ls: { typicalLow: 1, typicalHigh: 5 },
+      // LS names sorbitol among the sugar forms it doses together — 1–6% of total oil
+      // weight, into the lye solution or the oils, and before the dilution step
+      // (LS:1069). Trace was the CP stage inherited; LS puts its sugars in early.
+      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
     },
   },
   {
@@ -150,6 +160,12 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 1,
     typicalHigh: 1,
     defaultStage: 'lye',
+    processOverrides: {
+      // LS gives the citrate route a range rather than CP's single point: 1–2% of total
+      // oil weight into the lye solution (LS:3037). Other chelators are left to their
+      // supplier's own rate there, which is why only this range moves.
+      ls: { typicalLow: 1, typicalHigh: 2 },
+    },
   },
   {
     // Acid form of the citrate chelator: dissolved in the lye water it reacts with the
@@ -166,8 +182,11 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'lye',
     processOverrides: {
       // LS chelator route: citric into the lye solution makes potassium citrate in situ,
-      // at a wider dose than the CP/HP water-conditioning dose.
-      ls: { typicalLow: 1, typicalHigh: 3 },
+      // at 1–2% of total oil weight (LS:3037). The 3% ceiling this carried, and the
+      // "wider than CP/HP" claim with it, matched nothing in the source — the LS figure
+      // is the same 1–2% the base holds, stated here so the LS voice is explicit rather
+      // than inherited by accident.
+      ls: { typicalLow: 1, typicalHigh: 2 },
     },
     lyeNeutralization: {
       naohPerGram: 3 * CITRIC_MOL_PER_GRAM * NAOH_MOLAR_MASS,
@@ -203,6 +222,12 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 1,
     defaultStage: 'trace',
     hazards: ['can tunnel/overheat'],
+    processOverrides: {
+      // LS doses every sugar form alike — table sugar, honey, molasses — at 1–6% of total
+      // oil weight, into the lye solution or the oils, before dilution (LS:1069). This
+      // entry had no LS voice at all and was serving CP's single-point 1%.
+      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
+    },
   },
   {
     id: 'fragrance',
@@ -380,6 +405,15 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 1,
     defaultStage: 'oils',
     processes: ['hp', 'ls'],
+    processOverrides: {
+      // DERIVED, and deliberately so: LS gives this one as an absolute — roughly a
+      // quarter to half an ounce of liquid soap into the heated oils (LS:2559) — against
+      // the 16 oz total oil weight every worked recipe in that book formulates on
+      // (LS:2090, LS:2739). That is 1.5–3% of oil weight, thirty times the 0.05% floor
+      // this was serving LS from the HP seed-soap range. Recorded as a derivation rather
+      // than a quotation: the source states the ounces, the percentage is ours.
+      ls: { typicalLow: 1.5, typicalHigh: 3 },
+    },
   },
   {
     // Yogurt — stirred in after cook/dilution in fluid HP; its water content deducts from

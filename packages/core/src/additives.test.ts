@@ -245,7 +245,7 @@ describe('dose units (deep-review)', () => {
 });
 
 describe('citric acid additive (auto-lye)', () => {
-  it('offers citric acid for every process at the lye stage; LS widens to the 1–3% chelator route', () => {
+  it('offers citric acid for every process at the lye stage; LS states the 1–2% chelator route', () => {
     const citric = catalogEntryById('citric-acid')!;
     expect(citric.name).toBe('Citric acid (anhydrous)');
     expect(citric.defaultStage).toBe('lye');
@@ -255,8 +255,11 @@ describe('citric acid additive (auto-lye)', () => {
     }
     const cp = effectiveCatalogEntry(citric, 'cp');
     expect([cp.typicalLow, cp.typicalHigh]).toEqual([1, 2]);
+    // Was 1–3, described as "wider than CP/HP". The LS text gives the in-lye citrate
+    // route as 1–2% of total oil weight (LS:3037) — the same figure as CP's, stated
+    // explicitly for LS rather than inherited, so a future CP edit cannot move LS with it.
     const ls = effectiveCatalogEntry(citric, 'ls');
-    expect([ls.typicalLow, ls.typicalHigh]).toEqual([1, 3]);
+    expect([ls.typicalLow, ls.typicalHigh]).toEqual([1, 2]);
   });
 
   it('carries stoichiometric neutralization factors (triprotic, anhydrous MW 192.124)', () => {
@@ -359,9 +362,13 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
     expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([3, 5, 'oils']);
   });
 
-  it('sugar LS: 1–5% into the oils (less browning than the lye water)', () => {
+  it('sugar LS: 1–6% into the oils, the rate LS gives every sugar form (LS:1069)', () => {
+    // Was 1–5. The 5% ceiling answered to nothing in the LS text: the general rate for
+    // sugars in liquid soap is 1–6% of oil weight (LS:1069), and the 30-HTLS chapter's
+    // own 3–5% practice (LS:2667) sits inside it. The oils stage keeps its source —
+    // browning happens in a hot lye solution, so the sugar goes to the oils (LS:2667).
     const ls = effectiveCatalogEntry(catalogEntryById('sugar-sorbitol')!, 'ls');
-    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([1, 5, 'oils']);
+    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([1, 6, 'oils']);
   });
 
   it('salt LS: 3–8% at the lye stage, with the salt-curve hazard replacing the bar tag', () => {
@@ -445,14 +452,17 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
 });
 
 describe('sorbitol mirrors sugar per process (CP source: "same suggested usage rates as sugar")', () => {
-  it('CP 0.5–2 (tested to 4 lives in the ceiling, not the range); HP/LS 1–5', () => {
+  it('CP 0.5–2 (tested to 4 lives in the ceiling, not the range); HP 1–5; LS 1–6', () => {
     const base = catalogEntryById('sorbitol')!;
     const cp = effectiveCatalogEntry(base, 'cp');
     expect([cp.typicalLow, cp.typicalHigh]).toEqual([0.5, 2]);
-    for (const process of ['hp', 'ls'] as const) {
-      const eff = effectiveCatalogEntry(base, process);
-      expect([eff.typicalLow, eff.typicalHigh]).toEqual([1, 5]);
-    }
+    const hp = effectiveCatalogEntry(base, 'hp');
+    expect([hp.typicalLow, hp.typicalHigh]).toEqual([1, 5]);
+    // LS parts from HP here: its own text rates every sugar form at 1–6% of oil weight
+    // and puts them in before dilution (LS:1069), which is also why the LS stage is the
+    // oils rather than the CP trace this entry inherits.
+    const ls = effectiveCatalogEntry(base, 'ls');
+    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([1, 6, 'oils']);
     // Structural mirror of the sugar entry — the source's own claim.
     const sugar = catalogEntryById('sugar-sorbitol')!;
     for (const process of ['cp', 'hp', 'ls'] as const) {
@@ -510,6 +520,73 @@ describe('anti-DOS antioxidants', () => {
     // against DOS; offering them as anti-DOS doses would advertise a null result.
     for (const id of ['gse', 'vitamin-c', 'vitamin-e']) {
       expect(catalogEntryById(id)).toBeUndefined();
+    }
+  });
+});
+
+describe('LS defaults answer to the liquid-soap source, not to CP by inheritance', () => {
+  const ls = (id: string) => effectiveCatalogEntry(catalogEntryById(id)!, 'ls');
+
+  // Each row is a figure the source states for LIQUID SOAP, with the line it is stated on.
+  // These were audited one ingredient at a time; every one of the six below was serving a
+  // CP- or HP-audited number to LS before, and three of them were also staged wrong.
+  it.each([
+    // Sugar: the LS "how to use" figure, into the oils rather than the lye water, because
+    // that is where a hot lye solution browns it. (LS:2667)
+    ['sugar-sorbitol', 1, 6, 'oils'],
+    // Every sugar FORM shares one LS rate — table sugar, honey, molasses, sorbitol — dosed
+    // into the lye solution or the oils, before dilution. (LS:1069)
+    ['sorbitol', 1, 6, 'oils'],
+    ['honey', 1, 6, 'oils'],
+    // The citrate chelator route: into the lye solution, where the alkali makes citrate
+    // in situ. (LS:3037)
+    ['chelator', 1, 2, 'lye'],
+    ['citric-acid', 1, 2, 'lye'],
+    // Finished soap as an emulsion accelerant. DERIVED: the source gives a quarter to half
+    // an ounce into the heated oils (LS:2559) against the 16 oz oil weight its worked
+    // recipes use (LS:2090, LS:2739). The ounces are the source's; the percentage is ours.
+    ['finished-soap', 1.5, 3, 'oils'],
+  ])('%s doses %s–%s%% of oil at the %s stage in LS', (id, low, high, stage) => {
+    const e = ls(id as string);
+    expect([e.typicalLow, e.typicalHigh]).toEqual([low, high]);
+    expect(e.defaultStage).toBe(stage);
+  });
+
+  // The ones that were already right, kept here so a future edit cannot quietly move them:
+  // salt 3–8% of oil, into the oils or the lye water (LS:2630); sodium lactate at the
+  // author's own 3–5% into the oils (LS:3019); eugenol in parts per thousand of the oils
+  // (LS:2572); and the four solution-dosed additives, each stated as a share of the
+  // finished, diluted soap and added after dilution — fragrance (LS:2950), turkey red
+  // castor (LS:1263), water-dispersible shea (LS:3030), guar gum (LS:3101).
+  it.each([
+    ['salt', 3, 8, 'oil', 'lye'],
+    ['sodium-lactate', 3, 5, 'oil', 'oils'],
+    ['fragrance', 0.5, 3, 'solution', 'after_cook'],
+    ['turkey-red-castor', 1, 5, 'solution', 'after_cook'],
+    ['wd-shea', 1, 25, 'solution', 'after_cook'],
+    ['guar', 0.5, 1, 'solution', 'after_cook'],
+  ])('%s keeps its sourced LS dose (%s–%s%% of %s at %s)', (id, low, high, basis, stage) => {
+    const e = ls(id as string);
+    expect([e.typicalLow, e.typicalHigh]).toEqual([low, high]);
+    expect(e.doseBasis ?? 'oil').toBe(basis);
+    expect(e.defaultStage).toBe(stage);
+  });
+
+  it('doses eugenol in parts per thousand, not percent (LS:2572)', () => {
+    const e = ls('eugenol');
+    expect(e.doseUnit).toBe('ppt');
+    expect([e.typicalLow, e.typicalHigh]).toEqual([1, 3]);
+  });
+
+  // A solution basis is a claim that the finished, diluted soap exists to dose against —
+  // so it may only ship on entries the source dilutes into, and every one of those is
+  // added after dilution.
+  it('ships a solution basis only on after-dilution entries', () => {
+    for (const entry of ADDITIVE_CATALOG) {
+      const e = effectiveCatalogEntry(entry, 'ls');
+      if ((e.doseBasis ?? 'oil') === 'solution') {
+        expect(e.defaultStage, `${e.name} doses on the solution`).toBe('after_cook');
+      }
     }
   });
 });
