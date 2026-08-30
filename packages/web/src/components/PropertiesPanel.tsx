@@ -268,28 +268,35 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                         {SOAP_PROPERTY_LABELS[key]}
                         <InfoTip term={SOAP_PROPERTY_LABELS[key]}>{guidance}</InfoTip>
                       </span>
-                      <span className="property-bars__reading">
-                        {/* Out-of-range verdict sits on the same baseline as the number it
-                            judges. Gated by !lowCoverage for the same reason as the value
-                            color and the dot: a partial-data estimate isn't a real signal. */}
-                        {!inSuggested && !lowCoverage && (
-                          <span className="property-bars__status">
-                            {value < guide.low ? 'Too low' : 'Too high'}
-                          </span>
-                        )}
-                        <span
-                          className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
-                          role="meter"
-                          aria-valuemin={0}
-                          aria-valuemax={SCALE_MAX}
-                          aria-valuenow={Math.round(value)}
-                          aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatPropertyScore(value)}`}
-                        >
-                          {lowCoverage ? '~' : ''}
-                          {formatPropertyScore(value)}
+                      {/* Out-of-range verdict holds the row's right edge on its own. The
+                          number it judges no longer sits beside it — it rides the dot
+                          below, where the reading is. Gated by !lowCoverage for the same
+                          reason as the value colour and the dot: a partial-data estimate
+                          isn't a real signal. */}
+                      {!inSuggested && !lowCoverage && (
+                        <span className="property-bars__status">
+                          {value < guide.low ? 'Too low' : 'Too high'}
                         </span>
-                      </span>
+                      )}
                     </div>
+                    {/* THE VALUE RIDES ITS OWN DOT. Printed at the far right of the label
+                        row it was a number beside a name; centred over the marker it reads
+                        as the position on the scale, which is what the meter is for.
+                        Deliberately OUTSIDE the aria-hidden track below: this span carries
+                        role="meter", so hiding it would take the reading with it. */}
+                    <div className="property-bars__plot">
+                      <span
+                        className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
+                        style={{ left: `${pct(value)}%` }}
+                        role="meter"
+                        aria-valuemin={0}
+                        aria-valuemax={SCALE_MAX}
+                        aria-valuenow={Math.round(value)}
+                        aria-label={`${SOAP_PROPERTY_LABELS[key]}: ${lowCoverage ? 'estimated ' : ''}${formatPropertyScore(value)}`}
+                      >
+                        {lowCoverage ? '~' : ''}
+                        {formatPropertyScore(value)}
+                      </span>
                     {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
                         suggested range, stronger band = target, marker = where this recipe lands.
                         Decorative — the value's role="meter" and the sr-only range text carry it for AT. */}
@@ -334,6 +341,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       <span className="property-meter__extreme property-meter__extreme--high">
                         High
                       </span>
+                    </div>
                     </div>
                     <p className="sr-only">
                       Suggested {formatPropertyScoreRange(guide.low, guide.high)}

@@ -20,6 +20,14 @@ const WATER_MODE_SEG_CELLS: Record<WaterMode, string> = {
   lye_water_ratio: 'Water : lye',
 };
 
+/* What the dial's number is measured in, per mode. Stated, not derived: two of the three
+ * labels contain a "%" and only one of those means the value IS a percent. */
+const WATER_MODE_UNITS: Record<WaterMode, string> = {
+  percent_of_oils: '%',
+  lye_concentration: '%',
+  lye_water_ratio: ': 1',
+};
+
 /* THE CELL AND THE FIELD IT SWAPS IN CANNOT SHARE A NAME. Picking "Lye concentration %"
  * reveals an editable "Lye concentration %" right below it — two controls, one name, one
  * panel, doing different jobs (choose the method / hold its value). The suffix keeps the
@@ -188,11 +196,15 @@ export function SuperfatWaterPanel({
 }: SuperfatWaterPanelProps) {
   const waterField = WATER_FIELDS[settings.waterMode];
   // The label carries its unit ("Lye concentration %"); the dial shows that unit beside
-  // the digits instead, so the micro-label drops it. One derivation for both, or the two
-  // quietly stop agreeing — the same rule LedgerNumericField follows in Settings.
+  // the digits instead, so the micro-label drops a TRAILING one.
   const waterFieldTerm = waterField.label.replace(/\s*%$/, '');
-  const waterFieldUnit = waterFieldTerm === waterField.label ? ': 1' : '%';
-  const waterParts = formatWeightParts(waterGrams, weightUnit, 0);
+  // The unit is a property OF THE MODE, never inferred from how its label is spelled:
+  // "Water % of oils" carries its % in the middle, so a trailing-% test called the app's
+  // DEFAULT method a ratio and printed "38 : 1" for a percentage.
+  const waterFieldUnit = WATER_MODE_UNITS[settings.waterMode];
+  // Default precision, exactly as Results formats the same figure — pinning digits here
+  // is what made this panel say "0 kg" where Results said "0.33 kg".
+  const waterParts = formatWeightParts(waterGrams, weightUnit);
 
   const pcsfOils = settings.postCookSuperfatOils;
   const pcsfTotal = Math.max(0, Number(settings.postCookSuperfatTotalPercent) || 0);
@@ -300,10 +312,11 @@ export function SuperfatWaterPanel({
             control answers to (Label-in-Name, WCAG 2.5.3). */}
         <div className="numbers-inputs__method">
           <span className="micro-label">Water method</span>
+          {/* No preserveCase: these are labels, not chemical names — the seg's uppercase
+              is right for them, as the mock draws them. */}
           <SegRadioGroup
             label="Water method"
             name="water-method"
-            preserveCase
             options={waterModeChoicesFor(process).map((mode) => ({
               value: mode,
               cell: WATER_MODE_SEG_CELLS[mode],
@@ -323,10 +336,10 @@ export function SuperfatWaterPanel({
             derivation is how this figure would start contradicting Results. */}
         <div className="water-method">
           <div className="water-method__field">
-            <span className="micro-label">
-              {waterFieldTerm}
-              {waterField.help && <InfoTip term={waterFieldTerm}>{waterField.help}</InfoTip>}
-            </span>
+            {/* No InfoTip: the help this label used to hide behind a "?" is the caption
+                below the block now, permanently visible. Keeping both rendered the same
+                sentence twice. */}
+            <span className="micro-label">{waterFieldTerm}</span>
             <span className="water-method__dial">
               <input
                 type="number"

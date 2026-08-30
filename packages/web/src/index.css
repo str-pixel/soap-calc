@@ -382,12 +382,17 @@ details[open] > .disclosure__summary::before {
   color: var(--bg);
 }
 
+/* NO BOTTOM PADDING. The row aligns on flex-end, so any padding here lifts the actions
+   off the name field's bottom edge instead of sitting them on it — 0.45rem of it, which
+   is exactly the misalignment it caused. It dated from the display-headline name, whose
+   descender-heavy baseline the buttons were being nudged up to meet; the name is a 40px
+   boxed field now, so the two controls simply share an edge. */
 .recipe-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem 1.2rem;
-  padding: 0 0 0.45rem;
+  padding: 0;
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -695,11 +700,26 @@ details[open] > .disclosure__summary::before {
   gap: 0.5rem;
 }
 
-/* Single-number width: this dial holds "2.5" or "33.3", never a batch weight, so it is
-   sized for the value rather than stretched to the column. */
-.water-method__input.input {
+/* SINGLE-NUMBER WIDTH, and it means single: this dial holds "2", "2.5", "33.3" — never a
+   batch weight — so it hugs the digits actually typed instead of reserving a slab's worth
+   of ground for them. The one field in the app that still sizes to content: everywhere
+   else a steady width keeps a COLUMN of figures aligned, and here there is no column, just
+   one number with its unit beside it.
+   Scoped through .water-method to OUTRANK .figure-field.input, which is declared later in
+   this file and would otherwise win the tie and hand this dial the full 6.5rem slab. */
+.water-method .water-method__input.input {
   width: 4.4rem;
   text-align: center;
+}
+
+@supports (field-sizing: content) {
+  .water-method .water-method__input.input {
+    field-sizing: content;
+    width: auto;
+    /* One digit plus the slab's own padding — the floor an empty field rests at. */
+    min-width: calc(1ch + 1.1rem);
+    max-width: 100%;
+  }
 }
 
 /* The unit reads at the digits' own weight here — ": 1" is half the statement, not an
@@ -2347,8 +2367,11 @@ details[open] > .disclosure__summary::before {
   color: var(--text);
 }
 
+/* An out-of-range FIGURE goes accent, matching its dot — the two are one signal, and the
+   dot has always been accent. The amber stays on the "Too low" / "Too high" word beside
+   it, which is the caution, not the reading. */
 .property-bars__value--outside {
-  color: var(--warn);
+  color: var(--accent);
 }
 
 /* Value cluster on a property row: optional out-of-range verdict + the score, sharing
@@ -2370,11 +2393,28 @@ details[open] > .disclosure__summary::before {
 
 /* Zoned property meter: plain track = too-low / too-high, shaded = suggested range,
    stronger band = target, dot = current value. */
+/* The plot: the track, its scale row, and the value riding the marker above it. */
+.property-bars__plot {
+  position: relative;
+  padding-top: 1.5rem;
+}
+
+/* Centred over the dot it names. Absolute so it tracks the value's position on the
+   scale rather than sitting at a fixed end of the row. */
+.property-bars__plot > .property-bars__value {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .property-meter {
   position: relative;
-  height: 10px;
-  margin: 0.5rem 0 0.45rem;
-  background: var(--border);
+  height: 7px;
+  margin: 0 0 0.45rem;
+  background: var(--hairline);
   overflow: visible;
 }
 
@@ -2389,25 +2429,9 @@ details[open] > .disclosure__summary::before {
   background: var(--accent-soft);
 }
 
-/* The suggested range's edges, drawn as 1px ink ticks overhanging the track: the numbers
-   under the band name the bounds, and these mark exactly where on the track they sit. */
-.property-meter__band--suggested::before,
-.property-meter__band--suggested::after {
-  content: '';
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 1px;
-  background: var(--text);
-}
-
-.property-meter__band--suggested::before {
-  left: 0;
-}
-
-.property-meter__band--suggested::after {
-  right: 0;
-}
+/* No ink ticks at the band's edges: the numbers printed under those edges already name
+   the bounds, and on a 7px track a full-height rule read as a second marker competing
+   with the dot. */
 
 .property-meter__band--target {
   background: var(--accent-band);
@@ -2420,8 +2444,8 @@ details[open] > .disclosure__summary::before {
 .property-meter__marker {
   position: absolute;
   top: 50%;
-  width: 11px;
-  height: 11px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   background: var(--text);
   border: 2px solid var(--bg);
@@ -2816,7 +2840,9 @@ details[open] > .disclosure__summary::before {
    stack instead of overflowing when the column can't hold two. */
 .mold-sizer__picks {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  /* 8rem, not 11: the two picks belong side by side as drawn, and at 11rem the pair
+     collapsed to a stack inside the panel's own width. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
   gap: 0.7rem 0.9rem;
   margin: 0.85rem 0 0.6rem;
   padding-top: 0.75rem;
@@ -2852,16 +2878,47 @@ details[open] > .disclosure__summary::before {
   margin-top: 0.5rem;
 }
 
+/* Each dimension is a slab of its own, carrying its letter inside at the left and its
+   unit inside at the right — the digits sit between them, so the three cells read as one
+   instrument row instead of a wire of loose numbers and separators. */
 .dim-row__field {
+  flex: 1 1 0;
+  min-width: 6rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.4rem 0.55rem;
+  background: var(--slab);
   font-family: var(--font-mono);
   font-size: var(--label-size);
   letter-spacing: var(--label-track);
   text-transform: uppercase;
   color: var(--label);
   white-space: nowrap;
+}
+
+.dim-row__field:has(.input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.dim-row__letter {
+  flex: 0 0 auto;
+}
+
+/* The digits take the middle and push the unit to the right edge. */
+.dim-row__input.input {
+  flex: 1 1 2rem;
+  width: 2rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.dim-row__input.input:focus-visible {
+  outline: none;
 }
 
 /* The label's tracking and uppercase are for its single letter — both inherit, and
@@ -2880,9 +2937,14 @@ details[open] > .disclosure__summary::before {
   color: var(--caption);
 }
 
+/* "cm"/"in" are units, not labels: they keep their own casing against the field's
+   uppercase, which would otherwise print them "CM". */
 .dim-row__unit {
+  flex: 0 0 auto;
   font-family: var(--font-mono);
   font-size: 0.8rem;
+  letter-spacing: normal;
+  text-transform: none;
   color: var(--text-muted);
 }
 
@@ -2891,47 +2953,57 @@ details[open] > .disclosure__summary::before {
   margin-bottom: 0.5rem;
 }
 
+/* A micro-label over a full-width control — the shrinkage dial and the suggested-weight
+   answer both take this shape, rather than the label-left ledger row. */
+.mold-sizer__stack,
+.mold-sizer__answer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.mold-sizer__wide-figure {
+  width: 100%;
+}
+
 /* The block's answer: micro-label over the suggested weight, Apply beside it, split from
    the inputs by the block's last hairline. */
+/* The answer row: the filled slab takes the width, Apply holds the right edge. */
 .mold-sizer__result {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.65rem 0.9rem;
-  margin-top: 0.85rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--hairline);
+  align-items: stretch;
+  gap: 0.45rem;
 }
 
+/* THE ONE INK-FILLED FIGURE. Every other dial sits on a tint; this one is filled, which
+   is how the block's answer outranks the dials that produced it without changing size. */
 .mold-sizer__figure {
+  flex: 1 1 8rem;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.2rem 0.5rem;
-  margin-top: 0.25rem;
-  font-family: var(--font-ui);
-  font-weight: 900;
-  font-stretch: 110%;
-  font-size: 1.6rem;
-  line-height: 1;
-  letter-spacing: -0.03em;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-height: 40px;
+  padding: 0.4rem 0.65rem;
+  background: var(--text);
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--text);
+  color: var(--bg);
 }
 
-/* The figure never breaks mid-number; the oil-share caption wraps under it when tight. */
+/* The figure never breaks mid-number. */
 .mold-sizer__figure-value {
   white-space: nowrap;
 }
 
-.mold-sizer__figure-caption {
-  font-family: var(--font-mono);
-  font-weight: 400;
-  font-stretch: normal;
-  font-size: 0.72rem;
-  letter-spacing: normal;
-  color: var(--caption);
+/* On ink the unit steps down and softens, the same relationship it has on a tint. */
+.mold-sizer__figure-unit {
+  font-size: 0.8rem;
+  opacity: 0.65;
 }
 
 /* ── Pricing & profit ─────────────────────────────────────────────────── */

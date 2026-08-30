@@ -6,7 +6,7 @@ import {
   type MoldSizerInput,
   suggestOilGramsFromMoldSizer,
   wasteFactorExceedsMax } from '../lib/moldSizer';
-import { formatWeight, WEIGHT_UNITS } from '../lib/weightUnits';
+import { formatWeightParts, WEIGHT_UNITS } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 import { LedgerRow } from './LedgerRow';
 import { SegRadioGroup } from './SegRadioGroup';
@@ -28,26 +28,29 @@ type MoldSizerPanelProps = {
 function DimField({
   letter,
   name,
+  unit,
   value,
   onValueChange,
 }: {
   letter: string;
   name: string;
+  unit: string;
   value: string;
   onValueChange: (value: string) => void;
 }) {
   return (
     <label className="dim-row__field">
-      {letter}
+      <span className="dim-row__letter" aria-hidden="true">{letter}</span>
       <input
         type="number"
-        className="input figure-field"
+        className="input figure-field dim-row__input"
         aria-label={name}
         min={0}
         step={0.1}
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
       />
+      <span className="dim-row__unit" aria-hidden="true">{unit}</span>
     </label>
   );
 }
@@ -62,17 +65,21 @@ function ShrinkageRow({
   onChange: (input: MoldSizerInput) => void;
 }) {
   return (
-    <LedgerRow
-      label="Shrinkage / waste"
-      unit="%"
-      input={{
-        min: 0,
-        max: MAX_WASTE_FACTOR_PERCENT,
-        step: 1,
-        value: input.wasteFactorPercent,
-        onChange: (e) => onChange({ ...input, wasteFactorPercent: e.target.value }),
-      }}
-    />
+    <label className="mold-sizer__stack">
+      <span className="micro-label">Shrinkage / waste</span>
+      <span className="ledger__figure mold-sizer__wide-figure">
+        <input
+          type="number"
+          className="input figure-field"
+          min={0}
+          max={MAX_WASTE_FACTOR_PERCENT}
+          step={1}
+          value={input.wasteFactorPercent}
+          onChange={(e) => onChange({ ...input, wasteFactorPercent: e.target.value })}
+        />
+        <span className="ledger__unit">%</span>
+      </span>
+    </label>
   );
 }
 
@@ -152,9 +159,6 @@ export function MoldSizerPanel({
               />
             </div>
           </div>
-          <p className="inline-note">
-            For irregular molds, fill with water and measure volume, or weigh a test pour.
-          </p>
           <div className="mold-sizer__dims">
             <span className="micro-label">Mold dimensions</span>
             <div className="dim-row">
@@ -163,13 +167,14 @@ export function MoldSizerPanel({
                   <DimField
                     letter="R"
                     name={dimName('Radius')}
+                    unit={dimensionUnit}
                     value={input.radius}
                     onValueChange={(v) => onChange({ ...input, radius: v })}
                   />
-                  <span className="dim-row__sep" aria-hidden="true">×</span>
                   <DimField
                     letter="H"
                     name={dimName('Height')}
+                    unit={dimensionUnit}
                     value={input.height}
                     onValueChange={(v) => onChange({ ...input, height: v })}
                   />
@@ -179,28 +184,34 @@ export function MoldSizerPanel({
                   <DimField
                     letter="L"
                     name={dimName('Length')}
+                    unit={dimensionUnit}
                     value={input.length}
                     onValueChange={(v) => onChange({ ...input, length: v })}
                   />
-                  <span className="dim-row__sep" aria-hidden="true">×</span>
                   <DimField
                     letter="W"
                     name={dimName('Width')}
+                    unit={dimensionUnit}
                     value={input.width}
                     onValueChange={(v) => onChange({ ...input, width: v })}
                   />
-                  <span className="dim-row__sep" aria-hidden="true">×</span>
                   <DimField
                     letter="H"
                     name={dimName('Height')}
+                    unit={dimensionUnit}
                     value={input.height}
                     onValueChange={(v) => onChange({ ...input, height: v })}
                   />
                 </>
               )}
-              <span className="dim-row__unit">{dimensionUnit}</span>
             </div>
           </div>
+          {/* The caption reads AFTER the fields it qualifies: it tells you what to do when
+              the mold has no length and width to type, which only means something once
+              you have seen the boxes asking for them. */}
+          <p className="inline-note">
+            For irregular molds, fill with water and measure volume, or weigh a test pour.
+          </p>
         </>
       )}
 
@@ -241,32 +252,41 @@ export function MoldSizerPanel({
         </p>
       )}
       {applicableOilGrams !== null && (
-        <div className="mold-sizer__result">
-          <div>
-            <span className="micro-label">Suggested oil weight</span>
-            <div className="mold-sizer__figure">
+        /* The block's answer, stated as the one INK-FILLED slab in the app: this figure is
+           what the whole sizer exists to produce, and filling it is how it outranks the
+           dials that fed it without needing a bigger type size. Apply sits beside it, the
+           oil share it assumed reads underneath. */
+        <div className="mold-sizer__answer">
+          <span className="micro-label">Suggested oil weight</span>
+          <div className="mold-sizer__result">
+            <span className="mold-sizer__figure">
               <span className="mold-sizer__figure-value">
-                {formatWeight(suggestedGrams!, weightUnit)}
+                {formatWeightParts(suggestedGrams!, weightUnit).value}
               </span>
-              <span className="mold-sizer__figure-caption">
-                (using{' '}
-                {oilBatchFraction !== null
-                  ? `${Math.round(oilBatchFraction * 100)}%`
-                  : `${Math.round(DEFAULT_OIL_BATCH_FRACTION * 100)}%`}{' '}
-                oil share)
+              <span className="mold-sizer__figure-unit">
+                {formatWeightParts(suggestedGrams!, weightUnit).unit}
               </span>
-            </div>
+            </span>
+            {applicableOilGrams > 0 && (
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => onApply(applicableOilGrams)}
+              >
+                Apply to batch
+              </button>
+            )}
           </div>
           {applicableOilGrams <= 0 ? (
             <p className="inline-note inline-note--warn">Suggested oil weight is too small to apply.</p>
           ) : (
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={() => onApply(applicableOilGrams)}
-            >
-              Apply to batch
-            </button>
+            <p className="inline-note">
+              Using{' '}
+              {oilBatchFraction !== null
+                ? `${Math.round(oilBatchFraction * 100)}%`
+                : `${Math.round(DEFAULT_OIL_BATCH_FRACTION * 100)}%`}{' '}
+              oil share.
+            </p>
           )}
         </div>
       )}
