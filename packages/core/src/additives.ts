@@ -201,6 +201,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'trace',
   },
   {
+    // Oils stage per LS:2991 (see the clay entry below — one line covers both).
     id: 'charcoal',
     name: 'Charcoal',
     typicalLow: 0.1,
@@ -252,6 +253,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // (it is in the oils database, and the jojoba_superfat_note insight still covers it),
     // not dosed outside the lye math. Legacy saved lines with catalogId 'jojoba' load as
     // custom rows (normalizeAdditiveLine clears unknown catalog ids).
+    // The oils stage is SOURCED, not inherited: LS asks for adsorptive/absorptive
+    // additives — clays and charcoal alike — to go into the oils at the very start of the
+    // process (LS:2991), which is what the base stage already does, so no LS override is
+    // needed. Charcoal's entry above answers to the same line.
     id: 'clay',
     name: 'Clay (bentonite, kaolin)',
     typicalLow: 0.1,
@@ -305,6 +310,14 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // Hydrolyzed silk — dissolved into the lye water, reported to add slip/sheen to lather.
+    //
+    // DELIBERATELY BELOW the LS source's own figure, which is why this carries no LS
+    // override. That source puts supplier rates "often 1–5%" and adds silk to the lye
+    // solution, but warns in the same breath that too high a concentration streaks, that
+    // these proteins can cloud the soap, and that a VERY SMALL amount is what gives the
+    // silky feel (LS:3060). 0.25–1% is that caution expressed as a range; the 1–5% is a
+    // generic supplier envelope the source qualifies rather than endorses for liquid soap.
+    // Do not "correct" this upward to 1–5 without answering the streaking clause.
     id: 'silk',
     name: 'Silk (hydrolyzed)',
     typicalLow: 0.25,
@@ -520,10 +533,24 @@ export function catalogEntriesForProcess(
   return ADDITIVE_CATALOG.filter((entry) => isAdditiveOfferedFor(entry, process));
 }
 
+/**
+ * A one-press starting set for lather. It names WHAT to add and HOW MUCH, and deliberately
+ * does NOT name a stage: each ingredient is staged by its own per-process default, resolved
+ * through effectiveCatalogEntry at apply time.
+ *
+ * It used to carry a hardcoded stage per item, which happened to equal the CP default for
+ * all three — so the pack agreed with the catalog in cold process and quietly disagreed with
+ * it everywhere an override existed. In liquid soap that meant the pack dropped sugar at
+ * trace while the LS catalog stages it into the oils, since a hot lye solution is what
+ * browns it (LS:2667, LS:1069) — the one path that bypassed the per-process audit.
+ *
+ * 1% clears every process's typical range for all three (LS: sugar 1–6, chelator 1–2, cetyl
+ * alcohol 1–3), so the dose stays one number.
+ */
 export const LATHER_SUPPORT_PACK = [
-  { catalogId: 'sugar-sorbitol', percentOfOil: 1, stage: 'trace' as const },
-  { catalogId: 'chelator', percentOfOil: 1, stage: 'lye' as const },
-  { catalogId: 'cetyl-alcohol', percentOfOil: 1, stage: 'trace' as const },
+  { catalogId: 'sugar-sorbitol', percentOfOil: 1 },
+  { catalogId: 'chelator', percentOfOil: 1 },
+  { catalogId: 'cetyl-alcohol', percentOfOil: 1 },
 ] as const;
 
 export function catalogEntryById(id: string): AdditiveCatalogEntry | undefined {

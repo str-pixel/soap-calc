@@ -30,10 +30,27 @@ describe('additives', () => {
     expect(parsePercentOfOil('1.5')).toBe(1.5);
   });
 
-  it('ships lather support pack at 1% each', () => {
+  it('ships lather support pack at 1% each, and names no stage of its own', () => {
     expect(LATHER_SUPPORT_PACK).toHaveLength(3);
     expect(LATHER_SUPPORT_PACK.every((item) => item.percentOfOil === 1)).toBe(true);
     expect(ADDITIVE_CATALOG.some((e) => e.id === 'chelator')).toBe(true);
+    // The pack says what and how much; WHEN belongs to each ingredient's per-process
+    // default. A stage here would be a fourth opinion about staging that no audit covers,
+    // and it silently outranked the LS defaults for as long as it existed.
+    for (const item of LATHER_SUPPORT_PACK) {
+      expect(item).not.toHaveProperty('stage');
+    }
+    // Its dose has to sit inside every offering process's range, or one press lands a line
+    // the panel immediately flags as out of the typical band.
+    for (const item of LATHER_SUPPORT_PACK) {
+      const entry = catalogEntryById(item.catalogId)!;
+      for (const process of ['cp', 'hp', 'ls'] as const) {
+        if (!isAdditiveOfferedFor(entry, process)) continue;
+        const eff = effectiveCatalogEntry(entry, process);
+        expect(item.percentOfOil, `${entry.name} in ${process}`).toBeGreaterThanOrEqual(eff.typicalLow);
+        expect(item.percentOfOil, `${entry.name} in ${process}`).toBeLessThanOrEqual(eff.typicalHigh);
+      }
+    }
   });
 
   it('has unique catalog ids and coherent dose ranges', () => {

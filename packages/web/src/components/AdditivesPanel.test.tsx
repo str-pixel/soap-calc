@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ADDITIVE_CATALOG } from '@soap-calc/core';
+import { ADDITIVE_CATALOG, catalogEntryById, effectiveCatalogEntry } from '@soap-calc/core';
 import { AdditivesPanel } from './AdditivesPanel';
 import type { AdditiveLine } from '../lib/recipe';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
@@ -690,5 +690,55 @@ describe('the dose basis rides the amount, one control per question', () => {
     // stage (where it goes). Removing either would cost a real choice.
     expect(screen.getByLabelText('Dose mode for oat milk')).toBeTruthy();
     expect(screen.getByRole('radiogroup', { name: 'Add at for oat milk' })).toBeTruthy();
+  });
+});
+
+// The Lather support pack used to hardcode one stage per ingredient. Those stages equalled
+// the CP defaults, so the pack agreed with the catalog in cold process and silently
+// disagreed with it wherever a per-process override existed — dropping sugar at trace in
+// liquid soap while the LS catalog stages it into the oils (LS:2667, LS:1069). The pack
+// says what and how much; the catalog says when.
+describe('the lather support pack stages by process', () => {
+  const applyPack = (process: 'cp' | 'ls') => {
+    const onChange = vi.fn();
+    render(
+      <AdditivesPanel
+        additives={[]}
+        computed={[]}
+        weightUnit="g"
+        process={process}
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /lather support/i }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const lines = onChange.mock.calls[0][0] as Array<{
+      catalogId: string;
+      addAt: string;
+      amount: string;
+      basis: string;
+      unit: string;
+    }>;
+    cleanup();
+    return new Map(lines.map((l) => [l.catalogId, l]));
+  };
+
+  it('drops sugar into the oils in LS, and at trace in CP', () => {
+    expect(applyPack('ls').get('sugar-sorbitol')!.addAt).toBe('oils');
+    expect(applyPack('cp').get('sugar-sorbitol')!.addAt).toBe('trace');
+  });
+
+  it('gives every packed line the same stage a hand-pick would', () => {
+    for (const process of ['cp', 'ls'] as const) {
+      const packed = applyPack(process);
+      for (const [catalogId, line] of packed) {
+        const expected = effectiveCatalogEntry(catalogEntryById(catalogId)!, process);
+        expect(line.addAt, `${catalogId} in ${process}`).toBe(expected.defaultStage);
+        expect(line.basis).toBe(expected.doseBasis ?? 'oil');
+        expect(line.unit).toBe(expected.doseUnit ?? 'percent');
+        // The dose the pack ships, unchanged by any of this.
+        expect(line.amount).toBe('1');
+      }
+    }
   });
 });

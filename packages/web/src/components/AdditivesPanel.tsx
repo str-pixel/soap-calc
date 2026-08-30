@@ -179,15 +179,20 @@ export const AdditivesPanel = memo(function AdditivesPanel({
       if (existingIds.has(item.catalogId)) return [];
       const entry = catalogEntryById(item.catalogId);
       if (!entry) return [];
+      // Stage from the ingredient's own per-process default, not from the pack: the pack
+      // says what and how much, the catalog says when, and only the catalog was audited
+      // per process. Same resolution a hand-picked line gets from the type select below,
+      // so one press and three picks land the same recipe.
+      const forProcess = resolve(entry)!;
       return [
         {
           key: newAdditiveKey(),
           catalogId: entry.id,
           name: entry.name,
           amount: String(item.percentOfOil),
-          basis: 'oil',
-          unit: 'percent',
-          addAt: item.stage,
+          basis: forProcess.doseBasis ?? 'oil',
+          unit: forProcess.doseUnit ?? 'percent',
+          addAt: forProcess.defaultStage,
         },
       ];
     });
