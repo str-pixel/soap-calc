@@ -73,7 +73,7 @@ const ADDITIVE_STAGE_CELLS: Partial<Record<AdditiveStage, string>> = {
  * order of operations, so both notes say why you would pick them. */
 const ADDITIVE_STAGE_NOTES: Record<AdditiveStage, string> = {
   lye: 'Dissolved in the lye water before it meets the oils. Chelators are made here — citric acid becomes citrate in the lye solution. A fresh lye solution is hot enough to brown sugars.',
-  oils: 'Stirred into the warm oils before the lye goes in. Preferred for sugar, which browns less here than in a hot lye solution; salt dissolves in either.',
+  oils: 'Stirred into the warm oils before the lye goes in. Preferred for sugar, which browns less here than in a hot lye solution. Salt can go either way — stirred into the oils, or dissolved in the lye water.',
   trace: 'Blended in once the batter has emulsified.',
   top: 'Onto the surface after pouring — decoration, not part of the batter.',
   after_cook: 'Stirred in after the cook, once saponification is finished.',
