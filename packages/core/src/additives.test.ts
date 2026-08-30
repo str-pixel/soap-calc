@@ -630,3 +630,51 @@ describe('entries the LS source never names are not offered there', () => {
     expect(effectiveCatalogEntry(entry, 'ls').defaultStage).toBe('oils');
   });
 });
+
+describe('every additive carries its own incorporation note', () => {
+  // The typical range answers HOW MUCH; the note answers HOW — dissolve it first, melt the
+  // flakes, hydrate the gum in glycerin, match the polysorbate to the oil. The app's own
+  // words throughout: the sources are read for their facts and numbers, never their
+  // sentences, and the wording was measured against both LS extractions before shipping.
+  const EXEMPT = new Set([
+    // Offered in LS but with no liquid-soap guidance in any source this app follows, so
+    // there is nothing to say that would not be invented. Listed rather than silently
+    // skipped: if a source turns up, they get notes.
+    'oatmeal',
+    'loofah',
+    // CP/HP only — out of scope for the LS audit that produced these notes.
+    'cetyl-alcohol',
+    'titanium-dioxide',
+    'yogurt',
+  ]);
+
+  it.each(catalogEntriesForProcess('ls').map((e) => e.id))('%s explains how to add it', (id) => {
+    if (EXEMPT.has(id)) return;
+    const note = catalogEntryById(id)!.note;
+    expect(note, `${id} has no note`).toBeTruthy();
+    // Long enough to carry a method, not a label.
+    expect(note!.length).toBeGreaterThan(60);
+  });
+
+  it('never states a DOSE in prose — the range above the note is the only one', () => {
+    // A dose written into prose is a second source of truth for the same number and drifts
+    // from typicalLow/High the first time either moves. The range renders directly above.
+    //
+    // One exemption, and it is not a dose: sodium lactate's note quotes the STRENGTH of the
+    // liquid it is sold as, because a maker holding a weaker solution than the ranges assume
+    // would under-dose without knowing it. That figure describes the bottle, not the recipe,
+    // so it cannot drift from anything this entry holds.
+    const STRENGTH_NOT_DOSE = new Set(['sodium-lactate']);
+    for (const entry of ADDITIVE_CATALOG) {
+      if (!entry.note || STRENGTH_NOT_DOSE.has(entry.id)) continue;
+      const percents = entry.note.match(/\d+(\.\d+)?\s?%/g) ?? [];
+      expect(percents, `${entry.id} hardcodes a percentage in prose`).toEqual([]);
+    }
+    // And the exemption stays honest: the quoted strength must not equal either end of its
+    // own dose range, which is the collision the rule above exists to prevent.
+    const sl = catalogEntryById('sodium-lactate')!;
+    for (const p of sl.note!.match(/\d+(\.\d+)?(?=\s?%)/g) ?? []) {
+      expect([sl.typicalLow, sl.typicalHigh]).not.toContain(Number(p));
+    }
+  });
+});

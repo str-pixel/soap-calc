@@ -92,6 +92,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // statement; it was HP's.
       ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
     },
+    note:
+      'Dissolve it first; it can join either the lye water or the oils, so long as it goes in before dilution. Fresh lye and heat darken sugar, so the identical dose can finish anywhere from cream to caramel; liquid soap sends it to the oils for exactly that reason, since the lye solution is the hotter, harsher route.',
   },
   {
     // Glycerin, AFTER DILUTION ONLY. The source gives four timings — in the lye solution
@@ -131,7 +133,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     stages: ['after_cook'],
     processes: ['ls'],
-    note: 'Here it is an emollient and humectant only — too late to speed the cook or the dilution. For the cook, add it with the liquids instead: swapping part of the lye water for it puts its weight in the paste and takes it off the dilution water. This line adds to the bottle rather than replacing water, so if you meant it as part of your dilution liquid, pour that much less.',
+    note: 'Here it works as emollient and humectant only — too late to speed the cook or the dilution. For the cook, add it with the liquids instead: swapping part of the lye water for it puts its weight in the paste and takes it off the dilution water. This line adds to the bottle rather than replacing water, so if you meant it as part of your dilution liquid, pour that much less.',
   },
   {
     // Sorbitol — sugar alcohol with a stronger lather effect than sucrose; same overheat
@@ -153,6 +155,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // (LS:1069). Trace was the CP stage inherited; LS puts its sugars in early.
       ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
     },
+    note:
+      'A sugar alcohol, dosed and timed like the other sugars: into the lye solution or the oils, before dilution. It dissolves readily.',
   },
   {
     id: 'chelator',
@@ -166,6 +170,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // supplier's own rate there, which is why only this range moves.
       ls: { typicalLow: 1, typicalHigh: 2 },
     },
+    note:
+      'Stirred into the lye solution. In hard water the dissolved metals are what turn soap into scum and speed rancidity; this binds them so they cannot. Citrate and gluconate are the common forms — if you are starting from citric acid, use that entry instead, since the alkali has to convert it first.',
   },
   {
     // Acid form of the citrate chelator: dissolved in the lye water it reacts with the
@@ -192,6 +198,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       naohPerGram: 3 * CITRIC_MOL_PER_GRAM * NAOH_MOLAR_MASS,
       kohPerGram: 3 * CITRIC_MOL_PER_GRAM * KOH_MOLAR_MASS,
     },
+    note:
+      'Goes into the lye solution, where the alkali turns it into citrate — the citrate is the chelator, not the acid. It consumes some of that alkali on the way and the calculator has already replaced it, so the superfat you asked for is the one you get. It will not bring a finished soap\'s pH down — nothing at this dose will.',
   },
   {
     // CP/HP ONLY. The LS text never names it — one of just two entries in this catalog
@@ -218,6 +226,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.1,
     typicalHigh: 2,
     defaultStage: 'oils',
+    note:
+      'Stir it through the oils right at the start, so it is thoroughly wetted before the cook. It never dissolves: in a thin soap it drifts to the bottom over time, and a thicker one holds it up longer. Its own opacity hides any settling that does happen.',
   },
   {
     id: 'oatmeal',
@@ -240,6 +250,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // entry had no LS voice at all and was serving CP's single-point 1%.
       ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
     },
+    note:
+      'Honey is mostly sugar in water, so treat it as one of the sugars: in before any dilution. It browns in fresh lye and can push a batch hotter, so the oils are the gentler route.',
   },
   {
     id: 'fragrance',
@@ -258,6 +270,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // clouding risk noted at LS:2953).
       ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution', defaultStage: 'after_cook' },
     },
+    note:
+      'Dosed against the finished, diluted soap rather than the oil weight — a bottle of liquid soap is mostly water, so an oil-weight percentage would badly overshoot. It goes in once the cook is over, to soap already diluted and cooled. Liquid soap carries far less scent than a bar needs. Your supplier\'s skin-safe limit overrides this range.',
   },
   {
     // Jojoba is deliberately NOT in this catalog: it belongs in the saponified oil blend
@@ -273,6 +287,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.1,
     typicalHigh: 2,
     defaultStage: 'oils',
+    note:
+      'Into the oils right at the start, like charcoal — these powders adsorb rather than dissolve, and wetting them early is what keeps them evenly spread. A thicker soap suspends them longer; in a thin one they settle out with time.',
   },
   {
     // Table salt (NaCl) as a hardener, dissolved in the lye water. Kept low: past ~1%
@@ -301,6 +317,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
         hazards: ['past the salt curve more salt thins, not thickens'],
       },
     },
+    note:
+      'Dissolve it first — in the lye water before the alkali goes in, or into the oils. To thicken soap that is already diluted, make a solution of roughly one part salt to two parts water and stir it in a little at a time, watching as you go: every recipe has its own turning point, and past it more salt thins the soap rather than thickening it.',
   },
   {
     // Sodium lactate — humectant + hardener, water-soluble, added to the lye water.
@@ -318,6 +336,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // source envelope is 1–10% of oils (liquid form, ~60–70% solution).
       ls: { typicalLow: 3, typicalHigh: 5, defaultStage: 'oils' },
     },
+    note:
+      'Usually sold as a liquid at around 60% strength or better, and the percentages here assume that liquid rather than the dry powder — check what your bottle actually is. It can join the lye water, or go straight into the oils.',
   },
   {
     // Hydrolyzed silk — dissolved into the lye water, reported to add slip/sheen to lather.
@@ -334,6 +354,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.25,
     typicalHigh: 1,
     defaultStage: 'lye',
+    note:
+      'Buy a water-soluble grade and dissolve it into the lye water. Keep the amount small — these proteins can cloud a soap you wanted clear, and too much leaves streaks. If clarity matters, prove it on a small batch first.',
   },
   {
     // EDTA — synthetic chelator, added to the lye water alongside/instead of citrate.
@@ -356,6 +378,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.1,
     typicalHigh: 0.5,
     defaultStage: 'lye',
+    note:
+      'A chelator for hard water, like citrate. No liquid-soap figure of its own appears in the sources behind this app — the guidance there is to follow your supplier\'s stated rate, and the range shown is the ordinary cosmetic envelope rather than a measured recommendation.',
   },
   {
     // BHT — antioxidant, NOT a preservative: it slows the oxidation of unsaponified oil
@@ -371,6 +395,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.1,
     typicalHigh: 0.1,
     defaultStage: 'oils',
+    note:
+      'An antioxidant, not a preservative: it slows the oxidation that turns leftover oil rancid and spots the soap, and does nothing whatever about microbes. This dose is the one an antioxidant trial actually measured; several craft books print ten times it, which is above normal cosmetic use.',
   },
   {
     // Rosemary oleoresin extract — the natural-route antioxidant. Rosmarinic acid is the
@@ -383,6 +409,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalLow: 0.1,
     typicalHigh: 0.2,
     defaultStage: 'oils',
+    note:
+      'Rosemary extract, doing the same job as BHT — slowing rancidity in the oil that never became soap. It is not a preservative and will not hold back microbial growth.',
   },
   {
     // Titanium dioxide — mineral whitener, dispersed into the oils before mixing.
@@ -412,6 +440,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     doseUnit: 'ppt',
     defaultStage: 'oils',
     hazards: ['can seize'],
+    note:
+      'Clove or cinnamon oil, and note the unit: this one is measured in parts per thousand of your oils, not percent. Stir it into the warmed oils. It reacts with the alkali on contact, which is what speeds the emulsion — and why, at this dose, it will not scent the finished soap.',
   },
   {
     // Loofah — fibrous exfoliant, ground and blended into the oils.
@@ -450,6 +480,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // than a quotation: the source states the ounces, the percentage is ours.
       ls: { typicalLow: 1.5, typicalHigh: 3 },
     },
+    note:
+      'A little soap you have already made, stirred into the hot oils to give the new emulsion something to build on. Liquid soap or a grated bar both work. Expect some bubbling or foaming when it goes in; that is normal.',
   },
   {
     // Yogurt — stirred in after cook/dilution in fluid HP; its water content deducts from
@@ -476,6 +508,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     doseBasis: 'solution',
     processes: ['ls'],
+    note:
+      'Hydrate it before it touches the soap: stir it into about its own weight of glycerin and leave it ten minutes or so, then work that slurry into diluted, cooled soap in small additions. Added dry it clumps.',
   },
   {
     // Hydroxyethylcellulose (HEC) — LS-only thickener, same after-dilution dosing as guar
@@ -493,6 +527,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     doseBasis: 'solution',
     processes: ['ls'],
+    note:
+      'Hydrate it first, in stages: mix it into glycerin until it is fully wetted, rest it five to ten minutes, then let it down with water — roughly one part powder to three of glycerin and three of water — and stir that into diluted, cooled soap a little at a time. It hydrates faster in warmth and in alkali.',
   },
   {
     // Pearlizer (glycol stearate/distearate) — melted flakes, dosed as % of the finished
@@ -510,6 +546,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     doseBasis: 'solution',
     processes: ['ls'],
+    note:
+      'Comes as white flakes and has to be melted before it goes into the soap. Beyond the pearly sheen it lends a little opacity, body and conditioning feel. Dosed against the finished solution, and added once the soap is diluted.',
   },
   {
     // Water-dispersible shea — self-emulsifying emollient/opacifier, % of the finished
@@ -521,6 +559,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     doseBasis: 'solution',
     processes: ['ls'],
+    note:
+      'The water-dispersible grade, not ordinary shea butter — that is the entire point: it blends into diluted soap instead of floating as a separate layer. Add it after dilution, and dose it against the finished solution.',
   },
   {
     // Sulfonated castor oil — the one oil that disperses in water, so it conditions a
@@ -534,6 +574,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     doseBasis: 'solution',
     processes: ['ls'],
+    note:
+      'Sulfated castor oil, which disperses through water rather than sitting on top of it, so it can go into finished soap without separating or layering. It is not saponifiable, so add it after dilution: it stays an oil instead of becoming more soap.',
   },
   {
     // Polysorbate 80 — the LS post-cook-superfat emulsifier: warmed and premixed 1:1 with
@@ -545,6 +587,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 3,
     defaultStage: 'after_cook',
     processes: ['ls'],
+    note:
+      'The emulsifier that keeps a post-cook superfat from separating back out. Match it to the oil by weight, one to one, warm the two together and mix them before that blend goes into the soap.',
   },
 ] as const;
 
