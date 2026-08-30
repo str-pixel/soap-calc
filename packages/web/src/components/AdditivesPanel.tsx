@@ -340,32 +340,34 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                   </label>
                 )}
                 </div>
-                {/* The amount is a figure, so it takes the figure treatment — the same one
-                    an oil's weight takes one panel up. Dose mode and stage are enums and
-                    keep their boxes; the ink rule is reserved for numerics. */}
-                <div className="additive-list__amount">
-                  <label className="recipe-table__figure">
-                    Amount
-                    <span className="ledger__figure">
-                      <input
-                        type="number"
-                        className="input figure-field"
-                        min={0}
-                        max={line.unit === 'ppt' ? 1000 : 100}
-                        step={0.1}
-                        // No placeholder: the unit is a visible suffix inside the slab now,
-                        // so a "%" ghost in an empty one just read "% %".
-                        value={line.amount}
-                        onChange={(e) => updateLine(line.key, { amount: e.target.value })}
-                        aria-label={`Amount for ${rowName}`}
-                      />
-                      <span className="ledger__unit">{line.unit === 'ppt' ? 'ppt' : '%'}</span>
-                    </span>
-                  </label>
-                </div>
-                <div className="additive-list__dose">
-                <label className="field">
-                  <span className="sr-only">Dose mode</span>
+                {/* Amount and dose are ledger rows — the panel's own label column, so a row
+                    reads down the left edge (AMOUNT / DOSE / ADDS) instead of each sub-row
+                    finding its own. The amount is a figure and takes the figure treatment,
+                    the same one an oil's weight takes one panel up; dose and stage are enums
+                    and keep their boxes, since the ink slab is reserved for numerics. */}
+                <label className="ledger__row additive-list__amount">
+                  <span className="micro-label">Amount</span>
+                  <span className="ledger__figure">
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      max={line.unit === 'ppt' ? 1000 : 100}
+                      step={0.1}
+                      // No placeholder: the unit is a visible suffix inside the slab now,
+                      // so a "%" ghost in an empty one just read "% %".
+                      value={line.amount}
+                      onChange={(e) => updateLine(line.key, { amount: e.target.value })}
+                      aria-label={`Amount for ${rowName}`}
+                    />
+                    <span className="ledger__unit">{line.unit === 'ppt' ? 'ppt' : '%'}</span>
+                  </span>
+                </label>
+                <label className="ledger__row">
+                  {/* Visible now, in the label column: the dose basis was the one control on
+                      the row with nothing but its own current value to say what it was. The
+                      aria-label stays per-row, so the accessible name is unchanged. */}
+                  <span className="micro-label">Dose</span>
                   <select
                     className="input"
                     aria-label={`Dose mode for ${rowName}`}
@@ -404,12 +406,11 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                     {stageNote(line.addAt, process)}
                   </p>
                 </div>
-                </div>
                 <div className="additive-list__foot">
-                <span className="micro-label">Adds</span>
-                <div className="additive-list__grams" aria-live="polite">
-                  {row ? formatWeight(row.grams, weightUnit) : '—'}
-                </div>
+                  <span className="micro-label">Adds</span>
+                  <div className="additive-list__grams" aria-live="polite">
+                    {row ? formatWeight(row.grams, weightUnit) : '—'}
+                  </div>
                 </div>
                 {amountInvalid && (
                   <p className="additive-list__hint" role="alert">
