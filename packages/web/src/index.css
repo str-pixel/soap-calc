@@ -1283,7 +1283,6 @@ details[open] > .disclosure__summary::before {
   padding: 0.1rem 0.4rem;
 }
 
-
 /* ── Fields / inputs ──────────────────────────────────────────────────── */
 .field {
   display: flex;
@@ -2374,15 +2373,6 @@ details[open] > .disclosure__summary::before {
   color: var(--accent);
 }
 
-/* Value cluster on a property row: optional out-of-range verdict + the score, sharing
-   one baseline so the judgment reads as part of the number. */
-.property-bars__reading {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  white-space: nowrap;
-}
-
 .property-bars__status {
   font-family: var(--font-mono);
   font-size: var(--label-size);
@@ -2868,8 +2858,8 @@ details[open] > .disclosure__summary::before {
   margin-top: 0.85rem;
 }
 
-/* L × W × H on one wire: single-letter labels, × separators, the unit once at the end.
-   The full dimension names live on the inputs' aria-labels. */
+/* L × W × H on one wire: each dimension its own slab, carrying its letter and its unit
+   inside. The full dimension names live on the inputs' aria-labels. */
 .dim-row {
   display: flex;
   flex-wrap: wrap;
@@ -2883,7 +2873,11 @@ details[open] > .disclosure__summary::before {
    instrument row instead of a wire of loose numbers and separators. */
 .dim-row__field {
   flex: 1 1 0;
-  min-width: 6rem;
+  /* 5rem, measured, not guessed: at 6rem the three cells plus their gaps needed 317px in a
+     310px panel at a 1280px viewport, so H wrapped to a line of its own and — as the only
+     flex item on it — stretched the full width, which is the opposite of the one
+     instrument row this is. */
+  min-width: 5rem;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -2924,17 +2918,11 @@ details[open] > .disclosure__summary::before {
 /* The label's tracking and uppercase are for its single letter — both inherit, and
    .figure-field resets neither, so without this the dimension DIGITS would render
    tracked (and under-fit the ch-measured width floor, which excludes letter-spacing). */
+/* The letter's tracking and uppercase are for its single letter — both inherit, and
+   .figure-field resets neither, so without this the dimension DIGITS would render tracked. */
 .dim-row__field .input {
   letter-spacing: normal;
   text-transform: none;
-  /* Three slabs share a wire; the base slab width would push H off the row. */
-  width: 4.2rem;
-}
-
-.dim-row__sep {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--caption);
 }
 
 /* "cm"/"in" are units, not labels: they keep their own casing against the field's
@@ -2967,8 +2955,6 @@ details[open] > .disclosure__summary::before {
   width: 100%;
 }
 
-/* The block's answer: micro-label over the suggested weight, Apply beside it, split from
-   the inputs by the block's last hairline. */
 /* The answer row: the filled slab takes the width, Apply holds the right edge. */
 .mold-sizer__result {
   display: flex;

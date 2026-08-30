@@ -23,8 +23,8 @@ type MoldSizerPanelProps = {
 };
 
 /** One compact dimension cell: a single-letter visible label over the wire, the full name
- * as the accessible one — "L" reads fine beside "×" separators, but "Length (cm)" is what
- * a screen reader (and every locator) needs. */
+ * as the accessible one — "L" reads fine inside the slab, but "Length (cm)" is what a
+ * screen reader (and every locator) needs. */
 function DimField({
   letter,
   name,
@@ -102,6 +102,10 @@ export function MoldSizerPanel({
     suggestedGrams !== null ? Math.round(suggestedGrams) : null;
 
   const unitShort = WEIGHT_UNITS[weightUnit].short;
+  // One derivation for the answer's digits and its unit — two calls is how the pair
+  // would start disagreeing about rounding.
+  const suggestedParts =
+    suggestedGrams !== null ? formatWeightParts(suggestedGrams, weightUnit) : null;
   const dimensionUnit = input.useInches ? 'in' : 'cm';
   const dimName = (name: string) => `${name} (${dimensionUnit})`;
 
@@ -261,10 +265,10 @@ export function MoldSizerPanel({
           <div className="mold-sizer__result">
             <span className="mold-sizer__figure">
               <span className="mold-sizer__figure-value">
-                {formatWeightParts(suggestedGrams!, weightUnit).value}
+                {suggestedParts!.value}
               </span>
               <span className="mold-sizer__figure-unit">
-                {formatWeightParts(suggestedGrams!, weightUnit).unit}
+                {suggestedParts!.unit}
               </span>
             </span>
             {applicableOilGrams > 0 && (
