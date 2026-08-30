@@ -518,6 +518,16 @@ test('the additive amount stays a usable figure beside the widest dose basis', a
     await expect(amount, `the figure must stay visible at "${label}"`).toBeVisible();
     const w = await amount.evaluate((el) => el.getBoundingClientRect().width);
     expect(w, `the figure keeps room for "1000" at "${label}"`).toBeGreaterThan(40);
+    // Room for the ceiling is not room for the widest DOSE: the field takes decimals, so
+    // a five-character value is what the floor has to seat. At 3.4rem "1000" fit exactly
+    // and "999.9" lost a pixel off its leading digit — right-aligned, so it is the first
+    // digit that goes.
+    for (const value of ['1000', '999.9']) {
+      await amount.fill(value);
+      const clipped = await amount.evaluate((el) => el.scrollWidth - el.clientWidth);
+      expect(clipped, `"${value}" must not be clipped at "${label}"`).toBeLessThanOrEqual(0);
+    }
+    await amount.fill('');
   }
 
   // One dial, one unit: the basis sits inside the amount slab and nothing else states it.

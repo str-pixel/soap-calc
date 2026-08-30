@@ -1815,12 +1815,15 @@ details[open] > .disclosure__summary::before {
   width: auto;
 }
 
-/* And the figure keeps a floor of its own, so no basis label can squeeze it away again:
-   enough for "1000" (the ppt maximum) at the dial scale. */
+/* And the figure keeps a floor of its own, so no basis label can squeeze it away again.
+   Sized for the widest value a maker can actually type, not for the ceiling: "1000" (the
+   ppt maximum) fits 3.4rem exactly, but the field takes decimals, so "999.9" — and any
+   other five-character dose — shaved a pixel off its leading digit at the floor width,
+   which is the width in force in the two-column desktop layout. */
 .additive-list__amount .ledger__figure .figure-field.input {
   flex: 1 1 auto;
   width: auto;
-  min-width: 3.4rem;
+  min-width: 4rem;
 }
 
 .recipe-table__foot {
