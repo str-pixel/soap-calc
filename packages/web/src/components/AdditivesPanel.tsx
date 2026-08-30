@@ -296,19 +296,21 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                 <div className="additive-list__amount">
                   <label className="recipe-table__figure">
                     Amount
-                    <input
-                      type="number"
-                      className="input figure-field"
-                      min={0}
-                      max={line.unit === 'ppt' ? 1000 : 100}
-                      step={0.1}
-                      // No placeholder: the unit is a visible suffix after the field now, so
-                      // a "%" ghost inside an empty one just read "% %".
-                      value={line.amount}
-                      onChange={(e) => updateLine(line.key, { amount: e.target.value })}
-                      aria-label={`Amount for ${rowName}`}
-                    />
-                    {line.unit === 'ppt' ? 'ppt' : '%'}
+                    <span className="ledger__figure">
+                      <input
+                        type="number"
+                        className="input figure-field"
+                        min={0}
+                        max={line.unit === 'ppt' ? 1000 : 100}
+                        step={0.1}
+                        // No placeholder: the unit is a visible suffix inside the slab now,
+                        // so a "%" ghost in an empty one just read "% %".
+                        value={line.amount}
+                        onChange={(e) => updateLine(line.key, { amount: e.target.value })}
+                        aria-label={`Amount for ${rowName}`}
+                      />
+                      <span className="ledger__unit">{line.unit === 'ppt' ? 'ppt' : '%'}</span>
+                    </span>
                   </label>
                 </div>
                 <div className="additive-list__dose">

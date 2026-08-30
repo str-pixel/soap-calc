@@ -5,9 +5,27 @@ import { postCookSuperfatAllocated, type RecipeSettings, type WeightUnit } from 
 import { processOffers, type ProcessId } from '../lib/process';
 import { NEG_SUPERFAT_FLOOR } from '../lib/parseRecipeSettings';
 import { WATER_FIELDS, WATER_MODE_LABELS, waterModeChoicesFor } from '../lib/settingsFields';
+import { formatWeight } from '../lib/weightUnits';
 import { InfoTip } from './InfoTip';
 import { OilPicker } from './OilPicker';
+import { SegRadioGroup } from './SegRadioGroup';
 import { SplitLiquidPanel } from './SplitLiquidPanel';
+
+/* Cell text for the water-method seg. Each is a leading substring of its WATER_MODE_LABELS
+ * name ('Lye conc' ⊂ 'Lye concentration %'), which is what keeps Label-in-Name honest
+ * while the cells stay short enough for three to share one column. */
+const WATER_MODE_SEG_CELLS: Record<WaterMode, string> = {
+  percent_of_oils: '% of oils',
+  lye_concentration: 'Lye conc',
+  lye_water_ratio: 'Water : lye',
+};
+
+/* THE CELL AND THE FIELD IT SWAPS IN CANNOT SHARE A NAME. Picking "Lye concentration %"
+ * reveals an editable "Lye concentration %" right below it — two controls, one name, one
+ * panel, doing different jobs (choose the method / hold its value). The suffix keeps the
+ * visible cell text leading, so voice control still matches what is on screen. */
+const waterModeRadioName = (mode: WaterMode): string =>
+  `${WATER_MODE_LABELS[mode]} — water method`;
 
 // Upper bound for each water mode's drag slider — the typical working range, not the hard
 // input cap. The editable value readout keeps the field's real min/max, so out-of-range
@@ -140,6 +158,9 @@ type SuperfatWaterPanelProps = {
    * the water amount). See SplitLiquidPanel. */
   totalOilGrams: number;
   lyeGrams: number;
+  /** The water the current method comes to, from the view model — stated under the
+   * method's own field so the setting and its result read together. */
+  waterGrams: number;
   weightUnit: WeightUnit;
   waterSuggestion: SplitLiquidWaterSuggestion | null;
   lyeWaterStatus: LyeSolutionWaterStatus | null;
@@ -161,6 +182,7 @@ export function SuperfatWaterPanel({
   process,
   totalOilGrams,
   lyeGrams,
+  waterGrams,
   weightUnit,
   waterSuggestion,
   lyeWaterStatus,
@@ -271,23 +293,26 @@ export function SuperfatWaterPanel({
           value={settings.superfatPercent}
           onChange={(v) => setSettings((s) => ({ ...s, superfatPercent: v }))}
         />
-        <label className="field field--compact numbers-inputs__method">
-          <span>Water method</span>
-          <select
-            className="input"
-            aria-label="Water method"
+        {/* A mutually-exclusive pick, so it is a seg like every other one in the app —
+            the <select> it replaces was the last dropdown standing in for a choice of
+            three. Cells abbreviate; each is a LEADING SUBSTRING of the full label that
+            stays the accessible name, so what a voice-control user reads matches what the
+            control answers to (Label-in-Name, WCAG 2.5.3). */}
+        <div className="numbers-inputs__method">
+          <span className="micro-label">Water method</span>
+          <SegRadioGroup
+            label="Water method"
+            name="water-method"
+            preserveCase
+            options={waterModeChoicesFor(process).map((mode) => ({
+              value: mode,
+              cell: WATER_MODE_SEG_CELLS[mode],
+              name: waterModeRadioName(mode),
+            }))}
             value={settings.waterMode}
-            onChange={(e) =>
-              setSettings((s) => ({ ...s, waterMode: e.target.value as RecipeSettings['waterMode'] }))
-            }
-          >
-            {waterModeChoicesFor(process).map((mode) => (
-              <option key={mode} value={mode}>
-                {WATER_MODE_LABELS[mode]}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={(waterMode) => setSettings((s) => ({ ...s, waterMode }))}
+          />
+        </div>
         <SliderField
           label={waterField.label}
           valueLabel={waterField.label}
@@ -304,6 +329,17 @@ export function SuperfatWaterPanel({
             setSettings((s) => ({ ...s, [key]: v }));
           }}
         />
+        {/* WHAT THE RATIO ACTUALLY COMES TO. All three methods set water indirectly — a
+            ratio, a concentration, a share of oils — so the panel states the grams they
+            land on, and the maker can read the method against its result without hunting
+            for it in Results. Passed in from the view model, never recomputed here: a
+            second derivation is how this line would start contradicting the panel it
+            sits above. */}
+        {waterGrams > 0 && (
+          <p className="numbers-inputs__water">
+            water {formatWeight(waterGrams, weightUnit)}
+          </p>
+        )}
 
         {/* Split liquid — replaces part of the water with an alternative liquid (milk, beer,
             tea…), so it lives with the water controls. */}
@@ -411,23 +447,25 @@ export function SuperfatWaterPanel({
               + Add oil
             </button>
 
-            <label className="field field--compact numbers-inputs__method pcsf__method">
-              <span>Post-cook superfat method</span>
-              <select
-                className="input"
-                aria-label="Post-cook superfat method"
+            {/* The last two-way <select> in the app, now a seg like every other
+                mutually-exclusive pick. Each cell is a leading substring of its full
+                accessible name ('Subtract' ⊂ 'Subtract (reserve)'), keeping Label-in-Name
+                honest while the cells stay short enough to share a row. */}
+            <div className="pcsf__method">
+              <span className="micro-label">Post-cook superfat method</span>
+              <SegRadioGroup
+                label="Post-cook superfat method"
+                name="pcsf-method"
+                options={[
+                  { value: 'subtract', cell: 'Subtract', name: 'Subtract (reserve)' },
+                  { value: 'append', cell: 'Append', name: 'Append (add oil)' },
+                ]}
                 value={settings.postCookSuperfatMethod}
-                onChange={(e) =>
-                  setSettings((s) => ({
-                    ...s,
-                    postCookSuperfatMethod: e.target.value as 'append' | 'subtract',
-                  }))
+                onChange={(postCookSuperfatMethod) =>
+                  setSettings((s) => ({ ...s, postCookSuperfatMethod }))
                 }
-              >
-                <option value="subtract">Subtract (reserve)</option>
-                <option value="append">Append (add oil)</option>
-              </select>
-            </label>
+              />
+            </div>
             <p className="pcsf__method-help results-hint">
               {PCSF_METHOD_HELP[settings.postCookSuperfatMethod]}
             </p>

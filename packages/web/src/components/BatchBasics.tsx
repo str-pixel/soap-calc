@@ -53,12 +53,11 @@ export function BatchBasics({
         />
       </div>
 
-      {/* The panel's key figure: the number the whole recipe scales from, so it gets the
-          one louder rule (emphasis → .figure-field--key). */}
+      {/* The number the whole recipe scales from. It reads as the key figure from its
+          place at the head of the ledger — every dial is one size in this dialect. */}
       <LedgerRow
         label="Total oil"
         unit={weightUnitConfig.short}
-        emphasis
         input={{
           'aria-label': `Total oil (${weightUnitConfig.short})`,
           min: 0,

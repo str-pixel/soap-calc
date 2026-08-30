@@ -677,6 +677,7 @@ export default function App() {
               process={process}
               totalOilGrams={vm.totalOilGrams}
               lyeGrams={vm.result?.lyeWeightGrams ?? 0}
+              waterGrams={vm.result?.waterWeightGrams ?? 0}
               weightUnit={weightUnit}
               waterSuggestion={vm.waterSuggestion}
               lyeWaterStatus={vm.lyeWaterStatus}

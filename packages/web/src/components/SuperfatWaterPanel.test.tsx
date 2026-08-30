@@ -23,6 +23,7 @@ function Harness({
       process={process}
       totalOilGrams={1000}
       lyeGrams={140}
+      waterGrams={330}
       weightUnit="g"
       waterSuggestion={null}
       lyeWaterStatus={null}
@@ -67,7 +68,11 @@ test('Superfat allows a negative min only for LS', () => {
 test('changing the water method swaps the editable water-ratio field', () => {
   render(<Harness />);
   expect(screen.getByLabelText('Water % of oils')).toBeTruthy();
-  fireEvent.change(screen.getByLabelText('Water method'), { target: { value: 'lye_concentration' } });
+  // The method is a segmented radio group now, not a select — pick the cell by its
+  // accessible name. The "— water method" suffix is what keeps the CELL apart from the
+  // editable field it swaps in, which carries the bare label; asserting both here is the
+  // point of this test, so the two names must not collide.
+  fireEvent.click(screen.getByRole('radio', { name: 'Lye concentration % — water method' }));
   expect(screen.getByLabelText('Lye concentration %')).toBeTruthy();
   expect(screen.queryByLabelText('Water % of oils')).toBeNull();
 });
@@ -280,7 +285,7 @@ test('each method shows a plain-language explanation that changes with the selec
   render(<Harness process="hp" initial={ONE_PCSF} />);
   // Subtract is the default — its explanation is shown.
   expect(screen.getByText(/trims the lye/i)).toBeTruthy();
-  fireEvent.change(screen.getByLabelText('Post-cook superfat method'), { target: { value: 'append' } });
+  fireEvent.click(screen.getByRole('radio', { name: 'Append (add oil)' }));
   expect(screen.getByText(/on top after the cook/i)).toBeTruthy();
 });
 
@@ -313,10 +318,16 @@ test('Remove drops a post-cook superfat row', () => {
 
 test('the post-cook superfat method toggles, defaulting to subtract', () => {
   render(<Harness process="hp" initial={ONE_PCSF} />);
-  const select = screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement;
-  expect(select.value).toBe('subtract');
-  fireEvent.change(select, { target: { value: 'append' } });
-  expect((screen.getByLabelText('Post-cook superfat method') as HTMLSelectElement).value).toBe('append');
+  // A segmented radio pair now, not a select: "which cell is checked" is the state, and
+  // the group must still open on subtract.
+  const subtract = screen.getByRole('radio', { name: 'Subtract (reserve)' }) as HTMLInputElement;
+  const append = screen.getByRole('radio', { name: 'Append (add oil)' }) as HTMLInputElement;
+  expect(subtract.checked).toBe(true);
+  expect(append.checked).toBe(false);
+  fireEvent.click(append);
+  expect(
+    (screen.getByRole('radio', { name: 'Append (add oil)' }) as HTMLInputElement).checked,
+  ).toBe(true);
 });
 
 test('says the budget is spent, instead of silently rewriting the row to 0', () => {

@@ -77,6 +77,11 @@
   --radius: 0;
   --shadow: none;
 
+  /* THE SLAB GROUND (dial numbers): every typed or computed figure sits on this flat
+     tint, one step off its ground. Paper panels tint it --surface-2; tinted grounds
+     (the results column, nested blocks) flip it to --bg so the slab still reads. */
+  --slab: var(--surface-2);
+
   /* THE micro-label, one size and one tracking. Emphasis on a label comes from colour
      (--label · --text-figure · --warn), never from a half-step of size. */
   --label-size: 0.62rem;
@@ -397,36 +402,22 @@ details[open] > .disclosure__summary::before {
   min-width: 0;
 }
 
+/* Dial edition: the recipe name is a boxed mono field on the header row — 14rem, 40px,
+   hairline border on the field ground — not a display headline. */
 .recipe-toolbar__name-input.input {
-  /* Fixed fallback width; field-sizing lets the box hug the typed name where supported. */
-  width: 17rem;
+  width: 14rem;
   max-width: 100%;
+  min-height: 40px;
   text-align: left;
-  border: none;
-  border-bottom: 1.5px solid var(--text);
-  background: transparent;
-  font-family: var(--font-ui);
-  font-weight: 800;
-  font-stretch: 115%;
-  font-size: 1.9rem;
+  border: 1px solid var(--border);
+  background: var(--field);
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 600;
   line-height: 1.15;
-  letter-spacing: -0.01em;
   color: var(--text);
-  padding: 0 0 0.15rem;
+  padding: 0.4rem 0.7rem;
   border-radius: var(--radius);
-}
-
-@supports (field-sizing: content) {
-  .recipe-toolbar__name-input.input {
-    field-sizing: content;
-    width: auto;
-    min-width: 11rem;
-    max-width: min(100%, 34rem);
-  }
-}
-
-.recipe-toolbar__name-input.input:focus {
-  border-bottom-color: var(--accent);
 }
 
 .recipe-toolbar__actions {
@@ -564,6 +555,8 @@ details[open] > .disclosure__summary::before {
 @media (min-width: 42rem) {
   .col--tinted {
     background: var(--surface-2);
+    /* Inverse tint for the dial slabs: on the grey column a figure sits on paper. */
+    --slab: var(--bg);
   }
 
   /* A nested panel's ground IS --surface-2, so inside a tinted column it vanishes into
@@ -664,26 +657,46 @@ details[open] > .disclosure__summary::before {
   gap: 1.2rem;
 }
 
-/* The water-method chooser: a compact inline row, not a slider. */
+/* The water-method chooser: a micro-label over a seg whose cells split the panel width
+   evenly, the same shape the mold sizer's picks use. */
 .numbers-inputs__method {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
-.numbers-inputs__method span {
+.numbers-inputs__method .seg {
+  display: flex;
+}
+
+.numbers-inputs__method .seg__option {
+  flex: 1 1 0;
+  padding: 0 0.5rem;
+}
+
+/* The grams the chosen method comes to, stated under its field — mono, muted, quiet
+   enough to read as a consequence of the setting rather than a second control. */
+.numbers-inputs__water {
+  margin: -0.6rem 0 0;
   font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--label);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
-.numbers-inputs__method .input {
-  width: auto;
-  min-width: 11rem;
-  flex: 0 1 auto;
+/* The post-cook method chooser: same micro-label-over-seg shape as the water method. */
+.pcsf__method {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pcsf__method .seg {
+  display: flex;
+}
+
+.pcsf__method .seg__option {
+  flex: 1 1 0;
 }
 
 /* Post-cook superfat: a stacked list of {oil, %} rows with add/remove, then the method row. */
@@ -796,14 +809,15 @@ details[open] > .disclosure__summary::before {
   color: var(--accent);
 }
 
+/* Keeps its accent, but joins the dial scale. */
 .slider-field__value {
-  width: 3.2rem;
+  width: 4.4rem;
   border: none;
   background: transparent;
   text-align: right;
   font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 1.35rem;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
   padding: 0;
@@ -936,6 +950,9 @@ details[open] > .disclosure__summary::before {
   background: var(--surface-2);
   border: 0;
   box-shadow: none;
+  /* A nested block's ground IS --surface-2 (or the column tint), so its dial slabs
+     flip to paper. */
+  --slab: var(--bg);
 }
 
 .panel__title {
@@ -1231,59 +1248,40 @@ details[open] > .disclosure__summary::before {
   width: 100%;
 }
 
-/* THE BOXLESS FIGURE FIELD. An editable number on a 1.5px ink rule instead of inside a
-   bordered box: a six-oil recipe was eighteen input boxes stacked down the Formula column.
-   The rule reads as a slot waiting for a value, and 1.5px is deliberate — it matches the
-   disclosure chevron and the radar polygon, where a 1px hairline would read as incidental
-   text decoration and disappear.
-   Keeps .input alongside it so focus and disabled behaviour still come from there.
-   Reserved for NUMERICS. Text and enum inputs keep the box; the rule is what says
+/* THE DIAL NUMBER. Every typed figure sits in a flat tinted slab — no border, no radius,
+   no underline — digits mono 1.15rem/600 tabular, right-aligned, on the --slab ground
+   (which flips to paper on tinted grounds). Where a unit rides along, the WRAPPER span
+   (.ledger__figure / .dilution-row__value) carries the tint and the unit sits inside it,
+   so figure + unit read as one dial; this input then goes transparent and flexes.
+   Keeps .input alongside it so disabled behaviour still comes from there.
+   Reserved for NUMERICS. Text and enum inputs keep the box; the slab is what says
    "a figure goes here". */
 .figure-field.input {
-  /* FALLBACK width, sized for what this app actually holds: the starter recipe's own
-     total oil is 1,000 g, and kg/oz modes add a decimal point on top ("1234.5"). At
-     3.6rem a four-digit weight silently CLIPPED. Where field-sizing is supported the
-     @supports block below replaces this with a content-hugging width instead. */
-  width: 5.2rem;
+  /* Bare slabs (no wrapper) get a width that seats "1234.5" — the widest value the app
+     actually holds (kg/oz add a decimal to the starter's four-digit 1,000 g) — at the
+     dial scale. Inside a slab wrapper the width is the wrapper's business instead. */
+  width: 6.5rem;
+  min-height: 40px;
   border: none;
-  border-bottom: 1.5px solid var(--text);
   border-radius: var(--radius);
-  background: transparent;
-  padding: 0 0.2rem 0.15rem;
+  background: var(--slab);
+  padding: 0.4rem 0.55rem;
   text-align: right;
   font-family: var(--font-mono);
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 1.15rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
   /* No spinners. They ate a third of a field this narrow — with them, a four-digit weight
-     clipped even at a width the digits alone fit — and they are chrome on a rule whose whole
-     point is to be bare. .slider-field__value suppresses them for the same reason. */
+     clipped even at a width the digits alone fit — and they are chrome on a dial that is
+     meant to be bare digits. .slider-field__value suppresses them for the same reason. */
   appearance: textfield;
   -moz-appearance: textfield;
 }
 
-/* A five-digit batch paste weight (fallback width, like the base rule's). */
+/* A five-digit batch paste weight. */
 .figure-field--wide.input {
-  width: 6rem;
-}
-
-/* THE RULE IS AS LONG AS THE FIGURE. A fixed width leaves a four-digit rule under a
-   two-digit value, claiming figure that isn't there; content sizing lets the underline
-   hug what is actually typed and GROW when a value outruns it. The floor is four tabular
-   digits — "1000", the starter recipe's own total oil — so short and empty fields keep a
-   stable, workable target instead of collapsing; ch is measured in this field's own mono
-   face, so the floor is exactly the digits it claims to hold (plus the side padding,
-   counted because .input is border-box). Progressive enhancement, same as the recipe-name
-   headline: browsers without field-sizing keep the fixed fallbacks above. */
-@supports (field-sizing: content) {
-  .figure-field.input,
-  .figure-field--wide.input {
-    field-sizing: content;
-    width: auto;
-    min-width: calc(4ch + 0.4rem);
-    max-width: 100%;
-  }
+  width: 7.5rem;
 }
 
 .figure-field.input::-webkit-outer-spin-button,
@@ -1292,78 +1290,108 @@ details[open] > .disclosure__summary::before {
   margin: 0;
 }
 
-.figure-field.input:focus {
-  border-color: transparent;
-  border-bottom-color: var(--accent);
-}
-
-/* The key figure of a panel — Settings' Total oil, the number the recipe scales from.
-   One step up from the dialect's 0.95rem; the adaptive width above scales with it,
-   because its 4ch floor is measured in the field's own font. */
-.figure-field--key.input {
-  font-size: 1.15rem;
+/* The slab has no border to recolour, so focus is the accent ring flush on the slab. */
+.figure-field.input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
 }
 
 /* ── The ledger ───────────────────────────────────────────────────────── */
-/* THE row dialect: label left, control right, rows split by hairlines. A row is a
-   <label> when it holds one input (the whole row is the hit target) and a <div> when it
-   holds a radiogroup, which labels itself. The dilution panel's rows are the SAME object
-   under their own name — grouped into every definition here so the dialect cannot fork —
-   with one deliberate structural difference: dilution rows are free-standing (alert
-   prose interleaves between them), so each draws its own rule ABOVE itself instead of
-   living in a .ledger container that opens the run. */
+/* THE row dialect, dial edition: a two-column grid — label left, control filling a fixed
+   right-hand column — with NO hairlines between rows; the grid gap is the rhythm. A row
+   is a <label> when it holds one input (the whole row is the hit target) and a <div>
+   when it holds a radiogroup, which labels itself. The dilution panel's rows are the
+   SAME object under their own name — grouped into every definition here so the dialect
+   cannot fork — free-standing (alert prose interleaves between them), so each carries
+   its own margin instead of living in a .ledger container's gap. */
 .ledger {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--hairline);
+  gap: 0.6rem;
 }
 
-/* Rows may wrap: a segmented group is an unbreakable run of cells (nowrap by design),
-   so on a narrow column it drops under its label instead of forcing overflow. The
-   auto margins keep the control on the right edge whether or not it wrapped. */
 .ledger__row,
 .dilution-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10.5rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem 0.75rem;
-  padding: 0.6rem 0;
+  gap: 0.6rem 0.9rem;
+  padding: 0;
   margin: 0;
 }
 
-.ledger__row {
-  border-bottom: 1px solid var(--hairline);
-}
-
 .dilution-row {
-  border-top: 1px solid var(--hairline);
+  margin: 0.55rem 0;
 }
 
-.ledger__row > .seg,
-.ledger__row > .ledger__figure,
-.dilution-row > .seg,
-.dilution-row > .dilution-row__value {
-  margin-left: auto;
+/* Settings flips the fixed column to the LABEL side: its segs (four weight units,
+   NaOH + KOH) need the room, so the control fills the rest of the row, as drawn. */
+.ledger--settings .ledger__row {
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+}
+
+/* The scope pair is content-sized on the row's right edge — two prose-length cells
+   stretched across a fixed column would pad the words, not the choice. */
+.dilution-row--scope {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+/* A seg in a ledger row fills its column with equal cells. */
+.ledger__row > .seg {
+  display: flex;
+}
+
+.ledger__row > .seg .seg__option {
+  flex: 1 1 0;
+  justify-content: center;
 }
 
 .ledger__label,
 .dilution-row__label {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.3rem;
   font-size: 0.85rem;
   color: var(--text-strong);
 }
 
+/* THE SLAB WRAPPER: the figure and its unit share one tinted slab, so they read as one
+   dial. The input inside goes transparent and flexes; the wrapper fills its grid column. */
 .ledger__figure,
 .dilution-row__value {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0.4rem 0.55rem;
+  background: var(--slab);
 }
 
-/* The unit lives OUTSIDE the rule — it names the figure, it is not part of it. */
+.ledger__figure .figure-field.input,
+.dilution-row__value .figure-field.input {
+  flex: 1 1 2.5rem;
+  width: 2.5rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+
+/* One focus ring on the whole dial, not a ring inside a slab. */
+.ledger__figure:has(.input:focus-visible),
+.dilution-row__value:has(.input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.ledger__figure .figure-field.input:focus-visible,
+.dilution-row__value .figure-field.input:focus-visible {
+  outline: none;
+}
+
+/* The unit lives INSIDE the slab — the dial reads "540 g" as one instrument. */
 .ledger__unit,
 .dilution-row__unit {
   font-family: var(--font-mono);
@@ -1371,20 +1399,23 @@ details[open] > .disclosure__summary::before {
   color: var(--text-muted);
 }
 
-/* A figure with an aside stacked under it, both on the row's right edge — the HP
-   vessel volume and its ≈-multiple readout. Inside the row on purpose: as a ledger
-   sibling the note would paint below the row's own hairline and read as a caption for
-   whatever follows. */
+/* A figure with an aside stacked under it, both in the row's control column — the HP
+   vessel volume and its ≈-multiple readout. The outer wrapper stays transparent: only
+   the inner figure row is a slab, the note hangs below it. */
 .ledger__figure--stacked {
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.15rem;
+  align-items: stretch;
+  gap: 0.25rem;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .ledger__note {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   color: var(--label);
+  align-self: flex-end;
 }
 
 /* ── The segmented group ──────────────────────────────────────────────── */
@@ -1406,8 +1437,10 @@ details[open] > .disclosure__summary::before {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border: 1px solid var(--hairline);
-  padding: 0.32rem 0.7rem;
+  min-height: 40px;
+  padding: 0 0.9rem;
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 0.62rem;
@@ -1444,9 +1477,10 @@ details[open] > .disclosure__summary::before {
   z-index: 1;
 }
 
+/* The house hover on cells is the accent tint, not a border promotion. */
 .seg__option:hover:not(:has(input:checked)) {
+  background: var(--accent-soft);
   color: var(--text);
-  border-color: var(--text);
 }
 
 .seg__option:has(input:focus-visible) {
@@ -1455,52 +1489,9 @@ details[open] > .disclosure__summary::before {
   z-index: 2;
 }
 
-/* ── The text pick ────────────────────────────────────────────────────── */
-/* The dialect's quieter either/or: bare mono words, the chosen one in ink on the accent
-   underline. For choices subordinate to a segmented group above them (mold shape and
-   cm/in sit under Mold volume / Bar count) — same radio-in-label mechanics as .seg. */
-.text-pick {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.9rem;
-}
-
-.text-pick__option {
-  position: relative;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--label);
-  cursor: pointer;
-  padding-bottom: 1px;
-  border-bottom: 2px solid transparent;
-  white-space: nowrap;
-  user-select: none;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.text-pick__option input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.text-pick__option:has(input:checked) {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-}
-
-.text-pick__option:hover:not(:has(input:checked)) {
-  color: var(--text);
-}
-
-.text-pick__option:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+/* The quieter "text pick" skin (bare mono words on an accent underline) is gone: the
+   dial redesign settles on ONE treatment for every mutually-exclusive choice, so the
+   mold shape and cm/in picks that used it are segs like the rest. */
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
 /* THE outlined button. The actions trigger, the property toggle and the add-oil control
@@ -1508,16 +1499,21 @@ details[open] > .disclosure__summary::before {
    it at its own size, tracking, padding and border. They compose this now. The weight and
    0.12em come from .actions-menu__trigger, which had the fuller spec. */
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
   border: 1px solid var(--text);
   background: transparent;
   color: var(--text);
   border-radius: var(--radius);
-  padding: 0.42rem 0.9rem;
+  padding: 0 1rem;
   font-family: var(--font-mono);
   font-size: 0.64rem;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
@@ -1563,6 +1559,7 @@ details[open] > .disclosure__summary::before {
 .btn--icon {
   width: 2rem;
   height: 2rem;
+  min-height: 0;
   padding: 0;
   border: none;
   background: transparent;
@@ -1659,9 +1656,9 @@ details[open] > .disclosure__summary::before {
 .recipe-table__figures {
   grid-column: 1 / -1;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 1.1rem;
+  gap: 0.5rem 1.1rem;
   font-family: var(--font-mono);
   font-size: var(--label-size);
   letter-spacing: var(--label-track);
@@ -1671,8 +1668,15 @@ details[open] > .disclosure__summary::before {
 
 .recipe-table__figure {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* Outside a ledger's fixed column, the slab wrapper sizes itself: wide enough to seat
+   "1234.5" plus its unit at the dial scale. */
+.recipe-table__figure > .ledger__figure,
+.additive-list__amount .ledger__figure {
+  width: 7.2rem;
 }
 
 .recipe-table__foot {
@@ -1919,66 +1923,87 @@ details[open] > .disclosure__summary::before {
   gap: 0.85rem;
 }
 
+/* Dial edition: readout rows, not a two-up card grid. Each item is a ledger row — label
+   left in prose type, the computed figure on a slab filling the fixed right column — and
+   the primary figure steps out of the rows as a bare mono hero under a micro-label. */
 .results-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
   margin: 0;
 }
 
 .results-grid__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10.5rem;
+  align-items: center;
+  gap: 0.9rem;
   margin: 0;
 }
 
 .results-grid dt {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--label);
-  margin-bottom: 0.15rem;
+  font-size: 0.85rem;
+  color: var(--text-strong);
 }
 
+/* The computed slab: same dial as the typed fields, in the figure grey that says
+   "computed, not yours to edit". Long parenthetical notes wrap inside the slab. */
 .results-grid dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem 0.3rem;
+  min-height: 40px;
+  padding: 0.4rem 0.55rem;
+  background: var(--slab);
   margin: 0;
+  text-align: right;
   font-family: var(--font-mono);
-  font-size: 1.05rem;
-  font-weight: 500;
+  font-size: 1.15rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-figure);
 }
 
 .results-grid__item--primary {
-  grid-column: 1 / -1;
+  display: block;
 }
 
-/* Hero required-lye number. */
+.results-grid__item--primary dt {
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--label);
+  margin-bottom: 0.4rem;
+}
+
+/* Hero required-lye number: a bare dial figure, no slab — mono 2.15rem/700 ink, per the
+   dial dialect's hero scale. The mono face self-hosts 400–500 only, so weight synthesis
+   is allowed here (and only here) to reach the drawn 700. */
 .results-grid__item--primary dd {
-  font-family: var(--font-ui);
-  font-weight: 900;
-  font-stretch: 110%;
-  font-size: clamp(2.6rem, 7vw, 3.6rem);
-  line-height: 0.9;
-  letter-spacing: -0.04em;
+  background: none;
+  min-height: 0;
+  padding: 0;
+  justify-content: flex-start;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 2.15rem;
+  font-weight: 700;
+  font-synthesis: weight;
+  line-height: 1;
+  letter-spacing: normal;
   color: var(--text);
 }
 
-.panel--results .results-grid__item--primary dd {
-  color: var(--accent);
-}
-
-/* A HERO WITH NOTHING IN IT YET. An em-dash at Archivo 900 / stretch 110% / 3.6rem is a
-   solid bar the width of the column — in accent red it reads as a broken graphic, not as
-   "no figure yet". Keeps the full-width slot so nothing jumps when a real figure arrives;
-   drops only the display type. Caught by looking at the page, not by any assertion. */
-.results-grid__item--primary.results-grid__item--blank dd,
-.panel--results .results-grid__item--primary.results-grid__item--blank dd {
-  font-family: var(--font-mono);
-  font-size: 1.05rem;
+/* A HERO WITH NOTHING IN IT YET. An em-dash at hero scale is a solid bar the width of
+   the column — it reads as a broken graphic, not as "no figure yet". Keeps the full-width
+   slot so nothing jumps when a real figure arrives; drops only the display type. */
+.results-grid__item--primary.results-grid__item--blank dd {
+  font-size: 1.15rem;
   font-weight: 500;
-  font-stretch: normal;
   line-height: inherit;
-  letter-spacing: normal;
   color: var(--text-figure);
 }
 
@@ -2593,6 +2618,10 @@ details[open] > .disclosure__summary::before {
 
 .property-view-toggle__tab {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
@@ -2601,7 +2630,7 @@ details[open] > .disclosure__summary::before {
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 0.5rem 1.1rem;
+  padding: 0 1.1rem;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
@@ -2620,6 +2649,7 @@ details[open] > .disclosure__summary::before {
    properties panel's 0.7rem switch, because it shares a line with the title. */
 .property-view-toggle--compact .property-view-toggle__tab {
   font-size: 0.62rem;
+  min-height: 0;
   padding: 0.32rem 0.7rem;
 }
 
@@ -2705,16 +2735,31 @@ details[open] > .disclosure__summary::before {
 }
 
 /* Shape and cm/in picks share one row over the dimension fields — both scope what those
-   fields mean, so they read together, split by the block's first hairline. */
+   fields mean, so they read together, split by the block's first hairline. Each pick is
+   a micro-label over a seg whose cells split the half-column evenly, as drawn; the halves
+   stack instead of overflowing when the column can't hold two. */
 .mold-sizer__picks {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.6rem 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.7rem 0.9rem;
   margin: 0.85rem 0 0.6rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--hairline);
+}
+
+.mold-sizer__pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.mold-sizer__pick .seg {
+  display: flex;
+}
+
+.mold-sizer__pick .seg__option {
+  flex: 1 1 0;
+  padding: 0 0.5rem;
 }
 
 .mold-sizer__dims {
@@ -2726,14 +2771,14 @@ details[open] > .disclosure__summary::before {
 .dim-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem 0.9rem;
   margin-top: 0.5rem;
 }
 
 .dim-row__field {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem;
   font-family: var(--font-mono);
   font-size: var(--label-size);
@@ -2749,6 +2794,8 @@ details[open] > .disclosure__summary::before {
 .dim-row__field .input {
   letter-spacing: normal;
   text-transform: none;
+  /* Three slabs share a wire; the base slab width would push H off the row. */
+  width: 4.2rem;
 }
 
 .dim-row__sep {
@@ -3130,21 +3177,23 @@ details[open] > .disclosure__summary::before {
   gap: 0.35rem;
 }
 
+/* Dial hero: mono 2.15rem/700 ink, same scale as the Results hero (weight synthesis
+   allowed to reach the drawn 700 — the mono face self-hosts 400–500). */
 .dilution-hero__figure {
-  font-family: var(--font-ui);
-  font-weight: 900;
-  font-stretch: 110%;
-  font-size: clamp(2.6rem, 7vw, 3.6rem);
-  line-height: 0.9;
-  letter-spacing: -0.04em;
-  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 2.15rem;
+  font-weight: 700;
+  font-synthesis: weight;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--text);
 }
 
 /* Contested: an alert below disputes the plan this figure serves, so the figure keeps
-   its place but yields the accent — the loudest thing on the panel must never be an
-   uncontradicted claim. */
+   its place but yields its ink to the figure grey — the loudest thing on the panel must
+   never be an uncontradicted claim. */
 .dilution-hero--contested .dilution-hero__figure {
-  color: var(--text);
+  color: var(--text-figure);
 }
 
 .dilution-hero__caption {
@@ -3163,11 +3212,7 @@ details[open] > .disclosure__summary::before {
   font-size: 0.85rem;
 }
 
-/* The scope row closes its free-standing run: rule above from .dilution-row, rule below
-   from here. */
-.dilution-row--scope {
-  border-bottom: 1px solid var(--hairline);
-}
+/* The scope row's content-sized control column is defined with the ledger family. */
 
 /* The plan/reference boundary sentence, and the caption expanding the strip's
    abbreviated cells. Ordinary quiet prose, deliberately not .results-hint (the panel's
@@ -3196,13 +3241,12 @@ details[open] > .disclosure__summary::before {
   color: var(--text-muted);
 }
 
-/* The ratio presets (spec §2). BUTTONS, not radios: they do something once and stop, and
-   nothing on screen claims one of them describes the current plan — see the group's own
-   comment in DilutionPanel. A bordered strip of four equal cells on the field surface,
-   each stacking its ratio, the % it sets, and what that suits. Deliberately NO filled
-   "current" cell: a highlight would re-derive a selection state these buttons were
-   specifically rebuilt not to claim (a hand-typed 34% matches no preset, and marking the
-   nearest one would be a lie). */
+/* The ratio presets (spec §2). BUTTONS, not radios: they do something once and stop. A
+   bordered strip of four equal cells on the field surface, each stacking its ratio, the
+   % it sets, and what that suits. Deliberately NO filled "current" cell, and the dial
+   redesign does not change that: its mock fills the cell matching the concentration, which
+   is the same selection state these buttons were specifically rebuilt not to claim (a
+   hand-typed 34% matches no preset, and marking the nearest one would be a lie). */
 .dilution-presets {
   margin-bottom: 0.75rem;
 }

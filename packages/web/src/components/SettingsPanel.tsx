@@ -126,7 +126,9 @@ export function SettingsPanel({
         Superfat and the water ratio sit in the Superfat&nbsp;&amp;&nbsp;water panel below.
       </p>
 
-      <div className="ledger">
+      {/* --settings: this ledger's control column is the wide one — its segs (four weight
+          units, NaOH + KOH) need the room, so the fixed column goes to the labels. */}
+      <div className="ledger ledger--settings">
         <BatchBasics
           weightUnit={weightUnit}
           previewState={previewState}

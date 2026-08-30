@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ppoOzToPercentOfOil, tspToPercentOfOil } from '../lib/doseConverters';
+import { LedgerRow } from './LedgerRow';
 
 // The gel-phase control moved to the Soaping temperature panel, where it sits beside the
 // gel PREDICTION and the two inputs (temperature, water) that actually decide gel.
@@ -29,33 +30,34 @@ export function CpExtrasPanel({ totalOilGrams }: CpExtrasPanelProps) {
         </div>
       </div>
 
-      <label className="field">
-        <span>Teaspoons of additive (whole recipe)</span>
-        <input
-          type="number"
-          className="input input--number"
-          min={0}
-          step={0.25}
-          value={tsp}
-          onChange={(e) => setTsp(e.target.value)}
-          aria-label="Teaspoons of additive"
+      {/* Both converters are numerics, so they take the dial slab like every other figure
+          in the app — they were the last bordered number boxes left. */}
+      <div className="ledger">
+        <LedgerRow
+          label="Teaspoons of additive (whole recipe)"
+          unit="tsp"
+          input={{
+            'aria-label': 'Teaspoons of additive',
+            min: 0,
+            step: 0.25,
+            value: tsp,
+            onChange: (e) => setTsp(e.target.value),
+          }}
+          note={`${formatPercent(tspPercent)} of total oil weight`}
         />
-      </label>
-      <p className="results-hint">{formatPercent(tspPercent)} of total oil weight</p>
-
-      <label className="field">
-        <span>PPO (oz per lb of oils)</span>
-        <input
-          type="number"
-          className="input input--number"
-          min={0}
-          step={0.05}
-          value={ppoOz}
-          onChange={(e) => setPpoOz(e.target.value)}
-          aria-label="PPO ounces per pound of oils"
+        <LedgerRow
+          label="PPO (oz per lb of oils)"
+          unit="oz"
+          input={{
+            'aria-label': 'PPO ounces per pound of oils',
+            min: 0,
+            step: 0.05,
+            value: ppoOz,
+            onChange: (e) => setPpoOz(e.target.value),
+          }}
+          note={`${formatPercent(ppoPercent)} of total oil weight`}
         />
-      </label>
-      <p className="results-hint">{formatPercent(ppoPercent)} of total oil weight</p>
+      </div>
 
       <p className="results-hint">
         Vanillin/vanilla darkens soap to tan/brown over weeks — expected, not a defect.

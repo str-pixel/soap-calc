@@ -117,31 +117,40 @@ export function MoldSizerPanel({
 
       {input.mode === 'mold' && (
         <>
+          {/* Both picks scope what the dimension fields mean, so they read together as a
+              pair of micro-labelled segs above them — the mock's idiom for every
+              mutually-exclusive choice. */}
           <div className="mold-sizer__picks">
-            <SegRadioGroup
-              variant="text-pick"
-              label="Mold shape"
-              name="mold-sizer-shape"
-              options={[
-                { value: 'rectangular', cell: 'Rectangular' },
-                { value: 'cylinder', cell: 'Cylinder' },
-              ]}
-              value={input.moldShape}
-              onChange={(moldShape) => onChange({ ...input, moldShape })}
-            />
-            {/* The old "Use inches" checkbox as a cm/in text pick — same boolean state,
-                stated as the unit the maker is choosing rather than a yes/no. */}
-            <SegRadioGroup
-              variant="text-pick"
-              label="Dimension unit"
-              name="mold-sizer-units"
-              options={[
-                { value: 'cm', cell: 'cm' },
-                { value: 'in', cell: 'in' },
-              ]}
-              value={input.useInches ? 'in' : 'cm'}
-              onChange={(unit) => onChange({ ...input, useInches: unit === 'in' })}
-            />
+            <div className="mold-sizer__pick">
+              <span className="micro-label">Mold shape</span>
+              <SegRadioGroup
+                label="Mold shape"
+                name="mold-sizer-shape"
+                options={[
+                  { value: 'rectangular', cell: 'Rectangular' },
+                  { value: 'cylinder', cell: 'Cylinder' },
+                ]}
+                value={input.moldShape}
+                onChange={(moldShape) => onChange({ ...input, moldShape })}
+              />
+            </div>
+            {/* The old "Use inches" checkbox as a cm/in pick — same boolean state, stated
+                as the unit the maker is choosing rather than a yes/no. The cells keep
+                their own casing: "cm" and "in" are units, not labels. */}
+            <div className="mold-sizer__pick">
+              <span className="micro-label">Units</span>
+              <SegRadioGroup
+                label="Dimension unit"
+                name="mold-sizer-units"
+                preserveCase
+                options={[
+                  { value: 'cm', cell: 'cm' },
+                  { value: 'in', cell: 'in' },
+                ]}
+                value={input.useInches ? 'in' : 'cm'}
+                onChange={(unit) => onChange({ ...input, useInches: unit === 'in' })}
+              />
+            </div>
           </div>
           <p className="inline-note">
             For irregular molds, fill with water and measure volume, or weigh a test pour.

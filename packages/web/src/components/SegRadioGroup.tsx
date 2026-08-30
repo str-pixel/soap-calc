@@ -1,7 +1,9 @@
-/** One enum control, two skins. Radios drawn as a segmented group (`seg`: adjoining
- * cells, the checked one filled with ink) or a text pick (`text-pick`: bare mono words,
- * the chosen one on the accent underline). The input fills its label invisibly, so the
- * whole cell is the radio's own hit target and label-based locators resolve to it.
+/** THE enum control: radios drawn as a segmented group — adjoining 40px cells, the
+ * checked one filled with ink, the rest paper. Every mutually-exclusive pick in the app
+ * is this one object; the quieter "text pick" skin it briefly also carried is gone, the
+ * dial redesign having settled on one treatment for all of them. The input fills its
+ * label invisibly, so the whole cell is the radio's own hit target and label-based
+ * locators resolve to it.
  *
  * The naming contract lives here so call sites cannot disagree about it:
  * - No `name` on an option → the visible cell text IS the accessible name.
@@ -31,9 +33,8 @@ type SegRadioGroupProps<V extends string> = {
   options: ReadonlyArray<SegOption<V>>;
   value: V;
   onChange: (value: V) => void;
-  variant?: 'seg' | 'text-pick';
-  /** Keep the cells' own casing (chemical names like NaOH) instead of the seg
-   * uppercase. */
+  /** Keep the cells' own casing (chemical names like NaOH, units like cm) instead of the
+   * seg uppercase. */
   preserveCase?: boolean;
 };
 
@@ -43,16 +44,16 @@ export function SegRadioGroup<V extends string>({
   options,
   value,
   onChange,
-  variant = 'seg',
   preserveCase = false,
 }: SegRadioGroupProps<V>) {
-  const groupClass =
-    variant === 'seg' ? `seg${preserveCase ? ' seg--case' : ''}` : 'text-pick';
-  const optionClass = variant === 'seg' ? 'seg__option' : 'text-pick__option';
   return (
-    <div className={groupClass} role="radiogroup" aria-label={label}>
+    <div
+      className={`seg${preserveCase ? ' seg--case' : ''}`}
+      role="radiogroup"
+      aria-label={label}
+    >
       {options.map((option) => (
-        <label key={option.value} className={optionClass}>
+        <label key={option.value} className="seg__option">
           <input
             type="radio"
             name={name}

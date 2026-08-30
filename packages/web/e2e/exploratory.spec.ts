@@ -297,7 +297,7 @@ test.describe('settings validation & recovery', () => {
   });
 
   test('lye concentration 0 and 150 both produce input errors', async ({ page }) => {
-    await page.getByLabel('Water method').selectOption('lye_concentration');
+    await page.getByRole('radio', { name: 'Lye concentration % — water method' }).check();
     const field = page.getByLabel('Lye concentration %', { exact: true });
     await field.fill('0');
     await field.blur();
@@ -313,7 +313,7 @@ test.describe('settings validation & recovery', () => {
   });
 
   test('water:lye ratio method drives displayed ratio', async ({ page }) => {
-    await page.getByLabel('Water method').selectOption('lye_water_ratio');
+    await page.getByRole('radio', { name: 'Water : lye ratio — water method' }).check();
     const field = page.getByLabel('Water : lye ratio', { exact: true });
     await field.fill('2.5');
     await field.blur();
@@ -514,7 +514,7 @@ test.describe('liquid soap', () => {
     await picker.click();
     await picker.fill('jojoba');
     await page.locator('.oil-picker__option').first().click();
-    await page.getByLabel('Post-cook superfat method').selectOption('subtract');
+    await page.getByRole('radio', { name: 'Subtract (reserve)' }).check();
     await expect(
       page.locator('.panel--results .results-grid dt').filter({ hasText: /Post-cook superfat/ }).first(),
     ).toBeVisible();

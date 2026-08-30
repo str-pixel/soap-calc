@@ -156,45 +156,49 @@ export function RecipeOilsPanel({
                   recomputes grams and vice versa. The visible label is the bare word
                   "Weight", and the accessible name CONTAINS it (Label-in-Name, WCAG 2.5.3),
                   which is why it reads "Weight in g for Olive Oil" rather than naming the
-                  oil first. The unit glyph after the field is part of the label, not a
-                  figure, so it keeps the micro-label type. */}
+                  oil first. The unit rides INSIDE the field's slab (.ledger__figure, the
+                  same dial the ledger rows use), so figure and unit read as one. */}
               <div className="recipe-table__figures">
                 <label className="recipe-table__figure">
                   Weight
-                  <input
-                    type="number"
-                    className="input figure-field"
-                    min={0}
-                    step={weightUnitConfig.inputStep}
-                    value={getDraft(
-                      inputs.weightInputId(line.key),
-                      previewWeightDisplay(line, previewLine, weightUnit),
-                    )}
-                    onChange={(e) => inputs.handleWeightChange(line.key, e.target.value)}
-                    onBlur={(e) => inputs.commitWeightInput(line.key, e.target.value)}
-                    onKeyDown={commitOnEnter}
-                    aria-label={`Weight in ${weightUnitConfig.short} for ${oilName}`}
-                  />
-                  {weightUnitConfig.short}
+                  <span className="ledger__figure">
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      step={weightUnitConfig.inputStep}
+                      value={getDraft(
+                        inputs.weightInputId(line.key),
+                        previewWeightDisplay(line, previewLine, weightUnit),
+                      )}
+                      onChange={(e) => inputs.handleWeightChange(line.key, e.target.value)}
+                      onBlur={(e) => inputs.commitWeightInput(line.key, e.target.value)}
+                      onKeyDown={commitOnEnter}
+                      aria-label={`Weight in ${weightUnitConfig.short} for ${oilName}`}
+                    />
+                    <span className="ledger__unit">{weightUnitConfig.short}</span>
+                  </span>
                 </label>
                 <label className="recipe-table__figure">
                   Percent
-                  <input
-                    type="number"
-                    className="input figure-field"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    value={getDraft(
-                      inputs.percentInputId(line.key),
-                      previewPercentDisplay(line, previewLine),
-                    )}
-                    onChange={(e) => setDraft(inputs.percentInputId(line.key), e.target.value)}
-                    onBlur={(e) => inputs.commitPercentInput(line.key, e.target.value)}
-                    onKeyDown={commitOnEnter}
-                    aria-label={`Percent for ${oilName}`}
-                  />
-                  %
+                  <span className="ledger__figure">
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={getDraft(
+                        inputs.percentInputId(line.key),
+                        previewPercentDisplay(line, previewLine),
+                      )}
+                      onChange={(e) => setDraft(inputs.percentInputId(line.key), e.target.value)}
+                      onBlur={(e) => inputs.commitPercentInput(line.key, e.target.value)}
+                      onKeyDown={commitOnEnter}
+                      aria-label={`Percent for ${oilName}`}
+                    />
+                    <span className="ledger__unit">%</span>
+                  </span>
                 </label>
               </div>
             </div>

@@ -134,8 +134,13 @@ test('the Pricing view leads with its hero and reports nothing broken', async ({
 
   // Finding 12: the suggested price is the number the panel exists to produce, so it is
   // the one figure set at hero scale — everything else sat at 0.95rem beside it before.
+  // THE GAP NARROWED ON PURPOSE. The dial redesign raises every ordinary figure to the
+  // dial scale (mono 1.15rem, in its own slab) and sets heroes at mono 2.15rem, so the
+  // hero now leads by ~1.9× where the old display-type hero led by ~3.4×. It still has to
+  // lead — a hero that merely matches its neighbours is the bug this guards — but pinning
+  // the old multiple would pin the retired type scale, not the ranking.
   expect(await size(hero), 'the hero must outrank the ordinary figures').toBeGreaterThan(
-    (await size(plain)) * 2,
+    (await size(plain)) * 1.7,
   );
 
   expect(problems, 'browser complaints on the Pricing view').toEqual([]);
@@ -190,11 +195,13 @@ test('no rounded corners survive outside the documented exceptions', async ({ pa
   expect(problems, 'browser complaints while auditing radii').toEqual([]);
 });
 
-test('every boxless figure field fits the values this app actually holds', async ({ page }) => {
+test('every dial slab fits the values this app actually holds, at one steady width', async ({
+  page,
+}) => {
   const problems = watchForErrors(page);
   await page.goto('/');
 
-  // The ink rule replaced a bordered box that was width:100% in a 1fr column, so nothing
+  // The dial slab replaced a bordered box that was width:100% in a 1fr column, so nothing
   // used to clip. A fixed width can, and the starter recipe's own total oil is 1,000 g —
   // four digits — with kg/oz modes adding a decimal point on top. Measured, not eyeballed:
   // a clipped input still reports its full value, so only scrollWidth catches this.
@@ -225,28 +232,52 @@ test('every boxless figure field fits the values this app actually holds', async
     expect(m.s, `${sel} clips "${value}" (${m.s}px of content in ${m.c}px)`).toBeLessThanOrEqual(m.c + 1);
   }
 
-  // THE RULE HUGS THE FIGURE (field-sizing): the underline is as long as the digits it
-  // holds, with a four-digit floor — "1000", the starter's own total oil — so short and
-  // empty values keep one stable width, and longer values grow the rule instead of
-  // clipping. A fixed width under a two-digit value claims figure that isn't there.
+  // A DIAL HOLDS STILL. The boxless rule this replaced hugged its own digits
+  // (field-sizing), so the underline was itself a readout of length — deliberate then,
+  // wrong now: a slab is an instrument face, and a column of them must stay a column
+  // while a value is typed. So the width is fixed, sized for "1234.5" (the widest value
+  // the app holds — kg/oz add a decimal to the starter's four-digit 1,000 g) rather than
+  // grown to fit it. Every reading below is the SAME width, which is the whole claim.
   const widthAt = async (value: string) => {
     const el = page.locator('input[aria-label^="Weight in"]').first();
     await el.fill(value);
     return el.evaluate((n) => n.getBoundingClientRect().width);
   };
-  const atFloor = await widthAt('1000');
-  expect(await widthAt('45'), 'two digits sit at the four-digit floor').toBeCloseTo(atFloor, 1);
-  expect(await widthAt(''), 'an empty field keeps the floor').toBeCloseTo(atFloor, 1);
-  expect(await widthAt('1234.5'), 'a longer value grows the rule').toBeGreaterThan(atFloor + 5);
-  expect(atFloor, 'the floor is digit-sized, not the old fixed 5.2rem').toBeLessThan(60);
+  const steady = await widthAt('1000');
+  expect(await widthAt('45'), 'two digits do not shrink the slab').toBeCloseTo(steady, 1);
+  expect(await widthAt(''), 'nor does emptying it').toBeCloseTo(steady, 1);
+  expect(await widthAt('1234.5'), 'nor does the widest value the app holds').toBeCloseTo(
+    steady,
+    1,
+  );
 
-  // Spin buttons steal width from a field this narrow and read as chrome on a rule that is
-  // meant to be bare — .slider-field__value already suppresses them for the same reason.
+  // AND IT IS A SLAB, not a rule: a flat tinted ground carrying figure and unit together,
+  // with no border of its own, at the 40px control height the whole dialect uses. The tint
+  // rides the WRAPPER (so the unit sits on it too), which is why the input reads
+  // transparent here — that is the design, not a missing background.
+  const dial = await page
+    .locator('input[aria-label^="Weight in"]')
+    .first()
+    .evaluate((n) => {
+      const wrap = n.closest('.ledger__figure')!;
+      const ws = getComputedStyle(wrap);
+      return {
+        inputBorder: parseFloat(getComputedStyle(n).borderBottomWidth),
+        ground: ws.backgroundColor,
+        height: wrap.getBoundingClientRect().height,
+      };
+    });
+  expect(dial.inputBorder, 'the underline rule is gone — the slab is the field').toBe(0);
+  expect(dial.ground, 'the slab paints a tinted ground').not.toBe('rgba(0, 0, 0, 0)');
+  expect(dial.height, 'at the dialect\'s 40px control height').toBeGreaterThanOrEqual(40);
+
+  // Spin buttons steal width from a field this narrow and read as chrome on a dial that is
+  // meant to be bare digits — .slider-field__value suppresses them for the same reason.
   const spin = await page
     .locator('input[aria-label^="Weight in"]')
     .first()
     .evaluate((n) => getComputedStyle(n).appearance);
-  expect(spin, 'the boxless figure should not carry spinners').toBe('textfield');
+  expect(spin, 'the dial figure should not carry spinners').toBe('textfield');
 
   expect(problems, 'browser complaints while measuring figure fields').toEqual([]);
 });
