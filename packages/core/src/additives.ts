@@ -22,6 +22,13 @@ export type AdditiveProcessOverride = {
   /** Replaces (not appends to) the base hazards for this process — e.g. salt's
    * "crumbly bar" tag is meaningless in LS, where the risk is the salt curve. */
   hazards?: string[];
+  /** Stages this additive may be dosed at IN THIS PROCESS, replacing the entry's own list.
+   * The sanctioned moment is process-specific — fragrance goes in at trace in a bar and
+   * after dilution in liquid soap — so an entry-level list could only ever be right for one
+   * of them. Same rule as the entry-level field: set it where a stage would be WRONG, not
+   * merely unusual. A saved line sitting outside the list still renders (the panel's
+   * mismatched-select guard), so narrowing this never re-stages an existing recipe. */
+  stages?: AdditiveStage[];
 };
 
 export type AdditiveCatalogEntry = {
@@ -73,6 +80,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Table sugar and other sugar sources (honey, molasses, milks). Sorbitol is its own
     // entry below — it carries a higher typical range. (id stays 'sugar-sorbitol' so
     // recipes saved before the split still resolve.)
+    // LS sanctions the lye solution or the oils, before dilution (LS:1069).
     id: 'sugar-sorbitol',
     name: 'Sugar',
     typicalLow: 0.5,
@@ -90,7 +98,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // (LS:2667) — and 3–5% is that chapter's own practice, a point inside this range
       // rather than a competing one. The 5% ceiling this carried matched neither
       // statement; it was HP's.
-      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
+      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'] },
     },
     note:
       'Dissolve it first; it can join either the lye water or the oils, so long as it goes in before dilution. Fresh lye and heat darken sugar, so the identical dose can finish anywhere from cream to caramel; liquid soap sends it to the oils for exactly that reason, since the lye solution is the hotter, harsher route.',
@@ -142,6 +150,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // ceiling, not the typical range), so this entry mirrors the sugar entry per process.
     // A general-chapter 1–5% figure was previously mistaken for the CP range — it belongs
     // to HP/LS, whose sources both give 1–5.
+    // LS sanctions the lye solution or the oils, before dilution (LS:1069).
     id: 'sorbitol',
     name: 'Sorbitol',
     typicalLow: 0.5,
@@ -153,12 +162,13 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // LS names sorbitol among the sugar forms it doses together — 1–6% of total oil
       // weight, into the lye solution or the oils, and before the dilution step
       // (LS:1069). Trace was the CP stage inherited; LS puts its sugars in early.
-      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
+      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'] },
     },
     note:
       'A sugar alcohol, dosed and timed like the other sugars: into the lye solution or the oils, before dilution. It dissolves readily.',
   },
   {
+    // LS sanctions the lye solution, where the citrate forms (LS:3037).
     id: 'chelator',
     name: 'Chelator (citrate, gluconate)',
     typicalLow: 1,
@@ -168,7 +178,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // LS gives the citrate route a range rather than CP's single point: 1–2% of total
       // oil weight into the lye solution (LS:3037). Other chelators are left to their
       // supplier's own rate there, which is why only this range moves.
-      ls: { typicalLow: 1, typicalHigh: 2 },
+      ls: { typicalLow: 1, typicalHigh: 2, stages: ['lye'] },
     },
     note:
       'Stirred into the lye solution. In hard water the dissolved metals are what turn soap into scum and speed rancidity; this binds them so they cannot. Citrate and gluconate are the common forms — if you are starting from citric acid, use that entry instead, since the alkali has to convert it first.',
@@ -181,6 +191,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // LS lye-excess neutralization workflow (an after-cook citric dose) uncompensated
     // while allowing the LS in-lye chelator route. Does not lower finished-soap pH; copy
     // must never imply it does.
+    // LS sanctions the lye solution for the chelator route (LS:3037), or after the cook, which is the lye-excess neutralization this app models separately.
     id: 'citric-acid',
     name: 'Citric acid (anhydrous)',
     typicalLow: 1,
@@ -192,7 +203,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // "wider than CP/HP" claim with it, matched nothing in the source — the LS figure
       // is the same 1–2% the base holds, stated here so the LS voice is explicit rather
       // than inherited by accident.
-      ls: { typicalLow: 1, typicalHigh: 2 },
+      ls: { typicalLow: 1, typicalHigh: 2, stages: ['lye', 'after_cook'] },
     },
     lyeNeutralization: {
       naohPerGram: 3 * CITRIC_MOL_PER_GRAM * NAOH_MOLAR_MASS,
@@ -221,7 +232,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // Oils stage per LS:2991 (see the clay entry below — one line covers both).
+    // LS sanctions the oils, right at the start (LS:2991).
     id: 'charcoal',
+    processOverrides: { ls: { stages: ['oils'] } },
     name: 'Charcoal',
     typicalLow: 0.1,
     typicalHigh: 2,
@@ -238,6 +251,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // Honey is a sugar source — same overheat/tunnel behavior as table sugar.
+    // LS sanctions the lye solution or the oils, before dilution (LS:1069).
     id: 'honey',
     name: 'Honey',
     typicalLow: 1,
@@ -248,12 +262,13 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // LS doses every sugar form alike — table sugar, honey, molasses — at 1–6% of total
       // oil weight, into the lye solution or the oils, before dilution (LS:1069). This
       // entry had no LS voice at all and was serving CP's single-point 1%.
-      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils' },
+      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'] },
     },
     note:
       'Honey is mostly sugar in water, so treat it as one of the sugars: in before any dilution. It browns in fresh lye and can push a batch hotter, so the oils are the gentler route.',
   },
   {
+    // LS sanctions after the cook, into diluted soap (LS:2950, LS:3363).
     id: 'fragrance',
     name: 'Fragrance / essential oil',
     typicalLow: 2,
@@ -268,7 +283,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // place fragrance after the soap reaches its finished, diluted consistency, because
       // these oils separate and cloud the soap if added earlier (LS:2164, 2288, 2520, 2878;
       // clouding risk noted at LS:2953).
-      ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution', defaultStage: 'after_cook' },
+      ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution', defaultStage: 'after_cook', stages: ['after_cook'] },
     },
     note:
       'Dosed against the finished, diluted soap rather than the oil weight — a bottle of liquid soap is mostly water, so an oil-weight percentage would badly overshoot. It goes in once the cook is over, to soap already diluted and cooled. Liquid soap carries far less scent than a bar needs. Your supplier\'s skin-safe limit overrides this range.',
@@ -282,7 +297,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // additives — clays and charcoal alike — to go into the oils at the very start of the
     // process (LS:2991), which is what the base stage already does, so no LS override is
     // needed. Charcoal's entry above answers to the same line.
+    // LS sanctions the oils, right at the start (LS:2991).
     id: 'clay',
+    processOverrides: { ls: { stages: ['oils'] } },
     name: 'Clay (bentonite, kaolin)',
     typicalLow: 0.1,
     typicalHigh: 2,
@@ -301,6 +318,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // ACID that becomes a salt in the lye (citric → citrate; see lyeNeutralization).
     // Magnesium-bearing salts are the exception and are deliberately absent: they wreck
     // soap rather than harden it (magnesium_salt_scum insight warns on them by name).
+    // LS sanctions the lye water or the oils for the cook (LS:2630), or after dilution when it is used to thicken (LS:3091).
     id: 'salt',
     name: 'Table salt (NaCl)',
     typicalLow: 0.05,
@@ -311,11 +329,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // The LS start-of-cook dose (3–8% of oils ≈ 0.5–3% of the final solution at ~35%
       // concentration) suppresses the paste phase; past the salt curve more salt THINS.
       // The bar-crumble tag is meaningless in LS, so the hazard is replaced per-process.
-      ls: {
-        typicalLow: 3,
+      ls: { typicalLow: 3,
         typicalHigh: 8,
-        hazards: ['past the salt curve more salt thins, not thickens'],
-      },
+        hazards: ['past the salt curve more salt thins, not thickens'], stages: ['lye', 'oils', 'after_cook'] },
     },
     note:
       'Dissolve it first — in the lye water before the alkali goes in, or into the oils. To thicken soap that is already diluted, make a solution of roughly one part salt to two parts water and stir it in a little at a time, watching as you go: every recipe has its own turning point, and past it more salt thins the soap rather than thickening it.',
@@ -323,6 +339,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     // Sodium lactate — humectant + hardener, water-soluble, added to the lye water.
     // Higher dose range than table salt; it hardens the bar without the seize risk.
+    // LS sanctions the lye solution, the oils, or the dilution water (LS:3019).
     id: 'sodium-lactate',
     name: 'Sodium lactate',
     typicalLow: 0.5,
@@ -334,7 +351,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       hp: { typicalLow: 3, typicalHigh: 4, defaultStage: 'trace' },
       // LS runs it harder still, typically into the oils before the lye goes in; the
       // source envelope is 1–10% of oils (liquid form, ~60–70% solution).
-      ls: { typicalLow: 3, typicalHigh: 5, defaultStage: 'oils' },
+      ls: { typicalLow: 3, typicalHigh: 5, defaultStage: 'oils', stages: ['lye', 'oils', 'after_cook'] },
     },
     note:
       'Usually sold as a liquid at around 60% strength or better, and the percentages here assume that liquid rather than the dry powder — check what your bottle actually is. It can join the lye water, or go straight into the oils.',
@@ -349,7 +366,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // silky feel (LS:3060). 0.25–1% is that caution expressed as a range; the 1–5% is a
     // generic supplier envelope the source qualifies rather than endorses for liquid soap.
     // Do not "correct" this upward to 1–5 without answering the streaking clause.
+    // LS sanctions the lye solution (LS:3060), or after dilution as amino acids (LS:3347).
     id: 'silk',
+    processOverrides: { ls: { stages: ['lye', 'after_cook'] } },
     name: 'Silk (hydrolyzed)',
     typicalLow: 0.25,
     typicalHigh: 1,
@@ -433,7 +452,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Eugenol — clove-derived aromatic used as a trace accelerant; dosed in parts-per-thousand,
     // well below fragrance-oil percentages. Added to the heated oils so it reacts with the lye
     // from the start (as an accelerant it does nothing added at trace).
+    // LS sanctions the warmed oils, where it reacts on contact (LS:2572).
     id: 'eugenol',
+    processOverrides: { ls: { stages: ['oils'] } },
     name: 'Eugenol',
     typicalLow: 1,
     typicalHigh: 3,
@@ -465,6 +486,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // the free fatty acids it genuinely takes no lye. LS uses it identically (into the
     // hot oils); the LS source doses it in absolute ounces — the % range carries over
     // from the HP use of the same technique.
+    // LS sanctions the hot oils, as an emulsion seed (LS:2559).
     id: 'finished-soap',
     name: 'Finished soap (grated or liquid)',
     typicalLow: 0.05,
@@ -478,7 +500,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // (LS:2090, LS:2739). That is 1.5–3% of oil weight, thirty times the 0.05% floor
       // this was serving LS from the HP seed-soap range. Recorded as a derivation rather
       // than a quotation: the source states the ounces, the percentage is ours.
-      ls: { typicalLow: 1.5, typicalHigh: 3 },
+      ls: { typicalLow: 1.5, typicalHigh: 3, stages: ['oils'] },
     },
     note:
       'A little soap you have already made, stirred into the hot oils to give the new emulsion something to build on. Liquid soap or a grated bar both work. Expect some bubbling or foaming when it goes in; that is normal.',
@@ -502,6 +524,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // oil basis the dose would shrink as the recipe is diluted further — backwards, since a
     // thinner solution needs MORE gum, not less.
     id: 'guar',
+    // One sanctioned moment: hydrated, then worked into diluted and cooled soap (LS:3101).
+    stages: ['after_cook'],
     name: 'Guar gum',
     typicalLow: 0.5,
     typicalHigh: 1,
@@ -521,6 +545,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Crothix and xanthan gum as further thickeners but gives them no dose, which is why
     // neither is offered here.
     id: 'hec',
+    // One sanctioned moment: added after the final dilution and cooling
+    // (LS_full_text p.449).
+    stages: ['after_cook'],
     name: 'Hydroxyethylcellulose (HEC)',
     typicalLow: 0.5,
     typicalHigh: 1,
@@ -540,6 +567,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // why a search for "glycol stearate" or "pearlizer" finds nothing — a naming trap this
     // audit fell into once already. The 2–10% and the solution basis below are that line.
     id: 'pearlizer',
+    // One sanctioned moment: melted, then stirred into diluted soap (LS:3000).
+    stages: ['after_cook'],
     name: 'Pearlizer (glycol stearate)',
     typicalLow: 2,
     typicalHigh: 10,
@@ -553,6 +582,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Water-dispersible shea — self-emulsifying emollient/opacifier, % of the finished
     // solution, after dilution.
     id: 'wd-shea',
+    // One sanctioned moment: added after dilution (LS:3030).
+    stages: ['after_cook'],
     name: 'Water-dispersible shea',
     typicalLow: 1,
     typicalHigh: 25,
@@ -568,6 +599,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // after dilution, as % of the finished solution. It carries a light red-orange colour
     // and a faint own odour; both show at the top of the range.
     id: 'turkey-red-castor',
+    // One sanctioned moment: added after dilution; it is not saponifiable (LS:1260).
+    stages: ['after_cook'],
     name: 'Turkey red castor oil',
     typicalLow: 1,
     typicalHigh: 5,
@@ -582,6 +615,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // the PCSF oil so the oil stays suspended instead of separating. Dosed as % of oils to
     // mirror the PCSF percent it pairs with (1:1), typically 1–3%.
     id: 'polysorbate-80',
+    // One sanctioned moment: premixed with the post-cook superfat oil it emulsifies (LS:1276).
+    stages: ['after_cook'],
     name: 'Polysorbate 80',
     typicalLow: 1,
     typicalHigh: 3,

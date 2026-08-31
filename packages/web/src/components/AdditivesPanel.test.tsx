@@ -752,3 +752,62 @@ describe('the lather support pack stages by process', () => {
     }
   });
 });
+
+// With the LS stage lists in place, most additives have exactly one sanctioned moment, so
+// the panel states it instead of offering a four-cell control whose other three cells were
+// wrong answers at equal weight. The ones with a real choice keep the control.
+describe('the Add-at control appears only where there is a choice', () => {
+  const renderLine = (catalogId: string, addAt: string, process: 'cp' | 'ls' = 'ls') => {
+    cleanup();
+    render(
+      <AdditivesPanel
+        additives={[{ ...makeLine({ key: 's1', name: '' }), catalogId, addAt } as AdditiveLine]}
+        computed={[]}
+        weightUnit="g"
+        process={process}
+        onChange={() => {}}
+      />,
+    );
+  };
+
+  it.each([
+    ['guar', 'after_cook', 'After dilution'],
+    ['charcoal', 'oils', 'With oils'],
+    ['fragrance', 'after_cook', 'After dilution'],
+  ])('%s states its one stage instead of offering a control', (id, addAt, label) => {
+    renderLine(id, addAt);
+    expect(screen.queryByRole('radiogroup', { name: /^Add at/ })).toBeNull();
+    expect(document.querySelector('.additive-list__stage-fixed')!.textContent).toBe(label);
+  });
+
+  it.each([
+    ['sodium-lactate', 'oils', ['Lye water', 'Oils', 'After dilution']],
+    ['salt', 'lye', ['Lye water', 'Oils', 'After dilution']],
+    ['silk', 'lye', ['Lye water', 'After dilution']],
+    ['sugar-sorbitol', 'oils', ['Lye water', 'Oils']],
+  ])('%s keeps a control, showing only the sanctioned stages', (id, addAt, labels) => {
+    renderLine(id, addAt);
+    const group = screen.getByRole('radiogroup', { name: /^Add at/ });
+    expect(document.querySelector('.additive-list__stage-fixed')).toBeNull();
+    const shown = Array.from(group.querySelectorAll('label')).map((l) => (l.textContent ?? '').trim());
+    expect(shown).toEqual(labels);
+    // Trace is never among them: LS names the lye solution, the oils and the dilution
+    // water for these, never trace.
+    expect(shown).not.toContain('Trace');
+  });
+
+  it('still renders a saved line parked on a stage the entry no longer sanctions', () => {
+    // Narrowing the list must not strand an existing recipe: the line keeps its stage and
+    // stays operable, which is what the mismatched-select guard is for.
+    renderLine('guar', 'trace');
+    const group = screen.getByRole('radiogroup', { name: /^Add at/ });
+    const shown = Array.from(group.querySelectorAll('label')).map((l) => (l.textContent ?? '').trim());
+    expect(shown).toContain('Trace');
+    expect(shown).toContain('After dilution');
+  });
+
+  it('leaves the bar processes alone — fragrance still chooses in CP', () => {
+    renderLine('fragrance', 'trace', 'cp');
+    expect(screen.getByRole('radiogroup', { name: /^Add at/ })).toBeTruthy();
+  });
+});

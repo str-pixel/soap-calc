@@ -678,3 +678,63 @@ describe('every additive carries its own incorporation note', () => {
     }
   });
 });
+
+describe('LS offers only the stages its source sanctions', () => {
+  const ls = (id: string) => effectiveCatalogEntry(catalogEntryById(id)!, 'ls');
+
+  // The seg used to offer all four stages for every additive, weighting three wrong
+  // answers equally with the right one: guar into the lye water is destroyed, fragrance
+  // there flashes off, turkey red before the cook defeats the point of the sulfated form.
+  it.each([
+    // One sanctioned moment each — the panel states these instead of offering a control.
+    ['chelator', ['lye']],
+    ['charcoal', ['oils']],
+    ['clay', ['oils']],
+    ['eugenol', ['oils']],
+    ['finished-soap', ['oils']],
+    ['fragrance', ['after_cook']],
+    ['guar', ['after_cook']],
+    ['hec', ['after_cook']],
+    ['pearlizer', ['after_cook']],
+    ['wd-shea', ['after_cook']],
+    ['turkey-red-castor', ['after_cook']],
+    ['polysorbate-80', ['after_cook']],
+    ['glycerin', ['after_cook']],
+    // A real choice, and only the sanctioned members of it. Trace is absent from every one
+    // of these: LS names the lye solution, the oils and the dilution water, never trace.
+    ['sugar-sorbitol', ['lye', 'oils']],          // LS:1069
+    ['sorbitol', ['lye', 'oils']],                // LS:1069
+    ['honey', ['lye', 'oils']],                   // LS:1069
+    ['salt', ['lye', 'oils', 'after_cook']],      // LS:2630 + LS:3091 (thickening)
+    ['sodium-lactate', ['lye', 'oils', 'after_cook']], // LS:3019
+    ['silk', ['lye', 'after_cook']],              // LS:3060 + LS:3347
+    ['citric-acid', ['lye', 'after_cook']],       // LS:3037 + the neutralization route
+  ])('%s', (id, stages) => {
+    expect(ls(id as string).stages).toEqual(stages);
+  });
+
+  it('never defaults an additive to a stage it does not sanction', () => {
+    for (const entry of catalogEntriesForProcess('ls')) {
+      const e = effectiveCatalogEntry(entry, 'ls');
+      if (!e.stages) continue;
+      expect(e.stages, `${e.name}'s default sits outside its own list`).toContain(e.defaultStage);
+    }
+  });
+
+  it('leaves CP and HP unrestricted, because this audit only read the LS source', () => {
+    // Fragrance is the sharp case: after dilution in liquid soap, at trace in a bar. An
+    // entry-level list would have forced one answer on both.
+    for (const process of ['cp', 'hp'] as const) {
+      expect(effectiveCatalogEntry(catalogEntryById('fragrance')!, process).stages).toBeUndefined();
+      expect(effectiveCatalogEntry(catalogEntryById('salt')!, process).stages).toBeUndefined();
+    }
+  });
+
+  it('says nothing about stages where it has no source', () => {
+    // Unrestricted on purpose: no LS guidance exists for these, so every stage stays open
+    // rather than the app inventing a sanctioned moment.
+    for (const id of ['oatmeal', 'loofah', 'edta', 'bht', 'roe']) {
+      expect(ls(id).stages, `${id} should stay unrestricted`).toBeUndefined();
+    }
+  });
+});
