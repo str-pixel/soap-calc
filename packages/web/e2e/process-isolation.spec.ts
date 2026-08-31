@@ -10,8 +10,9 @@ const processTab = (page: Page, name: RegExp) => page.getByRole('tab', { name })
 const TABS: Array<[RegExp, string, string, string, string]> = [
   [/Cold process/, 'canary-cp', '311', '2', '5'],
   [/Hot process/, 'canary-hp', '322', '3', '3'],
-  // LS seeds 0% in-cook superfat — its 1–3% budget is delivered post-cook (2% olive).
-  [/Liquid soap/, 'canary-ls', '333', '4', '0'],
+  // LS seeds its whole 1–3% superfat budget in the cook: a lye discount needs no
+  // emulsifier, where a post-cook reserve in liquid soap does.
+  [/Liquid soap/, 'canary-ls', '333', '4', '2'],
 ];
 
 test('each process keeps its own workspace through a full tab cycle', async ({ page }) => {

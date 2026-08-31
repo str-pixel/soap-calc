@@ -221,18 +221,27 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     label: 'Liquid soap',
     defaultSettings: {
       lyeType: 'koh',
-      // 0% in-cook: the whole 1–3% LS superfat budget is delivered post-cook (the 2%
-      // olive reserve below). Main and post-cook superfat COMPOUND — seeding 2% + 2%
-      // lands at ~3.96%, past the ~3% cloud/separation ceiling the app itself warns at.
-      superfatPercent: '0',
+      // 2% in-cook, and nothing post-cook. The LS budget is 1–3% either way; what settles
+      // WHERE it sits is what each route costs a maker. A plain lye discount is the
+      // mainstream liquid-soap superfat and needs nothing but this field, while a post-cook
+      // reserve in liquid soap has to be emulsified — polysorbate 80, premixed 1:1 with the
+      // oil — or the fat separates instead of staying suspended (ls_pcsf_emulsifier says so
+      // the moment anyone turns it on). Seeding the reserve made every new LS recipe open
+      // with that advisory and an ingredient the maker had not chosen to buy. The reserve
+      // remains a click away for the makers who want its lower-PUFA superfat.
+      //
+      // Main and post-cook superfat COMPOUND, so the two are budgeted together whichever
+      // way round they are set: 2% + 2% lands at ~3.96%, past the ~3% cloud/separation
+      // ceiling the app itself warns at.
+      superfatPercent: '2',
       // Seeds a switch to dual lye at the documented LS ratio (80/20 KOH/NaOH) instead of
       // the bar default '5', which sits outside LS's kohBlendRange.
       kohBlendPercent: '80',
       waterMode: 'lye_water_ratio',
       lyeWaterRatio: '2',
       soapingTempF: '150', // lsMethodForTemp default — low temp's recommended band
-      postCookSuperfatTotalPercent: '2',
-      postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }],
+      postCookSuperfatTotalPercent: '0',
+      postCookSuperfatOils: [],
       processVariant: 'ls', // = variants[0].variant; pinned literally because defaultSettings is part of the record that defines variants[0]
     },
     lyeChoices: ['koh', 'dual'],

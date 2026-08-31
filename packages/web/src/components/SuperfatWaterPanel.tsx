@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
+import { effectiveSuperfatPercent } from '@soap-calc/core';
 import type { LyeSolutionWaterStatus, SplitLiquidWaterSuggestion, WaterMode } from '@soap-calc/core';
 import type { ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import { postCookSuperfatAllocated, type RecipeSettings, type WeightUnit } from '../lib/recipe';
@@ -209,6 +210,9 @@ export function SuperfatWaterPanel({
   const pcsfOils = settings.postCookSuperfatOils;
   const pcsfTotal = Math.max(0, Number(settings.postCookSuperfatTotalPercent) || 0);
   const pcsfAllocated = postCookSuperfatAllocated(pcsfOils);
+  // What the recipe actually delivers once the reserve rides on the main figure.
+  const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
+  const combinedSuperfatPercent = effectiveSuperfatPercent(mainSuperfatPercent, pcsfTotal);
   const pcsfRemaining = Math.max(0, roundPct(pcsfTotal - pcsfAllocated));
 
   // Editing an oil's OWN percent: cap it at the budget minus the other rows' allocation, so
@@ -409,6 +413,18 @@ export function SuperfatWaterPanel({
               value={settings.postCookSuperfatTotalPercent}
               onChange={setPcsfTotal}
             />
+
+            {/* The two superfat controls in this panel COMPOUND — the reserve scales the
+                lye after the main figure does, so 2% and 2% is not 4% — and until here
+                nothing said so until the Results panel, a screen away. Stated at the
+                second slider, where the compounding is created. Core's own definition,
+                never a re-derivation: four of those existed once and two of them added. */}
+            {pcsfTotal > 0 && (
+              <p className="pcsf__combined inline-note">
+                With {formatTotal(mainSuperfatPercent)}% above, the batch delivers{' '}
+                {formatTotal(combinedSuperfatPercent)}% superfat.
+              </p>
+            )}
 
             <div className="pcsf__alloc">
               <span className="pcsf__alloc-label">Oils</span>

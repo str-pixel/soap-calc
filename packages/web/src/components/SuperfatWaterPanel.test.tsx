@@ -40,6 +40,24 @@ const ONE_PCSF = {
   postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '5' }],
 };
 
+test('the reserve states what the two superfat controls add up to', () => {
+  // They compound rather than add — the reserve scales the lye after the main figure —
+  // and until this line the only place that showed was the Results panel, a screen away.
+  render(
+    <Harness
+      process="ls"
+      initial={{ superfatPercent: '2', postCookSuperfatTotalPercent: '2',
+        postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }] }}
+    />,
+  );
+  expect(screen.getByText(/With 2% above, the batch delivers 4\.0% superfat\./)).toBeTruthy();
+});
+
+test('with no reserve there is nothing to combine, and the line stays away', () => {
+  render(<Harness process="ls" initial={{ superfatPercent: '2', postCookSuperfatTotalPercent: '0' }} />);
+  expect(screen.queryByText(/the batch delivers/)).toBeNull();
+});
+
 test('renders the Superfat & water panel heading', () => {
   render(<Harness />);
   expect(screen.getByRole('heading', { name: 'Superfat & water' })).toBeTruthy();

@@ -781,6 +781,13 @@ details[open] > .disclosure__summary::before {
 }
 
 /* Allocation summary between the total slider and the oil rows. */
+/* What the two superfat controls add up to, said where the second one is. A readout, not
+   a warning: the ceiling has its own insight, and this line is true at every value. */
+.pcsf__combined {
+  margin: 0.35rem 0 0;
+  color: var(--caption);
+}
+
 .pcsf__alloc {
   display: flex;
   align-items: baseline;

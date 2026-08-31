@@ -62,9 +62,11 @@ describe('useRecipeStorage process', () => {
     act(() => result.current.setProcess('ls'));
     act(() => result.current.handleNew());
     expect(result.current.settings.lyeType).toBe('koh');
-    // LS seeds 0% in-cook superfat — the 1–3% LS budget is delivered post-cook (2% olive),
-    // because main and post-cook superfat compound toward the ~3% cloud ceiling.
-    expect(result.current.settings.superfatPercent).toBe('0');
+    // LS seeds its whole 1–3% superfat budget in the cook: a plain lye discount needs no
+    // emulsifier, where a post-cook reserve in liquid soap does. The two compound, so only
+    // one of them carries the budget.
+    expect(result.current.settings.superfatPercent).toBe('2');
+    expect(result.current.settings.postCookSuperfatTotalPercent).toBe('0');
   });
 
   it('handleNew locks the starter batch, matching a fresh load of the same recipe', () => {

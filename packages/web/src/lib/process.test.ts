@@ -133,10 +133,13 @@ describe('process definitions', () => {
     }
   });
 
-  it('LS defaults deliver a combined superfat inside the 1–3% band (main 0% + post-cook 2%)', () => {
-    // The LS cloud/separation ceiling is ~3% total. Main and post-cook superfat compound
-    // (subtract method), so the defaults must budget them together — 2% + 2% lands at
-    // ~3.96%, above the app's own threshold, which is why main superfat seeds at 0.
+  it('LS defaults deliver a combined superfat inside the 1–3% band, all of it in the cook', () => {
+    // The LS cloud/separation ceiling is ~3% total, and main and post-cook superfat
+    // compound (subtract method), so the defaults have to budget them together — 2% + 2%
+    // lands at ~3.96%, above the app's own threshold. The budget sits in the MAIN figure:
+    // a plain lye discount costs a maker nothing, while a post-cook reserve in liquid soap
+    // must be emulsified (ls_pcsf_emulsifier), so seeding one opened every new LS recipe
+    // with an advisory about an ingredient nobody had chosen to buy.
     // Asserted through core's OWN definition (effectiveSuperfatPercent), not a re-typed
     // formula — a re-derivation here would keep passing if core's model changed.
     const ls = PROCESS_DEFINITIONS.ls.defaultSettings;
@@ -144,7 +147,8 @@ describe('process definitions', () => {
     const combined = effectiveSuperfatPercent(main, Number(ls.postCookSuperfatTotalPercent));
     expect(combined).toBeGreaterThanOrEqual(1);
     expect(combined).toBeLessThanOrEqual(3);
-    expect(main).toBe(0);
+    expect(main).toBe(2);
+    expect(Number(ls.postCookSuperfatTotalPercent)).toBe(0);
   });
 
   it('processForLyeType infers ls for a KOH-primary dual blend', () => {
@@ -163,13 +167,14 @@ describe('process definitions', () => {
     expect(processForLyeType('naoh', '80')).toBe('cp');
   });
 
-  it('seeds HP 5% / LS 2% post-cook superfat defaults (single olive-oil row)', () => {
+  it('seeds HP a 5% post-cook superfat row, and LS none at all', () => {
+    // HP's reserve is folded into a bar, where nothing has to hold it in suspension. LS's
+    // would need an emulsifier, so liquid soap starts with an empty reserve and its whole
+    // superfat in the main figure (see the band test above).
     expect(PROCESS_DEFINITIONS.hp.defaultSettings.postCookSuperfatOils).toEqual([
       { oilId: 'olive-oil', percent: '5' },
     ]);
-    expect(PROCESS_DEFINITIONS.ls.defaultSettings.postCookSuperfatOils).toEqual([
-      { oilId: 'olive-oil', percent: '2' },
-    ]);
+    expect(PROCESS_DEFINITIONS.ls.defaultSettings.postCookSuperfatOils).toEqual([]);
   });
 });
 

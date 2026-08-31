@@ -506,8 +506,11 @@ test.describe('liquid soap', () => {
 
   test('post-cook superfat subtract reserves oil and notes lye reduction', async ({ page }) => {
     // Subtract is the default; raise the budget first, then allocate an oil within it.
+    // LS ships no reserve row (its superfat budget sits in the main figure, which needs no
+    // emulsifier), so the row this allocates into is added here.
     await page.getByLabel('Post-cook superfat total %').fill('3');
     await page.getByLabel('Post-cook superfat total %').blur();
+    await page.getByRole('button', { name: 'Add post-cook superfat oil' }).click();
     await page.getByLabel('Post-cook superfat % 1').fill('3');
     await page.getByLabel('Post-cook superfat % 1').blur();
     const picker = page.getByLabel('Post-cook superfat oil 1');
@@ -522,9 +525,11 @@ test.describe('liquid soap', () => {
   });
 
   test('post-cook superfat supports more than one oil', async ({ page }) => {
-    // Budget of 5% allocated across two oils (3 + 2). Set the total first, then the rows.
+    // Budget of 5% allocated across two oils (3 + 2). Set the total first, then the rows —
+    // both of them, since LS starts with no reserve row at all.
     await page.getByLabel('Post-cook superfat total %').fill('5');
     await page.getByLabel('Post-cook superfat total %').blur();
+    await page.getByRole('button', { name: 'Add post-cook superfat oil' }).click();
     await page.getByLabel('Post-cook superfat % 1').fill('3');
     await page.getByLabel('Post-cook superfat % 1').blur();
     await page.getByRole('button', { name: 'Add post-cook superfat oil' }).click();
