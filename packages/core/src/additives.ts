@@ -141,7 +141,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     stages: ['after_cook'],
     processes: ['ls'],
-    note: 'Here it works as emollient and humectant only — too late to speed the cook or the dilution. For the cook, add it with the liquids instead: swapping part of the lye water for it puts its weight in the paste and takes it off the dilution water. This line adds to the bottle rather than replacing water, so if you meant it as part of your dilution liquid, pour that much less.',
+    note: 'Here it works as emollient and humectant only — too late to speed the cook or the dilution. For the cook, add it with the liquids instead: swapping some of the lye water for it puts its weight in the paste and takes it off the dilution water. This line adds to the bottle rather than replacing water, so if you meant it as part of your dilution liquid, pour that much less.',
   },
   {
     // Sorbitol — sugar alcohol with a stronger lather effect than sucrose; same overheat
@@ -210,7 +210,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       kohPerGram: 3 * CITRIC_MOL_PER_GRAM * KOH_MOLAR_MASS,
     },
     note:
-      'Goes into the lye solution, where the alkali turns it into citrate — the citrate is the chelator, not the acid. It consumes some of that alkali on the way and the calculator has already replaced it, so the superfat you asked for is the one you get. It will not bring a finished soap\'s pH down — nothing at this dose will.',
+      'Goes into the lye solution, where the alkali turns it into citrate — the citrate is the chelator, not the acid. It consumes some of that alkali on the way and the calculator has already replaced it, so the superfat you asked for is the one you get. Added after the cook it answers a different problem: alkali left unreacted in a batch that came out lye-heavy. There the calculator deliberately does NOT replace what it consumes, because consuming it is the entire point. Either way it will not bring a finished soap\'s pH down — nothing at this dose will.',
   },
   {
     // CP/HP ONLY. The LS text never names it — one of just two entries in this catalog
@@ -265,7 +265,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'] },
     },
     note:
-      'Honey is mostly sugar in water, so treat it as one of the sugars: in before any dilution. It browns in fresh lye and can push a batch hotter, so the oils are the gentler route.',
+      'Honey is mostly sugar in water, so treat it as one of the sugars: into the lye solution or the oils, and in before any dilution. It browns in fresh lye and can push a batch hotter, which makes the oils the gentler of the two.',
   },
   {
     // LS sanctions after the cook, into diluted soap (LS:2950, LS:3363).
@@ -354,7 +354,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       ls: { typicalLow: 3, typicalHigh: 5, defaultStage: 'oils', stages: ['lye', 'oils', 'after_cook'] },
     },
     note:
-      'Usually sold as a liquid at around 60% strength or better, and the percentages here assume that liquid rather than the dry powder — check what your bottle actually is. It can join the lye water, or go straight into the oils.',
+      'Usually sold as a liquid at around 60% strength or better, and the percentages here assume that liquid rather than the dry powder — check what your bottle actually is. It can join the lye water, go straight into the oils, or wait and go into the dilution water — all three are named routes, and the oils are the author\'s own preference.',
   },
   {
     // Hydrolyzed silk — dissolved into the lye water, reported to add slip/sheen to lather.
@@ -374,7 +374,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 1,
     defaultStage: 'lye',
     note:
-      'Buy a water-soluble grade and dissolve it into the lye water. Keep the amount small — these proteins can cloud a soap you wanted clear, and too much leaves streaks. If clarity matters, prove it on a small batch first.',
+      'Buy a water-soluble grade and dissolve it into the lye water. Keep the amount small — these proteins can cloud a soap you wanted clear, and too much leaves streaks. If clarity matters, prove it on a small batch first. There is a second route: amino acids stirred into the soap once it is diluted, which keeps them out of the lye entirely.',
   },
   {
     // EDTA — synthetic chelator, added to the lye water alongside/instead of citrate.

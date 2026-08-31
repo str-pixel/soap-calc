@@ -738,3 +738,32 @@ describe('LS offers only the stages its source sanctions', () => {
     }
   });
 });
+
+describe('a note explains every stage its entry offers', () => {
+  // The defect this locks out, found in review: the incorporation notes and the sanctioned
+  // stage lists shipped in separate commits and were never reconciled, so four additives
+  // offered a cell their own prose never mentioned — sodium lactate's dilution-water route,
+  // silk's after-dilution amino acids, citric acid's after-cook neutralization, and honey's
+  // lye option. A maker could pick a stage and find no guidance for the thing they picked.
+  const MENTIONS: Record<string, RegExp> = {
+    lye: /lye (water|solution)/i,
+    oils: /oils/i,
+    trace: /trace/i,
+    after_cook: /after (the )?(cook|dilution)|diluted|dilution water/i,
+  };
+
+  it.each(['cp', 'hp', 'ls'] as const)('%s', (process) => {
+    for (const entry of catalogEntriesForProcess(process)) {
+      const e = effectiveCatalogEntry(entry, process);
+      // Only multi-stage entries: where there is one sanctioned moment the panel states it
+      // on the row itself, so the note does not have to name it again.
+      if (!e.stages || e.stages.length < 2 || !e.note) continue;
+      for (const stage of e.stages) {
+        expect(
+          MENTIONS[stage].test(e.note),
+          `${e.name} offers "${stage}" in ${process} but its note never explains that route`,
+        ).toBe(true);
+      }
+    }
+  });
+});
