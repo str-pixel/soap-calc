@@ -1,4 +1,4 @@
-import { alternativeLiquidPreset } from '@soap-calc/core';
+import { alternativeLiquidPreset, fToC, type AdditiveStage } from '@soap-calc/core';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from './calculateAdditives';
 import type { SplitLiquidRow, WeightUnit } from './recipe';
 import type { ProcessId } from './process';
@@ -11,6 +11,9 @@ import { formatWeight } from './weightUnits';
 export type RecipeItem = { name: string; detail: string };
 
 type FullRecipeInput = {
+  /** Resolved soaping temperature from the menu, °F. When present it opens the list,
+   * shown °C-first like the batch sheet's Method row. */
+  soapingTempF?: number;
   /** The calc's per-oil lines (oilId + resolved grams). Only lines with weight > 0 are listed. */
   lines: { oilId: string; weightGrams: number }[];
   /** Denominator for each oil's percent — the recipe oil weight the figures are shown against. */
@@ -39,6 +42,7 @@ type FullRecipeInput = {
  */
 export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
   const {
+    soapingTempF,
     lines,
     recipeOilWeightGrams,
     weightUnit,
@@ -57,6 +61,13 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
 
   const items: RecipeItem[] = [];
 
+  if (soapingTempF !== undefined) {
+    items.push({
+      name: 'Soaping temperature',
+      detail: `${fToC(soapingTempF)} °C (${soapingTempF} °F)`,
+    });
+  }
+
   for (const line of lines) {
     if (line.weightGrams <= 0) continue;
     const percent = recipeOilWeightGrams > 0 ? (line.weightGrams / recipeOilWeightGrams) * 100 : 0;
@@ -65,6 +76,40 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
       detail: `${formatWeight(line.weightGrams, weightUnit)} · ${formatGrams(percent, 1)}%`,
     });
   }
+
+  // Every timed material files into its stage bucket, then the buckets splice into the
+  // list at their procedure slot: with-oils items ride with the oils block, in-water
+  // items sit between the water and the alkali (dissolve first, THEN the lye goes in),
+  // and trace/top/after-cook follow the alkali. The stage labels the lines already carry
+  // now match the order they're read in.
+  const staged: Record<AdditiveStage, RecipeItem[]> = {
+    lye: [],
+    oils: [],
+    trace: [],
+    top: [],
+    after_cook: [],
+  };
+  for (const { row, grams } of splitLiquidRows ?? []) {
+    if (grams == null || grams <= 0) continue;
+    staged[row.addAt].push({
+      name: row.name.trim() || 'Alternative liquid',
+      detail: `${formatWeight(grams, weightUnit)} · ${additiveStageLabel(row.addAt, process)}`,
+    });
+  }
+  for (const additive of additives) {
+    staged[additive.addAt].push({
+      name: additive.name,
+      detail: `${formatWeight(additive.grams, weightUnit)} · ${additiveStageLabel(additive.addAt, process)}`,
+    });
+  }
+
+  items.push(...staged.oils);
+
+  items.push({
+    name: process === 'ls' ? 'Water' : 'Distilled water',
+    detail: formatWeight(waterGrams, weightUnit),
+  });
+  items.push(...staged.lye);
 
   if (lyeType === 'dual') {
     items.push({ name: 'Sodium hydroxide (NaOH)', detail: formatWeight(naohGrams, weightUnit) });
@@ -81,25 +126,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
     });
   }
 
-  items.push({
-    name: process === 'ls' ? 'Water' : 'Distilled water',
-    detail: formatWeight(waterGrams, weightUnit),
-  });
-
-  for (const { row, grams } of splitLiquidRows ?? []) {
-    if (grams == null || grams <= 0) continue;
-    items.push({
-      name: row.name.trim() || 'Alternative liquid',
-      detail: `${formatWeight(grams, weightUnit)} · ${additiveStageLabel(row.addAt, process)}`,
-    });
-  }
-
-  for (const additive of additives) {
-    items.push({
-      name: additive.name,
-      detail: `${formatWeight(additive.grams, weightUnit)} · ${additiveStageLabel(additive.addAt, process)}`,
-    });
-  }
+  items.push(...staged.trace, ...staged.top, ...staged.after_cook);
 
   // Last, not among the oils: the PCSF is the final material to touch the batch, and HP
   // convention keeps it out of the recipe oils entirely (the oils above sum to 100%

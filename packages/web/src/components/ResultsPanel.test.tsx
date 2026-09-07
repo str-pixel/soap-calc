@@ -741,3 +741,22 @@ test('the add-in-order CP step quotes the same unmold/cure windows as the estima
   expect(screen.getByText(/unmold ≈ 11–34 h and cure ≈ 5–7.5 weeks/)).toBeTruthy();
   expect(screen.queryByText(/24–48 h/)).toBeNull();
 });
+
+test('the Full recipe opens with the menu soaping temperature when provided', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      soapingTempF={125}
+    />,
+  );
+  expect(screen.getByText('Soaping temperature')).toBeTruthy();
+  expect(screen.getByText('52 °C (125 °F)')).toBeTruthy();
+});

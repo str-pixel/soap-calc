@@ -293,3 +293,88 @@ test('buildFullRecipe marks an applied subtract reserve as coming from the oils 
   const pcsf = items[items.length - 1];
   expect(pcsf.detail).toBe('20 g · 5% of oil · After cook, from oils above');
 });
+
+test('buildFullRecipe opens with the soaping temperature when provided, in °C (°F)', () => {
+  const items = buildFullRecipe({
+    lines: OILS,
+    recipeOilWeightGrams: 400,
+    weightUnit: 'g',
+    lyeType: 'naoh',
+    naohGrams: 0,
+    kohGrams: 0,
+    lyeGrams: 56.7,
+    waterGrams: 132,
+    additives: [],
+    soapingTempF: 125,
+    process: 'cp',
+  });
+  expect(items[0]).toEqual({ name: 'Soaping temperature', detail: '52 °C (125 °F)' });
+});
+
+test('buildFullRecipe has no temperature line when soapingTempF is omitted', () => {
+  const items = buildFullRecipe({
+    lines: OILS,
+    recipeOilWeightGrams: 400,
+    weightUnit: 'g',
+    lyeType: 'naoh',
+    naohGrams: 0,
+    kohGrams: 0,
+    lyeGrams: 56.7,
+    waterGrams: 132,
+    additives: [],
+    process: 'cp',
+  });
+  expect(items.some((i) => i.name === 'Soaping temperature')).toBe(false);
+});
+
+test('buildFullRecipe runs in procedure order: oils-stage, water, in-water additives, lye, trace, after cook', () => {
+  const items = buildFullRecipe({
+    lines: OILS,
+    recipeOilWeightGrams: 400,
+    weightUnit: 'g',
+    lyeType: 'naoh',
+    naohGrams: 0,
+    kohGrams: 0,
+    lyeGrams: 56.7,
+    waterGrams: 132,
+    additives: [
+      { key: 't', catalogId: 'sugar', name: 'Sugar', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'trace' },
+      { key: 'l', catalogId: 'citric-acid', name: 'Citric acid', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'lye' },
+      { key: 'o', catalogId: 'clay', name: 'Kaolin clay', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'oils' },
+    ],
+    process: 'cp',
+  });
+  const names = items.map((i) => i.name);
+  const at = (name: string) => names.indexOf(name);
+  // With-oils items ride with the oils block, before the water.
+  expect(at('Kaolin clay')).toBeGreaterThan(at('Olive Oil'));
+  expect(at('Kaolin clay')).toBeLessThan(at('Distilled water'));
+  // Water first, its dissolved additives next, THEN the lye goes in.
+  expect(at('Distilled water')).toBeLessThan(at('Citric acid'));
+  expect(at('Citric acid')).toBeLessThan(at('Sodium hydroxide (NaOH)'));
+  // Trace items follow the lye.
+  expect(at('Sugar')).toBeGreaterThan(at('Sodium hydroxide (NaOH)'));
+});
+
+test('an in-lye alternative liquid lists with the water, before the alkali', () => {
+  const row = {
+    key: 'x', name: 'Goat milk', presetKey: 'milk', addAt: 'lye',
+    mode: 'percent', percent: '50', grams: '',
+  } as never;
+  const items = buildFullRecipe({
+    lines: OILS,
+    recipeOilWeightGrams: 400,
+    weightUnit: 'g',
+    lyeType: 'naoh',
+    naohGrams: 0,
+    kohGrams: 0,
+    lyeGrams: 56.7,
+    waterGrams: 66,
+    additives: [],
+    splitLiquidRows: [{ row, grams: 66 }],
+    process: 'cp',
+  });
+  const names = items.map((i) => i.name);
+  expect(names.indexOf('Goat milk')).toBeGreaterThan(names.indexOf('Distilled water'));
+  expect(names.indexOf('Goat milk')).toBeLessThan(names.indexOf('Sodium hydroxide (NaOH)'));
+});

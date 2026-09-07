@@ -494,6 +494,7 @@ export default function App() {
       splitLiquidGrams={vm.splitLiquidGrams}
       additives={vm.computedAdditives}
       superfatPercent={vm.previewSettings.superfatPercent}
+      soapingTempF={vm.soapingTempF}
       postCookSuperfat={vm.postCookSuperfat}
       pcsfIsExtra={vm.pcsfIsExtra}
       extrasGrams={vm.extrasGrams}

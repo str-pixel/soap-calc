@@ -33,6 +33,9 @@ type ResultsPanelProps = {
   splitLiquidGrams?: number | null;
   additives?: ComputedAdditive[];
   superfatPercent?: string;
+  /** Resolved soaping temperature from the menu (vm.soapingTempF), °F — opens the Full
+   * recipe list when present. */
+  soapingTempF?: number;
   postCookSuperfat?: ComputedPostCookSuperfat | null;
   /** Whether the post-cook superfat is an added extra (append mode, or subtract under a
    * lye excess where the reserve was never actually applied) rather than reserved from
@@ -126,6 +129,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   splitLiquidGrams = null,
   additives = [],
   superfatPercent,
+  soapingTempF,
   postCookSuperfat = null,
   pcsfIsExtra = true,
   extrasGrams = 0,
@@ -215,6 +219,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   // The itemized recipe + build steps read straight off the figures above, so the on-screen
   // summary can never quote a weight the results grid doesn't.
   const fullRecipe = buildFullRecipe({
+    soapingTempF,
     lines: result.lines.map((line) => ({ oilId: line.oilId, weightGrams: line.weightGrams })),
     recipeOilWeightGrams,
     weightUnit,
