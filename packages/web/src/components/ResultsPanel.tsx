@@ -1,16 +1,16 @@
 import { memo, useState } from 'react';
-import { batchWeightBreakdown, effectiveSuperfatPercent } from '@soap-calc/core';
+import { batchWeightBreakdown } from '@soap-calc/core';
 import type { LyeCalculationResult, WaterMode } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import type { CureEstimate } from '../lib/cureEstimate';
 import { PROCESS_DEFINITIONS, type ProcessId } from '../lib/process';
-import { formatGrams } from '../lib/format';
+import { formatGrams, joinNames } from '../lib/format';
 import { formatDose } from '../lib/formatDose';
-import { oilById } from '../lib/oils';
 import type { AppliedPostCookSuperfat, ComputedAdditive } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidRow, WeightUnit } from '../lib/recipe';
-import { buildAddOrderSteps, buildFullRecipe } from '../lib/recipeSummary';
+import { buildAddOrderSteps, buildFullRecipe, postCookSuperfatProvenance } from '../lib/recipeSummary';
+import { oilDisplayName } from '../lib/oilDisplay';
 import { formatWeight, formatWeightParts } from '../lib/weightUnits';
 import { formatWorkabilityRange } from '../lib/workabilityFormat';
 import { formatCureRange } from '../lib/cureFormat';
@@ -32,13 +32,13 @@ type ResultsPanelProps = {
   splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
   splitLiquidGrams?: number | null;
   additives?: ComputedAdditive[];
+  /** Accepted but no longer read: the delivered total comes stamped on postCookSuperfat.
+   * Kept so App's call site stays untouched. */
   superfatPercent?: string;
   /** Resolved soaping temperature from the menu (vm.soapingTempF), °F — opens the Full
    * recipe list when present. */
   soapingTempF?: number;
-  /** The vm's stamped PCSF — the applied-state flag rides ON the object
-   * (AppliedPostCookSuperfat), so a caller cannot pass the superfat while a stale or
-   * defaulted flag rides along. Single source of truth: useRecipeViewModel. */
+  /** The vm's stamped PCSF (see AppliedPostCookSuperfat). */
   postCookSuperfat?: AppliedPostCookSuperfat | null;
   /** The vm's total off-recipe grams (additives + split liquid + PCSF-if-extra) — passed
    * down so this panel never recomputes it and drifts from the printed sheet. */
@@ -127,7 +127,6 @@ export const ResultsPanel = memo(function ResultsPanel({
   splitLiquidRows = [],
   splitLiquidGrams = null,
   additives = [],
-  superfatPercent,
   soapingTempF,
   postCookSuperfat = null,
   extrasGrams = 0,
@@ -178,13 +177,9 @@ export const ResultsPanel = memo(function ResultsPanel({
   const waterNote = waterFootnote(waterMode, excludedOilWeightGrams);
   const showTotalLiquid = splitLiquidGrams !== null && splitLiquidGrams > 0;
   const totalLiquidGrams = result.waterWeightGrams + (splitLiquidGrams ?? 0);
-  const cookSuperfatPercent = Number(superfatPercent) || 0;
-  // Shares COMPOUND (core effectiveSuperfatPercent) — plain addition printed a total the
-  // superfat insights contradicted about the same recipe.
-  const totalSuperfatPercent = effectiveSuperfatPercent(
-    cookSuperfatPercent,
-    postCookSuperfat?.percentOfOil,
-  );
+  // The delivered total is the vm's stamped, method-aware figure — never recomputed here
+  // (the three surfaces once disagreed about the same recipe).
+  const totalSuperfatPercent = postCookSuperfat?.deliveredSuperfatPercent ?? null;
   // Single-sourced from cureEstimate (itself derived from the view model's resolved
   // process-variant profile), not the `process` prop — the cure window / usableAtUnmold
   // already come from that profile, so under a transient variant/process mismatch the
@@ -195,9 +190,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   // actually sheds water.
   const showLabelWeight = labelWeight !== null && labelWeight < batchWeightWithExtras;
   const postCookSuperfatOilName = postCookSuperfat
-    ? postCookSuperfat.oils
-        .map((o) => oilById(o.oilId)?.displayName ?? o.oilId)
-        .join(' + ')
+    ? postCookSuperfat.oils.map((o) => oilDisplayName(o.oilId)).join(' + ')
     : null;
   // List only the extras actually present — a post-cook-superfat-only batch (no additive
   // lines) must not claim "includes additives".
@@ -205,9 +198,8 @@ export const ResultsPanel = memo(function ResultsPanel({
     additiveGrams > 0 ? 'additives' : null,
     splitLiquidGrams ? 'alternative liquid' : null,
     postCookSuperfat?.isExtra ? 'post-cook superfat' : null,
-  ]
-    .filter(Boolean)
-    .join(' and ');
+  ].filter((x): x is string => x !== null);
+  const extrasNoteText = joinNames(extrasNote);
   const batchWeight = batchWeightBreakdown({
     oilGrams: totalOilGrams,
     lyeGrams: result?.lyeWeightGrams ?? 0,
@@ -240,6 +232,10 @@ export const ResultsPanel = memo(function ResultsPanel({
     waterGrams: result.waterWeightGrams,
     weightUnit,
     splitLiquidRows,
+    // The same temperature and additive stages the Full recipe above renders, so the two
+    // lists in this panel can never tell different stories.
+    soapingTempF,
+    additives,
     // Same formatted strings the Workability rows / cure milestones render, so the step
     // copy can never contradict the estimates shown two panels up.
     unmoldText: cureEstimate?.workability
@@ -328,8 +324,8 @@ export const ResultsPanel = memo(function ResultsPanel({
             <dt>Batch weight</dt>
             <dd>
               <Weight grams={displayedBatchWeight} unit={weightUnit} />
-              {extrasGrams > 0 && extrasNote && (
-                <span className="results-excluded"> (includes {extrasNote})</span>
+              {extrasGrams > 0 && extrasNote.length > 0 && (
+                <span className="results-excluded"> (includes {extrasNoteText})</span>
               )}
             </dd>
           </div>
@@ -376,7 +372,7 @@ export const ResultsPanel = memo(function ResultsPanel({
             <div className="results-grid__item">
               <dt>
                 Post-cook superfat ({postCookSuperfatOilName})
-                {!postCookSuperfat.isExtra ? ' · reserved, lye reduced' : ''}
+                {postCookSuperfatProvenance(postCookSuperfat.isExtra)}
               </dt>
               <dd>
                 <Weight grams={postCookSuperfat.grams} unit={weightUnit} />
@@ -387,7 +383,9 @@ export const ResultsPanel = memo(function ResultsPanel({
               </dd>
             </div>
           )}
-          {postCookSuperfat && cookSuperfatPercent >= 0 && (
+          {/* Null when there is nothing to add up (a subtract reserve left unapplied under a
+              lye excess) — the vm decides, this row only renders. */}
+          {totalSuperfatPercent !== null && (
             <div className="results-grid__item">
               <dt>Total superfat</dt>
               <dd><Figure value={formatGrams(totalSuperfatPercent, 1)} unit="%" spaced={false} /></dd>

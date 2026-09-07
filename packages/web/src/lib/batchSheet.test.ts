@@ -122,6 +122,8 @@ describe('buildBatchSheetData post-cook superfat threading', () => {
       percentOfOil: 5,
       grams: 50,
       isExtra: false,
+      method: 'subtract' as const,
+      deliveredSuperfatPercent: null,
     };
     const data = buildBatchSheetData(makeBatchSheetInput({ postCookSuperfat: pcsf }));
     expect(data.postCookSuperfat).toEqual(pcsf);

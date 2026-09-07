@@ -40,7 +40,7 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
-    postCookSuperfat: { ...postCookSuperfat, isExtra: true },
+    postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'append', deliveredSuperfatPercent: null },
     extrasGrams: postCookSuperfat.grams,
     dilution: null,
     neutralization: null,
@@ -180,7 +180,7 @@ test('prints a total superfat (cook + post-cook) row', () => {
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
-    postCookSuperfat: { ...postCookSuperfat, isExtra: true },
+    postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'append', deliveredSuperfatPercent: 7.767 },
     extrasGrams: postCookSuperfat.grams,
     dilution: null,
     neutralization: null,
@@ -195,11 +195,11 @@ test('prints a total superfat (cook + post-cook) row', () => {
 
   render(<BatchSheet data={data} />);
 
-  // Cook 5% compounded with post-cook 3% (core effectiveSuperfatPercent):
-  // 100×(1−0.95×0.97) = 7.85 → "7.9%". The sheet and the on-screen results share the
-  // definition, so neither can print the plain-addition 8% the insights contradict.
+  // The sheet prints the vm's stamped delivered figure — append arithmetic here,
+  // (5 + 3) / 1.03 = 7.77 → "7.8%" — the same field the on-screen row renders, so the
+  // two cannot disagree and neither recomputes.
   expect(screen.getByText('Total superfat')).toBeTruthy();
-  expect(screen.getByText('7.9%')).toBeTruthy();
+  expect(screen.getByText('7.8%')).toBeTruthy();
 });
 
 test('subtract + negative main superfat: no from-oils-above note and no Total superfat row (cookFactor guard leaves lye untouched, so both would be false)', () => {
@@ -231,7 +231,7 @@ test('subtract + negative main superfat: no from-oils-above note and no Total su
     splitLiquidGrams: null,
     // cookFactor guard: a lye excess (superfat -2%) forces cookFactor back to 1, so the
     // subtract reserve is never actually applied — the PCSF oil is an extra either way.
-    postCookSuperfat: { ...postCookSuperfat, isExtra: true },
+    postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'subtract', deliveredSuperfatPercent: null },
     extrasGrams: postCookSuperfat.grams,
     dilution: null,
     neutralization: null,
@@ -277,7 +277,7 @@ test('subtract + non-negative main superfat: notes the reserve comes from the oi
     splitLiquidGrams: null,
     // Non-negative superfat: the subtract reserve is actually applied, so the PCSF oil is
     // reserved from the recipe oils, not an extra.
-    postCookSuperfat: { ...postCookSuperfat, isExtra: false },
+    postCookSuperfat: { ...postCookSuperfat, isExtra: false, method: 'subtract', deliveredSuperfatPercent: 6.9 },
     extrasGrams: 0,
     dilution: null,
     neutralization: null,
@@ -1421,7 +1421,7 @@ test('LS prints the Post-cook superfat section AFTER Dilution, matching the on-s
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
-    postCookSuperfat: { ...postCookSuperfat, isExtra: false },
+    postCookSuperfat: { ...postCookSuperfat, isExtra: false, method: 'subtract', deliveredSuperfatPercent: null },
     extrasGrams: 0,
     dilution,
     neutralization: null,
@@ -1442,4 +1442,45 @@ test('LS prints the Post-cook superfat section AFTER Dilution, matching the on-s
   expect(headings).toContain('Dilution');
   expect(headings).toContain('Post-cook superfat');
   expect(headings.indexOf('Post-cook superfat')).toBeGreaterThan(headings.indexOf('Dilution'));
+});
+
+test.each([
+  ['cp', ['Lye solution', 'Oils']],
+  ['hp', ['Oils', 'Lye solution']],
+] as const)('%s: the sheet orders Oils and Lye solution like the on-screen Full recipe', (process, expected) => {
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  const data = buildBatchSheetData({
+    recipeName: 'Order batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    extrasGrams: 0,
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    insights: [],
+    process,
+  });
+  const { container } = render(<BatchSheet data={data} />);
+  const headings = Array.from(container.querySelectorAll('.batch-sheet__section > h2')).map(
+    (el) => el.textContent ?? '',
+  );
+  const pair = headings.filter((h) => h === 'Oils' || h === 'Lye solution');
+  expect(pair).toEqual(expected);
 });

@@ -34,8 +34,7 @@ export type BatchSheetData = {
   additives: ComputedAdditive[];
   splitLiquidRows: Array<{ row: SplitLiquidRow; grams: number | null }>;
   splitLiquidGrams: number | null;
-  /** Flag ON the object (AppliedPostCookSuperfat) — same contract as the Results panel:
-   * a sheet can never pair the superfat with a stale or defaulted applied-state. */
+  /** The vm's stamped PCSF (see AppliedPostCookSuperfat). */
   postCookSuperfat: AppliedPostCookSuperfat | null;
   extrasGrams: number;
   dilution: DilutionResult | null;

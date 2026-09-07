@@ -7,6 +7,7 @@ import {
   allProcessVariantIds,
   soapingTempRangeFor,
   effectiveSoapingTempF,
+  lyeSolutionBeforeOils,
   PROCESS_DEFINITIONS,
 } from './process';
 
@@ -181,5 +182,15 @@ describe('HP water band matches the source', () => {
     const band = processProfileById('hp-lthp')!.waterBand!;
     // 32% is the first high-tier value in the source and must be inside the high tier.
     expect(band.highTier[0]).toBeLessThanOrEqual(32);
+  });
+});
+
+describe('procedure order lives on the process definition', () => {
+  it('CP makes the lye solution first (it needs the cooling time); HP and LS heat the oils first', () => {
+    expect(PROCESS_DEFINITIONS.cp.procedure.lyeSolutionFirst).toBe(true);
+    expect(PROCESS_DEFINITIONS.hp.procedure.lyeSolutionFirst).toBe(false);
+    expect(PROCESS_DEFINITIONS.ls.procedure.lyeSolutionFirst).toBe(false);
+    expect(lyeSolutionBeforeOils('cp')).toBe(true);
+    expect(lyeSolutionBeforeOils('hp')).toBe(false);
   });
 });

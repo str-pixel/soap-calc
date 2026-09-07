@@ -2,7 +2,6 @@ import { memo, useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   alternativeLiquidPreset,
-  effectiveSuperfatPercent,
   formatPropertyScore,
   formatSoapPropertyPercent,
   lsFinishedVolumeMl,
@@ -23,6 +22,7 @@ import {
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
 import { postCookSuperfatLineDetail, splitLiquidProcedureStep } from '../lib/recipeSummary';
+import { lyeSolutionBeforeOils } from '../lib/process';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
 import {
@@ -94,7 +94,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
 
   const modeled = fattyAcids.modeledOilIds;
 
-  const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
 
   const isDualLye = settings.lyeType === 'dual';
@@ -268,13 +267,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
       ? ` NOTE: above the ${preservative.ceiling === 'eu' ? 'EU legal maximum' : "supplier's maximum"} of ${preservative.maxPct}%.`
       : '';
 
-  return (
-    <article className="batch-sheet" aria-hidden="true">
-      <header className="batch-sheet__header">
-        <h1>{recipeName}</h1>
-        <p className="batch-sheet__meta">Printed {printedAt}</p>
-      </header>
-
+  const oilsSection = (
       <section className="batch-sheet__section">
         <h2>Oils</h2>
         <table className="batch-sheet__table">
@@ -299,6 +292,8 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         </table>
       </section>
 
+  );
+  const lyeSection = (
       <section className="batch-sheet__section">
         <h2>Lye solution</h2>
         <dl className="batch-sheet__dl">
@@ -343,19 +338,10 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             <dt>Superfat</dt>
             <dd>{settings.superfatPercent || '0'}%</dd>
           </div>
-          {postCookSuperfat && mainSuperfatPercent >= 0 && (
+          {postCookSuperfat?.deliveredSuperfatPercent != null && (
             <div>
               <dt>Total superfat</dt>
-              <dd>
-                {formatGrams(
-                  effectiveSuperfatPercent(
-                    Number(settings.superfatPercent) || 0,
-                    postCookSuperfat.percentOfOil,
-                  ),
-                  1,
-                )}
-                %
-              </dd>
+              <dd>{formatGrams(postCookSuperfat.deliveredSuperfatPercent, 1)}%</dd>
             </div>
           )}
           <div>
@@ -385,6 +371,29 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           </p>
         ) : null}
       </section>
+  );
+
+  return (
+    <article className="batch-sheet" aria-hidden="true">
+      <header className="batch-sheet__header">
+        <h1>{recipeName}</h1>
+        <p className="batch-sheet__meta">Printed {printedAt}</p>
+      </header>
+
+      {/* The two sections come in the process's own order — CP makes the lye solution
+          first (lyeSolutionBeforeOils), HP and LS heat the oils first — read from the same
+          table as the on-screen Full recipe, so the sheet and the screen cannot disagree. */}
+      {lyeSolutionBeforeOils(process) ? (
+        <>
+          {lyeSection}
+          {oilsSection}
+        </>
+      ) : (
+        <>
+          {oilsSection}
+          {lyeSection}
+        </>
+      )}
 
       {includedLines.length > 0 && (
         <section className="batch-sheet__section">

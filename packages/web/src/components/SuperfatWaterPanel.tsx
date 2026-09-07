@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { effectiveSuperfatPercent } from '@soap-calc/core';
+import { deliveredSuperfatPercent } from '@soap-calc/core';
 import type { LyeSolutionWaterStatus, SplitLiquidWaterSuggestion, WaterMode } from '@soap-calc/core';
 import type { ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import { postCookSuperfatAllocated, type RecipeSettings, type WeightUnit } from '../lib/recipe';
@@ -219,9 +219,10 @@ export function SuperfatWaterPanel({
   // core's documented approximation, shared with ResultsPanel and BatchSheet).
   const pcsfIsSubtract = settings.postCookSuperfatMethod === 'subtract';
   const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
-  const combinedSuperfatPercent = effectiveSuperfatPercent(
+  const combinedSuperfatPercent = deliveredSuperfatPercent(
     mainSuperfatPercent,
     pcsfIsSubtract ? Math.min(99, pcsfAllocated) : pcsfAllocated,
+    settings.postCookSuperfatMethod,
   );
   const pcsfRemaining = Math.max(0, roundPct(pcsfTotal - pcsfAllocated));
 

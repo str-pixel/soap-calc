@@ -98,6 +98,15 @@ export type ProcessDefinition = {
   capabilities: CapabilityKey[];
   finishing: 'cure' | 'sequester';
   terms: { finishingLabel: string };
+  /** Bench-order facts every surface reads through lyeSolutionBeforeOils — the Full
+   * recipe's section order, the Add-in-order steps, and the printed sheet — so the three
+   * cannot tell different stories. */
+  procedure: {
+    /** True where the lye solution is made first and cools while the oils are prepared
+     * (CP); false where the oils heat first and the hot solution is made when they are at
+     * temperature (HP, LS). */
+    lyeSolutionFirst: boolean;
+  };
   variants: readonly ProcessProfile[];
 };
 
@@ -136,6 +145,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     capabilities: ['cpExtras'],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
+    procedure: { lyeSolutionFirst: true },
     variants: [
       {
         variant: 'cp',
@@ -174,6 +184,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     capabilities: ['postCook', 'hpVessel', 'afterCookStage'],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
+    procedure: { lyeSolutionFirst: false },
     variants: [
       {
         variant: 'hp-lthp',
@@ -250,6 +261,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     capabilities: ['postCook', 'dilution', 'neutralize', 'preserve', 'negativeSuperfat', 'solutionDosing', 'afterCookStage'],
     finishing: 'sequester',
     terms: { finishingLabel: 'Sequester' },
+    procedure: { lyeSolutionFirst: false },
     variants: [
       {
         variant: 'ls',
@@ -352,6 +364,12 @@ export function isProcessId(value: unknown): value is ProcessId {
  * and the behaviour (mount/memo) cannot diverge — the arc's founding invariant. */
 export function processOffers(process: ProcessId, capability: CapabilityKey): boolean {
   return PROCESS_DEFINITIONS[process].capabilities.includes(capability);
+}
+
+/** Which the procedure makes first, the lye solution or the oils — see
+ * ProcessDefinition.procedure. Readers use this instead of `process === 'cp'`. */
+export function lyeSolutionBeforeOils(process: ProcessId): boolean {
+  return PROCESS_DEFINITIONS[process].procedure.lyeSolutionFirst;
 }
 
 

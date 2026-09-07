@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { buildAddOrderSteps, buildFullRecipe } from './recipeSummary';
+import { addOrderStepPlan, buildAddOrderSteps, buildFullRecipe, postCookSuperfatLineDetail } from './recipeSummary';
 
 /** Flatten the sectioned manifest for ordering assertions that span sections. */
 const flat = (sections: ReturnType<typeof buildFullRecipe>) => sections.flatMap((s) => s.items);
@@ -25,7 +25,7 @@ const FULL_RECIPE_BASE: Parameters<typeof buildFullRecipe>[0] = {
   process: 'cp',
 };
 
-test('buildFullRecipe lists weighted oils (weight · %), then alkali, water, and additives', () => {
+test('buildFullRecipe lists weighted oils (weight · %), the lye solution, and additives', () => {
   const items = flat(buildFullRecipe({
     ...FULL_RECIPE_BASE,
     additives: [
@@ -37,7 +37,7 @@ test('buildFullRecipe lists weighted oils (weight · %), then alkali, water, and
   expect(items).toHaveLength(5);
   // Percent uses up to 1 decimal (trailing .0 trimmed); weights are whole grams, matching
   // the app's other figures.
-  expect(items[0].detail).toContain('75%'); // 300 / 400
+  expect(items.find((i) => i.name === 'Olive Oil')?.detail).toContain('75%'); // 300 / 400
   const names = items.map((i) => i.name);
   expect(names).toContain('Sodium hydroxide (NaOH)');
   expect(names).toContain('Distilled water');
@@ -94,11 +94,12 @@ test('buildAddOrderSteps quotes the batch weights and keeps lye-into-water for C
     weightUnit: 'g',
   });
   expect(steps).toHaveLength(5);
-  expect(steps[0]).toContain('400 g');
-  expect(steps[1]).toContain('57 g'); // 56.7 rounds to whole grams
-  expect(steps[1]).toContain('132 g');
-  expect(steps[1]).toContain('NaOH');
-  expect(steps[1]).toMatch(/add the lye to the water \(never the reverse\)/);
+  // CP makes the lye solution first (it needs the cooling time), then weighs the oils.
+  expect(steps[0]).toContain('57 g'); // 56.7 rounds to whole grams
+  expect(steps[0]).toContain('132 g');
+  expect(steps[0]).toContain('NaOH');
+  expect(steps[0]).toMatch(/add the lye to the water \(never the reverse\)/);
+  expect(steps[1]).toContain('400 g');
   expect(steps[4]).toContain('cure 4–6 weeks');
 });
 
@@ -273,7 +274,7 @@ test('the Post-cook superfat section is last, and only exists when one is set in
       oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }],
       percentOfOil: 5,
       grams: 20,
-      isExtra: true,
+      isExtra: true, method: 'append', deliveredSuperfatPercent: null,
     },
   });
   const last = sections[sections.length - 1];
@@ -298,8 +299,10 @@ test('buildFullRecipe has no temperature line when soapingTempF is omitted', () 
 });
 
 test('buildFullRecipe runs in procedure order: oils-stage, water, in-water additives, lye, trace, after cook', () => {
+  // HP: the oils-first process (CP makes the lye solution first — see the section-order test).
   const items = flat(buildFullRecipe({
     ...FULL_RECIPE_BASE,
+    process: 'hp',
     additives: [
       { key: 't', catalogId: 'sugar', name: 'Sugar', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'trace' },
       { key: 'l', catalogId: 'citric-acid', name: 'Citric acid', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'lye' },
@@ -346,7 +349,7 @@ test('buildFullRecipe groups the manifest under soap-book section headings', () 
       oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }],
       percentOfOil: 5,
       grams: 20,
-      isExtra: true,
+      isExtra: true, method: 'append', deliveredSuperfatPercent: null,
     },
     soapingTempF: 125,
     process: 'hp',
@@ -379,7 +382,7 @@ test('buildFullRecipe groups the manifest under soap-book section headings', () 
 test('a reserved PCSF section line still says it comes from the oils above', () => {
   const sections = buildFullRecipe({
     ...FULL_RECIPE_BASE,
-    postCookSuperfat: { oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }], percentOfOil: 5, grams: 20, isExtra: false },
+    postCookSuperfat: { oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }], percentOfOil: 5, grams: 20, isExtra: false, method: 'subtract', deliveredSuperfatPercent: null },
     process: 'hp',
   });
   const pcsf = sections.find((s) => s.heading === 'Post-cook superfat')!;
@@ -399,4 +402,135 @@ test('the after-cook section heading is process-aware — LS says After dilution
     process: 'ls',
   });
   expect(sections.map((s) => s.heading)).toContain('After dilution');
+});
+
+test('a solvent in-lye liquid (glycerin) lists BEFORE the alkali — it is what the alkali dissolves into', () => {
+  const row = {
+    key: 'g', name: 'Glycerin', presetKey: 'glycerin', addAt: 'lye',
+    mode: 'percent', percent: '50', grams: '',
+  } as never;
+  const items = flat(buildFullRecipe({
+    ...FULL_RECIPE_BASE,
+    process: 'ls',
+    lyeType: 'koh',
+    lyeGrams: 80,
+    splitLiquidRows: [{ row, grams: 220 }],
+  }));
+  const names = items.map((i) => i.name);
+  expect(names.indexOf('Glycerin')).toBeGreaterThan(names.indexOf('Water'));
+  expect(names.indexOf('Glycerin')).toBeLessThan(names.indexOf('Potassium hydroxide (KOH)'));
+});
+
+test('a PCSF line with no applied state at all fails safe — it never claims a reserve', () => {
+  // Only a type-bypassing caller can get here; if one does, "extra weight" is the harmless
+  // reading and "from oils above (lye reduced)" the harmful one.
+  expect(postCookSuperfatLineDetail({ grams: 20, percentOfOil: 5 }, 'g', undefined as never)).toBe(
+    '20 g · 5% of oil',
+  );
+});
+
+test('section order follows the process: CP makes the lye solution first, HP and LS heat the oils first', () => {
+  const headings = (process: 'cp' | 'hp' | 'ls', lyeType: 'naoh' | 'koh') =>
+    buildFullRecipe({ ...FULL_RECIPE_BASE, process, lyeType, soapingTempF: 125 }).map((s) => s.heading);
+  expect(headings('cp', 'naoh')).toEqual([null, 'Lye solution', 'Oils']);
+  expect(headings('hp', 'naoh')).toEqual([null, 'Oils', 'Lye solution']);
+  expect(headings('ls', 'koh')).toEqual([null, 'Oils', 'Lye solution']);
+});
+
+test('CP steps make the lye solution first, quoting the menu temperature, then the oils', () => {
+  const steps = buildAddOrderSteps({ ...CP_BASE, soapingTempF: 125 });
+  expect(steps[0]).toContain('NaOH');
+  expect(steps[0]).toContain('cool to 52 °C (125 °F)');
+  expect(steps[1]).toContain('1,000 g');
+  expect(steps[1]).toContain('warm to 52 °C (125 °F)');
+  expect(steps.join(' ')).not.toContain('38–43');
+});
+
+test('CP steps keep a generic temperature band only when no menu temperature is given', () => {
+  const steps = buildAddOrderSteps(CP_BASE);
+  expect(steps[0]).toContain('NaOH');
+  expect(steps[0]).toContain('38–43 °C');
+});
+
+const ADDITIVE = (name: string, addAt: 'lye' | 'oils' | 'trace' | 'top' | 'after_cook') => ({
+  key: name, catalogId: name.toLowerCase(), name, amount: 1, unit: 'percent' as const,
+  basis: 'oil' as const, grams: 10, addAt,
+});
+
+test('CP steps name each additive at the stage the Full recipe files it under', () => {
+  const steps = buildAddOrderSteps({
+    ...CP_BASE,
+    additives: [ADDITIVE('Citric acid', 'lye'), ADDITIVE('Kaolin clay', 'oils'), ADDITIVE('Sugar', 'trace'), ADDITIVE('Dried petals', 'top')],
+  });
+  const lye = steps.find((s) => s.includes('NaOH'))!;
+  expect(lye).toMatch(/stir .*Citric acid.* into the water/);
+  expect(steps.find((s) => s.includes('warm to'))).toContain('Kaolin clay');
+  expect(steps.find((s) => s.includes('at trace'))).toContain('Sugar');
+  expect(steps.find((s) => s.includes('Pour into the mold'))).toContain('Dried petals');
+  // Nothing generic survives beside a named additive.
+  expect(steps.join(' ')).not.toContain('any additives');
+});
+
+test('HP steps put in-lye additives before the alkali and after-cook additives after the cook', () => {
+  const steps = buildAddOrderSteps({
+    process: 'hp', lyeType: 'naoh', totalOilGrams: 1000, lyeGrams: 138, waterGrams: 330, weightUnit: 'g',
+    additives: [ADDITIVE('Table salt', 'lye'), ADDITIVE('Fragrance', 'after_cook'), ADDITIVE('Sugar', 'trace')],
+  });
+  expect(steps.find((s) => s.includes('NaOH'))).toMatch(/stir .*Table salt.* into the water/);
+  expect(steps.find((s) => s.includes('After the cook'))).toContain('Fragrance');
+  expect(steps.find((s) => s.includes('cook to a thick'))).toContain('Sugar');
+});
+
+test('LS steps name after-dilution additives in the dilution step, never in the paste', () => {
+  const steps = buildAddOrderSteps({
+    process: 'ls', lyeType: 'koh', totalOilGrams: 1000, lyeGrams: 200, waterGrams: 400, weightUnit: 'g',
+    additives: [ADDITIVE('Fragrance', 'after_cook'), ADDITIVE('Sugar', 'lye')],
+  });
+  expect(steps.find((s) => s.includes('Dilute'))).toContain('Fragrance');
+  expect(steps.find((s) => s.includes('KOH'))).toMatch(/stir .*Sugar.* into the water/);
+});
+
+test('every process hosts every additive stage in exactly one step, and every liquid slot once', () => {
+  for (const process of ['cp', 'hp', 'ls'] as const) {
+    const plan = addOrderStepPlan(process);
+    const hosted = plan.flatMap((step) => step.hosts).sort();
+    expect(hosted, process).toEqual(['after_cook', 'lye', 'oils', 'top', 'trace']);
+    const slots = plan.flatMap((step) => step.liquids.map((l) => l.slot)).sort();
+    expect(slots, process).toEqual(['lye_after_alkali', 'lye_before_alkali', 'oils', 'trace']);
+  }
+});
+
+test('a solvent in-lye liquid (glycerin) is weighed with the water BEFORE the alkali step, in CP and LS', () => {
+  const glycerin = { row: SPLIT({ presetKey: 'glycerin', name: 'Glycerin', addAt: 'lye' }), grams: 220 };
+  const cp = buildAddOrderSteps({ ...CP_BASE, splitLiquidRows: [glycerin] });
+  expect(cp.findIndex((s) => s.includes('Glycerin'))).toBeLessThan(cp.findIndex((s) => s.includes('NaOH')));
+  const ls = buildAddOrderSteps({
+    process: 'ls', lyeType: 'koh', totalOilGrams: 1000, lyeGrams: 200, waterGrams: 400, weightUnit: 'g',
+    splitLiquidRows: [glycerin],
+  });
+  expect(ls.findIndex((s) => s.includes('Glycerin'))).toBeLessThan(ls.findIndex((s) => s.includes('KOH')));
+  expect(ls.find((s) => s.includes('Glycerin'))).toMatch(/with the water/);
+});
+
+test('a sugary in-lye liquid (milk) still joins the cooled solution AFTER the alkali step', () => {
+  const milk = { row: SPLIT({ presetKey: 'milk', name: 'Goat milk', addAt: 'lye' }), grams: 200 };
+  const cp = buildAddOrderSteps({ ...CP_BASE, splitLiquidRows: [milk] });
+  expect(cp.findIndex((s) => s.includes('Goat milk'))).toBeGreaterThan(cp.findIndex((s) => s.includes('NaOH')));
+});
+
+test('with additives present but none at trace, no generic "any additives" line survives', () => {
+  const steps = buildAddOrderSteps({ ...CP_BASE, additives: [ADDITIVE('Citric acid', 'lye')] });
+  expect(steps.join(' ')).not.toContain('any additives');
+  expect(steps.join(' ')).toMatch(/stir .*Citric acid.* into the water/);
+});
+
+test('a line parked on a stage the process does not offer is still named somewhere in the steps', () => {
+  // A saved HP line at After cook survives a switch to CP; an LS recipe can carry a top line.
+  const cp = buildAddOrderSteps({ ...CP_BASE, additives: [ADDITIVE('Fragrance', 'after_cook')] });
+  expect(cp.join(' ')).toContain('Fragrance');
+  const ls = buildAddOrderSteps({
+    process: 'ls', lyeType: 'koh', totalOilGrams: 1000, lyeGrams: 200, waterGrams: 400, weightUnit: 'g',
+    additives: [ADDITIVE('Dried petals', 'top')],
+  });
+  expect(ls.join(' ')).toContain('Dried petals');
 });

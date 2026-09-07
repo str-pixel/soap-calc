@@ -382,11 +382,12 @@ export function addExtraLye(
  *
  * Subtract-method composition: the reserve scales the lye via scaleLyeResult(1 − p/100)
  * AFTER the main superfat factor (1 − s/100), so the unsaponified shares compound —
- * 2% + 2% → 100 × (1 − 0.98 × 0.98) = 3.96%. Append mode adds the oil on top of the
- * batch instead; the compounded figure understates that case by under 0.1 points at
- * typical doses, inside the display's own rounding. A missing/invalid/zero post-cook
- * share passes the main figure through unchanged; a negative main share (lye excess)
- * composes the same way. */
+ * 2% + 2% → 100 × (1 − 0.98 × 0.98) = 3.96%. This is the SUBTRACT-mode figure only:
+ * append mode adds the oil on top of the batch, and the compounded number OVERSTATES that
+ * case (2% + 5% appended is 6.67%, compounded says 6.90%; −5% + 5% appended is exactly 0,
+ * compounded says 0.25) — use deliveredSuperfatPercent, which takes the method. A
+ * missing/invalid/zero post-cook share passes the main figure through unchanged; a
+ * negative main share (lye excess) composes the same way. */
 export function effectiveSuperfatPercent(
   mainPercent: number,
   postCookPercent: number | undefined,
@@ -394,6 +395,24 @@ export function effectiveSuperfatPercent(
   const p = postCookPercent;
   if (p === undefined || !Number.isFinite(p) || p <= 0) return mainPercent;
   return 100 * (1 - (1 - mainPercent / 100) * (1 - p / 100));
+}
+
+/** The superfat a batch actually delivers once the post-cook oil is in, by METHOD — the
+ * single figure every surface (results grid, batch sheet, Superfat & water note) quotes.
+ * Subtract scales the lye, so the shares compound (effectiveSuperfatPercent). Append adds
+ * p% of the recipe oils on top of a batch whose main superfat left s% unsaponified: the
+ * unsaponified fat is s + p parts over 100 + p parts of fat, (s + p) / (1 + p/100) — so a
+ * 5% lye excess plus 5% appended oil delivers exactly 0, where compounding would claim
+ * 0.25. A missing/invalid/zero post-cook share passes the main figure through. */
+export function deliveredSuperfatPercent(
+  mainPercent: number,
+  postCookPercent: number | undefined,
+  method: 'append' | 'subtract',
+): number {
+  const p = postCookPercent;
+  if (p === undefined || !Number.isFinite(p) || p <= 0) return mainPercent;
+  if (method === 'append') return (mainPercent + p) / (1 + p / 100);
+  return effectiveSuperfatPercent(mainPercent, p);
 }
 
 export function scaleLyeResult(result: LyeCalculationResult, factor: number): LyeCalculationResult {

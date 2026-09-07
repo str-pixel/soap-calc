@@ -182,13 +182,14 @@ describe('additive catalog book audit (2026-07-26)', () => {
     expect(sugar?.name).toBe('Sugar');
     expect(sugar?.typicalLow).toBe(0.5);
     expect(sugar?.typicalHigh).toBe(2);
-    expect(sugar?.defaultStage).toBe('trace');
+    // Lye water is the sourced home for sugar in a bar (HP:9809, HP:10402; CP:8995).
+    expect(sugar?.defaultStage).toBe('lye');
 
     const sorbitol = catalogEntryById('sorbitol');
     expect(sorbitol?.name).toBe('Sorbitol');
     expect(sorbitol?.typicalLow).toBe(0.5);
     expect(sorbitol?.typicalHigh).toBe(2);
-    expect(sorbitol?.defaultStage).toBe('trace');
+    expect(sorbitol?.defaultStage).toBe('lye'); // mirrors sugar — HP:9809 lists them as one line
     expect(sorbitol?.processes).toBeUndefined();
     expect(sorbitol?.hazards).toContain('can tunnel/overheat');
   });
@@ -308,11 +309,11 @@ describe('per-process catalog overrides (HP audit 2026-07-26)', () => {
     expect(hp.name).toBe('Sodium lactate');
   });
 
-  it('sugar: HP overrides the range to 1–5% but keeps the trace stage', () => {
+  it('sugar: HP overrides the range to 1–5% but keeps the lye-water stage', () => {
     const base = catalogEntryById('sugar-sorbitol')!;
     const hp = effectiveCatalogEntry(base, 'hp');
     expect([hp.typicalLow, hp.typicalHigh]).toEqual([1, 5]);
-    expect(hp.defaultStage).toBe('trace');
+    expect(hp.defaultStage).toBe('lye');
   });
 
   it('returns the entry unchanged for a process with no override', () => {
@@ -379,13 +380,14 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
     expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([3, 5, 'oils']);
   });
 
-  it('sugar LS: 1–6% into the oils, the rate LS gives every sugar form (LS:1069)', () => {
+  it('sugar LS: 1–6% into the lye water, the rate LS gives every sugar form (LS:1069)', () => {
     // Was 1–5. The 5% ceiling answered to nothing in the LS text: the general rate for
     // sugars in liquid soap is 1–6% of oil weight (LS:1069), and the 30-HTLS chapter's
-    // own 3–5% practice (LS:2667) sits inside it. The oils stage keeps its source —
-    // browning happens in a hot lye solution, so the sugar goes to the oils (LS:2667).
+    // own 3–5% practice (LS:2667) sits inside it. The lye solution is one of LS's two
+    // sanctioned homes (LS:1069) and the default every process shares; the oils stay a
+    // first-class choice for the paler result a hot lye solution costs (LS:2667).
     const ls = effectiveCatalogEntry(catalogEntryById('sugar-sorbitol')!, 'ls');
-    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([1, 6, 'oils']);
+    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([1, 6, 'lye']);
   });
 
   it('salt LS: 3–8% at the lye stage, with the salt-curve hazard replacing the bar tag', () => {
@@ -476,16 +478,17 @@ describe('sorbitol mirrors sugar per process (CP source: "same suggested usage r
     const hp = effectiveCatalogEntry(base, 'hp');
     expect([hp.typicalLow, hp.typicalHigh]).toEqual([1, 5]);
     // LS parts from HP here: its own text rates every sugar form at 1–6% of oil weight
-    // and puts them in before dilution (LS:1069), which is also why the LS stage is the
-    // oils rather than the CP trace this entry inherits.
+    // and puts them in before dilution (LS:1069). The stage is the lye water, like sugar —
+    // the HP recipes list "Sugar/sorbitol in lye water" as one line (HP:9809).
     const ls = effectiveCatalogEntry(base, 'ls');
-    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([1, 6, 'oils']);
-    // Structural mirror of the sugar entry — the source's own claim.
+    expect([ls.typicalLow, ls.typicalHigh, ls.defaultStage]).toEqual([1, 6, 'lye']);
+    // Structural mirror of the sugar entry — the source's own claim — range AND staging.
     const sugar = catalogEntryById('sugar-sorbitol')!;
     for (const process of ['cp', 'hp', 'ls'] as const) {
       const s = effectiveCatalogEntry(sugar, process);
       const so = effectiveCatalogEntry(base, process);
       expect([so.typicalLow, so.typicalHigh]).toEqual([s.typicalLow, s.typicalHigh]);
+      expect([so.defaultStage, so.stages]).toEqual([s.defaultStage, s.stages]);
     }
   });
 });
@@ -548,12 +551,16 @@ describe('LS defaults answer to the liquid-soap source, not to CP by inheritance
   // These were audited one ingredient at a time; every one of the six below was serving a
   // CP- or HP-audited number to LS before, and three of them were also staged wrong.
   it.each([
-    // Sugar: the LS "how to use" figure, into the oils rather than the lye water, because
-    // that is where a hot lye solution browns it. (LS:2667)
-    ['sugar-sorbitol', 1, 6, 'oils'],
+    // Sugar: the LS "how to use" figure. The lye solution is one of its two sanctioned
+    // homes (LS:1069) and the default the bar books share; the oils stay selectable for
+    // the paler result a hot lye solution costs (LS:2667).
+    ['sugar-sorbitol', 1, 6, 'lye'],
     // Every sugar FORM shares one LS rate — table sugar, honey, molasses, sorbitol — dosed
     // into the lye solution or the oils, before dilution. (LS:1069)
-    ['sorbitol', 1, 6, 'oils'],
+    // Sorbitol mirrors sugar exactly — the HP source lists "Sugar/sorbitol in lye water"
+    // (HP:9809). Honey is the deliberate exception: it browns and overheats, so the
+    // gentler oils stay its LS home (LS:1069, LS:2667).
+    ['sorbitol', 1, 6, 'lye'],
     ['honey', 1, 6, 'oils'],
     // The citrate chelator route: into the lye solution, where the alkali makes citrate
     // in situ. (LS:3037)
@@ -701,9 +708,11 @@ describe('LS offers only the stages its source sanctions', () => {
     ['polysorbate-80', ['after_cook']],
     ['glycerin', ['after_cook']],
     // A real choice, and only the sanctioned members of it. Trace is absent from every one
-    // of these: LS names the lye solution, the oils and the dilution water, never trace.
-    ['sugar-sorbitol', ['lye', 'oils']],          // LS:1069
-    ['sorbitol', ['lye', 'oils']],                // LS:1069
+    // of these but sugar: LS names the lye solution, the oils and the dilution water. Sugar
+    // alone keeps trace as an optional before-the-cook route — unusual, not wrong, since
+    // the cook sterilises it — so every process offers the same three choices for it.
+    ['sugar-sorbitol', ['lye', 'oils', 'trace']], // LS:1069 + trace by decision
+    ['sorbitol', ['lye', 'oils', 'trace']],       // mirrors sugar
     ['honey', ['lye', 'oils']],                   // LS:1069
     ['salt', ['lye', 'oils', 'after_cook']],      // LS:2630 + LS:3091 (thickening)
     ['sodium-lactate', ['lye', 'oils', 'after_cook']], // LS:3019
@@ -764,6 +773,16 @@ describe('a note explains every stage its entry offers', () => {
           `${e.name} offers "${stage}" in ${process} but its note never explains that route`,
         ).toBe(true);
       }
+    }
+  });
+});
+
+describe('sugar and sorbitol offer the same three stages in every process', () => {
+  it.each(['cp', 'hp', 'ls'] as const)('%s', (process) => {
+    for (const id of ['sugar-sorbitol', 'sorbitol']) {
+      const e = effectiveCatalogEntry(catalogEntryById(id)!, process);
+      expect(e.stages, `${id} in ${process}`).toEqual(['lye', 'oils', 'trace']);
+      expect(e.defaultStage, `${id} in ${process}`).toBe('lye');
     }
   });
 });

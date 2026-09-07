@@ -80,8 +80,11 @@ test('postCookSuperfat is null when off, and its grams fold into batchWeightWith
     oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: expect.any(Number) }],
     percentOfOil: 5,
     grams: expect.any(Number),
-    // Append mode: the applied-state flag rides on the object, stamped by the vm.
+    // Append mode: the applied-state flag AND the method ride on the object, stamped by
+    // the vm — consumers gate on the method without re-reading settings.
     isExtra: true,
+    method: 'append',
+    deliveredSuperfatPercent: expect.any(Number),
   });
   expect(withPcsf.postCookSuperfat.grams).toBeGreaterThan(0);
   expect(withPcsf.batchWeightWithExtras).toBeCloseTo(

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addExtraLye,
   calculateLye,
   effectiveSuperfatPercent,
+  deliveredSuperfatPercent,
   lyeForOilLine,
   scaleLyeResult,
   sapCoefficientForLye,
@@ -505,5 +506,24 @@ describe('addExtraLye', () => {
       waterPercentOfOils: 33,
     });
     expect(addExtraLye(base, { naohGrams: 0, kohGrams: 0 })).toEqual(base);
+  });
+});
+
+describe('deliveredSuperfatPercent', () => {
+  it('subtract: the reserve scales the lye after the main figure, so the shares compound', () => {
+    expect(deliveredSuperfatPercent(2, 2, 'subtract')).toBeCloseTo(3.96, 10);
+  });
+
+  it('append: the oil rides on top of the batch — (s + p) / (1 + p/100), not the compounded figure', () => {
+    // 2% main + 5% appended: 7 unsaponified parts over 105 parts of fat = 6.67%, where the
+    // compounded formula overstates it as 6.90%.
+    expect(deliveredSuperfatPercent(2, 5, 'append')).toBeCloseTo(6.6667, 3);
+    // A 5% lye excess saponifies exactly the 5% appended oil: nothing is left over.
+    expect(deliveredSuperfatPercent(-5, 5, 'append')).toBeCloseTo(0, 10);
+  });
+
+  it('a missing or zero post-cook share passes the main figure through in either mode', () => {
+    expect(deliveredSuperfatPercent(3, 0, 'append')).toBe(3);
+    expect(deliveredSuperfatPercent(3, undefined, 'subtract')).toBe(3);
   });
 });

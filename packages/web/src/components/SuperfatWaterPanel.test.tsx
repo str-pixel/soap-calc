@@ -439,7 +439,8 @@ test('append mode still notes the combination under a lye excess — the oil is 
         postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '3' }] }}
     />,
   );
-  expect(screen.getByText(/With -2% above, the batch delivers 1\.1% superfat\./)).toBeTruthy();
+  // Append arithmetic: (−2 + 3) / 1.03 = 0.97 → "1.0" (compounding would have said 1.1).
+  expect(screen.getByText(/With -2% above, the batch delivers 1\.0% superfat\./)).toBeTruthy();
 });
 
 test('the subtract figure clamps the reserve at 99% exactly like the lye math', () => {

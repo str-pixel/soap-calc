@@ -80,12 +80,22 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Table sugar and other sugar sources (honey, molasses, milks). Sorbitol is its own
     // entry below — it carries a higher typical range. (id stays 'sugar-sorbitol' so
     // recipes saved before the split still resolve.)
-    // LS sanctions the lye solution or the oils, before dilution (LS:1069).
+    //
+    // STAGE: the lye water, in every process. Both bar books dissolve sugar in the water
+    // before the alkali goes in — the HP recipes list it "in lye water" outright and the
+    // procedure weighs "water and sugar/sorbitol" together ahead of the NaOH (HP:9809,
+    // HP:10402); CP doses it "in your lye solution" (CP:8995). LS names the lye solution
+    // or the oils, before dilution (LS:1069). Trace stays selectable everywhere as an
+    // optional route (unusual, not wrong — the cook or the mold's own heat takes it in).
+    // The base list below is what makes that "the same three choices whatever the
+    // process": without it CP would offer Top and HP After cook, routes no book gives
+    // sugar. (A saved line on another stage still renders — the mismatched-select guard.)
     id: 'sugar-sorbitol',
     name: 'Sugar',
     typicalLow: 0.5,
     typicalHigh: 2,
-    defaultStage: 'trace',
+    defaultStage: 'lye',
+    stages: ['lye', 'oils', 'trace'],
     hazards: ['can tunnel/overheat'],
     processOverrides: {
       // An HP cook tolerates (and typically uses) more sugar than a CP mold; stage unchanged.
@@ -93,15 +103,14 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // LS gives every sugar FORM one rate — table sugar, honey, molasses, sorbitol — at
       // 1–6% of total oil weight, into the lye solution or the oils and before dilution
       // (LS:1069); sorbitol and honey below carry the identical range for that reason.
-      // The stage is the sharper claim: the 30-HTLS chapter puts sugar directly in the
-      // oils rather than the lye solution, since a hot lye solution is what browns it
-      // (LS:2667) — and 3–5% is that chapter's own practice, a point inside this range
-      // rather than a competing one. The 5% ceiling this carried matched neither
-      // statement; it was HP's.
-      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'] },
+      // The 30-HTLS chapter prefers the oils, since a hot lye solution is what browns
+      // sugar (LS:2667) — that is why the oils stay a first-class choice here, and why
+      // the note below says when to take them. The 5% ceiling this once carried matched
+      // neither statement; it was HP's.
+      ls: { typicalLow: 1, typicalHigh: 6 },
     },
     note:
-      'Dissolve it first; it can join either the lye water or the oils, so long as it goes in before dilution. Fresh lye and heat darken sugar, so the identical dose can finish anywhere from cream to caramel; liquid soap sends it to the oils for exactly that reason, since the lye solution is the hotter, harsher route.',
+      'Dissolve it in the water first, then add the lye — the lye water is its standard home. Fresh lye and heat darken sugar, so the same dose can finish anywhere from cream to caramel; for a paler result keep the solution cool, or move the sugar to the oils or to trace instead.',
   },
   {
     // Glycerin, AFTER DILUTION ONLY. The source gives four timings — in the lye solution
@@ -147,25 +156,24 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Sorbitol — sugar alcohol with a stronger lather effect than sucrose; same overheat
     // behavior as other sugars. The CP usage-rates passage is explicit that sorbitol takes
     // "the same suggested usage rates as sugar" (author-tested at 4% CP — the family
-    // ceiling, not the typical range), so this entry mirrors the sugar entry per process.
-    // A general-chapter 1–5% figure was previously mistaken for the CP range — it belongs
-    // to HP/LS, whose sources both give 1–5.
-    // LS sanctions the lye solution or the oils, before dilution (LS:1069).
+    // ceiling, not the typical range), so this entry mirrors the sugar entry per process —
+    // STAGES INCLUDED: the HP recipes list "Sugar/sorbitol in lye water" as one line
+    // (HP:9809), and LS names it among the sugar forms it doses together, into the lye
+    // solution or the oils before dilution (LS:1069). A general-chapter 1–5% figure was
+    // previously mistaken for the CP range — it belongs to HP/LS, whose sources both give 1–5.
     id: 'sorbitol',
     name: 'Sorbitol',
     typicalLow: 0.5,
     typicalHigh: 2,
-    defaultStage: 'trace',
+    defaultStage: 'lye',
+    stages: ['lye', 'oils', 'trace'],
     hazards: ['can tunnel/overheat'],
     processOverrides: {
       hp: { typicalLow: 1, typicalHigh: 5 },
-      // LS names sorbitol among the sugar forms it doses together — 1–6% of total oil
-      // weight, into the lye solution or the oils, and before the dilution step
-      // (LS:1069). Trace was the CP stage inherited; LS puts its sugars in early.
-      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'] },
+      ls: { typicalLow: 1, typicalHigh: 6 },
     },
     note:
-      'A sugar alcohol, dosed and timed like the other sugars: into the lye solution or the oils, before dilution. It dissolves readily.',
+      'A sugar alcohol, dosed and timed like table sugar: dissolve it in the lye water before the lye goes in, or move it to the oils or to trace for a paler result. It dissolves readily.',
   },
   {
     // LS sanctions the lye solution, where the citrate forms (LS:3037).
@@ -265,7 +273,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'] },
     },
     note:
-      'Honey is mostly sugar in water, so treat it as one of the sugars: into the lye solution or the oils, and in before any dilution. It browns in fresh lye and can push a batch hotter, which makes the oils the gentler of the two.',
+      'Honey is mostly sugar in water, dosed like the other sugars but staged more gently: it browns in fresh lye and can push a batch hotter, so unlike table sugar it is not sent to the lye water by default — the oils (or trace in a bar) are the kinder route, and it must be in before any dilution.',
   },
   {
     // LS sanctions after the cook, into diluted soap (LS:2950, LS:3363).
@@ -652,11 +660,11 @@ export function catalogEntriesForProcess(
  * does NOT name a stage: each ingredient is staged by its own per-process default, resolved
  * through effectiveCatalogEntry at apply time.
  *
- * It used to carry a hardcoded stage per item, which happened to equal the CP default for
- * all three — so the pack agreed with the catalog in cold process and quietly disagreed with
- * it everywhere an override existed. In liquid soap that meant the pack dropped sugar at
- * trace while the LS catalog stages it into the oils, since a hot lye solution is what
- * browns it (LS:2667, LS:1069) — the one path that bypassed the per-process audit.
+ * It used to carry a hardcoded stage per item, which happened to equal the CP default of
+ * the time — so the pack agreed with the catalog in cold process and quietly disagreed with
+ * it everywhere an override existed (sugar was once staged differently in liquid soap) —
+ * the one path that bypassed the per-process audit. Resolving through the catalog means
+ * the pack follows every later restaging (sugar now seeds the lye water everywhere) for free.
  *
  * 1% clears every process's typical range for all three (LS: sugar 1–6, chelator 1–2, cetyl
  * alcohol 1–3), so the dose stays one number.

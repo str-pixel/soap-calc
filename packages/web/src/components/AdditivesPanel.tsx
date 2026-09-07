@@ -72,8 +72,8 @@ const ADDITIVE_STAGE_CELLS: Partial<Record<AdditiveStage, string>> = {
  * The lye-vs-oils distinction is the one that changes the soap rather than just the
  * order of operations, so both notes say why you would pick them. */
 const ADDITIVE_STAGE_NOTES: Record<AdditiveStage, string> = {
-  lye: 'Dissolved in the lye water before it meets the oils. Chelators are made here — citric acid becomes citrate in the lye solution. A fresh lye solution is hot enough to brown sugars.',
-  oils: 'Stirred into the warm oils before the lye goes in. Preferred for sugar, which browns less here than in a hot lye solution. Salt can go either way — stirred into the oils, or dissolved in the lye water.',
+  lye: 'Dissolved in the water before the lye goes in. The standard home for sugars and salt, and where chelators are made — citric acid becomes citrate in the lye solution. Fresh lye is hot: keep the solution cool if a pale colour matters.',
+  oils: 'Stirred into the warm oils before the lye goes in. The gentler route for anything that browns in hot lye — honey, or sugar when a paler bar is the goal. Salt can go either way.',
   trace: 'Blended in once the batter has emulsified.',
   top: 'Onto the surface after pouring — decoration, not part of the batter.',
   after_cook: 'Stirred in after the cook, once saponification is finished.',

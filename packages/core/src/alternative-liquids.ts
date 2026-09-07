@@ -203,6 +203,12 @@ export function alternativeLiquidPreset(key: string): AlternativeLiquidPreset | 
   return ALTERNATIVE_LIQUID_GUIDE.find((preset) => preset.key === key) ?? null;
 }
 
+/** Whether a preset is a SOLVENT the alkali dissolves into (glycerin) — the one flag test
+ * the lye-dissolution floor, the manifest's order, and the procedure step all share. */
+export function isSolventLiquid(presetKey: string): boolean {
+  return alternativeLiquidPreset(presetKey)?.flags.includes('solvent') ?? false;
+}
+
 /** The liquids offered under `process`. Resolve the picker list through this, never off
  * ALTERNATIVE_LIQUID_GUIDE directly — a preset withheld from a process (vinegar in LS)
  * must not be selectable there. Lookup by key stays unfiltered on purpose, so a recipe

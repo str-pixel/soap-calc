@@ -70,7 +70,7 @@ const dualRange = formatTempDualRange;
  * ls_coconut_hot_cook insight. */
 export const LS_METHOD_STAGES: Record<LsMethod, readonly string[]> = {
   cold: [
-    `Melt the oils at ${dualRange(120, 130)} and let the lye solution cool — no sustained heat after this.`,
+    `Melt the oils at ${dualRange(120, 130)}; make the lye solution and let it cool to the same range — no sustained heat after this.`,
     'Blend oils and lye to a thick trace.',
     'Cover and insulate, and let the paste saponify on its own heat, 12–48 hours (slow recipes take longer).',
     'Run the clarity test: stir a little paste into hot water — clear means ready, milky means wait.',

@@ -1,6 +1,8 @@
 import type { AppliedPostCookSuperfat } from '../lib/calculateAdditives';
 import { useMemo } from 'react';
-import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lsMethodForTemp, lsPreservativeById, lsPreservativeDoseTier, lyeSolutionWaterStatus, parsePercentOfOil, preservativeDoseGrams, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
+import {
+  deliveredSuperfatPercent,
+  isSolventLiquid, addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lsMethodForTemp, lsPreservativeById, lsPreservativeDoseTier, lyeSolutionWaterStatus, parsePercentOfOil, preservativeDoseGrams, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
 import type { DilutionResult, LsMethodInfo, NeutralizationResult } from '@soap-calc/core';
 import { buildBatchSheetData, canPrintBatchSheet, waterModeLabel } from '../lib/batchSheet';
 import { budgetSizingAvailable, resolveSplitLiquidRows, splitLiquidCalcOverride, type ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
@@ -124,7 +126,6 @@ export type RecipeViewModel = {
    * resolveDilution's own doc comment. */
   dilutionRecord: ResolvedDilution['record'];
   neutralization: NeutralizationResult | null;
-  pcsfIsExtra: boolean;
   extrasGrams: number;
   /** The mass the LS batch actually bottles. PLAN ARM: solution base (real paste when the
    * target exceeds it) plus additives, append-mode PCSF oil, and split-liquid solids. RECORD
@@ -623,13 +624,22 @@ export function useRecipeViewModel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [process, pcsfOilsKey, totalOilGrams],
   );
-  // The applied-state flag rides ON the object from here down (AppliedPostCookSuperfat):
-  // stamped once, beside the cookFactor that defines it, so ResultsPanel, the batch
-  // sheet, and pricing can never pair the superfat with a stale or defaulted flag.
-  const postCookSuperfat = useMemo(
-    () => (computedPcsf ? { ...computedPcsf, isExtra: pcsfIsExtra } : null),
-    [computedPcsf, pcsfIsExtra],
-  );
+  // The applied state rides ON the object from here down (AppliedPostCookSuperfat):
+  // stamped once, beside the cookFactor that defines it, and nowhere else — the hook
+  // exports no separate flag for a consumer to pair with it.
+  const pcsfMethod = previewSettings.postCookSuperfatMethod;
+  const mainSuperfatRaw = previewSettings.superfatPercent;
+  const postCookSuperfat = useMemo(() => {
+    if (!computedPcsf) return null;
+    // Same parse as the cookFactor guard: a non-numeric main figure means "not applied".
+    const main = Number(mainSuperfatRaw);
+    const unapplied = pcsfMethod === 'subtract' && pcsfIsExtra;
+    const deliveredSuperfat =
+      unapplied || !Number.isFinite(main)
+        ? null
+        : deliveredSuperfatPercent(main, computedPcsf.percentOfOil, pcsfMethod);
+    return { ...computedPcsf, isExtra: pcsfIsExtra, method: pcsfMethod, deliveredSuperfatPercent: deliveredSuperfat };
+  }, [computedPcsf, pcsfIsExtra, pcsfMethod, mainSuperfatRaw]);
   const waterSuggestion = useMemo(() => {
     // Budget rows already allocated their water in the calc; only additive rows added at
     // trace still motivate a lye-water reduction, and never under an active override
@@ -686,8 +696,7 @@ export function useRecipeViewModel({
     // but DOES dissolve lye when hot — the glycerin-method premise — so the 1:1
     // dissolution floor counts its full grams.
     const solventGrams = splitLiquidRows.reduce((sum, { row, grams }) => {
-      const preset = alternativeLiquidPreset(row.presetKey);
-      return row.addAt === 'lye' && grams != null && preset?.flags.includes('solvent')
+      return row.addAt === 'lye' && grams != null && isSolventLiquid(row.presetKey)
         ? sum + grams
         : sum;
     }, 0);
@@ -765,10 +774,7 @@ export function useRecipeViewModel({
   const lsGlycerinPresent =
     sizedSplitRows.some(({ row }) => {
       const preset = alternativeLiquidPreset(row.presetKey);
-      return (
-        (preset?.flags.includes('solvent') ?? false) &&
-        isAlternativeLiquidOfferedFor(preset!, process)
-      );
+      return isSolventLiquid(row.presetKey) && !!preset && isAlternativeLiquidOfferedFor(preset, process);
     }) || computedAdditives.some(isCookGlycerin);
   // Glycerin grams for the 30-min solvent-scale gate (sourced floor: >= 1x lye weight) —
   // sized split-liquid glycerin rows plus any pre-cook glycerin additive line, summed
@@ -824,7 +830,7 @@ export function useRecipeViewModel({
       lsSplitLiquidIsSolventOnly:
         sizedSplitRows.length > 0 &&
         sizedSplitRows.every(
-          ({ row }) => alternativeLiquidPreset(row.presetKey)?.flags.includes('solvent') ?? false,
+          ({ row }) => isSolventLiquid(row.presetKey),
         ),
       soapingTempF,
     },
@@ -835,12 +841,7 @@ export function useRecipeViewModel({
       : settings.lyeType === 'naoh'
         ? 'NaOH'
         : 'KOH';
-  const extrasGrams = computeExtrasGrams(
-    computedAdditives,
-    splitLiquidGrams,
-    postCookSuperfat,
-    pcsfIsExtra,
-  );
+  const extrasGrams = computeExtrasGrams(computedAdditives, splitLiquidGrams, postCookSuperfat);
   const batchWeightWithExtras = baseBatchGrams + extrasGrams;
   // The mass the LS batch actually bottles — solution base plus the extras that ride
   // through (see computeBottledSolutionGrams for the full accounting, including why a
@@ -1025,7 +1026,6 @@ export function useRecipeViewModel({
     fattyAcids,
     insights,
     neutralization,
-    pcsfIsExtra,
     postCookSuperfat,
     previewSettings,
     previewState.lines,
@@ -1094,7 +1094,6 @@ export function useRecipeViewModel({
     dilutionGoverns: resolvedDilution.governs,
     dilutionRecord: resolvedDilution.record,
     neutralization,
-    pcsfIsExtra,
     extrasGrams,
     bottledSolutionGrams,
     preservativeDosingBasisGrams,

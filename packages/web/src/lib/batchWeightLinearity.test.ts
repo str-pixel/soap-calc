@@ -32,7 +32,7 @@ function batchWeightFor(
     batchGrams: base,
     solutionGrams: 0,
   });
-  return base + computeExtrasGrams(computed, null, null, true);
+  return base + computeExtrasGrams(computed, null, null);
 }
 
 const scaled = (lines: RecipeLine[], s: number): RecipeLine[] =>

@@ -9,7 +9,7 @@ import {
   type LsDilutionTarget,
 } from '@soap-calc/core';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
-import { formatConcentrationPercent } from '../lib/format';
+import { joinNames, formatConcentrationPercent } from '../lib/format';
 import { resolveDilution } from '../lib/resolveDilution';
 import { formatWeight } from '../lib/weightUnits';
 import {
@@ -1260,10 +1260,7 @@ export function DilutionPanel({
                 // Commas with ONE final "and": a 12.5% endpoint lands in four bands, and
                 // joining those with " and " alone read "baby or gentle soap and face soap
                 // and foaming dispenser and body wash".
-                const labels = u.map((x) => x.label.toLowerCase());
-                return labels.length > 1
-                  ? `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
-                  : labels[0];
+                return joinNames(u.map((x) => x.label.toLowerCase()));
               };
               return (
                 <p className="dilution-presets__caption">

@@ -1,26 +1,33 @@
-import { alternativeLiquidPreset, formatTempDual, type AdditiveStage } from '@soap-calc/core';
-import type { ComputedAdditive, ComputedPostCookSuperfat } from './calculateAdditives';
+import { alternativeLiquidPreset, formatTempDual, isSolventLiquid, type AdditiveStage } from '@soap-calc/core';
+import type { AppliedPostCookSuperfat, ComputedAdditive } from './calculateAdditives';
 import type { SplitLiquidRow, WeightUnit } from './recipe';
-import type { ProcessId } from './process';
+import { lyeSolutionBeforeOils, type ProcessId } from './process';
 import { additiveStageLabel } from './additiveStageLabel';
-import { formatGrams } from './format';
+import { formatGrams, joinNames } from './format';
 import { oilDisplayName } from './oilDisplay';
 import { formatWeight } from './weightUnits';
 
-/** The one PCSF line detail both surfaces quote — "140 g · 5% of oil", with the reserve
- * provenance appended when the subtract reserve is applied. Shared by the on-screen Full
- * recipe and the printed batch sheet ("cross-checked at the bench"), so the vocabulary is
- * structurally identical rather than hand-synchronized. "(lye reduced)" explains why the
- * printed lye figures run below plain SAP-table math for this recipe. */
+/** The one provenance phrase every surface appends to an APPLIED subtract reserve — the
+ * results-grid row, the Full recipe line, and the printed sheet. "from oils above" says
+ * where the grams come from; "(lye reduced)" explains why the lye figures run below plain
+ * SAP-table math. Empty for an extra. Fails SAFE: only `false` earns the note, so a PCSF
+ * that somehow arrives without its applied state reads as extra weight (harmless) rather
+ * than as a reserve the lye was never scaled for. */
+export function postCookSuperfatProvenance(isExtra: boolean): string {
+  return isExtra === false ? ' · from oils above (lye reduced)' : '';
+}
+
+/** The one PCSF line detail the Full recipe and the printed sheet quote —
+ * "140 g · 5% of oil" plus the shared provenance phrase — so the two are structurally
+ * identical rather than hand-synchronized. */
 export function postCookSuperfatLineDetail(
   oil: { grams: number; percentOfOil: number },
   weightUnit: WeightUnit,
   isExtra: boolean,
 ): string {
-  return `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil${
-    isExtra ? '' : ' · from oils above (lye reduced)'
-  }`;
+  return `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil${postCookSuperfatProvenance(isExtra)}`;
 }
+
 
 /** A single line of the printable "Full recipe" list: a material and its formatted amount. */
 export type RecipeItem = { name: string; detail: string };
@@ -47,20 +54,20 @@ type FullRecipeInput = {
   waterGrams: number;
   additives: ComputedAdditive[];
   splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
-  /** The PCSF rides with its own applied-state flag — `isExtra: false` means the subtract
-   * reserve is actually applied, so the grams are held back from the oils listed above,
-   * not extra weight to buy. The flag lives ON the object (stamped by the view model
-   * beside cookFactor) so no caller can pass the superfat while forgetting the flag —
-   * see calculateAdditives.ts on why it can never be re-derived here. */
-  postCookSuperfat?: (ComputedPostCookSuperfat & { isExtra: boolean }) | null;
+  /** The vm's stamped PCSF (see AppliedPostCookSuperfat) — its own applied state decides
+   * whether the line reads as reserved from the oils above or as extra weight. */
+  postCookSuperfat?: AppliedPostCookSuperfat | null;
   process: ProcessId;
 };
 
 /**
- * Flatten a finished recipe into an ordered materials list — oils (weight · % of oils), the
- * alkali, water, any alternative liquid, post-cook superfat, and additives — each with its
- * amount preformatted in the active weight unit. Mirrors the figures the Results panel and
- * batch sheet already show, so the on-screen list can never state a different number.
+ * The Full recipe manifest: headed sections in procedure order, optionally led by the
+ * soaping-temperature line. Oils (weight · % of oils) and the Lye solution (water → dry
+ * in-lye additives → alkali → in-lye liquids, solvents before the alkali) come in the
+ * process's own order (lyeSolutionBeforeOils), then the timed stages that have anything
+ * in them, then the post-cook superfat last. Every amount is preformatted in the active
+ * weight unit and mirrors the figures the Results panel and batch sheet already show, so
+ * the on-screen list can never state a different number.
  */
 export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   const {
@@ -101,10 +108,10 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     top: [],
     after_cook: [],
   };
-  // In-lye LIQUIDS are kept apart from in-lye additives: a dry additive dissolves in the
-  // water before the alkali goes in, but a liquid joins the finished (cooled) solution —
-  // splitLiquidProcedureStep below owns that rule ("sugars scorch in hot lye"), and the
-  // manifest's order must tell the same story.
+  // Where an in-lye liquid joins is ONE decision, splitLiquidSlot's, rendered here as
+  // order and in the steps as phrasing: a solvent (glycerin) is what the alkali dissolves
+  // into, so it lists with the water before the alkali; any other liquid joins the
+  // finished, cooled solution after it.
   const lyeLiquids: RecipeItem[] = [];
   for (const { row, grams } of splitLiquidRows ?? []) {
     if (grams == null || grams <= 0) continue;
@@ -112,7 +119,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       name: row.name.trim() || 'Alternative liquid',
       detail: formatWeight(grams, weightUnit),
     };
-    if (row.addAt === 'lye') lyeLiquids.push(item);
+    if (splitLiquidSlot(row) === 'lye_after_alkali') lyeLiquids.push(item);
     else staged[row.addAt].push(item);
   }
   for (const additive of additives) {
@@ -131,11 +138,11 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       detail: `${formatWeight(line.weightGrams, weightUnit)} · ${formatGrams(percent, 1)}%`,
     });
   }
-  push('Oils', [...oilItems, ...staged.oils]);
+  const oilsSection: RecipeItem[] = [...oilItems, ...staged.oils];
 
-  // The lye solution reads in mixing order: water first, dry additives dissolved in it
-  // next, THEN the alkali goes in (never the reverse) — and any in-lye liquid last,
-  // stirred into the finished solution.
+  // The lye solution reads in mixing order: water first, anything dissolved in it next
+  // (dry additives, a solvent liquid), THEN the alkali goes in (never the reverse) — and
+  // any other in-lye liquid last, stirred into the finished solution.
   const lyeItems: RecipeItem[] = [
     {
       name: process === 'ls' ? 'Water' : 'Distilled water',
@@ -158,7 +165,13 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     });
   }
   lyeItems.push(...lyeLiquids);
-  push('Lye solution', lyeItems);
+  if (lyeSolutionBeforeOils(process)) {
+    push('Lye solution', lyeItems);
+    push('Oils', oilsSection);
+  } else {
+    push('Oils', oilsSection);
+    push('Lye solution', lyeItems);
+  }
 
   push(additiveStageLabel('trace', process), staged.trace);
   push(additiveStageLabel('top', process), staged.top);
@@ -199,45 +212,56 @@ type AddOrderInput = {
   /** Preformatted usable-from window from the cure model (e.g. "≈ 5–7.5 weeks") — same
    * single-sourcing contract as unmoldText, against the cure milestone rows. */
   cureText?: string | null;
+  /** Resolved menu temperature, °F — quoted in the CP warm/cool steps so the steps can
+   * never disagree with the Full recipe's lead line. Absent → the generic CP band. */
+  soapingTempF?: number;
+  /** Additive lines by stage. Each is NAMED in the step for its stage — the same stage the
+   * Full recipe files it under — so the manifest and the steps tell one story. */
+  additives?: Array<{ name: string; addAt: AdditiveStage }>;
 };
 
-/**
- * Process-aware "add in this order" steps for the finished batch, quoting the recipe's own
- * lye and water weights. Original, concise cold-process/hot-process/liquid-soap copy — always
- * lye into water, never the reverse.
- */
 /** The split-liquid procedure step, phrased for where it joins the batch, or null when the
  * split is off. In-lye liquids get a scorch caution when the preset carries a sugars flag —
  * the one advisory that must survive onto the printed sheet. */
+/** Where a split liquid joins the batch — the one decision the Full recipe (order), the
+ * Add-in-order steps (position + phrasing) and the printed sheet all render. A SOLVENT
+ * (glycerin) is what the alkali dissolves into, so it goes in with the water before the
+ * alkali; any other in-lye liquid (milk, juice) is stirred into the finished, cooled
+ * solution, since sugars scorch in hot lye. */
+export type SplitLiquidSlot = 'lye_before_alkali' | 'lye_after_alkali' | 'oils' | 'trace';
+export function splitLiquidSlot(row: SplitLiquidRow): SplitLiquidSlot {
+  if (row.addAt !== 'lye') return row.addAt;
+  return isSolventLiquid(row.presetKey) ? 'lye_before_alkali' : 'lye_after_alkali';
+}
+
 export function splitLiquidProcedureStep(input: {
   row: SplitLiquidRow;
   grams: number | null;
   weightUnit: WeightUnit;
   process: ProcessId;
-}): { step: string; addAt: SplitLiquidRow['addAt'] } | null {
+}): { step: string; addAt: SplitLiquidRow['addAt']; slot: SplitLiquidSlot } | null {
   const { row, grams, weightUnit, process } = input;
   if (grams == null || grams <= 0) return null;
   const amount = formatWeight(grams, weightUnit);
   const name = row.name.trim() || 'the alternative liquid';
   const flags = alternativeLiquidPreset(row.presetKey)?.flags ?? [];
   const sugary = flags.includes('sugars');
-  const solvent = flags.includes('solvent');
-
-  if (row.addAt === 'lye') {
-    // Solvent liquids (glycerin) are the opposite of sugary ones: they NEED heat to take
-    // the lye up, and there is nothing in them to scorch.
-    const note = solvent
-      ? ' — heat gently until the lye fully dissolves; it takes longer than water'
-      : sugary
-        ? ' — keep it cool; sugars scorch in hot lye'
-        : '';
+  const slot = splitLiquidSlot(row);
+  if (slot === 'lye_before_alkali') {
+    // Solvent liquids (glycerin) NEED heat to take the lye up, and there is nothing in
+    // them to scorch: the alkali goes into water and glycerin together.
     return {
       addAt: 'lye',
-      step: `Stir ${amount} ${name} into the ${solvent ? 'lye solution' : 'cooled lye solution'}${note}.`,
+      slot,
+      step: `Weigh ${amount} ${name} with the water — the lye goes into both; heat gently until it fully dissolves, it takes longer than in water alone.`,
     };
   }
-  if (row.addAt === 'oils') {
-    return { addAt: 'oils', step: `Blend ${amount} ${name} into the oils before the lye goes in.` };
+  if (slot === 'lye_after_alkali') {
+    const note = sugary ? ' — keep it cool; sugars scorch in hot lye' : '';
+    return { addAt: 'lye', slot, step: `Stir ${amount} ${name} into the cooled lye solution${note}.` };
+  }
+  if (slot === 'oils') {
+    return { addAt: 'oils', slot, step: `Blend ${amount} ${name} into the oils before the lye goes in.` };
   }
   const trace =
     process === 'hp'
@@ -248,67 +272,164 @@ export function splitLiquidProcedureStep(input: {
           // months afterwards. The dilution stage is plain distilled water only.
           `Blend in ${amount} ${name} at trace, before the cook — never into the diluted soap.`
         : `Blend in ${amount} ${name} at light trace.`;
-  return { addAt: 'trace', step: trace };
+  return { addAt: 'trace', slot: 'trace', step: trace };
 }
 
-export function buildAddOrderSteps(input: AddOrderInput): string[] {
-  const { process, lyeType, totalOilGrams, lyeGrams, waterGrams, weightUnit, unmoldText, cureText } = input;
-  const oil = formatWeight(totalOilGrams, weightUnit);
-  const lye = formatWeight(lyeGrams, weightUnit);
-  const water = formatWeight(waterGrams, weightUnit);
-  const alkali = lyeType === 'dual' ? 'lye' : lyeType === 'koh' ? 'KOH' : 'NaOH';
-  const liquids = (input.splitLiquidRows ?? [])
-    .map(({ row, grams }) => splitLiquidProcedureStep({ row, grams, weightUnit, process }))
-    .filter((step): step is NonNullable<typeof step> => step !== null);
-  // Where the liquid steps slot in, per process: after the oils step for 'oils', after the
-  // lye step for 'lye', and at the process's own late stage for 'trace'. Later insertions
-  // go first so earlier positions aren't shifted by the splice.
-  const withLiquid = (steps: string[], positions: { lye: number; oils: number; trace: number }) => {
-    const ordered = [...liquids].sort((a, b) => positions[b.addAt] - positions[a.addAt]);
-    for (const liquid of ordered) {
-      steps.splice(positions[liquid.addAt], 0, liquid.step);
-    }
-    return steps;
-  };
+/** One step of the Add-in-order list: its text, the additive stages it HOSTS (each named
+ * in it), and the split-liquid slots that attach to it and on which side. Every process's
+ * plan hosts all five stages and all four slots exactly once — a test pins that — so
+ * nothing the Full recipe renders can vanish from the steps. */
+type AddOrderStep = {
+  key: 'lye' | 'oils' | string;
+  hosts: AdditiveStage[];
+  liquids: Array<{ slot: SplitLiquidSlot; where: 'before' | 'after' }>;
+  text: string;
+};
+
+type StepContext = {
+  process: ProcessId;
+  oil: string;
+  lye: string;
+  water: string;
+  alkali: string;
+  temp: string;
+  unmoldText?: string | null;
+  cureText?: string | null;
+  /** Names hosted by a step, "the X and Y", or null when it hosts none. */
+  named: (stages: AdditiveStage[]) => string | null;
+  /** Whether any additive line exists — with none, the steps keep their generic copy. */
+  anyAdditives: boolean;
+};
+
+function addOrderSteps(ctx: StepContext): AddOrderStep[] {
+  const { process, oil, lye, water, alkali, temp, unmoldText, cureText, named, anyAdditives } = ctx;
+  // Dry or liquid, an in-lye additive is stirred into the water BEFORE the alkali goes in.
+  const intoWater = (n: string | null) => (n ? ` stir ${n} into the water first, then` : '');
+  const intoOils = (n: string | null) => (n ? ` Blend in ${n}.` : '');
+  const onTop = (n: string | null) => (n ? `, finish the top with ${n}` : '');
+  const inLye = { slot: 'lye_before_alkali' as const, where: 'before' as const };
+  const afterLye = { slot: 'lye_after_alkali' as const, where: 'after' as const };
 
   if (process === 'ls') {
-    return withLiquid(
-      [
-        `Weigh the oils — ${oil} total — and heat to melt.`,
-        `Weigh ${lye} KOH and ${water} water; add the KOH to the water and stir until clear.`,
-        `Combine the lye solution with the oils and blend to trace.`,
-        `Cook to a thick, translucent paste.`,
-        `Dilute the paste with hot water, then blend in fragrance and additives.`,
-        `Bottle and rest 1–2 weeks before use.`,
-      ],
-      // trace: 3 — between blending to trace and the cook. Splitting the old combined
-      // "combine and cook" step is what gives an at-trace liquid an honest home; slotting
-      // it at the end would have put it in the diluted soap, which the process forbids.
-      { oils: 1, lye: 2, trace: 3 },
-    );
+    const dilute = named(['after_cook', 'top']);
+    return [
+      { key: 'oils', hosts: ['oils'], liquids: [{ slot: 'oils', where: 'after' }],
+        text: `Weigh the oils — ${oil} total — and heat to melt.${intoOils(named(['oils']))}` },
+      { key: 'lye', hosts: ['lye'], liquids: [inLye, afterLye],
+        text: `Weigh ${lye} KOH and ${water} water;${intoWater(named(['lye']))} add the KOH to the water and stir until clear.` },
+      // trace liquids land after this step — between blending to trace and the cook, never
+      // in the diluted soap, which the process forbids.
+      { key: 'blend', hosts: ['trace'], liquids: [{ slot: 'trace', where: 'after' }],
+        text: `Combine the lye solution with the oils${named(['trace']) ? `, stir in ${named(['trace'])},` : ''} and blend to trace.` },
+      { key: 'cook', hosts: [], liquids: [], text: 'Cook to a thick, translucent paste.' },
+      { key: 'dilute', hosts: ['after_cook', 'top'], liquids: [],
+        text: `Dilute the paste with hot water${dilute ? `, then blend in ${dilute}` : anyAdditives ? '' : ', then blend in fragrance and additives'}.` },
+      { key: 'bottle', hosts: [], liquids: [], text: 'Bottle and rest 1–2 weeks before use.' },
+    ];
   }
 
   if (process === 'hp') {
-    return withLiquid(
-      [
-        `Weigh each oil — ${oil} total — and heat until melted.`,
-        `Weigh ${lye} ${alkali} and ${water} distilled water; add the lye to the water, never the reverse.`,
-        `Blend the lye solution into the oils and cook to a thick, translucent paste.`,
-        `After the cook, stir in fragrance, additives, and any post-cook superfat.`,
-        `Pack into the mold; unmold once firm and use after a short cure.`,
-      ],
-      { oils: 1, lye: 2, trace: 3 },
-    );
+    const afterCook = named(['after_cook']);
+    return [
+      { key: 'oils', hosts: ['oils'], liquids: [{ slot: 'oils', where: 'after' }],
+        text: `Weigh each oil — ${oil} total — and heat until melted.${intoOils(named(['oils']))}` },
+      { key: 'lye', hosts: ['lye'], liquids: [inLye, afterLye],
+        text: `Weigh ${lye} ${alkali} and ${water} distilled water;${intoWater(named(['lye']))} add the lye to the water, never the reverse.` },
+      // A trace liquid is stirred into the cooked paste (its own step text), so it lands after.
+      { key: 'cook', hosts: ['trace'], liquids: [{ slot: 'trace', where: 'after' }],
+        text: `Blend the lye solution into the oils${named(['trace']) ? `, stir in ${named(['trace'])} at trace,` : ''} and cook to a thick, translucent paste.` },
+      { key: 'after', hosts: ['after_cook'], liquids: [],
+        text: `After the cook, stir in ${afterCook ? `${afterCook} and any post-cook superfat` : anyAdditives ? 'any post-cook superfat' : 'fragrance, additives, and any post-cook superfat'}.` },
+      { key: 'mold', hosts: ['top'], liquids: [],
+        text: `Pack into the mold${onTop(named(['top']))}; unmold once firm and use after a short cure.` },
+    ];
   }
 
-  return withLiquid(
-    [
-      `Weigh each oil — ${oil} total — and warm to 38–43 °C.`,
-      `Weigh ${lye} ${alkali} and ${water} distilled water; add the lye to the water (never the reverse) and cool to 38–43 °C.`,
-      `Pour the lye solution into the oils and blend to light trace.`,
-      `Stir in fragrance and any additives at trace.`,
-      `Pour into the mold; unmold ${unmoldText ?? 'in 24–48 h'} and cure ${cureText ?? '4–6 weeks'}.`,
-    ],
-    { oils: 1, lye: 2, trace: 3 },
+  // CP. An after-cook line (a stray from a process switch) has no cook to follow here; the
+  // last moment anything goes into the batter is trace, so it is named there.
+  const atTrace = named(['trace', 'after_cook']);
+  return [
+    { key: 'lye', hosts: ['lye'], liquids: [inLye, afterLye],
+      text: `Weigh ${lye} ${alkali} and ${water} distilled water;${intoWater(named(['lye']))} add the lye to the water (never the reverse) and cool to ${temp}.` },
+    { key: 'oils', hosts: ['oils'], liquids: [{ slot: 'oils', where: 'after' }],
+      text: `Weigh each oil — ${oil} total — and warm to ${temp}.${intoOils(named(['oils']))}` },
+    { key: 'blend', hosts: [], liquids: [], text: 'Pour the lye solution into the oils and blend to light trace.' },
+    { key: 'trace', hosts: ['trace', 'after_cook'], liquids: [{ slot: 'trace', where: 'before' }],
+      text: atTrace ? `Stir in ${atTrace} at trace.` : anyAdditives ? 'Blend on to a pourable trace.' : 'Stir in fragrance and any additives at trace.' },
+    { key: 'pour', hosts: ['top'], liquids: [],
+      text: `Pour into the mold${onTop(named(['top']))}; unmold ${unmoldText ?? 'in 24–48 h'} and cure ${cureText ?? '4–6 weeks'}.` },
+  ];
+}
+
+/** The lye and oils steps come in the process's own order (lyeSolutionBeforeOils); the rest
+ * keep their place. */
+function inProcedureOrder(steps: AddOrderStep[], process: ProcessId): AddOrderStep[] {
+  const lyeAt = steps.findIndex((s) => s.key === 'lye');
+  const oilsAt = steps.findIndex((s) => s.key === 'oils');
+  const lyeFirst = lyeSolutionBeforeOils(process);
+  if (lyeFirst === lyeAt < oilsAt) return steps;
+  const swapped = [...steps];
+  [swapped[lyeAt], swapped[oilsAt]] = [steps[oilsAt], steps[lyeAt]];
+  return swapped;
+}
+
+/** The stage/slot plan per process, text-free — what the exhaustiveness test pins. */
+export function addOrderStepPlan(process: ProcessId): Array<Pick<AddOrderStep, 'key' | 'hosts' | 'liquids'>> {
+  return inProcedureOrder(
+    addOrderSteps({
+      process, oil: '', lye: '', water: '', alkali: '', temp: '', named: () => null, anyAdditives: false,
+    }),
+    process,
+  ).map(({ key, hosts, liquids }) => ({ key, hosts, liquids }));
+}
+
+/**
+ * Process-aware "add in this order" steps for the finished batch, quoting the recipe's own
+ * lye and water weights, the menu temperature, and each additive at its own stage.
+ * Original, concise cold-process/hot-process/liquid-soap copy — always lye into water,
+ * never the reverse. The lye-vs-oils order comes from the process definition
+ * (lyeSolutionBeforeOils), the same table the Full recipe and the sheet read.
+ */
+export function buildAddOrderSteps(input: AddOrderInput): string[] {
+  const {
+    process, lyeType, totalOilGrams, lyeGrams, waterGrams, weightUnit, unmoldText, cureText,
+    soapingTempF, additives = [],
+  } = input;
+  const byStage: Record<AdditiveStage, string[]> = { lye: [], oils: [], trace: [], top: [], after_cook: [] };
+  for (const a of additives) byStage[a.addAt].push(a.name);
+  const named = (stages: AdditiveStage[]) => {
+    const names = stages.flatMap((stage) => byStage[stage]);
+    return names.length ? `the ${joinNames(names)}` : null;
+  };
+  const steps = inProcedureOrder(
+    addOrderSteps({
+      process,
+      oil: formatWeight(totalOilGrams, weightUnit),
+      lye: formatWeight(lyeGrams, weightUnit),
+      water: formatWeight(waterGrams, weightUnit),
+      alkali: lyeType === 'dual' ? 'lye' : lyeType === 'koh' ? 'KOH' : 'NaOH',
+      // The menu temperature the Full recipe opens with; the generic band survives only
+      // when none was resolved.
+      temp: soapingTempF !== undefined ? formatTempDual(soapingTempF) : '38–43 °C',
+      unmoldText,
+      cureText,
+      named,
+      anyAdditives: additives.length > 0,
+    }),
+    process,
   );
+  const texts = steps.map((s) => s.text);
+  // Liquids splice in at the step that declares their slot, before or after it. Later
+  // insertions go first so earlier indices are not shifted by the splice.
+  const liquids = (input.splitLiquidRows ?? [])
+    .map(({ row, grams }) => splitLiquidProcedureStep({ row, grams, weightUnit, process }))
+    .filter((step): step is NonNullable<typeof step> => step !== null)
+    .map((liquid) => {
+      const at = steps.findIndex((s) => s.liquids.some((l) => l.slot === liquid.slot));
+      const where = steps[at].liquids.find((l) => l.slot === liquid.slot)!.where;
+      return { text: liquid.step, index: where === 'before' ? at : at + 1 };
+    })
+    .sort((a, b) => b.index - a.index);
+  for (const liquid of liquids) texts.splice(liquid.index, 0, liquid.text);
+  return texts;
 }

@@ -28,3 +28,10 @@ export function formatInputNumber(value: number, digits = 1): string {
 export function formatConcentrationPercent(value: number, digits: 1 | 2 = 1): string {
   return formatGrams(value, digits);
 }
+
+/** "a", "a and b", "a, b and c" — the app's one list conjunction, for naming things in
+ * prose (step copy, batch-weight notes, dilution guidance). */
+export function joinNames(names: string[]): string {
+  if (names.length <= 1) return names.join('');
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}

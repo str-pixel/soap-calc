@@ -723,9 +723,9 @@ describe('the lather support pack stages by process', () => {
     return new Map(lines.map((l) => [l.catalogId, l]));
   };
 
-  it('drops sugar into the oils in LS, and at trace in CP', () => {
-    expect(applyPack('ls').get('sugar-sorbitol')!.addAt).toBe('oils');
-    expect(applyPack('cp').get('sugar-sorbitol')!.addAt).toBe('trace');
+  it('drops sugar into the lye water in every process — the sourced default for a bar', () => {
+    expect(applyPack('ls').get('sugar-sorbitol')!.addAt).toBe('lye');
+    expect(applyPack('cp').get('sugar-sorbitol')!.addAt).toBe('lye');
   });
 
   it('skips a packed ingredient the process does not offer, rather than adding a dead row', () => {
@@ -757,7 +757,7 @@ describe('the lather support pack stages by process', () => {
 // the panel states it instead of offering a four-cell control whose other three cells were
 // wrong answers at equal weight. The ones with a real choice keep the control.
 describe('the Add-at control appears only where there is a choice', () => {
-  const renderLine = (catalogId: string, addAt: string, process: 'cp' | 'ls' = 'ls') => {
+  const renderLine = (catalogId: string, addAt: string, process: 'cp' | 'hp' | 'ls' = 'ls') => {
     cleanup();
     render(
       <AdditivesPanel
@@ -784,7 +784,6 @@ describe('the Add-at control appears only where there is a choice', () => {
     ['sodium-lactate', 'oils', ['Lye water', 'Oils', 'After dilution']],
     ['salt', 'lye', ['Lye water', 'Oils', 'After dilution']],
     ['silk', 'lye', ['Lye water', 'After dilution']],
-    ['sugar-sorbitol', 'oils', ['Lye water', 'Oils']],
   ])('%s keeps a control, showing only the sanctioned stages', (id, addAt, labels) => {
     renderLine(id, addAt);
     const group = screen.getByRole('radiogroup', { name: /^Add at/ });
@@ -794,6 +793,27 @@ describe('the Add-at control appears only where there is a choice', () => {
     // Trace is never among them: LS names the lye solution, the oils and the dilution
     // water for these, never trace.
     expect(shown).not.toContain('Trace');
+  });
+
+  it.each(['cp', 'hp', 'ls'] as const)(
+    'sugar offers Lye water, Oils and Trace in %s — never Top or After cook',
+    (process) => {
+      renderLine('sugar-sorbitol', 'lye', process);
+      const group = screen.getByRole('radiogroup', { name: /^Add at/ });
+      const shown = Array.from(group.querySelectorAll('label')).map((l) => (l.textContent ?? '').trim());
+      expect(shown).toEqual(['Lye water', 'Oils', 'Trace']);
+    },
+  );
+
+  it('the stage notes no longer preach the old sugar staging — lye water is the standard home', () => {
+    renderLine('sugar-sorbitol', 'lye', 'cp');
+    const note = document.querySelector('.additive-list__stage-note')?.textContent ?? '';
+    expect(note).not.toMatch(/brown/i);
+    // And the Oils note, shown when Oils is chosen, no longer calls it "preferred for sugar".
+    cleanup();
+    renderLine('sugar-sorbitol', 'oils', 'cp');
+    const oilsNote = document.querySelector('.additive-list__stage-note')?.textContent ?? '';
+    expect(oilsNote).not.toMatch(/preferred for sugar/i);
   });
 
   it('still renders a saved line parked on a stage the entry no longer sanctions', () => {
