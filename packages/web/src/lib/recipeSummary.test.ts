@@ -534,3 +534,61 @@ test('a line parked on a stage the process does not offer is still named somewhe
   });
   expect(ls.join(' ')).toContain('Dried petals');
 });
+
+test('the oils list runs biggest amount first, whatever order they were entered in', () => {
+  const items = flat(buildFullRecipe({
+    ...FULL_RECIPE_BASE,
+    lines: [
+      { oilId: 'castor-oil', weightGrams: 20 },
+      { oilId: 'coconut-oil-76', weightGrams: 100 },
+      { oilId: 'olive-oil', weightGrams: 280 },
+    ],
+  }));
+  const names = items.map((i) => i.name);
+  const at = (name: string) => names.indexOf(name);
+  expect(at('Olive Oil')).toBeLessThan(at('Coconut Oil, 76°F'));
+  expect(at('Coconut Oil, 76°F')).toBeLessThan(at('Castor Oil'));
+});
+
+test('additives within a stage run biggest amount first', () => {
+  const items = flat(buildFullRecipe({
+    ...FULL_RECIPE_BASE,
+    additives: [
+      { key: 'a', catalogId: 'clay', name: 'Kaolin clay', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'trace' },
+      { key: 'b', catalogId: 'fragrance', name: 'Fragrance', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'trace' },
+    ],
+  }));
+  const names = items.map((i) => i.name);
+  expect(names.indexOf('Fragrance')).toBeLessThan(names.indexOf('Kaolin clay'));
+});
+
+test('the lye solution keeps its mixing order — amount never reorders lye into water', () => {
+  // Sorting by amount would put the 57 g alkali above the 4 g citric acid; the section is a
+  // mixing instruction, so the dissolved additive stays between the water and the lye.
+  const items = flat(buildFullRecipe({
+    ...FULL_RECIPE_BASE,
+    additives: [
+      { key: 'l', catalogId: 'citric-acid', name: 'Citric acid', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'lye' },
+    ],
+  }));
+  const names = items.map((i) => i.name);
+  expect(names.indexOf('Distilled water')).toBeLessThan(names.indexOf('Citric acid'));
+  expect(names.indexOf('Citric acid')).toBeLessThan(names.indexOf('Sodium hydroxide (NaOH)'));
+});
+
+test('post-cook superfat oils run biggest amount first', () => {
+  const sections = buildFullRecipe({
+    ...FULL_RECIPE_BASE,
+    postCookSuperfat: {
+      oils: [
+        { oilId: 'castor-oil', percentOfOil: 1, grams: 4 },
+        { oilId: 'shea-butter', percentOfOil: 5, grams: 20 },
+      ],
+      percentOfOil: 6,
+      grams: 24,
+      isExtra: true, method: 'append', deliveredSuperfatPercent: null,
+    },
+  });
+  const names = sections.find((s) => s.heading === 'Post-cook superfat')!.items.map((i) => i.name);
+  expect(names).toEqual(['Shea Butter', 'Castor Oil']);
+});

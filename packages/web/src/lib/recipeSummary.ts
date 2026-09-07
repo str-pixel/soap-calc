@@ -60,14 +60,30 @@ type FullRecipeInput = {
   process: ProcessId;
 };
 
+/** One manifest line plus the grams behind its formatted detail — the number the list is
+ * ordered by, dropped before the section is returned. */
+type WeighedItem = RecipeItem & { grams: number };
+
+/** Heaviest first: within a group the list reads as a weighing order, so the oils that
+ * carry the recipe (and the additives that matter most by weight) come off the scale
+ * first. Ties keep their entered order — Array#sort is stable. */
+function byAmount(items: WeighedItem[]): RecipeItem[] {
+  return [...items]
+    .sort((a, b) => b.grams - a.grams)
+    .map(({ name, detail }) => ({ name, detail }));
+}
+
 /**
  * The Full recipe manifest: headed sections in procedure order, optionally led by the
  * soaping-temperature line. Oils (weight · % of oils) and the Lye solution (water → dry
  * in-lye additives → alkali → in-lye liquids, solvents before the alkali) come in the
  * process's own order (lyeSolutionBeforeOils), then the timed stages that have anything
- * in them, then the post-cook superfat last. Every amount is preformatted in the active
- * weight unit and mirrors the figures the Results panel and batch sheet already show, so
- * the on-screen list can never state a different number.
+ * in them, then the post-cook superfat last. WITHIN each group the lines run biggest
+ * amount to smallest; the groups themselves keep their procedure order, because the lye
+ * solution's sequence is a mixing instruction (lye into water, never the reverse), not a
+ * list. Every amount is preformatted in the active weight unit and mirrors the figures the
+ * Results panel and batch sheet already show, so the on-screen list can never state a
+ * different number.
  */
 export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   const {
@@ -101,7 +117,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   // Every timed material files into its stage bucket, then the buckets become sections
   // (or, for the oils/lye stages, fold into those sections) at their procedure slot.
   // The section heading carries the stage, so the lines themselves no longer repeat it.
-  const staged: Record<AdditiveStage, RecipeItem[]> = {
+  const staged: Record<AdditiveStage, WeighedItem[]> = {
     lye: [],
     oils: [],
     trace: [],
@@ -112,12 +128,13 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   // order and in the steps as phrasing: a solvent (glycerin) is what the alkali dissolves
   // into, so it lists with the water before the alkali; any other liquid joins the
   // finished, cooled solution after it.
-  const lyeLiquids: RecipeItem[] = [];
+  const lyeLiquids: WeighedItem[] = [];
   for (const { row, grams } of splitLiquidRows ?? []) {
     if (grams == null || grams <= 0) continue;
     const item = {
       name: row.name.trim() || 'Alternative liquid',
       detail: formatWeight(grams, weightUnit),
+      grams,
     };
     if (splitLiquidSlot(row) === 'lye_after_alkali') lyeLiquids.push(item);
     else staged[row.addAt].push(item);
@@ -126,19 +143,24 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     staged[additive.addAt].push({
       name: additive.name,
       detail: formatWeight(additive.grams, weightUnit),
+      grams: additive.grams,
     });
   }
 
-  const oilItems: RecipeItem[] = [];
+  const oilItems: WeighedItem[] = [];
   for (const line of lines) {
     if (line.weightGrams <= 0) continue;
     const percent = recipeOilWeightGrams > 0 ? (line.weightGrams / recipeOilWeightGrams) * 100 : 0;
     oilItems.push({
       name: oilDisplayName(line.oilId),
       detail: `${formatWeight(line.weightGrams, weightUnit)} · ${formatGrams(percent, 1)}%`,
+      grams: line.weightGrams,
     });
   }
-  const oilsSection: RecipeItem[] = [...oilItems, ...staged.oils];
+  // The oils rank among themselves and the with-oils additives among themselves: a clay at
+  // 4 g must not push a 5 g oil down the list, because the oils above it are the block that
+  // sums to 100%.
+  const oilsSection: RecipeItem[] = [...byAmount(oilItems), ...byAmount(staged.oils)];
 
   // The lye solution reads in mixing order: water first, anything dissolved in it next
   // (dry additives, a solvent liquid), THEN the alkali goes in (never the reverse) — and
@@ -148,7 +170,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       name: process === 'ls' ? 'Water' : 'Distilled water',
       detail: formatWeight(waterGrams, weightUnit),
     },
-    ...staged.lye,
+    ...byAmount(staged.lye),
   ];
   if (lyeType === 'dual') {
     lyeItems.push({ name: 'Sodium hydroxide (NaOH)', detail: formatWeight(naohGrams, weightUnit) });
@@ -164,7 +186,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       detail: formatWeight(lyeGrams, weightUnit),
     });
   }
-  lyeItems.push(...lyeLiquids);
+  lyeItems.push(...byAmount(lyeLiquids));
   if (lyeSolutionBeforeOils(process)) {
     push('Lye solution', lyeItems);
     push('Oils', oilsSection);
@@ -173,9 +195,9 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     push('Lye solution', lyeItems);
   }
 
-  push(additiveStageLabel('trace', process), staged.trace);
-  push(additiveStageLabel('top', process), staged.top);
-  push(additiveStageLabel('after_cook', process), staged.after_cook);
+  push(additiveStageLabel('trace', process), byAmount(staged.trace));
+  push(additiveStageLabel('top', process), byAmount(staged.top));
+  push(additiveStageLabel('after_cook', process), byAmount(staged.after_cook));
 
   // Its own section, last and never among the recipe oils (those sum to 100% without
   // it) — the UG2HP convention, and the heading is the book's own term. Present only
@@ -185,10 +207,13 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   if (postCookSuperfat) {
     push(
       'Post-cook superfat',
-      postCookSuperfat.oils.map((oil) => ({
-        name: oilDisplayName(oil.oilId),
-        detail: postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.isExtra),
-      })),
+      byAmount(
+        postCookSuperfat.oils.map((oil) => ({
+          name: oilDisplayName(oil.oilId),
+          detail: postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.isExtra),
+          grams: oil.grams,
+        })),
+      ),
     );
   }
 
