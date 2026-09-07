@@ -4,7 +4,8 @@ import {
   isAdditiveOfferedFor,
   catalogEntryById,
   effectiveCatalogEntry,
-  LATHER_SUPPORT_PACK,
+  ADDITIVE_PACKS,
+  type AdditivePack,
   parseDoseAmount,
   type AdditiveCatalogEntry,
   type AdditiveStage,
@@ -171,11 +172,15 @@ export const AdditivesPanel = memo(function AdditivesPanel({
     ]);
   }
 
-  function addLatherSupportPack() {
+  // The packs this process offers — the shared lather set everywhere, the bar sets in
+  // their own process (ADDITIVE_PACKS.processes).
+  const packs = ADDITIVE_PACKS.filter((pack) => !pack.processes || pack.processes.includes(process));
+
+  function addPack(pack: AdditivePack) {
     const existingIds = new Set(
       additives.map((line) => line.catalogId).filter((id) => id !== ''),
     );
-    const pack = LATHER_SUPPORT_PACK.flatMap((item): AdditiveLine[] => {
+    const lines = pack.items.flatMap((item): AdditiveLine[] => {
       if (existingIds.has(item.catalogId)) return [];
       const entry = catalogEntryById(item.catalogId);
       if (!entry) return [];
@@ -202,14 +207,12 @@ export const AdditivesPanel = memo(function AdditivesPanel({
         },
       ];
     });
-    if (pack.length === 0) return;
-    onChange([...additives, ...pack]);
+    if (lines.length === 0) return;
+    onChange([...additives, ...lines]);
   }
 
-  const latherPackCatalogIds = LATHER_SUPPORT_PACK.map((item) => item.catalogId);
-  const allLatherPackPresent = latherPackCatalogIds.every((id) =>
-    additives.some((line) => line.catalogId === id),
-  );
+  const packPresent = (pack: AdditivePack) =>
+    pack.items.every((item) => additives.some((line) => line.catalogId === item.catalogId));
 
   function removeLine(key: string) {
     onChange(additives.filter((line) => line.key !== key));
@@ -225,14 +228,17 @@ export const AdditivesPanel = memo(function AdditivesPanel({
           <p className="panel__subtitle">Dose per additive</p>
         </div>
         <div className="panel__actions">
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={addLatherSupportPack}
-            disabled={allLatherPackPresent}
-          >
-            Lather support pack
-          </button>
+          {packs.map((pack) => (
+            <button
+              key={pack.id}
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => addPack(pack)}
+              disabled={packPresent(pack)}
+            >
+              {pack.label}
+            </button>
+          ))}
           <button type="button" className="btn btn--ghost" onClick={addLine}>
             + Add
           </button>
@@ -248,6 +254,32 @@ export const AdditivesPanel = memo(function AdditivesPanel({
           Free fatty acids (stearic, lauric, myristic) saponify — dose them as oils in the oils
           list, typically {process === 'hp' ? '5–8%' : '5–10%'} of oils for a fluid
           {process === 'hp' ? ' cook' : ' no-paste cook'}.
+        </p>
+      )}
+      {process === 'cp' && (
+        // The CP counterparts: the same fatty acids at the far lower cold-process dose
+        // (a trace accelerant, CP:10784-10790 — more can seize), the waxes that are oils
+        // too (CP:9179), and the liquids that belong to the other control.
+        <>
+          <p className="results-hint">
+            Free fatty acids (stearic, lauric, myristic) saponify — dose them as oils in the
+            oils list, no more than 0.5–1% of oils as a trace accelerant; more can seize.
+            Beeswax and candelilla are oils too, at 1–2%.
+          </p>
+          <p className="results-hint">
+            Milk, juice, coffee, beer and purées are liquids — enter them under Split liquid,
+            frozen into the lye water or blended in at trace. Colorants have no fixed dose:
+            colour the soap, not the lather.
+          </p>
+        </>
+      )}
+      {process === 'hp' && (
+        // The HP additive moment is after the cook (HP:9478-9481, 11122-11131): a hot paste
+        // browns milk sugars and drives off scent.
+        <p className="results-hint">
+          Milk, yogurt, colorants and fragrance go in after the cook, warmed to at least room
+          temperature — the hot paste browns milk sugars and drives off scent. Milk as a
+          liquid goes under Split liquid.
         </p>
       )}
       {process === 'ls' && (

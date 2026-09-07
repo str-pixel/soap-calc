@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ADDITIVE_PACKS,
   ADDITIVE_CATALOG,
   ADDITIVE_STAGE_LABELS,
   catalogEntryById,
@@ -317,8 +318,9 @@ describe('per-process catalog overrides (HP audit 2026-07-26)', () => {
   });
 
   it('returns the entry unchanged for a process with no override', () => {
-    const honey = catalogEntryById('honey')!;
-    expect(effectiveCatalogEntry(honey, 'hp')).toEqual(honey);
+    // EDTA carries no per-process override at all (honey gained an HP one in the bar audit).
+    const edta = catalogEntryById('edta')!;
+    expect(effectiveCatalogEntry(edta, 'hp')).toEqual(edta);
   });
 });
 
@@ -730,21 +732,26 @@ describe('LS offers only the stages its source sanctions', () => {
     }
   });
 
-  it('leaves CP and HP unrestricted, because this audit only read the LS source', () => {
-    // Fragrance is the sharp case: after dilution in liquid soap, at trace in a bar. An
-    // entry-level list would have forced one answer on both.
-    for (const process of ['cp', 'hp'] as const) {
-      expect(effectiveCatalogEntry(catalogEntryById('fragrance')!, process).stages).toBeUndefined();
-      expect(effectiveCatalogEntry(catalogEntryById('salt')!, process).stages).toBeUndefined();
-    }
+  it('gives each process its own answer where the sources differ — fragrance is the sharp case', () => {
+    // After dilution in liquid soap, after the cook in hot process, at trace in a bar. The
+    // CP/HP audit (2026-09-07) gave the bar processes their own lists; no single
+    // entry-level list could have carried all three.
+    const frag = catalogEntryById('fragrance')!;
+    expect(effectiveCatalogEntry(frag, 'cp').stages).toEqual(['trace']);
+    expect(effectiveCatalogEntry(frag, 'hp').stages).toEqual(['after_cook']);
+    expect(effectiveCatalogEntry(frag, 'ls').stages).toEqual(['after_cook']);
   });
 
-  it('says nothing about stages where it has no source', () => {
-    // Unrestricted on purpose: no LS guidance exists for these, so every stage stays open
-    // rather than the app inventing a sanctioned moment.
-    for (const id of ['oatmeal', 'loofah', 'edta', 'bht', 'roe']) {
-      expect(ls(id).stages, `${id} should stay unrestricted`).toBeUndefined();
-    }
+  it("inherits the bar audit's list where the LS source is silent, never a wider one", () => {
+    // These have no LS guidance of their own. Rather than leaving every stage open, LS now
+    // reads the base (bar-audited) list — a narrower claim than "anywhere", and one that is
+    // physically right for a liquid too (an antioxidant goes into the oils; a chelator into
+    // the lye). Top is filtered out by the picker for LS regardless.
+    expect(ls('oatmeal').stages).toEqual(['oils', 'trace', 'top']);
+    expect(ls('loofah').stages).toEqual(['oils', 'top']);
+    expect(ls('edta').stages).toEqual(['lye']);
+    expect(ls('bht').stages).toEqual(['oils']);
+    expect(ls('roe').stages).toEqual(['oils']);
   });
 });
 
@@ -759,6 +766,7 @@ describe('a note explains every stage its entry offers', () => {
     oils: /oils/i,
     trace: /trace/i,
     after_cook: /after (the )?(cook|dilution)|diluted|dilution water/i,
+    top: /on top|decorat/i,
   };
 
   it.each(['cp', 'hp', 'ls'] as const)('%s', (process) => {
@@ -777,12 +785,142 @@ describe('a note explains every stage its entry offers', () => {
   });
 });
 
-describe('sugar and sorbitol offer the same three stages in every process', () => {
-  it.each(['cp', 'hp', 'ls'] as const)('%s', (process) => {
+describe('sugar and sorbitol: lye water by default, with the oils and trace beside it', () => {
+  it.each([
+    ['cp', ['lye', 'oils', 'trace']],
+    ['ls', ['lye', 'oils', 'trace']],
+    // HP alone also sanctions the sugars after the cook (HP:5040).
+    ['hp', ['lye', 'oils', 'trace', 'after_cook']],
+  ] as const)('%s', (process, stages) => {
     for (const id of ['sugar-sorbitol', 'sorbitol']) {
       const e = effectiveCatalogEntry(catalogEntryById(id)!, process);
-      expect(e.stages, `${id} in ${process}`).toEqual(['lye', 'oils', 'trace']);
+      expect(e.stages, `${id} in ${process}`).toEqual(stages);
       expect(e.defaultStage, `${id} in ${process}`).toBe('lye');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------------------
+// CP / HP stage audit (2026-09-07). Every entry a bar maker can pick carries the stage its
+// own source names and offers the others only where that process sanctions them — the
+// same treatment the LS audit gave liquid soap. Citations are CP:<line> / HP:<line> into
+// the extracted texts; "practice" marks the one figure the books dose but never stage.
+// ---------------------------------------------------------------------------------------
+describe('CP: each additive defaults to its sourced stage and offers only sanctioned ones', () => {
+  const cp = (id: string) => effectiveCatalogEntry(catalogEntryById(id)!, 'cp');
+  it.each([
+    ['chelator', 'lye', ['lye']],                       // CP:10596
+    ['citric-acid', 'lye', ['lye']],                    // CP:10596
+    ['edta', 'lye', ['lye']],                           // CP:10593
+    ['cetyl-alcohol', 'trace', ['trace']],              // CP:5817 melted, after trace
+    ['charcoal', 'oils', ['oils', 'trace']],            // CP:16777, 8996
+    ['clay', 'oils', ['oils', 'trace']],                // CP:9912
+    ['oatmeal', 'oils', ['oils', 'trace', 'top']],      // CP:16837, 17611
+    ['honey', 'oils', ['lye', 'oils', 'trace']],        // CP:16837; sugars CP:5790
+    ['fragrance', 'trace', ['trace']],                  // CP:16777 (EO after trace)
+    ['salt', 'lye', ['lye', 'oils', 'top']],            // CP:10618, 17606
+    ['sodium-lactate', 'lye', ['lye', 'oils', 'trace']], // dose CP:10669; stage: practice
+    ['silk', 'lye', ['lye']],                           // CP:10697 into the water before the NaOH
+    ['bht', 'oils', ['oils']],                          // CP:5563
+    ['roe', 'oils', ['oils']],                          // CP:5563, 17611
+    ['titanium-dioxide', 'oils', ['oils', 'lye']],      // dispersible in oil or water (HP:8514)
+    ['eugenol', 'oils', ['oils']],                      // CP:10841
+    ['loofah', 'oils', ['oils', 'top']],                // HP:11161 (CP silent)
+  ] as const)('%s', (id, defaultStage, stages) => {
+    expect(cp(id).defaultStage).toBe(defaultStage);
+    expect(cp(id).stages).toEqual(stages);
+  });
+});
+
+describe('HP: each additive defaults to its sourced stage and offers only sanctioned ones', () => {
+  const hp = (id: string) => effectiveCatalogEntry(catalogEntryById(id)!, 'hp');
+  it.each([
+    ['chelator', 'lye', ['lye']],                                  // HP:5148
+    ['citric-acid', 'lye', ['lye']],                               // HP:5148
+    ['cetyl-alcohol', 'trace', ['trace']],                         // HP:5059
+    ['charcoal', 'oils', ['oils', 'trace', 'after_cook']],         // HP:11081-11084
+    ['clay', 'oils', ['oils', 'trace', 'after_cook']],             // HP:11083
+    ['oatmeal', 'oils', ['oils', 'after_cook', 'top']],            // HP:11108-11116
+    ['honey', 'oils', ['lye', 'oils', 'trace', 'after_cook']],     // HP:5033-5040 (sugars)
+    ['fragrance', 'after_cook', ['after_cook']],                   // HP:10653
+    ['salt', 'lye', ['lye', 'oils', 'top']],                       // HP:9414-9417, 11093
+    ['sodium-lactate', 'trace', ['lye', 'trace']],                 // HP:9411 after a thick trace
+    ['silk', 'lye', ['lye']],                                      // HP:11165
+    ['bht', 'oils', ['oils', 'after_cook']],                       // HP:5797 with the PCSF
+    ['roe', 'oils', ['oils', 'after_cook']],                       // HP:5797
+    ['eugenol', 'oils', ['oils']],                                 // HP:9361
+    ['finished-soap', 'oils', ['oils']],                           // HP:9292
+    ['yogurt', 'after_cook', ['after_cook']],                      // HP:9478
+  ] as const)('%s', (id, defaultStage, stages) => {
+    expect(hp(id).defaultStage).toBe(defaultStage);
+    expect(hp(id).stages).toEqual(stages);
+  });
+});
+
+describe('bar-only additives from the CP recipes (2026-09-07), with the HP reference section for their HP stage', () => {
+  // Every figure is a recipe table line or chapter figure from the CP text; the LS text is
+  // silent on all six, so — like cetyl alcohol and titanium dioxide — none is offered there.
+  it.each([
+    // id, name, low, high, CP default, CP stages, HP default, HP stages
+    ['cocoa-powder', 'Cocoa powder', 1, 1, 'oils', ['oils', 'trace'], 'oils', ['oils', 'lye', 'after_cook']],       // CP:17160; HP:11179
+    ['milk-powder', 'Milk powder', 1, 1.5, 'trace', ['trace', 'oils'], 'after_cook', ['after_cook', 'oils']],       // CP:17757, 17612, 17673; HP:11122
+    ['coffee-grounds', 'Coffee grounds', 2, 3, 'trace', ['trace', 'top'], 'after_cook', ['after_cook', 'top']],     // CP:16975, 16996; HP:11150
+    ['seeds', 'Seeds (poppy, etc.)', 1, 1, 'trace', ['trace', 'top'], 'after_cook', ['after_cook', 'top']],         // CP:17090, 17108; HP:11144
+    ['botanicals', 'Dried botanicals, ground', 0.25, 0.25, 'oils', ['oils', 'trace', 'top'], 'after_cook', ['after_cook', 'top']], // CP:17614; HP:11097
+    ['arrowroot', 'Arrowroot powder', 1, 1, 'trace', ['trace'], 'after_cook', ['trace', 'after_cook']],             // CP:17605, 17673
+  ] as const)('%s', (id, name, low, high, cpDefault, cpStages, hpDefault, hpStages) => {
+    const base = catalogEntryById(id)!;
+    expect(base.name).toBe(name);
+    expect(base.processes).toEqual(['cp', 'hp']);
+    const cp = effectiveCatalogEntry(base, 'cp');
+    expect([cp.typicalLow, cp.typicalHigh, cp.defaultStage, cp.stages]).toEqual([low, high, cpDefault, cpStages]);
+    const hp = effectiveCatalogEntry(base, 'hp');
+    expect([hp.defaultStage, hp.stages]).toEqual([hpDefault, hpStages]);
+    expect(catalogEntriesForProcess('ls').some((e) => e.id === id), `${id} offered in LS`).toBe(false);
+  });
+
+  it('milk powder carries the sugars hazard — milk browns and overheats in fresh lye (CP:10453)', () => {
+    expect(catalogEntryById('milk-powder')?.hazards).toContain('can tunnel/overheat');
+  });
+});
+
+describe('additive packs (one-press starting sets, staged by the catalog)', () => {
+  it('offers the lather pack everywhere and the two bar packs in their own process', () => {
+    const byId = Object.fromEntries(ADDITIVE_PACKS.map((pack) => [pack.id, pack]));
+    expect(byId['lather'].processes).toBeUndefined();
+    expect(byId['fluid-hp'].processes).toEqual(['hp']);
+    expect(byId['hard-bar'].processes).toEqual(['cp']);
+  });
+
+  it('fluid HP pack: the HP fluidity set — sodium lactate, sugar, yogurt, eugenol (HP:9411, 9543, 9478, 9361)', () => {
+    const pack = ADDITIVE_PACKS.find((p) => p.id === 'fluid-hp')!;
+    expect(pack.items).toEqual([
+      { catalogId: 'sodium-lactate', percentOfOil: 3 },
+      { catalogId: 'sugar-sorbitol', percentOfOil: 3 },
+      { catalogId: 'yogurt', percentOfOil: 3 },
+      { catalogId: 'eugenol', percentOfOil: 2 },
+    ]);
+  });
+
+  it('hard-bar pack: the CP unmolding aids — sodium lactate and salt (CP:10669, 10639)', () => {
+    const pack = ADDITIVE_PACKS.find((p) => p.id === 'hard-bar')!;
+    expect(pack.items).toEqual([
+      { catalogId: 'sodium-lactate', percentOfOil: 1 },
+      { catalogId: 'salt', percentOfOil: 0.5 },
+    ]);
+  });
+
+  it('every pack item is offered in every process the pack is, and its dose sits inside that process\'s typical range', () => {
+    for (const pack of ADDITIVE_PACKS) {
+      for (const process of pack.processes ?? (['cp', 'hp', 'ls'] as const)) {
+        for (const item of pack.items) {
+          const entry = catalogEntryById(item.catalogId)!;
+          if (!isAdditiveOfferedFor(entry, process)) continue; // the lather pack skips these by design
+          const e = effectiveCatalogEntry(entry, process);
+          expect(item.percentOfOil, `${pack.id}/${item.catalogId} in ${process}`).toBeGreaterThanOrEqual(e.typicalLow);
+          expect(item.percentOfOil, `${pack.id}/${item.catalogId} in ${process}`).toBeLessThanOrEqual(e.typicalHigh);
+        }
+      }
     }
   });
 });

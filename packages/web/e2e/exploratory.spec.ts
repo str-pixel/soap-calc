@@ -557,6 +557,21 @@ test.describe('liquid soap', () => {
 // ---------- 7. HP specifics ----------
 
 test.describe('hot process', () => {
+  test('the Fluid HP pack seeds four lines, each filed under its own stage in the Full recipe', async ({ page }) => {
+    await processTab(page, /Hot process/).click();
+    await page.getByRole('button', { name: /fluid hp pack/i }).click();
+    const section = (heading: string) =>
+      page
+        .locator('.results-recipe__section')
+        .filter({ has: page.locator('.results-recipe__heading', { hasText: heading }) });
+    await expect(section('Lye solution')).toContainText(/Sugar/);
+    await expect(section('At trace')).toContainText(/Sodium lactate/i);
+    await expect(section('After cook')).toContainText(/Yogurt/i);
+    await expect(section('Oils')).toContainText(/Eugenol|clove/i);
+    // Pressing it again adds nothing — every line is already present.
+    await expect(page.getByRole('button', { name: /fluid hp pack/i })).toBeDisabled();
+  });
+
   test('cook stages and vessel-volume readout', async ({ page }, testInfo) => {
     await processTab(page, /Hot process/).click();
     for (const s of ['trace', 'applesauce', 'expansion', 'mashed potato']) {

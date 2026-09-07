@@ -554,17 +554,17 @@ describe('per-process dose resolution (HP audit)', () => {
   });
 });
 
-describe('free-fatty-acid guidance (HP + LS audits)', () => {
-  it('tells HP (5–8%) and LS (5–10%) users to dose free fatty acids as oils; silent under CP', () => {
-    for (const [process, range] of [['hp', '5–8%'], ['ls', '5–10%']] as const) {
+describe('free-fatty-acid guidance (HP + LS audits; CP audit 2026-09-07)', () => {
+  it('tells each process its own fatty-acid dose as oils: HP 5–8%, LS 5–10%, CP 0.5–1% as a trace accelerant', () => {
+    // CP:10784-10790 — in cold process the same acids are a trace accelerant at no more
+    // than 0.5-1% of oils; more can seize. It was silent here before the CP audit.
+    for (const [process, range] of [['hp', '5–8%'], ['ls', '5–10%'], ['cp', '0.5–1%']] as const) {
       const r = render(
         <AdditivesPanel additives={[]} computed={[]} weightUnit="g" process={process} onChange={() => {}} />,
       );
       expect(screen.getByText(/stearic, lauric, myristic/i).textContent).toContain(range);
       r.unmount();
     }
-    render(<AdditivesPanel additives={[]} computed={[]} weightUnit="g" process="cp" onChange={() => {}} />);
-    expect(screen.queryByText(/stearic, lauric, myristic/i)).toBeNull();
   });
 });
 
@@ -795,15 +795,17 @@ describe('the Add-at control appears only where there is a choice', () => {
     expect(shown).not.toContain('Trace');
   });
 
-  it.each(['cp', 'hp', 'ls'] as const)(
-    'sugar offers Lye water, Oils and Trace in %s — never Top or After cook',
-    (process) => {
-      renderLine('sugar-sorbitol', 'lye', process);
-      const group = screen.getByRole('radiogroup', { name: /^Add at/ });
-      const shown = Array.from(group.querySelectorAll('label')).map((l) => (l.textContent ?? '').trim());
-      expect(shown).toEqual(['Lye water', 'Oils', 'Trace']);
-    },
-  );
+  it.each([
+    ['cp', ['Lye water', 'Oils', 'Trace']],
+    ['ls', ['Lye water', 'Oils', 'Trace']],
+    // HP alone also sanctions the sugars after the cook (HP:5040); never Top.
+    ['hp', ['Lye water', 'Oils', 'Trace', 'After cook']],
+  ] as const)('sugar offers only its sanctioned stages in %s', (process, labels) => {
+    renderLine('sugar-sorbitol', 'lye', process);
+    const group = screen.getByRole('radiogroup', { name: /^Add at/ });
+    const shown = Array.from(group.querySelectorAll('label')).map((l) => (l.textContent ?? '').trim());
+    expect(shown).toEqual([...labels]);
+  });
 
   it('the stage notes no longer preach the old sugar staging — lye water is the standard home', () => {
     renderLine('sugar-sorbitol', 'lye', 'cp');
@@ -826,8 +828,71 @@ describe('the Add-at control appears only where there is a choice', () => {
     expect(shown).toContain('After dilution');
   });
 
-  it('leaves the bar processes alone — fragrance still chooses in CP', () => {
+  it('the bar processes have their own audit: fragrance is fixed at trace in CP, salt still chooses', () => {
     renderLine('fragrance', 'trace', 'cp');
-    expect(screen.getByRole('radiogroup', { name: /^Add at/ })).toBeTruthy();
+    expect(screen.queryByRole('radiogroup', { name: /^Add at/ })).toBeNull();
+    expect(document.querySelector('.additive-list__stage-fixed')).toBeTruthy();
+    renderLine('salt', 'lye', 'cp');
+    const group = screen.getByRole('radiogroup', { name: /^Add at/ });
+    const shown = Array.from(group.querySelectorAll('label')).map((l) => (l.textContent ?? '').trim());
+    expect(shown).toEqual(['Lye water', 'Oils', 'Top']);
+  });
+});
+
+describe('process packs and hints', () => {
+  const renderPanel = (process: 'cp' | 'hp' | 'ls') => {
+    const onChange = vi.fn();
+    cleanup();
+    render(
+      <AdditivesPanel additives={[]} computed={[]} weightUnit="g" process={process} onChange={onChange} />,
+    );
+    return onChange;
+  };
+
+  it('shows the Fluid HP pack button only in HP and the Hard-bar pack only in CP', () => {
+    renderPanel('hp');
+    expect(screen.getByRole('button', { name: /fluid hp pack/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /hard-bar pack/i })).toBeNull();
+    renderPanel('cp');
+    expect(screen.getByRole('button', { name: /hard-bar pack/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /fluid hp pack/i })).toBeNull();
+    renderPanel('ls');
+    expect(screen.queryByRole('button', { name: /fluid hp pack/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /hard-bar pack/i })).toBeNull();
+    // The shared button is untouched.
+    expect(screen.getByRole('button', { name: /lather support/i })).toBeTruthy();
+  });
+
+  it('the Fluid HP pack seeds four lines, each at its HP catalog stage and unit', () => {
+    const onChange = renderPanel('hp');
+    fireEvent.click(screen.getByRole('button', { name: /fluid hp pack/i }));
+    const lines = onChange.mock.calls[0][0] as Array<{ catalogId: string; addAt: string; amount: string; unit: string }>;
+    expect(lines.map((l) => [l.catalogId, l.amount, l.unit, l.addAt])).toEqual([
+      ['sodium-lactate', '3', 'percent', 'trace'],
+      ['sugar-sorbitol', '3', 'percent', 'lye'],
+      ['yogurt', '3', 'percent', 'after_cook'],
+      ['eugenol', '2', 'ppt', 'oils'],
+    ]);
+  });
+
+  it('the Hard-bar pack seeds sodium lactate and salt into the lye water', () => {
+    const onChange = renderPanel('cp');
+    fireEvent.click(screen.getByRole('button', { name: /hard-bar pack/i }));
+    const lines = onChange.mock.calls[0][0] as Array<{ catalogId: string; addAt: string; amount: string }>;
+    expect(lines.map((l) => [l.catalogId, l.amount, l.addAt])).toEqual([
+      ['sodium-lactate', '1', 'lye'],
+      ['salt', '0.5', 'lye'],
+    ]);
+  });
+
+  it('CP hint: fatty acids as oils at a trace-accelerant dose, and liquids via Split liquid', () => {
+    renderPanel('cp');
+    expect(screen.getByText(/stearic, lauric, myristic/i).textContent).toMatch(/0\.5–1%/);
+    expect(screen.getByText(/milk|juice/i).textContent).toMatch(/split liquid/i);
+  });
+
+  it('HP hint: milk, yogurt, colorants and fragrance go in after the cook', () => {
+    renderPanel('hp');
+    expect(screen.getByText(/after the cook/i).textContent).toMatch(/milk/i);
   });
 });
