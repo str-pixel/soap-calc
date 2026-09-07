@@ -539,17 +539,18 @@ test.describe('liquid soap', () => {
     await page.locator('.oil-picker__option').first().click();
     await page.getByLabel('Post-cook superfat % 2').fill('2');
     await page.getByLabel('Post-cook superfat % 2').blur();
-    // The results PCSF line names both oils (aggregate), and the Full recipe lists each
-    // as its own post-cook superfat line.
+    // The results PCSF line names both oils (aggregate), and the Full recipe carries a
+    // Post-cook superfat section listing each oil as its own line.
     const pcsfLine = page
       .locator('.panel--results .results-grid__item')
       .filter({ hasText: /Post-cook superfat/ })
       .first();
     await expect(pcsfLine).toContainText(/Olive Oil/);
     await expect(pcsfLine).toContainText(/Jojoba/);
-    await expect(
-      page.locator('.panel--results').getByText(/Jojoba.*\(post-cook superfat\)/),
-    ).toBeVisible();
+    const pcsfSection = page
+      .locator('.results-recipe__section')
+      .filter({ has: page.locator('.results-recipe__heading', { hasText: 'Post-cook superfat' }) });
+    await expect(pcsfSection.getByText(/Jojoba/)).toBeVisible();
   });
 });
 
