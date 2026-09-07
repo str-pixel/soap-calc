@@ -10,6 +10,11 @@ import { formatWeight } from './weightUnits';
 /** A single line of the printable "Full recipe" list: a material and its formatted amount. */
 export type RecipeItem = { name: string; detail: string };
 
+/** One headed group of the Full recipe manifest. `heading: null` is the unheaded lead-in
+ * (the soaping-temperature line). Headings use the source books' vocabulary — "Lye
+ * solution", never the cosmetics-industry "water phase". */
+export type RecipeSection = { heading: string | null; items: RecipeItem[] };
+
 type FullRecipeInput = {
   /** Resolved soaping temperature from the menu, °F. When present it opens the list,
    * shown °C-first like the batch sheet's Method row. */
@@ -40,7 +45,7 @@ type FullRecipeInput = {
  * amount preformatted in the active weight unit. Mirrors the figures the Results panel and
  * batch sheet already show, so the on-screen list can never state a different number.
  */
-export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
+export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   const {
     soapingTempF,
     lines,
@@ -59,29 +64,20 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
     process,
   } = input;
 
-  const items: RecipeItem[] = [];
+  const sections: RecipeSection[] = [];
+  const push = (heading: string | null, items: RecipeItem[]) => {
+    if (items.length > 0) sections.push({ heading, items });
+  };
 
   if (soapingTempF !== undefined) {
-    items.push({
-      name: 'Soaping temperature',
-      detail: `${fToC(soapingTempF)} °C (${soapingTempF} °F)`,
-    });
+    push(null, [
+      { name: 'Soaping temperature', detail: `${fToC(soapingTempF)} °C (${soapingTempF} °F)` },
+    ]);
   }
 
-  for (const line of lines) {
-    if (line.weightGrams <= 0) continue;
-    const percent = recipeOilWeightGrams > 0 ? (line.weightGrams / recipeOilWeightGrams) * 100 : 0;
-    items.push({
-      name: oilDisplayName(line.oilId),
-      detail: `${formatWeight(line.weightGrams, weightUnit)} · ${formatGrams(percent, 1)}%`,
-    });
-  }
-
-  // Every timed material files into its stage bucket, then the buckets splice into the
-  // list at their procedure slot: with-oils items ride with the oils block, in-water
-  // items sit between the water and the alkali (dissolve first, THEN the lye goes in),
-  // and trace/top/after-cook follow the alkali. The stage labels the lines already carry
-  // now match the order they're read in.
+  // Every timed material files into its stage bucket, then the buckets become sections
+  // (or, for the oils/lye stages, fold into those sections) at their procedure slot.
+  // The section heading carries the stage, so the lines themselves no longer repeat it.
   const staged: Record<AdditiveStage, RecipeItem[]> = {
     lye: [],
     oils: [],
@@ -93,58 +89,74 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
     if (grams == null || grams <= 0) continue;
     staged[row.addAt].push({
       name: row.name.trim() || 'Alternative liquid',
-      detail: `${formatWeight(grams, weightUnit)} · ${additiveStageLabel(row.addAt, process)}`,
+      detail: formatWeight(grams, weightUnit),
     });
   }
   for (const additive of additives) {
     staged[additive.addAt].push({
       name: additive.name,
-      detail: `${formatWeight(additive.grams, weightUnit)} · ${additiveStageLabel(additive.addAt, process)}`,
+      detail: formatWeight(additive.grams, weightUnit),
     });
   }
 
-  items.push(...staged.oils);
+  const oilItems: RecipeItem[] = [];
+  for (const line of lines) {
+    if (line.weightGrams <= 0) continue;
+    const percent = recipeOilWeightGrams > 0 ? (line.weightGrams / recipeOilWeightGrams) * 100 : 0;
+    oilItems.push({
+      name: oilDisplayName(line.oilId),
+      detail: `${formatWeight(line.weightGrams, weightUnit)} · ${formatGrams(percent, 1)}%`,
+    });
+  }
+  push('Oils', [...oilItems, ...staged.oils]);
 
-  items.push({
-    name: process === 'ls' ? 'Water' : 'Distilled water',
-    detail: formatWeight(waterGrams, weightUnit),
-  });
-  items.push(...staged.lye);
-
+  // The lye solution reads in mixing order: water first, anything dissolved in it next,
+  // THEN the alkali goes in — never the reverse.
+  const lyeItems: RecipeItem[] = [
+    {
+      name: process === 'ls' ? 'Water' : 'Distilled water',
+      detail: formatWeight(waterGrams, weightUnit),
+    },
+    ...staged.lye,
+  ];
   if (lyeType === 'dual') {
-    items.push({ name: 'Sodium hydroxide (NaOH)', detail: formatWeight(naohGrams, weightUnit) });
+    lyeItems.push({ name: 'Sodium hydroxide (NaOH)', detail: formatWeight(naohGrams, weightUnit) });
     // Only state the blend share when it's actually set — never invent "0%".
     const kohShare = kohBlendPercent?.trim();
-    items.push({
+    lyeItems.push({
       name: kohShare ? `Potassium hydroxide (KOH, ${kohShare}%)` : 'Potassium hydroxide (KOH)',
       detail: formatWeight(kohGrams, weightUnit),
     });
   } else {
-    items.push({
+    lyeItems.push({
       name: lyeType === 'koh' ? 'Potassium hydroxide (KOH)' : 'Sodium hydroxide (NaOH)',
       detail: formatWeight(lyeGrams, weightUnit),
     });
   }
+  push('Lye solution', lyeItems);
 
-  items.push(...staged.trace, ...staged.top, ...staged.after_cook);
+  push(additiveStageLabel('trace', process), staged.trace);
+  push(additiveStageLabel('top', process), staged.top);
+  push(additiveStageLabel('after_cook', process), staged.after_cook);
 
-  // Last, not among the oils: the PCSF is the final material to touch the batch, and HP
-  // convention keeps it out of the recipe oils entirely (the oils above sum to 100%
-  // without it). Stage-labeled like every other timed material; an applied subtract
-  // reserve additionally says the grams come out of the oils already listed, so the
-  // manifest never reads as extra shopping weight.
+  // Its own section, last and never among the recipe oils (those sum to 100% without
+  // it) — the UG2HP convention, and the heading is the book's own term. Present only
+  // when a PCSF is actually set in the calculator. An applied subtract reserve says its
+  // grams come out of the oils already listed, so the manifest never reads as extra
+  // shopping weight.
   if (postCookSuperfat) {
-    const stage = additiveStageLabel('after_cook', process);
-    const timing = pcsfIsExtra ? stage : `${stage}, from oils above`;
-    for (const oil of postCookSuperfat.oils) {
-      items.push({
-        name: `${oilDisplayName(oil.oilId)} (post-cook superfat)`,
-        detail: `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil · ${timing}`,
-      });
-    }
+    push(
+      'Post-cook superfat',
+      postCookSuperfat.oils.map((oil) => ({
+        name: oilDisplayName(oil.oilId),
+        detail: `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil${
+          pcsfIsExtra ? '' : ' · from oils above'
+        }`,
+      })),
+    );
   }
 
-  return items;
+  return sections;
 }
 
 type AddOrderInput = {

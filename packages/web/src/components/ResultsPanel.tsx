@@ -534,14 +534,21 @@ export const ResultsPanel = memo(function ResultsPanel({
           onToggle={(e) => setFullRecipeOpen((e.target as HTMLDetailsElement).open)}
         >
           <summary className="disclosure__summary">Full recipe</summary>
-          <dl className="results-recipe__list">
-            {fullRecipe.map((item, index) => (
-              <div key={`${item.name}-${index}`} className="results-recipe__row">
-                <dt>{item.name}</dt>
-                <dd>{item.detail}</dd>
-              </div>
-            ))}
-          </dl>
+          {fullRecipe.map((section, sIndex) => (
+            <div key={section.heading ?? `lead-${sIndex}`} className="results-recipe__section">
+              {section.heading && (
+                <div className="results-recipe__heading">{section.heading}</div>
+              )}
+              <dl className="results-recipe__list">
+                {section.items.map((item, index) => (
+                  <div key={`${item.name}-${index}`} className="results-recipe__row">
+                    <dt>{item.name}</dt>
+                    <dd>{item.detail}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))}
         </details>
       )}
 

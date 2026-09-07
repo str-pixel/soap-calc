@@ -2239,6 +2239,18 @@ details[open] > .disclosure__summary::before {
   flex-direction: column;
 }
 
+/* Section subheads inside the Full recipe manifest — same label idiom as the
+   Add-in-order title, a size down so the summary line keeps the top rank. */
+.results-recipe__heading {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--label);
+  margin-top: 0.55rem;
+}
+
 .results-recipe__row {
   display: flex;
   align-items: baseline;
