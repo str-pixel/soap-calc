@@ -244,3 +244,52 @@ test('two rows at different stages both appear, each at its position', () => {
   expect(aloeIdx).toBeLessThan(steps.findIndex((s) => s.includes('lye solution into the oils')));
   expect(milkIdx).toBeGreaterThan(steps.findIndex((s) => s.includes('blend to light trace')));
 });
+
+test('buildFullRecipe lists post-cook superfat last, stage-labeled like other timed materials', () => {
+  const items = buildFullRecipe({
+    lines: OILS,
+    recipeOilWeightGrams: 400,
+    weightUnit: 'g',
+    lyeType: 'naoh',
+    naohGrams: 0,
+    kohGrams: 0,
+    lyeGrams: 56.7,
+    waterGrams: 132,
+    additives: [
+      { key: 'a', catalogId: 'sugar', name: 'Sugar', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'trace' },
+    ],
+    postCookSuperfat: {
+      oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }],
+      percentOfOil: 5,
+      grams: 20,
+    },
+    process: 'hp',
+  });
+  const pcsf = items[items.length - 1];
+  // Last item — after the additives, since it is the last material to touch the batch.
+  expect(pcsf.name).toContain('post-cook superfat');
+  expect(pcsf.detail).toBe('20 g · 5% of oil · After cook');
+});
+
+test('buildFullRecipe marks an applied subtract reserve as coming from the oils above', () => {
+  const items = buildFullRecipe({
+    lines: OILS,
+    recipeOilWeightGrams: 400,
+    weightUnit: 'g',
+    lyeType: 'naoh',
+    naohGrams: 0,
+    kohGrams: 0,
+    lyeGrams: 56.7,
+    waterGrams: 132,
+    additives: [],
+    postCookSuperfat: {
+      oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }],
+      percentOfOil: 5,
+      grams: 20,
+    },
+    pcsfIsExtra: false,
+    process: 'hp',
+  });
+  const pcsf = items[items.length - 1];
+  expect(pcsf.detail).toBe('20 g · 5% of oil · After cook, from oils above');
+});

@@ -25,6 +25,9 @@ type FullRecipeInput = {
   additives: ComputedAdditive[];
   splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
   postCookSuperfat?: ComputedPostCookSuperfat | null;
+  /** False when the subtract reserve is actually applied — the PCSF grams are then held
+   * back from the oils listed above, not extra weight to buy. Defaults to true (extra). */
+  pcsfIsExtra?: boolean;
   process: ProcessId;
 };
 
@@ -48,6 +51,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
     additives,
     splitLiquidRows,
     postCookSuperfat,
+    pcsfIsExtra = true,
     process,
   } = input;
 
@@ -90,20 +94,27 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeItem[] {
     });
   }
 
-  if (postCookSuperfat) {
-    for (const oil of postCookSuperfat.oils) {
-      items.push({
-        name: `${oilDisplayName(oil.oilId)} (post-cook superfat)`,
-        detail: `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}%`,
-      });
-    }
-  }
-
   for (const additive of additives) {
     items.push({
       name: additive.name,
       detail: `${formatWeight(additive.grams, weightUnit)} · ${additiveStageLabel(additive.addAt, process)}`,
     });
+  }
+
+  // Last, not among the oils: the PCSF is the final material to touch the batch, and HP
+  // convention keeps it out of the recipe oils entirely (the oils above sum to 100%
+  // without it). Stage-labeled like every other timed material; an applied subtract
+  // reserve additionally says the grams come out of the oils already listed, so the
+  // manifest never reads as extra shopping weight.
+  if (postCookSuperfat) {
+    const stage = additiveStageLabel('after_cook', process);
+    const timing = pcsfIsExtra ? stage : `${stage}, from oils above`;
+    for (const oil of postCookSuperfat.oils) {
+      items.push({
+        name: `${oilDisplayName(oil.oilId)} (post-cook superfat)`,
+        detail: `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil · ${timing}`,
+      });
+    }
   }
 
   return items;

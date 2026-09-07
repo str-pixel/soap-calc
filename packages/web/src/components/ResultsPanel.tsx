@@ -227,6 +227,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     additives,
     splitLiquidRows,
     postCookSuperfat,
+    pcsfIsExtra,
     process,
   });
   const addOrderSteps = buildAddOrderSteps({
