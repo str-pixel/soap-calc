@@ -391,3 +391,67 @@ test('the spent-budget notice clears as soon as there is headroom again', () => 
   fireEvent.change(screen.getByLabelText('Post-cook superfat % 1'), { target: { value: '1' } });
   expect(screen.queryByText(/is allocated/i)).toBeNull();
 });
+
+test('the combined note quotes the ALLOCATED reserve, not the unallocated budget', () => {
+  // Budget 5% but only 2% allocated to rows: the lye scaling uses the allocated sum
+  // (useRecipeViewModel's pcsfSubtractPercent), so the note must quote the same figure —
+  // effectiveSuperfatPercent(2, 2) → 4.0, never the budget-fed 6.9.
+  render(
+    <Harness
+      process="ls"
+      initial={{ superfatPercent: '2', postCookSuperfatTotalPercent: '5',
+        postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }] }}
+    />,
+  );
+  expect(screen.getByText(/With 2% above, the batch delivers 4\.0% superfat\./)).toBeTruthy();
+});
+
+test('a budget with nothing allocated reserves nothing, so the note stays away', () => {
+  render(
+    <Harness
+      process="ls"
+      initial={{ superfatPercent: '2', postCookSuperfatTotalPercent: '3', postCookSuperfatOils: [] }}
+    />,
+  );
+  expect(screen.queryByText(/the batch delivers/)).toBeNull();
+});
+
+test('under a lye excess the reserve is never applied, so the note makes no delivery claim', () => {
+  // Mirrors useRecipeViewModel's cookFactor guard: superfat < 0 forces cookFactor to 1.
+  render(
+    <Harness
+      process="ls"
+      initial={{ superfatPercent: '-3', postCookSuperfatTotalPercent: '2',
+        postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '2' }] }}
+    />,
+  );
+  expect(screen.queryByText(/the batch delivers/)).toBeNull();
+});
+
+test('append mode still notes the combination under a lye excess — the oil is delivered regardless', () => {
+  // The cookFactor guard's negative-main condition is a SUBTRACT rule (no lye to scale);
+  // an appended oil rides on top of the batch whatever the main figure says.
+  render(
+    <Harness
+      process="hp"
+      initial={{ superfatPercent: '-2', postCookSuperfatMethod: 'append',
+        postCookSuperfatTotalPercent: '3',
+        postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '3' }] }}
+    />,
+  );
+  expect(screen.getByText(/With -2% above, the batch delivers 1\.1% superfat\./)).toBeTruthy();
+});
+
+test('the subtract figure clamps the reserve at 99% exactly like the lye math', () => {
+  // useRecipeViewModel clamps pcsfSubtractPercent to 99 before scaling; the note must
+  // quote the same clamped figure, not a 100% the scaling never applies.
+  render(
+    <Harness
+      process="hp"
+      initial={{ superfatPercent: '2', postCookSuperfatMethod: 'subtract',
+        postCookSuperfatTotalPercent: '100',
+        postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '100' }] }}
+    />,
+  );
+  expect(screen.getByText(/the batch delivers 99\.0% superfat\./)).toBeTruthy();
+});

@@ -1,4 +1,4 @@
-import { alternativeLiquidPreset, fToC, type AdditiveStage } from '@soap-calc/core';
+import { alternativeLiquidPreset, formatTempDual, type AdditiveStage } from '@soap-calc/core';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from './calculateAdditives';
 import type { SplitLiquidRow, WeightUnit } from './recipe';
 import type { ProcessId } from './process';
@@ -6,6 +6,21 @@ import { additiveStageLabel } from './additiveStageLabel';
 import { formatGrams } from './format';
 import { oilDisplayName } from './oilDisplay';
 import { formatWeight } from './weightUnits';
+
+/** The one PCSF line detail both surfaces quote — "140 g · 5% of oil", with the reserve
+ * provenance appended when the subtract reserve is applied. Shared by the on-screen Full
+ * recipe and the printed batch sheet ("cross-checked at the bench"), so the vocabulary is
+ * structurally identical rather than hand-synchronized. "(lye reduced)" explains why the
+ * printed lye figures run below plain SAP-table math for this recipe. */
+export function postCookSuperfatLineDetail(
+  oil: { grams: number; percentOfOil: number },
+  weightUnit: WeightUnit,
+  isExtra: boolean,
+): string {
+  return `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil${
+    isExtra ? '' : ' · from oils above (lye reduced)'
+  }`;
+}
 
 /** A single line of the printable "Full recipe" list: a material and its formatted amount. */
 export type RecipeItem = { name: string; detail: string };
@@ -32,10 +47,12 @@ type FullRecipeInput = {
   waterGrams: number;
   additives: ComputedAdditive[];
   splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
-  postCookSuperfat?: ComputedPostCookSuperfat | null;
-  /** False when the subtract reserve is actually applied — the PCSF grams are then held
-   * back from the oils listed above, not extra weight to buy. Defaults to true (extra). */
-  pcsfIsExtra?: boolean;
+  /** The PCSF rides with its own applied-state flag — `isExtra: false` means the subtract
+   * reserve is actually applied, so the grams are held back from the oils listed above,
+   * not extra weight to buy. The flag lives ON the object (stamped by the view model
+   * beside cookFactor) so no caller can pass the superfat while forgetting the flag —
+   * see calculateAdditives.ts on why it can never be re-derived here. */
+  postCookSuperfat?: (ComputedPostCookSuperfat & { isExtra: boolean }) | null;
   process: ProcessId;
 };
 
@@ -60,7 +77,6 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     additives,
     splitLiquidRows,
     postCookSuperfat,
-    pcsfIsExtra = true,
     process,
   } = input;
 
@@ -71,7 +87,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
 
   if (soapingTempF !== undefined) {
     push(null, [
-      { name: 'Soaping temperature', detail: `${fToC(soapingTempF)} °C (${soapingTempF} °F)` },
+      { name: 'Soaping temperature', detail: formatTempDual(soapingTempF) },
     ]);
   }
 
@@ -85,12 +101,19 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     top: [],
     after_cook: [],
   };
+  // In-lye LIQUIDS are kept apart from in-lye additives: a dry additive dissolves in the
+  // water before the alkali goes in, but a liquid joins the finished (cooled) solution —
+  // splitLiquidProcedureStep below owns that rule ("sugars scorch in hot lye"), and the
+  // manifest's order must tell the same story.
+  const lyeLiquids: RecipeItem[] = [];
   for (const { row, grams } of splitLiquidRows ?? []) {
     if (grams == null || grams <= 0) continue;
-    staged[row.addAt].push({
+    const item = {
       name: row.name.trim() || 'Alternative liquid',
       detail: formatWeight(grams, weightUnit),
-    });
+    };
+    if (row.addAt === 'lye') lyeLiquids.push(item);
+    else staged[row.addAt].push(item);
   }
   for (const additive of additives) {
     staged[additive.addAt].push({
@@ -110,8 +133,9 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   }
   push('Oils', [...oilItems, ...staged.oils]);
 
-  // The lye solution reads in mixing order: water first, anything dissolved in it next,
-  // THEN the alkali goes in — never the reverse.
+  // The lye solution reads in mixing order: water first, dry additives dissolved in it
+  // next, THEN the alkali goes in (never the reverse) — and any in-lye liquid last,
+  // stirred into the finished solution.
   const lyeItems: RecipeItem[] = [
     {
       name: process === 'ls' ? 'Water' : 'Distilled water',
@@ -133,6 +157,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       detail: formatWeight(lyeGrams, weightUnit),
     });
   }
+  lyeItems.push(...lyeLiquids);
   push('Lye solution', lyeItems);
 
   push(additiveStageLabel('trace', process), staged.trace);
@@ -149,9 +174,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       'Post-cook superfat',
       postCookSuperfat.oils.map((oil) => ({
         name: oilDisplayName(oil.oilId),
-        detail: `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil${
-          pcsfIsExtra ? '' : ' · from oils above'
-        }`,
+        detail: postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.isExtra),
       })),
     );
   }

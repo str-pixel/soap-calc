@@ -5,7 +5,7 @@
  * sequester windows and guide stages all live here and nowhere else.
  * Spec: docs/superpowers/specs/2026-08-01-ls-temperature-method-redesign-design.md.
  */
-import { fToC } from './soaping-temperature.js';
+import { formatTempDual, formatTempDualRange } from './soaping-temperature.js';
 
 export type LsMethod = 'cold' | 'lowtemp' | 'hightemp';
 
@@ -62,9 +62,8 @@ const SEQUESTER: Record<LsMethod, LsSequesterWindow> = {
 /** Temperatures in user-facing copy render °C-first with the stored °F in parentheses
  * ("102 °C (215 °F)"), matching the temperature panel's readout convention — the panel
  * edits in °C, and single-unit °F copy made users convert by hand. */
-const dual = (f: number) => `${fToC(f)} °C (${f} °F)`;
-const dualRange = (lowF: number, highF: number) =>
-  `${fToC(lowF)}–${fToC(highF)} °C (${lowF}–${highF} °F)`;
+const dual = formatTempDual;
+const dualRange = formatTempDualRange;
 
 /** Behavior-only method steps, rendered by the process guide. The ≥2× vessel line on high
  * temp is mandatory in the source; coconut-heavy recipes get the stricter 3× via the

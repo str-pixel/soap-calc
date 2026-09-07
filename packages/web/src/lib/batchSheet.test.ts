@@ -97,7 +97,6 @@ function makeBatchSheetInput(
     insights: [],
     process: 'hp',
     postCookSuperfat: null,
-    pcsfIsExtra: true,
     extrasGrams: 0,
     dilution: null,
     neutralization: null,
@@ -122,6 +121,7 @@ describe('buildBatchSheetData post-cook superfat threading', () => {
       oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }],
       percentOfOil: 5,
       grams: 50,
+      isExtra: false,
     };
     const data = buildBatchSheetData(makeBatchSheetInput({ postCookSuperfat: pcsf }));
     expect(data.postCookSuperfat).toEqual(pcsf);
@@ -159,7 +159,7 @@ describe('buildBatchSheetData dilution threading', () => {
     const data = buildBatchSheetData({
       recipeName: 'LS', batchNotes: '', weightUnit: 'g', lyeLabel: 'KOH', settings: DEFAULT_SETTINGS,
       lines, linePercents, result, displayTotals, additives: [], splitLiquidRows: [], splitLiquidGrams: null,
-      postCookSuperfat: null, pcsfIsExtra: true, extrasGrams: 0, dilution, neutralization: null, properties: null,
+      postCookSuperfat: null, extrasGrams: 0, dilution, neutralization: null, properties: null,
       indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
       batchWeightWithExtras: displayTotals.batchWeightGrams, waterModeLabel: '2:1',
       fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] }, insights: [], process: 'ls',

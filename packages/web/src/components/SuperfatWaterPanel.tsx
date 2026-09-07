@@ -210,9 +210,19 @@ export function SuperfatWaterPanel({
   const pcsfOils = settings.postCookSuperfatOils;
   const pcsfTotal = Math.max(0, Number(settings.postCookSuperfatTotalPercent) || 0);
   const pcsfAllocated = postCookSuperfatAllocated(pcsfOils);
-  // What the recipe actually delivers once the reserve rides on the main figure.
+  // What the recipe actually delivers once the reserve rides on the main figure. Fed the
+  // ALLOCATED sum, never the budget: the lye scaling reserves only what the oil rows
+  // claim (useRecipeViewModel's pcsfSubtractPercent), so a half-allocated budget must not
+  // let this note out-promise the Results panel's own total. In subtract mode the sum is
+  // clamped to 99 exactly as the vm clamps it before scaling; append adds the oil on top
+  // instead (the compounded figure understates that by <0.1 points at typical doses —
+  // core's documented approximation, shared with ResultsPanel and BatchSheet).
+  const pcsfIsSubtract = settings.postCookSuperfatMethod === 'subtract';
   const mainSuperfatPercent = Number(settings.superfatPercent) || 0;
-  const combinedSuperfatPercent = effectiveSuperfatPercent(mainSuperfatPercent, pcsfTotal);
+  const combinedSuperfatPercent = effectiveSuperfatPercent(
+    mainSuperfatPercent,
+    pcsfIsSubtract ? Math.min(99, pcsfAllocated) : pcsfAllocated,
+  );
   const pcsfRemaining = Math.max(0, roundPct(pcsfTotal - pcsfAllocated));
 
   // Editing an oil's OWN percent: cap it at the budget minus the other rows' allocation, so
@@ -418,8 +428,12 @@ export function SuperfatWaterPanel({
                 lye after the main figure does, so 2% and 2% is not 4% — and until here
                 nothing said so until the Results panel, a screen away. Stated at the
                 second slider, where the compounding is created. Core's own definition,
-                never a re-derivation: four of those existed once and two of them added. */}
-            {pcsfTotal > 0 && (
+                never a re-derivation: four of those existed once and two of them added.
+                Gated like the lye math itself: only an allocated reserve combines with
+                anything, and the negative-main suppression is a SUBTRACT rule — the
+                cookFactor guard forces 1 there (no lye to scale under a lye excess),
+                while an appended oil is delivered whatever the main figure says. */}
+            {pcsfAllocated > 0 && (!pcsfIsSubtract || mainSuperfatPercent >= 0) && (
               <p className="pcsf__combined inline-note">
                 With {formatTotal(mainSuperfatPercent)}% above, the batch delivers{' '}
                 {formatTotal(combinedSuperfatPercent)}% superfat.

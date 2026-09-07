@@ -96,6 +96,13 @@ export type ComputedPostCookSuperfat = {
   grams: number;
 };
 
+/** A PCSF with its applied-state flag riding ON the object — the shape every consumer
+ * downstream of the view model sees. `isExtra: false` means the subtract reserve was
+ * actually applied (cookFactor < 1): the grams are held back from the recipe oils and
+ * the lye was scaled. Stamped ONCE in useRecipeViewModel beside cookFactor, so no
+ * surface can pair the superfat with a stale or defaulted flag. */
+export type AppliedPostCookSuperfat = ComputedPostCookSuperfat & { isExtra: boolean };
+
 /** Total off-recipe grams added to the batch: additives + trace split liquid + the
  * post-cook superfat when `pcsfIsExtra` is true (i.e. it isn't actually reserved from
  * the recipe oils). Single source of truth for the view model, ResultsPanel, and

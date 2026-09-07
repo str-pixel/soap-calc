@@ -251,12 +251,9 @@ export default function App() {
         splitLiquids: vm.splitLiquidRows
           .filter(({ grams }) => grams != null && grams > 0)
           .map(({ row, grams }) => ({ key: row.key, name: row.name, grams: grams as number })),
-        postCookSuperfat: vm.postCookSuperfat
-          ? {
-              oils: vm.postCookSuperfat.oils.map((o) => ({ oilId: o.oilId, grams: o.grams })),
-              isExtra: vm.pcsfIsExtra,
-            }
-          : null,
+        // vm.postCookSuperfat already carries isExtra (AppliedPostCookSuperfat) — pass
+        // the stamped object through instead of re-pairing the flag by hand.
+        postCookSuperfat: vm.postCookSuperfat,
       }),
     [
       vm.previewState.lines,
@@ -266,7 +263,6 @@ export default function App() {
       vm.splitLiquidRows,
       vm.splitLiquidGrams,
       vm.postCookSuperfat,
-      vm.pcsfIsExtra,
     ],
   );
 
@@ -496,7 +492,6 @@ export default function App() {
       superfatPercent={vm.previewSettings.superfatPercent}
       soapingTempF={vm.soapingTempF}
       postCookSuperfat={vm.postCookSuperfat}
-      pcsfIsExtra={vm.pcsfIsExtra}
       extrasGrams={vm.extrasGrams}
       batchWeightWithExtras={vm.batchWeightWithExtras}
       cureEstimate={vm.cureEstimate}

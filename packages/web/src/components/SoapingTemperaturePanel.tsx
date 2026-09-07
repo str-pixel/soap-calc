@@ -3,6 +3,8 @@ import {
   cToF,
   estimateGelPhase,
   fToC,
+  formatTempDual,
+  formatTempDualRange,
   LS_ZONES,
   soapingTempBand,
   type GelMode,
@@ -35,10 +37,10 @@ type SoapingTemperaturePanelProps = {
 function targetLabel(temp: TempTarget): string {
   const range =
     temp.lowF === temp.highF
-      ? `${fToC(temp.lowF)} °C (${temp.lowF} °F)`
-      : `${fToC(temp.lowF)}–${fToC(temp.highF)} °C (${temp.lowF}–${temp.highF} °F)`;
+      ? formatTempDual(temp.lowF)
+      : formatTempDualRange(temp.lowF, temp.highF);
   const ceiling =
-    temp.ceilingF !== undefined ? `, ceiling ${fToC(temp.ceilingF)} °C (${temp.ceilingF} °F)` : '';
+    temp.ceilingF !== undefined ? `, ceiling ${formatTempDual(temp.ceilingF)}` : '';
   return `${range}${ceiling}`;
 }
 
@@ -112,7 +114,7 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           )}
         </div>
         <p className="panel__subtitle">
-          {fToC(effectiveF)} °C ({effectiveF} °F)
+          {formatTempDual(effectiveF)}
           {process === 'ls' && lsMethod && <> — {lsMethod.label}</>}
         </p>
       </div>
@@ -268,19 +270,18 @@ export const SoapingTemperaturePanel = memo(function SoapingTemperaturePanel({
           // Dual-unit per the panel's convention; figures and clauses per the redesign spec.
           lsMethod.hold.recommendedLowF !== undefined ? (
             <p className="results-hint">
-              Hold {fToC(lsMethod.hold.lowF)}–{fToC(lsMethod.hold.highF)} °C (
-              {lsMethod.hold.lowF}–{lsMethod.hold.highF} °F) — {fToC(lsMethod.hold.recommendedLowF)}
-              –{fToC(lsMethod.hold.highF)} °C ({lsMethod.hold.recommendedLowF}–
-              {lsMethod.hold.highF} °F) recommended — through cook and dilution.
+              Hold {formatTempDualRange(lsMethod.hold.lowF, lsMethod.hold.highF)} —{' '}
+              {formatTempDualRange(lsMethod.hold.recommendedLowF, lsMethod.hold.highF)}{' '}
+              recommended — through cook and dilution.
             </p>
           ) : (
             // The 215 °F hold is the COOK figure; dilution runs on hot water at the
             // sourced 160–200 °F with the heat maintained — asserting 215 through
             // dilution would overstate the source and sit against its do-not-boil line.
             <p className="results-hint">
-              Hold {fToC(lsMethod.hold.lowF)} °C ({lsMethod.hold.lowF} °F) for the cook, then
-              dilute with hot water at {fToC(160)}–{fToC(200)} °C (160–200 °F) with the heat
-              on — do not exceed {fToC(lsMethod.hold.ceilingF!)} °C ({lsMethod.hold.ceilingF} °F).
+              Hold {formatTempDual(lsMethod.hold.lowF)} for the cook, then dilute with hot
+              water at {formatTempDualRange(160, 200)} with the heat on — do not exceed{' '}
+              {formatTempDual(lsMethod.hold.ceilingF!)}.
             </p>
           )
         ) : null

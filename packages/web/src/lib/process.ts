@@ -336,7 +336,11 @@ export function effectiveSoapingTempF(
   const range = soapingTempRangeFor(variant);
   const raw = Number(settings.soapingTempF);
   if (settings.soapingTempF.trim() === '' || !Number.isFinite(raw)) return range.defaultF;
-  return Math.min(range.maxF, Math.max(range.minF, raw));
+  // Rounded to a whole °F: only a hand-edited/imported file can store a fraction, and one
+  // resolved figure must feed BOTH the displays (which print whole degrees) and the LS
+  // zone classification — otherwise a 214.6 °F recipe shows "(215 °F)" beside method copy
+  // that treats it as below the 215 °F high-temp start.
+  return Math.round(Math.min(range.maxF, Math.max(range.minF, raw)));
 }
 
 export function isProcessId(value: unknown): value is ProcessId {

@@ -1,3 +1,4 @@
+import type { AppliedPostCookSuperfat } from '../lib/calculateAdditives';
 import { useMemo } from 'react';
 import { addExtraLye, alternativeLiquidFatGrams, alternativeLiquidPreset, isAlternativeLiquidOfferedFor, calculateDilution, calculateNeutralization, extraLyeForAcidLiquid, lsMethodForTemp, lsPreservativeById, lsPreservativeDoseTier, lyeSolutionWaterStatus, parsePercentOfOil, preservativeDoseGrams, scaleLyeResult, SOAP_FILL_DENSITY_G_PER_CM3, splitLiquidPasteWaterGrams, suggestLyeWaterWithSplitLiquid, superfatShiftFromLiquidFat } from '@soap-calc/core';
 import type { DilutionResult, LsMethodInfo, NeutralizationResult } from '@soap-calc/core';
@@ -98,7 +99,7 @@ export type RecipeViewModel = {
    * must not reach. See the memo for the leak that taught it. */
   overDilutionCertain: boolean;
   fixedBatchExtrasGrams: number;
-  postCookSuperfat: ReturnType<typeof computePostCookSuperfat>;
+  postCookSuperfat: AppliedPostCookSuperfat | null;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
   lyeWaterStatus: ReturnType<typeof lyeSolutionWaterStatus> | null;
   splitAllocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
@@ -614,13 +615,20 @@ export function useRecipeViewModel({
   // narrowed deps are safe by type: computePostCookSuperfat takes
   // Pick<RecipeSettings, 'postCookSuperfatOils'>, which pcsfOilsKey captures by value.
   const pcsfOilsKey = JSON.stringify(previewSettings.postCookSuperfatOils);
-  const postCookSuperfat = useMemo(
+  const computedPcsf = useMemo(
     () =>
       processOffers(process, 'postCook')
         ? computePostCookSuperfat(previewSettings, totalOilGrams)
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [process, pcsfOilsKey, totalOilGrams],
+  );
+  // The applied-state flag rides ON the object from here down (AppliedPostCookSuperfat):
+  // stamped once, beside the cookFactor that defines it, so ResultsPanel, the batch
+  // sheet, and pricing can never pair the superfat with a stale or defaulted flag.
+  const postCookSuperfat = useMemo(
+    () => (computedPcsf ? { ...computedPcsf, isExtra: pcsfIsExtra } : null),
+    [computedPcsf, pcsfIsExtra],
   );
   const waterSuggestion = useMemo(() => {
     // Budget rows already allocated their water in the calc; only additive rows added at
@@ -978,7 +986,6 @@ export function useRecipeViewModel({
       splitLiquidRows,
       splitLiquidGrams,
       postCookSuperfat,
-      pcsfIsExtra,
       extrasGrams,
       dilution,
       measuredPasteGrams,

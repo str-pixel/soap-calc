@@ -11,7 +11,7 @@ import {
   LOW_COVERAGE_PERCENT,
   preservativeDoseGrams,
   saturatedUnsaturatedRatio,
-  fToC,
+  formatTempDual,
 } from '@soap-calc/core';
 import type { BatchSheetData } from '../lib/batchSheet';
 import {
@@ -22,7 +22,7 @@ import {
 } from '../lib/batchSheet';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
-import { splitLiquidProcedureStep } from '../lib/recipeSummary';
+import { postCookSuperfatLineDetail, splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
 import {
@@ -78,7 +78,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     splitLiquidRows,
     splitLiquidGrams,
     postCookSuperfat,
-    pcsfIsExtra,
     extrasGrams,
     dilution,
     measuredPasteGrams,
@@ -303,6 +302,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
       <section className="batch-sheet__section">
         <h2>Lye solution</h2>
         <dl className="batch-sheet__dl">
+          {/* Water first, alkali after — the sheet must model the same mixing direction
+              as the on-screen Full recipe: always add the lye TO the water. */}
+          <div>
+            <dt>Water</dt>
+            <dd>{formatWeight(result.waterWeightGrams, weightUnit)}</dd>
+          </div>
           {isDualLye ? (
             <>
               <div>
@@ -325,17 +330,13 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             </div>
           )}
           <div>
-            <dt>Water</dt>
-            <dd>{formatWeight(result.waterWeightGrams, weightUnit)}</dd>
-          </div>
-          <div>
             <dt>Water method</dt>
             <dd>{waterModeLabel}</dd>
           </div>
           {data.soapingTempF !== undefined && (
             <div>
               <dt>Soaping temperature</dt>
-              <dd>{fToC(data.soapingTempF)} °C ({data.soapingTempF} °F)</dd>
+              <dd>{formatTempDual(data.soapingTempF)}</dd>
             </div>
           )}
           <div>
@@ -425,7 +426,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         </section>
       )}
 
-      {(additives.length > 0 || splitLiquidGrams || postCookSuperfat) && (
+      {(additives.length > 0 || splitLiquidGrams) && (
         <section className="batch-sheet__section">
           <h2>Additives &amp; liquids</h2>
           <ul className="batch-sheet__list">
@@ -442,14 +443,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 </li>
               );
             })}
-            {postCookSuperfat?.oils.map((oil, i) => (
-              <li key={`pcsf-${i}`}>
-                {batchSheetOilName(oil.oilId)} —{' '}
-                {formatWeight(oil.grams, weightUnit)} (
-                {formatGrams(oil.percentOfOil, 1)}% post-cook superfat)
-                {!pcsfIsExtra ? ' — reserved (lye reduced)' : ''}
-              </li>
-            ))}
             {additives.map((item) => (
               <li key={item.key}>
                 {item.name} — {formatWeight(item.grams, weightUnit)} (
@@ -651,6 +644,25 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           <p>Stearic acid cannot be overdosed — melt it in; any surplus cools and is filtered off.</p>
         </section>
       )}
+
+      {postCookSuperfat && (
+        /* Its own section, the same vocabulary as the on-screen Full recipe ("% of oil",
+           "from oils above") — the sheet and the screen are cross-checked at the bench,
+           so the reserved oil must read identically on both. Placed after Dilution and
+           Neutralize: the manifest lists the PCSF last of all materials (after the
+           After-dilution stage on LS), and the printed timing must agree. */
+        <section className="batch-sheet__section">
+          <h2>Post-cook superfat</h2>
+          <ul className="batch-sheet__list">
+            {postCookSuperfat.oils.map((oil, i) => (
+              <li key={`pcsf-${i}`}>
+                {batchSheetOilName(oil.oilId)} — {postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.isExtra)}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
 
       {properties?.properties && (
         <section className="batch-sheet__section">

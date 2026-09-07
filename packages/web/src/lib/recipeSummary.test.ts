@@ -10,20 +10,27 @@ const OILS = [
   { oilId: 'ignored', weightGrams: 0 },
 ];
 
+/** The canonical two-oil recipe the buildFullRecipe tests vary from — each test spreads
+ * this and states only what it changes, so a base-field change is made once. */
+const FULL_RECIPE_BASE: Parameters<typeof buildFullRecipe>[0] = {
+  lines: OILS,
+  recipeOilWeightGrams: 400,
+  weightUnit: 'g',
+  lyeType: 'naoh',
+  naohGrams: 0,
+  kohGrams: 0,
+  lyeGrams: 56.7,
+  waterGrams: 132,
+  additives: [],
+  process: 'cp',
+};
+
 test('buildFullRecipe lists weighted oils (weight · %), then alkali, water, and additives', () => {
   const items = flat(buildFullRecipe({
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
-    lyeType: 'naoh',
-    naohGrams: 0,
-    kohGrams: 0,
-    lyeGrams: 56.7,
-    waterGrams: 132,
+    ...FULL_RECIPE_BASE,
     additives: [
       { key: 'a', catalogId: 'fragrance', name: 'Fragrance', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'trace' },
     ],
-    process: 'cp',
   }));
 
   // The 0 g line is dropped: 2 oils + NaOH + water + 1 additive.
@@ -250,14 +257,7 @@ test('two rows at different stages both appear, each at its position', () => {
 
 test('the Post-cook superfat section is last, and only exists when one is set in the calculator', () => {
   const input: Parameters<typeof buildFullRecipe>[0] = {
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
-    lyeType: 'naoh',
-    naohGrams: 0,
-    kohGrams: 0,
-    lyeGrams: 56.7,
-    waterGrams: 132,
+    ...FULL_RECIPE_BASE,
     additives: [
       { key: 'a', catalogId: 'sugar', name: 'Sugar', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'trace' },
     ],
@@ -273,6 +273,7 @@ test('the Post-cook superfat section is last, and only exists when one is set in
       oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }],
       percentOfOil: 5,
       grams: 20,
+      isExtra: true,
     },
   });
   const last = sections[sections.length - 1];
@@ -283,53 +284,27 @@ test('the Post-cook superfat section is last, and only exists when one is set in
 
 test('buildFullRecipe opens with the soaping temperature when provided, in °C (°F)', () => {
   const items = flat(buildFullRecipe({
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
-    lyeType: 'naoh',
-    naohGrams: 0,
-    kohGrams: 0,
-    lyeGrams: 56.7,
-    waterGrams: 132,
-    additives: [],
+    ...FULL_RECIPE_BASE,
     soapingTempF: 125,
-    process: 'cp',
   }));
   expect(items[0]).toEqual({ name: 'Soaping temperature', detail: '52 °C (125 °F)' });
 });
 
 test('buildFullRecipe has no temperature line when soapingTempF is omitted', () => {
   const items = flat(buildFullRecipe({
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
-    lyeType: 'naoh',
-    naohGrams: 0,
-    kohGrams: 0,
-    lyeGrams: 56.7,
-    waterGrams: 132,
-    additives: [],
-    process: 'cp',
+    ...FULL_RECIPE_BASE,
   }));
   expect(items.some((i) => i.name === 'Soaping temperature')).toBe(false);
 });
 
 test('buildFullRecipe runs in procedure order: oils-stage, water, in-water additives, lye, trace, after cook', () => {
   const items = flat(buildFullRecipe({
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
-    lyeType: 'naoh',
-    naohGrams: 0,
-    kohGrams: 0,
-    lyeGrams: 56.7,
-    waterGrams: 132,
+    ...FULL_RECIPE_BASE,
     additives: [
       { key: 't', catalogId: 'sugar', name: 'Sugar', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'trace' },
       { key: 'l', catalogId: 'citric-acid', name: 'Citric acid', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'lye' },
       { key: 'o', catalogId: 'clay', name: 'Kaolin clay', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'oils' },
     ],
-    process: 'cp',
   }));
   const names = items.map((i) => i.name);
   const at = (name: string) => names.indexOf(name);
@@ -343,39 +318,26 @@ test('buildFullRecipe runs in procedure order: oils-stage, water, in-water addit
   expect(at('Sugar')).toBeGreaterThan(at('Sodium hydroxide (NaOH)'));
 });
 
-test('an in-lye alternative liquid lists with the water, before the alkali', () => {
+test('an in-lye alternative liquid lists AFTER the alkali — it joins the finished solution', () => {
+  // The procedure step in this same file directs in-lye liquids into the (cooled) lye
+  // solution — sugars scorch under raw lye — so the manifest must not imply pouring the
+  // alkali onto the liquid. Only dry in-lye additives dissolve in the water first.
   const row = {
     key: 'x', name: 'Goat milk', presetKey: 'milk', addAt: 'lye',
     mode: 'percent', percent: '50', grams: '',
   } as never;
   const items = flat(buildFullRecipe({
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
-    lyeType: 'naoh',
-    naohGrams: 0,
-    kohGrams: 0,
-    lyeGrams: 56.7,
+    ...FULL_RECIPE_BASE,
     waterGrams: 66,
-    additives: [],
     splitLiquidRows: [{ row, grams: 66 }],
-    process: 'cp',
   }));
   const names = items.map((i) => i.name);
-  expect(names.indexOf('Goat milk')).toBeGreaterThan(names.indexOf('Distilled water'));
-  expect(names.indexOf('Goat milk')).toBeLessThan(names.indexOf('Sodium hydroxide (NaOH)'));
+  expect(names.indexOf('Goat milk')).toBeGreaterThan(names.indexOf('Sodium hydroxide (NaOH)'));
 });
 
 test('buildFullRecipe groups the manifest under soap-book section headings', () => {
   const sections = buildFullRecipe({
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
-    lyeType: 'naoh',
-    naohGrams: 0,
-    kohGrams: 0,
-    lyeGrams: 56.7,
-    waterGrams: 132,
+    ...FULL_RECIPE_BASE,
     additives: [
       { key: 't', catalogId: 'sugar', name: 'Sugar', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'trace' },
       { key: 'l', catalogId: 'citric-acid', name: 'Citric acid', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'lye' },
@@ -384,6 +346,7 @@ test('buildFullRecipe groups the manifest under soap-book section headings', () 
       oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }],
       percentOfOil: 5,
       grams: 20,
+      isExtra: true,
     },
     soapingTempF: 125,
     process: 'hp',
@@ -415,33 +378,21 @@ test('buildFullRecipe groups the manifest under soap-book section headings', () 
 
 test('a reserved PCSF section line still says it comes from the oils above', () => {
   const sections = buildFullRecipe({
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
-    lyeType: 'naoh',
-    naohGrams: 0,
-    kohGrams: 0,
-    lyeGrams: 56.7,
-    waterGrams: 132,
-    additives: [],
-    postCookSuperfat: { oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }], percentOfOil: 5, grams: 20 },
-    pcsfIsExtra: false,
+    ...FULL_RECIPE_BASE,
+    postCookSuperfat: { oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }], percentOfOil: 5, grams: 20, isExtra: false },
     process: 'hp',
   });
   const pcsf = sections.find((s) => s.heading === 'Post-cook superfat')!;
-  expect(pcsf.items[0].detail).toBe('20 g · 5% of oil · from oils above');
+  // "from oils above" says where the grams come from; "(lye reduced)" re-establishes the
+  // dropped explanation for why the printed lye figures run below SAP-table math.
+  expect(pcsf.items[0].detail).toBe('20 g · 5% of oil · from oils above (lye reduced)');
 });
 
 test('the after-cook section heading is process-aware — LS says After dilution', () => {
   const sections = buildFullRecipe({
-    lines: OILS,
-    recipeOilWeightGrams: 400,
-    weightUnit: 'g',
+    ...FULL_RECIPE_BASE,
     lyeType: 'koh',
-    naohGrams: 0,
-    kohGrams: 0,
     lyeGrams: 80,
-    waterGrams: 132,
     additives: [
       { key: 'a', catalogId: 'fragrance', name: 'Fragrance', amount: 3, unit: 'percent', basis: 'oil', grams: 12, addAt: 'after_cook' },
     ],

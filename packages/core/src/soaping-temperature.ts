@@ -62,6 +62,27 @@ export function fToC(tempF: number): number {
   return Math.round(((tempF - 32) * 5) / 9);
 }
 
+/** The two-unit °C-first temperature display — "52 °C (125 °F)". The one template every
+ * surface quotes (batch sheet Method row, temperature panel, full-recipe lead line, LS
+ * method copy), exported so the copies cannot drift. Rounds the °F too: the stored
+ * setting is clamped but not integer-forced, and a printable sheet never shows "150.7 °F". */
+/** The range companion to formatTempDual — "49–54 °C (120–130 °F)". Same rounding and
+ * °C-from-rounded-°F rule, so the LS method copy, the temperature panel's target label,
+ * and its hold hints all quote one template. */
+export function formatTempDualRange(lowF: number, highF: number): string {
+  const lo = Math.round(lowF);
+  const hi = Math.round(highF);
+  return `${fToC(lo)}–${fToC(hi)} °C (${lo}–${hi} °F)`;
+}
+
+export function formatTempDual(tempF: number): string {
+  // °C is derived from the ROUNDED °F, not the raw value: 149.5 must print
+  // "66 °C (150 °F)", never "65 °C (150 °F)" — the displayed pair has to agree with
+  // itself under the app's own fToC conversion.
+  const wholeF = Math.round(tempF);
+  return `${fToC(wholeF)} °C (${wholeF} °F)`;
+}
+
 /** °C → rounded °F. The stored setting and every source constant here are °F; the UI
  * edits in °C and converts at that boundary. Round-trips stably at 1 °C steps
  * (52 °C → 126 °F → 52 °C), which is what keeps the input from fighting the user. */

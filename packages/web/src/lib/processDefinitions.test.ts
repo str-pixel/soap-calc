@@ -151,6 +151,13 @@ describe('soaping-temperature ranges and clamp (2026-07-27)', () => {
     expect(effectiveSoapingTempF({ soapingTempF: '' }, 'cp')).toBe(125);
     expect(effectiveSoapingTempF({ soapingTempF: 'abc' }, 'hp-hthp')).toBe(215);
   });
+
+  it('rounds a fractional stored value, so display and zone classification share one figure', () => {
+    // A hand-edited/imported '214.6' must not let the subtitle print the rounded 215 °F
+    // while lsMethodForTemp classifies the raw value as below the 215 °F high-temp start.
+    expect(effectiveSoapingTempF({ soapingTempF: '214.6' }, 'ls')).toBe(215);
+    expect(effectiveSoapingTempF({ soapingTempF: '125.4' }, 'cp')).toBe(125);
+  });
 });
 
 describe('HP water band matches the source', () => {

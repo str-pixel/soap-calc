@@ -92,7 +92,7 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
       weightUnit="g"
       batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }], percentOfOil: 3, grams: 30 }}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }], percentOfOil: 3, grams: 30, isExtra: true }}
     />,
   );
   // Shea Butter now appears in both the post-cook-superfat line and the Full recipe list.
@@ -116,7 +116,7 @@ test('a post-cook-superfat-only batch does not claim "additives" in the batch-we
       weightUnit="g"
       batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }], percentOfOil: 3, grams: 30 }}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }], percentOfOil: 3, grams: 30, isExtra: true }}
       extrasGrams={30}
     />,
   );
@@ -132,8 +132,7 @@ test('subtract: PCSF labeled reserved + batch weight uses the vm value (not a lo
       result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50 }}
-      pcsfIsExtra={false}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, isExtra: false }}
       batchWeightWithExtras={1234}
     />,
   );
@@ -149,8 +148,7 @@ test('subtract + negative main superfat: no "reserved" label and no Total superf
       result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent="-2"
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50 }}
-      pcsfIsExtra={true}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, isExtra: true }}
       batchWeightWithExtras={1234}
     />,
   );
@@ -165,8 +163,7 @@ test('subtract + non-negative main superfat: "reserved" label and Total superfat
       result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent="2"
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50 }}
-      pcsfIsExtra={false}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, isExtra: false }}
       batchWeightWithExtras={1234}
     />,
   );

@@ -912,10 +912,10 @@ export const INSIGHT_RULES: InsightRule[] = [
     code: 'ls_no_superfat_buffer',
     processes: ['ls'],
     // Exact lye: the combined superfat is 0, so the alkali is set to saponify every gram of
-    // oil. Reachable from the defaults — LS seeds main superfat 0% + post-cook 2%, so
-    // deleting the optional post-cook row lands here — and no other rule covers it
-    // (no_superfat_margin is CP/HP-gated, ls_lye_excess needs superfat < 0,
-    // ls_superfat_high needs > 3).
+    // oil. Deliberate, not a default-adjacent slip — LS seeds main superfat 2% with no
+    // post-cook reserve, so landing here takes typing 0 into the main figure — and no
+    // other rule covers it (no_superfat_margin is CP/HP-gated, ls_lye_excess needs
+    // superfat < 0, ls_superfat_high needs > 3).
     //
     // INFO, and only at exactly 0. Exact-lye liquid soap is a documented configuration, and
     // the no-paste high-temp method publishes a 0–3% superfat range — so warning here would

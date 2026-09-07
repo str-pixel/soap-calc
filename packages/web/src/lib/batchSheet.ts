@@ -9,7 +9,7 @@ import {
   type RecipePropertiesResult,
 } from '@soap-calc/core';
 import { additiveStageLabel } from './additiveStageLabel';
-import type { ComputedAdditive, ComputedPostCookSuperfat } from './calculateAdditives';
+import type { ComputedAdditive, AppliedPostCookSuperfat } from './calculateAdditives';
 import type { RecipeFattyAcids } from './calculateFattyAcids';
 import type { RecipeDisplayTotals } from './calculateRecipe';
 import type { RecipeIndexResult } from './calculateRecipeIndexes';
@@ -34,8 +34,9 @@ export type BatchSheetData = {
   additives: ComputedAdditive[];
   splitLiquidRows: Array<{ row: SplitLiquidRow; grams: number | null }>;
   splitLiquidGrams: number | null;
-  postCookSuperfat: ComputedPostCookSuperfat | null;
-  pcsfIsExtra: boolean;
+  /** Flag ON the object (AppliedPostCookSuperfat) — same contract as the Results panel:
+   * a sheet can never pair the superfat with a stale or defaulted applied-state. */
+  postCookSuperfat: AppliedPostCookSuperfat | null;
   extrasGrams: number;
   dilution: DilutionResult | null;
   /** The maker's scale reading for the whole batch's paste, in grams — the same App state

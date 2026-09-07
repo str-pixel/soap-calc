@@ -7,7 +7,7 @@ import { PROCESS_DEFINITIONS, type ProcessId } from '../lib/process';
 import { formatGrams } from '../lib/format';
 import { formatDose } from '../lib/formatDose';
 import { oilById } from '../lib/oils';
-import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
+import type { AppliedPostCookSuperfat, ComputedAdditive } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidRow, WeightUnit } from '../lib/recipe';
 import { buildAddOrderSteps, buildFullRecipe } from '../lib/recipeSummary';
@@ -36,11 +36,10 @@ type ResultsPanelProps = {
   /** Resolved soaping temperature from the menu (vm.soapingTempF), °F — opens the Full
    * recipe list when present. */
   soapingTempF?: number;
-  postCookSuperfat?: ComputedPostCookSuperfat | null;
-  /** Whether the post-cook superfat is an added extra (append mode, or subtract under a
-   * lye excess where the reserve was never actually applied) rather than reserved from
-   * the recipe oils. Single source of truth from the view model — see useRecipeViewModel. */
-  pcsfIsExtra?: boolean;
+  /** The vm's stamped PCSF — the applied-state flag rides ON the object
+   * (AppliedPostCookSuperfat), so a caller cannot pass the superfat while a stale or
+   * defaulted flag rides along. Single source of truth: useRecipeViewModel. */
+  postCookSuperfat?: AppliedPostCookSuperfat | null;
   /** The vm's total off-recipe grams (additives + split liquid + PCSF-if-extra) — passed
    * down so this panel never recomputes it and drifts from the printed sheet. */
   extrasGrams?: number;
@@ -131,7 +130,6 @@ export const ResultsPanel = memo(function ResultsPanel({
   superfatPercent,
   soapingTempF,
   postCookSuperfat = null,
-  pcsfIsExtra = true,
   extrasGrams = 0,
   batchWeightWithExtras,
   cureEstimate = null,
@@ -206,7 +204,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   const extrasNote = [
     additiveGrams > 0 ? 'additives' : null,
     splitLiquidGrams ? 'alternative liquid' : null,
-    postCookSuperfat && pcsfIsExtra ? 'post-cook superfat' : null,
+    postCookSuperfat?.isExtra ? 'post-cook superfat' : null,
   ]
     .filter(Boolean)
     .join(' and ');
@@ -232,7 +230,6 @@ export const ResultsPanel = memo(function ResultsPanel({
     additives,
     splitLiquidRows,
     postCookSuperfat,
-    pcsfIsExtra,
     process,
   });
   const addOrderSteps = buildAddOrderSteps({
@@ -379,7 +376,7 @@ export const ResultsPanel = memo(function ResultsPanel({
             <div className="results-grid__item">
               <dt>
                 Post-cook superfat ({postCookSuperfatOilName})
-                {!pcsfIsExtra ? ' · reserved, lye reduced' : ''}
+                {!postCookSuperfat.isExtra ? ' · reserved, lye reduced' : ''}
               </dt>
               <dd>
                 <Weight grams={postCookSuperfat.grams} unit={weightUnit} />

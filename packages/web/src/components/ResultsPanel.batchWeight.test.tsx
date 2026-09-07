@@ -32,7 +32,6 @@ function renderPanel() {
       additives={[] as never}
       superfatPercent={'5'}
       postCookSuperfat={null as never}
-      pcsfIsExtra={false}
       extrasGrams={144}
       batchWeightWithExtras={1612}
       totalOilGrams={1000}
@@ -68,7 +67,6 @@ describe('single-sourced batch weight (deep-review)', () => {
         additives={[] as never}
         superfatPercent={'5'}
         postCookSuperfat={null as never}
-        pcsfIsExtra={false}
         extrasGrams={144}
         batchWeightWithExtras={1600}
         totalOilGrams={1000}
