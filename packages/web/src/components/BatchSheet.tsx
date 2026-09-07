@@ -21,7 +21,7 @@ import {
 } from '../lib/batchSheet';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams } from '../lib/format';
-import { postCookSuperfatLineDetail, splitLiquidProcedureStep } from '../lib/recipeSummary';
+import { heaviestFirst, postCookSuperfatLineDetail, splitLiquidProcedureStep } from '../lib/recipeSummary';
 import { lyeSolutionBeforeOils } from '../lib/process';
 import { formatDose } from '../lib/formatDose';
 import { formatWeight } from '../lib/weightUnits';
@@ -279,8 +279,13 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
             </tr>
           </thead>
           <tbody>
-            {lines
-              .filter((line) => Number(line.weightGrams) > 0)
+            {/* Heaviest first, the same order the on-screen Full recipe lists the oils in:
+                sheet and screen are cross-checked at the bench, so they must not disagree
+                about sequence any more than about a weight. */}
+            {heaviestFirst(
+              lines.filter((line) => Number(line.weightGrams) > 0),
+              (line) => Number(line.weightGrams),
+            )
               .map((line) => (
                 <tr key={line.key}>
                   <td>{batchSheetOilName(line.oilId)}</td>
@@ -663,7 +668,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         <section className="batch-sheet__section">
           <h2>Post-cook superfat</h2>
           <ul className="batch-sheet__list">
-            {postCookSuperfat.oils.map((oil, i) => (
+            {heaviestFirst(postCookSuperfat.oils, (oil) => oil.grams).map((oil, i) => (
               <li key={`pcsf-${i}`}>
                 {batchSheetOilName(oil.oilId)} — {postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.isExtra)}
               </li>

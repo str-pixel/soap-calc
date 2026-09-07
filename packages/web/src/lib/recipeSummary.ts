@@ -64,13 +64,19 @@ type FullRecipeInput = {
  * ordered by, dropped before the section is returned. */
 type WeighedItem = RecipeItem & { grams: number };
 
-/** Heaviest first: within a group the list reads as a weighing order, so the oils that
- * carry the recipe (and the additives that matter most by weight) come off the scale
- * first. Ties keep their entered order — Array#sort is stable. */
+/** Heaviest first: within a group a list of materials reads as a weighing order, so the
+ * oils that carry the recipe (and the additives that matter most by weight) come off the
+ * scale first. Ties keep their entered order — Array#sort is stable. THE one ordering
+ * rule for every "what goes into this batch" list: the Full recipe manifest, the printed
+ * sheet's oils table and post-cook superfat, and the aggregate PCSF line all call it, so
+ * the surfaces cannot disagree about sequence any more than they may about a number. */
+export function heaviestFirst<T>(items: readonly T[], grams: (item: T) => number): T[] {
+  return [...items].sort((a, b) => grams(b) - grams(a));
+}
+
+/** heaviestFirst over manifest lines, dropping the grams the sort read. */
 function byAmount(items: WeighedItem[]): RecipeItem[] {
-  return [...items]
-    .sort((a, b) => b.grams - a.grams)
-    .map(({ name, detail }) => ({ name, detail }));
+  return heaviestFirst(items, (item) => item.grams).map(({ name, detail }) => ({ name, detail }));
 }
 
 /**
@@ -241,8 +247,9 @@ type AddOrderInput = {
    * never disagree with the Full recipe's lead line. Absent → the generic CP band. */
   soapingTempF?: number;
   /** Additive lines by stage. Each is NAMED in the step for its stage — the same stage the
-   * Full recipe files it under — so the manifest and the steps tell one story. */
-  additives?: Array<{ name: string; addAt: AdditiveStage }>;
+   * Full recipe files it under, in the same heaviest-first order — so the manifest and the
+   * steps tell one story. */
+  additives?: Array<{ name: string; addAt: AdditiveStage; grams: number }>;
 };
 
 /** The split-liquid procedure step, phrased for where it joins the batch, or null when the
@@ -421,7 +428,9 @@ export function buildAddOrderSteps(input: AddOrderInput): string[] {
     soapingTempF, additives = [],
   } = input;
   const byStage: Record<AdditiveStage, string[]> = { lye: [], oils: [], trace: [], top: [], after_cook: [] };
-  for (const a of additives) byStage[a.addAt].push(a.name);
+  // Same order the manifest lists them in, so "stir in the fragrance and the clay" reads
+  // down the Full recipe's trace section rather than across it.
+  for (const a of heaviestFirst(additives, (item) => item.grams)) byStage[a.addAt].push(a.name);
   const named = (stages: AdditiveStage[]) => {
     const names = stages.flatMap((stage) => byStage[stage]);
     return names.length ? `the ${joinNames(names)}` : null;

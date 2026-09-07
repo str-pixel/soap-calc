@@ -592,3 +592,22 @@ test('post-cook superfat oils run biggest amount first', () => {
   const names = sections.find((s) => s.heading === 'Post-cook superfat')!.items.map((i) => i.name);
   expect(names).toEqual(['Shea Butter', 'Castor Oil']);
 });
+
+test('the add-in-order steps name additives heaviest first, like the manifest above them', () => {
+  // The clay is entered first but weighs a third of the fragrance; the step must read down
+  // the Full recipe's trace section, not across it.
+  const steps = buildAddOrderSteps({
+    process: 'cp',
+    lyeType: 'naoh',
+    totalOilGrams: 400,
+    lyeGrams: 56.7,
+    waterGrams: 132,
+    weightUnit: 'g',
+    additives: [
+      { name: 'Kaolin clay', addAt: 'trace', grams: 4 },
+      { name: 'Fragrance', addAt: 'trace', grams: 12 },
+    ],
+  });
+  const trace = steps.find((s) => s.includes('at trace'))!;
+  expect(trace).toContain('the Fragrance and Kaolin clay');
+});

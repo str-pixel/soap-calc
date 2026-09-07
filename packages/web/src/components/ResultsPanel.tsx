@@ -9,7 +9,7 @@ import { formatDose } from '../lib/formatDose';
 import type { AppliedPostCookSuperfat, ComputedAdditive } from '../lib/calculateAdditives';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidRow, WeightUnit } from '../lib/recipe';
-import { buildAddOrderSteps, buildFullRecipe, postCookSuperfatProvenance } from '../lib/recipeSummary';
+import { buildAddOrderSteps, buildFullRecipe, heaviestFirst, postCookSuperfatProvenance } from '../lib/recipeSummary';
 import { oilDisplayName } from '../lib/oilDisplay';
 import { formatWeight, formatWeightParts } from '../lib/weightUnits';
 import { formatWorkabilityRange } from '../lib/workabilityFormat';
@@ -189,8 +189,12 @@ export const ResultsPanel = memo(function ResultsPanel({
   // batchWeightWithExtras — only show a separate label-weight line when cure/sequester
   // actually sheds water.
   const showLabelWeight = labelWeight !== null && labelWeight < batchWeightWithExtras;
+  // Heaviest first, the order the Full recipe's own Post-cook superfat section lists them
+  // in — the aggregate line and the manifest name the same oils in the same sequence.
   const postCookSuperfatOilName = postCookSuperfat
-    ? postCookSuperfat.oils.map((o) => oilDisplayName(o.oilId)).join(' + ')
+    ? heaviestFirst(postCookSuperfat.oils, (o) => o.grams)
+        .map((o) => oilDisplayName(o.oilId))
+        .join(' + ')
     : null;
   // List only the extras actually present — a post-cook-superfat-only batch (no additive
   // lines) must not claim "includes additives".

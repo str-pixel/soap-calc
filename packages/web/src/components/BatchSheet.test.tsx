@@ -1484,3 +1484,45 @@ test.each([
   const pair = headings.filter((h) => h === 'Oils' || h === 'Lye solution');
   expect(pair).toEqual(expected);
 });
+
+test('the printed oils table lists heaviest first, like the on-screen Full recipe', () => {
+  // The starter recipe is entered 450 / 250 / 300 — deliberately not already descending,
+  // so an unsorted table would fail this.
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  const data = buildBatchSheetData({
+    recipeName: 'Order batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    extrasGrams: 0,
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oils',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    insights: [],
+    process: 'cp',
+  });
+  const { container } = render(<BatchSheet data={data} />);
+  const oilsSection = Array.from(container.querySelectorAll('.batch-sheet__section')).find(
+    (section) => section.querySelector('h2')?.textContent === 'Oils',
+  )!;
+  const weights = Array.from(oilsSection.querySelectorAll('tbody tr')).map(
+    (row) => row.querySelectorAll('td')[1]?.textContent ?? '',
+  );
+  expect(weights).toEqual(['450 g', '300 g', '250 g']);
+});

@@ -791,3 +791,30 @@ test('the Full recipe opens with the menu soaping temperature when provided', ()
   expect(screen.getByText('Soaping temperature')).toBeTruthy();
   expect(screen.getByText('52 °C (125 °F)')).toBeTruthy();
 });
+
+test('the aggregate post-cook-superfat line names its oils heaviest first', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="hp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 40}
+      superfatPercent={DEFAULT_SETTINGS.superfatPercent}
+      // Entered light-first: the line must still read the heavier oil first, matching the
+      // Full recipe's Post-cook superfat section below it.
+      postCookSuperfat={{
+        oils: [
+          { oilId: 'castor-oil', percentOfOil: 1, grams: 10 },
+          { oilId: 'shea-butter', percentOfOil: 3, grams: 30 },
+        ],
+        percentOfOil: 4, grams: 40, isExtra: true, method: 'append', deliveredSuperfatPercent: null,
+      }}
+    />,
+  );
+  expect(screen.getByText(/Post-cook superfat \(Shea Butter \+ Castor Oil\)/)).toBeTruthy();
+});
