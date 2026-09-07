@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   ADDITIVE_PACKS,
+  PROCESS_STAGES,
+  effectiveStages,
+  packsForProcess,
   ADDITIVE_CATALOG,
   ADDITIVE_STAGE_LABELS,
   catalogEntryById,
@@ -10,7 +13,6 @@ import {
   type AdditiveCatalogEntry,
   gramsFromDose,
   gramsFromPercentOfOil,
-  LATHER_SUPPORT_PACK,
   MAX_ADDITIVE_NAME_LENGTH,
   MAX_RECIPE_ADDITIVES,
   parsePercentOfOil,
@@ -32,18 +34,18 @@ describe('additives', () => {
   });
 
   it('ships lather support pack at 1% each, and names no stage of its own', () => {
-    expect(LATHER_SUPPORT_PACK).toHaveLength(3);
-    expect(LATHER_SUPPORT_PACK.every((item) => item.percentOfOil === 1)).toBe(true);
+    expect(ADDITIVE_PACKS.find((p) => p.id === 'lather')!.items).toHaveLength(3);
+    expect(ADDITIVE_PACKS.find((p) => p.id === 'lather')!.items.every((item) => item.percentOfOil === 1)).toBe(true);
     expect(ADDITIVE_CATALOG.some((e) => e.id === 'chelator')).toBe(true);
     // The pack says what and how much; WHEN belongs to each ingredient's per-process
     // default. A stage here would be a fourth opinion about staging that no audit covers,
     // and it silently outranked the LS defaults for as long as it existed.
-    for (const item of LATHER_SUPPORT_PACK) {
+    for (const item of ADDITIVE_PACKS.find((p) => p.id === 'lather')!.items) {
       expect(item).not.toHaveProperty('stage');
     }
     // Its dose has to sit inside every offering process's range, or one press lands a line
     // the panel immediately flags as out of the typical band.
-    for (const item of LATHER_SUPPORT_PACK) {
+    for (const item of ADDITIVE_PACKS.find((p) => p.id === 'lather')!.items) {
       const entry = catalogEntryById(item.catalogId)!;
       for (const process of ['cp', 'hp', 'ls'] as const) {
         if (!isAdditiveOfferedFor(entry, process)) continue;
@@ -422,7 +424,7 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
     expect(g?.stages).toEqual(['after_cook']);
     expect(g?.doseBasis).toBeUndefined(); // % of oil weight
     // The row explains where the cook's glycerin went, in the app's own words.
-    expect(g?.note).toMatch(/lye water/i);
+    expect(g?.note).toMatch(/Split liquid/);
   });
 
   it('glycerin is never offered for CP or HP — the pickers, not just the scoping field', () => {
@@ -747,8 +749,9 @@ describe('LS offers only the stages its source sanctions', () => {
     // reads the base (bar-audited) list — a narrower claim than "anywhere", and one that is
     // physically right for a liquid too (an antioxidant goes into the oils; a chelator into
     // the lye). Top is filtered out by the picker for LS regardless.
-    expect(ls('oatmeal').stages).toEqual(['oils', 'trace', 'top']);
-    expect(ls('loofah').stages).toEqual(['oils', 'top']);
+    // Where the bar list carried Top, LS has its own list (a bottle has no surface).
+    expect(ls('oatmeal').stages).toEqual(['oils', 'trace']);
+    expect(ls('loofah').stages).toEqual(['oils']);
     expect(ls('edta').stages).toEqual(['lye']);
     expect(ls('bht').stages).toEqual(['oils']);
     expect(ls('roe').stages).toEqual(['oils']);
@@ -850,6 +853,7 @@ describe('HP: each additive defaults to its sourced stage and offers only sancti
     ['roe', 'oils', ['oils', 'after_cook']],                       // HP:5797
     ['eugenol', 'oils', ['oils']],                                 // HP:9361
     ['finished-soap', 'oils', ['oils']],                           // HP:9292
+    ['titanium-dioxide', 'oils', ['oils', 'lye', 'after_cook']],   // HP:8514; colorants after the cook HP:11318-11330
     ['yogurt', 'after_cook', ['after_cook']],                      // HP:9478
   ] as const)('%s', (id, defaultStage, stages) => {
     expect(hp(id).defaultStage).toBe(defaultStage);
@@ -867,7 +871,7 @@ describe('bar-only additives from the CP recipes (2026-09-07), with the HP refer
     ['coffee-grounds', 'Coffee grounds', 2, 3, 'trace', ['trace', 'top'], 'after_cook', ['after_cook', 'top']],     // CP:16975, 16996; HP:11150
     ['seeds', 'Seeds (poppy, etc.)', 1, 1, 'trace', ['trace', 'top'], 'after_cook', ['after_cook', 'top']],         // CP:17090, 17108; HP:11144
     ['botanicals', 'Dried botanicals, ground', 0.25, 0.25, 'oils', ['oils', 'trace', 'top'], 'after_cook', ['after_cook', 'top']], // CP:17614; HP:11097
-    ['arrowroot', 'Arrowroot powder', 1, 1, 'trace', ['trace'], 'after_cook', ['trace', 'after_cook']],             // CP:17605, 17673
+    ['arrowroot', 'Arrowroot powder', 1, 1, 'trace', ['trace'], 'after_cook', ['after_cook']],                      // CP:17605, 17673; rides with HP fragrance (HP:10653)
   ] as const)('%s', (id, name, low, high, cpDefault, cpStages, hpDefault, hpStages) => {
     const base = catalogEntryById(id)!;
     expect(base.name).toBe(name);
@@ -910,17 +914,95 @@ describe('additive packs (one-press starting sets, staged by the catalog)', () =
     ]);
   });
 
-  it('every pack item is offered in every process the pack is, and its dose sits inside that process\'s typical range', () => {
+  it('a process-scoped pack offers every item in its process; every dose sits inside the typical range where offered', () => {
     for (const pack of ADDITIVE_PACKS) {
-      for (const process of pack.processes ?? (['cp', 'hp', 'ls'] as const)) {
+      for (const process of ['cp', 'hp', 'ls'] as const) {
+        if (!packsForProcess(process).includes(pack)) continue;
         for (const item of pack.items) {
           const entry = catalogEntryById(item.catalogId)!;
-          if (!isAdditiveOfferedFor(entry, process)) continue; // the lather pack skips these by design
+          const offered = isAdditiveOfferedFor(entry, process);
+          // Only the everywhere-pack may carry an item some process lacks (cetyl alcohol
+          // in LS); a pack scoped to a process must be whole there, or the panel would
+          // silently seed fewer lines than the button promises.
+          if (pack.processes) expect(offered, `${pack.id}/${item.catalogId} not offered in ${process}`).toBe(true);
+          if (!offered) continue;
           const e = effectiveCatalogEntry(entry, process);
           expect(item.percentOfOil, `${pack.id}/${item.catalogId} in ${process}`).toBeGreaterThanOrEqual(e.typicalLow);
           expect(item.percentOfOil, `${pack.id}/${item.catalogId} in ${process}`).toBeLessThanOrEqual(e.typicalHigh);
         }
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------------------
+// The process → offered-stages rule lives in core (PROCESS_STAGES), not in the web picker:
+// the picker, the manifest and these tests all read one answer.
+// ---------------------------------------------------------------------------------------
+describe('PROCESS_STAGES — which stages each process offers at all', () => {
+  it('CP has no cook; LS has no top (a bottle has no surface to decorate)', () => {
+    expect(PROCESS_STAGES.cp).toEqual(['lye', 'oils', 'trace', 'top']);
+    expect(PROCESS_STAGES.hp).toEqual(['lye', 'oils', 'trace', 'top', 'after_cook']);
+    expect(PROCESS_STAGES.ls).toEqual(['lye', 'oils', 'trace', 'after_cook']);
+  });
+
+  it('effectiveStages intersects an entry\'s list with the process offer, and falls back to the whole offer', () => {
+    // oatmeal's bar list carries top; LS never offers it.
+    expect(effectiveStages(catalogEntryById('oatmeal')!, 'ls')).not.toContain('top');
+    // an entry with no list of its own gets everything the process offers
+    const unrestricted = { ...catalogEntryById('oatmeal')!, stages: undefined, processOverrides: undefined };
+    expect(effectiveStages(unrestricted, 'cp')).toEqual(PROCESS_STAGES.cp);
+  });
+});
+
+describe('catalog-wide staging invariant — every entry, every process it is offered in', () => {
+  it('defaults to a stage it sanctions, sanctions only stages the process offers', () => {
+    // Collected, not thrown one at a time: an audit slip should list every entry it touched.
+    const violations: string[] = [];
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      for (const entry of catalogEntriesForProcess(process)) {
+        const e = effectiveCatalogEntry(entry, process);
+        const stages = effectiveStages(entry, process);
+        if (!stages.includes(e.defaultStage)) violations.push(`${entry.id} in ${process}: default ${e.defaultStage} not sanctioned`);
+        for (const stage of e.stages ?? []) {
+          if (!PROCESS_STAGES[process].includes(stage)) violations.push(`${entry.id} in ${process} lists "${stage}", which ${process} never offers`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it('a note never recommends a route the process withholds (mention → stage)', () => {
+    // The inverse of "a note explains every stage": prose that says "blend it in at trace"
+    // under a process whose picker offers no Trace cell sends the maker hunting for it.
+    const MENTIONS: Record<string, RegExp> = {
+      lye: /lye (water|solution)/i,
+      oils: /\boils\b/i,
+      trace: /\btrace\b/i,
+      after_cook: /after (the )?(cook|dilution)|diluted|dilution water/i,
+      top: /on top|decorat/i,
+    };
+    const violations: string[] = [];
+    for (const process of ['cp', 'hp', 'ls'] as const) {
+      for (const entry of catalogEntriesForProcess(process)) {
+        const e = effectiveCatalogEntry(entry, process);
+        if (!e.note) continue;
+        const stages = effectiveStages(entry, process);
+        for (const [stage, re] of Object.entries(MENTIONS)) {
+          if (re.test(e.note) && !stages.includes(stage as never)) {
+            violations.push(`${entry.id} in ${process}: mentions "${stage}", offers ${stages.join('/')}`);
+          }
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
+
+describe('packsForProcess', () => {
+  it('offers the lather pack everywhere, the bar packs in their own process only', () => {
+    expect(packsForProcess('ls').map((p) => p.id)).toEqual(['lather']);
+    expect(packsForProcess('hp').map((p) => p.id)).toEqual(['lather', 'fluid-hp']);
+    expect(packsForProcess('cp').map((p) => p.id)).toEqual(['lather', 'hard-bar']);
   });
 });

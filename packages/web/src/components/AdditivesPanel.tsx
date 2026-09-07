@@ -4,7 +4,9 @@ import {
   isAdditiveOfferedFor,
   catalogEntryById,
   effectiveCatalogEntry,
-  ADDITIVE_PACKS,
+  PROCESS_STAGES,
+  effectiveStages,
+  packsForProcess,
   type AdditivePack,
   parseDoseAmount,
   type AdditiveCatalogEntry,
@@ -51,7 +53,6 @@ function offeredDoseModesForProcess(process: ProcessId): typeof DOSE_MODES {
     : DOSE_MODES.filter((m) => m.basis !== 'solution');
 }
 
-const BASE_STAGE_OPTIONS: AdditiveStage[] = ['lye', 'oils', 'trace', 'top'];
 
 /** Short cell text for the stage seg. Each is contained in its full stage label, which
  * stays the accessible name (Label-in-Name, WCAG 2.5.3) — four full labels side by side
@@ -89,10 +90,18 @@ const ADDITIVE_STAGE_NOTES: Record<AdditiveStage, string> = {
  * in liquid soap", LS:3067), and every "layer on top" in that text is unsaponified fat
  * separating out: a defect to fix, not a stage to choose. */
 function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
-  const base =
-    process === 'ls' ? BASE_STAGE_OPTIONS.filter((s) => s !== 'top') : BASE_STAGE_OPTIONS;
-  return processOffers(process, 'afterCookStage') ? [...base, 'after_cook'] : base;
+  // One table, in core (PROCESS_STAGES) — the manifest and the catalog tests read the
+  // same one. A test pins it against processOffers(p, 'afterCookStage').
+  return [...PROCESS_STAGES[process]];
 }
+
+/** The per-process tail of the free-fatty-acid hint — the sentence is shared, the dose is
+ * not. */
+const FATTY_ACID_DOSE: Record<ProcessId, string> = {
+  cp: 'no more than 0.5–1% of oils as a trace accelerant; more can seize.',
+  hp: 'typically 5–8% of oils for a fluid cook.',
+  ls: 'typically 5–10% of oils for a fluid no-paste cook.',
+};
 
 /** The stage seg's cell text. after_cook shows its process-aware label whole ("After
  * cook" / "After dilution") — the cells wrap, so the word that carries the timing does
@@ -172,15 +181,18 @@ export const AdditivesPanel = memo(function AdditivesPanel({
     ]);
   }
 
-  // The packs this process offers — the shared lather set everywhere, the bar sets in
-  // their own process (ADDITIVE_PACKS.processes).
-  const packs = ADDITIVE_PACKS.filter((pack) => !pack.processes || pack.processes.includes(process));
+  const packs = packsForProcess(process);
 
-  function addPack(pack: AdditivePack) {
+  // What pressing a pack would add RIGHT NOW: items not already a line, offered in this
+  // process, staged by their catalog default. One computation feeds both the click and
+  // the button's disabled state, so "nothing left to add" and "adds nothing" agree by
+  // construction — a pack whose item this process never offers (cetyl alcohol in liquid
+  // soap) still disables once its offered items are in.
+  function pendingPackLines(pack: AdditivePack): AdditiveLine[] {
     const existingIds = new Set(
       additives.map((line) => line.catalogId).filter((id) => id !== ''),
     );
-    const lines = pack.items.flatMap((item): AdditiveLine[] => {
+    return pack.items.flatMap((item): AdditiveLine[] => {
       if (existingIds.has(item.catalogId)) return [];
       const entry = catalogEntryById(item.catalogId);
       if (!entry) return [];
@@ -207,12 +219,13 @@ export const AdditivesPanel = memo(function AdditivesPanel({
         },
       ];
     });
+  }
+
+  function addPack(pack: AdditivePack) {
+    const lines = pendingPackLines(pack);
     if (lines.length === 0) return;
     onChange([...additives, ...lines]);
   }
-
-  const packPresent = (pack: AdditivePack) =>
-    pack.items.every((item) => additives.some((line) => line.catalogId === item.catalogId));
 
   function removeLine(key: string) {
     onChange(additives.filter((line) => line.key !== key));
@@ -234,7 +247,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
               type="button"
               className="btn btn--ghost"
               onClick={() => addPack(pack)}
-              disabled={packPresent(pack)}
+              disabled={pendingPackLines(pack).length === 0}
             >
               {pack.label}
             </button>
@@ -245,33 +258,23 @@ export const AdditivesPanel = memo(function AdditivesPanel({
         </div>
       </div>
 
-      {(process === 'hp' || process === 'ls') && (
-        // Deliberately NOT in the empty-state branch: it applies whether or not rows exist.
-        // The free fatty acids were removed from this catalog (they saponify — see
-        // ADDITIVE_CATALOG's finished-soap comment); this is where HP/LS users find them
-        // now. The typical dose differs per process (fluid HP vs no-paste LS cook).
-        <p className="results-hint">
-          Free fatty acids (stearic, lauric, myristic) saponify — dose them as oils in the oils
-          list, typically {process === 'hp' ? '5–8%' : '5–10%'} of oils for a fluid
-          {process === 'hp' ? ' cook' : ' no-paste cook'}.
-        </p>
-      )}
+      {/* Deliberately NOT in the empty-state branch: it applies whether or not rows exist.
+          The free fatty acids were removed from this catalog (they saponify — see
+          ADDITIVE_CATALOG's finished-soap comment); this is where every process finds them
+          now. One sentence, one per-process dose: a fluid HP cook (5–8%), a no-paste LS
+          cook (5–10%), and CP's far lower trace-accelerant dose (0.5–1%, CP:10784-10790 —
+          more can seize). */}
+      <p className="results-hint">
+        Free fatty acids (stearic, lauric, myristic) saponify — dose them as oils in the oils
+        list, {FATTY_ACID_DOSE[process]}
+      </p>
       {process === 'cp' && (
-        // The CP counterparts: the same fatty acids at the far lower cold-process dose
-        // (a trace accelerant, CP:10784-10790 — more can seize), the waxes that are oils
-        // too (CP:9179), and the liquids that belong to the other control.
-        <>
-          <p className="results-hint">
-            Free fatty acids (stearic, lauric, myristic) saponify — dose them as oils in the
-            oils list, no more than 0.5–1% of oils as a trace accelerant; more can seize.
-            Beeswax and candelilla are oils too, at 1–2%.
-          </p>
-          <p className="results-hint">
-            Milk, juice, coffee, beer and purées are liquids — enter them under Split liquid,
-            frozen into the lye water or blended in at trace. Colorants have no fixed dose:
-            colour the soap, not the lather.
-          </p>
-        </>
+        // The waxes that are oils too (CP:9179), and the liquids that belong to the other control.
+        <p className="results-hint">
+          Beeswax and candelilla are oils too, at 1–2%. Milk, juice, coffee, beer and purées
+          are liquids — enter them under Split liquid, frozen into the lye water or blended in
+          at trace. Colorants have no fixed dose: colour the soap, not the lather.
+        </p>
       )}
       {process === 'hp' && (
         // The HP additive moment is after the cook (HP:9478-9481, 11122-11131): a hot paste
@@ -321,9 +324,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
             // An entry may restrict its own stages (glycerin is after-dilution only — the
             // cook's route is the split-liquid row). Intersect, never widen: a stage the
             // process does not offer is not made available by an entry listing it.
-            const entryStages = entry?.stages
-              ? offeredStages.filter((stage) => entry.stages!.includes(stage))
-              : offeredStages;
+            const entryStages = rawEntry ? effectiveStages(rawEntry, process) : offeredStages;
             const stageOptions = entryStages.includes(line.addAt)
               ? entryStages
               : [...entryStages, line.addAt];
@@ -483,6 +484,17 @@ export const AdditivesPanel = memo(function AdditivesPanel({
                   />
                   )}
                   <p className="inline-note additive-list__stage-note">
+                    {!entryStages.includes(line.addAt) && (
+                      // A saved line parked on a stage this entry no longer sanctions here
+                      // (the mismatched-select guard keeps it selectable). Say so, and say
+                      // that moving off it retires the option — otherwise the cell just
+                      // vanishes on the first change of mind.
+                      <>
+                        <strong>Not a usual stage for this additive here</strong> — it stays
+                        selectable for this saved line only; choose another stage and this one
+                        goes away.{' '}
+                      </>
+                    )}
                     {stageNote(line.addAt, process)}
                   </p>
                 </div>

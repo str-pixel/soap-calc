@@ -325,6 +325,10 @@ function sugarLine(percent: string): AdditiveLine {
   };
 }
 
+function milkPowderLine(percent: string): AdditiveLine {
+  return { ...honeyLine(percent), key: newAdditiveKey(), catalogId: 'milk-powder', name: 'Milk powder' };
+}
+
 function honeyLine(percent: string): AdditiveLine {
   return {
     key: newAdditiveKey(),
@@ -438,6 +442,14 @@ describe('useFormulationInsights sugar aggregator (Step 3b)', () => {
   it('fires sugar_total_high exactly once when two sugar-family additives sum past 4%', () => {
     const { result } = renderHook(() =>
       useProcessWiringHarness(lines, 'cp', [sugarLine('3'), honeyLine('2')]),
+    );
+    const codes = result.current.insights.map((i) => i.code);
+    expect(codes.filter((c) => c === 'sugar_total_high')).toHaveLength(1);
+  });
+
+  it('counts milk powder as sugar family — it carries the sugars hazard, so it counts toward the ceiling', () => {
+    const { result } = renderHook(() =>
+      useProcessWiringHarness(lines, 'cp', [sugarLine('3'), milkPowderLine('1.5')]),
     );
     const codes = result.current.insights.map((i) => i.code);
     expect(codes.filter((c) => c === 'sugar_total_high')).toHaveLength(1);

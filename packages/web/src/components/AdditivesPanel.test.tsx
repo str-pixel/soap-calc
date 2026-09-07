@@ -4,6 +4,8 @@ import { render, screen, fireEvent, cleanup, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { ADDITIVE_CATALOG, catalogEntryById, effectiveCatalogEntry } from '@soap-calc/core';
 import { AdditivesPanel } from './AdditivesPanel';
+import { PROCESS_STAGES } from '@soap-calc/core';
+import { processOffers } from '../lib/process';
 import type { AdditiveLine } from '../lib/recipe';
 import type { ComputedAdditive } from '../lib/calculateAdditives';
 
@@ -894,5 +896,48 @@ describe('process packs and hints', () => {
   it('HP hint: milk, yogurt, colorants and fragrance go in after the cook', () => {
     renderPanel('hp');
     expect(screen.getByText(/after the cook/i).textContent).toMatch(/milk/i);
+  });
+});
+
+describe('the offered-stages table and the pack buttons agree with the catalog', () => {
+  it.each(['cp', 'hp', 'ls'] as const)('%s: core PROCESS_STAGES offers after_cook iff the process declares the afterCookStage capability', (process) => {
+    expect(PROCESS_STAGES[process].includes('after_cook')).toBe(processOffers(process, 'afterCookStage'));
+  });
+
+  it('in LS the Lather support pack disables once its OFFERED items are in — cetyl alcohol is not offered there', () => {
+    const onChange = vi.fn();
+    render(<AdditivesPanel additives={[]} computed={[]} weightUnit="g" process="ls" onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /lather support/i }));
+    const lines = onChange.mock.calls[0][0] as AdditiveLine[];
+    expect(lines.map((l) => l.catalogId)).toEqual(['sugar-sorbitol', 'chelator']);
+    cleanup();
+    render(<AdditivesPanel additives={lines} computed={[]} weightUnit="g" process="ls" onChange={onChange} />);
+    expect((screen.getByRole('button', { name: /lather support/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('a saved line parked on a stage the entry no longer sanctions says so beneath the control', () => {
+    cleanup();
+    render(
+      <AdditivesPanel
+        additives={[{ ...makeLine({ key: 's1', name: '' }), catalogId: 'fragrance', addAt: 'oils' } as AdditiveLine]}
+        computed={[]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(/not a usual stage for this additive here/i)).toBeTruthy();
+    // And a line on a sanctioned stage carries no such cue.
+    cleanup();
+    render(
+      <AdditivesPanel
+        additives={[{ ...makeLine({ key: 's1', name: '' }), catalogId: 'fragrance', addAt: 'trace' } as AdditiveLine]}
+        computed={[]}
+        weightUnit="g"
+        process="cp"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/not a usual stage/i)).toBeNull();
   });
 });

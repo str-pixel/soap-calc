@@ -22,6 +22,11 @@ export type AdditiveProcessOverride = {
   /** Replaces (not appends to) the base hazards for this process — e.g. salt's
    * "crumbly bar" tag is meaningless in LS, where the risk is the salt curve. */
   hazards?: string[];
+  /** Replaces the entry's note for this process. Needed wherever the sanctioned routes
+   * differ by process: a note that says "blend it in at trace" under a process whose
+   * picker offers no Trace cell sends the maker hunting for it. A test pins that every
+   * route a note names is one the process actually offers. */
+  note?: string;
   /** Stages this additive may be dosed at IN THIS PROCESS, replacing the entry's own list.
    * The sanctioned moment is process-specific — fragrance goes in at trace in a bar and
    * after dilution in liquid soap — so an entry-level list could only ever be right for one
@@ -86,10 +91,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // procedure weighs "water and sugar/sorbitol" together ahead of the NaOH (HP:9809,
     // HP:10402); CP doses it "in your lye solution" (CP:8995). LS names the lye solution
     // or the oils, before dilution (LS:1069). Trace stays selectable everywhere as an
-    // optional route (unusual, not wrong — the cook or the mold's own heat takes it in).
-    // The base list below is what makes that "the same three choices whatever the
-    // process": without it CP would offer Top and HP After cook, routes no book gives
-    // sugar. (A saved line on another stage still renders — the mismatched-select guard.)
+    // optional route (unusual, not wrong — the cook or the mold's own heat takes it in),
+    // and HP alone adds after the cook (HP:5040) through its override below. The base
+    // list keeps Top out: no book gives sugar that route. (A saved line on another stage
+    // still renders — the mismatched-select guard.)
     id: 'sugar-sorbitol',
     name: 'Sugar',
     typicalLow: 0.5,
@@ -99,7 +104,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     hazards: ['can tunnel/overheat'],
     processOverrides: {
       // An HP cook tolerates (and typically uses) more sugar than a CP mold; stage unchanged.
-      hp: { typicalLow: 1, typicalHigh: 5, stages: ['lye', 'oils', 'trace', 'after_cook'] },
+      hp: { typicalLow: 1, typicalHigh: 5, stages: ['lye', 'oils', 'trace', 'after_cook'], note: 'Dissolve it in the water first, then add the lye — the lye water is its standard home. Fresh lye and heat darken sugar, so the same dose can finish anywhere from cream to caramel; for a paler result keep the solution cool, move the sugar to the oils or to trace, or stir it in after the cook.' },
       // LS gives every sugar FORM one rate — table sugar, honey, molasses, sorbitol — at
       // 1–6% of total oil weight, into the lye solution or the oils and before dilution
       // (LS:1069); sorbitol and honey below carry the identical range for that reason.
@@ -110,7 +115,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       ls: { typicalLow: 1, typicalHigh: 6 },
     },
     note:
-      'Dissolve it in the water first, then add the lye — the lye water is its standard home. Fresh lye and heat darken sugar, so the same dose can finish anywhere from cream to caramel; for a paler result keep the solution cool, or move the sugar to the oils or to trace instead. Hot process can also take it after the cook.',
+      'Dissolve it in the water first, then add the lye — the lye water is its standard home. Fresh lye and heat darken sugar, so the same dose can finish anywhere from cream to caramel; for a paler result keep the solution cool, or move the sugar to the oils or to trace instead.',
   },
   {
     // Glycerin, AFTER DILUTION ONLY. The source gives four timings — in the lye solution
@@ -150,7 +155,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'after_cook',
     stages: ['after_cook'],
     processes: ['ls'],
-    note: 'Here it works as emollient and humectant only — too late to speed the cook or the dilution. For the cook, add it with the liquids instead: swapping some of the lye water for it puts its weight in the paste and takes it off the dilution water. This line adds to the bottle rather than replacing water, so if you meant it as part of your dilution liquid, pour that much less.',
+    note:
+      'Here it works as emollient and humectant only — too late to speed the cook or the dilution. For the cook, add it with the liquids instead: swapping part of the water for it under Split liquid puts its weight in the paste and takes it off the dilution water. This line adds to the bottle rather than replacing water, so if you meant it as part of your dilution liquid, pour that much less.',
   },
   {
     // Sorbitol — sugar alcohol with a stronger lather effect than sucrose; same overheat
@@ -169,11 +175,11 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     stages: ['lye', 'oils', 'trace'],
     hazards: ['can tunnel/overheat'],
     processOverrides: {
-      hp: { typicalLow: 1, typicalHigh: 5, stages: ['lye', 'oils', 'trace', 'after_cook'] },
+      hp: { typicalLow: 1, typicalHigh: 5, stages: ['lye', 'oils', 'trace', 'after_cook'], note: 'A sugar alcohol, dosed and timed like table sugar: dissolve it in the lye water before the lye goes in, move it to the oils or to trace for a paler result, or stir it in after the cook. It dissolves readily.' },
       ls: { typicalLow: 1, typicalHigh: 6 },
     },
     note:
-      'A sugar alcohol, dosed and timed like table sugar: dissolve it in the lye water before the lye goes in, or move it to the oils or to trace for a paler result; hot process can also take it after the cook. It dissolves readily.',
+      'A sugar alcohol, dosed and timed like table sugar: dissolve it in the lye water before the lye goes in, or move it to the oils or to trace for a paler result. It dissolves readily.',
   },
   {
     // LS sanctions the lye solution, where the citrate forms (LS:3037).
@@ -215,14 +221,14 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // "wider than CP/HP" claim with it, matched nothing in the source — the LS figure
       // is the same 1–2% the base holds, stated here so the LS voice is explicit rather
       // than inherited by accident.
-      ls: { typicalLow: 1, typicalHigh: 2, stages: ['lye', 'after_cook'] },
+      ls: { typicalLow: 1, typicalHigh: 2, stages: ['lye', 'after_cook'], note: 'Goes into the lye solution, where the alkali turns it into citrate — the citrate is the chelator, not the acid. It consumes some of that alkali on the way and the calculator has already replaced it, so the superfat you asked for is the one you get. Added after the cook it answers a different problem: alkali left unreacted in a batch that came out lye-heavy. There the calculator deliberately does NOT replace what it consumes, because consuming it is the entire point. Either way it will not bring a finished soap\'s pH down — nothing at this dose will.' },
     },
     lyeNeutralization: {
       naohPerGram: 3 * CITRIC_MOL_PER_GRAM * NAOH_MOLAR_MASS,
       kohPerGram: 3 * CITRIC_MOL_PER_GRAM * KOH_MOLAR_MASS,
     },
     note:
-      'Goes into the lye solution, where the alkali turns it into citrate — the citrate is the chelator, not the acid. It consumes some of that alkali on the way and the calculator has already replaced it, so the superfat you asked for is the one you get. Added after the cook it answers a different problem: alkali left unreacted in a batch that came out lye-heavy. There the calculator deliberately does NOT replace what it consumes, because consuming it is the entire point. Either way it will not bring a finished soap\'s pH down — nothing at this dose will.',
+      'Goes into the lye solution, where the alkali turns it into citrate — the citrate is the chelator, not the acid. It consumes some of that alkali on the way and the calculator has already replaced it, so the superfat you asked for is the one you get. It will not bring a finished soap\'s pH down — nothing at this dose will.',
   },
   {
     // CP/HP ONLY. The LS text never names it — one of just two entries in this catalog
@@ -253,8 +259,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     id: 'charcoal',
     processOverrides: {
       // LS sanctions the oils only, right at the start (LS:2991).
-      ls: { stages: ['oils'] },
-      hp: { stages: ['oils', 'trace', 'after_cook'] },
+      ls: { stages: ['oils'], note: 'Stir it through the oils right at the start, so it is thoroughly wetted before the cook. It never dissolves: in a thin soap it drifts to the bottom over time, and a thicker one holds it up longer. Its own opacity hides any settling that does happen.' },
+      hp: { stages: ['oils', 'trace', 'after_cook'], note: 'Stir it through the oils right at the start so it is thoroughly wetted, slurry it in a little water and blend it in at trace, or stir the slurry in after the cook. It never dissolves: in a thin soap it drifts to the bottom over time, and a thicker one holds it up longer. Its own opacity hides any settling that does happen.' },
     },
     name: 'Charcoal',
     typicalLow: 0.1,
@@ -262,7 +268,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'oils',
     stages: ['oils', 'trace'],
     note:
-      'Stir it through the oils right at the start so it is thoroughly wetted, or slurry it in a little water and blend it in at trace; in hot process it can also go in after the cook. It never dissolves: in a thin soap it drifts to the bottom over time, and a thicker one holds it up longer. Its own opacity hides any settling that does happen.',
+      'Stir it through the oils right at the start so it is thoroughly wetted, or slurry it in a little water and blend it in at trace. It never dissolves: in a thin soap it drifts to the bottom over time, and a thicker one holds it up longer. Its own opacity hides any settling that does happen.',
   },
   {
     // CP/HP stage audit: the CP recipes blend it into the soft oils before starting (CP:16837, 17611), 1% of oil; whole oats go on top; HP wets it with oil or warm water and adds it to the base or the top (HP:11108-11116).
@@ -273,10 +279,11 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'oils',
     stages: ['oils', 'trace', 'top'],
     processOverrides: {
-      hp: { stages: ['oils', 'after_cook', 'top'] },
+      ls: { stages: ['oils', 'trace'], note: 'Blend the ground oats into the oils before the lye goes in, or at trace before the cook. Grind them fine: coarse flakes settle out of a liquid.' },
+      hp: { stages: ['oils', 'after_cook', 'top'], note: 'Blend the ground oats into the melted oils, or wet them with a little oil or warm water and stir them in after the cook — dry oats soak up moisture and thicken the paste. Whole rolled oats can go on top for decoration.' },
     },
     note:
-      'Blend the ground oats into the soft oils before the lye goes in, or add them at trace; whole rolled oats can go on top for decoration. In hot process, wet them with a little oil or warm water first and stir them in after the cook — dry oats soak up moisture and thicken the paste.',
+      'Blend the ground oats into the soft oils before the lye goes in, or add them at trace; whole rolled oats can go on top for decoration.',
   },
   {
     // Honey is a sugar source — same overheat/tunnel behavior as table sugar.
@@ -290,14 +297,14 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     stages: ['lye', 'oils', 'trace'],
     hazards: ['can tunnel/overheat'],
     processOverrides: {
-      hp: { stages: ['lye', 'oils', 'trace', 'after_cook'] },
+      hp: { stages: ['lye', 'oils', 'trace', 'after_cook'], note: 'Honey is mostly sugar in water, dosed like the other sugars but staged more gently: stir it into the oils before the lye goes in, blend it in at trace, or add it after the cook, where the cooler paste keeps it paler; the lye water is allowed but browns it.' },
       // LS doses every sugar form alike — table sugar, honey, molasses — at 1–6% of total
       // oil weight, into the lye solution or the oils, before dilution (LS:1069). This
       // entry had no LS voice at all and was serving CP's single-point 1%.
-      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'] },
+      ls: { typicalLow: 1, typicalHigh: 6, defaultStage: 'oils', stages: ['lye', 'oils'], note: 'Honey is mostly sugar in water, dosed like the other sugars but staged more gently: into the oils before the lye goes in, or into the lye water, which browns it. It must be in before any dilution.' },
     },
     note:
-      'Honey is mostly sugar in water, dosed like the other sugars but staged more gently: stir it into the oils before the lye goes in — the route the cold-process recipes use — or blend it in at trace; the lye water is allowed but browns it. In hot process it can also go in after the cook, where the cooler paste keeps it paler. It must be in before any dilution.',
+      'Honey is mostly sugar in water, dosed like the other sugars but staged more gently: stir it into the oils before the lye goes in — the usual cold-process route — or blend it in at trace; the lye water is allowed but browns it.',
   },
   {
     // LS sanctions after the cook, into diluted soap (LS:2950, LS:3363).
@@ -309,7 +316,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'trace',
     stages: ['trace'],
     processOverrides: {
-      hp: { defaultStage: 'after_cook', stages: ['after_cook'] },
+      hp: { defaultStage: 'after_cook', stages: ['after_cook'], note: 'Goes in after the cook, once the paste has cooled a little — the heat of the cook would drive off the lighter notes. Your supplier\'s skin-safe limit overrides this range.' },
       // LS doses fragrance as a concentration in the finished solution, 3% max — well
       // below bar-soap oil-weight percentages. A solution basis presupposes a solution:
       // that mass does not exist until after dilution, so the stage must move to
@@ -318,10 +325,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // place fragrance after the soap reaches its finished, diluted consistency, because
       // these oils separate and cloud the soap if added earlier (LS:2164, 2288, 2520, 2878;
       // clouding risk noted at LS:2953).
-      ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution', defaultStage: 'after_cook', stages: ['after_cook'] },
+      ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution', defaultStage: 'after_cook', stages: ['after_cook'], note: 'Dosed against the finished, diluted soap rather than the oil weight — a bottle of liquid soap is mostly water, so an oil-weight percentage would badly overshoot. It goes in once the cook is over, to soap already diluted and cooled. Liquid soap carries far less scent than a bar needs. Your supplier\'s skin-safe limit overrides this range.' },
     },
     note:
-      'In a bar it goes in at trace — cold process — or after the cook in hot process, where the heat would otherwise drive off the lighter notes. Liquid soap doses it against the finished, diluted soap rather than the oil weight — a bottle is mostly water, so an oil-weight percentage would badly overshoot — and it goes in once the cook is over, to soap already diluted and cooled. Your supplier\'s skin-safe limit overrides this range.',
+      'Goes in at trace, once the batter has emulsified — any earlier and the lighter notes can flash off in the fresh lye. Your supplier\'s skin-safe limit overrides this range.',
   },
   {
     // Jojoba is deliberately NOT in this catalog: it belongs in the saponified oil blend
@@ -337,8 +344,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     id: 'clay',
     processOverrides: {
       // LS sanctions the oils only, right at the start (LS:2991).
-      ls: { stages: ['oils'] },
-      hp: { stages: ['oils', 'trace', 'after_cook'] },
+      ls: { stages: ['oils'], note: 'Into the oils right at the start, like charcoal — these powders adsorb rather than dissolve, and wetting them early is what keeps them evenly spread. A thicker soap suspends them longer; in a thin one they settle out with time.' },
+      hp: { stages: ['oils', 'trace', 'after_cook'], note: 'Into the oils right at the start, like charcoal — these powders adsorb rather than dissolve, and wetting them early is what keeps them evenly spread; a water slurry blended in at trace works too, and so does stirring the slurry in after the cook. A thicker soap suspends them longer; in a thin one they settle out with time.' },
     },
     name: 'Clay (bentonite, kaolin)',
     typicalLow: 0.1,
@@ -346,7 +353,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'oils',
     stages: ['oils', 'trace'],
     note:
-      'Into the oils right at the start, like charcoal — these powders adsorb rather than dissolve, and wetting them early is what keeps them evenly spread; a water slurry blended in at trace works too, and hot process can take it after the cook. A thicker soap suspends them longer; in a thin one they settle out with time.',
+      'Into the oils right at the start, like charcoal — these powders adsorb rather than dissolve, and wetting them early is what keeps them evenly spread; a water slurry blended in at trace works too. A thicker soap suspends them longer; in a thin one they settle out with time.',
   },
   {
     // Table salt (NaCl) as a hardener, dissolved in the lye water. Kept low: past ~1%
@@ -374,10 +381,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // The bar-crumble tag is meaningless in LS, so the hazard is replaced per-process.
       ls: { typicalLow: 3,
         typicalHigh: 8,
-        hazards: ['past the salt curve more salt thins, not thickens'], stages: ['lye', 'oils', 'after_cook'] },
+        hazards: ['past the salt curve more salt thins, not thickens'], stages: ['lye', 'oils', 'after_cook'], note: 'Dissolve it first — in the lye water before the alkali goes in, or into the oils. To thicken soap that is already diluted, make a solution of roughly one part salt to two parts water and stir it in a little at a time, watching as you go: every recipe has its own turning point, and past it more salt thins the soap rather than thickening it.' },
     },
     note:
-      'Dissolve it first — in the lye water before the alkali goes in, or into the oils; coarse salt can also be pressed on top of a bar for decoration. To thicken soap that is already diluted, make a solution of roughly one part salt to two parts water and stir it in a little at a time, watching as you go: every recipe has its own turning point, and past it more salt thins the soap rather than thickening it.',
+      'Dissolve it first — in the lye water before the alkali goes in, or into the oils; coarse salt can also be pressed on top of a bar for decoration.',
   },
   {
     // Sodium lactate — humectant + hardener, water-soluble, added to the lye water.
@@ -393,13 +400,13 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     processOverrides: {
       // HP doses it harder and later: into the batter after a very thick trace (before the
       // expansion phase), where it keeps the cook fluid and hardens the finished bar.
-      hp: { typicalLow: 3, typicalHigh: 4, defaultStage: 'trace', stages: ['lye', 'trace'] },
+      hp: { typicalLow: 3, typicalHigh: 4, defaultStage: 'trace', stages: ['lye', 'trace'], note: 'Usually sold as a liquid at around 60% strength or better, and the percentages here assume that liquid rather than the dry powder — check what your bottle actually is. Add it to the lye water, or — the hot-process route — stir it into the batter after a very thick trace, before the paste expands.' },
       // LS runs it harder still, typically into the oils before the lye goes in; the
       // source envelope is 1–10% of oils (liquid form, ~60–70% solution).
-      ls: { typicalLow: 3, typicalHigh: 5, defaultStage: 'oils', stages: ['lye', 'oils', 'after_cook'] },
+      ls: { typicalLow: 3, typicalHigh: 5, defaultStage: 'oils', stages: ['lye', 'oils', 'after_cook'], note: 'Usually sold as a liquid at around 60% strength or better, and the percentages here assume that liquid rather than the dry powder — check what your bottle actually is. It can join the lye water, go straight into the oils, or wait and go into the dilution water — all three are named routes, and the oils are the usual choice.' },
     },
     note:
-      'Usually sold as a liquid at around 60% strength or better, and the percentages here assume that liquid rather than the dry powder — check what your bottle actually is. It can join the lye water or go straight into the oils; the hot-process route is into the batter after a very thick trace, before the paste expands; liquid soap can also wait and add it to the dilution water — the oils are that author\'s own preference.',
+      'Usually sold as a liquid at around 60% strength or better, and the percentages here assume that liquid rather than the dry powder — check what your bottle actually is. It can join the lye water, go straight into the oils, or be stirred in at trace.',
   },
   {
     // Hydrolyzed silk — dissolved into the lye water, reported to add slip/sheen to lather.
@@ -414,14 +421,16 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // LS sanctions the lye solution (LS:3060), or after dilution as amino acids (LS:3347).
     // CP/HP stage audit: raw silk cut small and added to the lye water BEFORE the NaOH, fully dissolved before it meets the oils (CP:10694-10699); HP dissolves it in the hot lye solution (HP:11165-11167).
     id: 'silk',
-    processOverrides: { ls: { stages: ['lye', 'after_cook'] } },
+    processOverrides: {
+      ls: { stages: ['lye', 'after_cook'], note: 'Buy a water-soluble grade and dissolve it into the lye water. Keep the amount small — these proteins can cloud a soap you wanted clear, and too much leaves streaks. If clarity matters, prove it on a small batch first. There is a second route: amino acids stirred into the soap once it is diluted, which keeps them out of the lye entirely.' },
+    },
     name: 'Silk (hydrolyzed)',
     typicalLow: 0.25,
     typicalHigh: 1,
     defaultStage: 'lye',
     stages: ['lye'],
     note:
-      'Buy a water-soluble grade and dissolve it into the lye water. Keep the amount small — these proteins can cloud a soap you wanted clear, and too much leaves streaks. If clarity matters, prove it on a small batch first. There is a second route: amino acids stirred into the soap once it is diluted, which keeps them out of the lye entirely.',
+      'Buy a water-soluble grade and dissolve it into the lye water. Keep the amount small — these proteins can cloud a soap you wanted clear, and too much leaves streaks. If clarity matters, prove it on a small batch first.',
   },
   {
     // EDTA — synthetic chelator, added to the lye water alongside/instead of citrate.
@@ -466,10 +475,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'oils',
     stages: ['oils'],
     processOverrides: {
-      hp: { stages: ['oils', 'after_cook'] },
+      hp: { stages: ['oils', 'after_cook'], note: 'Stir it into the oils at the start, or mix it into the post-cook superfat oil and let it go in after the cook. An antioxidant, not a preservative: it slows the oxidation that turns leftover oil rancid and spots the soap, and does nothing whatever about microbes. This dose is the one an antioxidant trial actually measured; several craft books print ten times it, which is above normal cosmetic use.' },
     },
     note:
-      'Stir it into the oils at the start; in hot process it can instead be mixed into the post-cook superfat oil and go in after the cook. An antioxidant, not a preservative: it slows the oxidation that turns leftover oil rancid and spots the soap, and does nothing whatever about microbes. This dose is the one an antioxidant trial actually measured; several craft books print ten times it, which is above normal cosmetic use.',
+      'Stir it into the oils at the start. An antioxidant, not a preservative: it slows the oxidation that turns leftover oil rancid and spots the soap, and does nothing whatever about microbes. This dose is the one an antioxidant trial actually measured; several craft books print ten times it, which is above normal cosmetic use.',
   },
   {
     // Rosemary oleoresin extract — the natural-route antioxidant. Rosmarinic acid is the
@@ -485,10 +494,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'oils',
     stages: ['oils'],
     processOverrides: {
-      hp: { stages: ['oils', 'after_cook'] },
+      hp: { stages: ['oils', 'after_cook'], note: 'Stir it into the oils at the start, or mix it into the post-cook superfat oil and let it go in after the cook. Rosemary extract does the same job as BHT — slowing rancidity in the oil that never became soap. It is not a preservative and will not hold back microbial growth.' },
     },
     note:
-      'Stir it into the oils at the start; in hot process it can instead be mixed into the post-cook superfat oil and go in after the cook. Rosemary extract does the same job as BHT — slowing rancidity in the oil that never became soap. It is not a preservative and will not hold back microbial growth.',
+      'Stir it into the oils at the start. Rosemary extract does the same job as BHT — slowing rancidity in the oil that never became soap. It is not a preservative and will not hold back microbial growth.',
   },
   {
     // Titanium dioxide — mineral whitener, dispersed into the oils before mixing.
@@ -507,6 +516,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     defaultStage: 'oils',
     stages: ['oils', 'lye'],
     hazards: ['can glycerin-river at high water'],
+    processOverrides: {
+      hp: { stages: ['oils', 'lye', 'after_cook'], note: 'Check the label: an oil-dispersible grade is worked into a little oil and stirred into the oils; a water-dispersible one is mixed into a little water and added to the lye water, or dispersed in hot water and stirred in after the cook with the other colorants. Either way disperse it first — clumps streak. Keep the water on the low side or it can glycerin-river.' },
+    },
     processes: ['cp', 'hp'],
     note:
       'Check the label: an oil-dispersible grade is worked into a little oil and stirred into the oils; a water-dispersible one is mixed into a little water and added to the lye water. Either way disperse it first — clumps streak. Keep the water on the low side or it can glycerin-river.',
@@ -538,6 +550,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     typicalHigh: 0.3,
     defaultStage: 'oils',
     stages: ['oils', 'top'],
+    processOverrides: {
+      ls: { stages: ['oils'], note: 'Ground fine and blended into the oils it gives a gentle scrub.' },
+    },
     note:
       'Ground fine and blended into the oils it gives a gentle scrub; a whole slice set on top of the poured soap, or in the mold, is decoration.',
   },
@@ -554,10 +569,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     stages: ['oils', 'trace'],
     processes: ['cp', 'hp'],
     processOverrides: {
-      hp: { stages: ['oils', 'lye', 'after_cook'] },
+      hp: { stages: ['oils', 'lye', 'after_cook'], note: 'Stir it into the warm oils or into the lye water, or in after the cook with the other colorants. A natural brown colorant with a soft sweet aroma; expect the shade to deepen with heat.' },
     },
     note:
-      'Stir it into the warm oils before the lye goes in, or blend a slurry in at trace. In hot process it can go into warm oil or into the lye water, or in after the cook. A natural brown colorant with a soft sweet aroma; expect the shade to deepen with heat.',
+      'Stir it into the warm oils before the lye goes in, or blend a slurry in at trace. A natural brown colorant with a soft sweet aroma; expect the shade to deepen with heat.',
   },
   {
     // Milk powder (goat, coconut). The CP recipes make a slurry in a little reserved water
@@ -575,10 +590,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     processes: ['cp', 'hp'],
     hazards: ['can tunnel/overheat'],
     processOverrides: {
-      hp: { defaultStage: 'after_cook', stages: ['after_cook', 'oils'] },
+      hp: { defaultStage: 'after_cook', stages: ['after_cook', 'oils'], note: 'Stir it in after the cook, warmed, or blend the powder into the melted oils. Keep it away from the fresh lye: milk sugars brown there and push the batch hotter.' },
     },
     note:
-      'Make a slurry in a little water held back from the recipe and blend it in at thin trace, or blend the powder into the soft oils before the lye goes in. In hot process stir it in after the cook, warmed. Keep it out of the lye water: milk sugars brown there and push the batch hotter.',
+      'Make a slurry in a little water held back from the recipe and blend it in at thin trace, or blend the powder into the soft oils before the lye goes in. Keep it away from the fresh lye: milk sugars brown there and push the batch hotter.',
   },
   {
     // Coffee grounds — exfoliant. 2-3% of oil, added at trace (CP:16975, 16996; brewed
@@ -593,10 +608,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     stages: ['trace', 'top'],
     processes: ['cp', 'hp'],
     processOverrides: {
-      hp: { defaultStage: 'after_cook', stages: ['after_cook', 'top'] },
+      hp: { defaultStage: 'after_cook', stages: ['after_cook', 'top'], note: 'Stir the used, dried grounds in after the cook for a firm scrub; a pinch on top is decoration. Brewed coffee is a liquid — swap it for part of the water under Split liquid instead.' },
     },
     note:
-      'Used, dried grounds blended in at trace give a firm scrub; in hot process stir them in after the cook. A pinch on top is decoration. Brewed coffee is a liquid — swap it for part of the water under Split liquid instead.',
+      'Used, dried grounds blended in at trace give a firm scrub; a pinch on top is decoration. Brewed coffee is a liquid — swap it for part of the water under Split liquid instead.',
   },
   {
     // Seeds (poppy etc.) — exfoliant/decoration. 1% of oil, added at trace with the clay
@@ -610,10 +625,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     stages: ['trace', 'top'],
     processes: ['cp', 'hp'],
     processOverrides: {
-      hp: { defaultStage: 'after_cook', stages: ['after_cook', 'top'] },
+      hp: { defaultStage: 'after_cook', stages: ['after_cook', 'top'], note: 'Stir them in after the cook for a gentle scrub through the bar, or sprinkle them on top for decoration. Poppy, strawberry and apricot seeds all work; keep them small and few.' },
     },
     note:
-      'Blend them in at trace for a gentle scrub through the bar, or sprinkle them on top for decoration. In hot process stir them in after the cook. Poppy, strawberry and apricot seeds all work; keep them small and few.',
+      'Blend them in at trace for a gentle scrub through the bar, or sprinkle them on top for decoration. Poppy, strawberry and apricot seeds all work; keep them small and few.',
   },
   {
     // Dried botanicals, ground (eucalyptus, lemongrass leaves…). ONE CP recipe: leaves
@@ -630,10 +645,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     stages: ['oils', 'trace', 'top'],
     processes: ['cp', 'hp'],
     processOverrides: {
-      hp: { defaultStage: 'after_cook', stages: ['after_cook', 'top'] },
+      hp: { defaultStage: 'after_cook', stages: ['after_cook', 'top'], note: 'Stir the powder in after the cook; whole leaves and petals go on top for decoration. Data for this dose is thin — treat it as a starting point.' },
     },
     note:
-      'Ground fine and blended into the soft oils until no flecks show, or blended in at trace; whole leaves and petals go on top for decoration. In hot process stir the powder in after the cook. This figure comes from a single recipe — treat it as a starting point.',
+      'Ground fine and blended into the soft oils until no flecks show, or blended in at trace; whole leaves and petals go on top for decoration. Data for this dose is thin — treat it as a starting point.',
   },
   {
     // Arrowroot powder — fragrance anchor. Blended with the essential oils and set aside
@@ -648,10 +663,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     stages: ['trace'],
     processes: ['cp', 'hp'],
     processOverrides: {
-      hp: { defaultStage: 'after_cook', stages: ['trace', 'after_cook'] },
+      hp: { defaultStage: 'after_cook', stages: ['after_cook'], note: 'Blend it with the fragrance half an hour ahead, then add the mixture with the fragrance after the cook — it anchors the scent.' },
     },
     note:
-      'Blend it with the essential oils half an hour ahead, then add the mixture at trace — it anchors the scent. In hot process it goes in with the fragrance after the cook.',
+      'Blend it with the fragrance half an hour ahead, then add the mixture at trace — it anchors the scent.',
   },
   {
     // Free fatty acids (stearic, lauric, myristic) are deliberately NOT in this catalog:
@@ -795,7 +810,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     doseBasis: 'solution',
     processes: ['ls'],
     note:
-      'Sulfated castor oil, which disperses through water rather than sitting on top of it, so it can go into finished soap without separating or layering. It is not saponifiable, so add it after dilution: it stays an oil instead of becoming more soap.',
+      'Sulfated castor oil, which disperses through water rather than floating on it, so it can go into finished soap without separating or layering. It is not saponifiable, so add it after dilution: it stays an oil instead of becoming more soap.',
   },
   {
     // Polysorbate 80 — the LS post-cook-superfat emulsifier: warmed and premixed 1:1 with
@@ -834,25 +849,7 @@ export function catalogEntriesForProcess(
   return ADDITIVE_CATALOG.filter((entry) => isAdditiveOfferedFor(entry, process));
 }
 
-/**
- * A one-press starting set for lather. It names WHAT to add and HOW MUCH, and deliberately
- * does NOT name a stage: each ingredient is staged by its own per-process default, resolved
- * through effectiveCatalogEntry at apply time.
- *
- * It used to carry a hardcoded stage per item, which happened to equal the CP default of
- * the time — so the pack agreed with the catalog in cold process and quietly disagreed with
- * it everywhere an override existed (sugar was once staged differently in liquid soap) —
- * the one path that bypassed the per-process audit. Resolving through the catalog means
- * the pack follows every later restaging (sugar now seeds the lye water everywhere) for free.
- *
- * 1% clears every process's typical range for all three (LS: sugar 1–6, chelator 1–2, cetyl
- * alcohol 1–3), so the dose stays one number.
- */
-export const LATHER_SUPPORT_PACK = [
-  { catalogId: 'sugar-sorbitol', percentOfOil: 1 },
-  { catalogId: 'chelator', percentOfOil: 1 },
-  { catalogId: 'cetyl-alcohol', percentOfOil: 1 },
-] as const;
+
 
 export function catalogEntryById(id: string): AdditiveCatalogEntry | undefined {
   return ADDITIVE_CATALOG.find((entry) => entry.id === id);
@@ -868,11 +865,31 @@ export function effectiveCatalogEntry(
   return override ? { ...entry, ...override } : entry;
 }
 
+/** The stages each process offers AT ALL — the one table the picker, the manifest and the
+ * catalog tests read. CP has no cook, so no after-cook stage; LS has no top: a bottle has
+ * no surface to decorate, and the LS text rules the decorative additives out (LS:3067).
+ * HP and LS's after-cook stage is the same fact processOffers(p, 'afterCookStage') states
+ * on the web side — a test pins the two together. */
+export const PROCESS_STAGES: Record<AdditiveProcess, readonly AdditiveStage[]> = {
+  cp: ['lye', 'oils', 'trace', 'top'],
+  hp: ['lye', 'oils', 'trace', 'top', 'after_cook'],
+  ls: ['lye', 'oils', 'trace', 'after_cook'],
+};
+
+/** The stages an entry may be dosed at in `process`: its own (per-process) list where it
+ * has one, intersected with what the process offers; the whole offer where it has none.
+ * Never wider than the process — an inherited bar list cannot put Top into liquid soap. */
+export function effectiveStages(entry: AdditiveCatalogEntry, process: AdditiveProcess): AdditiveStage[] {
+  const offered = PROCESS_STAGES[process];
+  const own = effectiveCatalogEntry(entry, process).stages;
+  return own ? offered.filter((stage) => own.includes(stage)) : [...offered];
+}
+
 /** A one-press starting set: WHAT and HOW MUCH, never WHEN — each line is staged by the
- * catalog's own per-process default at apply time (see LATHER_SUPPORT_PACK). `processes`
- * absent = offered everywhere. `percentOfOil` is in the entry's own dose unit: eugenol's
- * catalog unit is parts-per-thousand, so its figure below is ppt, exactly as the panel
- * seeds it. */
+ * catalog's own per-process default at apply time (see the lather pack's note). `processes`
+ * absent = offered everywhere (isAdditivePackOfferedFor — the same rule as entries and
+ * liquids). `percentOfOil` is in the entry's own dose unit: eugenol's catalog unit is
+ * parts-per-thousand, so its figure below is ppt, exactly as the panel seeds it. */
 export type AdditivePack = {
   id: 'lather' | 'fluid-hp' | 'hard-bar';
   label: string;
@@ -881,7 +898,21 @@ export type AdditivePack = {
 };
 
 export const ADDITIVE_PACKS: readonly AdditivePack[] = [
-  { id: 'lather', label: 'Lather support pack', items: LATHER_SUPPORT_PACK },
+  {
+    // The lather set names WHAT and HOW MUCH and deliberately NOT a stage: each ingredient
+    // is staged by its own per-process default at apply time. It once carried a hardcoded
+    // stage per item that happened to equal the CP default of the day, so it agreed with
+    // the catalog in cold process and quietly disagreed wherever an override existed —
+    // the one path that bypassed the per-process audit. 1% clears every process's typical
+    // range for all three (LS: sugar 1–6, chelator 1–2, cetyl alcohol 1–3).
+    id: 'lather',
+    label: 'Lather support pack',
+    items: [
+      { catalogId: 'sugar-sorbitol', percentOfOil: 1 },
+      { catalogId: 'chelator', percentOfOil: 1 },
+      { catalogId: 'cetyl-alcohol', percentOfOil: 1 },
+    ],
+  },
   {
     // The HP book's fluidity set: sodium lactate 3-4% after a thick trace (HP:9411-9414),
     // sugar 1-5% (HP:9543), yogurt 2-5% after the cook (HP:9478), eugenol 1-3 ppt into the
@@ -908,6 +939,16 @@ export const ADDITIVE_PACKS: readonly AdditivePack[] = [
     ],
   },
 ];
+
+/** Same "absent = everywhere" rule as isAdditiveOfferedFor / isAlternativeLiquidOfferedFor. */
+export function isAdditivePackOfferedFor(pack: AdditivePack, process: AdditiveProcess): boolean {
+  return !pack.processes || pack.processes.includes(process);
+}
+
+export function packsForProcess(process: AdditiveProcess): AdditivePack[] {
+  return ADDITIVE_PACKS.filter((pack) => isAdditivePackOfferedFor(pack, process));
+}
+
 
 /** Grams from % of total oil weight. Returns null when percent is invalid.
  * Thin alias over gramsFromDose (percent unit) — single source of truth for the math.

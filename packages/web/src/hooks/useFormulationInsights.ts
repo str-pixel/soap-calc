@@ -106,9 +106,11 @@ export function sugarTotalPercentForInsights(
   excludeYogurt = false,
 ): number {
   if (totalOilGrams <= 0) return 0;
+  // Milk powder is milk sugars (it carries the sugars hazard for that reason), so it
+  // counts here like honey does.
   const keywords = excludeYogurt
-    ? ['sugar', 'sorbitol', 'honey']
-    : ['sugar', 'sorbitol', 'honey', 'yogurt'];
+    ? ['sugar', 'sorbitol', 'honey', 'milk powder']
+    : ['sugar', 'sorbitol', 'honey', 'milk powder', 'yogurt'];
   return additives
     .filter((item) => keywords.some((keyword) => additiveMatches([item], keyword, keyword)))
     .reduce((sum, item) => sum + (item.grams / totalOilGrams) * 100, 0);
@@ -205,6 +207,7 @@ export function useFormulationInsights(
       (additiveMatches(additiveEntries, 'sugar', 'sugar') ||
         additiveMatches(additiveEntries, 'sorbitol', 'sorbitol') ||
         additiveMatches(additiveEntries, 'honey', 'honey') ||
+        additiveMatches(additiveEntries, 'milk-powder', 'milk powder') ||
         additiveMatches(additiveEntries, 'yogurt', 'yogurt'));
     const traceSpeed = traceSpeedApplicable
       ? estimateTraceSpeed({
