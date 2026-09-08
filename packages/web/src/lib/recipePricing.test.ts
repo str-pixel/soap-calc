@@ -193,7 +193,7 @@ describe('the Fragrance & colorants section is priced', () => {
     const built = buildRecipePricingContext({
       lines: [], computedAdditives: [], lyeGrams: 0, batchWeightWithExtras: 1000, splitLiquids: [], postCookSuperfat: null, scentColor: scent,
     });
-    const scentRows = built.additives.filter((a) => a.group === 'scent');
+    const scentRows = built.additives.filter((a) => a.group === 'fragrance' || a.group === 'colorant');
     expect(scentRows.map((a) => [a.catalogId, a.grams])).toEqual([
       ['fragrance:name:rose absolute', 30],
       ['vanilla-stabilizer', 30],
@@ -212,7 +212,7 @@ describe('the Fragrance & colorants section is priced', () => {
     const built = buildRecipePricingContext({
       lines: [], computedAdditives: [], lyeGrams: 0, batchWeightWithExtras: 3000, splitLiquids: [], postCookSuperfat: null, scentColor: scent,
     });
-    expect(built.additives.filter((a) => a.group === 'scent').map((a) => [a.catalogId, a.grams])).toEqual([
+    expect(built.additives.filter((a) => a.group === 'fragrance' || a.group === 'colorant').map((a) => [a.catalogId, a.grams])).toEqual([
       ['fragrance:name:lemon', 30],
       ['polysorbate-20', 30],
     ]);

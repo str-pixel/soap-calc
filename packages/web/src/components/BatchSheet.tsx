@@ -480,9 +480,9 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         </section>
       )}
 
-      {(scentFragranceRows.length > 0 || scentColorantRows.length > 0) && (
+      {scentFragranceRows.length > 0 && (
         <section className="batch-sheet__section">
-          <h2>Fragrance &amp; colorants</h2>
+          <h2>Fragrance</h2>
           <ul className="batch-sheet__list">
             {scentFragranceRows.map((f) => (
               <li key={f.key}>
@@ -495,6 +495,19 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
                 {item.name} — {item.detail}, mixed into the fragrance first
               </li>
             ))}
+          </ul>
+          {scentSupplement.label && (
+            <p className="batch-sheet__note">
+              {scentSupplement.label.name}: {scentSupplement.label.detail}
+            </p>
+          )}
+        </section>
+      )}
+
+      {scentColorantRows.length > 0 && (
+        <section className="batch-sheet__section">
+          <h2>Colorants</h2>
+          <ul className="batch-sheet__list">
             {scentColorantRows.map((c) => (
               <li key={c.key}>
                 {c.name.trim() || 'Colorant'}
@@ -503,11 +516,6 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               </li>
             ))}
           </ul>
-          {scentSupplement.label && (
-            <p className="batch-sheet__note">
-              {scentSupplement.label.name}: {scentSupplement.label.detail}
-            </p>
-          )}
         </section>
       )}
 

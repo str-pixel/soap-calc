@@ -153,7 +153,7 @@ describe('migrateSavedScent — the one loader for drafts and files', () => {
   });
   it('the notice names the move, and the re-entry when a dose could not be carried', () => {
     expect(scentMigrationNotice({ fragrancesMoved: 0, dosesDropped: 0 })).toBe('');
-    expect(scentMigrationNotice({ fragrancesMoved: 1, dosesDropped: 0 })).toBe(' — fragrance moved to Fragrance & colorants');
-    expect(scentMigrationNotice({ fragrancesMoved: 2, dosesDropped: 1 })).toMatch(/fragrances moved to Fragrance & colorants — re-enter its dose there/);
+    expect(scentMigrationNotice({ fragrancesMoved: 1, dosesDropped: 0 })).toBe(' — fragrance moved to the Fragrance section');
+    expect(scentMigrationNotice({ fragrancesMoved: 2, dosesDropped: 1 })).toMatch(/fragrances moved to the Fragrance section — re-enter its dose there/);
   });
 });

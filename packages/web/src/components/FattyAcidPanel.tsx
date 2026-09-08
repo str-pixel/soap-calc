@@ -69,7 +69,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
   if (!result.profile) {
     return (
       <section className="panel">
-        <h2 className="panel__title"><span className="panel__num" aria-hidden="true">08</span>Fatty acid profile</h2>
+        <h2 className="panel__title"><span className="panel__num" aria-hidden="true">09</span>Fatty acid profile</h2>
         <p className="results-hint">
           Add triglyceride oils with fatty-acid data to see recipe totals.
         </p>
@@ -124,7 +124,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           name that keeps the two "Bars" tabs on this page apart — every page-level
           locator must scope through the tablist name, never the bare tab. */}
       <div className="panel__head">
-        <h2 className="panel__title"><span className="panel__num" aria-hidden="true">08</span>Fatty acid profile</h2>
+        <h2 className="panel__title"><span className="panel__num" aria-hidden="true">09</span>Fatty acid profile</h2>
         <div
           className="property-view-toggle property-view-toggle--compact"
           role="tablist"

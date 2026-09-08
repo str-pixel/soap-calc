@@ -3625,7 +3625,7 @@ details[open] > .disclosure__summary::before {
   margin: 0.5rem 0 0;
 }
 
-/* Fragrance & colorants: the allergen declarations fold under each fragrance row. */
+/* Fragrance: the allergen declarations fold under each fragrance row. */
 .scent-list__allergens { grid-column: 1 / -1; }
 .scent-list__allergens summary { cursor: pointer; font-size: 0.8rem; color: var(--label); }
 .scent-list__allergen { display: grid; grid-template-columns: 1fr 8rem auto; gap: 0.4rem; margin-top: 0.4rem; }

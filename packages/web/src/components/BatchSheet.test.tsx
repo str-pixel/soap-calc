@@ -1544,7 +1544,7 @@ test('the printed oils table lists heaviest first, like the on-screen Full recip
   expect(weights).toEqual(['450 g', '300 g', '250 g']);
 });
 
-describe('the printed sheet carries the Fragrance & colorants section', () => {
+describe('the printed sheet carries the Fragrance and Colorants sections', () => {
   it('lists each fragrance and colour with its stage, the stabilizer, and the label line', () => {
     const scent = computedScent({
           fragrances: [{ name: 'Vanilla dream', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
@@ -1552,7 +1552,8 @@ describe('the printed sheet carries the Fragrance & colorants section', () => {
           portions: [{ name: 'Swirl', percent: '40' }],
         }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
     render(<BatchSheet data={{ ...cpSheetData({}), scentColor: scent }} />);
-    expect(screen.getByText('Fragrance & colorants', { selector: 'h2' })).toBeTruthy();
+    expect(screen.getByText('Fragrance', { selector: 'h2' })).toBeTruthy();
+    expect(screen.getByText('Colorants', { selector: 'h2' })).toBeTruthy();
     expect(screen.getByText(/Vanilla dream — 30 g · 3% of oils \(At trace\)/)).toBeTruthy();
     expect(screen.getByText(/Vanilla stabilizer — 30 g/)).toBeTruthy();
     expect(screen.getByText(/Blue mica \(Swirl 40%\) — 4 g · 1% · Mix 1:1 with a light carrier oil \(4 g\) \(At trace\)/)).toBeTruthy();
@@ -1566,7 +1567,8 @@ describe('the printed sheet carries the Fragrance & colorants section', () => {
 
   it('prints nothing for the section when it is empty, or when its only rows are blank forms', () => {
     render(<BatchSheet data={cpSheetData({})} />);
-    expect(screen.queryByText('Fragrance & colorants', { selector: 'h2' })).toBeNull();
+    expect(screen.queryByText('Fragrance', { selector: 'h2' })).toBeNull();
+    expect(screen.queryByText('Colorants', { selector: 'h2' })).toBeNull();
     cleanup();
     const blank = computedScent({
           fragrances: [{ name: '', kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
@@ -1574,6 +1576,7 @@ describe('the printed sheet carries the Fragrance & colorants section', () => {
           portions: [],
         }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
     render(<BatchSheet data={{ ...cpSheetData({}), scentColor: blank }} />);
-    expect(screen.queryByText('Fragrance & colorants', { selector: 'h2' })).toBeNull();
+    expect(screen.queryByText('Fragrance', { selector: 'h2' })).toBeNull();
+    expect(screen.queryByText('Colorants', { selector: 'h2' })).toBeNull();
   });
 });

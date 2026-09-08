@@ -83,11 +83,16 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
         symbol,
       );
 
-  // One pass splits the rows; one helper renders both groups, so the price row can never
-  // drift between plain additives and the Fragrance & colorants group.
-  const scentRows: RecipePricingContext['additives'] = [];
+  // One pass splits the rows; one helper renders every group, so the price row can never
+  // drift between plain additives and the scent groups.
+  const fragranceRows: RecipePricingContext['additives'] = [];
+  const colorantRows: RecipePricingContext['additives'] = [];
   const plainRows: RecipePricingContext['additives'] = [];
-  for (const a of context.additives) (a.group === 'scent' ? scentRows : plainRows).push(a);
+  for (const a of context.additives) {
+    if (a.group === 'fragrance') fragranceRows.push(a);
+    else if (a.group === 'colorant') colorantRows.push(a);
+    else plainRows.push(a);
+  }
   const additiveRow = (a: RecipePricingContext['additives'][number]) => {
     const key = additivePriceKey(a);
     const shown = additivePriceEntry(profile, a);
@@ -121,10 +126,16 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
           </div>,
         )}
         {plainRows.map(additiveRow)}
-        {scentRows.length > 0 && (
+        {fragranceRows.length > 0 && (
           <>
-            <div className="results-recipe__heading" aria-hidden="true">Fragrance &amp; colorants</div>
-            {scentRows.map(additiveRow)}
+            <div className="results-recipe__heading" aria-hidden="true">Fragrance</div>
+            {fragranceRows.map(additiveRow)}
+          </>
+        )}
+        {colorantRows.length > 0 && (
+          <>
+            <div className="results-recipe__heading" aria-hidden="true">Colorants</div>
+            {colorantRows.map(additiveRow)}
           </>
         )}
         {priceRow('Lye', context.lyeGrams, profile.lyePrice, (patch) =>

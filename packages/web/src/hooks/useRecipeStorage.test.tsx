@@ -96,7 +96,7 @@ describe('useRecipeStorage process', () => {
     }));
     const { result } = renderHook(() => useRecipeStorage());
     expect(result.current.scentColor.fragrances[0]).toMatchObject({ name: 'Lavender FO', percent: '' });
-    expect(result.current.saveMessage).toMatch(/fragrance moved to Fragrance & colorants — re-enter its dose/);
+    expect(result.current.saveMessage).toMatch(/fragrance moved to the Fragrance section — re-enter its dose/);
     // Written back at once: the slot no longer carries the additive line, so the notice
     // cannot repeat on the next load.
     const stored = JSON.parse(localStorage.getItem('soap-calc:draft:cp')!);
@@ -105,7 +105,7 @@ describe('useRecipeStorage process', () => {
     expect(stored.scentColor.fragrances[0].name).toBe('Lavender FO');
   });
 
-  it('importing a v2 file with a fragrance additive lands it in the Fragrance & colorants section', async () => {
+  it('importing a v2 file with a fragrance additive lands it in the Fragrance section', async () => {
     const raw = JSON.stringify({
       version: 2, process: 'cp', name: 'legacy', exportedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS,
       lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
@@ -119,7 +119,7 @@ describe('useRecipeStorage process', () => {
     });
     expect(result.current.additives).toEqual([]);
     expect(result.current.scentColor.fragrances[0]).toMatchObject({ name: 'Lavender FO', percent: '3' });
-    expect(result.current.saveMessage).toMatch(/fragrance moved to Fragrance & colorants/);
+    expect(result.current.saveMessage).toMatch(/fragrance moved to the Fragrance section/);
     // and the persisted draft agrees
     expect(loadDraft('cp')?.scentColor.fragrances[0].name).toBe('Lavender FO');
   });

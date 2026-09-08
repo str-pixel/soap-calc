@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
-import { FragranceColorantsPanel } from './components/FragranceColorantsPanel';
+import { FragrancePanel } from './components/FragrancePanel';
+import { ColorantsPanel } from './components/ColorantsPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
 import { DilutionPanel, type DilutionScope } from './components/DilutionPanel';
@@ -716,7 +717,15 @@ export default function App() {
               onChange={setAdditives}
             />
 
-            <FragranceColorantsPanel
+            <FragrancePanel
+              scent={scentColor}
+              computed={vm.scentColor}
+              process={process}
+              weightUnit={weightUnit}
+              onChange={setScentColor}
+            />
+
+            <ColorantsPanel
               scent={scentColor}
               computed={vm.scentColor}
               process={process}

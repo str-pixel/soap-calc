@@ -212,5 +212,5 @@ export function scentMigrationNotice(m: { fragrancesMoved: number; dosesDropped:
   if (m.fragrancesMoved === 0) return '';
   const moved = m.fragrancesMoved === 1 ? 'fragrance moved' : 'fragrances moved';
   const dose = m.dosesDropped > 0 ? ' — re-enter its dose there, the old figure was on another basis' : '';
-  return ` — ${moved} to Fragrance & colorants${dose}`;
+  return ` — ${moved} to the Fragrance section${dose}`;
 }

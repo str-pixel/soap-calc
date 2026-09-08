@@ -6,9 +6,9 @@ import type { ComputedScentColor } from './computeScentColor';
 
 export interface RecipePricingContext {
   oilLines: Array<{ key: string; oilId: string; grams: number; name: string }>;
-  /** `group` sorts the panel's rows: the Fragrance & colorants section prices under its
-   * own heading; absent means a plain additive (or split liquid). */
-  additives: Array<{ key: string; catalogId: string; name: string; grams: number; group?: 'additive' | 'scent' }>;
+  /** `group` sorts the panel's rows: the Fragrance and Colorants sections each price under
+   * their own heading; absent means a plain additive (or split liquid). */
+  additives: Array<{ key: string; catalogId: string; name: string; grams: number; group?: 'additive' | 'fragrance' | 'colorant' }>;
   lyeGrams: number;
   totalBatchGrams: number;
 }
@@ -158,20 +158,20 @@ export function buildRecipePricingContext(src: RecipePricingSource): RecipePrici
   if (scent) {
     for (const f of scent.fragrances) {
       if (f.grams <= 0) continue;
-      additives.push({ key: `fragrance-${f.key}`, catalogId: scentPriceKey(FRAGRANCE_PRICE_PREFIX, f.name), name: f.name.trim() || 'Fragrance', grams: f.grams, group: 'scent' });
+      additives.push({ key: `fragrance-${f.key}`, catalogId: scentPriceKey(FRAGRANCE_PRICE_PREFIX, f.name), name: f.name.trim() || 'Fragrance', grams: f.grams, group: 'fragrance' });
     }
     if (scent.stabilizerGrams > 0) {
-      additives.push({ key: 'vanilla-stabilizer', catalogId: 'vanilla-stabilizer', name: 'Vanilla stabilizer', grams: scent.stabilizerGrams, group: 'scent' });
+      additives.push({ key: 'vanilla-stabilizer', catalogId: 'vanilla-stabilizer', name: 'Vanilla stabilizer', grams: scent.stabilizerGrams, group: 'fragrance' });
     }
     if (scent.polysorbateGrams > 0) {
-      additives.push({ key: 'polysorbate-20', catalogId: 'polysorbate-20', name: 'Polysorbate 20', grams: scent.polysorbateGrams, group: 'scent' });
+      additives.push({ key: 'polysorbate-20', catalogId: 'polysorbate-20', name: 'Polysorbate 20', grams: scent.polysorbateGrams, group: 'fragrance' });
     }
     for (const c of scent.colorants) {
       if (c.grams === null || c.grams <= 0) continue;
-      additives.push({ key: `colorant-${c.key}`, catalogId: scentPriceKey(COLORANT_PRICE_PREFIX, c.name), name: c.name.trim() || 'Colorant', grams: c.grams, group: 'scent' });
+      additives.push({ key: `colorant-${c.key}`, catalogId: scentPriceKey(COLORANT_PRICE_PREFIX, c.name), name: c.name.trim() || 'Colorant', grams: c.grams, group: 'colorant' });
     }
     if (scent.carrierOilGrams > 0) {
-      additives.push({ key: 'carrier-oil', catalogId: 'carrier-oil', name: 'Carrier oil (colorants)', grams: scent.carrierOilGrams, group: 'scent' });
+      additives.push({ key: 'carrier-oil', catalogId: 'carrier-oil', name: 'Carrier oil (colorants)', grams: scent.carrierOilGrams, group: 'colorant' });
     }
   }
   return {

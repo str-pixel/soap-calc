@@ -149,7 +149,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     return (
       <section className="panel panel--results" aria-live="polite">
         <h2 className="panel__title">
-          <span className="panel__num" aria-hidden="true">09</span>Results
+          <span className="panel__num" aria-hidden="true">10</span>Results
         </h2>
         <ul className="message-list message-list--error">
           {inputErrors.map((msg) => (
@@ -164,7 +164,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     return (
       <section className="panel panel--results" aria-live="polite">
         <h2 className="panel__title">
-          <span className="panel__num" aria-hidden="true">09</span>Results
+          <span className="panel__num" aria-hidden="true">10</span>Results
         </h2>
         <p className="results-hint">Enter oil weights to calculate lye and water.</p>
       </section>
@@ -206,8 +206,11 @@ export const ResultsPanel = memo(function ResultsPanel({
     additiveGrams > 0 ? 'additives' : null,
     splitLiquidGrams ? 'alternative liquid' : null,
     postCookSuperfat?.isExtra ? 'post-cook superfat' : null,
-    // Fragrance, stabilizer, polysorbate, colorant and carrier oil — real mass in extrasGrams.
-    scentColor && scentColor.extrasGrams > 0 ? 'fragrance & colorants' : null,
+    // Real mass in extrasGrams, named by the section it was entered in.
+    scentColor && scentColor.fragranceGrams + scentColor.stabilizerGrams + scentColor.polysorbateGrams > 0
+      ? 'fragrance'
+      : null,
+    scentColor && scentColor.colorantGrams + scentColor.carrierOilGrams > 0 ? 'colorants' : null,
   ].filter((x): x is string => x !== null);
   const extrasNoteText = joinNames(extrasNote);
   const batchWeight = batchWeightBreakdown({
@@ -259,7 +262,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   return (
     <section className="panel panel--results" aria-live="polite">
       <h2 className="panel__title">
-        <span className="panel__num" aria-hidden="true">09</span>Results
+        <span className="panel__num" aria-hidden="true">10</span>Results
       </h2>
 
       {hasLineErrors && (

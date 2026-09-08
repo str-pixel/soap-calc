@@ -561,7 +561,21 @@ test.describe('fragrance & colorants', () => {
     page
       .locator('.results-recipe__section')
       .filter({ has: page.locator('.results-recipe__heading', { hasText: heading }) });
-  const panel = (page: Page) => page.locator('.panel', { has: page.locator('h2', { hasText: 'Fragrance & colorants' }) });
+  // Two panels now, each located by its own exact heading — '06 Fragrance' and
+  // '07 Colorants' — so a locator cannot silently match the other one.
+  const fragrancePanel = (page: Page) =>
+    page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /^06Fragrance$/ }) });
+  const colorantsPanel = (page: Page) =>
+    page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /^07Colorants$/ }) });
+
+  test('the two sections are separate panels, each with only its own controls', async ({ page }) => {
+    await expect(fragrancePanel(page)).toHaveCount(1);
+    await expect(colorantsPanel(page)).toHaveCount(1);
+    await expect(fragrancePanel(page).getByRole('button', { name: /add colorant/i })).toHaveCount(0);
+    await expect(colorantsPanel(page).getByRole('button', { name: /add fragrance/i })).toHaveCount(0);
+    await expect(fragrancePanel(page).getByRole('button', { name: /add fragrance/i })).toHaveCount(1);
+    await expect(colorantsPanel(page).getByRole('button', { name: /add colorant/i })).toHaveCount(1);
+  });
 
   test('CP: a vanillin fragrance with an allergen and a portion colour land in the Full recipe', async ({ page }) => {
     await page.getByRole('button', { name: /add fragrance/i }).click();
@@ -569,7 +583,7 @@ test.describe('fragrance & colorants', () => {
     await page.getByLabel(/Vanilla dream % of oils/).fill('3');
     await page.getByLabel(/Vanilla dream supplier max/).fill('5');
     await page.getByLabel(/Vanilla dream vanillin/).fill('12');
-    await panel(page).getByText(/Allergens \(0\)/).click();
+    await fragrancePanel(page).getByText(/Allergens \(0\)/).click();
     await page.getByRole('button', { name: /add allergen/i }).click();
     await page.getByLabel('Allergen name').fill('Linalool');
     await page.getByLabel('Allergen % of fragrance').fill('12');
@@ -585,11 +599,13 @@ test.describe('fragrance & colorants', () => {
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla dream/);
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla stabilizer/);
     await expect(section(page, 'Fragrance')).toContainText(/Linalool/);
-    // The panel states the stage and the finished-bar share; it survives a reload.
-    await expect(panel(page)).toContainText('At trace');
-    await expect(panel(page)).toContainText(/of the finished bar/);
+    // Each panel states its own row's stage and reading; both survive a reload.
+    await expect(fragrancePanel(page)).toContainText('At trace');
+    await expect(fragrancePanel(page)).toContainText(/of the finished bar/);
+    await expect(colorantsPanel(page)).toContainText('At trace');
     await page.reload();
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla dream/);
+    await expect(page.getByLabel('Colorant name')).toHaveValue('Blue mica');
   });
 
   test('HP: the fragrance is filed after the cook', async ({ page }) => {
@@ -597,13 +613,13 @@ test.describe('fragrance & colorants', () => {
     await page.getByRole('button', { name: /add fragrance/i }).click();
     await page.getByLabel(/^Fragrance % of oils/).fill('3');
     await expect(section(page, 'Fragrance')).toBeVisible();
-    await expect(panel(page)).toContainText('After cook');
+    await expect(fragrancePanel(page)).toContainText('After cook');
   });
 
   test('LS: the dose is a % of solution, a dye goes in after dilution, and there is no batter to split', async ({ page }) => {
     await processTab(page, /Liquid soap/).click();
     await page.getByRole('button', { name: /add colorant/i }).click();
-    await expect(panel(page)).toContainText('After dilution');
+    await expect(colorantsPanel(page)).toContainText('After dilution');
     await page.getByRole('button', { name: /add fragrance/i }).click();
     await expect(page.getByLabel(/^Fragrance % of solution/)).toBeVisible();
     await expect(page.getByRole('button', { name: /split the batter/i })).toHaveCount(0);

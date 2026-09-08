@@ -75,6 +75,13 @@ const EMPTY_COMPUTED: ComputedScentColor = emptyComputedScentColor();
 
 const positiveOrNull = (n: number | null): number | null => (n !== null && n > 0 ? n : null);
 
+/** What the compliance shares are shares OF, in words — the Fragrance panel's note and any
+ * other surface that quotes a share name it the same way. */
+export function productNoun(process: ProcessId, basis: ComputedScentColor['productBasis']): string {
+  if (basis === 'batch') return 'raw batch';
+  return process === 'ls' ? 'finished solution' : 'finished bar';
+}
+
 /** Pass 1 — everything that depends only on the oils/solution. The finished-product
  * figures need the batch weight this pass feeds, so they come in pass 2. */
 export function computeScentColorGrams(
