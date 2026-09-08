@@ -36,18 +36,21 @@ export type ComputedFragrance = {
 export type ComputedColorant = {
   key: string; name: string; kind: ColorantKind; percent: number | null; grams: number | null;
   portionKey: string; portionName: string; portionPercent: number | null;
+  /** Linked to a portion that has no usable share yet — the typed dose cannot be sized. */
+  portionShareMissing: boolean;
   stage: AdditiveStage; dispersal: ColorantDispersal;
 };
 export type ComputedScentColor = {
   fragrances: ComputedFragrance[];
   colorants: ComputedColorant[];
   portions: Array<{ key: string; name: string; percent: number | null }>;
+  /** core portionsTotalPercent — the printed total and the over-100 verdict from ONE sum. */
+  portionsTotalPercent: number;
   portionsOver100: boolean;
   fragranceGrams: number; stabilizerGrams: number; polysorbateGrams: number; colorantGrams: number; carrierOilGrams: number;
   extrasGrams: number;
   carrierSuperfatShiftPercent: number;
   labelAllergens: LabelAllergen[];
-  productGrams: number | null;
   productBasis: 'label' | 'solution' | 'batch' | null;
 };
 
@@ -60,9 +63,9 @@ export function fragranceStageFor(process: ProcessId): AdditiveStage {
 /** An empty section, fully computed — for fixtures and any caller with no scent state. */
 export function emptyComputedScentColor(): ComputedScentColor {
   return {
-    fragrances: [], colorants: [], portions: [], portionsOver100: false,
+    fragrances: [], colorants: [], portions: [], portionsTotalPercent: 0, portionsOver100: false,
     fragranceGrams: 0, stabilizerGrams: 0, polysorbateGrams: 0, colorantGrams: 0, carrierOilGrams: 0,
-    extrasGrams: 0, carrierSuperfatShiftPercent: 0, labelAllergens: [], productGrams: null, productBasis: null,
+    extrasGrams: 0, carrierSuperfatShiftPercent: 0, labelAllergens: [], productBasis: null,
   };
 }
 
@@ -70,13 +73,15 @@ export function emptyComputedScentColor(): ComputedScentColor {
  * returns this by identity, so nothing downstream re-renders for a section with no rows. */
 const EMPTY_COMPUTED: ComputedScentColor = emptyComputedScentColor();
 
+const positiveOrNull = (n: number | null): number | null => (n !== null && n > 0 ? n : null);
+
 /** Pass 1 — everything that depends only on the oils/solution. The finished-product
  * figures need the batch weight this pass feeds, so they come in pass 2. */
 export function computeScentColorGrams(
   scent: ScentColor,
   ctx: { process: ProcessId; totalOilGrams: number; solutionGrams: number; deliveredSuperfatPercent: number | null },
 ): ComputedScentColor {
-  if (scent.fragrances.length === 0 && scent.colorants.length === 0) return EMPTY_COMPUTED;
+  if (scent.fragrances.length === 0 && scent.colorants.length === 0 && scent.portions.length === 0) return EMPTY_COMPUTED;
   const { process, totalOilGrams, solutionGrams, deliveredSuperfatPercent } = ctx;
   const basisGrams = process === 'ls' ? solutionGrams : totalOilGrams;
   const stage = fragranceStageFor(process);
@@ -91,7 +96,9 @@ export function computeScentColorGrams(
       stabilizerGrams: vanillaStabilizerGrams(grams, vanillin),
       allergens: f.allergens.map((a) => ({ name: a.name, percentOfFragrance: parsePercentOfOil(a.percentOfFragrance) })),
       polysorbateGrams: process === 'ls' ? polysorbate20Grams(grams, deliveredSuperfatPercent) : 0,
-      supplierMaxPercent: parsePercentOfOil(f.supplierMaxPercent),
+      // 0 is "no rate" (core fragranceOverSupplierMax says so): read it as unentered, so the
+      // prompt fires instead of every check going quiet.
+      supplierMaxPercent: positiveOrNull(parsePercentOfOil(f.supplierMaxPercent)),
       shareOfProduct: 0,
       overSupplierMax: false,
     };
@@ -119,10 +126,12 @@ export function computeScentColorGrams(
     return {
       key: c.key, name: c.name, kind: c.kind, percent, grams,
       portionKey: portion?.key ?? '', portionName: portion?.name ?? '', portionPercent: portion?.percent ?? null,
+      portionShareMissing: portion !== undefined && portion.percent === null && percent !== null,
       stage: colorantStage(process, portion !== undefined),
       dispersal: colorantDispersal(process, grams, portion !== undefined),
     };
   });
+  const portionTotal = portionsTotalPercent(portions);
   const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
   const fragranceTotal = sum(fragrances.map((f) => f.grams));
   const stabilizerGrams = sum(fragrances.map((f) => f.stabilizerGrams));
@@ -131,12 +140,12 @@ export function computeScentColorGrams(
   const carrierOilGrams = sum(colorants.map((c) => (c.dispersal.method === 'carrier-oil' ? c.dispersal.carrierGrams ?? 0 : 0)));
   return {
     fragrances, colorants, portions,
-    portionsOver100: portionsTotalPercent(portions).over100,
+    portionsTotalPercent: portionTotal.total,
+    portionsOver100: portionTotal.over100,
     fragranceGrams: fragranceTotal, stabilizerGrams, polysorbateGrams, colorantGrams: colorantTotal, carrierOilGrams,
     extrasGrams: fragranceTotal + stabilizerGrams + polysorbateGrams + colorantTotal + carrierOilGrams,
     carrierSuperfatShiftPercent: carrierOilSuperfatShift(carrierOilGrams, totalOilGrams),
     labelAllergens: [],
-    productGrams: null,
     productBasis: null,
   };
 }
@@ -160,5 +169,5 @@ export function applyScentColorCompliance(
     )),
     product,
   );
-  return { ...computed, fragrances, productGrams: product, productBasis, labelAllergens };
+  return { ...computed, fragrances, productBasis, labelAllergens };
 }

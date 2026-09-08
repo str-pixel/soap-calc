@@ -1,6 +1,6 @@
 // packages/web/src/lib/scentColor.ts
 import { MAX_ADDITIVE_NAME_LENGTH, type ColorantKind, type FragranceKind } from '@soap-calc/core';
-import { newAdditiveKey } from './recipe';
+import { isRecord, newAdditiveKey } from './recipe';
 import type { ProcessId } from './process';
 
 export type AllergenLine = { key: string; name: string; percentOfFragrance: string };
@@ -68,7 +68,6 @@ export function newPortion(): Portion {
   return { key: newAdditiveKey(), name: '', percent: '' };
 }
 
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const name = (v: unknown): string => str(v).slice(0, MAX_NAME_LENGTH);
 
@@ -81,12 +80,6 @@ function percentString(v: unknown): string {
   return Number.isFinite(n) && n >= 0 ? s : '';
 }
 
-function clampPortionPercent(v: unknown): string {
-  const s = percentString(v);
-  if (s === '') return '';
-  const n = Number(s);
-  return n > 100 ? '100' : s;
-}
 
 export function normalizeScentColor(raw: unknown): ScentColor {
   if (!isRecord(raw) || !Array.isArray(raw.fragrances) || !Array.isArray(raw.colorants) || !Array.isArray(raw.portions)) {
@@ -99,7 +92,9 @@ export function normalizeScentColor(raw: unknown): ScentColor {
     if (!isRecord(p)) return [];
     const key = newAdditiveKey();
     portionKeyMap.set(`#${i}`, key);
-    return [{ key, name: name(p.name), percent: clampPortionPercent(p.percent) }];
+    // Kept as typed, even past 100: the compute step SHOWS an oversize share and flags it;
+    // a reload must not erase the maker's mistake and its warning together.
+    return [{ key, name: name(p.name), percent: percentString(p.percent) }];
   });
   const fragrances: FragranceLine[] = raw.fragrances.slice(0, MAX_SCENT_ROWS).flatMap((f) => {
     if (!isRecord(f)) return [];
@@ -144,8 +139,8 @@ export function scentColorToSaved(scent: ScentColor): SavedScentColor {
   };
 }
 
-export type LegacyFragranceMigration = {
-  additives: Array<Record<string, unknown>>;
+export type LegacyFragranceMigration<T> = {
+  additives: T[];
   fragrances: FragranceLine[];
   /** Fragrance lines whose number could NOT be carried (other basis, ppt, batch) — the
    * maker has to re-enter a dose and must be told so. */
@@ -161,27 +156,34 @@ export type LegacyFragranceMigration = {
  * empty dose rather than a silently re-based number (3% of oils re-read as 3% of an LS
  * solution would triple the dose). The stage is dropped: the section derives it.
  */
-export function extractLegacyFragrance(
-  rawAdditives: Array<Record<string, unknown>>,
+export function extractLegacyFragrance<T extends object>(
+  rawAdditives: readonly T[],
   process: ProcessId,
-): LegacyFragranceMigration {
+): LegacyFragranceMigration<T> {
   const fragrances: FragranceLine[] = [];
   let dosesDropped = 0;
   const sectionBasis = process === 'ls' ? 'solution' : 'oil';
-  const additives = rawAdditives.filter((line) => {
+  const additives = rawAdditives.filter((row) => {
+    const line = row as Record<string, unknown>;
     if (line.catalogId !== 'fragrance') return true;
-    const carriesPercent = line.unit === 'percent' && line.basis === sectionBasis;
-    const percent = carriesPercent ? percentString(line.amount) : '';
-    if (!carriesPercent && str(line.amount).trim() !== '') dosesDropped += 1;
+    // The same defaults normalizeAdditiveLine and parseAdditiveLine apply: a row saved
+    // before the basis/unit reshape (2026-07-11) carries `percentOfOil` and no basis or
+    // unit, and means percent of oil — so the draft path and the file path agree.
+    const basis = line.basis === 'batch' ? 'batch' : line.basis === 'solution' ? 'solution' : 'oil';
+    const unit = line.unit === 'ppt' ? 'ppt' : 'percent';
+    const amount = typeof line.amount === 'string' ? line.amount : typeof line.percentOfOil === 'string' ? line.percentOfOil : '';
+    const carriesPercent = unit === 'percent' && basis === sectionBasis;
+    const percent = carriesPercent ? percentString(amount) : '';
+    if (!carriesPercent && amount.trim() !== '') dosesDropped += 1;
     fragrances.push({ ...newFragranceLine(), name: name(line.name) || 'Fragrance', percent });
     return false;
   });
   return { additives, fragrances, dosesDropped };
 }
 
-export type SavedScentMigration = {
+export type SavedScentMigration<T> = {
   scentColor: ScentColor;
-  additives: Array<Record<string, unknown>>;
+  additives: T[];
   /** How many legacy fragrance lines moved into the section. */
   fragrancesMoved: number;
   dosesDropped: number;
@@ -192,8 +194,13 @@ export type SavedScentMigration = {
  * paths cannot disagree about what an old recipe contains: tolerant normalization of the
  * saved section, the legacy fragrance rows moved in ahead of it, the row cap re-applied.
  */
-export function migrateSavedScent(rawScent: unknown, rawAdditives: unknown, process: ProcessId): SavedScentMigration {
-  const rows = Array.isArray(rawAdditives) ? rawAdditives.filter(isRecord) : [];
+export function migrateSavedScent<T extends object>(
+  rawScent: unknown,
+  rawAdditives: readonly T[] | undefined,
+  process: ProcessId,
+): SavedScentMigration<T> {
+  // JSON can put anything in the field; the type says rows, the guard makes it so.
+  const rows = Array.isArray(rawAdditives) ? rawAdditives.filter((r): r is T => isRecord(r)) : [];
   const { additives, fragrances, dosesDropped } = extractLegacyFragrance(rows, process);
   const scentColor = normalizeScentColor(rawScent);
   if (fragrances.length) scentColor.fragrances = [...fragrances, ...scentColor.fragrances].slice(0, MAX_SCENT_ROWS);
@@ -201,7 +208,7 @@ export function migrateSavedScent(rawScent: unknown, rawAdditives: unknown, proc
 }
 
 /** The clause a load or import message appends when the migration moved something. */
-export function scentMigrationNotice(m: Pick<SavedScentMigration, 'fragrancesMoved' | 'dosesDropped'>): string {
+export function scentMigrationNotice(m: { fragrancesMoved: number; dosesDropped: number }): string {
   if (m.fragrancesMoved === 0) return '';
   const moved = m.fragrancesMoved === 1 ? 'fragrance moved' : 'fragrances moved';
   const dose = m.dosesDropped > 0 ? ' — re-enter its dose there, the old figure was on another basis' : '';

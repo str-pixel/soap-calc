@@ -174,7 +174,12 @@ export function useRecipeStorage() {
   useEffect(() => {
     const ws = initial.current?.ws;
     if (ws?.unreadable) flashSaveMessage(unreadableDraftMessage(ws.kept));
-    else if (ws?.scentNotice) flashSaveMessage(`Recipe updated${ws.scentNotice}.`);
+    else if (ws?.scentNotice) {
+      // Persist the migrated shape now: the autosave seeds the loaded state as clean, so
+      // without this the old draft stays on disk and the notice repeats every load.
+      saveDraft(initial.current!.process, ws.name, ws.lines, ws.settings, ws.additives, ws.scentColor);
+      flashSaveMessage(`Recipe updated${ws.scentNotice}.`);
+    }
   }, []);
 
   function flashSaveMessage(message: string) {
@@ -209,6 +214,7 @@ export function useRecipeStorage() {
     } else if (ws.unreadable) {
       flashSaveMessage(unreadableDraftMessage(ws.kept));
     } else if (ws.scentNotice) {
+      saveDraft(next, ws.name, ws.lines, ws.settings, ws.additives, ws.scentColor);
       flashSaveMessage(`Recipe updated${ws.scentNotice}.`);
     }
   }
@@ -262,9 +268,7 @@ export function useRecipeStorage() {
         // the draft path runs, on the parsed rows BEFORE recipeAdditivesFromFile →
         // normalizeAdditiveLine clears the unknown id.
         const migration = migrateSavedScent(parsed.data.scentColor, parsed.data.additives, nextProcess);
-        const importedAdditives = recipeAdditivesFromFile(
-          migration.additives as unknown as typeof parsed.data.additives,
-        );
+        const importedAdditives = recipeAdditivesFromFile(migration.additives);
         const importedScent = migration.scentColor;
         // Read the target slot BEFORE any of the import's writes can land on it (the
         // flush below hits the same slot on a same-process import; the imported save

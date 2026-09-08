@@ -120,6 +120,7 @@ Research notes and third-party coursebooks may inform **features and numeric def
 | Less water | water discount | Higher lye concentration; faster trace |
 | Milk/juice/puree at trace | split liquid, alternative liquid | Lye dissolved in minimum water; rest added later |
 | Additive dosing | % of oil weight | Same basis as fragrance “% of oils”; not PPO/teaspoons in new UI |
+| Colorant guidance | tsp per lb / per kg of oils, with the derived % | The one sanctioned volume figure (user ruling 2026-09-08): colorants have no sourced weight dose, so the guidance TEXT quotes the trade's volume range beside its derived %; the dose FIELD stays % of oil weight |
 | Legacy additive shorthand | PPO (per pound of oils) | Recognize in imports; prefer % of oil weight in UI |
 | Bar metrics | hardness, cleansing, conditioning, bubbly, creamy, longevity, INS, iodine | Fatty-acid weighted sums (common CP calculator convention) |
 | Optional guidance | formulation insights, recommended ranges | Heuristic hints, not errors |

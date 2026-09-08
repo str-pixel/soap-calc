@@ -3629,6 +3629,3 @@ details[open] > .disclosure__summary::before {
 .scent-list__allergens { grid-column: 1 / -1; }
 .scent-list__allergens summary { cursor: pointer; font-size: 0.8rem; color: var(--label); }
 .scent-list__allergen { display: grid; grid-template-columns: 1fr 8rem auto; gap: 0.4rem; margin-top: 0.4rem; }
-
-/* Pricing: the Fragrance & colorants rows sit under their own quiet heading. */
-.pricing-row--group { margin-top: 0.6rem; font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--label); }

@@ -984,6 +984,20 @@ export function useRecipeViewModel({
     () => splitLiquidRows.map(({ row, grams }) => ({ addAt: row.addAt, grams })),
     [splitLiquidRows],
   );
+  // The insights read four fields of the section; keying on the whole object would re-run
+  // every rule (and rebuild the batch sheet) on each keystroke in a colorant name. Same
+  // serialized-key discipline as pcsfOilsKey above.
+  const insightScentKey = JSON.stringify({
+    f: scentColorComputed.fragrances.map((f) => [f.name, f.percent, f.supplierMaxPercent, f.overSupplierMax, f.browning, f.caution]),
+    a: scentColorComputed.labelAllergens,
+    o: scentColorComputed.portionsOver100,
+    c: scentColorComputed.carrierSuperfatShiftPercent,
+  });
+  const insightScent = useMemo(
+    () => scentColorComputed,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by content, see above
+    [insightScentKey],
+  );
   const { insights } = useFormulationInsights(
     previewState.lines,
     previewSettings,
@@ -1018,7 +1032,7 @@ export function useRecipeViewModel({
           ({ row }) => isSolventLiquid(row.presetKey),
         ),
       soapingTempF,
-      scentColor: scentColorComputed,
+      scentColor: insightScent,
     },
   );
   const liveOilBatchFraction = useMemo(() => {

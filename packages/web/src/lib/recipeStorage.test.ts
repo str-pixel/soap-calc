@@ -498,7 +498,13 @@ describe('drafts carry the Fragrance & colorants section', () => {
     expect(loadDraft('cp')?.name).toBe('old');
   });
 
-  it('parks a draft whose additives field is not an array, as it did before the section existed', () => {
+  it('a null additives field reads as no additives (an older loader accepted it)', () => {
+    const raw = { version: 4, name: 'nul', updatedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS, lines: [{ oilId: 'olive-oil', weightGrams: '1000' }], additives: null };
+    localStorage.setItem('soap-calc:draft:cp', JSON.stringify(raw));
+    expect(loadDraft('cp')?.additives).toEqual([]);
+  });
+
+  it('parks a draft whose additives field is a non-null non-array', () => {
     const raw = { version: 4, name: 'corrupt', updatedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS, lines: [{ oilId: 'olive-oil', weightGrams: '1000' }], additives: 'oops' };
     localStorage.setItem('soap-calc:draft:cp', JSON.stringify(raw));
     const slot = loadDraftSlot('cp');

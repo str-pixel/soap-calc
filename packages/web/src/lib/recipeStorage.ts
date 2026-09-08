@@ -173,7 +173,7 @@ export type LoadedDraft = {
   additives: AdditiveLine[];
   scentColor: ScentColor;
   /** What the legacy-fragrance migration did on this load, so the caller can say so. */
-  scentMigration: Pick<SavedScentMigration, 'fragrancesMoved' | 'dosesDropped'>;
+  scentMigration: Pick<SavedScentMigration<SavedAdditiveLine>, 'fragrancesMoved' | 'dosesDropped'>;
   settings: RecipeSettings;
 };
 
@@ -204,21 +204,22 @@ export function loadDraftSlot(process: ProcessId): DraftSlot {
       // already held) THIS payload, and the message downstream picks its sentence by it.
       return { draft: null, unreadable: true, kept: backupUnreadableDraft(process, raw) };
     }
-    // A present-but-malformed additives field is corruption, not "no additives": throw
-    // into the catch below so the payload is parked, as it was before the section existed.
-    if (data.additives !== undefined && !Array.isArray(data.additives)) {
+    // A present, non-null, non-array additives field is corruption, not "no additives":
+    // throw into the catch below so the payload is parked. Null reads as none (an older
+    // loader accepted it), so a draft is never set aside for a field it can do without.
+    if (data.additives != null && !Array.isArray(data.additives)) {
       throw new Error('additives is not an array');
     }
     // The retired `fragrance` catalog entry migrates into the Fragrance & colorants
     // section. migrateSavedScent runs on the RAW rows: additivesFromSaved →
     // normalizeAdditiveLine would clear the unknown id and the fragrance would silently
     // become a nameless custom row.
-    const migration = migrateSavedScent(data.scentColor, data.additives, process);
+    const migration = migrateSavedScent(data.scentColor, data.additives ?? undefined, process);
     return {
       draft: {
         name: typeof data.name === 'string' && data.name ? data.name : 'Untitled recipe',
         lines: linesFromSaved(data.lines),
-        additives: additivesFromSaved(migration.additives as unknown as SavedAdditiveLine[]),
+        additives: additivesFromSaved(migration.additives),
         scentColor: migration.scentColor,
         scentMigration: { fragrancesMoved: migration.fragrancesMoved, dosesDropped: migration.dosesDropped },
         settings: migrateSettings(normalizeSettings(data.settings), data.version),

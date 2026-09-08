@@ -1,9 +1,9 @@
 // packages/web/src/components/FragranceColorantsPanel.tsx
 import { memo } from 'react';
-import { type ColorantKind, type FragranceKind } from '@soap-calc/core';
+import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT, type ColorantKind, type FragranceKind } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
-import { colorantGuidanceText, hpWaterText } from '../lib/colorantGuidance';
-import type { ComputedColorant, ComputedFragrance, ComputedScentColor } from '../lib/computeScentColor';
+import { colorantDispersalText, colorantGuidanceText } from '../lib/colorantGuidance';
+import type { ComputedFragrance, ComputedScentColor } from '../lib/computeScentColor';
 import { formatGrams } from '../lib/format';
 import { fragranceDoseLabel, labelAllergensDetail } from '../lib/recipeSummary';
 import type { ProcessId } from '../lib/process';
@@ -49,7 +49,7 @@ const PROCESS_COPY: Record<ProcessId, string> = {
    0.01% of a rinse-off product; Regulation (EU) 2023/1545 widens the list for products
    placed on the market from 31 July 2026 (sell-through to 31 July 2028). */
 const REGULATORY_COPY =
-  'EU labelling: a listed allergen above 0.01% of the finished soap must be named on the label — the wider list applies to products placed on the market from 31 July 2026. Your safety assessment (CPSR) needs the supplier\'s allergen declaration.';
+  `EU labelling: a listed allergen above ${ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT}% of the finished soap must be named on the label — the wider list applies to products placed on the market from 31 July 2026. Your safety assessment (CPSR) needs the supplier's allergen declaration.`;
 
 const productNoun = (process: ProcessId, basis: ComputedScentColor['productBasis']) =>
   basis === 'batch' ? 'raw batch' : process === 'ls' ? 'finished solution' : 'finished bar';
@@ -161,7 +161,7 @@ export const FragranceColorantsPanel = memo(function FragranceColorantsPanel({ s
             </li>
           ))}
           <li className="additive-list__foot">
-            Portions total {formatGrams(computed.portions.reduce((s, p) => s + (p.percent ?? 0), 0), 1)}%
+            Portions total {formatGrams(computed.portionsTotalPercent, 1)}%
             {computed.portionsOver100 && <strong> — over 100%: the portions cannot add up to more than the batter.</strong>}
           </li>
         </ul>
@@ -189,11 +189,11 @@ export const FragranceColorantsPanel = memo(function FragranceColorantsPanel({ s
                     </select>
                   </label>
                 )}
-                <div className="additive-list__grams">{c.grams !== null ? formatWeight(c.grams, weightUnit) : 'to shade'}</div>
+                <div className="additive-list__grams">{c.grams !== null ? formatWeight(c.grams, weightUnit) : c.portionShareMissing ? 'enter the portion\'s share' : 'to shade'}</div>
                 <div className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</div>
                 <p className="inline-note additive-list__hint">
                   {guidance && <>{guidance} </>}
-                  <DispersalLine c={c} unit={weightUnit} />
+                  {colorantDispersalText(c.dispersal, weightUnit)}.
                   {c.kind !== 'dye' && process === 'ls' && ' Micas and oxides settle in a liquid — shake before use.'}
                 </p>
               </li>
@@ -237,12 +237,3 @@ function FragranceNotes({ c, noun, unit }: { c: ComputedFragrance; noun: string;
   );
 }
 
-function DispersalLine({ c, unit }: { c: ComputedColorant; unit: WeightUnit }) {
-  const d = c.dispersal;
-  if (d.method === 'carrier-oil') {
-    return <>{d.carrierGrams !== null ? `Mix 1:1 with a light carrier oil (${formatWeight(d.carrierGrams, unit)}).` : 'Mix 1:1 with a light carrier oil.'}</>;
-  }
-  if (d.method === 'hot-sugar-water') return <>Disperse in {hpWaterText(unit)}.</>;
-  if (d.method === 'recipe-oil') return <>Stir straight into the warmed oils — no slurry for a single colour.</>;
-  return <>Dissolve in a little warm water.</>;
-}

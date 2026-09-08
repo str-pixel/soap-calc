@@ -112,6 +112,36 @@ describe('HP dispersal follows the stage', () => {
   });
 });
 
+describe('portions without colours still count', () => {
+  it('two 70% portions and no colorant yet total 140% and flag over-100', () => {
+    const scentP = normalizeScentColor({ fragrances: [], colorants: [], portions: [{ name: 'A', percent: '70' }, { name: 'B', percent: '70' }] });
+    const c = computeScentColorGrams(scentP, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
+    expect(c.portionsTotalPercent).toBe(140);
+    expect(c.portionsOver100).toBe(true);
+  });
+});
+
+describe('a supplier max of 0 is "not entered", so the prompt fires instead of every check going quiet', () => {
+  it('reads 0 as null', () => {
+    const s0 = normalizeScentColor({ fragrances: [{ name: 'F', kind: 'fragrance-oil', percent: '5', supplierMaxPercent: '0', vanillinPercent: '', allergens: [] }], colorants: [], portions: [] });
+    const c = computeScentColorGrams(s0, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
+    expect(c.fragrances[0].supplierMaxPercent).toBeNull();
+  });
+});
+
+describe('a colour on a portion with no share says what is missing', () => {
+  it('portionShareMissing is set only when a dose was typed and the linked portion has no share', () => {
+    const mk = (portionPercent: string, dose: string) => normalizeScentColor({
+      fragrances: [], colorants: [{ name: 'Mica', kind: 'mica', percent: dose, portionKey: '#0' }],
+      portions: [{ name: 'Swirl', percent: portionPercent }],
+    });
+    const ctx = { process: 'cp' as const, totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 };
+    expect(computeScentColorGrams(mk('', '1'), ctx).colorants[0].portionShareMissing).toBe(true);
+    expect(computeScentColorGrams(mk('', ''), ctx).colorants[0].portionShareMissing).toBe(false);
+    expect(computeScentColorGrams(mk('40', '1'), ctx).colorants[0].portionShareMissing).toBe(false);
+  });
+});
+
 describe('an empty section is one shared object', () => {
   it('returns the same identity across calls and through the compliance pass', () => {
     const a = computeScentColorGrams(createEmptyScentColor(), { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });

@@ -1,6 +1,7 @@
 // packages/web/src/components/PricingPanel.tsx
 import { memo } from 'react';
-import { additivePriceEntry, additivePriceKey, computeRecipePricing, hasMissingMaterialPrice } from '../lib/recipePricing';
+import { computePricing } from '@soap-calc/core';
+import { additivePriceEntry, additivePriceKey, buildPricingInput, pricingInputIncomplete } from '../lib/recipePricing';
 import type { RecipePricingContext } from '../lib/recipePricing';
 import { bookEntry, type PricedEntry, type PricingProfile } from '../lib/pricingProfile';
 import { formatCostBreakdown, formatMoney, type PriceUnit } from '../lib/money';
@@ -19,8 +20,10 @@ const UNIT_OPTIONS: PriceUnit[] = ['kg', 'lb'];
 // memo: like the other sidebar panels, props are stable view-model outputs — without
 // this every keystroke anywhere (recipe name, notes) re-runs computeRecipePricing.
 export const PricingPanel = memo(function PricingPanel({ context, profile, onProfileChange, weightUnit = 'g' }: PricingPanelProps) {
-  const result = computeRecipePricing(context, profile);
-  const incomplete = hasMissingMaterialPrice(context, profile);
+  // Built once per render; the result and the missing-price flag both read it.
+  const pricingInput = buildPricingInput(context, profile);
+  const result = computePricing(pricingInput);
+  const incomplete = pricingInputIncomplete(pricingInput);
   const symbol = profile.currencySymbol;
   const money = (v: number | null) => (v == null || incomplete ? '—' : formatMoney(v, symbol));
   const pct = (v: number | null) => (v == null || incomplete ? '—' : `${v.toFixed(1)}%`);
@@ -29,8 +32,11 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
     book: 'oilPrices' | 'additivePrices',
     key: string,
     patch: Partial<PricedEntry>,
+    // The entry the row DISPLAYED — for a fragrance row that may be the legacy `fragrance`
+    // price standing in; seeding from it means editing one field keeps the other.
+    shown: PricedEntry | undefined = bookEntry(profile[book], key),
   ) => {
-    const prev = bookEntry(profile[book], key) ?? { price: '', unit: profile.outputUnit };
+    const prev = shown ?? { price: '', unit: profile.outputUnit };
     onProfileChange({ ...profile, [book]: { ...profile[book], [key]: { ...prev, ...patch } } });
   };
 
@@ -84,9 +90,10 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
   for (const a of context.additives) (a.group === 'scent' ? scentRows : plainRows).push(a);
   const additiveRow = (a: RecipePricingContext['additives'][number]) => {
     const key = additivePriceKey(a);
+    const shown = additivePriceEntry(profile, a);
     return (
       <div key={a.key}>
-        {priceRow(a.name, a.grams, additivePriceEntry(profile, a), (patch) => setEntry('additivePrices', key, patch))}
+        {priceRow(a.name, a.grams, shown, (patch) => setEntry('additivePrices', key, patch, shown))}
       </div>
     );
   };
@@ -116,7 +123,7 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
         {plainRows.map(additiveRow)}
         {scentRows.length > 0 && (
           <>
-            <div className="pricing-row--group" aria-hidden="true">Fragrance &amp; colorants</div>
+            <div className="results-recipe__heading" aria-hidden="true">Fragrance &amp; colorants</div>
             {scentRows.map(additiveRow)}
           </>
         )}

@@ -27,7 +27,7 @@ import {
   heaviestFirst,
   postCookSuperfatLineDetail,
   scentRowIsMaterial,
-  scentSupplementItems,
+  scentSupplements,
   splitLiquidProcedureStep,
 } from '../lib/recipeSummary';
 import { lyeSolutionBeforeOils } from '../lib/process';
@@ -102,6 +102,10 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   } = data;
 
   const modeled = fattyAcids.modeledOilIds;
+  // Filtered once per render: the section guard and both lists read these.
+  const scentFragranceRows = scentColor.fragrances.filter(scentRowIsMaterial);
+  const scentColorantRows = scentColor.colorants.filter(scentRowIsMaterial);
+  const scentSupplement = scentSupplements(scentColor, weightUnit);
 
   const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
 
@@ -476,38 +480,34 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         </section>
       )}
 
-      {(scentColor.fragrances.some(scentRowIsMaterial) || scentColor.colorants.some(scentRowIsMaterial)) && (
+      {(scentFragranceRows.length > 0 || scentColorantRows.length > 0) && (
         <section className="batch-sheet__section">
           <h2>Fragrance &amp; colorants</h2>
           <ul className="batch-sheet__list">
-            {scentColor.fragrances.filter(scentRowIsMaterial).map((f) => (
+            {scentFragranceRows.map((f) => (
               <li key={f.key}>
                 {f.name.trim() || 'Fragrance'} — {fragranceLineDetail(f, weightUnit, process)} (
                 {additiveStageLabel(f.stage, process)})
               </li>
             ))}
-            {scentSupplementItems(scentColor, weightUnit)
-              .filter((item) => item.name !== 'Name on the label')
-              .map((item) => (
-                <li key={item.name}>
-                  {item.name} — {item.detail}, mixed into the fragrance first
-                </li>
-              ))}
-            {scentColor.colorants.filter(scentRowIsMaterial).map((c) => (
+            {scentSupplement.materials.map((item) => (
+              <li key={item.name}>
+                {item.name} — {item.detail}, mixed into the fragrance first
+              </li>
+            ))}
+            {scentColorantRows.map((c) => (
               <li key={c.key}>
                 {c.name.trim() || 'Colorant'}
-                {c.portionName ? ` (${c.portionName} ${formatGrams(c.portionPercent ?? 0, 0)}%)` : ''} —{' '}
+                {c.portionKey ? ` (${c.portionName.trim() || 'Portion'} ${formatGrams(c.portionPercent ?? 0, 0)}%)` : ''} —{' '}
                 {colorantLineDetail(c, weightUnit)} ({additiveStageLabel(c.stage, process)})
               </li>
             ))}
           </ul>
-          {scentSupplementItems(scentColor, weightUnit)
-            .filter((item) => item.name === 'Name on the label')
-            .map((item) => (
-              <p key={item.name} className="batch-sheet__note">
-                {item.name}: {item.detail}
-              </p>
-            ))}
+          {scentSupplement.label && (
+            <p className="batch-sheet__note">
+              {scentSupplement.label.name}: {scentSupplement.label.detail}
+            </p>
+          )}
         </section>
       )}
 

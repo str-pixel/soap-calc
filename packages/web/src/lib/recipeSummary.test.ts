@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest';
+import { computedScent } from '../testing/scentFixtures';
+import { applyScentColorCompliance, computeScentColorGrams } from './computeScentColor';
 import { addOrderStepPlan, buildAddOrderSteps, buildFullRecipe, postCookSuperfatLineDetail } from './recipeSummary';
 import { normalizeScentColor } from './scentColor';
-import { applyScentColorCompliance, computeScentColorGrams } from './computeScentColor';
 
 /** Flatten the sectioned manifest for ordering assertions that span sections. */
 const flat = (sections: ReturnType<typeof buildFullRecipe>) => sections.flatMap((s) => s.items);
@@ -619,21 +620,14 @@ test('the add-in-order steps name additives heaviest first, like the manifest ab
 /** 400 g of oils: 3% vanilla fragrance (12 g; 12% vanillin → 12 g stabilizer at 1:1) with
  * a 12% linalool declaration, a whole-batter oxide at 1% (4 g) and a mica at 1% of a 40%
  * portion (1.6 g). Finished bar taken as 600 g: 12 g × 12% = 1.44 g linalool = 0.24%. */
-const SCENT_CP = applyScentColorCompliance(
-  computeScentColorGrams(
-    normalizeScentColor({
+const SCENT_CP = computedScent({
       fragrances: [{ name: 'Vanilla dream', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
       colorants: [
         { name: 'Yellow oxide', kind: 'oxide', percent: '1', portionKey: '' },
         { name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' },
       ],
       portions: [{ name: 'Swirl', percent: '40' }],
-    }),
-    { process: 'cp', totalOilGrams: 400, solutionGrams: 0, deliveredSuperfatPercent: 5 },
-  ),
-  600,
-  'label',
-);
+    }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
 
 test('Full recipe (CP): base colour inside Oils, portion colours in a Colorants section after trace, Fragrance after that with stabilizer and label allergens', () => {
   const sections = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: SCENT_CP });
@@ -641,11 +635,11 @@ test('Full recipe (CP): base colour inside Oils, portion colours in a Colorants 
   expect(headings.indexOf('Colorants')).toBeGreaterThan(headings.indexOf('Oils'));
   expect(headings.indexOf('Fragrance')).toBe(headings.indexOf('Colorants') + 1);
   const oils = sections.find((s) => s.heading === 'Oils')!;
-  expect(oils.items.some((i) => i.name === 'Yellow oxide' && i.detail === '4 g · 1% · in 4 g carrier oil')).toBe(true);
+  expect(oils.items.some((i) => i.name === 'Yellow oxide' && i.detail === '4 g · 1% · Mix 1:1 with a light carrier oil (4 g)')).toBe(true);
   const colorants = sections.find((s) => s.heading === 'Colorants')!;
   expect(colorants.items[0]).toEqual({ name: 'Swirl — 40%', detail: '' });
   expect(colorants.items[1].name).toBe('Blue mica');
-  expect(colorants.items[1].detail).toBe('1.6 g · 1% · in 1.6 g carrier oil');
+  expect(colorants.items[1].detail).toBe('1.6 g · 1% · Mix 1:1 with a light carrier oil (1.6 g)');
   const fragrance = sections.find((s) => s.heading === 'Fragrance')!;
   expect(fragrance.items.map((i) => i.name)).toEqual(['Vanilla dream', 'Vanilla stabilizer', 'Name on the label']);
   expect(fragrance.items[0].detail).toBe('12 g · 3% of oils');
@@ -668,23 +662,16 @@ test('Full recipe (CP): the scent sections sit between At trace and Top', () => 
 });
 
 test('Full recipe (HP/LS): the Fragrance section is last; LS colorants sit in the after-dilution slot', () => {
-  const ls = applyScentColorCompliance(
-    computeScentColorGrams(
-      normalizeScentColor({
+  const ls = computedScent({
         fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
         colorants: [{ name: 'Blue dye', kind: 'dye', percent: '', portionKey: '' }],
         portions: [],
-      }),
-      { process: 'ls', totalOilGrams: 400, solutionGrams: 1200, deliveredSuperfatPercent: 2 },
-    ),
-    1200,
-    'solution',
-  );
+      }, { process: 'ls', totalOilGrams: 400, solutionGrams: 1200, deliveredSuperfatPercent: 2, productGrams: 1200 });
   const sections = buildFullRecipe({ ...FULL_RECIPE_BASE, process: 'ls', lyeType: 'koh', scentColor: ls });
   const headings = sections.map((s) => s.heading);
   expect(headings[headings.length - 1]).toBe('Fragrance');
   expect(headings[headings.length - 2]).toBe('Colorants');
-  expect(sections.find((s) => s.heading === 'Colorants')!.items[0]).toEqual({ name: 'Blue dye', detail: 'to shade · dissolved in a little warm water' });
+  expect(sections.find((s) => s.heading === 'Colorants')!.items[0]).toEqual({ name: 'Blue dye', detail: 'to shade · Dissolve in a little warm water' });
   expect(sections.find((s) => s.heading === 'Fragrance')!.items.map((i) => [i.name, i.detail])).toEqual([
     ['Lemon', '12 g · 1% of solution'],
     ['Polysorbate 20', '12 g'],
@@ -711,14 +698,7 @@ const SCENT_INPUT_HP = normalizeScentColor({
 });
 
 test('a blank scent row (no name, no dose) is not listed', () => {
-  const blank = applyScentColorCompliance(
-    computeScentColorGrams(
-      normalizeScentColor({ fragrances: [{ name: '', kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }], colorants: [{ name: '', kind: 'mica', percent: '', portionKey: '' }], portions: [] }),
-      { process: 'cp', totalOilGrams: 400, solutionGrams: 0, deliveredSuperfatPercent: 5 },
-    ),
-    600,
-    'label',
-  );
+  const blank = computedScent({ fragrances: [{ name: '', kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }], colorants: [{ name: '', kind: 'mica', percent: '', portionKey: '' }], portions: [] }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
   const sections = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: blank });
   expect(sections.map((s) => s.heading)).toEqual(['Lye solution', 'Oils']);
   expect(sections.find((s) => s.heading === 'Oils')!.items).toHaveLength(2);
@@ -743,20 +723,19 @@ test('HP steps put the fragrance and the portion split after the cook; LS names 
   expect(hpSteps.find((s) => s.includes('After the cook'))).toBe(
     'After the cook, stir in the Oak and any post-cook superfat. Then split the batter — Top 30% (Red oxide) — and colour each portion.',
   );
-  const ls = applyScentColorCompliance(
-    computeScentColorGrams(
-      normalizeScentColor({
+  const ls = computedScent({
         fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
         colorants: [{ name: 'Blue dye', kind: 'dye', percent: '', portionKey: '' }],
         portions: [],
-      }),
-      { process: 'ls', totalOilGrams: 400, solutionGrams: 1200, deliveredSuperfatPercent: 0 },
-    ),
-    1200,
-    'solution',
-  );
+      }, { process: 'ls', totalOilGrams: 400, solutionGrams: 1200, deliveredSuperfatPercent: 0, productGrams: 1200 });
   const lsSteps = buildAddOrderSteps({ ...CP_BASE, process: 'ls', lyeType: 'koh', scentColor: ls });
   expect(lsSteps.find((s) => s.includes('Dilute the paste'))).toBe(
     'Dilute the paste with hot water, then blend in the Lemon and Blue dye.',
   );
+});
+
+test('a just-added blank portion is not named in the split sentence', () => {
+  const scent = computedScent({ fragrances: [], colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '' }], portions: [{ name: '', percent: '' }] }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const steps = buildAddOrderSteps({ ...CP_BASE, scentColor: scent });
+  expect(steps.join(' ')).not.toMatch(/split the batter/);
 });

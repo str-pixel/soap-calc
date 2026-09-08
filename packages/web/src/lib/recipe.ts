@@ -270,7 +270,8 @@ export function normalizeSplitLiquid(
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+/** The saved-shape guard every loader shares (drafts, files, the scent section). */
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 

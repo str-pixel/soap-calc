@@ -3,6 +3,7 @@ import {
   sumFattyAcids,
   type FattyAcidProfile,
 } from './fatty-acids.js';
+import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT } from './fragrance.js';
 import { DEFAULT_KOH_BLEND_PERCENT, effectiveSuperfatPercent, type LyeType, type WaterMode } from './lye.js';
 import { CP_OVERFLOW_RISK_F } from './soaping-temperature.js';
 import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
@@ -130,9 +131,7 @@ export type FormulationAnalysisInput = {
    * supplier's IFRA rate is stated in; `supplierMaxPercent` null = not entered. */
   fragranceRows?: Array<{
     name: string;
-    kind: 'fragrance-oil' | 'essential-oil';
     percent: number | null;
-    shareOfProduct: number;
     supplierMaxPercent: number | null;
     /** The ONE verdict (core fragranceOverSupplierMax) — the rule never re-decides it. */
     overSupplierMax: boolean;
@@ -1280,7 +1279,7 @@ export const INSIGHT_RULES: InsightRule[] = [
       return {
         level: 'info',
         code: 'fragrance_allergens_to_label',
-        message: `Name on the label: ${list.map((a) => a.name).join(', ')} — each is above 0.01% of the finished soap.`,
+        message: `Name on the label: ${list.map((a) => a.name).join(', ')} — each is above ${ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT}% of the finished soap.`,
       };
     },
   },

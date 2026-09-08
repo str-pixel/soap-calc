@@ -7,6 +7,7 @@ import { additiveStageLabel } from './additiveStageLabel';
 import { formatGrams, joinNames } from './format';
 import { oilDisplayName } from './oilDisplay';
 import { formatWeight } from './weightUnits';
+import { colorantDispersalText } from './colorantGuidance';
 
 /** The one provenance phrase every surface appends to an APPLIED subtract reserve — the
  * results-grid row, the Full recipe line, and the printed sheet. "from oils above" says
@@ -45,18 +46,7 @@ export function fragranceLineDetail(f: ComputedFragrance, unit: WeightUnit, proc
  * process the section derived. */
 export function colorantLineDetail(c: ComputedColorant, unit: WeightUnit): string {
   const dose = c.grams !== null ? `${formatWeight(c.grams, unit)} · ${formatGrams(c.percent ?? 0, 2)}%` : 'to shade';
-  const d = c.dispersal;
-  const how =
-    d.method === 'carrier-oil'
-      ? d.carrierGrams !== null
-        ? `in ${formatWeight(d.carrierGrams, unit)} carrier oil`
-        : 'in a little carrier oil'
-      : d.method === 'hot-sugar-water'
-        ? `in ${formatWeight(d.waterGramsLow, unit)}–${formatWeight(d.waterGramsHigh, unit)} hot sugar water`
-        : d.method === 'recipe-oil'
-          ? 'straight into the warmed oils'
-          : 'dissolved in a little warm water';
-  return `${dose} · ${how}`;
+  return `${dose} · ${colorantDispersalText(c.dispersal, unit)}`;
 }
 
 /** "Linalool 0.277%, Limonene 0.012%" — the one rendering of the label list (3 decimals:
@@ -65,14 +55,21 @@ export function labelAllergensDetail(list: ComputedScentColor['labelAllergens'])
   return list.map((a) => `${a.name} ${formatGrams(a.percentOfProduct, 3)}%`).join(', ');
 }
 
-/** The lines that ride with the fragrance — stabilizer, polysorbate, the label list — as
- * the Full recipe and the printed sheet both quote them. */
-export function scentSupplementItems(scentColor: ComputedScentColor, unit: WeightUnit): RecipeItem[] {
-  const items: RecipeItem[] = [];
-  if (scentColor.stabilizerGrams > 0) items.push({ name: 'Vanilla stabilizer', detail: formatWeight(scentColor.stabilizerGrams, unit) });
-  if (scentColor.polysorbateGrams > 0) items.push({ name: 'Polysorbate 20', detail: formatWeight(scentColor.polysorbateGrams, unit) });
-  if (scentColor.labelAllergens.length > 0) items.push({ name: 'Name on the label', detail: labelAllergensDetail(scentColor.labelAllergens) });
-  return items;
+/** What rides with the fragrance, as the Full recipe and the printed sheet both quote it:
+ * the MATERIALS (stabilizer, polysorbate — weighed, mixed into the fragrance first) and,
+ * separately typed, the label line, which is a note and not a material. */
+export function scentSupplements(
+  scentColor: ComputedScentColor,
+  unit: WeightUnit,
+): { materials: RecipeItem[]; label: RecipeItem | null } {
+  const materials: RecipeItem[] = [];
+  if (scentColor.stabilizerGrams > 0) materials.push({ name: 'Vanilla stabilizer', detail: formatWeight(scentColor.stabilizerGrams, unit) });
+  if (scentColor.polysorbateGrams > 0) materials.push({ name: 'Polysorbate 20', detail: formatWeight(scentColor.polysorbateGrams, unit) });
+  const label =
+    scentColor.labelAllergens.length > 0
+      ? { name: 'Name on the label', detail: labelAllergensDetail(scentColor.labelAllergens) }
+      : null;
+  return { materials, label };
 }
 
 /** A blank row (no name, no dose) is a form in progress, not a material to list. Shared with
@@ -243,8 +240,10 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     if (process === 'ls') {
       colorantItems.push(...designColorants.map(colorantItem));
     } else {
+      const byPortion = new Map<string, ComputedColorant[]>();
+      for (const c of designColorants) byPortion.set(c.portionKey, [...(byPortion.get(c.portionKey) ?? []), c]);
       for (const portion of scentColor.portions) {
-        const own = designColorants.filter((c) => c.portionKey === portion.key);
+        const own = byPortion.get(portion.key) ?? [];
         if (own.length === 0) continue;
         colorantItems.push({
           name: `${portion.name.trim() || 'Portion'} — ${formatGrams(portion.percent ?? 0, 1)}%`,
@@ -261,7 +260,9 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       if (!scentRowIsMaterial(f)) continue;
       fragranceItems.push({ name: f.name.trim() || 'Fragrance', detail: fragranceLineDetail(f, weightUnit, process) });
     }
-    fragranceItems.push(...scentSupplementItems(scentColor, weightUnit));
+    const { materials, label } = scentSupplements(scentColor, weightUnit);
+    fragranceItems.push(...materials);
+    if (label) fragranceItems.push(label);
   }
   const pushScentSections = () => {
     push('Colorants', colorantItems);
@@ -556,9 +557,11 @@ export function buildAddOrderSteps(input: AddOrderInput): string[] {
     if (c.portionKey) continue;
     byStage[c.stage].push(c.name.trim() || 'colorant');
   }
+  // Only portions with a share are a split to state — a just-added blank row is not; the
+  // manifest likewise lists a portion only once something is in it.
   const portionSplit = (() => {
     if (!scentColor || process === 'ls') return null;
-    const parts = scentColor.portions.map((p) => {
+    const parts = scentColor.portions.filter((p) => p.percent !== null && p.percent > 0).map((p) => {
       const colours = scentColorants.filter((c) => c.portionKey === p.key).map((c) => c.name.trim() || 'colorant');
       return `${p.name.trim() || 'portion'} ${formatGrams(p.percent ?? 0, 0)}%${colours.length ? ` (${colours.join(', ')})` : ''}`;
     });

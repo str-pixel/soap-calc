@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import { computedScent } from '../testing/scentFixtures';
 import { DEFAULT_PRICING_PROFILE } from './pricingProfile';
 import {
   additivePriceEntry,
   additivePriceKey,
+  FRAGRANCE_PRICE_PREFIX,
+  scentPriceKey,
   buildRecipePricingContext,
   buildPricingInput,
   computeRecipePricing,
   hasMissingMaterialPrice,
   type RecipePricingContext,
 } from './recipePricing';
-import { normalizeScentColor } from './scentColor';
-import { applyScentColorCompliance, computeScentColorGrams } from './computeScentColor';
 
 const ctx: RecipePricingContext = {
   oilLines: [{ key: 'a', oilId: 'olive-oil', grams: 1000, name: 'Olive Oil' }],
@@ -184,18 +185,11 @@ describe('second-wave hardening', () => {
 
 describe('the Fragrance & colorants section is priced', () => {
   it('prices fragrance, stabilizer, colorant and carrier oil under the scent group with name-stable keys', () => {
-    const scent = applyScentColorCompliance(
-      computeScentColorGrams(
-        normalizeScentColor({
+    const scent = computedScent({
           fragrances: [{ name: 'Rose Absolute', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [] }],
           colorants: [{ name: 'Pink Mica', kind: 'mica', percent: '1', portionKey: '' }],
           portions: [],
-        }),
-        { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 },
-      ),
-      1300,
-      'label',
-    );
+        }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
     const built = buildRecipePricingContext({
       lines: [], computedAdditives: [], lyeGrams: 0, batchWeightWithExtras: 1000, splitLiquids: [], postCookSuperfat: null, scentColor: scent,
     });
@@ -210,18 +204,11 @@ describe('the Fragrance & colorants section is priced', () => {
     expect(scentRows.map(additivePriceKey)).toEqual(scentRows.map((a) => a.catalogId));
   });
   it('a "to shade" colorant has no grams and is not priced; polysorbate appears for LS under a superfat', () => {
-    const scent = applyScentColorCompliance(
-      computeScentColorGrams(
-        normalizeScentColor({
+    const scent = computedScent({
           fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
           colorants: [{ name: 'Blue dye', kind: 'dye', percent: '', portionKey: '' }],
           portions: [],
-        }),
-        { process: 'ls', totalOilGrams: 1000, solutionGrams: 3000, deliveredSuperfatPercent: 2 },
-      ),
-      3000,
-      'solution',
-    );
+        }, { process: 'ls', totalOilGrams: 1000, solutionGrams: 3000, deliveredSuperfatPercent: 2, productGrams: 3000 });
     const built = buildRecipePricingContext({
       lines: [], computedAdditives: [], lyeGrams: 0, batchWeightWithExtras: 3000, splitLiquids: [], postCookSuperfat: null, scentColor: scent,
     });
@@ -239,5 +226,12 @@ describe('a price saved under the retired fragrance key stands in for a named fr
     expect(additivePriceEntry(profile, { key: 'k', catalogId: 'colorant:name:mica', name: 'Mica' })).toBeUndefined();
     const named = { ...profile, additivePrices: { ...profile.additivePrices, 'fragrance:name:rose': { price: '30', unit: 'kg' as const } } };
     expect(additivePriceEntry(named, { key: 'k', catalogId: 'fragrance:name:rose', name: 'Rose' })).toEqual({ price: '30', unit: 'kg' });
+  });
+});
+
+describe('scentPriceKey shares the name rule with additivePriceKey', () => {
+  it('trims and lower-cases, and names the unnamed', () => {
+    expect(scentPriceKey(FRAGRANCE_PRICE_PREFIX, '  Rose Absolute ')).toBe('fragrance:name:rose absolute');
+    expect(scentPriceKey(FRAGRANCE_PRICE_PREFIX, '')).toBe('fragrance:name:unnamed');
   });
 });

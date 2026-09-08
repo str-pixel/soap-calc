@@ -13,10 +13,23 @@ export interface RecipePricingContext {
   totalBatchGrams: number;
 }
 
+/** The one name-normalization behind every name-keyed price-book entry. */
+function nameKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
 export function additivePriceKey(a: { key: string; catalogId: string; name: string }): string {
   if (a.catalogId) return a.catalogId;
-  const n = a.name.trim().toLowerCase();
+  const n = nameKey(a.name);
   return n && n !== 'additive' ? `name:${n}` : `line:${a.key}`;
+}
+
+/** Price-book keys for the Fragrance & colorants rows: by NAME, so a fragrance priced once
+ * is found by every recipe that names it. */
+export const FRAGRANCE_PRICE_PREFIX = 'fragrance:name:';
+export const COLORANT_PRICE_PREFIX = 'colorant:name:';
+export function scentPriceKey(prefix: typeof FRAGRANCE_PRICE_PREFIX | typeof COLORANT_PRICE_PREFIX, name: string): string {
+  return `${prefix}${nameKey(name) || 'unnamed'}`;
 }
 
 function entryPerGram(entry: PricedEntry | undefined): number | null {
@@ -32,7 +45,7 @@ export function additivePriceEntry(
 ): PricedEntry | undefined {
   const own = bookEntry(profile.additivePrices, additivePriceKey(a));
   if (own) return own;
-  return a.catalogId.startsWith('fragrance:name:') ? bookEntry(profile.additivePrices, 'fragrance') : undefined;
+  return a.catalogId.startsWith(FRAGRANCE_PRICE_PREFIX) ? bookEntry(profile.additivePrices, 'fragrance') : undefined;
 }
 
 export function buildPricingInput(ctx: RecipePricingContext, profile: PricingProfile): PricingInput {
@@ -68,13 +81,20 @@ export function computeRecipePricing(ctx: RecipePricingContext, profile: Pricing
   return computePricing(buildPricingInput(ctx, profile));
 }
 
+/** Read off the built input, so a panel that already built it does not resolve every
+ * price-book entry a second time. Lye is a real material: leaving it blank used to
+ * silently price it at $0 while every output rendered as a definite figure. */
+export function pricingInputIncomplete(input: PricingInput): boolean {
+  const lineMissing = (l: { pricePerGram: number | null }) => l.pricePerGram == null;
+  return (
+    input.oilLines.some(lineMissing) ||
+    input.additiveLines.some(lineMissing) ||
+    (input.lyeGrams > 0 && input.lyePricePerGram == null)
+  );
+}
+
 export function hasMissingMaterialPrice(ctx: RecipePricingContext, profile: PricingProfile): boolean {
-  const oilMissing = ctx.oilLines.some((o) => entryPerGram(bookEntry(profile.oilPrices, o.oilId)) == null);
-  const addMissing = ctx.additives.some((a) => entryPerGram(additivePriceEntry(profile, a)) == null);
-  // Lye is a real material: leaving it blank used to silently price it at $0 while
-  // every output rendered as a definite figure.
-  const lyeMissing = ctx.lyeGrams > 0 && entryPerGram(profile.lyePrice) == null;
-  return oilMissing || addMissing || lyeMissing;
+  return pricingInputIncomplete(buildPricingInput(ctx, profile));
 }
 
 export interface RecipePricingSource {
@@ -136,10 +156,9 @@ export function buildRecipePricingContext(src: RecipePricingSource): RecipePrici
   // it on the next recipe. The helpers are one material each, so they take a fixed key.
   const scent = src.scentColor;
   if (scent) {
-    const nameKey = (prefix: string, name: string) => `${prefix}:name:${name.trim().toLowerCase() || 'unnamed'}`;
     for (const f of scent.fragrances) {
       if (f.grams <= 0) continue;
-      additives.push({ key: `fragrance-${f.key}`, catalogId: nameKey('fragrance', f.name), name: f.name.trim() || 'Fragrance', grams: f.grams, group: 'scent' });
+      additives.push({ key: `fragrance-${f.key}`, catalogId: scentPriceKey(FRAGRANCE_PRICE_PREFIX, f.name), name: f.name.trim() || 'Fragrance', grams: f.grams, group: 'scent' });
     }
     if (scent.stabilizerGrams > 0) {
       additives.push({ key: 'vanilla-stabilizer', catalogId: 'vanilla-stabilizer', name: 'Vanilla stabilizer', grams: scent.stabilizerGrams, group: 'scent' });
@@ -149,7 +168,7 @@ export function buildRecipePricingContext(src: RecipePricingSource): RecipePrici
     }
     for (const c of scent.colorants) {
       if (c.grams === null || c.grams <= 0) continue;
-      additives.push({ key: `colorant-${c.key}`, catalogId: nameKey('colorant', c.name), name: c.name.trim() || 'Colorant', grams: c.grams, group: 'scent' });
+      additives.push({ key: `colorant-${c.key}`, catalogId: scentPriceKey(COLORANT_PRICE_PREFIX, c.name), name: c.name.trim() || 'Colorant', grams: c.grams, group: 'scent' });
     }
     if (scent.carrierOilGrams > 0) {
       additives.push({ key: 'carrier-oil', catalogId: 'carrier-oil', name: 'Carrier oil (colorants)', grams: scent.carrierOilGrams, group: 'scent' });

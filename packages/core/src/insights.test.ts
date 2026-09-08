@@ -1238,23 +1238,23 @@ describe('rule registry consistency', () => {
     ls_water_outside_envelope: { waterEnvelope: [25, 60], waterGrams: 200, process: 'ls' },
     // Fragrance & colorants
     fragrance_over_supplier_max: {
-      fragranceRows: [{ name: 'F', kind: 'fragrance-oil', percent: 3, shareOfProduct: 5.5, supplierMaxPercent: 5, overSupplierMax: true, browning: 'none', caution: false }],
+      fragranceRows: [{ name: 'F', percent: 3, supplierMaxPercent: 5, overSupplierMax: true, browning: 'none', caution: false }],
     },
     fragrance_no_supplier_rate: {
-      fragranceRows: [{ name: 'F', kind: 'fragrance-oil', percent: 3, shareOfProduct: 2.3, supplierMaxPercent: null, overSupplierMax: false, browning: 'none', caution: false }],
+      fragranceRows: [{ name: 'F', percent: 3, supplierMaxPercent: null, overSupplierMax: false, browning: 'none', caution: false }],
     },
     fragrance_vanillin_browning: {
-      fragranceRows: [{ name: 'F', kind: 'fragrance-oil', percent: 3, shareOfProduct: 2.3, supplierMaxPercent: 5, overSupplierMax: false, browning: 'deep', caution: false }],
+      fragranceRows: [{ name: 'F', percent: 3, supplierMaxPercent: 5, overSupplierMax: false, browning: 'deep', caution: false }],
     },
     fragrance_accelerant_eo: {
-      fragranceRows: [{ name: 'Clove', kind: 'essential-oil', percent: 1, shareOfProduct: 0.8, supplierMaxPercent: 1, overSupplierMax: false, browning: 'none', caution: true }],
+      fragranceRows: [{ name: 'Clove', percent: 1, supplierMaxPercent: 1, overSupplierMax: false, browning: 'none', caution: true }],
       process: 'cp',
     },
     fragrance_allergens_to_label: { labelAllergens: [{ name: 'Linalool', percentOfProduct: 0.28 }] },
     colorant_portions_over_100: { colorantPortionsOver100: true },
     colorant_carrier_superfat: { colorantCarrierShiftPercent: 1, process: 'cp' },
     ls_fragrance_clouding: {
-      fragranceRows: [{ name: 'F', kind: 'fragrance-oil', percent: 1, shareOfProduct: 1, supplierMaxPercent: 3, overSupplierMax: false, browning: 'none', caution: false }],
+      fragranceRows: [{ name: 'F', percent: 1, supplierMaxPercent: 3, overSupplierMax: false, browning: 'none', caution: false }],
       process: 'ls',
     },
   };
@@ -1396,17 +1396,17 @@ describe('fragrance & colorant insights', () => {
   const codes = (extra: Partial<FormulationAnalysisInput>, process: 'cp' | 'hp' | 'ls') =>
     analyzeFormulation(waterInput(330, 1000, { ...extra, process })).map((i) => i.code);
   const row = (over: Partial<NonNullable<FormulationAnalysisInput['fragranceRows']>[number]> = {}) => ({
-    name: 'F', kind: 'fragrance-oil' as const, percent: 3, shareOfProduct: 2.3, supplierMaxPercent: 5,
+    name: 'F', percent: 3, supplierMaxPercent: 5,
     overSupplierMax: false, browning: 'none' as const, caution: false, ...over,
   });
 
   it('warns above the supplier rate (finished-product basis), informs when no rate is entered', () => {
-    expect(codes({ fragranceRows: [row({ shareOfProduct: 5.5, overSupplierMax: true })] }, 'cp')).toContain('fragrance_over_supplier_max');
+    expect(codes({ fragranceRows: [row({ overSupplierMax: true })] }, 'cp')).toContain('fragrance_over_supplier_max');
     expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('fragrance_over_supplier_max');
     expect(codes({ fragranceRows: [row({ supplierMaxPercent: null })] }, 'cp')).toContain('fragrance_no_supplier_rate');
     expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('fragrance_no_supplier_rate');
     // the rule reads the computed verdict, never the numbers — a 0% max (core: unknown) stays quiet
-    expect(codes({ fragranceRows: [row({ shareOfProduct: 5, supplierMaxPercent: 0, overSupplierMax: false })] }, 'cp')).not.toContain('fragrance_over_supplier_max');
+    expect(codes({ fragranceRows: [row({ supplierMaxPercent: 0, overSupplierMax: false })] }, 'cp')).not.toContain('fragrance_over_supplier_max');
   });
 
   it('browning above 0% vanillin in any process; the deep wording above 1%', () => {
@@ -1418,7 +1418,7 @@ describe('fragrance & colorant insights', () => {
   });
 
   it('the clove/cinnamon caution is a cold-process concern only', () => {
-    const eo = row({ kind: 'essential-oil', caution: true });
+    const eo = row({ caution: true });
     expect(codes({ fragranceRows: [eo] }, 'cp')).toContain('fragrance_accelerant_eo');
     expect(codes({ fragranceRows: [eo] }, 'hp')).not.toContain('fragrance_accelerant_eo');
     expect(codes({ fragranceRows: [eo] }, 'ls')).not.toContain('fragrance_accelerant_eo');

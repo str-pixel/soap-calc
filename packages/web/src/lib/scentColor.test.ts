@@ -16,7 +16,7 @@ describe('normalizeScentColor', () => {
     expect(normalizeScentColor(undefined)).toEqual(createEmptyScentColor());
     expect(normalizeScentColor({ fragrances: 'nope' })).toEqual(createEmptyScentColor());
   });
-  it('keeps valid rows, assigns keys, drops unknown fields, clamps portions to 0–100, and unlinks a deleted portion', () => {
+  it('keeps valid rows, assigns keys, drops unknown fields, keeps an oversize portion share as typed, and unlinks a deleted portion', () => {
     const s = normalizeScentColor({
       fragrances: [{ name: 'Lavender', kind: 'essential-oil', percent: '3', supplierMaxPercent: '5', vanillinPercent: '', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }], junk: 1 }],
       colorants: [{ name: 'Ultramarine', kind: 'oxide', percent: '0.5', portionKey: 'gone' }],
@@ -26,7 +26,7 @@ describe('normalizeScentColor', () => {
     expect(s.fragrances[0].key).toBeTruthy();
     expect(s.fragrances[0].allergens[0]).toMatchObject({ name: 'Linalool', percentOfFragrance: '12' });
     expect((s.fragrances[0] as unknown as { junk?: unknown }).junk).toBeUndefined();
-    expect(s.portions[0].percent).toBe('100');
+    expect(s.portions[0].percent).toBe('150'); // shown and flagged by the compute step, never silently clamped
     expect(s.colorants[0].portionKey).toBe(''); // 'gone' matched no portion
   });
   it('a colorant keeps its portion when the portion exists (matched by the saved portion index)', () => {
@@ -111,6 +111,17 @@ describe('extractLegacyFragrance — the additive catalog no longer has fragranc
     expect(ls.fragrances[0].percent).toBe('');
     expect(ls.dosesDropped).toBe(1);
   });
+  it('a row saved before the basis/unit reshape (percentOfOil, no basis or unit) keeps its dose — the same defaults the loaders apply', () => {
+    const legacy = [{ catalogId: 'fragrance', name: 'Lavender', percentOfOil: '3', addAt: 'trace' }];
+    const cp = extractLegacyFragrance(legacy, 'cp');
+    expect(cp.fragrances[0]).toMatchObject({ name: 'Lavender', percent: '3' });
+    expect(cp.dosesDropped).toBe(0);
+    // Under LS the same row is percent of OIL, which the section does not read: dropped and counted.
+    const ls = extractLegacyFragrance(legacy, 'ls');
+    expect(ls.fragrances[0].percent).toBe('');
+    expect(ls.dosesDropped).toBe(1);
+  });
+
   it('keeps the name but not the number for a batch basis or a ppt unit, and counts the dropped doses', () => {
     const { fragrances, dosesDropped } = extractLegacyFragrance([
       { catalogId: 'fragrance', name: 'A', amount: '3', basis: 'batch', unit: 'percent', addAt: 'trace' },
@@ -136,7 +147,7 @@ describe('migrateSavedScent — the one loader for drafts and files', () => {
     expect(m.additives).toEqual([]);
   });
   it('tolerates a missing section and a non-array additives field', () => {
-    const m = migrateSavedScent(undefined, 'garbage', 'hp');
+    const m = migrateSavedScent(undefined, 'garbage' as unknown as undefined, 'hp');
     expect(m.scentColor).toEqual(createEmptyScentColor());
     expect(m.fragrancesMoved).toBe(0);
   });

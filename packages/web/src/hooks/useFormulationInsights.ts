@@ -261,16 +261,9 @@ export function useFormulationInsights(
       // the LS cloud-threshold insights (a 2% + 2% recipe is ~4% effective, not 2%).
       postCookSuperfatPercent: options.postCookSuperfat?.percentOfOil,
       process: options.process,
-      fragranceRows: options.scentColor?.fragrances.map((f) => ({
-        name: f.name,
-        kind: f.kind,
-        percent: f.percent,
-        shareOfProduct: f.shareOfProduct,
-        supplierMaxPercent: f.supplierMaxPercent,
-        overSupplierMax: f.overSupplierMax,
-        browning: f.browning,
-        caution: f.caution,
-      })),
+      // ComputedFragrance is a superset of the rule input (structural), so the rows pass
+      // straight through — no field list to keep in step.
+      fragranceRows: options.scentColor?.fragrances,
       labelAllergens: options.scentColor?.labelAllergens,
       colorantPortionsOver100: options.scentColor?.portionsOver100,
       colorantCarrierShiftPercent: options.scentColor?.carrierSuperfatShiftPercent,

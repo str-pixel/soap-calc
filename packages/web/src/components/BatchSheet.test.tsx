@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, test } from 'vitest';
+import { computedScent } from '../testing/scentFixtures';
 import { render, screen, cleanup } from '@testing-library/react';
 import { BatchSheet } from './BatchSheet';
-import { applyScentColorCompliance, computeScentColorGrams, emptyComputedScentColor } from '../lib/computeScentColor';
-import { normalizeScentColor } from '../lib/scentColor';
+import { emptyComputedScentColor } from '../lib/computeScentColor';
 // The dilution figure has to be identical on the screen and on the page carried to the
 // bench, so the pin renders both surfaces from one fixture rather than trusting two
 // same-shaped assertions in two files to stay in step.
@@ -1546,41 +1546,33 @@ test('the printed oils table lists heaviest first, like the on-screen Full recip
 
 describe('the printed sheet carries the Fragrance & colorants section', () => {
   it('lists each fragrance and colour with its stage, the stabilizer, and the label line', () => {
-    const scent = applyScentColorCompliance(
-      computeScentColorGrams(
-        normalizeScentColor({
+    const scent = computedScent({
           fragrances: [{ name: 'Vanilla dream', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
           colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' }],
           portions: [{ name: 'Swirl', percent: '40' }],
-        }),
-        { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 },
-      ),
-      1300,
-      'label',
-    );
+        }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
     render(<BatchSheet data={{ ...cpSheetData({}), scentColor: scent }} />);
     expect(screen.getByText('Fragrance & colorants', { selector: 'h2' })).toBeTruthy();
     expect(screen.getByText(/Vanilla dream — 30 g · 3% of oils \(At trace\)/)).toBeTruthy();
     expect(screen.getByText(/Vanilla stabilizer — 30 g/)).toBeTruthy();
-    expect(screen.getByText(/Blue mica \(Swirl 40%\) — 4 g · 1% · in 4 g carrier oil \(At trace\)/)).toBeTruthy();
+    expect(screen.getByText(/Blue mica \(Swirl 40%\) — 4 g · 1% · Mix 1:1 with a light carrier oil \(4 g\) \(At trace\)/)).toBeTruthy();
     expect(screen.getByText(/Name on the label: Linalool 0\.277%/)).toBeTruthy();
   });
+  it('an unnamed portion still prints its share beside its colour', () => {
+    const scent = computedScent({ fragrances: [], colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' }], portions: [{ name: '', percent: '40' }] }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
+    render(<BatchSheet data={{ ...cpSheetData({}), scentColor: scent }} />);
+    expect(screen.getByText(/Blue mica \(Portion 40%\)/)).toBeTruthy();
+  });
+
   it('prints nothing for the section when it is empty, or when its only rows are blank forms', () => {
     render(<BatchSheet data={cpSheetData({})} />);
     expect(screen.queryByText('Fragrance & colorants', { selector: 'h2' })).toBeNull();
     cleanup();
-    const blank = applyScentColorCompliance(
-      computeScentColorGrams(
-        normalizeScentColor({
+    const blank = computedScent({
           fragrances: [{ name: '', kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
           colorants: [{ name: '', kind: 'mica', percent: '', portionKey: '' }],
           portions: [],
-        }),
-        { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 },
-      ),
-      1300,
-      'label',
-    );
+        }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
     render(<BatchSheet data={{ ...cpSheetData({}), scentColor: blank }} />);
     expect(screen.queryByText('Fragrance & colorants', { selector: 'h2' })).toBeNull();
   });
