@@ -11,7 +11,6 @@
 
 import { gramsFromDose } from './additives.js';
 
-export type FragranceKind = 'fragrance-oil' | 'essential-oil';
 export type VanillinBrowning = 'none' | 'light' | 'deep';
 export type AllergenInput = { name: string; percentOfFragrance: number; fragranceGrams: number };
 export type LabelAllergen = { name: string; percentOfProduct: number };
@@ -45,10 +44,9 @@ export function fragranceOverSupplierMax(shareOfProduct: number, supplierMaxPerc
 
 /** Only the two the text names: clove and cinnamon essential oils carry eugenol /
  * cinnamaldehyde, react with the lye as accelerants (CP:9531-9537) and irritate — the text
- * advises against cinnamon EO in soap outright (CP:9589-9592). A fragrance OIL named after
- * them is a synthetic blend and never triggers this. */
-export function essentialOilCaution(kind: FragranceKind, name: string): boolean {
-  if (kind !== 'essential-oil') return false;
+ * advises against cinnamon EO in soap outright (CP:9589-9592). The section holds essential
+ * oils only, so the name is the whole test. */
+export function essentialOilCaution(name: string): boolean {
   return /clove|cinnamon/i.test(name);
 }
 

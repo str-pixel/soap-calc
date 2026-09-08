@@ -1164,7 +1164,7 @@ test('the additive solution basis falls to the plan figure, not 0, when a record
 
 test('the Fragrance & colorants section joins the extras, the batch weight and the label weight; the share is of the label weight', () => {
   const scent = normalizeScentColor({
-    fragrances: [{ name: 'F', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
+    fragrances: [{ name: 'F', percent: '3', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
     colorants: [],
     portions: [],
   });

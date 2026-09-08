@@ -27,6 +27,6 @@ export function computedScent(saved: unknown, ctx: ScentFixtureContext): Compute
 /** The canonical vanilla row: 3% fragrance oil, 12% vanillin (deep browning, 1:1 stabilizer),
  * a 12% linalool declaration. */
 export const VANILLA_FRAGRANCE = {
-  name: 'Vanilla dream', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '12',
+  name: 'Vanilla dream', percent: '3', supplierMaxPercent: '', vanillinPercent: '12',
   allergens: [{ name: 'Linalool', percentOfFragrance: '12' }],
 };

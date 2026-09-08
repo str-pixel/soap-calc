@@ -767,7 +767,7 @@ describe('imports are app recipes only: declared process must match its lye choi
 describe('recipe file v3 carries scentColor', () => {
   it('serializes at version 3 and parses it back; a v2 file without the field parses as empty', () => {
     const scent = normalizeScentColor({
-      fragrances: [{ name: 'Rose', kind: 'fragrance-oil', percent: '4', supplierMaxPercent: '5', vanillinPercent: '2', allergens: [{ name: 'Citronellol', percentOfFragrance: '3' }] }],
+      fragrances: [{ name: 'Rose', percent: '4', supplierMaxPercent: '5', vanillinPercent: '2', allergens: [{ name: 'Citronellol', percentOfFragrance: '3' }] }],
       colorants: [{ name: 'Pink mica', kind: 'mica', percent: '', portionKey: '' }],
       portions: [{ name: 'A', percent: '40' }],
     });

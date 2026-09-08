@@ -556,7 +556,7 @@ test.describe('liquid soap', () => {
 
 // ---------- 7. HP specifics ----------
 
-test.describe('fragrance & colorants', () => {
+test.describe('essential oils & colorants', () => {
   const section = (page: Page, heading: string) =>
     page
       .locator('.results-recipe__section')
@@ -564,7 +564,7 @@ test.describe('fragrance & colorants', () => {
   // Two panels now, each located by its own exact heading — '06 Fragrance' and
   // '07 Colorants' — so a locator cannot silently match the other one.
   const fragrancePanel = (page: Page) =>
-    page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /^06Fragrance$/ }) });
+    page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /^06Essential oils$/ }) });
   const colorantsPanel = (page: Page) =>
     page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /^07Colorants$/ }) });
 
@@ -572,14 +572,16 @@ test.describe('fragrance & colorants', () => {
     await expect(fragrancePanel(page)).toHaveCount(1);
     await expect(colorantsPanel(page)).toHaveCount(1);
     await expect(fragrancePanel(page).getByRole('button', { name: /add colorant/i })).toHaveCount(0);
-    await expect(colorantsPanel(page).getByRole('button', { name: /add fragrance/i })).toHaveCount(0);
-    await expect(fragrancePanel(page).getByRole('button', { name: /add fragrance/i })).toHaveCount(1);
+    await expect(colorantsPanel(page).getByRole('button', { name: /add essential oil/i })).toHaveCount(0);
+    await expect(fragrancePanel(page).getByRole('button', { name: /add essential oil/i })).toHaveCount(1);
+    // The section holds essential oils only — no fragrance-oil choice to make.
+    await expect(fragrancePanel(page).getByRole('radiogroup', { name: /^Kind of/ })).toHaveCount(0);
     await expect(colorantsPanel(page).getByRole('button', { name: /add colorant/i })).toHaveCount(1);
   });
 
   test('CP: a vanillin fragrance with an allergen and a portion colour land in the Full recipe', async ({ page }) => {
-    await page.getByRole('button', { name: /add fragrance/i }).click();
-    await page.getByLabel('Fragrance name').fill('Vanilla dream');
+    await page.getByRole('button', { name: /add essential oil/i }).click();
+    await page.getByLabel('Essential oil name').fill('Vanilla dream');
     await page.getByLabel(/Vanilla dream % of oils/).fill('3');
     await page.getByLabel(/Vanilla dream supplier max/).fill('5');
     await page.getByLabel(/Vanilla dream vanillin/).fill('12');
@@ -626,10 +628,10 @@ test.describe('fragrance & colorants', () => {
     await expect(colorantsPanel(page).getByLabel('Colorant name')).toHaveCount(1);
   });
 
-  test('HP: the fragrance is filed after the cook', async ({ page }) => {
+  test('HP: the scent is filed after the cook', async ({ page }) => {
     await processTab(page, /Hot process/).click();
-    await page.getByRole('button', { name: /add fragrance/i }).click();
-    await page.getByLabel(/^Fragrance % of oils/).fill('3');
+    await page.getByRole('button', { name: /add essential oil/i }).click();
+    await page.getByLabel(/^Essential oil % of oils/).fill('3');
     await expect(section(page, 'Fragrance')).toBeVisible();
     await expect(fragrancePanel(page)).toContainText('After cook');
   });
@@ -638,8 +640,8 @@ test.describe('fragrance & colorants', () => {
     await processTab(page, /Liquid soap/).click();
     await page.getByRole('button', { name: /add colorant/i }).click();
     await expect(colorantsPanel(page)).toContainText('After dilution');
-    await page.getByRole('button', { name: /add fragrance/i }).click();
-    await expect(page.getByLabel(/^Fragrance % of solution/)).toBeVisible();
+    await page.getByRole('button', { name: /add essential oil/i }).click();
+    await expect(page.getByLabel(/^Essential oil % of solution/)).toBeVisible();
     await expect(page.getByRole('button', { name: /split the batter/i })).toHaveCount(0);
   });
 });

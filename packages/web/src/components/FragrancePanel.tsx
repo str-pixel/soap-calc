@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT, type FragranceKind } from '@soap-calc/core';
+import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import { productNoun, type ComputedFragrance, type ComputedScentColor } from '../lib/computeScentColor';
 import { formatGrams } from '../lib/format';
@@ -10,7 +10,6 @@ import {
   type FragranceLine, type ScentColor,
 } from '../lib/scentColor';
 import { formatWeight, type WeightUnit } from '../lib/weightUnits';
-import { SegRadioGroup } from './SegRadioGroup';
 
 type Props = {
   scent: ScentColor;
@@ -19,11 +18,6 @@ type Props = {
   weightUnit: WeightUnit;
   onChange: (next: ScentColor) => void;
 };
-
-const FRAGRANCE_KINDS: Array<{ value: FragranceKind; cell: string; name: string }> = [
-  { value: 'fragrance-oil', cell: 'Fragrance oil', name: 'Fragrance oil' },
-  { value: 'essential-oil', cell: 'Essential oil', name: 'Essential oil' },
-];
 
 /* Process copy. Bars: 2–6% of total oil weight, the recipes at 3–6% (CP:9612-9614, 16777),
    the supplier's tested rate as the ceiling (CP:9565-9605), the flashpoint no soaping limit
@@ -53,7 +47,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
       <div className="panel__head">
         <div>
           <h2 className="panel__title">
-            <span className="panel__num" aria-hidden="true">06</span>Fragrance
+            <span className="panel__num" aria-hidden="true">06</span>Essential oils
           </h2>
           <p className="panel__subtitle">Scent, and what the label must say</p>
         </div>
@@ -64,7 +58,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
             disabled={scent.fragrances.length >= MAX_SCENT_ROWS}
             onClick={() => onChange({ ...scent, fragrances: [...scent.fragrances, newFragranceLine()] })}
           >
-            + Add fragrance
+            + Add essential oil
           </button>
         </div>
       </div>
@@ -72,21 +66,25 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
       <p className="results-hint">{PROCESS_COPY[process]}</p>
 
       {scent.fragrances.length === 0 ? (
-        <p className="results-hint">No fragrance yet. Colour has its own section below.</p>
+        <p className="results-hint">
+          No scent yet. This section holds essential oils: a fragrance oil is a supplier's own
+          blend, so its dose limit and its allergens come from the declaration that ships with it
+          rather than from anything this app can work out.
+        </p>
       ) : (
         <ul className="additive-list" aria-label="Fragrances">
           {scent.fragrances.map((f, i) => {
             const c = computed.fragrances[i];
-            const rowName = f.name.trim() || 'Fragrance';
+            const rowName = f.name.trim() || 'Essential oil';
             return (
               <li key={f.key} className="additive-list__row">
                 <div className="additive-list__names">
                   <label className="field">
-                    <span>Fragrance name</span>
+                    <span>Essential oil</span>
                     <input
                       className="input"
-                      aria-label="Fragrance name"
-                      placeholder="e.g. Lavender, or a blend name"
+                      aria-label="Essential oil name"
+                      placeholder="e.g. Lavender"
                       value={f.name}
                       onChange={(e) => setFragrance(f.key, { name: e.target.value })}
                     />
@@ -100,14 +98,6 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     ×
                   </button>
                 </div>
-                <SegRadioGroup
-                  label={`Kind of ${rowName}`}
-                  name={`fragrance-kind-${f.key}`}
-                  options={FRAGRANCE_KINDS}
-                  value={f.kind}
-                  onChange={(kind) => setFragrance(f.key, { kind })}
-                  preserveCase
-                />
                 <label className="field"><span>{doseLabel}</span>
                   <input className="input" inputMode="decimal" aria-label={`${rowName} ${doseLabel}`} value={f.percent} onChange={(e) => setFragrance(f.key, { percent: e.target.value })} />
                 </label>

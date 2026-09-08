@@ -5,7 +5,7 @@ import { applyScentColorCompliance, computeScentColorGrams } from './computeScen
 
 const scent = normalizeScentColor({
   fragrances: [
-    { name: 'Vanilla dream', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '2', vanillinPercent: '12',
+    { name: 'Vanilla dream', percent: '3', supplierMaxPercent: '2', vanillinPercent: '12',
       allergens: [{ name: 'Linalool', percentOfFragrance: '12' }, { name: 'Coumarin', percentOfFragrance: '0.4' }] },
     { name: 'Clove bud', kind: 'essential-oil', percent: '0.5', supplierMaxPercent: '', vanillinPercent: '', allergens: [] },
   ],
@@ -123,7 +123,7 @@ describe('portions without colours still count', () => {
 
 describe('a supplier max of 0 is "not entered", so the prompt fires instead of every check going quiet', () => {
   it('reads 0 as null', () => {
-    const s0 = normalizeScentColor({ fragrances: [{ name: 'F', kind: 'fragrance-oil', percent: '5', supplierMaxPercent: '0', vanillinPercent: '', allergens: [] }], colorants: [], portions: [] });
+    const s0 = normalizeScentColor({ fragrances: [{ name: 'F', percent: '5', supplierMaxPercent: '0', vanillinPercent: '', allergens: [] }], colorants: [], portions: [] });
     const c = computeScentColorGrams(s0, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
     expect(c.fragrances[0].supplierMaxPercent).toBeNull();
   });

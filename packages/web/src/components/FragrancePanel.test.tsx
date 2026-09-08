@@ -16,27 +16,29 @@ function renderPanel(scent: ScentColor, process: ProcessId, unit: 'g' | 'lb' = '
 }
 
 const vanilla = normalizeScentColor({
-  fragrances: [{ name: 'Vanilla dream', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '2', vanillinPercent: '12',
+  fragrances: [{ name: 'Vanilla dream', percent: '3', supplierMaxPercent: '2', vanillinPercent: '12',
     allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
   colorants: [],
   portions: [],
 });
 
 describe('FragrancePanel', () => {
-  it('is its own numbered section, and says where colour lives', () => {
+  it('is its own numbered section, holding essential oils only', () => {
     renderPanel(createEmptyScentColor(), 'cp');
-    expect(screen.getByRole('heading', { name: /Fragrance/ }).textContent).toBe('06Fragrance');
+    expect(screen.getByRole('heading', { name: /Essential oils/ }).textContent).toBe('06Essential oils');
     expect(screen.queryByRole('button', { name: /add colorant/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /split the batter/i })).toBeNull();
-    expect(screen.getByText(/Colour has its own section below/i)).toBeTruthy();
+    // No kind control: a fragrance oil is a supplier's blend and has no place here.
+    expect(screen.queryByRole('radiogroup', { name: /^Kind of/ })).toBeNull();
+    expect(screen.getByText(/a fragrance oil is a supplier's own blend/i)).toBeTruthy();
   });
 
   it('the name field carries a VISIBLE label, not just a placeholder', () => {
     renderPanel(vanilla, 'cp');
-    const input = screen.getByLabelText('Fragrance name');
+    const input = screen.getByLabelText('Essential oil name');
     expect(input).toBeTruthy();
     // The label element is rendered text, so a reader sees what the box is for.
-    expect(input.closest('label')!.querySelector('span')!.textContent).toBe('Fragrance name');
+    expect(input.closest('label')!.querySelector('span')!.textContent).toBe('Essential oil');
   });
 
   it('labels the dose per process: % of oils for bars, % of solution for liquid soap', () => {
@@ -57,12 +59,12 @@ describe('FragrancePanel', () => {
     expect(screen.getByText(/name on the label/i).closest('li')!.textContent).toMatch(/Linalool/);
   });
 
-  it('adds a fragrance row through its own button', () => {
+  it('adds a scent row through its own button', () => {
     const onChange = renderPanel(createEmptyScentColor(), 'cp');
-    fireEvent.click(screen.getByRole('button', { name: /add fragrance/i }));
+    fireEvent.click(screen.getByRole('button', { name: /add essential oil/i }));
     const next = onChange.mock.calls[0][0] as ScentColor;
     expect(next.fragrances).toHaveLength(1);
-    expect(next.fragrances[0].kind).toBe('fragrance-oil');
+    expect(next.fragrances[0].name).toBe('');
   });
 
   it('the allergen disclosure adds declaration rows', () => {
@@ -73,7 +75,7 @@ describe('FragrancePanel', () => {
 
   it('names the browning without a stabilizer figure until there is a dose to size it', () => {
     const noDose = normalizeScentColor({
-      fragrances: [{ name: 'V', kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '12', allergens: [] }],
+      fragrances: [{ name: 'V', percent: '', supplierMaxPercent: '', vanillinPercent: '12', allergens: [] }],
       colorants: [], portions: [],
     });
     renderPanel(noDose, 'cp');
@@ -89,10 +91,10 @@ describe('FragrancePanel', () => {
 
   it('stops adding at the cap the loader applies, so nothing entered is lost on reload', () => {
     const full = normalizeScentColor({
-      fragrances: Array.from({ length: 20 }, (_, i) => ({ name: `F${i}`, kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] })),
+      fragrances: Array.from({ length: 20 }, (_, i) => ({ name: `F${i}`, percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] })),
       colorants: [], portions: [],
     });
     renderPanel(full, 'cp');
-    expect((screen.getByRole('button', { name: /add fragrance/i }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: /add essential oil/i }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

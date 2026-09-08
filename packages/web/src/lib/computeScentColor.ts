@@ -18,7 +18,6 @@ import {
   type AdditiveStage,
   type ColorantDispersal,
   type ColorantKind,
-  type FragranceKind,
   type LabelAllergen,
   type VanillinBrowning,
 } from '@soap-calc/core';
@@ -26,7 +25,7 @@ import type { ProcessId } from './process';
 import type { ScentColor } from './scentColor';
 
 export type ComputedFragrance = {
-  key: string; name: string; kind: FragranceKind; percent: number | null; grams: number;
+  key: string; name: string; percent: number | null; grams: number;
   stage: AdditiveStage; caution: boolean; browning: VanillinBrowning;
   stabilizerGrams: number; polysorbateGrams: number; supplierMaxPercent: number | null;
   /** The declarations as typed, parsed; the compliance pass turns them into labelAllergens. */
@@ -97,8 +96,8 @@ export function computeScentColorGrams(
     const grams = fragranceGrams(percent, basisGrams);
     const vanillin = parsePercentOfOil(f.vanillinPercent);
     return {
-      key: f.key, name: f.name, kind: f.kind, percent, grams, stage,
-      caution: essentialOilCaution(f.kind, f.name),
+      key: f.key, name: f.name, percent, grams, stage,
+      caution: essentialOilCaution(f.name),
       browning: vanillinBrowning(vanillin),
       stabilizerGrams: vanillaStabilizerGrams(grams, vanillin),
       allergens: f.allergens.map((a) => ({ name: a.name, percentOfFragrance: parsePercentOfOil(a.percentOfFragrance) })),

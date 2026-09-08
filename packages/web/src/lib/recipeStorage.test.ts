@@ -477,7 +477,7 @@ describe('drafts carry the Fragrance & colorants section', () => {
 
   it('round-trips scentColor, and an older draft without the field loads empty', () => {
     const scent = normalizeScentColor({
-      fragrances: [{ name: 'Rose', kind: 'fragrance-oil', percent: '4', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
+      fragrances: [{ name: 'Rose', percent: '4', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
       colorants: [],
       portions: [],
     });

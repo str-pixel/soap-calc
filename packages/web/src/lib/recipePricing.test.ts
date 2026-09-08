@@ -186,7 +186,7 @@ describe('second-wave hardening', () => {
 describe('the Fragrance & colorants section is priced', () => {
   it('prices fragrance, stabilizer, colorant and carrier oil under the scent group with name-stable keys', () => {
     const scent = computedScent({
-          fragrances: [{ name: 'Rose Absolute', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [] }],
+          fragrances: [{ name: 'Rose Absolute', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [] }],
           colorants: [{ name: 'Pink Mica', kind: 'mica', percent: '1', portionKey: '' }],
           portions: [],
         }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });

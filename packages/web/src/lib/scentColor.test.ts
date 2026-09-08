@@ -22,7 +22,7 @@ describe('normalizeScentColor', () => {
       colorants: [{ name: 'Ultramarine', kind: 'oxide', percent: '0.5', portionKey: 'gone' }],
       portions: [{ name: 'A', percent: '150' }],
     });
-    expect(s.fragrances[0]).toMatchObject({ name: 'Lavender', kind: 'essential-oil', percent: '3', supplierMaxPercent: '5', vanillinPercent: '' });
+    expect(s.fragrances[0]).toMatchObject({ name: 'Lavender', percent: '3', supplierMaxPercent: '5', vanillinPercent: '' });
     expect(s.fragrances[0].key).toBeTruthy();
     expect(s.fragrances[0].allergens[0]).toMatchObject({ name: 'Linalool', percentOfFragrance: '12' });
     expect((s.fragrances[0] as unknown as { junk?: unknown }).junk).toBeUndefined();
@@ -39,7 +39,7 @@ describe('normalizeScentColor', () => {
   });
   it('caps names and numbers so a hand-edited file cannot flood state or the draft slot', () => {
     const s = normalizeScentColor({
-      fragrances: [{ name: 'x'.repeat(5000), kind: 'fragrance-oil', percent: '3' + '0'.repeat(100), supplierMaxPercent: '', vanillinPercent: '', allergens: [{ name: 'y'.repeat(5000), percentOfFragrance: '1' }] }],
+      fragrances: [{ name: 'x'.repeat(5000), percent: '3' + '0'.repeat(100), supplierMaxPercent: '', vanillinPercent: '', allergens: [{ name: 'y'.repeat(5000), percentOfFragrance: '1' }] }],
       colorants: [{ name: 'z'.repeat(5000), kind: 'mica', percent: '', portionKey: '' }],
       portions: [{ name: 'w'.repeat(5000), percent: '40' }],
     });
@@ -67,14 +67,16 @@ describe('normalizeScentColor', () => {
     expect(back.colorants[0]).toMatchObject({ catalogId: 'madder-root', name: 'Madder root', kind: 'natural' });
   });
 
-  it('unknown kinds fall back: fragrance → fragrance-oil, colorant → other', () => {
+  it('an unknown colorant kind falls back to Other, and a stored fragrance kind is simply dropped', () => {
     const s = normalizeScentColor({
+      // `kind` is no longer part of a scent row: the section holds essential oils only.
       fragrances: [{ name: 'x', kind: 'perfume', percent: '' }],
       colorants: [{ name: 'y', kind: 'glitter', percent: '' }],
       portions: [],
     });
-    expect(s.fragrances[0].kind).toBe('fragrance-oil');
     expect(s.colorants[0].kind).toBe('other');
+    expect('kind' in s.fragrances[0]).toBe(false);
+    expect(s.fragrances[0].name).toBe('x');
   });
 });
 
@@ -85,15 +87,17 @@ describe('row factories', () => {
     expect(newColorantLine('cp').percent).toBe('');
     expect(newColorantLine('hp').percent).toBe('');
   });
-  it('a new fragrance is a fragrance oil with everything blank', () => {
-    expect(newFragranceLine()).toMatchObject({ kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] });
+  it('a new scent row is blank, and carries no kind — every row is an essential oil', () => {
+    const line = newFragranceLine();
+    expect(line).toMatchObject({ name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] });
+    expect('kind' in line).toBe(false);
   });
 });
 
 describe('scentColorToSaved round-trips through normalizeScentColor', () => {
   it('drops keys on save and restores them on load, keeping the portion link', () => {
     const s = normalizeScentColor({
-      fragrances: [{ name: 'Rose', kind: 'fragrance-oil', percent: '4', supplierMaxPercent: '', vanillinPercent: '2', allergens: [] }],
+      fragrances: [{ name: 'Rose', percent: '4', supplierMaxPercent: '', vanillinPercent: '2', allergens: [] }],
       colorants: [{ name: 'Pink mica', kind: 'mica', percent: '', portionKey: '#0' }],
       portions: [{ name: 'Swirl', percent: '30' }],
     });
@@ -113,7 +117,7 @@ describe('extractLegacyFragrance — the additive catalog no longer has fragranc
     const { additives, fragrances, dosesDropped } = extractLegacyFragrance(raw, 'cp');
     expect(additives.map((a) => a.catalogId)).toEqual(['sugar-sorbitol']);
     expect(fragrances).toHaveLength(1);
-    expect(fragrances[0]).toMatchObject({ name: 'Fragrance / essential oil', kind: 'fragrance-oil', percent: '3' });
+    expect(fragrances[0]).toMatchObject({ name: 'Fragrance / essential oil', percent: '3' });
     expect(dosesDropped).toBe(0);
   });
   it('carries a solution-basis percent for LS only — the section reads the field as % of solution', () => {
@@ -157,7 +161,7 @@ describe('extractLegacyFragrance — the additive catalog no longer has fragranc
 
 describe('migrateSavedScent — the one loader for drafts and files', () => {
   it('moves legacy rows ahead of the saved section, re-applies the row cap, and reports what it did', () => {
-    const rawScent = { fragrances: Array.from({ length: 20 }, (_, i) => ({ name: `F${i}`, kind: 'fragrance-oil', percent: '1', supplierMaxPercent: '', vanillinPercent: '', allergens: [] })), colorants: [], portions: [] };
+    const rawScent = { fragrances: Array.from({ length: 20 }, (_, i) => ({ name: `F${i}`, percent: '1', supplierMaxPercent: '', vanillinPercent: '', allergens: [] })), colorants: [], portions: [] };
     const m = migrateSavedScent(rawScent, [{ catalogId: 'fragrance', name: 'Old', amount: '3', basis: 'oil', unit: 'percent', addAt: 'trace' }], 'cp');
     expect(m.scentColor.fragrances).toHaveLength(20);
     expect(m.scentColor.fragrances[0].name).toBe('Old');
@@ -171,7 +175,7 @@ describe('migrateSavedScent — the one loader for drafts and files', () => {
   });
   it('the notice names the move, and the re-entry when a dose could not be carried', () => {
     expect(scentMigrationNotice({ fragrancesMoved: 0, dosesDropped: 0 })).toBe('');
-    expect(scentMigrationNotice({ fragrancesMoved: 1, dosesDropped: 0 })).toBe(' — fragrance moved to the Fragrance section');
-    expect(scentMigrationNotice({ fragrancesMoved: 2, dosesDropped: 1 })).toMatch(/fragrances moved to the Fragrance section — re-enter its dose there/);
+    expect(scentMigrationNotice({ fragrancesMoved: 1, dosesDropped: 0 })).toBe(' — fragrance moved to the Essential oils section');
+    expect(scentMigrationNotice({ fragrancesMoved: 2, dosesDropped: 1 })).toMatch(/fragrances moved to the Essential oils section — re-enter its dose there/);
   });
 });

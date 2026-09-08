@@ -42,13 +42,11 @@ describe('fragranceOverSupplierMax', () => {
 });
 
 describe('essentialOilCaution — clove and cinnamon EOs accelerate and irritate (CP:9531-9537, 9589-9592)', () => {
-  it('fires for an essential oil named clove or cinnamon, case-insensitively', () => {
-    expect(essentialOilCaution('essential-oil', 'Clove bud')).toBe(true);
-    expect(essentialOilCaution('essential-oil', 'CINNAMON leaf')).toBe(true);
-    expect(essentialOilCaution('essential-oil', 'Lavender')).toBe(false);
-  });
-  it('never fires for a fragrance oil, whatever its name', () => {
-    expect(essentialOilCaution('fragrance-oil', 'Cinnamon bun')).toBe(false);
+  it('fires for an oil named clove or cinnamon, case-insensitively', () => {
+    expect(essentialOilCaution('Clove bud')).toBe(true);
+    expect(essentialOilCaution('CINNAMON leaf')).toBe(true);
+    expect(essentialOilCaution('Lavender')).toBe(false);
+    expect(essentialOilCaution('')).toBe(false);
   });
 });
 

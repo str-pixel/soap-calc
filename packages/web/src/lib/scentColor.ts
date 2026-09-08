@@ -1,5 +1,5 @@
 // packages/web/src/lib/scentColor.ts
-import { colorantEntryById, MAX_ADDITIVE_NAME_LENGTH, type ColorantKind, type FragranceKind } from '@soap-calc/core';
+import { colorantEntryById, MAX_ADDITIVE_NAME_LENGTH, type ColorantKind } from '@soap-calc/core';
 import { isRecord, newAdditiveKey } from './recipe';
 import type { ProcessId } from './process';
 
@@ -7,7 +7,6 @@ export type AllergenLine = { key: string; name: string; percentOfFragrance: stri
 export type FragranceLine = {
   key: string;
   name: string;
-  kind: FragranceKind;
   /** Of total oil weight (CP/HP) or of the finished solution (LS) — the basis is derived
    * from the process at compute time, never stored. */
   percent: string;
@@ -46,7 +45,6 @@ export const MAX_SCENT_ROWS = 20;
 const MAX_NAME_LENGTH = MAX_ADDITIVE_NAME_LENGTH;
 const MAX_NUMBER_LENGTH = 32;
 
-const FRAGRANCE_KINDS: FragranceKind[] = ['fragrance-oil', 'essential-oil'];
 const COLORANT_KINDS: ColorantKind[] = ['mica', 'oxide', 'natural', 'dye', 'other'];
 
 export function createEmptyScentColor(): ScentColor {
@@ -54,7 +52,7 @@ export function createEmptyScentColor(): ScentColor {
 }
 
 export function newFragranceLine(): FragranceLine {
-  return { key: newAdditiveKey(), name: '', kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] };
+  return { key: newAdditiveKey(), name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] };
 }
 
 export function newAllergenLine(): AllergenLine {
@@ -103,7 +101,6 @@ export function normalizeScentColor(raw: unknown): ScentColor {
   });
   const fragrances: FragranceLine[] = raw.fragrances.slice(0, MAX_SCENT_ROWS).flatMap((f) => {
     if (!isRecord(f)) return [];
-    const kind = FRAGRANCE_KINDS.includes(f.kind as FragranceKind) ? (f.kind as FragranceKind) : 'fragrance-oil';
     const allergens: AllergenLine[] = Array.isArray(f.allergens)
       ? f.allergens.slice(0, MAX_SCENT_ROWS).flatMap((a) =>
           isRecord(a) ? [{ key: newAdditiveKey(), name: name(a.name), percentOfFragrance: percentString(a.percentOfFragrance) }] : [],
@@ -112,7 +109,6 @@ export function normalizeScentColor(raw: unknown): ScentColor {
     return [{
       key: newAdditiveKey(),
       name: name(f.name),
-      kind,
       percent: percentString(f.percent),
       supplierMaxPercent: percentString(f.supplierMaxPercent),
       vanillinPercent: percentString(f.vanillinPercent),
@@ -145,8 +141,8 @@ export function normalizeScentColor(raw: unknown): ScentColor {
 export function scentColorToSaved(scent: ScentColor): SavedScentColor {
   const portionIndex = new Map(scent.portions.map((p, i) => [p.key, `#${i}`]));
   return {
-    fragrances: scent.fragrances.map(({ name, kind, percent, supplierMaxPercent, vanillinPercent, allergens }) => ({
-      name, kind, percent, supplierMaxPercent, vanillinPercent,
+    fragrances: scent.fragrances.map(({ name, percent, supplierMaxPercent, vanillinPercent, allergens }) => ({
+      name, percent, supplierMaxPercent, vanillinPercent,
       allergens: allergens.map(({ name: n, percentOfFragrance }) => ({ name: n, percentOfFragrance })),
     })),
     colorants: scent.colorants.map(({ catalogId, name, kind, percent, portionKey }) => ({
@@ -229,5 +225,5 @@ export function scentMigrationNotice(m: { fragrancesMoved: number; dosesDropped:
   if (m.fragrancesMoved === 0) return '';
   const moved = m.fragrancesMoved === 1 ? 'fragrance moved' : 'fragrances moved';
   const dose = m.dosesDropped > 0 ? ' — re-enter its dose there, the old figure was on another basis' : '';
-  return ` — ${moved} to the Fragrance section${dose}`;
+  return ` — ${moved} to the Essential oils section${dose}`;
 }
