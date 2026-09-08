@@ -33,8 +33,9 @@ export const HP_COLORANT_WATER_GRAMS = { low: 0.25 * GRAMS_PER_OZ, high: 0.5 * G
 /**
  * Derived ranges. Volume figures: micas ½–2 tsp per lb of oils, 1 typical; oxides and
  * ultramarines 1 tsp/lb, HALF OR LESS for brown and red; natural powders ½–1 tsp/lb
- * (supplier usage pages read 2026-09-08; the URLs were NOT retained — a follow-up must
- * re-fetch and pin them here, the way fragrance.ts pins its IFRA source. Never in copy.) Weight derivation: a supplier FAQ puts its micas at 12–18 tsp/oz = 1.6–2.4 g/tsp,
+ * (supplier usage pages; the per-colour rates were re-fetched and pinned 2026-09-09 — the
+ * URLs are listed in colorant-catalog.ts, which carries the per-material figures. These
+ * per-KIND bands stay a broad fallback for a colour the catalog does not name. Never in copy.) Weight derivation: a supplier FAQ puts its micas at 12–18 tsp/oz = 1.6–2.4 g/tsp,
  * so ½ tsp/lb = 0.18–0.26% and 1 tsp/lb = 0.35–0.53% of oils; the CP text's own example
  * (4 g per 450 g, CP:9389-9391) is 0.89%. The band below spans that whole spread. Dyes are
  * "to shade" (LS:13256-13262) and "other" is unknown by definition: no range.

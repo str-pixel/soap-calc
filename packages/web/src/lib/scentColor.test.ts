@@ -49,6 +49,24 @@ describe('normalizeScentColor', () => {
     expect(s.portions[0].name.length).toBeLessThanOrEqual(120);
     expect(s.fragrances[0].percent.length).toBeLessThanOrEqual(32);
   });
+  it('a colorant saved before the catalog existed loads as a custom row, name intact', () => {
+    const s = normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ name: 'Ultramarine blue', kind: 'oxide', percent: '1', portionKey: '' }],
+    });
+    expect(s.colorants[0]).toMatchObject({ catalogId: '', name: 'Ultramarine blue', kind: 'oxide', percent: '1' });
+  });
+
+  it('a catalog pick round-trips, and the entry supplies the name and kind on load', () => {
+    const saved = scentColorToSaved(normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: 'madder-root', name: 'whatever the file said', kind: 'dye', percent: '1', portionKey: '' }],
+    }));
+    expect(saved.colorants[0].catalogId).toBe('madder-root');
+    const back = normalizeScentColor(saved);
+    expect(back.colorants[0]).toMatchObject({ catalogId: 'madder-root', name: 'Madder root', kind: 'natural' });
+  });
+
   it('unknown kinds fall back: fragrance → fragrance-oil, colorant → other', () => {
     const s = normalizeScentColor({
       fragrances: [{ name: 'x', kind: 'perfume', percent: '' }],

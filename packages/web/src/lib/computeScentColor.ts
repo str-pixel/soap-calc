@@ -34,7 +34,7 @@ export type ComputedFragrance = {
   shareOfProduct: number; overSupplierMax: boolean;
 };
 export type ComputedColorant = {
-  key: string; name: string; kind: ColorantKind; percent: number | null; grams: number | null;
+  key: string; catalogId: string; name: string; kind: ColorantKind; percent: number | null; grams: number | null;
   portionKey: string; portionName: string; portionPercent: number | null;
   /** Linked to a portion that has no usable share yet — the typed dose cannot be sized. */
   portionShareMissing: boolean;
@@ -131,7 +131,7 @@ export function computeScentColorGrams(
           : portionOilGrams(totalOilGrams, Math.min(portion.percent, 100));
     const grams = colorantGrams(percent, basisGrams);
     return {
-      key: c.key, name: c.name, kind: c.kind, percent, grams,
+      key: c.key, catalogId: c.catalogId, name: c.name, kind: c.kind, percent, grams,
       portionKey: portion?.key ?? '', portionName: portion?.name ?? '', portionPercent: portion?.percent ?? null,
       portionShareMissing: portion !== undefined && portion.percent === null && percent !== null,
       stage: colorantStage(process, portion !== undefined),

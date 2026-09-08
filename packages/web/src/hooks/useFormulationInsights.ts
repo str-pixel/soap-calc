@@ -15,6 +15,7 @@ import {
 import { oilById } from '../lib/oils';
 import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
+import { colorantEntryById } from '@soap-calc/core';
 import type { ComputedScentColor } from '../lib/computeScentColor';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
@@ -267,6 +268,13 @@ export function useFormulationInsights(
       labelAllergens: options.scentColor?.labelAllergens,
       colorantPortionsOver100: options.scentColor?.portionsOver100,
       colorantCarrierShiftPercent: options.scentColor?.carrierSuperfatShiftPercent,
+      colorantAdditiveOverlap: (() => {
+        const dosedAsAdditive = new Set(additiveEntries.map((a) => a.catalogId));
+        return (options.scentColor?.colorants ?? []).flatMap((c) => {
+          const entry = c.catalogId ? colorantEntryById(c.catalogId) : undefined;
+          return entry?.alsoAdditiveId && dosedAsAdditive.has(entry.alsoAdditiveId) ? [entry.name] : [];
+        });
+      })(),
       lsGlycerinSolvent: options.lsGlycerinSolvent,
       lsSplitLiquidFatShiftPercent: options.lsSplitLiquidFatShiftPercent,
       lsSplitLiquidIsSolventOnly: options.lsSplitLiquidIsSolventOnly,

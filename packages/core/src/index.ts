@@ -18,6 +18,7 @@ export * from './additives.js';
 export * from './units.js';
 export * from './fragrance.js';
 export * from './colorants.js';
+export * from './colorant-catalog.js';
 export * from './mold-sizer.js';
 export * from './ls-yield.js';
 export * from './batch-weight.js';

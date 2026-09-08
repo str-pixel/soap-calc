@@ -168,7 +168,10 @@ export function buildRecipePricingContext(src: RecipePricingSource): RecipePrici
     }
     for (const c of scent.colorants) {
       if (c.grams === null || c.grams <= 0) continue;
-      additives.push({ key: `colorant-${c.key}`, catalogId: scentPriceKey(COLORANT_PRICE_PREFIX, c.name), name: c.name.trim() || 'Colorant', grams: c.grams, group: 'colorant' });
+      // A catalog colour prices by its id, so the same madder is found whatever the row
+      // is called; a custom one falls back to its name.
+      const key = c.catalogId ? `${COLORANT_PRICE_PREFIX}${c.catalogId}` : scentPriceKey(COLORANT_PRICE_PREFIX, c.name);
+      additives.push({ key: `colorant-${c.key}`, catalogId: key, name: c.name.trim() || 'Colorant', grams: c.grams, group: 'colorant' });
     }
     if (scent.carrierOilGrams > 0) {
       additives.push({ key: 'carrier-oil', catalogId: 'carrier-oil', name: 'Carrier oil (colorants)', grams: scent.carrierOilGrams, group: 'colorant' });

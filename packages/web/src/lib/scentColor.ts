@@ -1,5 +1,5 @@
 // packages/web/src/lib/scentColor.ts
-import { MAX_ADDITIVE_NAME_LENGTH, type ColorantKind, type FragranceKind } from '@soap-calc/core';
+import { colorantEntryById, MAX_ADDITIVE_NAME_LENGTH, type ColorantKind, type FragranceKind } from '@soap-calc/core';
 import { isRecord, newAdditiveKey } from './recipe';
 import type { ProcessId } from './process';
 
@@ -18,6 +18,9 @@ export type FragranceLine = {
 };
 export type ColorantLine = {
   key: string;
+  /** A COLORANT_CATALOG id, or '' for a colorant the maker names themselves. The catalog
+   * entry supplies the name, the kind and the guidance band; a custom row types its own. */
+  catalogId: string;
   name: string;
   kind: ColorantKind;
   /** Of the portion's oils; '' = to shade. Never seeded. */
@@ -61,7 +64,9 @@ export function newAllergenLine(): AllergenLine {
 /** LS seeds a dye (water-soluble is what a liquid tolerates, LS:13256); bars seed a mica.
  * The dose is EMPTY in every process — there is no sourced number to seed. */
 export function newColorantLine(process: ProcessId): ColorantLine {
-  return { key: newAdditiveKey(), name: '', kind: process === 'ls' ? 'dye' : 'mica', percent: '', portionKey: '' };
+  // LS seeds a water-soluble dye — what a liquid tolerates (LS:13256); bars seed a mica.
+  // No catalog pick and no dose: both are the maker's to choose.
+  return { key: newAdditiveKey(), catalogId: '', name: '', kind: process === 'ls' ? 'dye' : 'mica', percent: '', portionKey: '' };
 }
 
 export function newPortion(): Portion {
@@ -120,7 +125,19 @@ export function normalizeScentColor(raw: unknown): ScentColor {
     // A link to a portion that no longer exists returns the colorant to the whole batter
     // rather than dangling.
     const portionKey = portionKeyMap.get(str(c.portionKey)) ?? '';
-    return [{ key: newAdditiveKey(), name: name(c.name), kind, percent: percentString(c.percent), portionKey }];
+    // A catalog id that no longer resolves becomes a custom row, keeping the name — the
+    // same rule normalizeAdditiveLine applies to a retired additive id.
+    const rawCatalogId = str(c.catalogId);
+    const catalogId = rawCatalogId && colorantEntryById(rawCatalogId) ? rawCatalogId : '';
+    const entry = catalogId ? colorantEntryById(catalogId) : undefined;
+    return [{
+      key: newAdditiveKey(),
+      catalogId,
+      name: entry ? entry.name : name(c.name),
+      kind: entry ? entry.kind : kind,
+      percent: percentString(c.percent),
+      portionKey,
+    }];
   });
   return { fragrances, colorants, portions };
 }
@@ -132,8 +149,8 @@ export function scentColorToSaved(scent: ScentColor): SavedScentColor {
       name, kind, percent, supplierMaxPercent, vanillinPercent,
       allergens: allergens.map(({ name: n, percentOfFragrance }) => ({ name: n, percentOfFragrance })),
     })),
-    colorants: scent.colorants.map(({ name, kind, percent, portionKey }) => ({
-      name, kind, percent, portionKey: portionIndex.get(portionKey) ?? '',
+    colorants: scent.colorants.map(({ catalogId, name, kind, percent, portionKey }) => ({
+      catalogId, name, kind, percent, portionKey: portionIndex.get(portionKey) ?? '',
     })),
     portions: scent.portions.map(({ name, percent }) => ({ name, percent })),
   };

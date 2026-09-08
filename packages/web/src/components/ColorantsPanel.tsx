@@ -1,5 +1,10 @@
 import { memo } from 'react';
-import type { ColorantKind } from '@soap-calc/core';
+import {
+  colorantEntryById,
+  colorantsByFamily,
+  NATURAL_COLORANT_CAUTION,
+  type ColorantKind,
+} from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import { colorantDispersalText, colorantGuidanceText } from '../lib/colorantGuidance';
 import type { ComputedScentColor } from '../lib/computeScentColor';
@@ -18,6 +23,16 @@ type Props = {
   process: ProcessId;
   weightUnit: WeightUnit;
   onChange: (next: ScentColor) => void;
+};
+
+const COLORANT_GROUPS = colorantsByFamily();
+
+const KIND_LABELS: Record<ColorantKind, string> = {
+  mica: 'Mica',
+  oxide: 'Oxide or ultramarine',
+  natural: 'Natural powder',
+  dye: 'Water-soluble dye',
+  other: 'Other',
 };
 
 const COLORANT_KINDS: Array<{ value: ColorantKind; cell: string; name: string }> = [
@@ -45,6 +60,11 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
     onChange({ ...scent, colorants: scent.colorants.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
   const setPortion = (key: string, patch: Partial<Portion>) =>
     onChange({ ...scent, portions: scent.portions.map((p) => (p.key === key ? { ...p, ...patch } : p)) });
+  /** Picking a catalog entry adopts its name and kind; Custom… hands both back. */
+  const pickCatalog = (key: string, catalogId: string) => {
+    const entry = catalogId ? colorantEntryById(catalogId) : undefined;
+    setColorant(key, entry ? { catalogId, name: entry.name, kind: entry.kind } : { catalogId: '' });
+  };
   const removePortion = (key: string) =>
     onChange({
       ...scent,
@@ -120,26 +140,36 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
 
       {scent.colorants.length === 0 ? (
         <p className="results-hint">
-          No colour yet. Clays, charcoal, cocoa, botanicals and titanium dioxide are dosed under Additives instead.
+          No colour yet. Pick one from the list, or name your own. Clays, charcoal and cocoa are
+          dosed under Additives instead when they are there for slip or scrub rather than colour.
         </p>
       ) : (
         <ul className="additive-list" aria-label="Colorants">
           {scent.colorants.map((col, i) => {
             const c = computed.colorants[i];
+            const entry = col.catalogId ? colorantEntryById(col.catalogId) : undefined;
             const rowName = col.name.trim() || 'Colorant';
-            const guidance = process === 'ls' ? null : colorantGuidanceText(col.kind, weightUnit);
+            const guidance = process === 'ls' ? null : colorantGuidanceText(col.kind, weightUnit, col.catalogId);
             return (
               <li key={col.key} className="additive-list__row">
                 <div className="additive-list__names">
                   <label className="field">
-                    <span>Colorant name</span>
-                    <input
+                    <span>Colorant</span>
+                    <select
                       className="input"
-                      aria-label="Colorant name"
-                      placeholder="e.g. Ultramarine blue"
-                      value={col.name}
-                      onChange={(e) => setColorant(col.key, { name: e.target.value })}
-                    />
+                      aria-label={`Colorant for ${rowName}`}
+                      value={col.catalogId}
+                      onChange={(e) => pickCatalog(col.key, e.target.value)}
+                    >
+                      <option value="">Custom…</option>
+                      {COLORANT_GROUPS.map((g) => (
+                        <optgroup key={g.family} label={g.label}>
+                          {g.entries.map((item) => (
+                            <option key={item.id} value={item.id}>{item.name}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
                   </label>
                   <button
                     type="button"
@@ -149,15 +179,31 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                   >
                     ×
                   </button>
+                  {!entry && (
+                    <label className="field additive-list__custom-name">
+                      <span>Colorant name</span>
+                      <input
+                        className="input"
+                        aria-label="Colorant name"
+                        placeholder="e.g. Ultramarine blue"
+                        value={col.name}
+                        onChange={(e) => setColorant(col.key, { name: e.target.value })}
+                      />
+                    </label>
+                  )}
                 </div>
-                <SegRadioGroup
-                  label={`Kind of ${rowName}`}
-                  name={`colorant-kind-${col.key}`}
-                  options={COLORANT_KINDS}
-                  value={col.kind}
-                  onChange={(kind) => setColorant(col.key, { kind })}
-                  preserveCase
-                />
+                {entry ? (
+                  <p className="additive-list__stage-fixed">{KIND_LABELS[col.kind]}</p>
+                ) : (
+                  <SegRadioGroup
+                    label={`Kind of ${rowName}`}
+                    name={`colorant-kind-${col.key}`}
+                    options={COLORANT_KINDS}
+                    value={col.kind}
+                    onChange={(kind) => setColorant(col.key, { kind })}
+                    preserveCase
+                  />
+                )}
                 <label className="field"><span>% of oils</span>
                   <input className="input" inputMode="decimal" aria-label={`${rowName} % of oils`} placeholder="to shade" value={col.percent} onChange={(e) => setColorant(col.key, { percent: e.target.value })} />
                 </label>
@@ -178,9 +224,18 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                   {colorantDispersalText(c.dispersal, weightUnit)}.
                   {c.kind !== 'dye' && process === 'ls' && ' Micas and oxides settle in a liquid — shake before use.'}
                 </p>
+                {entry?.note && <p className="inline-note additive-list__hint">{entry.note}</p>}
+                {entry?.alsoAdditiveId && (
+                  <p className="inline-note additive-list__hint">
+                    Also an additive: dose it under Additives instead when you want it for slip, scrub or absorbency rather than colour.
+                  </p>
+                )}
               </li>
             );
           })}
+          {scent.colorants.some((c) => colorantEntryById(c.catalogId)?.kind === 'natural') && (
+            <li className="inline-note">{NATURAL_COLORANT_CAUTION}</li>
+          )}
           {computed.carrierOilGrams > 0 && (
             <li className="inline-note">
               The carrier oil is unsaponified oil riding on the recipe: {formatWeight(computed.carrierOilGrams, weightUnit)} adds about {formatGrams(computed.carrierSuperfatShiftPercent, 1)} superfat points.

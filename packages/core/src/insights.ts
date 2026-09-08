@@ -146,6 +146,9 @@ export type FormulationAnalysisInput = {
   colorantPortionsOver100?: boolean;
   /** Superfat points the colorants' 1:1 carrier oil adds (CP dispersal). */
   colorantCarrierShiftPercent?: number;
+  /** Materials the recipe doses under BOTH Additives and Colorants, by name — the two
+   * doses are separate lines and add up in the batch. */
+  colorantAdditiveOverlap?: string[];
 };
 
 export type InsightRuleParams = Record<string, number | string>;
@@ -1306,6 +1309,18 @@ export const INSIGHT_RULES: InsightRule[] = [
             message: `The colorants' carrier oil adds about ${(input.colorantCarrierShiftPercent ?? 0).toFixed(1)} superfat points — unsaponified oil riding on the recipe.`,
           }
         : null,
+  },
+  {
+    code: 'colorant_also_additive',
+    check: (input) => {
+      const both = input.colorantAdditiveOverlap ?? [];
+      if (both.length === 0) return null;
+      return {
+        level: 'info',
+        code: 'colorant_also_additive',
+        message: `${both.join(', ')} — dosed under both Additives and Colorants, so the two doses add up in the batch.`,
+      };
+    },
   },
   {
     code: 'ls_fragrance_clouding',

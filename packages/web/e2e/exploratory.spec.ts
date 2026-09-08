@@ -608,6 +608,24 @@ test.describe('fragrance & colorants', () => {
     await expect(page.getByLabel('Colorant name')).toHaveValue('Blue mica');
   });
 
+  test('a colorant is picked from the catalog, and brings its name, kind and warning', async ({ page }) => {
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    await page.getByLabel(/Colorant for/).selectOption('beet-root');
+    // The pick settles the name and the kind, so neither control is offered any more.
+    await expect(colorantsPanel(page).getByLabel('Colorant name')).toHaveCount(0);
+    await expect(colorantsPanel(page)).toContainText('Natural powder');
+    await expect(colorantsPanel(page)).toContainText(/never the red it is in the jar/i);
+    await expect(colorantsPanel(page)).toContainText(/anthocyanins and betalains/i);
+    await page.getByLabel(/Beet root % of oils/).fill('1');
+    // A whole-batter colour goes in WITH the oils, so it lists there — the Colorants
+    // section is for the portion colours added at the design stage.
+    await expect(section(page, 'Oils')).toContainText(/Beet root/);
+    await expect(section(page, 'Colorants')).toHaveCount(0);
+    // Custom… hands the name back.
+    await page.getByLabel(/Colorant for/).selectOption('');
+    await expect(colorantsPanel(page).getByLabel('Colorant name')).toHaveCount(1);
+  });
+
   test('HP: the fragrance is filed after the cook', async ({ page }) => {
     await processTab(page, /Hot process/).click();
     await page.getByRole('button', { name: /add fragrance/i }).click();

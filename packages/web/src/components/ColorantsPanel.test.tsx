@@ -92,6 +92,67 @@ describe('ColorantsPanel', () => {
     expect(screen.getAllByText(/straight into the warmed oils/i)).toHaveLength(1);
   });
 
+  it('offers the catalog as a grouped picker, with Custom first', () => {
+    renderPanel(blueMica, 'cp');
+    const picker = screen.getByLabelText(/Colorant for/) as HTMLSelectElement;
+    expect(picker.options[0].text).toBe('Custom…');
+    const groups = Array.from(picker.querySelectorAll('optgroup')).map((g) => g.getAttribute('label'));
+    expect(groups).toContain('Any colour');
+    expect(groups).toContain('Red and pink');
+    expect(Array.from(picker.querySelectorAll('option')).map((o) => o.textContent)).toContain('Madder root');
+  });
+
+  it('picking a catalog colour adopts its name and kind, and drops the controls it settles', () => {
+    const onChange = renderPanel(blueMica, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'madder-root' } });
+    const next = onChange.mock.calls[0][0] as ScentColor;
+    expect(next.colorants[0]).toMatchObject({ catalogId: 'madder-root', name: 'Madder root', kind: 'natural' });
+  });
+
+  it('a catalog row states its kind instead of offering the control, and a custom row keeps it', () => {
+    const picked = normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '', portionKey: '' }],
+    });
+    renderPanel(picked, 'cp');
+    expect(screen.queryByRole('radiogroup', { name: /^Kind of/ })).toBeNull();
+    expect(screen.queryByLabelText('Colorant name')).toBeNull();
+    expect(screen.getByText('Natural powder')).toBeTruthy();
+    cleanup();
+    renderPanel(blueMica, 'cp');
+    expect(screen.getByRole('radiogroup', { name: /^Kind of/ })).toBeTruthy();
+    expect(screen.getByLabelText('Colorant name')).toBeTruthy();
+  });
+
+  it('carries the picked colour\'s own warning, and the natural-pigment caution', () => {
+    const beet = normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: 'beet-root', name: 'Beet root', kind: 'natural', percent: '', portionKey: '' }],
+    });
+    renderPanel(beet, 'cp');
+    expect(screen.getByText(/never the red it is in the jar/i)).toBeTruthy();
+    expect(screen.getByText(/anthocyanins and betalains/i)).toBeTruthy();
+  });
+
+  it('a dual-purpose material says where else it belongs', () => {
+    const clay = normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: 'kaolin-clay', name: 'Kaolin clay', kind: 'natural', percent: '', portionKey: '' }],
+    });
+    renderPanel(clay, 'cp');
+    expect(screen.getByText(/Also an additive/i)).toBeTruthy();
+  });
+
+  it('an unknown catalog id falls back to a custom row, keeping the name', () => {
+    const stale = normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: 'retired-pigment', name: 'Old pigment', kind: 'natural', percent: '1', portionKey: '' }],
+    });
+    renderPanel(stale, 'cp');
+    expect((screen.getByLabelText('Colorant name') as HTMLInputElement).value).toBe('Old pigment');
+    expect((screen.getByLabelText(/Colorant for/) as HTMLSelectElement).value).toBe('');
+  });
+
   it('stops adding at the cap the loader applies', () => {
     const full = normalizeScentColor({
       fragrances: [],
