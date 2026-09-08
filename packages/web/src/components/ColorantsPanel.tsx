@@ -6,7 +6,12 @@ import {
   type ColorantKind,
 } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
-import { colorantDispersalText, colorantGuidanceText } from '../lib/colorantGuidance';
+import {
+  colorantDispersalText,
+  colorantGuidanceText,
+  colorantShadeLadder,
+  colorantStabilityText,
+} from '../lib/colorantGuidance';
 import type { ComputedScentColor } from '../lib/computeScentColor';
 import { formatGrams } from '../lib/format';
 import type { ProcessId } from '../lib/process';
@@ -150,6 +155,8 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
             const entry = col.catalogId ? colorantEntryById(col.catalogId) : undefined;
             const rowName = col.name.trim() || 'Colorant';
             const guidance = process === 'ls' ? null : colorantGuidanceText(col.kind, weightUnit, col.catalogId);
+            const ladder = process === 'ls' ? null : colorantShadeLadder(col.catalogId, weightUnit);
+            const stability = colorantStabilityText(col.catalogId);
             return (
               <li key={col.key} className="additive-list__row">
                 <div className="additive-list__names">
@@ -220,10 +227,22 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                 </div>
                 <div className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</div>
                 <p className="inline-note additive-list__hint">
-                  {guidance && <>{guidance} </>}
+                  {/* The ladder carries the dose AND what it buys, so the plain band would
+                      only repeat it more vaguely. One or the other, never both. */}
+                  {!ladder && guidance && <>{guidance} </>}
                   {colorantDispersalText(c.dispersal, weightUnit)}.
                   {c.kind !== 'dye' && process === 'ls' && ' Micas and oxides settle in a liquid — shake before use.'}
                 </p>
+                {ladder && (
+                  <p className="inline-note additive-list__hint">
+                    <strong>How dark it goes.</strong> {ladder} Weigh a spoonful once to fix your own percent.
+                  </p>
+                )}
+                {stability && (
+                  <p className="inline-note additive-list__hint">
+                    <strong>Over time.</strong> {stability}
+                  </p>
+                )}
                 {entry?.note && <p className="inline-note additive-list__hint">{entry.note}</p>}
                 {entry?.alsoAdditiveId && (
                   <p className="inline-note additive-list__hint">

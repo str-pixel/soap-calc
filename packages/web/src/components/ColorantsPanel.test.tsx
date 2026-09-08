@@ -163,3 +163,34 @@ describe('ColorantsPanel', () => {
     expect((screen.getByRole('button', { name: /add colorant/i }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe('how much, what shade, and what happens over time', () => {
+  const pick = (catalogId: string) =>
+    normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId, name: '', kind: 'natural', percent: '', portionKey: '' }],
+    });
+
+  it('a picked colour states its dose, its shade ladder and its keeping', () => {
+    renderPanel(pick('activated-charcoal'), 'cp');
+    expect(screen.getByText(/How dark it goes/)).toBeTruthy();
+    expect(screen.getByText(/Per kg of oils/)).toBeTruthy();
+    // The ladder replaces the plain band rather than sitting beside it.
+    expect(screen.queryByText(/weigh a spoonful once to fix your own percent, and start low/)).toBeNull();
+    expect(screen.getByText(/light grey/)).toBeTruthy();
+    expect(screen.getByText(/black, noticeably grey lather/)).toBeTruthy();
+    expect(screen.getByText(/Over time/)).toBeTruthy();
+    expect(screen.getByText(/Holds its colour/)).toBeTruthy();
+  });
+
+  it('a colour that fades says so', () => {
+    renderPanel(pick('spirulina'), 'cp');
+    expect(screen.getByText(/Fades with time and light/)).toBeTruthy();
+  });
+
+  it('says nothing rather than guessing where no source gives a ladder or a verdict', () => {
+    renderPanel(pick('woad'), 'cp');
+    expect(screen.queryByText(/How dark it goes/)).toBeNull();
+    expect(screen.queryByText(/Over time/)).toBeNull();
+  });
+});

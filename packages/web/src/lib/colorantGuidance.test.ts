@@ -1,6 +1,12 @@
 // packages/web/src/lib/colorantGuidance.test.ts
 import { describe, expect, it } from 'vitest';
-import { colorantGuidanceText, hpWaterText, tsp } from './colorantGuidance';
+import {
+  colorantGuidanceText,
+  colorantShadeLadder,
+  colorantStabilityText,
+  hpWaterText,
+  tsp,
+} from './colorantGuidance';
 
 describe('guidance renders in the active weight unit', () => {
   it('imperial: tsp per lb; metric: tsp per kg (1 lb = 0.4536 kg → ×2.2, rounded to halves)', () => {
@@ -47,11 +53,44 @@ describe('a catalog pick ships its own sourced rate, and no invented weight perc
   });
 
   it('says nothing at all for a colour with no defensible rate', () => {
-    expect(colorantGuidanceText('natural', 'lb', 'indigo')).toBeNull();
+    // Alkanet's only sourced route is an infusion, measured against the infusing oil.
     expect(colorantGuidanceText('natural', 'lb', 'alkanet-root')).toBeNull();
+    expect(colorantGuidanceText('natural', 'lb', 'woad')).toBeNull();
+    // Indigo DOES carry one now — three fetched sources agreed on a quarter to a half.
+    expect(colorantGuidanceText('natural', 'lb', 'indigo')).toMatch(/^About ¼–½ tsp per lb of oils/);
   });
 
   it('falls back to the kind band for a custom row, which still carries its derived percent', () => {
     expect(colorantGuidanceText('mica', 'lb')).toMatch(/roughly 0\.2–0\.9% by weight/);
+  });
+});
+
+describe('the shade ladder and the over-time line', () => {
+  it('reads dose to colour, lightest first, in the active unit', () => {
+    expect(colorantShadeLadder('activated-charcoal', 'lb')).toBe(
+      'Per lb of oils: ⅛ light grey · ½ medium grey · 1 dark grey, faint grey lather · 2 grey-black · 3 black, noticeably grey lather.',
+    );
+    // Per kilo the same ladder roughly doubles.
+    expect(colorantShadeLadder('activated-charcoal', 'g')).toMatch(/^Per kg of oils: ¼ light grey · 1 medium grey · 2 dark grey/);
+    // Turmeric's low rung survives the conversion instead of rounding to nothing.
+    expect(colorantShadeLadder('turmeric', 'lb')).toBe('Per lb of oils: ¹⁄₃₂ soft yellow · 1 burnt orange.');
+  });
+
+  it('says nothing for a colour with no sourced ladder, or for a custom row', () => {
+    expect(colorantShadeLadder('indigo', 'lb')).toBeNull();
+    expect(colorantShadeLadder('', 'lb')).toBeNull();
+  });
+
+  it('states what months of light and alkali do, where a source says', () => {
+    expect(colorantStabilityText('iron-oxide')).toMatch(/Holds its colour/);
+    expect(colorantStabilityText('spirulina')).toMatch(/Fades with time and light/);
+    expect(colorantStabilityText('mica')).toMatch(/Shifts in the first weeks/);
+    // Alkanet arrives grey and turns purple over the cure — a shift, not a fade.
+    expect(colorantStabilityText('alkanet-root')).toMatch(/Shifts in the first weeks/);
+    expect(colorantStabilityText('turmeric')).toMatch(/Fades with time and light/);
+    expect(colorantStabilityText('fdc-dye')).toMatch(/Fades/);
+    // Not every colour has a sourced answer, and silence is the honest one.
+    expect(colorantStabilityText('woad')).toBeNull();
+    expect(colorantStabilityText('')).toBeNull();
   });
 });

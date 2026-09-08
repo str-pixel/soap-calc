@@ -50,8 +50,48 @@ import type { ColorantKind } from './colorants.js';
  *   https://lovelygreens.com/make-naturally-colored-orange-soap-using-annatto-seeds/ and the
  *     alkanet section of the Lovely Greens colour guide — infusion routes, stated per pound of
  *     INFUSING oil, deliberately NOT carried as a per-pound-of-oils rate.
+ *
+ * SHADE LADDERS AND KEEPING, retrieved 2026-09-09. Only ladders stated per POUND OF OILS are
+ * carried; several good ones are stated per pound of SOAP or per cup of batter and are not
+ * comparable, so they are left out rather than converted:
+ *   https://thenovastudio.com/annatto-seed-natural-soap-colorant/ — annatto 1/8 to 1 tsp PPO,
+ *     lighter to deeper orange, grainy at the top.
+ *   http://www.soap-making-resource.com/natural-soap-colorants.html — black walnut 1/4 tsp PPO
+ *     light brown to 1/2 deep dark brown; paprika 1/2-1 TBSP PPO; indigo 1/4-1/2 tsp.
+ *   https://www.greatcakessoapworks.com/handmade-soap-blog/index.php/how-to-use-indigo-to-color-cold-process-soap/
+ *     — 1/2 tsp indigo through the LYE SOLUTION per 16 oz oils reads darker than a heavier
+ *     oil-dispersed dose, which is why the note says the route matters as much as the dose.
+ *   https://soapqueen.com/bath-and-body-tutorials/tips-and-tricks/using-madder-root-powder-color-soap/
+ *     — gelled madder runs coral to brick red where ungelled runs dusty rose to mauve. Its
+ *     step figures measure the 1:3 DISPERSION per pound of soap, so they are not carried.
+ *   https://soapqueen.com/bath-and-body-tutorials/tips-and-tricks/turmeric-cold-process-soap-color-tests/
+ *     — powder colours harder than infusion, and browns past the orange.
+ *   https://www.soapmakingforum.com/threads/turmeric-soap-lost-color.83941/ — turmeric fading
+ *     to cream within weeks, with the mechanism (curcumin is unstable to light, lye and heat).
+ *     One site calls turmeric permanent; five practitioner reports say otherwise, so it is
+ *     recorded as fading.
+ *   https://lovelygreens.com/natural-purple-soap-alkanet-root/ — alkanet's grey-to-purple shift
+ *     over about a week after cutting, and the ruby-red-oil test that predicts failure.
+ *   https://soapqueen.com/bath-and-body-tutorials/tips-and-tricks/sunday-night-spotlight-mica-colorants/
+ *     — the mica rule: what dyed the mica decides whether it survives soap pH.
+ *   https://soapyfriends.com/how-long-will-natural-colors-last-in-homemade-soap/ — plant greens
+ *     settling to khaki tan; the alkanet and indigo timelines.
  * Supplier names stay in these comments and out of the interface (AGENTS.md).
  */
+/** One rung of a shade ladder: a dose in teaspoons per POUND OF OILS, and the colour the
+ * source says it gives. Ordered lightest first. Only ladders stated against that same
+ * denominator are carried — a ladder stated per cup of batter is not comparable. */
+export type ColorantShade = { tspPerLb: number; colour: string };
+
+/** What time and light do to the colour once the soap is made. */
+export type ColorantStability = 'stable' | 'shifts' | 'fades';
+
+export const COLORANT_STABILITY_TEXT: Record<ColorantStability, string> = {
+  stable: 'Holds its colour: not light sensitive, and the alkali does not shift it.',
+  shifts: 'Shifts in the first weeks — what you cut is not what you keep. Prove it on a small batch before you build a design around it.',
+  fades: 'Fades with time and light: expect it weaker in a few months than the day you cut it.',
+};
+
 export type ColorantFamily =
   | 'multi' | 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'brown' | 'black' | 'white';
 
@@ -68,8 +108,17 @@ export type ColorantCatalogEntry = {
   tspPerLbHigh: number | null;
   /** What the maker has to know before choosing it. Short, behaviour only. */
   note?: string;
-  /** The additive-catalog id for the same material, dosed for a non-colour purpose. */
+  /** Dose to colour, lightest first — what the maker actually wants to know. */
+  shades?: readonly ColorantShade[];
+  /** How the colour holds up over months. Absent where no source says. */
+  stability?: ColorantStability;
+  /** The additive-catalog entry that covers this material when it is dosed for a non-colour
+   * purpose. Often a BUCKET: "Clay (bentonite, kaolin)", "Seeds (poppy, etc.)" and "Dried
+   * botanicals, ground" each stand for many materials. */
   alsoAdditiveId?: string;
+  /** Set only where that additive entry is the SAME MATERIAL, not a bucket — the one case
+   * where dosing both can be called dosing one thing twice. */
+  additiveIsSameMaterial?: true;
 };
 
 export const COLORANT_FAMILY_LABELS: Record<ColorantFamily, string> = {
@@ -91,7 +140,13 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     tspPerLbLow: 0.5, tspPerLbHigh: 2,
     // CP:9296-9302: must be tested and approved for cold process; colour can morph under
     // alkaline and high-heat conditions, and an unlabelled mica is not recommended.
-    note: 'Use one your supplier labels as approved for cold process — colour can morph in the alkali and the heat. Too much stains the lather.',
+    note: 'Whether a mica survives depends on what dyed it: one coloured with mineral pigment holds, one dyed with a lake shifts at soap pH — a blue can read lavender, or grey. Use one your supplier labels for cold process, and test it. Too much stains the lather.',
+    stability: 'shifts',
+    shades: [
+      { tspPerLb: 0.5, colour: 'pastel' },
+      { tspPerLb: 1, colour: 'full depth' },
+      { tspPerLb: 2, colour: 'bold' },
+    ],
   },
   {
     id: 'iron-oxide', name: 'Iron oxide', kind: 'oxide', family: 'multi',
@@ -100,78 +155,84 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     // The generic pigment rate is 1 tsp PPO, but the family spans 8x: black reads at
     // 1/4-1/2 tsp PPO while a red needs 1.5-2. Colour-specific, so it goes in the note.
     note: 'Opaque and steadfast: it does not bleed, migrate or fade. The rate swings by colour — black reads at a quarter of a teaspoon where a red wants two — and too much colours the lather and the washcloth.',
+    stability: 'stable',
   },
   {
     id: 'ultramarine', name: 'Ultramarine', kind: 'oxide', family: 'multi',
     tspPerLbLow: 1, tspPerLbHigh: 1,
     note: 'Opaque and steadfast, like the oxides. Externally applied cosmetics only.',
+    stability: 'stable',
   },
   {
     id: 'titanium-dioxide', name: 'Titanium dioxide', kind: 'oxide', family: 'white',
     tspPerLbLow: 0.25, tspPerLbHigh: 1,
-    alsoAdditiveId: 'titanium-dioxide',
+    alsoAdditiveId: 'titanium-dioxide', additiveIsSameMaterial: true,
     note: 'An opaque, steadfast white that also lightens every colour it shares a batch with. It is prone to glycerin rivers, more so dispersed in water than in oil, and too much leaves a chalky bar and a pasty lather.',
+    stability: 'stable',
   },
   {
     id: 'fdc-dye', name: 'FD&C / D&C dye', kind: 'dye', family: 'multi',
     tspPerLbLow: 0.25, tspPerLbHigh: 0.25,
     // CP:9269-9272: bleeding, heat and UV unstable, not recommended for CP by the source.
     note: 'Water soluble and vivid, but it bleeds between layers, morphs at soap pH and fades in light — the cold-process source advises against it in a bar.',
+    stability: 'fades',
   },
   {
     id: 'lake-pigment', name: 'Lake pigment', kind: 'other', family: 'multi',
     tspPerLbLow: 0.25, tspPerLbHigh: 0.25,
     // CP:9287-9291: migrating colorants, best in single-colour soaps and melt and pour.
     note: 'A dye on an insoluble base. It migrates, so keep it to a single-colour soap.',
+    stability: 'fades',
   },
 
   // --- Blue (CP:9339-9340) ------------------------------------------------------------
   {
     id: 'indigo', name: 'Indigo powder', kind: 'natural', family: 'blue',
-    tspPerLbLow: null, tspPerLbHigh: null,
-    note: 'Test your own product first. Published rates disagree by more than tenfold, and saturation genuinely varies between suppliers; too much turns the lather blue and stains cloth.',
+    tspPerLbLow: 0.25, tspPerLbHigh: 0.5,
+    note: 'Test your own product first — saturation genuinely varies between suppliers, and a concentrated grade needs a fraction of this. Past about half a teaspoon a pound the lather goes blue and stains cloth. Overdosed it reads green, not darker blue. Delivered through the lye solution it colours roughly twice as hard as dispersed in oil.',
+    stability: 'shifts',
   },
   { id: 'woad', name: 'Woad', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'blue-cambrian-clay', name: 'Blue Cambrian clay', kind: 'natural', family: 'blue', tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay' },
+  { id: 'blue-cambrian-clay', name: 'Blue Cambrian clay', kind: 'natural', family: 'blue', tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay', stability: 'stable' },
   { id: 'blue-cornmeal', name: 'Blue cornmeal', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
 
   // --- Green (CP:9343-9345) -----------------------------------------------------------
-  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 0.5, tspPerLbHigh: 3, note: 'Plant greens are fugitive: this fades with time and light whatever the dose. Mix it into an equal weight of water first.' },
-  { id: 'nettle', name: 'Nettle leaf powder', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'wheatgrass', name: 'Wheatgrass', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'spinach-powder', name: 'Spinach powder', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'kelp', name: 'Kelp', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'sage', name: 'Sage', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
+  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 0.5, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This goes olive within a couple of months and settles at a khaki tan; daylight speeds it, a dark cupboard slows it. Mix it into an equal weight of water first.', stability: 'fades' },
+  { id: 'nettle', name: 'Nettle leaf powder', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
+  { id: 'wheatgrass', name: 'Wheatgrass', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'fades' },
+  { id: 'spinach-powder', name: 'Spinach powder', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
+  { id: 'kelp', name: 'Kelp', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
+  { id: 'sage', name: 'Sage', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'botanicals', stability: 'fades' },
   { id: 'dandelion-root', name: 'Dandelion root', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
 
   // --- Yellow and orange (CP:9356-9361) ----------------------------------------------
-  { id: 'annatto', name: 'Annatto', kind: 'natural', family: 'yellow', tspPerLbLow: 0.125, tspPerLbHigh: 1, note: 'The rate above is for the powder added directly. Ground seed is coarse and many makers infuse it into an oil instead, which is a different measurement entirely.' },
-  { id: 'turmeric', name: 'Turmeric', kind: 'natural', family: 'yellow', tspPerLbLow: 0.03, tspPerLbHigh: 1, note: 'A very little goes a long way — a thirty-second of a teaspoon per pound reads soft yellow, a whole one burnt orange. Premix it in oil; it does not disperse in water.' },
+  { id: 'annatto', name: 'Annatto', kind: 'natural', family: 'yellow', tspPerLbLow: 0.125, tspPerLbHigh: 1, note: 'The rate above is for the powder added directly. Ground seed is coarse and many makers infuse it into an oil instead, which is a different measurement entirely.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light orange, visibly grainy' }, { tspPerLb: 0.5, colour: 'orange' }, { tspPerLb: 1, colour: 'deep orange' }] },
+  { id: 'turmeric', name: 'Turmeric', kind: 'natural', family: 'yellow', tspPerLbLow: 0.03, tspPerLbHigh: 1, note: 'A very little goes a long way. Premix it in oil; it does not disperse in water. Powder colours harder than an infusion but fades harder too — an infused oil holds longer.', shades: [{ tspPerLb: 0.03, colour: 'soft yellow' }, { tspPerLb: 1, colour: 'burnt orange' }], stability: 'fades' },
   { id: 'calendula', name: 'Calendula petals', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
-  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, note: 'Can irritate skin at more than a trace.' },
+  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'Can irritate skin at more than a trace.', stability: 'fades' },
   { id: 'curry-powder', name: 'Curry powder', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay' },
+  { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
   { id: 'carrot-puree', name: 'Carrot puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'pumpkin-puree', name: 'Pumpkin puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
 
   // --- Red and pink (CP:9362-9363) ----------------------------------------------------
-  { id: 'madder-root', name: 'Madder root', kind: 'natural', family: 'red', tspPerLbLow: 0.5, tspPerLbHigh: 2, note: 'Gel changes the outcome: ungelled reads pale pink to dusky, gelled reads true pink to deep salmon. Added at trace rather than infused it leaves small speckles.' },
+  { id: 'madder-root', name: 'Madder root', kind: 'natural', family: 'red', tspPerLbLow: 0.5, tspPerLbHigh: 2, note: 'Gel decides the hue, not just the depth: gelled runs coral to brick red, ungelled runs dusty rose to mauve, and the two diverge further the more you use. Added at trace rather than infused it leaves small speckles.', stability: 'stable' },
   { id: 'cochineal', name: 'Cochineal', kind: 'natural', family: 'red', tspPerLbLow: null, tspPerLbHigh: null, note: 'An insect-derived pigment — not vegan.' },
   { id: 'rhubarb-powder', name: 'Rhubarb powder', kind: 'natural', family: 'red', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'pink-kaolin', name: 'Pink kaolin clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay' },
-  { id: 'red-clay', name: 'Moroccan red clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay' },
+  { id: 'pink-kaolin', name: 'Pink kaolin clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'pink' }, { tspPerLb: 3, colour: 'deeper pink' }] },
+  { id: 'red-clay', name: 'Moroccan red clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'soft pink-brown' }, { tspPerLb: 3, colour: 'deeper brown' }] },
 
   // --- Purple (CP:9364) ---------------------------------------------------------------
-  { id: 'alkanet-root', name: 'Alkanet root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null, note: 'No direct rate: added as powder it grits and dulls, so the sourced route is an infusion — around three tablespoons of dried root per pound of infusing oil. Poor-quality root reads warm grey rather than purple.' },
+  { id: 'alkanet-root', name: 'Alkanet root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null, note: 'No direct rate: added as powder it grits and dulls, so the sourced route is an infusion — around three tablespoons of dried root per pound of infusing oil. Poor-quality root reads warm grey rather than purple — if the infused oil is not ruby red before you soap, the bars will not turn purple. Extra virgin olive oil fights the colour; use pomace.', stability: 'shifts' },
   { id: 'gromwell-root', name: 'Gromwell root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'purple-clay', name: 'Brazilian purple clay', kind: 'natural', family: 'purple', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay' },
+  { id: 'purple-clay', name: 'Brazilian purple clay', kind: 'natural', family: 'purple', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
 
   // --- Brown (CP:9341-9342) -----------------------------------------------------------
-  { id: 'cocoa-powder', name: 'Cocoa powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'cocoa-powder' },
-  { id: 'black-walnut', name: 'Black walnut powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null },
+  { id: 'cocoa-powder', name: 'Cocoa powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'cocoa-powder', additiveIsSameMaterial: true, stability: 'stable' },
+  { id: 'black-walnut', name: 'Black walnut powder', kind: 'natural', family: 'brown', tspPerLbLow: 0.25, tspPerLbHigh: 0.5, shades: [{ tspPerLb: 0.25, colour: 'light brown' }, { tspPerLb: 0.5, colour: 'deep dark brown' }] },
   { id: 'acorn-powder', name: 'Acorn powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'henna', name: 'Henna powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'rhassoul-clay', name: 'Rhassoul clay', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay' },
+  { id: 'henna', name: 'Henna powder', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 2 },
+  { id: 'rhassoul-clay', name: 'Rhassoul clay', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
   {
     id: 'beet-root', name: 'Beet root', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null,
     // CP:9367-9372: betalains do not survive the alkali — beet juice will not colour soap red.
@@ -179,17 +240,28 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   },
 
   // --- Black (CP:9346) ----------------------------------------------------------------
-  { id: 'activated-charcoal', name: 'Activated charcoal', kind: 'natural', family: 'black', tspPerLbLow: 0.125, tspPerLbHigh: 1, alsoAdditiveId: 'charcoal', note: 'An eighth of a teaspoon per pound reads light grey and a whole one dark; past that it goes black and greys the lather. It marks a soap dish and a washcloth, though it washes out.' },
-  { id: 'dead-sea-mud', name: 'Dead sea mud', kind: 'natural', family: 'black', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay' },
+  { id: 'activated-charcoal', name: 'Activated charcoal', kind: 'natural', family: 'black', tspPerLbLow: 0.125, tspPerLbHigh: 3, alsoAdditiveId: 'charcoal', additiveIsSameMaterial: true, note: 'It marks a soap dish and a washcloth at the darker end, though it washes out.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light grey' }, { tspPerLb: 0.5, colour: 'medium grey' }, { tspPerLb: 1, colour: 'dark grey, faint grey lather' }, { tspPerLb: 2, colour: 'grey-black' }, { tspPerLb: 3, colour: 'black, noticeably grey lather' }] },
+  { id: 'dead-sea-mud', name: 'Dead sea mud', kind: 'natural', family: 'black', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
   { id: 'poppy-seeds', name: 'Poppy seeds', kind: 'natural', family: 'black', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'seeds', note: 'Specks rather than a wash of colour, and they scrub.' },
 
   // --- White (CP:9365) ----------------------------------------------------------------
-  { id: 'kaolin-clay', name: 'Kaolin clay', kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', note: 'Every clay drinks water and thickens the batter, so expect a faster trace. Disperse it in water first or the bar can crack.' },
-  { id: 'fullers-earth', name: "Fuller's earth", kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay' },
+  { id: 'kaolin-clay', name: 'Kaolin clay', kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', note: 'Every clay drinks water and thickens the batter, so expect a faster trace. Disperse it in water first or the bar can crack.', stability: 'stable' },
+  { id: 'fullers-earth', name: "Fuller's earth", kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
 ];
 
 export function colorantEntryById(id: string): ColorantCatalogEntry | undefined {
   return COLORANT_CATALOG.find((e) => e.id === id);
+}
+
+/**
+ * Whether dosing this colour AND its additive entry is dosing one material twice. Only true
+ * where the additive entry names the same material; a bucket entry cannot be claimed equal
+ * to the specific colour picked here, so bentonite for slip beside dead sea mud for colour
+ * is two materials, not one doubled. Stated in the data, not inferred: the colorant side
+ * being unique says nothing about whether the ADDITIVE side is a bucket.
+ */
+export function colorantSharesMaterialWithAdditive(entry: ColorantCatalogEntry): boolean {
+  return entry.additiveIsSameMaterial === true;
 }
 
 /** Catalog entries grouped for the picker, in the source's own colour order. */

@@ -1,5 +1,6 @@
 // packages/web/src/lib/colorantGuidance.ts
 import {
+  COLORANT_STABILITY_TEXT,
   colorantEntryById,
   COLORANT_GUIDANCE,
   HP_COLORANT_WATER_GRAMS,
@@ -87,4 +88,23 @@ export function colorantDispersalText(d: ColorantDispersal, unit: WeightUnit): s
     case 'warm-water':
       return 'Dissolve in a little warm water';
   }
+}
+
+/** The shade ladder as one line: "⅛ tsp light grey · ½ medium grey · 1 dark grey", in the
+ * active unit. Null when the colour has no sourced ladder. */
+export function colorantShadeLadder(catalogId: string, unit: WeightUnit): string | null {
+  const entry = catalogId ? colorantEntryById(catalogId) : undefined;
+  if (!entry?.shades?.length) return null;
+  const metric = isMetric(unit);
+  const per = metric ? 'kg' : 'lb';
+  const rungs = entry.shades
+    .map((s) => `${tsp(metric ? s.tspPerLb * LB_PER_KG : s.tspPerLb)} ${s.colour}`)
+    .join(' · ');
+  return `Per ${per} of oils: ${rungs}.`;
+}
+
+/** What months of light and alkali do to this colour, or null when no source says. */
+export function colorantStabilityText(catalogId: string): string | null {
+  const entry = catalogId ? colorantEntryById(catalogId) : undefined;
+  return entry?.stability ? COLORANT_STABILITY_TEXT[entry.stability] : null;
 }

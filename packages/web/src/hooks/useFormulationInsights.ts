@@ -15,7 +15,7 @@ import {
 import { oilById } from '../lib/oils';
 import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
-import { colorantEntryById } from '@soap-calc/core';
+import { colorantEntryById, colorantSharesMaterialWithAdditive } from '@soap-calc/core';
 import type { ComputedScentColor } from '../lib/computeScentColor';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
@@ -268,12 +268,19 @@ export function useFormulationInsights(
       labelAllergens: options.scentColor?.labelAllergens,
       colorantPortionsOver100: options.scentColor?.portionsOver100,
       colorantCarrierShiftPercent: options.scentColor?.carrierSuperfatShiftPercent,
+      // Only a DOSED colour against a one-to-one additive pairing counts. A "to shade" row
+      // has no second dose to add up, and a generic additive bucket ("Clay (bentonite,
+      // kaolin)") cannot be claimed to be the same jar as the clay picked here.
       colorantAdditiveOverlap: (() => {
         const dosedAsAdditive = new Set(additiveEntries.map((a) => a.catalogId));
-        return (options.scentColor?.colorants ?? []).flatMap((c) => {
+        const names = new Set<string>();
+        for (const c of options.scentColor?.colorants ?? []) {
+          if (c.grams === null || c.grams <= 0) continue;
           const entry = c.catalogId ? colorantEntryById(c.catalogId) : undefined;
-          return entry?.alsoAdditiveId && dosedAsAdditive.has(entry.alsoAdditiveId) ? [entry.name] : [];
-        });
+          if (!entry || !colorantSharesMaterialWithAdditive(entry)) continue;
+          if (dosedAsAdditive.has(entry.alsoAdditiveId!)) names.add(entry.name);
+        }
+        return [...names];
       })(),
       lsGlycerinSolvent: options.lsGlycerinSolvent,
       lsSplitLiquidFatShiftPercent: options.lsSplitLiquidFatShiftPercent,

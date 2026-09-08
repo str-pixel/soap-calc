@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, expect, it } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { emptyComputedScentColor, type ComputedScentColor } from '../lib/computeScentColor';
 import {
   DEFAULT_SETTINGS,
   newAdditiveKey,
@@ -478,5 +479,57 @@ describe('useFormulationInsights sugar aggregator (Step 3b)', () => {
     );
     const codes = result.current.insights.map((i) => i.code);
     expect(codes).toContain('sugar_total_high');
+  });
+});
+
+describe('the double-dosing check reaches the rule only for a real double dose', () => {
+  const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+  const charcoalAdditive = {
+    key: 'a1', catalogId: 'charcoal', name: 'Charcoal', amount: 1, unit: 'percent' as const,
+    basis: 'oil' as const, grams: 10, addAt: 'oils' as const,
+  };
+  function harness(colorants: ComputedScentColor['colorants'], additives = [charcoalAdditive]) {
+    const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
+    const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
+    return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
+      process: 'cp',
+      additives,
+      scentColor: { ...emptyComputedScentColor(), colorants },
+    });
+  }
+  const colorant = (over: Partial<ComputedScentColor['colorants'][number]>) => ({
+    key: 'c1', catalogId: '', name: '', kind: 'natural' as const, percent: 1, grams: 10,
+    portionKey: '', portionName: '', portionPercent: null, portionShareMissing: false,
+    stage: 'oils' as const, dispersal: { method: 'carrier-oil' as const, carrierGrams: 10 },
+    ...over,
+  });
+  const fired = (colorants: ComputedScentColor['colorants'], additives?: typeof harness extends never ? never : Parameters<typeof harness>[1]) => {
+    const { result } = renderHook(() => harness(colorants, additives));
+    return result.current.insights.some((i) => i.code === 'colorant_also_additive');
+  };
+
+  it('fires when the same material carries a dose under both sections', () => {
+    expect(fired([colorant({ catalogId: 'activated-charcoal', name: 'Activated charcoal' })])).toBe(true);
+  });
+
+  it('stays quiet for a colour left "to shade" — there is no second dose to add up', () => {
+    expect(fired([colorant({ catalogId: 'activated-charcoal', name: 'Activated charcoal', percent: null, grams: null })])).toBe(false);
+  });
+
+  it('stays quiet when the additive entry is a bucket, not the same jar', () => {
+    // "Clay (bentonite, kaolin)" covers nine clays; dosing bentonite for slip and colouring
+    // with dead sea mud is two materials, and the app must not call it one doubled.
+    const clayAdditive = { ...charcoalAdditive, catalogId: 'clay', name: 'Clay (bentonite, kaolin)' };
+    expect(fired([colorant({ catalogId: 'dead-sea-mud', name: 'Dead sea mud' })], [clayAdditive])).toBe(false);
+    expect(fired([colorant({ catalogId: 'kaolin-clay', name: 'Kaolin clay' })], [clayAdditive])).toBe(false);
+  });
+
+  it('names a doubled material once, however many rows carry it', () => {
+    const { result } = renderHook(() => harness([
+      colorant({ key: 'c1', catalogId: 'activated-charcoal', name: 'Activated charcoal' }),
+      colorant({ key: 'c2', catalogId: 'activated-charcoal', name: 'Activated charcoal' }),
+    ]));
+    const msg = result.current.insights.find((i) => i.code === 'colorant_also_additive')!.message;
+    expect(msg.match(/Activated charcoal/g)).toHaveLength(1);
   });
 });
