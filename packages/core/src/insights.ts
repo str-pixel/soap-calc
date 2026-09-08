@@ -125,6 +125,28 @@ export type FormulationAnalysisInput = {
   /** EFFECTIVE (clamped) soaping temperature in °F. Only the CP overflow guard reads it —
    * HP/LS callers may pass their cook temperature, the gate ignores them by process. */
   soapingTempF?: number;
+  /** The Fragrance & colorants section, one row per fragrance. `shareOfProduct` is the
+   * dose as a % of the FINISHED product (label weight / bottled solution) — the basis the
+   * supplier's IFRA rate is stated in; `supplierMaxPercent` null = not entered. */
+  fragranceRows?: Array<{
+    name: string;
+    kind: 'fragrance-oil' | 'essential-oil';
+    percent: number | null;
+    shareOfProduct: number;
+    supplierMaxPercent: number | null;
+    /** The ONE verdict (core fragranceOverSupplierMax) — the rule never re-decides it. */
+    overSupplierMax: boolean;
+    /** core vanillinBrowning's reading, so the 1% threshold lives in one place. */
+    browning: 'none' | 'light' | 'deep';
+    /** Clove / cinnamon essential oil — see core essentialOilCaution. */
+    caution: boolean;
+  }>;
+  /** Allergens above the rinse-off labelling threshold — see core allergensToLabel. */
+  labelAllergens?: Array<{ name: string; percentOfProduct: number }>;
+  /** The batter portions add up past 100%. */
+  colorantPortionsOver100?: boolean;
+  /** Superfat points the colorants' 1:1 carrier oil adds (CP dispersal). */
+  colorantCarrierShiftPercent?: number;
 };
 
 export type InsightRuleParams = Record<string, number | string>;
@@ -1195,6 +1217,108 @@ export const INSIGHT_RULES: InsightRule[] = [
       }
       return null;
     },
+  },
+  // ---- Fragrance & colorants -------------------------------------------------------------
+  {
+    code: 'fragrance_over_supplier_max',
+    check: (input) => {
+      const over = (input.fragranceRows ?? []).filter((f) => f.overSupplierMax);
+      if (over.length === 0) return null;
+      return {
+        level: 'warning',
+        code: 'fragrance_over_supplier_max',
+        message: `${over.map((f) => f.name.trim() || 'A fragrance').join(', ')} exceeds the supplier's tested rate in the finished soap — lower the dose.`,
+      };
+    },
+  },
+  {
+    code: 'fragrance_no_supplier_rate',
+    check: (input) => {
+      const missing = (input.fragranceRows ?? []).filter(
+        (f) => f.percent !== null && f.percent > 0 && f.supplierMaxPercent === null,
+      );
+      if (missing.length === 0) return null;
+      return {
+        level: 'info',
+        code: 'fragrance_no_supplier_rate',
+        message: "Enter each fragrance's supplier rate for soap (Category 9) so the dose can be checked against it.",
+      };
+    },
+  },
+  {
+    code: 'fragrance_vanillin_browning',
+    check: (input) => {
+      const rows = (input.fragranceRows ?? []).filter((f) => f.browning !== 'none');
+      if (rows.length === 0) return null;
+      const deep = rows.some((f) => f.browning === 'deep');
+      return {
+        level: 'info',
+        code: 'fragrance_vanillin_browning',
+        message: deep
+          ? 'Vanillin above 1% browns the soap deeply over time — plan the colour around it or mix in a vanilla stabilizer.'
+          : 'A little vanillin tans the soap over the weeks — expected, not a defect.',
+      };
+    },
+  },
+  {
+    code: 'fragrance_accelerant_eo',
+    processes: ['cp'],
+    check: (input) =>
+      (input.fragranceRows ?? []).some((f) => f.caution)
+        ? {
+            level: 'info',
+            code: 'fragrance_accelerant_eo',
+            message: "Clove and cinnamon essential oils speed trace and can irritate skin — soap cool, add them last, and keep to the supplier's rate.",
+          }
+        : null,
+  },
+  {
+    code: 'fragrance_allergens_to_label',
+    check: (input) => {
+      const list = input.labelAllergens ?? [];
+      if (list.length === 0) return null;
+      return {
+        level: 'info',
+        code: 'fragrance_allergens_to_label',
+        message: `Name on the label: ${list.map((a) => a.name).join(', ')} — each is above 0.01% of the finished soap.`,
+      };
+    },
+  },
+  {
+    code: 'colorant_portions_over_100',
+    check: (input) =>
+      input.colorantPortionsOver100
+        ? {
+            level: 'warning',
+            code: 'colorant_portions_over_100',
+            message: 'The batter portions add up to more than 100% — trim them so each colour gets the share you mean.',
+          }
+        : null,
+  },
+  {
+    code: 'colorant_carrier_superfat',
+    processes: ['cp'],
+    params: { minShiftPercent: 0.5 },
+    check: (input, params) =>
+      (input.colorantCarrierShiftPercent ?? 0) >= Number(params.minShiftPercent)
+        ? {
+            level: 'info',
+            code: 'colorant_carrier_superfat',
+            message: `The colorants' carrier oil adds about ${(input.colorantCarrierShiftPercent ?? 0).toFixed(1)} superfat points — unsaponified oil riding on the recipe.`,
+          }
+        : null,
+  },
+  {
+    code: 'ls_fragrance_clouding',
+    processes: ['ls'],
+    check: (input) =>
+      (input.fragranceRows ?? []).some((f) => f.percent !== null && f.percent > 0)
+        ? {
+            level: 'info',
+            code: 'ls_fragrance_clouding',
+            message: 'Most fragrances cloud liquid soap a little — prove a new one in a small test solution; polysorbate 20 keeps it emulsified over a superfat.',
+          }
+        : null,
   },
 ];
 

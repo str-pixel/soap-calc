@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DilutionResult, LyeCalculationResult } from '@soap-calc/core';
 import { additiveStageLabel, buildBatchSheetData, canPrintBatchSheet } from './batchSheet';
+import { emptyComputedScentColor } from './computeScentColor';
 import type { ComputedAdditive } from './calculateAdditives';
 import { calculateRecipe, type RecipeDisplayTotals } from './calculateRecipe';
 import { createStarterLines, DEFAULT_SETTINGS } from './recipe';
@@ -98,6 +99,7 @@ function makeBatchSheetInput(
     process: 'hp',
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     ...overrides,
@@ -161,7 +163,7 @@ describe('buildBatchSheetData dilution threading', () => {
     const data = buildBatchSheetData({
       recipeName: 'LS', batchNotes: '', weightUnit: 'g', lyeLabel: 'KOH', settings: DEFAULT_SETTINGS,
       lines, linePercents, result, displayTotals, additives: [], splitLiquidRows: [], splitLiquidGrams: null,
-      postCookSuperfat: null, extrasGrams: 0, dilution, neutralization: null, properties: null,
+      postCookSuperfat: null, extrasGrams: 0, scentColor: emptyComputedScentColor(), dilution, neutralization: null, properties: null,
       indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
       batchWeightWithExtras: displayTotals.batchWeightGrams, waterModeLabel: '2:1',
       fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] }, insights: [], process: 'ls',

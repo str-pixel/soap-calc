@@ -2,6 +2,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { useRecipeViewModel } from './useRecipeViewModel';
+import { createEmptyScentColor, normalizeScentColor, type ScentColor } from '../lib/scentColor';
 import {
   createStarterLines,
   DEFAULT_SETTINGS,
@@ -36,6 +37,7 @@ function probe(
   process: ProcessId = 'cp',
   vesselVolumeCm3?: number | null,
   additivesOverride?: AdditiveLine[],
+  scentColor: ScentColor = createEmptyScentColor(),
 ) {
   function Probe() {
     const vm = useRecipeViewModel({
@@ -43,6 +45,7 @@ function probe(
       lines: createStarterLines(),
       settings: { ...DEFAULT_SETTINGS, ...settingsOverride },
       additives: additivesOverride ?? createEmptyAdditives(),
+      scentColor,
       drafts: {},
       weightUnit: 'g',
       process,
@@ -178,7 +181,7 @@ test('dilution: computed for LS, null for CP, null (no crash) for an empty LS re
   function Probe() {
     empty = useRecipeViewModel({
       recipeName: 'Empty', lines: [], settings: { ...DEFAULT_SETTINGS, soapConcentrationPercent: '30' },
-      additives: createEmptyAdditives(), drafts: {}, weightUnit: 'g', process: 'ls',
+      additives: createEmptyAdditives(), scentColor: createEmptyScentColor(), drafts: {}, weightUnit: 'g', process: 'ls',
     });
     return null;
   }
@@ -1157,4 +1160,24 @@ test('the additive solution basis falls to the plan figure, not 0, when a record
     // gradualDilutionFrom the module mock's factory wrapped (documented Vitest contract).
     mocked.mockReset();
   }
+});
+
+test('the Fragrance & colorants section joins the extras, the batch weight and the label weight; the share is of the label weight', () => {
+  const scent = normalizeScentColor({
+    fragrances: [{ name: 'F', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
+    colorants: [],
+    portions: [],
+  });
+  let plain: any;
+  let scented: any;
+  probe((vm) => { plain = vm; }, {}, 'cp');
+  probe((vm) => { scented = vm; }, {}, 'cp', undefined, undefined, scent);
+  const grams = scented.scentColor.fragranceGrams as number;
+  expect(grams).toBeCloseTo(plain.totalOilGrams * 0.03, 6);
+  expect(scented.extrasGrams).toBeCloseTo(plain.extrasGrams + grams, 6);
+  expect(scented.batchWeightWithExtras).toBeCloseTo(plain.batchWeightWithExtras + grams, 6);
+  expect(scented.labelWeight).toBeCloseTo(plain.labelWeight + grams, 6);
+  expect(scented.scentColor.productBasis).toBe('label');
+  expect(scented.scentColor.fragrances[0].shareOfProduct).toBeCloseTo((100 * grams) / scented.labelWeight, 6);
+  expect(scented.batchSheetData.scentColor.fragranceGrams).toBeCloseTo(grams, 6);
 });

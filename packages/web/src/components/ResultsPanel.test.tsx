@@ -12,6 +12,8 @@ import {
 } from '../lib/recipe';
 import { defaultsForProcess } from '../lib/process';
 import { useRecipeViewModel } from '../hooks/useRecipeViewModel';
+import { createEmptyScentColor, normalizeScentColor } from '../lib/scentColor';
+import { applyScentColorCompliance, computeScentColorGrams } from '../lib/computeScentColor';
 import { formatWeight } from '../lib/weightUnits';
 
 /** A dial reading renders its unit in a child span ("444" + "g"), so an element's OWN
@@ -350,6 +352,7 @@ function LsPanelProbe({
     lines: createStarterLines(),
     settings: { ...DEFAULT_SETTINGS, ...defaultsForProcess('ls'), ...settingsOverride },
     additives: additivesOverride ?? createEmptyAdditives(),
+    scentColor: createEmptyScentColor(),
     drafts: {},
     weightUnit: 'g',
     process: 'ls',
@@ -817,4 +820,35 @@ test('the aggregate post-cook-superfat line names its oils heaviest first', () =
     />,
   );
   expect(screen.getByText(/Post-cook superfat \(Shea Butter \+ Castor Oil\)/)).toBeTruthy();
+});
+
+test('the Full recipe renders the Fragrance section with the allergen line from vm.scentColor', () => {
+  const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
+  const scent = applyScentColorCompliance(
+    computeScentColorGrams(
+      normalizeScentColor({
+        fragrances: [{ name: 'Vanilla dream', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
+        colorants: [],
+        portions: [],
+      }),
+      { process: 'cp', totalOilGrams: displayTotals?.recipeOilWeightGrams ?? 0, solutionGrams: 0, deliveredSuperfatPercent: 5 },
+    ),
+    displayTotals?.batchWeightGrams ?? null,
+    'batch',
+  );
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      process="cp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + scent.fragranceGrams}
+      scentColor={scent}
+    />,
+  );
+  expect(screen.getByText('Fragrance', { selector: '.results-recipe__heading' })).toBeTruthy();
+  expect(screen.getByText('Vanilla dream')).toBeTruthy();
+  expect(screen.getByText('Name on the label')).toBeTruthy();
 });

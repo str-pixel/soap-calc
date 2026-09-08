@@ -12,12 +12,19 @@ const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
   bubbly: 10, cleansing: 0, condition: 65, hardness: 30, longevity: 30, creamy: 30, ...over,
 });
 
-/** The 41 insight codes analyzeFormulation can emit today, transcribed from insights.ts.
+/** The 49 insight codes analyzeFormulation can emit today, transcribed from insights.ts.
  * Slice 3's rule-catalog conversion must keep every one of these reachable. */
 const ALL_CODES = [
+  'colorant_carrier_superfat',
+  'colorant_portions_over_100',
   'dos_risk_no_antioxidant',
   'dual_lye_advanced',
   'eutectic_lather_sources',
+  'fragrance_accelerant_eo',
+  'fragrance_allergens_to_label',
+  'fragrance_no_supplier_rate',
+  'fragrance_over_supplier_max',
+  'fragrance_vanillin_browning',
   'glycerin_solvent_dilution',
   'high_cleansing_low_superfat',
   'high_poly_high_superfat',
@@ -34,6 +41,7 @@ const ALL_CODES = [
   'ls_castor_no_lather',
   'ls_coconut_hot_cook',
   'ls_dual_lye_recommendation',
+  'ls_fragrance_clouding',
   'ls_lye_excess',
   'ls_no_superfat_buffer',
   'ls_pcsf_emulsifier',
@@ -208,7 +216,7 @@ describe('analyzeFormulation golden matrix (slice 3 conversion guard)', () => {
     expect(actual).toEqual(GOLDEN);
   });
 
-  it('the matrix exercises at least 30 of the 41 insight codes', () => {
+  it('the matrix exercises at least 30 of the 49 insight codes', () => {
     const seen = new Set(
       (GOLDEN as Array<{ insights: Array<{ code: string }> }>).flatMap((c) =>
         c.insights.map((x) => x.code),

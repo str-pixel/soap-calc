@@ -2,6 +2,8 @@
 import { afterEach, describe, expect, it, test } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { BatchSheet } from './BatchSheet';
+import { applyScentColorCompliance, computeScentColorGrams, emptyComputedScentColor } from '../lib/computeScentColor';
+import { normalizeScentColor } from '../lib/scentColor';
 // The dilution figure has to be identical on the screen and on the page carried to the
 // bench, so the pin renders both surfaces from one fixture rather than trusting two
 // same-shaped assertions in two files to stay in step.
@@ -42,6 +44,7 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
     splitLiquidGrams: null,
     postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'append', deliveredSuperfatPercent: null },
     extrasGrams: postCookSuperfat.grams,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -84,6 +87,7 @@ test('the batch sheet lye solution lists the water before the alkali, like the s
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -129,6 +133,7 @@ test('prints a "Modeled profile" note naming derived-profile oils', () => {
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: {
@@ -182,6 +187,7 @@ test('prints a total superfat (cook + post-cook) row', () => {
     splitLiquidGrams: null,
     postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'append', deliveredSuperfatPercent: 7.767 },
     extrasGrams: postCookSuperfat.grams,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -233,6 +239,7 @@ test('subtract + negative main superfat: no from-oils-above note and no Total su
     // subtract reserve is never actually applied — the PCSF oil is an extra either way.
     postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'subtract', deliveredSuperfatPercent: null },
     extrasGrams: postCookSuperfat.grams,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -279,6 +286,7 @@ test('subtract + non-negative main superfat: notes the reserve comes from the oi
     // reserved from the recipe oils, not an extra.
     postCookSuperfat: { ...postCookSuperfat, isExtra: false, method: 'subtract', deliveredSuperfatPercent: 6.9 },
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -316,6 +324,7 @@ test('prints no post-cook-superfat line when absent', () => {
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -352,6 +361,7 @@ test('prints bar-property scores without a percent sign', () => {
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: {
@@ -405,6 +415,7 @@ test('prints the split-liquid advisory note and an explicit liquid step', () => 
     splitLiquidGrams,
     postCookSuperfat: null,
     extrasGrams: splitLiquidGrams,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -444,6 +455,7 @@ test('prints the soaping temperature in both units', () => {
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -513,6 +525,7 @@ function lsSheetData(extra: {
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: dilutionOverride ?? {
       anhydrousGrams: 1218,
       solutionGrams: 4059,
@@ -557,6 +570,7 @@ function cpSheetData(extra: { lyeWaterUnverifiable?: boolean }) {
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -1423,6 +1437,7 @@ test('LS prints the Post-cook superfat section AFTER Dilution, matching the on-s
     splitLiquidGrams: null,
     postCookSuperfat: { ...postCookSuperfat, isExtra: false, method: 'subtract', deliveredSuperfatPercent: null },
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution,
     neutralization: null,
     properties: null,
@@ -1467,6 +1482,7 @@ test.each([
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -1507,6 +1523,7 @@ test('the printed oils table lists heaviest first, like the on-screen Full recip
     splitLiquidGrams: null,
     postCookSuperfat: null,
     extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
     properties: null,
@@ -1525,4 +1542,46 @@ test('the printed oils table lists heaviest first, like the on-screen Full recip
     (row) => row.querySelectorAll('td')[1]?.textContent ?? '',
   );
   expect(weights).toEqual(['450 g', '300 g', '250 g']);
+});
+
+describe('the printed sheet carries the Fragrance & colorants section', () => {
+  it('lists each fragrance and colour with its stage, the stabilizer, and the label line', () => {
+    const scent = applyScentColorCompliance(
+      computeScentColorGrams(
+        normalizeScentColor({
+          fragrances: [{ name: 'Vanilla dream', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
+          colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' }],
+          portions: [{ name: 'Swirl', percent: '40' }],
+        }),
+        { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 },
+      ),
+      1300,
+      'label',
+    );
+    render(<BatchSheet data={{ ...cpSheetData({}), scentColor: scent }} />);
+    expect(screen.getByText('Fragrance & colorants', { selector: 'h2' })).toBeTruthy();
+    expect(screen.getByText(/Vanilla dream — 30 g · 3% of oils \(At trace\)/)).toBeTruthy();
+    expect(screen.getByText(/Vanilla stabilizer — 30 g/)).toBeTruthy();
+    expect(screen.getByText(/Blue mica \(Swirl 40%\) — 4 g · 1% · in 4 g carrier oil \(At trace\)/)).toBeTruthy();
+    expect(screen.getByText(/Name on the label: Linalool 0\.277%/)).toBeTruthy();
+  });
+  it('prints nothing for the section when it is empty, or when its only rows are blank forms', () => {
+    render(<BatchSheet data={cpSheetData({})} />);
+    expect(screen.queryByText('Fragrance & colorants', { selector: 'h2' })).toBeNull();
+    cleanup();
+    const blank = applyScentColorCompliance(
+      computeScentColorGrams(
+        normalizeScentColor({
+          fragrances: [{ name: '', kind: 'fragrance-oil', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
+          colorants: [{ name: '', kind: 'mica', percent: '', portionKey: '' }],
+          portions: [],
+        }),
+        { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 },
+      ),
+      1300,
+      'label',
+    );
+    render(<BatchSheet data={{ ...cpSheetData({}), scentColor: blank }} />);
+    expect(screen.queryByText('Fragrance & colorants', { selector: 'h2' })).toBeNull();
+  });
 });

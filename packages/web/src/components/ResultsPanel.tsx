@@ -7,6 +7,7 @@ import { PROCESS_DEFINITIONS, type ProcessId } from '../lib/process';
 import { formatGrams, joinNames } from '../lib/format';
 import { formatDose } from '../lib/formatDose';
 import type { AppliedPostCookSuperfat, ComputedAdditive } from '../lib/calculateAdditives';
+import type { ComputedScentColor } from '../lib/computeScentColor';
 import type { RecipeDisplayTotals } from '../lib/calculateRecipe';
 import type { SplitLiquidRow, WeightUnit } from '../lib/recipe';
 import { buildAddOrderSteps, buildFullRecipe, heaviestFirst, postCookSuperfatProvenance } from '../lib/recipeSummary';
@@ -40,6 +41,8 @@ type ResultsPanelProps = {
   soapingTempF?: number;
   /** The vm's stamped PCSF (see AppliedPostCookSuperfat). */
   postCookSuperfat?: AppliedPostCookSuperfat | null;
+  /** The Fragrance & colorants section as the vm computed it (vm.scentColor). */
+  scentColor?: ComputedScentColor;
   /** The vm's total off-recipe grams (additives + split liquid + PCSF-if-extra) — passed
    * down so this panel never recomputes it and drifts from the printed sheet. */
   extrasGrams?: number;
@@ -129,6 +132,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   additives = [],
   soapingTempF,
   postCookSuperfat = null,
+  scentColor,
   extrasGrams = 0,
   batchWeightWithExtras,
   cureEstimate = null,
@@ -145,7 +149,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     return (
       <section className="panel panel--results" aria-live="polite">
         <h2 className="panel__title">
-          <span className="panel__num" aria-hidden="true">08</span>Results
+          <span className="panel__num" aria-hidden="true">09</span>Results
         </h2>
         <ul className="message-list message-list--error">
           {inputErrors.map((msg) => (
@@ -160,7 +164,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     return (
       <section className="panel panel--results" aria-live="polite">
         <h2 className="panel__title">
-          <span className="panel__num" aria-hidden="true">08</span>Results
+          <span className="panel__num" aria-hidden="true">09</span>Results
         </h2>
         <p className="results-hint">Enter oil weights to calculate lye and water.</p>
       </section>
@@ -202,6 +206,8 @@ export const ResultsPanel = memo(function ResultsPanel({
     additiveGrams > 0 ? 'additives' : null,
     splitLiquidGrams ? 'alternative liquid' : null,
     postCookSuperfat?.isExtra ? 'post-cook superfat' : null,
+    // Fragrance, stabilizer, polysorbate, colorant and carrier oil — real mass in extrasGrams.
+    scentColor && scentColor.extrasGrams > 0 ? 'fragrance & colorants' : null,
   ].filter((x): x is string => x !== null);
   const extrasNoteText = joinNames(extrasNote);
   const batchWeight = batchWeightBreakdown({
@@ -227,6 +233,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     splitLiquidRows,
     postCookSuperfat,
     process,
+    scentColor,
   });
   const addOrderSteps = buildAddOrderSteps({
     process,
@@ -240,6 +247,7 @@ export const ResultsPanel = memo(function ResultsPanel({
     // lists in this panel can never tell different stories.
     soapingTempF,
     additives,
+    scentColor,
     // Same formatted strings the Workability rows / cure milestones render, so the step
     // copy can never contradict the estimates shown two panels up.
     unmoldText: cureEstimate?.workability
@@ -251,7 +259,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   return (
     <section className="panel panel--results" aria-live="polite">
       <h2 className="panel__title">
-        <span className="panel__num" aria-hidden="true">08</span>Results
+        <span className="panel__num" aria-hidden="true">09</span>Results
       </h2>
 
       {hasLineErrors && (

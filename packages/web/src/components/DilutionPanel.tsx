@@ -1304,7 +1304,7 @@ export function DilutionPanel({
       <div className="panel__head">
         <div>
           <h2 className="panel__title">
-            <span className="panel__num" aria-hidden="true">09</span>Dilution
+            <span className="panel__num" aria-hidden="true">10</span>Dilution
             {/* aria-hidden like the number: the target input below IS the accessible source
                 of this figure, and the heading's name stays "Dilution" for every locator
                 and screen-reader rotor that navigates by it. Shown only when the typed plan

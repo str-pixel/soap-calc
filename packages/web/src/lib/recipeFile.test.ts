@@ -9,6 +9,7 @@ import {
   recipeLinesFromFile,
   serializeRecipeFile,
 } from './recipeFile';
+import { createEmptyScentColor, normalizeScentColor } from './scentColor';
 
 describe('recipeFile', () => {
   it('round-trips recipe data', () => {
@@ -21,7 +22,7 @@ describe('recipeFile', () => {
 
     expect(parsed.data.name).toBe('Test batch');
     expect(parsed.data.lines).toHaveLength(3);
-    expect(parsed.data.version).toBe(2);
+    expect(parsed.data.version).toBe(3);
     expect(recipeLinesFromFile(parsed.data.lines)).toHaveLength(3);
   });
 
@@ -760,5 +761,27 @@ describe('imports are app recipes only: declared process must match its lye choi
     const parsed = parseRecipeFile(JSON.stringify(payload));
     expect(parsed.ok).toBe(true);
     if (parsed.ok) expect(parsed.data.process).toBe('ls');
+  });
+});
+
+describe('recipe file v3 carries scentColor', () => {
+  it('serializes at version 3 and parses it back; a v2 file without the field parses as empty', () => {
+    const scent = normalizeScentColor({
+      fragrances: [{ name: 'Rose', kind: 'fragrance-oil', percent: '4', supplierMaxPercent: '5', vanillinPercent: '2', allergens: [{ name: 'Citronellol', percentOfFragrance: '3' }] }],
+      colorants: [{ name: 'Pink mica', kind: 'mica', percent: '', portionKey: '' }],
+      portions: [{ name: 'A', percent: '40' }],
+    });
+    const payload = serializeRecipeFile('r', createStarterLines(), DEFAULT_SETTINGS, [], 'cp', scent);
+    expect(payload.version).toBe(3);
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.data.scentColor.fragrances[0].allergens[0].name).toBe('Citronellol');
+    expect(parsed.data.scentColor.portions[0]).toEqual({ name: 'A', percent: '40' });
+    const v2 = { ...payload, version: 2 } as Record<string, unknown>;
+    delete v2.scentColor;
+    const parsedV2 = parseRecipeFile(JSON.stringify(v2));
+    if (!parsedV2.ok) throw new Error(parsedV2.error);
+    expect(normalizeScentColor(parsedV2.data.scentColor)).toEqual(createEmptyScentColor());
+    expect(parsedV2.data.version).toBe(3);
   });
 });

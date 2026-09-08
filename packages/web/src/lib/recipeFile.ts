@@ -14,9 +14,19 @@ import {
 } from './recipe';
 import { isProcessId, PROCESS_DEFINITIONS, processForLyeType, type ProcessId } from './process';
 import { ppoOzToPercentOfOil as ppoOzToPercentOfOilCore } from './doseConverters';
+import {
+  createEmptyScentColor,
+  normalizeScentColor,
+  scentColorToSaved,
+  type SavedScentColor,
+  type ScentColor,
+} from './scentColor';
 
-export const RECIPE_FILE_VERSION = 2 as const;
-export const RECIPE_FILE_VERSION_LEGACY = 1 as const;
+// v3 adds `scentColor` (the Fragrance & colorants section). Older files still parse; a v3
+// file opened by an older build is refused by that build's version gate, which is the
+// honest signal — its field-by-field parser would silently drop the section.
+export const RECIPE_FILE_VERSION = 3 as const;
+export const RECIPE_FILE_LEGACY_VERSIONS: readonly number[] = [1, 2];
 
 /** Import cap on oil lines, mirroring MAX_RECIPE_ADDITIVES. Real recipes have a
  * handful of oils; without a cap a malformed/hostile file with a huge `lines`
@@ -51,6 +61,7 @@ export type RecipeFilePayload = {
     tarLyeTreatment?: RecipeLine['tarLyeTreatment'];
   }>;
   additives: RecipeFileAdditive[];
+  scentColor: SavedScentColor;
   settings: RecipeSettings;
   exportedAt: string;
 };
@@ -155,6 +166,7 @@ export function serializeRecipeFile(
   settings: RecipeSettings,
   additives: AdditiveLine[] = [],
   process: ProcessId = 'cp',
+  scentColor: ScentColor = createEmptyScentColor(),
 ): RecipeFilePayload {
   return {
     version: RECIPE_FILE_VERSION,
@@ -177,6 +189,7 @@ export function serializeRecipeFile(
       unit,
       addAt,
     })),
+    scentColor: scentColorToSaved(scentColor),
     settings: normalizeSettings(settings),
     exportedAt: new Date().toISOString(),
   };
@@ -199,7 +212,7 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
   }
 
   const version = parsed.version;
-  if (version !== RECIPE_FILE_VERSION && version !== RECIPE_FILE_VERSION_LEGACY) {
+  if (version !== RECIPE_FILE_VERSION && !RECIPE_FILE_LEGACY_VERSIONS.includes(version as number)) {
     return { ok: false, error: 'Unsupported or missing recipe file version' };
   }
 
@@ -289,6 +302,8 @@ export function parseRecipeFile(raw: string): ParsedRecipeFile {
       name: parsed.name.slice(0, MAX_FIELD_LENGTH),
       lines,
       additives,
+      // Tolerant: a v1/v2 file has no section, a hand-edited one may carry junk.
+      scentColor: scentColorToSaved(normalizeScentColor(parsed.scentColor)),
       settings: normalizeSettings(
         isRecord(parsed.settings) ? (parsed.settings as Partial<RecipeSettings>) : undefined,
       ),

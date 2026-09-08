@@ -23,6 +23,12 @@ import { computeWorkability } from '../lib/workabilityInput';
 import { PERCENT_ROUNDING_EPSILON } from '../lib/lineWeightSync';
 import { oilBatchFraction } from '../lib/moldSizer';
 import type { AdditiveLine, RecipeLine, RecipeSettings, WeightUnit } from '../lib/recipe';
+import type { ScentColor } from '../lib/scentColor';
+import {
+  applyScentColorCompliance,
+  computeScentColorGrams,
+  type ComputedScentColor,
+} from '../lib/computeScentColor';
 import {
   defaultVariantFor,
   effectiveSoapingTempF,
@@ -47,6 +53,8 @@ export type UseRecipeViewModelArgs = {
   lines: RecipeLine[];
   settings: RecipeSettings;
   additives: AdditiveLine[];
+  /** The Fragrance & colorants section (App state beside `additives`). */
+  scentColor: ScentColor;
   drafts: Record<string, string>;
   weightUnit: WeightUnit;
   process: ProcessId;
@@ -153,6 +161,9 @@ export type RecipeViewModel = {
    * floor/composition basis. Null before a dilution exists. */
   wholeBatchPasteGrams: number | null;
   batchWeightWithExtras: number;
+  /** The Fragrance & colorants section, computed once (grams, stages, finished-product
+   * shares, label allergens) — see lib/computeScentColor. */
+  scentColor: ComputedScentColor;
   liveOilBatchFraction: number | null;
   batchSheetData: ReturnType<typeof buildBatchSheetData> | null;
   /** Effective (clamped) soaping temperature, °F — see effectiveSoapingTempF. */
@@ -177,6 +188,7 @@ export function useRecipeViewModel({
   lines,
   settings,
   additives,
+  scentColor,
   drafts,
   weightUnit,
   process,
@@ -799,49 +811,35 @@ export function useRecipeViewModel({
       lyeGrams: result?.lyeWeightGrams ?? 0,
       additives: computedAdditives,
     });
-  const { insights } = useFormulationInsights(
-    previewState.lines,
-    previewSettings,
-    properties,
-    fattyAcids,
-    // Insights reason about the same figures the user sees — acid-adjusted when present.
-    finalResult ?? result,
-    {
-      splitLiquidGrams,
-      splitLiquidRows: splitLiquidRows.map(({ row, grams }) => ({ addAt: row.addAt, grams })),
-      cookWaterGrams,
-      suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
-      splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
-      additives: computedAdditives,
-      postCookSuperfat,
-      process,
-      hpVesselMultiple,
-      lsGlycerinSolvent: lsGlycerinPresent,
-      // Fat the alternative liquids bring in, as superfat points on top of the stated
-      // figure. LS-gated in core: only liquid soap separates over the fat a milk adds.
-      lsSplitLiquidFatShiftPercent: superfatShiftFromLiquidFat(
-        alternativeLiquidFatGrams(
-          splitLiquidRows.map(({ row, grams }) => ({ presetKey: row.presetKey, grams })),
-        ),
-        totalOilGrams,
-      ),
-      // Glycerin is the one alternative liquid that may go in the dilution water, so a
-      // glycerin-only recipe skips the dilute-with-plain-water advisory.
-      lsSplitLiquidIsSolventOnly:
-        sizedSplitRows.length > 0 &&
-        sizedSplitRows.every(
-          ({ row }) => isSolventLiquid(row.presetKey),
-        ),
-      soapingTempF,
-    },
-  );
   const lyeLabel =
     settings.lyeType === 'dual'
       ? 'Total alkali'
       : settings.lyeType === 'naoh'
         ? 'NaOH'
         : 'KOH';
-  const extrasGrams = computeExtrasGrams(computedAdditives, splitLiquidGrams, postCookSuperfat);
+  // Fragrance & colorants, pass 1: everything that follows from the oils (or the solution
+  // for LS). The finished-product figures (IFRA basis, allergen shares) need the batch weight
+  // this pass feeds, so they come in pass 2 below, after labelWeight / bottledSolutionGrams.
+  // Polysorbate 20 keys off the superfat the bottle actually carries: the stamped delivered
+  // figure under a PCSF, the stated main superfat otherwise.
+  const scentGrams = useMemo(
+    () =>
+      computeScentColorGrams(scentColor, {
+        process,
+        totalOilGrams,
+        solutionGrams,
+        deliveredSuperfatPercent:
+          postCookSuperfat?.deliveredSuperfatPercent ??
+          (Number.isFinite(Number(mainSuperfatRaw)) ? Number(mainSuperfatRaw) : null),
+      }),
+    [scentColor, process, totalOilGrams, solutionGrams, postCookSuperfat, mainSuperfatRaw],
+  );
+  const extrasGrams = computeExtrasGrams(
+    computedAdditives,
+    splitLiquidGrams,
+    postCookSuperfat,
+    scentGrams.extrasGrams,
+  );
   const batchWeightWithExtras = baseBatchGrams + extrasGrams;
   // The mass the LS batch actually bottles — solution base plus the extras that ride
   // through (see computeBottledSolutionGrams for the full accounting, including why a
@@ -963,6 +961,66 @@ export function useRecipeViewModel({
         : null,
     [profile, batchWeightWithExtras, baseBatchGrams],
   );
+  // Fragrance & colorants, pass 2: the supplier's IFRA rate and the allergen threshold are
+  // shares of the FINISHED product — the cured bar (label weight) or, for LS, the same
+  // finished-product figure the Dilution panel quotes (bottle INCLUDING the preservative,
+  // finishedProductGramsFor), never a second definition of "finished". Before a cure
+  // profile exists the raw batch stands in, and the section says which.
+  const scentColorComputed = useMemo(() => {
+    if (process === 'ls') {
+      const bottle = finishedProductGrams ?? bottledSolutionGrams;
+      return applyScentColorCompliance(scentGrams, bottle !== null && bottle > 0 ? bottle : null, 'solution');
+    }
+    if (labelWeight !== null) return applyScentColorCompliance(scentGrams, labelWeight, 'label');
+    return applyScentColorCompliance(
+      scentGrams,
+      batchWeightWithExtras > 0 ? batchWeightWithExtras : null,
+      'batch',
+    );
+  }, [scentGrams, process, finishedProductGrams, bottledSolutionGrams, labelWeight, batchWeightWithExtras]);
+  // Stable identity for the insights memo: built inline, this array was fresh every render
+  // and defeated the memo (and, through `insights`, the batch-sheet memo) on every keystroke.
+  const insightSplitRows = useMemo(
+    () => splitLiquidRows.map(({ row, grams }) => ({ addAt: row.addAt, grams })),
+    [splitLiquidRows],
+  );
+  const { insights } = useFormulationInsights(
+    previewState.lines,
+    previewSettings,
+    properties,
+    fattyAcids,
+    // Insights reason about the same figures the user sees — acid-adjusted when present.
+    finalResult ?? result,
+    {
+      splitLiquidGrams,
+      splitLiquidRows: insightSplitRows,
+      cookWaterGrams,
+      suggestedLyeWaterGrams: waterSuggestion?.suggestedWaterGrams ?? null,
+      splitLiquidWaterReductionGrams: waterSuggestion?.reductionGrams ?? null,
+      additives: computedAdditives,
+      postCookSuperfat,
+      process,
+      hpVesselMultiple,
+      lsGlycerinSolvent: lsGlycerinPresent,
+      // Fat the alternative liquids bring in, as superfat points on top of the stated
+      // figure. LS-gated in core: only liquid soap separates over the fat a milk adds.
+      lsSplitLiquidFatShiftPercent: superfatShiftFromLiquidFat(
+        alternativeLiquidFatGrams(
+          splitLiquidRows.map(({ row, grams }) => ({ presetKey: row.presetKey, grams })),
+        ),
+        totalOilGrams,
+      ),
+      // Glycerin is the one alternative liquid that may go in the dilution water, so a
+      // glycerin-only recipe skips the dilute-with-plain-water advisory.
+      lsSplitLiquidIsSolventOnly:
+        sizedSplitRows.length > 0 &&
+        sizedSplitRows.every(
+          ({ row }) => isSolventLiquid(row.presetKey),
+        ),
+      soapingTempF,
+      scentColor: scentColorComputed,
+    },
+  );
   const liveOilBatchFraction = useMemo(() => {
     if (!displayTotals || batchWeightWithExtras <= 0) return null;
     return oilBatchFraction(displayTotals.recipeOilWeightGrams, batchWeightWithExtras);
@@ -988,6 +1046,7 @@ export function useRecipeViewModel({
       splitLiquidGrams,
       postCookSuperfat,
       extrasGrams,
+      scentColor: scentColorComputed,
       dilution,
       measuredPasteGrams,
       wholeBatchPasteGrams,
@@ -1032,6 +1091,7 @@ export function useRecipeViewModel({
     process,
     properties,
     recipeName,
+    scentColorComputed,
     // finalResult is what the sheet actually prints; result stays listed because the memo
     // falls back to it. Every finalResult input is already covered transitively (its own
     // deps are result + totalAcidExtraLye, which reduce to previewSettings, splitLiquidRows
@@ -1063,6 +1123,7 @@ export function useRecipeViewModel({
     linePercents,
     totalOilGrams,
     computedAdditives,
+    scentColor: scentColorComputed,
     splitLiquidGrams,
     postCookSuperfat,
     waterSuggestion,

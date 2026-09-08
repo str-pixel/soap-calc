@@ -10,6 +10,7 @@ import {
 } from '@soap-calc/core';
 import { additiveStageLabel } from './additiveStageLabel';
 import type { ComputedAdditive, AppliedPostCookSuperfat } from './calculateAdditives';
+import type { ComputedScentColor } from './computeScentColor';
 import type { RecipeFattyAcids } from './calculateFattyAcids';
 import type { RecipeDisplayTotals } from './calculateRecipe';
 import type { RecipeIndexResult } from './calculateRecipeIndexes';
@@ -37,6 +38,8 @@ export type BatchSheetData = {
   /** The vm's stamped PCSF (see AppliedPostCookSuperfat). */
   postCookSuperfat: AppliedPostCookSuperfat | null;
   extrasGrams: number;
+  /** The Fragrance & colorants section as the vm computed it (see lib/computeScentColor). */
+  scentColor: ComputedScentColor;
   dilution: DilutionResult | null;
   /** The maker's scale reading for the whole batch's paste, in grams — the same App state
    * DilutionPanel and PortionDilutionResults read (see DilutionPanel's own doc). A valid one

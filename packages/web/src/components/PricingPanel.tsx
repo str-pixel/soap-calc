@@ -1,6 +1,6 @@
 // packages/web/src/components/PricingPanel.tsx
 import { memo } from 'react';
-import { computeRecipePricing, hasMissingMaterialPrice, additivePriceKey } from '../lib/recipePricing';
+import { additivePriceEntry, additivePriceKey, computeRecipePricing, hasMissingMaterialPrice } from '../lib/recipePricing';
 import type { RecipePricingContext } from '../lib/recipePricing';
 import { bookEntry, type PricedEntry, type PricingProfile } from '../lib/pricingProfile';
 import { formatCostBreakdown, formatMoney, type PriceUnit } from '../lib/money';
@@ -77,6 +77,19 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
         symbol,
       );
 
+  // One pass splits the rows; one helper renders both groups, so the price row can never
+  // drift between plain additives and the Fragrance & colorants group.
+  const scentRows: RecipePricingContext['additives'] = [];
+  const plainRows: RecipePricingContext['additives'] = [];
+  for (const a of context.additives) (a.group === 'scent' ? scentRows : plainRows).push(a);
+  const additiveRow = (a: RecipePricingContext['additives'][number]) => {
+    const key = additivePriceKey(a);
+    return (
+      <div key={a.key}>
+        {priceRow(a.name, a.grams, additivePriceEntry(profile, a), (patch) => setEntry('additivePrices', key, patch))}
+      </div>
+    );
+  };
   return (
     /* panel--results: this panel presents results, and the class is what turns the hero
        figure below accent — the same treatment the Recipe view's required-lye number gets,
@@ -100,14 +113,13 @@ export const PricingPanel = memo(function PricingPanel({ context, profile, onPro
             {priceRow(o.name, o.grams, bookEntry(profile.oilPrices, o.oilId), (patch) => setEntry('oilPrices', o.oilId, patch))}
           </div>,
         )}
-        {context.additives.map((a) => {
-          const key = additivePriceKey(a);
-          return (
-            <div key={a.key}>
-              {priceRow(a.name, a.grams, bookEntry(profile.additivePrices, key), (patch) => setEntry('additivePrices', key, patch))}
-            </div>
-          );
-        })}
+        {plainRows.map(additiveRow)}
+        {scentRows.length > 0 && (
+          <>
+            <div className="pricing-row--group" aria-hidden="true">Fragrance &amp; colorants</div>
+            {scentRows.map(additiveRow)}
+          </>
+        )}
         {priceRow('Lye', context.lyeGrams, profile.lyePrice, (patch) =>
           setField({ lyePrice: { ...profile.lyePrice, ...patch } }),
         )}

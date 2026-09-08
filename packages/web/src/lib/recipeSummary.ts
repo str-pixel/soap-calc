@@ -1,5 +1,6 @@
 import { alternativeLiquidPreset, formatTempDual, isSolventLiquid, type AdditiveStage } from '@soap-calc/core';
 import type { AppliedPostCookSuperfat, ComputedAdditive } from './calculateAdditives';
+import type { ComputedColorant, ComputedFragrance, ComputedScentColor } from './computeScentColor';
 import type { SplitLiquidRow, WeightUnit } from './recipe';
 import { lyeSolutionBeforeOils, type ProcessId } from './process';
 import { additiveStageLabel } from './additiveStageLabel';
@@ -26,6 +27,58 @@ export function postCookSuperfatLineDetail(
   isExtra: boolean,
 ): string {
   return `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil${postCookSuperfatProvenance(isExtra)}`;
+}
+
+/** The dose label the Fragrance & colorants section derives per process: a bar is dosed
+ * on the oils, a liquid soap on the finished solution. */
+export function fragranceDoseLabel(process: ProcessId): string {
+  return process === 'ls' ? '% of solution' : '% of oils';
+}
+
+/** The one fragrance line detail the Full recipe and the printed sheet quote — "30 g · 3%
+ * of oils" — so the two cannot drift apart. */
+export function fragranceLineDetail(f: ComputedFragrance, unit: WeightUnit, process: ProcessId): string {
+  return `${formatWeight(f.grams, unit)} · ${formatGrams(f.percent ?? 0, 2)}${fragranceDoseLabel(process)}`;
+}
+
+/** The one colorant line detail — dose (or "to shade") and how it is dispersed, per the
+ * process the section derived. */
+export function colorantLineDetail(c: ComputedColorant, unit: WeightUnit): string {
+  const dose = c.grams !== null ? `${formatWeight(c.grams, unit)} · ${formatGrams(c.percent ?? 0, 2)}%` : 'to shade';
+  const d = c.dispersal;
+  const how =
+    d.method === 'carrier-oil'
+      ? d.carrierGrams !== null
+        ? `in ${formatWeight(d.carrierGrams, unit)} carrier oil`
+        : 'in a little carrier oil'
+      : d.method === 'hot-sugar-water'
+        ? `in ${formatWeight(d.waterGramsLow, unit)}–${formatWeight(d.waterGramsHigh, unit)} hot sugar water`
+        : d.method === 'recipe-oil'
+          ? 'straight into the warmed oils'
+          : 'dissolved in a little warm water';
+  return `${dose} · ${how}`;
+}
+
+/** "Linalool 0.277%, Limonene 0.012%" — the one rendering of the label list (3 decimals:
+ * the threshold is 0.01%, so two would round a 0.014% share to 0.01% and read as "at" it). */
+export function labelAllergensDetail(list: ComputedScentColor['labelAllergens']): string {
+  return list.map((a) => `${a.name} ${formatGrams(a.percentOfProduct, 3)}%`).join(', ');
+}
+
+/** The lines that ride with the fragrance — stabilizer, polysorbate, the label list — as
+ * the Full recipe and the printed sheet both quote them. */
+export function scentSupplementItems(scentColor: ComputedScentColor, unit: WeightUnit): RecipeItem[] {
+  const items: RecipeItem[] = [];
+  if (scentColor.stabilizerGrams > 0) items.push({ name: 'Vanilla stabilizer', detail: formatWeight(scentColor.stabilizerGrams, unit) });
+  if (scentColor.polysorbateGrams > 0) items.push({ name: 'Polysorbate 20', detail: formatWeight(scentColor.polysorbateGrams, unit) });
+  if (scentColor.labelAllergens.length > 0) items.push({ name: 'Name on the label', detail: labelAllergensDetail(scentColor.labelAllergens) });
+  return items;
+}
+
+/** A blank row (no name, no dose) is a form in progress, not a material to list. Shared with
+ * the printed sheet so the two surfaces list the same rows. */
+export function scentRowIsMaterial(row: { name: string; grams: number | null }): boolean {
+  return row.name.trim() !== '' || (row.grams !== null && row.grams > 0);
 }
 
 
@@ -58,6 +111,10 @@ type FullRecipeInput = {
    * whether the line reads as reserved from the oils above or as extra weight. */
   postCookSuperfat?: AppliedPostCookSuperfat | null;
   process: ProcessId;
+  /** The Fragrance & colorants section as the vm computed it. A whole-batter colour lists
+   * with the oils (it goes in first); portion colours get a Colorants section at the design
+   * stage; the fragrance its own section at its stage. */
+  scentColor?: ComputedScentColor;
 };
 
 /** One manifest line plus the grams behind its formatted detail — the number the list is
@@ -107,6 +164,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     splitLiquidRows,
     postCookSuperfat,
     process,
+    scentColor,
   } = input;
 
   const sections: RecipeSection[] = [];
@@ -166,7 +224,49 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   // The oils rank among themselves and the with-oils additives among themselves: a clay at
   // 4 g must not push a 5 g oil down the list, because the oils above it are the block that
   // sums to 100%.
-  const oilsSection: RecipeItem[] = [...byAmount(oilItems), ...byAmount(staged.oils)];
+  const colorants = (scentColor?.colorants ?? []).filter(scentRowIsMaterial);
+  const colorantItem = (c: ComputedColorant): RecipeItem => ({
+    name: c.name.trim() || 'Colorant',
+    detail: colorantLineDetail(c, weightUnit),
+  });
+  // A whole-batter colour goes into the oils before the lye (CP:9401-9404; HP:11330-11334):
+  // it lists with them, after the with-oils additives, in its own entered order — a "to
+  // shade" line has no grams to rank by.
+  const wholeBatterColorants = colorants.filter((c) => c.stage === 'oils').map(colorantItem);
+  const oilsSection: RecipeItem[] = [...byAmount(oilItems), ...byAmount(staged.oils), ...wholeBatterColorants];
+
+  // Portion colours, grouped under their portion (name and share), in the portions' own
+  // order; LS lists every colorant plainly — a liquid has no portions.
+  const colorantItems: RecipeItem[] = [];
+  const designColorants = colorants.filter((c) => c.stage !== 'oils');
+  if (scentColor && designColorants.length > 0) {
+    if (process === 'ls') {
+      colorantItems.push(...designColorants.map(colorantItem));
+    } else {
+      for (const portion of scentColor.portions) {
+        const own = designColorants.filter((c) => c.portionKey === portion.key);
+        if (own.length === 0) continue;
+        colorantItems.push({
+          name: `${portion.name.trim() || 'Portion'} — ${formatGrams(portion.percent ?? 0, 1)}%`,
+          detail: '',
+        });
+        colorantItems.push(...own.map(colorantItem));
+      }
+    }
+  }
+
+  const fragranceItems: RecipeItem[] = [];
+  if (scentColor) {
+    for (const f of scentColor.fragrances) {
+      if (!scentRowIsMaterial(f)) continue;
+      fragranceItems.push({ name: f.name.trim() || 'Fragrance', detail: fragranceLineDetail(f, weightUnit, process) });
+    }
+    fragranceItems.push(...scentSupplementItems(scentColor, weightUnit));
+  }
+  const pushScentSections = () => {
+    push('Colorants', colorantItems);
+    push('Fragrance', fragranceItems);
+  };
 
   // The lye solution reads in mixing order: water first, anything dissolved in it next
   // (dry additives, a solvent liquid), THEN the alkali goes in (never the reverse) — and
@@ -202,6 +302,8 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   }
 
   push(additiveStageLabel('trace', process), byAmount(staged.trace));
+  // A bar's colour and scent go in at trace: right after that section, before the top.
+  if (process === 'cp') pushScentSections();
   push(additiveStageLabel('top', process), byAmount(staged.top));
   push(additiveStageLabel('after_cook', process), byAmount(staged.after_cook));
 
@@ -222,6 +324,9 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       ),
     );
   }
+  // HP colours the cooked paste and scents it last, with the PCSF; LS colours and scents
+  // the diluted soap — after everything else, in both.
+  if (process !== 'cp') pushScentSections();
 
   return sections;
 }
@@ -236,6 +341,9 @@ type AddOrderInput = {
   /** Alternative-liquid rows + resolved grams: each gains an explicit "add the {liquid}"
    * step at the right point, so the printed sheet never omits one. */
   splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
+  /** The Fragrance & colorants section: its rows are named at their derived stages, and a
+   * split batter gets its own sentence at the design step. */
+  scentColor?: ComputedScentColor;
   /** Preformatted unmold window from the workability estimate (e.g. "≈ 11–34 h"). When
    * present it replaces the generic CP timing so this list can never disagree with the
    * Workability rows above it. */
@@ -331,10 +439,14 @@ type StepContext = {
   named: (stages: AdditiveStage[]) => string | null;
   /** Whether any additive line exists — with none, the steps keep their generic copy. */
   anyAdditives: boolean;
+  /** "split the batter — Swirl 40% (Blue mica) — and colour each portion", or null. Read by
+   * the design step (CP trace, HP after the cook); LS has no portions. */
+  portionSplit?: string | null;
 };
 
 function addOrderSteps(ctx: StepContext): AddOrderStep[] {
-  const { process, oil, lye, water, alkali, temp, unmoldText, cureText, named, anyAdditives } = ctx;
+  const { process, oil, lye, water, alkali, temp, unmoldText, cureText, named, anyAdditives, portionSplit = null } = ctx;
+  const thenSplit = portionSplit ? ` Then ${portionSplit}.` : '';
   // Dry or liquid, an in-lye additive is stirred into the water BEFORE the alkali goes in.
   const intoWater = (n: string | null) => (n ? ` stir ${n} into the water first, then` : '');
   const intoOils = (n: string | null) => (n ? ` Blend in ${n}.` : '');
@@ -371,7 +483,7 @@ function addOrderSteps(ctx: StepContext): AddOrderStep[] {
       { key: 'cook', hosts: ['trace'], liquids: [{ slot: 'trace', where: 'after' }],
         text: `Blend the lye solution into the oils${named(['trace']) ? `, stir in ${named(['trace'])} at trace,` : ''} and cook to a thick, translucent paste.` },
       { key: 'after', hosts: ['after_cook'], liquids: [],
-        text: `After the cook, stir in ${afterCook ? `${afterCook} and any post-cook superfat` : anyAdditives ? 'any post-cook superfat' : 'fragrance, additives, and any post-cook superfat'}.` },
+        text: `After the cook, stir in ${afterCook ? `${afterCook} and any post-cook superfat` : anyAdditives ? 'any post-cook superfat' : 'fragrance, additives, and any post-cook superfat'}.${thenSplit}` },
       { key: 'mold', hosts: ['top'], liquids: [],
         text: `Pack into the mold${onTop(named(['top']))}; unmold once firm and use after a short cure.` },
     ];
@@ -387,7 +499,7 @@ function addOrderSteps(ctx: StepContext): AddOrderStep[] {
       text: `Weigh each oil — ${oil} total — and warm to ${temp}.${intoOils(named(['oils']))}` },
     { key: 'blend', hosts: [], liquids: [], text: 'Pour the lye solution into the oils and blend to light trace.' },
     { key: 'trace', hosts: ['trace', 'after_cook'], liquids: [{ slot: 'trace', where: 'before' }],
-      text: atTrace ? `Stir in ${atTrace} at trace.` : anyAdditives ? 'Blend on to a pourable trace.' : 'Stir in fragrance and any additives at trace.' },
+      text: `${atTrace ? `Stir in ${atTrace} at trace.` : anyAdditives ? 'Blend on to a pourable trace.' : 'Stir in fragrance and any additives at trace.'}${thenSplit}` },
     { key: 'pour', hosts: ['top'], liquids: [],
       text: `Pour into the mold${onTop(named(['top']))}; unmold ${unmoldText ?? 'in 24–48 h'} and cure ${cureText ?? '4–6 weeks'}.` },
   ];
@@ -425,12 +537,33 @@ export function addOrderStepPlan(process: ProcessId): Array<Pick<AddOrderStep, '
 export function buildAddOrderSteps(input: AddOrderInput): string[] {
   const {
     process, lyeType, totalOilGrams, lyeGrams, waterGrams, weightUnit, unmoldText, cureText,
-    soapingTempF, additives = [],
+    soapingTempF, additives = [], scentColor,
   } = input;
   const byStage: Record<AdditiveStage, string[]> = { lye: [], oils: [], trace: [], top: [], after_cook: [] };
   // Same order the manifest lists them in, so "stir in the fragrance and the clay" reads
   // down the Full recipe's trace section rather than across it.
   for (const a of heaviestFirst(additives, (item) => item.grams)) byStage[a.addAt].push(a.name);
+  // Scent and colour rows join their derived stages by name. A portion colour is named in
+  // the split sentence instead, so the step never says "stir in" a colour that goes into
+  // one portion only.
+  const scentFragrances = (scentColor?.fragrances ?? []).filter(scentRowIsMaterial);
+  const scentColorants = (scentColor?.colorants ?? []).filter(scentRowIsMaterial);
+  for (const f of scentFragrances) {
+    const name = f.name.trim() || 'fragrance';
+    byStage[f.stage].push(f.stabilizerGrams > 0 ? `${name} (stabilizer mixed in)` : name);
+  }
+  for (const c of scentColorants) {
+    if (c.portionKey) continue;
+    byStage[c.stage].push(c.name.trim() || 'colorant');
+  }
+  const portionSplit = (() => {
+    if (!scentColor || process === 'ls') return null;
+    const parts = scentColor.portions.map((p) => {
+      const colours = scentColorants.filter((c) => c.portionKey === p.key).map((c) => c.name.trim() || 'colorant');
+      return `${p.name.trim() || 'portion'} ${formatGrams(p.percent ?? 0, 0)}%${colours.length ? ` (${colours.join(', ')})` : ''}`;
+    });
+    return parts.length ? `split the batter — ${parts.join(', ')} — and colour each portion` : null;
+  })();
   const named = (stages: AdditiveStage[]) => {
     const names = stages.flatMap((stage) => byStage[stage]);
     return names.length ? `the ${joinNames(names)}` : null;
@@ -448,7 +581,8 @@ export function buildAddOrderSteps(input: AddOrderInput): string[] {
       unmoldText,
       cureText,
       named,
-      anyAdditives: additives.length > 0,
+      anyAdditives: additives.length > 0 || scentFragrances.length > 0 || scentColorants.length > 0,
+      portionSplit,
     }),
     process,
   );

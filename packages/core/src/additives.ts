@@ -307,30 +307,6 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       'Honey is mostly sugar in water, dosed like the other sugars but staged more gently: stir it into the oils before the lye goes in — the usual cold-process route — or blend it in at trace; the lye water is allowed but browns it.',
   },
   {
-    // LS sanctions after the cook, into diluted soap (LS:2950, LS:3363).
-    // CP/HP stage audit: essential oils go in after trace in CP (CP:16777, 3-6% of oil in the recipes); HP adds fragrance after the cook, with the PCSF and yogurt (HP:10653).
-    id: 'fragrance',
-    name: 'Fragrance / essential oil',
-    typicalLow: 2,
-    typicalHigh: 6,
-    defaultStage: 'trace',
-    stages: ['trace'],
-    processOverrides: {
-      hp: { defaultStage: 'after_cook', stages: ['after_cook'], note: 'Goes in after the cook, once the paste has cooled a little — the heat of the cook would drive off the lighter notes. Your supplier\'s skin-safe limit overrides this range.' },
-      // LS doses fragrance as a concentration in the finished solution, 3% max — well
-      // below bar-soap oil-weight percentages. A solution basis presupposes a solution:
-      // that mass does not exist until after dilution, so the stage must move to
-      // after_cook alongside it — CP/HP's trace stage would price the dose against soap
-      // that isn't there yet. All four LS procedures (CPLS, LTLS, HTLS, 30-minute HTLS)
-      // place fragrance after the soap reaches its finished, diluted consistency, because
-      // these oils separate and cloud the soap if added earlier (LS:2164, 2288, 2520, 2878;
-      // clouding risk noted at LS:2953).
-      ls: { typicalLow: 0.5, typicalHigh: 3, doseBasis: 'solution', defaultStage: 'after_cook', stages: ['after_cook'], note: 'Dosed against the finished, diluted soap rather than the oil weight — a bottle of liquid soap is mostly water, so an oil-weight percentage would badly overshoot. It goes in once the cook is over, to soap already diluted and cooled. Liquid soap carries far less scent than a bar needs. Your supplier\'s skin-safe limit overrides this range.' },
-    },
-    note:
-      'Goes in at trace, once the batter has emulsified — any earlier and the lighter notes can flash off in the fresh lye. Your supplier\'s skin-safe limit overrides this range.',
-  },
-  {
     // Jojoba is deliberately NOT in this catalog: it belongs in the saponified oil blend
     // (it is in the oils database, and the jojoba_superfat_note insight still covers it),
     // not dosed outside the lye math. Legacy saved lines with catalogId 'jojoba' load as

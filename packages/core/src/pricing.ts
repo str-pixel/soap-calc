@@ -1,5 +1,4 @@
-const GRAMS_PER_KG = 1000;
-const GRAMS_PER_LB = 453.59237;
+import { GRAMS_PER_KG, GRAMS_PER_LB } from './units.js';
 
 /** Neutral numeric defaults (informed, not copied). Follows the *_GUIDE convention. */
 export const PRICING_GUIDE = {

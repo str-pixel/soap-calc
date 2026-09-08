@@ -88,6 +88,36 @@ describe('useRecipeStorage process', () => {
     expect(loadDraft('cp')?.settings.superfatPercent).toBe('6');
   });
 
+  it('a draft whose fragrance line could not carry its dose says so on mount', () => {
+    localStorage.setItem('soap-calc:draft:cp', JSON.stringify({
+      version: 3, name: 'old', updatedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS,
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [{ catalogId: 'fragrance', name: 'Lavender FO', amount: '30', basis: 'oil', unit: 'ppt', addAt: 'trace' }],
+    }));
+    const { result } = renderHook(() => useRecipeStorage());
+    expect(result.current.scentColor.fragrances[0]).toMatchObject({ name: 'Lavender FO', percent: '' });
+    expect(result.current.saveMessage).toMatch(/fragrance moved to Fragrance & colorants — re-enter its dose/);
+  });
+
+  it('importing a v2 file with a fragrance additive lands it in the Fragrance & colorants section', async () => {
+    const raw = JSON.stringify({
+      version: 2, process: 'cp', name: 'legacy', exportedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS,
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [{ catalogId: 'fragrance', name: 'Lavender FO', amount: '3', basis: 'oil', unit: 'percent', addAt: 'trace' }],
+    });
+    const file = { text: () => Promise.resolve(raw) } as unknown as File;
+    const { result } = renderHook(() => useRecipeStorage());
+    await act(async () => {
+      result.current.handleImportFile(file);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(result.current.additives).toEqual([]);
+    expect(result.current.scentColor.fragrances[0]).toMatchObject({ name: 'Lavender FO', percent: '3' });
+    expect(result.current.saveMessage).toMatch(/fragrance moved to Fragrance & colorants/);
+    // and the persisted draft agrees
+    expect(loadDraft('cp')?.scentColor.fragrances[0].name).toBe('Lavender FO');
+  });
+
   it('handleImportFile flushes the outgoing workspace before swapping process, mirroring setProcess', async () => {
     const { result } = renderHook(() => useRecipeStorage()); // defaults to cp
     act(() => result.current.setSettings((s) => ({ ...s, superfatPercent: '6' })));

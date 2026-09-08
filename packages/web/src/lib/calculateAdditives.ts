@@ -124,10 +124,14 @@ export function computeExtrasGrams(
   additives: Array<{ grams: number }>,
   splitLiquidGrams: number | null,
   postCookSuperfat: AppliedPostCookSuperfat | null,
+  /** The Fragrance & colorants section's mass — fragrance, vanilla stabilizer, polysorbate,
+   * colorant powder, carrier oil (ComputedScentColor.extrasGrams). Real mass in the bar or
+   * bottle, so it rides through to the batch weight like the other extras. */
+  scentExtrasGrams = 0,
 ): number {
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
   const pcsfGrams = postCookSuperfat?.isExtra ? postCookSuperfat.grams : 0;
-  return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams;
+  return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams + scentExtrasGrams;
 }
 
 /** The mass an LS batch actually bottles, for the volume/bottle estimate. Lives beside

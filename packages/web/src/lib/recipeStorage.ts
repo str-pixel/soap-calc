@@ -8,13 +8,25 @@ import {
   normalizeSettings,
 } from './recipe';
 import { isProcessId, processForLyeType, type ProcessId } from './process';
+import {
+  createEmptyScentColor,
+  migrateSavedScent,
+  scentColorToSaved,
+  type SavedScentColor,
+  type SavedScentMigration,
+  type ScentColor,
+} from './scentColor';
 
 const LEGACY_DRAFT_KEY = 'soap-calc:draft';
 const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
 // v3: NaOH purity '100' in older drafts is migrated to the current default (see
-// migrateSettings). Version list accepted by loadDraftSlot must include every older version.
-const STORAGE_VERSION = 3;
-const READABLE_VERSIONS = [1, 2, STORAGE_VERSION];
+// migrateSettings). v4: the Fragrance & colorants section (`scentColor`) — bumped so that
+// a build that predates it PARKS the draft as unreadable (backupUnreadableDraft) instead of
+// reading it without the section and overwriting it on its first autosave; the recipe file
+// draws the same line at RECIPE_FILE_VERSION 3. Version list accepted by loadDraftSlot
+// must include every older version.
+const STORAGE_VERSION = 4;
+const READABLE_VERSIONS = [1, 2, 3, STORAGE_VERSION];
 
 function draftKey(process: ProcessId): string {
   return `soap-calc:draft:${process}`;
@@ -34,6 +46,8 @@ type DraftPayload = {
   name: string;
   lines: SavedLine[];
   additives?: SavedAdditiveLine[];
+  /** Optional: drafts written before the Fragrance & colorants section have none. */
+  scentColor?: SavedScentColor;
   settings: RecipeSettings;
   updatedAt: string;
 };
@@ -157,6 +171,9 @@ export type LoadedDraft = {
   name: string;
   lines: RecipeLine[];
   additives: AdditiveLine[];
+  scentColor: ScentColor;
+  /** What the legacy-fragrance migration did on this load, so the caller can say so. */
+  scentMigration: Pick<SavedScentMigration, 'fragrancesMoved' | 'dosesDropped'>;
   settings: RecipeSettings;
 };
 
@@ -187,11 +204,23 @@ export function loadDraftSlot(process: ProcessId): DraftSlot {
       // already held) THIS payload, and the message downstream picks its sentence by it.
       return { draft: null, unreadable: true, kept: backupUnreadableDraft(process, raw) };
     }
+    // A present-but-malformed additives field is corruption, not "no additives": throw
+    // into the catch below so the payload is parked, as it was before the section existed.
+    if (data.additives !== undefined && !Array.isArray(data.additives)) {
+      throw new Error('additives is not an array');
+    }
+    // The retired `fragrance` catalog entry migrates into the Fragrance & colorants
+    // section. migrateSavedScent runs on the RAW rows: additivesFromSaved →
+    // normalizeAdditiveLine would clear the unknown id and the fragrance would silently
+    // become a nameless custom row.
+    const migration = migrateSavedScent(data.scentColor, data.additives, process);
     return {
       draft: {
         name: typeof data.name === 'string' && data.name ? data.name : 'Untitled recipe',
         lines: linesFromSaved(data.lines),
-        additives: additivesFromSaved(data.additives),
+        additives: additivesFromSaved(migration.additives as unknown as SavedAdditiveLine[]),
+        scentColor: migration.scentColor,
+        scentMigration: { fragrancesMoved: migration.fragrancesMoved, dosesDropped: migration.dosesDropped },
         settings: migrateSettings(normalizeSettings(data.settings), data.version),
       },
       unreadable: false,
@@ -229,6 +258,7 @@ export function saveDraft(
   lines: RecipeLine[],
   settings: RecipeSettings,
   additives: AdditiveLine[] = createEmptyAdditives(),
+  scentColor: ScentColor = createEmptyScentColor(),
 ): boolean {
   // No writer may destroy what it cannot read. Every write into a draft slot funnels
   // through here — the autosave debounce, the pagehide flush, setProcess's and the
@@ -255,6 +285,7 @@ export function saveDraft(
     name,
     lines: cloneLines(lines),
     additives: cloneAdditives(additives),
+    scentColor: scentColorToSaved(scentColor),
     settings,
     updatedAt: new Date().toISOString(),
   };

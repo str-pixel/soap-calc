@@ -556,6 +556,60 @@ test.describe('liquid soap', () => {
 
 // ---------- 7. HP specifics ----------
 
+test.describe('fragrance & colorants', () => {
+  const section = (page: Page, heading: string) =>
+    page
+      .locator('.results-recipe__section')
+      .filter({ has: page.locator('.results-recipe__heading', { hasText: heading }) });
+  const panel = (page: Page) => page.locator('.panel', { has: page.locator('h2', { hasText: 'Fragrance & colorants' }) });
+
+  test('CP: a vanillin fragrance with an allergen and a portion colour land in the Full recipe', async ({ page }) => {
+    await page.getByRole('button', { name: /add fragrance/i }).click();
+    await page.getByLabel('Fragrance name').fill('Vanilla dream');
+    await page.getByLabel(/Vanilla dream % of oils/).fill('3');
+    await page.getByLabel(/Vanilla dream supplier max/).fill('5');
+    await page.getByLabel(/Vanilla dream vanillin/).fill('12');
+    await panel(page).getByText(/Allergens \(0\)/).click();
+    await page.getByRole('button', { name: /add allergen/i }).click();
+    await page.getByLabel('Allergen name').fill('Linalool');
+    await page.getByLabel('Allergen % of fragrance').fill('12');
+    await page.getByRole('button', { name: /split the batter/i }).click();
+    await page.getByLabel('Portion name').fill('Swirl');
+    await page.getByLabel(/Portion Swirl % of batter/).fill('40');
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    await page.getByLabel('Colorant name').fill('Blue mica');
+    await page.getByLabel(/Blue mica % of oils/).fill('1');
+    await page.getByLabel(/Blue mica portion/).selectOption({ label: 'Swirl' });
+    await expect(section(page, 'Colorants')).toContainText(/Swirl — 40%/);
+    await expect(section(page, 'Colorants')).toContainText(/Blue mica/);
+    await expect(section(page, 'Fragrance')).toContainText(/Vanilla dream/);
+    await expect(section(page, 'Fragrance')).toContainText(/Vanilla stabilizer/);
+    await expect(section(page, 'Fragrance')).toContainText(/Linalool/);
+    // The panel states the stage and the finished-bar share; it survives a reload.
+    await expect(panel(page)).toContainText('At trace');
+    await expect(panel(page)).toContainText(/of the finished bar/);
+    await page.reload();
+    await expect(section(page, 'Fragrance')).toContainText(/Vanilla dream/);
+  });
+
+  test('HP: the fragrance is filed after the cook', async ({ page }) => {
+    await processTab(page, /Hot process/).click();
+    await page.getByRole('button', { name: /add fragrance/i }).click();
+    await page.getByLabel(/^Fragrance % of oils/).fill('3');
+    await expect(section(page, 'Fragrance')).toBeVisible();
+    await expect(panel(page)).toContainText('After cook');
+  });
+
+  test('LS: the dose is a % of solution, a dye goes in after dilution, and there is no batter to split', async ({ page }) => {
+    await processTab(page, /Liquid soap/).click();
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    await expect(panel(page)).toContainText('After dilution');
+    await page.getByRole('button', { name: /add fragrance/i }).click();
+    await expect(page.getByLabel(/^Fragrance % of solution/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /split the batter/i })).toHaveCount(0);
+  });
+});
+
 test.describe('hot process', () => {
   test('the Fluid HP pack seeds four lines, each filed under its own stage in the Full recipe', async ({ page }) => {
     await processTab(page, /Hot process/).click();

@@ -8,6 +8,7 @@ import {
   saveActiveProcess,
   saveDraft,
 } from './recipeStorage';
+import { createEmptyScentColor, normalizeScentColor } from './scentColor';
 
 function createStorage(): Storage {
   const store = new Map<string, string>();
@@ -463,5 +464,59 @@ describe('flashDurationMs', () => {
     // The import-refusal copy (~150 chars) must get the cap, not vanish at 2s.
     expect(flashDurationMs('x'.repeat(150))).toBe(6000);
     expect(flashDurationMs('x'.repeat(80))).toBe(4000);
+  });
+});
+
+describe('drafts carry the Fragrance & colorants section', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createStorage());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('round-trips scentColor, and an older draft without the field loads empty', () => {
+    const scent = normalizeScentColor({
+      fragrances: [{ name: 'Rose', kind: 'fragrance-oil', percent: '4', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
+      colorants: [],
+      portions: [],
+    });
+    expect(saveDraft('cp', 'r', createStarterLines(), DEFAULT_SETTINGS, [], scent)).toBe(true);
+    expect(loadDraft('cp')?.scentColor.fragrances[0].name).toBe('Rose');
+    // strip the field as an older build would have written it
+    const raw = JSON.parse(localStorage.getItem('soap-calc:draft:cp')!);
+    delete raw.scentColor;
+    localStorage.setItem('soap-calc:draft:cp', JSON.stringify(raw));
+    expect(loadDraft('cp')?.scentColor).toEqual(createEmptyScentColor());
+  });
+
+  it('writes storage version 4 and still reads a v3 draft', () => {
+    expect(saveDraft('cp', 'r', createStarterLines(), DEFAULT_SETTINGS)).toBe(true);
+    expect(JSON.parse(localStorage.getItem('soap-calc:draft:cp')!).version).toBe(4);
+    const v3 = { version: 3, name: 'old', updatedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS, lines: [{ oilId: 'olive-oil', weightGrams: '1000' }] };
+    localStorage.setItem('soap-calc:draft:cp', JSON.stringify(v3));
+    expect(loadDraft('cp')?.name).toBe('old');
+  });
+
+  it('parks a draft whose additives field is not an array, as it did before the section existed', () => {
+    const raw = { version: 4, name: 'corrupt', updatedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS, lines: [{ oilId: 'olive-oil', weightGrams: '1000' }], additives: 'oops' };
+    localStorage.setItem('soap-calc:draft:cp', JSON.stringify(raw));
+    const slot = loadDraftSlot('cp');
+    expect(slot.draft).toBeNull();
+    expect(slot.unreadable).toBe(true);
+    expect(slot.kept).toBe(true);
+  });
+
+  it('migrates a saved fragrance additive into a fragrance row BEFORE normalization strips its id', () => {
+    const raw = {
+      version: 3, name: 'old', updatedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS,
+      lines: [{ oilId: 'olive-oil', weightGrams: '1000' }],
+      additives: [{ catalogId: 'fragrance', name: 'Lavender FO', amount: '3', basis: 'oil', unit: 'percent', addAt: 'trace' }],
+    };
+    localStorage.setItem('soap-calc:draft:cp', JSON.stringify(raw));
+    const draft = loadDraft('cp')!;
+    expect(draft.additives).toEqual([]);
+    expect(draft.scentColor.fragrances[0]).toMatchObject({ name: 'Lavender FO', percent: '3' });
+    expect(draft.scentMigration).toEqual({ fragrancesMoved: 1, dosesDropped: 0 });
   });
 });

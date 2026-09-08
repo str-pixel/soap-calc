@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PRICING_PROFILE } from './pricingProfile';
 import {
+  additivePriceEntry,
   additivePriceKey,
   buildRecipePricingContext,
   buildPricingInput,
@@ -8,6 +9,8 @@ import {
   hasMissingMaterialPrice,
   type RecipePricingContext,
 } from './recipePricing';
+import { normalizeScentColor } from './scentColor';
+import { applyScentColorCompliance, computeScentColorGrams } from './computeScentColor';
 
 const ctx: RecipePricingContext = {
   oilLines: [{ key: 'a', oilId: 'olive-oil', grams: 1000, name: 'Olive Oil' }],
@@ -176,5 +179,65 @@ describe('second-wave hardening', () => {
     const keyA = additivePriceKey(a.additives[0]);
     const keyB = additivePriceKey(b.additives[0]);
     expect(keyA).toBe(keyB);
+  });
+});
+
+describe('the Fragrance & colorants section is priced', () => {
+  it('prices fragrance, stabilizer, colorant and carrier oil under the scent group with name-stable keys', () => {
+    const scent = applyScentColorCompliance(
+      computeScentColorGrams(
+        normalizeScentColor({
+          fragrances: [{ name: 'Rose Absolute', kind: 'fragrance-oil', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [] }],
+          colorants: [{ name: 'Pink Mica', kind: 'mica', percent: '1', portionKey: '' }],
+          portions: [],
+        }),
+        { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 },
+      ),
+      1300,
+      'label',
+    );
+    const built = buildRecipePricingContext({
+      lines: [], computedAdditives: [], lyeGrams: 0, batchWeightWithExtras: 1000, splitLiquids: [], postCookSuperfat: null, scentColor: scent,
+    });
+    const scentRows = built.additives.filter((a) => a.group === 'scent');
+    expect(scentRows.map((a) => [a.catalogId, a.grams])).toEqual([
+      ['fragrance:name:rose absolute', 30],
+      ['vanilla-stabilizer', 30],
+      ['colorant:name:pink mica', 10],
+      ['carrier-oil', 10],
+    ]);
+    // The price book keys off the catalogId, so a renamed row key cannot orphan a price.
+    expect(scentRows.map(additivePriceKey)).toEqual(scentRows.map((a) => a.catalogId));
+  });
+  it('a "to shade" colorant has no grams and is not priced; polysorbate appears for LS under a superfat', () => {
+    const scent = applyScentColorCompliance(
+      computeScentColorGrams(
+        normalizeScentColor({
+          fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
+          colorants: [{ name: 'Blue dye', kind: 'dye', percent: '', portionKey: '' }],
+          portions: [],
+        }),
+        { process: 'ls', totalOilGrams: 1000, solutionGrams: 3000, deliveredSuperfatPercent: 2 },
+      ),
+      3000,
+      'solution',
+    );
+    const built = buildRecipePricingContext({
+      lines: [], computedAdditives: [], lyeGrams: 0, batchWeightWithExtras: 3000, splitLiquids: [], postCookSuperfat: null, scentColor: scent,
+    });
+    expect(built.additives.filter((a) => a.group === 'scent').map((a) => [a.catalogId, a.grams])).toEqual([
+      ['fragrance:name:lemon', 30],
+      ['polysorbate-20', 30],
+    ]);
+  });
+});
+
+describe('a price saved under the retired fragrance key stands in for a named fragrance row', () => {
+  const profile = { ...DEFAULT_PRICING_PROFILE, additivePrices: { fragrance: { price: '20', unit: 'kg' as const } } };
+  it('falls back to the legacy entry until a per-name price exists, and only for fragrance rows', () => {
+    expect(additivePriceEntry(profile, { key: 'k', catalogId: 'fragrance:name:rose', name: 'Rose' })).toEqual({ price: '20', unit: 'kg' });
+    expect(additivePriceEntry(profile, { key: 'k', catalogId: 'colorant:name:mica', name: 'Mica' })).toBeUndefined();
+    const named = { ...profile, additivePrices: { ...profile.additivePrices, 'fragrance:name:rose': { price: '30', unit: 'kg' as const } } };
+    expect(additivePriceEntry(named, { key: 'k', catalogId: 'fragrance:name:rose', name: 'Rose' })).toEqual({ price: '30', unit: 'kg' });
   });
 });

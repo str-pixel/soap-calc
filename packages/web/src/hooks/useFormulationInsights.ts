@@ -15,6 +15,7 @@ import {
 import { oilById } from '../lib/oils';
 import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
+import type { ComputedScentColor } from '../lib/computeScentColor';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
 
@@ -150,6 +151,8 @@ type FormulationInsightOptions = {
    * recipe's lye-only waterGrams undercounts the paste and can false-flag it as below the
    * envelope. Same threading pattern as waterEnvelope below. */
   cookWaterGrams?: number;
+  /** The Fragrance & colorants section, compliance-applied (vm.scentColor). */
+  scentColor?: ComputedScentColor;
 };
 
 export function useFormulationInsights(
@@ -258,6 +261,19 @@ export function useFormulationInsights(
       // the LS cloud-threshold insights (a 2% + 2% recipe is ~4% effective, not 2%).
       postCookSuperfatPercent: options.postCookSuperfat?.percentOfOil,
       process: options.process,
+      fragranceRows: options.scentColor?.fragrances.map((f) => ({
+        name: f.name,
+        kind: f.kind,
+        percent: f.percent,
+        shareOfProduct: f.shareOfProduct,
+        supplierMaxPercent: f.supplierMaxPercent,
+        overSupplierMax: f.overSupplierMax,
+        browning: f.browning,
+        caution: f.caution,
+      })),
+      labelAllergens: options.scentColor?.labelAllergens,
+      colorantPortionsOver100: options.scentColor?.portionsOver100,
+      colorantCarrierShiftPercent: options.scentColor?.carrierSuperfatShiftPercent,
       lsGlycerinSolvent: options.lsGlycerinSolvent,
       lsSplitLiquidFatShiftPercent: options.lsSplitLiquidFatShiftPercent,
       lsSplitLiquidIsSolventOnly: options.lsSplitLiquidIsSolventOnly,
@@ -312,6 +328,7 @@ export function useFormulationInsights(
     options.lsSplitLiquidFatShiftPercent,
     options.lsSplitLiquidIsSolventOnly,
     options.cookWaterGrams,
+    options.scentColor,
   ]);
 
   return { insights };

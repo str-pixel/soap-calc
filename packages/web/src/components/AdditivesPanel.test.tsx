@@ -584,17 +584,18 @@ describe('dose-basis seeding and display (LS audit)', () => {
     }
   });
 
-  it('the typical-range hint names the basis: solution under LS fragrance, oils under CP', () => {
-    const line = makeLine({ catalogId: 'fragrance', name: 'Fragrance / essential oil', amount: '1' });
+  it('the typical-range hint names the basis: solution under an LS solution-dosed row, oils under CP', () => {
+    const ls = makeLine({ catalogId: 'wd-shea', name: 'Water-dispersible shea', amount: '1' });
     const { unmount } = render(
-      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="ls" onChange={() => {}} />,
+      <AdditivesPanel additives={[ls]} computed={[makeComputed(ls)]} weightUnit="g" process="ls" onChange={() => {}} />,
     );
-    expect(screen.getByText(/Typical 0.5–3% of diluted solution/)).toBeTruthy();
+    expect(screen.getByText(/Typical 1–25% of diluted solution/)).toBeTruthy();
     unmount();
+    const cp = makeLine({ catalogId: 'silk', name: 'Silk', amount: '1' });
     render(
-      <AdditivesPanel additives={[line]} computed={[makeComputed(line)]} weightUnit="g" process="cp" onChange={() => {}} />,
+      <AdditivesPanel additives={[cp]} computed={[makeComputed(cp)]} weightUnit="g" process="cp" onChange={() => {}} />,
     );
-    expect(screen.getByText(/Typical 2–6% of oil weight/)).toBeTruthy();
+    expect(screen.getByText(/% of oil weight/)).toBeTruthy();
   });
 
   it('a stray solution row under CP points at the dose mode, not a dilution field CP lacks', () => {
@@ -775,7 +776,7 @@ describe('the Add-at control appears only where there is a choice', () => {
   it.each([
     ['guar', 'after_cook', 'After dilution'],
     ['charcoal', 'oils', 'With oils'],
-    ['fragrance', 'after_cook', 'After dilution'],
+    ['pearlizer', 'after_cook', 'After dilution'],
   ])('%s states its one stage instead of offering a control', (id, addAt, label) => {
     renderLine(id, addAt);
     expect(screen.queryByRole('radiogroup', { name: /^Add at/ })).toBeNull();
@@ -830,8 +831,8 @@ describe('the Add-at control appears only where there is a choice', () => {
     expect(shown).toContain('After dilution');
   });
 
-  it('the bar processes have their own audit: fragrance is fixed at trace in CP, salt still chooses', () => {
-    renderLine('fragrance', 'trace', 'cp');
+  it('the bar processes have their own audit: cetyl alcohol is fixed at trace in CP, salt still chooses', () => {
+    renderLine('cetyl-alcohol', 'trace', 'cp');
     expect(screen.queryByRole('radiogroup', { name: /^Add at/ })).toBeNull();
     expect(document.querySelector('.additive-list__stage-fixed')).toBeTruthy();
     renderLine('salt', 'lye', 'cp');
@@ -919,7 +920,7 @@ describe('the offered-stages table and the pack buttons agree with the catalog',
     cleanup();
     render(
       <AdditivesPanel
-        additives={[{ ...makeLine({ key: 's1', name: '' }), catalogId: 'fragrance', addAt: 'oils' } as AdditiveLine]}
+        additives={[{ ...makeLine({ key: 's1', name: '' }), catalogId: 'silk', addAt: 'oils' } as AdditiveLine]}
         computed={[]}
         weightUnit="g"
         process="cp"
@@ -931,7 +932,7 @@ describe('the offered-stages table and the pack buttons agree with the catalog',
     cleanup();
     render(
       <AdditivesPanel
-        additives={[{ ...makeLine({ key: 's1', name: '' }), catalogId: 'fragrance', addAt: 'trace' } as AdditiveLine]}
+        additives={[{ ...makeLine({ key: 's1', name: '' }), catalogId: 'silk', addAt: 'lye' } as AdditiveLine]}
         computed={[]}
         weightUnit="g"
         process="cp"

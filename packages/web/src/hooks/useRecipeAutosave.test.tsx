@@ -2,6 +2,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, renderHook } from '@testing-library/react';
 import { useRecipeAutosave } from './useRecipeAutosave';
+import { createEmptyScentColor } from '../lib/scentColor';
+
+const SCENT = createEmptyScentColor();
 import { loadDraft } from '../lib/recipeStorage';
 import { DEFAULT_SETTINGS, createStarterLines } from '../lib/recipe';
 import type { AdditiveLine } from '../lib/recipe';
@@ -61,7 +64,7 @@ describe('useRecipeAutosave', () => {
     // Mount alone must not write (dirty-tracking skips the just-loaded state);
     // an edit is what triggers the autosave.
     const { rerender } = renderHook(
-      ({ name }) => useRecipeAutosave('ls', name, createStarterLines(), DEFAULT_SETTINGS, additives),
+      ({ name }) => useRecipeAutosave('ls', name, createStarterLines(), DEFAULT_SETTINGS, additives, SCENT),
       { initialProps: { name: 'Draft' } },
     );
     rerender({ name: 'Body wash' });
@@ -79,7 +82,7 @@ describe('useRecipeAutosave', () => {
   it('flushes a pending edit synchronously on pagehide, before the 500ms debounce fires', () => {
     vi.useFakeTimers();
     const { rerender, unmount } = renderHook(
-      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, []),
+      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, [], SCENT),
       { initialProps: { name: 'First name' } },
     );
     // A fresh edit lands mid-debounce (rerender re-runs the effect, resetting the timer,
@@ -98,7 +101,7 @@ describe('useRecipeAutosave', () => {
   it('flushes on visibilitychange when the tab becomes hidden', () => {
     vi.useFakeTimers();
     const { rerender, unmount } = renderHook(
-      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, []),
+      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, [], SCENT),
       { initialProps: { name: 'First name' } },
     );
     rerender({ name: 'Edited then tab is hidden' });
@@ -118,7 +121,7 @@ describe('useRecipeAutosave', () => {
     vi.useFakeTimers();
     const setItemSpy = vi.spyOn(window.localStorage, 'setItem');
     const { rerender, unmount } = renderHook(
-      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, []),
+      ({ name }) => useRecipeAutosave('cp', name, createStarterLines(), DEFAULT_SETTINGS, [], SCENT),
       { initialProps: { name: 'First name' } },
     );
     rerender({ name: 'Edited just before tab close' });
@@ -142,7 +145,7 @@ describe('useRecipeAutosave', () => {
     const addSpy = vi.spyOn(window, 'addEventListener');
     const removeSpy = vi.spyOn(window, 'removeEventListener');
     const { unmount } = renderHook(() =>
-      useRecipeAutosave('cp', 'Some name', createStarterLines(), DEFAULT_SETTINGS, []),
+      useRecipeAutosave('cp', 'Some name', createStarterLines(), DEFAULT_SETTINGS, [], SCENT),
     );
     expect(addSpy).toHaveBeenCalledWith('pagehide', expect.any(Function));
     unmount();
@@ -158,7 +161,7 @@ describe('dirty-tracking (deep-review)', () => {
     vi.useFakeTimers();
     const lines = createStarterLines();
     renderHook(() =>
-      useRecipeAutosave('cp', 'Starter recipe', lines, DEFAULT_SETTINGS, []),
+      useRecipeAutosave('cp', 'Starter recipe', lines, DEFAULT_SETTINGS, [], SCENT),
     );
     vi.advanceTimersByTime(1000);
     expect(loadDraft('cp')).toBeNull();
@@ -169,7 +172,7 @@ describe('dirty-tracking (deep-review)', () => {
     vi.useFakeTimers();
     const lines = createStarterLines();
     const { rerender } = renderHook(
-      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, []),
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, [], SCENT),
       { initialProps: { name: 'Starter recipe' } },
     );
     vi.advanceTimersByTime(1000);
@@ -185,7 +188,7 @@ describe('failed-save retry (second wave)', () => {
     vi.useFakeTimers();
     const lines = createStarterLines();
     const { rerender } = renderHook(
-      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, []),
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, [], SCENT),
       { initialProps: { name: 'Draft' } },
     );
     // Make the debounced save fail once (quota), then let storage recover.
@@ -211,7 +214,7 @@ describe('externally-deleted draft (third wave)', () => {
     vi.useFakeTimers();
     const lines = createStarterLines();
     const { rerender } = renderHook(
-      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, []),
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, [], SCENT),
       { initialProps: { name: 'Draft' } },
     );
     rerender({ name: 'my recipe' });

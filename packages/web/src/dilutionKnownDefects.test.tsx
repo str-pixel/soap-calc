@@ -24,6 +24,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { BatchSheet } from './components/BatchSheet';
 import { DilutionPanel } from './components/DilutionPanel';
 import { useRecipeViewModel, type RecipeViewModel } from './hooks/useRecipeViewModel';
+import { createEmptyScentColor } from './lib/scentColor';
 import { computeBottledSolutionGrams } from './lib/calculateAdditives';
 import {
   createEmptyAdditives,
@@ -59,6 +60,7 @@ function viewModelFor(
       lines: createStarterLines(),
       settings: { ...DEFAULT_SETTINGS, ...settingsOverride },
       additives: createEmptyAdditives(),
+      scentColor: createEmptyScentColor(),
       drafts: {},
       weightUnit: 'g',
       process: 'ls',
@@ -369,6 +371,7 @@ describe('DEFECT 2 (fixed, was pre-existing): a measured paste no longer over-co
       dilution: vm.dilution!,
       cookWaterGrams: vm.cookWaterGrams,
       extrasGrams: vm.extrasGrams,
+      scentColor: vm.scentColor,
       splitLiquidPasteWaterGrams: vm.splitLiquidPasteWater,
       wholeBatchPasteGrams: vm.wholeBatchPasteGrams,
     };

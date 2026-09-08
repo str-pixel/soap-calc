@@ -298,8 +298,9 @@ export const AdditivesPanel = memo(function AdditivesPanel({
       )}
       {additives.length === 0 ? (
         <p className="results-hint">
-          Optional extras (fragrance, sugar, clay, etc.) dosed per additive — not included in lye
-          math (citric acid's compensation lye is added automatically).
+          Optional extras (sugar, clay, salt, etc.) dosed per additive — not included in lye
+          math (citric acid's compensation lye is added automatically). Fragrance and colour
+          have their own section below.
         </p>
       ) : (
         <ul className="additive-list" aria-label="Recipe additives">

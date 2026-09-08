@@ -29,6 +29,12 @@ import {
   recipeLinesFromFile,
   serializeRecipeFile,
 } from '../lib/recipeFile';
+import {
+  createEmptyScentColor,
+  migrateSavedScent,
+  scentMigrationNotice,
+  type ScentColor,
+} from '../lib/scentColor';
 
 type ExportOverride = {
   lines: RecipeLine[];
@@ -63,6 +69,11 @@ function loadWorkspace(process: ProcessId) {
     name: draft?.name ?? 'Starter recipe',
     lines: migrateRecipeLines(draft?.lines ?? createStarterLines(), settings),
     additives: draft?.additives ?? createEmptyAdditives(),
+    scentColor: draft?.scentColor ?? createEmptyScentColor(),
+    // A fragrance line moved out of Additives on this load — said by the call sites, the
+    // same way `unreadable` is, because a number that vanished from the batch weight with
+    // no word is how a maker concludes the app lost their work.
+    scentNotice: draft ? scentMigrationNotice(draft.scentMigration) : '',
     settings,
     // Carried out rather than announced here: the initial seeding below runs during the
     // first render, where flashSaveMessage does not exist yet. Both call sites decide
@@ -131,6 +142,7 @@ export function useRecipeStorage() {
   const [recipeName, setRecipeName] = useState(initial.current.ws.name);
   const [lines, setLines] = useState<RecipeLine[]>(initial.current.ws.lines);
   const [additives, setAdditives] = useState<AdditiveLine[]>(initial.current.ws.additives);
+  const [scentColor, setScentColor] = useState<ScentColor>(initial.current.ws.scentColor);
   const [settings, setSettings] = useState<RecipeSettings>(initial.current.ws.settings);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,8 +159,8 @@ export function useRecipeStorage() {
   // Latest workspace, updated every render: the import continuation below runs after an
   // async gap and must flush what the workspace IS at resolve time, not the stale render
   // closure it was created in (same refs pattern as useRecipeAutosave).
-  const workspaceRef = useRef({ process, recipeName, lines, settings, additives });
-  workspaceRef.current = { process, recipeName, lines, settings, additives };
+  const workspaceRef = useRef({ process, recipeName, lines, settings, additives, scentColor });
+  workspaceRef.current = { process, recipeName, lines, settings, additives, scentColor };
 
   useEffect(() => {
     return () => {
@@ -162,6 +174,7 @@ export function useRecipeStorage() {
   useEffect(() => {
     const ws = initial.current?.ws;
     if (ws?.unreadable) flashSaveMessage(unreadableDraftMessage(ws.kept));
+    else if (ws?.scentNotice) flashSaveMessage(`Recipe updated${ws.scentNotice}.`);
   }, []);
 
   function flashSaveMessage(message: string) {
@@ -176,13 +189,14 @@ export function useRecipeStorage() {
     // debounce (useRecipeAutosave) gets cancelled by effect-cleanup when state
     // swaps below, so without this an edit made <500ms before a tab switch is
     // silently lost. Warn if the flush fails (quota/blocked) so the loss isn't silent.
-    const flushed = saveDraft(process, recipeName, lines, settings, additives);
+    const flushed = saveDraft(process, recipeName, lines, settings, additives, scentColor);
     saveActiveProcess(next);
     const ws = loadWorkspace(next);
     setProcessState(next);
     setRecipeName(ws.name);
     setLines(ws.lines);
     setAdditives(ws.additives);
+    setScentColor(ws.scentColor);
     setSettings(ws.settings);
     setWorkspaceGeneration((g) => g + 1);
     // Both can be true at once (storage full AND the incoming slot unreadable) and
@@ -194,6 +208,8 @@ export function useRecipeStorage() {
       flashSaveMessage('Could not save the current recipe before switching — export it to avoid losing changes.');
     } else if (ws.unreadable) {
       flashSaveMessage(unreadableDraftMessage(ws.kept));
+    } else if (ws.scentNotice) {
+      flashSaveMessage(`Recipe updated${ws.scentNotice}.`);
     }
   }
 
@@ -201,6 +217,7 @@ export function useRecipeStorage() {
     setRecipeName('New recipe');
     setLines(createStarterLines());
     setAdditives(createEmptyAdditives());
+    setScentColor(createEmptyScentColor());
     setSettings(starterSettings(process));
     setWorkspaceGeneration((g) => g + 1);
   }
@@ -210,7 +227,7 @@ export function useRecipeStorage() {
     const settingsToExport = override?.settings ?? settings;
     const additivesToExport = override?.additives ?? additives;
     downloadRecipeFile(
-      serializeRecipeFile(recipeName, linesToExport, settingsToExport, additivesToExport, process),
+      serializeRecipeFile(recipeName, linesToExport, settingsToExport, additivesToExport, process, scentColor),
     );
     flashSaveMessage('Recipe exported');
   }
@@ -241,7 +258,14 @@ export function useRecipeStorage() {
           recipeLinesFromFile(parsed.data.lines),
           importedSettings,
         );
-        const importedAdditives = recipeAdditivesFromFile(parsed.data.additives);
+        // The retired `fragrance` catalog entry becomes a fragrance row — the same loader
+        // the draft path runs, on the parsed rows BEFORE recipeAdditivesFromFile →
+        // normalizeAdditiveLine clears the unknown id.
+        const migration = migrateSavedScent(parsed.data.scentColor, parsed.data.additives, nextProcess);
+        const importedAdditives = recipeAdditivesFromFile(
+          migration.additives as unknown as typeof parsed.data.additives,
+        );
+        const importedScent = migration.scentColor;
         // Read the target slot BEFORE any of the import's writes can land on it (the
         // flush below hits the same slot on a same-process import; the imported save
         // always does): an unreadable draft sitting there is the one copy of that
@@ -255,12 +279,13 @@ export function useRecipeStorage() {
         // without this, edits made just before an import (still pending the autosave
         // debounce) would be silently discarded when the state below swaps process.
         const ws = workspaceRef.current;
-        const flushedOutgoing = saveDraft(ws.process, ws.recipeName, ws.lines, ws.settings, ws.additives);
+        const flushedOutgoing = saveDraft(ws.process, ws.recipeName, ws.lines, ws.settings, ws.additives, ws.scentColor);
         saveActiveProcess(nextProcess);
         setProcessState(nextProcess);
         setRecipeName(parsed.data.name);
         setLines(importedLines);
         setAdditives(importedAdditives);
+        setScentColor(importedScent);
         setSettings(importedSettings);
         setWorkspaceGeneration((g) => g + 1);
         const savedImported = saveDraft(
@@ -269,8 +294,9 @@ export function useRecipeStorage() {
           importedLines,
           importedSettings,
           importedAdditives,
+          importedScent,
         );
-        const routing = importRoutingSuffix(parsed.data.processSource, nextProcess);
+        const routing = importRoutingSuffix(parsed.data.processSource, nextProcess) + scentMigrationNotice(migration);
         // Three candidate messages, one flash slot — choose rather than let call order
         // decide, same as setProcess's collision above. The storage-full warning wins
         // outright: the flushed and imported work exists only in memory, export is the
@@ -304,6 +330,8 @@ export function useRecipeStorage() {
     setLines,
     additives,
     setAdditives,
+    scentColor,
+    setScentColor,
     settings,
     setSettings,
     saveMessage,

@@ -402,12 +402,11 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
     expect(cp.hazards).toEqual(['can make the bar crumbly']);
   });
 
-  it('fragrance LS: 0.5–3% of the finished solution (3% max), added after cook/dilution', () => {
-    const ls = effectiveCatalogEntry(catalogEntryById('fragrance')!, 'ls');
-    expect([ls.typicalLow, ls.typicalHigh, ls.doseBasis, ls.defaultStage]).toEqual([
-      0.5, 3, 'solution', 'after_cook',
-    ]);
-    expect(effectiveCatalogEntry(catalogEntryById('fragrance')!, 'cp').doseBasis).toBeUndefined();
+  it('fragrance has left the additive catalog — it has its own section', () => {
+    expect(catalogEntryById('fragrance')).toBeUndefined();
+    for (const p of ['cp', 'hp', 'ls'] as const) {
+      expect(catalogEntriesForProcess(p).some((e) => e.id === 'fragrance')).toBe(false);
+    }
   });
 
   it('glycerin: LS-only, after dilution only, at the general 1–25% envelope', () => {
@@ -584,12 +583,11 @@ describe('LS defaults answer to the liquid-soap source, not to CP by inheritance
   // salt 3–8% of oil, into the oils or the lye water (LS:2630); sodium lactate at the
   // author's own 3–5% into the oils (LS:3019); eugenol in parts per thousand of the oils
   // (LS:2572); and the four solution-dosed additives, each stated as a share of the
-  // finished, diluted soap and added after dilution — fragrance (LS:2950), turkey red
+  // finished, diluted soap and added after dilution — turkey red
   // castor (LS:1263), water-dispersible shea (LS:3030), guar gum (LS:3101).
   it.each([
     ['salt', 3, 8, 'oil', 'lye'],
     ['sodium-lactate', 3, 5, 'oil', 'oils'],
-    ['fragrance', 0.5, 3, 'solution', 'after_cook'],
     ['turkey-red-castor', 1, 5, 'solution', 'after_cook'],
     ['wd-shea', 1, 25, 'solution', 'after_cook'],
     ['guar', 0.5, 1, 'solution', 'after_cook'],
@@ -694,8 +692,8 @@ describe('LS offers only the stages its source sanctions', () => {
   const ls = (id: string) => effectiveCatalogEntry(catalogEntryById(id)!, 'ls');
 
   // The seg used to offer all four stages for every additive, weighting three wrong
-  // answers equally with the right one: guar into the lye water is destroyed, fragrance
-  // there flashes off, turkey red before the cook defeats the point of the sulfated form.
+  // answers equally with the right one: guar into the lye water is destroyed, turkey red
+  // before the cook defeats the point of the sulfated form.
   it.each([
     // One sanctioned moment each — the panel states these instead of offering a control.
     ['chelator', ['lye']],
@@ -703,7 +701,6 @@ describe('LS offers only the stages its source sanctions', () => {
     ['clay', ['oils']],
     ['eugenol', ['oils']],
     ['finished-soap', ['oils']],
-    ['fragrance', ['after_cook']],
     ['guar', ['after_cook']],
     ['hec', ['after_cook']],
     ['pearlizer', ['after_cook']],
@@ -734,14 +731,14 @@ describe('LS offers only the stages its source sanctions', () => {
     }
   });
 
-  it('gives each process its own answer where the sources differ — fragrance is the sharp case', () => {
-    // After dilution in liquid soap, after the cook in hot process, at trace in a bar. The
-    // CP/HP audit (2026-09-07) gave the bar processes their own lists; no single
-    // entry-level list could have carried all three.
-    const frag = catalogEntryById('fragrance')!;
-    expect(effectiveCatalogEntry(frag, 'cp').stages).toEqual(['trace']);
-    expect(effectiveCatalogEntry(frag, 'hp').stages).toEqual(['after_cook']);
-    expect(effectiveCatalogEntry(frag, 'ls').stages).toEqual(['after_cook']);
+  it('gives each process its own answer where the sources differ — silk is the case', () => {
+    // Into the water before the alkali in a bar (CP:10697, HP:11165); liquid soap has a
+    // second route, amino acids into the diluted soap. The CP/HP audit (2026-09-07) gave
+    // the bar processes their own lists; no single entry-level list could carry all three.
+    const silk = catalogEntryById('silk')!;
+    expect(effectiveCatalogEntry(silk, 'cp').stages).toEqual(['lye']);
+    expect(effectiveCatalogEntry(silk, 'hp').stages).toEqual(['lye']);
+    expect(effectiveCatalogEntry(silk, 'ls').stages).toEqual(['lye', 'after_cook']);
   });
 
   it("inherits the bar audit's list where the LS source is silent, never a wider one", () => {
@@ -820,7 +817,6 @@ describe('CP: each additive defaults to its sourced stage and offers only sancti
     ['clay', 'oils', ['oils', 'trace']],                // CP:9912
     ['oatmeal', 'oils', ['oils', 'trace', 'top']],      // CP:16837, 17611
     ['honey', 'oils', ['lye', 'oils', 'trace']],        // CP:16837; sugars CP:5790
-    ['fragrance', 'trace', ['trace']],                  // CP:16777 (EO after trace)
     ['salt', 'lye', ['lye', 'oils', 'top']],            // CP:10618, 17606
     ['sodium-lactate', 'lye', ['lye', 'oils', 'trace']], // dose CP:10669; stage: practice
     ['silk', 'lye', ['lye']],                           // CP:10697 into the water before the NaOH
@@ -845,7 +841,6 @@ describe('HP: each additive defaults to its sourced stage and offers only sancti
     ['clay', 'oils', ['oils', 'trace', 'after_cook']],             // HP:11083
     ['oatmeal', 'oils', ['oils', 'after_cook', 'top']],            // HP:11108-11116
     ['honey', 'oils', ['lye', 'oils', 'trace', 'after_cook']],     // HP:5033-5040 (sugars)
-    ['fragrance', 'after_cook', ['after_cook']],                   // HP:10653
     ['salt', 'lye', ['lye', 'oils', 'top']],                       // HP:9414-9417, 11093
     ['sodium-lactate', 'trace', ['lye', 'trace']],                 // HP:9411 after a thick trace
     ['silk', 'lye', ['lye']],                                      // HP:11165

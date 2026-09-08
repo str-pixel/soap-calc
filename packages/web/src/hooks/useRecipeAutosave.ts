@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { AdditiveLine, RecipeLine, RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
+import type { ScentColor } from '../lib/scentColor';
 import { saveDraft, hasDraft } from '../lib/recipeStorage';
 
 const AUTOSAVE_MS = 500;
@@ -11,6 +12,7 @@ export function useRecipeAutosave(
   lines: RecipeLine[],
   settings: RecipeSettings,
   additives: AdditiveLine[],
+  scentColor: ScentColor,
   onSaveError?: () => void,
 ) {
   // Keep the latest callback in a ref so autosave binds to the timer without the
@@ -26,11 +28,13 @@ export function useRecipeAutosave(
   const linesRef = useRef(lines);
   const settingsRef = useRef(settings);
   const additivesRef = useRef(additives);
+  const scentColorRef = useRef(scentColor);
   processRef.current = process;
   recipeNameRef.current = recipeName;
   linesRef.current = lines;
   settingsRef.current = settings;
   additivesRef.current = additives;
+  scentColorRef.current = scentColor;
 
   // Tracks the pending debounce timer so the hide-flush can both run the same save the
   // timer would have run and cancel the timer itself (no double-save once flushed).
@@ -42,10 +46,10 @@ export function useRecipeAutosave(
   // the timer only in the passive effect — pagehide can land in that gap).
   const lastSavedRef = useRef<{
     process: typeof process; recipeName: string; lines: typeof lines;
-    settings: typeof settings; additives: typeof additives;
+    settings: typeof settings; additives: typeof additives; scentColor: typeof scentColor;
   } | null>(null);
   if (lastSavedRef.current === null) {
-    lastSavedRef.current = { process, recipeName, lines, settings, additives };
+    lastSavedRef.current = { process, recipeName, lines, settings, additives, scentColor };
   }
 
   function isDirty(): boolean {
@@ -56,7 +60,8 @@ export function useRecipeAutosave(
       last.recipeName !== recipeNameRef.current ||
       last.lines !== linesRef.current ||
       last.settings !== settingsRef.current ||
-      last.additives !== additivesRef.current
+      last.additives !== additivesRef.current ||
+      last.scentColor !== scentColorRef.current
     );
   }
 
@@ -64,11 +69,11 @@ export function useRecipeAutosave(
     if (!isDirty()) return;
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
-      const saved = saveDraft(process, recipeName, lines, settings, additives);
+      const saved = saveDraft(process, recipeName, lines, settings, additives, scentColor);
       // Only a SUCCESSFUL save marks the workspace clean — a quota failure must
       // leave it dirty so the pagehide flush retries once storage recovers.
       if (saved) {
-        lastSavedRef.current = { process, recipeName, lines, settings, additives };
+        lastSavedRef.current = { process, recipeName, lines, settings, additives, scentColor };
       } else {
         onSaveErrorRef.current?.();
       }
@@ -77,7 +82,7 @@ export function useRecipeAutosave(
       if (timerRef.current !== null) clearTimeout(timerRef.current);
       timerRef.current = null;
     };
-  }, [process, recipeName, lines, settings, additives]);
+  }, [process, recipeName, lines, settings, additives, scentColor]);
 
   // Flush-on-hide: a plain tab close/refresh/navigation never lets the 500ms debounce
   // above fire, silently dropping the last edit. `pagehide` (backed up by
@@ -102,6 +107,7 @@ export function useRecipeAutosave(
         linesRef.current,
         settingsRef.current,
         additivesRef.current,
+        scentColorRef.current,
       );
       if (saved) {
         lastSavedRef.current = {
@@ -110,6 +116,7 @@ export function useRecipeAutosave(
           lines: linesRef.current,
           settings: settingsRef.current,
           additives: additivesRef.current,
+          scentColor: scentColorRef.current,
         };
       } else {
         onSaveErrorRef.current?.();

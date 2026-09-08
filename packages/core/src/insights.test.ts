@@ -1085,10 +1085,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 41 unique codes', () => {
+  it('declares 49 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(41);
-    expect(new Set(declared).size).toBe(41);
+    expect(declared).toHaveLength(49);
+    expect(new Set(declared).size).toBe(49);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1101,7 +1101,7 @@ describe('rule registry consistency', () => {
     ...over,
   });
 
-  /** One known-firing probe input per declared code (40 total), reused from this file's and
+  /** One known-firing probe input per declared code (49 total), reused from this file's and
    * insights.golden.test.ts's own fixtures. Routed through analyzeFormulation (not a direct
    * rule.check() call) so the probe also exercises the `processes:` gate — a rule whose gate
    * excludes its own probe's process fails here, the exact blind spot a direct check() call
@@ -1236,6 +1236,27 @@ describe('rule registry consistency', () => {
     hp_vessel_too_small: { hpVesselMultiple: 1.2, process: 'hp' },
     ls_lye_excess: { superfatPercent: -2 },
     ls_water_outside_envelope: { waterEnvelope: [25, 60], waterGrams: 200, process: 'ls' },
+    // Fragrance & colorants
+    fragrance_over_supplier_max: {
+      fragranceRows: [{ name: 'F', kind: 'fragrance-oil', percent: 3, shareOfProduct: 5.5, supplierMaxPercent: 5, overSupplierMax: true, browning: 'none', caution: false }],
+    },
+    fragrance_no_supplier_rate: {
+      fragranceRows: [{ name: 'F', kind: 'fragrance-oil', percent: 3, shareOfProduct: 2.3, supplierMaxPercent: null, overSupplierMax: false, browning: 'none', caution: false }],
+    },
+    fragrance_vanillin_browning: {
+      fragranceRows: [{ name: 'F', kind: 'fragrance-oil', percent: 3, shareOfProduct: 2.3, supplierMaxPercent: 5, overSupplierMax: false, browning: 'deep', caution: false }],
+    },
+    fragrance_accelerant_eo: {
+      fragranceRows: [{ name: 'Clove', kind: 'essential-oil', percent: 1, shareOfProduct: 0.8, supplierMaxPercent: 1, overSupplierMax: false, browning: 'none', caution: true }],
+      process: 'cp',
+    },
+    fragrance_allergens_to_label: { labelAllergens: [{ name: 'Linalool', percentOfProduct: 0.28 }] },
+    colorant_portions_over_100: { colorantPortionsOver100: true },
+    colorant_carrier_superfat: { colorantCarrierShiftPercent: 1, process: 'cp' },
+    ls_fragrance_clouding: {
+      fragranceRows: [{ name: 'F', kind: 'fragrance-oil', percent: 1, shareOfProduct: 1, supplierMaxPercent: 3, overSupplierMax: false, browning: 'none', caution: false }],
+      process: 'ls',
+    },
   };
 
   it('every declared rule has a probe, and each rule emits its own code on its probe', () => {
@@ -1368,5 +1389,56 @@ describe('ls_water_outside_envelope', () => {
     // With no pasteWaterGrams supplied (CP/HP, or an LS recipe with no split liquid) it
     // falls back to waterGrams exactly as before.
     expect(has({ ...lsBase, waterGrams: 200 }, 'ls_water_outside_envelope')).toBe(true);
+  });
+});
+
+describe('fragrance & colorant insights', () => {
+  const codes = (extra: Partial<FormulationAnalysisInput>, process: 'cp' | 'hp' | 'ls') =>
+    analyzeFormulation(waterInput(330, 1000, { ...extra, process })).map((i) => i.code);
+  const row = (over: Partial<NonNullable<FormulationAnalysisInput['fragranceRows']>[number]> = {}) => ({
+    name: 'F', kind: 'fragrance-oil' as const, percent: 3, shareOfProduct: 2.3, supplierMaxPercent: 5,
+    overSupplierMax: false, browning: 'none' as const, caution: false, ...over,
+  });
+
+  it('warns above the supplier rate (finished-product basis), informs when no rate is entered', () => {
+    expect(codes({ fragranceRows: [row({ shareOfProduct: 5.5, overSupplierMax: true })] }, 'cp')).toContain('fragrance_over_supplier_max');
+    expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('fragrance_over_supplier_max');
+    expect(codes({ fragranceRows: [row({ supplierMaxPercent: null })] }, 'cp')).toContain('fragrance_no_supplier_rate');
+    expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('fragrance_no_supplier_rate');
+    // the rule reads the computed verdict, never the numbers — a 0% max (core: unknown) stays quiet
+    expect(codes({ fragranceRows: [row({ shareOfProduct: 5, supplierMaxPercent: 0, overSupplierMax: false })] }, 'cp')).not.toContain('fragrance_over_supplier_max');
+  });
+
+  it('browning above 0% vanillin in any process; the deep wording above 1%', () => {
+    const hp = analyzeFormulation(waterInput(330, 1000, { process: 'hp', fragranceRows: [row({ browning: 'deep' })] }));
+    expect(hp.find((i) => i.code === 'fragrance_vanillin_browning')?.message).toMatch(/deeply/);
+    const light = analyzeFormulation(waterInput(330, 1000, { process: 'cp', fragranceRows: [row({ browning: 'light' })] }));
+    expect(light.find((i) => i.code === 'fragrance_vanillin_browning')?.message).toMatch(/tans/);
+    expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('fragrance_vanillin_browning');
+  });
+
+  it('the clove/cinnamon caution is a cold-process concern only', () => {
+    const eo = row({ kind: 'essential-oil', caution: true });
+    expect(codes({ fragranceRows: [eo] }, 'cp')).toContain('fragrance_accelerant_eo');
+    expect(codes({ fragranceRows: [eo] }, 'hp')).not.toContain('fragrance_accelerant_eo');
+    expect(codes({ fragranceRows: [eo] }, 'ls')).not.toContain('fragrance_accelerant_eo');
+  });
+
+  it('allergens, portions over 100, the carrier superfat shift (CP, from half a point), LS clouding', () => {
+    expect(codes({ labelAllergens: [{ name: 'Linalool', percentOfProduct: 0.28 }] }, 'cp')).toContain('fragrance_allergens_to_label');
+    expect(codes({ labelAllergens: [] }, 'cp')).not.toContain('fragrance_allergens_to_label');
+    expect(codes({ colorantPortionsOver100: true }, 'cp')).toContain('colorant_portions_over_100');
+    expect(codes({ colorantCarrierShiftPercent: 1 }, 'cp')).toContain('colorant_carrier_superfat');
+    expect(codes({ colorantCarrierShiftPercent: 0.4 }, 'cp')).not.toContain('colorant_carrier_superfat');
+    expect(codes({ colorantCarrierShiftPercent: 1 }, 'hp')).not.toContain('colorant_carrier_superfat');
+    expect(codes({ fragranceRows: [row()] }, 'ls')).toContain('ls_fragrance_clouding');
+    expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('ls_fragrance_clouding');
+  });
+
+  it('fires nothing for an empty section', () => {
+    const all = codes({}, 'cp');
+    for (const c of ['fragrance_over_supplier_max', 'fragrance_no_supplier_rate', 'fragrance_vanillin_browning', 'fragrance_accelerant_eo', 'fragrance_allergens_to_label', 'colorant_portions_over_100', 'colorant_carrier_superfat', 'ls_fragrance_clouding']) {
+      expect(all).not.toContain(c);
+    }
   });
 });

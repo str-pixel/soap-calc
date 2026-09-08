@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { ActionsMenu } from './components/ActionsMenu';
 import { AdditivesPanel } from './components/AdditivesPanel';
+import { FragranceColorantsPanel } from './components/FragranceColorantsPanel';
 import { BatchSheet } from './components/BatchSheet';
 import { CpExtrasPanel } from './components/CpExtrasPanel';
 import { DilutionPanel, type DilutionScope } from './components/DilutionPanel';
@@ -55,6 +56,8 @@ export default function App() {
     setLines,
     additives,
     setAdditives,
+    scentColor,
+    setScentColor,
     settings,
     setSettings,
     saveMessage,
@@ -218,13 +221,14 @@ export default function App() {
     lines,
     settings,
     additives,
+    scentColor,
     drafts,
     weightUnit,
     process,
     vesselVolumeCm3,
     measuredPasteGrams,
   });
-  useRecipeAutosave(process, recipeName, lines, settings, additives, () =>
+  useRecipeAutosave(process, recipeName, lines, settings, additives, scentColor, () =>
     flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
   );
 
@@ -254,6 +258,7 @@ export default function App() {
         // vm.postCookSuperfat already carries isExtra (AppliedPostCookSuperfat) — pass
         // the stamped object through instead of re-pairing the flag by hand.
         postCookSuperfat: vm.postCookSuperfat,
+        scentColor: vm.scentColor,
       }),
     [
       vm.previewState.lines,
@@ -263,6 +268,7 @@ export default function App() {
       vm.splitLiquidRows,
       vm.splitLiquidGrams,
       vm.postCookSuperfat,
+      vm.scentColor,
     ],
   );
 
@@ -492,6 +498,7 @@ export default function App() {
       superfatPercent={vm.previewSettings.superfatPercent}
       soapingTempF={vm.soapingTempF}
       postCookSuperfat={vm.postCookSuperfat}
+      scentColor={vm.scentColor}
       extrasGrams={vm.extrasGrams}
       batchWeightWithExtras={vm.batchWeightWithExtras}
       cureEstimate={vm.cureEstimate}
@@ -707,6 +714,14 @@ export default function App() {
               weightUnit={weightUnit}
               process={process}
               onChange={setAdditives}
+            />
+
+            <FragranceColorantsPanel
+              scent={scentColor}
+              computed={vm.scentColor}
+              process={process}
+              weightUnit={weightUnit}
+              onChange={setScentColor}
             />
 
             {processOffers(process, 'cpExtras') && (
