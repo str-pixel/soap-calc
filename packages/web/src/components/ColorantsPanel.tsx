@@ -118,15 +118,18 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
     const used = new Set(
       next.colorants.map((c) => (colorantClaimsPortion(c, process) ? c.portionKey : '')).filter(Boolean),
     );
-    if (used.size === next.portions.length) return onChange(next);
     const portions = next.portions.filter((p) => used.has(p.key));
     const kept = new Set(portions.map((p) => p.key));
+    // A key survives only if the share is still there AND this colour can still hold one.
+    // Either way a stale key would leave the row reading "Portion" with no share to enter,
+    // or waiting to rejoin a share it left.
+    const stale = (c: ColorantLine) =>
+      c.portionKey !== '' && (!kept.has(c.portionKey) || !colorantClaimsPortion(c, process));
+    if (portions.length === next.portions.length && !next.colorants.some(stale)) return onChange(next);
     onChange({
       ...next,
       portions,
-      // A key pointing at a dropped share would leave the row reading "Portion" with no
-      // share to enter, so the two are cleared together.
-      colorants: next.colorants.map((c) => (c.portionKey && !kept.has(c.portionKey) ? { ...c, portionKey: '' } : c)),
+      colorants: next.colorants.map((c) => (stale(c) ? { ...c, portionKey: '' } : c)),
     });
   };
   const setColorant = (key: string, patch: Partial<ColorantLine>) =>

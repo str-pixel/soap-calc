@@ -264,3 +264,60 @@ describe('what a colour is mixed with, across a save and a load', () => {
     expect(loaded.colorants[0].mixedWith).toBe('oil');
   });
 });
+
+const MIXES = ['oil', 'water', 'vein', 'dry'];
+const IDS = ['', 'mica', 'madder-root', 'kaolin-clay', 'carrot-puree', 'iron-oxide'];
+
+/** A deterministic generator, so a failure is reproducible from the seed alone. */
+function rng(seed: number) {
+  let s = seed;
+  return () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+}
+
+describe('a scent survives every save and load, whatever is in it', () => {
+  it('round-trips 300 random sections without losing or inventing a field', () => {
+    const rand = rng(42);
+    for (let i = 0; i < 300; i += 1) {
+      const portionCount = Math.floor(rand() * 3);
+      const portions = Array.from({ length: portionCount }, (_, p) => ({ name: `P${p}`, percent: String(Math.floor(rand() * 120)) }));
+      const colorants = Array.from({ length: Math.floor(rand() * 4) }, () => ({
+        catalogId: IDS[Math.floor(rand() * IDS.length)],
+        name: 'x',
+        kind: 'mica',
+        percent: String(Math.round(rand() * 500) / 100),
+        portionKey: portionCount > 0 && rand() > 0.4 ? `#${Math.floor(rand() * portionCount)}` : '',
+        mixedWith: MIXES[Math.floor(rand() * MIXES.length)],
+        viaLye: rand() > 0.7,
+      }));
+      const first = normalizeScentColor({ fragrances: [], colorants, portions });
+      const second = normalizeScentColor(scentColorToSaved(first));
+
+      // Same shape, same values — keys are regenerated, so compare without them.
+      const strip = (s: ReturnType<typeof normalizeScentColor>) => ({
+        colorants: s.colorants.map(({ key: _k, portionKey, ...rest }) => ({
+          ...rest,
+          portionIndex: s.portions.findIndex((p) => p.key === portionKey),
+        })),
+        portions: s.portions.map(({ key: _k, ...rest }) => rest),
+      });
+      expect(strip(second), `iteration ${i}`).toEqual(strip(first));
+
+      // Every invariant the app now relies on, on both sides of the trip.
+      for (const s of [first, second]) {
+        const claimed = new Set(s.colorants.map((c) => c.portionKey).filter(Boolean));
+        // no share without an owner
+        expect(s.portions.every((p) => claimed.has(p.key)), `iteration ${i}`).toBe(true);
+        // no colour pointing at a share that is not there
+        expect(s.colorants.every((c) => c.portionKey === '' || s.portions.some((p) => p.key === c.portionKey))).toBe(true);
+        // and nobody holds a share who cannot
+        expect(s.colorants.every((c) => !(c.portionKey && (c.viaLye || c.mixedWith === 'vein' || c.mixedWith === 'dry')))).toBe(true);
+      }
+    }
+  });
+
+  it('an empty section is stable through the trip', () => {
+    const empty = createEmptyScentColor();
+    const back = normalizeScentColor(scentColorToSaved(empty));
+    expect(back).toEqual(empty);
+  });
+});

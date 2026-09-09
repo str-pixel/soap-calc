@@ -731,3 +731,23 @@ describe('a share cannot outlive the colour that holds it, whatever releases it'
     expect((onChange.mock.calls[0][0] as ScentColor).colorants[0]).toMatchObject({ mixedWith: 'oil', viaLye: false });
   });
 });
+
+it('a colour that cannot hold a share does not keep pointing at one another colour keeps alive', () => {
+  // Two colours in one share is a shape only an older recipe can have; flipping one to a
+  // vein used to leave it pointing at a share it cannot hold, ready to rejoin it silently.
+  const shared = normalizeScentColor({
+    fragrances: [],
+    colorants: [
+      { name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' },
+      { name: 'Gold mica', kind: 'mica', percent: '1', portionKey: '#0' },
+    ],
+    portions: [{ name: 'Swirl', percent: '40' }],
+  });
+  const onChange = renderPanel(shared, 'cp');
+  fireEvent.click(screen.getAllByRole('radio', { name: /1:2/ })[0]);
+  const next = onChange.mock.calls[0][0] as ScentColor;
+  expect(next.colorants[0]).toMatchObject({ mixedWith: 'vein', portionKey: '' });
+  // the other colour still holds the share, so the share itself stays
+  expect(next.portions).toHaveLength(1);
+  expect(next.colorants[1].portionKey).toBe(next.portions[0].key);
+});

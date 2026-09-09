@@ -180,14 +180,17 @@ export function normalizeScentColor(raw: unknown): ScentColor {
   // one whose colour has since gone through the lye, and it would sit there counting
   // toward the batter total with no control able to see or remove it.
   const claimed = new Set(colorants.map((c) => (colorantClaimsPortion(c) ? c.portionKey : '')).filter(Boolean));
-  const usedPortions = portions.filter((p) => claimed.has(p.key));
   return {
     fragrances,
-    portions: usedPortions,
-    colorants:
-      usedPortions.length === portions.length
-        ? colorants
-        : colorants.map((c) => (c.portionKey && !claimed.has(c.portionKey) ? { ...c, portionKey: '' } : c)),
+    portions: portions.filter((p) => claimed.has(p.key)),
+    // A key is cleared on BOTH counts: the share is gone, or this colour was never able to
+    // hold one. The second is not hypothetical because another colour can keep the share
+    // alive — a legacy file with two colours in one portion, one of them since flipped to a
+    // vein, left that vein pointing at a share it cannot have, ready to rejoin it silently
+    // the moment it went back on oil.
+    colorants: colorants.map((c) =>
+      c.portionKey && (!claimed.has(c.portionKey) || !colorantClaimsPortion(c)) ? { ...c, portionKey: '' } : c,
+    ),
   };
 }
 
