@@ -174,7 +174,7 @@ describe('the colours that would not keep are gone', () => {
   it('drops the fading greens and the synthetic dyes the sources argue against', () => {
     // Removed on the maker's instruction: plant greens that fade out of the bar, and the
     // dyes and lakes the cold-process source itself advises against.
-    for (const id of ['nettle', 'wheatgrass', 'spinach-powder', 'kelp', 'sage', 'avocado-puree', 'fdc-dye', 'lake-pigment']) {
+    for (const id of ['nettle', 'wheatgrass', 'spinach-powder', 'kelp', 'sage', 'avocado-puree', 'parsley', 'fdc-dye', 'lake-pigment']) {
       expect(colorantEntryById(id)).toBeUndefined();
     }
   });
@@ -182,8 +182,26 @@ describe('the colours that would not keep are gone', () => {
   it('leaves a green that holds, and keeps a way to record a dye', () => {
     const greens = COLORANT_CATALOG.filter((e) => e.family === 'green');
     expect(greens.some((e) => e.stability === 'stable')).toBe(true);
+    // Spirulina stays by request; it is now the only fading green left.
+    expect(greens.filter((e) => e.stability === 'fades').map((e) => e.id)).toEqual(['spirulina']);
     // No dye is named any more, but the KIND survives: liquid soap steers to a
     // water-soluble dye, so a maker must still be able to record one as a custom row.
     expect(COLORANT_CATALOG.some((e) => e.kind === 'dye')).toBe(false);
+  });
+});
+
+describe('the faders that stayed say how fast, where a source says', () => {
+  it('turmeric and spirulina carry their own clocks', () => {
+    // "after about 5 weeks it was just a dark creamy colour"
+    expect(colorantEntryById('turmeric')!.note).toMatch(/around five weeks/i);
+    // green through the cut and the first weeks of cure, then khaki tan
+    expect(colorantEntryById('spirulina')!.note).toMatch(/first weeks of the cure/i);
+  });
+
+  it('paprika says it fades and does not invent a timeframe', () => {
+    const note = colorantEntryById('paprika')!.note!;
+    expect(note).toMatch(/it fades/i);
+    expect(note).toMatch(/nobody puts a clock on how fast/i);
+    expect(note).not.toMatch(/weeks|months/i);
   });
 });

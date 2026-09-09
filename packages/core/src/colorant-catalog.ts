@@ -80,6 +80,11 @@ import type { ColorantKind } from './colorants.js';
  *     — powder colours harder than infusion, and browns past the orange.
  *   https://www.soapmakingforum.com/threads/turmeric-soap-lost-color.83941/ — turmeric fading
  *     to cream within weeks, with the mechanism (curcumin is unstable to light, lye and heat).
+ *     The clock in the entry is that thread's own: dull at unmoulding, "after about 5 weeks it
+ *     was just a dark creamy colour". Spirulina's clock is Soapy Friends below, which has the
+ *     wet soap, the cut soap and soap "curing for a few weeks" all still green before it
+ *     settles at a khaki tan. PAPRIKA HAS NO CLOCK: every source says it fades, none says how
+ *     fast, so the entry says that rather than inventing a figure.
  *     One site calls turmeric permanent; five practitioner reports say otherwise, so it is
  *     recorded as fading.
  *   https://lovelygreens.com/natural-purple-soap-alkanet-root/ — alkanet's grey-to-purple shift
@@ -216,15 +221,14 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     note: 'The green that keeps. Every plant green here fades; this one is a mineral, so it stays where it lands. Mix it into the lye water, or into a couple of teaspoons of water, before it goes in.',
   },
   { id: 'peppermint-leaf', name: 'Peppermint leaf', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'shifts', alsoAdditiveId: 'botanicals', note: 'If the leaves went in green they hold that green for some months, then darken.' },
-  { id: 'parsley', name: 'Parsley', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'fades', alsoAdditiveId: 'botanicals', note: 'The quickest to go of any green here — reported gone from the bars within days.' },
-  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one slides towards olive and ends up a khaki tan; light hurries it along and a dark cupboard holds it back. Wet it in the same weight of water before it goes in.', stability: 'fades' },
+  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one holds its green through the cut and the first weeks of the cure, then slides towards olive and settles at a khaki tan; daylight hurries it along and a dark cupboard holds it back. Wet it in the same weight of water before it goes in.', stability: 'fades' },
   { id: 'dandelion-root', name: 'Dandelion root', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
 
   // --- Yellow and orange (CP:9356-9361) ----------------------------------------------
   { id: 'annatto', name: 'Annatto', kind: 'natural', family: 'yellow', tspPerLbLow: 0.125, tspPerLbHigh: 1, note: 'The rate above is for the powder added directly. Ground seed is coarse and many makers infuse it into an oil instead, which is a different measurement entirely.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light orange, visibly grainy' }, { tspPerLb: 0.5, colour: 'orange' }, { tspPerLb: 1, colour: 'deep orange' }] },
-  { id: 'turmeric', name: 'Turmeric', kind: 'natural', family: 'yellow', tspPerLbLow: 0.03, tspPerLbHigh: 1, note: 'A very little goes a long way. Premix it in oil; it does not disperse in water. Powder colours harder than an infusion but fades harder too — an infused oil holds longer.', shades: [{ tspPerLb: 0.03, colour: 'soft yellow' }, { tspPerLb: 1, colour: 'burnt orange' }], stability: 'fades' },
+  { id: 'turmeric', name: 'Turmeric', kind: 'natural', family: 'yellow', tspPerLbLow: 0.03, tspPerLbHigh: 1, note: 'A very little goes a long way. Premix it in oil; it does not disperse in water. It starts to dull within a day or two of the cut, and by around five weeks the powder route can be down to a plain cream. Powder colours harder than an infusion but fades harder too — an infused oil holds longer.', shades: [{ tspPerLb: 0.03, colour: 'soft yellow' }, { tspPerLb: 1, colour: 'burnt orange' }], stability: 'fades' },
   { id: 'calendula', name: 'Calendula petals', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
-  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'That rate is for the powder stirred in directly, which leaves grit and specks in the bar and hurries trace along — an infusion is the kinder route for this one.', stability: 'fades' },
+  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'That rate is for the powder stirred in directly, which leaves grit and specks in the bar and hurries trace along — an infusion is the kinder route for this one. It fades, though nobody puts a clock on how fast.', stability: 'fades' },
   { id: 'curry-powder', name: 'Curry powder', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'yarrow', name: 'Yarrow', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
   { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
