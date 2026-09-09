@@ -272,7 +272,10 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                         onChange={(kind) => setColorant(col.key, { kind })}
                         preserveCase
                       />
-                      <p className="additive-list__stage-note">{KIND_NOTE[col.kind]}</p>
+                      {/* Same weight as the other hints in the row: this explains the
+                          control above it, so it must not read louder than the guidance
+                          under it. */}
+                      <p className="inline-note additive-list__hint">{KIND_NOTE[col.kind]}</p>
                     </>
                   )}
                 </div>

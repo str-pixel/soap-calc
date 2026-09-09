@@ -188,26 +188,12 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     stability: 'stable',
   },
   {
-    id: 'fdc-dye', name: 'FD&C / D&C dye', kind: 'dye', family: 'multi',
-    tspPerLbLow: 0.25, tspPerLbHigh: 0.25,
-    // CP:9265-9276: bleeding, heat and UV unstable, not recommended for CP by the source.
-    note: 'Water soluble and vivid, and the least suited of these to a bar: it creeps across a layer line, turns at soap pH, and gives up its colour in daylight.',
-    stability: 'fades',
-  },
-  {
     id: 'neon-pigment', name: 'Neon cosmetic pigment', kind: 'other', family: 'multi',
     // Dry pigment at the bottom of the band, the weaker liquid form at the top.
     tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'stable',
     // The coating is the whole story: it is what stops a bright organic colour bleeding and
     // morphing the way a bare dye does at soap pH.
     note: 'A bright pigment under a polymer coat, and the coat is why it behaves: it neither bleeds across a swirl nor turns at soap pH, where a bare dye does both. The liquid form is weaker — reckon on three times the dry rate.',
-  },
-  {
-    id: 'lake-pigment', name: 'Lake pigment', kind: 'other', family: 'multi',
-    tspPerLbLow: 0.25, tspPerLbHigh: 0.25,
-    // CP:9287-9291: migrating colorants, best in single-colour soaps and melt and pour.
-    note: 'A dye on an insoluble base. It migrates, so keep it to a single-colour soap.',
-    stability: 'fades',
   },
 
   // --- Blue (CP:9339-9340) ------------------------------------------------------------
@@ -229,15 +215,9 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     // mineral. Mixed into the lye solution or into a couple of teaspoons of water first.
     note: 'The green that keeps. Every plant green here fades; this one is a mineral, so it stays where it lands. Mix it into the lye water, or into a couple of teaspoons of water, before it goes in.',
   },
-  { id: 'avocado-puree', name: 'Avocado puree', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades', note: 'Starts green and usually settles at a muted yellow, faster in a bright room.' },
   { id: 'peppermint-leaf', name: 'Peppermint leaf', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'shifts', alsoAdditiveId: 'botanicals', note: 'If the leaves went in green they hold that green for some months, then darken.' },
   { id: 'parsley', name: 'Parsley', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'fades', alsoAdditiveId: 'botanicals', note: 'The quickest to go of any green here — reported gone from the bars within days.' },
   { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one slides towards olive and ends up a khaki tan; light hurries it along and a dark cupboard holds it back. Wet it in the same weight of water before it goes in.', stability: 'fades' },
-  { id: 'nettle', name: 'Nettle leaf powder', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
-  { id: 'wheatgrass', name: 'Wheatgrass', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'fades' },
-  { id: 'spinach-powder', name: 'Spinach powder', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
-  { id: 'kelp', name: 'Kelp', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
-  { id: 'sage', name: 'Sage', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'botanicals', stability: 'fades' },
   { id: 'dandelion-root', name: 'Dandelion root', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
 
   // --- Yellow and orange (CP:9356-9361) ----------------------------------------------

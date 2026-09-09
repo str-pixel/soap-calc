@@ -283,9 +283,10 @@ describe('the per-process copy states what the sources state', () => {
   });
 
   it('LS prescribes no water temperature, because no source gives one', () => {
+    // A custom row: no dye is named in the catalog, but the kind is still choosable.
     const dye = normalizeScentColor({
       fragrances: [], portions: [],
-      colorants: [{ catalogId: 'fdc-dye', name: 'FD&C dye', kind: 'dye', percent: '', portionKey: '' }],
+      colorants: [{ catalogId: '', name: 'My dye', kind: 'dye', percent: '', portionKey: '' }],
     });
     renderPanel(dye, 'ls');
     expect(screen.getByText(/Stir straight into the diluted soap/)).toBeTruthy();

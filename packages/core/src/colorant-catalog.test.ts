@@ -24,7 +24,7 @@ describe('the colorant catalog is internally sound', () => {
     // entry ("Clay (bentonite, kaolin)", "Seeds (poppy, etc.)", "Dried botanicals, ground")
     // and must never be claimed equal — poppy seeds is the trap, unique here but a bucket there.
     expect(oneToOne.sort()).toEqual(['activated-charcoal', 'cocoa-powder', 'titanium-dioxide']);
-    for (const id of ['kaolin-clay', 'red-clay', 'sage', 'poppy-seeds']) {
+    for (const id of ['kaolin-clay', 'red-clay', 'calendula', 'poppy-seeds']) {
       expect(colorantSharesMaterialWithAdditive(colorantEntryById(id)!)).toBe(false);
     }
     // A colorant with no additive pairing at all is never a match.
@@ -49,11 +49,9 @@ describe('the colorant catalog is internally sound', () => {
   });
 
   it('carries the sourced per-pound-of-oils rates, not a converted one', () => {
-    // Pigments and dyes, from the coloring guide: 1 tsp PPO, a quarter of that for dyes.
-    // The band holds the whole family: a black at the bottom, a red at the top, which is
-    // what the entry's own note describes.
+    // Pigments, from the coloring guide. The band holds the whole family: a black at the
+    // bottom, a red at the top, which is what the entry's own note describes.
     expect(colorantEntryById('iron-oxide')).toMatchObject({ tspPerLbLow: 0.25, tspPerLbHigh: 2 });
-    expect(colorantEntryById('fdc-dye')).toMatchObject({ tspPerLbLow: 0.25, tspPerLbHigh: 0.25 });
     // Mica runs pastel to bold.
     expect(colorantEntryById('mica')).toMatchObject({ tspPerLbLow: 0.5, tspPerLbHigh: 2 });
     // Turmeric's low end really is a thirty-second of a teaspoon.
@@ -125,8 +123,6 @@ describe('the colorant catalog is internally sound', () => {
     // shift: it is the dye on the mica, not the mica, that fails at soap pH.
     expect(colorantEntryById('mica')!.note).toMatch(/labelled for cold process/i);
     expect(colorantEntryById('mica')!.note).toMatch(/dye on the mica that decides/i);
-    // Dyes bleed and are unstable; the source advises against them (CP:9265-9276).
-    expect(colorantEntryById('fdc-dye')!.note).toMatch(/creeps across a layer line/i);
     // And the general caution names both classic disappointments.
     expect(NATURAL_COLORANT_CAUTION).toMatch(/anthocyanins/i);
     expect(NATURAL_COLORANT_CAUTION).toMatch(/betalains/i);
@@ -157,7 +153,7 @@ describe('the colorant catalog is internally sound', () => {
   it('a band whose source gives only a ceiling takes the book\'s general rate as its floor', () => {
     // "up to 3 tsp PPO" gives no low end, so the low is CP:9389-9391's 1 tsp per pound —
     // a cited figure rather than a guessed one.
-    for (const id of ['spirulina', 'spinach-powder', 'kelp', 'avocado-puree']) {
+    for (const id of ['spirulina']) {
       expect(colorantEntryById(id)!.tspPerLbLow).toBe(1);
       expect(colorantEntryById(id)!.tspPerLbHigh).toBe(3);
     }
@@ -171,5 +167,23 @@ describe('the colorant catalog is internally sound', () => {
     // The manufactured classes lead, the way the source presents them.
     expect(groups[0].family).toBe('multi');
     expect(groups[0].entries.map((e) => e.id)).toContain('mica');
+  });
+});
+
+describe('the colours that would not keep are gone', () => {
+  it('drops the fading greens and the synthetic dyes the sources argue against', () => {
+    // Removed on the maker's instruction: plant greens that fade out of the bar, and the
+    // dyes and lakes the cold-process source itself advises against.
+    for (const id of ['nettle', 'wheatgrass', 'spinach-powder', 'kelp', 'sage', 'avocado-puree', 'fdc-dye', 'lake-pigment']) {
+      expect(colorantEntryById(id)).toBeUndefined();
+    }
+  });
+
+  it('leaves a green that holds, and keeps a way to record a dye', () => {
+    const greens = COLORANT_CATALOG.filter((e) => e.family === 'green');
+    expect(greens.some((e) => e.stability === 'stable')).toBe(true);
+    // No dye is named any more, but the KIND survives: liquid soap steers to a
+    // water-soluble dye, so a maker must still be able to record one as a custom row.
+    expect(COLORANT_CATALOG.some((e) => e.kind === 'dye')).toBe(false);
   });
 });

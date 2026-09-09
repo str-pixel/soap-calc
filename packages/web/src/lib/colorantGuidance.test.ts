@@ -19,6 +19,7 @@ describe('guidance leads with the percent the dose field takes', () => {
     expect(colorantGuidanceText('mica', 'g')).toMatch(/^About 0\.4–1\.8% of the oils, which is 1–4½ tsp per kg\./);
     // A single-valued band collapses instead of printing the same figure twice.
     expect(colorantGuidanceText('oxide', 'g')).toMatch(/^About 0\.2–1\.8% of the oils, which is ½–4½ tsp per kg\./);
+    // No dye is named in the catalog any more, but the KIND keeps its band for a custom row.
     expect(colorantGuidanceText('dye', 'lb')).toMatch(/^About 0\.2% of the oils, which is ¼ tsp per lb\./);
   });
 
@@ -89,7 +90,7 @@ describe('the shade ladder and the over-time line', () => {
     expect(colorantStabilityText('alkanet-root')).not.toMatch(/cut/);
     expect(colorantStabilityText('turmeric')).not.toMatch(/cut/);
     expect(colorantStabilityText('turmeric')).toMatch(/Fades with time and light/);
-    expect(colorantStabilityText('fdc-dye')).toMatch(/Fades/);
+    expect(colorantStabilityText('turmeric')).toMatch(/Fades/);
     // Not every colour has a sourced answer, and silence is the honest one.
     expect(colorantStabilityText('woad')).toBeNull();
     expect(colorantStabilityText('')).toBeNull();
