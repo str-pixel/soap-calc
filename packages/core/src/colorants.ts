@@ -21,7 +21,36 @@ export type ColorantDispersal =
   /** LS: a water-soluble dye goes straight into the diluted soap (LS:13253-13262). */
   | { method: 'into-solution' }
   /** Steeped or stirred into the lye solution itself, which is already water. */
-  | { method: 'lye-solution' };
+  | { method: 'lye-solution' }
+  /** CP, the maker's other sanctioned solvent: "Colorants can be added to your soap using
+   * water, glycerin, oil, or any other liquid that you may be using ... You can also use
+   * distilled water and can even sneak in a little extra sugar for lather" (CP:18080-18089).
+   * No quantity is published for it, unlike the HP figure. */
+  | { method: 'water-solvent' }
+  /** A mica vein or pencil-line pour: "a mica solution at a ratio of 1:2 (pigment to oil)"
+   * (CP:18332-18336) — twice the oil of the 1:1 batter rule, thin enough to pour. */
+  | { method: 'vein-oil'; carrierGrams: number | null }
+  /** A pencil line, dusted dry between two pours (CP:18322-18330): no solvent at all. */
+  | { method: 'dusted' };
+
+/** How a CP colour is carried into the soap. Cold process only — the HP and LS texts
+ * prescribe their own solvent, and the technique passages (veins, pencil lines) are all in
+ * the cold-process design chapter. */
+export type ColorantMix = 'oil' | 'water' | 'vein' | 'dry';
+export const COLORANT_MIX_PROCESSES: readonly AdditiveProcess[] = ['cp'];
+
+/** The oil a vein carries per gram of pigment: 1:2 pigment to oil (CP:18332-18336). */
+export const VEIN_OIL_RATIO = 2;
+
+/**
+ * What CP's water route costs, in the book's own terms. It is permitted (CP:18080) and
+ * twice warned against: a light carrier oil "does not increase the risk of gelling or
+ * glycerin sweating" (CP:9397-9400), and among the crystal-river preventatives, "Do not use
+ * water for colorants, as these can increase the risk of gel phase in those portions of the
+ * soap" (CP:15215-15216).
+ */
+export const COLORANT_WATER_SOLVENT_CAUTION =
+  'Water works, and a pinch of sugar dissolved in it first buys a little lather. It costs you gel phase in that portion, though — a light carrier oil is the safer default, and it will not sweat glycerin either.';
 
 export type ColorantGuidance = {
   tspPerLbLow: number;
@@ -126,9 +155,19 @@ export function colorantDispersal(
   hasPortion: boolean,
   /** The maker chose the lye route: the solution IS the solvent, so nothing else disperses it. */
   viaLye = false,
+  /** CP only: what the maker mixes it with. 'oil' is the book's default and everything
+   * else's only option. */
+  mix: ColorantMix = 'oil',
 ): ColorantDispersal {
   if (viaLye) return { method: 'lye-solution' };
-  if (process === 'cp') return { method: 'carrier-oil', carrierGrams: colorantGrams };
+  if (process === 'cp') {
+    if (mix === 'dry') return { method: 'dusted' };
+    if (mix === 'water') return { method: 'water-solvent' };
+    if (mix === 'vein') {
+      return { method: 'vein-oil', carrierGrams: colorantGrams === null ? null : colorantGrams * VEIN_OIL_RATIO };
+    }
+    return { method: 'carrier-oil', carrierGrams: colorantGrams };
+  }
   if (process === 'hp') {
     if (!hasPortion) return { method: 'recipe-oil' };
     return { method: 'hot-sugar-water', waterGramsLow: HP_COLORANT_WATER_GRAMS.low, waterGramsHigh: HP_COLORANT_WATER_GRAMS.high };
@@ -152,11 +191,39 @@ export function colorantStage(
   process: AdditiveProcess,
   hasPortion: boolean,
   viaLye = false,
+  mix: ColorantMix = 'oil',
 ): AdditiveStage {
   if (viaLye) return 'lye';
   if (process === 'ls') return 'after_cook';
+  // A vein is poured between layers and a pencil line is dusted onto one (CP:18322-18336):
+  // both happen at the mold, not in the pot, so neither can ride in with the oils.
+  if (process === 'cp' && (mix === 'vein' || mix === 'dry')) return 'trace';
   if (!hasPortion) return 'oils';
   return process === 'cp' ? 'trace' : 'after_cook';
+}
+
+/**
+ * The water a batch of HP portion colours carries in, and what it is against the recipe's
+ * own water. The rule the app states with it is the book's, twice over — for colorants,
+ * "You do not need to include the water used as part of your water total unless using a
+ * large amount" (HP:10990-10993), and again for clays (HP:11084-11087). No source puts a
+ * figure on "a large amount", so this returns the numbers and leaves the judgement where
+ * the book leaves it.
+ */
+export function hpColorantWaterGrams(
+  colourCount: number,
+  recipeWaterGrams: number | null,
+): { low: number; high: number; sharePercentLow: number | null; sharePercentHigh: number | null } {
+  const count = Number.isFinite(colourCount) && colourCount > 0 ? Math.floor(colourCount) : 0;
+  const low = count * HP_COLORANT_WATER_GRAMS.low;
+  const high = count * HP_COLORANT_WATER_GRAMS.high;
+  const usable = finite(recipeWaterGrams) && recipeWaterGrams > 0 ? recipeWaterGrams : null;
+  return {
+    low,
+    high,
+    sharePercentLow: usable === null ? null : (100 * low) / usable,
+    sharePercentHigh: usable === null ? null : (100 * high) / usable,
+  };
 }
 
 export function portionsTotalPercent(portions: Array<{ percent: number | null }>): { total: number; over100: boolean } {

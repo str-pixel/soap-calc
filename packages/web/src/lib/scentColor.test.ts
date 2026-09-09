@@ -239,3 +239,28 @@ describe('a share nothing points at does not survive the load', () => {
     expect(claimed.colorants[0].portionKey).toBe(claimed.portions[0].key);
   });
 });
+
+describe('what a colour is mixed with, across a save and a load', () => {
+  it('round-trips, and an older file simply arrives on the oil the book prefers', () => {
+    const scent = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '', mixedWith: 'vein' }],
+      portions: [],
+    });
+    expect(scent.colorants[0].mixedWith).toBe('vein');
+    const saved = scentColorToSaved(scent);
+    expect(saved.colorants[0].mixedWith).toBe('vein');
+    expect(normalizeScentColor(saved).colorants[0].mixedWith).toBe('vein');
+    const older = { ...saved, colorants: saved.colorants.map(({ mixedWith: _drop, ...rest }) => rest) };
+    expect(normalizeScentColor(older).colorants[0].mixedWith).toBe('oil');
+  });
+
+  it('a value no version ever wrote falls back rather than dangling', () => {
+    const loaded = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '', mixedWith: 'glitter' }],
+      portions: [],
+    });
+    expect(loaded.colorants[0].mixedWith).toBe('oil');
+  });
+});

@@ -730,6 +730,7 @@ export default function App() {
               computed={vm.scentColor}
               process={process}
               weightUnit={weightUnit}
+              waterGrams={vm.result?.waterWeightGrams ?? null}
               onChange={setScentColor}
             />
 

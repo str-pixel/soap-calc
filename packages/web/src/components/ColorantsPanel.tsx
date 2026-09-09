@@ -3,10 +3,14 @@ import {
   colorantEntryById,
   COLORANT_LYE_ABSORPTION_CAUTION,
   COLORANT_LYE_ROUTE_CAUTION,
+  COLORANT_MIX_PROCESSES,
+  COLORANT_WATER_SOLVENT_CAUTION,
+  hpColorantWaterGrams,
   COLORANT_LYE_ROUTE_PROCESSES,
   colorantsByFamily,
   NATURAL_COLORANT_CAUTION,
   type ColorantKind,
+  type ColorantMix,
 } from '@soap-calc/core';
 import { colorantStage } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
@@ -32,8 +36,22 @@ type Props = {
   computed: ComputedScentColor;
   process: ProcessId;
   weightUnit: WeightUnit;
+  /** The recipe's own water, so the panel can say what the colour water is against it —
+   * the book gives the per-colour figure but leaves "a large amount" to the maker. */
+  waterGrams: number | null;
   onChange: (next: ScentColor) => void;
 };
+
+/** The four things a cold-process colour can be mixed with, in the book's own order of
+ * preference: the 1:1 carrier oil first (CP:9394-9400), then the water it also sanctions
+ * (CP:18080-18089), then the two mold-side techniques — a 1:2 vein and a dry pencil line
+ * (CP:18322-18336). */
+const MIX_OPTIONS: ReadonlyArray<{ value: ColorantMix; cell: string; name: string }> = [
+  { value: 'oil', cell: 'Oil 1:1', name: 'Carrier oil, 1:1' },
+  { value: 'water', cell: 'Water', name: 'Water' },
+  { value: 'vein', cell: 'Oil 1:2', name: 'Carrier oil, 1:2 — a vein' },
+  { value: 'dry', cell: 'Dry', name: 'Dry — a dusted line' },
+];
 
 const COLORANT_GROUPS = colorantsByFamily();
 
@@ -91,7 +109,7 @@ const PROCESS_COPY: Record<ProcessId, string> = {
   ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm anywhere from bright orange to deep red, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
 };
 
-export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, onChange }: Props) {
+export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, waterGrams, onChange }: Props) {
   /** Every write goes through here, so a share can never outlive the colour that asked for
    * it: a portion nothing points at is dropped on the way out. Without this a deleted row,
    * or one sent through the lye, left its share in the recipe — still counted in the total
@@ -159,6 +177,12 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
       colorants: scent.colorants.map((c) => (c.key === colorantKey ? { ...c, portionKey: '' } : c)),
     });
   };
+
+  // Every HP portion colour carries its own hot sugar water (HP:11320-11329); the total and
+  // its share of the recipe water are what the maker is otherwise guessing at.
+  const hpWaterColours = computed.colorants.filter((c) => c.dispersal.method === 'hot-sugar-water').length;
+  const hpWater =
+    hpWaterColours > 0 ? { count: hpWaterColours, ...hpColorantWaterGrams(hpWaterColours, waterGrams) } : null;
 
   return (
     <section className="panel">
@@ -296,7 +320,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                     through the lye drops it: it is in the pot before there is a batter to
                     split, so taking that route hands the share back rather than parking it
                     somewhere the maker can no longer see or edit. */}
-                {process !== 'ls' && !c.viaLye && (
+                {process !== 'ls' && !c.viaLye && c.mixedWith !== 'vein' && c.mixedWith !== 'dry' && (
                   <div className="additive-list__choice">
                     <span className="micro-label">Portion</span>
                     <SegRadioGroup
@@ -331,6 +355,23 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                       <span className="ledger__unit">% of batter</span>
                     </span>
                   </label>
+                )}
+                {COLORANT_MIX_PROCESSES.includes(process) && !c.viaLye && (
+                  <div className="additive-list__choice">
+                    <span className="micro-label">Mix with</span>
+                    {/* Cold process is the one text that offers a choice here: oil is its
+                        preference, water its other sanctioned solvent, and the last two are
+                        techniques rather than solvents — a vein is poured and a pencil line
+                        is dusted, so neither is a share of the batter. */}
+                    <SegRadioGroup
+                      label={`${rowName} mixed with`}
+                      name={`colorant-mix-${col.key}`}
+                      options={MIX_OPTIONS}
+                      value={col.mixedWith}
+                      onChange={(v) => setColorant(col.key, { mixedWith: v })}
+                      preserveCase
+                    />
+                  </div>
                 )}
                 <div className="additive-list__choice">
                   <span className="micro-label">Add at</span>
@@ -407,6 +448,23 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
             <li className="additive-list__foot">
               Portions total {formatGrams(computed.portionsTotalPercent, 1)}%
               {computed.portionsOver100 && <strong> — over 100%: the portions cannot add up to more than the batter.</strong>}
+            </li>
+          )}
+          {computed.colorants.some((c) => c.dispersal.method === 'water-solvent') && (
+            <li className="inline-note">{COLORANT_WATER_SOLVENT_CAUTION}</li>
+          )}
+          {hpWater !== null && (
+            <li className="inline-note">
+              {/* The figure is the book's, per colour; the judgement it asks for is the
+                  maker's, because no source puts a number on "a large amount". */}
+              Colour water: {formatWeight(hpWater.low, weightUnit)}–{formatWeight(hpWater.high, weightUnit)} across{' '}
+              {hpWater.count} {hpWater.count === 1 ? 'colour' : 'colours'}
+              {hpWater.sharePercentLow !== null && hpWater.sharePercentHigh !== null && (
+                <> — about {formatGrams(hpWater.sharePercentLow, 0)}–{formatGrams(hpWater.sharePercentHigh, 0)}% of this recipe&apos;s water</>
+              )}
+              . It need not count toward your water total unless it is a large amount; to count
+              it, take it out of the total under Split liquid instead of adding it on top, and
+              the lye keeps its own minimum.
             </li>
           )}
           {/* A clay, a mud or charcoal is a mineral: it has no plant pigment to lose. */}

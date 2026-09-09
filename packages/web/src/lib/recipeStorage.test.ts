@@ -490,12 +490,12 @@ describe('drafts carry the Fragrance & colorants section', () => {
     expect(loadDraft('cp')?.scentColor).toEqual(createEmptyScentColor());
   });
 
-  it('writes storage version 5 and still reads the older drafts', () => {
+  it('writes storage version 6 and still reads the older drafts', () => {
     expect(saveDraft('cp', 'r', createStarterLines(), DEFAULT_SETTINGS)).toBe(true);
-    expect(JSON.parse(localStorage.getItem('soap-calc:draft:cp')!).version).toBe(5);
+    expect(JSON.parse(localStorage.getItem('soap-calc:draft:cp')!).version).toBe(6);
     // Every version this build has ever written stays readable — v4 is the one the lye
     // route bumped past, v3 the one before the scent section.
-    for (const version of [3, 4]) {
+    for (const version of [3, 4, 5]) {
       const older = { version, name: `old-v${version}`, updatedAt: new Date().toISOString(), settings: DEFAULT_SETTINGS, lines: [{ oilId: 'olive-oil', weightGrams: '1000' }] };
       localStorage.setItem('soap-calc:draft:cp', JSON.stringify(older));
       expect(loadDraft('cp')?.name).toBe(`old-v${version}`);

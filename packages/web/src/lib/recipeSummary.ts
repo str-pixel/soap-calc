@@ -8,6 +8,7 @@ import { formatGrams, joinNames } from './format';
 import { oilDisplayName } from './oilDisplay';
 import { formatWeight } from './weightUnits';
 import { colorantDispersalText } from './colorantGuidance';
+import { hpColorantWaterGrams } from '@soap-calc/core';
 
 /** The one provenance phrase every surface appends to an APPLIED subtract reserve — the
  * results-grid row, the Full recipe line, and the printed sheet. "from oils above" says
@@ -271,6 +272,18 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
         colorantItems.push(...own.map(colorantItem));
       }
     }
+  }
+
+  // The water those HP colours carry in, said once where the colours are listed. The book
+  // gives the per-colour figure and says it need not count toward the water total unless it
+  // is a large amount (HP:10990-10993) — so the manifest states it and leaves it out.
+  const waterColours = colorants.filter((c) => c.dispersal.method === 'hot-sugar-water').length;
+  if (waterColours > 0) {
+    const water = hpColorantWaterGrams(waterColours, null);
+    colorantItems.push({
+      name: 'Colour water',
+      detail: `${formatWeight(water.low, weightUnit)}–${formatWeight(water.high, weightUnit)} · with a pinch of sugar each · not counted in the recipe water`,
+    });
   }
 
   const fragranceItems: RecipeItem[] = [];

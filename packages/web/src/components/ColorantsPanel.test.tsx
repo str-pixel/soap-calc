@@ -8,10 +8,10 @@ import type { ProcessId } from '../lib/process';
 
 afterEach(cleanup);
 
-function renderPanel(scent: ScentColor, process: ProcessId, unit: 'g' | 'lb' = 'g', productGrams: number | null = 1300) {
+function renderPanel(scent: ScentColor, process: ProcessId, unit: 'g' | 'lb' = 'g', productGrams: number | null = 1300, waterGrams: number | null = 330) {
   const computed = computedScent(scent, { process, totalOilGrams: 1000, solutionGrams: 3000, productGrams });
   const onChange = vi.fn();
-  render(<ColorantsPanel scent={scent} computed={computed} process={process} weightUnit={unit} onChange={onChange} />);
+  render(<ColorantsPanel scent={scent} computed={computed} process={process} weightUnit={unit} waterGrams={waterGrams} onChange={onChange} />);
   return onChange;
 }
 
@@ -50,7 +50,7 @@ describe('ColorantsPanel', () => {
     expect(dose.querySelector('.ledger__unit')!.textContent).toBe('% of oils');
     // every labelled block names itself in the label column
     expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
-      .toEqual(['Colorant', 'Name', 'Kind', 'Dose', 'Portion', 'Add at', 'Adds']);
+      .toEqual(['Colorant', 'Name', 'Kind', 'Dose', 'Portion', 'Mix with', 'Add at', 'Adds']);
   });
 
   it('offers two buttons — the whole batter, or this colour\'s own portion', () => {
@@ -599,4 +599,93 @@ it('a purée says it is also a liquid the water budget can size', () => {
   const text = document.querySelector('.additive-list')!.textContent!;
   expect(text).toContain('Enter it as a split liquid and that water comes out for you');
   expect(text).not.toContain('take the same weight off');
+});
+
+describe('what a cold-process colour is mixed with', () => {
+  const row = (mixedWith = 'oil') => normalizeScentColor({
+    fragrances: [],
+    colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '', mixedWith }],
+    portions: [],
+  });
+
+  it('offers the four the book gives, oil first', () => {
+    const onChange = renderPanel(row(), 'cp');
+    const seg = screen.getByRole('radiogroup', { name: /Mica mixed with/ });
+    expect([...seg.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['Oil 1:1', 'Water', 'Oil 1:2', 'Dry']);
+    expect(screen.getByText(/Mix 1:1 with a light carrier oil/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: 'Water' }));
+    expect((onChange.mock.calls[0][0] as ScentColor).colorants[0].mixedWith).toBe('water');
+  });
+
+  it('water names what it costs, and stops claiming a carrier oil', () => {
+    renderPanel(row('water'), 'cp');
+    expect(screen.getByText(/Mix into a little distilled water/)).toBeTruthy();
+    // The row no longer prescribes a carrier oil, and no superfat rides on one.
+    expect(document.querySelector('.additive-list__hint')!.textContent).not.toMatch(/Mix 1:1/);
+    expect(screen.queryByText(/adds about .* superfat points/)).toBeNull();
+    // the book's two warnings, said once for the list
+    expect(screen.getByText(/costs you gel phase in that portion/)).toBeTruthy();
+  });
+
+  it('a vein takes twice the oil, and a dusted line takes none', () => {
+    renderPanel(row('vein'), 'cp');
+    expect(screen.getByText(/Mix 1:2 with a light carrier oil \(20 g\)/)).toBeTruthy();
+    cleanup();
+    renderPanel(row('dry'), 'cp');
+    expect(screen.getByText(/Dust it dry over a poured layer/)).toBeTruthy();
+  });
+
+  it('neither a vein nor a dusted line is a share of the batter', () => {
+    for (const mix of ['vein', 'dry']) {
+      renderPanel(row(mix), 'cp');
+      expect(screen.queryByRole('radiogroup', { name: /portion$/i })).toBeNull();
+      // both happen at the mold, so they read at trace rather than with the oils
+      expect(screen.getByText('At trace')).toBeTruthy();
+      cleanup();
+    }
+  });
+
+  it('is offered in cold process only — the other texts prescribe their own solvent', () => {
+    for (const process of ['hp', 'ls'] as const) {
+      renderPanel(row(), process);
+      expect(screen.queryByRole('radiogroup', { name: /mixed with/i })).toBeNull();
+      cleanup();
+    }
+  });
+});
+
+describe('the water a batch of HP colours carries in', () => {
+  const twoPortionColours = normalizeScentColor({
+    fragrances: [],
+    colorants: [
+      { catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0' },
+      { catalogId: 'iron-oxide', name: '', kind: 'oxide', percent: '1', portionKey: '#1' },
+    ],
+    portions: [{ name: '', percent: '40' }, { name: '', percent: '30' }],
+  });
+
+  it('states the total, its share of the recipe water, and what the book does with it', () => {
+    renderPanel(twoPortionColours, 'hp', 'g', 1300, 330);
+    // 2 colours × 7–14 g
+    expect(screen.getByText(/Colour water: 14 g–28 g across 2 colours/)).toBeTruthy();
+    expect(screen.getByText(/about 4–9% of this recipe's water/)).toBeTruthy();
+    expect(screen.getByText(/need not count toward your water total unless it is a large amount/)).toBeTruthy();
+    // and where to put it if the maker decides it IS large
+    expect(screen.getByText(/take it out of the total under Split liquid/)).toBeTruthy();
+  });
+
+  it('says nothing where no colour carries water', () => {
+    renderPanel(blueMica, 'cp');
+    expect(screen.queryByText(/Colour water:/)).toBeNull();
+    cleanup();
+    // an HP whole-batter colour goes straight into the oils, with no slurry at all
+    renderPanel(blueMica, 'hp');
+    expect(screen.queryByText(/Colour water:/)).toBeNull();
+  });
+
+  it('drops the share when the recipe has no water figure yet', () => {
+    renderPanel(twoPortionColours, 'hp', 'g', 1300, null);
+    expect(screen.getByText(/Colour water: 14 g–28 g/)).toBeTruthy();
+    expect(screen.queryByText(/of this recipe's water/)).toBeNull();
+  });
 });

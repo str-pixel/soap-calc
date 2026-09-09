@@ -23,12 +23,14 @@ import {
 } from './scentColor';
 
 // v3 adds `scentColor` (the Fragrance & colorants section). v4 adds the colorant lye route
-// (`viaLye`), which moves a colour from the oils or trace into the lye solution. Older files
-// still parse; a v4 file opened by an older build is refused by that build's version gate,
-// which is the honest signal — its field-by-field parser would silently drop the field and
-// place the colour at a stage the maker did not choose.
-export const RECIPE_FILE_VERSION = 4 as const;
-export const RECIPE_FILE_LEGACY_VERSIONS: readonly number[] = [1, 2, 3];
+// (`viaLye`), which moves a colour from the oils or trace into the lye solution. v5 adds
+// what a cold-process colour is mixed with (`mixedWith`) — water instead of oil, or the two
+// mold-side techniques, which change the stage, the carrier oil and the superfat with it.
+// Older files still parse; a v5 file opened by an older build is refused by that build's
+// version gate, which is the honest signal — its field-by-field parser would silently drop
+// the field and put the colour back at a stage and a solvent the maker did not choose.
+export const RECIPE_FILE_VERSION = 5 as const;
+export const RECIPE_FILE_LEGACY_VERSIONS: readonly number[] = [1, 2, 3, 4];
 
 /** Import cap on oil lines, mirroring MAX_RECIPE_ADDITIVES. Real recipes have a
  * handful of oils; without a cap a malformed/hostile file with a huge `lines`

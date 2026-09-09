@@ -112,6 +112,15 @@ export function colorantDispersalText(d: ColorantDispersal, unit: WeightUnit): s
     case 'lye-solution':
       // The solution is already water, so it is the solvent — nothing else disperses it.
       return 'Stir into the lye solution itself — it needs no other solvent';
+    case 'water-solvent':
+      // The book sanctions water and names no quantity for it, so neither does this.
+      return 'Mix into a little distilled water, sugar dissolved in it first if you want the lather';
+    case 'vein-oil':
+      return d.carrierGrams !== null
+        ? `Mix 1:2 with a light carrier oil (${formatWeight(d.carrierGrams, unit)}) and pour it in thin layers`
+        : 'Mix 1:2 with a light carrier oil and pour it in thin layers';
+    case 'dusted':
+      return 'Dust it dry over a poured layer, thin enough that soap still shows through';
   }
 }
 

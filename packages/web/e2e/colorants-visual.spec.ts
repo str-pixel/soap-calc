@@ -133,6 +133,52 @@ test.describe('colorants, seen in each process', () => {
     expect(problems, 'browser reported nothing').toEqual([]);
   });
 
+  test('what a cold-process colour is mixed with, and what each choice changes', async ({ page }) => {
+    const problems = watchForErrors(page);
+    await fresh(page);
+
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    await page.getByLabel(/Colorant for/).selectOption('mica');
+    const mix = panel(page).getByRole('radiogroup', { name: /mixed with/i });
+    await expect(mix).toContainText('Oil 1:1');
+    await expect(panel(page)).toContainText(/Mix 1:1 with a light carrier oil/);
+    // the carrier oil rides on the recipe as superfat, which the panel says out loud
+    await expect(panel(page)).toContainText(/superfat points/);
+
+    // Water: the book's other sanctioned solvent, and it names what it costs.
+    await mix.getByRole('radio', { name: 'Water' }).click();
+    await expect(panel(page)).toContainText(/Mix into a little distilled water/);
+    await expect(panel(page)).toContainText(/costs you gel phase in that portion/);
+    await expect(panel(page)).not.toContainText(/superfat points/);
+
+    // A vein takes twice the oil and is poured at the mold, so it is not a batter share.
+    await mix.getByRole('radio', { name: /1:2/ }).click();
+    await expect(panel(page)).toContainText(/Mix 1:2 with a light carrier oil/);
+    await expect(panel(page).getByRole('radiogroup', { name: /portion$/i })).toHaveCount(0);
+    await expect(panel(page)).toContainText(/At trace/);
+
+    // A pencil line is dusted dry: no solvent at all.
+    await mix.getByRole('radio', { name: /^Dry/ }).click();
+    await expect(panel(page)).toContainText(/Dust it dry over a poured layer/);
+    await page.screenshot({ path: `${SHOTS}/colorants-cp-mix.png`, fullPage: true });
+
+    // Hot process prescribes its own solvent, so it offers no choice — and states the
+    // water its portion colours carry in.
+    await processTab(page, /Hot process/).click();
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    await page.getByLabel(/Colorant for/).selectOption('mica');
+    await expect(panel(page).getByRole('radiogroup', { name: /mixed with/i })).toHaveCount(0);
+    await panel(page).getByRole('radio', { name: 'Portion' }).click();
+    await page.getByLabel(/Mica share of the batter/).fill('40');
+    await expect(panel(page)).toContainText(/Colour water: 7.1 g–14 g across 1 colour/);
+    await expect(panel(page)).toContainText(/of this recipe's water/);
+    await expect(panel(page)).toContainText(/take it out of the total under Split liquid/);
+    await page.screenshot({ path: `${SHOTS}/colorants-hp-water.png`, fullPage: true });
+
+    await expectNoJunk(page);
+    expect(problems, 'browser reported nothing').toEqual([]);
+  });
+
   test('an overdose is caught, and the figure the panel prints is never called one', async ({ page }) => {
     const problems = watchForErrors(page);
     await fresh(page);

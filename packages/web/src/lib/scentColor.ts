@@ -1,5 +1,5 @@
 // packages/web/src/lib/scentColor.ts
-import { colorantEntryById, MAX_ADDITIVE_NAME_LENGTH, type ColorantKind } from '@soap-calc/core';
+import { colorantEntryById, MAX_ADDITIVE_NAME_LENGTH, type ColorantKind, type ColorantMix } from '@soap-calc/core';
 import { isRecord, newAdditiveKey } from './recipe';
 import type { ProcessId } from './process';
 
@@ -27,6 +27,10 @@ export type ColorantLine = {
   percent: string;
   /** '' = whole batter. */
   portionKey: string;
+  /** CP only: what the colour is mixed with before it goes in — the 1:1 carrier oil the
+   * book prefers, the water it also sanctions, the 1:2 oil of a vein, or nothing at all for
+   * a dusted pencil line. Anything but 'oil' outside cold process falls back on load. */
+  mixedWith: ColorantMix;
   /** True when the maker sends this colour through the lye solution instead of letting the
    * app derive the stage from the process and the portion, which is the usual case. Only a
    * catalog entry with a lyeRoute, in a process that offers it, can hold it true. */
@@ -66,10 +70,12 @@ export function newAllergenLine(): AllergenLine {
 
 /** LS seeds a dye (water-soluble is what a liquid tolerates, LS:13256); bars seed a mica.
  * The dose is EMPTY in every process — there is no sourced number to seed. */
+const COLORANT_MIXES: readonly ColorantMix[] = ['oil', 'water', 'vein', 'dry'];
+
 export function newColorantLine(process: ProcessId): ColorantLine {
   // LS seeds a water-soluble dye — what a liquid tolerates (LS:13256); bars seed a mica.
   // No catalog pick and no dose: both are the maker's to choose.
-  return { key: newAdditiveKey(), catalogId: '', name: '', kind: process === 'ls' ? 'dye' : 'mica', percent: '', portionKey: '', viaLye: false };
+  return { key: newAdditiveKey(), catalogId: '', name: '', kind: process === 'ls' ? 'dye' : 'mica', percent: '', portionKey: '', mixedWith: 'oil', viaLye: false };
 }
 
 export function newPortion(): Portion {
@@ -137,6 +143,11 @@ export function normalizeScentColor(raw: unknown): ScentColor {
     // A stored lye route only survives if the entry still offers one — a retired route, or
     // a colour that never had one, falls back to the derived stage rather than dangling.
     const viaLye = c.viaLye === true && entry?.lyeRoute !== undefined;
+    // Validated here, gated by process at compute time (COLORANT_MIX_PROCESSES) — the same
+    // split the lye route follows, so a recipe switched to HP and back keeps the choice.
+    const mixedWith: ColorantMix = COLORANT_MIXES.includes(c.mixedWith as ColorantMix)
+      ? (c.mixedWith as ColorantMix)
+      : 'oil';
     return [{
       key: newAdditiveKey(),
       catalogId,
@@ -144,6 +155,7 @@ export function normalizeScentColor(raw: unknown): ScentColor {
       kind: entry ? entry.kind : kind,
       percent: percentString(c.percent),
       portionKey,
+      mixedWith,
       viaLye,
     }];
   });
@@ -170,8 +182,8 @@ export function scentColorToSaved(scent: ScentColor): SavedScentColor {
       name, percent, supplierMaxPercent, vanillinPercent,
       allergens: allergens.map(({ name: n, percentOfFragrance }) => ({ name: n, percentOfFragrance })),
     })),
-    colorants: scent.colorants.map(({ catalogId, name, kind, percent, portionKey, viaLye }) => ({
-      catalogId, name, kind, percent, viaLye, portionKey: portionIndex.get(portionKey) ?? '',
+    colorants: scent.colorants.map(({ catalogId, name, kind, percent, portionKey, mixedWith, viaLye }) => ({
+      catalogId, name, kind, percent, mixedWith, viaLye, portionKey: portionIndex.get(portionKey) ?? '',
     })),
     portions: scent.portions.map(({ name, percent }) => ({ name, percent })),
   };

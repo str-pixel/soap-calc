@@ -815,3 +815,31 @@ test('several unnamed colours in one share are named by all of them', () => {
   const colorants = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: scent }).find((s) => s.heading === 'Colorants')!;
   expect(colorants.items[0]).toEqual({ name: 'Mica, Iron oxide — 40% of the batter', detail: '' });
 });
+
+test('HP portion colours list the water they carry in, and say it is not counted', () => {
+  const scent = computedScent({
+    fragrances: [],
+    colorants: [
+      { catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0' },
+      { catalogId: 'iron-oxide', name: '', kind: 'oxide', percent: '1', portionKey: '#1' },
+    ],
+    portions: [{ name: '', percent: '40' }, { name: '', percent: '30' }],
+  }, { process: 'hp', totalOilGrams: 400, productGrams: 600 });
+  const colorants = buildFullRecipe({ ...FULL_RECIPE_BASE, process: 'hp', scentColor: scent })
+    .find((s) => s.heading === 'Colorants')!;
+  const water = colorants.items[colorants.items.length - 1];
+  expect(water.name).toBe('Colour water');
+  expect(water.detail).toBe('14 g–28 g · with a pinch of sugar each · not counted in the recipe water');
+});
+
+test('a CP colour mixed with water carries no carrier oil into the manifest', () => {
+  const scent = computedScent({
+    fragrances: [],
+    colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '', mixedWith: 'water' }],
+    portions: [],
+  }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const oils = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: scent }).find((s) => s.heading === 'Oils')!;
+  const mica = oils.items.find((i) => i.name === 'Mica')!;
+  expect(mica.detail).toBe('4 g · 1% · Mix into a little distilled water, sugar dissolved in it first if you want the lather');
+  expect(scent.carrierOilGrams).toBe(0);
+});

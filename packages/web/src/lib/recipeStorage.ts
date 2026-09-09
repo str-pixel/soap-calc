@@ -25,10 +25,10 @@ const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
 // reading it without the section and overwriting it on its first autosave. v5: the colorant
 // lye route (`viaLye`), for the same reason — an older build would drop it and autosave a
 // colour back at a stage the maker did not choose. The recipe file draws the same line at
-// RECIPE_FILE_VERSION 4. Version list accepted by loadDraftSlot must include every older
-// version.
-const STORAGE_VERSION = 5;
-const READABLE_VERSIONS = [1, 2, 3, 4, STORAGE_VERSION];
+// RECIPE_FILE_VERSION 4. v6: what a cold-process colour is mixed with (`mixedWith`), for the
+// same reason. Version list accepted by loadDraftSlot must include every older version.
+const STORAGE_VERSION = 6;
+const READABLE_VERSIONS = [1, 2, 3, 4, 5, STORAGE_VERSION];
 
 function draftKey(process: ProcessId): string {
   return `soap-calc:draft:${process}`;

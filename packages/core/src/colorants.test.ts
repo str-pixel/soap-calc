@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { colorantEntryById } from './colorant-catalog.js';
 import {
   COLORANT_GUIDANCE,
+  COLORANT_MIX_PROCESSES,
+  COLORANT_WATER_SOLVENT_CAUTION,
+  hpColorantWaterGrams,
   GRAMS_PER_TSP_COLORANT,
   tspPerLbToPercentOfOils,
   HP_COLORANT_WATER_GRAMS,
@@ -140,5 +143,55 @@ describe('the lye-solution route, where a source puts a colour there', () => {
     expect(colorantStage('cp', true, false)).toBe('trace');
     expect(colorantStage('hp', true, false)).toBe('after_cook');
     expect(colorantDispersal('cp', 10, false, false).method).toBe('carrier-oil');
+  });
+});
+
+describe('what a cold-process colour is mixed with', () => {
+  it('is the 1:1 carrier oil unless the maker says otherwise', () => {
+    expect(colorantDispersal('cp', 10, false)).toEqual({ method: 'carrier-oil', carrierGrams: 10 });
+    expect(colorantDispersal('cp', 10, false, false, 'oil')).toEqual({ method: 'carrier-oil', carrierGrams: 10 });
+  });
+
+  it('water is the book\'s other sanctioned solvent, and carries no oil', () => {
+    expect(colorantDispersal('cp', 10, false, false, 'water')).toEqual({ method: 'water-solvent' });
+    // so it adds no superfat: there is no carrier oil riding on the recipe
+    expect(COLORANT_WATER_SOLVENT_CAUTION).toMatch(/gel phase/);
+  });
+
+  it('a vein takes twice the oil of the batter rule, and a pencil line takes none', () => {
+    expect(colorantDispersal('cp', 10, false, false, 'vein')).toEqual({ method: 'vein-oil', carrierGrams: 20 });
+    expect(colorantDispersal('cp', null, false, false, 'vein')).toEqual({ method: 'vein-oil', carrierGrams: null });
+    expect(colorantDispersal('cp', 10, false, false, 'dry')).toEqual({ method: 'dusted' });
+  });
+
+  it('a vein and a dusted line happen at the mold, so they never ride in with the oils', () => {
+    expect(colorantStage('cp', false, false, 'vein')).toBe('trace');
+    expect(colorantStage('cp', false, false, 'dry')).toBe('trace');
+    // the ordinary whole-batter colour still does
+    expect(colorantStage('cp', false, false, 'oil')).toBe('oils');
+    // and the lye route still wins over everything
+    expect(colorantStage('cp', false, true, 'dry')).toBe('lye');
+  });
+
+  it('is cold process only — the other two texts prescribe their own solvent', () => {
+    expect([...COLORANT_MIX_PROCESSES]).toEqual(['cp']);
+    expect(colorantDispersal('hp', 10, false, false, 'water').method).toBe('recipe-oil');
+    expect(colorantDispersal('ls', 10, false, false, 'dry').method).toBe('into-solution');
+  });
+});
+
+describe('the water a batch of HP portion colours carries in', () => {
+  it('totals the published per-colour figure and states it against the recipe water', () => {
+    const three = hpColorantWaterGrams(3, 330);
+    expect(three.low).toBeCloseTo(3 * HP_COLORANT_WATER_GRAMS.low, 6);
+    expect(three.high).toBeCloseTo(3 * HP_COLORANT_WATER_GRAMS.high, 6);
+    // 21–42 g against 330 g of recipe water
+    expect(three.sharePercentLow).toBeCloseTo(6.4, 1);
+    expect(three.sharePercentHigh).toBeCloseTo(12.9, 1);
+  });
+
+  it('has no share to state without a recipe water figure, and none at all for no colours', () => {
+    expect(hpColorantWaterGrams(2, null).sharePercentLow).toBeNull();
+    expect(hpColorantWaterGrams(0, 330)).toMatchObject({ low: 0, high: 0 });
   });
 });

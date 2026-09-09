@@ -5,6 +5,7 @@ import {
   colorantDispersal,
   colorantEntryById,
   COLORANT_LYE_ROUTE_PROCESSES,
+  COLORANT_MIX_PROCESSES,
   colorantGrams,
   colorantStage,
   essentialOilCaution,
@@ -19,6 +20,7 @@ import {
   vanillinBrowning,
   type AdditiveStage,
   type ColorantDispersal,
+  type ColorantMix,
   type ColorantKind,
   type LabelAllergen,
   type VanillinBrowning,
@@ -41,6 +43,9 @@ export type ComputedColorant = {
   portionShareMissing: boolean;
   /** The maker sent this colour through the lye solution. */
   viaLye: boolean;
+  /** What it is mixed with, once the process has had its say — everything but cold process
+   * prescribes its own solvent, so it reads 'oil' there whatever was stored. */
+  mixedWith: ColorantMix;
   stage: AdditiveStage; dispersal: ColorantDispersal;
 };
 export type ComputedScentColor = {
@@ -127,7 +132,13 @@ export function computeScentColorGrams(
     const entry = c.catalogId ? colorantEntryById(c.catalogId) : undefined;
     const viaLye =
       c.viaLye && entry?.lyeRoute !== undefined && COLORANT_LYE_ROUTE_PROCESSES.includes(process);
-    const portion = viaLye || process === 'ls' ? undefined : byKey.get(c.portionKey);
+    // The lye solution is the solvent on that route, so a stored mix has nothing to say.
+    const mixedWith: ColorantMix =
+      !viaLye && COLORANT_MIX_PROCESSES.includes(process) ? c.mixedWith : 'oil';
+    // A vein is poured and a pencil line is dusted at the mold, so neither is a share of
+    // the batter — the same reason a lye colour cannot hold one.
+    const takesPortion = !viaLye && process !== 'ls' && mixedWith !== 'vein' && mixedWith !== 'dry';
+    const portion = takesPortion ? byKey.get(c.portionKey) : undefined;
     const percent = parsePercentOfOil(c.percent);
     // A colour linked to a portion with no usable share (blank, 0) has no oils to dose against:
     // "to shade", never the whole batter's dose under a portion heading.
@@ -143,8 +154,9 @@ export function computeScentColorGrams(
       portionKey: portion?.key ?? '', portionName: portion?.name ?? '', portionPercent: portion?.percent ?? null,
       portionShareMissing: portion !== undefined && portion.percent === null && percent !== null,
       viaLye,
-      stage: colorantStage(process, portion !== undefined, viaLye),
-      dispersal: colorantDispersal(process, grams, portion !== undefined, viaLye),
+      mixedWith,
+      stage: colorantStage(process, portion !== undefined, viaLye, mixedWith),
+      dispersal: colorantDispersal(process, grams, portion !== undefined, viaLye, mixedWith),
     };
   });
   const portionTotal = portionsTotalPercent(portions);
