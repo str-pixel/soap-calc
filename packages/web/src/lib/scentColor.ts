@@ -22,7 +22,8 @@ export type ColorantLine = {
   catalogId: string;
   name: string;
   kind: ColorantKind;
-  /** Of the portion's oils; '' = to shade. Never seeded. */
+  /** Of the portion's oils; '' = to shade. A catalog pick seeds the low end of that
+   * colour's own band (see the panel's pickCatalog); a custom row starts empty. */
   percent: string;
   /** '' = whole batter. */
   portionKey: string;

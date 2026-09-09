@@ -80,11 +80,11 @@ export function colorantGuidanceText(kind: ColorantKind, unit: WeightUnit, catal
   // does not have — the maker weighs the spoonful once and types the percent.
   if (entry) {
     if (entry.tspPerLbLow === null || entry.tspPerLbHigh === null) return null;
-    return `${rateText(entry.tspPerLbLow, entry.tspPerLbHigh, unit)}. Powders differ in density, so weigh your spoonful once and go by the scale after that.`;
+    return `${rateText(entry.tspPerLbLow, entry.tspPerLbHigh, unit)}. Powders differ in density, so start at the low end, weigh your spoonful once, and go by the scale after that.`;
   }
   const g = COLORANT_GUIDANCE[kind];
   if (!g) return null;
-  return `${rateText(g.tspPerLbLow, g.tspPerLbHigh, unit)}. Powders differ in density, so weigh your spoonful once and go by the scale after that.`;
+  return `${rateText(g.tspPerLbLow, g.tspPerLbHigh, unit)}. Powders differ in density, so start at the low end, weigh your spoonful once, and go by the scale after that.`;
 }
 
 export function hpWaterText(unit: WeightUnit): string {
@@ -129,6 +129,15 @@ export function colorantShadeLadder(catalogId: string, unit: WeightUnit): string
     `–${tsp(metric ? entry.shades[entry.shades.length - 1].tspPerLb * LB_PER_KG : entry.shades[entry.shades.length - 1].tspPerLb)}` +
     ` tsp per ${per}`;
   return `${rungs}. That is ${spoons} of oils.`;
+}
+
+/** The top of a colour's band as the panel PRINTS it. The guard has to judge against this
+ * and not the raw figure: 1 tsp per pound is 0.881849% but reads as "0.9", and a maker who
+ * types the number they were shown must not be told they have overdosed. */
+export function colorantCeilingPercent(catalogId: string): number | null {
+  const entry = catalogId ? colorantEntryById(catalogId) : undefined;
+  if (!entry || entry.tspPerLbHigh === null) return null;
+  return Number(percentText(entry.tspPerLbHigh));
 }
 
 /** What months of light and alkali do to this colour, or null when no source says. */

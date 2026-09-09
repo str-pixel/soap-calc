@@ -568,15 +568,36 @@ describe('a colour dosed past its own sourced rate is flagged', () => {
   };
 
   it('fires above that material own ceiling, and names both figures', () => {
-    // charcoal tops out at 3 tsp per lb of oils, about 2.65%
+    // charcoal tops out at 3 tsp per lb of oils, printed as 2.6%
     const m = msg([colour({ percent: 5 })]);
-    expect(m).toMatch(/Activated charcoal at 5\.00% against 2\.65%/);
+    expect(m).toMatch(/Activated charcoal at 5\.00% against 2\.60%/);
     expect(m).toMatch(/washes out onto the tub/);
   });
 
   it('stays quiet inside the band, and at the ceiling itself', () => {
     expect(msg([colour({ percent: 2 })])).toBeUndefined();
     expect(msg([colour({ percent: 2.6 })])).toBeUndefined();
+  });
+
+  it('never fires on the figure the panel itself printed', () => {
+    // The raw ceiling for a 1 tsp entry is 0.881849%, which prints as "0.9". Judging
+    // against the raw figure told a maker who typed 0.9 that they had overdosed.
+    expect(msg([colour({ catalogId: 'kaolin-clay', name: 'Kaolin clay', percent: 0.9 })])).toBeUndefined();
+    // and the mica ladder's top rung prints 1.8 against a raw 1.7637
+    expect(msg([colour({ catalogId: 'mica', name: 'Mica', percent: 1.8 })])).toBeUndefined();
+  });
+
+  it('says nothing in liquid soap, where the panel shows no band to exceed', () => {
+    const lsHarness = (colorants: ComputedScentColor['colorants']) => {
+      const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
+      const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
+      return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
+        process: 'ls',
+        scentColor: { ...emptyComputedScentColor(), colorants },
+      });
+    };
+    const { result } = renderHook(() => lsHarness([colour({ percent: 20 })]));
+    expect(result.current.insights.some((i) => i.code === 'colorant_over_sourced_rate')).toBe(false);
   });
 
   it('never fires for a custom colour, which has no sourced band to exceed', () => {

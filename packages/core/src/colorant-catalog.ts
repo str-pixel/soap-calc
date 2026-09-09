@@ -22,7 +22,8 @@ import type { ColorantKind } from './colorants.js';
  * carried here. A "dispersed" teaspoon in these tutorials is a teaspoon of the DISPERSION
  * (about 1 tsp powder to 1 tbsp oil), not of powder; those figures are excluded too.
  * Weight % is not sourceable, because grams per teaspoon varies by product — see
- * COLORANT_GUIDANCE — which is why the panel's dose field starts empty.
+ * COLORANT_GUIDANCE. Picking a colour seeds the LOW end of its own band; a colour with no
+ * defensible rate, and a custom row, start empty.
  *
  * RATE SOURCES, all read off the page body and retrieved 2026-09-09:
  *   https://www.lovinsoap.com/wp-content/uploads/2016/06/ColoringSoap.pdf
@@ -161,7 +162,9 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   },
   {
     id: 'iron-oxide', name: 'Iron oxide', kind: 'oxide', family: 'multi',
-    tspPerLbLow: 1, tspPerLbHigh: 1,
+    // The band has to hold the whole family, or the note below prescribes a dose the
+    // over-rate guard then flags: black sits at the bottom, a red at the top.
+    tspPerLbLow: 0.25, tspPerLbHigh: 2,
     // CP:9276-9285: opaque, do not bleed, do not migrate or fade.
     // The generic pigment rate is 1 tsp PPO, but the family spans 8x: black reads at
     // 1/4-1/2 tsp PPO while a red needs 1.5-2. Colour-specific, so it goes in the note.
@@ -193,7 +196,8 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   },
   {
     id: 'neon-pigment', name: 'Neon cosmetic pigment', kind: 'other', family: 'multi',
-    tspPerLbLow: 1, tspPerLbHigh: 1, stability: 'stable',
+    // Dry pigment at the bottom of the band, the weaker liquid form at the top.
+    tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'stable',
     // The coating is the whole story: it is what stops a bright organic colour bleeding and
     // morphing the way a bare dye does at soap pH.
     note: 'A bright pigment under a polymer coat, and the coat is why it behaves: it neither bleeds across a swirl nor turns at soap pH, where a bare dye does both. The liquid form is weaker — reckon on three times the dry rate.',

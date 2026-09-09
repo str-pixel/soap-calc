@@ -13,12 +13,12 @@ import {
 describe('guidance leads with the percent the dose field takes', () => {
   it('states the percent first and the trade\'s teaspoon figure after it, in the active unit', () => {
     expect(colorantGuidanceText('mica', 'lb')).toBe(
-      'About 0.4–1.8% of the oils, which is ½–2 tsp per lb. Powders differ in density, so weigh your spoonful once and go by the scale after that.',
+      'About 0.4–1.8% of the oils, which is ½–2 tsp per lb. Powders differ in density, so start at the low end, weigh your spoonful once, and go by the scale after that.',
     );
     // Per kilo the spoons roughly double; the percent does not move, because it is a percent.
     expect(colorantGuidanceText('mica', 'g')).toMatch(/^About 0\.4–1\.8% of the oils, which is 1–4½ tsp per kg\./);
     // A single-valued band collapses instead of printing the same figure twice.
-    expect(colorantGuidanceText('oxide', 'g')).toMatch(/^About 0\.9% of the oils, which is 2 tsp per kg\./);
+    expect(colorantGuidanceText('oxide', 'g')).toMatch(/^About 0\.2–1\.8% of the oils, which is ½–4½ tsp per kg\./);
     expect(colorantGuidanceText('dye', 'lb')).toMatch(/^About 0\.2% of the oils, which is ¼ tsp per lb\./);
   });
 

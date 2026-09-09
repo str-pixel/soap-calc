@@ -50,7 +50,9 @@ describe('the colorant catalog is internally sound', () => {
 
   it('carries the sourced per-pound-of-oils rates, not a converted one', () => {
     // Pigments and dyes, from the coloring guide: 1 tsp PPO, a quarter of that for dyes.
-    expect(colorantEntryById('iron-oxide')).toMatchObject({ tspPerLbLow: 1, tspPerLbHigh: 1 });
+    // The band holds the whole family: a black at the bottom, a red at the top, which is
+    // what the entry's own note describes.
+    expect(colorantEntryById('iron-oxide')).toMatchObject({ tspPerLbLow: 0.25, tspPerLbHigh: 2 });
     expect(colorantEntryById('fdc-dye')).toMatchObject({ tspPerLbLow: 0.25, tspPerLbHigh: 0.25 });
     // Mica runs pastel to bold.
     expect(colorantEntryById('mica')).toMatchObject({ tspPerLbLow: 0.5, tspPerLbHigh: 2 });
@@ -141,7 +143,8 @@ describe('the colorant catalog is internally sound', () => {
   it('the coated neon is the thing "Other" was describing, and it carries a rate', () => {
     const neon = colorantEntryById('neon-pigment')!;
     expect(neon.kind).toBe('other');
-    expect([neon.tspPerLbLow, neon.tspPerLbHigh]).toEqual([1, 1]);
+    // dry pigment at the bottom, the weaker liquid form at the top
+    expect([neon.tspPerLbLow, neon.tspPerLbHigh]).toEqual([1, 3]);
     // the coating is why it behaves where a bare dye does not
     expect(neon.note).toMatch(/coat is why it behaves/i);
     expect(neon.stability).toBe('stable');

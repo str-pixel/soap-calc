@@ -1,5 +1,6 @@
 // packages/core/src/colorants.test.ts
 import { describe, expect, it } from 'vitest';
+import { colorantEntryById } from './colorant-catalog.js';
 import {
   COLORANT_GUIDANCE,
   GRAMS_PER_TSP_COLORANT,
@@ -76,7 +77,7 @@ describe('portionsTotalPercent', () => {
 describe('guidance ranges are derived, and say so', () => {
   it('each kind falls back to its own sourced generic rate, and only "other" gets none', () => {
     expect(COLORANT_GUIDANCE.mica).toEqual({ tspPerLbLow: 0.5, tspPerLbHigh: 2 });
-    expect(COLORANT_GUIDANCE.oxide).toEqual({ tspPerLbLow: 1, tspPerLbHigh: 1 });
+    expect(COLORANT_GUIDANCE.oxide).toEqual({ tspPerLbLow: 0.25, tspPerLbHigh: 2 });
     // The book's own general starting rate, since the named naturals span 1/32 to 3 tsp.
     expect(COLORANT_GUIDANCE.natural).toEqual({ tspPerLbLow: 1, tspPerLbHigh: 1 });
     expect(COLORANT_GUIDANCE.dye).toEqual({ tspPerLbLow: 0.25, tspPerLbHigh: 0.25 });
@@ -86,7 +87,8 @@ describe('guidance ranges are derived, and say so', () => {
   it('the fallback band never contradicts a catalog entry of the same family', () => {
     // These used to disagree — the oxide band said half a teaspoon where the iron oxide
     // entry said one — which put two answers for one material on the same screen.
-    expect(COLORANT_GUIDANCE.oxide!.tspPerLbLow).toBe(1);
+    expect(COLORANT_GUIDANCE.oxide!.tspPerLbLow).toBe(colorantEntryById('iron-oxide')!.tspPerLbLow);
+    expect(COLORANT_GUIDANCE.oxide!.tspPerLbHigh).toBe(colorantEntryById('iron-oxide')!.tspPerLbHigh);
     expect(COLORANT_GUIDANCE.mica!.tspPerLbHigh).toBe(2);
   });
 

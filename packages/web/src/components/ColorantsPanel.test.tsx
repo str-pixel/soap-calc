@@ -334,7 +334,8 @@ describe('picking a colour seeds its gentlest sourced dose', () => {
     expect(next.colorants[0]).toMatchObject({ catalogId: 'activated-charcoal', percent: '0.11' });
   });
 
-  it('seeds nothing for a colour with no defensible rate', () => {
+  it('seeds nothing for a colour the sources give no rate for', () => {
+    // Indigo HAS a rate, so it seeds like any other; alkanet's only route is an infusion.
     const onChange = renderPanel(blueMica, 'cp');
     fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'indigo' } });
     expect((onChange.mock.calls[0][0] as ScentColor).colorants[0].percent).toBe('0.22');

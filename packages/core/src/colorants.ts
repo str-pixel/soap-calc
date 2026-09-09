@@ -45,22 +45,18 @@ export const GRAMS_PER_TSP_COLORANT = 4;
 export const HP_COLORANT_WATER_GRAMS = { low: 0.25 * GRAMS_PER_OZ, high: 0.5 * GRAMS_PER_OZ };
 
 /**
- * Derived ranges. Volume figures: micas ½–2 tsp per lb of oils, 1 typical; oxides and
- * ultramarines 1 tsp/lb, HALF OR LESS for brown and red; natural powders ½–1 tsp/lb
- * (supplier usage pages; the per-colour rates were re-fetched and pinned 2026-09-09 — the
- * URLs are listed in colorant-catalog.ts, which carries the per-material figures. These
- * per-KIND bands stay a broad fallback for a colour the catalog does not name. Never in copy.) Weight derivation: a supplier FAQ puts its micas at 12–18 tsp/oz = 1.6–2.4 g/tsp,
- * so ½ tsp/lb = 0.18–0.26% and 1 tsp/lb = 0.35–0.53% of oils; the CP text's own example
- * (4 g per 450 g, CP:9389-9391) is 0.89%. The band below spans that whole spread. Dyes are
- * "to shade" (LS:13256-13262) and "other" is unknown by definition: no range.
- */
-/**
  * The fallback band for a colorant the catalog does not name, per kind. Each figure is the
- * sourced GENERIC rate for its family, not an average of the specific ones: mica ½–2 tsp
- * per pound of oils (pastel to bold), pigments and ultramarines 1, dyes ¼. A natural powder
- * falls back to the book's own general starting rate, 1 teaspoon per pound (CP:9389-9391),
- * because the named naturals run from a thirty-second of a teaspoon to three and no single
- * band describes them. "Other" gets none: glitter and a coated neon are not dosed alike.
+ * sourced rate for its family: mica ½–2 tsp per pound of oils, pastel to bold; oxides and
+ * ultramarines ¼ to 2, because the family really does run that wide — a black reads at the
+ * bottom of it and a red at the top; dyes ¼. A natural powder falls back to the book's own
+ * general starting rate, 1 teaspoon per pound (CP:9389-9391), because the named naturals
+ * run from a thirty-second of a teaspoon to three and no single band describes them.
+ * "Other" gets none: glitter and a coated neon are not dosed alike.
+ *
+ * Every figure is a VOLUME rate; the percent the app shows is derived from it through
+ * GRAMS_PER_TSP_COLORANT above, and is approximate for exactly the reason stated there.
+ * The per-material rates and their URLs live in colorant-catalog.ts, and supplier names
+ * stay in these comments and out of the interface (AGENTS.md).
  *
  * These deliberately match the catalog entries for the same families. They used to disagree
  * — the oxide band said half a teaspoon while the iron oxide entry said one — which put two
@@ -68,7 +64,10 @@ export const HP_COLORANT_WATER_GRAMS = { low: 0.25 * GRAMS_PER_OZ, high: 0.5 * G
  */
 export const COLORANT_GUIDANCE: Record<ColorantKind, ColorantGuidance | null> = {
   mica: { tspPerLbLow: 0.5, tspPerLbHigh: 2 },
-  oxide: { tspPerLbLow: 1, tspPerLbHigh: 1 },
+  // The whole oxide family, not the generic midpoint: a black reads at a quarter of a
+  // teaspoon per pound where a red wants two, and a band that held only the middle made
+  // the iron oxide entry's own note prescribe an over-dose.
+  oxide: { tspPerLbLow: 0.25, tspPerLbHigh: 2 },
   natural: { tspPerLbLow: 1, tspPerLbHigh: 1 },
   dye: { tspPerLbLow: 0.25, tspPerLbHigh: 0.25 },
   other: null,

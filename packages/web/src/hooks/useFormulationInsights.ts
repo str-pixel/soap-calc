@@ -15,11 +15,8 @@ import {
 import { oilById } from '../lib/oils';
 import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
-import {
-  colorantEntryById,
-  colorantSharesMaterialWithAdditive,
-  tspPerLbToPercentOfOils,
-} from '@soap-calc/core';
+import { colorantEntryById, colorantSharesMaterialWithAdditive } from '@soap-calc/core';
+import { colorantCeilingPercent } from '../lib/colorantGuidance';
 import type { ComputedScentColor } from '../lib/computeScentColor';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
@@ -278,14 +275,23 @@ export function useFormulationInsights(
       // clay dosed there is the clay picked here.
       // A colour dosed past the top of its OWN sourced band. Precise because it compares
       // against that material's figure rather than a blanket ceiling; a custom row has no
-      // band, and a colour the sources give no rate for has nothing to exceed.
-      colorantsOverRate: (options.scentColor?.colorants ?? []).flatMap((c) => {
-        if (c.percent === null || c.percent <= 0 || !c.catalogId) return [];
-        const entry = colorantEntryById(c.catalogId);
-        if (!entry || entry.tspPerLbHigh === null) return [];
-        const maxPercent = tspPerLbToPercentOfOils(entry.tspPerLbHigh);
-        return c.percent > maxPercent ? [{ name: entry.name, percent: c.percent, maxPercent }] : [];
-      }),
+      // band, and a colour the sources give no rate for has nothing to exceed. The ceiling
+      // is the one the panel PRINTS — judging against the raw figure warned a maker who
+      // typed the number they had just been shown. Bar processes only: the panel withholds
+      // the band and the ladder for liquid soap, where no source gives a colorant rate at
+      // all, so there is nothing there to have exceeded.
+      colorantsOverRate:
+        options.process === 'ls'
+          ? []
+          : (options.scentColor?.colorants ?? []).flatMap((c) => {
+              if (c.percent === null || c.percent <= 0 || !c.catalogId) return [];
+              const entry = colorantEntryById(c.catalogId);
+              const maxPercent = colorantCeilingPercent(c.catalogId);
+              if (!entry || maxPercent === null) return [];
+              return c.percent > maxPercent ? [{ name: entry.name, percent: c.percent, maxPercent }] : [];
+            }),
+      // Only a DOSED colour counts, and a one-to-one pairing is stated as a double dose
+      // while a generic additive bucket is raised as a question (see the rule).
       colorantAdditiveOverlap: (() => {
         const dosedAsAdditive = new Map(additiveEntries.map((a) => [a.catalogId, a.name]));
         const seen = new Set<string>();
