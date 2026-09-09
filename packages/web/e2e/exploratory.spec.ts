@@ -532,13 +532,16 @@ test.describe('liquid soap', () => {
     await page.getByRole('button', { name: 'Add post-cook superfat oil' }).click();
     await page.getByLabel('Post-cook superfat % 1').fill('3');
     await page.getByLabel('Post-cook superfat % 1').blur();
+    // A new row lands FIRST (withNewRow), so the olive row it just filled is now number 2
+    // and the jojoba it is about to add is number 1.
     await page.getByRole('button', { name: 'Add post-cook superfat oil' }).click();
-    const oil2 = page.getByLabel('Post-cook superfat oil 2');
-    await oil2.click();
-    await oil2.fill('jojoba');
+    await expect(page.getByLabel('Post-cook superfat % 2')).toHaveValue('3');
+    const newOil = page.getByLabel('Post-cook superfat oil 1');
+    await newOil.click();
+    await newOil.fill('jojoba');
     await page.locator('.oil-picker__option').first().click();
-    await page.getByLabel('Post-cook superfat % 2').fill('2');
-    await page.getByLabel('Post-cook superfat % 2').blur();
+    await page.getByLabel('Post-cook superfat % 1').fill('2');
+    await page.getByLabel('Post-cook superfat % 1').blur();
     // The results PCSF line names both oils (aggregate), and the Full recipe carries a
     // Post-cook superfat section listing each oil as its own line.
     const pcsfLine = page

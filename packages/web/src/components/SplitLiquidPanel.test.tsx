@@ -160,7 +160,8 @@ test('CP falls back to % of oils when rest is taken or budget modes are unavaila
   const existing = [ROW({ sizeMode: 'rest', amount: '' })];
   const { onChange } = renderPanel({ rows: existing, process: 'cp' });
   fireEvent.click(screen.getByRole('button', { name: /add liquid/i }));
-  expect((onChange.mock.calls[0][0] as SplitLiquidRow[])[1].sizeMode).toBe('percent_of_oils');
+  // the new row is the first one now
+  expect((onChange.mock.calls[0][0] as SplitLiquidRow[])[0].sizeMode).toBe('percent_of_oils');
 
   cleanup();
   const second = renderPanel({ rows: [], process: 'cp', waterMode: 'lye_concentration' });

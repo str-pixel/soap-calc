@@ -19,6 +19,7 @@ import { formatInputNumber } from '../lib/format';
 import { splitLiquidManualWaterHint } from '../lib/splitLiquidHint';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
+import { withNewRow } from '../lib/rowOrder';
 
 type SplitLiquidPanelProps = {
   rows: SplitLiquidRow[];
@@ -156,7 +157,7 @@ export function SplitLiquidPanel({
             const restFree = !rows.some((r) => r.sizeMode === 'rest');
             const defaultSizeMode =
               process === 'cp' && budgetModesAvailable && restFree ? 'rest' : 'percent_of_oils';
-            onChange([...rows, NEW_ROW(defaultSizeMode)]);
+            onChange(withNewRow(rows, NEW_ROW(defaultSizeMode)));
           }}
         >
           + Add liquid

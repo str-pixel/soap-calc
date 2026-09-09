@@ -11,6 +11,7 @@ import { InfoTip } from './InfoTip';
 import { OilPicker } from './OilPicker';
 import { SegRadioGroup } from './SegRadioGroup';
 import { SplitLiquidPanel } from './SplitLiquidPanel';
+import { withNewRow } from '../lib/rowOrder';
 
 /* Cell text for the water-method seg. Each is a leading substring of its WATER_MODE_LABELS
  * name ('Lye conc' ⊂ 'Lye concentration %'), which is what keeps Label-in-Name honest
@@ -260,7 +261,7 @@ export function SuperfatWaterPanel({
   const addPcsfOil = () =>
     setSettings((s) => ({
       ...s,
-      postCookSuperfatOils: [...s.postCookSuperfatOils, { oilId: 'olive-oil', percent: '' }],
+      postCookSuperfatOils: withNewRow(s.postCookSuperfatOils, { oilId: 'olive-oil', percent: '' }),
     }));
   const removePcsfOil = (index: number) =>
     setSettings((s) => ({

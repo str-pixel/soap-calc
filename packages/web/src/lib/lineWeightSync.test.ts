@@ -159,14 +159,15 @@ describe('resyncFromWeights (derive total from weights — clearing the Total oi
 });
 
 describe('addRecipeLine', () => {
-  it('appends an empty line, preserving existing weights and the batch/flag', () => {
+  it('puts the empty line FIRST, preserving existing weights and the batch/flag', () => {
     const result = addRecipeLine(twoLines, '1000', {
       key: 'c', oilId: 'olive-oil', weightGrams: '', weightPercent: '',
     }, true);
+    // The row you just added is the row you are about to fill in (see withNewRow).
     expect(result.lines).toHaveLength(3);
-    expect(result.lines[0]).toBe(twoLines[0]);
-    expect(result.lines[1]).toBe(twoLines[1]);
-    expect(result.lines[2].weightGrams).toBe('');
+    expect(result.lines[0].weightGrams).toBe('');
+    expect(result.lines[1]).toBe(twoLines[0]);
+    expect(result.lines[2]).toBe(twoLines[1]);
     expect(result.batchOilGrams).toBe('1000');
     expect(result.batchSetByUser).toBe(true);
   });

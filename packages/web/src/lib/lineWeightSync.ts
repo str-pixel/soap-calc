@@ -1,4 +1,5 @@
 import type { RecipeLine } from './recipe';
+import { withNewRow } from './rowOrder';
 
 function parseNum(value: string): number | null {
   if (value === '') return null;
@@ -315,10 +316,10 @@ export function addRecipeLine(
   if (batch !== null && batch > 0) {
     return {
       batchOilGrams,
-      lines: [...lines, newLine],
+      lines: withNewRow(lines, newLine),
       batchSetByUser,
     };
   }
 
-  return resyncFromWeights([...lines, newLine]);
+  return resyncFromWeights(withNewRow(lines, newLine));
 }

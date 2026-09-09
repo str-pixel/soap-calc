@@ -30,6 +30,7 @@ import {
 } from '../lib/scentColor';
 import { displayValueToGrams, formatWeight, gramsStringToLineDisplay, type WeightUnit } from '../lib/weightUnits';
 import { SegRadioGroup } from './SegRadioGroup';
+import { withNewRow } from '../lib/rowOrder';
 
 type Props = {
   scent: ScentColor;
@@ -240,7 +241,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
             type="button"
             className="btn btn--ghost"
             disabled={scent.colorants.length >= MAX_SCENT_ROWS}
-            onClick={() => onChange({ ...scent, colorants: [...scent.colorants, newColorantLine(process)] })}
+            onClick={() => onChange({ ...scent, colorants: withNewRow(scent.colorants, newColorantLine(process)) })}
           >
             + Add colorant
           </button>

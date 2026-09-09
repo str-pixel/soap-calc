@@ -22,6 +22,7 @@ import type { ComputedAdditive } from '../lib/calculateAdditives';
 import { formatWeight } from '../lib/weightUnits';
 import type { WeightUnit } from '../lib/recipe';
 import { SegRadioGroup } from './SegRadioGroup';
+import { withNewRow, withNewRows } from '../lib/rowOrder';
 
 type AdditivesPanelProps = {
   additives: AdditiveLine[];
@@ -167,9 +168,8 @@ export const AdditivesPanel = memo(function AdditivesPanel({
   }
 
   function addLine() {
-    onChange([
-      ...additives,
-      {
+    onChange(
+      withNewRow(additives, {
         key: newAdditiveKey(),
         catalogId: '',
         name: '',
@@ -177,8 +177,8 @@ export const AdditivesPanel = memo(function AdditivesPanel({
         basis: 'oil',
         unit: 'percent',
         addAt: 'trace',
-      },
-    ]);
+      }),
+    );
   }
 
   const packs = packsForProcess(process);
@@ -224,7 +224,7 @@ export const AdditivesPanel = memo(function AdditivesPanel({
   function addPack(pack: AdditivePack) {
     const lines = pendingPackLines(pack);
     if (lines.length === 0) return;
-    onChange([...additives, ...lines]);
+    onChange(withNewRows(additives, lines));
   }
 
   function removeLine(key: string) {

@@ -10,6 +10,7 @@ import {
   type FragranceLine, type ScentColor,
 } from '../lib/scentColor';
 import { formatWeight, type WeightUnit } from '../lib/weightUnits';
+import { withNewRow } from '../lib/rowOrder';
 
 type Props = {
   scent: ScentColor;
@@ -56,7 +57,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
             type="button"
             className="btn btn--ghost"
             disabled={scent.fragrances.length >= MAX_SCENT_ROWS}
-            onClick={() => onChange({ ...scent, fragrances: [...scent.fragrances, newFragranceLine()] })}
+            onClick={() => onChange({ ...scent, fragrances: withNewRow(scent.fragrances, newFragranceLine()) })}
           >
             + Add essential oil
           </button>
@@ -171,7 +172,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                         onClick={() => setFragrance(f.key, { allergens: f.allergens.filter((x) => x.key !== a.key) })}>×</button>
                     </div>
                   ))}
-                  <button type="button" className="btn btn--ghost" disabled={f.allergens.length >= MAX_SCENT_ROWS} onClick={() => setFragrance(f.key, { allergens: [...f.allergens, newAllergenLine()] })}>+ Add allergen</button>
+                  <button type="button" className="btn btn--ghost" disabled={f.allergens.length >= MAX_SCENT_ROWS} onClick={() => setFragrance(f.key, { allergens: withNewRow(f.allergens, newAllergenLine()) })}>+ Add allergen</button>
                 </details>
               </li>
             );
