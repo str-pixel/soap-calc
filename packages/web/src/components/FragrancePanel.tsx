@@ -109,7 +109,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                       min={0}
                       max={100}
                       step={0.1}
-                      aria-label={`${rowName} ${doseLabel}`}
+                      aria-label={`${rowName} dose, ${doseLabel}`}
                       value={f.percent}
                       onChange={(e) => setFragrance(f.key, { percent: e.target.value })}
                     />
@@ -125,7 +125,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                       min={0}
                       max={100}
                       step={0.1}
-                      aria-label={`${rowName} supplier max`}
+                      aria-label={`${rowName} max in product`}
                       value={f.supplierMaxPercent}
                       onChange={(e) => setFragrance(f.key, { supplierMaxPercent: e.target.value })}
                     />

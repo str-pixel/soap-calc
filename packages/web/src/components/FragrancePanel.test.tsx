@@ -42,6 +42,16 @@ describe('FragrancePanel', () => {
       .toBe('Essential oil');
   });
 
+  it('every visible label is part of the control\'s accessible name', () => {
+    renderPanel(vanilla, 'cp');
+    const named = (visible: string, control: HTMLElement) =>
+      (control.getAttribute('aria-label') ?? '').toLowerCase().includes(visible.toLowerCase());
+    expect(named('Dose', screen.getByLabelText(/Vanilla dream dose/))).toBe(true);
+    expect(named('Max in product', screen.getByLabelText(/Vanilla dream max in product/))).toBe(true);
+    expect(named('Vanillin', screen.getByLabelText(/Vanilla dream vanillin/))).toBe(true);
+    expect(named('Essential oil', screen.getByLabelText('Essential oil name'))).toBe(true);
+  });
+
   it('lays a row out like an additive row, with its units inside the figure slabs', () => {
     renderPanel(vanilla, 'cp');
     const row = document.querySelector('.additive-list__row')!;

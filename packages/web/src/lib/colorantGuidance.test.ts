@@ -88,8 +88,10 @@ describe('the shade ladder and the over-time line', () => {
     expect(colorantStabilityText('mica')).toMatch(/Shifts over the first weeks/);
     // Alkanet arrives grey and turns purple over the cure — a shift, not a fade.
     expect(colorantStabilityText('alkanet-root')).toMatch(/Shifts over the first weeks/);
-    // Worded for a bottle as well as a bar: liquid soap is poured, never cut.
+    // Worded for a bottle as well as a bar: liquid soap is poured, never cut. BOTH verdicts
+    // — the fades one carried the bar-only wording after its sibling had been fixed.
     expect(colorantStabilityText('alkanet-root')).not.toMatch(/cut/);
+    expect(colorantStabilityText('turmeric')).not.toMatch(/cut/);
     expect(colorantStabilityText('turmeric')).toMatch(/Fades with time and light/);
     expect(colorantStabilityText('fdc-dye')).toMatch(/Fades/);
     // Not every colour has a sourced answer, and silence is the honest one.

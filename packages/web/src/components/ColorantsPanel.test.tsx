@@ -72,14 +72,40 @@ describe('ColorantsPanel', () => {
     renderPanel(withPortion, 'cp');
     const input = screen.getByLabelText('Portion name');
     expect(input.closest('.additive-list__choice')!.querySelector('.micro-label')!.textContent).toBe('Portion');
-    const share = screen.getByLabelText(/Portion Swirl % of batter/);
+    const share = screen.getByLabelText(/Portion Swirl share/);
     expect(share.closest('label')!.querySelector('.micro-label')!.textContent).toBe('Share');
     expect(share.closest('.ledger__figure')!.querySelector('.ledger__unit')!.textContent).toBe('% of batter');
   });
 
+  it('an over-100 share can still be typed and is still flagged, not clamped away', () => {
+    const over = normalizeScentColor({ fragrances: [], colorants: [], portions: [{ name: 'Swirl', percent: '150' }] });
+    renderPanel(over, 'cp');
+    const share = screen.getByLabelText(/Portion Swirl share/) as HTMLInputElement;
+    expect(share.value).toBe('150');
+    // No max attribute: clamping would hide the very mistake the footer points out.
+    expect(share.getAttribute('max')).toBeNull();
+    expect(share.validity.rangeOverflow).toBe(false);
+    expect(screen.getByText(/over 100%/)).toBeTruthy();
+  });
+
+  it('every visible label is part of the control\'s accessible name', () => {
+    const withPortion = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '1', portionKey: '' }],
+      portions: [{ name: 'Swirl', percent: '40' }],
+    });
+    renderPanel(withPortion, 'cp');
+    const named = (visible: string, control: HTMLElement) =>
+      (control.getAttribute('aria-label') ?? '').toLowerCase().includes(visible.toLowerCase());
+    expect(named('Share', screen.getByLabelText(/Portion Swirl share/))).toBe(true);
+    expect(named('Portion', screen.getByLabelText('Portion name'))).toBe(true);
+    expect(named('Dose', screen.getByLabelText(/Madder root dose/))).toBe(true);
+    expect(named('Colorant', screen.getByLabelText(/Colorant for/))).toBe(true);
+  });
+
   it('the dose slab carries no placeholder — it would collide with the unit inside it', () => {
     renderPanel(blueMica, 'cp');
-    const dose = screen.getByLabelText(/Blue mica % of oils/) as HTMLInputElement;
+    const dose = screen.getByLabelText(/Blue mica dose/) as HTMLInputElement;
     expect(dose.placeholder).toBe('');
     // "to shade" is said where there is room for it
     expect(screen.getByText('to shade')).toBeTruthy();
@@ -217,7 +243,7 @@ describe('how much, what shade, and what happens over time', () => {
     expect(screen.getByText(/How dark it goes/)).toBeTruthy();
     expect(screen.getByText(/Teaspoons per kg of oils/)).toBeTruthy();
     // The ladder replaces the plain band rather than sitting beside it.
-    expect(screen.queryByText(/weigh a spoonful once to fix your own percent, and start low/)).toBeNull();
+    expect(screen.queryByText(/density varies by product/)).toBeNull();
     expect(screen.getByText(/light grey/)).toBeTruthy();
     expect(screen.getByText(/black, noticeably grey lather/)).toBeTruthy();
     expect(screen.getByText(/Over time/)).toBeTruthy();

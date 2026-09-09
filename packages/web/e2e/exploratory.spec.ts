@@ -582,8 +582,8 @@ test.describe('essential oils & colorants', () => {
   test('CP: a vanillin fragrance with an allergen and a portion colour land in the Full recipe', async ({ page }) => {
     await page.getByRole('button', { name: /add essential oil/i }).click();
     await page.getByLabel('Essential oil name').fill('Vanilla dream');
-    await page.getByLabel(/Vanilla dream % of oils/).fill('3');
-    await page.getByLabel(/Vanilla dream supplier max/).fill('5');
+    await page.getByLabel(/Vanilla dream dose/).fill('3');
+    await page.getByLabel(/Vanilla dream max in product/).fill('5');
     await page.getByLabel(/Vanilla dream vanillin/).fill('12');
     await fragrancePanel(page).getByText(/Allergens \(0\)/).click();
     await page.getByRole('button', { name: /add allergen/i }).click();
@@ -591,10 +591,10 @@ test.describe('essential oils & colorants', () => {
     await page.getByLabel('Allergen % of fragrance').fill('12');
     await page.getByRole('button', { name: /split the batter/i }).click();
     await page.getByLabel('Portion name').fill('Swirl');
-    await page.getByLabel(/Portion Swirl % of batter/).fill('40');
+    await page.getByLabel(/Portion Swirl share/).fill('40');
     await page.getByRole('button', { name: /add colorant/i }).click();
     await page.getByLabel('Colorant name').fill('Blue mica');
-    await page.getByLabel(/Blue mica % of oils/).fill('1');
+    await page.getByLabel(/Blue mica dose/).fill('1');
     await page.getByLabel(/Blue mica portion/).selectOption({ label: 'Swirl' });
     await expect(section(page, 'Colorants')).toContainText(/Swirl — 40%/);
     await expect(section(page, 'Colorants')).toContainText(/Blue mica/);
@@ -618,7 +618,7 @@ test.describe('essential oils & colorants', () => {
     await expect(colorantsPanel(page)).toContainText('Natural powder');
     await expect(colorantsPanel(page)).toContainText(/never the red it is in the jar/i);
     await expect(colorantsPanel(page)).toContainText(/anthocyanins and betalains/i);
-    await page.getByLabel(/Beet root % of oils/).fill('1');
+    await page.getByLabel(/Beet root dose/).fill('1');
     // A whole-batter colour goes in WITH the oils, so it lists there — the Colorants
     // section is for the portion colours added at the design stage.
     await expect(section(page, 'Oils')).toContainText(/Beet root/);
@@ -631,7 +631,7 @@ test.describe('essential oils & colorants', () => {
   test('HP: the scent is filed after the cook', async ({ page }) => {
     await processTab(page, /Hot process/).click();
     await page.getByRole('button', { name: /add essential oil/i }).click();
-    await page.getByLabel(/^Essential oil % of oils/).fill('3');
+    await page.getByLabel(/^Essential oil dose, % of oils/).fill('3');
     await expect(section(page, 'Fragrance')).toBeVisible();
     await expect(fragrancePanel(page)).toContainText('After cook');
   });
@@ -641,7 +641,7 @@ test.describe('essential oils & colorants', () => {
     await page.getByRole('button', { name: /add colorant/i }).click();
     await expect(colorantsPanel(page)).toContainText('After dilution');
     await page.getByRole('button', { name: /add essential oil/i }).click();
-    await expect(page.getByLabel(/^Essential oil % of solution/)).toBeVisible();
+    await expect(page.getByLabel(/^Essential oil dose, % of solution/)).toBeVisible();
     await expect(page.getByRole('button', { name: /split the batter/i })).toHaveCount(0);
   });
 });

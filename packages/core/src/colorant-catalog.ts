@@ -96,7 +96,7 @@ export type ColorantStability = 'stable' | 'shifts' | 'fades';
 export const COLORANT_STABILITY_TEXT: Record<ColorantStability, string> = {
   stable: 'Holds its colour: not light sensitive, and the alkali does not shift it.',
   shifts: 'Shifts over the first weeks — the colour you pour is not the colour you end up with. Prove it on a small batch before you build a design around it.',
-  fades: 'Fades with time and light: expect it weaker in a few months than the day you cut it.',
+  fades: 'Fades with time and light: expect it weaker in a few months than the day it was made.',
 };
 
 export type ColorantFamily =

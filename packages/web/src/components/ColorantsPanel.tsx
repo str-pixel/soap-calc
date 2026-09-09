@@ -137,9 +137,11 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                       type="number"
                       className="input figure-field"
                       min={0}
-                      max={100}
-                      step={1}
-                      aria-label={`Portion ${portionName} % of batter`}
+                      /* No max: a share over 100% is a state the section deliberately keeps,
+                         shows and flags (portionsOver100). Clamping it here would hide the
+                         mistake the footer exists to point out. */
+                      step={0.1}
+                      aria-label={`Portion ${portionName} share`}
                       value={p.percent}
                       onChange={(e) => setPortion(p.key, { percent: e.target.value })}
                     />
@@ -242,7 +244,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                       /* No placeholder: the unit is a visible suffix inside the slab, and a
                          word long enough to say "to shade" ran straight into it. The Adds
                          row below says "to shade" instead, where there is room for it. */
-                      aria-label={`${rowName} % of oils`}
+                      aria-label={`${rowName} dose, % of oils`}
                       value={col.percent}
                       onChange={(e) => setColorant(col.key, { percent: e.target.value })}
                     />
