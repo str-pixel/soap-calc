@@ -35,18 +35,25 @@ import type { ColorantKind } from './colorants.js';
  *   https://nurturehandmade.com/products/titanium-dioxide and
  *     https://www.savvyhomemade.com/titanium-dioxide-in-soap/ — 1/4-1 tsp PPO.
  *   https://lovelygreens.com/how-to-naturally-color-handmade-soap/ — madder 1/2-2 tsp PPO,
- *     turmeric 1/32-1 tsp PPO, spirulina up to 3 tsp PPO, charcoal up to 3 tsp PPO, and the
- *     per-clay rates (rose and red kaolin 1-3, Cambrian blue 1-2, Rhassoul 1).
+ *     turmeric 1/32-1 tsp PPO, spirulina up to 3 tsp PPO, charcoal up to 3 tsp PPO, nettle
+ *     1-3, sage 1, spinach up to 1 TBSP (3 tsp), kelp up to 3, henna 1-2, annatto 1, and the
+ *     per-clay rates (rose and red kaolin 1-3, Cambrian blue 1-2, Rhassoul 1). The same page
+ *     is the source for the plant greens fading — "plant-based greens tend to be fugitive …
+ *     they fade relatively quickly, especially when exposed to light" — which is where the
+ *     spirulina, nettle, wheatgrass, spinach, kelp and sage verdicts come from.
  *   https://thenerdyfarmwife.com/charcoal-in-soap/ — the charcoal shade ladder, 1/8 tsp PPO
  *     light grey to 4 tsp PPO black with grey lather.
  *   https://thenovastudio.com/annatto-seed-natural-soap-colorant/ — annatto powder tested
  *     1/8 to 1 tsp per pound of oils.
  *   https://www.ivyherbal.com/articles/soap-additives-what-they-do — clay 1 tsp per pound of
  *     oils, "about 8 to 10 g in a 1,000 g oil batch": the one direct weight anchor found.
- *   https://lovelygreens.com/indigo-soap-recipe-natural-blue-soap/ (under 1/2 tsp PPO) against
- *     https://nurturehandmade.com/products/natural-indigo-powder (3 tsp PPO) — the twelvefold
- *     disagreement that keeps indigo rate-free; a published side-by-side of three suppliers'
- *     indigo found the saturation genuinely differs by product.
+ *   https://lovelygreens.com/indigo-soap-recipe-natural-blue-soap/ (under 1/2 tsp PPO),
+ *     http://www.soap-making-resource.com/natural-soap-colorants.html (1/4-1/2 tsp) and the
+ *     Great Cakes test below all land on 1/4-1/2 tsp PPO for ordinary indigo powder. The
+ *     twelvefold outlier, https://nurturehandmade.com/products/natural-indigo-powder (3 tsp
+ *     PPO), is that supplier's own concentrated grade — a different material, not a different
+ *     opinion. A published side-by-side of three suppliers' indigo still found saturation
+ *     genuinely differs by product, which is why the entry's note leads with testing yours.
  *   https://lovelygreens.com/make-naturally-colored-orange-soap-using-annatto-seeds/ and the
  *     alkanet section of the Lovely Greens colour guide — infusion routes, stated per pound of
  *     INFUSING oil, deliberately NOT carried as a per-pound-of-oils rate.
@@ -88,7 +95,7 @@ export type ColorantStability = 'stable' | 'shifts' | 'fades';
 
 export const COLORANT_STABILITY_TEXT: Record<ColorantStability, string> = {
   stable: 'Holds its colour: not light sensitive, and the alkali does not shift it.',
-  shifts: 'Shifts in the first weeks — what you cut is not what you keep. Prove it on a small batch before you build a design around it.',
+  shifts: 'Shifts over the first weeks — the colour you pour is not the colour you end up with. Prove it on a small batch before you build a design around it.',
   fades: 'Fades with time and light: expect it weaker in a few months than the day you cut it.',
 };
 
@@ -189,7 +196,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   {
     id: 'indigo', name: 'Indigo powder', kind: 'natural', family: 'blue',
     tspPerLbLow: 0.25, tspPerLbHigh: 0.5,
-    note: 'Test your own product first — saturation genuinely varies between suppliers, and a concentrated grade needs a fraction of this. Past about half a teaspoon a pound the lather goes blue and stains cloth. Overdosed it reads green, not darker blue. Delivered through the lye solution it colours roughly twice as hard as dispersed in oil.',
+    note: 'Test your own product first — saturation genuinely varies between suppliers, and a concentrated grade needs a fraction of this. Past the top of that range the lather goes blue and stains cloth, and overdosed it reads green rather than a darker blue. How you deliver it matters as much as how much: through the lye solution it colours harder than dispersed in oil.',
     stability: 'shifts',
   },
   { id: 'woad', name: 'Woad', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
@@ -209,7 +216,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'annatto', name: 'Annatto', kind: 'natural', family: 'yellow', tspPerLbLow: 0.125, tspPerLbHigh: 1, note: 'The rate above is for the powder added directly. Ground seed is coarse and many makers infuse it into an oil instead, which is a different measurement entirely.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light orange, visibly grainy' }, { tspPerLb: 0.5, colour: 'orange' }, { tspPerLb: 1, colour: 'deep orange' }] },
   { id: 'turmeric', name: 'Turmeric', kind: 'natural', family: 'yellow', tspPerLbLow: 0.03, tspPerLbHigh: 1, note: 'A very little goes a long way. Premix it in oil; it does not disperse in water. Powder colours harder than an infusion but fades harder too — an infused oil holds longer.', shades: [{ tspPerLb: 0.03, colour: 'soft yellow' }, { tspPerLb: 1, colour: 'burnt orange' }], stability: 'fades' },
   { id: 'calendula', name: 'Calendula petals', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
-  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'Can irritate skin at more than a trace.', stability: 'fades' },
+  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'That rate is for the powder stirred in directly, which leaves the bar scratchy and freckled and speeds up trace — an infusion is the better route for this one.', stability: 'fades' },
   { id: 'curry-powder', name: 'Curry powder', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
   { id: 'carrot-puree', name: 'Carrot puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },

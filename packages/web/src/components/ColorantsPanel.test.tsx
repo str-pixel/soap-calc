@@ -140,7 +140,7 @@ describe('ColorantsPanel', () => {
       colorants: [{ catalogId: 'kaolin-clay', name: 'Kaolin clay', kind: 'natural', percent: '', portionKey: '' }],
     });
     renderPanel(clay, 'cp');
-    expect(screen.getByText(/Also an additive/i)).toBeTruthy();
+    expect(screen.getByText(/Also covered under Additives/i)).toBeTruthy();
   });
 
   it('an unknown catalog id falls back to a custom row, keeping the name', () => {
@@ -174,7 +174,7 @@ describe('how much, what shade, and what happens over time', () => {
   it('a picked colour states its dose, its shade ladder and its keeping', () => {
     renderPanel(pick('activated-charcoal'), 'cp');
     expect(screen.getByText(/How dark it goes/)).toBeTruthy();
-    expect(screen.getByText(/Per kg of oils/)).toBeTruthy();
+    expect(screen.getByText(/Teaspoons per kg of oils/)).toBeTruthy();
     // The ladder replaces the plain band rather than sitting beside it.
     expect(screen.queryByText(/weigh a spoonful once to fix your own percent, and start low/)).toBeNull();
     expect(screen.getByText(/light grey/)).toBeTruthy();

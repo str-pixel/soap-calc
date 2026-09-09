@@ -90,8 +90,10 @@ export function colorantDispersalText(d: ColorantDispersal, unit: WeightUnit): s
   }
 }
 
-/** The shade ladder as one line: "⅛ tsp light grey · ½ medium grey · 1 dark grey", in the
- * active unit. Null when the colour has no sourced ladder. */
+/** The shade ladder as one line: "Teaspoons per lb of oils: ⅛ light grey · ½ medium grey".
+ * The unit is named once in the lead-in rather than repeated on every rung — but it IS
+ * named, because a bare "¼ light grey" is a quarter of nothing. Null when the colour has no
+ * sourced ladder. */
 export function colorantShadeLadder(catalogId: string, unit: WeightUnit): string | null {
   const entry = catalogId ? colorantEntryById(catalogId) : undefined;
   if (!entry?.shades?.length) return null;
@@ -100,7 +102,7 @@ export function colorantShadeLadder(catalogId: string, unit: WeightUnit): string
   const rungs = entry.shades
     .map((s) => `${tsp(metric ? s.tspPerLb * LB_PER_KG : s.tspPerLb)} ${s.colour}`)
     .join(' · ');
-  return `Per ${per} of oils: ${rungs}.`;
+  return `Teaspoons per ${per} of oils: ${rungs}.`;
 }
 
 /** What months of light and alkali do to this colour, or null when no source says. */

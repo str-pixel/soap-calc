@@ -235,7 +235,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                 </p>
                 {ladder && (
                   <p className="inline-note additive-list__hint">
-                    <strong>How dark it goes.</strong> {ladder} Weigh a spoonful once to fix your own percent.
+                    <strong>How dark it goes.</strong> {ladder} Weigh a spoonful once to fix your own percent, and start low.
                   </p>
                 )}
                 {stability && (
@@ -246,7 +246,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                 {entry?.note && <p className="inline-note additive-list__hint">{entry.note}</p>}
                 {entry?.alsoAdditiveId && (
                   <p className="inline-note additive-list__hint">
-                    Also an additive: dose it under Additives instead when you want it for slip, scrub or absorbency rather than colour.
+                    Also covered under Additives — dose it there instead when it is going in for slip, scrub or absorbency rather than for colour.
                   </p>
                 )}
               </li>

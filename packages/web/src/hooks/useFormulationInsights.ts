@@ -268,19 +268,28 @@ export function useFormulationInsights(
       labelAllergens: options.scentColor?.labelAllergens,
       colorantPortionsOver100: options.scentColor?.portionsOver100,
       colorantCarrierShiftPercent: options.scentColor?.carrierSuperfatShiftPercent,
-      // Only a DOSED colour against a one-to-one additive pairing counts. A "to shade" row
-      // has no second dose to add up, and a generic additive bucket ("Clay (bentonite,
-      // kaolin)") cannot be claimed to be the same jar as the clay picked here.
+      // Only a DOSED colour counts — a "to shade" row has no second dose to add up. A
+      // one-to-one pairing is stated as a double dose; a generic additive bucket ("Clay
+      // (bentonite, kaolin)") is raised as a question, since the app cannot know whether the
+      // clay dosed there is the clay picked here.
       colorantAdditiveOverlap: (() => {
-        const dosedAsAdditive = new Set(additiveEntries.map((a) => a.catalogId));
-        const names = new Set<string>();
+        const dosedAsAdditive = new Map(additiveEntries.map((a) => [a.catalogId, a.name]));
+        const seen = new Set<string>();
+        const rows: Array<{ colorant: string; additive: string; sameMaterial: boolean }> = [];
         for (const c of options.scentColor?.colorants ?? []) {
           if (c.grams === null || c.grams <= 0) continue;
           const entry = c.catalogId ? colorantEntryById(c.catalogId) : undefined;
-          if (!entry || !colorantSharesMaterialWithAdditive(entry)) continue;
-          if (dosedAsAdditive.has(entry.alsoAdditiveId!)) names.add(entry.name);
+          if (!entry?.alsoAdditiveId) continue;
+          const additive = dosedAsAdditive.get(entry.alsoAdditiveId);
+          if (additive === undefined || seen.has(entry.id)) continue;
+          seen.add(entry.id);
+          rows.push({
+            colorant: entry.name,
+            additive: additive.trim() || 'that additive',
+            sameMaterial: colorantSharesMaterialWithAdditive(entry),
+          });
         }
-        return [...names];
+        return rows;
       })(),
       lsGlycerinSolvent: options.lsGlycerinSolvent,
       lsSplitLiquidFatShiftPercent: options.lsSplitLiquidFatShiftPercent,

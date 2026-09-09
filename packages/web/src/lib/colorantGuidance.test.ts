@@ -67,13 +67,14 @@ describe('a catalog pick ships its own sourced rate, and no invented weight perc
 
 describe('the shade ladder and the over-time line', () => {
   it('reads dose to colour, lightest first, in the active unit', () => {
+    // The unit is named — a bare "⅛ light grey" is an eighth of nothing.
     expect(colorantShadeLadder('activated-charcoal', 'lb')).toBe(
-      'Per lb of oils: ⅛ light grey · ½ medium grey · 1 dark grey, faint grey lather · 2 grey-black · 3 black, noticeably grey lather.',
+      'Teaspoons per lb of oils: ⅛ light grey · ½ medium grey · 1 dark grey, faint grey lather · 2 grey-black · 3 black, noticeably grey lather.',
     );
     // Per kilo the same ladder roughly doubles.
-    expect(colorantShadeLadder('activated-charcoal', 'g')).toMatch(/^Per kg of oils: ¼ light grey · 1 medium grey · 2 dark grey/);
+    expect(colorantShadeLadder('activated-charcoal', 'g')).toMatch(/^Teaspoons per kg of oils: ¼ light grey · 1 medium grey · 2 dark grey/);
     // Turmeric's low rung survives the conversion instead of rounding to nothing.
-    expect(colorantShadeLadder('turmeric', 'lb')).toBe('Per lb of oils: ¹⁄₃₂ soft yellow · 1 burnt orange.');
+    expect(colorantShadeLadder('turmeric', 'lb')).toBe('Teaspoons per lb of oils: ¹⁄₃₂ soft yellow · 1 burnt orange.');
   });
 
   it('says nothing for a colour with no sourced ladder, or for a custom row', () => {
@@ -84,9 +85,11 @@ describe('the shade ladder and the over-time line', () => {
   it('states what months of light and alkali do, where a source says', () => {
     expect(colorantStabilityText('iron-oxide')).toMatch(/Holds its colour/);
     expect(colorantStabilityText('spirulina')).toMatch(/Fades with time and light/);
-    expect(colorantStabilityText('mica')).toMatch(/Shifts in the first weeks/);
+    expect(colorantStabilityText('mica')).toMatch(/Shifts over the first weeks/);
     // Alkanet arrives grey and turns purple over the cure — a shift, not a fade.
-    expect(colorantStabilityText('alkanet-root')).toMatch(/Shifts in the first weeks/);
+    expect(colorantStabilityText('alkanet-root')).toMatch(/Shifts over the first weeks/);
+    // Worded for a bottle as well as a bar: liquid soap is poured, never cut.
+    expect(colorantStabilityText('alkanet-root')).not.toMatch(/cut/);
     expect(colorantStabilityText('turmeric')).toMatch(/Fades with time and light/);
     expect(colorantStabilityText('fdc-dye')).toMatch(/Fades/);
     // Not every colour has a sourced answer, and silence is the honest one.

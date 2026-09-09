@@ -516,12 +516,23 @@ describe('the double-dosing check reaches the rule only for a real double dose',
     expect(fired([colorant({ catalogId: 'activated-charcoal', name: 'Activated charcoal', percent: null, grams: null })])).toBe(false);
   });
 
-  it('stays quiet when the additive entry is a bucket, not the same jar', () => {
-    // "Clay (bentonite, kaolin)" covers nine clays; dosing bentonite for slip and colouring
-    // with dead sea mud is two materials, and the app must not call it one doubled.
+  it('raises a bucket pairing as a question, never as a claim', () => {
+    // "Clay (bentonite, kaolin)" covers nine clays. Dosing bentonite for slip and colouring
+    // with dead sea mud may be two materials or one — the app cannot tell, so it asks.
     const clayAdditive = { ...charcoalAdditive, catalogId: 'clay', name: 'Clay (bentonite, kaolin)' };
-    expect(fired([colorant({ catalogId: 'dead-sea-mud', name: 'Dead sea mud' })], [clayAdditive])).toBe(false);
-    expect(fired([colorant({ catalogId: 'kaolin-clay', name: 'Kaolin clay' })], [clayAdditive])).toBe(false);
+    const { result } = renderHook(() => harness([colorant({ catalogId: 'kaolin-clay', name: 'Kaolin clay' })], [clayAdditive]));
+    const msg = result.current.insights.find((i) => i.code === 'colorant_also_additive')!.message;
+    expect(msg).toMatch(/if that is the same jar/);
+    expect(msg).toContain('Clay (bentonite, kaolin)');
+    // and it does not assert the doses add up, the way a one-to-one pairing does
+    expect(msg).not.toMatch(/so the two doses add up/);
+  });
+
+  it('asserts the double dose only for a one-to-one pairing', () => {
+    const { result } = renderHook(() => harness([colorant({ catalogId: 'activated-charcoal', name: 'Activated charcoal' })]));
+    const msg = result.current.insights.find((i) => i.code === 'colorant_also_additive')!.message;
+    expect(msg).toMatch(/so the two doses add up in the batch/);
+    expect(msg).not.toMatch(/if that is the same jar/);
   });
 
   it('names a doubled material once, however many rows carry it', () => {

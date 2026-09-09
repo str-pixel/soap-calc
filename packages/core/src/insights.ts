@@ -146,9 +146,11 @@ export type FormulationAnalysisInput = {
   colorantPortionsOver100?: boolean;
   /** Superfat points the colorants' 1:1 carrier oil adds (CP dispersal). */
   colorantCarrierShiftPercent?: number;
-  /** Materials the recipe doses under BOTH Additives and Colorants, by name — the two
-   * doses are separate lines and add up in the batch. */
-  colorantAdditiveOverlap?: string[];
+  /** Colours that also carry an additive dose. `sameMaterial` separates the two cases the
+   * app can tell apart: a one-to-one pairing (charcoal under both) really is one material
+   * dosed twice, while a generic additive entry ("Clay (bentonite, kaolin)") only MIGHT be
+   * the same jar as the clay picked as a colour — worth raising, never worth asserting. */
+  colorantAdditiveOverlap?: Array<{ colorant: string; additive: string; sameMaterial: boolean }>;
 };
 
 export type InsightRuleParams = Record<string, number | string>;
@@ -1313,13 +1315,18 @@ export const INSIGHT_RULES: InsightRule[] = [
   {
     code: 'colorant_also_additive',
     check: (input) => {
-      const both = input.colorantAdditiveOverlap ?? [];
-      if (both.length === 0) return null;
-      return {
-        level: 'info',
-        code: 'colorant_also_additive',
-        message: `${both.join(', ')} — dosed under both Additives and Colorants, so the two doses add up in the batch.`,
-      };
+      const rows = input.colorantAdditiveOverlap ?? [];
+      if (rows.length === 0) return null;
+      const certain = rows.filter((r) => r.sameMaterial).map((r) => r.colorant);
+      const possible = rows.filter((r) => !r.sameMaterial);
+      const parts: string[] = [];
+      if (certain.length > 0) {
+        parts.push(`${certain.join(', ')} — dosed under both Additives and Colorants, so the two doses add up in the batch.`);
+      }
+      for (const r of possible) {
+        parts.push(`${r.colorant} — Additives also carries ${r.additive}; if that is the same jar, the two doses add up.`);
+      }
+      return { level: 'info', code: 'colorant_also_additive', message: parts.join(' ') };
     },
   },
   {

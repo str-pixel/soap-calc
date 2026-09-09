@@ -1253,7 +1253,9 @@ describe('rule registry consistency', () => {
     fragrance_allergens_to_label: { labelAllergens: [{ name: 'Linalool', percentOfProduct: 0.28 }] },
     colorant_portions_over_100: { colorantPortionsOver100: true },
     colorant_carrier_superfat: { colorantCarrierShiftPercent: 1, process: 'cp' },
-    colorant_also_additive: { colorantAdditiveOverlap: ['Kaolin clay'] },
+    colorant_also_additive: {
+      colorantAdditiveOverlap: [{ colorant: 'Activated charcoal', additive: 'Charcoal', sameMaterial: true }],
+    },
     ls_fragrance_clouding: {
       fragranceRows: [{ name: 'F', percent: 1, supplierMaxPercent: 3, overSupplierMax: false, browning: 'none', caution: false }],
       process: 'ls',
