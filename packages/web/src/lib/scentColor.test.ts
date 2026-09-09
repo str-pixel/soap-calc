@@ -19,7 +19,11 @@ describe('normalizeScentColor', () => {
   it('keeps valid rows, assigns keys, drops unknown fields, keeps an oversize portion share as typed, and unlinks a deleted portion', () => {
     const s = normalizeScentColor({
       fragrances: [{ name: 'Lavender', kind: 'essential-oil', percent: '3', supplierMaxPercent: '5', vanillinPercent: '', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }], junk: 1 }],
-      colorants: [{ name: 'Ultramarine', kind: 'oxide', percent: '0.5', portionKey: 'gone' }],
+      // The first colour claims the oversize share; the second's key matches no portion.
+      colorants: [
+        { name: 'Ultramarine', kind: 'oxide', percent: '0.5', portionKey: 'gone' },
+        { name: 'Mica', kind: 'mica', percent: '0.5', portionKey: '#0' },
+      ],
       portions: [{ name: 'A', percent: '150' }],
     });
     expect(s.fragrances[0]).toMatchObject({ name: 'Lavender', percent: '3', supplierMaxPercent: '5', vanillinPercent: '' });
@@ -41,12 +45,12 @@ describe('normalizeScentColor', () => {
     const s = normalizeScentColor({
       fragrances: [{ name: 'x'.repeat(5000), percent: '3' + '0'.repeat(100), supplierMaxPercent: '', vanillinPercent: '', allergens: [{ name: 'y'.repeat(5000), percentOfFragrance: '1' }] }],
       colorants: [{ name: 'z'.repeat(5000), kind: 'mica', percent: '', portionKey: '' }],
-      portions: [{ name: 'w'.repeat(5000), percent: '40' }],
+      portions: [],
     });
     expect(s.fragrances[0].name.length).toBeLessThanOrEqual(120);
     expect(s.fragrances[0].allergens[0].name.length).toBeLessThanOrEqual(120);
     expect(s.colorants[0].name.length).toBeLessThanOrEqual(120);
-    expect(s.portions[0].name.length).toBeLessThanOrEqual(120);
+    expect(s.portions).toEqual([]); // nothing claims it, so nothing keeps it
     expect(s.fragrances[0].percent.length).toBeLessThanOrEqual(32);
   });
   it('a colorant saved before the catalog existed loads as a custom row, name intact', () => {
@@ -203,5 +207,35 @@ describe('the lye route across a save and a load', () => {
       portions: [],
     });
     expect(loaded.colorants[0].viaLye).toBe(false);
+  });
+});
+
+describe('a share nothing points at does not survive the load', () => {
+  it('drops a portion no colour claims, and unlinks a colour that went through the lye', () => {
+    // Older builds could split the batter before any colour wanted it.
+    const orphan = normalizeScentColor({
+      fragrances: [], colorants: [{ name: 'Mica', kind: 'mica', percent: '1', portionKey: '' }],
+      portions: [{ name: 'A', percent: '70' }],
+    });
+    expect(orphan.portions).toEqual([]);
+
+    // A colour in the lye ignores its portion, so the share it used to hold goes too —
+    // the panel has no control that could reach it.
+    const viaLye = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'madder-root', name: '', kind: 'natural', percent: '0.88', portionKey: '#0', viaLye: true }],
+      portions: [{ name: 'A', percent: '40' }],
+    });
+    expect(viaLye.portions).toEqual([]);
+    expect(viaLye.colorants[0].portionKey).toBe('');
+
+    // A claimed share is untouched, name and all.
+    const claimed = normalizeScentColor({
+      fragrances: [], colorants: [{ name: 'Mica', kind: 'mica', percent: '1', portionKey: '#0' }],
+      portions: [{ name: 'Top layer', percent: '40' }],
+    });
+    expect(claimed.portions).toHaveLength(1);
+    expect(claimed.portions[0]).toMatchObject({ name: 'Top layer', percent: '40' });
+    expect(claimed.colorants[0].portionKey).toBe(claimed.portions[0].key);
   });
 });

@@ -42,6 +42,12 @@ export function fragranceLineDetail(f: ComputedFragrance, unit: WeightUnit, proc
   return `${formatWeight(f.grams, unit)} · ${formatGrams(f.percent ?? 0, 2)}${fragranceDoseLabel(process)}`;
 }
 
+/** What to call a share that carries no name of its own: the colours in it. A portion is
+ * made by a colour that wanted its own share, so its colours ARE its identity. */
+function portionColourNames(own: ReadonlyArray<ComputedColorant>): string {
+  return own.map((c) => c.name.trim() || 'colorant').join(', ');
+}
+
 /** The one colorant line detail — dose (or "to shade") and how it is dispersed, per the
  * process the section derived. */
 export function colorantLineDetail(c: ComputedColorant, unit: WeightUnit): string {
@@ -249,10 +255,19 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       for (const portion of scentColor.portions) {
         const own = byPortion.get(portion.key) ?? [];
         if (own.length === 0) continue;
-        colorantItems.push({
-          name: `${portion.name.trim() || 'Portion'} — ${formatGrams(portion.percent ?? 0, 1)}%`,
-          detail: '',
-        });
+        const share = `${formatGrams(portion.percent ?? 0, 1)}% of the batter`;
+        // A share belongs to one colour unless an older recipe put several in it, and it
+        // carries no name of its own — so the usual case is ONE line naming the colour and
+        // its share, not a heading that repeats the name of the single line beneath it.
+        const name = portion.name.trim();
+        if (!name && own.length === 1) {
+          colorantItems.push({
+            name: `${own[0].name.trim() || 'Colorant'} — ${share}`,
+            detail: colorantLineDetail(own[0], weightUnit),
+          });
+          continue;
+        }
+        colorantItems.push({ name: `${name || portionColourNames(own)} — ${share}`, detail: '' });
         colorantItems.push(...own.map(colorantItem));
       }
     }
@@ -570,7 +585,12 @@ export function buildAddOrderSteps(input: AddOrderInput): string[] {
     if (!scentColor || process === 'ls') return null;
     const parts = scentColor.portions.filter((p) => p.percent !== null && p.percent > 0).map((p) => {
       const colours = scentColorants.filter((c) => c.portionKey === p.key).map((c) => c.name.trim() || 'colorant');
-      return `${p.name.trim() || 'portion'} ${formatGrams(p.percent ?? 0, 0)}%${colours.length ? ` (${colours.join(', ')})` : ''}`;
+      const share = formatGrams(p.percent ?? 0, 0);
+      // An unnamed share is named by its colours; naming it and then repeating them in
+      // brackets said the same word twice ("Mica 40% (Mica)").
+      const name = p.name.trim();
+      if (!name) return `${colours.length ? colours.join(', ') : 'portion'} ${share}%`;
+      return `${name} ${share}%${colours.length ? ` (${colours.join(', ')})` : ''}`;
     });
     return parts.length ? `split the batter — ${parts.join(', ')} — and colour each portion` : null;
   })();

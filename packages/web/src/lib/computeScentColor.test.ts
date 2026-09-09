@@ -112,9 +112,17 @@ describe('HP dispersal follows the stage', () => {
   });
 });
 
-describe('portions without colours still count', () => {
-  it('two 70% portions and no colorant yet total 140% and flag over-100', () => {
-    const scentP = normalizeScentColor({ fragrances: [], colorants: [], portions: [{ name: 'A', percent: '70' }, { name: 'B', percent: '70' }] });
+describe('the shares are totalled across the colours that hold them', () => {
+  it('two colours at 70% each total 140% and flag over-100', () => {
+    // A share belongs to a colour, so an unclaimed one no longer exists to be counted.
+    const scentP = normalizeScentColor({
+      fragrances: [],
+      colorants: [
+        { name: 'A', kind: 'mica', percent: '1', portionKey: '#0' },
+        { name: 'B', kind: 'mica', percent: '1', portionKey: '#1' },
+      ],
+      portions: [{ name: 'A', percent: '70' }, { name: 'B', percent: '70' }],
+    });
     const c = computeScentColorGrams(scentP, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
     expect(c.portionsTotalPercent).toBe(140);
     expect(c.portionsOver100).toBe(true);

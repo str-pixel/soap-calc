@@ -618,7 +618,7 @@ describe('a purée colour in the lye is a liquid the water budget should know ab
     dispersal: { method: 'lye-solution' as const },
     ...over,
   });
-  type Row = { addAt: 'lye' | 'oils' | 'trace'; grams: number | null; presetKey?: string; sizeMode?: 'percent_of_oils' | 'grams' | 'percent_of_liquid' | 'rest' };
+  type Row = { addAt: 'lye' | 'oils' | 'trace'; grams: number | null; presetKey: string; sizeMode: 'percent_of_oils' | 'grams' | 'percent_of_liquid' | 'rest' };
   function harness(colorants: ComputedScentColor['colorants'], splitLiquidRows: Row[] = []) {
     const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
     const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');

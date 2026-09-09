@@ -26,7 +26,7 @@ import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/rec
 export function totalAdditivePercentForInsights(
   additives: Array<{ catalogId?: string; grams: number; addAt?: AdditiveStage }>,
   oilGrams: number,
-  splitLiquidRows: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null; presetKey?: string; sizeMode?: SplitLiquidSettings['sizeMode'] }>,
+  splitLiquidRows: readonly { addAt: SplitLiquidSettings['addAt']; grams: number | null }[],
 ): number {
   const additivePercent =
     oilGrams > 0
@@ -121,9 +121,20 @@ export function sugarTotalPercentForInsights(
     .reduce((sum, item) => sum + (item.grams / totalOilGrams) * 100, 0);
 }
 
+/** A split-liquid row as the RULES need it: how much, where it joins, which liquid it is,
+ * and how it was sized. presetKey and sizeMode are required, not optional — a caller that
+ * left them out would silently be read as "a custom liquid, stacked on top of the water",
+ * and one of those readings decides whether a rule speaks at all. */
+export type InsightSplitLiquidRow = {
+  addAt: SplitLiquidSettings['addAt'];
+  grams: number | null;
+  presetKey: string;
+  sizeMode: SplitLiquidSettings['sizeMode'];
+};
+
 type FormulationInsightOptions = {
   splitLiquidGrams?: number | null;
-  splitLiquidRows?: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null; presetKey?: string; sizeMode?: SplitLiquidSettings['sizeMode'] }>;
+  splitLiquidRows?: readonly InsightSplitLiquidRow[];
   suggestedLyeWaterGrams?: number | null;
   splitLiquidWaterReductionGrams?: number | null;
   additives?: ComputedAdditive[];
@@ -311,7 +322,7 @@ export function useFormulationInsights(
           const rowsForKey = sizedLiquidRows.filter((r) => r.presetKey === key);
           // Only a row that CARVES the liquid out of the budget makes the water figure
           // right; sized on top, the water is still the full plain-water figure.
-          if (rowsForKey.some((r) => r.sizeMode !== undefined && isBudgetSizeMode(r.sizeMode))) continue;
+          if (rowsForKey.some((r) => isBudgetSizeMode(r.sizeMode))) continue;
           seen.add(entry.id);
           rows.push({ name: entry.name, liquid: preset.label, sizedOnTop: rowsForKey.length > 0 });
         }

@@ -61,9 +61,10 @@ describe('ColorantsPanel', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Portion' }));
     const next = onChange.mock.calls[0][0] as ScentColor;
-    // One gesture: the share exists AND belongs to this colour, named after it.
+    // One gesture: the share exists AND belongs to this colour. It carries no name of its
+    // own — the manifest reads that off the colour, so nothing can go stale.
     expect(next.portions).toHaveLength(1);
-    expect(next.portions[0].name).toBe('Blue mica');
+    expect(next.portions[0].name).toBe('');
     expect(next.colorants[0].portionKey).toBe(next.portions[0].key);
   });
 
@@ -116,17 +117,61 @@ describe('ColorantsPanel', () => {
     expect((onChange.mock.calls[0][0] as ScentColor).portions[0].percent).toBe('25');
   });
 
-  it('a repick renames the share with the colour it belongs to', () => {
+  it('a repick keeps the share, and never overwrites a name the maker typed', () => {
     const scent = normalizeScentColor({
       fragrances: [],
       colorants: [{ catalogId: 'mica', name: 'Mica', kind: 'mica', percent: '1', portionKey: '#0' }],
-      portions: [{ name: 'Mica', percent: '40' }],
+      // A name from an older build, which no control can retype: it must survive a repick.
+      portions: [{ name: 'Top layer', percent: '40' }],
     });
     const onChange = renderPanel(scent, 'cp');
     fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'kaolin-clay' } });
     const next = onChange.mock.calls[0][0] as ScentColor;
-    expect(next.portions[0].name).toBe('Kaolin clay');
-    expect(next.portions[0].percent).toBe('40');
+    expect(next.portions[0]).toMatchObject({ name: 'Top layer', percent: '40' });
+    expect(next.colorants[0].portionKey).toBe(next.portions[0].key);
+  });
+
+  describe('a share cannot outlive the colour that asked for it', () => {
+    const coloured = () => normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '0.88', portionKey: '#0' }],
+      portions: [{ name: '', percent: '40' }],
+    });
+
+    it('deleting the colour takes its share with it', () => {
+      const onChange = renderPanel(coloured(), 'cp');
+      fireEvent.click(screen.getByRole('button', { name: /^Remove Madder root$/ }));
+      const next = onChange.mock.calls[0][0] as ScentColor;
+      expect(next.colorants).toEqual([]);
+      // Left behind, it would still count toward the total with no control able to reach it.
+      expect(next.portions).toEqual([]);
+    });
+
+    it('sending the colour through the lye hands its share back', () => {
+      const onChange = renderPanel(coloured(), 'cp');
+      fireEvent.click(screen.getByRole('radio', { name: 'In lye water' }));
+      const next = onChange.mock.calls[0][0] as ScentColor;
+      expect(next.portions).toEqual([]);
+      // and the row does not keep pointing at a share that no longer exists
+      expect(next.colorants[0].portionKey).toBe('');
+      expect(next.colorants[0].viaLye).toBe(true);
+    });
+
+    it('a share another colour still sits in is left where it is', () => {
+      const shared = normalizeScentColor({
+        fragrances: [],
+        colorants: [
+          { name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' },
+          { name: 'Gold mica', kind: 'mica', percent: '1', portionKey: '#0' },
+        ],
+        portions: [{ name: 'Swirl', percent: '40' }],
+      });
+      const onChange = renderPanel(shared, 'cp');
+      fireEvent.click(screen.getByRole('button', { name: /^Remove Blue mica$/ }));
+      const next = onChange.mock.calls[0][0] as ScentColor;
+      expect(next.portions).toHaveLength(1);
+      expect(next.colorants[0].portionKey).toBe(next.portions[0].key);
+    });
   });
 
   it('the share row carries a visible label and a figure slab, like every other row', () => {
@@ -475,16 +520,18 @@ describe('the lye-solution route', () => {
   });
 });
 
-it('a lye colour drops the portion picker — there is no batter to split yet', () => {
+it('a lye colour has no portion control and no share — there is no batter to split yet', () => {
   const split = normalizeScentColor({
     fragrances: [],
     colorants: [{ catalogId: 'madder-root', name: '', kind: 'natural', percent: '0.88', portionKey: '#0', viaLye: true }],
     portions: [{ name: 'Swirl', percent: '40' }],
   });
+  // The share went with the route, on load as in the panel: nothing could reach it.
+  expect(split.portions).toEqual([]);
   renderPanel(split, 'cp');
-  expect(screen.queryByLabelText(/portion$/i)).toBeNull();
-  // the stored pick is still what the derived option would go back to
-  expect(screen.getByRole('radio', { name: 'At trace' })).toBeTruthy();
+  expect(screen.queryByRole('radiogroup', { name: /portion$/i })).toBeNull();
+  expect(screen.queryByLabelText(/share of the batter/i)).toBeNull();
+  expect(screen.getByRole('radio', { name: 'In lye water' })).toBeTruthy();
 });
 
 

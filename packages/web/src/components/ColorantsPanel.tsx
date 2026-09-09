@@ -92,8 +92,25 @@ const PROCESS_COPY: Record<ProcessId, string> = {
 };
 
 export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, onChange }: Props) {
+  /** Every write goes through here, so a share can never outlive the colour that asked for
+   * it: a portion nothing points at is dropped on the way out. Without this a deleted row,
+   * or one sent through the lye, left its share in the recipe — still counted in the total
+   * and in the over-100 guard, with no control left anywhere to see or remove it. */
+  const commit = (next: ScentColor) => {
+    const used = new Set(next.colorants.map((c) => (c.viaLye ? '' : c.portionKey)).filter(Boolean));
+    if (used.size === next.portions.length) return onChange(next);
+    const portions = next.portions.filter((p) => used.has(p.key));
+    const kept = new Set(portions.map((p) => p.key));
+    onChange({
+      ...next,
+      portions,
+      // A key pointing at a dropped share would leave the row reading "Portion" with no
+      // share to enter, so the two are cleared together.
+      colorants: next.colorants.map((c) => (c.portionKey && !kept.has(c.portionKey) ? { ...c, portionKey: '' } : c)),
+    });
+  };
   const setColorant = (key: string, patch: Partial<ColorantLine>) =>
-    onChange({ ...scent, colorants: scent.colorants.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
+    commit({ ...scent, colorants: scent.colorants.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
   const setPortion = (key: string, patch: Partial<Portion>) =>
     onChange({ ...scent, portions: scent.portions.map((p) => (p.key === key ? { ...p, ...patch } : p)) });
   /** Picking a catalog entry adopts its name and kind, and seeds the LOW end of its own
@@ -110,26 +127,12 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
       setColorant(key, { catalogId: '', percent: '', viaLye: false });
       return;
     }
-    const line = scent.colorants.find((c) => c.key === key);
-    onChange({
-      ...scent,
-      colorants: scent.colorants.map((c) =>
-        c.key === key
-          ? {
-              ...c,
-              catalogId,
-              name: entry.name,
-              kind: entry.kind,
-              percent: entry.tspPerLbLow !== null ? percentValue(entry.tspPerLbLow) : '',
-              viaLye: false,
-            }
-          : c,
-      ),
-      // Its own share is named after it, so a repick renames that too rather than leaving
-      // the manifest calling the share by the colour that used to be there.
-      portions: scent.portions.map((p) =>
-        line && p.key === line.portionKey ? { ...p, name: entry.name } : p,
-      ),
+    setColorant(key, {
+      catalogId,
+      name: entry.name,
+      kind: entry.kind,
+      percent: entry.tspPerLbLow !== null ? percentValue(entry.tspPerLbLow) : '',
+      viaLye: false,
     });
   };
   /** Give this colour its own share of the batter, or hand it back. A portion exists
@@ -141,20 +144,18 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
     const line = scent.colorants.find((c) => c.key === colorantKey);
     if (!line || (line.portionKey !== '') === wantsPortion) return;
     if (wantsPortion) {
-      // Named after the colour, so the manifest and the steps can say which share is which.
-      const portion = { ...newPortion(), name: line.name.trim() };
-      onChange({
+      // No name is copied in: the share belongs to one colour, and the manifest reads the
+      // name off that colour. A copy would go stale the moment the colour was repicked.
+      const portion = newPortion();
+      commit({
         ...scent,
         portions: [...scent.portions, portion],
         colorants: scent.colorants.map((c) => (c.key === colorantKey ? { ...c, portionKey: portion.key } : c)),
       });
       return;
     }
-    const released = line.portionKey;
-    const stillUsed = scent.colorants.some((c) => c.key !== colorantKey && c.portionKey === released);
-    onChange({
+    commit({
       ...scent,
-      portions: stillUsed ? scent.portions : scent.portions.filter((p) => p.key !== released),
       colorants: scent.colorants.map((c) => (c.key === colorantKey ? { ...c, portionKey: '' } : c)),
     });
   };
@@ -229,7 +230,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                       type="button"
                       className="btn btn--icon"
                       aria-label={`Remove ${rowName}`}
-                      onClick={() => onChange({ ...scent, colorants: scent.colorants.filter((x) => x.key !== col.key) })}
+                      onClick={() => commit({ ...scent, colorants: scent.colorants.filter((x) => x.key !== col.key) })}
                     >
                       ×
                     </button>
@@ -293,7 +294,8 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                     because a colour needs its own share, so the choice and the split are
                     one control rather than a button somewhere above. A colour going
                     through the lye drops it: it is in the pot before there is a batter to
-                    split, and its stored pick comes back if the route is switched off. */}
+                    split, so taking that route hands the share back rather than parking it
+                    somewhere the maker can no longer see or edit. */}
                 {process !== 'ls' && !c.viaLye && (
                   <div className="additive-list__choice">
                     <span className="micro-label">Portion</span>

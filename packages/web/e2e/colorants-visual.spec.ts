@@ -74,6 +74,12 @@ test.describe('colorants, seen in each process', () => {
     await expect(panel(page)).toContainText(/Portions total 40/);
     await page.screenshot({ path: `${SHOTS}/colorants-cp-portion.png`, fullPage: true });
 
+    // A share belongs to the colour that asked for it: delete the colour and the share goes
+    // with it, rather than sitting in the total with no control able to reach it.
+    await expect(panel(page)).toContainText(/Portions total 40/);
+    await panel(page).getByRole('button', { name: /^Remove Activated charcoal$/ }).click();
+    await expect(panel(page)).not.toContainText(/Portions total/);
+
     await expectNoJunk(page);
     expect(problems, 'browser reported nothing').toEqual([]);
   });

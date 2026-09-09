@@ -768,7 +768,7 @@ describe('the recipe file carries scentColor', () => {
   it('serializes at the current version and parses it back; a v2 file without the field parses as empty', () => {
     const scent = normalizeScentColor({
       fragrances: [{ name: 'Rose', percent: '4', supplierMaxPercent: '5', vanillinPercent: '2', allergens: [{ name: 'Citronellol', percentOfFragrance: '3' }] }],
-      colorants: [{ name: 'Pink mica', kind: 'mica', percent: '', portionKey: '' }],
+      colorants: [{ name: 'Pink mica', kind: 'mica', percent: '', portionKey: '#0' }],
       portions: [{ name: 'A', percent: '40' }],
     });
     const payload = serializeRecipeFile('r', createStarterLines(), DEFAULT_SETTINGS, [], 'cp', scent);

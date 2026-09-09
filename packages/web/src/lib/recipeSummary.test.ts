@@ -637,7 +637,7 @@ test('Full recipe (CP): base colour inside Oils, portion colours in a Colorants 
   const oils = sections.find((s) => s.heading === 'Oils')!;
   expect(oils.items.some((i) => i.name === 'Yellow oxide' && i.detail === '4 g · 1% · Mix 1:1 with a light carrier oil (4 g)')).toBe(true);
   const colorants = sections.find((s) => s.heading === 'Colorants')!;
-  expect(colorants.items[0]).toEqual({ name: 'Swirl — 40%', detail: '' });
+  expect(colorants.items[0]).toEqual({ name: 'Swirl — 40% of the batter', detail: '' });
   expect(colorants.items[1].name).toBe('Blue mica');
   expect(colorants.items[1].detail).toBe('1.6 g · 1% · Mix 1:1 with a light carrier oil (1.6 g)');
   const fragrance = sections.find((s) => s.heading === 'Fragrance')!;
@@ -770,4 +770,48 @@ test('Add-in-order steps (CP): a lye colour is named in the lye step, not at the
   expect(steps[0]).toContain('stir the Madder root into the water first');
   // the stored portion pick does not colour a portion while the route is on
   expect(steps.join(' ')).not.toMatch(/Swirl 40% \(Madder root\)/);
+});
+
+test('a share with no name of its own is named by the colour in it, once', () => {
+  const scent = computedScent({
+    fragrances: [],
+    colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0' }],
+    portions: [{ name: '', percent: '40' }],
+  }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const sections = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: scent });
+  const colorants = sections.find((s) => s.heading === 'Colorants')!;
+  // One line, not a heading that repeats the name of the single line beneath it.
+  expect(colorants.items).toHaveLength(1);
+  expect(colorants.items[0].name).toBe('Mica — 40% of the batter');
+  expect(colorants.items[0].detail).toBe('1.6 g · 1% · Mix 1:1 with a light carrier oil (1.6 g)');
+  // and the step says it once too
+  const steps = buildAddOrderSteps({ ...CP_BASE, scentColor: scent });
+  expect(steps.find((s) => s.includes('split the batter'))).toContain('split the batter — Mica 40% — and colour each portion');
+});
+
+test('an older recipe with several colours in one named share still reads as a group', () => {
+  const scent = computedScent({
+    fragrances: [],
+    colorants: [
+      { catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0' },
+      { catalogId: 'iron-oxide', name: '', kind: 'oxide', percent: '1', portionKey: '#0' },
+    ],
+    portions: [{ name: 'Swirl', percent: '40' }],
+  }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const colorants = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: scent }).find((s) => s.heading === 'Colorants')!;
+  expect(colorants.items[0]).toEqual({ name: 'Swirl — 40% of the batter', detail: '' });
+  expect(colorants.items.map((i) => i.name).slice(1)).toEqual(['Mica', 'Iron oxide']);
+});
+
+test('several unnamed colours in one share are named by all of them', () => {
+  const scent = computedScent({
+    fragrances: [],
+    colorants: [
+      { catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0' },
+      { catalogId: 'iron-oxide', name: '', kind: 'oxide', percent: '1', portionKey: '#0' },
+    ],
+    portions: [{ name: '', percent: '40' }],
+  }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const colorants = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: scent }).find((s) => s.heading === 'Colorants')!;
+  expect(colorants.items[0]).toEqual({ name: 'Mica, Iron oxide — 40% of the batter', detail: '' });
 });

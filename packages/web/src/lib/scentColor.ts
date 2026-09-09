@@ -94,12 +94,15 @@ export function normalizeScentColor(raw: unknown): ScentColor {
     return createEmptyScentColor();
   }
   // Portions first: a saved colorant links to its portion by the portion's saved INDEX
-  // ("#n", written by scentColorToSaved) — every production input is a saved shape.
+  // ("#n", written by scentColorToSaved) — every production input is a saved shape. A LIVE
+  // shape is also accepted, by its own key: normalizing twice must not quietly unlink every
+  // colour from its share, which is what a test fixture (and any future re-normalize) does.
   const portionKeyMap = new Map<string, string>();
   const portions: Portion[] = raw.portions.slice(0, MAX_SCENT_ROWS).flatMap((p, i) => {
     if (!isRecord(p)) return [];
     const key = newAdditiveKey();
     portionKeyMap.set(`#${i}`, key);
+    if (typeof p.key === 'string' && p.key) portionKeyMap.set(p.key, key);
     // Kept as typed, even past 100: the compute step SHOWS an oversize share and flags it;
     // a reload must not erase the maker's mistake and its warning together.
     return [{ key, name: name(p.name), percent: percentString(p.percent) }];
@@ -144,7 +147,20 @@ export function normalizeScentColor(raw: unknown): ScentColor {
       viaLye,
     }];
   });
-  return { fragrances, colorants, portions };
+  // A share exists BECAUSE a colour asked for it, and the panel offers no way to reach one
+  // that nothing points at — an older file could carry a portion with no colour in it, or
+  // one whose colour has since gone through the lye, and it would sit there counting
+  // toward the batter total with no control able to see or remove it.
+  const claimed = new Set(colorants.map((c) => (c.viaLye ? '' : c.portionKey)).filter(Boolean));
+  const usedPortions = portions.filter((p) => claimed.has(p.key));
+  return {
+    fragrances,
+    portions: usedPortions,
+    colorants:
+      usedPortions.length === portions.length
+        ? colorants
+        : colorants.map((c) => (c.portionKey && !claimed.has(c.portionKey) ? { ...c, portionKey: '' } : c)),
+  };
 }
 
 export function scentColorToSaved(scent: ScentColor): SavedScentColor {
