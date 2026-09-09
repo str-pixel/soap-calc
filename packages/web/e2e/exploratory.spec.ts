@@ -1030,3 +1030,36 @@ test.describe('persistence & files', () => {
     await expect(props).toContainText('Add triglyceride oils with fatty-acid data');
   });
 });
+
+test.describe('acid compensation', () => {
+  test('the batch weight carries the alkali the recipe tells you to weigh', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    const results = page.locator('.panel--results');
+    const grab = async () => {
+      const t = await results.innerText();
+      return {
+        batch: Number(((t.match(/Batch weight\s*([\d.,]+)/) || [])[1] ?? '0').replace(/,/g, '')),
+        lye: Number(((t.match(/(?:Sodium hydroxide|NaOH)[^\d]*([\d.,]+)/) || [])[1] ?? '0').replace(/,/g, '')),
+      };
+    };
+    const before = await grab();
+
+    // 200 g of vinegar in the lye: its acetic acid eats alkali, so the calc adds some back.
+    await page.getByRole('button', { name: /add liquid/i }).click();
+    const row = page.locator('.split-liquid-row').first();
+    await row.getByLabel('Liquid preset', { exact: true }).selectOption('vinegar');
+    await row.getByLabel('Sized by', { exact: true }).selectOption('grams');
+    await row.getByLabel('Amount', { exact: true }).fill('200');
+    await row.getByLabel('Add at', { exact: true }).selectOption('lye');
+    const after = await grab();
+
+    const extraLye = after.lye - before.lye;
+    expect(extraLye).toBeGreaterThan(0);
+    // The figure on screen must add up: the old batch, the liquid poured in, and the extra
+    // alkali that liquid made necessary. Without that last term this read 6 g light while
+    // the lye line beside it already carried them.
+    expect(after.batch).toBeCloseTo(before.batch + 200 + extraLye, 0);
+  });
+});

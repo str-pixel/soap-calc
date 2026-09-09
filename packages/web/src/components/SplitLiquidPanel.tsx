@@ -191,6 +191,11 @@ export function SplitLiquidPanel({
                   <span>Liquid preset</span>
                   <select
                     className="input"
+                    // Named explicitly, like Sized by and Add at below. A wrapping <label>
+                    // gives the right accessible name but its TEXT includes every option in
+                    // the select, so a by-label lookup can only ever match loosely — which
+                    // is what made an end-to-end check of this row hard to write.
+                    aria-label="Liquid preset"
                     value={row.presetKey}
                     onChange={(e) => {
                       const nextKey = e.target.value;
@@ -215,6 +220,7 @@ export function SplitLiquidPanel({
                   <input
                     type="text"
                     className="input"
+                    aria-label="Liquid name"
                     placeholder="e.g. goat milk, pumpkin puree"
                     value={row.name}
                     onChange={(e) => updateRow(row.key, { name: e.target.value })}
@@ -230,6 +236,7 @@ export function SplitLiquidPanel({
                       max={100}
                       step={1}
                       placeholder="100"
+                      aria-label="% water (optional)"
                       aria-invalid={waterState === 'invalid' || undefined}
                       value={row.customWaterPercent}
                       onChange={(e) => updateRow(row.key, { customWaterPercent: e.target.value })}
@@ -280,6 +287,7 @@ export function SplitLiquidPanel({
                     <input
                       type="number"
                       className="input"
+                      aria-label="Amount"
                       min={0}
                       step={0.1}
                       value={row.amount}
