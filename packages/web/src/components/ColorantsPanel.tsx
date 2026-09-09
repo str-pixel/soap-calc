@@ -117,9 +117,9 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
             const portionName = p.name.trim() || 'Portion';
             return (
               <li key={p.key} className="additive-list__row">
-                <div className="additive-list__names">
-                  <label className="field">
-                    <span>Portion name</span>
+                <div className="additive-list__choice">
+                  <span className="micro-label">Portion</span>
+                  <div className="additive-list__names">
                     <input
                       className="input"
                       aria-label="Portion name"
@@ -127,11 +127,24 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                       value={p.name}
                       onChange={(e) => setPortion(p.key, { name: e.target.value })}
                     />
-                  </label>
-                  <button type="button" className="btn btn--icon" aria-label={`Remove portion ${portionName}`} onClick={() => removePortion(p.key)}>×</button>
+                    <button type="button" className="btn btn--icon" aria-label={`Remove portion ${portionName}`} onClick={() => removePortion(p.key)}>×</button>
+                  </div>
                 </div>
-                <label className="field"><span>% of batter</span>
-                  <input className="input" inputMode="decimal" aria-label={`Portion ${portionName} % of batter`} value={p.percent} onChange={(e) => setPortion(p.key, { percent: e.target.value })} />
+                <label className="ledger__row additive-list__amount">
+                  <span className="micro-label">Share</span>
+                  <span className="ledger__figure">
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      max={100}
+                      step={1}
+                      aria-label={`Portion ${portionName} % of batter`}
+                      value={p.percent}
+                      onChange={(e) => setPortion(p.key, { percent: e.target.value })}
+                    />
+                    <span className="ledger__unit">% of batter</span>
+                  </span>
                 </label>
               </li>
             );
@@ -159,9 +172,11 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
             const stability = colorantStabilityText(col.catalogId);
             return (
               <li key={col.key} className="additive-list__row">
-                <div className="additive-list__names">
-                  <label className="field">
-                    <span>Colorant</span>
+                {/* Same shape as an additive row: the pick and its × on one line, then
+                    labelled ledger rows down a shared label column. */}
+                <div className="additive-list__choice">
+                  <span className="micro-label">Colorant</span>
+                  <div className="additive-list__names">
                     <select
                       className="input"
                       aria-label={`Colorant for ${rowName}`}
@@ -177,55 +192,95 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                         </optgroup>
                       ))}
                     </select>
+                    <button
+                      type="button"
+                      className="btn btn--icon"
+                      aria-label={`Remove ${rowName}`}
+                      onClick={() => onChange({ ...scent, colorants: scent.colorants.filter((x) => x.key !== col.key) })}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                {!entry && (
+                  <label className="ledger__row">
+                    <span className="micro-label">Name</span>
+                    <input
+                      className="input"
+                      aria-label="Colorant name"
+                      placeholder="e.g. Ultramarine blue"
+                      value={col.name}
+                      onChange={(e) => setColorant(col.key, { name: e.target.value })}
+                    />
                   </label>
-                  <button
-                    type="button"
-                    className="btn btn--icon"
-                    aria-label={`Remove ${rowName}`}
-                    onClick={() => onChange({ ...scent, colorants: scent.colorants.filter((x) => x.key !== col.key) })}
-                  >
-                    ×
-                  </button>
-                  {!entry && (
-                    <label className="field additive-list__custom-name">
-                      <span>Colorant name</span>
-                      <input
-                        className="input"
-                        aria-label="Colorant name"
-                        placeholder="e.g. Ultramarine blue"
-                        value={col.name}
-                        onChange={(e) => setColorant(col.key, { name: e.target.value })}
-                      />
-                    </label>
+                )}
+                <div className="additive-list__choice">
+                  <span className="micro-label">Kind</span>
+                  {/* A catalog pick states its kind; only a custom colour has a choice. */}
+                  {entry ? (
+                    <p className="additive-list__stage-fixed">{KIND_LABELS[col.kind]}</p>
+                  ) : (
+                    <SegRadioGroup
+                      label={`Kind of ${rowName}`}
+                      name={`colorant-kind-${col.key}`}
+                      options={COLORANT_KINDS}
+                      value={col.kind}
+                      onChange={(kind) => setColorant(col.key, { kind })}
+                      preserveCase
+                    />
                   )}
                 </div>
-                {entry ? (
-                  <p className="additive-list__stage-fixed">{KIND_LABELS[col.kind]}</p>
-                ) : (
-                  <SegRadioGroup
-                    label={`Kind of ${rowName}`}
-                    name={`colorant-kind-${col.key}`}
-                    options={COLORANT_KINDS}
-                    value={col.kind}
-                    onChange={(kind) => setColorant(col.key, { kind })}
-                    preserveCase
-                  />
-                )}
-                <label className="field"><span>% of oils</span>
-                  <input className="input" inputMode="decimal" aria-label={`${rowName} % of oils`} placeholder="to shade" value={col.percent} onChange={(e) => setColorant(col.key, { percent: e.target.value })} />
+                <label className="ledger__row additive-list__amount">
+                  <span className="micro-label">Dose</span>
+                  <span className="ledger__figure">
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      max={100}
+                      step={0.01}
+                      /* No placeholder: the unit is a visible suffix inside the slab, and a
+                         word long enough to say "to shade" ran straight into it. The Adds
+                         row below says "to shade" instead, where there is room for it. */
+                      aria-label={`${rowName} % of oils`}
+                      value={col.percent}
+                      onChange={(e) => setColorant(col.key, { percent: e.target.value })}
+                    />
+                    <span className="ledger__unit">% of oils</span>
+                  </span>
                 </label>
-                {process !== 'ls' && (
-                  <label className="field"><span>Portion</span>
-                    <select className="input" aria-label={`${rowName} portion`} value={col.portionKey} onChange={(e) => setColorant(col.key, { portionKey: e.target.value })}>
+                {/* A portion picker with nothing to pick is not a control: it appears once
+                    the batter has actually been split. */}
+                {process !== 'ls' && scent.portions.length > 0 && (
+                  <label className="ledger__row">
+                    <span className="micro-label">Portion</span>
+                    <select
+                      className="input"
+                      aria-label={`${rowName} portion`}
+                      value={col.portionKey}
+                      onChange={(e) => setColorant(col.key, { portionKey: e.target.value })}
+                    >
                       <option value="">Whole batter</option>
-                      {scent.portions.map((p) => <option key={p.key} value={p.key}>{p.name.trim() || 'Portion'}</option>)}
+                      {scent.portions.map((p) => (
+                        <option key={p.key} value={p.key}>{p.name.trim() || 'Portion'}</option>
+                      ))}
                     </select>
                   </label>
                 )}
-                <div className="additive-list__grams">
-                  {c.grams !== null ? formatWeight(c.grams, weightUnit) : c.portionShareMissing ? "enter the portion's share" : 'to shade'}
+                <div className="additive-list__choice">
+                  <span className="micro-label">Add at</span>
+                  <p className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</p>
                 </div>
-                <div className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</div>
+                <div className="additive-list__foot">
+                  <span className="micro-label">Adds</span>
+                  <div className="additive-list__grams" aria-live="polite">
+                    {c.grams !== null
+                      ? formatWeight(c.grams, weightUnit)
+                      : c.portionShareMissing
+                        ? "enter the portion's share"
+                        : 'to shade'}
+                  </div>
+                </div>
                 <p className="inline-note additive-list__hint">
                   {/* The ladder carries the dose AND what it buys, so the plain band would
                       only repeat it more vaguely. One or the other, never both. */}

@@ -37,8 +37,22 @@ describe('FragrancePanel', () => {
     renderPanel(vanilla, 'cp');
     const input = screen.getByLabelText('Essential oil name');
     expect(input).toBeTruthy();
-    // The label element is rendered text, so a reader sees what the box is for.
-    expect(input.closest('label')!.querySelector('span')!.textContent).toBe('Essential oil');
+    // Rendered text above the row, so a reader sees what the box is for.
+    expect(input.closest('.additive-list__choice')!.querySelector('.micro-label')!.textContent)
+      .toBe('Essential oil');
+  });
+
+  it('lays a row out like an additive row, with its units inside the figure slabs', () => {
+    renderPanel(vanilla, 'cp');
+    const row = document.querySelector('.additive-list__row')!;
+    expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
+      .toEqual(['Essential oil', 'Dose', 'Max in product', 'Vanillin', 'Add at', 'Adds']);
+    expect([...row.querySelectorAll('.ledger__unit')].map((n) => n.textContent))
+      .toEqual(['% of oils', '%', '%']);
+    // and the dose unit follows the process
+    cleanup();
+    renderPanel(vanilla, 'ls');
+    expect(document.querySelector('.ledger__unit')!.textContent).toBe('% of solution');
   });
 
   it('labels the dose per process: % of oils for bars, % of solution for liquid soap', () => {

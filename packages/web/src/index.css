@@ -1256,13 +1256,19 @@ details[open] > .disclosure__summary::before {
    alternatives. NOT a ledger row: "LYE WATER" alone needs most of a quarter of the full
    column, so the four cells take the whole row and the label sits above them — the same
    trade .ledger--settings makes for its segs, one step further. */
-.additive-list__stage {
+/* A labelled choice inside an ingredient row: micro-label above a seg, or above the value
+   the entry pins itself to. Aliased because a colour row uses the same block twice — once
+   for the kind of colorant, once for the stage — and calling the first one "__stage" would
+   be a lie in the markup. */
+.additive-list__stage,
+.additive-list__choice {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.additive-list__stage .seg {
+.additive-list__stage .seg,
+.additive-list__choice .seg {
   display: flex;
 }
 
@@ -1270,7 +1276,8 @@ details[open] > .disclosure__summary::before {
    cell whose meaning lives in its preposition, so it is shown whole and takes two lines
    rather than being cut back to a word that says the opposite. Wrapping also lets the
    cells shrink to their longest WORD, so the strip fits a narrower column than before. */
-.additive-list__stage .seg__option {
+.additive-list__stage .seg__option,
+.additive-list__choice .seg__option {
   flex: 1 1 0;
   padding: 0.3rem 0.4rem;
   white-space: normal;

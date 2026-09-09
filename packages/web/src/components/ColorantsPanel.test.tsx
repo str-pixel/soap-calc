@@ -33,15 +33,56 @@ describe('ColorantsPanel', () => {
     renderPanel(blueMica, 'cp');
     const input = screen.getByLabelText('Colorant name');
     expect(input).toBeTruthy();
-    expect(input.closest('label')!.querySelector('span')!.textContent).toBe('Colorant name');
+    // A ledger row: the label sits in the row's own label column, same as an additive's.
+    expect(input.closest('label')!.querySelector('.micro-label')!.textContent).toBe('Name');
     expect((input as HTMLInputElement).value).toBe('Blue mica');
   });
 
-  it('the portion name field carries a visible label too', () => {
+  it('lays a row out like an additive row: ledger rows under a shared label column', () => {
+    renderPanel(blueMica, 'cp');
+    const row = document.querySelector('.additive-list__row')!;
+    // the pick and its × share the names grid
+    expect(row.querySelector('.additive-list__names select')).toBeTruthy();
+    // every row names its own primary control, the way the portion row does
+    // dose is a figure slab with its unit inside, not a full-width box
+    const dose = row.querySelector('.additive-list__amount .ledger__figure')!;
+    expect(dose.querySelector('input.figure-field')).toBeTruthy();
+    expect(dose.querySelector('.ledger__unit')!.textContent).toBe('% of oils');
+    // every labelled block names itself in the label column
+    expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
+      .toEqual(['Colorant', 'Name', 'Kind', 'Dose', 'Add at', 'Adds']);
+  });
+
+  it('offers no Portion control until the batter has actually been split', () => {
+    renderPanel(blueMica, 'cp');
+    expect(screen.queryByLabelText(/portion$/i)).toBeNull();
+    cleanup();
+    const withPortion = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ name: 'Blue mica', kind: 'mica', percent: '', portionKey: '' }],
+      portions: [{ name: 'Swirl', percent: '40' }],
+    });
+    renderPanel(withPortion, 'cp');
+    const picker = screen.getByLabelText(/portion$/i) as HTMLSelectElement;
+    expect([...picker.options].map((o) => o.text)).toEqual(['Whole batter', 'Swirl']);
+  });
+
+  it('the portion row carries a visible label and a figure slab, like every other row', () => {
     const withPortion = normalizeScentColor({ fragrances: [], colorants: [], portions: [{ name: 'Swirl', percent: '40' }] });
     renderPanel(withPortion, 'cp');
     const input = screen.getByLabelText('Portion name');
-    expect(input.closest('label')!.querySelector('span')!.textContent).toBe('Portion name');
+    expect(input.closest('.additive-list__choice')!.querySelector('.micro-label')!.textContent).toBe('Portion');
+    const share = screen.getByLabelText(/Portion Swirl % of batter/);
+    expect(share.closest('label')!.querySelector('.micro-label')!.textContent).toBe('Share');
+    expect(share.closest('.ledger__figure')!.querySelector('.ledger__unit')!.textContent).toBe('% of batter');
+  });
+
+  it('the dose slab carries no placeholder — it would collide with the unit inside it', () => {
+    renderPanel(blueMica, 'cp');
+    const dose = screen.getByLabelText(/Blue mica % of oils/) as HTMLInputElement;
+    expect(dose.placeholder).toBe('');
+    // "to shade" is said where there is room for it
+    expect(screen.getByText('to shade')).toBeTruthy();
   });
 
   it('typing a name reaches the caller', () => {

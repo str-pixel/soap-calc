@@ -78,9 +78,11 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
             const rowName = f.name.trim() || 'Essential oil';
             return (
               <li key={f.key} className="additive-list__row">
-                <div className="additive-list__names">
-                  <label className="field">
-                    <span>Essential oil</span>
+                {/* Same shape as an additive row: the name and its × on one line, then
+                    labelled ledger rows down a shared label column. */}
+                <div className="additive-list__choice">
+                  <span className="micro-label">Essential oil</span>
+                  <div className="additive-list__names">
                     <input
                       className="input"
                       aria-label="Essential oil name"
@@ -88,27 +90,74 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                       value={f.name}
                       onChange={(e) => setFragrance(f.key, { name: e.target.value })}
                     />
-                  </label>
-                  <button
-                    type="button"
-                    className="btn btn--icon"
-                    aria-label={`Remove ${rowName}`}
-                    onClick={() => onChange({ ...scent, fragrances: scent.fragrances.filter((x) => x.key !== f.key) })}
-                  >
-                    ×
-                  </button>
+                    <button
+                      type="button"
+                      className="btn btn--icon"
+                      aria-label={`Remove ${rowName}`}
+                      onClick={() => onChange({ ...scent, fragrances: scent.fragrances.filter((x) => x.key !== f.key) })}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
-                <label className="field"><span>{doseLabel}</span>
-                  <input className="input" inputMode="decimal" aria-label={`${rowName} ${doseLabel}`} value={f.percent} onChange={(e) => setFragrance(f.key, { percent: e.target.value })} />
+                <label className="ledger__row additive-list__amount">
+                  <span className="micro-label">Dose</span>
+                  <span className="ledger__figure">
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      aria-label={`${rowName} ${doseLabel}`}
+                      value={f.percent}
+                      onChange={(e) => setFragrance(f.key, { percent: e.target.value })}
+                    />
+                    <span className="ledger__unit">{doseLabel}</span>
+                  </span>
                 </label>
-                <label className="field"><span>Supplier max (% of finished product)</span>
-                  <input className="input" inputMode="decimal" aria-label={`${rowName} supplier max`} value={f.supplierMaxPercent} onChange={(e) => setFragrance(f.key, { supplierMaxPercent: e.target.value })} />
+                <label className="ledger__row additive-list__amount">
+                  <span className="micro-label">Max in product</span>
+                  <span className="ledger__figure">
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      aria-label={`${rowName} supplier max`}
+                      value={f.supplierMaxPercent}
+                      onChange={(e) => setFragrance(f.key, { supplierMaxPercent: e.target.value })}
+                    />
+                    <span className="ledger__unit">%</span>
+                  </span>
                 </label>
-                <label className="field"><span>Vanillin %</span>
-                  <input className="input" inputMode="decimal" aria-label={`${rowName} vanillin`} value={f.vanillinPercent} onChange={(e) => setFragrance(f.key, { vanillinPercent: e.target.value })} />
+                <label className="ledger__row additive-list__amount">
+                  <span className="micro-label">Vanillin</span>
+                  <span className="ledger__figure">
+                    <input
+                      type="number"
+                      className="input figure-field"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      aria-label={`${rowName} vanillin`}
+                      value={f.vanillinPercent}
+                      onChange={(e) => setFragrance(f.key, { vanillinPercent: e.target.value })}
+                    />
+                    <span className="ledger__unit">%</span>
+                  </span>
                 </label>
-                <div className="additive-list__grams">{c.grams > 0 ? formatWeight(c.grams, weightUnit) : '—'}</div>
-                <div className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</div>
+                <div className="additive-list__choice">
+                  <span className="micro-label">Add at</span>
+                  <p className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</p>
+                </div>
+                <div className="additive-list__foot">
+                  <span className="micro-label">Adds</span>
+                  <div className="additive-list__grams" aria-live="polite">
+                    {c.grams > 0 ? formatWeight(c.grams, weightUnit) : '—'}
+                  </div>
+                </div>
                 <FragranceNotes c={c} noun={noun} unit={weightUnit} />
                 <details className="scent-list__allergens">
                   <summary>Allergens ({f.allergens.length})</summary>
