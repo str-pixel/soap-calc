@@ -161,6 +161,8 @@ export type RecipeViewModel = {
    * floor/composition basis. Null before a dilution exists. */
   wholeBatchPasteGrams: number | null;
   batchWeightWithExtras: number;
+  /** Oils + lye + water — the soap batter itself, before any extra is folded in. */
+  baseBatchGrams: number;
   /** The Fragrance & colorants section, computed once (grams, stages, finished-product
    * shares, label allergens) — see lib/computeScentColor. */
   scentColor: ComputedScentColor;
@@ -1185,6 +1187,10 @@ export function useRecipeViewModel({
     finishedProductGrams,
     wholeBatchPasteGrams,
     batchWeightWithExtras,
+    /** Oils + lye + water: the soap batter, which is what a portion is a share OF. Distinct
+     * from batchWeightWithExtras, which folds in additives and scent mass that are not in
+     * the pot when the batter is divided. */
+    baseBatchGrams,
     liveOilBatchFraction,
     batchSheetData,
     soapingTempF,

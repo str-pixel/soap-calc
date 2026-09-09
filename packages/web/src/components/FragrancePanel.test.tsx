@@ -58,16 +58,16 @@ describe('FragrancePanel', () => {
     expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
       .toEqual(['Essential oil', 'Dose', 'Max in product', 'Vanillin', 'Add at', 'Adds']);
     expect([...row.querySelectorAll('.ledger__unit')].map((n) => n.textContent))
-      .toEqual(['% of oils', '%', '%']);
+      .toEqual(['% of oil weight', '%', '%']);
     // and the dose unit follows the process
     cleanup();
     renderPanel(vanilla, 'ls');
     expect(document.querySelector('.ledger__unit')!.textContent).toBe('% of solution');
   });
 
-  it('labels the dose per process: % of oils for bars, % of solution for liquid soap', () => {
+  it('labels the dose per process: % of oil weight for bars, % of solution for liquid soap', () => {
     renderPanel(vanilla, 'cp');
-    expect(screen.getByLabelText(/Vanilla dream.*% of oils/i)).toBeTruthy();
+    expect(screen.getByLabelText(/Vanilla dream.*% of oil weight/i)).toBeTruthy();
     cleanup();
     renderPanel(vanilla, 'ls');
     expect(screen.getByLabelText(/Vanilla dream.*% of solution/i)).toBeTruthy();

@@ -642,7 +642,7 @@ test('Full recipe (CP): base colour inside Oils, portion colours in a Colorants 
   expect(colorants.items[1].detail).toBe('1.6 g · 1% · Mix 1:1 with a light carrier oil (1.6 g)');
   const fragrance = sections.find((s) => s.heading === 'Fragrance')!;
   expect(fragrance.items.map((i) => i.name)).toEqual(['Vanilla dream', 'Vanilla stabilizer', 'Name on the label']);
-  expect(fragrance.items[0].detail).toBe('12 g · 3% of oils');
+  expect(fragrance.items[0].detail).toBe('12 g · 3% of oil weight');
   expect(fragrance.items[1].detail).toBe('12 g');
   expect(fragrance.items[2].detail).toBe('Linalool 0.24%');
 });

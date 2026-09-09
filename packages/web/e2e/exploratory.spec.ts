@@ -633,7 +633,7 @@ test.describe('essential oils & colorants', () => {
   test('HP: the scent is filed after the cook', async ({ page }) => {
     await processTab(page, /Hot process/).click();
     await page.getByRole('button', { name: /add essential oil/i }).click();
-    await page.getByLabel(/^Essential oil dose, % of oils/).fill('3');
+    await page.getByLabel(/^Essential oil dose, % of oil weight/).fill('3');
     await expect(section(page, 'Fragrance')).toBeVisible();
     await expect(fragrancePanel(page)).toContainText('After cook');
   });

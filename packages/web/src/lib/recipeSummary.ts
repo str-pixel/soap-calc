@@ -34,7 +34,9 @@ export function postCookSuperfatLineDetail(
 /** The dose label the Fragrance & colorants section derives per process: a bar is dosed
  * on the oils, a liquid soap on the finished solution. */
 export function fragranceDoseLabel(process: ProcessId): string {
-  return process === 'ls' ? '% of solution' : '% of oils';
+  // "of oil weight", not "of oils": the dose is a percent of what the recipe's oils weigh,
+  // not of the batter they end up in — the same distinction the colorant panel draws.
+  return process === 'ls' ? '% of solution' : '% of oil weight';
 }
 
 /** The one fragrance line detail the Full recipe and the printed sheet quote — "30 g · 3%
