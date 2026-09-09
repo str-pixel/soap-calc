@@ -50,12 +50,20 @@ describe('ColorantsPanel', () => {
     expect(dose.querySelector('.ledger__unit')!.textContent).toBe('% of oils');
     // every labelled block names itself in the label column
     expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
-      .toEqual(['Colorant', 'Name', 'Kind', 'Dose', 'Add at', 'Adds']);
+      .toEqual(['Colorant', 'Name', 'Kind', 'Dose', 'Portion', 'Add at', 'Adds']);
   });
 
-  it('offers no Portion control until the batter has actually been split', () => {
-    renderPanel(blueMica, 'cp');
-    expect(screen.queryByLabelText(/portion$/i)).toBeNull();
+  it('offers the batter or a portion as buttons, and making a split is one of them', () => {
+    // Nothing split yet: the choice is the whole batter, or a split made right here.
+    const onChange = renderPanel(blueMica, 'cp');
+    const seg = screen.getByRole('radiogroup', { name: /Blue mica portion/ });
+    expect([...seg.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['Whole batter', '+ Portion']);
+    fireEvent.click(screen.getByRole('radio', { name: 'New portion' }));
+    const next = onChange.mock.calls[0][0] as ScentColor;
+    // One gesture: the portion exists AND this colour is in it.
+    expect(next.portions).toHaveLength(1);
+    expect(next.colorants[0].portionKey).toBe(next.portions[0].key);
+
     cleanup();
     const withPortion = normalizeScentColor({
       fragrances: [],
@@ -63,8 +71,21 @@ describe('ColorantsPanel', () => {
       portions: [{ name: 'Swirl', percent: '40' }],
     });
     renderPanel(withPortion, 'cp');
-    const picker = screen.getByLabelText(/portion$/i) as HTMLSelectElement;
-    expect([...picker.options].map((o) => o.text)).toEqual(['Whole batter', 'Swirl']);
+    const seg2 = screen.getByRole('radiogroup', { name: /Blue mica portion/ });
+    expect([...seg2.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['Whole batter', 'Swirl', '+ Portion']);
+    expect((screen.getByRole('radio', { name: 'Whole batter' }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('numbers unnamed portions only once there is more than one to tell apart', () => {
+    const two = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ name: 'Blue mica', kind: 'mica', percent: '', portionKey: '' }],
+      portions: [{ name: '', percent: '40' }, { name: '', percent: '30' }],
+    });
+    renderPanel(two, 'cp');
+    const seg = screen.getByRole('radiogroup', { name: /Blue mica portion/ });
+    expect([...seg.querySelectorAll('label')].map((n) => n.textContent))
+      .toEqual(['Whole batter', 'Portion 1', 'Portion 2', '+ Portion']);
   });
 
   it('the portion row carries a visible label and a figure slab, like every other row', () => {
@@ -121,11 +142,14 @@ describe('ColorantsPanel', () => {
     const onChange = renderPanel(createEmptyScentColor(), 'ls');
     fireEvent.click(screen.getByRole('button', { name: /add colorant/i }));
     expect((onChange.mock.calls[0][0] as ScentColor).colorants[0]).toMatchObject({ kind: 'dye', percent: '' });
-    expect(screen.queryByRole('button', { name: /split the batter/i })).toBeNull();
+    // A bottle has no batter to divide, so the row carries no portion control at all.
     cleanup();
-    const onChangeCp = renderPanel(createEmptyScentColor(), 'cp');
-    fireEvent.click(screen.getByRole('button', { name: /split the batter/i }));
-    expect((onChangeCp.mock.calls[0][0] as ScentColor).portions).toHaveLength(1);
+    renderPanel(blueMica, 'ls');
+    expect(screen.queryByRole('radiogroup', { name: /portion$/i })).toBeNull();
+    // and the panel head has no split button in any process — the split is made per colour
+    cleanup();
+    renderPanel(createEmptyScentColor(), 'cp');
+    expect(screen.queryByRole('button', { name: /split the batter/i })).toBeNull();
   });
 
   it('shows the guidance in the active unit, the dispersal line, and "to shade" without a dose', () => {

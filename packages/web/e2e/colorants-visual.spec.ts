@@ -62,14 +62,15 @@ test.describe('colorants, seen in each process', () => {
     // The ladder is in the unit the field takes.
     await expect(panel(page)).toContainText(/0\.1% light grey/);
     await expect(panel(page)).toContainText(/Holds its colour/);
-    // No portion control until there is a portion to pick.
-    await expect(panel(page).getByLabel(/portion$/i)).toHaveCount(0);
+    // The batter-or-portion choice is a seg, and the split is made from it.
+    await expect(panel(page).getByRole('radiogroup', { name: /portion$/i })).toContainText('Whole batter');
     await page.screenshot({ path: `${SHOTS}/colorants-cp-whole.png`, fullPage: true });
 
-    await page.getByRole('button', { name: /split the batter/i }).click();
+    await panel(page).getByRole('radio', { name: 'New portion' }).click();
     await page.getByLabel('Portion name').fill('Swirl');
     await page.getByLabel(/Portion Swirl share/).fill('40');
-    await page.getByLabel(/Activated charcoal portion/).selectOption({ label: 'Swirl' });
+    // Choosing the split put the colour in it: no second control to set.
+    await expect(panel(page).getByRole('radio', { name: 'Swirl' })).toBeChecked();
     // A portion colour moves to trace, and its dose is now against the portion's oils.
     await expect(panel(page)).toContainText(/At trace/i);
     await expect(panel(page)).toContainText(/Portions total 40/);
@@ -94,10 +95,10 @@ test.describe('colorants, seen in each process', () => {
     await expect(panel(page)).toContainText(/post-cook superfat/i);
     await page.screenshot({ path: `${SHOTS}/colorants-hp-whole.png`, fullPage: true });
 
-    await page.getByRole('button', { name: /split the batter/i }).click();
+    await panel(page).getByRole('radio', { name: 'New portion' }).click();
     await page.getByLabel('Portion name').fill('Top');
     await page.getByLabel(/Portion Top share/).fill('30');
-    await page.getByLabel(/French green clay portion/).selectOption({ label: 'Top' });
+    await expect(panel(page).getByRole('radio', { name: 'Top' })).toBeChecked();
     // A portion colour waits for the cook, and gets the sugar-water dispersal.
     await expect(panel(page)).toContainText(/After cook/i);
     await expect(panel(page)).toContainText(/hot water and a pinch of sugar/);
@@ -119,8 +120,8 @@ test.describe('colorants, seen in each process', () => {
     await expect(panel(page)).toContainText(/Stir straight into the diluted soap/);
     // No temperature is prescribed, because no source gives one.
     await expect(panel(page)).not.toContainText(/warm water/i);
-    // A bottle has no batter to divide.
-    await expect(page.getByRole('button', { name: /split the batter/i })).toHaveCount(0);
+    // A bottle has no batter to divide, so the row carries no portion control.
+    await expect(panel(page).getByRole('radiogroup', { name: /portion$/i })).toHaveCount(0);
     // And no dose band is offered: every colorant rate in the app comes from a bar source.
     await expect(panel(page)).not.toContainText(/tsp per/);
     await expect(panel(page)).toContainText(/sink to the bottom of the bottle/);
@@ -200,11 +201,9 @@ test.describe('colorants, seen in each process', () => {
     await page.getByLabel(/Colorant for/).selectOption('madder-root');
     await panel(page).getByRole('radio', { name: 'In lye water' }).click();
 
-    // Splitting the batter cannot claim a colour that is in the pot before the batter is.
-    await page.getByRole('button', { name: /split the batter/i }).click();
-    await page.getByLabel('Portion name').fill('Swirl');
-    await page.getByLabel(/Portion Swirl share/).fill('40');
-    await expect(panel(page).getByLabel(/Madder root portion/)).toHaveCount(0);
+    // A colour in the pot before the batter exists cannot be split into a portion, so the
+    // control is gone entirely while the route is on.
+    await expect(panel(page).getByRole('radiogroup', { name: /Madder root portion/ })).toHaveCount(0);
 
     // The sources cover cold process only: the choice is gone in the other two.
     await processTab(page, /Hot process/).click();

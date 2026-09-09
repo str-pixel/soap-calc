@@ -37,6 +37,9 @@ type Props = {
 
 const COLORANT_GROUPS = colorantsByFamily();
 
+/** Seg value that means "make a new portion and put this colour in it" — never a key. */
+const NEW_PORTION = '__new-portion';
+
 const KIND_LABELS: Record<ColorantKind, string> = {
   mica: 'Mica',
   oxide: 'Oxide or ultramarine',
@@ -86,10 +89,18 @@ const COLORANT_KINDS: Array<{ value: ColorantKind; cell: string; name: string }>
 
    Reworded, not quoted. */
 const PROCESS_COPY: Record<ProcessId, string> = {
-  cp: 'Aim the colour at the bar, not at the wash: overdo it and the pigment travels into the lather and marks the tub, the towels and your skin. One colour for the whole batch goes in with the oils; to colour parts of it, split the batter first and add them at trace. Work each powder into an equal weight of light carrier oil — that oil rides on the recipe as extra superfat.',
-  hp: 'One colour for the whole batch goes in with the oils, where the blender can work it through evenly. To colour parts of the batch, split the batter and colour each part after the cook. The solvent is yours to pick: hot sugar water is a common choice and the sugar buys a little extra lather, while oil serves just as well and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
+  cp: 'Aim the colour at the bar, not at the wash: overdo it and the pigment travels into the lather and marks the tub, the towels and your skin. One colour for the whole batch goes in with the oils; to colour part of it, give that colour its own portion and it goes in at trace. Work each powder into an equal weight of light carrier oil — that oil rides on the recipe as extra superfat.',
+  hp: 'One colour for the whole batch goes in with the oils, where the blender can work it through evenly. To colour part of the batch, give that colour its own portion and it goes in after the cook. The solvent is yours to pick: hot sugar water is a common choice and the sugar buys a little extra lather, while oil serves just as well and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
   ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm anywhere from bright orange to deep red, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
 };
+
+/** A portion's name in a one-line control. Unnamed portions are told apart by number,
+ * but only once there is more than one — a lone unnamed portion is just "Portion". */
+function portionLabel(p: { name: string }, index: number, total: number): string {
+  const typed = p.name.trim();
+  if (typed) return typed;
+  return total > 1 ? `Portion ${index + 1}` : 'Portion';
+}
 
 export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, onChange }: Props) {
   const setColorant = (key: string, patch: Partial<ColorantLine>) =>
@@ -118,6 +129,17 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
       viaLye: false,
     });
   };
+  /** Split the batter FOR this colour: a new portion, and the colour moved into it. The
+   * split exists because a colour wants its own share, so making one is the same gesture
+   * as choosing one. */
+  const splitInto = (colorantKey: string) => {
+    const portion = newPortion();
+    onChange({
+      ...scent,
+      portions: [...scent.portions, portion],
+      colorants: scent.colorants.map((c) => (c.key === colorantKey ? { ...c, portionKey: portion.key } : c)),
+    });
+  };
   const removePortion = (key: string) =>
     onChange({
       ...scent,
@@ -144,16 +166,6 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
           >
             + Add colorant
           </button>
-          {process !== 'ls' && (
-            <button
-              type="button"
-              className="btn btn--ghost"
-              disabled={scent.portions.length >= MAX_SCENT_ROWS}
-              onClick={() => onChange({ ...scent, portions: [...scent.portions, newPortion()] })}
-            >
-              Split the batter
-            </button>
-          )}
         </div>
       </div>
 
@@ -309,25 +321,34 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                     <span className="ledger__unit">% of oils</span>
                   </span>
                 </label>
-                {/* A portion picker with nothing to pick is not a control: it appears once
-                    the batter has actually been split. A colour going through the lye is in
-                    the pot before there is a batter to split, so it drops the picker too —
-                    the stored pick survives, and comes back if the route is switched off. */}
-                {process !== 'ls' && scent.portions.length > 0 && !c.viaLye && (
-                  <label className="ledger__row">
+                {/* Where the colour goes, as the same black-and-white seg an additive's
+                    stage uses. This is also where a split is MADE — a batter is split
+                    because a colour needs its own share, so the choice and the split are
+                    one control rather than a button somewhere above. A colour going
+                    through the lye drops it: it is in the pot before there is a batter to
+                    split, and its stored pick comes back if the route is switched off. */}
+                {process !== 'ls' && !c.viaLye && (
+                  <div className="additive-list__choice">
                     <span className="micro-label">Portion</span>
-                    <select
-                      className="input"
-                      aria-label={`${rowName} portion`}
+                    <SegRadioGroup
+                      label={`${rowName} portion`}
+                      name={`colorant-portion-${col.key}`}
+                      options={[
+                        { value: '', cell: 'Whole batter', name: 'Whole batter' },
+                        ...scent.portions.map((p, pi) => ({
+                          value: p.key,
+                          cell: portionLabel(p, pi, scent.portions.length),
+                          name: portionLabel(p, pi, scent.portions.length),
+                        })),
+                        ...(scent.portions.length < MAX_SCENT_ROWS
+                          ? [{ value: NEW_PORTION, cell: '+ Portion', name: 'New portion' }]
+                          : []),
+                      ]}
                       value={col.portionKey}
-                      onChange={(e) => setColorant(col.key, { portionKey: e.target.value })}
-                    >
-                      <option value="">Whole batter</option>
-                      {scent.portions.map((p) => (
-                        <option key={p.key} value={p.key}>{p.name.trim() || 'Portion'}</option>
-                      ))}
-                    </select>
-                  </label>
+                      onChange={(v) => (v === NEW_PORTION ? splitInto(col.key) : setColorant(col.key, { portionKey: v }))}
+                      preserveCase
+                    />
+                  </div>
                 )}
                 <div className="additive-list__choice">
                   <span className="micro-label">Add at</span>
