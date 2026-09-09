@@ -158,7 +158,13 @@ export function computeScentColorGrams(
       dispersal: colorantDispersal(process, grams, portion !== undefined, viaLye, mixedWith),
     };
   });
-  const portionTotal = portionsTotalPercent(portions);
+  // Only the shares a colour actually holds are counted. A share exists BECAUSE a colour
+  // asked for it, so in practice this is every portion — except where the process itself
+  // refuses them: a liquid soap has no batter, its colours hold nothing, and a total (and an
+  // over-100 warning) drawn from portions nothing points at would describe shares no control
+  // in that process can show or reach.
+  const claimed = new Set(colorants.map((c) => c.portionKey).filter(Boolean));
+  const portionTotal = portionsTotalPercent(portions.filter((p) => claimed.has(p.key)));
   const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
   const fragranceTotal = sum(fragrances.map((f) => f.grams));
   const stabilizerGrams = sum(fragrances.map((f) => f.stabilizerGrams));

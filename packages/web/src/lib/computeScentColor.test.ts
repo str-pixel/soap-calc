@@ -188,3 +188,29 @@ describe("a vein's oil is oil the recipe carries", () => {
     }
   });
 });
+
+describe('the batter total counts only shares a colour holds', () => {
+  const twoShares = normalizeScentColor({
+    fragrances: [],
+    colorants: [
+      { catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0' },
+      { catalogId: 'iron-oxide', name: '', kind: 'oxide', percent: '1', portionKey: '#1' },
+    ],
+    portions: [{ name: 'A', percent: '70' }, { name: 'B', percent: '70' }],
+  });
+
+  it('adds them up and flags over-100 where there IS a batter', () => {
+    const cp = computeScentColorGrams(twoShares, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
+    expect(cp.portionsTotalPercent).toBe(140);
+    expect(cp.portionsOver100).toBe(true);
+  });
+
+  it('counts nothing in a liquid soap, which has no batter to divide', () => {
+    // The colours already hold no share there; the total must say the same thing, or the
+    // over-100 warning describes shares no control in that process can show or reach.
+    const ls = computeScentColorGrams(twoShares, { process: 'ls', totalOilGrams: 1000, solutionGrams: 3000, deliveredSuperfatPercent: 2 });
+    expect(ls.colorants.map((c) => c.portionKey)).toEqual(['', '']);
+    expect(ls.portionsTotalPercent).toBe(0);
+    expect(ls.portionsOver100).toBe(false);
+  });
+});
