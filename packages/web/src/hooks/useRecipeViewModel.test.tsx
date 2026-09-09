@@ -1220,3 +1220,20 @@ test('a whole-batter colour is in the batter with its carrier oil; a portion col
   // colours its own 40% share AFTER the split, so none of it counts here.
   expect(v.batterAtTraceGrams).toBeCloseTo(v.baseBatchGrams + v.totalOilGrams * 0.02, 6);
 });
+
+test('an alternative liquid is in the pot too, and the batter figure counts it', () => {
+  let vm: { baseBatchGrams: number; batterAtTraceGrams: number | null } | null = null;
+  probe((v) => { vm = v as never; }, {
+    waterMode: 'percent_of_oils',
+    waterPercentOfOils: '33',
+    splitLiquids: [
+      { key: 'm', presetKey: 'milk', name: 'Milk', customWaterPercent: '', sizeMode: 'percent_of_liquid', amount: '25', addAt: 'lye' },
+      { key: 'a', presetKey: 'aloe-juice', name: 'Aloe', customWaterPercent: '', sizeMode: 'grams', amount: '50', addAt: 'top' },
+    ],
+  } as never);
+  const v = vm!;
+  // The milk carve is a quarter of a 33%-of-oils budget: 8.25% of the oils, in the pot.
+  // The aloe goes on top, after the split, so it stays out.
+  const oils = 1000;
+  expect(v.batterAtTraceGrams).toBeCloseTo(v.baseBatchGrams + oils * 0.0825, 1);
+});

@@ -864,8 +864,16 @@ export function useRecipeViewModel({
       (sum, f) => (f.stage === 'after_cook' ? sum : sum + f.grams + f.stabilizerGrams),
       0,
     );
-    return baseBatchGrams + additiveMass + colourMass + scentMass;
-  }, [baseBatchGrams, computedAdditives, scentGrams]);
+    // An alternative liquid is in the pot too, and it is NOT already counted: baseBatchGrams
+    // carries the recipe's own (possibly carved-down) water, never the milk or purée that
+    // replaced part of it. A 25% carve is 82 g on a 1 kg-oil batch — more than a whole
+    // ordinary additive load.
+    const liquidMass = (resolvedSplit?.rows ?? []).reduce(
+      (sum, r) => (r.row.addAt === 'lye' || r.row.addAt === 'oils' || r.row.addAt === 'trace' ? sum + (r.grams ?? 0) : sum),
+      0,
+    );
+    return baseBatchGrams + additiveMass + colourMass + scentMass + liquidMass;
+  }, [baseBatchGrams, computedAdditives, scentGrams, resolvedSplit]);
   const extrasGrams = computeExtrasGrams(
     computedAdditives,
     splitLiquidGrams,
