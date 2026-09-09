@@ -72,6 +72,14 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
+      # Playwright's dep install runs `apt-get update`, which fails the whole job when ANY
+      # configured repo is inconsistent — and the runner ships Google's Chrome repo, which
+      # served a mismatched index for hours on 2026-09-09 and took every push down with it.
+      # Nothing here installs from it: the browser comes from Playwright's own download and
+      # its libraries come from Ubuntu's repos. So it goes before apt is asked anything.
+      - name: Drop the Google Chrome apt source (not used, and breaks apt when it is stale)
+        run: sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
+
       # --with-deps pulls the OS libraries the browser needs; skip it on a cache hit, when
       # only the binary was restored.
       - run: npx playwright install --with-deps chromium
