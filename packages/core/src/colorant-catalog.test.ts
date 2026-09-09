@@ -104,7 +104,8 @@ describe('the colorant catalog is internally sound', () => {
     const alkanet = colorantEntryById('alkanet-root')!;
     expect(alkanet.tspPerLbLow).toBeNull();
     expect(alkanet.note).toMatch(/infusion/i);
-    expect(alkanet.note).toMatch(/per pound of infusing oil/i);
+    // it names the other denominator in words rather than shipping it as a rate
+    expect(alkanet.note).toMatch(/to a pound of the oil you steep it in/i);
   });
 
   it('the oxide note carries the colour-by-colour spread the single rate hides', () => {
@@ -116,12 +117,14 @@ describe('the colorant catalog is internally sound', () => {
   it('the source warnings ride with the materials they belong to', () => {
     // Betalains do not survive the alkali (CP:9367-9372).
     expect(colorantEntryById('beet-root')!.note).toMatch(/never the red/i);
+    // and the general caution names where those pigments actually end up
+    expect(NATURAL_COLORANT_CAUTION).toMatch(/land on brown/i);
     // A mica must be labelled for cold process (CP:9296-9302), and the note names WHY some
     // shift: it is the dye on the mica, not the mica, that fails at soap pH.
-    expect(colorantEntryById('mica')!.note).toMatch(/labels for cold process/i);
-    expect(colorantEntryById('mica')!.note).toMatch(/what dyed it/i);
+    expect(colorantEntryById('mica')!.note).toMatch(/labelled for cold process/i);
+    expect(colorantEntryById('mica')!.note).toMatch(/dye on the mica that decides/i);
     // Dyes bleed and are unstable; the source advises against them (CP:9269-9272).
-    expect(colorantEntryById('fdc-dye')!.note).toMatch(/bleeds/i);
+    expect(colorantEntryById('fdc-dye')!.note).toMatch(/creeps across a layer line/i);
     // And the general caution names both classic disappointments.
     expect(NATURAL_COLORANT_CAUTION).toMatch(/anthocyanins/i);
     expect(NATURAL_COLORANT_CAUTION).toMatch(/betalains/i);

@@ -617,7 +617,7 @@ test.describe('essential oils & colorants', () => {
     await expect(colorantsPanel(page).getByLabel('Colorant name')).toHaveCount(0);
     await expect(colorantsPanel(page)).toContainText('Natural powder');
     await expect(colorantsPanel(page)).toContainText(/never the red it is in the jar/i);
-    await expect(colorantsPanel(page)).toContainText(/anthocyanins and betalains/i);
+    await expect(colorantsPanel(page)).toContainText(/anthocyanins in berries/i);
     await page.getByLabel(/Beet root dose/).fill('1');
     // A whole-batter colour goes in WITH the oils, so it lists there — the Colorants
     // section is for the portion colours added at the design stage.

@@ -198,7 +198,7 @@ describe('ColorantsPanel', () => {
     });
     renderPanel(beet, 'cp');
     expect(screen.getByText(/never the red it is in the jar/i)).toBeTruthy();
-    expect(screen.getByText(/anthocyanins and betalains/i)).toBeTruthy();
+    expect(screen.getByText(/anthocyanins in berries/i)).toBeTruthy();
   });
 
   it('a dual-purpose material says where else it belongs', () => {

@@ -147,7 +147,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     tspPerLbLow: 0.5, tspPerLbHigh: 2,
     // CP:9296-9302: must be tested and approved for cold process; colour can morph under
     // alkaline and high-heat conditions, and an unlabelled mica is not recommended.
-    note: 'Whether a mica survives depends on what dyed it: one coloured with mineral pigment holds, one dyed with a lake shifts at soap pH — a blue can read lavender, or grey. Use one your supplier labels for cold process, and test it. Too much stains the lather.',
+    note: 'It is the dye on the mica that decides, not the mica: mineral-pigment ones hold, lake-dyed ones turn at soap pH, and a blue may come out lavender or a flat grey. Buy one labelled for cold process and prove it on a small batch. Too much of any of them stains the lather.',
     stability: 'shifts',
     shades: [
       { tspPerLb: 0.5, colour: 'pastel' },
@@ -167,21 +167,24 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   {
     id: 'ultramarine', name: 'Ultramarine', kind: 'oxide', family: 'multi',
     tspPerLbLow: 1, tspPerLbHigh: 1,
-    note: 'Opaque and steadfast, like the oxides. Externally applied cosmetics only.',
+    note: 'Opaque and steadfast, like the oxides.',
     stability: 'stable',
   },
   {
     id: 'titanium-dioxide', name: 'Titanium dioxide', kind: 'oxide', family: 'white',
     tspPerLbLow: 0.25, tspPerLbHigh: 1,
     alsoAdditiveId: 'titanium-dioxide', additiveIsSameMaterial: true,
-    note: 'An opaque, steadfast white that also lightens every colour it shares a batch with. It is prone to glycerin rivers, more so dispersed in water than in oil, and too much leaves a chalky bar and a pasty lather.',
+    // The source names it as the base under a pastel soap (CP:9403), which is the same
+    // fact as "it lightens what it is mixed with"; the rivers and the dulling are the
+    // supplier pages cited in the header.
+    note: 'An opaque, steadfast white, and the usual base under a pastel — it lightens whatever it is mixed with. It brings on glycerin rivers, more readily dispersed in water than in oil, and too much of it dulls both the bar and the lather.',
     stability: 'stable',
   },
   {
     id: 'fdc-dye', name: 'FD&C / D&C dye', kind: 'dye', family: 'multi',
     tspPerLbLow: 0.25, tspPerLbHigh: 0.25,
     // CP:9269-9272: bleeding, heat and UV unstable, not recommended for CP by the source.
-    note: 'Water soluble and vivid, but it bleeds between layers, morphs at soap pH and fades in light — the cold-process source advises against it in a bar.',
+    note: 'Water soluble and vivid, and the least suited of these to a bar: it creeps across a layer line, turns at soap pH, and gives up its colour in daylight.',
     stability: 'fades',
   },
   {
@@ -196,7 +199,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   {
     id: 'indigo', name: 'Indigo powder', kind: 'natural', family: 'blue',
     tspPerLbLow: 0.25, tspPerLbHigh: 0.5,
-    note: 'Test your own product first — saturation genuinely varies between suppliers, and a concentrated grade needs a fraction of this. Past the top of that range the lather goes blue and stains cloth, and overdosed it reads green rather than a darker blue. How you deliver it matters as much as how much: through the lye solution it colours harder than dispersed in oil.',
+    note: 'Test your own product first — saturation genuinely varies between suppliers, and a concentrated grade needs a fraction of this. Past the top of that range the lather can come out blue and mark a tub or a cloth, and makers who overdo it report green rather than a deeper blue. It barely disperses in water, so it goes into the lye or into an infused oil.',
     stability: 'shifts',
   },
   { id: 'woad', name: 'Woad', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
@@ -204,7 +207,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'blue-cornmeal', name: 'Blue cornmeal', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
 
   // --- Green (CP:9343-9345) -----------------------------------------------------------
-  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 0.5, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This goes olive within a couple of months and settles at a khaki tan; daylight speeds it, a dark cupboard slows it. Mix it into an equal weight of water first.', stability: 'fades' },
+  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 0.5, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one slides towards olive and ends up a khaki tan; light hurries it along and a dark cupboard holds it back. Wet it in the same weight of water before it goes in.', stability: 'fades' },
   { id: 'nettle', name: 'Nettle leaf powder', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
   { id: 'wheatgrass', name: 'Wheatgrass', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'fades' },
   { id: 'spinach-powder', name: 'Spinach powder', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
@@ -216,21 +219,21 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'annatto', name: 'Annatto', kind: 'natural', family: 'yellow', tspPerLbLow: 0.125, tspPerLbHigh: 1, note: 'The rate above is for the powder added directly. Ground seed is coarse and many makers infuse it into an oil instead, which is a different measurement entirely.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light orange, visibly grainy' }, { tspPerLb: 0.5, colour: 'orange' }, { tspPerLb: 1, colour: 'deep orange' }] },
   { id: 'turmeric', name: 'Turmeric', kind: 'natural', family: 'yellow', tspPerLbLow: 0.03, tspPerLbHigh: 1, note: 'A very little goes a long way. Premix it in oil; it does not disperse in water. Powder colours harder than an infusion but fades harder too — an infused oil holds longer.', shades: [{ tspPerLb: 0.03, colour: 'soft yellow' }, { tspPerLb: 1, colour: 'burnt orange' }], stability: 'fades' },
   { id: 'calendula', name: 'Calendula petals', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
-  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'That rate is for the powder stirred in directly, which leaves the bar scratchy and freckled and speeds up trace — an infusion is the better route for this one.', stability: 'fades' },
+  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'That rate is for the powder stirred in directly, which leaves grit and specks in the bar and hurries trace along — an infusion is the kinder route for this one.', stability: 'fades' },
   { id: 'curry-powder', name: 'Curry powder', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
   { id: 'carrot-puree', name: 'Carrot puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'pumpkin-puree', name: 'Pumpkin puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
 
   // --- Red and pink (CP:9362-9363) ----------------------------------------------------
-  { id: 'madder-root', name: 'Madder root', kind: 'natural', family: 'red', tspPerLbLow: 0.5, tspPerLbHigh: 2, note: 'Gel decides the hue, not just the depth: gelled runs coral to brick red, ungelled runs dusty rose to mauve, and the two diverge further the more you use. Added at trace rather than infused it leaves small speckles.', stability: 'stable' },
+  { id: 'madder-root', name: 'Madder root', kind: 'natural', family: 'red', tspPerLbLow: 0.5, tspPerLbHigh: 2, note: 'Gel decides the hue, not just the depth: gelled runs coral to brick red, ungelled runs dusty rose to mauve, and the gap widens the more you use. Stirred in at trace rather than infused, it specks.', stability: 'stable' },
   { id: 'cochineal', name: 'Cochineal', kind: 'natural', family: 'red', tspPerLbLow: null, tspPerLbHigh: null, note: 'An insect-derived pigment — not vegan.' },
   { id: 'rhubarb-powder', name: 'Rhubarb powder', kind: 'natural', family: 'red', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'pink-kaolin', name: 'Pink kaolin clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'pink' }, { tspPerLb: 3, colour: 'deeper pink' }] },
   { id: 'red-clay', name: 'Moroccan red clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'soft pink-brown' }, { tspPerLb: 3, colour: 'deeper brown' }] },
 
   // --- Purple (CP:9364) ---------------------------------------------------------------
-  { id: 'alkanet-root', name: 'Alkanet root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null, note: 'No direct rate: added as powder it grits and dulls, so the sourced route is an infusion — around three tablespoons of dried root per pound of infusing oil. Poor-quality root reads warm grey rather than purple — if the infused oil is not ruby red before you soap, the bars will not turn purple. Extra virgin olive oil fights the colour; use pomace.', stability: 'shifts' },
+  { id: 'alkanet-root', name: 'Alkanet root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null, note: 'No direct rate: the powder grits and dulls, so the route with a figure behind it is an infusion — roughly three tablespoons of dried root to a pound of the oil you steep it in. Judge it before you soap. The oil should be a deep red by then; a pale or brownish one gives warm grey instead of purple, and poor-quality root does the same. Extra virgin olive oil fights the colour, so steep it in pomace.', stability: 'shifts' },
   { id: 'gromwell-root', name: 'Gromwell root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'purple-clay', name: 'Brazilian purple clay', kind: 'natural', family: 'purple', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
 
@@ -252,7 +255,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'poppy-seeds', name: 'Poppy seeds', kind: 'natural', family: 'black', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'seeds', note: 'Specks rather than a wash of colour, and they scrub.' },
 
   // --- White (CP:9365) ----------------------------------------------------------------
-  { id: 'kaolin-clay', name: 'Kaolin clay', kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', note: 'Every clay drinks water and thickens the batter, so expect a faster trace. Disperse it in water first or the bar can crack.', stability: 'stable' },
+  { id: 'kaolin-clay', name: 'Kaolin clay', kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', note: 'Clay pulls water out of the batter and stiffens it, so trace arrives sooner than you planned. Wet it in water before it goes in, or the bar can crack.', stability: 'stable' },
   { id: 'fullers-earth', name: "Fuller's earth", kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
 ];
 
@@ -290,4 +293,4 @@ export function colorantsByFamily(): Array<{ family: ColorantFamily; label: stri
  * (blueberry, cherry) and betalains (beet) are the named examples — neither survives.
  */
 export const NATURAL_COLORANT_CAUTION =
-  'Many plant pigments do not survive soap: the alkali, the heat and the air change them. Anthocyanins and betalains are the classic disappointments — blueberry will not read blue and beet will not read red.';
+  'A plant pigment has to survive the alkali, the heat of saponification and the air, and many do not. The two that catch people out are the anthocyanins in berries and the betalains in beetroot: neither keeps its colour, and both land on brown.';

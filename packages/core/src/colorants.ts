@@ -5,7 +5,7 @@ import { GRAMS_PER_OZ } from './units.js';
 
 /**
  * Colorant math. There is no sourced dose for a colorant — the cold-process text says so
- * ("There isn't a 'set' amount", CP:9384) and then gives a rule of thumb whose own worked
+ * ("There isn't a 'set' amount", CP:9376) and then gives a rule of thumb whose own worked
  * example disagrees with it (0.1% stated; 4 g per 450 g ≈ 0.89% shown; CP:9389-9391). The
  * trade doses by volume (½–2 tsp per lb of oils). Every percent here is DERIVED and the
  * guidance copy says so; the dose field starts empty everywhere.
@@ -57,8 +57,9 @@ export function portionOilGrams(totalOilGrams: number, portionPercent: number | 
 }
 
 /** The book's rate is for a single-colour soap; each colour is dosed against the oils it
- * actually colours, or a three-way swirl would carry three times the pigment —
- * "colour the soap, not the lather" (CP:9378-9379). Null = to shade. */
+ * actually colours, or a three-way swirl would carry three times the pigment. The rule it
+ * serves is the source's own: colour belongs to the soap rather than the lather, and too
+ * much of it migrates into the lather and stains tub, towels and skin (CP:9378-9385). */
 export function colorantGrams(percent: number | null, portionOilGrams: number): number | null {
   if (!finite(percent) || percent <= 0) return null;
   // The additive multiplier is the one source of percent-of-basis math.

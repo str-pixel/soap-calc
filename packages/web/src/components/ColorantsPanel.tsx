@@ -48,14 +48,17 @@ const COLORANT_KINDS: Array<{ value: ColorantKind; cell: string; name: string }>
   { value: 'other', cell: 'Other', name: 'Other' },
 ];
 
-/* Process copy. CP colours the soap, not the lather (CP:9376-9379); a whole-batter colour
-   goes into the oils and a portion colour in at trace (CP:9401-9404), each powder dispersed
-   1:1 in a light carrier oil rather than water or glycerin (CP:9395-9400). HP sends a single
-   colour straight into the oils (HP:11330-11334) and colours portions after the cook, each in
-   a little hot sugar water (HP:11319-11321). LS colours the diluted soap (LS:13256, 13262);
-   micas and oxides settle out of a liquid (LS:13390). */
+/* Process copy. The cold-process source's rule of thumb is that the colour belongs to the
+   bar and not to the wash — overdose it and the pigment migrates into the lather, staining
+   tub, towels and skin (CP:9376-9385). A whole-batter colour goes into the oils and a portion
+   colour in at trace (CP:9396-9404), each powder dispersed 1:1 in a light carrier oil rather
+   than water or glycerin, which the source prefers because it does not raise the risk of
+   gelling or glycerin sweating (CP:9395-9400). HP sends a single colour straight into the
+   oils (HP:11330-11334) and colours portions after the cook, each in a little hot sugar water
+   (HP:11319-11321). LS colours the diluted soap (LS:13256, 13262); micas and oxides settle
+   out of a liquid (LS:13390). Reworded, not quoted. */
 const PROCESS_COPY: Record<ProcessId, string> = {
-  cp: 'Colour the soap, not the lather. One colour for the whole batch goes in with the oils; split the batter first to colour parts of it at trace. Disperse each powder 1:1 in a light carrier oil — that oil rides on the recipe as extra superfat.',
+  cp: 'Aim the colour at the bar, not at the wash: overdo it and the pigment travels into the lather and marks the tub, the towels and your skin. One colour for the whole batch goes in with the oils; to colour parts of it, split the batter first and add them at trace. Work each powder into an equal weight of light carrier oil — that oil rides on the recipe as extra superfat.',
   hp: 'One colour for the whole batch goes in with the oils. To colour parts of the batch, split the batter and add each colour after the cook, dispersed in a little hot sugar water.',
   ls: 'Colour goes in after the dilution. A water-soluble dye stays in solution; micas and oxides settle out and need shaking before use.',
 };
