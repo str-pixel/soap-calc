@@ -109,6 +109,9 @@ export function colorantDispersalText(d: ColorantDispersal, unit: WeightUnit): s
     case 'into-solution':
       // No source prescribes a temperature; a dye is water soluble and often already liquid.
       return 'Stir straight into the diluted soap';
+    case 'lye-solution':
+      // The solution is already water, so it is the solvent — nothing else disperses it.
+      return 'Stir into the lye solution itself — it needs no other solvent';
   }
 }
 

@@ -4,6 +4,9 @@ import {
   COLORANT_CATALOG,
   COLORANT_FAMILY_LABELS,
   colorantEntryById,
+  COLORANT_LYE_ABSORPTION_CAUTION,
+  COLORANT_LYE_ROUTE_CAUTION,
+  COLORANT_LYE_ROUTE_PROCESSES,
   colorantsByFamily,
   colorantSharesMaterialWithAdditive,
   NATURAL_COLORANT_CAUTION,
@@ -203,5 +206,49 @@ describe('the faders that stayed say how fast, where a source says', () => {
     expect(note).toMatch(/it fades/i);
     expect(note).toMatch(/nobody puts a clock on how fast/i);
     expect(note).not.toMatch(/weeks|months/i);
+  });
+});
+
+describe('the lye-solution route', () => {
+  it('is offered only for cold process, which is the only one the sources cover', () => {
+    expect([...COLORANT_LYE_ROUTE_PROCESSES]).toEqual(['cp']);
+  });
+
+  it('rides only on colours a source actually puts in the lye', () => {
+    const routed = COLORANT_CATALOG.filter((e) => e.lyeRoute).map((e) => e.id);
+    // Confirmed by the research: indigo, madder, calendula, every clay, charcoal,
+    // spirulina, cocoa, walnut, cinnamon, paprika and the purées.
+    for (const id of ['indigo', 'madder-root', 'calendula', 'kaolin-clay', 'activated-charcoal', 'cocoa-powder']) {
+      expect(routed).toContain(id);
+    }
+    // NOT offered where the sources put it elsewhere or say nothing: alkanet's route is an
+    // oil infusion, and no source sends a mica or an oxide through the lye.
+    for (const id of ['alkanet-root', 'mica', 'iron-oxide', 'turmeric', 'annatto']) {
+      expect(routed).not.toContain(id);
+    }
+  });
+
+  it('every routed colour says what the route buys it', () => {
+    for (const e of COLORANT_CATALOG) {
+      if (!e.lyeRoute) continue;
+      expect(e.lyeRoute.note.trim()).not.toBe('');
+    }
+    // and the two shared cautions carry the caustic warning and the absorption failure
+    expect(COLORANT_LYE_ROUTE_CAUTION).toMatch(/caustic/i);
+    expect(COLORANT_LYE_ABSORPTION_CAUTION).toMatch(/30 g of root in 160 g of water/);
+    // stated as what happened, not as a published ceiling
+    expect(COLORANT_LYE_ABSORPTION_CAUTION).toMatch(/never set/i);
+  });
+
+  it('indigo names the dry-lye route and the smell, madder names the straining', () => {
+    expect(colorantEntryById('indigo')!.lyeRoute!.note).toMatch(/dry lye/i);
+    expect(colorantEntryById('indigo')!.lyeRoute!.note).toMatch(/pungent/i);
+    expect(colorantEntryById('madder-root')!.lyeRoute!.note).toMatch(/strain/i);
+    // Calendula is the one that stays in.
+    expect(colorantEntryById('calendula')!.lyeRoute!.note).toMatch(/unstrained/i);
+    // A clay needs no extra water on this route, unlike at trace.
+    expect(colorantEntryById('kaolin-clay')!.lyeRoute!.note).toMatch(/no extra water/i);
+    // A purée displaces the water instead.
+    expect(colorantEntryById('carrot-puree')!.lyeRoute!.note).toMatch(/displaces it/i);
   });
 });

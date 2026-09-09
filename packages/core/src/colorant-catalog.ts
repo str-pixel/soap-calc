@@ -1,3 +1,4 @@
+import type { AdditiveProcess } from './additives.js';
 import type { ColorantKind } from './colorants.js';
 
 /**
@@ -127,6 +128,10 @@ export type ColorantCatalogEntry = {
   note?: string;
   /** Dose to colour, lightest first — what the maker actually wants to know. */
   shades?: readonly ColorantShade[];
+  /** Present when this colour can go into the LYE SOLUTION instead of the oils or the
+   * batter, with what that route buys and what it costs. Cold process only — see
+   * COLORANT_LYE_ROUTE_PROCESSES. */
+  lyeRoute?: { note: string };
   /** How the colour holds up over months. Absent where no source says. */
   stability?: ColorantStability;
   /** The additive-catalog entry that covers this material when it is dosed for a non-colour
@@ -137,6 +142,38 @@ export type ColorantCatalogEntry = {
    * where dosing both can be called dosing one thing twice. */
   additiveIsSameMaterial?: true;
 };
+
+/**
+ * The lye-solution route is a COLD PROCESS technique in the sources. Every substantive one
+ * frames it that way, and one supplier's own extract says "For cold process soap only".
+ * Hot process is mechanically possible — it makes a lye solution too — but the only report
+ * found is a failure, an indigo that ended "an icky yellowish pea green after less than two
+ * months". For liquid soap no source applies the route at all: that is undocumented rather
+ * than ruled out, and the app offers what is documented.
+ */
+export const COLORANT_LYE_ROUTE_PROCESSES: readonly AdditiveProcess[] = ['cp'];
+
+/**
+ * What every lye-routed colour shares, whatever the material.
+ *
+ * The gain is convention rather than a measured result: several sources say the same colour
+ * reads deeper, or specks less, through the lye than at trace, and their dosing agrees —
+ * indigo is recommended at roughly half through the lye. But NO source runs the same
+ * colorant at the same weight through lye and oil in one batch, so this app says the route
+ * usually needs less and does not put a number on it.
+ */
+export const COLORANT_LYE_ROUTE_CAUTION =
+  'Fresh lye solution is caustic and hot, so add the colour to it at arm\'s length and expect it to spit. Colour delivered this way usually goes further than the same weight at trace, so start below your usual dose.';
+
+/**
+ * The hazard that belongs to steeped PIECES specifically. Dried root and seed swell in the
+ * lye solution and drink some of it, and they are strained out still holding it — which
+ * takes that alkali out of the batch. One maker's account: 30 g of madder in 160 g of water
+ * gave soap that never set, "an oily mess". That is a single failed batch and not a
+ * published ceiling, so it is quoted as what happened rather than as a limit.
+ */
+export const COLORANT_LYE_ABSORPTION_CAUTION =
+  'Dried pieces swell in the lye solution and soak some of it up, and they carry it away when you strain them — which leaves less alkali for the oils. One published batch never set at 30 g of root in 160 g of water. Keep the amount small, or weigh the solution back after straining.';
 
 export const COLORANT_FAMILY_LABELS: Record<ColorantFamily, string> = {
   multi: 'Any colour',
@@ -207,9 +244,10 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     tspPerLbLow: 0.25, tspPerLbHigh: 0.5,
     note: 'Test your own product first — saturation genuinely varies between suppliers, and a concentrated grade needs a fraction of this. Past the top of that range the lather can come out blue and mark a tub or a cloth, and makers who overdo it report green rather than a deeper blue. It barely disperses in water, so it goes into the lye or into an infused oil.',
     stability: 'shifts',
+    lyeRoute: { note: 'This is where it is usually put. Stirred into the dry lye before the water, or into the finished solution, it reads deeper than the same weight dispersed in oil. Expect a pungent smell while you mix, which does not survive into the bars, and mix in stainless steel — it stains plastic for good.' },
   },
   { id: 'woad', name: 'Woad', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'blue-cambrian-clay', name: 'Blue Cambrian clay', kind: 'natural', family: 'blue', tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay', stability: 'stable' },
+  { id: 'blue-cambrian-clay', name: 'Blue Cambrian clay', kind: 'natural', family: 'blue', tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
   { id: 'blue-cornmeal', name: 'Blue cornmeal', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
 
   // --- Green (CP:9343-9345) -----------------------------------------------------------
@@ -219,43 +257,44 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     // The one green that holds: every plant green in this family is fugitive, and a clay is
     // mineral. Mixed into the lye solution or into a couple of teaspoons of water first.
     note: 'The green that keeps. Every plant green here fades; this one is a mineral, so it stays where it lands. Mix it into the lye water, or into a couple of teaspoons of water, before it goes in.',
+    lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' },
   },
   { id: 'peppermint-leaf', name: 'Peppermint leaf', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'shifts', alsoAdditiveId: 'botanicals', note: 'If the leaves went in green they hold that green for some months, then darken.' },
-  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one holds its green through the cut and the first weeks of the cure, then slides towards olive and settles at a khaki tan; daylight hurries it along and a dark cupboard holds it back. Wet it in the same weight of water before it goes in.', stability: 'fades' },
+  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one holds its green through the cut and the first weeks of the cure, then slides towards olive and settles at a khaki tan; daylight hurries it along and a dark cupboard holds it back. Wet it in the same weight of water before it goes in.', stability: 'fades', lyeRoute: { note: 'Through the lye it specks less. One source recommends the route and others warn the alkali is what fades it, so prove it before you rely on it.' } },
   { id: 'dandelion-root', name: 'Dandelion root', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
 
   // --- Yellow and orange (CP:9356-9361) ----------------------------------------------
   { id: 'annatto', name: 'Annatto', kind: 'natural', family: 'yellow', tspPerLbLow: 0.125, tspPerLbHigh: 1, note: 'The rate above is for the powder added directly. Ground seed is coarse and many makers infuse it into an oil instead, which is a different measurement entirely.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light orange, visibly grainy' }, { tspPerLb: 0.5, colour: 'orange' }, { tspPerLb: 1, colour: 'deep orange' }] },
   { id: 'turmeric', name: 'Turmeric', kind: 'natural', family: 'yellow', tspPerLbLow: 0.03, tspPerLbHigh: 1, note: 'A very little goes a long way. Premix it in oil; it does not disperse in water. It starts to dull within a day or two of the cut, and by around five weeks the powder route can be down to a plain cream. Powder colours harder than an infusion but fades harder too — an infused oil holds longer.', shades: [{ tspPerLb: 0.03, colour: 'soft yellow' }, { tspPerLb: 1, colour: 'burnt orange' }], stability: 'fades' },
-  { id: 'calendula', name: 'Calendula petals', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
-  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'That rate is for the powder stirred in directly, which leaves grit and specks in the bar and hurries trace along — an infusion is the kinder route for this one. It fades, though nobody puts a clock on how fast.', stability: 'fades' },
+  { id: 'calendula', name: 'Calendula petals', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals', lyeRoute: { note: 'The petals go into the hot lye solution and stay there, unstrained, straight into the oils with it.' } },
+  { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'That rate is for the powder stirred in directly, which leaves grit and specks in the bar and hurries trace along — an infusion is the kinder route for this one. It fades, though nobody puts a clock on how fast.', stability: 'fades', lyeRoute: { note: 'Listed among the botanicals worth trying in the lye solution; no rate is published for that route.' } },
   { id: 'curry-powder', name: 'Curry powder', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'yarrow', name: 'Yarrow', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
-  { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
-  { id: 'carrot-puree', name: 'Carrot puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'pumpkin-puree', name: 'Pumpkin puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
+  { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
+  { id: 'carrot-puree', name: 'Carrot puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, lyeRoute: { note: 'A purée can go into the lye water, but it displaces it: take the same weight off the recipe\'s water, and expect the heat to darken it.' } },
+  { id: 'pumpkin-puree', name: 'Pumpkin puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, lyeRoute: { note: 'A purée can go into the lye water, but it displaces it: take the same weight off the recipe\'s water, and expect the heat to darken it.' } },
 
   // --- Red and pink (CP:9362-9363) ----------------------------------------------------
-  { id: 'madder-root', name: 'Madder root', kind: 'natural', family: 'red', tspPerLbLow: 0.5, tspPerLbHigh: 2, note: 'Gel decides the hue, not just the depth: gelled runs coral to brick red, ungelled runs dusty rose to mauve, and the gap widens the more you use. Stirred in at trace rather than infused, it specks.', stability: 'stable' },
+  { id: 'madder-root', name: 'Madder root', kind: 'natural', family: 'red', tspPerLbLow: 0.5, tspPerLbHigh: 2, note: 'Gel decides the hue, not just the depth: gelled runs coral to brick red, ungelled runs dusty rose to mauve, and the gap widens the more you use. Stirred in at trace rather than infused, it specks.', stability: 'stable', lyeRoute: { note: 'Steeped in the hot lye solution it can come out ruby to burgundy, brighter than at trace — but that colour is made by the alkali and much of it can go again over the cure. Strain the swollen pieces out before the solution meets the oils.' } },
   { id: 'cochineal', name: 'Cochineal', kind: 'natural', family: 'red', tspPerLbLow: null, tspPerLbHigh: null, note: 'An insect-derived pigment — not vegan.' },
   { id: 'rhubarb-powder', name: 'Rhubarb powder', kind: 'natural', family: 'red', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'pink-kaolin', name: 'Pink kaolin clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'pink' }, { tspPerLb: 3, colour: 'deeper pink' }] },
-  { id: 'red-clay', name: 'Moroccan red clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'soft pink-brown' }, { tspPerLb: 3, colour: 'deeper brown' }] },
+  { id: 'pink-kaolin', name: 'Pink kaolin clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'pink' }, { tspPerLb: 3, colour: 'deeper pink' }], lyeRoute: { note: 'Through the lye it reads a darker pink than the same amount at trace, and it needs no extra water of its own.' } },
+  { id: 'red-clay', name: 'Moroccan red clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'soft pink-brown' }, { tspPerLb: 3, colour: 'deeper brown' }], lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
 
   // --- Purple (CP:9364) ---------------------------------------------------------------
   { id: 'alkanet-root', name: 'Alkanet root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null, note: 'No direct rate: the powder grits and dulls, so the route with a figure behind it is an infusion — roughly three tablespoons of dried root to a pound of the oil you steep it in. Judge it before you soap. The oil should be a deep red by then; a pale or brownish one gives warm grey instead of purple, and poor-quality root does the same. Extra virgin olive oil fights the colour, so steep it in pomace. Much of what is sold as alkanet is ratanjot, which steeps brownish and gives a pale pinkish beige.', stability: 'shifts' },
   { id: 'gromwell-root', name: 'Gromwell root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'purple-clay', name: 'Brazilian purple clay', kind: 'natural', family: 'purple', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
+  { id: 'purple-clay', name: 'Brazilian purple clay', kind: 'natural', family: 'purple', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
 
   // --- Brown (CP:9341-9342) -----------------------------------------------------------
-  { id: 'cinnamon', name: 'Cinnamon', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 1, note: 'A light to medium warm brown, and slightly gritty in the bar.' },
+  { id: 'cinnamon', name: 'Cinnamon', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 1, note: 'A light to medium warm brown, and slightly gritty in the bar.', lyeRoute: { note: 'Listed among the botanicals worth trying in the lye solution; no rate is published for that route.' } },
   { id: 'molasses', name: 'Molasses', kind: 'natural', family: 'brown', tspPerLbLow: 0.5, tspPerLbHigh: 1, note: 'Chocolate brown. It is a sugar, so it feeds the lather as well as colouring — and it browns further in a hot batch.' },
   { id: 'marshmallow-root', name: 'Marshmallow root', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null },
-  { id: 'cocoa-powder', name: 'Cocoa powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'cocoa-powder', additiveIsSameMaterial: true, stability: 'stable' },
-  { id: 'black-walnut', name: 'Black walnut powder', kind: 'natural', family: 'brown', tspPerLbLow: 0.25, tspPerLbHigh: 0.5, shades: [{ tspPerLb: 0.25, colour: 'light brown' }, { tspPerLb: 0.5, colour: 'deep dark brown' }] },
+  { id: 'cocoa-powder', name: 'Cocoa powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'cocoa-powder', additiveIsSameMaterial: true, stability: 'stable', lyeRoute: { note: 'Reads a darker brown through the lye than the same amount at trace.' } },
+  { id: 'black-walnut', name: 'Black walnut powder', kind: 'natural', family: 'brown', tspPerLbLow: 0.25, tspPerLbHigh: 0.5, shades: [{ tspPerLb: 0.25, colour: 'light brown' }, { tspPerLb: 0.5, colour: 'deep dark brown' }], lyeRoute: { note: 'Less speckled through the lye than stirred in at trace.' } },
   { id: 'acorn-powder', name: 'Acorn powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'henna', name: 'Henna powder', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 2 },
-  { id: 'rhassoul-clay', name: 'Rhassoul clay', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
+  { id: 'rhassoul-clay', name: 'Rhassoul clay', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
   {
     id: 'beet-root', name: 'Beet root', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null,
     // CP:9367-9372: betalains do not survive the alkali — beet juice will not colour soap red.
@@ -263,14 +302,14 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   },
 
   // --- Black (CP:9346) ----------------------------------------------------------------
-  { id: 'black-brazilian-clay', name: 'Black Brazilian clay', kind: 'natural', family: 'black', tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay', stability: 'stable' },
-  { id: 'activated-charcoal', name: 'Activated charcoal', kind: 'natural', family: 'black', tspPerLbLow: 0.125, tspPerLbHigh: 3, alsoAdditiveId: 'charcoal', additiveIsSameMaterial: true, note: 'It marks a soap dish and a washcloth at the darker end, though it washes out.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light grey' }, { tspPerLb: 0.5, colour: 'medium grey' }, { tspPerLb: 1, colour: 'dark grey, faint grey lather' }, { tspPerLb: 2, colour: 'grey-black' }, { tspPerLb: 3, colour: 'black, noticeably grey lather' }] },
-  { id: 'dead-sea-mud', name: 'Dead sea mud', kind: 'natural', family: 'black', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
+  { id: 'black-brazilian-clay', name: 'Black Brazilian clay', kind: 'natural', family: 'black', tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
+  { id: 'activated-charcoal', name: 'Activated charcoal', kind: 'natural', family: 'black', tspPerLbLow: 0.125, tspPerLbHigh: 3, alsoAdditiveId: 'charcoal', additiveIsSameMaterial: true, note: 'It marks a soap dish and a washcloth at the darker end, though it washes out.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light grey' }, { tspPerLb: 0.5, colour: 'medium grey' }, { tspPerLb: 1, colour: 'dark grey, faint grey lather' }, { tspPerLb: 2, colour: 'grey-black' }, { tspPerLb: 3, colour: 'black, noticeably grey lather' }], lyeRoute: { note: 'Through the lye it specks far less than it does at trace, and it needs less than usual to reach the same grey.' } },
+  { id: 'dead-sea-mud', name: 'Dead sea mud', kind: 'natural', family: 'black', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
   { id: 'poppy-seeds', name: 'Poppy seeds', kind: 'natural', family: 'black', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'seeds', note: 'Specks rather than a wash of colour, and they scrub.' },
 
   // --- White (CP:9365) ----------------------------------------------------------------
-  { id: 'kaolin-clay', name: 'Kaolin clay', kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', note: 'Clay pulls water out of the batter and stiffens it, so trace arrives sooner than you planned. Wet it in water before it goes in, or the bar can crack.', stability: 'stable' },
-  { id: 'fullers-earth', name: "Fuller's earth", kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
+  { id: 'kaolin-clay', name: 'Kaolin clay', kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', note: 'Clay pulls water out of the batter and stiffens it, so trace arrives sooner than you planned. Wet it in water before it goes in, or the bar can crack.', stability: 'stable', lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
+  { id: 'fullers-earth', name: "Fuller's earth", kind: 'natural', family: 'white', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: 'Straight into the lye solution, and unlike the trace route it needs no extra water of its own.' } },
 ];
 
 export function colorantEntryById(id: string): ColorantCatalogEntry | undefined {

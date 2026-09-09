@@ -1,10 +1,14 @@
 import { memo } from 'react';
 import {
   colorantEntryById,
+  COLORANT_LYE_ABSORPTION_CAUTION,
+  COLORANT_LYE_ROUTE_CAUTION,
+  COLORANT_LYE_ROUTE_PROCESSES,
   colorantsByFamily,
   NATURAL_COLORANT_CAUTION,
   type ColorantKind,
 } from '@soap-calc/core';
+import { colorantStage } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import {
   colorantDispersalText,
@@ -213,6 +217,10 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
             const guidance = process === 'ls' ? null : colorantGuidanceText(col.kind, weightUnit, col.catalogId);
             const ladder = process === 'ls' ? null : colorantShadeLadder(col.catalogId, weightUnit);
             const stability = colorantStabilityText(col.catalogId);
+            // Offered only where a source actually puts this colour in the lye, and only in a
+            // process the sources cover — cold process, in every case found.
+            const lyeOffered =
+              entry?.lyeRoute !== undefined && COLORANT_LYE_ROUTE_PROCESSES.includes(process);
             return (
               <li key={col.key} className="additive-list__row">
                 {/* Same shape as an additive row: the pick and its × on one line, then
@@ -299,8 +307,10 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                   </span>
                 </label>
                 {/* A portion picker with nothing to pick is not a control: it appears once
-                    the batter has actually been split. */}
-                {process !== 'ls' && scent.portions.length > 0 && (
+                    the batter has actually been split. A colour going through the lye is in
+                    the pot before there is a batter to split, so it drops the picker too —
+                    the stored pick survives, and comes back if the route is switched off. */}
+                {process !== 'ls' && scent.portions.length > 0 && !c.viaLye && (
                   <label className="ledger__row">
                     <span className="micro-label">Portion</span>
                     <select
@@ -318,7 +328,24 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                 )}
                 <div className="additive-list__choice">
                   <span className="micro-label">Add at</span>
-                  <p className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</p>
+                  {/* The stage is derived from the process and the portion, EXCEPT where a
+                      source puts this colour in the lye solution — that one is the maker's
+                      call, so it is the one case with a control instead of a statement. */}
+                  {lyeOffered ? (
+                    <SegRadioGroup
+                      label={`Add at for ${rowName}`}
+                      name={`colorant-stage-${col.key}`}
+                      options={[
+                        { value: 'derived', cell: additiveStageLabel(colorantStage(process, Boolean(col.portionKey)), process), name: additiveStageLabel(colorantStage(process, Boolean(col.portionKey)), process) },
+                        { value: 'lye', cell: 'In lye water', name: 'In lye water' },
+                      ]}
+                      value={col.viaLye ? 'lye' : 'derived'}
+                      onChange={(v) => setColorant(col.key, { viaLye: v === 'lye' })}
+                      preserveCase
+                    />
+                  ) : (
+                    <p className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</p>
+                  )}
                 </div>
                 <div className="additive-list__foot">
                   <span className="micro-label">Adds</span>
@@ -347,6 +374,11 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                     <strong>Over time.</strong> {stability}
                   </p>
                 )}
+                {c.viaLye && entry?.lyeRoute && (
+                  <p className="inline-note additive-list__hint">
+                    <strong>Through the lye.</strong> {entry.lyeRoute.note} {COLORANT_LYE_ROUTE_CAUTION}
+                  </p>
+                )}
                 {entry?.note && <p className="inline-note additive-list__hint">{entry.note}</p>}
                 {entry?.alsoAdditiveId && (
                   <p className="inline-note additive-list__hint">
@@ -358,6 +390,9 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
           })}
           {scent.colorants.some((c) => colorantEntryById(c.catalogId)?.kind === 'natural') && (
             <li className="inline-note">{NATURAL_COLORANT_CAUTION}</li>
+          )}
+          {scent.colorants.some((c) => c.viaLye && colorantEntryById(c.catalogId)?.kind === 'natural') && (
+            <li className="inline-note">{COLORANT_LYE_ABSORPTION_CAUTION}</li>
           )}
           {computed.carrierOilGrams > 0 && (
             <li className="inline-note">

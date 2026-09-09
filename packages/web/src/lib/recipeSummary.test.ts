@@ -739,3 +739,35 @@ test('a just-added blank portion is not named in the split sentence', () => {
   const steps = buildAddOrderSteps({ ...CP_BASE, scentColor: scent });
   expect(steps.join(' ')).not.toMatch(/split the batter/);
 });
+
+test('a colorant sent through the lye lists with the lye solution, not under Colorants', () => {
+  const scent = computedScent({
+    fragrances: [],
+    colorants: [
+      { catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '0.88', portionKey: '', viaLye: true },
+      { catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '' },
+    ],
+    portions: [],
+  }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const sections = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: scent });
+  const lye = sections.find((s) => s.heading === 'Lye solution')!;
+  // in the pot before the oils are, so it reads there — after the alkali and its liquid
+  expect(lye.items[lye.items.length - 1].name).toBe('Madder root');
+  expect(lye.items[lye.items.length - 1].detail).toBe('3.5 g · 0.88% · Stir into the lye solution itself — it needs no other solvent');
+  // the mica stays a whole-batter colour, with the oils; neither is a design step
+  expect(sections.find((s) => s.heading === 'Colorants')).toBeUndefined();
+  expect(sections.find((s) => s.heading === 'Oils')!.items.some((i) => i.name === 'Mica')).toBe(true);
+});
+
+test('Add-in-order steps (CP): a lye colour is named in the lye step, not at the split', () => {
+  const scent = computedScent({
+    fragrances: [],
+    colorants: [{ catalogId: 'madder-root', name: '', kind: 'natural', percent: '0.88', portionKey: '#0', viaLye: true }],
+    portions: [{ name: 'Swirl', percent: '40' }],
+  }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const steps = buildAddOrderSteps({ ...CP_BASE, scentColor: scent });
+  // it goes into the water before the alkali does, which is where the lye step names it
+  expect(steps[0]).toContain('stir the Madder root into the water first');
+  // the stored portion pick does not colour a portion while the route is on
+  expect(steps.join(' ')).not.toMatch(/Swirl 40% \(Madder root\)/);
+});

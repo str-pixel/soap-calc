@@ -27,6 +27,10 @@ export type ColorantLine = {
   percent: string;
   /** '' = whole batter. */
   portionKey: string;
+  /** 'lye' when the maker sends this colour through the lye solution; '' to let the app
+   * derive the stage from the process and the portion, which is the usual case. Only a
+   * catalog entry with a lyeRoute, in a process that offers it, can hold 'lye'. */
+  viaLye: boolean;
 };
 export type Portion = { key: string; name: string; percent: string };
 export type ScentColor = { fragrances: FragranceLine[]; colorants: ColorantLine[]; portions: Portion[] };
@@ -65,7 +69,7 @@ export function newAllergenLine(): AllergenLine {
 export function newColorantLine(process: ProcessId): ColorantLine {
   // LS seeds a water-soluble dye — what a liquid tolerates (LS:13256); bars seed a mica.
   // No catalog pick and no dose: both are the maker's to choose.
-  return { key: newAdditiveKey(), catalogId: '', name: '', kind: process === 'ls' ? 'dye' : 'mica', percent: '', portionKey: '' };
+  return { key: newAdditiveKey(), catalogId: '', name: '', kind: process === 'ls' ? 'dye' : 'mica', percent: '', portionKey: '', viaLye: false };
 }
 
 export function newPortion(): Portion {
@@ -127,6 +131,9 @@ export function normalizeScentColor(raw: unknown): ScentColor {
     const rawCatalogId = str(c.catalogId);
     const catalogId = rawCatalogId && colorantEntryById(rawCatalogId) ? rawCatalogId : '';
     const entry = catalogId ? colorantEntryById(catalogId) : undefined;
+    // A stored lye route only survives if the entry still offers one — a retired route, or
+    // a colour that never had one, falls back to the derived stage rather than dangling.
+    const viaLye = c.viaLye === true && entry?.lyeRoute !== undefined;
     return [{
       key: newAdditiveKey(),
       catalogId,
@@ -134,6 +141,7 @@ export function normalizeScentColor(raw: unknown): ScentColor {
       kind: entry ? entry.kind : kind,
       percent: percentString(c.percent),
       portionKey,
+      viaLye,
     }];
   });
   return { fragrances, colorants, portions };
@@ -146,8 +154,8 @@ export function scentColorToSaved(scent: ScentColor): SavedScentColor {
       name, percent, supplierMaxPercent, vanillinPercent,
       allergens: allergens.map(({ name: n, percentOfFragrance }) => ({ name: n, percentOfFragrance })),
     })),
-    colorants: scent.colorants.map(({ catalogId, name, kind, percent, portionKey }) => ({
-      catalogId, name, kind, percent, portionKey: portionIndex.get(portionKey) ?? '',
+    colorants: scent.colorants.map(({ catalogId, name, kind, percent, portionKey, viaLye }) => ({
+      catalogId, name, kind, percent, viaLye, portionKey: portionIndex.get(portionKey) ?? '',
     })),
     portions: scent.portions.map(({ name, percent }) => ({ name, percent })),
   };

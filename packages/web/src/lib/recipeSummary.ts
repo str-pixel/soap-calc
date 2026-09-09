@@ -232,10 +232,14 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   const wholeBatterColorants = colorants.filter((c) => c.stage === 'oils').map(colorantItem);
   const oilsSection: RecipeItem[] = [...byAmount(oilItems), ...byAmount(staged.oils), ...wholeBatterColorants];
 
+  // A colour the maker sent through the lye reads with the lye solution, in mixing order:
+  // it is in the pot before the oils are.
+  const lyeColorants = colorants.filter((c) => c.stage === 'lye').map(colorantItem);
+
   // Portion colours, grouped under their portion (name and share), in the portions' own
   // order; LS lists every colorant plainly — a liquid has no portions.
   const colorantItems: RecipeItem[] = [];
-  const designColorants = colorants.filter((c) => c.stage !== 'oils');
+  const designColorants = colorants.filter((c) => c.stage !== 'oils' && c.stage !== 'lye');
   if (scentColor && designColorants.length > 0) {
     if (process === 'ls') {
       colorantItems.push(...designColorants.map(colorantItem));
@@ -294,6 +298,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     });
   }
   lyeItems.push(...byAmount(lyeLiquids));
+  lyeItems.push(...lyeColorants);
   if (lyeSolutionBeforeOils(process)) {
     push('Lye solution', lyeItems);
     push('Oils', oilsSection);
@@ -554,6 +559,8 @@ export function buildAddOrderSteps(input: AddOrderInput): string[] {
     byStage[f.stage].push(f.stabilizerGrams > 0 ? `${name} (stabilizer mixed in)` : name);
   }
   for (const c of scentColorants) {
+    // A portion colour is named in the split sentence instead; a lye colour is named in the
+    // lye step, which its own derived stage already points at.
     if (c.portionKey) continue;
     byStage[c.stage].push(c.name.trim() || 'colorant');
   }

@@ -151,4 +151,42 @@ test.describe('colorants, seen in each process', () => {
     await expectNoJunk(page);
     expect(problems, 'browser reported nothing').toEqual([]);
   });
+
+  test('the lye route: offered where a source puts the colour in the lye, cold process only', async ({ page }) => {
+    const problems = watchForErrors(page);
+    await fresh(page);
+
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    // A mica has no lye route in any source, so its stage stays a statement.
+    await page.getByLabel(/Colorant for/).selectOption('mica');
+    await expect(panel(page).getByRole('radiogroup', { name: /^Add at for/ })).toHaveCount(0);
+
+    // Madder root does, and gets the choice.
+    await page.getByLabel(/Colorant for/).selectOption('madder-root');
+    const addAt = panel(page).getByRole('radiogroup', { name: /^Add at for/ });
+    await expect(addAt).toContainText('In lye water');
+    await expect(panel(page)).not.toContainText(/Through the lye/);
+
+    await addAt.getByRole('radio', { name: 'In lye water' }).click();
+    // The route replaces the carrier oil rather than adding to it, and says what it costs.
+    await expect(panel(page)).toContainText(/Stir into the lye solution itself/);
+    await expect(panel(page)).not.toContainText(/Mix 1:1 with a light carrier oil/);
+    await expect(panel(page)).toContainText(/Through the lye/);
+    await expect(panel(page)).toContainText(/never set at 30 g of root in 160 g of water/);
+    await page.screenshot({ path: `${SHOTS}/colorants-cp-lye.png`, fullPage: true });
+
+    // Splitting the batter cannot claim a colour that is in the pot before the batter is.
+    await page.getByRole('button', { name: /split the batter/i }).click();
+    await page.getByLabel('Portion name').fill('Swirl');
+    await page.getByLabel(/Portion Swirl share/).fill('40');
+    await expect(panel(page).getByLabel(/Madder root portion/)).toHaveCount(0);
+
+    // The sources cover cold process only: the choice is gone in the other two.
+    await processTab(page, /Hot process/).click();
+    await expect(panel(page).getByRole('radiogroup', { name: /^Add at for/ })).toHaveCount(0);
+    await expect(panel(page)).not.toContainText(/Stir into the lye solution itself/);
+
+    await expectNoJunk(page);
+    expect(problems, 'browser reported nothing').toEqual([]);
+  });
 });

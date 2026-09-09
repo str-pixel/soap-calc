@@ -3,6 +3,8 @@ import {
   allergensToLabel,
   carrierOilSuperfatShift,
   colorantDispersal,
+  colorantEntryById,
+  COLORANT_LYE_ROUTE_PROCESSES,
   colorantGrams,
   colorantStage,
   essentialOilCaution,
@@ -37,6 +39,8 @@ export type ComputedColorant = {
   portionKey: string; portionName: string; portionPercent: number | null;
   /** Linked to a portion that has no usable share yet — the typed dose cannot be sized. */
   portionShareMissing: boolean;
+  /** The maker sent this colour through the lye solution. */
+  viaLye: boolean;
   stage: AdditiveStage; dispersal: ColorantDispersal;
 };
 export type ComputedScentColor = {
@@ -118,7 +122,12 @@ export function computeScentColorGrams(
   const portions = scent.portions.map((p) => ({ key: p.key, name: p.name, percent: rawPercent(p.percent) }));
   const byKey = new Map(portions.map((p) => [p.key, p]));
   const colorants: ComputedColorant[] = scent.colorants.map((c) => {
-    const portion = process === 'ls' ? undefined : byKey.get(c.portionKey);
+    // A colour in the lye is in the pot before the oils are, so a portion cannot claim it,
+    // and the route only stands where the entry and the process both offer it.
+    const entry = c.catalogId ? colorantEntryById(c.catalogId) : undefined;
+    const viaLye =
+      c.viaLye && entry?.lyeRoute !== undefined && COLORANT_LYE_ROUTE_PROCESSES.includes(process);
+    const portion = viaLye || process === 'ls' ? undefined : byKey.get(c.portionKey);
     const percent = parsePercentOfOil(c.percent);
     // A colour linked to a portion with no usable share (blank, 0) has no oils to dose against:
     // "to shade", never the whole batter's dose under a portion heading.
@@ -133,8 +142,9 @@ export function computeScentColorGrams(
       key: c.key, catalogId: c.catalogId, name: c.name, kind: c.kind, percent, grams,
       portionKey: portion?.key ?? '', portionName: portion?.name ?? '', portionPercent: portion?.percent ?? null,
       portionShareMissing: portion !== undefined && portion.percent === null && percent !== null,
-      stage: colorantStage(process, portion !== undefined),
-      dispersal: colorantDispersal(process, grams, portion !== undefined),
+      viaLye,
+      stage: colorantStage(process, portion !== undefined, viaLye),
+      dispersal: colorantDispersal(process, grams, portion !== undefined, viaLye),
     };
   });
   const portionTotal = portionsTotalPercent(portions);

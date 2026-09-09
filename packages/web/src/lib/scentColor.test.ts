@@ -179,3 +179,29 @@ describe('migrateSavedScent — the one loader for drafts and files', () => {
     expect(scentMigrationNotice({ fragrancesMoved: 2, dosesDropped: 1 })).toMatch(/fragrances moved to the Essential oils section — re-enter its dose there/);
   });
 });
+
+describe('the lye route across a save and a load', () => {
+  it('round-trips, and an older file without the field simply has no route on', () => {
+    const scent = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'madder-root', name: '', kind: 'natural', percent: '0.88', portionKey: '', viaLye: true }],
+      portions: [],
+    });
+    const saved = scentColorToSaved(scent);
+    expect(saved.colorants[0].viaLye).toBe(true);
+    expect(normalizeScentColor(saved).colorants[0].viaLye).toBe(true);
+    // A v3 file predates the field: it loads as the derived stage, not as a dangling flag.
+    const older = { ...saved, colorants: saved.colorants.map(({ viaLye: _drop, ...rest }) => rest) };
+    expect(normalizeScentColor(older).colorants[0].viaLye).toBe(false);
+  });
+
+  it('drops a stored route the entry no longer offers', () => {
+    // A mica has no lye route, so a hand-edited file claiming one loads without it.
+    const loaded = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '', viaLye: true }],
+      portions: [],
+    });
+    expect(loaded.colorants[0].viaLye).toBe(false);
+  });
+});

@@ -126,3 +126,19 @@ describe('the per-process rules follow the sources, including where a source off
     expect(colorantDispersal('cp', 10, true).method).toBe('carrier-oil');
   });
 });
+
+describe('the lye-solution route, where a source puts a colour there', () => {
+  it('overrides the derived stage and needs no other solvent', () => {
+    expect(colorantStage('cp', false, true)).toBe('lye');
+    // In the pot before the oils are, so a portion cannot claim it.
+    expect(colorantStage('cp', true, true)).toBe('lye');
+    expect(colorantDispersal('cp', 10, false, true)).toEqual({ method: 'lye-solution' });
+  });
+
+  it('leaves the derived stage alone when the route is not taken', () => {
+    expect(colorantStage('cp', false, false)).toBe('oils');
+    expect(colorantStage('cp', true, false)).toBe('trace');
+    expect(colorantStage('hp', true, false)).toBe('after_cook');
+    expect(colorantDispersal('cp', 10, false, false).method).toBe('carrier-oil');
+  });
+});

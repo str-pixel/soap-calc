@@ -356,3 +356,74 @@ describe('picking a colour seeds its gentlest sourced dose', () => {
     expect((onChange.mock.calls[0][0] as ScentColor).colorants[0]).toMatchObject({ catalogId: '', percent: '' });
   });
 });
+
+describe('the lye-solution route', () => {
+  const routed = normalizeScentColor({
+    fragrances: [],
+    colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '0.88', portionKey: '' }],
+    portions: [],
+  });
+
+  it('turns "Add at" into a choice only for a colour a source puts in the lye', () => {
+    renderPanel(routed, 'cp');
+    const seg = screen.getByRole('radiogroup', { name: /Add at for Madder root/ });
+    expect([...seg.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['With oils', 'In lye water']);
+    cleanup();
+    // A mica has no such source, so its stage stays a statement.
+    renderPanel(blueMica, 'cp');
+    expect(screen.queryByRole('radiogroup', { name: /Add at/ })).toBeNull();
+  });
+
+  it('is cold-process only — the sources cover no other process', () => {
+    for (const process of ['hp', 'ls'] as const) {
+      renderPanel(routed, process);
+      expect(screen.queryByRole('radiogroup', { name: /Add at/ })).toBeNull();
+      cleanup();
+    }
+  });
+
+  it('choosing it reports the choice up, and the route note appears once chosen', () => {
+    const onChange = renderPanel(routed, 'cp');
+    expect(screen.queryByText(/Through the lye/)).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: 'In lye water' }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0].colorants[0].viaLye).toBe(true);
+
+    cleanup();
+    const viaLye = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '0.88', portionKey: '', viaLye: true }],
+      portions: [],
+    });
+    renderPanel(viaLye, 'cp');
+    expect(screen.getByText(/Through the lye/)).toBeTruthy();
+    // the caustic caution, and the absorption failure for a natural colour
+    expect(screen.getByText(/at arm's length/)).toBeTruthy();
+    expect(screen.getByText(/never set at 30 g of root/)).toBeTruthy();
+    // no other solvent: it does not also ask for a carrier oil
+    expect(screen.getByText(/Stir into the lye solution itself/)).toBeTruthy();
+  });
+
+  it('a lye colour cannot also claim a portion — it is in the pot before the batter exists', () => {
+    const split = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '0.88', portionKey: 'p1', viaLye: true }],
+      portions: [{ key: 'p1', name: 'Swirl', percent: '40' }],
+    });
+    renderPanel(split, 'cp');
+    // the whole batter's worth, not 40% of it
+    expect(screen.getByText('8.8 g')).toBeTruthy();
+  });
+});
+
+it('a lye colour drops the portion picker — there is no batter to split yet', () => {
+  const split = normalizeScentColor({
+    fragrances: [],
+    colorants: [{ catalogId: 'madder-root', name: '', kind: 'natural', percent: '0.88', portionKey: '#0', viaLye: true }],
+    portions: [{ name: 'Swirl', percent: '40' }],
+  });
+  renderPanel(split, 'cp');
+  expect(screen.queryByLabelText(/portion$/i)).toBeNull();
+  // the stored pick is still what the derived option would go back to
+  expect(screen.getByRole('radio', { name: 'At trace' })).toBeTruthy();
+});

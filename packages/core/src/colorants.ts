@@ -19,7 +19,9 @@ export type ColorantDispersal =
   /** HP whole-batter: straight into the warmed oils, no slurry (HP:11331-11338). */
   | { method: 'recipe-oil' }
   /** LS: a water-soluble dye goes straight into the diluted soap (LS:13253-13262). */
-  | { method: 'into-solution' };
+  | { method: 'into-solution' }
+  /** Steeped or stirred into the lye solution itself, which is already water. */
+  | { method: 'lye-solution' };
 
 export type ColorantGuidance = {
   tspPerLbLow: number;
@@ -122,7 +124,10 @@ export function colorantDispersal(
   process: AdditiveProcess,
   colorantGrams: number | null,
   hasPortion: boolean,
+  /** The maker chose the lye route: the solution IS the solvent, so nothing else disperses it. */
+  viaLye = false,
 ): ColorantDispersal {
+  if (viaLye) return { method: 'lye-solution' };
   if (process === 'cp') return { method: 'carrier-oil', carrierGrams: colorantGrams };
   if (process === 'hp') {
     if (!hasPortion) return { method: 'recipe-oil' };
@@ -139,8 +144,16 @@ export const carrierOilSuperfatShift: (carrierGrams: number, totalOilGrams: numb
 
 /** A whole-batter colour goes into the oils at the start (CP:9396-9404; HP:11331-11338); a
  * portion colour at the design stage — CP trace, HP after the cook. LS dyes are "added
- * directly to your soap after the dilution" (LS:13262), portions or not. */
-export function colorantStage(process: AdditiveProcess, hasPortion: boolean): AdditiveStage {
+ * directly to your soap after the dilution" (LS:13262), portions or not. The lye solution is
+ * the one stage the MAKER chooses rather than the app deriving it, and only where a source
+ * puts that colour there — see ColorantCatalogEntry.lyeRoute. A colour on that route is in
+ * the pot before the oils are, so a portion cannot claim it. */
+export function colorantStage(
+  process: AdditiveProcess,
+  hasPortion: boolean,
+  viaLye = false,
+): AdditiveStage {
+  if (viaLye) return 'lye';
   if (process === 'ls') return 'after_cook';
   if (!hasPortion) return 'oils';
   return process === 'cp' ? 'trace' : 'after_cook';
