@@ -8,7 +8,16 @@ import { formatGrams, joinNames } from './format';
 import { oilDisplayName } from './oilDisplay';
 import { formatWeight } from './weightUnits';
 import { colorantDispersalText } from './colorantGuidance';
-import { hpColorantWaterGrams } from '@soap-calc/core';
+import {
+  ADDITIVE_ALLERGEN_ORIGINS,
+  COLORANT_ALLERGEN_ORIGINS,
+  LIQUID_ALLERGEN_ORIGINS,
+  OIL_ALLERGEN_ORIGINS,
+  allergenOriginsFor,
+  hpColorantWaterGrams,
+  type AllergenOrigin,
+  type AllergenOriginHit,
+} from '@soap-calc/core';
 
 /** The one provenance phrase every surface appends to an APPLIED subtract reserve — the
  * results-grid row, the Full recipe line, and the printed sheet. "from oils above" says
@@ -89,7 +98,12 @@ export function scentRowIsMaterial(row: { name: string; grams: number | null }):
 
 
 /** A single line of the printable "Full recipe" list: a material and its formatted amount. */
-export type RecipeItem = { name: string; detail: string };
+export type RecipeItem = {
+  name: string;
+  detail: string;
+  /** The detail is a sentence, not a figure: it wraps rather than holding one line. */
+  prose?: true;
+};
 
 /** One headed group of the Full recipe manifest. `heading: null` is the unheaded lead-in
  * (the soaping-temperature line). Headings use the source books' vocabulary — "Lye
@@ -364,7 +378,46 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   // the diluted soap — after everything else, in both.
   if (process !== 'cp') pushScentSections();
 
+  // What the batch is made FROM, where a customer might need to avoid it. Provenance, not a
+  // declaration: no threshold is computed and no compliance is claimed (see core's
+  // allergen-origins for the sources and for that distinction). Last, because it is read
+  // when the soap is sold rather than while it is made.
+  const originItems: RecipeItem[] = recipeAllergenOrigins(input).map((hit) => ({
+    name: hit.label,
+    detail: hit.note ? `${hit.ingredients.join(', ')} — ${hit.note}` : hit.ingredients.join(', '),
+    prose: true as const,
+  }));
+  push('Contains', originItems);
+
   return sections;
+}
+
+/** Every allergen origin a recipe carries, read off the ids its own catalogs use. */
+export function recipeAllergenOrigins(input: {
+  lines: { oilId: string; weightGrams: number }[];
+  additives: ComputedAdditive[];
+  splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
+  scentColor?: ComputedScentColor;
+}): AllergenOriginHit[] {
+  const items: Array<{ name: string; origins: readonly AllergenOrigin[] }> = [];
+  for (const line of input.lines) {
+    if (line.weightGrams <= 0) continue;
+    const origins = OIL_ALLERGEN_ORIGINS[line.oilId];
+    if (origins) items.push({ name: oilDisplayName(line.oilId), origins });
+  }
+  for (const a of input.additives) {
+    const origins = a.catalogId ? ADDITIVE_ALLERGEN_ORIGINS[a.catalogId] : undefined;
+    if (origins && a.grams > 0) items.push({ name: a.name.trim() || 'Additive', origins });
+  }
+  for (const { row, grams } of input.splitLiquidRows ?? []) {
+    const origins = row.presetKey ? LIQUID_ALLERGEN_ORIGINS[row.presetKey] : undefined;
+    if (origins && (grams ?? 0) > 0) items.push({ name: row.name.trim() || 'Liquid', origins });
+  }
+  for (const c of input.scentColor?.colorants ?? []) {
+    const origins = c.catalogId ? COLORANT_ALLERGEN_ORIGINS[c.catalogId] : undefined;
+    if (origins && scentRowIsMaterial(c)) items.push({ name: c.name.trim() || 'Colorant', origins });
+  }
+  return allergenOriginsFor(items);
 }
 
 type AddOrderInput = {

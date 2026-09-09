@@ -1063,3 +1063,25 @@ test.describe('acid compensation', () => {
     expect(after.batch).toBeCloseTo(before.batch + 200 + extraLye, 0);
   });
 });
+
+test.describe('what the batch is made from', () => {
+  test('the recipe ends with a Contains section, and it carries the rule where there is one', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    const contains = page
+      .locator('.results-recipe__section')
+      .filter({ has: page.locator('.results-recipe__heading', { hasText: /CONTAINS/i }) });
+
+    // The starter recipe carries coconut, which the two labelling lists disagree about.
+    await expect(contains).toContainText('Coconut');
+    await expect(contains).toContainText(/tree nut in the US list, not in the EU/);
+
+    // Cochineal is the one with a cosmetic labelling rule of its own.
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    await page.getByLabel(/Colorant for/).first().selectOption('cochineal');
+    await page.getByLabel(/Cochineal dose/).first().fill('0.5');
+    await expect(contains).toContainText('Insect (carmine)');
+    await expect(contains).toContainText(/must be named on a cosmetic label/);
+  });
+});

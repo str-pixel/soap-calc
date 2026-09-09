@@ -657,7 +657,8 @@ test('Full recipe (CP): the scent sections sit between At trace and Top', () => 
     ],
   });
   expect(sections.map((s) => s.heading)).toEqual([
-    'Lye solution', 'Oils', 'At trace', 'Colorants', 'Fragrance', 'On top',
+    // "Contains" is last on purpose: it is read when the soap is sold, not while it is made.
+    'Lye solution', 'Oils', 'At trace', 'Colorants', 'Fragrance', 'On top', 'Contains',
   ]);
 });
 
@@ -842,4 +843,48 @@ test('a CP colour mixed with water carries no carrier oil into the manifest', ()
   const mica = oils.items.find((i) => i.name === 'Mica')!;
   expect(mica.detail).toBe('4 g · 1% · Mix into a little distilled water, sugar dissolved in it first if you want the lather');
   expect(scent.carrierOilGrams).toBe(0);
+});
+
+test('the manifest ends with what the batch is made from, and names what carries it', () => {
+  const scent = computedScent({
+    fragrances: [],
+    colorants: [{ catalogId: 'cochineal', name: '', kind: 'natural', percent: '1', portionKey: '' }],
+    portions: [],
+  }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const sections = buildFullRecipe({
+    ...FULL_RECIPE_BASE,
+    lines: [
+      { oilId: 'olive-oil', weightGrams: 300 },
+      { oilId: 'almond-oil-sweet', weightGrams: 60 },
+      { oilId: 'coconut-oil-76', weightGrams: 40 },
+    ],
+    additives: [
+      { key: 'h', catalogId: 'honey', name: 'Honey', amount: 1, unit: 'percent', basis: 'oil', grams: 4, addAt: 'trace' },
+    ],
+    scentColor: scent,
+  });
+  const contains = sections.find((s) => s.heading === 'Contains')!;
+  expect(contains.items.map((i) => i.name)).toEqual(['Tree nut', 'Coconut', 'Insect (carmine)', 'Bee products']);
+  expect(contains.items[0].detail).toBe('Almond Oil, sweet');
+  // The one with a rule carries the rule; plain provenance stays plain.
+  expect(contains.items[2].detail).toMatch(/Cochineal — Carmine and cochineal extract must be named on a cosmetic label/);
+  expect(contains.items[3].detail).toBe('Honey');
+});
+
+test('a recipe made of nothing anyone avoids has no Contains section at all', () => {
+  const sections = buildFullRecipe({
+    ...FULL_RECIPE_BASE,
+    lines: [{ oilId: 'olive-oil', weightGrams: 1000 }],
+    additives: [],
+  });
+  expect(sections.find((s) => s.heading === 'Contains')).toBeUndefined();
+});
+
+test('an ingredient with no weight is not in the batch, so it is not in Contains', () => {
+  const sections = buildFullRecipe({
+    ...FULL_RECIPE_BASE,
+    lines: [{ oilId: 'olive-oil', weightGrams: 1000 }, { oilId: 'peanut-oil', weightGrams: 0 }],
+    additives: [],
+  });
+  expect(sections.find((s) => s.heading === 'Contains')).toBeUndefined();
 });

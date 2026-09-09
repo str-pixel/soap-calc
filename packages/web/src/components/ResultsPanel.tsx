@@ -551,7 +551,14 @@ export const ResultsPanel = memo(function ResultsPanel({
               )}
               <dl className="results-recipe__list">
                 {section.items.map((item, index) => (
-                  <div key={`${item.name}-${index}`} className="results-recipe__row">
+                  <div
+                    key={`${item.name}-${index}`}
+                    // A figure must never wrap mid-number, so the default row holds its
+                    // detail on one line. A row whose detail is a SENTENCE — what a batch is
+                    // made from, and the rule that goes with it — has to wrap, or it pushes
+                    // the whole page sideways on a phone.
+                    className={`results-recipe__row${item.prose ? ' results-recipe__row--prose' : ''}`}
+                  >
                     <dt>{item.name}</dt>
                     <dd>{item.detail}</dd>
                   </div>
