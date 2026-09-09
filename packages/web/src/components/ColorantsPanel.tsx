@@ -59,8 +59,8 @@ const COLORANT_KINDS: Array<{ value: ColorantKind; cell: string; name: string }>
    out of a liquid (LS:13390). Reworded, not quoted. */
 const PROCESS_COPY: Record<ProcessId, string> = {
   cp: 'Aim the colour at the bar, not at the wash: overdo it and the pigment travels into the lather and marks the tub, the towels and your skin. One colour for the whole batch goes in with the oils; to colour parts of it, split the batter first and add them at trace. Work each powder into an equal weight of light carrier oil — that oil rides on the recipe as extra superfat.',
-  hp: 'One colour for the whole batch goes in with the oils. To colour parts of the batch, split the batter and add each colour after the cook, dispersed in a little hot sugar water.',
-  ls: 'Colour goes in after the dilution. A water-soluble dye stays in solution; micas and oxides settle out and need shaking before use.',
+  hp: 'One colour for the whole batch goes in with the oils, where the blender can work it through evenly. To colour parts of the batch, split the batter and colour each part after the cook. Hot sugar water is the usual solvent and the sugar buys a little extra lather; oil serves too, and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
+  ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm orange, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
 };
 
 export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, onChange }: Props) {

@@ -261,3 +261,34 @@ describe('how much, what shade, and what happens over time', () => {
     expect(screen.queryByText(/Over time/)).toBeNull();
   });
 });
+
+describe('the per-process copy states what the sources state', () => {
+  const empty = createEmptyScentColor();
+
+  it('HP names the alternatives the source offers, instead of one solvent as the rule', () => {
+    renderPanel(empty, 'hp');
+    const copy = screen.getByText(/One colour for the whole batch/).textContent!;
+    expect(copy).toMatch(/hot sugar water/i);
+    expect(copy).toMatch(/post-cook superfat/i); // oil route, which the app already models
+    expect(copy).toMatch(/glycerin/i);           // the one it advises against
+  });
+
+  it('LS steers to a water-soluble dye and warns that pigments sediment', () => {
+    renderPanel(empty, 'ls');
+    const copy = screen.getByText(/Colour goes in after the dilution/).textContent!;
+    expect(copy).toMatch(/water-soluble/i);
+    expect(copy).toMatch(/sink to the bottom/i);
+    // the oils themselves are a colorant in liquid soap
+    expect(copy).toMatch(/hemp reads green/i);
+  });
+
+  it('LS prescribes no water temperature, because no source gives one', () => {
+    const dye = normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: 'fdc-dye', name: 'FD&C dye', kind: 'dye', percent: '', portionKey: '' }],
+    });
+    renderPanel(dye, 'ls');
+    expect(screen.getByText(/Stir straight into the diluted soap/)).toBeTruthy();
+    expect(screen.queryByText(/warm water/i)).toBeNull();
+  });
+});

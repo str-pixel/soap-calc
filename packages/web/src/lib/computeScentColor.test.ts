@@ -67,7 +67,7 @@ describe('LS', () => {
     expect(c.fragrances[1].grams).toBe(15); // 0.5% of 3000 g
     expect(c.polysorbateGrams).toBe(105); // equal parts to 90 g + 15 g
     expect(c.colorants.every((x) => x.stage === 'after_cook')).toBe(true);
-    expect(c.colorants[0].dispersal).toEqual({ method: 'warm-water' });
+    expect(c.colorants[0].dispersal).toEqual({ method: 'into-solution' });
     expect(c.carrierOilGrams).toBe(0);
   });
   it('is 0 g without a dilution', () => {

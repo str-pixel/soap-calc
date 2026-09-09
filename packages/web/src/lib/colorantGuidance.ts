@@ -85,8 +85,9 @@ export function colorantDispersalText(d: ColorantDispersal, unit: WeightUnit): s
       return `Disperse in ${hpWaterText(unit)}`;
     case 'recipe-oil':
       return 'Stir straight into the warmed oils — no slurry for a single colour';
-    case 'warm-water':
-      return 'Dissolve in a little warm water';
+    case 'into-solution':
+      // No source prescribes a temperature; a dye is water soluble and often already liquid.
+      return 'Stir straight into the diluted soap';
   }
 }
 

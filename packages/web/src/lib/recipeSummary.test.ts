@@ -671,7 +671,7 @@ test('Full recipe (HP/LS): the Fragrance section is last; LS colorants sit in th
   const headings = sections.map((s) => s.heading);
   expect(headings[headings.length - 1]).toBe('Fragrance');
   expect(headings[headings.length - 2]).toBe('Colorants');
-  expect(sections.find((s) => s.heading === 'Colorants')!.items[0]).toEqual({ name: 'Blue dye', detail: 'to shade · Dissolve in a little warm water' });
+  expect(sections.find((s) => s.heading === 'Colorants')!.items[0]).toEqual({ name: 'Blue dye', detail: 'to shade · Stir straight into the diluted soap' });
   expect(sections.find((s) => s.heading === 'Fragrance')!.items.map((i) => [i.name, i.detail])).toEqual([
     ['Lemon', '12 g · 1% of solution'],
     ['Polysorbate 20', '12 g'],

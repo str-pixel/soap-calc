@@ -40,8 +40,8 @@ describe('dispersal per process', () => {
   it('HP whole-batter colour goes straight into the oils, no slurry (HP:11330-11334)', () => {
     expect(colorantDispersal('hp', 4, false)).toEqual({ method: 'recipe-oil' });
   });
-  it('LS: dyes dissolve in a little warm water (LS:13256)', () => {
-    expect(colorantDispersal('ls', 4, false)).toEqual({ method: 'warm-water' });
+  it('LS: a dye goes straight into the diluted soap (LS:13253-13262)', () => {
+    expect(colorantDispersal('ls', 4, false)).toEqual({ method: 'into-solution' });
   });
 });
 
@@ -79,5 +79,28 @@ describe('guidance ranges are derived, and say so', () => {
     expect(COLORANT_GUIDANCE.natural).toEqual({ tspPerLbLow: 0.5, tspPerLbHigh: 1, percentLow: 0.2, percentHigh: 0.9 });
     expect(COLORANT_GUIDANCE.dye).toBeNull();
     expect(COLORANT_GUIDANCE.other).toBeNull();
+  });
+});
+
+describe('the per-process rules follow the sources, including where a source offers a choice', () => {
+  it('HP splits on the stage, not on taste: whole batter into the oils, a portion in sugar water', () => {
+    // The source lists oil, glycerin, water, yogurt and milk as solvents and states hot
+    // sugar water as its own preference; the app derives that preference and the panel copy
+    // names the alternatives. What is NOT a preference is the whole-batter route: a single
+    // colorant goes into the oils at the start (HP:11331-11334).
+    expect(colorantDispersal('hp', 10, false)).toEqual({ method: 'recipe-oil' });
+    expect(colorantDispersal('hp', 10, true).method).toBe('hot-sugar-water');
+  });
+
+  it('LS prescribes no temperature, because no source does', () => {
+    // "A dye ... shows color when it is dissolved", most are water soluble, and the cosmetic
+    // ones go straight into the diluted soap — often bought already liquid (LS:13253-13262).
+    expect(colorantDispersal('ls', 10, false)).toEqual({ method: 'into-solution' });
+    expect(colorantDispersal('ls', 10, true)).toEqual({ method: 'into-solution' });
+  });
+
+  it('CP disperses in oil whatever the stage — the source discourages water and glycerin', () => {
+    expect(colorantDispersal('cp', 10, false).method).toBe('carrier-oil');
+    expect(colorantDispersal('cp', 10, true).method).toBe('carrier-oil');
   });
 });

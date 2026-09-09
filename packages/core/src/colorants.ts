@@ -18,7 +18,8 @@ export type ColorantDispersal =
   | { method: 'hot-sugar-water'; waterGramsLow: number; waterGramsHigh: number }
   /** HP whole-batter: straight into the warmed oils, no slurry (HP:11330-11334). */
   | { method: 'recipe-oil' }
-  | { method: 'warm-water' };
+  /** LS: a water-soluble dye goes straight into the diluted soap (LS:13253-13262). */
+  | { method: 'into-solution' };
 
 export type ColorantGuidance = {
   tspPerLbLow: number;
@@ -68,11 +69,23 @@ export function colorantGrams(percent: number | null, portionOilGrams: number): 
 }
 
 /** CP: "mixed at a 1:1 ratio with a light carrier oil" — glycerin or water discouraged
- * (CP:9395-9400). HP: the sugar-water pitchers are for colouring the COOKED paste
- * (HP:11319-11321); a single, whole-batter colorant goes "directly to your oils" at the
- * start instead (HP:11330-11334). LS: dyes dissolve in water (LS:13256); micas settle
- * (LS:13390). `hasPortion` is the same flag colorantStage reads, so dispersal and stage
- * cannot disagree. */
+ * (CP:9395-9400).
+ *
+ * HP: the source offers a CHOICE of solvent — oil, glycerin, water, yogurt, milk — and
+ * states hot sugar water as the author's own preference, with oil "an excellent option"
+ * that many makers combine with the post-cook superfat, and glycerin the one it advises
+ * against (HP:11296-11312). The app has to derive one answer, so it derives the stated
+ * preference and the panel copy names the alternatives rather than hiding them. Sugar-water
+ * quantities at HP:11319-11321. A single, whole-batter colorant goes "directly to your
+ * oils" at the start instead (HP:11331-11334).
+ *
+ * LS: a dye "shows color when it is dissolved", most are water soluble, and the cosmetic
+ * ones go "directly to your soap after the dilution" — often bought already liquid
+ * (LS:13253-13262). No source prescribes a temperature for it, so the app does not either.
+ * Pigments and coarse particles sediment instead (LS:13307-13310, LS:13380-13390).
+ *
+ * `hasPortion` is the same flag colorantStage reads, so dispersal and stage cannot
+ * disagree. */
 export function colorantDispersal(
   process: AdditiveProcess,
   colorantGrams: number | null,
@@ -83,7 +96,7 @@ export function colorantDispersal(
     if (!hasPortion) return { method: 'recipe-oil' };
     return { method: 'hot-sugar-water', waterGramsLow: HP_COLORANT_WATER_GRAMS.low, waterGramsHigh: HP_COLORANT_WATER_GRAMS.high };
   }
-  return { method: 'warm-water' };
+  return { method: 'into-solution' };
 }
 
 /** The carrier is unsaponified oil riding on the recipe oils: 1:1 at a 1% colorant is a
