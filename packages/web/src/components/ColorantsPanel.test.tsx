@@ -427,3 +427,56 @@ it('a lye colour drops the portion picker — there is no batter to split yet', 
   // the stored pick is still what the derived option would go back to
   expect(screen.getByRole('radio', { name: 'At trace' })).toBeTruthy();
 });
+
+
+describe('the cautions follow the hazard, not the kind', () => {
+  const routed = (catalogId: string) => normalizeScentColor({
+    fragrances: [],
+    colorants: [{ catalogId, name: '', kind: 'natural', percent: '0.88', portionKey: '', viaLye: true }],
+    portions: [],
+  });
+
+  it('warns about swollen pieces only where pieces are strained back out', () => {
+    renderPanel(routed('madder-root'), 'cp');
+    expect(screen.getByText(/never set at 30 g of root/)).toBeTruthy();
+    cleanup();
+    // A clay powder is never lifted out, so it cannot take the alkali with it.
+    renderPanel(routed('kaolin-clay'), 'cp');
+    expect(screen.queryByText(/never set at 30 g of root/)).toBeNull();
+    // The caustic warning still applies to every route.
+    expect(screen.getByText(/at arm's length/)).toBeTruthy();
+  });
+
+  it('spares a mineral the plant-pigment caution', () => {
+    renderPanel(routed('kaolin-clay'), 'cp');
+    expect(screen.queryByText(/anthocyanins in berries/)).toBeNull();
+    cleanup();
+    renderPanel(routed('spirulina'), 'cp');
+    expect(screen.getByText(/anthocyanins in berries/)).toBeTruthy();
+  });
+
+  it('never tells the maker to wet a colour the lye has already wetted', () => {
+    renderPanel(routed('kaolin-clay'), 'cp');
+    const text = document.querySelector('.additive-list')!.textContent!;
+    expect(text).toContain('needs no other solvent');
+    expect(text).toContain('Unless it is going through the lye, wet it in water');
+  });
+});
+
+describe('picking a different colorant', () => {
+  it('does not carry the lye route across to the new material', () => {
+    const scent = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'madder-root', name: '', kind: 'natural', percent: '0.44', portionKey: '', viaLye: true }],
+      portions: [],
+    });
+    const onChange = renderPanel(scent, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'kaolin-clay' } });
+    expect(onChange.mock.calls[0][0].colorants[0]).toMatchObject({ catalogId: 'kaolin-clay', viaLye: false });
+    cleanup();
+    // and a custom row cannot keep a route either
+    const onChange2 = renderPanel(scent, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: '' } });
+    expect(onChange2.mock.calls[0][0].colorants[0]).toMatchObject({ catalogId: '', viaLye: false });
+  });
+});

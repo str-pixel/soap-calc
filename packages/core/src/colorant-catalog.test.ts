@@ -240,6 +240,39 @@ describe('the lye-solution route', () => {
     expect(COLORANT_LYE_ABSORPTION_CAUTION).toMatch(/never set/i);
   });
 
+  it('the absorption caution rides only on a form that is steeped and lifted back out', () => {
+    const absorbing = COLORANT_CATALOG.filter((e) => e.lyeRoute?.absorbs).map((e) => e.id);
+    // Madder pieces are strained out swollen, which is what takes the alkali with them.
+    expect(absorbing).toEqual(['madder-root']);
+    // A clay stays in; calendula petals go in "flower petals and all"; a powder never
+    // leaves. None of them can carry lye out of the batch.
+    for (const id of ['kaolin-clay', 'calendula', 'spirulina', 'activated-charcoal', 'cocoa-powder']) {
+      expect(colorantEntryById(id)!.lyeRoute?.absorbs).toBeUndefined();
+    }
+  });
+
+  it('a mineral colour is marked as one, so the plant-pigment caution can skip it', () => {
+    for (const id of ['kaolin-clay', 'french-green-clay', 'dead-sea-mud', 'activated-charcoal', 'rhassoul-clay']) {
+      expect(colorantEntryById(id)!.mineral).toBe(true);
+    }
+    for (const id of ['spirulina', 'madder-root', 'turmeric', 'beet-root', 'calendula']) {
+      expect(colorantEntryById(id)!.mineral).toBeUndefined();
+    }
+    // The caution is about plant pigments, which is why it cannot be shown for a clay.
+    expect(NATURAL_COLORANT_CAUTION).toMatch(/plant pigment/);
+  });
+
+  it('no note tells a maker to wet a colour that the lye route already wets', () => {
+    // The lye solution IS the solvent, so a base note prescribing a premix has to say it
+    // is the other route's instruction — or the panel contradicts itself on screen.
+    for (const e of COLORANT_CATALOG) {
+      if (!e.lyeRoute || !e.note) continue;
+      if (/wet it in|premix it|mix it into a/i.test(e.note)) {
+        expect(e.note, `${e.id} must scope its premix instruction`).toMatch(/unless it is going through the lye|lye water/i);
+      }
+    }
+  });
+
   it('indigo names the dry-lye route and the smell, madder names the straining', () => {
     expect(colorantEntryById('indigo')!.lyeRoute!.note).toMatch(/dry lye/i);
     expect(colorantEntryById('indigo')!.lyeRoute!.note).toMatch(/pungent/i);

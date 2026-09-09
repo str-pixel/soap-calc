@@ -175,6 +175,20 @@ test.describe('colorants, seen in each process', () => {
     await expect(panel(page)).toContainText(/never set at 30 g of root in 160 g of water/);
     await page.screenshot({ path: `${SHOTS}/colorants-cp-lye.png`, fullPage: true });
 
+    // The absorption warning belongs to steeped-and-strained pieces, which madder is.
+    await expect(panel(page)).toContainText(/Dried pieces swell in the lye solution/);
+    // A clay is not: it stays in, and it is a mineral, so neither that warning nor the
+    // plant-pigment one follows it — and its own note no longer argues with the route.
+    await page.getByLabel(/Colorant for/).selectOption('kaolin-clay');
+    // The route does not ride across with the pick: the new material starts derived.
+    await expect(panel(page)).not.toContainText(/Stir into the lye solution itself/);
+    await panel(page).getByRole('radio', { name: 'In lye water' }).click();
+    await expect(panel(page)).not.toContainText(/Dried pieces swell in the lye solution/);
+    await expect(panel(page)).not.toContainText(/anthocyanins in berries/);
+    await expect(panel(page)).toContainText(/Unless it is going through the lye, wet it in water/);
+    await page.getByLabel(/Colorant for/).selectOption('madder-root');
+    await panel(page).getByRole('radio', { name: 'In lye water' }).click();
+
     // Splitting the batter cannot claim a colour that is in the pot before the batter is.
     await page.getByRole('button', { name: /split the batter/i }).click();
     await page.getByLabel('Portion name').fill('Swirl');

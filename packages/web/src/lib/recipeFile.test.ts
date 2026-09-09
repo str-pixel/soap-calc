@@ -22,7 +22,7 @@ describe('recipeFile', () => {
 
     expect(parsed.data.name).toBe('Test batch');
     expect(parsed.data.lines).toHaveLength(3);
-    expect(parsed.data.version).toBe(3);
+    expect(parsed.data.version).toBe(4);
     expect(recipeLinesFromFile(parsed.data.lines)).toHaveLength(3);
   });
 
@@ -764,15 +764,15 @@ describe('imports are app recipes only: declared process must match its lye choi
   });
 });
 
-describe('recipe file v3 carries scentColor', () => {
-  it('serializes at version 3 and parses it back; a v2 file without the field parses as empty', () => {
+describe('the recipe file carries scentColor', () => {
+  it('serializes at the current version and parses it back; a v2 file without the field parses as empty', () => {
     const scent = normalizeScentColor({
       fragrances: [{ name: 'Rose', percent: '4', supplierMaxPercent: '5', vanillinPercent: '2', allergens: [{ name: 'Citronellol', percentOfFragrance: '3' }] }],
       colorants: [{ name: 'Pink mica', kind: 'mica', percent: '', portionKey: '' }],
       portions: [{ name: 'A', percent: '40' }],
     });
     const payload = serializeRecipeFile('r', createStarterLines(), DEFAULT_SETTINGS, [], 'cp', scent);
-    expect(payload.version).toBe(3);
+    expect(payload.version).toBe(4);
     const parsed = parseRecipeFile(JSON.stringify(payload));
     if (!parsed.ok) throw new Error(parsed.error);
     expect(parsed.data.scentColor.fragrances[0].allergens[0].name).toBe('Citronellol');
@@ -782,6 +782,29 @@ describe('recipe file v3 carries scentColor', () => {
     const parsedV2 = parseRecipeFile(JSON.stringify(v2));
     if (!parsedV2.ok) throw new Error(parsedV2.error);
     expect(normalizeScentColor(parsedV2.data.scentColor)).toEqual(createEmptyScentColor());
-    expect(parsedV2.data.version).toBe(3);
+    // A legacy file is reported at the current version once parsed — the loader has
+    // already filled in everything the newer versions added.
+    expect(parsedV2.data.version).toBe(4);
+  });
+
+  it('v4 carries the colorant lye route, and a v3 file simply arrives without it', () => {
+    const scent = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'madder-root', name: '', kind: 'natural', percent: '0.88', portionKey: '', viaLye: true }],
+      portions: [],
+    });
+    const payload = serializeRecipeFile('r', createStarterLines(), DEFAULT_SETTINGS, [], 'cp', scent);
+    const parsed = parseRecipeFile(JSON.stringify(payload));
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(normalizeScentColor(parsed.data.scentColor).colorants[0].viaLye).toBe(true);
+    // The v3 shape: same file, field dropped, which is exactly what an older build wrote.
+    const v3 = {
+      ...payload,
+      version: 3,
+      scentColor: { ...payload.scentColor, colorants: payload.scentColor.colorants.map(({ viaLye: _drop, ...rest }) => rest) },
+    } as Record<string, unknown>;
+    const parsedV3 = parseRecipeFile(JSON.stringify(v3));
+    if (!parsedV3.ok) throw new Error(parsedV3.error);
+    expect(normalizeScentColor(parsedV3.data.scentColor).colorants[0].viaLye).toBe(false);
   });
 });

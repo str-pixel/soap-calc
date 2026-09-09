@@ -104,8 +104,10 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
    * Custom… hands the name, the kind and the dose back. */
   const pickCatalog = (key: string, catalogId: string) => {
     const entry = catalogId ? colorantEntryById(catalogId) : undefined;
+    // A different material is a different stage decision: the lye route belongs to the
+    // colour that was picked, so it does not ride across to the next one.
     if (!entry) {
-      setColorant(key, { catalogId: '', percent: '' });
+      setColorant(key, { catalogId: '', percent: '', viaLye: false });
       return;
     }
     setColorant(key, {
@@ -113,6 +115,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
       name: entry.name,
       kind: entry.kind,
       percent: entry.tspPerLbLow !== null ? percentValue(entry.tspPerLbLow) : '',
+      viaLye: false,
     });
   };
   const removePortion = (key: string) =>
@@ -388,10 +391,16 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
               </li>
             );
           })}
-          {scent.colorants.some((c) => colorantEntryById(c.catalogId)?.kind === 'natural') && (
+          {/* A clay, a mud or charcoal is a mineral: it has no plant pigment to lose. */}
+          {scent.colorants.some((c) => {
+            const e = colorantEntryById(c.catalogId);
+            return e?.kind === 'natural' && !e.mineral;
+          }) && (
             <li className="inline-note">{NATURAL_COLORANT_CAUTION}</li>
           )}
-          {scent.colorants.some((c) => c.viaLye && colorantEntryById(c.catalogId)?.kind === 'natural') && (
+          {/* Only the steeped-and-strained forms take lye out of the batch with them; a
+              powder or a petal that stays in cannot. */}
+          {scent.colorants.some((c) => c.viaLye && colorantEntryById(c.catalogId)?.lyeRoute?.absorbs) && (
             <li className="inline-note">{COLORANT_LYE_ABSORPTION_CAUTION}</li>
           )}
           {computed.carrierOilGrams > 0 && (

@@ -22,11 +22,13 @@ const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
 // v3: NaOH purity '100' in older drafts is migrated to the current default (see
 // migrateSettings). v4: the Fragrance & colorants section (`scentColor`) — bumped so that
 // a build that predates it PARKS the draft as unreadable (backupUnreadableDraft) instead of
-// reading it without the section and overwriting it on its first autosave; the recipe file
-// draws the same line at RECIPE_FILE_VERSION 3. Version list accepted by loadDraftSlot
-// must include every older version.
-const STORAGE_VERSION = 4;
-const READABLE_VERSIONS = [1, 2, 3, STORAGE_VERSION];
+// reading it without the section and overwriting it on its first autosave. v5: the colorant
+// lye route (`viaLye`), for the same reason — an older build would drop it and autosave a
+// colour back at a stage the maker did not choose. The recipe file draws the same line at
+// RECIPE_FILE_VERSION 4. Version list accepted by loadDraftSlot must include every older
+// version.
+const STORAGE_VERSION = 5;
+const READABLE_VERSIONS = [1, 2, 3, 4, STORAGE_VERSION];
 
 function draftKey(process: ProcessId): string {
   return `soap-calc:draft:${process}`;

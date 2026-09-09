@@ -27,9 +27,9 @@ export type ColorantLine = {
   percent: string;
   /** '' = whole batter. */
   portionKey: string;
-  /** 'lye' when the maker sends this colour through the lye solution; '' to let the app
-   * derive the stage from the process and the portion, which is the usual case. Only a
-   * catalog entry with a lyeRoute, in a process that offers it, can hold 'lye'. */
+  /** True when the maker sends this colour through the lye solution instead of letting the
+   * app derive the stage from the process and the portion, which is the usual case. Only a
+   * catalog entry with a lyeRoute, in a process that offers it, can hold it true. */
   viaLye: boolean;
 };
 export type Portion = { key: string; name: string; percent: string };
