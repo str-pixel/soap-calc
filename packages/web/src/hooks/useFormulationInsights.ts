@@ -18,6 +18,7 @@ import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
 import { colorantEntryById, colorantSharesMaterialWithAdditive } from '@soap-calc/core';
 import { colorantCeilingPercent } from '../lib/colorantGuidance';
+import { isBudgetSizeMode } from '../lib/splitLiquidSizing';
 import type { ComputedScentColor } from '../lib/computeScentColor';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
@@ -25,7 +26,7 @@ import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/rec
 export function totalAdditivePercentForInsights(
   additives: Array<{ catalogId?: string; grams: number; addAt?: AdditiveStage }>,
   oilGrams: number,
-  splitLiquidRows: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null; presetKey?: string }>,
+  splitLiquidRows: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null; presetKey?: string; sizeMode?: SplitLiquidSettings['sizeMode'] }>,
 ): number {
   const additivePercent =
     oilGrams > 0
@@ -122,7 +123,7 @@ export function sugarTotalPercentForInsights(
 
 type FormulationInsightOptions = {
   splitLiquidGrams?: number | null;
-  splitLiquidRows?: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null; presetKey?: string }>;
+  splitLiquidRows?: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null; presetKey?: string; sizeMode?: SplitLiquidSettings['sizeMode'] }>;
   suggestedLyeWaterGrams?: number | null;
   splitLiquidWaterReductionGrams?: number | null;
   additives?: ComputedAdditive[];
@@ -174,6 +175,9 @@ export function useFormulationInsights(
     const sizedSplitRows = options.splitLiquidRows
       ? options.splitLiquidRows.filter((r) => r.grams != null && r.grams > 0)
       : undefined;
+    // The same rows, always a list — the colour rules ask "is this liquid in the pot?",
+    // which has an answer (no) even when the caller passed no rows at all.
+    const sizedLiquidRows = sizedSplitRows ?? [];
     if (!lyeResult) return [];
     const totalAdditivePercent = totalAdditivePercentForInsights(
       options.additives ?? [],
@@ -295,18 +299,35 @@ export function useFormulationInsights(
       // split-liquid section is what sizes that. Listed only while no such row exists —
       // once it does, the water figure is already right and there is nothing to say.
       colorantsAsLiquid: (() => {
-        const enteredPresets = new Set(
-          (options.splitLiquidRows ?? [])
-            .filter((r) => r.grams != null && r.grams > 0 && r.presetKey)
-            .map((r) => r.presetKey as string),
-        );
         const seen = new Set<string>();
-        const rows: Array<{ name: string; liquid: string }> = [];
+        const rows: Array<{ name: string; liquid: string; sizedOnTop: boolean }> = [];
         for (const c of options.scentColor?.colorants ?? []) {
           if (!c.viaLye || !c.catalogId) continue;
           const entry = colorantEntryById(c.catalogId);
           const key = entry?.alsoSplitLiquidKey;
-          if (!key || enteredPresets.has(key) || seen.has(entry.id)) continue;
+          if (!key || seen.has(entry.id)) continue;
+          const preset = alternativeLiquidPreset(key);
+          if (!preset) continue;
+          const rowsForKey = sizedLiquidRows.filter((r) => r.presetKey === key);
+          // Only a row that CARVES the liquid out of the budget makes the water figure
+          // right; sized on top, the water is still the full plain-water figure.
+          if (rowsForKey.some((r) => r.sizeMode !== undefined && isBudgetSizeMode(r.sizeMode))) continue;
+          seen.add(entry.id);
+          rows.push({ name: entry.name, liquid: preset.label, sizedOnTop: rowsForKey.length > 0 });
+        }
+        return rows;
+      })(),
+      // The same material entered twice — a dose here AND a liquid row — is weighed twice.
+      // The preset is a bucket, so this is a question, never an assertion.
+      colorantsDoubleAsLiquid: (() => {
+        const seen = new Set<string>();
+        const rows: Array<{ name: string; liquid: string }> = [];
+        for (const c of options.scentColor?.colorants ?? []) {
+          if (c.grams === null || c.grams <= 0 || !c.catalogId) continue;
+          const entry = colorantEntryById(c.catalogId);
+          const key = entry?.alsoSplitLiquidKey;
+          if (!key || seen.has(entry.id)) continue;
+          if (!sizedLiquidRows.some((r) => r.presetKey === key)) continue;
           const preset = alternativeLiquidPreset(key);
           if (!preset) continue;
           seen.add(entry.id);

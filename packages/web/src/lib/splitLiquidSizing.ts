@@ -1,5 +1,5 @@
 import { DEFAULT_LYE_WATER_RATIO, DEFAULT_WATER_PERCENT, type WaterMode } from '@soap-calc/core';
-import type { RecipeSettings, SplitLiquidRow } from './recipe';
+import type { RecipeSettings, SplitLiquidRow, SplitLiquidSizeMode } from './recipe';
 
 /**
  * Whether the recipe's water setting reads as a TOTAL-LIQUID budget that a liquid can be
@@ -16,6 +16,17 @@ const MIN_LYE_WATER_RATIO = 0.001;
 
 export function budgetSizingAvailable(waterMode: WaterMode): boolean {
   return waterMode === 'percent_of_oils' || waterMode === 'lye_water_ratio';
+}
+
+/**
+ * Whether a size mode CARVES the liquid out of the recipe's total liquid rather than
+ * stacking it on top. The two additive modes leave the water exactly where it was, so a
+ * liquid sized that way has not replaced any of it — the one thing a caller reasoning
+ * about "is the water figure right?" has to know. A budget row with no budget resolves to
+ * no grams at all (see resolveSplitLiquidRows), so a sized budget row always did carve.
+ */
+export function isBudgetSizeMode(sizeMode: SplitLiquidSizeMode): boolean {
+  return sizeMode === 'percent_of_liquid' || sizeMode === 'rest';
 }
 
 type SizingContext = {

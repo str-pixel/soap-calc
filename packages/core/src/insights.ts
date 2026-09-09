@@ -154,9 +154,15 @@ export type FormulationAnalysisInput = {
   /** Colours dosed above the top of their OWN sourced band, carrying that ceiling. */
   colorantsOverRate?: Array<{ name: string; percent: number; maxPercent: number }>;
   /** Colours going through the lye that are LIQUIDS the split-liquid section could size —
-   * a purée standing in for part of the water — with no such row entered yet. Only the
-   * unentered ones are listed: once the row exists, the water figure is already right. */
-  colorantsAsLiquid?: Array<{ name: string; liquid: string }>;
+   * a purée standing in for part of the water — whose weight has not come out of the water
+   * budget. `sizedOnTop` separates the two ways that happens: no liquid row at all, or a
+   * row sized by weight / % of oils, which stacks on top instead of carving out. A row
+   * that did carve is not listed: the water figure is already right. */
+  colorantsAsLiquid?: Array<{ name: string; liquid: string; sizedOnTop: boolean }>;
+  /** A colour DOSED here whose material is also sized as a split liquid. The preset is a
+   * bucket ("Fruit or vegetable puree" covers carrot and pumpkin alike), so this can only
+   * ever be raised as a question — the same discipline colorantAdditiveOverlap follows. */
+  colorantsDoubleAsLiquid?: Array<{ name: string; liquid: string }>;
 };
 
 export type InsightRuleParams = Record<string, number | string>;
@@ -1357,12 +1363,30 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       const rows = input.colorantsAsLiquid ?? [];
       if (rows.length === 0) return null;
-      const names = rows.map((r) => `${r.name} (as ${r.liquid.toLowerCase()})`).join(', ');
-      return {
-        level: 'info',
-        code: 'colorant_puree_as_liquid',
-        message: `${names} — in the lye solution a purée stands in for part of the liquid instead of adding to it. Add it under Split liquid and its weight comes out of the water budget; left here it colours the batch but the water figure still assumes plain water.`,
-      };
+      const named = (list: typeof rows) => list.map((r) => `${r.name} (as ${r.liquid.toLowerCase()})`).join(', ');
+      const missing = rows.filter((r) => !r.sizedOnTop);
+      const onTop = rows.filter((r) => r.sizedOnTop);
+      const parts: string[] = [];
+      if (missing.length > 0) {
+        parts.push(`${named(missing)} — in the lye solution a purée stands in for part of the liquid instead of adding to it. Add it under Split liquid and its weight comes out of the water budget; left here it colours the batch but the water figure still assumes plain water.`);
+      }
+      if (onTop.length > 0) {
+        // Sized by weight or % of oils, the liquid is added ON TOP of the full water. The
+        // row exists, so the material is accounted for — the water is not.
+        parts.push(`${named(onTop)} — sized under Split liquid on top of the water rather than out of it, so the water figure still assumes plain water. Size it by % of total liquid, or as all liquid above the lye minimum, to take it out of the budget.`);
+      }
+      return { level: 'info', code: 'colorant_puree_as_liquid', message: parts.join(' ') };
+    },
+  },
+  {
+    code: 'colorant_liquid_double_count',
+    check: (input) => {
+      const rows = input.colorantsDoubleAsLiquid ?? [];
+      if (rows.length === 0) return null;
+      const parts = rows.map(
+        (r) => `${r.name} carries a dose here, and ${r.liquid.toLowerCase()} is also sized under Split liquid — if that is the same jar, its weight is counted twice in the batch.`,
+      );
+      return { level: 'info', code: 'colorant_liquid_double_count', message: parts.join(' ') };
     },
   },
   {

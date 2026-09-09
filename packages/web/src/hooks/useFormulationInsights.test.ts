@@ -618,10 +618,8 @@ describe('a purée colour in the lye is a liquid the water budget should know ab
     dispersal: { method: 'lye-solution' as const },
     ...over,
   });
-  function harness(
-    colorants: ComputedScentColor['colorants'],
-    splitLiquidRows: Array<{ addAt: 'lye' | 'oils' | 'trace'; grams: number | null; presetKey?: string }> = [],
-  ) {
+  type Row = { addAt: 'lye' | 'oils' | 'trace'; grams: number | null; presetKey?: string; sizeMode?: 'percent_of_oils' | 'grams' | 'percent_of_liquid' | 'rest' };
+  function harness(colorants: ComputedScentColor['colorants'], splitLiquidRows: Row[] = []) {
     const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
     const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
     return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
@@ -630,24 +628,56 @@ describe('a purée colour in the lye is a liquid the water budget should know ab
       scentColor: { ...emptyComputedScentColor(), colorants },
     });
   }
-  const msg = (
-    colorants: ComputedScentColor['colorants'],
-    rows: Array<{ addAt: 'lye' | 'oils' | 'trace'; grams: number | null; presetKey?: string }> = [],
-  ) => {
+  const msg = (colorants: ComputedScentColor['colorants'], rows: Row[] = []) => {
     const { result } = renderHook(() => harness(colorants, rows));
     return result.current.insights.find((i) => i.code === 'colorant_puree_as_liquid')?.message;
   };
+  const doubleMsg = (colorants: ComputedScentColor['colorants'], rows: Row[] = []) => {
+    const { result } = renderHook(() => harness(colorants, rows));
+    return result.current.insights.find((i) => i.code === 'colorant_liquid_double_count')?.message;
+  };
+  const carved: Row = { addAt: 'lye', grams: 120, presetKey: 'puree', sizeMode: 'percent_of_liquid' };
+  const onTop: Row = { addAt: 'lye', grams: 120, presetKey: 'puree', sizeMode: 'grams' };
 
   it('says so while the purée is only a colour', () => {
     expect(msg([puree()])).toMatch(/Carrot puree \(as fruit or vegetable puree\)/);
     expect(msg([puree()])).toMatch(/comes out of the water budget/);
   });
 
-  it('goes quiet once the liquid is actually entered and sized', () => {
-    expect(msg([puree()], [{ addAt: 'lye', grams: 120, presetKey: 'puree' }])).toBeUndefined();
+  it('goes quiet once the liquid is carved out of the water budget', () => {
+    expect(msg([puree()], [carved])).toBeUndefined();
+    expect(msg([puree()], [{ ...carved, sizeMode: 'rest' }])).toBeUndefined();
     // A different liquid is not that liquid, and an unsized row has not changed the water.
-    expect(msg([puree()], [{ addAt: 'lye', grams: 120, presetKey: 'milk' }])).toBeTruthy();
-    expect(msg([puree()], [{ addAt: 'lye', grams: null, presetKey: 'puree' }])).toBeTruthy();
+    expect(msg([puree()], [{ ...carved, presetKey: 'milk' }])).toBeTruthy();
+    expect(msg([puree()], [{ ...carved, grams: null }])).toBeTruthy();
+  });
+
+  it('keeps talking when the row was stacked ON TOP of the water instead of carved out', () => {
+    // The two additive size modes leave the water exactly where it was, so the row exists
+    // but the water figure is still the full plain-water figure — the case the notice is for.
+    for (const sizeMode of ['grams', 'percent_of_oils'] as const) {
+      const text = msg([puree()], [{ ...onTop, sizeMode }]);
+      expect(text).toMatch(/on top of the water rather than out of it/);
+      expect(text).toMatch(/% of total liquid/);
+      // and it does not also give the "add it under Split liquid" advice for a row that exists
+      expect(text).not.toMatch(/Add it under Split liquid/);
+    }
+    // One carved row settles it even beside a stacked one — the water did come out.
+    expect(msg([puree()], [onTop, carved])).toBeUndefined();
+  });
+
+  it('asks about a double count when the same material is dosed here AND sized there', () => {
+    // Dosed as a colour and entered as a liquid: both weights land in the batch.
+    expect(doubleMsg([puree({ percent: 1, grams: 10 })], [carved]))
+      .toMatch(/Carrot puree carries a dose here.*counted twice/);
+    // The preset is a bucket — carrot the colour and pumpkin the liquid are not the same
+    // jar — so it is put as a question, never as a statement.
+    expect(doubleMsg([puree({ percent: 1, grams: 10 })], [carved])).toMatch(/if that is the same jar/);
+    // An undosed colour adds no weight, and a colour with no liquid row cannot double up.
+    expect(doubleMsg([puree()], [carved])).toBeUndefined();
+    expect(doubleMsg([puree({ percent: 1, grams: 10 })], [])).toBeUndefined();
+    // It does not depend on the lye route: the two weights add up wherever the colour goes.
+    expect(doubleMsg([puree({ percent: 1, grams: 10, viaLye: false, stage: 'oils' })], [carved])).toBeTruthy();
   });
 
   it('says nothing about a purée that is not going through the lye', () => {
