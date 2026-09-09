@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import {
   additiveMatches,
+  alternativeLiquidPreset,
   analyzeFormulation,
   estimateTraceSpeed,
   
@@ -24,7 +25,7 @@ import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/rec
 export function totalAdditivePercentForInsights(
   additives: Array<{ catalogId?: string; grams: number; addAt?: AdditiveStage }>,
   oilGrams: number,
-  splitLiquidRows: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null }>,
+  splitLiquidRows: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null; presetKey?: string }>,
 ): number {
   const additivePercent =
     oilGrams > 0
@@ -121,7 +122,7 @@ export function sugarTotalPercentForInsights(
 
 type FormulationInsightOptions = {
   splitLiquidGrams?: number | null;
-  splitLiquidRows?: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null }>;
+  splitLiquidRows?: Array<{ addAt: SplitLiquidSettings['addAt']; grams: number | null; presetKey?: string }>;
   suggestedLyeWaterGrams?: number | null;
   splitLiquidWaterReductionGrams?: number | null;
   additives?: ComputedAdditive[];
@@ -290,6 +291,29 @@ export function useFormulationInsights(
               if (!entry || maxPercent === null) return [];
               return c.percent > maxPercent ? [{ name: entry.name, percent: c.percent, maxPercent }] : [];
             }),
+      // A purée sent through the lye is a LIQUID standing in for part of the water; the
+      // split-liquid section is what sizes that. Listed only while no such row exists —
+      // once it does, the water figure is already right and there is nothing to say.
+      colorantsAsLiquid: (() => {
+        const enteredPresets = new Set(
+          (options.splitLiquidRows ?? [])
+            .filter((r) => r.grams != null && r.grams > 0 && r.presetKey)
+            .map((r) => r.presetKey as string),
+        );
+        const seen = new Set<string>();
+        const rows: Array<{ name: string; liquid: string }> = [];
+        for (const c of options.scentColor?.colorants ?? []) {
+          if (!c.viaLye || !c.catalogId) continue;
+          const entry = colorantEntryById(c.catalogId);
+          const key = entry?.alsoSplitLiquidKey;
+          if (!key || enteredPresets.has(key) || seen.has(entry.id)) continue;
+          const preset = alternativeLiquidPreset(key);
+          if (!preset) continue;
+          seen.add(entry.id);
+          rows.push({ name: entry.name, liquid: preset.label });
+        }
+        return rows;
+      })(),
       // Only a DOSED colour counts, and a one-to-one pairing is stated as a double dose
       // while a generic additive bucket is raised as a question (see the rule).
       colorantAdditiveOverlap: (() => {

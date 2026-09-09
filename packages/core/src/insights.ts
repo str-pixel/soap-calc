@@ -153,6 +153,10 @@ export type FormulationAnalysisInput = {
   colorantAdditiveOverlap?: Array<{ colorant: string; additive: string; sameMaterial: boolean }>;
   /** Colours dosed above the top of their OWN sourced band, carrying that ceiling. */
   colorantsOverRate?: Array<{ name: string; percent: number; maxPercent: number }>;
+  /** Colours going through the lye that are LIQUIDS the split-liquid section could size —
+   * a purée standing in for part of the water — with no such row entered yet. Only the
+   * unentered ones are listed: once the row exists, the water figure is already right. */
+  colorantsAsLiquid?: Array<{ name: string; liquid: string }>;
 };
 
 export type InsightRuleParams = Record<string, number | string>;
@@ -1344,6 +1348,21 @@ export const INSIGHT_RULES: InsightRule[] = [
         parts.push(`${r.colorant} — Additives also carries ${r.additive}; if that is the same jar, the two doses add up.`);
       }
       return { level: 'info', code: 'colorant_also_additive', message: parts.join(' ') };
+    },
+  },
+  {
+    code: 'colorant_puree_as_liquid',
+    // CP-only, like the lye route itself (COLORANT_LYE_ROUTE_PROCESSES).
+    processes: ['cp'],
+    check: (input) => {
+      const rows = input.colorantsAsLiquid ?? [];
+      if (rows.length === 0) return null;
+      const names = rows.map((r) => `${r.name} (as ${r.liquid.toLowerCase()})`).join(', ');
+      return {
+        level: 'info',
+        code: 'colorant_puree_as_liquid',
+        message: `${names} — in the lye solution a purée stands in for part of the liquid instead of adding to it. Add it under Split liquid and its weight comes out of the water budget; left here it colours the batch but the water figure still assumes plain water.`,
+      };
     },
   },
   {

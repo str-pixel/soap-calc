@@ -383,6 +383,13 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                   </p>
                 )}
                 {entry?.note && <p className="inline-note additive-list__hint">{entry.note}</p>}
+                {entry?.alsoSplitLiquidKey && (
+                  <p className="inline-note additive-list__hint">
+                    Also a liquid: entered under Split liquid it stands in for part of the
+                    recipe&apos;s water, and the water figure follows. Dosed here it only
+                    colours — the water still counts as plain water.
+                  </p>
+                )}
                 {entry?.alsoAdditiveId && (
                   <p className="inline-note additive-list__hint">
                     Also covered under Additives — dose it there instead when it is going in for slip, scrub or absorbency rather than for colour.

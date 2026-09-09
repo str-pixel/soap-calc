@@ -148,6 +148,17 @@ test.describe('colorants, seen in each process', () => {
     await expect(insights).toContainText(/Kaolin clay at 5\.00% against 0\.90%/);
     await page.screenshot({ path: `${SHOTS}/colorants-overdose.png`, fullPage: true });
 
+    // Hot process too — each process keeps its own draft, so the colour is picked again.
+    // Nothing else about an HP colour moves (it takes no carrier oil), so this is the leg
+    // that catches insights sitting on a stale answer.
+    await processTab(page, /Hot process/).click();
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    await page.getByLabel(/Colorant for/).selectOption('kaolin-clay');
+    await page.getByLabel(/Kaolin clay dose/).fill('0.9');
+    await expect(notesPanel(page)).not.toContainText(/Past the rate its source gives/);
+    await page.getByLabel(/Kaolin clay dose/).fill('5');
+    await expect(notesPanel(page)).toContainText(/Kaolin clay at 5\.00% against 0\.90%/);
+
     await expectNoJunk(page);
     expect(problems, 'browser reported nothing').toEqual([]);
   });
@@ -199,6 +210,34 @@ test.describe('colorants, seen in each process', () => {
     await processTab(page, /Hot process/).click();
     await expect(panel(page).getByRole('radiogroup', { name: /^Add at for/ })).toHaveCount(0);
     await expect(panel(page)).not.toContainText(/Stir into the lye solution itself/);
+
+    await expectNoJunk(page);
+    expect(problems, 'browser reported nothing').toEqual([]);
+  });
+
+  test('a puree in the lye is a liquid: the note points at the water budget, and goes when it is sized', async ({ page }) => {
+    const problems = watchForErrors(page);
+    await fresh(page);
+
+    await page.getByRole('button', { name: /add colorant/i }).click();
+    await page.getByLabel(/Colorant for/).selectOption('carrot-puree');
+    await panel(page).getByRole('radio', { name: 'In lye water' }).click();
+
+    // A purée stands in for part of the water rather than riding on top of it, and the
+    // app can size that — so the panel points at the machinery, not at arithmetic.
+    await expect(panel(page)).toContainText(/Enter it as a split liquid and that water comes out for you/);
+    await expect(panel(page)).toContainText(/Also a liquid: entered under Split liquid/);
+    await expect(notesPanel(page)).toContainText(/Carrot puree \(as fruit or vegetable puree\)/);
+    await page.screenshot({ path: `${SHOTS}/colorants-puree-lye.png`, fullPage: true });
+
+    // Enter it where it is actually sized: the water figure now accounts for it, so the
+    // note has nothing left to say.
+    await page.getByRole('button', { name: /add liquid/i }).click();
+    await page.getByLabel('Liquid preset').last().selectOption('puree');
+    await page.getByLabel('Sized by').last().selectOption('percent_of_liquid');
+    await page.getByLabel('Amount').last().fill('40');
+    await expect(notesPanel(page)).not.toContainText(/as fruit or vegetable puree/);
+    await page.screenshot({ path: `${SHOTS}/colorants-puree-sized.png`, fullPage: true });
 
     await expectNoJunk(page);
     expect(problems, 'browser reported nothing').toEqual([]);

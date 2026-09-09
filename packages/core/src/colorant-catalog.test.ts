@@ -1,3 +1,4 @@
+import { alternativeLiquidPreset } from './alternative-liquids.js';
 import { describe, expect, it } from 'vitest';
 import { catalogEntryById } from './additives.js';
 import {
@@ -281,7 +282,19 @@ describe('the lye-solution route', () => {
     expect(colorantEntryById('calendula')!.lyeRoute!.note).toMatch(/unstrained/i);
     // A clay needs no extra water on this route, unlike at trace.
     expect(colorantEntryById('kaolin-clay')!.lyeRoute!.note).toMatch(/no extra water/i);
-    // A purée displaces the water instead.
-    expect(colorantEntryById('carrot-puree')!.lyeRoute!.note).toMatch(/displaces it/i);
+    // A purée is a liquid, so it stands in for water rather than riding on it — and the
+    // note sends the maker to the machinery that sizes that, not to arithmetic.
+    expect(colorantEntryById('carrot-puree')!.lyeRoute!.note).toMatch(/stands in for part of the recipe's liquid/i);
+    expect(colorantEntryById('carrot-puree')!.lyeRoute!.note).toMatch(/split liquid/i);
+    expect(colorantEntryById('carrot-puree')!.alsoSplitLiquidKey).toBe('puree');
+    expect(colorantEntryById('pumpkin-puree')!.alsoSplitLiquidKey).toBe('puree');
+    // Every liquid pointer must name a preset that actually exists.
+    for (const e of COLORANT_CATALOG) {
+      if (!e.alsoSplitLiquidKey) continue;
+      expect(alternativeLiquidPreset(e.alsoSplitLiquidKey), e.id).not.toBeNull();
+    }
+    // A powder is not a liquid: nothing else claims to stand in for water.
+    expect(COLORANT_CATALOG.filter((e) => e.alsoSplitLiquidKey).map((e) => e.id))
+      .toEqual(['carrot-puree', 'pumpkin-puree']);
   });
 });

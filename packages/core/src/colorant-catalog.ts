@@ -140,6 +140,11 @@ export type ColorantCatalogEntry = {
   mineral?: true;
   /** How the colour holds up over months. Absent where no source says. */
   stability?: ColorantStability;
+  /** The alternative-liquid preset that carries this material as a LIQUID. A purée is
+   * mostly water, so in the lye it replaces part of the recipe's liquid instead of adding
+   * to it — entered as a split liquid, the water comes out of the budget by itself and the
+   * figures stay right. Read with ALTERNATIVE_LIQUID_GUIDE. */
+  alsoSplitLiquidKey?: string;
   /** The additive-catalog entry that covers this material when it is dosed for a non-colour
    * purpose. Often a BUCKET: "Clay (bentonite, kaolin)", "Seeds (poppy, etc.)" and "Dried
    * botanicals, ground" each stand for many materials. */
@@ -187,6 +192,15 @@ export type ColorantCatalogEntry = {
  * than ruled out, and the app offers what is documented.
  */
 export const COLORANT_LYE_ROUTE_PROCESSES: readonly AdditiveProcess[] = ['cp'];
+
+/**
+ * A purée is not a powder: it is mostly water, so in the lye it stands in for part of the
+ * recipe's liquid rather than riding on top of it [MSM-Jo: "decrease water amount by the
+ * amount ... added"]. The app already sizes a liquid that way — see alsoSplitLiquidKey —
+ * so the note sends the maker there instead of asking for the arithmetic.
+ */
+const PUREE_LYE_ROUTE_NOTE =
+  'A purée is mostly water, so in the lye it stands in for part of the recipe\'s liquid rather than adding to it. Enter it as a split liquid and that water comes out for you. Expect the heat of the fresh solution to darken it.';
 
 /** Every clay takes the route on the same general rule, so they share one sentence rather
  * than nine copies of it that can drift apart [LG-clay]. */
@@ -311,8 +325,8 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'curry-powder', name: 'Curry powder', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'yarrow', name: 'Yarrow', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
   { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', mineral: true, tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: CLAY_LYE_ROUTE_NOTE } },
-  { id: 'carrot-puree', name: 'Carrot puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, lyeRoute: { note: 'A purée can go into the lye water, but it displaces it: take the same weight off the recipe\'s water, and expect the heat to darken it.' } },
-  { id: 'pumpkin-puree', name: 'Pumpkin puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, lyeRoute: { note: 'A purée can go into the lye water, but it displaces it: take the same weight off the recipe\'s water, and expect the heat to darken it.' } },
+  { id: 'carrot-puree', name: 'Carrot puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoSplitLiquidKey: 'puree', lyeRoute: { note: PUREE_LYE_ROUTE_NOTE } },
+  { id: 'pumpkin-puree', name: 'Pumpkin puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoSplitLiquidKey: 'puree', lyeRoute: { note: PUREE_LYE_ROUTE_NOTE } },
 
   // --- Red and pink (CP:9362-9363) ----------------------------------------------------
   { id: 'madder-root', name: 'Madder root', kind: 'natural', family: 'red', tspPerLbLow: 0.5, tspPerLbHigh: 2, note: 'Gel decides the hue, not just the depth: gelled runs coral to brick red, ungelled runs dusty rose to mauve, and the gap widens the more you use. Stirred in at trace rather than infused, it specks.', stability: 'stable', lyeRoute: { note: 'Steeped in the hot lye solution it can come out ruby to burgundy, brighter than at trace — but that colour is made by the alkali and much of it can go again over the cure. Strain the swollen pieces out before the solution meets the oils.', absorbs: true } },

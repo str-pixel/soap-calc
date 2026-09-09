@@ -16,6 +16,7 @@ const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
  * Slice 3's rule-catalog conversion must keep every one of these reachable. */
 const ALL_CODES = [
   'colorant_also_additive',
+  'colorant_puree_as_liquid',
   'colorant_carrier_superfat',
   'colorant_over_sourced_rate',
   'colorant_portions_over_100',

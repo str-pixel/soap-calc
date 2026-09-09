@@ -608,3 +608,57 @@ describe('a colour dosed past its own sourced rate is flagged', () => {
     expect(msg([colour({ catalogId: 'alkanet-root', name: 'Alkanet root', percent: 40 })])).toBeUndefined();
   });
 });
+
+describe('a purée colour in the lye is a liquid the water budget should know about', () => {
+  const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+  const puree = (over: Partial<ComputedScentColor['colorants'][number]> = {}) => ({
+    key: 'c1', catalogId: 'carrot-puree', name: 'Carrot puree', kind: 'natural' as const,
+    percent: null, grams: null, portionKey: '', portionName: '', portionPercent: null,
+    portionShareMissing: false, viaLye: true, stage: 'lye' as const,
+    dispersal: { method: 'lye-solution' as const },
+    ...over,
+  });
+  function harness(
+    colorants: ComputedScentColor['colorants'],
+    splitLiquidRows: Array<{ addAt: 'lye' | 'oils' | 'trace'; grams: number | null; presetKey?: string }> = [],
+  ) {
+    const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
+    const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
+    return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
+      process: 'cp',
+      splitLiquidRows,
+      scentColor: { ...emptyComputedScentColor(), colorants },
+    });
+  }
+  const msg = (
+    colorants: ComputedScentColor['colorants'],
+    rows: Array<{ addAt: 'lye' | 'oils' | 'trace'; grams: number | null; presetKey?: string }> = [],
+  ) => {
+    const { result } = renderHook(() => harness(colorants, rows));
+    return result.current.insights.find((i) => i.code === 'colorant_puree_as_liquid')?.message;
+  };
+
+  it('says so while the purée is only a colour', () => {
+    expect(msg([puree()])).toMatch(/Carrot puree \(as fruit or vegetable puree\)/);
+    expect(msg([puree()])).toMatch(/comes out of the water budget/);
+  });
+
+  it('goes quiet once the liquid is actually entered and sized', () => {
+    expect(msg([puree()], [{ addAt: 'lye', grams: 120, presetKey: 'puree' }])).toBeUndefined();
+    // A different liquid is not that liquid, and an unsized row has not changed the water.
+    expect(msg([puree()], [{ addAt: 'lye', grams: 120, presetKey: 'milk' }])).toBeTruthy();
+    expect(msg([puree()], [{ addAt: 'lye', grams: null, presetKey: 'puree' }])).toBeTruthy();
+  });
+
+  it('says nothing about a purée that is not going through the lye', () => {
+    expect(msg([puree({ viaLye: false, stage: 'oils' })])).toBeUndefined();
+    // and nothing about a powder, which really does ride on top of the water
+    expect(msg([puree({ catalogId: 'madder-root', name: 'Madder root' })])).toBeUndefined();
+  });
+
+  it('names each purée once, however many rows carry it', () => {
+    const both = msg([puree(), puree({ key: 'c2' }), puree({ key: 'c3', catalogId: 'pumpkin-puree', name: 'Pumpkin puree' })]);
+    expect(both!.match(/Carrot puree/g)).toHaveLength(1);
+    expect(both).toMatch(/Pumpkin puree/);
+  });
+});

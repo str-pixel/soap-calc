@@ -981,17 +981,25 @@ export function useRecipeViewModel({
   // Stable identity for the insights memo: built inline, this array was fresh every render
   // and defeated the memo (and, through `insights`, the batch-sheet memo) on every keystroke.
   const insightSplitRows = useMemo(
-    () => splitLiquidRows.map(({ row, grams }) => ({ addAt: row.addAt, grams })),
+    // presetKey rides along so a rule can ask WHICH liquid is in the pot, not just how
+    // much — the purée a colorant wants sized is a specific preset.
+    () => splitLiquidRows.map(({ row, grams }) => ({ addAt: row.addAt, grams, presetKey: row.presetKey })),
     [splitLiquidRows],
   );
-  // The insights read four fields of the section; keying on the whole object would re-run
-  // every rule (and rebuild the batch sheet) on each keystroke in a colorant name. Same
-  // serialized-key discipline as pcsfOilsKey above.
+  // The insights read a handful of fields of the section; keying on the whole object would
+  // re-run every rule (and rebuild the batch sheet) on each keystroke in a colorant name.
+  // Same serialized-key discipline as pcsfOilsKey above. The colorant projection carries
+  // exactly what the colour rules read — which catalog entry, its dose, and whether it is
+  // going through the lye. Keying on the carrier-oil shift alone was not enough: an
+  // undosed colour moves it not at all, and outside CP nothing moves it, so a colour rule
+  // could sit on a stale answer. The typed NAME is still left out on purpose — the rules
+  // quote the catalog's name, not the maker's.
   const insightScentKey = JSON.stringify({
     f: scentColorComputed.fragrances.map((f) => [f.name, f.percent, f.supplierMaxPercent, f.overSupplierMax, f.browning, f.caution]),
     a: scentColorComputed.labelAllergens,
     o: scentColorComputed.portionsOver100,
     c: scentColorComputed.carrierSuperfatShiftPercent,
+    k: scentColorComputed.colorants.map((c) => [c.catalogId, c.percent, c.viaLye]),
   });
   const insightScent = useMemo(
     () => scentColorComputed,

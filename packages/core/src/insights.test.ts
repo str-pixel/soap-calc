@@ -1085,10 +1085,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 51 unique codes', () => {
+  it('declares 52 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(51);
-    expect(new Set(declared).size).toBe(51);
+    expect(declared).toHaveLength(52);
+    expect(new Set(declared).size).toBe(52);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1101,7 +1101,7 @@ describe('rule registry consistency', () => {
     ...over,
   });
 
-  /** One known-firing probe input per declared code (51 total), reused from this file's and
+  /** One known-firing probe input per declared code (52 total), reused from this file's and
    * insights.golden.test.ts's own fixtures. Routed through analyzeFormulation (not a direct
    * rule.check() call) so the probe also exercises the `processes:` gate — a rule whose gate
    * excludes its own probe's process fails here, the exact blind spot a direct check() call
@@ -1258,6 +1258,10 @@ describe('rule registry consistency', () => {
     },
     colorant_also_additive: {
       colorantAdditiveOverlap: [{ colorant: 'Activated charcoal', additive: 'Charcoal', sameMaterial: true }],
+    },
+    colorant_puree_as_liquid: {
+      colorantsAsLiquid: [{ name: 'Carrot puree', liquid: 'Fruit or vegetable puree' }],
+      process: 'cp',
     },
     ls_fragrance_clouding: {
       fragranceRows: [{ name: 'F', percent: 1, supplierMaxPercent: 3, overSupplierMax: false, browning: 'none', caution: false }],

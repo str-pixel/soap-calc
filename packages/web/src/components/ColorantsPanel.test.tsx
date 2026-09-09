@@ -480,3 +480,17 @@ describe('picking a different colorant', () => {
     expect(onChange2.mock.calls[0][0].colorants[0]).toMatchObject({ catalogId: '', viaLye: false });
   });
 });
+
+it('a purée says it is also a liquid the water budget can size', () => {
+  const scent = normalizeScentColor({
+    fragrances: [],
+    colorants: [{ catalogId: 'carrot-puree', name: '', kind: 'natural', percent: '', portionKey: '', viaLye: true }],
+    portions: [],
+  });
+  renderPanel(scent, 'cp');
+  expect(screen.getByText(/Also a liquid: entered under Split liquid/)).toBeTruthy();
+  // and the route note points at the same place instead of asking for arithmetic
+  const text = document.querySelector('.additive-list')!.textContent!;
+  expect(text).toContain('Enter it as a split liquid and that water comes out for you');
+  expect(text).not.toContain('take the same weight off');
+});
