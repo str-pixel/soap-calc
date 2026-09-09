@@ -41,6 +41,10 @@ export type ComputedColorant = {
   portionKey: string; portionName: string; portionPercent: number | null;
   /** Linked to a portion that has no usable share yet — the typed dose cannot be sized. */
   portionShareMissing: boolean;
+  /** The oils this colour is dosed against: the recipe's, or its portion's share of them.
+   * Carried so a caller can turn a weight back into the percent that produced it without
+   * re-deriving the portion arithmetic. 0 when there is nothing to dose against yet. */
+  basisGrams: number;
   /** The maker sent this colour through the lye solution. */
   viaLye: boolean;
   /** What it is mixed with, once the process has had its say — everything but cold process
@@ -152,6 +156,7 @@ export function computeScentColorGrams(
       key: c.key, catalogId: c.catalogId, name: c.name, kind: c.kind, percent, grams,
       portionKey: portion?.key ?? '', portionName: portion?.name ?? '', portionPercent: portion?.percent ?? null,
       portionShareMissing: portion !== undefined && portion.percent === null && percent !== null,
+      basisGrams,
       viaLye,
       mixedWith,
       stage: colorantStage(process, portion !== undefined, viaLye, mixedWith),

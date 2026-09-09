@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import {
   colorantEntryById,
   COLORANT_LYE_ABSORPTION_CAUTION,
@@ -28,7 +28,7 @@ import {
   colorantClaimsPortion, MAX_SCENT_ROWS, newColorantLine, newPortion,
   type ColorantLine, type Portion, type ScentColor,
 } from '../lib/scentColor';
-import { formatWeight, type WeightUnit } from '../lib/weightUnits';
+import { displayValueToGrams, formatWeight, gramsStringToLineDisplay, type WeightUnit } from '../lib/weightUnits';
 import { SegRadioGroup } from './SegRadioGroup';
 
 type Props = {
@@ -39,6 +39,9 @@ type Props = {
   /** The recipe's own water, so the panel can say what the colour water is against it —
    * the book gives the per-colour figure but leaves "a large amount" to the maker. */
   waterGrams: number | null;
+  /** The batter a share is a share OF — oils, lye and water, the mass in the pot at trace.
+   * Lets a share be entered as a weight instead of a percent. Null before there is one. */
+  batterGrams: number | null;
   onChange: (next: ScentColor) => void;
 };
 
@@ -109,7 +112,40 @@ const PROCESS_COPY: Record<ProcessId, string> = {
   ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm anywhere from bright orange to deep red, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
 };
 
-export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, waterGrams, onChange }: Props) {
+export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, waterGrams, batterGrams, onChange }: Props) {
+  // A weight field is a VIEW of the percent that produced it, never a second source of
+  // truth: typing grams converts and stores the percent, so the two can never disagree.
+  // The draft is what the maker is part-way through typing — without it, every keystroke
+  // would be reformatted by the round trip through the percent.
+  const [weightDraft, setWeightDraft] = useState<Record<string, string>>({});
+  const draftKey = (kind: 'dose' | 'share', key: string) => `${kind}:${key}`;
+  const weightValue = (kind: 'dose' | 'share', key: string, grams: number | null) => {
+    const draft = weightDraft[draftKey(kind, key)];
+    if (draft !== undefined) return draft;
+    return grams === null || grams <= 0 ? '' : gramsStringToLineDisplay(String(grams), weightUnit);
+  };
+  const commitWeight = (
+    kind: 'dose' | 'share',
+    key: string,
+    raw: string,
+    basisGrams: number,
+    apply: (percent: string) => void,
+  ) => {
+    setWeightDraft((d) => ({ ...d, [draftKey(kind, key)]: raw }));
+    if (raw.trim() === '') return apply('');
+    const typed = Number(raw);
+    if (!Number.isFinite(typed) || typed < 0 || basisGrams <= 0) return;
+    // The field is in the maker's own unit; the percent behind it is not.
+    const grams = displayValueToGrams(typed, weightUnit);
+    apply(String(Number(((100 * grams) / basisGrams).toFixed(2))));
+  };
+  const clearDraft = (kind: 'dose' | 'share', key: string) =>
+    setWeightDraft((d) => {
+      if (!(draftKey(kind, key) in d)) return d;
+      const next = { ...d };
+      delete next[draftKey(kind, key)];
+      return next;
+    });
   /** Every write goes through here, so a share can never outlive the colour that asked for
    * it: a portion nothing points at is dropped on the way out. Without this a deleted row,
    * or one sent through the lye, left its share in the recipe — still counted in the total
@@ -326,6 +362,27 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                     through the lye drops it: it is in the pot before there is a batter to
                     split, so taking that route hands the share back rather than parking it
                     somewhere the maker can no longer see or edit. */}
+                {/* The same figure as a weight, and editable: a maker with a scale should not
+                    have to work out what 0.88% of their oils comes to. It is a VIEW of the
+                    percent — typing here stores a percent, so the two cannot disagree. */}
+                {c.basisGrams > 0 && (
+                  <label className="ledger__row additive-list__amount">
+                    <span className="micro-label">Weight</span>
+                    <span className="ledger__figure">
+                      <input
+                        type="number"
+                        className="input figure-field"
+                        min={0}
+                        step={0.1}
+                        aria-label={`${rowName} weight`}
+                        value={weightValue('dose', col.key, c.grams)}
+                        onChange={(e) => commitWeight('dose', col.key, e.target.value, c.basisGrams, (percent) => setColorant(col.key, { percent }))}
+                        onBlur={() => clearDraft('dose', col.key)}
+                      />
+                      <span className="ledger__unit">{weightUnit}</span>
+                    </span>
+                  </label>
+                )}
                 {colorantClaimsPortion(c, process) && (
                   <div className="additive-list__choice">
                     <span className="micro-label">Portion</span>
@@ -359,6 +416,24 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                         onChange={(e) => setPortion(ownPortion.key, { percent: e.target.value })}
                       />
                       <span className="ledger__unit">% of batter</span>
+                    </span>
+                  </label>
+                )}
+                {ownPortion && colorantClaimsPortion(c, process) && batterGrams !== null && batterGrams > 0 && (
+                  <label className="ledger__row additive-list__amount">
+                    <span className="micro-label">Batter</span>
+                    <span className="ledger__figure">
+                      <input
+                        type="number"
+                        className="input figure-field"
+                        min={0}
+                        step={0.1}
+                        aria-label={`${rowName} share weight`}
+                        value={weightValue('share', col.key, c.portionPercent === null ? null : (batterGrams * c.portionPercent) / 100)}
+                        onChange={(e) => commitWeight('share', col.key, e.target.value, batterGrams, (percent) => setPortion(ownPortion.key, { percent }))}
+                        onBlur={() => clearDraft('share', col.key)}
+                      />
+                      <span className="ledger__unit">{weightUnit}</span>
                     </span>
                   </label>
                 )}
@@ -400,16 +475,16 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                     <p className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</p>
                   )}
                 </div>
-                <div className="additive-list__foot">
-                  <span className="micro-label">Adds</span>
-                  <div className="additive-list__grams" aria-live="polite">
-                    {c.grams !== null
-                      ? formatWeight(c.grams, weightUnit)
-                      : c.portionShareMissing
-                        ? "enter the portion's share"
-                        : 'to shade'}
+                {/* Only for what the Weight field cannot say: a colour with no dose typed,
+                    or one whose portion has no share to size it against. */}
+                {c.grams === null && (
+                  <div className="additive-list__foot">
+                    <span className="micro-label">Adds</span>
+                    <div className="additive-list__grams" aria-live="polite">
+                      {c.portionShareMissing ? "enter the portion's share" : 'to shade'}
+                    </div>
                   </div>
-                </div>
+                )}
                 <p className="inline-note additive-list__hint">
                   {/* The ladder carries the dose AND what it buys, so the plain band would
                       only repeat it more vaguely. One or the other, never both. */}

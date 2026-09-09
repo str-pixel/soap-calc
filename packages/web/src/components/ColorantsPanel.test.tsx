@@ -4,14 +4,15 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ColorantsPanel } from './ColorantsPanel';
 import { createEmptyScentColor, normalizeScentColor, type ScentColor } from '../lib/scentColor';
 import { computedScent } from '../testing/scentFixtures';
+import { gramsStringToLineDisplay } from '../lib/weightUnits';
 import type { ProcessId } from '../lib/process';
 
 afterEach(cleanup);
 
-function renderPanel(scent: ScentColor, process: ProcessId, unit: 'g' | 'lb' = 'g', productGrams: number | null = 1300, waterGrams: number | null = 330) {
+function renderPanel(scent: ScentColor, process: ProcessId, unit: 'g' | 'lb' = 'g', productGrams: number | null = 1300, waterGrams: number | null = 330, batterGrams: number | null = 1470) {
   const computed = computedScent(scent, { process, totalOilGrams: 1000, solutionGrams: 3000, productGrams });
   const onChange = vi.fn();
-  render(<ColorantsPanel scent={scent} computed={computed} process={process} weightUnit={unit} waterGrams={waterGrams} onChange={onChange} />);
+  render(<ColorantsPanel scent={scent} computed={computed} process={process} weightUnit={unit} waterGrams={waterGrams} batterGrams={batterGrams} onChange={onChange} />);
   return onChange;
 }
 
@@ -50,7 +51,9 @@ describe('ColorantsPanel', () => {
     expect(dose.querySelector('.ledger__unit')!.textContent).toBe('% of oils');
     // every labelled block names itself in the label column
     expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
-      .toEqual(['Colorant', 'Name', 'Kind', 'Dose', 'Portion', 'Mix with', 'Add at', 'Adds']);
+      // 'Adds' is the undosed row's own line: the weight field is empty, so something has
+      // to say "to shade".
+      .toEqual(['Colorant', 'Name', 'Kind', 'Dose', 'Weight', 'Portion', 'Mix with', 'Add at', 'Adds']);
   });
 
   it('offers two buttons — the whole batter, or this colour\'s own portion', () => {
@@ -515,8 +518,8 @@ describe('the lye-solution route', () => {
       portions: [{ key: 'p1', name: 'Swirl', percent: '40' }],
     });
     renderPanel(split, 'cp');
-    // the whole batter's worth, not 40% of it
-    expect(screen.getByText('8.8 g')).toBeTruthy();
+    // the whole batter's worth, not 40% of it — read off the weight field beside the dose
+    expect((screen.getByLabelText(/Madder root weight/) as HTMLInputElement).value).toBe('8.8');
   });
 });
 
@@ -750,4 +753,63 @@ it('a colour that cannot hold a share does not keep pointing at one another colo
   // the other colour still holds the share, so the share itself stays
   expect(next.portions).toHaveLength(1);
   expect(next.colorants[1].portionKey).toBe(next.portions[0].key);
+});
+
+describe('a dose can be entered either way', () => {
+  const scent = normalizeScentColor({
+    fragrances: [],
+    colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '' }],
+    portions: [],
+  });
+
+  it('shows the weight the percent comes to, in the maker\'s own unit', () => {
+    renderPanel(scent, 'cp');
+    // 1% of 1000 g of oils
+    expect((screen.getByLabelText(/Mica weight/) as HTMLInputElement).value).toBe('10');
+    cleanup();
+    renderPanel(scent, 'cp', 'lb');
+    // The field follows the app's own weight-display convention, so it reads the same as
+    // every other weight on the row. The percent stays the source of truth: a colorant is
+    // a couple of hundredths of a pound, and only an actual edit changes what is stored.
+    expect((screen.getByLabelText(/Mica weight/) as HTMLInputElement).value)
+      .toBe(gramsStringToLineDisplay('10', 'lb'));
+  });
+
+  it('typing a weight stores the percent it works out to', () => {
+    const onChange = renderPanel(scent, 'cp');
+    fireEvent.change(screen.getByLabelText(/Mica weight/), { target: { value: '25' } });
+    // 25 g of 1000 g of oils
+    expect((onChange.mock.calls[0][0] as ScentColor).colorants[0].percent).toBe('2.5');
+  });
+
+  it('clearing the weight clears the dose, not just the field', () => {
+    const onChange = renderPanel(scent, 'cp');
+    fireEvent.change(screen.getByLabelText(/Mica weight/), { target: { value: '' } });
+    expect((onChange.mock.calls[0][0] as ScentColor).colorants[0].percent).toBe('');
+  });
+
+  it('a share can be entered as a weight of batter too', () => {
+    const split = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0' }],
+      portions: [{ name: '', percent: '40' }],
+    });
+    const onChange = renderPanel(split, 'cp');
+    // 40% of a 1,470 g batter
+    expect((screen.getByLabelText(/Mica share weight/) as HTMLInputElement).value).toBe('588');
+    fireEvent.change(screen.getByLabelText(/Mica share weight/), { target: { value: '735' } });
+    expect((onChange.mock.calls[0][0] as ScentColor).portions[0].percent).toBe('50');
+  });
+
+  it('says nothing to fill in when there is no batter to weigh against', () => {
+    const split = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0' }],
+      portions: [{ name: '', percent: '40' }],
+    });
+    renderPanel(split, 'cp', 'g', 1300, 330, null);
+    expect(screen.queryByLabelText(/share weight/i)).toBeNull();
+    // the share itself is still there to type
+    expect(screen.getByLabelText(/Mica share of the batter/)).toBeTruthy();
+  });
 });

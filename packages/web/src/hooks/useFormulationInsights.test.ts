@@ -499,7 +499,7 @@ describe('the double-dosing check reaches the rule only for a real double dose',
   }
   const colorant = (over: Partial<ComputedScentColor['colorants'][number]>) => ({
     key: 'c1', catalogId: '', name: '', kind: 'natural' as const, percent: 1, grams: 10,
-    portionKey: '', portionName: '', portionPercent: null, portionShareMissing: false, viaLye: false, mixedWith: 'oil' as const,
+    portionKey: '', portionName: '', portionPercent: null, portionShareMissing: false, viaLye: false, mixedWith: 'oil' as const, basisGrams: 1000,
     stage: 'oils' as const, dispersal: { method: 'carrier-oil' as const, carrierGrams: 10 },
     ...over,
   });
@@ -558,7 +558,7 @@ describe('a colour dosed past its own sourced rate is flagged', () => {
   const colour = (over: Partial<ComputedScentColor['colorants'][number]>) => ({
     key: 'c1', catalogId: 'activated-charcoal', name: 'Activated charcoal', kind: 'natural' as const,
     percent: 1, grams: 10, portionKey: '', portionName: '', portionPercent: null,
-    portionShareMissing: false, viaLye: false, mixedWith: 'oil' as const, stage: 'oils' as const,
+    portionShareMissing: false, viaLye: false, mixedWith: 'oil' as const, basisGrams: 1000, stage: 'oils' as const,
     dispersal: { method: 'carrier-oil' as const, carrierGrams: 10 },
     ...over,
   });
@@ -614,7 +614,7 @@ describe('a purée colour in the lye is a liquid the water budget should know ab
   const puree = (over: Partial<ComputedScentColor['colorants'][number]> = {}) => ({
     key: 'c1', catalogId: 'carrot-puree', name: 'Carrot puree', kind: 'natural' as const,
     percent: null, grams: null, portionKey: '', portionName: '', portionPercent: null,
-    portionShareMissing: false, viaLye: true, mixedWith: 'oil' as const, stage: 'lye' as const,
+    portionShareMissing: false, viaLye: true, mixedWith: 'oil' as const, basisGrams: 1000, stage: 'lye' as const,
     dispersal: { method: 'lye-solution' as const },
     ...over,
   });
