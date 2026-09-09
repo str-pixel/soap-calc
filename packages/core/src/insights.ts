@@ -153,6 +153,12 @@ export type FormulationAnalysisInput = {
   colorantAdditiveOverlap?: Array<{ colorant: string; additive: string; sameMaterial: boolean }>;
   /** Colours dosed above the top of their OWN sourced band, carrying that ceiling. */
   colorantsOverRate?: Array<{ name: string; percent: number; maxPercent: number }>;
+  /** ALL the pigment in the batch, against the most any ONE of its colours is sourced for.
+   * `percentOfOils` is the summed colorant weight over the recipe's oils, so a colour that
+   * only pigments its own portion counts for what it actually weighs. `ceilingPercent` is
+   * the highest per-colour ceiling among the colours in play — a sourced number, not an
+   * invented total, which is why this is absent when no colour in the batch carries one. */
+  colorantTotalLoad?: { percentOfOils: number; ceilingPercent: number; colourCount: number };
   /** Colours going through the lye that are LIQUIDS the split-liquid section could size —
    * a purée standing in for part of the water — whose weight has not come out of the water
    * budget. `sizedOnTop` separates the two ways that happens: no liquid row at all, or a
@@ -1376,6 +1382,28 @@ export const INSIGHT_RULES: InsightRule[] = [
         parts.push(`${named(onTop)} — sized under Split liquid on top of the water rather than out of it, so the water figure still assumes plain water. Size it by % of total liquid, or as all liquid above the lye minimum, to take it out of the budget.`);
       }
       return { level: 'info', code: 'colorant_puree_as_liquid', message: parts.join(' ') };
+    },
+  },
+  {
+    code: 'colorant_total_load',
+    // Bars only: an LS dye is dosed on the solution and the bands are bar-sourced.
+    processes: ['cp', 'hp'],
+    check: (input) => {
+      const load = input.colorantTotalLoad;
+      if (!load || load.colourCount < 2 || load.percentOfOils <= load.ceilingPercent) return null;
+      return {
+        level: 'warning',
+        code: 'colorant_total_load',
+        // No source gives a maximum total: the cold-process text says outright that there
+        // is no "set" amount and that it varies by colorant. What it does give is the
+        // failure — colour that travels into the lather and marks the tub, the towels and
+        // the skin — and a per-colour rate for each colour. So the comparison is the
+        // batch's whole pigment load against the most any ONE of its own colours is
+        // sourced for: every number in it came from the maker's own picks.
+        message:
+          `${load.colourCount} colours together come to ${load.percentOfOils.toFixed(2)}% of the oil weight, and the most any one of them is sourced for is ${load.ceilingPercent}%. ` +
+          'Past that the colour starts to travel into the lather rather than staying in the bar. Split the batter finer, or lighten the colours, and prove it on a small batch.',
+      };
     },
   },
   {

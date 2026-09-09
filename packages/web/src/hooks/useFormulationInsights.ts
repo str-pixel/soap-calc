@@ -306,6 +306,27 @@ export function useFormulationInsights(
               if (!entry || maxPercent === null) return [];
               return c.percent > maxPercent ? [{ name: entry.name, percent: c.percent, maxPercent }] : [];
             }),
+      // The whole batch's pigment load, against the most any ONE of its colours is sourced
+      // for. Summing GRAMS is what makes a portion colour count for what it actually weighs
+      // — four colours in four quarters carry no more pigment than one colour would.
+      colorantTotalLoad: (() => {
+        if (options.process === 'ls') return undefined;
+        const colorants = (options.scentColor?.colorants ?? []).filter((c) => (c.grams ?? 0) > 0);
+        const totalGrams = colorants.reduce((sum, c) => sum + (c.grams ?? 0), 0);
+        const oils = lyeResult.totalOilWeightGrams;
+        if (colorants.length < 2 || totalGrams <= 0 || oils <= 0) return undefined;
+        // Only colours that carry a sourced band can set the bar; with none, there is no
+        // number to judge against and the app says nothing rather than inventing one.
+        const ceilings = colorants
+          .map((c) => colorantCeilingPercent(c.catalogId))
+          .filter((n): n is number => n !== null);
+        if (ceilings.length === 0) return undefined;
+        return {
+          percentOfOils: (100 * totalGrams) / oils,
+          ceilingPercent: Math.max(...ceilings),
+          colourCount: colorants.length,
+        };
+      })(),
       // A purée sent through the lye is a LIQUID standing in for part of the water; the
       // split-liquid section is what sizes that. Listed only while no such row exists —
       // once it does, the water figure is already right and there is nothing to say.

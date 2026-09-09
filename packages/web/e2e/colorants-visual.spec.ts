@@ -179,6 +179,31 @@ test.describe('colorants, seen in each process', () => {
     expect(problems, 'browser reported nothing').toEqual([]);
   });
 
+  test('four colours, each inside its own band, and the batch past what any one allows', async ({ page }) => {
+    const problems = watchForErrors(page);
+    await fresh(page);
+
+    // Four colours over the whole batter, each dosed inside its own sourced band — every
+    // one of them legal alone, and the bar carrying four times the pigment any single one
+    // is sourced for. (Four colours in four QUARTERS would not: each pigments only its own
+    // share, so the batch total is the same as one colour at that rate — see the hook's
+    // own tests.)
+    for (const id of ['mica', 'activated-charcoal', 'spirulina', 'paprika']) {
+      await page.getByRole('button', { name: /add colorant/i }).click();
+      await page.getByLabel(/Colorant for/).first().selectOption(id);
+      await page.getByLabel(/ dose, % of oil weight/).first().fill('1.8');
+    }
+    // No single colour is over its own rate...
+    await expect(notesPanel(page)).not.toContainText(/Past the rate its source gives/);
+    // ...and the batch as a whole is still called out.
+    await expect(notesPanel(page)).toContainText(/4 colours together come to/);
+    await expect(notesPanel(page)).toContainText(/travel into the lather/);
+    await page.screenshot({ path: `${SHOTS}/colorants-total-load.png`, fullPage: true });
+
+    await expectNoJunk(page);
+    expect(problems, 'browser reported nothing').toEqual([]);
+  });
+
   test('an overdose is caught, and the figure the panel prints is never called one', async ({ page }) => {
     const problems = watchForErrors(page);
     await fresh(page);

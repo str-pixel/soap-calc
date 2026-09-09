@@ -17,6 +17,7 @@ const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
 const ALL_CODES = [
   'colorant_also_additive',
   'colorant_puree_as_liquid',
+  'colorant_total_load',
   'colorant_liquid_double_count',
   'colorant_carrier_superfat',
   'colorant_over_sourced_rate',

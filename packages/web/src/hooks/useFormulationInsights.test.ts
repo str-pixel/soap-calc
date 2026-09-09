@@ -692,3 +692,51 @@ describe('a purée colour in the lye is a liquid the water budget should know ab
     expect(both).toMatch(/Pumpkin puree/);
   });
 });
+
+describe('the whole batch has a pigment load, not just each colour', () => {
+  const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+  const colour = (over: Partial<ComputedScentColor['colorants'][number]>) => ({
+    key: `c${Math.random()}`, catalogId: 'mica', name: 'Mica', kind: 'mica' as const,
+    percent: 2, grams: 20, portionKey: '', portionName: '', portionPercent: null,
+    portionShareMissing: false, basisGrams: 1000, viaLye: false, mixedWith: 'oil' as const,
+    stage: 'oils' as const, dispersal: { method: 'carrier-oil' as const, carrierGrams: 20 },
+    ...over,
+  });
+  function harness(colorants: ComputedScentColor['colorants'], process: 'cp' | 'hp' | 'ls' = 'cp') {
+    const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
+    const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, process);
+    return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
+      process,
+      scentColor: { ...emptyComputedScentColor(), colorants },
+    });
+  }
+  const msg = (colorants: ComputedScentColor['colorants'], process: 'cp' | 'hp' | 'ls' = 'cp') => {
+    const { result } = renderHook(() => harness(colorants, process));
+    return result.current.insights.find((i) => i.code === 'colorant_total_load')?.message;
+  };
+
+  it('adds four colours up and measures them against the most any one is sourced for', () => {
+    // Mica's own band tops out at 1.8%; four of them at 2% each is 8% of the oil weight.
+    const text = msg([colour({}), colour({}), colour({}), colour({})]);
+    expect(text).toMatch(/4 colours together come to 8\.00% of the oil weight/);
+    expect(text).toMatch(/the most any one of them is sourced for is 1\.8%/);
+    expect(text).toMatch(/travel into the lather/);
+  });
+
+  it('says nothing when the batch carries no more than one colour is allowed alone', () => {
+    // Four quarter-shares, each well inside mica's own band: 4 × 4 g on 1,000 g of oils is
+    // 1.6% of the oil weight — no more pigment than a single colour may carry alone.
+    const quarter = colour({ grams: 4, percent: 1.6, basisGrams: 250, portionKey: 'p', portionPercent: 25 });
+    expect(msg([quarter, quarter, quarter, quarter])).toBeUndefined();
+    // and never for a single colour — that is the per-colour rule's job
+    expect(msg([colour({ grams: 80, percent: 8 })])).toBeUndefined();
+  });
+
+  it('needs a sourced band to judge against, and stays out of liquid soap', () => {
+    const custom = colour({ catalogId: '', name: 'Something' });
+    expect(msg([custom, custom])).toBeUndefined();
+    // one banded colour among them is enough to set the bar
+    expect(msg([custom, colour({})])).toBeTruthy();
+    expect(msg([colour({}), colour({}), colour({}), colour({})], 'ls')).toBeUndefined();
+  });
+});
