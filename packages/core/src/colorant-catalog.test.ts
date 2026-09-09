@@ -130,6 +130,36 @@ describe('the colorant catalog is internally sound', () => {
     expect(NATURAL_COLORANT_CAUTION).toMatch(/betalains/i);
   });
 
+  it('the greens include one that actually holds, since every plant green fades', () => {
+    const greens = COLORANT_CATALOG.filter((e) => e.family === 'green');
+    expect(greens.some((e) => e.stability === 'fades')).toBe(true);
+    const holds = greens.filter((e) => e.stability === 'stable');
+    expect(holds.map((e) => e.id)).toEqual(['french-green-clay']);
+    expect(holds[0].note).toMatch(/every plant green here fades/i);
+  });
+
+  it('the coated neon is the thing "Other" was describing, and it carries a rate', () => {
+    const neon = colorantEntryById('neon-pigment')!;
+    expect(neon.kind).toBe('other');
+    expect([neon.tspPerLbLow, neon.tspPerLbHigh]).toEqual([1, 1]);
+    // the coating is why it behaves where a bare dye does not
+    expect(neon.note).toMatch(/coat is why it behaves/i);
+    expect(neon.stability).toBe('stable');
+  });
+
+  it('warns that much of what is sold as alkanet is a different root', () => {
+    expect(colorantEntryById('alkanet-root')!.note).toMatch(/ratanjot/i);
+  });
+
+  it('a band whose source gives only a ceiling takes the book\'s general rate as its floor', () => {
+    // "up to 3 tsp PPO" gives no low end, so the low is CP:9389-9391's 1 tsp per pound —
+    // a cited figure rather than a guessed one.
+    for (const id of ['spirulina', 'spinach-powder', 'kelp', 'avocado-puree']) {
+      expect(colorantEntryById(id)!.tspPerLbLow).toBe(1);
+      expect(colorantEntryById(id)!.tspPerLbHigh).toBe(3);
+    }
+  });
+
   it('groups for the picker: every group is non-empty, labelled, and holds every entry once', () => {
     const groups = colorantsByFamily();
     expect(groups.every((g) => g.entries.length > 0)).toBe(true);

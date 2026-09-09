@@ -47,6 +47,10 @@ import type { ColorantKind } from './colorants.js';
  *     1/8 to 1 tsp per pound of oils.
  *   https://www.ivyherbal.com/articles/soap-additives-what-they-do — clay 1 tsp per pound of
  *     oils, "about 8 to 10 g in a 1,000 g oil batch": the one direct weight anchor found.
+ *
+ * WHERE A SOURCE GIVES ONLY A CEILING ("up to 3 tsp PPO"), the band's low end is the book's
+ * own general starting rate for any colorant, 1 teaspoon per pound (CP:9389-9391) — a cited
+ * figure rather than a guessed one. That covers spirulina, spinach, kelp and avocado.
  *   https://lovelygreens.com/indigo-soap-recipe-natural-blue-soap/ (under 1/2 tsp PPO),
  *     http://www.soap-making-resource.com/natural-soap-colorants.html (1/4-1/2 tsp) and the
  *     Great Cakes test below all land on 1/4-1/2 tsp PPO for ordinary indigo powder. The
@@ -188,6 +192,13 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     stability: 'fades',
   },
   {
+    id: 'neon-pigment', name: 'Neon cosmetic pigment', kind: 'other', family: 'multi',
+    tspPerLbLow: 1, tspPerLbHigh: 1, stability: 'stable',
+    // The coating is the whole story: it is what stops a bright organic colour bleeding and
+    // morphing the way a bare dye does at soap pH.
+    note: 'A bright pigment under a polymer coat, and the coat is why it behaves: it neither bleeds across a swirl nor turns at soap pH, where a bare dye does both. The liquid form is weaker — reckon on three times the dry rate.',
+  },
+  {
     id: 'lake-pigment', name: 'Lake pigment', kind: 'other', family: 'multi',
     tspPerLbLow: 0.25, tspPerLbHigh: 0.25,
     // CP:9287-9291: migrating colorants, best in single-colour soaps and melt and pour.
@@ -207,7 +218,17 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'blue-cornmeal', name: 'Blue cornmeal', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
 
   // --- Green (CP:9343-9345) -----------------------------------------------------------
-  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 0.5, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one slides towards olive and ends up a khaki tan; light hurries it along and a dark cupboard holds it back. Wet it in the same weight of water before it goes in.', stability: 'fades' },
+  {
+    id: 'french-green-clay', name: 'French green clay', kind: 'natural', family: 'green',
+    tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable',
+    // The one green that holds: every plant green in this family is fugitive, and a clay is
+    // mineral. Mixed into the lye solution or into a couple of teaspoons of water first.
+    note: 'The green that keeps. Every plant green here fades; this one is a mineral, so it stays where it lands. Mix it into the lye water, or into a couple of teaspoons of water, before it goes in.',
+  },
+  { id: 'avocado-puree', name: 'Avocado puree', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades', note: 'Starts green and usually settles at a muted yellow, faster in a bright room.' },
+  { id: 'peppermint-leaf', name: 'Peppermint leaf', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'shifts', alsoAdditiveId: 'botanicals', note: 'If the leaves went in green they hold that green for some months, then darken.' },
+  { id: 'parsley', name: 'Parsley', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'fades', alsoAdditiveId: 'botanicals', note: 'The quickest to go of any green here — reported gone from the bars within days.' },
+  { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one slides towards olive and ends up a khaki tan; light hurries it along and a dark cupboard holds it back. Wet it in the same weight of water before it goes in.', stability: 'fades' },
   { id: 'nettle', name: 'Nettle leaf powder', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
   { id: 'wheatgrass', name: 'Wheatgrass', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, stability: 'fades' },
   { id: 'spinach-powder', name: 'Spinach powder', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, stability: 'fades' },
@@ -221,6 +242,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'calendula', name: 'Calendula petals', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
   { id: 'paprika', name: 'Paprika', kind: 'natural', family: 'yellow', tspPerLbLow: 1.5, tspPerLbHigh: 3, note: 'That rate is for the powder stirred in directly, which leaves grit and specks in the bar and hurries trace along — an infusion is the kinder route for this one.', stability: 'fades' },
   { id: 'curry-powder', name: 'Curry powder', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
+  { id: 'yarrow', name: 'Yarrow', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
   { id: 'yellow-clay', name: 'Yellow or orange clay', kind: 'natural', family: 'yellow', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
   { id: 'carrot-puree', name: 'Carrot puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'pumpkin-puree', name: 'Pumpkin puree', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null },
@@ -233,11 +255,14 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'red-clay', name: 'Moroccan red clay', kind: 'natural', family: 'red', tspPerLbLow: 1, tspPerLbHigh: 3, alsoAdditiveId: 'clay', stability: 'stable', shades: [{ tspPerLb: 1, colour: 'soft pink-brown' }, { tspPerLb: 3, colour: 'deeper brown' }] },
 
   // --- Purple (CP:9364) ---------------------------------------------------------------
-  { id: 'alkanet-root', name: 'Alkanet root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null, note: 'No direct rate: the powder grits and dulls, so the route with a figure behind it is an infusion — roughly three tablespoons of dried root to a pound of the oil you steep it in. Judge it before you soap. The oil should be a deep red by then; a pale or brownish one gives warm grey instead of purple, and poor-quality root does the same. Extra virgin olive oil fights the colour, so steep it in pomace.', stability: 'shifts' },
+  { id: 'alkanet-root', name: 'Alkanet root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null, note: 'No direct rate: the powder grits and dulls, so the route with a figure behind it is an infusion — roughly three tablespoons of dried root to a pound of the oil you steep it in. Judge it before you soap. The oil should be a deep red by then; a pale or brownish one gives warm grey instead of purple, and poor-quality root does the same. Extra virgin olive oil fights the colour, so steep it in pomace. Much of what is sold as alkanet is ratanjot, which steeps brownish and gives a pale pinkish beige.', stability: 'shifts' },
   { id: 'gromwell-root', name: 'Gromwell root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'purple-clay', name: 'Brazilian purple clay', kind: 'natural', family: 'purple', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
 
   // --- Brown (CP:9341-9342) -----------------------------------------------------------
+  { id: 'cinnamon', name: 'Cinnamon', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 1, note: 'A light to medium warm brown, and slightly gritty in the bar.' },
+  { id: 'molasses', name: 'Molasses', kind: 'natural', family: 'brown', tspPerLbLow: 0.5, tspPerLbHigh: 1, note: 'Chocolate brown. It is a sugar, so it feeds the lather as well as colouring — and it browns further in a hot batch.' },
+  { id: 'marshmallow-root', name: 'Marshmallow root', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'cocoa-powder', name: 'Cocoa powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'cocoa-powder', additiveIsSameMaterial: true, stability: 'stable' },
   { id: 'black-walnut', name: 'Black walnut powder', kind: 'natural', family: 'brown', tspPerLbLow: 0.25, tspPerLbHigh: 0.5, shades: [{ tspPerLb: 0.25, colour: 'light brown' }, { tspPerLb: 0.5, colour: 'deep dark brown' }] },
   { id: 'acorn-powder', name: 'Acorn powder', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null },
@@ -250,6 +275,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   },
 
   // --- Black (CP:9346) ----------------------------------------------------------------
+  { id: 'black-brazilian-clay', name: 'Black Brazilian clay', kind: 'natural', family: 'black', tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay', stability: 'stable' },
   { id: 'activated-charcoal', name: 'Activated charcoal', kind: 'natural', family: 'black', tspPerLbLow: 0.125, tspPerLbHigh: 3, alsoAdditiveId: 'charcoal', additiveIsSameMaterial: true, note: 'It marks a soap dish and a washcloth at the darker end, though it washes out.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light grey' }, { tspPerLb: 0.5, colour: 'medium grey' }, { tspPerLb: 1, colour: 'dark grey, faint grey lather' }, { tspPerLb: 2, colour: 'grey-black' }, { tspPerLb: 3, colour: 'black, noticeably grey lather' }] },
   { id: 'dead-sea-mud', name: 'Dead sea mud', kind: 'natural', family: 'black', tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable' },
   { id: 'poppy-seeds', name: 'Poppy seeds', kind: 'natural', family: 'black', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'seeds', note: 'Specks rather than a wash of colour, and they scrub.' },
