@@ -40,6 +40,18 @@ const KIND_LABELS: Record<ColorantKind, string> = {
   other: 'Other',
 };
 
+/* What the kind decides, said where it is chosen — the additive panel's stage seg explains
+   its selected cell the same way. The only thing the kind changes is the dose guidance, so
+   "Other" is the honest escape hatch: outside these four families this app has no sourced
+   rate to offer. */
+const KIND_NOTE: Record<ColorantKind, string> = {
+  mica: 'Shimmer pigment. What was used to dye it decides whether it survives soap, so buy one labelled for cold process.',
+  oxide: 'Opaque mineral pigment — the oxides and the ultramarines. Steadfast, and it will not bleed across a swirl.',
+  natural: 'A plant, clay or mineral powder. Rates vary widely by material, and many plant colours fade.',
+  dye: 'Water-soluble colour. Vivid, but it creeps across a layer line and gives up its colour in daylight.',
+  other: 'Anything outside those four — glitter, a lake pigment, a coated neon. No dose range comes with it: this app has no sourced rate for them.',
+};
+
 const COLORANT_KINDS: Array<{ value: ColorantKind; cell: string; name: string }> = [
   { value: 'mica', cell: 'Mica', name: 'Mica' },
   { value: 'oxide', cell: 'Oxide', name: 'Oxide or ultramarine' },
@@ -50,17 +62,28 @@ const COLORANT_KINDS: Array<{ value: ColorantKind; cell: string; name: string }>
 
 /* Process copy. The cold-process source's rule of thumb is that the colour belongs to the
    bar and not to the wash — overdose it and the pigment migrates into the lather, staining
-   tub, towels and skin (CP:9376-9385). A whole-batter colour goes into the oils and a portion
+   tub, towels and skin (CP:9376-9388). A whole-batter colour goes into the oils and a portion
    colour in at trace (CP:9396-9404), each powder dispersed 1:1 in a light carrier oil rather
    than water or glycerin, which the source prefers because it does not raise the risk of
-   gelling or glycerin sweating (CP:9395-9400). HP sends a single colour straight into the
-   oils (HP:11330-11334) and colours portions after the cook, each in a little hot sugar water
-   (HP:11319-11321). LS colours the diluted soap (LS:13256, 13262); micas and oxides settle
-   out of a liquid (LS:13390). Reworded, not quoted. */
+   gelling or glycerin sweating (CP:9395-9400).
+
+   HP sends a single colour straight into the oils, where the immersion blender can work it
+   through (HP:11331-11338). Its solvent list is a CHOICE — oil, glycerin, water, yogurt,
+   milk — with hot sugar water the author's own preference, oil "an excellent option" often
+   combined with the post-cook superfat, and glycerin the one it advises against
+   (HP:11296-11312); the sugar's own benefit is lather (HP:11308-11310). Quantities at
+   HP:11320-11329.
+
+   LS colours the diluted soap (LS:13253-13262) and steers to water-soluble colorants because
+   pigments and coarse particles sediment (LS:13307-13310, LS:13380-13390). The oils are a
+   colorant in their own right there: hemp green, red palm a range from bright golden orange
+   to deep red, sea buckthorn deep yellow, pumpkin seed brown (LS:13234-13251).
+
+   Reworded, not quoted. */
 const PROCESS_COPY: Record<ProcessId, string> = {
   cp: 'Aim the colour at the bar, not at the wash: overdo it and the pigment travels into the lather and marks the tub, the towels and your skin. One colour for the whole batch goes in with the oils; to colour parts of it, split the batter first and add them at trace. Work each powder into an equal weight of light carrier oil — that oil rides on the recipe as extra superfat.',
-  hp: 'One colour for the whole batch goes in with the oils, where the blender can work it through evenly. To colour parts of the batch, split the batter and colour each part after the cook. Hot sugar water is the usual solvent and the sugar buys a little extra lather; oil serves too, and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
-  ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm orange, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
+  hp: 'One colour for the whole batch goes in with the oils, where the blender can work it through evenly. To colour parts of the batch, split the batter and colour each part after the cook. The solvent is yours to pick: hot sugar water is a common choice and the sugar buys a little extra lather, while oil serves just as well and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
+  ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm anywhere from bright orange to deep red, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
 };
 
 export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, onChange }: Props) {
@@ -225,14 +248,17 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                   {entry ? (
                     <p className="additive-list__stage-fixed">{KIND_LABELS[col.kind]}</p>
                   ) : (
-                    <SegRadioGroup
-                      label={`Kind of ${rowName}`}
-                      name={`colorant-kind-${col.key}`}
-                      options={COLORANT_KINDS}
-                      value={col.kind}
-                      onChange={(kind) => setColorant(col.key, { kind })}
-                      preserveCase
-                    />
+                    <>
+                      <SegRadioGroup
+                        label={`Kind of ${rowName}`}
+                        name={`colorant-kind-${col.key}`}
+                        options={COLORANT_KINDS}
+                        value={col.kind}
+                        onChange={(kind) => setColorant(col.key, { kind })}
+                        preserveCase
+                      />
+                      <p className="additive-list__stage-note">{KIND_NOTE[col.kind]}</p>
+                    </>
                   )}
                 </div>
                 <label className="ledger__row additive-list__amount">

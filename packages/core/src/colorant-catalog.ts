@@ -145,7 +145,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   {
     id: 'mica', name: 'Mica', kind: 'mica', family: 'multi',
     tspPerLbLow: 0.5, tspPerLbHigh: 2,
-    // CP:9296-9302: must be tested and approved for cold process; colour can morph under
+    // CP:9293-9310: must be tested and approved for cold process; colour can morph under
     // alkaline and high-heat conditions, and an unlabelled mica is not recommended.
     note: 'It is the dye on the mica that decides, not the mica: mineral-pigment ones hold, lake-dyed ones turn at soap pH, and a blue may come out lavender or a flat grey. Buy one labelled for cold process and prove it on a small batch. Too much of any of them stains the lather.',
     stability: 'shifts',
@@ -183,7 +183,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   {
     id: 'fdc-dye', name: 'FD&C / D&C dye', kind: 'dye', family: 'multi',
     tspPerLbLow: 0.25, tspPerLbHigh: 0.25,
-    // CP:9269-9272: bleeding, heat and UV unstable, not recommended for CP by the source.
+    // CP:9265-9276: bleeding, heat and UV unstable, not recommended for CP by the source.
     note: 'Water soluble and vivid, and the least suited of these to a bar: it creeps across a layer line, turns at soap pH, and gives up its colour in daylight.',
     stability: 'fades',
   },

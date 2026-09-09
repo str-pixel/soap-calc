@@ -226,7 +226,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
     name: c.name.trim() || 'Colorant',
     detail: colorantLineDetail(c, weightUnit),
   });
-  // A whole-batter colour goes into the oils before the lye (CP:9401-9404; HP:11330-11334):
+  // A whole-batter colour goes into the oils before the lye (CP:9396-9404; HP:11331-11338):
   // it lists with them, after the with-oils additives, in its own entered order — a "to
   // shade" line has no grams to rank by.
   const wholeBatterColorants = colorants.filter((c) => c.stage === 'oils').map(colorantItem);

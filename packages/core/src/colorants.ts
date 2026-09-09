@@ -16,7 +16,7 @@ export type ColorantKind = 'mica' | 'oxide' | 'natural' | 'dye' | 'other';
 export type ColorantDispersal =
   | { method: 'carrier-oil'; carrierGrams: number | null }
   | { method: 'hot-sugar-water'; waterGramsLow: number; waterGramsHigh: number }
-  /** HP whole-batter: straight into the warmed oils, no slurry (HP:11330-11334). */
+  /** HP whole-batter: straight into the warmed oils, no slurry (HP:11331-11338). */
   | { method: 'recipe-oil' }
   /** LS: a water-soluble dye goes straight into the diluted soap (LS:13253-13262). */
   | { method: 'into-solution' };
@@ -28,7 +28,7 @@ export type ColorantGuidance = {
   percentHigh: number;
 };
 
-/** "add 0.25-0.50 ounces water per colorant" with a little sugar (HP:11319-11321). */
+/** "add 0.25-0.50 ounces water per colorant" with a little sugar (HP:11320-11329). */
 export const HP_COLORANT_WATER_GRAMS = { low: 0.25 * GRAMS_PER_OZ, high: 0.5 * GRAMS_PER_OZ };
 
 /**
@@ -60,7 +60,8 @@ export function portionOilGrams(totalOilGrams: number, portionPercent: number | 
 /** The book's rate is for a single-colour soap; each colour is dosed against the oils it
  * actually colours, or a three-way swirl would carry three times the pigment. The rule it
  * serves is the source's own: colour belongs to the soap rather than the lather, and too
- * much of it migrates into the lather and stains tub, towels and skin (CP:9378-9385). */
+ * much of it migrates into the lather and stains tub, towels and skin (CP:9378-9388).
+ * Null = to shade: the maker has not fixed a dose, and both render paths read that. */
 export function colorantGrams(percent: number | null, portionOilGrams: number): number | null {
   if (!finite(percent) || percent <= 0) return null;
   // The additive multiplier is the one source of percent-of-basis math.
@@ -76,8 +77,9 @@ export function colorantGrams(percent: number | null, portionOilGrams: number): 
  * that many makers combine with the post-cook superfat, and glycerin the one it advises
  * against (HP:11296-11312). The app has to derive one answer, so it derives the stated
  * preference and the panel copy names the alternatives rather than hiding them. Sugar-water
- * quantities at HP:11319-11321. A single, whole-batter colorant goes "directly to your
- * oils" at the start instead (HP:11331-11334).
+ * quantities at HP:11320-11329. A single, whole-batter colorant goes "directly to your
+ * oils" at the start instead, which also lets the immersion blender do the mixing
+ * (HP:11331-11338).
  *
  * LS: a dye "shows color when it is dissolved", most are water soluble, and the cosmetic
  * ones go "directly to your soap after the dilution" — often bought already liquid
@@ -105,7 +107,7 @@ export function colorantDispersal(
 export const carrierOilSuperfatShift: (carrierGrams: number, totalOilGrams: number) => number =
   superfatShiftFromLiquidFat;
 
-/** A whole-batter colour goes into the oils at the start (CP:9401-9404; HP:11330-11334); a
+/** A whole-batter colour goes into the oils at the start (CP:9396-9404; HP:11331-11338); a
  * portion colour at the design stage — CP trace, HP after the cook. LS dyes are "added
  * directly to your soap after the dilution" (LS:13262), portions or not. */
 export function colorantStage(process: AdditiveProcess, hasPortion: boolean): AdditiveStage {

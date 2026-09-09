@@ -292,3 +292,35 @@ describe('the per-process copy states what the sources state', () => {
     expect(screen.queryByText(/warm water/i)).toBeNull();
   });
 });
+
+describe('the kind seg explains the cell it has selected', () => {
+  const custom = (kind: string) =>
+    normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: '', name: 'Mine', kind, percent: '', portionKey: '' }],
+    });
+
+  it('says what Other actually means, since it is the one cell with no dose range', () => {
+    renderPanel(custom('other'), 'cp');
+    const note = screen.getByText(/Anything outside those four/);
+    expect(note.textContent).toMatch(/glitter/i);
+    expect(note.textContent).toMatch(/no sourced rate/i);
+    // and it is the only kind the app offers no band for
+    expect(screen.queryByText(/tsp per/)).toBeNull();
+  });
+
+  it('explains every other kind too, and only where the choice is actually offered', () => {
+    for (const [kind, phrase] of [['mica', /labelled for cold process/i], ['oxide', /will not bleed/i], ['natural', /many plant colours fade/i], ['dye', /creeps across a layer line/i]] as const) {
+      cleanup();
+      renderPanel(custom(kind), 'cp');
+      expect(screen.getByText(phrase)).toBeTruthy();
+    }
+    // A catalog pick states its kind, so there is no cell to explain.
+    cleanup();
+    renderPanel(normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '', portionKey: '' }],
+    }), 'cp');
+    expect(screen.queryByText(/many plant colours fade/i)).toBeNull();
+  });
+});

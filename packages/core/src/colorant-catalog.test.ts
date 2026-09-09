@@ -119,11 +119,11 @@ describe('the colorant catalog is internally sound', () => {
     expect(colorantEntryById('beet-root')!.note).toMatch(/never the red/i);
     // and the general caution names where those pigments actually end up
     expect(NATURAL_COLORANT_CAUTION).toMatch(/land on brown/i);
-    // A mica must be labelled for cold process (CP:9296-9302), and the note names WHY some
+    // A mica must be labelled for cold process (CP:9293-9310), and the note names WHY some
     // shift: it is the dye on the mica, not the mica, that fails at soap pH.
     expect(colorantEntryById('mica')!.note).toMatch(/labelled for cold process/i);
     expect(colorantEntryById('mica')!.note).toMatch(/dye on the mica that decides/i);
-    // Dyes bleed and are unstable; the source advises against them (CP:9269-9272).
+    // Dyes bleed and are unstable; the source advises against them (CP:9265-9276).
     expect(colorantEntryById('fdc-dye')!.note).toMatch(/creeps across a layer line/i);
     // And the general caution names both classic disappointments.
     expect(NATURAL_COLORANT_CAUTION).toMatch(/anthocyanins/i);

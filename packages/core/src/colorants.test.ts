@@ -32,12 +32,12 @@ describe('dispersal per process', () => {
     expect(colorantDispersal('cp', 4, false)).toEqual({ method: 'carrier-oil', carrierGrams: 4 });
     expect(colorantDispersal('cp', null, true)).toEqual({ method: 'carrier-oil', carrierGrams: null });
   });
-  it('HP portion colour: 0.25–0.50 oz hot water per colorant plus a little sugar (HP:11319-11321) = 7.1–14.2 g', () => {
+  it('HP portion colour: 0.25–0.50 oz hot water per colorant plus a little sugar (HP:11320-11329) = 7.1–14.2 g', () => {
     expect(HP_COLORANT_WATER_GRAMS.low).toBeCloseTo(7.1, 1);
     expect(HP_COLORANT_WATER_GRAMS.high).toBeCloseTo(14.2, 1);
     expect(colorantDispersal('hp', 4, true)).toEqual({ method: 'hot-sugar-water', waterGramsLow: HP_COLORANT_WATER_GRAMS.low, waterGramsHigh: HP_COLORANT_WATER_GRAMS.high });
   });
-  it('HP whole-batter colour goes straight into the oils, no slurry (HP:11330-11334)', () => {
+  it('HP whole-batter colour goes straight into the oils, no slurry (HP:11331-11338)', () => {
     expect(colorantDispersal('hp', 4, false)).toEqual({ method: 'recipe-oil' });
   });
   it('LS: a dye goes straight into the diluted soap (LS:13253-13262)', () => {
@@ -55,8 +55,8 @@ describe('the carrier oil is extra unsaponified oil — a superfat shift', () =>
 
 describe('stage: whole-batter colour into the oils; a portion at the design stage; LS after dilution', () => {
   it.each([
-    ['cp', false, 'oils'], ['cp', true, 'trace'],           // CP:9401-9404
-    ['hp', false, 'oils'], ['hp', true, 'after_cook'],      // HP:11330-11334
+    ['cp', false, 'oils'], ['cp', true, 'trace'],           // CP:9396-9404
+    ['hp', false, 'oils'], ['hp', true, 'after_cook'],      // HP:11331-11338
     ['ls', false, 'after_cook'], ['ls', true, 'after_cook'], // LS:13262
   ] as const)('%s hasPortion=%s → %s', (process, hasPortion, stage) => {
     expect(colorantStage(process, hasPortion)).toBe(stage);
