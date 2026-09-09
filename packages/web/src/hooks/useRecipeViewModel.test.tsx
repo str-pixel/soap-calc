@@ -1237,3 +1237,38 @@ test('an alternative liquid is in the pot too, and the batter figure counts it',
   const oils = 1000;
   expect(v.batterAtTraceGrams).toBeCloseTo(v.baseBatchGrams + oils * 0.0825, 1);
 });
+
+test('the alkali added back for an acid is mass, and every mass figure carries it', () => {
+  const vinegar = {
+    key: 'v', presetKey: 'vinegar', name: 'Vinegar (5%)', customWaterPercent: '',
+    sizeMode: 'grams', amount: '200', addAt: 'lye',
+  };
+  type MassVm = {
+    baseBatchGrams: number; batchMassGrams: number; batchWeightWithExtras: number;
+    result: { lyeWeightGrams: number } | null;
+  };
+  let plain: MassVm | undefined;
+  let acid: MassVm | undefined;
+  probe((v) => { plain = v as MassVm; }, {});
+  probe((v) => { acid = v as MassVm; }, { splitLiquids: [vinegar] } as never);
+  const p = plain as MassVm;
+  const a = acid as MassVm;
+
+  // The acid consumes alkali, so the calc adds some back — and the maker weighs it.
+  const extra = a.result!.lyeWeightGrams - p.result!.lyeWeightGrams;
+  expect(extra).toBeGreaterThan(5);
+
+  // The dose basis stays on the base batch: sizing a "% of batch" dose against the lye
+  // that dose caused would be a loop.
+  expect(a.batchMassGrams - a.baseBatchGrams).toBeCloseTo(extra, 6);
+  // and the pot's own mass carries it, so the batch weight and everything derived from it
+  // agree with the lye figure the recipe prints.
+  expect(a.batchWeightWithExtras).toBeCloseTo(a.batchMassGrams + 200, 6);
+});
+
+test('a recipe with no acid is untouched by the compensation path', () => {
+  let vm: { baseBatchGrams: number; batchMassGrams: number } | undefined;
+  probe((v) => { vm = v as { baseBatchGrams: number; batchMassGrams: number }; }, {});
+  const v = vm as { baseBatchGrams: number; batchMassGrams: number };
+  expect(v.batchMassGrams).toBe(v.baseBatchGrams);
+});

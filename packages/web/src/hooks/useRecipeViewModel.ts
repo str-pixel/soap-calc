@@ -161,8 +161,12 @@ export type RecipeViewModel = {
    * floor/composition basis. Null before a dilution exists. */
   wholeBatchPasteGrams: number | null;
   batchWeightWithExtras: number;
-  /** Oils + lye + water — the base batch, before anything is stirred in. */
+  /** Oils + lye + water — the base batch, before anything is stirred in and before acid
+   * compensation. The "% of batch" dose basis; every MASS figure reads batchMassGrams. */
   baseBatchGrams: number;
+  /** The base batch plus the alkali the calc adds back to neutralize an acid: what the pot
+   * actually weighs before extras. */
+  batchMassGrams: number;
   /** The mass in the pot when the batter is divided: the base batch plus every additive,
    * colour and scent already added by then. What a portion share is a share of. */
   batterAtTraceGrams: number | null;
@@ -550,6 +554,8 @@ export function useRecipeViewModel({
         additives,
         {
           oilGrams: totalOilGrams,
+          // The BASE batch on purpose, not batchMassGrams: sizing a batch-basis dose
+          // against a weight that includes the acid compensation that dose caused is a loop.
           batchGrams: baseBatchGrams,
           solutionGrams,
         },
@@ -624,6 +630,25 @@ export function useRecipeViewModel({
     () => (result && totalAcidExtraLye ? addExtraLye(result, totalAcidExtraLye) : result),
     [result, totalAcidExtraLye],
   );
+  /**
+   * Every gram that goes into the pot — the base batch PLUS the alkali the calc adds back to
+   * neutralize an acid (vinegar, a lye-stage citric). The maker weighs that alkali, so it is
+   * mass like any other: leaving it out had the app print a lye figure it then did its own
+   * arithmetic without, and pricing pay for alkali its cost-per-unit divisor did not contain.
+   *
+   * THE DOSE BASIS DELIBERATELY DOES NOT READ THIS. A "% of batch" dose feeds the additive
+   * grams, which feed the acid compensation, which would feed the batch weight the dose was
+   * sized against — a loop, and a wrong one: a dose cannot be sized against the lye that
+   * dose caused. computedAdditives keeps baseBatchGrams for that reason, and nothing
+   * upstream of it reads this, so there is no cycle here.
+   *
+   * The soap-CONCENTRATION model does not read it either, and that is a different reason —
+   * see the dilution memo above: the acetate/citrate is dissolved salt, not soap solids.
+   */
+  const acidExtraLyeGrams = totalAcidExtraLye
+    ? totalAcidExtraLye.naohGrams + totalAcidExtraLye.kohGrams
+    : 0;
+  const batchMassGrams = baseBatchGrams + acidExtraLyeGrams;
   // Post-cook superfat is an HP/LS-only concept. Gate on process so a CP recipe carrying a
   // stray non-zero postCookSuperfatPercent (hand-edited or imported — CP hides the field, so
   // the user has no way to clear it) can never silently change batch weight or render a PCSF
@@ -771,11 +796,11 @@ export function useRecipeViewModel({
   const hpVesselMultiple = useMemo(() => {
     if (!processOffers(process, 'hpVessel')) return undefined;
     if (!Number.isFinite(vesselVolumeCm3) || (vesselVolumeCm3 ?? 0) <= 0) return undefined;
-    if (baseBatchGrams <= 0) return undefined;
-    const batchVolumeCm3 = baseBatchGrams / SOAP_FILL_DENSITY_G_PER_CM3;
+    if (batchMassGrams <= 0) return undefined;
+    const batchVolumeCm3 = batchMassGrams / SOAP_FILL_DENSITY_G_PER_CM3;
     if (batchVolumeCm3 <= 0) return undefined;
     return (vesselVolumeCm3 as number) / batchVolumeCm3;
-  }, [process, vesselVolumeCm3, baseBatchGrams]);
+  }, [process, vesselVolumeCm3, batchMassGrams]);
   const { properties, indexes, fattyAcids } = useRecipeProperties(
     previewState.lines,
     previewSettings,
@@ -846,7 +871,7 @@ export function useRecipeViewModel({
   // with their carrier oil; a PORTION colour does not — it goes into its share after the
   // split, so counting it would fold a colour into the batter it is dividing.
   const batterAtTraceGrams = useMemo(() => {
-    if (baseBatchGrams <= 0) return null;
+    if (batchMassGrams <= 0) return null;
     const additiveMass = computedAdditives.reduce(
       (sum, a) => (a.addAt === 'after_cook' || a.addAt === 'top' ? sum : sum + a.grams),
       0,
@@ -872,15 +897,15 @@ export function useRecipeViewModel({
       (sum, r) => (r.row.addAt === 'lye' || r.row.addAt === 'oils' || r.row.addAt === 'trace' ? sum + (r.grams ?? 0) : sum),
       0,
     );
-    return baseBatchGrams + additiveMass + colourMass + scentMass + liquidMass;
-  }, [baseBatchGrams, computedAdditives, scentGrams, resolvedSplit]);
+    return batchMassGrams + additiveMass + colourMass + scentMass + liquidMass;
+  }, [batchMassGrams, computedAdditives, scentGrams, resolvedSplit]);
   const extrasGrams = computeExtrasGrams(
     computedAdditives,
     splitLiquidGrams,
     postCookSuperfat,
     scentGrams.extrasGrams,
   );
-  const batchWeightWithExtras = baseBatchGrams + extrasGrams;
+  const batchWeightWithExtras = batchMassGrams + extrasGrams;
   // The mass the LS batch actually bottles — solution base plus the extras that ride
   // through (see computeBottledSolutionGrams for the full accounting, including why a
   // target that exceeds the paste switches the base to anhydrous + cook water).
@@ -997,9 +1022,9 @@ export function useRecipeViewModel({
   const labelWeight = useMemo(
     () =>
       profile
-        ? labelWeightGrams(batchWeightWithExtras, baseBatchGrams, profile.waterLossPercent)
+        ? labelWeightGrams(batchWeightWithExtras, batchMassGrams, profile.waterLossPercent)
         : null,
-    [profile, batchWeightWithExtras, baseBatchGrams],
+    [profile, batchWeightWithExtras, batchMassGrams],
   );
   // Fragrance & colorants, pass 2: the supplier's IFRA rate and the allergen threshold are
   // shares of the FINISHED product — the cured bar (label weight) or, for LS, the same
@@ -1225,8 +1250,11 @@ export function useRecipeViewModel({
     finishedProductGrams,
     wholeBatchPasteGrams,
     batchWeightWithExtras,
-    /** Oils + lye + water, before anything is stirred in. */
+    /** Oils + lye + water, before anything is stirred in and before acid compensation —
+     * the dose basis, and nothing else. */
     baseBatchGrams,
+    /** Every gram in the pot: the base batch plus the alkali added back for an acid. */
+    batchMassGrams,
     /** What is in the pot when the batter is divided — the figure a share is a share OF.
      * Null before there is a batch. */
     batterAtTraceGrams,
