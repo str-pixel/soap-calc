@@ -37,9 +37,6 @@ type Props = {
 
 const COLORANT_GROUPS = colorantsByFamily();
 
-/** Seg value that means "make a new portion and put this colour in it" — never a key. */
-const NEW_PORTION = '__new-portion';
-
 const KIND_LABELS: Record<ColorantKind, string> = {
   mica: 'Mica',
   oxide: 'Oxide or ultramarine',
@@ -94,14 +91,6 @@ const PROCESS_COPY: Record<ProcessId, string> = {
   ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm anywhere from bright orange to deep red, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
 };
 
-/** A portion's name in a one-line control. Unnamed portions are told apart by number,
- * but only once there is more than one — a lone unnamed portion is just "Portion". */
-function portionLabel(p: { name: string }, index: number, total: number): string {
-  const typed = p.name.trim();
-  if (typed) return typed;
-  return total > 1 ? `Portion ${index + 1}` : 'Portion';
-}
-
 export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, process, weightUnit, onChange }: Props) {
   const setColorant = (key: string, patch: Partial<ColorantLine>) =>
     onChange({ ...scent, colorants: scent.colorants.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
@@ -121,32 +110,54 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
       setColorant(key, { catalogId: '', percent: '', viaLye: false });
       return;
     }
-    setColorant(key, {
-      catalogId,
-      name: entry.name,
-      kind: entry.kind,
-      percent: entry.tspPerLbLow !== null ? percentValue(entry.tspPerLbLow) : '',
-      viaLye: false,
-    });
-  };
-  /** Split the batter FOR this colour: a new portion, and the colour moved into it. The
-   * split exists because a colour wants its own share, so making one is the same gesture
-   * as choosing one. */
-  const splitInto = (colorantKey: string) => {
-    const portion = newPortion();
+    const line = scent.colorants.find((c) => c.key === key);
     onChange({
       ...scent,
-      portions: [...scent.portions, portion],
-      colorants: scent.colorants.map((c) => (c.key === colorantKey ? { ...c, portionKey: portion.key } : c)),
+      colorants: scent.colorants.map((c) =>
+        c.key === key
+          ? {
+              ...c,
+              catalogId,
+              name: entry.name,
+              kind: entry.kind,
+              percent: entry.tspPerLbLow !== null ? percentValue(entry.tspPerLbLow) : '',
+              viaLye: false,
+            }
+          : c,
+      ),
+      // Its own share is named after it, so a repick renames that too rather than leaving
+      // the manifest calling the share by the colour that used to be there.
+      portions: scent.portions.map((p) =>
+        line && p.key === line.portionKey ? { ...p, name: entry.name } : p,
+      ),
     });
   };
-  const removePortion = (key: string) =>
+  /** Give this colour its own share of the batter, or hand it back. A portion exists
+   * BECAUSE a colour wanted one, so the two are made and unmade together: choosing Portion
+   * splits the batter for that colour, and choosing Whole batter releases the share (and
+   * the portion with it, unless another colour still sits in it — a recipe saved when
+   * several colours could share one portion still loads and still works). */
+  const setOwnPortion = (colorantKey: string, wantsPortion: boolean) => {
+    const line = scent.colorants.find((c) => c.key === colorantKey);
+    if (!line || (line.portionKey !== '') === wantsPortion) return;
+    if (wantsPortion) {
+      // Named after the colour, so the manifest and the steps can say which share is which.
+      const portion = { ...newPortion(), name: line.name.trim() };
+      onChange({
+        ...scent,
+        portions: [...scent.portions, portion],
+        colorants: scent.colorants.map((c) => (c.key === colorantKey ? { ...c, portionKey: portion.key } : c)),
+      });
+      return;
+    }
+    const released = line.portionKey;
+    const stillUsed = scent.colorants.some((c) => c.key !== colorantKey && c.portionKey === released);
     onChange({
       ...scent,
-      portions: scent.portions.filter((p) => p.key !== key),
-      // Its colours go back to the whole batter rather than dangling.
-      colorants: scent.colorants.map((c) => (c.portionKey === key ? { ...c, portionKey: '' } : c)),
+      portions: stillUsed ? scent.portions : scent.portions.filter((p) => p.key !== released),
+      colorants: scent.colorants.map((c) => (c.key === colorantKey ? { ...c, portionKey: '' } : c)),
     });
+  };
 
   return (
     <section className="panel">
@@ -171,53 +182,6 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
 
       <p className="results-hint">{PROCESS_COPY[process]}</p>
 
-      {scent.portions.length > 0 && process !== 'ls' && (
-        <ul className="additive-list" aria-label="Batter portions">
-          {scent.portions.map((p) => {
-            const portionName = p.name.trim() || 'Portion';
-            return (
-              <li key={p.key} className="additive-list__row">
-                <div className="additive-list__choice">
-                  <span className="micro-label">Portion</span>
-                  <div className="additive-list__names">
-                    <input
-                      className="input"
-                      aria-label="Portion name"
-                      placeholder="e.g. Swirl, Top layer"
-                      value={p.name}
-                      onChange={(e) => setPortion(p.key, { name: e.target.value })}
-                    />
-                    <button type="button" className="btn btn--icon" aria-label={`Remove portion ${portionName}`} onClick={() => removePortion(p.key)}>×</button>
-                  </div>
-                </div>
-                <label className="ledger__row additive-list__amount">
-                  <span className="micro-label">Share</span>
-                  <span className="ledger__figure">
-                    <input
-                      type="number"
-                      className="input figure-field"
-                      min={0}
-                      /* No max: a share over 100% is a state the section deliberately keeps,
-                         shows and flags (portionsOver100). Clamping it here would hide the
-                         mistake the footer exists to point out. */
-                      step={0.1}
-                      aria-label={`Portion ${portionName} share`}
-                      value={p.percent}
-                      onChange={(e) => setPortion(p.key, { percent: e.target.value })}
-                    />
-                    <span className="ledger__unit">% of batter</span>
-                  </span>
-                </label>
-              </li>
-            );
-          })}
-          <li className="additive-list__foot">
-            Portions total {formatGrams(computed.portionsTotalPercent, 1)}%
-            {computed.portionsOver100 && <strong> — over 100%: the portions cannot add up to more than the batter.</strong>}
-          </li>
-        </ul>
-      )}
-
       {scent.colorants.length === 0 ? (
         <p className="results-hint">
           No colour yet. Pick one from the list, or name your own. Clays, charcoal and cocoa are
@@ -234,6 +198,9 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
             const stability = colorantStabilityText(col.catalogId);
             // Offered only where a source actually puts this colour in the lye, and only in a
             // process the sources cover — cold process, in every case found.
+            const ownPortion = col.portionKey
+              ? scent.portions.find((p) => p.key === col.portionKey)
+              : undefined;
             const lyeOffered =
               entry?.lyeRoute !== undefined && COLORANT_LYE_ROUTE_PROCESSES.includes(process);
             return (
@@ -334,21 +301,34 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                       label={`${rowName} portion`}
                       name={`colorant-portion-${col.key}`}
                       options={[
-                        { value: '', cell: 'Whole batter', name: 'Whole batter' },
-                        ...scent.portions.map((p, pi) => ({
-                          value: p.key,
-                          cell: portionLabel(p, pi, scent.portions.length),
-                          name: portionLabel(p, pi, scent.portions.length),
-                        })),
-                        ...(scent.portions.length < MAX_SCENT_ROWS
-                          ? [{ value: NEW_PORTION, cell: '+ Portion', name: 'New portion' }]
-                          : []),
+                        { value: 'batter', cell: 'Whole batter', name: 'Whole batter' },
+                        { value: 'portion', cell: 'Portion', name: 'Portion' },
                       ]}
-                      value={col.portionKey}
-                      onChange={(v) => (v === NEW_PORTION ? splitInto(col.key) : setColorant(col.key, { portionKey: v }))}
+                      value={col.portionKey ? 'portion' : 'batter'}
+                      onChange={(v) => setOwnPortion(col.key, v === 'portion')}
                       preserveCase
                     />
                   </div>
+                )}
+                {ownPortion && !c.viaLye && (
+                  <label className="ledger__row additive-list__amount">
+                    <span className="micro-label">Share</span>
+                    <span className="ledger__figure">
+                      <input
+                        type="number"
+                        className="input figure-field"
+                        min={0}
+                        /* No max: a share over 100% is a state the section deliberately
+                           keeps, shows and flags (portionsOver100). Clamping it here would
+                           hide the mistake the footer exists to point out. */
+                        step={0.1}
+                        aria-label={`${rowName} share of the batter`}
+                        value={ownPortion.percent}
+                        onChange={(e) => setPortion(ownPortion.key, { percent: e.target.value })}
+                      />
+                      <span className="ledger__unit">% of batter</span>
+                    </span>
+                  </label>
                 )}
                 <div className="additive-list__choice">
                   <span className="micro-label">Add at</span>
@@ -419,6 +399,14 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
               </li>
             );
           })}
+          {/* The shares live on the colours now, so their total is read at the foot of the
+              same list — it is the guard against splitting more batter than exists. */}
+          {process !== 'ls' && scent.portions.length > 0 && (
+            <li className="additive-list__foot">
+              Portions total {formatGrams(computed.portionsTotalPercent, 1)}%
+              {computed.portionsOver100 && <strong> — over 100%: the portions cannot add up to more than the batter.</strong>}
+            </li>
+          )}
           {/* A clay, a mud or charcoal is a mineral: it has no plant pigment to lose. */}
           {scent.colorants.some((c) => {
             const e = colorantEntryById(c.catalogId);

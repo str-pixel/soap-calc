@@ -66,11 +66,9 @@ test.describe('colorants, seen in each process', () => {
     await expect(panel(page).getByRole('radiogroup', { name: /portion$/i })).toContainText('Whole batter');
     await page.screenshot({ path: `${SHOTS}/colorants-cp-whole.png`, fullPage: true });
 
-    await panel(page).getByRole('radio', { name: 'New portion' }).click();
-    await page.getByLabel('Portion name').fill('Swirl');
-    await page.getByLabel(/Portion Swirl share/).fill('40');
-    // Choosing the split put the colour in it: no second control to set.
-    await expect(panel(page).getByRole('radio', { name: 'Swirl' })).toBeChecked();
+    // One button splits the batter for this colour, and the share is entered on it.
+    await panel(page).getByRole('radio', { name: 'Portion' }).click();
+    await page.getByLabel(/Activated charcoal share of the batter/).fill('40');
     // A portion colour moves to trace, and its dose is now against the portion's oils.
     await expect(panel(page)).toContainText(/At trace/i);
     await expect(panel(page)).toContainText(/Portions total 40/);
@@ -95,10 +93,8 @@ test.describe('colorants, seen in each process', () => {
     await expect(panel(page)).toContainText(/post-cook superfat/i);
     await page.screenshot({ path: `${SHOTS}/colorants-hp-whole.png`, fullPage: true });
 
-    await panel(page).getByRole('radio', { name: 'New portion' }).click();
-    await page.getByLabel('Portion name').fill('Top');
-    await page.getByLabel(/Portion Top share/).fill('30');
-    await expect(panel(page).getByRole('radio', { name: 'Top' })).toBeChecked();
+    await panel(page).getByRole('radio', { name: 'Portion' }).click();
+    await page.getByLabel(/French green clay share of the batter/).fill('30');
     // A portion colour waits for the cook, and gets the sugar-water dispersal.
     await expect(panel(page)).toContainText(/After cook/i);
     await expect(panel(page)).toContainText(/hot water and a pinch of sugar/);
@@ -229,13 +225,24 @@ test.describe('colorants, seen in each process', () => {
     await expect(notesPanel(page)).toContainText(/Carrot puree \(as fruit or vegetable puree\)/);
     await page.screenshot({ path: `${SHOTS}/colorants-puree-lye.png`, fullPage: true });
 
-    // Enter it where it is actually sized: the water figure now accounts for it, so the
-    // note has nothing left to say.
+    // Sized by weight, the liquid rides ON TOP of the full water — the row exists but the
+    // water figure has not moved, so the note changes rather than disappearing.
     await page.getByRole('button', { name: /add liquid/i }).click();
     await page.getByLabel('Liquid preset').last().selectOption('puree');
+    await page.getByLabel('Sized by').last().selectOption('grams');
+    await page.getByLabel('Amount').last().fill('120');
+    await expect(notesPanel(page)).toContainText(/on top of the water rather than out of it/);
+
+    // Carved out of the total instead: now the water figure accounts for it, and the note
+    // has nothing left to say.
     await page.getByLabel('Sized by').last().selectOption('percent_of_liquid');
     await page.getByLabel('Amount').last().fill('40');
     await expect(notesPanel(page)).not.toContainText(/as fruit or vegetable puree/);
+
+    // Dose the colour as well and the same purée is weighed twice — asked, not asserted,
+    // because the preset covers every purée.
+    await page.getByLabel(/Carrot puree dose/).fill('2');
+    await expect(notesPanel(page)).toContainText(/carries a dose here.*counted twice/);
     await page.screenshot({ path: `${SHOTS}/colorants-puree-sized.png`, fullPage: true });
 
     await expectNoJunk(page);

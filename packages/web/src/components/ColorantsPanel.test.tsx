@@ -53,55 +53,102 @@ describe('ColorantsPanel', () => {
       .toEqual(['Colorant', 'Name', 'Kind', 'Dose', 'Portion', 'Add at', 'Adds']);
   });
 
-  it('offers the batter or a portion as buttons, and making a split is one of them', () => {
-    // Nothing split yet: the choice is the whole batter, or a split made right here.
+  it('offers two buttons — the whole batter, or this colour\'s own portion', () => {
     const onChange = renderPanel(blueMica, 'cp');
     const seg = screen.getByRole('radiogroup', { name: /Blue mica portion/ });
-    expect([...seg.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['Whole batter', '+ Portion']);
-    fireEvent.click(screen.getByRole('radio', { name: 'New portion' }));
-    const next = onChange.mock.calls[0][0] as ScentColor;
-    // One gesture: the portion exists AND this colour is in it.
-    expect(next.portions).toHaveLength(1);
-    expect(next.colorants[0].portionKey).toBe(next.portions[0].key);
+    expect([...seg.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['Whole batter', 'Portion']);
+    expect((screen.getByRole('radio', { name: 'Whole batter' }) as HTMLInputElement).checked).toBe(true);
 
+    fireEvent.click(screen.getByRole('radio', { name: 'Portion' }));
+    const next = onChange.mock.calls[0][0] as ScentColor;
+    // One gesture: the share exists AND belongs to this colour, named after it.
+    expect(next.portions).toHaveLength(1);
+    expect(next.portions[0].name).toBe('Blue mica');
+    expect(next.colorants[0].portionKey).toBe(next.portions[0].key);
+  });
+
+  it('handing the share back takes the portion with it', () => {
+    const scent = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' }],
+      portions: [{ name: 'Blue mica', percent: '40' }],
+    });
+    const onChange = renderPanel(scent, 'cp');
+    expect((screen.getByRole('radio', { name: 'Portion' }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole('radio', { name: 'Whole batter' }));
+    const next = onChange.mock.calls[0][0] as ScentColor;
+    expect(next.colorants[0].portionKey).toBe('');
+    expect(next.portions).toEqual([]);
+  });
+
+  it('a share another colour still sits in is left alone', () => {
+    // A recipe saved when two colours could share one portion still loads and still works.
+    const shared = normalizeScentColor({
+      fragrances: [],
+      colorants: [
+        { name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' },
+        { name: 'Gold mica', kind: 'mica', percent: '1', portionKey: '#0' },
+      ],
+      portions: [{ name: 'Swirl', percent: '40' }],
+    });
+    const onChange = renderPanel(shared, 'cp');
+    fireEvent.click(screen.getAllByRole('radio', { name: 'Whole batter' })[0]);
+    const next = onChange.mock.calls[0][0] as ScentColor;
+    expect(next.colorants[0].portionKey).toBe('');
+    expect(next.portions).toHaveLength(1);
+    expect(next.colorants[1].portionKey).toBe(next.portions[0].key);
+  });
+
+  it('the share is entered on the colour it belongs to, and only while it has one', () => {
+    renderPanel(blueMica, 'cp');
+    expect(screen.queryByLabelText(/share of the batter/i)).toBeNull();
     cleanup();
+    const scent = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' }],
+      portions: [{ name: 'Blue mica', percent: '40' }],
+    });
+    const onChange = renderPanel(scent, 'cp');
+    const share = screen.getByLabelText(/Blue mica share of the batter/) as HTMLInputElement;
+    expect(share.value).toBe('40');
+    expect(share.closest('.ledger__figure')!.querySelector('.ledger__unit')!.textContent).toBe('% of batter');
+    fireEvent.change(share, { target: { value: '25' } });
+    expect((onChange.mock.calls[0][0] as ScentColor).portions[0].percent).toBe('25');
+  });
+
+  it('a repick renames the share with the colour it belongs to', () => {
+    const scent = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'mica', name: 'Mica', kind: 'mica', percent: '1', portionKey: '#0' }],
+      portions: [{ name: 'Mica', percent: '40' }],
+    });
+    const onChange = renderPanel(scent, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'kaolin-clay' } });
+    const next = onChange.mock.calls[0][0] as ScentColor;
+    expect(next.portions[0].name).toBe('Kaolin clay');
+    expect(next.portions[0].percent).toBe('40');
+  });
+
+  it('the share row carries a visible label and a figure slab, like every other row', () => {
     const withPortion = normalizeScentColor({
       fragrances: [],
-      colorants: [{ name: 'Blue mica', kind: 'mica', percent: '', portionKey: '' }],
+      colorants: [{ name: 'Swirl', kind: 'mica', percent: '1', portionKey: '#0' }],
       portions: [{ name: 'Swirl', percent: '40' }],
     });
     renderPanel(withPortion, 'cp');
-    const seg2 = screen.getByRole('radiogroup', { name: /Blue mica portion/ });
-    expect([...seg2.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['Whole batter', 'Swirl', '+ Portion']);
-    expect((screen.getByRole('radio', { name: 'Whole batter' }) as HTMLInputElement).checked).toBe(true);
-  });
-
-  it('numbers unnamed portions only once there is more than one to tell apart', () => {
-    const two = normalizeScentColor({
-      fragrances: [],
-      colorants: [{ name: 'Blue mica', kind: 'mica', percent: '', portionKey: '' }],
-      portions: [{ name: '', percent: '40' }, { name: '', percent: '30' }],
-    });
-    renderPanel(two, 'cp');
-    const seg = screen.getByRole('radiogroup', { name: /Blue mica portion/ });
-    expect([...seg.querySelectorAll('label')].map((n) => n.textContent))
-      .toEqual(['Whole batter', 'Portion 1', 'Portion 2', '+ Portion']);
-  });
-
-  it('the portion row carries a visible label and a figure slab, like every other row', () => {
-    const withPortion = normalizeScentColor({ fragrances: [], colorants: [], portions: [{ name: 'Swirl', percent: '40' }] });
-    renderPanel(withPortion, 'cp');
-    const input = screen.getByLabelText('Portion name');
-    expect(input.closest('.additive-list__choice')!.querySelector('.micro-label')!.textContent).toBe('Portion');
-    const share = screen.getByLabelText(/Portion Swirl share/);
+    const share = screen.getByLabelText(/Swirl share of the batter/);
     expect(share.closest('label')!.querySelector('.micro-label')!.textContent).toBe('Share');
     expect(share.closest('.ledger__figure')!.querySelector('.ledger__unit')!.textContent).toBe('% of batter');
   });
 
   it('an over-100 share can still be typed and is still flagged, not clamped away', () => {
-    const over = normalizeScentColor({ fragrances: [], colorants: [], portions: [{ name: 'Swirl', percent: '150' }] });
+    const over = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ name: 'Swirl', kind: 'mica', percent: '1', portionKey: '#0' }],
+      portions: [{ name: 'Swirl', percent: '150' }],
+    });
     renderPanel(over, 'cp');
-    const share = screen.getByLabelText(/Portion Swirl share/) as HTMLInputElement;
+    const share = screen.getByLabelText(/Swirl share of the batter/) as HTMLInputElement;
     expect(share.value).toBe('150');
     // No max attribute: clamping would hide the very mistake the footer points out.
     expect(share.getAttribute('max')).toBeNull();
@@ -112,14 +159,14 @@ describe('ColorantsPanel', () => {
   it('every visible label is part of the control\'s accessible name', () => {
     const withPortion = normalizeScentColor({
       fragrances: [],
-      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '1', portionKey: '' }],
-      portions: [{ name: 'Swirl', percent: '40' }],
+      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '1', portionKey: '#0' }],
+      portions: [{ name: 'Madder root', percent: '40' }],
     });
     renderPanel(withPortion, 'cp');
     const named = (visible: string, control: HTMLElement) =>
       (control.getAttribute('aria-label') ?? '').toLowerCase().includes(visible.toLowerCase());
-    expect(named('Share', screen.getByLabelText(/Portion Swirl share/))).toBe(true);
-    expect(named('Portion', screen.getByLabelText('Portion name'))).toBe(true);
+    expect(named('Share', screen.getByLabelText(/Madder root share of the batter/))).toBe(true);
+    expect(named('Portion', screen.getByRole('radiogroup', { name: /Madder root portion/ }))).toBe(true);
     expect(named('Dose', screen.getByLabelText(/Madder root dose/))).toBe(true);
     expect(named('Colorant', screen.getByLabelText(/Colorant for/))).toBe(true);
   });
@@ -160,18 +207,6 @@ describe('ColorantsPanel', () => {
     cleanup();
     renderPanel(blueMica, 'cp', 'g');
     expect(screen.getByText(/which is 1–4½ tsp per kg/)).toBeTruthy();
-  });
-
-  it('deleting a portion returns its colorants to the whole batter', () => {
-    const scent = normalizeScentColor({
-      fragrances: [], colorants: [{ name: 'Mica', kind: 'mica', percent: '1', portionKey: '#0' }],
-      portions: [{ name: 'Swirl', percent: '40' }],
-    });
-    const onChange = renderPanel(scent, 'cp');
-    fireEvent.click(screen.getByRole('button', { name: /remove portion swirl/i }));
-    const next = onChange.mock.calls[0][0] as ScentColor;
-    expect(next.portions).toEqual([]);
-    expect(next.colorants[0].portionKey).toBe('');
   });
 
   it('an HP whole-batter colour is told to go straight into the oils', () => {

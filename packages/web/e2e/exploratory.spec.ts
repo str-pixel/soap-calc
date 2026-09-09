@@ -592,11 +592,10 @@ test.describe('essential oils & colorants', () => {
     await page.getByRole('button', { name: /add colorant/i }).click();
     await page.getByLabel('Colorant name').fill('Blue mica');
     await page.getByLabel(/Blue mica dose/).fill('1');
-    // The split is made from the colour that wants it, and naming it follows.
-    await colorantsPanel(page).getByRole('radio', { name: 'New portion' }).click();
-    await page.getByLabel('Portion name').fill('Swirl');
-    await page.getByLabel(/Portion Swirl share/).fill('40');
-    await expect(section(page, 'Colorants')).toContainText(/Swirl — 40%/);
+    // The split is made from the colour that wants it, and takes that colour's name.
+    await colorantsPanel(page).getByRole('radio', { name: 'Portion' }).click();
+    await page.getByLabel(/Blue mica share of the batter/).fill('40');
+    await expect(section(page, 'Colorants')).toContainText(/Blue mica — 40%/);
     await expect(section(page, 'Colorants')).toContainText(/Blue mica/);
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla dream/);
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla stabilizer/);
