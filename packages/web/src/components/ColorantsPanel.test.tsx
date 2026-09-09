@@ -130,12 +130,12 @@ describe('ColorantsPanel', () => {
 
   it('shows the guidance in the active unit, the dispersal line, and "to shade" without a dose', () => {
     renderPanel(blueMica, 'cp', 'lb');
-    expect(screen.getByText(/½–1 tsp per lb of oils/)).toBeTruthy();
+    expect(screen.getByText(/About 0\.4–1\.8% of the oils, which is ½–2 tsp per lb/)).toBeTruthy();
     expect(screen.getByText(/to shade/i)).toBeTruthy();
     expect(screen.getByText(/1:1 with a light carrier oil/i)).toBeTruthy();
     cleanup();
     renderPanel(blueMica, 'cp', 'g');
-    expect(screen.getByText(/1–2 tsp per kg of oils/)).toBeTruthy();
+    expect(screen.getByText(/which is 1–4½ tsp per kg/)).toBeTruthy();
   });
 
   it('deleting a portion returns its colorants to the whole batter', () => {
@@ -241,7 +241,7 @@ describe('how much, what shade, and what happens over time', () => {
   it('a picked colour states its dose, its shade ladder and its keeping', () => {
     renderPanel(pick('activated-charcoal'), 'cp');
     expect(screen.getByText(/How dark it goes/)).toBeTruthy();
-    expect(screen.getByText(/Teaspoons per kg of oils/)).toBeTruthy();
+    expect(screen.getByText(/0\.1% light grey/)).toBeTruthy();
     // The ladder replaces the plain band rather than sitting beside it.
     expect(screen.queryByText(/density varies by product/)).toBeNull();
     expect(screen.getByText(/light grey/)).toBeTruthy();
@@ -322,5 +322,35 @@ describe('the kind seg explains the cell it has selected', () => {
       colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '', portionKey: '' }],
     }), 'cp');
     expect(screen.queryByText(/many plant colours fade/i)).toBeNull();
+  });
+});
+
+describe('picking a colour seeds its gentlest sourced dose', () => {
+  it('fills the field with the low end of that colour\'s own band, editable', () => {
+    const onChange = renderPanel(blueMica, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'activated-charcoal' } });
+    const next = onChange.mock.calls[0][0] as ScentColor;
+    // charcoal's band starts at 1/8 tsp per lb, which is about 0.1% of the oils
+    expect(next.colorants[0]).toMatchObject({ catalogId: 'activated-charcoal', percent: '0.11' });
+  });
+
+  it('seeds nothing for a colour with no defensible rate', () => {
+    const onChange = renderPanel(blueMica, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'indigo' } });
+    expect((onChange.mock.calls[0][0] as ScentColor).colorants[0].percent).toBe('0.22');
+    cleanup();
+    const onChange2 = renderPanel(blueMica, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'alkanet-root' } });
+    expect((onChange2.mock.calls[0][0] as ScentColor).colorants[0].percent).toBe('');
+  });
+
+  it('Custom… hands the dose back along with the name and the kind', () => {
+    const picked = normalizeScentColor({
+      fragrances: [], portions: [],
+      colorants: [{ catalogId: 'madder-root', name: 'Madder root', kind: 'natural', percent: '0.44', portionKey: '' }],
+    });
+    const onChange = renderPanel(picked, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: '' } });
+    expect((onChange.mock.calls[0][0] as ScentColor).colorants[0]).toMatchObject({ catalogId: '', percent: '' });
   });
 });

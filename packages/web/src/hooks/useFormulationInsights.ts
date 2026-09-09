@@ -15,7 +15,11 @@ import {
 import { oilById } from '../lib/oils';
 import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
-import { colorantEntryById, colorantSharesMaterialWithAdditive } from '@soap-calc/core';
+import {
+  colorantEntryById,
+  colorantSharesMaterialWithAdditive,
+  tspPerLbToPercentOfOils,
+} from '@soap-calc/core';
 import type { ComputedScentColor } from '../lib/computeScentColor';
 import type { ComputedAdditive, ComputedPostCookSuperfat } from '../lib/calculateAdditives';
 import type { RecipeLine, RecipeSettings, SplitLiquidSettings } from '../lib/recipe';
@@ -272,6 +276,16 @@ export function useFormulationInsights(
       // one-to-one pairing is stated as a double dose; a generic additive bucket ("Clay
       // (bentonite, kaolin)") is raised as a question, since the app cannot know whether the
       // clay dosed there is the clay picked here.
+      // A colour dosed past the top of its OWN sourced band. Precise because it compares
+      // against that material's figure rather than a blanket ceiling; a custom row has no
+      // band, and a colour the sources give no rate for has nothing to exceed.
+      colorantsOverRate: (options.scentColor?.colorants ?? []).flatMap((c) => {
+        if (c.percent === null || c.percent <= 0 || !c.catalogId) return [];
+        const entry = colorantEntryById(c.catalogId);
+        if (!entry || entry.tspPerLbHigh === null) return [];
+        const maxPercent = tspPerLbToPercentOfOils(entry.tspPerLbHigh);
+        return c.percent > maxPercent ? [{ name: entry.name, percent: c.percent, maxPercent }] : [];
+      }),
       colorantAdditiveOverlap: (() => {
         const dosedAsAdditive = new Map(additiveEntries.map((a) => [a.catalogId, a.name]));
         const seen = new Set<string>();

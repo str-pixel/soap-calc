@@ -151,6 +151,8 @@ export type FormulationAnalysisInput = {
    * dosed twice, while a generic additive entry ("Clay (bentonite, kaolin)") only MIGHT be
    * the same jar as the clay picked as a colour — worth raising, never worth asserting. */
   colorantAdditiveOverlap?: Array<{ colorant: string; additive: string; sameMaterial: boolean }>;
+  /** Colours dosed above the top of their OWN sourced band, carrying that ceiling. */
+  colorantsOverRate?: Array<{ name: string; percent: number; maxPercent: number }>;
 };
 
 export type InsightRuleParams = Record<string, number | string>;
@@ -1311,6 +1313,21 @@ export const INSIGHT_RULES: InsightRule[] = [
             message: `The colorants' carrier oil adds about ${(input.colorantCarrierShiftPercent ?? 0).toFixed(1)} superfat points — unsaponified oil riding on the recipe.`,
           }
         : null,
+  },
+  {
+    code: 'colorant_over_sourced_rate',
+    check: (input) => {
+      const over = input.colorantsOverRate ?? [];
+      if (over.length === 0) return null;
+      const named = over
+        .map((c) => `${c.name} at ${c.percent.toFixed(2)}% against ${c.maxPercent.toFixed(2)}%`)
+        .join(', ');
+      return {
+        level: 'warning',
+        code: 'colorant_over_sourced_rate',
+        message: `Past the rate its source gives — ${named}. Colour belongs to the soap rather than the lather: overdo it and the pigment washes out onto the tub, the towels and the skin.`,
+      };
+    },
   },
   {
     code: 'colorant_also_additive',

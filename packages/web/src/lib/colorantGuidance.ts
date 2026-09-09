@@ -2,6 +2,7 @@
 import {
   COLORANT_STABILITY_TEXT,
   colorantEntryById,
+  tspPerLbToPercentOfOils,
   COLORANT_GUIDANCE,
   HP_COLORANT_WATER_GRAMS,
   type ColorantDispersal,
@@ -40,13 +41,34 @@ export function tsp(n: number): string {
   return half - whole ? `${whole}½` : String(whole);
 }
 
-/** One rate, rendered per pound or per kilo of oils. */
+/** A dose as the FIELD takes it — percent of oils — ROUNDED FOR READING. One decimal is
+ * enough on screen; below a tenth of a percent it takes two, so a thirty-second of a
+ * teaspoon does not round away to nothing. */
+export function percentText(tspPerLb: number): string {
+  const pct = tspPerLbToPercentOfOils(tspPerLb);
+  return pct < 0.1 ? pct.toFixed(2) : pct.toFixed(1);
+}
+
+/** The same dose as a VALUE to put in the field. Two decimals, because the reading round
+ * is a tenth of a percent wide and seeding 0.1 where the source says 0.11 would quietly
+ * shave a tenth off the gentlest dose the source gives. Trailing zeros go. */
+export function percentValue(tspPerLb: number): string {
+  const pct = tspPerLbToPercentOfOils(tspPerLb);
+  return String(Number(pct.toFixed(2)));
+}
+
+/** One rate, in percent first because that is the field's own unit, with the trade's
+ * teaspoon figure alongside it. */
 function rateText(tspPerLbLow: number, tspPerLbHigh: number, unit: WeightUnit): string {
   const metric = isMetric(unit);
-  const low = tsp(metric ? tspPerLbLow * LB_PER_KG : tspPerLbLow);
-  const high = tsp(metric ? tspPerLbHigh * LB_PER_KG : tspPerLbHigh);
   const per = metric ? 'kg' : 'lb';
-  return low === high ? `About ${low} tsp per ${per} of oils` : `About ${low}–${high} tsp per ${per} of oils`;
+  const spoonLow = tsp(metric ? tspPerLbLow * LB_PER_KG : tspPerLbLow);
+  const spoonHigh = tsp(metric ? tspPerLbHigh * LB_PER_KG : tspPerLbHigh);
+  const pctLow = percentText(tspPerLbLow);
+  const pctHigh = percentText(tspPerLbHigh);
+  const pct = pctLow === pctHigh ? `${pctLow}%` : `${pctLow}–${pctHigh}%`;
+  const spoons = spoonLow === spoonHigh ? `${spoonLow} tsp per ${per}` : `${spoonLow}–${spoonHigh} tsp per ${per}`;
+  return `About ${pct} of the oils, which is ${spoons}`;
 }
 
 /** The dose guidance for a row: a catalog entry's own band when it has one, otherwise the
@@ -58,12 +80,11 @@ export function colorantGuidanceText(kind: ColorantKind, unit: WeightUnit, catal
   // does not have — the maker weighs the spoonful once and types the percent.
   if (entry) {
     if (entry.tspPerLbLow === null || entry.tspPerLbHigh === null) return null;
-    return `${rateText(entry.tspPerLbLow, entry.tspPerLbHigh, unit)} — weigh a spoonful once to fix your own percent, and start low.`;
+    return `${rateText(entry.tspPerLbLow, entry.tspPerLbHigh, unit)}. Powders differ in density, so weigh your spoonful once and go by the scale after that.`;
   }
   const g = COLORANT_GUIDANCE[kind];
   if (!g) return null;
-  const half = kind === 'oxide' ? ' half or less for brown and red;' : '';
-  return `${rateText(g.tspPerLbLow, g.tspPerLbHigh, unit)} — roughly ${g.percentLow}–${g.percentHigh}% by weight;${half} density varies by product, start low.`;
+  return `${rateText(g.tspPerLbLow, g.tspPerLbHigh, unit)}. Powders differ in density, so weigh your spoonful once and go by the scale after that.`;
 }
 
 export function hpWaterText(unit: WeightUnit): string {
@@ -100,10 +121,14 @@ export function colorantShadeLadder(catalogId: string, unit: WeightUnit): string
   if (!entry?.shades?.length) return null;
   const metric = isMetric(unit);
   const per = metric ? 'kg' : 'lb';
+  // Percent first: it is what the dose field takes, so the ladder is directly actionable.
   const rungs = entry.shades
-    .map((s) => `${tsp(metric ? s.tspPerLb * LB_PER_KG : s.tspPerLb)} ${s.colour}`)
+    .map((s) => `${percentText(s.tspPerLb)}% ${s.colour}`)
     .join(' · ');
-  return `Teaspoons per ${per} of oils: ${rungs}.`;
+  const spoons = `${tsp(metric ? entry.shades[0].tspPerLb * LB_PER_KG : entry.shades[0].tspPerLb)}` +
+    `–${tsp(metric ? entry.shades[entry.shades.length - 1].tspPerLb * LB_PER_KG : entry.shades[entry.shades.length - 1].tspPerLb)}` +
+    ` tsp per ${per}`;
+  return `${rungs}. That is ${spoons} of oils.`;
 }
 
 /** What months of light and alkali do to this colour, or null when no source says. */

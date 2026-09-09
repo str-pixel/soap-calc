@@ -1,7 +1,7 @@
 // packages/core/src/colorants.ts
 import { gramsFromDose, type AdditiveProcess, type AdditiveStage } from './additives.js';
 import { superfatShiftFromLiquidFat } from './alternative-liquids.js';
-import { GRAMS_PER_OZ } from './units.js';
+import { GRAMS_PER_LB, GRAMS_PER_OZ } from './units.js';
 
 /**
  * Colorant math. There is no sourced dose for a colorant — the cold-process text says so
@@ -24,9 +24,22 @@ export type ColorantDispersal =
 export type ColorantGuidance = {
   tspPerLbLow: number;
   tspPerLbHigh: number;
-  percentLow: number;
-  percentHigh: number;
 };
+
+/**
+ * The book's own equivalence, and the one bridge between the volume rates the trade
+ * publishes and the weight percent this app doses in: "approximately 4g of colorant per
+ * 450g or 1 teaspoon per pound of oil" (CP:9389-9391). So a teaspoon of colorant powder is
+ * about 4 g, and a teaspoon per pound of oils is about 0.9% of them.
+ *
+ * ONE anchor across materials whose density genuinely differs — a mica runs lighter than a
+ * clay — so every percent derived from it is approximate, and the guidance copy says to
+ * weigh a spoonful once and trust the scale after that. The alternative was to publish no
+ * percent at all, which left the maker holding a teaspoon figure and a field that takes
+ * percents.
+ */
+export const GRAMS_PER_TSP_COLORANT = 4;
+
 
 /** "add 0.25-0.50 ounces water per colorant" with a little sugar (HP:11320-11329). */
 export const HP_COLORANT_WATER_GRAMS = { low: 0.25 * GRAMS_PER_OZ, high: 0.5 * GRAMS_PER_OZ };
@@ -41,15 +54,33 @@ export const HP_COLORANT_WATER_GRAMS = { low: 0.25 * GRAMS_PER_OZ, high: 0.5 * G
  * (4 g per 450 g, CP:9389-9391) is 0.89%. The band below spans that whole spread. Dyes are
  * "to shade" (LS:13256-13262) and "other" is unknown by definition: no range.
  */
+/**
+ * The fallback band for a colorant the catalog does not name, per kind. Each figure is the
+ * sourced GENERIC rate for its family, not an average of the specific ones: mica ½–2 tsp
+ * per pound of oils (pastel to bold), pigments and ultramarines 1, dyes ¼. A natural powder
+ * falls back to the book's own general starting rate, 1 teaspoon per pound (CP:9389-9391),
+ * because the named naturals run from a thirty-second of a teaspoon to three and no single
+ * band describes them. "Other" gets none: glitter and a coated neon are not dosed alike.
+ *
+ * These deliberately match the catalog entries for the same families. They used to disagree
+ * — the oxide band said half a teaspoon while the iron oxide entry said one — which put two
+ * different answers for one material on the same screen.
+ */
 export const COLORANT_GUIDANCE: Record<ColorantKind, ColorantGuidance | null> = {
-  mica: { tspPerLbLow: 0.5, tspPerLbHigh: 1, percentLow: 0.2, percentHigh: 0.9 },
-  oxide: { tspPerLbLow: 0.5, tspPerLbHigh: 1, percentLow: 0.2, percentHigh: 0.9 },
-  natural: { tspPerLbLow: 0.5, tspPerLbHigh: 1, percentLow: 0.2, percentHigh: 0.9 },
-  dye: null,
+  mica: { tspPerLbLow: 0.5, tspPerLbHigh: 2 },
+  oxide: { tspPerLbLow: 1, tspPerLbHigh: 1 },
+  natural: { tspPerLbLow: 1, tspPerLbHigh: 1 },
+  dye: { tspPerLbLow: 0.25, tspPerLbHigh: 0.25 },
   other: null,
 };
 
 const finite = (n: number | null | undefined): n is number => typeof n === 'number' && Number.isFinite(n);
+
+/** Teaspoons per pound of oils → percent of oils, through the book's own anchor. */
+export function tspPerLbToPercentOfOils(tspPerLb: number): number {
+  if (!finite(tspPerLb) || tspPerLb <= 0) return 0;
+  return (tspPerLb * GRAMS_PER_TSP_COLORANT * 100) / GRAMS_PER_LB;
+}
 
 export function portionOilGrams(totalOilGrams: number, portionPercent: number | null): number {
   if (!finite(totalOilGrams) || totalOilGrams <= 0) return 0;

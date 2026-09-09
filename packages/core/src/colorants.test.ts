@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   COLORANT_GUIDANCE,
+  GRAMS_PER_TSP_COLORANT,
+  tspPerLbToPercentOfOils,
   HP_COLORANT_WATER_GRAMS,
   carrierOilSuperfatShift,
   colorantDispersal,
@@ -72,13 +74,31 @@ describe('portionsTotalPercent', () => {
 });
 
 describe('guidance ranges are derived, and say so', () => {
-  it('micas/oxides carry the tsp-per-lb range and its weight derivation; dyes and "other" carry none', () => {
-    expect(COLORANT_GUIDANCE.mica).toEqual({ tspPerLbLow: 0.5, tspPerLbHigh: 1, percentLow: 0.2, percentHigh: 0.9 });
-    // Oxides share the mica band; the brown/red "half or less" is copy, not a second halving.
-    expect(COLORANT_GUIDANCE.oxide).toEqual({ tspPerLbLow: 0.5, tspPerLbHigh: 1, percentLow: 0.2, percentHigh: 0.9 });
-    expect(COLORANT_GUIDANCE.natural).toEqual({ tspPerLbLow: 0.5, tspPerLbHigh: 1, percentLow: 0.2, percentHigh: 0.9 });
-    expect(COLORANT_GUIDANCE.dye).toBeNull();
+  it('each kind falls back to its own sourced generic rate, and only "other" gets none', () => {
+    expect(COLORANT_GUIDANCE.mica).toEqual({ tspPerLbLow: 0.5, tspPerLbHigh: 2 });
+    expect(COLORANT_GUIDANCE.oxide).toEqual({ tspPerLbLow: 1, tspPerLbHigh: 1 });
+    // The book's own general starting rate, since the named naturals span 1/32 to 3 tsp.
+    expect(COLORANT_GUIDANCE.natural).toEqual({ tspPerLbLow: 1, tspPerLbHigh: 1 });
+    expect(COLORANT_GUIDANCE.dye).toEqual({ tspPerLbLow: 0.25, tspPerLbHigh: 0.25 });
     expect(COLORANT_GUIDANCE.other).toBeNull();
+  });
+
+  it('the fallback band never contradicts a catalog entry of the same family', () => {
+    // These used to disagree — the oxide band said half a teaspoon where the iron oxide
+    // entry said one — which put two answers for one material on the same screen.
+    expect(COLORANT_GUIDANCE.oxide!.tspPerLbLow).toBe(1);
+    expect(COLORANT_GUIDANCE.mica!.tspPerLbHigh).toBe(2);
+  });
+
+  it("converts a teaspoon rate to a percent through the book's own anchor", () => {
+    // "approximately 4g of colorant per 450g or 1 teaspoon per pound of oil" (CP:9389-9391)
+    expect(GRAMS_PER_TSP_COLORANT).toBe(4);
+    expect(tspPerLbToPercentOfOils(1)).toBeCloseTo(0.882, 3);
+    expect(tspPerLbToPercentOfOils(0.5)).toBeCloseTo(0.441, 3);
+    // turmeric's thirty-second of a teaspoon survives as a real, typeable figure
+    expect(tspPerLbToPercentOfOils(0.03)).toBeCloseTo(0.026, 3);
+    expect(tspPerLbToPercentOfOils(0)).toBe(0);
+    expect(tspPerLbToPercentOfOils(-1)).toBe(0);
   });
 });
 

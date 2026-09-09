@@ -9,6 +9,7 @@ import { additiveStageLabel } from '../lib/additiveStageLabel';
 import {
   colorantDispersalText,
   colorantGuidanceText,
+  percentValue,
   colorantShadeLadder,
   colorantStabilityText,
 } from '../lib/colorantGuidance';
@@ -91,10 +92,24 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
     onChange({ ...scent, colorants: scent.colorants.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
   const setPortion = (key: string, patch: Partial<Portion>) =>
     onChange({ ...scent, portions: scent.portions.map((p) => (p.key === key ? { ...p, ...patch } : p)) });
-  /** Picking a catalog entry adopts its name and kind; Custom… hands both back. */
+  /** Picking a catalog entry adopts its name and kind, and seeds the LOW end of its own
+   * sourced band as the dose — the gentlest figure the source gives, freely editable. An
+   * empty field left the maker with a range they could not act on; the smallest dose is
+   * both the safe default and the one every source says to start from. A colour with no
+   * defensible rate (indigo, alkanet) still starts empty, because there is nothing to seed.
+   * Custom… hands the name, the kind and the dose back. */
   const pickCatalog = (key: string, catalogId: string) => {
     const entry = catalogId ? colorantEntryById(catalogId) : undefined;
-    setColorant(key, entry ? { catalogId, name: entry.name, kind: entry.kind } : { catalogId: '' });
+    if (!entry) {
+      setColorant(key, { catalogId: '', percent: '' });
+      return;
+    }
+    setColorant(key, {
+      catalogId,
+      name: entry.name,
+      kind: entry.kind,
+      percent: entry.tspPerLbLow !== null ? percentValue(entry.tspPerLbLow) : '',
+    });
   };
   const removePortion = (key: string) =>
     onChange({

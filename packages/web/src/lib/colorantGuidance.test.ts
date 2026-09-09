@@ -5,21 +5,41 @@ import {
   colorantShadeLadder,
   colorantStabilityText,
   hpWaterText,
+  percentText,
+  percentValue,
   tsp,
 } from './colorantGuidance';
 
-describe('guidance renders in the active weight unit', () => {
-  it('imperial: tsp per lb; metric: tsp per kg (1 lb = 0.4536 kg → ×2.2, rounded to halves)', () => {
-    expect(colorantGuidanceText('mica', 'lb')).toBe('About ½–1 tsp per lb of oils — roughly 0.2–0.9% by weight; density varies by product, start low.');
-    expect(colorantGuidanceText('mica', 'kg')).toBe('About 1–2 tsp per kg of oils — roughly 0.2–0.9% by weight; density varies by product, start low.');
-    expect(colorantGuidanceText('oxide', 'g')).toBe('About 1–2 tsp per kg of oils — roughly 0.2–0.9% by weight; half or less for brown and red; density varies by product, start low.');
-    expect(colorantGuidanceText('oxide', 'lb')).toBe('About ½–1 tsp per lb of oils — roughly 0.2–0.9% by weight; half or less for brown and red; density varies by product, start low.');
-    expect(colorantGuidanceText('natural', 'oz')).toBe('About ½–1 tsp per lb of oils — roughly 0.2–0.9% by weight; density varies by product, start low.');
+describe('guidance leads with the percent the dose field takes', () => {
+  it('states the percent first and the trade\'s teaspoon figure after it, in the active unit', () => {
+    expect(colorantGuidanceText('mica', 'lb')).toBe(
+      'About 0.4–1.8% of the oils, which is ½–2 tsp per lb. Powders differ in density, so weigh your spoonful once and go by the scale after that.',
+    );
+    // Per kilo the spoons roughly double; the percent does not move, because it is a percent.
+    expect(colorantGuidanceText('mica', 'g')).toMatch(/^About 0\.4–1\.8% of the oils, which is 1–4½ tsp per kg\./);
+    // A single-valued band collapses instead of printing the same figure twice.
+    expect(colorantGuidanceText('oxide', 'g')).toMatch(/^About 0\.9% of the oils, which is 2 tsp per kg\./);
+    expect(colorantGuidanceText('dye', 'lb')).toMatch(/^About 0\.2% of the oils, which is ¼ tsp per lb\./);
   });
-  it('dyes and "other" have no range', () => {
-    expect(colorantGuidanceText('dye', 'g')).toBeNull();
+
+  it('a custom row and a catalog row of the same family now say the SAME thing', () => {
+    // They used to disagree: the oxide fallback said half a teaspoon where the iron oxide
+    // entry said one, so one screen carried two answers for one material.
+    expect(colorantGuidanceText('oxide', 'g')).toBe(colorantGuidanceText('oxide', 'g', 'iron-oxide'));
+    expect(colorantGuidanceText('mica', 'lb')).toBe(colorantGuidanceText('mica', 'lb', 'mica'));
+  });
+
+  it('"other" has no range, because glitter and a coated neon are not dosed alike', () => {
     expect(colorantGuidanceText('other', 'lb')).toBeNull();
   });
+
+  it('says nothing at all for a colour with no defensible rate', () => {
+    // Alkanet's only sourced route is an infusion, measured against the infusing oil.
+    expect(colorantGuidanceText('natural', 'lb', 'alkanet-root')).toBeNull();
+    // Indigo DOES carry one — three fetched sources agreed on a quarter to a half.
+    expect(colorantGuidanceText('natural', 'lb', 'indigo')).toMatch(/^About 0\.2–0\.4% of the oils/);
+  });
+
   it('the HP water figure follows the unit', () => {
     expect(hpWaterText('g')).toBe('7–14 g hot water and a pinch of sugar');
     expect(hpWaterText('oz')).toBe('¼–½ oz hot water and a pinch of sugar');
@@ -40,41 +60,17 @@ describe('spoon fractions', () => {
   });
 });
 
-describe('a catalog pick ships its own sourced rate, and no invented weight percent', () => {
-  it('renders the entry rate per pound or per kilo, and collapses a single-valued band', () => {
-    expect(colorantGuidanceText('mica', 'lb', 'mica')).toBe(
-      'About ½–2 tsp per lb of oils — weigh a spoonful once to fix your own percent, and start low.',
-    );
-    // 1 tsp/lb is about 2 tsp/kg.
-    expect(colorantGuidanceText('oxide', 'g', 'iron-oxide')).toBe(
-      'About 2 tsp per kg of oils — weigh a spoonful once to fix your own percent, and start low.',
-    );
-    expect(colorantGuidanceText('dye', 'lb', 'fdc-dye')).toMatch(/^About ¼ tsp per lb of oils/);
-  });
-
-  it('says nothing at all for a colour with no defensible rate', () => {
-    // Alkanet's only sourced route is an infusion, measured against the infusing oil.
-    expect(colorantGuidanceText('natural', 'lb', 'alkanet-root')).toBeNull();
-    expect(colorantGuidanceText('natural', 'lb', 'woad')).toBeNull();
-    // Indigo DOES carry one now — three fetched sources agreed on a quarter to a half.
-    expect(colorantGuidanceText('natural', 'lb', 'indigo')).toMatch(/^About ¼–½ tsp per lb of oils/);
-  });
-
-  it('falls back to the kind band for a custom row, which still carries its derived percent', () => {
-    expect(colorantGuidanceText('mica', 'lb')).toMatch(/roughly 0\.2–0\.9% by weight/);
-  });
-});
-
 describe('the shade ladder and the over-time line', () => {
   it('reads dose to colour, lightest first, in the active unit', () => {
-    // The unit is named — a bare "⅛ light grey" is an eighth of nothing.
+    // Each rung is a percent, because that is what the dose field takes.
     expect(colorantShadeLadder('activated-charcoal', 'lb')).toBe(
-      'Teaspoons per lb of oils: ⅛ light grey · ½ medium grey · 1 dark grey, faint grey lather · 2 grey-black · 3 black, noticeably grey lather.',
+      '0.1% light grey · 0.4% medium grey · 0.9% dark grey, faint grey lather · 1.8% grey-black · 2.6% black, noticeably grey lather. That is ⅛–3 tsp per lb of oils.',
     );
-    // Per kilo the same ladder roughly doubles.
-    expect(colorantShadeLadder('activated-charcoal', 'g')).toMatch(/^Teaspoons per kg of oils: ¼ light grey · 1 medium grey · 2 dark grey/);
-    // Turmeric's low rung survives the conversion instead of rounding to nothing.
-    expect(colorantShadeLadder('turmeric', 'lb')).toBe('Teaspoons per lb of oils: ¹⁄₃₂ soft yellow · 1 burnt orange.');
+    // The percents do not move with the unit; only the spoons do.
+    expect(colorantShadeLadder('activated-charcoal', 'g')).toMatch(/^0\.1% light grey · 0\.4% medium grey/);
+    expect(colorantShadeLadder('activated-charcoal', 'g')).toMatch(/That is ¼–6½ tsp per kg of oils\.$/);
+    // Turmeric's thirty-second of a teaspoon survives as a typeable figure, not a zero.
+    expect(colorantShadeLadder('turmeric', 'lb')).toBe('0.03% soft yellow · 0.9% burnt orange. That is ¹⁄₃₂–1 tsp per lb of oils.');
   });
 
   it('says nothing for a colour with no sourced ladder, or for a custom row', () => {
@@ -97,5 +93,23 @@ describe('the shade ladder and the over-time line', () => {
     // Not every colour has a sourced answer, and silence is the honest one.
     expect(colorantStabilityText('woad')).toBeNull();
     expect(colorantStabilityText('')).toBeNull();
+  });
+});
+
+describe('a seeded dose keeps the precision the reading round drops', () => {
+  it('seeds two decimals, so the gentlest sourced dose is not shaved by rounding', () => {
+    expect(percentValue(0.125)).toBe('0.11'); // charcoal's lightest grey
+    expect(percentValue(0.25)).toBe('0.22');
+    expect(percentValue(0.5)).toBe('0.44');
+    expect(percentValue(1)).toBe('0.88');
+    // and the display still rounds for reading — a tenth is enough on screen
+    expect(percentText(0.125)).toBe('0.1');
+    expect(percentText(0.5)).toBe('0.4');
+    expect(percentText(1)).toBe('0.9');
+  });
+
+  it('drops a trailing zero rather than seeding "1.80" into a number field', () => {
+    expect(percentValue(2)).toBe('1.76');
+    expect(percentValue(0.03)).toBe('0.03');
   });
 });

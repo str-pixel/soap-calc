@@ -544,3 +544,46 @@ describe('the double-dosing check reaches the rule only for a real double dose',
     expect(msg.match(/Activated charcoal/g)).toHaveLength(1);
   });
 });
+
+describe('a colour dosed past its own sourced rate is flagged', () => {
+  const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+  function harness(colorants: ComputedScentColor['colorants']) {
+    const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
+    const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
+    return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
+      process: 'cp',
+      scentColor: { ...emptyComputedScentColor(), colorants },
+    });
+  }
+  const colour = (over: Partial<ComputedScentColor['colorants'][number]>) => ({
+    key: 'c1', catalogId: 'activated-charcoal', name: 'Activated charcoal', kind: 'natural' as const,
+    percent: 1, grams: 10, portionKey: '', portionName: '', portionPercent: null,
+    portionShareMissing: false, stage: 'oils' as const,
+    dispersal: { method: 'carrier-oil' as const, carrierGrams: 10 },
+    ...over,
+  });
+  const msg = (colorants: ComputedScentColor['colorants']) => {
+    const { result } = renderHook(() => harness(colorants));
+    return result.current.insights.find((i) => i.code === 'colorant_over_sourced_rate')?.message;
+  };
+
+  it('fires above that material own ceiling, and names both figures', () => {
+    // charcoal tops out at 3 tsp per lb of oils, about 2.65%
+    const m = msg([colour({ percent: 5 })]);
+    expect(m).toMatch(/Activated charcoal at 5\.00% against 2\.65%/);
+    expect(m).toMatch(/washes out onto the tub/);
+  });
+
+  it('stays quiet inside the band, and at the ceiling itself', () => {
+    expect(msg([colour({ percent: 2 })])).toBeUndefined();
+    expect(msg([colour({ percent: 2.6 })])).toBeUndefined();
+  });
+
+  it('never fires for a custom colour, which has no sourced band to exceed', () => {
+    expect(msg([colour({ catalogId: '', name: 'Mine', percent: 40 })])).toBeUndefined();
+  });
+
+  it('never fires for a colour the sources give no rate for', () => {
+    expect(msg([colour({ catalogId: 'alkanet-root', name: 'Alkanet root', percent: 40 })])).toBeUndefined();
+  });
+});
