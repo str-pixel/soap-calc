@@ -78,7 +78,7 @@ export const LYE_TYPE_LABELS: Record<LyeType, string> = {
 };
 
 export const WATER_MODE_LABELS: Record<WaterMode, string> = {
-  percent_of_oils: '% of oils',
+  percent_of_oils: '% of oil weight',
   lye_concentration: 'Lye concentration %',
   lye_water_ratio: 'Water : lye ratio',
 };

@@ -595,7 +595,8 @@ describe('dose-basis seeding and display (LS audit)', () => {
     render(
       <AdditivesPanel additives={[cp]} computed={[makeComputed(cp)]} weightUnit="g" process="cp" onChange={() => {}} />,
     );
-    expect(screen.getByText(/% of oil weight/)).toBeTruthy();
+    // the HINT, not the dose-mode option that now uses the same words
+    expect(screen.getByText(/Typical [^,]*% of oil weight/)).toBeTruthy();
   });
 
   it('a stray solution row under CP points at the dose mode, not a dilution field CP lacks', () => {

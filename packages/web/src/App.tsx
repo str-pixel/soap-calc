@@ -731,7 +731,7 @@ export default function App() {
               process={process}
               weightUnit={weightUnit}
               waterGrams={vm.result?.waterWeightGrams ?? null}
-              batterGrams={vm.baseBatchGrams > 0 ? vm.baseBatchGrams : null}
+              batterGrams={vm.batterAtTraceGrams}
               onChange={setScentColor}
             />
 

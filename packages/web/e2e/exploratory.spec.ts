@@ -684,7 +684,7 @@ test.describe('additives', () => {
     const row = page.locator('ul[aria-label="Recipe additives"] li').first();
     await row.getByLabel('Additive type').selectOption({ label: 'Sugar' });
     await row.getByLabel(/^Amount( for .*)?$/).fill('3');
-    await row.getByLabel('Dose mode').selectOption({ label: '% of oil' });
+    await row.getByLabel('Dose mode').selectOption({ label: '% of oil weight' });
     await expect(row.locator('.additive-list__grams')).toHaveText(/^30(\.0)? g$/);
     // batch weight now includes extras
     const batch = num(await resultDd(page, /^Batch weight/));
@@ -702,7 +702,7 @@ test.describe('additives', () => {
     await expect(row.locator('.additive-list__grams')).toHaveText(/^30(\.0)? g$/);
     await row.getByLabel(/^Amount( for .*)?$/).fill('2000');
     await expect(row.getByRole('alert')).toContainText(/Max 1000 ppt/);
-    await row.getByLabel('Dose mode').selectOption({ label: '% of oil' });
+    await row.getByLabel('Dose mode').selectOption({ label: '% of oil weight' });
     await row.getByLabel(/^Amount( for .*)?$/).fill('150');
     await expect(row.getByRole('alert')).toContainText(/Max 100%/);
   });

@@ -17,7 +17,7 @@ import { withNewRow } from '../lib/rowOrder';
  * name ('Lye conc' ⊂ 'Lye concentration %'), which is what keeps Label-in-Name honest
  * while the cells stay short enough for three to share one column. */
 const WATER_MODE_SEG_CELLS: Record<WaterMode, string> = {
-  percent_of_oils: '% of oils',
+  percent_of_oils: '% of oil weight',
   lye_concentration: 'Lye conc',
   lye_water_ratio: 'Water : lye',
 };

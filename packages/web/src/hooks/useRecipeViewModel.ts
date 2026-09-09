@@ -161,8 +161,11 @@ export type RecipeViewModel = {
    * floor/composition basis. Null before a dilution exists. */
   wholeBatchPasteGrams: number | null;
   batchWeightWithExtras: number;
-  /** Oils + lye + water — the soap batter itself, before any extra is folded in. */
+  /** Oils + lye + water — the base batch, before anything is stirred in. */
   baseBatchGrams: number;
+  /** The mass in the pot when the batter is divided: the base batch plus every additive,
+   * colour and scent already added by then. What a portion share is a share of. */
+  batterAtTraceGrams: number | null;
   /** The Fragrance & colorants section, computed once (grams, stages, finished-product
    * shares, label allergens) — see lib/computeScentColor. */
   scentColor: ComputedScentColor;
@@ -836,6 +839,33 @@ export function useRecipeViewModel({
       }),
     [scentColor, process, totalOilGrams, solutionGrams, postCookSuperfat, mainSuperfatRaw],
   );
+  // What is actually in the pot when the batter is divided: the base batch plus everything
+  // already stirred in. Additives staged in the lye, with the oils or at trace are in;
+  // after-cook and on-top ones are not, which makes this process-aware by construction (an
+  // HP fragrance is after_cook, a CP one is at trace). Whole-batter and lye colours count
+  // with their carrier oil; a PORTION colour does not — it goes into its share after the
+  // split, so counting it would fold a colour into the batter it is dividing.
+  const batterAtTraceGrams = useMemo(() => {
+    if (baseBatchGrams <= 0) return null;
+    const additiveMass = computedAdditives.reduce(
+      (sum, a) => (a.addAt === 'after_cook' || a.addAt === 'top' ? sum : sum + a.grams),
+      0,
+    );
+    const scent = scentGrams;
+    const colourMass = scent.colorants.reduce((sum, c) => {
+      if (c.stage !== 'oils' && c.stage !== 'lye') return sum;
+      const carrier =
+        c.dispersal.method === 'carrier-oil' || c.dispersal.method === 'vein-oil'
+          ? c.dispersal.carrierGrams ?? 0
+          : 0;
+      return sum + (c.grams ?? 0) + carrier;
+    }, 0);
+    const scentMass = scent.fragrances.reduce(
+      (sum, f) => (f.stage === 'after_cook' ? sum : sum + f.grams + f.stabilizerGrams),
+      0,
+    );
+    return baseBatchGrams + additiveMass + colourMass + scentMass;
+  }, [baseBatchGrams, computedAdditives, scentGrams]);
   const extrasGrams = computeExtrasGrams(
     computedAdditives,
     splitLiquidGrams,
@@ -1187,10 +1217,11 @@ export function useRecipeViewModel({
     finishedProductGrams,
     wholeBatchPasteGrams,
     batchWeightWithExtras,
-    /** Oils + lye + water: the soap batter, which is what a portion is a share OF. Distinct
-     * from batchWeightWithExtras, which folds in additives and scent mass that are not in
-     * the pot when the batter is divided. */
+    /** Oils + lye + water, before anything is stirred in. */
     baseBatchGrams,
+    /** What is in the pot when the batter is divided — the figure a share is a share OF.
+     * Null before there is a batch. */
+    batterAtTraceGrams,
     liveOilBatchFraction,
     batchSheetData,
     soapingTempF,

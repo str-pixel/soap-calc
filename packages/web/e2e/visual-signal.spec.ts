@@ -501,7 +501,7 @@ test('the topbar wraps on a phone instead of clipping', async ({ page }) => {
 test('the additive amount stays a usable figure beside the widest dose basis', async ({ page }) => {
   const problems = watchForErrors(page);
   await page.goto('/');
-  // Liquid soap offers the longest basis labels ("ppt of solution").
+  // Liquid soap offers the longest basis labels ("% of oil weight", "ppt of solution").
   await page.getByRole('tab', { name: /liquid soap/i }).click();
   const panel = page
     .locator('section.panel')
@@ -510,7 +510,7 @@ test('the additive amount stays a usable figure beside the widest dose basis', a
 
   const basis = page.getByLabel(/^Dose mode for/).first();
   const amount = page.getByLabel(/^Amount for/).first();
-  for (const label of ['% of oil', 'ppt of solution']) {
+  for (const label of ['% of oil weight', 'ppt of solution']) {
     await basis.selectOption({ label });
     // The regression this pins: with the slab at its old fixed width, the basis select
     // ate the whole dial and the number field collapsed to ZERO width — present in the

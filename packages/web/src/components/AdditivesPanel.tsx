@@ -33,7 +33,9 @@ type AdditivesPanelProps = {
 };
 
 const DOSE_MODES: { value: string; basis: DoseBasis; unit: DoseUnit; label: string }[] = [
-  { value: 'oil-percent', basis: 'oil', unit: 'percent', label: '% of oil' },
+  // "of oil weight" everywhere the basis is the recipe's oils — the colorant and
+  // essential-oil panels say the same, so one basis cannot read as three.
+  { value: 'oil-percent', basis: 'oil', unit: 'percent', label: '% of oil weight' },
   { value: 'batch-percent', basis: 'batch', unit: 'percent', label: '% of batch' },
   { value: 'oil-ppt', basis: 'oil', unit: 'ppt', label: 'ppt of oil' },
   { value: 'batch-ppt', basis: 'batch', unit: 'ppt', label: 'ppt of batch' },

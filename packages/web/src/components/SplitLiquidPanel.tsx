@@ -262,12 +262,12 @@ export function SplitLiquidPanel({
                     <option value="percent_of_oils">% of oil weight</option>
                     <option value="grams">Weight</option>
                     <option value="percent_of_liquid" disabled={!budgetModesAvailable}>
-                      % of total liquid{budgetModesAvailable ? '' : ' (needs % of oils water)'}
+                      % of total liquid{budgetModesAvailable ? '' : ' (needs % of oil weight water)'}
                     </option>
                     <option value="rest" disabled={!budgetModesAvailable || otherHasRest}>
                       All liquid above the lye minimum
                       {!budgetModesAvailable
-                        ? ' (needs % of oils water)'
+                        ? ' (needs % of oil weight water)'
                         : otherHasRest
                           ? ' (already used)'
                           : ''}
@@ -346,7 +346,7 @@ export function SplitLiquidPanel({
                 )}
                 {isInertBudgetRow && (
                   <p className="split-liquid-warning" role="alert">
-                    This sizing needs &ldquo;% of oils&rdquo; water or a water:lye ratio —
+                    This sizing needs &ldquo;% of oil weight&rdquo; water or a water:lye ratio —
                     lye-concentration water sets the lye solution&apos;s strength, so there
                     is no total-liquid budget to carve this out of. This liquid is not being
                     added. Switch the water method, or size it by % of oil weight or Weight.

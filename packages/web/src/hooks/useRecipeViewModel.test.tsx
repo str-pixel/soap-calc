@@ -1181,3 +1181,42 @@ test('the Fragrance & colorants section joins the extras, the batch weight and t
   expect(scented.scentColor.fragrances[0].shareOfProduct).toBeCloseTo((100 * grams) / scented.labelWeight, 6);
   expect(scented.batchSheetData.scentColor.fragranceGrams).toBeCloseTo(grams, 6);
 });
+
+test('the batter a share is a share of is the pot at the split, not the base batch', () => {
+  let vm: {
+    baseBatchGrams: number; batterAtTraceGrams: number | null; totalOilGrams: number;
+  } | null = null;
+  probe(
+    (v) => { vm = v as never; },
+    {},
+    'cp',
+    null,
+    [
+      { key: 'a', catalogId: 'sodium-lactate', name: 'Sodium lactate', amount: '3', basis: 'oil', unit: 'percent', addAt: 'lye' },
+      { key: 'b', catalogId: 'silk', name: 'Silk', amount: '1', basis: 'oil', unit: 'percent', addAt: 'trace' },
+      { key: 'c', catalogId: 'oatmeal', name: 'Oatmeal', amount: '1', basis: 'oil', unit: 'percent', addAt: 'top' },
+    ] as never,
+  );
+  const v = vm!;
+  // The lye and trace additives are in the pot when the batter is divided; the on-top one
+  // is not — so the batter is the base batch plus 4% of the oils, not 5%.
+  expect(v.batterAtTraceGrams).toBeCloseTo(v.baseBatchGrams + v.totalOilGrams * 0.04, 6);
+  expect(v.batterAtTraceGrams).toBeGreaterThan(v.baseBatchGrams);
+});
+
+test('a whole-batter colour is in the batter with its carrier oil; a portion colour is not', () => {
+  const scent = normalizeScentColor({
+    fragrances: [],
+    colorants: [
+      { catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '' },
+      { catalogId: 'iron-oxide', name: '', kind: 'oxide', percent: '1', portionKey: '#0' },
+    ],
+    portions: [{ name: '', percent: '40' }],
+  });
+  let vm: { baseBatchGrams: number; batterAtTraceGrams: number | null; totalOilGrams: number } | null = null;
+  probe((v) => { vm = v as never; }, {}, 'cp', null, undefined, scent);
+  const v = vm!;
+  // The mica is 1% of the oils and carries an equal weight of oil: 2% in all. The oxide
+  // colours its own 40% share AFTER the split, so none of it counts here.
+  expect(v.batterAtTraceGrams).toBeCloseTo(v.baseBatchGrams + v.totalOilGrams * 0.02, 6);
+});
