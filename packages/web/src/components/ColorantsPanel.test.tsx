@@ -614,9 +614,9 @@ describe('what a cold-process colour is mixed with', () => {
   it('offers the four the book gives, oil first', () => {
     const onChange = renderPanel(row(), 'cp');
     const seg = screen.getByRole('radiogroup', { name: /Mica mixed with/ });
-    expect([...seg.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['Oil 1:1', 'Water', 'Oil 1:2', 'Dry']);
+    expect([...seg.querySelectorAll('label')].map((n) => n.textContent)).toEqual(['In oil', 'In water', 'Vein', 'Dusted']);
     expect(screen.getByText(/Mix 1:1 with a light carrier oil/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('radio', { name: 'Water' }));
+    fireEvent.click(screen.getByRole('radio', { name: /Mixed into water/ }));
     expect((onChange.mock.calls[0][0] as ScentColor).colorants[0].mixedWith).toBe('water');
   });
 
@@ -701,7 +701,7 @@ describe('a share cannot outlive the colour that holds it, whatever releases it'
   });
 
   it('a vein or a dusted line hands the share back, like the lye route does', () => {
-    for (const option of [/1:2/, /^Dry/]) {
+    for (const option of [/A vein/, /A dusted line/]) {
       const onChange = renderPanel(coloured(), 'cp');
       fireEvent.click(screen.getByRole('radio', { name: option }));
       const next = onChange.mock.calls[0][0] as ScentColor;
@@ -747,7 +747,7 @@ it('a colour that cannot hold a share does not keep pointing at one another colo
     portions: [{ name: 'Swirl', percent: '40' }],
   });
   const onChange = renderPanel(shared, 'cp');
-  fireEvent.click(screen.getAllByRole('radio', { name: /1:2/ })[0]);
+  fireEvent.click(screen.getAllByRole('radio', { name: /A vein/ })[0]);
   const next = onChange.mock.calls[0][0] as ScentColor;
   expect(next.colorants[0]).toMatchObject({ mixedWith: 'vein', portionKey: '' });
   // the other colour still holds the share, so the share itself stays
@@ -811,5 +811,45 @@ describe('a dose can be entered either way', () => {
     expect(screen.queryByLabelText(/share weight/i)).toBeNull();
     // the share itself is still there to type
     expect(screen.getByLabelText(/Mica share of the batter/)).toBeTruthy();
+  });
+});
+
+describe('the mix buttons say what they are', () => {
+  const row = (mixedWith = 'oil') => normalizeScentColor({
+    fragrances: [],
+    colorants: [{ catalogId: 'iron-oxide', name: '', kind: 'oxide', percent: '0.22', portionKey: '', mixedWith }],
+    portions: [],
+  });
+
+  it('names each choice in words, not in a bare ratio', () => {
+    renderPanel(row(), 'cp');
+    const cells = [...screen.getByRole('radiogroup', { name: /mixed with/i }).querySelectorAll('label')];
+    expect(cells.map((n) => n.textContent)).toEqual(['In oil', 'In water', 'Vein', 'Dusted']);
+    // and the ratio is spelled out underneath, where there is room for a sentence
+    expect(screen.getByText(/One part colour to one part light carrier oil/)).toBeTruthy();
+    cleanup();
+    // and water says what it changes
+    renderPanel(row('water'), 'cp');
+    expect(screen.getByText(/no superfat rides on it/)).toBeTruthy();
+  });
+
+  it('explains the two that go in at the mold, including why the portion control goes', () => {
+    renderPanel(row('vein'), 'cp');
+    expect(screen.getByText(/twice its weight in oil/)).toBeTruthy();
+    expect(screen.getByText(/takes no share of the batter/)).toBeTruthy();
+    expect(screen.queryByRole('radiogroup', { name: /portion$/i })).toBeNull();
+    cleanup();
+    renderPanel(row('dry'), 'cp');
+    expect(screen.getByText(/no solvent at all, dusted over a poured layer/)).toBeTruthy();
+    expect(screen.getByText(/takes no share of the batter/)).toBeTruthy();
+  });
+
+  it('keeps the dose and its weight through every choice — nothing is lost by switching', () => {
+    for (const mix of ['oil', 'water', 'vein', 'dry']) {
+      renderPanel(row(mix), 'cp');
+      expect((screen.getByLabelText(/Iron oxide dose/) as HTMLInputElement).value).toBe('0.22');
+      expect((screen.getByLabelText(/Iron oxide weight/) as HTMLInputElement).value).toBe('2.2');
+      cleanup();
+    }
   });
 });

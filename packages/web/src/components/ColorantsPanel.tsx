@@ -51,11 +51,22 @@ type Props = {
  * (CP:18080-18089), then the two mold-side techniques — a 1:2 vein and a dry pencil line
  * (CP:18322-18336). */
 const MIX_OPTIONS: ReadonlyArray<{ value: ColorantMix; cell: string; name: string }> = [
-  { value: 'oil', cell: 'Oil 1:1', name: 'Carrier oil, 1:1' },
-  { value: 'water', cell: 'Water', name: 'Water' },
-  { value: 'vein', cell: 'Oil 1:2', name: 'Carrier oil, 1:2 — a vein' },
-  { value: 'dry', cell: 'Dry', name: 'Dry — a dusted line' },
+  { value: 'oil', cell: 'In oil', name: 'Mixed into carrier oil' },
+  { value: 'water', cell: 'In water', name: 'Mixed into water' },
+  { value: 'vein', cell: 'Vein', name: 'A vein, poured between layers' },
+  { value: 'dry', cell: 'Dusted', name: 'A dusted line, between layers' },
 ];
+
+/** What each choice IS, in one line, under the buttons. A ratio on a button ("Oil 1:2")
+ * says nothing on its own, and the last two also move the colour to the mold — which takes
+ * the portion control away with it, and that has to be explained where it happens rather
+ * than left looking like something broke. */
+const MIX_NOTE: Record<ColorantMix, string> = {
+  oil: 'One part colour to one part light carrier oil, stirred through the batter.',
+  water: 'Into a little water instead of oil — no carrier oil, so no superfat rides on it.',
+  vein: 'A mica vein: twice its weight in oil, thin enough to pour in a line between two layers. It goes in at the mold, so it takes no share of the batter.',
+  dry: 'A pencil line: no solvent at all, dusted over a poured layer before the next one goes on. It goes in at the mold, so it takes no share of the batter.',
+};
 
 const COLORANT_GROUPS = colorantsByFamily();
 
@@ -453,6 +464,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                       onChange={(v) => setColorant(col.key, { mixedWith: v })}
                       preserveCase
                     />
+                    <p className="inline-note additive-list__stage-note">{MIX_NOTE[c.mixedWith]}</p>
                   </div>
                 )}
                 <div className="additive-list__choice">

@@ -140,25 +140,25 @@ test.describe('colorants, seen in each process', () => {
     await page.getByRole('button', { name: /add colorant/i }).click();
     await page.getByLabel(/Colorant for/).selectOption('mica');
     const mix = panel(page).getByRole('radiogroup', { name: /mixed with/i });
-    await expect(mix).toContainText('Oil 1:1');
+    await expect(mix).toContainText('In oil');
     await expect(panel(page)).toContainText(/Mix 1:1 with a light carrier oil/);
     // the carrier oil rides on the recipe as superfat, which the panel says out loud
     await expect(panel(page)).toContainText(/superfat points/);
 
     // Water: the book's other sanctioned solvent, and it names what it costs.
-    await mix.getByRole('radio', { name: 'Water' }).click();
+    await mix.getByRole('radio', { name: /Mixed into water/ }).click();
     await expect(panel(page)).toContainText(/Mix into a little distilled water/);
     await expect(panel(page)).toContainText(/costs you gel phase in that portion/);
     await expect(panel(page)).not.toContainText(/superfat points/);
 
     // A vein takes twice the oil and is poured at the mold, so it is not a batter share.
-    await mix.getByRole('radio', { name: /1:2/ }).click();
+    await mix.getByRole('radio', { name: /A vein/ }).click();
     await expect(panel(page)).toContainText(/Mix 1:2 with a light carrier oil/);
     await expect(panel(page).getByRole('radiogroup', { name: /portion$/i })).toHaveCount(0);
     await expect(panel(page)).toContainText(/At trace/);
 
     // A pencil line is dusted dry: no solvent at all.
-    await mix.getByRole('radio', { name: /^Dry/ }).click();
+    await mix.getByRole('radio', { name: /A dusted line/ }).click();
     await expect(panel(page)).toContainText(/Dust it dry over a poured layer/);
     await page.screenshot({ path: `${SHOTS}/colorants-cp-mix.png`, fullPage: true });
 
