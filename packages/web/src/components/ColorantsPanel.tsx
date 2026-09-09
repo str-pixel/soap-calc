@@ -25,7 +25,7 @@ import type { ComputedScentColor } from '../lib/computeScentColor';
 import { formatGrams } from '../lib/format';
 import type { ProcessId } from '../lib/process';
 import {
-  MAX_SCENT_ROWS, newColorantLine, newPortion,
+  colorantClaimsPortion, MAX_SCENT_ROWS, newColorantLine, newPortion,
   type ColorantLine, type Portion, type ScentColor,
 } from '../lib/scentColor';
 import { formatWeight, type WeightUnit } from '../lib/weightUnits';
@@ -115,7 +115,9 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
    * or one sent through the lye, left its share in the recipe — still counted in the total
    * and in the over-100 guard, with no control left anywhere to see or remove it. */
   const commit = (next: ScentColor) => {
-    const used = new Set(next.colorants.map((c) => (c.viaLye ? '' : c.portionKey)).filter(Boolean));
+    const used = new Set(
+      next.colorants.map((c) => (colorantClaimsPortion(c, process) ? c.portionKey : '')).filter(Boolean),
+    );
     if (used.size === next.portions.length) return onChange(next);
     const portions = next.portions.filter((p) => used.has(p.key));
     const kept = new Set(portions.map((p) => p.key));
@@ -142,7 +144,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
     // A different material is a different stage decision: the lye route belongs to the
     // colour that was picked, so it does not ride across to the next one.
     if (!entry) {
-      setColorant(key, { catalogId: '', percent: '', viaLye: false });
+      setColorant(key, { catalogId: '', percent: '', mixedWith: 'oil', viaLye: false });
       return;
     }
     setColorant(key, {
@@ -150,6 +152,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
       name: entry.name,
       kind: entry.kind,
       percent: entry.tspPerLbLow !== null ? percentValue(entry.tspPerLbLow) : '',
+      mixedWith: 'oil',
       viaLye: false,
     });
   };
@@ -320,7 +323,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                     through the lye drops it: it is in the pot before there is a batter to
                     split, so taking that route hands the share back rather than parking it
                     somewhere the maker can no longer see or edit. */}
-                {process !== 'ls' && !c.viaLye && c.mixedWith !== 'vein' && c.mixedWith !== 'dry' && (
+                {colorantClaimsPortion(c, process) && (
                   <div className="additive-list__choice">
                     <span className="micro-label">Portion</span>
                     <SegRadioGroup
@@ -336,7 +339,7 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                     />
                   </div>
                 )}
-                {ownPortion && !c.viaLye && (
+                {ownPortion && colorantClaimsPortion(c, process) && (
                   <label className="ledger__row additive-list__amount">
                     <span className="micro-label">Share</span>
                     <span className="ledger__figure">

@@ -205,3 +205,21 @@ describe('a near-total liquid share never kills the calculation', () => {
     expect(Number(o!.settingsForCalc.lyeWaterRatio)).toBeCloseTo(0.02, 5);
   });
 });
+
+describe('the carve hands the calc a figure precise enough to hold the total', () => {
+  it('lands the water within a hundredth of a gram, not half a gram', () => {
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      waterMode: 'percent_of_oils' as const,
+      waterPercentOfOils: '33',
+      splitLiquids: [ROW({ presetKey: 'milk', name: 'Milk', sizeMode: 'percent_of_liquid', amount: '25', addAt: 'lye' })],
+    };
+    const override = splitLiquidCalcOverride(settings, 1000)!;
+    const target = override.targetLiquidGrams!;
+    // 25% of a 330 g budget is 82.5 g, so the lye water is 247.5 g = 24.75% of the oils —
+    // a figure one decimal place cannot carry.
+    const water = (Number(override.settingsForCalc.waterPercentOfOils) / 100) * 1000;
+    expect(water + target * 0.25).toBeCloseTo(target, 2);
+    expect(Number(override.settingsForCalc.waterPercentOfOils)).toBeCloseTo(24.75, 6);
+  });
+});

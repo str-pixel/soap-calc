@@ -72,6 +72,22 @@ export function newAllergenLine(): AllergenLine {
  * The dose is EMPTY in every process — there is no sourced number to seed. */
 const COLORANT_MIXES: readonly ColorantMix[] = ['oil', 'water', 'vein', 'dry'];
 
+/**
+ * Whether a colour can hold a share of the batter at all. THE one answer: the panel's
+ * control, the load-time cleanup and the compute step all read it, so a colour can never be
+ * shown one way and counted another. Three things disqualify a colour, and each is the same
+ * reason twice over — it is not in the batter when the batter is divided. A lye colour is in
+ * the pot before there is a batter; a vein is poured and a pencil line is dusted at the
+ * mold, after it. A liquid soap has no batter to divide, which is the caller's `process`.
+ */
+export function colorantClaimsPortion(
+  line: Pick<ColorantLine, 'viaLye' | 'mixedWith'>,
+  process?: ProcessId,
+): boolean {
+  if (process === 'ls') return false;
+  return !line.viaLye && line.mixedWith !== 'vein' && line.mixedWith !== 'dry';
+}
+
 export function newColorantLine(process: ProcessId): ColorantLine {
   // LS seeds a water-soluble dye — what a liquid tolerates (LS:13256); bars seed a mica.
   // No catalog pick and no dose: both are the maker's to choose.
@@ -163,7 +179,7 @@ export function normalizeScentColor(raw: unknown): ScentColor {
   // that nothing points at — an older file could carry a portion with no colour in it, or
   // one whose colour has since gone through the lye, and it would sit there counting
   // toward the batter total with no control able to see or remove it.
-  const claimed = new Set(colorants.map((c) => (c.viaLye ? '' : c.portionKey)).filter(Boolean));
+  const claimed = new Set(colorants.map((c) => (colorantClaimsPortion(c) ? c.portionKey : '')).filter(Boolean));
   const usedPortions = portions.filter((p) => claimed.has(p.key));
   return {
     fragrances,

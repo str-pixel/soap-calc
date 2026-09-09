@@ -689,3 +689,45 @@ describe('the water a batch of HP colours carries in', () => {
     expect(screen.queryByText(/of this recipe's water/)).toBeNull();
   });
 });
+
+describe('a share cannot outlive the colour that holds it, whatever releases it', () => {
+  const coloured = (mixedWith = 'oil') => normalizeScentColor({
+    fragrances: [],
+    colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '#0', mixedWith }],
+    portions: [{ name: '', percent: '40' }],
+  });
+
+  it('a vein or a dusted line hands the share back, like the lye route does', () => {
+    for (const option of [/1:2/, /^Dry/]) {
+      const onChange = renderPanel(coloured(), 'cp');
+      fireEvent.click(screen.getByRole('radio', { name: option }));
+      const next = onChange.mock.calls[0][0] as ScentColor;
+      // Left behind, it would still count toward the batter total with nothing able to
+      // reach it — the panel hides the portion control for both of these.
+      expect(next.portions).toEqual([]);
+      expect(next.colorants[0].portionKey).toBe('');
+      cleanup();
+    }
+  });
+
+  it('and a stored one does not survive the load either', () => {
+    for (const mix of ['vein', 'dry']) {
+      const loaded = coloured(mix);
+      expect(loaded.portions).toEqual([]);
+      expect(loaded.colorants[0].portionKey).toBe('');
+    }
+    // while an ordinary oil colour keeps its share
+    expect(coloured('oil').portions).toHaveLength(1);
+  });
+
+  it('a repick keeps neither the route nor the mix — a new material is a new decision', () => {
+    const scent = normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '', mixedWith: 'vein' }],
+      portions: [],
+    });
+    const onChange = renderPanel(scent, 'cp');
+    fireEvent.change(screen.getByLabelText(/Colorant for/), { target: { value: 'kaolin-clay' } });
+    expect((onChange.mock.calls[0][0] as ScentColor).colorants[0]).toMatchObject({ mixedWith: 'oil', viaLye: false });
+  });
+});

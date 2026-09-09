@@ -26,7 +26,7 @@ import {
   type VanillinBrowning,
 } from '@soap-calc/core';
 import type { ProcessId } from './process';
-import type { ScentColor } from './scentColor';
+import { colorantClaimsPortion, type ScentColor } from './scentColor';
 
 export type ComputedFragrance = {
   key: string; name: string; percent: number | null; grams: number;
@@ -135,10 +135,9 @@ export function computeScentColorGrams(
     // The lye solution is the solvent on that route, so a stored mix has nothing to say.
     const mixedWith: ColorantMix =
       !viaLye && COLORANT_MIX_PROCESSES.includes(process) ? c.mixedWith : 'oil';
-    // A vein is poured and a pencil line is dusted at the mold, so neither is a share of
-    // the batter — the same reason a lye colour cannot hold one.
-    const takesPortion = !viaLye && process !== 'ls' && mixedWith !== 'vein' && mixedWith !== 'dry';
-    const portion = takesPortion ? byKey.get(c.portionKey) : undefined;
+    // One predicate decides who can hold a share — the panel's control and the load-time
+    // cleanup read the same one, so a colour cannot be shown one way and counted another.
+    const portion = colorantClaimsPortion({ viaLye, mixedWith }, process) ? byKey.get(c.portionKey) : undefined;
     const percent = parsePercentOfOil(c.percent);
     // A colour linked to a portion with no usable share (blank, 0) has no oils to dose against:
     // "to shade", never the whole batter's dose under a portion heading.
@@ -165,7 +164,16 @@ export function computeScentColorGrams(
   const stabilizerGrams = sum(fragrances.map((f) => f.stabilizerGrams));
   const polysorbateGrams = sum(fragrances.map((f) => f.polysorbateGrams));
   const colorantTotal = sum(colorants.map((c) => c.grams ?? 0));
-  const carrierOilGrams = sum(colorants.map((c) => (c.dispersal.method === 'carrier-oil' ? c.dispersal.carrierGrams ?? 0 : 0)));
+  // Both oil methods count: a vein carries TWICE the pigment's weight in oil (1:2), which is
+  // the largest single load a colour can put on the recipe — leaving it out kept it out of
+  // the batch weight and out of the superfat with it.
+  const carrierOilGrams = sum(
+    colorants.map((c) =>
+      c.dispersal.method === 'carrier-oil' || c.dispersal.method === 'vein-oil'
+        ? c.dispersal.carrierGrams ?? 0
+        : 0,
+    ),
+  );
   return {
     fragrances, colorants, portions,
     portionsTotalPercent: portionTotal.total,

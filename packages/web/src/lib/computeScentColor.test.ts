@@ -158,3 +158,33 @@ describe('an empty section is one shared object', () => {
     expect(applyScentColorCompliance(a, 1300, 'label')).toBe(a);
   });
 });
+
+describe("a vein's oil is oil the recipe carries", () => {
+  it('counts twice the pigment, in the batch weight and in the superfat', () => {
+    const mk = (mixedWith: string) => computeScentColorGrams(normalizeScentColor({
+      fragrances: [],
+      colorants: [{ catalogId: 'mica', name: '', kind: 'mica', percent: '1', portionKey: '', mixedWith }],
+      portions: [],
+    }), { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
+
+    const oil = mk('oil');
+    expect(oil.carrierOilGrams).toBe(10);
+    expect(oil.extrasGrams).toBe(20);
+    expect(oil.carrierSuperfatShiftPercent).toBeCloseTo(1, 9);
+
+    // 1:2 pigment to oil — the largest single load a colour puts on a recipe, so it is the
+    // one that must not go missing from the weight or the superfat.
+    const vein = mk('vein');
+    expect(vein.carrierOilGrams).toBe(20);
+    expect(vein.extrasGrams).toBe(30);
+    expect(vein.carrierSuperfatShiftPercent).toBeCloseTo(2, 9);
+
+    // Water and a dusted line carry no oil at all, so they shift nothing.
+    for (const mix of ['water', 'dry']) {
+      const c = mk(mix);
+      expect(c.carrierOilGrams).toBe(0);
+      expect(c.extrasGrams).toBe(10);
+      expect(c.carrierSuperfatShiftPercent).toBe(0);
+    }
+  });
+});

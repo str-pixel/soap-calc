@@ -193,7 +193,11 @@ export function splitLiquidCalcOverride(
   return {
     settingsForCalc: {
       ...settings,
-      waterPercentOfOils: String(Math.round(waterPercentOfOils * 10) / 10),
+      // Three decimals, matching the ratio branch above. One decimal is a tenth of a percent
+      // of the oils — a whole gram on a 1 kg batch — so the carve missed the total liquid it
+      // is supposed to hold by up to half a gram per kilo. parseRecipeSettings takes the
+      // string through Number(), so the extra places cost nothing.
+      waterPercentOfOils: String(Math.round(waterPercentOfOils * 1000) / 1000),
     },
     targetLiquidGrams,
   };
