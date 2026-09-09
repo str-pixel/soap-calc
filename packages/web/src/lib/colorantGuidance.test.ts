@@ -13,14 +13,14 @@ import {
 describe('guidance leads with the percent the dose field takes', () => {
   it('states the percent first and the trade\'s teaspoon figure after it, in the active unit', () => {
     expect(colorantGuidanceText('mica', 'lb')).toBe(
-      'About 0.4–1.8% of the oils, which is ½–2 tsp per lb. Powders differ in density, so start at the low end, weigh your spoonful once, and go by the scale after that.',
+      'About 0.4–1.8% of the oil weight, which is ½–2 tsp per lb. Powders differ in density, so start at the low end, weigh your spoonful once, and go by the scale after that.',
     );
     // Per kilo the spoons roughly double; the percent does not move, because it is a percent.
-    expect(colorantGuidanceText('mica', 'g')).toMatch(/^About 0\.4–1\.8% of the oils, which is 1–4½ tsp per kg\./);
+    expect(colorantGuidanceText('mica', 'g')).toMatch(/^About 0\.4–1\.8% of the oil weight, which is 1–4½ tsp per kg\./);
     // A single-valued band collapses instead of printing the same figure twice.
-    expect(colorantGuidanceText('oxide', 'g')).toMatch(/^About 0\.2–1\.8% of the oils, which is ½–4½ tsp per kg\./);
+    expect(colorantGuidanceText('oxide', 'g')).toMatch(/^About 0\.2–1\.8% of the oil weight, which is ½–4½ tsp per kg\./);
     // No dye is named in the catalog any more, but the KIND keeps its band for a custom row.
-    expect(colorantGuidanceText('dye', 'lb')).toMatch(/^About 0\.2% of the oils, which is ¼ tsp per lb\./);
+    expect(colorantGuidanceText('dye', 'lb')).toMatch(/^About 0\.2% of the oil weight, which is ¼ tsp per lb\./);
   });
 
   it('a custom row and a catalog row of the same family now say the SAME thing', () => {
@@ -38,7 +38,7 @@ describe('guidance leads with the percent the dose field takes', () => {
     // Alkanet's only sourced route is an infusion, measured against the infusing oil.
     expect(colorantGuidanceText('natural', 'lb', 'alkanet-root')).toBeNull();
     // Indigo DOES carry one — three fetched sources agreed on a quarter to a half.
-    expect(colorantGuidanceText('natural', 'lb', 'indigo')).toMatch(/^About 0\.2–0\.4% of the oils/);
+    expect(colorantGuidanceText('natural', 'lb', 'indigo')).toMatch(/^About 0\.2–0\.4% of the oil weight/);
   });
 
   it('the HP water figure follows the unit', () => {

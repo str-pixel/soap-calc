@@ -68,7 +68,7 @@ function rateText(tspPerLbLow: number, tspPerLbHigh: number, unit: WeightUnit): 
   const pctHigh = percentText(tspPerLbHigh);
   const pct = pctLow === pctHigh ? `${pctLow}%` : `${pctLow}–${pctHigh}%`;
   const spoons = spoonLow === spoonHigh ? `${spoonLow} tsp per ${per}` : `${spoonLow}–${spoonHigh} tsp per ${per}`;
-  return `About ${pct} of the oils, which is ${spoons}`;
+  return `About ${pct} of the oil weight, which is ${spoons}`;
 }
 
 /** The dose guidance for a row: a catalog entry's own band when it has one, otherwise the

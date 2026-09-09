@@ -48,7 +48,7 @@ describe('ColorantsPanel', () => {
     // dose is a figure slab with its unit inside, not a full-width box
     const dose = row.querySelector('.additive-list__amount .ledger__figure')!;
     expect(dose.querySelector('input.figure-field')).toBeTruthy();
-    expect(dose.querySelector('.ledger__unit')!.textContent).toBe('% of oils');
+    expect(dose.querySelector('.ledger__unit')!.textContent).toBe('% of oil weight');
     // every labelled block names itself in the label column
     expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
       // 'Adds' is the undosed row's own line: the weight field is empty, so something has
@@ -115,7 +115,7 @@ describe('ColorantsPanel', () => {
     const onChange = renderPanel(scent, 'cp');
     const share = screen.getByLabelText(/Blue mica share of the batter/) as HTMLInputElement;
     expect(share.value).toBe('40');
-    expect(share.closest('.ledger__figure')!.querySelector('.ledger__unit')!.textContent).toBe('% of batter');
+    expect(share.closest('.ledger__figure')!.querySelector('.ledger__unit')!.textContent).toBe('% of soap batter');
     fireEvent.change(share, { target: { value: '25' } });
     expect((onChange.mock.calls[0][0] as ScentColor).portions[0].percent).toBe('25');
   });
@@ -186,7 +186,7 @@ describe('ColorantsPanel', () => {
     renderPanel(withPortion, 'cp');
     const share = screen.getByLabelText(/Swirl share of the batter/);
     expect(share.closest('label')!.querySelector('.micro-label')!.textContent).toBe('Share');
-    expect(share.closest('.ledger__figure')!.querySelector('.ledger__unit')!.textContent).toBe('% of batter');
+    expect(share.closest('.ledger__figure')!.querySelector('.ledger__unit')!.textContent).toBe('% of soap batter');
   });
 
   it('an over-100 share can still be typed and is still flagged, not clamped away', () => {
@@ -249,7 +249,7 @@ describe('ColorantsPanel', () => {
 
   it('shows the guidance in the active unit, the dispersal line, and "to shade" without a dose', () => {
     renderPanel(blueMica, 'cp', 'lb');
-    expect(screen.getByText(/About 0\.4–1\.8% of the oils, which is ½–2 tsp per lb/)).toBeTruthy();
+    expect(screen.getByText(/About 0\.4–1\.8% of the oil weight, which is ½–2 tsp per lb/)).toBeTruthy();
     expect(screen.getByText(/to shade/i)).toBeTruthy();
     expect(screen.getByText(/1:1 with a light carrier oil/i)).toBeTruthy();
     cleanup();

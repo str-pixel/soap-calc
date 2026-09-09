@@ -119,8 +119,8 @@ const COLORANT_KINDS: Array<{ value: ColorantKind; cell: string; name: string }>
 
    Reworded, not quoted. */
 const PROCESS_COPY: Record<ProcessId, string> = {
-  cp: 'Aim the colour at the bar, not at the wash: overdo it and the pigment travels into the lather and marks the tub, the towels and your skin. One colour for the whole batch goes in with the oils; to colour part of it, give that colour its own portion and it goes in at trace. Work each powder into an equal weight of light carrier oil — that oil rides on the recipe as extra superfat.',
-  hp: 'One colour for the whole batch goes in with the oils, where the blender can work it through evenly. To colour part of the batch, give that colour its own portion and it goes in after the cook. The solvent is yours to pick: hot sugar water is a common choice and the sugar buys a little extra lather, while oil serves just as well and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
+  cp: 'Aim the colour at the bar, not at the wash: overdo it and the pigment travels into the lather and marks the tub, the towels and your skin. One colour for the whole batch goes in with the oils, before the lye; to colour part of the soap batter — the oils and lye already mixed — give that colour its own portion and it goes in at trace. Work each powder into an equal weight of light carrier oil — that oil rides on the recipe as extra superfat.',
+  hp: 'One colour for the whole batch goes in with the oils, before the lye, where the blender can work it through evenly. To colour part of the cooked soap, give that colour its own portion and it goes in after the cook. The solvent is yours to pick: hot sugar water is a common choice and the sugar buys a little extra lather, while oil serves just as well and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
   ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm anywhere from bright orange to deep red, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
 };
 
@@ -360,11 +360,14 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                       /* No placeholder: the unit is a visible suffix inside the slab, and a
                          word long enough to say "to shade" ran straight into it. The Adds
                          row below says "to shade" instead, where there is room for it. */
-                      aria-label={`${rowName} dose, % of oils`}
+                      aria-label={`${rowName} dose, % of oil weight`}
                       value={col.percent}
                       onChange={(e) => setColorant(col.key, { percent: e.target.value })}
                     />
-                    <span className="ledger__unit">% of oils</span>
+                    {/* The recipe's OIL WEIGHT, which is what every published colorant
+                        rate is per — not the batter it ends up in. The two differ by half
+                        again, so the unit has to say which one it means. */}
+                    <span className="ledger__unit">% of oil weight</span>
                   </span>
                 </label>
                 {/* Where the colour goes, as the same black-and-white seg an additive's
@@ -427,13 +430,13 @@ export const ColorantsPanel = memo(function ColorantsPanel({ scent, computed, pr
                         value={ownPortion.percent}
                         onChange={(e) => setPortion(ownPortion.key, { percent: e.target.value })}
                       />
-                      <span className="ledger__unit">% of batter</span>
+                      <span className="ledger__unit">% of soap batter</span>
                     </span>
                   </label>
                 )}
                 {ownPortion && colorantClaimsPortion(c, process) && batterGrams !== null && batterGrams > 0 && (
                   <label className="ledger__row additive-list__amount">
-                    <span className="micro-label">Batter</span>
+                    <span className="micro-label">Batter</span>{/* oils + lye + water: what is actually in the pot to divide */}
                     <span className="ledger__figure">
                       <input
                         type="number"
