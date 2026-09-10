@@ -2282,16 +2282,20 @@ details[open] > .disclosure__summary::before {
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
   color: var(--text-figure);
-  white-space: nowrap;
-}
-
-/* A prose row: the detail is a sentence, so it wraps and reads as text rather than as a
-   figure. min-width: 0 is what actually lets it wrap inside the flex row. */
-.results-recipe__row--prose dd {
-  font-family: inherit;
+  /* WRAPS. This was nowrap, which is right for "120 g" and wrong for everything a detail
+     has since grown into: a colorant line carries its dispersal sentence, and one plain
+     mica pushed a 390px viewport 93px sideways — 468px once the sentence was longer. A
+     figure that breaks across two lines is a blemish; a page that scrolls sideways on a
+     phone is a fault. min-width: 0 is what actually lets it wrap inside the flex row. */
   white-space: normal;
   min-width: 0;
   text-align: right;
+}
+
+/* A prose row: the detail is a sentence, so it reads as text rather than as a figure.
+   Wrapping is the default for every row now — see above. */
+.results-recipe__row--prose dd {
+  font-family: inherit;
 }
 
 .results-steps__list {
