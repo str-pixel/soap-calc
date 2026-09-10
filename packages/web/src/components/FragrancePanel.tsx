@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import {
   ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT,
+  allergenBreakEvenPercentOfFragrance,
   ESSENTIAL_OIL_ALLERGEN_CAUTION,
   ESSENTIAL_OIL_CATALOG,
   essentialOilEntryById,
@@ -101,6 +102,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
           {scent.fragrances.map((f, i) => {
             const c = computed.fragrances[i];
             const rowName = f.name.trim() || 'Essential oil';
+            const breakEven = allergenBreakEvenPercentOfFragrance(c.shareOfProduct);
             return (
               <li key={f.key} className="additive-list__row">
                 {/* Same shape as an additive row: the name and its × on one line, then
@@ -209,6 +211,17 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                       for and what to print. */}
                   {f.catalogId !== '' && (
                     <p className="inline-note">{ESSENTIAL_OIL_ALLERGEN_CAUTION}</p>
+                  )}
+                  {/* The line the maker is otherwise doing in their head: a declaration
+                      compares the allergen's share of the finished soap against 0.01%, so at
+                      THIS dose it comes down to how much of the oil the allergen is. With it,
+                      a supplier's declaration reads as a yes or a no per line. */}
+                  {breakEven !== null && (
+                    <p className="inline-note">
+                      At this dose, an allergen has to be more than{' '}
+                      <strong>{formatGrams(breakEven, breakEven < 0.1 ? 3 : 2)}% of the oil</strong>{' '}
+                      before it must be named on the label.
+                    </p>
                   )}
                   {f.allergens.map((a) => (
                     <div key={a.key} className="scent-list__allergen">

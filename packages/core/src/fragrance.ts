@@ -37,6 +37,28 @@ export function fragranceShareOfProduct(fragranceGrams: number, productGrams: nu
   return (100 * fragranceGrams) / productGrams;
 }
 
+/**
+ * How much of the OIL an allergen has to be before it must go on the label, at this dose.
+ *
+ * The declaration compares the allergen's share of the FINISHED PRODUCT against the
+ * threshold, and that share is the fragrance's own share times the allergen's share of the
+ * fragrance. Turned around: at a fragrance share of S percent, an allergen clears the line
+ * once it is more than threshold ÷ S × 100 percent of the oil. At 2% of the bar that is
+ * 0.5% of the oil — which is why the answer is almost always "yes, name it" for a main
+ * constituent, and why a trace one can be present and still not need naming.
+ *
+ * Null when there is no dose to work from: with no fragrance in the product there is
+ * nothing to clear.
+ */
+export function allergenBreakEvenPercentOfFragrance(
+  shareOfProductPercent: number,
+  thresholdPercent = ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT,
+): number | null {
+  if (!finite(shareOfProductPercent) || shareOfProductPercent <= 0) return null;
+  if (!finite(thresholdPercent) || thresholdPercent <= 0) return null;
+  return (thresholdPercent / shareOfProductPercent) * 100;
+}
+
 export function fragranceOverSupplierMax(shareOfProduct: number, supplierMaxPercent: number | null): boolean {
   if (!finite(supplierMaxPercent) || supplierMaxPercent <= 0) return false;
   return shareOfProduct > supplierMaxPercent;

@@ -183,3 +183,39 @@ describe('picking an essential oil', () => {
   });
   void empty;
 });
+
+describe('the line an allergen has to clear', () => {
+  const at = (percent: string) =>
+    normalizeScentColor({
+      fragrances: [{ catalogId: 'patchouli', name: 'Patchouli', percent, allergens: [{ name: 'Limonene', percentOfFragrance: '' }] }],
+      colorants: [], portions: [],
+    });
+
+  it('states it at this dose, so a trace constituent can be seen not to need naming', () => {
+    // 3% of the oils on a 1,300 g bar is about 2.3% of the product → ~0.43% of the oil.
+    renderPanel(at('3'), 'cp');
+    fireEvent.click(screen.getByText(/Allergens \(1\)/));
+    const text = screen.getByText(/At this dose, an allergen has to be more than/).textContent!;
+    expect(text).toMatch(/At this dose, an allergen has to be more than/);
+    const figure = Number(text.match(/more than ([\d.]+)% of the oil/)![1]);
+    expect(figure).toBeGreaterThan(0.4);
+    expect(figure).toBeLessThan(0.5);
+    // Patchouli's limonene is 0.01–0.3% of the oil — under that line, which is the point.
+  });
+
+  it('moves with the dose: more oil, a lower bar', () => {
+    const figureAt = (percent: string) => {
+      renderPanel(at(percent), 'cp');
+      const t = screen.getByText(/At this dose, an allergen has to be more than/).textContent!;
+      const n = Number(t.match(/more than ([\d.]+)% of the oil/)![1]);
+      cleanup();
+      return n;
+    };
+    expect(figureAt('6')).toBeLessThan(figureAt('3'));
+  });
+
+  it('says nothing when there is no dose to work from', () => {
+    renderPanel(at(''), 'cp');
+    expect(screen.queryByText(/At this dose, an allergen has to be more than/)).toBeNull();
+  });
+});

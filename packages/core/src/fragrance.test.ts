@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT,
+  allergenBreakEvenPercentOfFragrance,
   allergensToLabel,
   essentialOilCaution,
   fragranceGrams,
@@ -103,5 +104,32 @@ describe('polysorbate20Grams — equal parts to the fragrance when LS carries a 
     expect(polysorbate20Grams(30, 2)).toBe(30);
     expect(polysorbate20Grams(30, 0)).toBe(0);
     expect(polysorbate20Grams(30, null)).toBe(0);
+  });
+});
+
+describe('how much of the oil an allergen must be before it is named', () => {
+  it('is the threshold divided by the dose, so a heavier dose catches more', () => {
+    // 2% of the bar → anything over 0.5% of the oil clears 0.01% of the product.
+    expect(allergenBreakEvenPercentOfFragrance(2)).toBeCloseTo(0.5, 9);
+    expect(allergenBreakEvenPercentOfFragrance(1)).toBeCloseTo(1, 9);
+    expect(allergenBreakEvenPercentOfFragrance(5)).toBeCloseTo(0.2, 9);
+  });
+
+  it('agrees with the declaration it is derived from', () => {
+    const share = 2;
+    const breakEven = allergenBreakEvenPercentOfFragrance(share)!;
+    const productGrams = 1000;
+    const fragranceGrams = (share / 100) * productGrams;
+    // Just over the line is named; just under it is not.
+    const over = allergensToLabel([{ name: 'Linalool', percentOfFragrance: breakEven * 1.01, fragranceGrams }], productGrams);
+    const under = allergensToLabel([{ name: 'Linalool', percentOfFragrance: breakEven * 0.99, fragranceGrams }], productGrams);
+    expect(over).toHaveLength(1);
+    expect(under).toHaveLength(0);
+  });
+
+  it('has no answer without a dose', () => {
+    expect(allergenBreakEvenPercentOfFragrance(0)).toBeNull();
+    expect(allergenBreakEvenPercentOfFragrance(NaN)).toBeNull();
+    expect(allergenBreakEvenPercentOfFragrance(-2)).toBeNull();
   });
 });
