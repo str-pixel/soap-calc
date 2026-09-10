@@ -15,6 +15,42 @@ export type VanillinBrowning = 'none' | 'light' | 'deep';
 export type AllergenInput = { name: string; percentOfFragrance: number; fragranceGrams: number };
 export type LabelAllergen = { name: string; percentOfProduct: number };
 
+/**
+ * IFRA's ceiling for a fragrance material in CATEGORY 9 — soap and other rinse-off products
+ * for the body — as a percent of the FINISHED PRODUCT, which is the same basis the labelling
+ * threshold uses. Read off IFRA's own standard for each substance, all retrieved 2026-09-10
+ * from https://d3t14p1xronwr0.cloudfront.net/docs/standards/IFRA_STD_<n>.pdf:
+ *   Eugenol 4.9% (STD 035, Amendment 51) · Cinnamal 0.49% (STD 018, "Cinnamic aldehyde") ·
+ *   Citral 1.2% (STD 021) · Citronellol 24% (STD 022) · Geraniol 2.8% (STD 037) ·
+ *   Farnesol 2.3% (STD 036) · Isoeugenol 0.21% (STD 048) · Benzyl salicylate 14% (STD 011) ·
+ *   Coumarin 0.52% (STD 023).
+ *
+ * Note what is NOT here. Limonene, linalool and benzyl benzoate carry no Category 9
+ * concentration limit — IFRA's standards for the first two are about peroxide value, not
+ * how much you may use — so the app says nothing rather than inventing a ceiling. And a
+ * figure of 0.05% for cinnamal circulates in soapmaking guides; IFRA's own standard says
+ * 0.49% for this category, so the app follows the standard.
+ *
+ * IFRA is an industry standard rather than EU law, and it is what a cosmetic safety
+ * assessment leans on: the EU sets no general essential-oil dose at all.
+ */
+export const IFRA_CATEGORY_NINE_PERCENT: Readonly<Record<string, number>> = {
+  Eugenol: 4.9,
+  Cinnamal: 0.49,
+  Citral: 1.2,
+  Citronellol: 24,
+  Geraniol: 2.8,
+  Farnesol: 2.3,
+  Isoeugenol: 0.21,
+  'Benzyl salicylate': 14,
+  Coumarin: 0.52,
+};
+
+/** The Category 9 ceiling for a substance, or null where IFRA sets none. */
+export function ifraCategoryNinePercent(substance: string): number | null {
+  return IFRA_CATEGORY_NINE_PERCENT[substance.trim()] ?? null;
+}
+
 /** Annex III of (EC) 1223/2009: the listed allergens are named on the label when their
  * concentration EXCEEDS 0.01% in a rinse-off product (0.001% leave-on). Regulation (EU)
  * 2023/1545 widens the list for products placed on the market from 31 July 2026

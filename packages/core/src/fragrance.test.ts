@@ -7,6 +7,7 @@ import {
   essentialOilCaution,
   fragranceGrams,
   fragranceOverSupplierMax,
+  ifraCategoryNinePercent,
   fragranceShareOfProduct,
   polysorbate20Grams,
   vanillaStabilizerGrams,
@@ -131,5 +132,24 @@ describe('how much of the oil an allergen must be before it is named', () => {
     expect(allergenBreakEvenPercentOfFragrance(0)).toBeNull();
     expect(allergenBreakEvenPercentOfFragrance(NaN)).toBeNull();
     expect(allergenBreakEvenPercentOfFragrance(-2)).toBeNull();
+  });
+});
+
+describe('IFRA Category 9, which is the category soap sits in', () => {
+  it('answers for the substances that carry a ceiling, and stays silent for the rest', () => {
+    expect(ifraCategoryNinePercent('Eugenol')).toBe(4.9);
+    expect(ifraCategoryNinePercent('Cinnamal')).toBe(0.49);
+    expect(ifraCategoryNinePercent('Citral')).toBe(1.2);
+    // No Category 9 concentration limit exists for these: IFRA restricts the first two by
+    // peroxide value instead, and inventing a number would be worse than saying nothing.
+    expect(ifraCategoryNinePercent('Limonene')).toBeNull();
+    expect(ifraCategoryNinePercent('Linalool')).toBeNull();
+    expect(ifraCategoryNinePercent('Benzyl benzoate')).toBeNull();
+    expect(ifraCategoryNinePercent('Nonsense')).toBeNull();
+  });
+
+  it('keeps the standard\'s own figure for cinnamal, not the one that circulates', () => {
+    // Soapmaking guides quote 0.05%; IFRA's standard for this category says 0.49%.
+    expect(ifraCategoryNinePercent('Cinnamal')).toBeGreaterThan(0.05);
   });
 });

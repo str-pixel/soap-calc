@@ -219,3 +219,46 @@ describe('the line an allergen has to clear', () => {
     expect(screen.queryByText(/At this dose, an allergen has to be more than/)).toBeNull();
   });
 });
+
+describe('what the row says about its allergens without opening anything', () => {
+  const picked = (id: string, extra: Record<string, unknown> = {}) => normalizeScentColor({
+    fragrances: [{ catalogId: id, name: '', percent: '3', allergens: [], ...extra }],
+    colorants: [], portions: [],
+  });
+  const withRows = (id: string, names: string[]) => normalizeScentColor({
+    fragrances: [{ catalogId: id, name: '', percent: '3', allergens: names.map((name) => ({ name, percentOfFragrance: '' })) }],
+    colorants: [], portions: [],
+  });
+
+  it('the list is open, and the summary itself warns, when the oil carries allergens', () => {
+    renderPanel(withRows('bergamot', ['Limonene', 'Linalool', 'Geraniol']), 'cp');
+    const details = document.querySelector('details.scent-list__allergens') as HTMLDetailsElement;
+    expect(details.open).toBe(true);
+    expect(details.querySelector('summary')!.textContent).toMatch(/this oil carries labelling allergens/);
+    cleanup();
+    // an oil with none stays closed and says nothing of the sort
+    renderPanel(picked('tea-tree'), 'cp');
+    const quiet = document.querySelector('details.scent-list__allergens') as HTMLDetailsElement;
+    expect(quiet.open).toBe(false);
+    expect(quiet.querySelector('summary')!.textContent).not.toMatch(/carries labelling allergens/);
+  });
+
+  it('each allergen carries its IFRA soap ceiling where one exists, and none where none does', () => {
+    renderPanel(withRows('lemongrass', ['Citral', 'Linalool', 'Geraniol']), 'cp');
+    expect(screen.getByLabelText('Citral IFRA ceiling').textContent).toMatch(/1\.2% of the finished soap/);
+    expect(screen.getByLabelText('Geraniol IFRA ceiling').textContent).toMatch(/2\.8% of the finished soap/);
+    // Linalool has no Category 9 concentration limit; the app says nothing rather than invent one.
+    expect(screen.queryByLabelText('Linalool IFRA ceiling')).toBeNull();
+  });
+
+  it('the vanillin field is for an oil the maker named, or a row that already has a figure', () => {
+    renderPanel(picked('lavender'), 'cp');
+    expect(screen.queryByLabelText(/vanillin$/)).toBeNull();
+    cleanup();
+    renderPanel(picked('lavender', { vanillinPercent: '2' }), 'cp');
+    expect(screen.getByLabelText(/vanillin$/)).toBeTruthy();
+    cleanup();
+    renderPanel(normalizeScentColor({ fragrances: [{ name: 'Vanilla absolute', percent: '2' }], colorants: [], portions: [] }), 'cp');
+    expect(screen.getByLabelText(/vanillin$/)).toBeTruthy();
+  });
+});

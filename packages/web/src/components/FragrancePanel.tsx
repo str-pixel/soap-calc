@@ -5,6 +5,7 @@ import {
   ESSENTIAL_OIL_ALLERGEN_CAUTION,
   ESSENTIAL_OIL_CATALOG,
   essentialOilEntryById,
+  ifraCategoryNinePercent,
 } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import { productNoun, type ComputedFragrance, type ComputedScentColor } from '../lib/computeScentColor';
@@ -177,6 +178,12 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     <span className="ledger__unit">%</span>
                   </span>
                 </label>
+                {/* Vanillin is what browns a bar, and it comes from vanilla-bearing
+                    fragrance material — no essential oil in the catalog carries any. So the
+                    field is offered for an oil the maker named themselves (a vanilla
+                    absolute, a benzoin), and for a saved row that already has a figure,
+                    rather than sitting empty on every lavender. */}
+                {(f.catalogId === '' || f.vanillinPercent !== '') && (
                 <label className="ledger__row additive-list__amount">
                   <span className="micro-label">Vanillin</span>
                   <span className="ledger__figure">
@@ -193,6 +200,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     <span className="ledger__unit">%</span>
                   </span>
                 </label>
+                )}
                 <div className="additive-list__choice">
                   <span className="micro-label">Add at</span>
                   <p className="additive-list__stage-fixed">{additiveStageLabel(c.stage, process)}</p>
@@ -204,8 +212,13 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                   </div>
                 </div>
                 <FragranceNotes c={c} noun={noun} unit={weightUnit} />
-                <details className="scent-list__allergens">
-                  <summary>Allergens ({f.allergens.length})</summary>
+                <details className="scent-list__allergens" open={f.allergens.length > 0}>
+                  <summary>
+                    Allergens ({f.allergens.length})
+                    {/* Said on the summary itself, so it reads without opening anything:
+                        this oil has label allergens in it. */}
+                    {f.allergens.length > 0 && <strong> — this oil carries labelling allergens</strong>}
+                  </summary>
                   {/* Said where the pre-filled names are, not once at the top of the panel:
                       it is about THESE rows, and it is the difference between what to look
                       for and what to print. */}
@@ -231,6 +244,14 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                         onChange={(e) => setFragrance(f.key, { allergens: f.allergens.map((x) => (x.key === a.key ? { ...x, percentOfFragrance: e.target.value } : x)) })} />
                       <button type="button" className="btn btn--icon" aria-label={`Remove allergen ${a.name || ''}`.trim()}
                         onClick={() => setFragrance(f.key, { allergens: f.allergens.filter((x) => x.key !== a.key) })}>×</button>
+                      {/* After the × in DOM order, so the name, the figure and the × fill the
+                          grid's first line and this spans the second — put before the button
+                          it took the button's cell and pushed the × onto a line of its own. */}
+                      {ifraCategoryNinePercent(a.name) !== null && (
+                        <span className="inline-note scent-list__allergen-limit" aria-label={`${a.name} IFRA ceiling`}>
+                          IFRA soap ceiling {ifraCategoryNinePercent(a.name)}% of the finished soap
+                        </span>
+                      )}
                     </div>
                   ))}
                   <button type="button" className="btn btn--ghost" disabled={f.allergens.length >= MAX_SCENT_ROWS} onClick={() => setFragrance(f.key, { allergens: withNewRow(f.allergens, newAllergenLine()) })}>+ Add allergen</button>

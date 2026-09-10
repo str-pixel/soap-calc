@@ -2292,6 +2292,13 @@ details[open] > .disclosure__summary::before {
   text-align: right;
 }
 
+/* An allergen row's IFRA ceiling: a short note that hangs under the row's two fields,
+   spanning the width, so the figure and the limit read together. */
+.scent-list__allergen-limit {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+}
+
 /* A prose row: the detail is a sentence, so it reads as text rather than as a figure.
    Wrapping is the default for every row now — see above. */
 .results-recipe__row--prose dd {
