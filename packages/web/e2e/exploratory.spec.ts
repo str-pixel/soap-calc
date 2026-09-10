@@ -602,7 +602,8 @@ test.describe('essential oils & colorants', () => {
     await expect(section(page, 'Colorants')).toContainText(/Blue mica/);
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla dream/);
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla stabilizer/);
-    await expect(section(page, 'Fragrance')).toContainText(/Linalool/);
+    // The declaration itself reads with the other label facts, not among the weights.
+    await expect(section(page, 'Allergens')).toContainText(/Linalool/);
     // Each panel states its own row's stage and reading; both survive a reload.
     await expect(fragrancePanel(page)).toContainText('At trace');
     await expect(fragrancePanel(page)).toContainText(/of the finished bar/);
@@ -1065,13 +1066,13 @@ test.describe('acid compensation', () => {
 });
 
 test.describe('what the batch is made from', () => {
-  test('the recipe ends with a Contains section, and it carries the rule where there is one', async ({ page }) => {
+  test('the recipe ends with one Allergens list, and it carries the rule where there is one', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     const contains = page
       .locator('.results-recipe__section')
-      .filter({ has: page.locator('.results-recipe__heading', { hasText: /CONTAINS/i }) });
+      .filter({ has: page.locator('.results-recipe__heading', { hasText: /ALLERGENS/i }) });
 
     // The starter recipe carries coconut, which the two labelling lists disagree about.
     await expect(contains).toContainText('Coconut');
@@ -1083,5 +1084,18 @@ test.describe('what the batch is made from', () => {
     await page.getByLabel(/Cochineal dose/).first().fill('0.5');
     await expect(contains).toContainText('Insect (carmine)');
     await expect(contains).toContainText(/must be named on a cosmetic label/);
+
+    // A fragrance allergen over the labelling threshold joins the same list, at the top:
+    // it is the half of this with a percentage to declare.
+    await page.getByRole('button', { name: /add essential oil/i }).click();
+    await page.getByLabel('Essential oil name').first().fill('Lavender');
+    await page.getByLabel(/dose, % of oil weight/).first().fill('3');
+    await page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /Essential oils/ }) })
+      .getByText(/Allergens \(0\)/).click();
+    await page.getByRole('button', { name: /add allergen/i }).click();
+    await page.getByLabel('Allergen name').fill('Linalool');
+    await page.getByLabel('Allergen % of fragrance').fill('30');
+    await expect(contains).toContainText(/Name on the label/);
+    await expect(contains).toContainText(/Linalool/);
   });
 });

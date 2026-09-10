@@ -641,10 +641,14 @@ test('Full recipe (CP): base colour inside Oils, portion colours in a Colorants 
   expect(colorants.items[1].name).toBe('Blue mica');
   expect(colorants.items[1].detail).toBe('1.6 g · 1% · Mix 1:1 with a light carrier oil (1.6 g)');
   const fragrance = sections.find((s) => s.heading === 'Fragrance')!;
-  expect(fragrance.items.map((i) => i.name)).toEqual(['Vanilla dream', 'Vanilla stabilizer', 'Name on the label']);
+  // The stabilizer is weighed with the fragrance; the label line is not weighed at all, so
+  // it reads with the other label facts at the end.
+  expect(fragrance.items.map((i) => i.name)).toEqual(['Vanilla dream', 'Vanilla stabilizer']);
+  const allergens = sections.find((s) => s.heading === 'Allergens')!;
+  expect(allergens.items[0]).toEqual({ name: 'Name on the label', detail: 'Linalool 0.24%' });
   expect(fragrance.items[0].detail).toBe('12 g · 3% of oil weight');
   expect(fragrance.items[1].detail).toBe('12 g');
-  expect(fragrance.items[2].detail).toBe('Linalool 0.24%');
+
 });
 
 test('Full recipe (CP): the scent sections sit between At trace and Top', () => {
@@ -658,7 +662,7 @@ test('Full recipe (CP): the scent sections sit between At trace and Top', () => 
   });
   expect(sections.map((s) => s.heading)).toEqual([
     // "Contains" is last on purpose: it is read when the soap is sold, not while it is made.
-    'Lye solution', 'Oils', 'At trace', 'Colorants', 'Fragrance', 'On top', 'Contains',
+    'Lye solution', 'Oils', 'At trace', 'Colorants', 'Fragrance', 'On top', 'Allergens',
   ]);
 });
 
@@ -845,7 +849,7 @@ test('a CP colour mixed with water carries no carrier oil into the manifest', ()
   expect(scent.carrierOilGrams).toBe(0);
 });
 
-test('the manifest ends with what the batch is made from, and names what carries it', () => {
+test('the manifest ends with one Allergens list: what must be named, then what it is made from', () => {
   const scent = computedScent({
     fragrances: [],
     colorants: [{ catalogId: 'cochineal', name: '', kind: 'natural', percent: '1', portionKey: '' }],
@@ -863,7 +867,7 @@ test('the manifest ends with what the batch is made from, and names what carries
     ],
     scentColor: scent,
   });
-  const contains = sections.find((s) => s.heading === 'Contains')!;
+  const contains = sections.find((s) => s.heading === 'Allergens')!;
   expect(contains.items.map((i) => i.name)).toEqual(['Tree nut', 'Coconut', 'Insect (carmine)', 'Bee products']);
   expect(contains.items[0].detail).toBe('Almond Oil, sweet');
   // The one with a rule carries the rule; plain provenance stays plain.
@@ -871,13 +875,13 @@ test('the manifest ends with what the batch is made from, and names what carries
   expect(contains.items[3].detail).toBe('Honey');
 });
 
-test('a recipe made of nothing anyone avoids has no Contains section at all', () => {
+test('a recipe made of nothing anyone avoids has no Allergens section at all', () => {
   const sections = buildFullRecipe({
     ...FULL_RECIPE_BASE,
     lines: [{ oilId: 'olive-oil', weightGrams: 1000 }],
     additives: [],
   });
-  expect(sections.find((s) => s.heading === 'Contains')).toBeUndefined();
+  expect(sections.find((s) => s.heading === 'Allergens')).toBeUndefined();
 });
 
 test('an ingredient with no weight is not in the batch, so it is not in Contains', () => {
@@ -886,5 +890,5 @@ test('an ingredient with no weight is not in the batch, so it is not in Contains
     lines: [{ oilId: 'olive-oil', weightGrams: 1000 }, { oilId: 'peanut-oil', weightGrams: 0 }],
     additives: [],
   });
-  expect(sections.find((s) => s.heading === 'Contains')).toBeUndefined();
+  expect(sections.find((s) => s.heading === 'Allergens')).toBeUndefined();
 });

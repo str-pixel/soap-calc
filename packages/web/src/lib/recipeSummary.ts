@@ -308,9 +308,11 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       if (!scentRowIsMaterial(f)) continue;
       fragranceItems.push({ name: f.name.trim() || 'Fragrance', detail: fragranceLineDetail(f, weightUnit, process) });
     }
-    const { materials, label } = scentSupplements(scentColor, weightUnit);
+    // The MATERIALS ride with the fragrance because they are weighed with it. The label
+    // line does not: it is not something to weigh, it is something to print, so it reads
+    // with the rest of what goes on the label at the end.
+    const { materials } = scentSupplements(scentColor, weightUnit);
     fragranceItems.push(...materials);
-    if (label) fragranceItems.push(label);
   }
   const pushScentSections = () => {
     push('Colorants', colorantItems);
@@ -378,16 +380,25 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   // the diluted soap — after everything else, in both.
   if (process !== 'cp') pushScentSections();
 
-  // What the batch is made FROM, where a customer might need to avoid it. Provenance, not a
-  // declaration: no threshold is computed and no compliance is claimed (see core's
-  // allergen-origins for the sources and for that distinction). Last, because it is read
-  // when the soap is sold rather than while it is made.
-  const originItems: RecipeItem[] = recipeAllergenOrigins(input).map((hit) => ({
-    name: hit.label,
-    detail: hit.note ? `${hit.ingredients.join(', ')} — ${hit.note}` : hit.ingredients.join(', '),
-    prose: true as const,
-  }));
-  push('Contains', originItems);
+  // ONE list of what a buyer may need to know, at the end, where it is read when the soap
+  // is sold rather than while it is made. Two different kinds of fact, in order of what the
+  // maker owes: first the fragrance allergens that are OVER the labelling threshold and so
+  // must be named with their percentages (the one part of this with arithmetic behind it —
+  // see core's fragrance.ts), then what the batch is made from, which is provenance and
+  // carries no threshold at all (core's allergen-origins).
+  const allergenItems: RecipeItem[] = [];
+  if (scentColor) {
+    const { label } = scentSupplements(scentColor, weightUnit);
+    if (label) allergenItems.push(label);
+  }
+  allergenItems.push(
+    ...recipeAllergenOrigins(input).map((hit) => ({
+      name: hit.label,
+      detail: hit.note ? `${hit.ingredients.join(', ')} — ${hit.note}` : hit.ingredients.join(', '),
+      prose: true as const,
+    })),
+  );
+  push('Allergens', allergenItems);
 
   return sections;
 }
