@@ -140,19 +140,17 @@ export type FormulationAnalysisInput = {
     /** Clove / cinnamon essential oil — see core essentialOilCaution. */
     caution: boolean;
   }>;
-  /** Allergens above the rinse-off labelling threshold — see core allergensToLabel. */
-  labelAllergens?: Array<{ name: string; percentOfProduct: number }>;
-  /** A declared allergen whose typed share of its oil puts it over IFRA's Category 9 ceiling
-   * at this dose. The verdict is the compute step's (overIfra); this carries the figures for
-   * the sentence. */
-  fragranceAllergensOverIfra?: Array<{
+  /** The labelling allergens the picked oils are known to carry — presence, by name. */
+  labelAllergens?: Array<{ name: string }>;
+  /** An oil dosed past its derived safe ceiling: the most of it the finished soap may carry
+   * before its binding constituent passes IFRA's Category 9 cap. Verdict is the compute
+   * step's (overSafeMax); this carries the figures for the sentence. */
+  fragrancesOverSafeMax?: Array<{
     fragrance: string;
-    allergen: string;
-    percentOfFragrance: number;
-    /** The ceiling in the oil's own basis at this dose — what the oil may carry at most. */
-    ceilingPercentOfFragrance: number;
-    /** IFRA's figure as stated: a percent of the finished product. */
-    ceilingPercentOfProduct: number;
+    shareOfProduct: number;
+    safeMaxPercentOfProduct: number;
+    substance: string;
+    capPercentOfProduct: number;
   }>;
   /** The batter portions add up past 100%. */
   colorantPortionsOver100?: boolean;
@@ -1314,7 +1312,7 @@ export const INSIGHT_RULES: InsightRule[] = [
       return {
         level: 'info',
         code: 'fragrance_allergens_to_label',
-        message: `Name on the label: ${list.map((a) => a.name).join(', ')} — each is above ${ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT}% of the finished soap.`,
+        message: `Expect to name on the label: ${list.map((a) => a.name).join(', ')} — these are the labelling allergens your oils are known to carry. Any one above ${ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT}% of the finished soap must be named; the supplier's declaration says which.`,
       };
     },
   },
@@ -1430,18 +1428,18 @@ export const INSIGHT_RULES: InsightRule[] = [
     },
   },
   {
-    code: 'fragrance_allergen_over_ifra',
+    code: 'fragrance_over_safe_max',
     check: (input) => {
-      const rows = input.fragranceAllergensOverIfra ?? [];
+      const rows = input.fragrancesOverSafeMax ?? [];
       if (rows.length === 0) return null;
       const parts = rows.map(
         (r) =>
-          `${r.allergen} in ${r.fragrance}: ${r.percentOfFragrance.toFixed(1)}% of the oil is past IFRA's ${r.ceilingPercentOfProduct}% ceiling for it in soap — at this dose the oil can carry no more than ${r.ceilingPercentOfFragrance.toFixed(1)}%.`,
+          `${r.fragrance} is ${r.shareOfProduct.toFixed(1)}% of the finished soap; ${r.safeMaxPercentOfProduct.toFixed(1)}% is the most that keeps its ${r.substance.toLowerCase()} under IFRA's ${r.capPercentOfProduct}% cap for soap.`,
       );
       return {
         level: 'warning',
-        code: 'fragrance_allergen_over_ifra',
-        message: `${parts.join(' ')} Lower the dose, or pick a batch with less of it.`,
+        code: 'fragrance_over_safe_max',
+        message: `${parts.join(' ')} Lower the dose.`,
       };
     },
   },

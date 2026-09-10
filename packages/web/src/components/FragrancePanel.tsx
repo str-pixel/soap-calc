@@ -1,11 +1,8 @@
 import { memo } from 'react';
 import {
   ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT,
-  allergenBreakEvenPercentOfFragrance,
-  ESSENTIAL_OIL_ALLERGEN_CAUTION,
   ESSENTIAL_OIL_CATALOG,
   essentialOilEntryById,
-  ifraCategoryNinePercent,
 } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import { productNoun, type ComputedFragrance, type ComputedScentColor } from '../lib/computeScentColor';
@@ -13,7 +10,7 @@ import { formatGrams } from '../lib/format';
 import { fragranceDoseLabel, labelAllergensDetail } from '../lib/recipeSummary';
 import type { ProcessId } from '../lib/process';
 import {
-  MAX_SCENT_ROWS, newAllergenLine, newFragranceLine,
+  MAX_SCENT_ROWS, newFragranceLine,
   type FragranceLine, type ScentColor,
 } from '../lib/scentColor';
 import { formatWeight, type WeightUnit } from '../lib/weightUnits';
@@ -47,24 +44,12 @@ const REGULATORY_COPY =
 export const FragrancePanel = memo(function FragrancePanel({ scent, computed, process, weightUnit, onChange }: Props) {
   const setFragrance = (key: string, patch: Partial<FragranceLine>) =>
     onChange({ ...scent, fragrances: scent.fragrances.map((f) => (f.key === key ? { ...f, ...patch } : f)) });
-  /** Picking an oil takes its name and pre-fills the allergen rows it typically carries —
-   * NAMES only, because the percentages belong to the maker's own supplier declaration and
-   * a principal-component list is not one (see ESSENTIAL_OIL_ALLERGEN_CAUTION). Rows the
-   * maker already filled in are kept: a pick adds what is missing, it does not overwrite
-   * work. Custom… hands the name back and leaves everything else alone. */
+  /** Picking an oil settles its name; what it carries and what it may be dosed at come off
+   * the catalog at compute time, so nothing has to be copied into the row. Custom… hands the
+   * name back and leaves the rest alone. */
   const pickCatalog = (key: string, catalogId: string) => {
     const entry = essentialOilEntryById(catalogId);
-    if (!entry) return setFragrance(key, { catalogId: '' });
-    const row = scent.fragrances.find((f) => f.key === key);
-    const already = new Set((row?.allergens ?? []).map((a) => a.name.trim().toLowerCase()));
-    const added = entry.allergens
-      .filter((a) => !already.has(a.toLowerCase()))
-      .map((a) => ({ ...newAllergenLine(), name: a }));
-    setFragrance(key, {
-      catalogId: entry.id,
-      name: entry.name,
-      allergens: [...(row?.allergens ?? []), ...added],
-    });
+    setFragrance(key, entry ? { catalogId: entry.id, name: entry.name } : { catalogId: '' });
   };
   const doseLabel = fragranceDoseLabel(process);
   const noun = productNoun(process, computed.productBasis);
@@ -103,7 +88,6 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
           {scent.fragrances.map((f, i) => {
             const c = computed.fragrances[i];
             const rowName = f.name.trim() || 'Essential oil';
-            const breakEven = allergenBreakEvenPercentOfFragrance(c.shareOfProduct);
             return (
               <li key={f.key} className="additive-list__row">
                 {/* Same shape as an additive row: the name and its × on one line, then
@@ -212,100 +196,38 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                   </div>
                 </div>
                 <FragranceNotes c={c} noun={noun} unit={weightUnit} />
-                <details className="scent-list__allergens" open={f.allergens.length > 0}>
-                  <summary>
-                    Allergens ({f.allergens.length})
-                    {/* Said on the summary itself, so it reads without opening anything:
-                        this oil has label allergens in it. */}
-                    {f.allergens.length > 0 && <strong> — this oil carries labelling allergens</strong>}
-                  </summary>
-                  {/* Said where the pre-filled names are, not once at the top of the panel:
-                      it is about THESE rows, and it is the difference between what to look
-                      for and what to print. */}
-                  {f.allergens.length > 0 && (
-                    <p className="inline-note">
-                      {/* What the boxes are FOR, before any caveat about them. A maker who
-                          picked an oil and met three empty fields had no way to know that the
-                          number is on their supplier's declaration, or that the app turns it
-                          into which names go on the label. */}
-                      <strong>What to do here:</strong> for each one, type its share of the oil from your
-                      supplier&apos;s allergen declaration. The app then works out which of them must be
-                      named on the label at this dose — the answer appears beside each figure as you type.
-                    </p>
-                  )}
-                  {f.catalogId !== '' && (
-                    <p className="inline-note">{ESSENTIAL_OIL_ALLERGEN_CAUTION}</p>
-                  )}
-                  {/* The line the maker is otherwise doing in their head: a declaration
-                      compares the allergen's share of the finished soap against 0.01%, so at
-                      THIS dose it comes down to how much of the oil the allergen is. With it,
-                      a supplier's declaration reads as a yes or a no per line. */}
-                  {breakEven !== null && (
-                    <p className="inline-note">
-                      At this dose, an allergen has to be more than{' '}
-                      <strong>{formatGrams(breakEven, breakEven < 0.1 ? 3 : 2)}% of the oil</strong>{' '}
-                      before it must be named on the label.
-                    </p>
-                  )}
-                  {f.allergens.map((a) => (
-                    <div key={a.key} className="scent-list__allergen">
-                      <input className="input" aria-label="Allergen name" placeholder="INCI name, as declared" value={a.name}
-                        onChange={(e) => setFragrance(f.key, { allergens: f.allergens.map((x) => (x.key === a.key ? { ...x, name: e.target.value } : x)) })} />
-                      <input className="input" inputMode="decimal" aria-label="Allergen % of fragrance" placeholder="% of the oil" value={a.percentOfFragrance}
-                        onChange={(e) => setFragrance(f.key, { allergens: f.allergens.map((x) => (x.key === a.key ? { ...x, percentOfFragrance: e.target.value } : x)) })} />
-                      <button type="button" className="btn btn--icon" aria-label={`Remove allergen ${a.name || ''}`.trim()}
-                        onClick={() => setFragrance(f.key, { allergens: f.allergens.filter((x) => x.key !== a.key) })}>×</button>
-                      {/* After the × in DOM order, so the name, the figure and the × fill the
-                          grid's first line and this spans the second — put before the button
-                          it took the button's cell and pushed the × onto a line of its own. */}
-                      {(() => {
-                        // The labelling verdict for THIS row, from the figure just typed: its
-                        // share of the finished soap, against the 0.01% line. Feedback where
-                        // the typing happens, rather than only in the recipe on the right.
-                        const typed = c.allergens.find((x) => x.name === a.name)?.percentOfFragrance ?? null;
-                        if (typed === null || c.shareOfProduct <= 0) return null;
-                        const ofProduct = (c.shareOfProduct * typed) / 100;
-                        // THE verdict is the recipe's (allergensToLabel, in the compliance
-                        // pass): it adds the same allergen up across every oil and applies
-                        // the threshold once, with its tolerance. Re-deciding here from this
-                        // row alone had two lemon-and-orange rows each saying "not required"
-                        // while the recipe named the limonene they carried between them.
-                        const onLabel = computed.labelAllergens.find((l) => l.name.trim().toLowerCase() === a.name.trim().toLowerCase());
-                        const named = onLabel !== undefined;
-                        const combined = onLabel !== undefined && Math.abs(onLabel.percentOfProduct - ofProduct) > 1e-9;
-                        return (
-                          <span className="inline-note scent-list__allergen-limit" aria-label={`${a.name} on the label`}>
-                            → {formatGrams(ofProduct, ofProduct < 0.1 ? 3 : 2)}% of the {noun}
-                            {combined && <> from this oil, {formatGrams(onLabel.percentOfProduct, onLabel.percentOfProduct < 0.1 ? 3 : 2)}% with the other oils</>}
-                            {' — '}
-                            {named ? <strong>must be named on the label</strong> : 'under the 0.01% line, not required'}
-                          </span>
-                        );
-                      })()}
-                      {ifraCategoryNinePercent(a.name) !== null && (() => {
-                        const ca = c.allergens.find((x) => x.name === a.name);
-                        const inOil = ca?.ifraCeilingPercentOfFragrance ?? null;
-                        return (
-                          <span className="inline-note scent-list__allergen-limit" aria-label={`${a.name} IFRA ceiling`}>
-                            {/* Both bases, named: the ceiling as IFRA states it, and what it
-                                comes to in the field's own basis at this dose — because the
-                                field beside it takes a percent of the OIL, and a bare "1.2%"
-                                next to it reads as the number to type. */}
-                            IFRA soap ceiling {ifraCategoryNinePercent(a.name)}% of the finished soap
-                            {/* Past 100% the ceiling is out of reach: no share of this oil,
-                                even all of it, could put the substance over IFRA's figure at
-                                this dose. Said as that — "1,023% of this oil" is not a
-                                number anyone can use. */}
-                            {inOil !== null && inOil >= 100 && <> — out of reach at this dose, whatever the share</>}
-                            {inOil !== null && inOil < 100 && <> — at this dose, {formatGrams(inOil, inOil < 10 ? 1 : 0)}% of this oil</>}
-                            {ca?.overIfra && <strong> — over, at the figure typed</strong>}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  ))}
-                  <button type="button" className="btn btn--ghost" disabled={f.allergens.length >= MAX_SCENT_ROWS} onClick={() => setFragrance(f.key, { allergens: withNewRow(f.allergens, newAllergenLine()) })}>+ Add allergen</button>
-                </details>
+                {/* One warning and one safe-use line, in place of a list to fill in. What
+                    the oil carries comes off the catalog; what it may be dosed at is IFRA's
+                    cap on its binding constituent turned into a share of the finished soap,
+                    where both figures are cited — and the supplier's own certificate where
+                    they are not. No typing, no arithmetic left to the maker. */}
+                {c.allergenNames.length > 0 && (
+                  <p className="inline-note scent-list__warning" aria-label={`${rowName} allergens`}>
+                    <strong>Allergens.</strong> This oil carries {c.allergenNames.join(', ')} — expect to name
+                    them on the label, and confirm each against your supplier&apos;s allergen declaration.
+                  </p>
+                )}
+                {f.catalogId !== '' && (
+                  <p className="inline-note" aria-label={`${rowName} safe use`}>
+                    <strong>Safe use.</strong>{' '}
+                    {c.safeMaxPercentOfProduct !== null ? (
+                      <>
+                        Up to <strong>{formatGrams(c.safeMaxPercentOfProduct, 1)}% of the {noun}</strong> — the most
+                        that keeps its {essentialOilEntryById(f.catalogId)?.binding?.substance.toLowerCase()} under
+                        IFRA&apos;s cap for soap, at the top of this oil&apos;s usual range.
+                        {c.shareOfProduct > 0 && (
+                          <> This dose is {formatGrams(c.shareOfProduct, 1)}%{c.overSafeMax ? <strong> — over it.</strong> : '.'}</>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        IFRA sets no cap on this oil&apos;s main constituents in soap, so no ceiling can be derived
+                        for it. Bars usually carry 2–6% of oil weight; your supplier&apos;s IFRA certificate gives this
+                        oil&apos;s own tested figure — enter it as Max in product and the app holds you to it.
+                      </>
+                    )}
+                  </p>
+                )}
               </li>
             );
           })}
@@ -316,7 +238,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
           </li>
           {computed.labelAllergens.length > 0 && (
             <li className="inline-note">
-              <strong>Name on the label:</strong> {labelAllergensDetail(computed.labelAllergens)} — of the {noun}.
+              <strong>Expect to name on the label:</strong> {labelAllergensDetail(computed.labelAllergens)} — confirm each against the supplier&apos;s declaration.
             </li>
           )}
         </ul>

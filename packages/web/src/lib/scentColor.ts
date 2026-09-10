@@ -3,7 +3,6 @@ import { colorantEntryById, essentialOilEntryById, MAX_ADDITIVE_NAME_LENGTH, typ
 import { isRecord, newAdditiveKey } from './recipe';
 import type { ProcessId } from './process';
 
-export type AllergenLine = { key: string; name: string; percentOfFragrance: string };
 export type FragranceLine = {
   key: string;
   /** The catalog entry this row was picked from, or '' for one the maker named themselves.
@@ -17,7 +16,6 @@ export type FragranceLine = {
   /** The supplier's IFRA Category 9 rate, % of the FINISHED product. '' = unknown. */
   supplierMaxPercent: string;
   vanillinPercent: string;
-  allergens: AllergenLine[];
 };
 export type ColorantLine = {
   key: string;
@@ -44,7 +42,7 @@ export type Portion = { key: string; name: string; percent: string };
 export type ScentColor = { fragrances: FragranceLine[]; colorants: ColorantLine[]; portions: Portion[] };
 
 export type SavedScentColor = {
-  fragrances: Array<Omit<FragranceLine, 'key' | 'allergens'> & { allergens: Array<Omit<AllergenLine, 'key'>> }>;
+  fragrances: Array<Omit<FragranceLine, 'key'>>;
   colorants: Array<Omit<ColorantLine, 'key'>>;
   portions: Array<Omit<Portion, 'key'>>;
 };
@@ -65,11 +63,7 @@ export function createEmptyScentColor(): ScentColor {
 }
 
 export function newFragranceLine(): FragranceLine {
-  return { key: newAdditiveKey(), catalogId: '', name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] };
-}
-
-export function newAllergenLine(): AllergenLine {
-  return { key: newAdditiveKey(), name: '', percentOfFragrance: '' };
+  return { key: newAdditiveKey(), catalogId: '', name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '' };
 }
 
 /** LS seeds a dye (water-soluble is what a liquid tolerates, LS:13256); bars seed a mica.
@@ -135,11 +129,8 @@ export function normalizeScentColor(raw: unknown): ScentColor {
   });
   const fragrances: FragranceLine[] = raw.fragrances.slice(0, MAX_SCENT_ROWS).flatMap((f) => {
     if (!isRecord(f)) return [];
-    const allergens: AllergenLine[] = Array.isArray(f.allergens)
-      ? f.allergens.slice(0, MAX_SCENT_ROWS).flatMap((a) =>
-          isRecord(a) ? [{ key: newAdditiveKey(), name: name(a.name), percentOfFragrance: percentString(a.percentOfFragrance) }] : [],
-        )
-      : [];
+    // A saved `allergens` list from before v7 is dropped on the floor: the app no longer
+    // takes typed allergen shares, it reads the oil's allergens off the catalog.
     // A pick that no longer resolves becomes a row the maker named, keeping the name —
     // the same rule a retired colorant follows.
     const rawCatalogId = str(f.catalogId);
@@ -151,7 +142,6 @@ export function normalizeScentColor(raw: unknown): ScentColor {
       percent: percentString(f.percent),
       supplierMaxPercent: percentString(f.supplierMaxPercent),
       vanillinPercent: percentString(f.vanillinPercent),
-      allergens,
     }];
   });
   const colorants: ColorantLine[] = raw.colorants.slice(0, MAX_SCENT_ROWS).flatMap((c) => {
@@ -206,9 +196,8 @@ export function normalizeScentColor(raw: unknown): ScentColor {
 export function scentColorToSaved(scent: ScentColor): SavedScentColor {
   const portionIndex = new Map(scent.portions.map((p, i) => [p.key, `#${i}`]));
   return {
-    fragrances: scent.fragrances.map(({ catalogId, name, percent, supplierMaxPercent, vanillinPercent, allergens }) => ({
+    fragrances: scent.fragrances.map(({ catalogId, name, percent, supplierMaxPercent, vanillinPercent }) => ({
       catalogId, name, percent, supplierMaxPercent, vanillinPercent,
-      allergens: allergens.map(({ name: n, percentOfFragrance }) => ({ name: n, percentOfFragrance })),
     })),
     colorants: scent.colorants.map(({ catalogId, name, kind, percent, portionKey, mixedWith, viaLye }) => ({
       catalogId, name, kind, percent, mixedWith, viaLye, portionKey: portionIndex.get(portionKey) ?? '',

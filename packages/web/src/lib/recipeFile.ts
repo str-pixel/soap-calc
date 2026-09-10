@@ -31,8 +31,8 @@ import {
 // the field and put the colour back at a stage and a solvent the maker did not choose. v6
 // adds the essential-oil pick (`catalogId`), which carries the name and the allergen rows
 // that came with it.
-export const RECIPE_FILE_VERSION = 6 as const;
-export const RECIPE_FILE_LEGACY_VERSIONS: readonly number[] = [1, 2, 3, 4, 5];
+export const RECIPE_FILE_VERSION = 7 as const;
+export const RECIPE_FILE_LEGACY_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6];
 
 /** Import cap on oil lines, mirroring MAX_RECIPE_ADDITIVES. Real recipes have a
  * handful of oils; without a cap a malformed/hostile file with a huge `lines`

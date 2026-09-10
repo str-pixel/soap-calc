@@ -18,7 +18,7 @@ describe('normalizeScentColor', () => {
   });
   it('keeps valid rows, assigns keys, drops unknown fields, keeps an oversize portion share as typed, and unlinks a deleted portion', () => {
     const s = normalizeScentColor({
-      fragrances: [{ name: 'Lavender', kind: 'essential-oil', percent: '3', supplierMaxPercent: '5', vanillinPercent: '', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }], junk: 1 }],
+      fragrances: [{ name: 'Lavender', kind: 'essential-oil', percent: '3', supplierMaxPercent: '5', vanillinPercent: '', junk: 1 }],
       // The first colour claims the oversize share; the second's key matches no portion.
       colorants: [
         { name: 'Ultramarine', kind: 'oxide', percent: '0.5', portionKey: 'gone' },
@@ -28,7 +28,6 @@ describe('normalizeScentColor', () => {
     });
     expect(s.fragrances[0]).toMatchObject({ name: 'Lavender', percent: '3', supplierMaxPercent: '5', vanillinPercent: '' });
     expect(s.fragrances[0].key).toBeTruthy();
-    expect(s.fragrances[0].allergens[0]).toMatchObject({ name: 'Linalool', percentOfFragrance: '12' });
     expect((s.fragrances[0] as unknown as { junk?: unknown }).junk).toBeUndefined();
     expect(s.portions[0].percent).toBe('150'); // shown and flagged by the compute step, never silently clamped
     expect(s.colorants[0].portionKey).toBe(''); // 'gone' matched no portion
@@ -43,12 +42,11 @@ describe('normalizeScentColor', () => {
   });
   it('caps names and numbers so a hand-edited file cannot flood state or the draft slot', () => {
     const s = normalizeScentColor({
-      fragrances: [{ name: 'x'.repeat(5000), percent: '3' + '0'.repeat(100), supplierMaxPercent: '', vanillinPercent: '', allergens: [{ name: 'y'.repeat(5000), percentOfFragrance: '1' }] }],
+      fragrances: [{ name: 'x'.repeat(5000), percent: '3' + '0'.repeat(100), supplierMaxPercent: '', vanillinPercent: '' }],
       colorants: [{ name: 'z'.repeat(5000), kind: 'mica', percent: '', portionKey: '' }],
       portions: [],
     });
     expect(s.fragrances[0].name.length).toBeLessThanOrEqual(120);
-    expect(s.fragrances[0].allergens[0].name.length).toBeLessThanOrEqual(120);
     expect(s.colorants[0].name.length).toBeLessThanOrEqual(120);
     expect(s.portions).toEqual([]); // nothing claims it, so nothing keeps it
     expect(s.fragrances[0].percent.length).toBeLessThanOrEqual(32);
@@ -93,7 +91,7 @@ describe('row factories', () => {
   });
   it('a new scent row is blank, and carries no kind — every row is an essential oil', () => {
     const line = newFragranceLine();
-    expect(line).toMatchObject({ name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] });
+    expect(line).toMatchObject({ name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '' });
     expect('kind' in line).toBe(false);
   });
 });
@@ -101,7 +99,7 @@ describe('row factories', () => {
 describe('scentColorToSaved round-trips through normalizeScentColor', () => {
   it('drops keys on save and restores them on load, keeping the portion link', () => {
     const s = normalizeScentColor({
-      fragrances: [{ name: 'Rose', percent: '4', supplierMaxPercent: '', vanillinPercent: '2', allergens: [] }],
+      fragrances: [{ name: 'Rose', percent: '4', supplierMaxPercent: '', vanillinPercent: '2' }],
       colorants: [{ name: 'Pink mica', kind: 'mica', percent: '', portionKey: '#0' }],
       portions: [{ name: 'Swirl', percent: '30' }],
     });
@@ -165,7 +163,7 @@ describe('extractLegacyFragrance — the additive catalog no longer has fragranc
 
 describe('migrateSavedScent — the one loader for drafts and files', () => {
   it('moves legacy rows ahead of the saved section, re-applies the row cap, and reports what it did', () => {
-    const rawScent = { fragrances: Array.from({ length: 20 }, (_, i) => ({ name: `F${i}`, percent: '1', supplierMaxPercent: '', vanillinPercent: '', allergens: [] })), colorants: [], portions: [] };
+    const rawScent = { fragrances: Array.from({ length: 20 }, (_, i) => ({ name: `F${i}`, percent: '1', supplierMaxPercent: '', vanillinPercent: '' })), colorants: [], portions: [] };
     const m = migrateSavedScent(rawScent, [{ catalogId: 'fragrance', name: 'Old', amount: '3', basis: 'oil', unit: 'percent', addAt: 'trace' }], 'cp');
     expect(m.scentColor.fragrances).toHaveLength(20);
     expect(m.scentColor.fragrances[0].name).toBe('Old');
@@ -325,17 +323,16 @@ describe('a scent survives every save and load, whatever is in it', () => {
 describe('an essential-oil pick across a save and a load', () => {
   it('round-trips, and a retired pick becomes a row the maker named', () => {
     const scent = normalizeScentColor({
-      fragrances: [{ catalogId: 'lavender', name: '', percent: '3', allergens: [{ name: 'Linalool', percentOfFragrance: '28' }] }],
+      fragrances: [{ catalogId: 'lavender', name: '', percent: '3' }],
       colorants: [], portions: [],
     });
     expect(scent.fragrances[0]).toMatchObject({ catalogId: 'lavender', name: 'Lavender' });
     const saved = scentColorToSaved(scent);
     expect(saved.fragrances[0].catalogId).toBe('lavender');
-    expect(normalizeScentColor(saved).fragrances[0].allergens[0].percentOfFragrance).toBe('28');
 
     // An id no catalog knows keeps the typed name rather than dangling.
     const gone = normalizeScentColor({
-      fragrances: [{ catalogId: 'unicorn-oil', name: 'Unicorn', percent: '3', allergens: [] }],
+      fragrances: [{ catalogId: 'unicorn-oil', name: 'Unicorn', percent: '3' }],
       colorants: [], portions: [],
     });
     expect(gone.fragrances[0]).toMatchObject({ catalogId: '', name: 'Unicorn' });
@@ -343,9 +340,20 @@ describe('an essential-oil pick across a save and a load', () => {
 
   it('an older file simply has no pick', () => {
     const older = normalizeScentColor({
-      fragrances: [{ name: 'Lavender', percent: '3', allergens: [] }],
+      fragrances: [{ name: 'Lavender', percent: '3' }],
       colorants: [], portions: [],
     });
     expect(older.fragrances[0].catalogId).toBe('');
+  });
+});
+
+describe('a typed allergen list from before v7', () => {
+  it('is dropped on load: the app reads allergens off the catalog now', () => {
+    const s = normalizeScentColor({
+      fragrances: [{ catalogId: 'lavender', name: '', percent: '3', allergens: [{ name: 'Linalool', percentOfFragrance: '28' }] }],
+      colorants: [], portions: [],
+    });
+    expect('allergens' in s.fragrances[0]).toBe(false);
+    expect(s.fragrances[0]).toMatchObject({ catalogId: 'lavender', name: 'Lavender', percent: '3' });
   });
 });

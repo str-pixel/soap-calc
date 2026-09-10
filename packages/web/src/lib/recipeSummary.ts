@@ -67,10 +67,11 @@ export function colorantLineDetail(c: ComputedColorant, unit: WeightUnit): strin
   return `${dose} · ${colorantDispersalText(c.dispersal, unit)}`;
 }
 
-/** "Linalool 0.277%, Limonene 0.012%" — the one rendering of the label list (3 decimals:
- * the threshold is 0.01%, so two would round a 0.014% share to 0.01% and read as "at" it). */
+/** "Limonene, Citral, Geraniol" — the one rendering of the label list. Names only: they are
+ * the allergens the picked oils are known to carry, not measured shares, and the supplier's
+ * declaration is what settles each one. */
 export function labelAllergensDetail(list: ComputedScentColor['labelAllergens']): string {
-  return list.map((a) => `${a.name} ${formatGrams(a.percentOfProduct, 3)}%`).join(', ');
+  return list.map((a) => a.name).join(', ');
 }
 
 /** What rides with the fragrance, as the Full recipe and the printed sheet both quote it:
@@ -85,7 +86,7 @@ export function scentSupplements(
   if (scentColor.polysorbateGrams > 0) materials.push({ name: 'Polysorbate 20', detail: formatWeight(scentColor.polysorbateGrams, unit) });
   const label =
     scentColor.labelAllergens.length > 0
-      ? { name: 'Name on the label', detail: labelAllergensDetail(scentColor.labelAllergens) }
+      ? { name: 'Expect to name on the label', detail: `${labelAllergensDetail(scentColor.labelAllergens)} — confirm each against the supplier's allergen declaration` }
       : null;
   return { materials, label };
 }

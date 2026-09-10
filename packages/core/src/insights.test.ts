@@ -1250,7 +1250,7 @@ describe('rule registry consistency', () => {
       fragranceRows: [{ name: 'Clove', percent: 1, supplierMaxPercent: 1, overSupplierMax: false, browning: 'none', caution: true }],
       process: 'cp',
     },
-    fragrance_allergens_to_label: { labelAllergens: [{ name: 'Linalool', percentOfProduct: 0.28 }] },
+    fragrance_allergens_to_label: { labelAllergens: [{ name: 'Linalool' }] },
     colorant_portions_over_100: { colorantPortionsOver100: true },
     colorant_carrier_superfat: { colorantCarrierShiftPercent: 1, process: 'cp' },
     colorant_over_sourced_rate: {
@@ -1267,8 +1267,8 @@ describe('rule registry consistency', () => {
       colorantTotalLoad: { percentOfOils: 4.2, ceilingPercent: 2, colourCount: 4 },
       process: 'cp',
     },
-    fragrance_allergen_over_ifra: {
-      fragranceAllergensOverIfra: [{ fragrance: 'Lemongrass', allergen: 'Citral', percentOfFragrance: 80, ceilingPercentOfFragrance: 52, ceilingPercentOfProduct: 1.2 }],
+    fragrance_over_safe_max: {
+      fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct: 6, safeMaxPercentOfProduct: 5.2, substance: 'Eugenol', capPercentOfProduct: 4.9 }],
     },
     colorant_liquid_double_count: {
       colorantsDoubleAsLiquid: [{ name: 'Carrot puree', liquid: 'Fruit or vegetable puree' }],
@@ -1445,7 +1445,7 @@ describe('fragrance & colorant insights', () => {
   });
 
   it('allergens, portions over 100, the carrier superfat shift (CP, from half a point), LS clouding', () => {
-    expect(codes({ labelAllergens: [{ name: 'Linalool', percentOfProduct: 0.28 }] }, 'cp')).toContain('fragrance_allergens_to_label');
+    expect(codes({ labelAllergens: [{ name: 'Linalool' }] }, 'cp')).toContain('fragrance_allergens_to_label');
     expect(codes({ labelAllergens: [] }, 'cp')).not.toContain('fragrance_allergens_to_label');
     expect(codes({ colorantPortionsOver100: true }, 'cp')).toContain('colorant_portions_over_100');
     expect(codes({ colorantCarrierShiftPercent: 1 }, 'cp')).toContain('colorant_carrier_superfat');

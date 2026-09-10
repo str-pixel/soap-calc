@@ -588,10 +588,6 @@ test.describe('essential oils & colorants', () => {
     await page.getByLabel(/Vanilla dream dose/).fill('3');
     await page.getByLabel(/Vanilla dream max in product/).fill('5');
     await page.getByLabel(/Vanilla dream vanillin/).fill('12');
-    await fragrancePanel(page).getByText(/Allergens \(0\)/).click();
-    await page.getByRole('button', { name: /add allergen/i }).click();
-    await page.getByLabel('Allergen name').fill('Linalool');
-    await page.getByLabel('Allergen % of fragrance').fill('12');
     await page.getByRole('button', { name: /add colorant/i }).click();
     await page.getByLabel('Colorant name').fill('Blue mica');
     await page.getByLabel(/Blue mica dose/).fill('1');
@@ -602,8 +598,6 @@ test.describe('essential oils & colorants', () => {
     await expect(section(page, 'Colorants')).toContainText(/Blue mica/);
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla dream/);
     await expect(section(page, 'Fragrance')).toContainText(/Vanilla stabilizer/);
-    // The declaration itself reads with the other label facts, not among the weights.
-    await expect(section(page, 'Allergens')).toContainText(/Linalool/);
     // Each panel states its own row's stage and reading; both survive a reload.
     await expect(fragrancePanel(page)).toContainText('At trace');
     await expect(fragrancePanel(page)).toContainText(/of the finished bar/);
@@ -1085,41 +1079,36 @@ test.describe('what the batch is made from', () => {
     await expect(contains).toContainText('Insect (carmine)');
     await expect(contains).toContainText(/must be named on a cosmetic label/);
 
-    // A fragrance allergen over the labelling threshold joins the same list, at the top:
-    // it is the half of this with a percentage to declare.
+    // A picked oil's allergens join the same list, at the top: what to expect to name.
     await page.getByRole('button', { name: /add essential oil/i }).click();
-    await page.getByLabel('Essential oil name').first().fill('Lavender');
+    await page.getByLabel(/Essential oil for/).first().selectOption('lavender');
     await page.getByLabel(/dose, % of oil weight/).first().fill('3');
-    await page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /Essential oils/ }) })
-      .getByText(/Allergens \(0\)/).click();
-    await page.getByRole('button', { name: /add allergen/i }).click();
-    await page.getByLabel('Allergen name').fill('Linalool');
-    await page.getByLabel('Allergen % of fragrance').fill('30');
-    await expect(contains).toContainText(/Name on the label/);
+    await expect(contains).toContainText(/Expect to name on the label/);
     await expect(contains).toContainText(/Linalool/);
   });
 });
 
 test.describe('the essential-oil catalog', () => {
-  test('picking an oil brings its name and the allergens to look for', async ({ page }) => {
+  test('picking an oil warns what it carries and says what use is safe', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     const panel = page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /Essential oils/ }) });
 
     await page.getByRole('button', { name: /add essential oil/i }).click();
-    await page.getByLabel(/Essential oil for/).first().selectOption('lemongrass');
-    await page.getByLabel(/dose, % of oil weight/).first().fill('2');
-
-    // The pick settles the name, so the free-text field steps aside.
+    await page.getByLabel(/Essential oil for/).first().selectOption('clove');
+    await page.getByLabel(/dose, % of oil weight/).first().fill('3');
     await expect(panel.getByLabel('Essential oil name')).toHaveCount(0);
-    await expect(panel).toContainText('Allergens (5)');
-    await panel.getByText(/Allergens \(5\)/).click();
-    for (const a of ['Citral', 'Linalool', 'Geraniol', 'Citronellol', 'Farnesol']) {
-      await expect(panel.getByLabel('Allergen name').filter({ has: page.locator(`[value="${a}"]`) }).or(panel.locator(`input[value="${a}"]`))).toHaveCount(1);
-    }
-    // Names only: the percentages are the maker's to take from their own declaration.
-    await expect(panel).toContainText(/not a declaration/);
-    await expect(panel).toContainText(/supplier's allergen declaration/);
+    // No list to fill in: one warning, one safe-use line.
+    await expect(panel).toContainText(/This oil carries Eugenol — expect to name them on the label/);
+    await expect(panel).toContainText(/Up to 5\.2% of the finished bar/);
+    await expect(panel).toContainText(/This dose is 2\.3%\./);
+    await expect(panel.getByLabel('Allergen % of fragrance')).toHaveCount(0);
+
+    // Past the ceiling, the row and the notes both say so.
+    await page.getByLabel(/dose, % of oil weight/).first().fill('8');
+    await expect(panel).toContainText(/over it\./);
+    const notes = page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: 'Formulation notes' }) });
+    await expect(notes).toContainText(/Clove is 6\.0% of the finished soap; 5\.2% is the most/);
   });
 });

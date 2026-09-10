@@ -827,7 +827,7 @@ test('the Full recipe renders the Fragrance section with the allergen line from 
   const scent = applyScentColorCompliance(
     computeScentColorGrams(
       normalizeScentColor({
-        fragrances: [{ name: 'Vanilla dream', percent: '3', supplierMaxPercent: '', vanillinPercent: '', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
+        fragrances: [{ catalogId: 'lavender', name: '', percent: '3', supplierMaxPercent: '', vanillinPercent: '' }],
         colorants: [],
         portions: [],
       }),
@@ -849,6 +849,6 @@ test('the Full recipe renders the Fragrance section with the allergen line from 
     />,
   );
   expect(screen.getByText('Fragrance', { selector: '.results-recipe__heading' })).toBeTruthy();
-  expect(screen.getByText('Vanilla dream')).toBeTruthy();
-  expect(screen.getByText('Name on the label')).toBeTruthy();
+  expect(screen.getByText('Lavender')).toBeTruthy();
+  expect(screen.getByText('Expect to name on the label')).toBeTruthy();
 });

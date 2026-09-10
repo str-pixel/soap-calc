@@ -27,8 +27,8 @@ const ACTIVE_PROCESS_KEY = 'soap-calc:active-process';
 // colour back at a stage the maker did not choose. The recipe file draws the same line at
 // RECIPE_FILE_VERSION 4. v7: the essential-oil pick (`catalogId`). v6: what a cold-process colour is mixed with (`mixedWith`), for the
 // same reason. Version list accepted by loadDraftSlot must include every older version.
-const STORAGE_VERSION = 7;
-const READABLE_VERSIONS = [1, 2, 3, 4, 5, 6, STORAGE_VERSION];
+const STORAGE_VERSION = 8;
+const READABLE_VERSIONS = [1, 2, 3, 4, 5, 6, 7, STORAGE_VERSION];
 
 function draftKey(process: ProcessId): string {
   return `soap-calc:draft:${process}`;

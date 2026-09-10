@@ -100,7 +100,7 @@ describe('useRecipeStorage process', () => {
     // Written back at once: the slot no longer carries the additive line, so the notice
     // cannot repeat on the next load.
     const stored = JSON.parse(localStorage.getItem('soap-calc:draft:cp')!);
-    expect(stored.version).toBe(7);
+    expect(stored.version).toBe(8);
     expect(stored.additives).toEqual([]);
     expect(stored.scentColor.fragrances[0].name).toBe('Lavender FO');
   });

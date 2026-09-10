@@ -16,8 +16,7 @@ function renderPanel(scent: ScentColor, process: ProcessId, unit: 'g' | 'lb' = '
 }
 
 const vanilla = normalizeScentColor({
-  fragrances: [{ name: 'Vanilla dream', percent: '3', supplierMaxPercent: '2', vanillinPercent: '12',
-    allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
+  fragrances: [{ name: 'Vanilla dream', percent: '3', supplierMaxPercent: '2', vanillinPercent: '12' }],
   colorants: [],
   portions: [],
 });
@@ -81,7 +80,8 @@ describe('FragrancePanel', () => {
     expect(screen.getByText(/supplier max 2%/)).toBeTruthy();
     expect(screen.getByText(/browning: deep/i)).toBeTruthy();
     expect(screen.getByText(/30 g vanilla stabilizer/i)).toBeTruthy();
-    expect(screen.getByText(/name on the label/i).closest('li')!.textContent).toMatch(/Linalool/);
+    // A fragrance the maker named carries nothing the app can vouch for: no label line.
+    expect(screen.queryByText(/name on the label/i)).toBeNull();
   });
 
   it('adds a scent row through its own button', () => {
@@ -92,11 +92,6 @@ describe('FragrancePanel', () => {
     expect(next.fragrances[0].name).toBe('');
   });
 
-  it('the allergen disclosure adds declaration rows', () => {
-    const onChange = renderPanel(vanilla, 'cp');
-    fireEvent.click(screen.getByRole('button', { name: /add allergen/i }));
-    expect((onChange.mock.calls[0][0] as ScentColor).fragrances[0].allergens).toHaveLength(2);
-  });
 
   it('names the browning without a stabilizer figure until there is a dose to size it', () => {
     const noDose = normalizeScentColor({
@@ -125,242 +120,71 @@ describe('FragrancePanel', () => {
 });
 
 describe('picking an essential oil', () => {
-  const empty = createEmptyScentColor();
+  const blank = normalizeScentColor({ fragrances: [{ name: '', percent: '' }], colorants: [], portions: [] });
 
-  it('offers the catalog, with Custom first', () => {
-    const onChange = renderPanel(normalizeScentColor({ fragrances: [{ name: '', percent: '' }], colorants: [], portions: [] }), 'cp');
+  it('offers the catalog, with Custom first, and a pick settles the name only', () => {
+    const onChange = renderPanel(blank, 'cp');
     const picker = screen.getByLabelText(/Essential oil for/) as HTMLSelectElement;
     expect([...picker.options][0].text).toBe('Custom…');
-    expect([...picker.options].map((o) => o.value)).toContain('lavender');
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it('fills the name and the allergens it typically carries, percentages left blank', () => {
-    const onChange = renderPanel(normalizeScentColor({ fragrances: [{ name: '', percent: '' }], colorants: [], portions: [] }), 'cp');
-    fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: 'lemongrass' } });
+    fireEvent.change(picker, { target: { value: 'lemongrass' } });
     const row = (onChange.mock.calls[0][0] as ScentColor).fragrances[0];
     expect(row).toMatchObject({ catalogId: 'lemongrass', name: 'Lemongrass' });
-    expect(row.allergens.map((a) => a.name)).toEqual(['Citral', 'Linalool', 'Geraniol', 'Citronellol', 'Farnesol']);
-    // The percentages are the maker's to take off their own declaration.
-    expect(row.allergens.every((a) => a.percentOfFragrance === '')).toBe(true);
+    // nothing is copied into the row: what it carries comes off the catalog at compute time
+    expect('allergens' in row).toBe(false);
   });
 
-  it('adds what is missing without overwriting a percentage already typed', () => {
-    const typed = normalizeScentColor({
-      fragrances: [{ name: 'My lavender', percent: '3', allergens: [{ name: 'Linalool', percentOfFragrance: '28' }] }],
-      colorants: [], portions: [],
-    });
-    const onChange = renderPanel(typed, 'cp');
-    fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: 'geranium' } });
-    const row = (onChange.mock.calls[0][0] as ScentColor).fragrances[0];
-    // The row the maker filled in stays, and only the ones it lacked are added.
-    expect(row.allergens[0]).toMatchObject({ name: 'Linalool', percentOfFragrance: '28' });
-    expect(row.allergens.map((a) => a.name)).toEqual(['Linalool', 'Citronellol', 'Geraniol', 'Citral', 'Limonene']);
-  });
-
-  it('says what a pre-filled list is, and says it only where there is one', () => {
-    renderPanel(normalizeScentColor({
-      fragrances: [{ catalogId: 'lavender', name: 'Lavender', percent: '3', allergens: [{ name: 'Linalool', percentOfFragrance: '' }] }],
-      colorants: [], portions: [],
-    }), 'cp');
-    expect(screen.getByText(/not a declaration/)).toBeTruthy();
-    cleanup();
-    renderPanel(normalizeScentColor({ fragrances: [{ name: 'Mine', percent: '3' }], colorants: [], portions: [] }), 'cp');
-    expect(screen.queryByText(/not a declaration/)).toBeNull();
-  });
-
-  it('Custom… hands the name back and keeps the allergens the maker has', () => {
-    const picked = normalizeScentColor({
-      fragrances: [{ catalogId: 'clove', name: 'Clove', percent: '1', allergens: [{ name: 'Eugenol', percentOfFragrance: '80' }] }],
-      colorants: [], portions: [],
-    });
+  it('Custom… hands the name back', () => {
+    const picked = normalizeScentColor({ fragrances: [{ catalogId: 'clove', name: '', percent: '1' }], colorants: [], portions: [] });
     const onChange = renderPanel(picked, 'cp');
     fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: '' } });
-    const row = (onChange.mock.calls[0][0] as ScentColor).fragrances[0];
-    expect(row.catalogId).toBe('');
-    expect(row.name).toBe('Clove');
-    expect(row.allergens[0]).toMatchObject({ name: 'Eugenol', percentOfFragrance: '80' });
-  });
-  void empty;
-});
-
-describe('the line an allergen has to clear', () => {
-  const at = (percent: string) =>
-    normalizeScentColor({
-      fragrances: [{ catalogId: 'patchouli', name: 'Patchouli', percent, allergens: [{ name: 'Limonene', percentOfFragrance: '' }] }],
-      colorants: [], portions: [],
-    });
-
-  it('states it at this dose, so a trace constituent can be seen not to need naming', () => {
-    // 3% of the oils on a 1,300 g bar is about 2.3% of the product → ~0.43% of the oil.
-    renderPanel(at('3'), 'cp');
-    fireEvent.click(screen.getByText(/Allergens \(1\)/));
-    const text = screen.getByText(/At this dose, an allergen has to be more than/).textContent!;
-    expect(text).toMatch(/At this dose, an allergen has to be more than/);
-    const figure = Number(text.match(/more than ([\d.]+)% of the oil/)![1]);
-    expect(figure).toBeGreaterThan(0.4);
-    expect(figure).toBeLessThan(0.5);
-    // Patchouli's limonene is 0.01–0.3% of the oil — under that line, which is the point.
-  });
-
-  it('moves with the dose: more oil, a lower bar', () => {
-    const figureAt = (percent: string) => {
-      renderPanel(at(percent), 'cp');
-      const t = screen.getByText(/At this dose, an allergen has to be more than/).textContent!;
-      const n = Number(t.match(/more than ([\d.]+)% of the oil/)![1]);
-      cleanup();
-      return n;
-    };
-    expect(figureAt('6')).toBeLessThan(figureAt('3'));
-  });
-
-  it('says nothing when there is no dose to work from', () => {
-    renderPanel(at(''), 'cp');
-    expect(screen.queryByText(/At this dose, an allergen has to be more than/)).toBeNull();
+    expect((onChange.mock.calls[0][0] as ScentColor).fragrances[0]).toMatchObject({ catalogId: '', name: 'Clove' });
   });
 });
 
-describe('what the row says about its allergens without opening anything', () => {
-  const picked = (id: string, extra: Record<string, unknown> = {}) => normalizeScentColor({
-    fragrances: [{ catalogId: id, name: '', percent: '3', allergens: [], ...extra }],
-    colorants: [], portions: [],
-  });
-  const withRows = (id: string, names: string[]) => normalizeScentColor({
-    fragrances: [{ catalogId: id, name: '', percent: '3', allergens: names.map((name) => ({ name, percentOfFragrance: '' })) }],
-    colorants: [], portions: [],
+describe('the warning and the safe-use line', () => {
+  const picked = (id: string, percent = '3') =>
+    normalizeScentColor({ fragrances: [{ catalogId: id, name: '', percent }], colorants: [], portions: [] });
+
+  it('names what the oil carries and says to expect it on the label', () => {
+    renderPanel(picked('grapefruit'), 'cp');
+    const w = screen.getByLabelText('Grapefruit allergens').textContent!;
+    expect(w).toMatch(/This oil carries Limonene, Citral, Geraniol/);
+    expect(w).toMatch(/expect to name them on the label/);
+    expect(w).toMatch(/supplier's allergen declaration/);
+    // and the section foot lists them, by name, no share
+    expect(screen.getByText(/Expect to name on the label:/).parentElement!.textContent).toMatch(/Limonene, Citral, Geraniol/);
   });
 
-  it('the list is open, and the summary itself warns, when the oil carries allergens', () => {
-    renderPanel(withRows('bergamot', ['Limonene', 'Linalool', 'Geraniol']), 'cp');
-    const details = document.querySelector('details.scent-list__allergens') as HTMLDetailsElement;
-    expect(details.open).toBe(true);
-    expect(details.querySelector('summary')!.textContent).toMatch(/this oil carries labelling allergens/);
-    cleanup();
-    // an oil with none stays closed and says nothing of the sort
+  it('says nothing about allergens for an oil that carries none, or one the maker named', () => {
     renderPanel(picked('tea-tree'), 'cp');
-    const quiet = document.querySelector('details.scent-list__allergens') as HTMLDetailsElement;
-    expect(quiet.open).toBe(false);
-    expect(quiet.querySelector('summary')!.textContent).not.toMatch(/carries labelling allergens/);
+    expect(screen.queryByLabelText('Tea tree allergens')).toBeNull();
+    cleanup();
+    renderPanel(normalizeScentColor({ fragrances: [{ name: 'Mine', percent: '3' }], colorants: [], portions: [] }), 'cp');
+    expect(screen.queryByLabelText(/allergens$/)).toBeNull();
+    expect(screen.queryByLabelText(/safe use$/)).toBeNull();
   });
 
-  it('each allergen carries its IFRA soap ceiling where one exists, and none where none does', () => {
-    renderPanel(withRows('lemongrass', ['Citral', 'Linalool', 'Geraniol']), 'cp');
-    expect(screen.getByLabelText('Citral IFRA ceiling').textContent).toMatch(/1\.2% of the finished soap/);
-    expect(screen.getByLabelText('Geraniol IFRA ceiling').textContent).toMatch(/2\.8% of the finished soap/);
-    // Linalool has no Category 9 concentration limit; the app says nothing rather than invent one.
-    expect(screen.queryByLabelText('Linalool IFRA ceiling')).toBeNull();
+  it('gives a derived ceiling where IFRA caps a cited constituent, and marks a dose over it', () => {
+    // Clove: eugenol capped at 4.9% of the soap, clove up to 95% eugenol → 5.2% of the bar.
+    renderPanel(picked('clove', '3'), 'cp');
+    let safe = screen.getByLabelText('Clove safe use').textContent!;
+    expect(safe).toMatch(/Up to 5\.2% of the finished bar/);
+    expect(safe).toMatch(/keeps its eugenol under IFRA's cap/);
+    expect(safe).toMatch(/This dose is 2\.3%\./);
+    expect(safe).not.toMatch(/over it/);
+    cleanup();
+    // 8% of the oils is 6.2% of the bar — past it.
+    renderPanel(picked('clove', '8'), 'cp');
+    safe = screen.getByLabelText('Clove safe use').textContent!;
+    expect(safe).toMatch(/This dose is 6\.2% — over it\./);
   });
 
-  it('the vanillin field is for an oil the maker named, or a row that already has a figure', () => {
+  it('says plainly when no ceiling can be derived, and points at the supplier certificate', () => {
     renderPanel(picked('lavender'), 'cp');
-    expect(screen.queryByLabelText(/vanillin$/)).toBeNull();
-    cleanup();
-    renderPanel(picked('lavender', { vanillinPercent: '2' }), 'cp');
-    expect(screen.getByLabelText(/vanillin$/)).toBeTruthy();
-    cleanup();
-    renderPanel(normalizeScentColor({ fragrances: [{ name: 'Vanilla absolute', percent: '2' }], colorants: [], portions: [] }), 'cp');
-    expect(screen.getByLabelText(/vanillin$/)).toBeTruthy();
-  });
-});
-
-describe("the ceiling in the field's own basis", () => {
-  const lemongrass = (citral: string) => normalizeScentColor({
-    fragrances: [{ catalogId: 'lemongrass', name: '', percent: '3', allergens: [{ name: 'Citral', percentOfFragrance: citral }] }],
-    colorants: [], portions: [],
-  });
-
-  it('says what the ceiling comes to in this oil at this dose, beside the figure it states', () => {
-    renderPanel(lemongrass(''), 'cp');
-    const note = screen.getByLabelText('Citral IFRA ceiling').textContent!;
-    expect(note).toMatch(/1\.2% of the finished soap/);
-    // 30 g in a 1,300 g bar is 2.3% of it; 1.2 ÷ 2.3 → ~52% of the oil
-    expect(note).toMatch(/at this dose, 5[12]% of this oil/);
-    expect(note).not.toMatch(/over/);
-  });
-
-  it('marks a typed figure that is over it', () => {
-    renderPanel(lemongrass('80'), 'cp');
-    expect(screen.getByLabelText('Citral IFRA ceiling').textContent).toMatch(/over, at the figure typed/);
-  });
-
-  it('says a ceiling out of reach at this dose is out of reach, rather than printing 1,023%', () => {
-    renderPanel(normalizeScentColor({
-      fragrances: [{ catalogId: 'lemongrass', name: '', percent: '3', allergens: [{ name: 'Citronellol', percentOfFragrance: '' }] }],
-      colorants: [], portions: [],
-    }), 'cp');
-    // Citronellol's ceiling is 24% of the soap: on a 2.3% dose that is over 1,000% of the
-    // oil, which no share of it can reach.
-    const note = screen.getByLabelText('Citronellol IFRA ceiling').textContent!;
-    expect(note).toMatch(/out of reach at this dose/);
-    expect(note).not.toMatch(/\d{3,}% of this oil/);
-  });
-});
-
-describe('the boxes say what they are for, and answer as you type', () => {
-  const grapefruit = (limonene: string, geraniol: string) => normalizeScentColor({
-    fragrances: [{ catalogId: 'grapefruit', name: '', percent: '2', allergens: [
-      { name: 'Limonene', percentOfFragrance: limonene },
-      { name: 'Geraniol', percentOfFragrance: geraniol },
-    ] }],
-    colorants: [], portions: [],
-  });
-
-  it('opens with the purpose, before any caveat', () => {
-    renderPanel(grapefruit('', ''), 'cp');
-    const notes = [...document.querySelectorAll('details.scent-list__allergens .inline-note')].map((n) => n.textContent ?? '');
-    expect(notes[0]).toMatch(/^What to do here:/);
-    expect(notes[0]).toMatch(/supplier's allergen declaration/);
-    expect(notes[0]).toMatch(/which of them must be named on the label/);
-    // and the field itself says whose number it wants
-    expect((screen.getAllByLabelText('Allergen % of fragrance')[0] as HTMLInputElement).placeholder).toBe('% of the oil');
-  });
-
-  it('gives each typed figure its verdict on the row: named, or under the line', () => {
-    // 2% of 1,000 g of oils is 20 g in a 1,300 g bar: 1.54% of it.
-    renderPanel(grapefruit('92', '0.3'), 'cp');
-    const limonene = screen.getByLabelText('Limonene on the label').textContent!;
-    expect(limonene).toMatch(/1\.4\d% of the finished bar/);
-    expect(limonene).toMatch(/must be named on the label/);
-    const geraniol = screen.getByLabelText('Geraniol on the label').textContent!;
-    // 0.3% of 1.54% is 0.0046% — under 0.01%
-    expect(geraniol).toMatch(/0\.00\d% of the finished bar/);
-    expect(geraniol).toMatch(/under the 0\.01% line, not required/);
-  });
-
-  it('says nothing on a row until a figure is typed', () => {
-    renderPanel(grapefruit('', '0.3'), 'cp');
-    expect(screen.queryByLabelText('Limonene on the label')).toBeNull();
-    expect(screen.getByLabelText('Geraniol on the label')).toBeTruthy();
-  });
-});
-
-describe("the row's verdict is the recipe's verdict", () => {
-  it('an allergen two oils share is named on both rows, with the combined figure', () => {
-    // Each oil is 1% of the oils — 10 g in a 1,300 g bar, 0.77% of it — and limonene at 1%
-    // of each is 0.0077% of the bar per oil: under 0.01% alone, 0.015% together.
-    const shared = normalizeScentColor({
-      fragrances: [
-        { catalogId: 'lemon', name: '', percent: '1', allergens: [{ name: 'Limonene', percentOfFragrance: '1' }] },
-        { catalogId: 'sweet-orange', name: '', percent: '1', allergens: [{ name: 'Limonene', percentOfFragrance: '1' }] },
-      ],
-      colorants: [], portions: [],
-    });
-    renderPanel(shared, 'cp');
-    const rows = screen.getAllByLabelText('Limonene on the label').map((el) => el.textContent ?? '');
-    expect(rows).toHaveLength(2);
-    for (const row of rows) {
-      expect(row).toMatch(/0\.008% of the finished bar from this oil, 0\.015% with the other oils/);
-      expect(row).toMatch(/must be named on the label/);
-    }
-  });
-
-  it('a lone oil under the line still reads as not required, with no combined figure', () => {
-    renderPanel(normalizeScentColor({
-      fragrances: [{ catalogId: 'lemon', name: '', percent: '1', allergens: [{ name: 'Limonene', percentOfFragrance: '1' }] }],
-      colorants: [], portions: [],
-    }), 'cp');
-    const row = screen.getByLabelText('Limonene on the label').textContent!;
-    expect(row).toMatch(/under the 0\.01% line, not required/);
-    expect(row).not.toMatch(/with the other oils/);
+    const safe = screen.getByLabelText('Lavender safe use').textContent!;
+    expect(safe).toMatch(/IFRA sets no cap on this oil's main constituents/);
+    expect(safe).toMatch(/2–6% of oil weight/);
+    expect(safe).toMatch(/Max in product/);
+    expect(safe).not.toMatch(/Up to/);
   });
 });

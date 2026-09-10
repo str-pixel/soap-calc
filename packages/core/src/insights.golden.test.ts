@@ -19,7 +19,7 @@ const ALL_CODES = [
   'colorant_puree_as_liquid',
   'colorant_total_load',
   'colorant_liquid_double_count',
-  'fragrance_allergen_over_ifra',
+  'fragrance_over_safe_max',
   'colorant_carrier_superfat',
   'colorant_over_sourced_rate',
   'colorant_portions_over_100',

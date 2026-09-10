@@ -741,34 +741,33 @@ describe('the whole batch has a pigment load, not just each colour', () => {
   });
 });
 
-describe("a declared allergen past IFRA's soap ceiling", () => {
+describe("an oil dosed past its derived safe ceiling", () => {
   const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
-  const oil = (allergens: ComputedScentColor['fragrances'][number]['allergens']) => ({
-    key: 'f1', name: 'Lemongrass', percent: 3, grams: 30, stage: 'trace' as const, caution: false,
+  const clove = (shareOfProduct: number, overSafeMax: boolean) => ({
+    key: 'f1', catalogId: 'clove', name: 'Clove', percent: 8, grams: 80, stage: 'trace' as const, caution: true,
     browning: 'none' as const, stabilizerGrams: 0, polysorbateGrams: 0, supplierMaxPercent: null,
-    shareOfProduct: 2.3, overSupplierMax: false, allergens,
+    allergenNames: ['Eugenol'], safeMaxPercentOfProduct: 5.16, shareOfProduct, overSafeMax, overSupplierMax: false,
   });
   function harness(fragrances: ComputedScentColor['fragrances']) {
     const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
     const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
     return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
-      process: 'cp',
-      scentColor: { ...emptyComputedScentColor(), fragrances },
+      process: 'cp', scentColor: { ...emptyComputedScentColor(), fragrances },
     });
   }
   const msg = (fragrances: ComputedScentColor['fragrances']) => {
     const { result } = renderHook(() => harness(fragrances));
-    return result.current.insights.find((i) => i.code === 'fragrance_allergen_over_ifra')?.message;
+    return result.current.insights.find((i) => i.code === 'fragrance_over_safe_max')?.message;
   };
 
-  it('names the allergen, the oil, and what the oil may carry at this dose', () => {
-    const text = msg([oil([{ name: 'Citral', percentOfFragrance: 80, ifraCeilingPercentOfFragrance: 52.2, overIfra: true }])]);
-    expect(text).toMatch(/Citral in Lemongrass: 80\.0% of the oil is past IFRA's 1\.2% ceiling/);
-    expect(text).toMatch(/no more than 52\.2%/);
+  it('names the oil, the figure, the ceiling and the constituent behind it', () => {
+    const text = msg([clove(6.2, true)]);
+    expect(text).toMatch(/Clove is 6\.2% of the finished soap; 5\.2% is the most that keeps its eugenol under IFRA's 4\.9% cap/);
+    expect(text).toMatch(/Lower the dose/);
   });
 
-  it('says nothing for a figure under the line, or for an allergen with no ceiling', () => {
-    expect(msg([oil([{ name: 'Citral', percentOfFragrance: 40, ifraCeilingPercentOfFragrance: 52.2, overIfra: false }])])).toBeUndefined();
-    expect(msg([oil([{ name: 'Linalool', percentOfFragrance: 90, ifraCeilingPercentOfFragrance: null, overIfra: false }])])).toBeUndefined();
+  it('is the compute step\'s verdict, not its own', () => {
+    // Same figures, verdict false: the rule does not re-decide.
+    expect(msg([clove(6.2, false)])).toBeUndefined();
   });
 });

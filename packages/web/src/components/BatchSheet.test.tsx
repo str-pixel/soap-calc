@@ -1547,17 +1547,18 @@ test('the printed oils table lists heaviest first, like the on-screen Full recip
 describe('the printed sheet carries the Fragrance and Colorants sections', () => {
   it('lists each fragrance and colour with its stage, the stabilizer, and the label line', () => {
     const scent = computedScent({
-          fragrances: [{ name: 'Vanilla dream', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [{ name: 'Linalool', percentOfFragrance: '12' }] }],
+          fragrances: [{ catalogId: 'lavender', name: '', percent: '3', supplierMaxPercent: '', vanillinPercent: '12' }],
           colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' }],
           portions: [{ name: 'Swirl', percent: '40' }],
         }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
     render(<BatchSheet data={{ ...cpSheetData({}), scentColor: scent }} />);
     expect(screen.getByText('Fragrance', { selector: 'h2' })).toBeTruthy();
     expect(screen.getByText('Colorants', { selector: 'h2' })).toBeTruthy();
-    expect(screen.getByText(/Vanilla dream — 30 g · 3% of oil weight \(At trace\)/)).toBeTruthy();
+    expect(screen.getByText(/Lavender — 30 g · 3% of oil weight \(At trace\)/)).toBeTruthy();
     expect(screen.getByText(/Vanilla stabilizer — 30 g/)).toBeTruthy();
     expect(screen.getByText(/Blue mica \(Swirl 40%\) — 4 g · 1% · Mix 1:1 with a light carrier oil \(4 g\) \(At trace\)/)).toBeTruthy();
-    expect(screen.getByText(/Name on the label: Linalool 0\.277%/)).toBeTruthy();
+    // The label line names what the picked oil is known to carry — no share to print.
+    expect(screen.getByText(/Expect to name on the label: Linalool/)).toBeTruthy();
   });
   it('an unnamed portion still prints its share beside its colour', () => {
     const scent = computedScent({ fragrances: [], colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' }], portions: [{ name: '', percent: '40' }] }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });

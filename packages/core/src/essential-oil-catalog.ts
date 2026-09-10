@@ -1,4 +1,5 @@
 import type { AdditiveProcess } from './additives.js';
+import { ifraCategoryNinePercent } from './fragrance.js';
 
 /**
  * ESSENTIAL OILS the app offers by name, with the labelling allergens each one typically
@@ -31,6 +32,11 @@ export type EssentialOilEntry = {
   name: string;
   /** Annex III substances among this oil's published principal components ([EO-COMP]). */
   allergens: readonly string[];
+  /** The restricted constituent that binds first, with the TOP of its published share of
+   * the oil. IFRA caps the constituent in the finished soap; dividing that cap by this
+   * share gives the most of the oil the soap may carry — a derived figure, from two cited
+   * ones, and the conservative end of the range so a rich batch is still inside it. */
+  binding?: { substance: string; maxPercentOfOil: number; source: string };
   /** Accelerates trace and irritates skin (CP:9531-9538). */
   accelerates?: true;
   /** Anything the books say about this oil in soap, in the app's own words. */
@@ -69,21 +75,48 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
     id: 'ylang-ylang', name: 'Ylang ylang',
     allergens: ['Linalool', 'Geraniol', 'Farnesol', 'Benzyl benzoate', 'Benzyl salicylate'],
   },
-  { id: 'lemongrass', name: 'Lemongrass', allergens: ['Citral', 'Linalool', 'Geraniol', 'Citronellol', 'Farnesol'] },
+  {
+    id: 'lemongrass', name: 'Lemongrass', allergens: ['Citral', 'Linalool', 'Geraniol', 'Citronellol', 'Farnesol'],
+    // ISO 3217:1974 sets a citral minimum of 75%; published analyses run 65–85% by species,
+    // origin and process ([LEMONGRASS], retrieved 2026-09-10:
+    // https://www.iso.org/standard/8421.html and
+    // https://www.sciencedirect.com/science/article/pii/S2666154324006070). 85 is the top.
+    binding: { substance: 'Citral', maxPercentOfOil: 85, source: 'ISO 3217 / published analyses, 65–85%' },
+  },
   // Woody and earthy.
   { id: 'patchouli', name: 'Patchouli', allergens: ['Limonene'] },
   { id: 'cedarwood', name: 'Cedarwood', allergens: [] },
   // The two the cold-process text singles out.
   {
     id: 'clove', name: 'Clove', allergens: ['Eugenol'], accelerates: true,
+    // "Eugenol (70–95%)" — [EO-COMP] Table 3. 95 is the top.
+    binding: { substance: 'Eugenol', maxPercentOfOil: 95, source: 'Molecules 2021;26(3):666, 70–95%' },
     note: 'Eugenol-heavy, so it hurries trace along and can irritate skin. Keep the dose low and have the mold ready.',
   },
   {
     id: 'cinnamon', name: 'Cinnamon', allergens: ['Cinnamal', 'Eugenol', 'Linalool'], accelerates: true,
+    // Cinnamon bark oil is 65–80% cinnamaldehyde ([CINNAMON], retrieved 2026-09-10:
+    // https://www.sciencedirect.com/topics/agricultural-and-biological-sciences/cinnamon-oil).
+    // 80 is the top. Cassia runs higher still, which is one more reason the book says no.
+    binding: { substance: 'Cinnamal', maxPercentOfOil: 80, source: 'cinnamon bark oil, 65–80% cinnamaldehyde' },
     note: 'The cold-process text advises against this one in soap: cinnamaldehyde and eugenol both irritate, and it seizes a batch faster than almost anything else.',
   },
 ];
 
 export function essentialOilEntryById(id: string): EssentialOilEntry | undefined {
   return id ? ESSENTIAL_OIL_CATALOG.find((e) => e.id === id) : undefined;
+}
+
+/**
+ * The most of this oil a soap may carry, as a percent of the FINISHED PRODUCT, before its
+ * binding constituent passes IFRA's Category 9 cap: cap ÷ (top share ÷ 100). Clove's eugenol
+ * is capped at 4.9% and clove is up to 95% eugenol, so clove tops out at 5.2% of the bar.
+ * Null where the oil has no binding constituent with both a cap and a cited share — which
+ * is most of them, and for those the honest answer is the supplier's own IFRA certificate.
+ */
+export function essentialOilSafeMaxPercentOfProduct(entry: EssentialOilEntry): number | null {
+  if (!entry.binding) return null;
+  const cap = ifraCategoryNinePercent(entry.binding.substance);
+  if (cap === null || entry.binding.maxPercentOfOil <= 0) return null;
+  return cap / (entry.binding.maxPercentOfOil / 100);
 }
