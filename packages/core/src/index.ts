@@ -40,3 +40,4 @@ export * from './cook-stages.js';
 export * from './ls-method.js';
 export * from './troubleshooting.js';
 export * from './allergen-origins.js';
+export * from './essential-oil-catalog.js';

@@ -22,7 +22,7 @@ describe('recipeFile', () => {
 
     expect(parsed.data.name).toBe('Test batch');
     expect(parsed.data.lines).toHaveLength(3);
-    expect(parsed.data.version).toBe(5);
+    expect(parsed.data.version).toBe(6);
     expect(recipeLinesFromFile(parsed.data.lines)).toHaveLength(3);
   });
 
@@ -772,7 +772,7 @@ describe('the recipe file carries scentColor', () => {
       portions: [{ name: 'A', percent: '40' }],
     });
     const payload = serializeRecipeFile('r', createStarterLines(), DEFAULT_SETTINGS, [], 'cp', scent);
-    expect(payload.version).toBe(5);
+    expect(payload.version).toBe(6);
     const parsed = parseRecipeFile(JSON.stringify(payload));
     if (!parsed.ok) throw new Error(parsed.error);
     expect(parsed.data.scentColor.fragrances[0].allergens[0].name).toBe('Citronellol');
@@ -784,7 +784,7 @@ describe('the recipe file carries scentColor', () => {
     expect(normalizeScentColor(parsedV2.data.scentColor)).toEqual(createEmptyScentColor());
     // A legacy file is reported at the current version once parsed — the loader has
     // already filled in everything the newer versions added.
-    expect(parsedV2.data.version).toBe(5);
+    expect(parsedV2.data.version).toBe(6);
   });
 
   it('v4 carries the colorant lye route, and a v3 file simply arrives without it', () => {

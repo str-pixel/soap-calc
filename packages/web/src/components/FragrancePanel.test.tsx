@@ -35,11 +35,12 @@ describe('FragrancePanel', () => {
 
   it('the name field carries a VISIBLE label, not just a placeholder', () => {
     renderPanel(vanilla, 'cp');
+    // An oil the maker names themselves keeps the field, in its own labelled ledger row.
     const input = screen.getByLabelText('Essential oil name');
-    expect(input).toBeTruthy();
-    // Rendered text above the row, so a reader sees what the box is for.
-    expect(input.closest('.additive-list__choice')!.querySelector('.micro-label')!.textContent)
-      .toBe('Essential oil');
+    expect(input.closest('label')!.querySelector('.micro-label')!.textContent).toBe('Name');
+    // and the picker above it says what the row is
+    expect(screen.getByLabelText(/Essential oil for/).closest('.additive-list__choice')!
+      .querySelector('.micro-label')!.textContent).toBe('Essential oil');
   });
 
   it('every visible label is part of the control\'s accessible name', () => {
@@ -56,7 +57,7 @@ describe('FragrancePanel', () => {
     renderPanel(vanilla, 'cp');
     const row = document.querySelector('.additive-list__row')!;
     expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
-      .toEqual(['Essential oil', 'Dose', 'Max in product', 'Vanillin', 'Add at', 'Adds']);
+      .toEqual(['Essential oil', 'Name', 'Dose', 'Max in product', 'Vanillin', 'Add at', 'Adds']);
     expect([...row.querySelectorAll('.ledger__unit')].map((n) => n.textContent))
       .toEqual(['% of oil weight', '%', '%']);
     // and the dose unit follows the process
@@ -121,4 +122,64 @@ describe('FragrancePanel', () => {
     renderPanel(full, 'cp');
     expect((screen.getByRole('button', { name: /add essential oil/i }) as HTMLButtonElement).disabled).toBe(true);
   });
+});
+
+describe('picking an essential oil', () => {
+  const empty = createEmptyScentColor();
+
+  it('offers the catalog, with Custom first', () => {
+    const onChange = renderPanel(normalizeScentColor({ fragrances: [{ name: '', percent: '' }], colorants: [], portions: [] }), 'cp');
+    const picker = screen.getByLabelText(/Essential oil for/) as HTMLSelectElement;
+    expect([...picker.options][0].text).toBe('Custom…');
+    expect([...picker.options].map((o) => o.value)).toContain('lavender');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('fills the name and the allergens it typically carries, percentages left blank', () => {
+    const onChange = renderPanel(normalizeScentColor({ fragrances: [{ name: '', percent: '' }], colorants: [], portions: [] }), 'cp');
+    fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: 'lemongrass' } });
+    const row = (onChange.mock.calls[0][0] as ScentColor).fragrances[0];
+    expect(row).toMatchObject({ catalogId: 'lemongrass', name: 'Lemongrass' });
+    expect(row.allergens.map((a) => a.name)).toEqual(['Citral', 'Linalool', 'Geraniol', 'Citronellol', 'Farnesol']);
+    // The percentages are the maker's to take off their own declaration.
+    expect(row.allergens.every((a) => a.percentOfFragrance === '')).toBe(true);
+  });
+
+  it('adds what is missing without overwriting a percentage already typed', () => {
+    const typed = normalizeScentColor({
+      fragrances: [{ name: 'My lavender', percent: '3', allergens: [{ name: 'Linalool', percentOfFragrance: '28' }] }],
+      colorants: [], portions: [],
+    });
+    const onChange = renderPanel(typed, 'cp');
+    fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: 'geranium' } });
+    const row = (onChange.mock.calls[0][0] as ScentColor).fragrances[0];
+    // The row the maker filled in stays, and only the ones it lacked are added.
+    expect(row.allergens[0]).toMatchObject({ name: 'Linalool', percentOfFragrance: '28' });
+    expect(row.allergens.map((a) => a.name)).toEqual(['Linalool', 'Citronellol', 'Geraniol', 'Citral', 'Limonene']);
+  });
+
+  it('says what a pre-filled list is, and says it only where there is one', () => {
+    renderPanel(normalizeScentColor({
+      fragrances: [{ catalogId: 'lavender', name: 'Lavender', percent: '3', allergens: [{ name: 'Linalool', percentOfFragrance: '' }] }],
+      colorants: [], portions: [],
+    }), 'cp');
+    expect(screen.getByText(/not a declaration/)).toBeTruthy();
+    cleanup();
+    renderPanel(normalizeScentColor({ fragrances: [{ name: 'Mine', percent: '3' }], colorants: [], portions: [] }), 'cp');
+    expect(screen.queryByText(/not a declaration/)).toBeNull();
+  });
+
+  it('Custom… hands the name back and keeps the allergens the maker has', () => {
+    const picked = normalizeScentColor({
+      fragrances: [{ catalogId: 'clove', name: 'Clove', percent: '1', allergens: [{ name: 'Eugenol', percentOfFragrance: '80' }] }],
+      colorants: [], portions: [],
+    });
+    const onChange = renderPanel(picked, 'cp');
+    fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: '' } });
+    const row = (onChange.mock.calls[0][0] as ScentColor).fragrances[0];
+    expect(row.catalogId).toBe('');
+    expect(row.name).toBe('Clove');
+    expect(row.allergens[0]).toMatchObject({ name: 'Eugenol', percentOfFragrance: '80' });
+  });
+  void empty;
 });

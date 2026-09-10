@@ -1,5 +1,10 @@
 import { memo } from 'react';
-import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT } from '@soap-calc/core';
+import {
+  ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT,
+  ESSENTIAL_OIL_ALLERGEN_CAUTION,
+  ESSENTIAL_OIL_CATALOG,
+  essentialOilEntryById,
+} from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import { productNoun, type ComputedFragrance, type ComputedScentColor } from '../lib/computeScentColor';
 import { formatGrams } from '../lib/format';
@@ -40,6 +45,25 @@ const REGULATORY_COPY =
 export const FragrancePanel = memo(function FragrancePanel({ scent, computed, process, weightUnit, onChange }: Props) {
   const setFragrance = (key: string, patch: Partial<FragranceLine>) =>
     onChange({ ...scent, fragrances: scent.fragrances.map((f) => (f.key === key ? { ...f, ...patch } : f)) });
+  /** Picking an oil takes its name and pre-fills the allergen rows it typically carries —
+   * NAMES only, because the percentages belong to the maker's own supplier declaration and
+   * a principal-component list is not one (see ESSENTIAL_OIL_ALLERGEN_CAUTION). Rows the
+   * maker already filled in are kept: a pick adds what is missing, it does not overwrite
+   * work. Custom… hands the name back and leaves everything else alone. */
+  const pickCatalog = (key: string, catalogId: string) => {
+    const entry = essentialOilEntryById(catalogId);
+    if (!entry) return setFragrance(key, { catalogId: '' });
+    const row = scent.fragrances.find((f) => f.key === key);
+    const already = new Set((row?.allergens ?? []).map((a) => a.name.trim().toLowerCase()));
+    const added = entry.allergens
+      .filter((a) => !already.has(a.toLowerCase()))
+      .map((a) => ({ ...newAllergenLine(), name: a }));
+    setFragrance(key, {
+      catalogId: entry.id,
+      name: entry.name,
+      allergens: [...(row?.allergens ?? []), ...added],
+    });
+  };
   const doseLabel = fragranceDoseLabel(process);
   const noun = productNoun(process, computed.productBasis);
 
@@ -84,13 +108,17 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                 <div className="additive-list__choice">
                   <span className="micro-label">Essential oil</span>
                   <div className="additive-list__names">
-                    <input
+                    <select
                       className="input"
-                      aria-label="Essential oil name"
-                      placeholder="e.g. Lavender"
-                      value={f.name}
-                      onChange={(e) => setFragrance(f.key, { name: e.target.value })}
-                    />
+                      aria-label={`Essential oil for ${rowName}`}
+                      value={f.catalogId}
+                      onChange={(e) => pickCatalog(f.key, e.target.value)}
+                    >
+                      <option value="">Custom…</option>
+                      {ESSENTIAL_OIL_CATALOG.map((entry) => (
+                        <option key={entry.id} value={entry.id}>{entry.name}</option>
+                      ))}
+                    </select>
                     <button
                       type="button"
                       className="btn btn--icon"
@@ -101,6 +129,20 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     </button>
                   </div>
                 </div>
+                {/* A pick settles the name; only an oil the maker names themselves needs
+                    the field, exactly as a custom colour does. */}
+                {f.catalogId === '' && (
+                  <label className="ledger__row">
+                    <span className="micro-label">Name</span>
+                    <input
+                      className="input"
+                      aria-label="Essential oil name"
+                      placeholder="e.g. Lavender"
+                      value={f.name}
+                      onChange={(e) => setFragrance(f.key, { name: e.target.value })}
+                    />
+                  </label>
+                )}
                 <label className="ledger__row additive-list__amount">
                   <span className="micro-label">Dose</span>
                   <span className="ledger__figure">
@@ -162,6 +204,12 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                 <FragranceNotes c={c} noun={noun} unit={weightUnit} />
                 <details className="scent-list__allergens">
                   <summary>Allergens ({f.allergens.length})</summary>
+                  {/* Said where the pre-filled names are, not once at the top of the panel:
+                      it is about THESE rows, and it is the difference between what to look
+                      for and what to print. */}
+                  {f.catalogId !== '' && (
+                    <p className="inline-note">{ESSENTIAL_OIL_ALLERGEN_CAUTION}</p>
+                  )}
                   {f.allergens.map((a) => (
                     <div key={a.key} className="scent-list__allergen">
                       <input className="input" aria-label="Allergen name" placeholder="INCI name, as declared" value={a.name}

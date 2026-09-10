@@ -321,3 +321,31 @@ describe('a scent survives every save and load, whatever is in it', () => {
     expect(back).toEqual(empty);
   });
 });
+
+describe('an essential-oil pick across a save and a load', () => {
+  it('round-trips, and a retired pick becomes a row the maker named', () => {
+    const scent = normalizeScentColor({
+      fragrances: [{ catalogId: 'lavender', name: '', percent: '3', allergens: [{ name: 'Linalool', percentOfFragrance: '28' }] }],
+      colorants: [], portions: [],
+    });
+    expect(scent.fragrances[0]).toMatchObject({ catalogId: 'lavender', name: 'Lavender' });
+    const saved = scentColorToSaved(scent);
+    expect(saved.fragrances[0].catalogId).toBe('lavender');
+    expect(normalizeScentColor(saved).fragrances[0].allergens[0].percentOfFragrance).toBe('28');
+
+    // An id no catalog knows keeps the typed name rather than dangling.
+    const gone = normalizeScentColor({
+      fragrances: [{ catalogId: 'unicorn-oil', name: 'Unicorn', percent: '3', allergens: [] }],
+      colorants: [], portions: [],
+    });
+    expect(gone.fragrances[0]).toMatchObject({ catalogId: '', name: 'Unicorn' });
+  });
+
+  it('an older file simply has no pick', () => {
+    const older = normalizeScentColor({
+      fragrances: [{ name: 'Lavender', percent: '3', allergens: [] }],
+      colorants: [], portions: [],
+    });
+    expect(older.fragrances[0].catalogId).toBe('');
+  });
+});

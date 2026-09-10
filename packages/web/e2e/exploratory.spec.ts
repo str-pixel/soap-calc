@@ -1099,3 +1099,27 @@ test.describe('what the batch is made from', () => {
     await expect(contains).toContainText(/Linalool/);
   });
 });
+
+test.describe('the essential-oil catalog', () => {
+  test('picking an oil brings its name and the allergens to look for', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    const panel = page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: /Essential oils/ }) });
+
+    await page.getByRole('button', { name: /add essential oil/i }).click();
+    await page.getByLabel(/Essential oil for/).first().selectOption('lemongrass');
+    await page.getByLabel(/dose, % of oil weight/).first().fill('2');
+
+    // The pick settles the name, so the free-text field steps aside.
+    await expect(panel.getByLabel('Essential oil name')).toHaveCount(0);
+    await expect(panel).toContainText('Allergens (5)');
+    await panel.getByText(/Allergens \(5\)/).click();
+    for (const a of ['Citral', 'Linalool', 'Geraniol', 'Citronellol', 'Farnesol']) {
+      await expect(panel.getByLabel('Allergen name').filter({ has: page.locator(`[value="${a}"]`) }).or(panel.locator(`input[value="${a}"]`))).toHaveCount(1);
+    }
+    // Names only: the percentages are the maker's to take from their own declaration.
+    await expect(panel).toContainText(/not a declaration/);
+    await expect(panel).toContainText(/supplier's allergen declaration/);
+  });
+});
