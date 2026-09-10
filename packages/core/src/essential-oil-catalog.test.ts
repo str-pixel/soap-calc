@@ -45,6 +45,14 @@ describe('the essential-oil catalog', () => {
     expect(ESSENTIAL_OIL_CATALOG.filter((e) => e.accelerates).map((e) => e.id)).toEqual(['clove', 'cinnamon']);
   });
 
+  it('a note that quotes a rule says which products the rule is about', () => {
+    // Bergamot's phototoxicity limits are LEAVE-ON limits; soap is rinse-off. A note that
+    // borrowed them without saying so would have the app warning about the wrong product.
+    const bergamot = essentialOilEntryById('bergamot')!;
+    expect(bergamot.note).toMatch(/leave-on/);
+    expect(bergamot.note).toMatch(/rinse-off soap is not what they are about/);
+  });
+
   it('says what a pre-filled list is and is not', () => {
     expect(ESSENTIAL_OIL_ALLERGEN_CAUTION).toMatch(/not a declaration/);
     expect(ESSENTIAL_OIL_ALLERGEN_CAUTION).toMatch(/supplier's allergen declaration/);

@@ -214,3 +214,24 @@ describe('the batter total counts only shares a colour holds', () => {
     expect(ls.portionsOver100).toBe(false);
   });
 });
+
+describe('which oil accelerates trace', () => {
+  const row = (over: Record<string, unknown>) => computeScentColorGrams(normalizeScentColor({
+    fragrances: [{ name: '', percent: '3', ...over }],
+    colorants: [], portions: [],
+  }), { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
+
+  it('is the catalog\'s answer for an oil picked from it', () => {
+    expect(row({ catalogId: 'cinnamon' }).fragrances[0].caution).toBe(true);
+    expect(row({ catalogId: 'clove' }).fragrances[0].caution).toBe(true);
+    expect(row({ catalogId: 'lavender' }).fragrances[0].caution).toBe(false);
+  });
+
+  it('falls back to the name only for an oil the maker named themselves', () => {
+    expect(row({ name: 'Clove bud' }).fragrances[0].caution).toBe(true);
+    expect(row({ name: 'Lavender' }).fragrances[0].caution).toBe(false);
+    // A picked lavender stays calm even if the maker had typed something else first: the
+    // pick is the fact, not the leftover text.
+    expect(row({ catalogId: 'lavender', name: 'Cinnamon' }).fragrances[0].caution).toBe(false);
+  });
+});

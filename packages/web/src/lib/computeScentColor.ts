@@ -9,6 +9,7 @@ import {
   colorantGrams,
   colorantStage,
   essentialOilCaution,
+  essentialOilEntryById,
   fragranceGrams,
   fragranceOverSupplierMax,
   fragranceShareOfProduct,
@@ -105,12 +106,16 @@ export function computeScentColorGrams(
   const basisGrams = process === 'ls' ? solutionGrams : totalOilGrams;
   const stage = fragranceStageFor(process);
   const fragrances: ComputedFragrance[] = scent.fragrances.map((f) => {
+    const entry = f.catalogId ? essentialOilEntryById(f.catalogId) : undefined;
     const percent = parsePercentOfOil(f.percent);
     const grams = fragranceGrams(percent, basisGrams);
     const vanillin = parsePercentOfOil(f.vanillinPercent);
     return {
       key: f.key, name: f.name, percent, grams, stage,
-      caution: essentialOilCaution(f.name),
+      // The CATALOG decides for an oil that was picked from it, and the name test only for
+      // one the maker named themselves — where the name is all there is to go on. Two
+      // sources for one claim is how they end up disagreeing.
+      caution: entry ? entry.accelerates === true : essentialOilCaution(f.name),
       browning: vanillinBrowning(vanillin),
       stabilizerGrams: vanillaStabilizerGrams(grams, vanillin),
       allergens: f.allergens.map((a) => ({ name: a.name, percentOfFragrance: parsePercentOfOil(a.percentOfFragrance) })),

@@ -50,7 +50,12 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
   { id: 'grapefruit', name: 'Grapefruit', allergens: ['Limonene', 'Citral', 'Geraniol'] },
   {
     id: 'bergamot', name: 'Bergamot', allergens: ['Limonene', 'Linalool', 'Geraniol'],
-    note: 'Expressed bergamot carries bergapten and is phototoxic on skin; a bergapten-free (FCF) grade is the one to soap with.',
+    // [IFRA-BERGAMOT] IFRA Standard, expressed bergamot oil (Amendment 49):
+    // https://d3t14p1xronwr0.cloudfront.net/docs/standards/IFRA_STD_087.pdf — retrieved
+    // 2026-09-10. The restriction is a LEAVE-ON one (0.4% for skin exposed to sunshine;
+    // bergapten under 15 ppm), and soap is rinse-off, Category 9 — so it does not bite here.
+    // Said anyway because the same bottle usually goes into balms and oils too, where it does.
+    note: 'Expressed bergamot carries bergapten, which is phototoxic in sunlight. The limits on it are for leave-on products, so a rinse-off soap is not what they are about — but if that same bottle also goes into a balm or a body oil, reach for the distilled bergapten-free (FCF) grade there.',
   },
   // Herbaceous and minty.
   { id: 'lavender', name: 'Lavender', allergens: ['Linalool'] },
