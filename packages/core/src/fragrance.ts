@@ -46,6 +46,23 @@ export const IFRA_CATEGORY_NINE_PERCENT: Readonly<Record<string, number>> = {
   Coumarin: 0.52,
 };
 
+/**
+ * IFRA's ceiling turned into the basis the maker actually types in. The ceiling is a percent
+ * of the FINISHED PRODUCT; a supplier's declaration is a percent of the OIL; the fragrance's
+ * share of the product joins them. At a share of S percent, a ceiling of C percent of the
+ * product is C ÷ S × 100 percent of the oil — so citral's 1.2% is 52% of a lemongrass that
+ * is 2.3% of the bar, and a lemongrass that is typically 70–85% citral is over it at that
+ * dose. Null with no dose to work from.
+ */
+export function ifraCeilingAsPercentOfFragrance(
+  ceilingPercentOfProduct: number | null,
+  fragranceShareOfProductPercent: number,
+): number | null {
+  if (!finite(ceilingPercentOfProduct) || ceilingPercentOfProduct <= 0) return null;
+  if (!finite(fragranceShareOfProductPercent) || fragranceShareOfProductPercent <= 0) return null;
+  return (ceilingPercentOfProduct / fragranceShareOfProductPercent) * 100;
+}
+
 /** The Category 9 ceiling for a substance, or null where IFRA sets none. */
 export function ifraCategoryNinePercent(substance: string): number | null {
   return IFRA_CATEGORY_NINE_PERCENT[substance.trim()] ?? null;

@@ -740,3 +740,35 @@ describe('the whole batch has a pigment load, not just each colour', () => {
     expect(msg([colour({}), colour({}), colour({}), colour({})], 'ls')).toBeUndefined();
   });
 });
+
+describe("a declared allergen past IFRA's soap ceiling", () => {
+  const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
+  const oil = (allergens: ComputedScentColor['fragrances'][number]['allergens']) => ({
+    key: 'f1', name: 'Lemongrass', percent: 3, grams: 30, stage: 'trace' as const, caution: false,
+    browning: 'none' as const, stabilizerGrams: 0, polysorbateGrams: 0, supplierMaxPercent: null,
+    shareOfProduct: 2.3, overSupplierMax: false, allergens,
+  });
+  function harness(fragrances: ComputedScentColor['fragrances']) {
+    const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
+    const { result } = useRecipeCalculation(lines, DEFAULT_SETTINGS, 'cp');
+    return useFormulationInsights(lines, DEFAULT_SETTINGS, properties, fattyAcids, result, {
+      process: 'cp',
+      scentColor: { ...emptyComputedScentColor(), fragrances },
+    });
+  }
+  const msg = (fragrances: ComputedScentColor['fragrances']) => {
+    const { result } = renderHook(() => harness(fragrances));
+    return result.current.insights.find((i) => i.code === 'fragrance_allergen_over_ifra')?.message;
+  };
+
+  it('names the allergen, the oil, and what the oil may carry at this dose', () => {
+    const text = msg([oil([{ name: 'Citral', percentOfFragrance: 80, ifraCeilingPercentOfFragrance: 52.2, overIfra: true }])]);
+    expect(text).toMatch(/Citral in Lemongrass: 80\.0% of the oil is past IFRA's 1\.2% ceiling/);
+    expect(text).toMatch(/no more than 52\.2%/);
+  });
+
+  it('says nothing for a figure under the line, or for an allergen with no ceiling', () => {
+    expect(msg([oil([{ name: 'Citral', percentOfFragrance: 40, ifraCeilingPercentOfFragrance: 52.2, overIfra: false }])])).toBeUndefined();
+    expect(msg([oil([{ name: 'Linalool', percentOfFragrance: 90, ifraCeilingPercentOfFragrance: null, overIfra: false }])])).toBeUndefined();
+  });
+});

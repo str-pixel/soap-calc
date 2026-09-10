@@ -262,3 +262,36 @@ describe('what the row says about its allergens without opening anything', () =>
     expect(screen.getByLabelText(/vanillin$/)).toBeTruthy();
   });
 });
+
+describe("the ceiling in the field's own basis", () => {
+  const lemongrass = (citral: string) => normalizeScentColor({
+    fragrances: [{ catalogId: 'lemongrass', name: '', percent: '3', allergens: [{ name: 'Citral', percentOfFragrance: citral }] }],
+    colorants: [], portions: [],
+  });
+
+  it('says what the ceiling comes to in this oil at this dose, beside the figure it states', () => {
+    renderPanel(lemongrass(''), 'cp');
+    const note = screen.getByLabelText('Citral IFRA ceiling').textContent!;
+    expect(note).toMatch(/1\.2% of the finished soap/);
+    // 30 g in a 1,300 g bar is 2.3% of it; 1.2 ÷ 2.3 → ~52% of the oil
+    expect(note).toMatch(/at this dose, 5[12]% of this oil/);
+    expect(note).not.toMatch(/over/);
+  });
+
+  it('marks a typed figure that is over it', () => {
+    renderPanel(lemongrass('80'), 'cp');
+    expect(screen.getByLabelText('Citral IFRA ceiling').textContent).toMatch(/over, at the figure typed/);
+  });
+
+  it('says a ceiling out of reach at this dose is out of reach, rather than printing 1,023%', () => {
+    renderPanel(normalizeScentColor({
+      fragrances: [{ catalogId: 'lemongrass', name: '', percent: '3', allergens: [{ name: 'Citronellol', percentOfFragrance: '' }] }],
+      colorants: [], portions: [],
+    }), 'cp');
+    // Citronellol's ceiling is 24% of the soap: on a 2.3% dose that is over 1,000% of the
+    // oil, which no share of it can reach.
+    const note = screen.getByLabelText('Citronellol IFRA ceiling').textContent!;
+    expect(note).toMatch(/out of reach at this dose/);
+    expect(note).not.toMatch(/\d{3,}% of this oil/);
+  });
+});

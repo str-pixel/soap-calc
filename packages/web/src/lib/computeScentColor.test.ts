@@ -235,3 +235,40 @@ describe('which oil accelerates trace', () => {
     expect(row({ catalogId: 'lavender', name: 'Cinnamon' }).fragrances[0].caution).toBe(false);
   });
 });
+
+describe("an allergen against IFRA's ceiling, at this dose", () => {
+  const lemongrass = (citralPercent: string) => normalizeScentColor({
+    fragrances: [{ catalogId: 'lemongrass', name: '', percent: '3', allergens: [
+      { name: 'Citral', percentOfFragrance: citralPercent },
+      { name: 'Linalool', percentOfFragrance: '5' },
+    ] }],
+    colorants: [], portions: [],
+  });
+  const at = (citralPercent: string) => applyScentColorCompliance(
+    computeScentColorGrams(lemongrass(citralPercent), { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 }),
+    1300,
+    'label',
+  ).fragrances[0].allergens;
+
+  it('converts the ceiling into the oil, and marks a typed figure that is over it', () => {
+    const [citral, linalool] = at('80');
+    // 30 g in 1,300 g is 2.31% of the bar; 1.2% ÷ 2.31% ≈ 52% of the oil.
+    expect(citral.ifraCeilingPercentOfFragrance).toBeCloseTo(52, 0);
+    expect(citral.overIfra).toBe(true);
+    // Linalool has no ceiling, so it cannot be over one.
+    expect(linalool.ifraCeilingPercentOfFragrance).toBeNull();
+    expect(linalool.overIfra).toBe(false);
+  });
+
+  it('is not over when the typed figure sits under the line, or when none is typed', () => {
+    expect(at('40')[0].overIfra).toBe(false);
+    const [untyped] = at('');
+    expect(untyped.ifraCeilingPercentOfFragrance).toBeCloseTo(52, 0);
+    expect(untyped.overIfra).toBe(false);
+  });
+
+  it('carries nothing before the compliance pass, which is where the dose is known', () => {
+    const first = computeScentColorGrams(lemongrass('80'), { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
+    expect(first.fragrances[0].allergens[0]).toMatchObject({ ifraCeilingPercentOfFragrance: null, overIfra: false });
+  });
+});

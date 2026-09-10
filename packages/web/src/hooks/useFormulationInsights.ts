@@ -16,7 +16,7 @@ import {
 import { oilById } from '../lib/oils';
 import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
-import { colorantEntryById, colorantSharesMaterialWithAdditive } from '@soap-calc/core';
+import { colorantEntryById, colorantSharesMaterialWithAdditive, ifraCategoryNinePercent } from '@soap-calc/core';
 import { colorantCeilingPercent } from '../lib/colorantGuidance';
 import { isBudgetSizeMode } from '../lib/splitLiquidSizing';
 import type { ComputedScentColor } from '../lib/computeScentColor';
@@ -283,6 +283,20 @@ export function useFormulationInsights(
       // straight through — no field list to keep in step.
       fragranceRows: options.scentColor?.fragrances,
       labelAllergens: options.scentColor?.labelAllergens,
+      // The verdict is the compute step's; this only carries the figures for the sentence.
+      fragranceAllergensOverIfra: (options.scentColor?.fragrances ?? []).flatMap((f) =>
+        f.allergens.flatMap((a) =>
+          a.overIfra && a.percentOfFragrance !== null && a.ifraCeilingPercentOfFragrance !== null
+            ? [{
+                fragrance: f.name.trim() || 'Essential oil',
+                allergen: a.name.trim() || 'allergen',
+                percentOfFragrance: a.percentOfFragrance,
+                ceilingPercentOfFragrance: a.ifraCeilingPercentOfFragrance,
+                ceilingPercentOfProduct: ifraCategoryNinePercent(a.name) ?? 0,
+              }]
+            : [],
+        ),
+      ),
       colorantPortionsOver100: options.scentColor?.portionsOver100,
       colorantCarrierShiftPercent: options.scentColor?.carrierSuperfatShiftPercent,
       // Only a DOSED colour counts — a "to shade" row has no second dose to add up. A

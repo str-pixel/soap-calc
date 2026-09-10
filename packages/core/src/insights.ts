@@ -142,6 +142,18 @@ export type FormulationAnalysisInput = {
   }>;
   /** Allergens above the rinse-off labelling threshold — see core allergensToLabel. */
   labelAllergens?: Array<{ name: string; percentOfProduct: number }>;
+  /** A declared allergen whose typed share of its oil puts it over IFRA's Category 9 ceiling
+   * at this dose. The verdict is the compute step's (overIfra); this carries the figures for
+   * the sentence. */
+  fragranceAllergensOverIfra?: Array<{
+    fragrance: string;
+    allergen: string;
+    percentOfFragrance: number;
+    /** The ceiling in the oil's own basis at this dose — what the oil may carry at most. */
+    ceilingPercentOfFragrance: number;
+    /** IFRA's figure as stated: a percent of the finished product. */
+    ceilingPercentOfProduct: number;
+  }>;
   /** The batter portions add up past 100%. */
   colorantPortionsOver100?: boolean;
   /** Superfat points the colorants' 1:1 carrier oil adds (CP dispersal). */
@@ -1415,6 +1427,22 @@ export const INSIGHT_RULES: InsightRule[] = [
         (r) => `${r.name} carries a dose here, and ${r.liquid.toLowerCase()} is also sized under Split liquid — if that is the same jar, its weight is counted twice in the batch.`,
       );
       return { level: 'info', code: 'colorant_liquid_double_count', message: parts.join(' ') };
+    },
+  },
+  {
+    code: 'fragrance_allergen_over_ifra',
+    check: (input) => {
+      const rows = input.fragranceAllergensOverIfra ?? [];
+      if (rows.length === 0) return null;
+      const parts = rows.map(
+        (r) =>
+          `${r.allergen} in ${r.fragrance}: ${r.percentOfFragrance.toFixed(1)}% of the oil is past IFRA's ${r.ceilingPercentOfProduct}% ceiling for it in soap — at this dose the oil can carry no more than ${r.ceilingPercentOfFragrance.toFixed(1)}%.`,
+      );
+      return {
+        level: 'warning',
+        code: 'fragrance_allergen_over_ifra',
+        message: `${parts.join(' ')} Lower the dose, or pick a batch with less of it.`,
+      };
     },
   },
   {

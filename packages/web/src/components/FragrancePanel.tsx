@@ -247,11 +247,26 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                       {/* After the × in DOM order, so the name, the figure and the × fill the
                           grid's first line and this spans the second — put before the button
                           it took the button's cell and pushed the × onto a line of its own. */}
-                      {ifraCategoryNinePercent(a.name) !== null && (
-                        <span className="inline-note scent-list__allergen-limit" aria-label={`${a.name} IFRA ceiling`}>
-                          IFRA soap ceiling {ifraCategoryNinePercent(a.name)}% of the finished soap
-                        </span>
-                      )}
+                      {ifraCategoryNinePercent(a.name) !== null && (() => {
+                        const ca = c.allergens.find((x) => x.name === a.name);
+                        const inOil = ca?.ifraCeilingPercentOfFragrance ?? null;
+                        return (
+                          <span className="inline-note scent-list__allergen-limit" aria-label={`${a.name} IFRA ceiling`}>
+                            {/* Both bases, named: the ceiling as IFRA states it, and what it
+                                comes to in the field's own basis at this dose — because the
+                                field beside it takes a percent of the OIL, and a bare "1.2%"
+                                next to it reads as the number to type. */}
+                            IFRA soap ceiling {ifraCategoryNinePercent(a.name)}% of the finished soap
+                            {/* Past 100% the ceiling is out of reach: no share of this oil,
+                                even all of it, could put the substance over IFRA's figure at
+                                this dose. Said as that — "1,023% of this oil" is not a
+                                number anyone can use. */}
+                            {inOil !== null && inOil >= 100 && <> — out of reach at this dose, whatever the share</>}
+                            {inOil !== null && inOil < 100 && <> — at this dose, {formatGrams(inOil, inOil < 10 ? 1 : 0)}% of this oil</>}
+                            {ca?.overIfra && <strong> — over, at the figure typed</strong>}
+                          </span>
+                        );
+                      })()}
                     </div>
                   ))}
                   <button type="button" className="btn btn--ghost" disabled={f.allergens.length >= MAX_SCENT_ROWS} onClick={() => setFragrance(f.key, { allergens: withNewRow(f.allergens, newAllergenLine()) })}>+ Add allergen</button>

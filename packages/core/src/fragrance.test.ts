@@ -8,6 +8,7 @@ import {
   fragranceGrams,
   fragranceOverSupplierMax,
   ifraCategoryNinePercent,
+  ifraCeilingAsPercentOfFragrance,
   fragranceShareOfProduct,
   polysorbate20Grams,
   vanillaStabilizerGrams,
@@ -151,5 +152,20 @@ describe('IFRA Category 9, which is the category soap sits in', () => {
   it('keeps the standard\'s own figure for cinnamal, not the one that circulates', () => {
     // Soapmaking guides quote 0.05%; IFRA's standard for this category says 0.49%.
     expect(ifraCategoryNinePercent('Cinnamal')).toBeGreaterThan(0.05);
+  });
+});
+
+describe("IFRA's ceiling in the basis the maker types in", () => {
+  it('divides the product ceiling by the fragrance share', () => {
+    // Citral: 1.2% of the soap, on a lemongrass that is 2.3% of the bar → ~52% of the oil.
+    expect(ifraCeilingAsPercentOfFragrance(1.2, 2.3)).toBeCloseTo(52.17, 1);
+    // A heavier dose leaves less room in the oil.
+    expect(ifraCeilingAsPercentOfFragrance(1.2, 4.6)).toBeCloseTo(26.09, 1);
+  });
+
+  it('has no answer with no ceiling or no dose', () => {
+    expect(ifraCeilingAsPercentOfFragrance(null, 2.3)).toBeNull();
+    expect(ifraCeilingAsPercentOfFragrance(1.2, 0)).toBeNull();
+    expect(ifraCeilingAsPercentOfFragrance(1.2, NaN)).toBeNull();
   });
 });

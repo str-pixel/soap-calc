@@ -10,6 +10,8 @@ import {
   colorantStage,
   essentialOilCaution,
   essentialOilEntryById,
+  ifraCategoryNinePercent,
+  ifraCeilingAsPercentOfFragrance,
   fragranceGrams,
   fragranceOverSupplierMax,
   fragranceShareOfProduct,
@@ -33,8 +35,16 @@ export type ComputedFragrance = {
   key: string; name: string; percent: number | null; grams: number;
   stage: AdditiveStage; caution: boolean; browning: VanillinBrowning;
   stabilizerGrams: number; polysorbateGrams: number; supplierMaxPercent: number | null;
-  /** The declarations as typed, parsed; the compliance pass turns them into labelAllergens. */
-  allergens: Array<{ name: string; percentOfFragrance: number | null }>;
+  /** The declarations as typed, parsed; the compliance pass turns them into labelAllergens.
+   * `ifraCeilingPercentOfFragrance` is IFRA's Category 9 ceiling for that substance in the
+   * field's own basis at THIS dose (null: no ceiling, or no dose yet); `overIfra` is the
+   * typed figure against it. Both are settled in the compliance pass, which knows the dose. */
+  allergens: Array<{
+    name: string;
+    percentOfFragrance: number | null;
+    ifraCeilingPercentOfFragrance: number | null;
+    overIfra: boolean;
+  }>;
   shareOfProduct: number; overSupplierMax: boolean;
 };
 export type ComputedColorant = {
@@ -118,7 +128,12 @@ export function computeScentColorGrams(
       caution: entry ? entry.accelerates === true : essentialOilCaution(f.name),
       browning: vanillinBrowning(vanillin),
       stabilizerGrams: vanillaStabilizerGrams(grams, vanillin),
-      allergens: f.allergens.map((a) => ({ name: a.name, percentOfFragrance: parsePercentOfOil(a.percentOfFragrance) })),
+      allergens: f.allergens.map((a) => ({
+        name: a.name,
+        percentOfFragrance: parsePercentOfOil(a.percentOfFragrance),
+        ifraCeilingPercentOfFragrance: null,
+        overIfra: false,
+      })),
       polysorbateGrams: process === 'ls' ? polysorbate20Grams(grams, deliveredSuperfatPercent) : 0,
       // 0 is "no rate" (core fragranceOverSupplierMax says so): read it as unentered, so the
       // prompt fires instead of every check going quiet.
@@ -213,7 +228,18 @@ export function applyScentColorCompliance(
   const product = productGrams !== null && Number.isFinite(productGrams) && productGrams > 0 ? productGrams : null;
   const fragrances = computed.fragrances.map((f) => {
     const shareOfProduct = product === null ? 0 : fragranceShareOfProduct(f.grams, product);
-    return { ...f, shareOfProduct, overSupplierMax: fragranceOverSupplierMax(shareOfProduct, f.supplierMaxPercent) };
+    // Each allergen's IFRA ceiling, in the basis the maker types in, at this dose — and the
+    // typed figure against it. Decided here and nowhere else, so the panel and the rule
+    // cannot disagree about who is over.
+    const allergens = f.allergens.map((a) => {
+      const ceiling = ifraCeilingAsPercentOfFragrance(ifraCategoryNinePercent(a.name), shareOfProduct);
+      return {
+        ...a,
+        ifraCeilingPercentOfFragrance: ceiling,
+        overIfra: ceiling !== null && a.percentOfFragrance !== null && a.percentOfFragrance > ceiling,
+      };
+    });
+    return { ...f, shareOfProduct, allergens, overSupplierMax: fragranceOverSupplierMax(shareOfProduct, f.supplierMaxPercent) };
   });
   const labelAllergens = product === null ? [] : allergensToLabel(
     fragrances.flatMap((f) => f.allergens.flatMap((a) =>
