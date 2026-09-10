@@ -222,6 +222,17 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                   {/* Said where the pre-filled names are, not once at the top of the panel:
                       it is about THESE rows, and it is the difference between what to look
                       for and what to print. */}
+                  {f.allergens.length > 0 && (
+                    <p className="inline-note">
+                      {/* What the boxes are FOR, before any caveat about them. A maker who
+                          picked an oil and met three empty fields had no way to know that the
+                          number is on their supplier's declaration, or that the app turns it
+                          into which names go on the label. */}
+                      <strong>What to do here:</strong> for each one, type its share of the oil from your
+                      supplier&apos;s allergen declaration. The app then works out which of them must be
+                      named on the label at this dose — the answer appears beside each figure as you type.
+                    </p>
+                  )}
                   {f.catalogId !== '' && (
                     <p className="inline-note">{ESSENTIAL_OIL_ALLERGEN_CAUTION}</p>
                   )}
@@ -240,13 +251,28 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     <div key={a.key} className="scent-list__allergen">
                       <input className="input" aria-label="Allergen name" placeholder="INCI name, as declared" value={a.name}
                         onChange={(e) => setFragrance(f.key, { allergens: f.allergens.map((x) => (x.key === a.key ? { ...x, name: e.target.value } : x)) })} />
-                      <input className="input" inputMode="decimal" aria-label="Allergen % of fragrance" placeholder="% of fragrance" value={a.percentOfFragrance}
+                      <input className="input" inputMode="decimal" aria-label="Allergen % of fragrance" placeholder="% of the oil" value={a.percentOfFragrance}
                         onChange={(e) => setFragrance(f.key, { allergens: f.allergens.map((x) => (x.key === a.key ? { ...x, percentOfFragrance: e.target.value } : x)) })} />
                       <button type="button" className="btn btn--icon" aria-label={`Remove allergen ${a.name || ''}`.trim()}
                         onClick={() => setFragrance(f.key, { allergens: f.allergens.filter((x) => x.key !== a.key) })}>×</button>
                       {/* After the × in DOM order, so the name, the figure and the × fill the
                           grid's first line and this spans the second — put before the button
                           it took the button's cell and pushed the × onto a line of its own. */}
+                      {(() => {
+                        // The labelling verdict for THIS row, from the figure just typed: its
+                        // share of the finished soap, against the 0.01% line. Feedback where
+                        // the typing happens, rather than only in the recipe on the right.
+                        const typed = c.allergens.find((x) => x.name === a.name)?.percentOfFragrance ?? null;
+                        if (typed === null || c.shareOfProduct <= 0) return null;
+                        const ofProduct = (c.shareOfProduct * typed) / 100;
+                        const named = ofProduct > ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT;
+                        return (
+                          <span className="inline-note scent-list__allergen-limit" aria-label={`${a.name} on the label`}>
+                            → {formatGrams(ofProduct, ofProduct < 0.1 ? 3 : 2)}% of the {noun} —{' '}
+                            {named ? <strong>must be named on the label</strong> : 'under the 0.01% line, not required'}
+                          </span>
+                        );
+                      })()}
                       {ifraCategoryNinePercent(a.name) !== null && (() => {
                         const ca = c.allergens.find((x) => x.name === a.name);
                         const inOil = ca?.ifraCeilingPercentOfFragrance ?? null;

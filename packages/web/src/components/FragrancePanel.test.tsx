@@ -295,3 +295,41 @@ describe("the ceiling in the field's own basis", () => {
     expect(note).not.toMatch(/\d{3,}% of this oil/);
   });
 });
+
+describe('the boxes say what they are for, and answer as you type', () => {
+  const grapefruit = (limonene: string, geraniol: string) => normalizeScentColor({
+    fragrances: [{ catalogId: 'grapefruit', name: '', percent: '2', allergens: [
+      { name: 'Limonene', percentOfFragrance: limonene },
+      { name: 'Geraniol', percentOfFragrance: geraniol },
+    ] }],
+    colorants: [], portions: [],
+  });
+
+  it('opens with the purpose, before any caveat', () => {
+    renderPanel(grapefruit('', ''), 'cp');
+    const notes = [...document.querySelectorAll('details.scent-list__allergens .inline-note')].map((n) => n.textContent ?? '');
+    expect(notes[0]).toMatch(/^What to do here:/);
+    expect(notes[0]).toMatch(/supplier's allergen declaration/);
+    expect(notes[0]).toMatch(/which of them must be named on the label/);
+    // and the field itself says whose number it wants
+    expect((screen.getAllByLabelText('Allergen % of fragrance')[0] as HTMLInputElement).placeholder).toBe('% of the oil');
+  });
+
+  it('gives each typed figure its verdict on the row: named, or under the line', () => {
+    // 2% of 1,000 g of oils is 20 g in a 1,300 g bar: 1.54% of it.
+    renderPanel(grapefruit('92', '0.3'), 'cp');
+    const limonene = screen.getByLabelText('Limonene on the label').textContent!;
+    expect(limonene).toMatch(/1\.4\d% of the finished bar/);
+    expect(limonene).toMatch(/must be named on the label/);
+    const geraniol = screen.getByLabelText('Geraniol on the label').textContent!;
+    // 0.3% of 1.54% is 0.0046% — under 0.01%
+    expect(geraniol).toMatch(/0\.00\d% of the finished bar/);
+    expect(geraniol).toMatch(/under the 0\.01% line, not required/);
+  });
+
+  it('says nothing on a row until a figure is typed', () => {
+    renderPanel(grapefruit('', '0.3'), 'cp');
+    expect(screen.queryByLabelText('Limonene on the label')).toBeNull();
+    expect(screen.getByLabelText('Geraniol on the label')).toBeTruthy();
+  });
+});
