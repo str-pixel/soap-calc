@@ -333,3 +333,34 @@ describe('the boxes say what they are for, and answer as you type', () => {
     expect(screen.getByLabelText('Geraniol on the label')).toBeTruthy();
   });
 });
+
+describe("the row's verdict is the recipe's verdict", () => {
+  it('an allergen two oils share is named on both rows, with the combined figure', () => {
+    // Each oil is 1% of the oils — 10 g in a 1,300 g bar, 0.77% of it — and limonene at 1%
+    // of each is 0.0077% of the bar per oil: under 0.01% alone, 0.015% together.
+    const shared = normalizeScentColor({
+      fragrances: [
+        { catalogId: 'lemon', name: '', percent: '1', allergens: [{ name: 'Limonene', percentOfFragrance: '1' }] },
+        { catalogId: 'sweet-orange', name: '', percent: '1', allergens: [{ name: 'Limonene', percentOfFragrance: '1' }] },
+      ],
+      colorants: [], portions: [],
+    });
+    renderPanel(shared, 'cp');
+    const rows = screen.getAllByLabelText('Limonene on the label').map((el) => el.textContent ?? '');
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row).toMatch(/0\.008% of the finished bar from this oil, 0\.015% with the other oils/);
+      expect(row).toMatch(/must be named on the label/);
+    }
+  });
+
+  it('a lone oil under the line still reads as not required, with no combined figure', () => {
+    renderPanel(normalizeScentColor({
+      fragrances: [{ catalogId: 'lemon', name: '', percent: '1', allergens: [{ name: 'Limonene', percentOfFragrance: '1' }] }],
+      colorants: [], portions: [],
+    }), 'cp');
+    const row = screen.getByLabelText('Limonene on the label').textContent!;
+    expect(row).toMatch(/under the 0\.01% line, not required/);
+    expect(row).not.toMatch(/with the other oils/);
+  });
+});

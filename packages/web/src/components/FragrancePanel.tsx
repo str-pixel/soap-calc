@@ -265,10 +265,19 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                         const typed = c.allergens.find((x) => x.name === a.name)?.percentOfFragrance ?? null;
                         if (typed === null || c.shareOfProduct <= 0) return null;
                         const ofProduct = (c.shareOfProduct * typed) / 100;
-                        const named = ofProduct > ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT;
+                        // THE verdict is the recipe's (allergensToLabel, in the compliance
+                        // pass): it adds the same allergen up across every oil and applies
+                        // the threshold once, with its tolerance. Re-deciding here from this
+                        // row alone had two lemon-and-orange rows each saying "not required"
+                        // while the recipe named the limonene they carried between them.
+                        const onLabel = computed.labelAllergens.find((l) => l.name.trim().toLowerCase() === a.name.trim().toLowerCase());
+                        const named = onLabel !== undefined;
+                        const combined = onLabel !== undefined && Math.abs(onLabel.percentOfProduct - ofProduct) > 1e-9;
                         return (
                           <span className="inline-note scent-list__allergen-limit" aria-label={`${a.name} on the label`}>
-                            → {formatGrams(ofProduct, ofProduct < 0.1 ? 3 : 2)}% of the {noun} —{' '}
+                            → {formatGrams(ofProduct, ofProduct < 0.1 ? 3 : 2)}% of the {noun}
+                            {combined && <> from this oil, {formatGrams(onLabel.percentOfProduct, onLabel.percentOfProduct < 0.1 ? 3 : 2)}% with the other oils</>}
+                            {' — '}
                             {named ? <strong>must be named on the label</strong> : 'under the 0.01% line, not required'}
                           </span>
                         );
