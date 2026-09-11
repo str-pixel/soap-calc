@@ -3,7 +3,7 @@ import {
   sumFattyAcids,
   type FattyAcidProfile,
 } from './fatty-acids.js';
-import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT } from './fragrance.js';
+import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT, formatCeilingPercent } from './fragrance.js';
 import { DEFAULT_KOH_BLEND_PERCENT, effectiveSuperfatPercent, type LyeType, type WaterMode } from './lye.js';
 import { CP_OVERFLOW_RISK_F } from './soaping-temperature.js';
 import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
@@ -126,15 +126,14 @@ export type FormulationAnalysisInput = {
   /** EFFECTIVE (clamped) soaping temperature in °F. Only the CP overflow guard reads it —
    * HP/LS callers may pass their cook temperature, the gate ignores them by process. */
   soapingTempF?: number;
-  /** The Fragrance & colorants section, one row per fragrance. `shareOfProduct` is the
-   * dose as a % of the FINISHED product (label weight / bottled solution) — the basis the
-   * supplier's IFRA rate is stated in; `supplierMaxPercent` null = not entered. */
+  /** One row per essential oil, as the compute step settled it: the dose in the basis the
+   * maker types in (% of oil weight, or of the solution for LS), and the verdicts. */
   fragranceRows?: Array<{
     name: string;
     percent: number | null;
-    supplierMaxPercent: number | null;
-    /** The ONE verdict (core fragranceOverSupplierMax) — the rule never re-decides it. */
-    overSupplierMax: boolean;
+    /** Past what a bar or a bottle usually carries (core fragranceOverUsualRange) — the
+     * ONE verdict; the rule never re-decides it. */
+    overUsualRange: boolean;
     /** core vanillinBrowning's reading, so the 1% threshold lives in one place. */
     browning: 'none' | 'light' | 'deep';
     /** Clove / cinnamon essential oil — see core essentialOilCaution. */
@@ -142,15 +141,14 @@ export type FormulationAnalysisInput = {
   }>;
   /** The labelling allergens the picked oils are known to carry — presence, by name. */
   labelAllergens?: Array<{ name: string }>;
-  /** An oil dosed past its derived safe ceiling: the most of it the finished soap may carry
-   * before its binding constituent passes IFRA's Category 9 cap. Verdict is the compute
-   * step's (overSafeMax); this carries the figures for the sentence. */
+  /** An oil dosed past its ceiling: the most of it the finished soap may carry, off the
+   * catalog (core essentialOilSafeMaxPercentOfProduct) with the sentence behind the figure.
+   * Verdict is the compute step's (overSafeMax); this carries the figures for the message. */
   fragrancesOverSafeMax?: Array<{
     fragrance: string;
     shareOfProduct: number;
     safeMaxPercentOfProduct: number;
-    substance: string;
-    capPercentOfProduct: number;
+    why: string;
   }>;
   /** The batter portions add up past 100%. */
   colorantPortionsOver100?: boolean;
@@ -1252,28 +1250,19 @@ export const INSIGHT_RULES: InsightRule[] = [
   },
   // ---- Fragrance & colorants -------------------------------------------------------------
   {
-    code: 'fragrance_over_supplier_max',
+    code: 'fragrance_over_usual_range',
     check: (input) => {
-      const over = (input.fragranceRows ?? []).filter((f) => f.overSupplierMax);
+      const over = (input.fragranceRows ?? []).filter((f) => f.overUsualRange);
       if (over.length === 0) return null;
+      const names = over.map((f) => f.name.trim() || 'A fragrance').join(', ');
+      const verb = over.length > 1 ? 'are' : 'is';
       return {
         level: 'warning',
-        code: 'fragrance_over_supplier_max',
-        message: `${over.map((f) => f.name.trim() || 'A fragrance').join(', ')} exceeds the supplier's tested rate in the finished soap — lower the dose.`,
-      };
-    },
-  },
-  {
-    code: 'fragrance_no_supplier_rate',
-    check: (input) => {
-      const missing = (input.fragranceRows ?? []).filter(
-        (f) => f.percent !== null && f.percent > 0 && f.supplierMaxPercent === null,
-      );
-      if (missing.length === 0) return null;
-      return {
-        level: 'info',
-        code: 'fragrance_no_supplier_rate',
-        message: "Enter each fragrance's supplier rate for soap (Category 9) so the dose can be checked against it.",
+        code: 'fragrance_over_usual_range',
+        message:
+          input.process === 'ls'
+            ? `${names} ${verb} dosed past the 3% of the finished solution that liquid soap carries at most — no book stands behind more, and most fragrances cloud a solution; prove it in a small batch first.`
+            : `${names} ${verb} dosed past the 2–6% of oil weight bars usually carry — no book or standard stands behind more, and any ceiling the row shows is for the finished bar, not a licence to go higher.`,
       };
     },
   },
@@ -1300,7 +1289,7 @@ export const INSIGHT_RULES: InsightRule[] = [
         ? {
             level: 'info',
             code: 'fragrance_accelerant_eo',
-            message: "Clove and cinnamon essential oils speed trace and can irritate skin — soap cool, add them last, and keep to the supplier's rate.",
+            message: 'Clove and cinnamon essential oils speed trace and can irritate skin — soap cool, add them last, and keep under the ceiling the row shows.',
           }
         : null,
   },
@@ -1434,7 +1423,7 @@ export const INSIGHT_RULES: InsightRule[] = [
       if (rows.length === 0) return null;
       const parts = rows.map(
         (r) =>
-          `${r.fragrance} is ${r.shareOfProduct.toFixed(1)}% of the finished soap; ${r.safeMaxPercentOfProduct.toFixed(1)}% is the most that keeps its ${r.substance.toLowerCase()} under IFRA's ${r.capPercentOfProduct}% cap for soap.`,
+          `${r.fragrance} is ${r.shareOfProduct.toFixed(1)}% of the finished soap; ${formatCeilingPercent(r.safeMaxPercentOfProduct)}% is its ceiling — ${r.why}.`,
       );
       return {
         level: 'warning',

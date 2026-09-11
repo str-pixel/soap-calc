@@ -744,9 +744,10 @@ describe('the whole batch has a pigment load, not just each colour', () => {
 describe("an oil dosed past its derived safe ceiling", () => {
   const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
   const clove = (shareOfProduct: number, overSafeMax: boolean) => ({
-    key: 'f1', catalogId: 'clove', name: 'Clove', percent: 8, grams: 80, stage: 'trace' as const, caution: true,
-    browning: 'none' as const, stabilizerGrams: 0, polysorbateGrams: 0, supplierMaxPercent: null,
-    allergenNames: ['Eugenol'], safeMaxPercentOfProduct: 5.16, shareOfProduct, overSafeMax, overSupplierMax: false,
+    key: 'f1', catalogId: 'clove', name: 'Clove', percent: 3, grams: 30, stage: 'trace' as const, caution: true,
+    browning: 'none' as const, stabilizerGrams: 0, polysorbateGrams: 0, doseBasisGrams: 1000, overUsualRange: false,
+    allergenNames: ['Eugenol'], safeMaxPercentOfProduct: 1, ceilingWhy: 'EU law caps methyl eugenol at 0.001% of a rinse-off product',
+    ceilingAboveUsualRange: false, safeMaxPercentOfBasis: 1.3, shareOfProduct, overSafeMax,
   });
   function harness(fragrances: ComputedScentColor['fragrances']) {
     const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
@@ -760,14 +761,19 @@ describe("an oil dosed past its derived safe ceiling", () => {
     return result.current.insights.find((i) => i.code === 'fragrance_over_safe_max')?.message;
   };
 
-  it('names the oil, the figure, the ceiling and the constituent behind it', () => {
-    const text = msg([clove(6.2, true)]);
-    expect(text).toMatch(/Clove is 6\.2% of the finished soap; 5\.2% is the most that keeps its eugenol under IFRA's 4\.9% cap/);
-    expect(text).toMatch(/Lower the dose/);
+  it('names the oil, the figure, the ceiling and the sentence behind it', () => {
+    const text = msg([clove(2.3, true)]);
+    expect(text).toBe('Clove is 2.3% of the finished soap; 1% is its ceiling — EU law caps methyl eugenol at 0.001% of a rinse-off product. Lower the dose.');
   });
 
   it('is the compute step\'s verdict, not its own', () => {
     // Same figures, verdict false: the rule does not re-decide.
-    expect(msg([clove(6.2, false)])).toBeUndefined();
+    expect(msg([clove(2.3, false)])).toBeUndefined();
+  });
+
+  it('the usual-range warning reads the compute step\'s verdict too', () => {
+    const { result } = renderHook(() => harness([{ ...clove(2.3, false), name: 'Lavender', percent: 8, overUsualRange: true }]));
+    expect(result.current.insights.find((i) => i.code === 'fragrance_over_usual_range')?.message)
+      .toMatch(/^Lavender is dosed past the 2–6% of oil weight bars usually carry/);
   });
 });

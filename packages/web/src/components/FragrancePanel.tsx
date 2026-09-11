@@ -3,6 +3,7 @@ import {
   ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT,
   ESSENTIAL_OIL_CATALOG,
   essentialOilEntryById,
+  formatCeilingPercent,
 } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import { productNoun, type ComputedFragrance, type ComputedScentColor } from '../lib/computeScentColor';
@@ -24,16 +25,33 @@ type Props = {
   onChange: (next: ScentColor) => void;
 };
 
-/* Process copy. Bars: 2–6% of total oil weight, the recipes at 3–6% (CP:9612-9614, 16777),
-   the supplier's tested rate as the ceiling (CP:9565-9605), the flashpoint no soaping limit
-   (CP:9844-9860); HP adds it after the cook at room temperature, and a stabilizer can thicken
+/* Process copy. Bars: 2–6% of total oil weight, the recipes at 3–6% (CP:9612-9614, 16777);
+   the text says usage rates differ by oil and to check each (CP:9547-9552), and the app now
+   carries that per oil — each listed oil's ceiling in soap is the catalog's (core
+   essential-oil-catalog.ts: IFRA's standards and annex, EU Annex III, the SCCS) — the
+   flashpoint no soaping limit (CP:9844-9860); HP adds it after the cook at room temperature, and a stabilizer can thicken
    the paste (HP:11024-11029); LS doses the finished solution at 0.5–3%, 3% at most, and proves
    a new fragrance in a small solution first — most cloud a little (LS:2950-2953, 16991-16998). */
 const PROCESS_COPY: Record<ProcessId, string> = {
-  cp: "Dose against total oil weight — bars usually carry 2–6%; your supplier's tested rate is the ceiling. The flashpoint is a shipping figure, not a soaping limit.",
-  hp: 'Dose against total oil weight — bars usually carry 2–6%. Add it after the cook, at room temperature; a vanilla stabilizer goes into the measured fragrance first and can thicken the paste.',
-  ls: 'Dose against the finished solution — usually 0.5–3%, 3% at most — and prove a new fragrance in a small test solution first; most cloud a little.',
+  cp: "Dose against total oil weight — bars usually carry 2–6%. Every oil in the list comes with its own ceiling for soap, IFRA's or EU law's where that binds first, and the row warns when a dose is over it. The flashpoint is a shipping figure, not a soaping limit.",
+  hp: 'Dose against total oil weight — bars usually carry 2–6%, and every oil in the list comes with its own ceiling for soap; the row warns when a dose is over it. Add it after the cook, at room temperature; a vanilla stabilizer goes into the measured fragrance first and can thicken the paste.',
+  ls: 'Dose against the finished solution — usually 0.5–3%, 3% at most. Every oil in the list comes with its own ceiling, and the row warns when a dose is over it; prove a new fragrance in a small test solution first, most cloud a little.',
 };
+
+/** The books' usual range, in the basis the maker types in — the fallback where an oil has
+ * no ceiling, and the line past which the row warns (core USUAL_DOSE_MAX_PERCENT). */
+function usualRangeCopy(process: ProcessId): string {
+  return process === 'ls'
+    ? 'liquid soap usually carries 0.5–3% of the finished solution, 3% at most'
+    : 'bars usually carry 2–6% of oil weight';
+}
+
+/** The same range as the thing a dose is past. */
+function usualRangePast(process: ProcessId): string {
+  return process === 'ls'
+    ? 'the 3% of the finished solution liquid soap carries at most'
+    : 'the 2–6% of oil weight bars usually carry';
+}
 
 /* EU labelling, checked 2026-09-08: Annex III of (EC) 1223/2009 names listed allergens above
    0.01% of a rinse-off product; Regulation (EU) 2023/1545 widens the list for products
@@ -146,22 +164,6 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     <span className="ledger__unit">{doseLabel}</span>
                   </span>
                 </label>
-                <label className="ledger__row additive-list__amount">
-                  <span className="micro-label">Max in product</span>
-                  <span className="ledger__figure">
-                    <input
-                      type="number"
-                      className="input figure-field"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      aria-label={`${rowName} max in product`}
-                      value={f.supplierMaxPercent}
-                      onChange={(e) => setFragrance(f.key, { supplierMaxPercent: e.target.value })}
-                    />
-                    <span className="ledger__unit">%</span>
-                  </span>
-                </label>
                 {/* Vanillin is what browns a bar, and it comes from vanilla-bearing
                     fragrance material — no essential oil in the catalog carries any. So the
                     field is offered for an oil the maker named themselves (a vanilla
@@ -195,39 +197,49 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     {c.grams > 0 ? formatWeight(c.grams, weightUnit) : '—'}
                   </div>
                 </div>
-                <FragranceNotes c={c} noun={noun} unit={weightUnit} />
+                <FragranceNotes c={c} noun={noun} unit={weightUnit} doseLabel={doseLabel} usualPast={usualRangePast(process)} />
                 {/* One warning and one safe-use line, in place of a list to fill in. What
-                    the oil carries comes off the catalog; what it may be dosed at is IFRA's
-                    cap on its binding constituent turned into a share of the finished soap,
-                    where both figures are cited — and the supplier's own certificate where
-                    they are not. No typing, no arithmetic left to the maker. */}
+                    the oil carries comes off the catalog; what it may be dosed at is the
+                    catalog's ceiling — a standard's own figure, or a constituent's limit
+                    turned into a share of the finished soap — with the sentence behind it.
+                    The ceiling is also turned back into the basis the maker types in, for
+                    this recipe, so nothing is left to convert by hand. */}
                 {c.allergenNames.length > 0 && (
                   <p className="inline-note scent-list__warning" aria-label={`${rowName} allergens`}>
                     <strong>Allergens.</strong> This oil carries {c.allergenNames.join(', ')} — expect to name
                     them on the label, and confirm each against your supplier&apos;s allergen declaration.
                   </p>
                 )}
-                {f.catalogId !== '' && (
-                  <p className="inline-note" aria-label={`${rowName} safe use`}>
-                    <strong>Safe use.</strong>{' '}
-                    {c.safeMaxPercentOfProduct !== null ? (
-                      <>
-                        Up to <strong>{formatGrams(c.safeMaxPercentOfProduct, 1)}% of the {noun}</strong> — the most
-                        that keeps its {essentialOilEntryById(f.catalogId)?.binding?.substance.toLowerCase()} under
-                        IFRA&apos;s cap for soap, at the top of this oil&apos;s usual range.
-                        {c.shareOfProduct > 0 && (
-                          <> This dose is {formatGrams(c.shareOfProduct, 1)}%{c.overSafeMax ? <strong> — over it.</strong> : '.'}</>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        IFRA sets no cap on this oil&apos;s main constituents in soap, so no ceiling can be derived
-                        for it. Bars usually carry 2–6% of oil weight; your supplier&apos;s IFRA certificate gives this
-                        oil&apos;s own tested figure — enter it as Max in product and the app holds you to it.
-                      </>
-                    )}
-                  </p>
-                )}
+                <p className="inline-note" aria-label={`${rowName} safe use`}>
+                  <strong>Safe use.</strong>{' '}
+                  {f.catalogId === '' ? (
+                    <>
+                      No ceiling is known for an oil the app does not list — your supplier&apos;s IFRA certificate
+                      gives one for soap (Category 9). Until then, {usualRangeCopy(process)}.
+                    </>
+                  ) : c.safeMaxPercentOfProduct === null ? (
+                    <>
+                      IFRA sets no ceiling for this oil in soap and EU law names no limit on it — {usualRangeCopy(process)}.
+                      {c.shareOfProduct > 0 && <> This dose is {formatGrams(c.shareOfProduct, 1)}% of the {noun}.</>}
+                    </>
+                  ) : c.ceilingAboveUsualRange ? (
+                    <>
+                      No ceiling bites below the usual range: this oil&apos;s works out at{' '}
+                      {formatCeilingPercent(c.safeMaxPercentOfProduct)}% of the {noun} ({c.ceilingWhy}), and{' '}
+                      {usualRangeCopy(process)}.
+                      {c.shareOfProduct > 0 && <> This dose is {formatGrams(c.shareOfProduct, 1)}%.</>}
+                    </>
+                  ) : (
+                    <>
+                      Up to <strong>{formatCeilingPercent(c.safeMaxPercentOfProduct)}% of the {noun}</strong>
+                      {c.safeMaxPercentOfBasis !== null && <> (about {formatGrams(c.safeMaxPercentOfBasis, 1)}{doseLabel} in this recipe)</>}
+                      {' — '}{c.ceilingWhy}.
+                      {c.shareOfProduct > 0 && (
+                        <> This dose is {formatGrams(c.shareOfProduct, 1)}%{c.overSafeMax ? <strong> — over it.</strong> : '.'}</>
+                      )}
+                    </>
+                  )}
+                </p>
               </li>
             );
           })}
@@ -249,19 +261,24 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
   );
 });
 
-function FragranceNotes({ c, noun, unit }: { c: ComputedFragrance; noun: string; unit: WeightUnit }) {
+function FragranceNotes({ c, noun, unit, doseLabel, usualPast }: {
+  c: ComputedFragrance; noun: string; unit: WeightUnit; doseLabel: string; usualPast: string;
+}) {
   const notes: Array<{ text: string; hazard?: boolean }> = [];
-  if (c.overSupplierMax) {
-    notes.push({ hazard: true, text: `Over the supplier's rate: ${formatGrams(c.percent ?? 0, 2)}% → ${formatGrams(c.shareOfProduct, 1)}% of the ${noun}; supplier max ${formatGrams(c.supplierMaxPercent ?? 0, 2)}%.` });
-  } else if (c.shareOfProduct > 0) {
-    notes.push({ text: `${formatGrams(c.percent ?? 0, 2)}% → ${formatGrams(c.shareOfProduct, 1)}% of the ${noun}${c.supplierMaxPercent !== null ? `; supplier max ${formatGrams(c.supplierMaxPercent, 2)}%` : ''}.` });
+  // The same grams in both bases, each named: the dose is typed against the oils, every
+  // ceiling is a share of the finished soap, and the bar is heavier than its oils.
+  if (c.shareOfProduct > 0) {
+    notes.push({ text: `${formatGrams(c.percent ?? 0, 2)}${doseLabel} = ${formatGrams(c.shareOfProduct, 1)}% of the ${noun}.` });
+  }
+  if (c.overUsualRange) {
+    notes.push({ hazard: true, text: `${formatGrams(c.percent ?? 0, 2)}${doseLabel} is past ${usualPast} — no book or standard stands behind more.` });
   }
   if (c.browning !== 'none') {
     notes.push({
       text: `Browning: ${c.browning}.${c.stabilizerGrams > 0 ? ` Mix ${formatWeight(c.stabilizerGrams, unit)} vanilla stabilizer into the fragrance first.` : ''}`,
     });
   }
-  if (c.caution) notes.push({ hazard: true, text: "Clove and cinnamon essential oils accelerate trace and can irritate — check the supplier's rate closely." });
+  if (c.caution) notes.push({ hazard: true, text: 'Clove and cinnamon essential oils accelerate trace and can irritate — keep under the ceiling in Safe use.' });
   if (c.polysorbateGrams > 0) notes.push({ text: `Mix ${formatWeight(c.polysorbateGrams, unit)} polysorbate 20 into the fragrance so it stays emulsified over the superfat.` });
   if (notes.length === 0) return null;
   return (

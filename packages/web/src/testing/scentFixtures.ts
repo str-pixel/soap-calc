@@ -24,9 +24,9 @@ export function computedScent(saved: unknown, ctx: ScentFixtureContext): Compute
   return applyScentColorCompliance(grams, ctx.productGrams, ctx.productBasis ?? (ctx.process === 'ls' ? 'solution' : 'label'));
 }
 
-/** The canonical vanilla row: 3% fragrance oil, 12% vanillin (deep browning, 1:1 stabilizer),
- * a 12% linalool declaration. */
+/** The canonical vanilla row: 3% fragrance oil, 12% vanillin (deep browning, 1:1 stabilizer).
+ * The `allergens` list is the pre-v7 shape, kept so the fixture proves the loader drops it. */
 export const VANILLA_FRAGRANCE = {
-  name: 'Vanilla dream', percent: '3', supplierMaxPercent: '', vanillinPercent: '12',
+  name: 'Vanilla dream', percent: '3', vanillinPercent: '12',
   allergens: [{ name: 'Linalool', percentOfFragrance: '12' }],
 };

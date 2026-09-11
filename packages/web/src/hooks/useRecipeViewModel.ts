@@ -1026,7 +1026,7 @@ export function useRecipeViewModel({
         : null,
     [profile, batchWeightWithExtras, batchMassGrams],
   );
-  // Fragrance & colorants, pass 2: the supplier's IFRA rate and the allergen threshold are
+  // Fragrance & colorants, pass 2: an oil's ceiling and the allergen threshold are
   // shares of the FINISHED product — the cured bar (label weight) or, for LS, the same
   // finished-product figure the Dilution panel quotes (bottle INCLUDING the preservative,
   // finishedProductGramsFor), never a second definition of "finished". Before a cure
@@ -1062,7 +1062,7 @@ export function useRecipeViewModel({
   // colour, and grams move with the oil weight while the typed percent does not. The typed
   // NAME is still left out on purpose — the rules quote the catalog's name, not the maker's.
   const insightScentKey = JSON.stringify({
-    f: scentColorComputed.fragrances.map((f) => [f.name, f.percent, f.supplierMaxPercent, f.overSupplierMax, f.browning, f.caution]),
+    f: scentColorComputed.fragrances.map((f) => [f.name, f.percent, f.overUsualRange, f.overSafeMax, f.browning, f.caution]),
     a: scentColorComputed.labelAllergens,
     o: scentColorComputed.portionsOver100,
     c: scentColorComputed.carrierSuperfatShiftPercent,

@@ -827,7 +827,7 @@ test('the Full recipe renders the Fragrance section with the allergen line from 
   const scent = applyScentColorCompliance(
     computeScentColorGrams(
       normalizeScentColor({
-        fragrances: [{ catalogId: 'lavender', name: '', percent: '3', supplierMaxPercent: '', vanillinPercent: '' }],
+        fragrances: [{ catalogId: 'lavender', name: '', percent: '3', vanillinPercent: '' }],
         colorants: [],
         portions: [],
       }),

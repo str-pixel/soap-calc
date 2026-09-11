@@ -18,21 +18,24 @@ export type LabelAllergen = { name: string; percentOfProduct: number };
 /**
  * IFRA's ceiling for a fragrance material in CATEGORY 9 — soap and other rinse-off products
  * for the body — as a percent of the FINISHED PRODUCT, which is the same basis the labelling
- * threshold uses. Read off IFRA's own standard for each substance, all retrieved 2026-09-10
- * from https://d3t14p1xronwr0.cloudfront.net/docs/standards/IFRA_STD_<n>.pdf:
- *   Eugenol 4.9% (STD 035, Amendment 51) · Cinnamal 0.49% (STD 018, "Cinnamic aldehyde") ·
- *   Citral 1.2% (STD 021) · Citronellol 24% (STD 022) · Geraniol 2.8% (STD 037) ·
- *   Farnesol 2.3% (STD 036) · Isoeugenol 0.21% (STD 048) · Benzyl salicylate 14% (STD 011) ·
- *   Coumarin 0.52% (STD 023).
+ * threshold uses. Read off IFRA's own standards, consolidated at the 51st Amendment
+ * ([IFRA-51], retrieved 2026-09-11 and text-extracted locally:
+ * https://d3t14p1xronwr0.cloudfront.net/docs/Standards-Documentation/ifra-standards-51st-amendment.pdf):
+ *   Eugenol 4.9% (2023 revision) · Cinnamal 0.49% ("Cinnamic aldehyde") · Citral 1.2%, whose
+ *   standard names geranial and neral in scope · Citronellol 24% · Geraniol 2.8% (2023
+ *   revision) · Farnesol 2.3% · Isoeugenol 0.21% · Benzyl salicylate 14% · Coumarin 0.52% ·
+ *   Cedrene 2.9%, α- and β- both in scope · Methyl eugenol 0.0017% (2023 revision).
  *
- * Note what is NOT here. Limonene, linalool and benzyl benzoate carry no Category 9
- * concentration limit — IFRA's standards for the first two are about peroxide value, not
- * how much you may use — so the app says nothing rather than inventing a ceiling. And a
- * figure of 0.05% for cinnamal circulates in soapmaking guides; IFRA's own standard says
- * 0.49% for this category, so the app follows the standard.
+ * Note what is NOT here. Limonene and linalool carry no Category 9 concentration limit —
+ * IFRA's standards for them are about peroxide value, not how much you may use — and benzyl
+ * benzoate has no standard at all, so the app says nothing rather than inventing a ceiling.
+ * A figure of 0.05% for cinnamal circulates in soapmaking guides; IFRA's own standard says
+ * 0.49% for this category, so the app follows the standard. Pulegone and menthofuran, the
+ * peppermint constituents medicines regulators watch, have no IFRA standard either.
  *
  * IFRA is an industry standard rather than EU law, and it is what a cosmetic safety
- * assessment leans on: the EU sets no general essential-oil dose at all.
+ * assessment leans on: the EU sets no general essential-oil dose at all. Where EU law DOES
+ * name a limit on a constituent, it is in EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT below.
  */
 export const IFRA_CATEGORY_NINE_PERCENT: Readonly<Record<string, number>> = {
   Eugenol: 4.9,
@@ -44,7 +47,49 @@ export const IFRA_CATEGORY_NINE_PERCENT: Readonly<Record<string, number>> = {
   Isoeugenol: 0.21,
   'Benzyl salicylate': 14,
   Coumarin: 0.52,
+  Cedrene: 2.9,
+  'Methyl eugenol': 0.0017,
 };
+
+/**
+ * The one constituent of a catalog oil that EU LAW itself limits in a rinse-off product, as
+ * a percent of the finished product. Regulation (EC) 1223/2009 Annex III entry 102, methyl
+ * eugenol: 0.001% in rinse-off products (0.0002% other leave-on and oral care, 0.01% fine
+ * fragrance, 0.004% eau de toilette) — quoted in the SCCS's tea tree opinion, SCCS/1681/25
+ * p.12 ([SCCS-TTO], retrieved 2026-09-11:
+ * https://health.ec.europa.eu/document/download/827f8a57-c6f2-4d6d-9bbd-2ef12384ffbf_en?filename=sccs_o_303.pdf),
+ * and read in Annex III itself on 2026-09-08 (legislation.gov.uk mirror; EUR-Lex blocks
+ * fetching). It is a LIMIT, not a labelling threshold: a clove or tea tree oil carries methyl
+ * eugenol as a trace, and the trace binds long before eugenol's IFRA cap would.
+ */
+export const EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT: Readonly<Record<string, number>> = {
+  'Methyl eugenol': 0.001,
+};
+
+/** The EU rinse-off limit for a substance, or null where Annex III names none. */
+export function euRinseOffLimitPercent(substance: string): number | null {
+  return EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT[substance.trim()] ?? null;
+}
+
+/**
+ * What a bar or a bottle USUALLY carries — the top of the books' range, in the basis the
+ * maker doses in. Bars: 2–6% of total oil weight (CP:9612-9614, 16777); liquid soap: 0.5–3%
+ * of the finished solution, 3% at most (LS:2950-2953, 16991-16998). Not a safety ceiling —
+ * an oil's own ceiling (essentialOilSafeMaxPercentOfProduct) is that — but past this figure
+ * no book and no standard stands behind the dose, and the app says so.
+ */
+export const USUAL_DOSE_MAX_PERCENT: Readonly<Record<'cp' | 'hp' | 'ls', number>> = { cp: 6, hp: 6, ls: 3 };
+
+export function fragranceOverUsualRange(percent: number | null, process: 'cp' | 'hp' | 'ls'): boolean {
+  return finite(percent) && percent > USUAL_DOSE_MAX_PERCENT[process];
+}
+
+/** A ceiling as the app prints it, the same everywhere it appears: one decimal at 1% and
+ * above (1.4, 9.6), two below it (0.65), trailing zeros dropped (1, not 1.0). */
+export function formatCeilingPercent(percentOfProduct: number): string {
+  const s = percentOfProduct >= 1 ? percentOfProduct.toFixed(1) : percentOfProduct.toFixed(2);
+  return s.replace(/\.?0+$/, '');
+}
 
 /**
  * IFRA's ceiling turned into the basis the maker actually types in. The ceiling is a percent
@@ -110,11 +155,6 @@ export function allergenBreakEvenPercentOfFragrance(
   if (!finite(shareOfProductPercent) || shareOfProductPercent <= 0) return null;
   if (!finite(thresholdPercent) || thresholdPercent <= 0) return null;
   return (thresholdPercent / shareOfProductPercent) * 100;
-}
-
-export function fragranceOverSupplierMax(shareOfProduct: number, supplierMaxPercent: number | null): boolean {
-  if (!finite(supplierMaxPercent) || supplierMaxPercent <= 0) return false;
-  return shareOfProduct > supplierMaxPercent;
 }
 
 /** Only the two the text names: clove and cinnamon essential oils carry eugenol /

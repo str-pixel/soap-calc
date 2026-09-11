@@ -621,7 +621,7 @@ test('the add-in-order steps name additives heaviest first, like the manifest ab
  * a 12% linalool declaration, a whole-batter oxide at 1% (4 g) and a mica at 1% of a 40%
  * portion (1.6 g). Finished bar taken as 600 g: 12 g × 12% = 1.44 g linalool = 0.24%. */
 const SCENT_CP = computedScent({
-      fragrances: [{ name: 'Vanilla dream', percent: '3', supplierMaxPercent: '', vanillinPercent: '12' }],
+      fragrances: [{ name: 'Vanilla dream', percent: '3', vanillinPercent: '12' }],
       colorants: [
         { name: 'Yellow oxide', kind: 'oxide', percent: '1', portionKey: '' },
         { name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' },
@@ -669,7 +669,7 @@ test('Full recipe (CP): the scent sections sit between At trace and Top', () => 
 
 test('Full recipe (HP/LS): the Fragrance section is last; LS colorants sit in the after-dilution slot', () => {
   const ls = computedScent({
-        fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', supplierMaxPercent: '', vanillinPercent: '' }],
+        fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', vanillinPercent: '' }],
         colorants: [{ name: 'Blue dye', kind: 'dye', percent: '', portionKey: '' }],
         portions: [],
       }, { process: 'ls', totalOilGrams: 400, solutionGrams: 1200, deliveredSuperfatPercent: 2, productGrams: 1200 });
@@ -698,13 +698,13 @@ test('Full recipe (HP/LS): the Fragrance section is last; LS colorants sit in th
 });
 
 const SCENT_INPUT_HP = normalizeScentColor({
-  fragrances: [{ name: 'Oak', percent: '3', supplierMaxPercent: '', vanillinPercent: '' }],
+  fragrances: [{ name: 'Oak', percent: '3', vanillinPercent: '' }],
   colorants: [{ name: 'Red oxide', kind: 'oxide', percent: '1', portionKey: '#0' }],
   portions: [{ name: 'Top', percent: '30' }],
 });
 
 test('a blank scent row (no name, no dose) is not listed', () => {
-  const blank = computedScent({ fragrances: [{ name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '' }], colorants: [{ name: '', kind: 'mica', percent: '', portionKey: '' }], portions: [] }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
+  const blank = computedScent({ fragrances: [{ name: '', percent: '', vanillinPercent: '' }], colorants: [{ name: '', kind: 'mica', percent: '', portionKey: '' }], portions: [] }, { process: 'cp', totalOilGrams: 400, productGrams: 600 });
   const sections = buildFullRecipe({ ...FULL_RECIPE_BASE, scentColor: blank });
   expect(sections.map((s) => s.heading)).toEqual(['Lye solution', 'Oils']);
   expect(sections.find((s) => s.heading === 'Oils')!.items).toHaveLength(2);
@@ -730,7 +730,7 @@ test('HP steps put the fragrance and the portion split after the cook; LS names 
     'After the cook, stir in the Oak and any post-cook superfat. Then split the batter — Top 30% (Red oxide) — and colour each portion.',
   );
   const ls = computedScent({
-        fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', supplierMaxPercent: '', vanillinPercent: '' }],
+        fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', vanillinPercent: '' }],
         colorants: [{ name: 'Blue dye', kind: 'dye', percent: '', portionKey: '' }],
         portions: [],
       }, { process: 'ls', totalOilGrams: 400, solutionGrams: 1200, deliveredSuperfatPercent: 0, productGrams: 1200 });

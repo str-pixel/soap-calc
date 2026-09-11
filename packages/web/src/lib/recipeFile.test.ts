@@ -22,7 +22,7 @@ describe('recipeFile', () => {
 
     expect(parsed.data.name).toBe('Test batch');
     expect(parsed.data.lines).toHaveLength(3);
-    expect(parsed.data.version).toBe(7);
+    expect(parsed.data.version).toBe(8);
     expect(recipeLinesFromFile(parsed.data.lines)).toHaveLength(3);
   });
 
@@ -767,12 +767,12 @@ describe('imports are app recipes only: declared process must match its lye choi
 describe('the recipe file carries scentColor', () => {
   it('serializes at the current version and parses it back; a v2 file without the field parses as empty', () => {
     const scent = normalizeScentColor({
-      fragrances: [{ name: 'Rose', percent: '4', supplierMaxPercent: '5', vanillinPercent: '2' }],
+      fragrances: [{ name: 'Rose', percent: '4', vanillinPercent: '2' }],
       colorants: [{ name: 'Pink mica', kind: 'mica', percent: '', portionKey: '#0' }],
       portions: [{ name: 'A', percent: '40' }],
     });
     const payload = serializeRecipeFile('r', createStarterLines(), DEFAULT_SETTINGS, [], 'cp', scent);
-    expect(payload.version).toBe(7);
+    expect(payload.version).toBe(8);
     const parsed = parseRecipeFile(JSON.stringify(payload));
     if (!parsed.ok) throw new Error(parsed.error);
     expect(parsed.data.scentColor.portions[0]).toEqual({ name: 'A', percent: '40' });
@@ -783,7 +783,7 @@ describe('the recipe file carries scentColor', () => {
     expect(normalizeScentColor(parsedV2.data.scentColor)).toEqual(createEmptyScentColor());
     // A legacy file is reported at the current version once parsed — the loader has
     // already filled in everything the newer versions added.
-    expect(parsedV2.data.version).toBe(7);
+    expect(parsedV2.data.version).toBe(8);
   });
 
   it('v4 carries the colorant lye route, and a v3 file simply arrives without it', () => {

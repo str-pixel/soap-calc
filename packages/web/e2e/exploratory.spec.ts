@@ -586,7 +586,6 @@ test.describe('essential oils & colorants', () => {
     await page.getByRole('button', { name: /add essential oil/i }).click();
     await page.getByLabel('Essential oil name').fill('Vanilla dream');
     await page.getByLabel(/Vanilla dream dose/).fill('3');
-    await page.getByLabel(/Vanilla dream max in product/).fill('5');
     await page.getByLabel(/Vanilla dream vanillin/).fill('12');
     await page.getByRole('button', { name: /add colorant/i }).click();
     await page.getByLabel('Colorant name').fill('Blue mica');
@@ -1097,18 +1096,26 @@ test.describe('the essential-oil catalog', () => {
 
     await page.getByRole('button', { name: /add essential oil/i }).click();
     await page.getByLabel(/Essential oil for/).first().selectOption('clove');
-    await page.getByLabel(/dose, % of oil weight/).first().fill('3');
+    await page.getByLabel(/dose, % of oil weight/).first().fill('1');
     await expect(panel.getByLabel('Essential oil name')).toHaveCount(0);
-    // No list to fill in: one warning, one safe-use line.
+    // No list to fill in and no ceiling to type: one warning, one safe-use line off the catalog.
     await expect(panel).toContainText(/This oil carries Eugenol — expect to name them on the label/);
-    await expect(panel).toContainText(/Up to 5\.2% of the finished bar/);
-    await expect(panel).toContainText(/This dose is 2\.3%\./);
+    await expect(panel).toContainText(/Up to 1% of the finished bar \(about 1\.3% of oil weight in this recipe\)/);
+    await expect(panel).toContainText(/EU law \(Annex III\) caps methyl eugenol/);
+    await expect(panel).toContainText(/This dose is 0\.8%\./);
     await expect(panel.getByLabel('Allergen % of fragrance')).toHaveCount(0);
+    await expect(panel.getByLabel(/max in product/i)).toHaveCount(0);
 
     // Past the ceiling, the row and the notes both say so.
-    await page.getByLabel(/dose, % of oil weight/).first().fill('8');
-    await expect(panel).toContainText(/over it\./);
+    await page.getByLabel(/dose, % of oil weight/).first().fill('3');
+    await expect(panel).toContainText(/This dose is 2\.3% — over it\./);
     const notes = page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: 'Formulation notes' }) });
-    await expect(notes).toContainText(/Clove is 6\.0% of the finished soap; 5\.2% is the most/);
+    await expect(notes).toContainText(/Clove is 2\.3% of the finished soap; 1% is its ceiling — EU law \(Annex III\) caps methyl eugenol/);
+
+    // Past the usual range, whatever the oil, the row says so in the basis the maker types in.
+    await page.getByLabel(/Essential oil for/).first().selectOption('lavender');
+    await page.getByLabel(/dose, % of oil weight/).first().fill('8');
+    await expect(panel).toContainText(/8% of oil weight is past the 2–6% of oil weight bars usually carry/);
+    await expect(notes).toContainText(/Lavender is dosed past the 2–6% of oil weight bars usually carry/);
   });
 });

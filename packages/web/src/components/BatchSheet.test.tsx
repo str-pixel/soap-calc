@@ -1547,7 +1547,7 @@ test('the printed oils table lists heaviest first, like the on-screen Full recip
 describe('the printed sheet carries the Fragrance and Colorants sections', () => {
   it('lists each fragrance and colour with its stage, the stabilizer, and the label line', () => {
     const scent = computedScent({
-          fragrances: [{ catalogId: 'lavender', name: '', percent: '3', supplierMaxPercent: '', vanillinPercent: '12' }],
+          fragrances: [{ catalogId: 'lavender', name: '', percent: '3', vanillinPercent: '12' }],
           colorants: [{ name: 'Blue mica', kind: 'mica', percent: '1', portionKey: '#0' }],
           portions: [{ name: 'Swirl', percent: '40' }],
         }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
@@ -1572,7 +1572,7 @@ describe('the printed sheet carries the Fragrance and Colorants sections', () =>
     expect(screen.queryByText('Colorants', { selector: 'h2' })).toBeNull();
     cleanup();
     const blank = computedScent({
-          fragrances: [{ name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
+          fragrances: [{ name: '', percent: '', vanillinPercent: '', allergens: [] }],
           colorants: [{ name: '', kind: 'mica', percent: '', portionKey: '' }],
           portions: [],
         }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });

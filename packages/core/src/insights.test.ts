@@ -1085,10 +1085,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 55 unique codes', () => {
+  it('declares 54 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(55);
-    expect(new Set(declared).size).toBe(55);
+    expect(declared).toHaveLength(54);
+    expect(new Set(declared).size).toBe(54);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1237,17 +1237,14 @@ describe('rule registry consistency', () => {
     ls_lye_excess: { superfatPercent: -2 },
     ls_water_outside_envelope: { waterEnvelope: [25, 60], waterGrams: 200, process: 'ls' },
     // Fragrance & colorants
-    fragrance_over_supplier_max: {
-      fragranceRows: [{ name: 'F', percent: 3, supplierMaxPercent: 5, overSupplierMax: true, browning: 'none', caution: false }],
-    },
-    fragrance_no_supplier_rate: {
-      fragranceRows: [{ name: 'F', percent: 3, supplierMaxPercent: null, overSupplierMax: false, browning: 'none', caution: false }],
+    fragrance_over_usual_range: {
+      fragranceRows: [{ name: 'Lavender', percent: 8, overUsualRange: true, browning: 'none', caution: false }],
     },
     fragrance_vanillin_browning: {
-      fragranceRows: [{ name: 'F', percent: 3, supplierMaxPercent: 5, overSupplierMax: false, browning: 'deep', caution: false }],
+      fragranceRows: [{ name: 'F', percent: 3, overUsualRange: false, browning: 'deep', caution: false }],
     },
     fragrance_accelerant_eo: {
-      fragranceRows: [{ name: 'Clove', percent: 1, supplierMaxPercent: 1, overSupplierMax: false, browning: 'none', caution: true }],
+      fragranceRows: [{ name: 'Clove', percent: 1, overUsualRange: false, browning: 'none', caution: true }],
       process: 'cp',
     },
     fragrance_allergens_to_label: { labelAllergens: [{ name: 'Linalool' }] },
@@ -1268,13 +1265,13 @@ describe('rule registry consistency', () => {
       process: 'cp',
     },
     fragrance_over_safe_max: {
-      fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct: 6, safeMaxPercentOfProduct: 5.2, substance: 'Eugenol', capPercentOfProduct: 4.9 }],
+      fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct: 2.3, safeMaxPercentOfProduct: 1, why: 'EU law caps methyl eugenol' }],
     },
     colorant_liquid_double_count: {
       colorantsDoubleAsLiquid: [{ name: 'Carrot puree', liquid: 'Fruit or vegetable puree' }],
     },
     ls_fragrance_clouding: {
-      fragranceRows: [{ name: 'F', percent: 1, supplierMaxPercent: 3, overSupplierMax: false, browning: 'none', caution: false }],
+      fragranceRows: [{ name: 'F', percent: 1, overUsualRange: false, browning: 'none', caution: false }],
       process: 'ls',
     },
   };
@@ -1416,17 +1413,29 @@ describe('fragrance & colorant insights', () => {
   const codes = (extra: Partial<FormulationAnalysisInput>, process: 'cp' | 'hp' | 'ls') =>
     analyzeFormulation(waterInput(330, 1000, { ...extra, process })).map((i) => i.code);
   const row = (over: Partial<NonNullable<FormulationAnalysisInput['fragranceRows']>[number]> = {}) => ({
-    name: 'F', percent: 3, supplierMaxPercent: 5,
-    overSupplierMax: false, browning: 'none' as const, caution: false, ...over,
+    name: 'F', percent: 3, overUsualRange: false, browning: 'none' as const, caution: false, ...over,
   });
 
-  it('warns above the supplier rate (finished-product basis), informs when no rate is entered', () => {
-    expect(codes({ fragranceRows: [row({ overSupplierMax: true })] }, 'cp')).toContain('fragrance_over_supplier_max');
-    expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('fragrance_over_supplier_max');
-    expect(codes({ fragranceRows: [row({ supplierMaxPercent: null })] }, 'cp')).toContain('fragrance_no_supplier_rate');
-    expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('fragrance_no_supplier_rate');
-    // the rule reads the computed verdict, never the numbers — a 0% max (core: unknown) stays quiet
-    expect(codes({ fragranceRows: [row({ supplierMaxPercent: 0, overSupplierMax: false })] }, 'cp')).not.toContain('fragrance_over_supplier_max');
+  it('warns past the usual range, reading the computed verdict and never the number', () => {
+    expect(codes({ fragranceRows: [row({ overUsualRange: true })] }, 'cp')).toContain('fragrance_over_usual_range');
+    expect(codes({ fragranceRows: [row()] }, 'cp')).not.toContain('fragrance_over_usual_range');
+    // 8% typed with the verdict false stays quiet: the compute step owns the threshold
+    expect(codes({ fragranceRows: [row({ percent: 8 })] }, 'cp')).not.toContain('fragrance_over_usual_range');
+    const bar = analyzeFormulation(waterInput(330, 1000, { process: 'cp', fragranceRows: [row({ name: 'Lavender', overUsualRange: true })] }));
+    expect(bar.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/^Lavender is dosed past the 2–6% of oil weight/);
+    const two = analyzeFormulation(waterInput(330, 1000, { process: 'cp', fragranceRows: [row({ name: 'Lavender', overUsualRange: true }), row({ name: 'Rose', overUsualRange: true })] }));
+    expect(two.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/^Lavender, Rose are dosed past/);
+    const ls = analyzeFormulation(waterInput(330, 1000, { process: 'ls', fragranceRows: [row({ name: 'Lavender', overUsualRange: true })] }));
+    expect(ls.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/3% of the finished solution/);
+  });
+
+  it('an oil over its ceiling says how far, what the ceiling is, and why — in the app\'s one format', () => {
+    const over = analyzeFormulation(waterInput(330, 1000, {
+      process: 'cp',
+      fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct: 2.34, safeMaxPercentOfProduct: 1, why: 'EU law caps methyl eugenol at 0.001% of a rinse-off product' }],
+    }));
+    expect(over.find((i) => i.code === 'fragrance_over_safe_max')?.message)
+      .toBe('Clove is 2.3% of the finished soap; 1% is its ceiling — EU law caps methyl eugenol at 0.001% of a rinse-off product. Lower the dose.');
   });
 
   it('browning above 0% vanillin in any process; the deep wording above 1%', () => {
@@ -1457,7 +1466,7 @@ describe('fragrance & colorant insights', () => {
 
   it('fires nothing for an empty section', () => {
     const all = codes({}, 'cp');
-    for (const c of ['fragrance_over_supplier_max', 'fragrance_no_supplier_rate', 'fragrance_vanillin_browning', 'fragrance_accelerant_eo', 'fragrance_allergens_to_label', 'colorant_portions_over_100', 'colorant_carrier_superfat', 'ls_fragrance_clouding']) {
+    for (const c of ['fragrance_over_usual_range', 'fragrance_over_safe_max', 'fragrance_vanillin_browning', 'fragrance_accelerant_eo', 'fragrance_allergens_to_label', 'colorant_portions_over_100', 'colorant_carrier_superfat', 'ls_fragrance_clouding']) {
       expect(all).not.toContain(c);
     }
   });

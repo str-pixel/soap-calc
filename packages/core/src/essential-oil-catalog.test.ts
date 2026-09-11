@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   ESSENTIAL_OIL_ALLERGEN_CAUTION,
   ESSENTIAL_OIL_CATALOG,
+  essentialOilCeilingWhy,
   essentialOilEntryById,
+  essentialOilSafeMaxPercentOfProduct,
 } from './essential-oil-catalog.js';
-import { essentialOilCaution } from './fragrance.js';
+import { essentialOilCaution, USUAL_DOSE_MAX_PERCENT } from './fragrance.js';
 
 /** The labelling list the app declares against (Annex III, cited in fragrance.ts). Only a
  * name on this list may appear in a catalog entry — a component that is not a labelling
@@ -69,5 +71,62 @@ describe('the essential-oil catalog', () => {
     expect(essentialOilEntryById('cedarwood')!.allergens).toEqual([]);
     // Grapefruit's furanocoumarins are NOT the labelling allergen "Coumarin".
     expect(essentialOilEntryById('grapefruit')!.allergens).not.toContain('Coumarin');
+  });
+});
+
+describe('each oil\'s ceiling in soap, % of the finished product', () => {
+  const ceiling = (id: string) => essentialOilSafeMaxPercentOfProduct(essentialOilEntryById(id)!);
+
+  it('every ceiling on record resolves to a figure — a constituent named without a limit is a data error', () => {
+    for (const e of ESSENTIAL_OIL_CATALOG) {
+      if (!e.ceiling) continue;
+      const c = essentialOilSafeMaxPercentOfProduct(e);
+      expect(c, e.id).not.toBeNull();
+      expect(c!, e.id).toBeGreaterThan(0);
+      expect(essentialOilCeilingWhy(e), e.id).toBeTruthy();
+    }
+  });
+
+  it('pins the figures to their primary sources (IFRA 51st Amendment, IFRA Annex, SCCS/1681/25)', () => {
+    // Clove: EU law's 0.001% methyl eugenol ÷ IFRA's typical 0.1% in clove bud oil → 1.0%.
+    // Eugenol alone (4.9% ÷ 82%) would have allowed 6.0%; the trace binds first.
+    expect(ceiling('clove')).toBeCloseTo(1.0, 6);
+    // Cinnamon bark: cinnamic aldehyde 0.49% ÷ 75%.
+    expect(ceiling('cinnamon')).toBeCloseTo(0.6533, 3);
+    // Lemongrass: citral 1.2% ÷ 73%.
+    expect(ceiling('lemongrass')).toBeCloseTo(1.6438, 3);
+    // Ylang ylang: the oil's own standard, STD 084, Category 9.
+    expect(ceiling('ylang-ylang')).toBe(1.4);
+    // Tea tree: the SCCS's shower-gel figure; IFRA has no standard for the oil.
+    expect(ceiling('tea-tree')).toBe(1.0);
+    // Geranium (geraniol 2.8% ÷ 17.7%) and Virginian cedarwood (cedrene 2.9% ÷ 30.2%) have
+    // ceilings, but above anything a bar carries — the app must not print them as "safe use".
+    expect(ceiling('geranium')).toBeCloseTo(15.82, 1);
+    expect(ceiling('cedarwood')).toBeCloseTo(9.60, 1);
+  });
+
+  it('an oil with no restricted constituent at a level that bites has no ceiling', () => {
+    for (const id of ['lavender', 'rosemary', 'peppermint', 'eucalyptus', 'patchouli', 'lemon', 'sweet-orange', 'grapefruit', 'bergamot']) {
+      expect(essentialOilEntryById(id)!.ceiling, id).toBeUndefined();
+      expect(ceiling(id), id).toBeNull();
+    }
+  });
+
+  it('the sentence behind each ceiling names its authority and no supplier', () => {
+    for (const e of ESSENTIAL_OIL_CATALOG) {
+      if (!e.ceiling) continue;
+      const why = e.ceiling.why;
+      expect(why, e.id).toMatch(/IFRA|EU law|scientific committee/);
+      expect(why, e.id).not.toMatch(/supplier/i);
+      // The sentence is spliced after "Up to X% —" and "X% is its ceiling —": no full stop of its own.
+      expect(why, e.id).not.toMatch(/\.$/);
+    }
+  });
+
+  it('the ceilings that bind are all under the usual range, so the row can hold the maker to them', () => {
+    // 6% of oil weight is ~4.7% of a cured bar; every binding ceiling sits well under it.
+    for (const id of ['clove', 'cinnamon', 'lemongrass', 'ylang-ylang', 'tea-tree']) {
+      expect(ceiling(id)!, id).toBeLessThan(USUAL_DOSE_MAX_PERCENT.cp);
+    }
   });
 });

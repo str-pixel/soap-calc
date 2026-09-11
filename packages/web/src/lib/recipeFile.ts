@@ -30,9 +30,11 @@ import {
 // version gate, which is the honest signal — its field-by-field parser would silently drop
 // the field and put the colour back at a stage and a solvent the maker did not choose. v6
 // adds the essential-oil pick (`catalogId`), which carries the name and the allergen rows
-// that came with it.
-export const RECIPE_FILE_VERSION = 7 as const;
-export const RECIPE_FILE_LEGACY_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6];
+// that came with it. v7 drops the typed allergen rows: what an oil carries is read off the
+// catalog. v8 drops the typed supplier ceiling (`supplierMaxPercent`) the same way: each
+// listed oil's ceiling in soap is the catalog's, and a v8 file no longer carries the field.
+export const RECIPE_FILE_VERSION = 8 as const;
+export const RECIPE_FILE_LEGACY_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7];
 
 /** Import cap on oil lines, mirroring MAX_RECIPE_ADDITIVES. Real recipes have a
  * handful of oils; without a cap a malformed/hostile file with a huge `lines`

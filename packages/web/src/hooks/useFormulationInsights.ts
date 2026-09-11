@@ -16,7 +16,7 @@ import {
 import { oilById } from '../lib/oils';
 import { isCookGlycerin } from '../lib/glycerinRoute';
 import { processProfileById, isProcessVariantId, type ProcessId } from '../lib/process';
-import { colorantEntryById, colorantSharesMaterialWithAdditive, essentialOilEntryById, ifraCategoryNinePercent } from '@soap-calc/core';
+import { colorantEntryById, colorantSharesMaterialWithAdditive } from '@soap-calc/core';
 import { colorantCeilingPercent } from '../lib/colorantGuidance';
 import { isBudgetSizeMode } from '../lib/splitLiquidSizing';
 import type { ComputedScentColor } from '../lib/computeScentColor';
@@ -284,18 +284,16 @@ export function useFormulationInsights(
       fragranceRows: options.scentColor?.fragrances,
       labelAllergens: options.scentColor?.labelAllergens,
       // The verdict is the compute step's; this only carries the figures for the sentence.
-      fragrancesOverSafeMax: (options.scentColor?.fragrances ?? []).flatMap((f) => {
-        if (!f.overSafeMax || f.safeMaxPercentOfProduct === null) return [];
-        const entry = essentialOilEntryById(f.catalogId);
-        const substance = entry?.binding?.substance ?? '';
-        return [{
-          fragrance: f.name.trim() || 'Essential oil',
-          shareOfProduct: f.shareOfProduct,
-          safeMaxPercentOfProduct: f.safeMaxPercentOfProduct,
-          substance,
-          capPercentOfProduct: ifraCategoryNinePercent(substance) ?? 0,
-        }];
-      }),
+      fragrancesOverSafeMax: (options.scentColor?.fragrances ?? []).flatMap((f) =>
+        f.overSafeMax && f.safeMaxPercentOfProduct !== null
+          ? [{
+              fragrance: f.name.trim() || 'Essential oil',
+              shareOfProduct: f.shareOfProduct,
+              safeMaxPercentOfProduct: f.safeMaxPercentOfProduct,
+              why: f.ceilingWhy ?? '',
+            }]
+          : [],
+      ),
       colorantPortionsOver100: options.scentColor?.portionsOver100,
       colorantCarrierShiftPercent: options.scentColor?.carrierSuperfatShiftPercent,
       // Only a DOSED colour counts — a "to shade" row has no second dose to add up. A

@@ -6,7 +6,9 @@ import {
   allergensToLabel,
   essentialOilCaution,
   fragranceGrams,
-  fragranceOverSupplierMax,
+  euRinseOffLimitPercent,
+  formatCeilingPercent,
+  fragranceOverUsualRange,
   ifraCategoryNinePercent,
   ifraCeilingAsPercentOfFragrance,
   fragranceShareOfProduct,
@@ -36,11 +38,25 @@ describe('fragranceShareOfProduct — the IFRA basis is the FINISHED product, no
   });
 });
 
-describe('fragranceOverSupplierMax', () => {
-  it('flags only above the supplier rate, and never when the rate is unknown', () => {
-    expect(fragranceOverSupplierMax(5.1, 5)).toBe(true);
-    expect(fragranceOverSupplierMax(5, 5)).toBe(false);
-    expect(fragranceOverSupplierMax(9, null)).toBe(false);
+describe('fragranceOverUsualRange — the top of the books\' range, in the dose basis', () => {
+  it('bars: past 6% of oil weight (CP:9612-9614); liquid soap: past 3% of the solution (LS:2950-2953)', () => {
+    expect(fragranceOverUsualRange(6, 'cp')).toBe(false);
+    expect(fragranceOverUsualRange(6.1, 'cp')).toBe(true);
+    expect(fragranceOverUsualRange(6.1, 'hp')).toBe(true);
+    expect(fragranceOverUsualRange(3, 'ls')).toBe(false);
+    expect(fragranceOverUsualRange(3.1, 'ls')).toBe(true);
+    expect(fragranceOverUsualRange(null, 'cp')).toBe(false);
+  });
+});
+
+describe('formatCeilingPercent — one figure, printed the same everywhere', () => {
+  it('one decimal from 1% up, two below, no trailing zeros', () => {
+    expect(formatCeilingPercent(1.0)).toBe('1');
+    expect(formatCeilingPercent(1.4)).toBe('1.4');
+    expect(formatCeilingPercent(1.6438)).toBe('1.6');
+    expect(formatCeilingPercent(0.65333)).toBe('0.65');
+    expect(formatCeilingPercent(0.5)).toBe('0.5');
+    expect(formatCeilingPercent(15.819)).toBe('15.8');
   });
 });
 
@@ -141,6 +157,9 @@ describe('IFRA Category 9, which is the category soap sits in', () => {
     expect(ifraCategoryNinePercent('Eugenol')).toBe(4.9);
     expect(ifraCategoryNinePercent('Cinnamal')).toBe(0.49);
     expect(ifraCategoryNinePercent('Citral')).toBe(1.2);
+    // The 51st Amendment's own figures for the two that bring cedarwood and clove into scope.
+    expect(ifraCategoryNinePercent('Cedrene')).toBe(2.9);
+    expect(ifraCategoryNinePercent('Methyl eugenol')).toBe(0.0017);
     // No Category 9 concentration limit exists for these: IFRA restricts the first two by
     // peroxide value instead, and inventing a number would be worse than saying nothing.
     expect(ifraCategoryNinePercent('Limonene')).toBeNull();
@@ -152,6 +171,17 @@ describe('IFRA Category 9, which is the category soap sits in', () => {
   it('keeps the standard\'s own figure for cinnamal, not the one that circulates', () => {
     // Soapmaking guides quote 0.05%; IFRA's standard for this category says 0.49%.
     expect(ifraCategoryNinePercent('Cinnamal')).toBeGreaterThan(0.05);
+  });
+});
+
+describe('EU Annex III — the one constituent limit the law itself sets on a catalog oil', () => {
+  it('methyl eugenol: 0.001% of a rinse-off product (Annex III/102, as quoted in SCCS/1681/25)', () => {
+    expect(euRinseOffLimitPercent('Methyl eugenol')).toBe(0.001);
+    // Lower than IFRA's own 0.0017% — the law is what binds clove.
+    expect(euRinseOffLimitPercent('Methyl eugenol')!).toBeLessThan(ifraCategoryNinePercent('Methyl eugenol')!);
+    // Labelling allergens are thresholds, not limits: the law names no rinse-off limit on them.
+    expect(euRinseOffLimitPercent('Eugenol')).toBeNull();
+    expect(euRinseOffLimitPercent('Linalool')).toBeNull();
   });
 });
 

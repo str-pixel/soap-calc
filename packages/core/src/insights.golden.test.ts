@@ -12,7 +12,7 @@ const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
   bubbly: 10, cleansing: 0, condition: 65, hardness: 30, longevity: 30, creamy: 30, ...over,
 });
 
-/** The 51 insight codes analyzeFormulation can emit today, transcribed from insights.ts.
+/** The 54 insight codes analyzeFormulation can emit today, transcribed from insights.ts.
  * Slice 3's rule-catalog conversion must keep every one of these reachable. */
 const ALL_CODES = [
   'colorant_also_additive',
@@ -28,8 +28,7 @@ const ALL_CODES = [
   'eutectic_lather_sources',
   'fragrance_accelerant_eo',
   'fragrance_allergens_to_label',
-  'fragrance_no_supplier_rate',
-  'fragrance_over_supplier_max',
+  'fragrance_over_usual_range',
   'fragrance_vanillin_browning',
   'glycerin_solvent_dilution',
   'high_cleansing_low_superfat',

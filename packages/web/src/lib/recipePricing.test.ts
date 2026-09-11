@@ -186,7 +186,7 @@ describe('second-wave hardening', () => {
 describe('the Fragrance & colorants section is priced', () => {
   it('prices fragrance, stabilizer, colorant and carrier oil under the scent group with name-stable keys', () => {
     const scent = computedScent({
-          fragrances: [{ name: 'Rose Absolute', percent: '3', supplierMaxPercent: '', vanillinPercent: '12', allergens: [] }],
+          fragrances: [{ name: 'Rose Absolute', percent: '3', vanillinPercent: '12', allergens: [] }],
           colorants: [{ name: 'Pink Mica', kind: 'mica', percent: '1', portionKey: '' }],
           portions: [],
         }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
@@ -205,7 +205,7 @@ describe('the Fragrance & colorants section is priced', () => {
   });
   it('a "to shade" colorant has no grams and is not priced; polysorbate appears for LS under a superfat', () => {
     const scent = computedScent({
-          fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', supplierMaxPercent: '', vanillinPercent: '', allergens: [] }],
+          fragrances: [{ name: 'Lemon', kind: 'essential-oil', percent: '1', vanillinPercent: '', allergens: [] }],
           colorants: [{ name: 'Blue dye', kind: 'dye', percent: '', portionKey: '' }],
           portions: [],
         }, { process: 'ls', totalOilGrams: 1000, solutionGrams: 3000, deliveredSuperfatPercent: 2, productGrams: 3000 });

@@ -16,7 +16,7 @@ function renderPanel(scent: ScentColor, process: ProcessId, unit: 'g' | 'lb' = '
 }
 
 const vanilla = normalizeScentColor({
-  fragrances: [{ name: 'Vanilla dream', percent: '3', supplierMaxPercent: '2', vanillinPercent: '12' }],
+  fragrances: [{ name: 'Vanilla dream', percent: '3', vanillinPercent: '12' }],
   colorants: [],
   portions: [],
 });
@@ -47,7 +47,6 @@ describe('FragrancePanel', () => {
     const named = (visible: string, control: HTMLElement) =>
       (control.getAttribute('aria-label') ?? '').toLowerCase().includes(visible.toLowerCase());
     expect(named('Dose', screen.getByLabelText(/Vanilla dream dose/))).toBe(true);
-    expect(named('Max in product', screen.getByLabelText(/Vanilla dream max in product/))).toBe(true);
     expect(named('Vanillin', screen.getByLabelText(/Vanilla dream vanillin/))).toBe(true);
     expect(named('Essential oil', screen.getByLabelText('Essential oil name'))).toBe(true);
   });
@@ -56,9 +55,9 @@ describe('FragrancePanel', () => {
     renderPanel(vanilla, 'cp');
     const row = document.querySelector('.additive-list__row')!;
     expect([...row.querySelectorAll('.micro-label')].map((n) => n.textContent))
-      .toEqual(['Essential oil', 'Name', 'Dose', 'Max in product', 'Vanillin', 'Add at', 'Adds']);
+      .toEqual(['Essential oil', 'Name', 'Dose', 'Vanillin', 'Add at', 'Adds']);
     expect([...row.querySelectorAll('.ledger__unit')].map((n) => n.textContent))
-      .toEqual(['% of oil weight', '%', '%']);
+      .toEqual(['% of oil weight', '%']);
     // and the dose unit follows the process
     cleanup();
     renderPanel(vanilla, 'ls');
@@ -73,11 +72,13 @@ describe('FragrancePanel', () => {
     expect(screen.getByLabelText(/Vanilla dream.*% of solution/i)).toBeTruthy();
   });
 
-  it('shows the fixed stage, the over-max warning with both readings, browning, stabilizer grams and the label allergens', () => {
+  it('shows the fixed stage, the dose in both bases, browning, stabilizer grams and the label allergens', () => {
     renderPanel(vanilla, 'cp');
     expect(screen.getByText('At trace')).toBeTruthy();
-    expect(screen.getByText(/2\.3% of the finished bar/)).toBeTruthy();
-    expect(screen.getByText(/supplier max 2%/)).toBeTruthy();
+    // The same 30 g, each basis named — the bar is heavier than its oils, so the share is smaller.
+    expect(screen.getByText('3% of oil weight = 2.3% of the finished bar.')).toBeTruthy();
+    expect(screen.queryByText(/supplier max/)).toBeNull();
+    expect(screen.queryByLabelText(/max in product/i)).toBeNull();
     expect(screen.getByText(/browning: deep/i)).toBeTruthy();
     expect(screen.getByText(/30 g vanilla stabilizer/i)).toBeTruthy();
     // A fragrance the maker named carries nothing the app can vouch for: no label line.
@@ -95,7 +96,7 @@ describe('FragrancePanel', () => {
 
   it('names the browning without a stabilizer figure until there is a dose to size it', () => {
     const noDose = normalizeScentColor({
-      fragrances: [{ name: 'V', percent: '', supplierMaxPercent: '', vanillinPercent: '12', allergens: [] }],
+      fragrances: [{ name: 'V', percent: '', vanillinPercent: '12', allergens: [] }],
       colorants: [], portions: [],
     });
     renderPanel(noDose, 'cp');
@@ -111,7 +112,7 @@ describe('FragrancePanel', () => {
 
   it('stops adding at the cap the loader applies, so nothing entered is lost on reload', () => {
     const full = normalizeScentColor({
-      fragrances: Array.from({ length: 20 }, (_, i) => ({ name: `F${i}`, percent: '', supplierMaxPercent: '', vanillinPercent: '', allergens: [] })),
+      fragrances: Array.from({ length: 20 }, (_, i) => ({ name: `F${i}`, percent: '', vanillinPercent: '', allergens: [] })),
       colorants: [], portions: [],
     });
     renderPanel(full, 'cp');
@@ -161,30 +162,65 @@ describe('the warning and the safe-use line', () => {
     cleanup();
     renderPanel(normalizeScentColor({ fragrances: [{ name: 'Mine', percent: '3' }], colorants: [], portions: [] }), 'cp');
     expect(screen.queryByLabelText(/allergens$/)).toBeNull();
-    expect(screen.queryByLabelText(/safe use$/)).toBeNull();
+    // An oil the app does not list has no ceiling on record: the line says where one comes from.
+    const safe = screen.getByLabelText('Mine safe use').textContent!;
+    expect(safe).toMatch(/No ceiling is known for an oil the app does not list/);
+    expect(safe).toMatch(/supplier's IFRA certificate/);
+    expect(safe).toMatch(/bars usually carry 2–6% of oil weight/);
   });
 
-  it('gives a derived ceiling where IFRA caps a cited constituent, and marks a dose over it', () => {
-    // Clove: eugenol capped at 4.9% of the soap, clove up to 95% eugenol → 5.2% of the bar.
-    renderPanel(picked('clove', '3'), 'cp');
+  it('gives the catalog ceiling, in both bases, with the sentence behind it — and marks a dose over it', () => {
+    // Clove: EU law's 0.001% methyl eugenol ÷ 0.1% of the oil → 1.0% of the bar. At 1% of
+    // 1000 g oils that is 10 g of a 1300 g bar, 0.8%; the ceiling solved back to the oils is
+    // 1% × 1290 ÷ 0.99 = 13.0 g → 1.3% of oil weight.
+    renderPanel(picked('clove', '1'), 'cp');
     let safe = screen.getByLabelText('Clove safe use').textContent!;
-    expect(safe).toMatch(/Up to 5\.2% of the finished bar/);
-    expect(safe).toMatch(/keeps its eugenol under IFRA's cap/);
-    expect(safe).toMatch(/This dose is 2\.3%\./);
+    expect(safe).toMatch(/Up to 1% of the finished bar \(about 1\.3% of oil weight in this recipe\)/);
+    expect(safe).toMatch(/EU law \(Annex III\) caps methyl eugenol/);
+    expect(safe).toMatch(/This dose is 0\.8%\./);
     expect(safe).not.toMatch(/over it/);
     cleanup();
-    // 8% of the oils is 6.2% of the bar — past it.
-    renderPanel(picked('clove', '8'), 'cp');
+    // 3% of the oils is 2.3% of the bar — past it.
+    renderPanel(picked('clove', '3'), 'cp');
     safe = screen.getByLabelText('Clove safe use').textContent!;
-    expect(safe).toMatch(/This dose is 6\.2% — over it\./);
+    expect(safe).toMatch(/This dose is 2\.3% — over it\./);
+    cleanup();
+    // Ylang ylang: IFRA's own standard for the oil.
+    renderPanel(picked('ylang-ylang', '2'), 'cp');
+    safe = screen.getByLabelText('Ylang ylang safe use').textContent!;
+    expect(safe).toMatch(/Up to 1\.4% of the finished bar/);
+    expect(safe).toMatch(/IFRA's own standard for ylang ylang extracts/);
+    expect(safe).toMatch(/This dose is 1\.5% — over it\./); // 20 g of the fixture's 1300 g bar
   });
 
-  it('says plainly when no ceiling can be derived, and points at the supplier certificate', () => {
+  it('says plainly when the catalog has no ceiling for the oil, and falls back to the usual range', () => {
     renderPanel(picked('lavender'), 'cp');
     const safe = screen.getByLabelText('Lavender safe use').textContent!;
-    expect(safe).toMatch(/IFRA sets no cap on this oil's main constituents/);
-    expect(safe).toMatch(/2–6% of oil weight/);
-    expect(safe).toMatch(/Max in product/);
+    expect(safe).toMatch(/IFRA sets no ceiling for this oil in soap and EU law names no limit on it/);
+    expect(safe).toMatch(/bars usually carry 2–6% of oil weight/);
+    expect(safe).toMatch(/This dose is 2\.3% of the finished bar\./);
     expect(safe).not.toMatch(/Up to/);
+    expect(safe).not.toMatch(/Max in product/);
+  });
+
+  it('a ceiling above anything a bar carries is not printed as "safe use"', () => {
+    // Geranium: geraniol 2.8% ÷ 17.7% → 15.8% of the bar, far past the usual 2–6% of oils.
+    renderPanel(picked('geranium', '3'), 'cp');
+    const safe = screen.getByLabelText('Geranium safe use').textContent!;
+    expect(safe).toMatch(/No ceiling bites below the usual range: this oil's works out at 15\.8% of the finished bar/);
+    expect(safe).toMatch(/IFRA caps geraniol at 2\.8%/);
+    expect(safe).toMatch(/bars usually carry 2–6% of oil weight/);
+    expect(safe).not.toMatch(/Up to/);
+  });
+
+  it('warns past the usual range, in the dose basis, whatever the oil', () => {
+    renderPanel(picked('lavender', '8'), 'cp');
+    expect(screen.getByText('8% of oil weight is past the 2–6% of oil weight bars usually carry — no book or standard stands behind more.').className).toBe('additive-list__hazard');
+    cleanup();
+    renderPanel(picked('lavender', '6'), 'cp');
+    expect(screen.queryByText(/is past the 2–6%/)).toBeNull();
+    cleanup();
+    renderPanel(picked('lavender', '4'), 'ls', 'g', 3000);
+    expect(screen.getByText(/4% of solution is past the 3% of the finished solution liquid soap carries at most/)).toBeTruthy();
   });
 });

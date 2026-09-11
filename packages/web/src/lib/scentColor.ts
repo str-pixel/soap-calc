@@ -13,8 +13,6 @@ export type FragranceLine = {
   /** Of total oil weight (CP/HP) or of the finished solution (LS) — the basis is derived
    * from the process at compute time, never stored. */
   percent: string;
-  /** The supplier's IFRA Category 9 rate, % of the FINISHED product. '' = unknown. */
-  supplierMaxPercent: string;
   vanillinPercent: string;
 };
 export type ColorantLine = {
@@ -63,7 +61,7 @@ export function createEmptyScentColor(): ScentColor {
 }
 
 export function newFragranceLine(): FragranceLine {
-  return { key: newAdditiveKey(), catalogId: '', name: '', percent: '', supplierMaxPercent: '', vanillinPercent: '' };
+  return { key: newAdditiveKey(), catalogId: '', name: '', percent: '', vanillinPercent: '' };
 }
 
 /** LS seeds a dye (water-soluble is what a liquid tolerates, LS:13256); bars seed a mica.
@@ -129,8 +127,9 @@ export function normalizeScentColor(raw: unknown): ScentColor {
   });
   const fragrances: FragranceLine[] = raw.fragrances.slice(0, MAX_SCENT_ROWS).flatMap((f) => {
     if (!isRecord(f)) return [];
-    // A saved `allergens` list from before v7 is dropped on the floor: the app no longer
-    // takes typed allergen shares, it reads the oil's allergens off the catalog.
+    // A saved `allergens` list from before v7, and a `supplierMaxPercent` from before v8, are
+    // dropped on the floor: the app no longer takes typed allergen shares or a typed
+    // ceiling — it reads the oil's allergens and its ceiling off the catalog.
     // A pick that no longer resolves becomes a row the maker named, keeping the name —
     // the same rule a retired colorant follows.
     const rawCatalogId = str(f.catalogId);
@@ -140,7 +139,6 @@ export function normalizeScentColor(raw: unknown): ScentColor {
       catalogId: entry ? entry.id : '',
       name: entry ? entry.name : name(f.name),
       percent: percentString(f.percent),
-      supplierMaxPercent: percentString(f.supplierMaxPercent),
       vanillinPercent: percentString(f.vanillinPercent),
     }];
   });
@@ -196,8 +194,8 @@ export function normalizeScentColor(raw: unknown): ScentColor {
 export function scentColorToSaved(scent: ScentColor): SavedScentColor {
   const portionIndex = new Map(scent.portions.map((p, i) => [p.key, `#${i}`]));
   return {
-    fragrances: scent.fragrances.map(({ catalogId, name, percent, supplierMaxPercent, vanillinPercent }) => ({
-      catalogId, name, percent, supplierMaxPercent, vanillinPercent,
+    fragrances: scent.fragrances.map(({ catalogId, name, percent, vanillinPercent }) => ({
+      catalogId, name, percent, vanillinPercent,
     })),
     colorants: scent.colorants.map(({ catalogId, name, kind, percent, portionKey, mixedWith, viaLye }) => ({
       catalogId, name, kind, percent, mixedWith, viaLye, portionKey: portionIndex.get(portionKey) ?? '',

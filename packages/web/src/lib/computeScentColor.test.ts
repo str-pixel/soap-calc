@@ -5,9 +5,9 @@ import { applyScentColorCompliance, computeScentColorGrams } from './computeScen
 
 const scent = normalizeScentColor({
   fragrances: [
-    { catalogId: 'lavender', name: 'Vanilla dream', percent: '3', supplierMaxPercent: '2', vanillinPercent: '12',
+    { catalogId: 'lavender', name: 'Vanilla dream', percent: '3', vanillinPercent: '12',
       allergens: [{ name: 'Linalool', percentOfFragrance: '12' }, { name: 'Coumarin', percentOfFragrance: '0.4' }] },
-    { name: 'Clove bud', kind: 'essential-oil', percent: '0.5', supplierMaxPercent: '', vanillinPercent: '', allergens: [] },
+    { name: 'Clove bud', kind: 'essential-oil', percent: '0.5', vanillinPercent: '', allergens: [] },
   ],
   colorants: [
     { name: 'Yellow oxide', kind: 'oxide', percent: '1', portionKey: '' },
@@ -42,12 +42,12 @@ describe('computeScentColorGrams (CP, 1000 g oils)', () => {
 });
 
 describe('applyScentColorCompliance', () => {
-  it('compares the share of the FINISHED product to the supplier max, and lists what the picked oil carries', () => {
+  it('settles the share of the FINISHED product, and lists what the picked oil carries', () => {
     const grams = computeScentColorGrams(scent, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
     const c = applyScentColorCompliance(grams, 1300, 'label');
     expect(c.fragrances[0].shareOfProduct).toBeCloseTo(2.31, 2);
-    expect(c.fragrances[0].overSupplierMax).toBe(true);   // 2.31% of product > 2% max
-    expect(c.fragrances[1].overSupplierMax).toBe(false);  // no max entered
+    expect(c.fragrances[0].overSafeMax).toBe(false);   // lavender: no ceiling on record
+    expect(c.fragrances[0].safeMaxPercentOfBasis).toBeNull();
     expect(c.labelAllergens.map((a) => a.name)).toEqual(['Linalool']);
     expect(c.productBasis).toBe('label');
   });
@@ -129,11 +129,17 @@ describe('the shares are totalled across the colours that hold them', () => {
   });
 });
 
-describe('a supplier max of 0 is "not entered", so the prompt fires instead of every check going quiet', () => {
-  it('reads 0 as null', () => {
-    const s0 = normalizeScentColor({ fragrances: [{ name: 'F', percent: '5', supplierMaxPercent: '0', vanillinPercent: '', allergens: [] }], colorants: [], portions: [] });
-    const c = computeScentColorGrams(s0, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
-    expect(c.fragrances[0].supplierMaxPercent).toBeNull();
+describe('the usual-range verdict is settled in pass 1, per process', () => {
+  const at = (percent: string, process: 'cp' | 'ls') => computeScentColorGrams(
+    normalizeScentColor({ fragrances: [{ name: 'F', percent }], colorants: [], portions: [] }),
+    { process, totalOilGrams: 1000, solutionGrams: 3000, deliveredSuperfatPercent: 5 },
+  ).fragrances[0];
+  it('bars past 6% of oil weight, liquid soap past 3% of the solution', () => {
+    expect(at('6', 'cp').overUsualRange).toBe(false);
+    expect(at('6.1', 'cp').overUsualRange).toBe(true);
+    expect(at('3', 'ls').overUsualRange).toBe(false);
+    expect(at('3.1', 'ls').overUsualRange).toBe(true);
+    expect(at('', 'cp').overUsualRange).toBe(false);
   });
 });
 
@@ -249,17 +255,44 @@ describe('what a picked oil carries, and what it may be dosed at', () => {
     expect(c.labelAllergens.map((a) => a.name)).toEqual(['Limonene', 'Citral', 'Geraniol']);
   });
 
-  it('derives the safe ceiling where it can, and decides over it once, here', () => {
-    const under = at('clove', '3');
-    expect(under.fragrances[0].safeMaxPercentOfProduct).toBeCloseTo(4.9 / 0.95, 6);
+  it('reads the ceiling off the catalog, decides over it once, here, and turns it into the dose basis', () => {
+    // Clove: EU law's 0.001% methyl eugenol ÷ 0.1% of the oil → 1.0% of the bar.
+    const under = at('clove', '1');
+    expect(under.fragrances[0].safeMaxPercentOfProduct).toBeCloseTo(1.0, 6);
+    expect(under.fragrances[0].ceilingWhy).toMatch(/EU law/);
+    expect(under.fragrances[0].ceilingAboveUsualRange).toBe(false);
     expect(under.fragrances[0].overSafeMax).toBe(false);
-    const over = at('clove', '8');
-    expect(over.fragrances[0].shareOfProduct).toBeGreaterThan(5.2);
+    // 10 g in a 1300 g bar; the most that fits is 1% × 1290 ÷ 0.99 = 13.03 g → 1.303% of 1000 g oils.
+    expect(under.fragrances[0].safeMaxPercentOfBasis).toBeCloseTo(1.303, 3);
+    const over = at('clove', '3');
+    expect(over.fragrances[0].shareOfProduct).toBeGreaterThan(1.0);
     expect(over.fragrances[0].overSafeMax).toBe(true);
-    // no binding constituent → no ceiling, never over
+    // no ceiling on record → never over, nothing to convert
     const lav = at('lavender', '8');
     expect(lav.fragrances[0].safeMaxPercentOfProduct).toBeNull();
+    expect(lav.fragrances[0].ceilingWhy).toBeNull();
     expect(lav.fragrances[0].overSafeMax).toBe(false);
+    expect(lav.fragrances[0].safeMaxPercentOfBasis).toBeNull();
+    // a ceiling above the usual range is carried, flagged, and still never reached
+    const ger = at('geranium', '8');
+    expect(ger.fragrances[0].safeMaxPercentOfProduct).toBeCloseTo(15.82, 1);
+    expect(ger.fragrances[0].ceilingAboveUsualRange).toBe(true);
+    expect(ger.fragrances[0].overSafeMax).toBe(false);
+  });
+
+  it('the dose-basis figure is solved with the oil in the product, not scaled — and is null before the product weight is known', () => {
+    const c = applyScentColorCompliance(
+      computeScentColorGrams(normalizeScentColor({ fragrances: [{ catalogId: 'ylang-ylang', name: '', percent: '2' }], colorants: [], portions: [] }),
+        { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 }),
+      null, 'batch',
+    );
+    expect(c.fragrances[0].safeMaxPercentOfBasis).toBeNull();
+    // 1.4% of a 1300 g bar that holds 20 g of the oil: 0.014 × 1280 ÷ 0.986 = 18.17 g → 1.817% of oils.
+    const known = applyScentColorCompliance(c, 1300, 'label');
+    expect(known.fragrances[0].safeMaxPercentOfBasis).toBeCloseTo(1.817, 3);
+    // and the maker typing exactly that lands exactly on the ceiling
+    const share = (18.17 / (1280 + 18.17)) * 100;
+    expect(share).toBeCloseTo(1.4, 2);
   });
 
   it('an oil the maker named carries nothing the app can vouch for', () => {
