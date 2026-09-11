@@ -1,5 +1,5 @@
 import type { AdditiveProcess } from './additives.js';
-import { EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT, IFRA_CATEGORY_NINE_PERCENT } from './fragrance.js';
+import { EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT, IFRA_CATEGORY_NINE_PERCENT, USUAL_DOSE_RANGE_PERCENT } from './fragrance.js';
 
 /**
  * ESSENTIAL OILS the app offers by name, with the labelling allergens each one typically
@@ -86,6 +86,9 @@ export type EssentialOilEntry = {
    * own standard for the material, or the SCCS's opinion. Compared with the constituents'
    * figures; the lowest wins. */
   standard?: { percentOfProduct: number; authority: 'IFRA' | 'SCCS'; why: string };
+  /** The dose the cold-process text itself puts on this oil — a recipe's, or the rate it
+   * quotes — as a percent of total oil weight, with the line. The starting dose reads it. */
+  bookDose?: { percent: number; source: string };
   /** Accelerates trace and irritates skin (CP:9531-9538). */
   accelerates?: true;
   /** Anything the books say about this oil in soap, in the app's own words. */
@@ -102,6 +105,7 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
   // varieties it lists for the oil); essential-oil-catalog.test.ts holds the transcript.
   {
     id: 'lemon', name: 'Lemon', allergens: ['Limonene'],
+    bookDose: { percent: 6, source: 'CP:17084' },
     // [IFRA-ANNEX] lemon oil, expressed. 7-Methoxycoumarin is prohibited as such and allowed
     // as a natural constituent up to 0.01% of the product (the standard's notebox) → 20%.
     constituents: [
@@ -139,6 +143,7 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
   // Herbaceous and minty.
   {
     id: 'lavender', name: 'Lavender', allergens: ['Linalool'],
+    bookDose: { percent: 3, source: 'CP:17556' },
     // [IFRA-ANNEX] lavender oil: nothing near binding (the lowest figure, 2-hexenal, → 150%).
     constituents: [
       { substance: '1-Octen-3-yl acetate', percentOfOil: 1.04 },
@@ -158,9 +163,10 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
     ],
   },
   // Eucalyptus globulus is not in [IFRA-ANNEX]; radiata carries 1.5% citral (→ 80%).
-  { id: 'eucalyptus', name: 'Eucalyptus', allergens: ['Limonene'] },
+  { id: 'eucalyptus', name: 'Eucalyptus', allergens: ['Limonene'], bookDose: { percent: 3, source: 'CP:17670' } },
   {
     id: 'tea-tree', name: 'Tea tree', allergens: [],
+    bookDose: { percent: 5, source: 'CP:16761' },
     // [SCCS-TTO] 1.0% in shower gel. [IFRA-ANNEX] tea tree oil: methyl eugenol 0.05%, which
     // EU law's 0.001% would cap at 2.0% — the SCCS figure is lower and wins.
     standard: {
@@ -221,6 +227,7 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
   },
   {
     id: 'lemongrass', name: 'Lemongrass', allergens: ['Citral', 'Linalool', 'Geraniol', 'Citronellol', 'Farnesol'],
+    bookDose: { percent: 3, source: 'CP:17667' },
     // [IFRA-ANNEX] lemongrass oil, West and East Indian, the higher of the two per row:
     // citral 73% (West; East lists geranial 41.4 + neral 30.5 = 72%); cap 1.2% → 1.6% of a
     // bar. The East Indian's iso-geranial and iso-neral rows have no standard of their own
@@ -264,6 +271,8 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
   },
   {
     id: 'cinnamon', name: 'Cinnamon', material: 'cinnamon bark oil', allergens: ['Cinnamal', 'Eugenol', 'Linalool'], accelerates: true,
+    // "cinnamon bark EO commonly has a suggested usage rate of 0.1%" (CP:9589-9590).
+    bookDose: { percent: 0.1, source: 'CP:9589-9590' },
     // [IFRA-ANNEX] cinnamon bark oil (C. zeylanicum): cinnamic aldehyde 75% (cap 0.49% →
     // 0.65% of a bar); the rest sit far above it — safrole, prohibited as such and allowed as
     // a natural constituent up to 0.01% of the product by IFRA's notebox and by EU Annex
@@ -336,4 +345,48 @@ export function essentialOilCeiling(entry: EssentialOilEntry): EssentialOilCeili
   if (candidates.length === 0) return null;
   const best = candidates.reduce((a, b) => (b.percentOfProduct < a.percentOfProduct ? b : a));
   return best.percentOfProduct < 100 ? best : null;
+}
+
+/** "Most FO/EOs will only require 0.5-1% for a potent fragrance" in a liquid soap
+ * (LS:13214-13215): the top of that is where a bottle starts. */
+export const LS_STARTING_DOSE_PERCENT = 1;
+
+/** Four-fifths of a ceiling, rounded down to the half point — the room a starting dose
+ * keeps under it. Below half a point the figure is kept at two decimals instead of
+ * collapsing to nothing. */
+function roomUnder(ceilingPercentOfProduct: number): number {
+  const fourFifths = 0.8 * ceilingPercentOfProduct;
+  const half = Math.floor(fourFifths * 2 + 1e-9) / 2;
+  return half >= 0.5 ? half : Math.floor(fourFifths * 100 + 1e-9) / 100;
+}
+
+/**
+ * Where a dose of this oil starts, in the basis the maker types in (% of oil weight for a
+ * bar, % of the finished solution for liquid soap), and why. A bar starts at the dose the
+ * cold-process text itself puts on the oil, else at the floor of its recipes (3%); a bottle
+ * at 1% (LS:13214-13215). Where that would sit at or over the oil's ceiling, it starts at
+ * four-fifths of the ceiling rounded down to the half point instead — a bar's dose basis
+ * is lighter than the cured bar and a bottle's is the solution before its extras, so a
+ * dose typed at that figure lands under the ceiling in either.
+ */
+export function essentialOilStartingDose(
+  entry: EssentialOilEntry,
+  process: AdditiveProcess,
+): { percent: number; why: string } {
+  const base =
+    process === 'ls'
+      ? { percent: LS_STARTING_DOSE_PERCENT, why: 'most oils need only 0.5–1% of a liquid soap for a potent scent' }
+      : entry.bookDose
+        ? {
+            percent: entry.bookDose.percent,
+            why: entry.bookDose.percent < USUAL_DOSE_RANGE_PERCENT[process].low
+              ? `the rate the cold-process text quotes for ${essentialOilMaterial(entry)}`
+              : `what the cold-process text doses ${essentialOilMaterial(entry)} at`,
+          }
+        : { percent: USUAL_DOSE_RANGE_PERCENT[process].low, why: 'the floor of the cold-process recipes' };
+  const ceiling = essentialOilCeiling(entry);
+  if (!ceiling) return base;
+  const room = roomUnder(ceiling.percentOfProduct);
+  if (base.percent <= room) return base;
+  return { percent: room, why: 'four-fifths of its ceiling, rounded down to the half point, so it starts well under' };
 }

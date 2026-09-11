@@ -3,6 +3,7 @@ import {
   ESSENTIAL_OIL_CATALOG,
   essentialOilCeiling,
   essentialOilEntryById,
+  essentialOilStartingDose,
 } from './essential-oil-catalog.js';
 import {
   EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT,
@@ -195,6 +196,55 @@ describe('each oil\'s ceiling in soap, % of the finished product', () => {
     for (const id of ['geranium', 'cedarwood']) {
       const dose = fragranceDoseAtCeiling(ceiling(id)!.percentOfProduct, 1300, 0, 0, 1000)!;
       expect(dose, id).toBeGreaterThan(USUAL_DOSE_RANGE_PERCENT.cp.high);
+    }
+  });
+});
+
+describe('where a dose starts', () => {
+  const start = (id: string, process: 'cp' | 'hp' | 'ls') => essentialOilStartingDose(essentialOilEntryById(id)!, process);
+
+  it('a bar starts at the dose the cold-process text puts on the oil, else the floor of its recipes', () => {
+    expect(start('lavender', 'cp')).toMatchObject({ percent: 3 });
+    expect(start('lavender', 'cp').why).toMatch(/doses lavender oil at/);
+    expect(start('lemon', 'cp').percent).toBe(6);
+    expect(start('tea-tree', 'hp').percent).not.toBe(5); // the book's 5% sits over tea tree's ceiling — see below
+    expect(start('eucalyptus', 'cp').percent).toBe(3);
+    // the text's own figure for cinnamon bark, 0.1%, is far under its ceiling and stands
+    expect(start('cinnamon', 'cp')).toMatchObject({ percent: 0.1 });
+    expect(start('cinnamon', 'cp').why).toMatch(/the rate the cold-process text quotes for cinnamon bark oil/);
+    // no book figure: the floor of the recipes
+    expect(start('rosemary', 'cp')).toEqual({ percent: 3, why: 'the floor of the cold-process recipes' });
+    expect(start('geranium', 'cp').percent).toBe(3);
+    expect(start('cedarwood', 'cp').percent).toBe(3);
+  });
+
+  it('a ceiling the base would sit at or over pulls the start down to four-fifths of it, rounded to the half point', () => {
+    expect(start('clove', 'cp')).toMatchObject({ percent: 0.5 });        // 0.8 × 1.0 → 0.5
+    expect(start('clove', 'cp').why).toMatch(/four-fifths of its ceiling/);
+    expect(start('lemongrass', 'cp').percent).toBe(1);                  // 0.8 × 1.64 = 1.31 → 1.0
+    expect(start('ylang-ylang', 'cp').percent).toBe(1);                 // 0.8 × 1.4 = 1.12 → 1.0
+    expect(start('tea-tree', 'cp').percent).toBe(0.5);                  // 0.8 × 1.0 → 0.5, not the book's 5
+  });
+
+  it('a bottle starts at 1% (LS:13214-13215), under the same ceilings', () => {
+    expect(start('lavender', 'ls')).toEqual({ percent: 1, why: 'most oils need only 0.5–1% of a liquid soap for a potent scent' });
+    expect(start('clove', 'ls').percent).toBe(0.5);
+    expect(start('cinnamon', 'ls').percent).toBe(0.5);                  // 0.8 × 0.65 = 0.52 → 0.5
+    expect(start('tea-tree', 'ls').percent).toBe(0.5);
+    expect(start('geranium', 'ls').percent).toBe(1);
+  });
+
+  it('every start lands under the ceiling, in a representative bar and bottle', () => {
+    for (const e of ESSENTIAL_OIL_CATALOG) {
+      const c = essentialOilCeiling(e);
+      if (!c) continue;
+      // bar: 1000 g oils, 1300 g cured — the share is the dose × 1000 ÷ 1300
+      const bar = start(e.id, 'cp').percent;
+      expect((bar * 1000) / (1300 + bar * 10), e.id).toBeLessThan(c.percentOfProduct);
+      // bottle: 1000 g solution, polysorbate at 1:1 — the share is g ÷ (1000 + 2g)
+      const bottle = start(e.id, 'ls').percent;
+      const g = bottle * 10;
+      expect((100 * g) / (1000 + 2 * g), e.id).toBeLessThan(c.percentOfProduct);
     }
   });
 });

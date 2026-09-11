@@ -486,7 +486,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           <ul className="batch-sheet__list">
             {scentFragranceRows.map((f) => (
               <li key={f.key}>
-                {f.name.trim() || 'Fragrance'} — {fragranceLineDetail(f, weightUnit, process)} (
+                {f.name.trim() || 'Essential oil'} — {fragranceLineDetail(f, weightUnit, process)} (
                 {additiveStageLabel(f.stage, process)})
               </li>
             ))}

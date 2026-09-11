@@ -4,6 +4,7 @@ import {
   ceilingDigits,
   ESSENTIAL_OIL_CATALOG,
   essentialOilEntryById,
+  essentialOilStartingDose,
   formatPercentToward,
   formatShareAgainstCeiling,
   usualDoseClause,
@@ -55,12 +56,17 @@ const REGULATORY_COPY =
 export const FragrancePanel = memo(function FragrancePanel({ scent, computed, process, weightUnit, onChange }: Props) {
   const setFragrance = (key: string, patch: Partial<FragranceLine>) =>
     onChange({ ...scent, fragrances: scent.fragrances.map((f) => (f.key === key ? { ...f, ...patch } : f)) });
-  /** Picking an oil settles its name; what it carries and what it may be dosed at come off
-   * the catalog at compute time, so nothing has to be copied into the row. Custom… hands the
-   * name back and leaves the rest alone. */
+  /** Picking an oil settles its name and, if the dose is still empty, starts it at the
+   * oil's own starting dose (core essentialOilStartingDose) — a typed dose is the maker's
+   * and is left alone. What the oil carries and what it may be dosed at come off the
+   * catalog at compute time, so nothing else has to be copied into the row. Custom… hands
+   * the name back and leaves the rest alone. */
   const pickCatalog = (key: string, catalogId: string) => {
     const entry = essentialOilEntryById(catalogId);
-    setFragrance(key, entry ? { catalogId: entry.id, name: entry.name } : { catalogId: '' });
+    if (!entry) { setFragrance(key, { catalogId: '' }); return; }
+    const row = scent.fragrances.find((f) => f.key === key);
+    const seed = row && row.percent.trim() === '' ? { percent: String(essentialOilStartingDose(entry, process).percent) } : {};
+    setFragrance(key, { catalogId: entry.id, name: entry.name, ...seed });
   };
   const doseLabel = fragranceDoseLabel(process);
   const noun = productNoun(process, computed.productBasis);
@@ -254,11 +260,20 @@ function DoseSentence({ c, noun, share }: { c: ComputedFragrance; noun: string; 
   return <> This dose is {share}% of the {noun}{c.overSafeMax ? <strong> — over it.</strong> : '.'}</>;
 }
 
+/** Where the dose starts for a listed oil, and why — the figure the pick fills in. */
+function StartSentence({ f, process, doseLabel }: { f: FragranceLine; process: ProcessId; doseLabel: string }) {
+  const entry = essentialOilEntryById(f.catalogId);
+  if (!entry) return null;
+  const start = essentialOilStartingDose(entry, process);
+  return <> Start at <strong>{formatGrams(start.percent, 2)}{doseLabel}</strong> — {start.why}.</>;
+}
+
 function SafeUse({ f, c, process, noun, doseLabel, figures }: {
   f: FragranceLine; c: ComputedFragrance; process: ProcessId; noun: string; doseLabel: string;
   figures: ReturnType<typeof rowFigures>;
 }) {
   const dose = <DoseSentence c={c} noun={noun} share={figures.share} />;
+  const start = <StartSentence f={f} process={process} doseLabel={doseLabel} />;
   if (f.catalogId === '') {
     return (
       <>
@@ -271,7 +286,7 @@ function SafeUse({ f, c, process, noun, doseLabel, figures }: {
     return (
       <>
         No ceiling applies: none of this oil&apos;s restricted constituents comes near its limit in soap, and no
-        standard names the oil itself — {usualDoseClause(process)}.{dose}
+        standard names the oil itself — {usualDoseClause(process)}.{start}{dose}
       </>
     );
   }
@@ -279,7 +294,7 @@ function SafeUse({ f, c, process, noun, doseLabel, figures }: {
     return (
       <>
         No ceiling bites below the usual range: this oil&apos;s works out at {figures.ceiling}% of the {noun}{' '}
-        ({c.ceiling.why}), and {usualDoseClause(process)}.{dose}
+        ({c.ceiling.why}), and {usualDoseClause(process)}.{start}{dose}
       </>
     );
   }
@@ -287,7 +302,7 @@ function SafeUse({ f, c, process, noun, doseLabel, figures }: {
     <>
       Up to <strong>{figures.ceiling}% of the {noun}</strong>
       {figures.basis !== null && <> (about {figures.basis}{doseLabel} in this recipe)</>}
-      {' — '}{c.ceiling.why}.{dose}
+      {' — '}{c.ceiling.why}.{start}{dose}
     </>
   );
 }

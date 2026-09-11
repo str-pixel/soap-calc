@@ -10,6 +10,8 @@ export type ScentFixtureContext = {
   /** The finished-product mass the compliance pass divides by; null = unknown. */
   productGrams: number | null;
   productBasis?: 'label' | 'solution' | 'batch';
+  /** Grams of product per gram put in (a pot-wide preservative); 1 when absent. */
+  productPerGramOfContents?: number;
 };
 
 /** A saved-shape section, run through the same two passes the view model runs — so a test
@@ -21,7 +23,7 @@ export function computedScent(saved: unknown, ctx: ScentFixtureContext): Compute
     solutionGrams: ctx.solutionGrams ?? 0,
     deliveredSuperfatPercent: ctx.deliveredSuperfatPercent ?? 5,
   });
-  return applyScentColorCompliance(grams, ctx.productGrams, ctx.productBasis ?? (ctx.process === 'ls' ? 'solution' : 'label'));
+  return applyScentColorCompliance(grams, ctx.productGrams, ctx.productBasis ?? (ctx.process === 'ls' ? 'solution' : 'label'), ctx.productPerGramOfContents ?? 1);
 }
 
 /** The canonical vanilla row: 3% fragrance oil, 12% vanillin (deep browning, 1:1 stabilizer).

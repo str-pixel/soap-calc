@@ -307,7 +307,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   if (scentColor) {
     for (const f of scentColor.fragrances) {
       if (!scentRowIsMaterial(f)) continue;
-      fragranceItems.push({ name: f.name.trim() || 'Fragrance', detail: fragranceLineDetail(f, weightUnit, process) });
+      fragranceItems.push({ name: f.name.trim() || 'Essential oil', detail: fragranceLineDetail(f, weightUnit, process) });
     }
     // The MATERIALS ride with the fragrance because they are weighed with it. The label
     // line does not: it is not something to weigh, it is something to print, so it reads

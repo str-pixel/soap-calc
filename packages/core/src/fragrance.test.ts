@@ -115,6 +115,18 @@ describe('fragranceDoseAtCeiling — the ceiling in the basis the maker types in
     const g = 9.5918;
     expect((100 * g) / (940 + 2 * g)).toBeCloseTo(1, 4);
   });
+  it('counts a preservative dosed on the whole pot — every gram put in grows the product by its factor', () => {
+    // 1% ceiling; a 1000 g bottle that is the pot ÷ 0.99 (a 1% w/w preservative), holding
+    // 30 g of oil and 30 g of polysorbate. Per gram of oil the product grows by 2 ÷ 0.99.
+    const s = 1 / 0.99;
+    const d = fragranceDoseAtCeiling(1, 1000, 30, 30, 1000, s)!;
+    const g = (d / 100) * 1000;
+    const rest = 1000 - 60 * s;
+    expect((100 * g) / (rest + 2 * g * s)).toBeCloseTo(1.0, 6);
+    // and without the factor the same figure would land a hair over
+    const naive = (fragranceDoseAtCeiling(1, 1000, 30, 30, 1000)! / 100) * 1000;
+    expect((100 * naive) / (rest + 2 * naive * s)).toBeGreaterThan(1.0);
+  });
   it('is null without a product weight, a ceiling, or a basis', () => {
     expect(fragranceDoseAtCeiling(1, null, 10, 0, 1000)).toBeNull();
     expect(fragranceDoseAtCeiling(null, 1300, 10, 0, 1000)).toBeNull();

@@ -312,6 +312,18 @@ describe('what a picked oil carries, and what it may be dosed at', () => {
     expect((100 * g) / (940 + 2 * g)).toBeCloseTo(1.0, 3);
   });
 
+  it('…and so is the preservative dosed on the whole pot, so the figure is exact for the bottle', () => {
+    // The same bottle with a 1% w/w preservative: the pot is 1000 ÷ 0.99 = 1010.1 g and grows
+    // by 2 ÷ 0.99 g for every gram of oil (oil + polysorbate, then the preservative on both).
+    const s = 1 / 0.99;
+    const c = computedScent({ fragrances: [{ catalogId: 'tea-tree', name: '', percent: '3' }], colorants: [], portions: [] },
+      { process: 'ls', totalOilGrams: 500, solutionGrams: 1000, deliveredSuperfatPercent: 5, productGrams: 1000 * s, productPerGramOfContents: s });
+    const f = c.fragrances[0];
+    const g = (f.ceilingPercentOfBasis! / 100) * 1000;
+    const rest = 1000 * s - 60 * s;
+    expect((100 * g) / (rest + 2 * g * s)).toBeCloseTo(1.0, 6);
+  });
+
   it('an oil the maker named carries nothing the app can vouch for', () => {
     const c = applyScentColorCompliance(
       computeScentColorGrams(normalizeScentColor({ fragrances: [{ name: 'Mine', percent: '3' }], colorants: [], portions: [] }),

@@ -1096,6 +1096,9 @@ test.describe('the essential-oil catalog', () => {
 
     await page.getByRole('button', { name: /add essential oil/i }).click();
     await page.getByLabel(/Essential oil for/).first().selectOption('clove');
+    // The pick starts the empty dose at the oil's own starting figure, and the row says why.
+    await expect(page.getByLabel(/dose, % of oil weight/).first()).toHaveValue('0.5');
+    await expect(panel).toContainText(/Start at 0\.5% of oil weight — four-fifths of its ceiling/);
     await page.getByLabel(/dose, % of oil weight/).first().fill('1');
     await expect(panel.getByLabel('Essential oil name')).toHaveCount(0);
     // No list to fill in and no ceiling to type: one warning, one safe-use line off the catalog.

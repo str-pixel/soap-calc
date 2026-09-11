@@ -1034,7 +1034,14 @@ export function useRecipeViewModel({
   const scentColorComputed = useMemo(() => {
     if (process === 'ls') {
       const bottle = finishedProductGrams ?? bottledSolutionGrams;
-      return applyScentColorCompliance(scentGrams, bottle !== null && bottle > 0 ? bottle : null, 'solution');
+      // The preservative is dosed on the whole pot, fragrance included, so every gram of
+      // oil put in grows the bottle by pot ÷ (pot − dose) — exact by construction of
+      // finishedProductGramsFor, and 1 when there is no dose.
+      const perGram =
+        finishedProductGrams !== null && finishedProductGrams > preservativeDoseGramsValue && preservativeDoseGramsValue > 0
+          ? finishedProductGrams / (finishedProductGrams - preservativeDoseGramsValue)
+          : 1;
+      return applyScentColorCompliance(scentGrams, bottle !== null && bottle > 0 ? bottle : null, 'solution', perGram);
     }
     if (labelWeight !== null) return applyScentColorCompliance(scentGrams, labelWeight, 'label');
     return applyScentColorCompliance(
@@ -1042,7 +1049,7 @@ export function useRecipeViewModel({
       batchWeightWithExtras > 0 ? batchWeightWithExtras : null,
       'batch',
     );
-  }, [scentGrams, process, finishedProductGrams, bottledSolutionGrams, labelWeight, batchWeightWithExtras]);
+  }, [scentGrams, process, finishedProductGrams, bottledSolutionGrams, preservativeDoseGramsValue, labelWeight, batchWeightWithExtras]);
   // Stable identity for the insights memo: built inline, this array was fresh every render
   // and defeated the memo (and, through `insights`, the batch-sheet memo) on every keystroke.
   const insightSplitRows = useMemo(

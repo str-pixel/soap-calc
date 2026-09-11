@@ -244,6 +244,10 @@ export function applyScentColorCompliance(
   computed: ComputedScentColor,
   productGrams: number | null,
   productBasis: 'label' | 'solution' | 'batch',
+  /** How many grams the product grows for every gram put into it — 1 for a bar, whose
+   * extras sit on top of the cured base; the pot ÷ (pot − preservative) for a liquid soap
+   * whose preservative is dosed on the whole pot, fragrance included. */
+  productPerGramOfContents = 1,
 ): ComputedScentColor {
   // Nothing to compare: keep the pass-1 object (identity matters to the panel's memo).
   if (computed.fragrances.length === 0) return computed;
@@ -260,7 +264,7 @@ export function applyScentColorCompliance(
     // in that same basis, and only approximated by the product-basis figure before the
     // product weight is known.
     const ceilingPercentOfBasis = fragranceDoseAtCeiling(
-      ceiling, product, f.grams, f.polysorbateGrams + f.stabilizerGrams, computed.fragranceBasisGrams,
+      ceiling, product, f.grams, f.polysorbateGrams + f.stabilizerGrams, computed.fragranceBasisGrams, productPerGramOfContents,
     );
     const high = computed.fragranceUsualHighPercent;
     const ceilingAboveUsualRange =

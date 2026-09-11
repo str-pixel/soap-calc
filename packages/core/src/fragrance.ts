@@ -184,11 +184,13 @@ export function formatShareAgainstCeiling(
 
 /**
  * A product-basis ceiling turned into the basis the maker types in, for one recipe. The
- * product carries the oil itself and whatever rides with the dose (polysorbate 20 at 1:1
- * in liquid soap, a vanilla stabilizer), so the most of the oil that fits is solved, not
- * scaled: with the rest of the product at R grams, a ceiling of c (a fraction) and k grams
- * of extras per gram of oil, g ÷ (R + g + k·g) = c gives g = c·R ÷ (1 − c·(1 + k)); over
- * the dose basis that is the percent to type. Null until the product weight is known.
+ * product carries the oil itself and whatever rides with the dose — polysorbate 20 at 1:1
+ * in liquid soap, a vanilla stabilizer, and in liquid soap a preservative dosed on the
+ * whole pot, which grows the product by a fixed factor s for every gram put in — so the
+ * most of the oil that fits is solved, not scaled: with the rest of the product at R
+ * grams, a ceiling of c (a fraction) and k grams of extras per gram of oil, g ÷ (R + s·(1 +
+ * k)·g) = c gives g = c·R ÷ (1 − c·s·(1 + k)); over the dose basis that is the percent to
+ * type. Null until the product weight is known.
  */
 export function fragranceDoseAtCeiling(
   ceilingPercentOfProduct: number | null,
@@ -196,13 +198,16 @@ export function fragranceDoseAtCeiling(
   fragranceGrams: number,
   extrasWithDoseGrams: number,
   doseBasisGrams: number,
+  productPerGramOfContents = 1,
 ): number | null {
   if (!finite(ceilingPercentOfProduct) || !finite(productGrams) || productGrams <= 0 || doseBasisGrams <= 0) return null;
   const c = ceilingPercentOfProduct / 100;
   if (c <= 0 || c >= 1) return null;
+  const s = finite(productPerGramOfContents) && productPerGramOfContents >= 1 ? productPerGramOfContents : 1;
   const k = fragranceGrams > 0 ? Math.max(0, extrasWithDoseGrams) / fragranceGrams : 0;
-  const rest = Math.max(0, productGrams - fragranceGrams * (1 + k));
-  const denominator = 1 - c * (1 + k);
+  const perGram = s * (1 + k);
+  const rest = Math.max(0, productGrams - fragranceGrams * perGram);
+  const denominator = 1 - c * perGram;
   if (denominator <= 0) return null;
   return (100 * ((c * rest) / denominator)) / doseBasisGrams;
 }
