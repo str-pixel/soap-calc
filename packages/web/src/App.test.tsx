@@ -404,12 +404,12 @@ describe('the preservative dose is a % of what the maker is actually making', ()
     const jar = within(dilutionPanel)
       .getByText('Finished so far (this jar)')
       .nextElementSibling!.textContent!.trim();
-    expect(jar).toBe('1,300 g');
+    expect(jar).toBe('1300 g');
     // The snippet's own row is the INCLUSIVE figure (fix 3: the jar plus the dose it
     // implies), not a bare echo of the panel's basis-only jar readout — but it is still the
     // jar the maker actually recorded that is being dosed, not the 2,060 g the stale amount
     // implies: 1,300 + the 1% w/w dose (13 g) → 1,313 g.
-    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('1,313 g');
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('1313 g');
     expect(figure(snippet, '≈ Finished product (whole batch)')).toBe('');
     // 1% w/w of 1,300 g. The 2,060 g the stale amount implies would print 21 g here.
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(13, 0);
@@ -433,7 +433,7 @@ describe('the preservative dose is a % of what the maker is actually making', ()
 
     // 1,700 g of paste plus 300 g of water is a 2,000 g jar; the row is that basis PLUS the
     // 1% w/w dose (fix 3) — 2,000 + 20 → 2,020 g.
-    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('2,020 g');
+    expect(figure(snippet, '≈ Finished product (custom amount)')).toBe('2020 g');
     expect(grams(figure(snippet, 'Preservative to add'))).toBeCloseTo(20, 0);
   });
 
@@ -547,17 +547,17 @@ describe('Whole batch, with a record: one batch has one finished mass', () => {
     fireEvent.change(paste, { target: { value: '1400' } });
     fireEvent.change(water, { target: { value: '0' } });
 
-    expect(potRow(panel)).toBe('1,400 g');
+    expect(potRow(panel)).toBe('1400 g');
     // What the panel says is in the pot is what the snippet DOSES — the pot, never the
     // 1,666 g computed pot this printed before. The snippet's own row is the INCLUSIVE
     // figure (fix 3: the pot plus its own advisory dose, 1,400 + 14 → 1,414 g), so it is no
     // longer a bare echo of the pot text, but it is still built from the same 1,400 g.
-    expect(row(snippet, '≈ Finished product (whole batch)')).toBe('1,414 g');
+    expect(row(snippet, '≈ Finished product (whole batch)')).toBe('1414 g');
     // …and the volume the maker sizes bottles from follows it, dose included: the seeded 1%
     // Suttocide A is the app's recommendation for a water-based product and weighs what the
     // snippet says it does, chosen or not — (1,400 + 1,400x1/99) / 1.03 = 1,373 ml, not the
     // 1,359 ml the pot alone would give.
-    expect(row(panel, '≈ Finished volume')).toBe('1,373 ml');
+    expect(row(panel, '≈ Finished volume')).toBe('1373 ml');
     // The snippet's OWN advisory dose is unaffected by the flag — it always shows the maker
     // a worked example from the typed %, gated on neither the tier nor the choice: 1,400×1/99
     // ≈ 14 g. It is the mass that bottles that follows the choice, not this figure.
@@ -582,12 +582,12 @@ describe('Whole batch, with a record: one batch has one finished mass', () => {
     fireEvent.change(paste, { target: { value: '1400' } });
     fireEvent.change(water, { target: { value: '0' } });
 
-    expect(potRow(panel)).toBe('1,400 g');
+    expect(potRow(panel)).toBe('1400 g');
     // …and the volume the maker sizes bottles from follows it: the finished mass now
     // INCLUDES the preservative dose (spec §3) — (1,400 + 1,400×1/99) / 1.03 ≈ 1,373 ml —
     // not the plain 1,359 ml the pot alone would give, and not the 1,618 ml the computed
     // pot implies.
-    expect(row(panel, '≈ Finished volume')).toBe('1,373 ml');
+    expect(row(panel, '≈ Finished volume')).toBe('1373 ml');
     expect(num(row(snippet, 'Preservative to add'))).toBeCloseTo(14, 0);
   });
 

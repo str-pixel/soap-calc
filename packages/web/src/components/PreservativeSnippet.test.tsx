@@ -95,8 +95,8 @@ test('the dose is seeded with the default and computes grams from the finished m
   // The row is the INCLUSIVE figure (basis + dose = 4,000 + 40.40… → 4,040 g), the same
   // number the panel's own same-named row quotes — one name, one mass (fix 3). The bare
   // 4,000 g basis is never shown; it stays internal, feeding the dose math only.
-  expect(screen.getByText('4,040 g')).toBeTruthy();
-  expect(screen.queryByText('4,000 g')).toBeNull();
+  expect(screen.getByText('4040 g')).toBeTruthy();
+  expect(screen.queryByText('4000 g')).toBeNull();
 });
 
 test('the base row names the scope it came from, and the portion scope is a different mass', () => {
@@ -136,7 +136,7 @@ test('a recorded jar is still dosed and named as the custom amount it is', () =>
   // toggle's own wording, because that is what the maker chose up the panel.
   render(<Harness finishedGrams={1300} basisScope="portion" portionIsRecorded />);
   expect(screen.getByText('≈ Finished product (custom amount)')).toBeTruthy();
-  expect(screen.getByText('13 g')).toBeTruthy(); // 1% of the 1,300 g jar
+  expect(screen.getByText('13 g')).toBeTruthy(); // 1% of the 1300 g jar
 });
 
 test('picking another preservative reseeds the dose with ITS default and shows its facts', () => {
@@ -173,7 +173,7 @@ test("a dose above a supplier ceiling says whose maximum it is, and still comput
   expect(alert.textContent).toContain('0.5%');
   expect(alert.textContent).toContain('supplier');
   expect(alert.textContent).not.toContain('EU legal maximum');
-  expect(screen.getByText('32 g')).toBeTruthy();   // 0.8% of 4,000 g
+  expect(screen.getByText('32 g')).toBeTruthy();   // 0.8% of 4000 g
 });
 
 test('a dose inside the typical range raises nothing', () => {
@@ -181,7 +181,7 @@ test('a dose inside the typical range raises nothing', () => {
   fireEvent.change(doseInput(), { target: { value: '0.7' } });
   expect(screen.queryByRole('alert')).toBeNull();
   expect(screen.queryByText(/Below the typical/)).toBeNull();
-  expect(screen.getByText('28 g')).toBeTruthy();   // 0.7% of 4,000 g
+  expect(screen.getByText('28 g')).toBeTruthy();   // 0.7% of 4000 g
 });
 
 test('an under-dose is flagged as a plain note, not an alert', () => {
@@ -189,7 +189,7 @@ test('an under-dose is flagged as a plain note, not an alert', () => {
   fireEvent.change(doseInput(), { target: { value: '0.2' } });
   expect(screen.getByText(/Below the typical 0.5–1% for Suttocide A/)).toBeTruthy();
   expect(screen.queryByRole('alert')).toBeNull();  // plain note: it must not steal focus
-  expect(screen.getByText('8 g')).toBeTruthy();    // 0.2% of 4,000 g — still computed
+  expect(screen.getByText('8 g')).toBeTruthy();    // 0.2% of 4000 g — still computed
 });
 
 test('a dose over 100% is refused outright — no figure, because it is not a dose', () => {

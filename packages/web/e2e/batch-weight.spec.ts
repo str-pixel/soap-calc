@@ -26,7 +26,7 @@ test('committing a Total batch target rescales the oils to hit it', async ({ pag
   await batchField(page).blur();
 
   // Results' own batch line shows ~the target (whole-gram rounding ⇒ within a few grams).
-  await expect(page.getByTestId('batch-weight')).toContainText(/1,49\d|1,50\d/);
+  await expect(page.getByTestId('batch-weight')).toContainText(/149\d|150\d/);
   // Oils scaled up proportionally.
   const firstOilAfter = Number(await weightInputs(page).nth(0).inputValue());
   expect(firstOilAfter).toBeGreaterThan(firstOilBefore);
@@ -42,7 +42,7 @@ test('pressing Enter commits the target — no click-away needed', async ({ page
   await batchField(page).fill('1500');
   await batchField(page).press('Enter'); // commit via Enter, focus stays in the field
 
-  await expect(page.getByTestId('batch-weight')).toContainText(/1,49\d|1,50\d/);
+  await expect(page.getByTestId('batch-weight')).toContainText(/149\d|150\d/);
   expect(Number(await oilTotal.inputValue())).toBeGreaterThan(oilBefore);
 });
 

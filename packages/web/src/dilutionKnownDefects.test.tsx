@@ -172,8 +172,8 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
     const alert = alerts[0]!.textContent!.replace(/\s+/g, ' ');
     // Both sides of the comparison it asserts, so the maker can check the claim…
     expect(alert).toContain('already more dilute than the target above');
-    expect(alert).toContain('1,945 g');
-    expect(alert).toContain('1,870 g');
+    expect(alert).toContain('1945 g');
+    expect(alert).toContain('1870 g');
     // …and the remedy Custom amount gives for the same state, from the same shared wording.
     expect(alert).toContain('Lower the target concentration above (more water)');
     expect(hintTexts().some((t) => /more dilute|cannot be diluted|past the target/.test(t))).toBe(
@@ -181,7 +181,7 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
     );
   });
 
-  it('1,600 g canned coconut milk on 1,000 g oils at a 40% target: 0 g on screen, one alert', () => {
+  it('1600 g canned coconut milk on 1000 g oils at a 40% target: 0 g on screen, one alert', () => {
     const settings = {
       lyeType: 'koh' as const,
       soapConcentrationPercent: '40',
@@ -206,12 +206,12 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
     const alerts = screen.queryAllByRole('alert');
     expect(alerts.length).toBe(1);
     expect(alerts[0]!.textContent!.replace(/\s+/g, ' ')).toContain(
-      'it weighs 3,145 g against the 3,038 g its soap makes at that concentration',
+      'it weighs 3145 g against the 3038 g its soap makes at that concentration',
     );
     // The head-start hint still prints alongside and still explains the DEDUCTION rather
     // than the zero — the two paragraphs answer different questions and both belong.
     expect(
-      hintTexts().some((t) => t.startsWith('Already 1,600 g lighter')),
+      hintTexts().some((t) => t.startsWith('Already 1600 g lighter')),
     ).toBe(true);
   });
 
@@ -284,7 +284,7 @@ describe('DEFECT 1 (fixed): a corrected paste past the target says so instead of
     expect(notes.length).toBe(1);
     const note = notes[0]!.textContent!.replace(/\s+/g, ' ');
     expect(note).toContain('already more dilute than 65%');
-    expect(note).toContain('it weighs 1,945 g against the 1,870 g');
+    expect(note).toContain('it weighs 1945 g against the 1870 g');
     expect(note).toContain('there is no dilution water to add');
   });
 });
@@ -348,16 +348,16 @@ describe('DEFECT 2 (fixed, was pre-existing): a measured paste no longer over-co
     // solution (it prints when the two differ). They match now, so it is suppressed — the
     // same way it already was without a measurement, asserted below.
     expect(screen.queryByText('≈ Finished product')).toBeNull();
-    expect(rowText('Finished solution')).toBe('4,051 g');
+    expect(rowText('Finished solution')).toBe('4051 g');
     // …and the volume the bottle count is derived from follows: 4,051.11 / 1.03, not
     // 4,115.11 / 1.03 (3,995 ml).
-    expect(rowText('≈ Finished volume')).toBe('3,933 ml');
+    expect(rowText('≈ Finished volume')).toBe('3933 ml');
 
     cleanup();
     const unmeasured = viewModelFor(settings);
     renderPanel(unmeasured, settings.soapConcentrationPercent);
     expect(screen.queryByText('≈ Finished product')).toBeNull();
-    expect(rowText('≈ Finished volume')).toBe('3,933 ml');
+    expect(rowText('≈ Finished volume')).toBe('3933 ml');
   });
 
   it('the corrected pot is now decisive on the measured path too, not just the unmeasured one', () => {
@@ -419,12 +419,12 @@ describe('DEFECT 3 (fixed): the head-start hint renders on a glycerin recipe', (
     expect(glycerin.wholeBatchPasteGrams! - plain.wholeBatchPasteGrams!).toBeCloseTo(400, 3);
 
     renderPanel(plain, AT_30.soapConcentrationPercent);
-    expect(rowText('Dilution water to add')).toBe('2,506 g');
+    expect(rowText('Dilution water to add')).toBe('2506 g');
     const plainPour = rowGrams('Dilution water to add');
     cleanup();
 
     renderPanel(glycerin, AT_30.soapConcentrationPercent);
-    expect(rowText('Dilution water to add')).toBe('2,106 g');
+    expect(rowText('Dilution water to add')).toBe('2106 g');
     expect(plainPour - rowGrams('Dilution water to add')).toBe(400);
     // FIXED: the 400 g drop is accounted for, and the paragraph quotes the whole 400 g
     // rather than a water term that would have read "0 g".
@@ -493,8 +493,8 @@ describe('DEFECT 4 (fixed): "Total water" reconciles with the pour again', () =>
     renderPanel(vm, '30');
     // FIXED: 2,836 g less the milk's 64 g of solids. Core's own figure is untouched — only
     // what the panel prints for the finished solution changed.
-    expect(rowText('Total water')).toBe('2,772 g');
-    expect(rowText('Dilution water to add')).toBe('2,306 g');
+    expect(rowText('Total water')).toBe('2772 g');
+    expect(rowText('Dilution water to add')).toBe('2306 g');
     const implied = rowGrams('Total water') - rowGrams('Dilution water to add');
     expect(implied).toBe(466);
     expect(implied - vm.cookWaterGrams).toBeCloseTo(0, 0);
@@ -511,8 +511,8 @@ describe('DEFECT 4 (fixed): "Total water" reconciles with the pour again', () =>
     expect(vm.cookWaterGrams).toBeCloseTo(330, 3);
 
     renderPanel(vm, '30');
-    expect(rowText('Total water')).toBe('2,436 g');
-    expect(rowText('Dilution water to add')).toBe('2,106 g');
+    expect(rowText('Total water')).toBe('2436 g');
+    expect(rowText('Dilution water to add')).toBe('2106 g');
     const implied = rowGrams('Total water') - rowGrams('Dilution water to add');
     expect(implied).toBe(330);
     expect(implied - vm.cookWaterGrams).toBeCloseTo(0, 0);
@@ -569,7 +569,7 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
     const alerts = screen.queryAllByRole('alert');
     expect(alerts.length).toBe(1);
     const alert = alerts[0]!.textContent!.replace(/\s+/g, ' ');
-    expect(alert).toContain('less than the 1,600 g of soap and alternative-liquid solids');
+    expect(alert).toContain('less than the 1600 g of soap and alternative-liquid solids');
     expect(alert).toContain('the cook boils off water, not solids');
   });
 
@@ -580,7 +580,7 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
     renderPanel(rejected, SETTINGS.soapConcentrationPercent, IMPOSSIBLE);
     // 4,051 − 1,930, not the 4,051 − 1,400 = 2,651 g the accepted reading used to pour: a
     // 530 g over-dose derived from a pot 200 g lighter than its own glycerin.
-    expect(rowText('Dilution water to add')).toBe('2,121 g');
+    expect(rowText('Dilution water to add')).toBe('2121 g');
     // No "uses your measured paste" note either — the panel does not claim a reading it
     // refused one paragraph above.
     expect(hintTexts().some((t) => /uses your measured paste/i.test(t))).toBe(false);
@@ -588,7 +588,7 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
 
     // The same figure the field-blank panel prints, which is what "falls back" means.
     renderPanel(blank, SETTINGS.soapConcentrationPercent);
-    expect(rowText('Dilution water to add')).toBe('2,121 g');
+    expect(rowText('Dilution water to add')).toBe('2121 g');
     // The bottled mass follows the same basis: 4,051 g of solution with the glycerin inside
     // it, counted once, measured or not.
     expect(rejected.bottledSolutionGrams!).toBeCloseTo(blank.bottledSolutionGrams!, 6);
@@ -602,7 +602,7 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
       document.querySelectorAll('.batch-sheet__section'),
     ).find((s) => s.querySelector('h2')?.textContent === 'Dilution')!;
     const text = dilutionSection.textContent!.replace(/\s+/g, ' ');
-    expect(text).toContain('Dilution water to add2,121 g');
+    expect(text).toContain('Dilution water to add2121 g');
     expect(text).not.toContain('uses the measured paste weight');
   });
 
@@ -613,7 +613,7 @@ describe('DEFECT 5 (fixed): the paste floor counts solids that cannot boil off',
     const vm = viewModelFor(SETTINGS, '1750');
     renderPanel(vm, SETTINGS.soapConcentrationPercent, '1750');
     expect(screen.queryAllByRole('alert').length).toBe(0);
-    expect(rowText('Dilution water to add')).toBe('2,301 g'); // 4,051 − 1,750
+    expect(rowText('Dilution water to add')).toBe('2301 g'); // 4051 − 1750
     expect(hintTexts().some((t) => /uses your measured paste/i.test(t))).toBe(true);
   });
 });

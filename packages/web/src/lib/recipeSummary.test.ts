@@ -444,7 +444,7 @@ test('CP steps make the lye solution first, quoting the menu temperature, then t
   const steps = buildAddOrderSteps({ ...CP_BASE, soapingTempF: 125 });
   expect(steps[0]).toContain('NaOH');
   expect(steps[0]).toContain('cool to 52 °C (125 °F)');
-  expect(steps[1]).toContain('1,000 g');
+  expect(steps[1]).toContain('1000 g');
   expect(steps[1]).toContain('warm to 52 °C (125 °F)');
   expect(steps.join(' ')).not.toContain('38–43');
 });

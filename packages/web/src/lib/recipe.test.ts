@@ -717,7 +717,7 @@ describe('gradual dilution water', () => {
 // under recipeFile.ts's 1 MB byte cap) sails through where a 101-line `lines` array is
 // refused outright.
 describe('row-list caps on settings-nested arrays (unbounded-import guard)', () => {
-  it('caps a huge splitLiquids array instead of building all 50,000 rows', () => {
+  it('caps a huge splitLiquids array instead of building all 50000 rows', () => {
     const huge = Array.from({ length: 50_000 }, (_, i) => ({
       key: `k${i}`,
       presetKey: '',
@@ -732,7 +732,7 @@ describe('row-list caps on settings-nested arrays (unbounded-import guard)', () 
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  it('caps a huge postCookSuperfatOils array instead of building all 50,000 rows', () => {
+  it('caps a huge postCookSuperfatOils array instead of building all 50000 rows', () => {
     const huge = Array.from({ length: 50_000 }, () => ({ oilId: 'olive-oil', percent: '0.001' }));
     const s = normalizeSettings({
       postCookSuperfatOils: huge,

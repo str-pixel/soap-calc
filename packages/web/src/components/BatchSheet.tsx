@@ -595,7 +595,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               </div>
             )}
             {finishedVolumeMl !== null && (
-              <div><dt>≈ Finished volume</dt><dd>{Math.round(finishedVolumeMl).toLocaleString('en-US')} ml</dd></div>
+              <div><dt>≈ Finished volume</dt><dd>{formatGrams(Math.round(finishedVolumeMl), 0)} ml</dd></div>
             )}
           </dl>
           {measuredPasteValid && (

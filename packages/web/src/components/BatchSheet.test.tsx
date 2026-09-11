@@ -601,7 +601,7 @@ test('the printed caveat drops the floor framing once the figure is exact', () =
     /same whatever it turns out to be/i,
   );
   // The row itself still prints, corrected: 4,059 − 2,059.
-  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('2,000 g');
+  expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('2000 g');
 });
 
 test('no caveat rows when everything is declared', () => {
@@ -619,7 +619,7 @@ test('the printed sheet explains a pour the liquid\'s solids clamped to 0 g', ()
   expect(pour.textContent).toContain('0 g');
   const note = screen.getByText(/already more dilute than 30%/i).textContent!.replace(/\s+/g, ' ');
   // Both sides of the comparison, so the figure can be checked against the rows above it.
-  expect(note).toContain('it weighs 4,200 g against the 4,059 g');
+  expect(note).toContain('it weighs 4200 g against the 4059 g');
   expect(note).toContain('there is no dilution water to add');
 });
 
@@ -642,7 +642,7 @@ test('a reading a hair over the solution pours the recipe’s own figure with no
   );
   // 4,059 - 1,600, the recipe's own answer to a reading it cannot use.
   expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain(
-    '2,459 g',
+    '2459 g',
   );
   expect(screen.queryByText(/uses the measured paste weight/i)).toBeNull();
 });
@@ -658,7 +658,7 @@ test('…and answers identically just past that band, so the band leaves no seam
     <BatchSheet data={lsSheetData({ measuredPasteGrams: '4061', wholeBatchPasteGrams: 1600 })} />,
   );
   expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain(
-    '2,459 g',
+    '2459 g',
   );
 });
 
@@ -682,10 +682,10 @@ test('a record in hand does not widen the pour’s own ceiling (Phase 3: the wid
     />,
   );
   const pour = screen.getByText('Dilution water to add').nextElementSibling!;
-  expect(pour.textContent).toContain('2,459 g');
+  expect(pour.textContent).toContain('2459 g');
   expect(screen.getByText(/Water actually added/).closest('div')!.textContent).toContain('0 g');
   // The weighed pot plus nothing — the record's own basis is unaffected by the pour's ceiling.
-  expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('4,060 g');
+  expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('4060 g');
 });
 
 test('…and never prints that note beside the water-only one, which subsumes it', () => {
@@ -808,7 +808,7 @@ it('prints the dilution water in one unit only', () => {
   // The negative alone would pass for almost any format change — including printing
   // nothing at all — so pin the string the row is actually expected to carry. The sheet
   // is built at weightUnit 'g' and the fixture's dilutionWaterGrams is 2,000.
-  expect(row.textContent).toContain('2,000 g');
+  expect(row.textContent).toContain('2000 g');
   expect(row.textContent).not.toMatch(/\(.*oz.*\/.*lb.*\)/);
   expect(row.textContent).not.toMatch(/oz|lb/);
 });
@@ -819,8 +819,8 @@ test('printed dilution water reflects a measured paste, matching the on-screen f
   // computed dilutionWaterGrams instead, so a maker who weighed their paste saw two
   // different numbers. solutionGrams 4,059 - measured 1,600 = 2,459 g, not 2,000 g.
   render(<BatchSheet data={lsSheetData({ measuredPasteGrams: '1600' })} />);
-  expect(screen.getByText(/^2,459 g/)).toBeTruthy();
-  expect(screen.queryByText(/^2,000 g/)).toBeNull();
+  expect(screen.getByText(/^2459 g/)).toBeTruthy();
+  expect(screen.queryByText(/^2000 g/)).toBeNull();
   expect(screen.getByText(/measured paste/i)).toBeTruthy();
 });
 
@@ -832,7 +832,7 @@ test('echoes the measured paste in grams on the printed sheet, whatever the prin
   // surface that is read away from the app, where the typed number cannot be checked.
   render(<BatchSheet data={lsSheetData({ measuredPasteGrams: '1600', weightUnit: 'lb' })} />);
   const note = screen.getByText(/measured paste weight/i);
-  expect(note.textContent).toMatch(/1,600 g/);
+  expect(note.textContent).toMatch(/1600 g/);
   expect(note.textContent).not.toMatch(/3\.53 lb/);
   // The corrected water figure beside it is a bench readout and DOES print in lb — without
   // this the assertion above would also pass for a sheet that ignored weightUnit entirely.
@@ -841,7 +841,7 @@ test('echoes the measured paste in grams on the printed sheet, whatever the prin
 
 test('prints the recipe-computed dilution water, with no measurement note, when no measurement is given', () => {
   render(<BatchSheet data={lsSheetData({})} />);
-  expect(screen.getByText(/^2,000 g/)).toBeTruthy();
+  expect(screen.getByText(/^2000 g/)).toBeTruthy();
   expect(screen.queryByText(/measured paste/i)).toBeNull();
 });
 
@@ -854,15 +854,15 @@ test('prints the bottled mass and finished volume — not just the chemistry-onl
   // 4,560.6 ÷ 1.03 g/ml = 4,428 ml, computed via the same core helper the on-screen panel
   // uses (lsFinishedVolumeMl), not recomputed here.
   render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4515 })} />);
-  expect(screen.getByText('4,561 g')).toBeTruthy();
-  expect(screen.getByText('4,428 ml')).toBeTruthy();
+  expect(screen.getByText('4561 g')).toBeTruthy();
+  expect(screen.getByText('4428 ml')).toBeTruthy();
 });
 
 test('omits the bottled-mass row when it matches the chemistry-only solution (nothing to add)', () => {
   render(<BatchSheet data={lsSheetData({ bottledSolutionGrams: 4059 })} />);
   // 4,059 g is exactly lsSheetData's own dilution.solutionGrams — no extras, so the
   // bottled row would be a bare duplicate of "Finished solution" and is skipped.
-  expect(screen.queryByText('4,059 g (with extras)')).toBeNull();
+  expect(screen.queryByText('4059 g (with extras)')).toBeNull();
 });
 
 it('prints no bottle count, but keeps the finished product and volume', () => {
@@ -942,7 +942,7 @@ describe('the panel and the printed sheet pour one figure (split-liquid recipe)'
     const panelFigure = panelPourFigure();
     // Stated absolutely as well as relatively: an equality alone would also pass if both
     // surfaces regressed to the same wrong number.
-    expect(panelFigure).toBe('5,000 g');
+    expect(panelFigure).toBe('5000 g');
     render(
       <BatchSheet
         data={lsSheetData({
@@ -972,14 +972,14 @@ describe('the panel and the printed sheet pour one figure (split-liquid recipe)'
     // the plan still asks for, and a record does not move it.
     expect(
       screen.getByText('Dilution water to add (plan)').nextElementSibling!.textContent,
-    ).toBe('5,000 g');
+    ).toBe('5000 g');
   });
 
   test('a recipe with no split liquid is untouched: no corrected basis, the recipe figure stands', () => {
     // The fixture's own dilution (2,000 g) with no wholeBatchPasteGrams supplied — the
     // fallback every caller predating the corrected basis still takes.
     render(<BatchSheet data={lsSheetData({})} />);
-    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('2,000 g');
+    expect(screen.getByText('Dilution water to add').nextElementSibling!.textContent).toContain('2000 g');
   });
 });
 
@@ -1133,11 +1133,11 @@ describe('the sheet records the water actually poured', () => {
       />,
     );
     const row = screen.getByText(/Water actually added/).closest('div')!;
-    expect(row.textContent).toContain('2,000 g');
+    expect(row.textContent).toContain('2000 g');
     // 1,600 g of paste plus the 2,000 g recorded — the panel's own basis and the panel's own
     // sum, through the shared helpers, so screen and sheet cannot print different masses.
     const made = screen.getByText(/That record makes/).closest('div')!;
-    expect(made.textContent).toContain('3,600 g');
+    expect(made.textContent).toContain('3600 g');
   });
 
   test('names which row is the record and which is the target, so neither stands in for the other', () => {
@@ -1172,7 +1172,7 @@ describe('the sheet records the water actually poured', () => {
         })}
       />,
     );
-    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('3,500 g');
+    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('3500 g');
   });
 
   test('says nothing about a finished mass when nothing was recorded', () => {
@@ -1216,7 +1216,7 @@ describe('the sheet records the water actually poured', () => {
     );
     expect(screen.getByText(/Water actually added/).closest('div')!.textContent).toContain('0 g');
     // …and what it makes is the pot itself: 1,600 g of paste plus nothing.
-    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('1,600 g');
+    expect(screen.getByText(/That record makes/).closest('div')!.textContent).toContain('1600 g');
   });
 
   test('the mass a record makes reads the same on screen and on paper', () => {
@@ -1257,7 +1257,7 @@ describe('the sheet records the water actually poured', () => {
     const onScreen = screen
       .getByText('Finished so far (weighed)')
       .nextElementSibling!.textContent!.trim();
-    expect(onScreen).toBe('4,500 g');
+    expect(onScreen).toBe('4500 g');
     cleanup();
 
     render(
@@ -1275,7 +1275,7 @@ describe('the sheet records the water actually poured', () => {
     // …while the pour keeps its own ceiling and answers from the recipe's computed pot:
     // 4,059 - 1,600. One page, two questions, both named.
     expect(screen.getByText('Dilution water to add').closest('div')!.textContent).toContain(
-      '2,459 g',
+      '2459 g',
     );
   });
 
@@ -1301,7 +1301,7 @@ describe('the sheet records the water actually poured', () => {
       />,
     );
     expect(screen.getByText('Dilution water to add').closest('div')!.textContent).toContain(
-      '2,459 g',
+      '2459 g',
     );
   });
 

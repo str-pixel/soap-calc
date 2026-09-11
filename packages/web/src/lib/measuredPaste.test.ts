@@ -306,8 +306,8 @@ describe('the paste floor counts solids that cannot boil off', () => {
   // batch — and the anhydrous-only floor accepted every one of them down to 1,200 g.
   const COOK_WATER = 400;
   const SOLIDS = 450;
-  const POT = DILUTION.anhydrousGrams + COOK_WATER + SOLIDS; // 2,050
-  const FLOOR = DILUTION.anhydrousGrams + SOLIDS; // 1,650
+  const POT = DILUTION.anhydrousGrams + COOK_WATER + SOLIDS; // 2050
+  const FLOOR = DILUTION.anhydrousGrams + SOLIDS; // 1650
 
   it('rejects a whole-batch reading between the anhydrous soap and the real floor', () => {
     // 1,400 g clears the old floor by 200 g and is still 250 g short of the pot's own
@@ -424,7 +424,7 @@ describe('the paste floor counts solids that cannot boil off', () => {
     // back to the corrected pot rather than to the reading.
     expect(measuredPasteIsValidFor('1400', DILUTION, POT, COOK_WATER)).toBe(false);
     expect(correctedDilutionWaterGrams(DILUTION, '1400', POT, COOK_WATER)).toBe(
-      DILUTION.solutionGrams - POT, // 1,950 — the unmeasured corrected pour, not 4,000 − 1,400
+      DILUTION.solutionGrams - POT, // 1950 — the unmeasured corrected pour, not 4000 − 1400
     );
     // …and an accepted reading still outranks both computed bases, exactly as before.
     expect(measuredPasteIsValidFor('1700', DILUTION, POT, COOK_WATER)).toBe(true);
@@ -657,7 +657,7 @@ describe('parseGradualWaterRecordGrams — is there a record, and is it a scale 
     expect(parseGradualWaterRecordGrams('-100')).toBeUndefined();
   });
 
-  it('refuses a swallowed thousands separator — 2,000 g of water is not 2 g', () => {
+  it('refuses a swallowed thousands separator — 2000 g of water is not 2 g', () => {
     // The same trap the measured-paste field and the "Amount to make (ml)" field are already
     // guarded against, on the field that records the pour: `<input type="number">` reads a
     // typed comma as a decimal point in every locale, so 2,000 arrives as '2.000' and the app

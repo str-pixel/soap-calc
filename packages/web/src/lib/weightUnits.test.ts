@@ -75,7 +75,7 @@ describe('formatWeight keeps sub-gram doses visible', () => {
   it('leaves batch-scale figures byte-identical', () => {
     expect(formatWeight(12.49, 'g')).toBe('12 g');
     expect(formatWeight(5, 'g')).toBe('5 g');
-    expect(formatWeight(2270, 'g')).toBe('2,270 g');
+    expect(formatWeight(2270, 'g')).toBe('2270 g');
     expect(formatWeight(453.59237, 'lb')).toBe('1 lb');
   });
 });

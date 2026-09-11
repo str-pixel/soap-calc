@@ -1102,7 +1102,7 @@ test.describe('the essential-oil catalog', () => {
     await page.getByLabel(/dose, % of oil weight/).first().fill('1');
     await expect(panel.getByLabel('Essential oil name')).toHaveCount(0);
     // No list to fill in and no ceiling to type: one warning, one safe-use line off the catalog.
-    await expect(panel).toContainText(/This oil carries Eugenol — expect to name them on the label/);
+    await expect(panel).toContainText(/This oil carries Eugenol — expect to name it on the label/);
     // The printed oil-weight figure is rounded DOWN, so typing it never lands over.
     await expect(panel).toContainText(/Up to 1% of the finished bar \(about 1\.2% of oil weight in this recipe\)/);
     await expect(panel).toContainText(/EU law \(Annex III\) caps methyl eugenol/);

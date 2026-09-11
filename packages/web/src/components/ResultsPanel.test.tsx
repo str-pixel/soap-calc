@@ -142,7 +142,7 @@ test('subtract: the PCSF row carries the shared provenance phrase + batch weight
   expect(screen.getAllByText(/from oils above \(lye reduced\)/).length).toBeGreaterThanOrEqual(2);
   expect(screen.queryByText(/reserved, lye reduced/)).toBeNull();
   // The panel renders the vm's batch weight, not (full displayTotals batch + PCSF grams).
-  expect(figure('1,234 g')).toBeTruthy();
+  expect(figure('1234 g')).toBeTruthy();
 });
 
 test('subtract + negative main superfat: no provenance note and no Total superfat row (cookFactor guard leaves lye untouched, so both would be false)', () => {

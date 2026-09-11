@@ -1,7 +1,20 @@
+/**
+ * The app's one rule for printing a quantity: digits with no thousands separator, a
+ * decimal point, trailing zeros dropped — "2100 g", "1249.5 g", never "2,100 g". ISO
+ * 80000-1 (Quantities and units — General; https://www.iso.org/obp/ui/#iso:std:iso:80000:-1:ed-1:v1:en,
+ * read 2026-09-11) allows digits to be separated into groups of three but says that
+ * "neither dots nor commas are inserted in the spaces between groups" — a comma is a
+ * decimal sign in most of Europe, and a grouped "1,200" typed back into a number field
+ * commits as 1.2 (the trap DilutionPanel documents). The app groups nothing at all, which
+ * the standard also permits. The unit follows after a space, as the SI Brochure (9th
+ * edition, chapter 5) requires: "a space is always used to separate the unit from the
+ * number" — so "2100 g", not "2100g". Money keeps its own conventions in money.ts.
+ */
 export function formatGrams(value: number, digits = 1): string {
   return value.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: digits,
+    useGrouping: false,
   });
 }
 

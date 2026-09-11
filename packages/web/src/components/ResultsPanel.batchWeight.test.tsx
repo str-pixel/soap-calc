@@ -43,7 +43,7 @@ describe('ResultsPanel batch-weight breakdown', () => {
   it('renders the total and the four slices', () => {
     renderPanel();
     const el = screen.getByTestId('batch-weight');
-    expect(el.textContent).toMatch(/1,612 g/);   // total = oils+lye+water+extras
+    expect(el.textContent).toMatch(/1612 g/);   // total = oils+lye+water+extras
     expect(el.textContent).toMatch(/oils/i);
     expect(el.textContent).toMatch(/extras/i);
   });
@@ -74,7 +74,7 @@ describe('single-sourced batch weight (deep-review)', () => {
     );
     // The dl "Batch weight" row and the breakdown line must agree: both read
     // batchWeightWithExtras (1,600), not an independently recomputed 1,612.
-    expect(screen.getByTestId('batch-weight').textContent).toMatch(/1,600 g/);
-    expect(screen.getByTestId('batch-weight').textContent).not.toMatch(/1,612 g/);
+    expect(screen.getByTestId('batch-weight').textContent).toMatch(/1600 g/);
+    expect(screen.getByTestId('batch-weight').textContent).not.toMatch(/1612 g/);
   });
 });

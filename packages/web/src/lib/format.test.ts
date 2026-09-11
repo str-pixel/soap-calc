@@ -5,7 +5,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('formatGrams', () => {
   it('formats with grouping and one decimal by default', () => {
-    expect(formatGrams(1234.56)).toBe('1,234.6');
+    expect(formatGrams(1234.56)).toBe('1234.6');
   });
   // The output must not float with the browser locale: sibling formatters
   // (formatWeight, formatMoney) pin en-US, and one printed sheet must not mix

@@ -45,7 +45,7 @@ test('the water figure shows a single unit, switchable from DilutionPanel above 
 test('says so when more is asked for than the batch holds', () => {
   render(<PortionDilutionResults {...PROPS} targetMl="9000" />);
   expect(screen.getByText(/figures above are the whole batch/i)).toBeTruthy();
-  expect(screen.getByText('1,600 g')).toBeTruthy(); // all the paste
+  expect(screen.getByText('1600 g')).toBeTruthy(); // all the paste
 });
 
 test('shows no figures until an amount is entered', () => {
@@ -175,7 +175,7 @@ test('a valid measured paste sizes a portion even when targetExceedsPaste is set
     />,
   );
   expect(screen.queryByText(/already more dilute/i)).toBeNull();
-  expect(screen.getByText('386 g')).toBeTruthy(); // paste to weigh out for a 1,000 ml portion
+  expect(screen.getByText('386 g')).toBeTruthy(); // paste to weigh out for a 1000 ml portion
   expect(screen.getByText(/^644 g/)).toBeTruthy(); // water to add for that portion
 });
 
@@ -190,8 +190,8 @@ test('a measured paste replaces the computed one and moves the water to match', 
       targetMl="3883"
     />,
   );
-  expect(screen.getByText('1,480 g')).toBeTruthy();
-  expect(screen.getByText(/^2,520 g/)).toBeTruthy();
+  expect(screen.getByText('1480 g')).toBeTruthy();
+  expect(screen.getByText(/^2520 g/)).toBeTruthy();
 });
 
 test('shows the water:paste ratio the reference dilutes by', () => {

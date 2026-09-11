@@ -98,7 +98,7 @@ export function formatWeightParts(
   const config = WEIGHT_UNITS[unit];
   const value = gramsToDisplayValue(grams, unit);
   // Magnitude-aware precision. displayDigits is tuned for batch-scale figures (0 in gram
-  // mode), where dropping the fraction costs 0.03% on a 1,234.6 g figure. On a DOSE it
+  // mode), where dropping the fraction costs 0.03% on a 1234.6 g figure. On a DOSE it
   // costs everything: 0.3 g rendered "0 g" is a 100% error, and 0.5 g rendered "1 g" is a
   // 100% overstatement — reachable at salt's own 0.05% typical low on the default recipe.
   // Same shape as gramsStringToLineDisplay above, which already forks a 1-decimal gram
@@ -108,9 +108,11 @@ export function formatWeightParts(
     digits ??
     (value > 0 && value < 10 ? Math.max(config.displayDigits, 1) : config.displayDigits);
   return {
+    // No thousands separator — the app's one number rule (lib/format.ts formatGrams).
     value: value.toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: d,
+      useGrouping: false,
     }),
     unit: config.short,
   };
