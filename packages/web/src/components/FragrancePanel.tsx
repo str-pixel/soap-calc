@@ -29,15 +29,17 @@ type Props = {
   onChange: (next: ScentColor) => void;
 };
 
-/* Process copy. The usual range is core's (USUAL_DOSE_RANGE_PERCENT: bars 2–6% of total
-   oil weight, CP:9612-9614, 16777; LS 0.5–3% of the solution, LS:2950-2953, 16991-16998),
-   spliced in so the number and the words cannot drift. The text says usage rates differ
-   by oil and to check each (CP:9547-9552); the app carries that per oil — each listed
-   oil's ceiling in soap is the catalog's (core essential-oil-catalog.ts: IFRA's standards
-   and annex, EU Annex III, the SCCS) — and the row says when none is on record. The
-   flashpoint is no soaping limit (CP:9844-9860); HP adds the scent after the cook at room
-   temperature, and a stabilizer can thicken the paste (HP:11024-11029); LS proves a new
-   fragrance in a small solution first — most cloud a little (LS:2950-2953, 16991-16998). */
+/* Process copy. The usual range is core's (USUAL_DOSE_RANGE_PERCENT: the cold-process
+   recipes run 3–6% of total oil weight, CP:16761, 17084, 17556, 17667, 17670; LS 0.5–3% of
+   the solution, 3% at most, LS:13214-13215), spliced in so the number and the words cannot
+   drift. The text says usage rates differ by oil and to follow the supplier's tested rate
+   (CP:9547-9552, 9565-9600) and to dose on total oil weight (CP:9612-9620); the app carries
+   the per-oil part itself — each listed oil's ceiling in soap is the catalog's (core
+   essential-oil-catalog.ts: IFRA's standards and annex, EU Annex III, the SCCS) — and the
+   row says when none is on record. The flashpoint is no soaping limit (CP:9844-9860); HP
+   adds the scent after the cook at room temperature, and a stabilizer can thicken the paste
+   (HP:11024-11029); LS proves a new fragrance in a small solution first — almost all cloud
+   (LS:16991-16998). */
 const PROCESS_COPY: Record<ProcessId, string> = {
   cp: `Dose against total oil weight — ${usualDoseClause('cp')}. Each listed oil's row says what ceiling soap sets for it, IFRA's or EU law's, or that none does, and warns when a dose is over it. The flashpoint is a shipping figure, not a soaping limit.`,
   hp: `Dose against total oil weight — ${usualDoseClause('hp')}; each listed oil's row says what ceiling soap sets for it, or that none does. Add it after the cook, at room temperature; a vanilla stabilizer goes into the measured fragrance first and can thicken the paste.`,

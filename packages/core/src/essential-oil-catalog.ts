@@ -97,21 +97,25 @@ export type EssentialOilEntry = {
 export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
   // Citrus: limonene carries them all. The phototoxicity standards for the expressed oils
   // read "No Restriction" for Category 9 ([IFRA-51]); what IFRA's annex lists is far from
-  // binding at any dose a bar carries.
+  // binding at any dose a bar carries. Each list below is the annex's every row for the
+  // oil that has a limit on record, at the annex's level (the highest across the grades and
+  // varieties it lists for the oil); essential-oil-catalog.test.ts holds the transcript.
   {
     id: 'lemon', name: 'Lemon', allergens: ['Limonene'],
-    // [IFRA-ANNEX] lemon oil, expressed.
+    // [IFRA-ANNEX] lemon oil, expressed. 7-Methoxycoumarin is prohibited as such and allowed
+    // as a natural constituent up to 0.01% of the product (the standard's notebox) → 20%.
     constituents: [
       { substance: 'Citral', percentOfOil: 3.5 },
       { substance: 'Citronellal', percentOfOil: 0.1 },
       { substance: 'Geraniol', percentOfOil: 0.1 },
+      { substance: '7-Methoxycoumarin', percentOfOil: 0.05 },
     ],
   },
   // Sweet orange oil itself is not in [IFRA-ANNEX] (only its terpenes are).
   { id: 'sweet-orange', name: 'Sweet orange', allergens: ['Limonene'] },
   {
     id: 'grapefruit', name: 'Grapefruit', allergens: ['Limonene', 'Citral', 'Geraniol'],
-    // [IFRA-ANNEX] grapefruit oil.
+    // [IFRA-ANNEX] grapefruit oil. Its geranial and neral rows are the citral row again.
     constituents: [
       { substance: 'Citral', percentOfOil: 0.1 },
       { substance: 'Citronellal', percentOfOil: 0.1 },
@@ -135,8 +139,9 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
   // Herbaceous and minty.
   {
     id: 'lavender', name: 'Lavender', allergens: ['Linalool'],
-    // [IFRA-ANNEX] lavender oil: nothing near binding (geraniol → 583% of a bar).
+    // [IFRA-ANNEX] lavender oil: nothing near binding (the lowest figure, 2-hexenal, → 150%).
     constituents: [
+      { substance: '1-Octen-3-yl acetate', percentOfOil: 1.04 },
       { substance: 'Geraniol', percentOfOil: 0.48 },
       { substance: '2-Hexenal', percentOfOil: 0.01 },
     ],
@@ -147,7 +152,10 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
     id: 'peppermint', name: 'Peppermint', allergens: [],
     // [IFRA-ANNEX] peppermint oil: carvone 0.1% against a 0.18% cap → 180% of a bar. The
     // pulegone and menthofuran that medicines regulators watch have no IFRA standard.
-    constituents: [{ substance: 'Carvone', percentOfOil: 0.1 }],
+    constituents: [
+      { substance: 'Carvone', percentOfOil: 0.1 },
+      { substance: 'cis-3-Hexenyl isovalerate', percentOfOil: 0.1 },
+    ],
   },
   // Eucalyptus globulus is not in [IFRA-ANNEX]; radiata carries 1.5% citral (→ 80%).
   { id: 'eucalyptus', name: 'Eucalyptus', allergens: ['Limonene'] },
@@ -159,53 +167,71 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
       percentOfProduct: 1.0, authority: 'SCCS',
       why: "the EU's scientific committee found tea tree oil safe up to 1.0% in a shower gel (SCCS/1681/25), the nearest product it assessed to a bar — the oil has no IFRA standard of its own",
     },
-    constituents: [{ substance: 'Methyl eugenol', percentOfOil: 0.05 }],
+    constituents: [
+      { substance: 'Methyl eugenol', percentOfOil: 0.05 },
+      { substance: 'Cedrene', percentOfOil: 0.03 },
+    ],
   },
   // Floral and sweet.
   {
     id: 'geranium', name: 'Geranium', allergens: ['Citronellol', 'Geraniol', 'Linalool', 'Citral', 'Limonene'],
-    // [IFRA-ANNEX] geranium oil. Geraniol (cap 2.8% → 15.8% of a bar) binds ahead of
-    // citronellol (cap 24% → 114%), citral (→ 240%) and citronellal.
+    // [IFRA-ANNEX] geranium oil (Pelargonium graveolens; the "African" P. odoratissimum row
+    // is another species). Geraniol (cap 2.8% → 15.8% of a bar) binds ahead of citronellol
+    // (cap 24% → 114%), citral (→ 240%) and the rest.
     constituents: [
       { substance: 'Citronellol', percentOfOil: 21.1 },
       { substance: 'Geraniol', percentOfOil: 17.7 },
       { substance: 'Citral', percentOfOil: 0.5 },
+      { substance: 'Citronellyl acetate', percentOfOil: 0.5 },
       { substance: 'Citronellal', percentOfOil: 0.15 },
+      { substance: 'cis-3-Hexenyl isovalerate', percentOfOil: 0.1 },
     ],
   },
   {
     id: 'ylang-ylang', name: 'Ylang ylang',
     allergens: ['Linalool', 'Geraniol', 'Farnesol', 'Benzyl benzoate', 'Benzyl salicylate'],
     // [IFRA-51] Ylang ylang extracts, STD 084 (Amendment 49): Category 9 1.4%, dermal
-    // sensitisation. [IFRA-ANNEX] lists five grades (extra, I, II, III, complete); each
+    // sensitisation. [IFRA-ANNEX] lists five oil grades (extra, I, II, III, complete); each
     // constituent below is the highest level across them, so a rich grade is still inside.
-    // None binds below the standard: isoeugenol → 21%, estragole → 2.1%, methyl eugenol → 2.5%.
+    // None binds below the standard: estragole → 2.1%, methyl eugenol → 2.5%, benzyl cyanide
+    // (prohibited as such, 0.01% notebox) → 20%, isoeugenol → 21%, benzyl benzoate → 24%.
+    // The annex's "cresol (unspecified)" is carried as p-cresol, the one isomer with a
+    // standard, at the annex level.
     standard: {
       percentOfProduct: 1.4, authority: 'IFRA',
       why: "IFRA's own standard for ylang ylang extracts sets 1.4% in soap (Category 9), for skin sensitisation",
     },
     constituents: [
+      { substance: 'Benzyl benzoate', percentOfOil: 7.81 },
       { substance: 'Benzyl salicylate', percentOfOil: 3.35 },
       { substance: 'Farnesol', percentOfOil: 2.35 },
       { substance: 'Geraniol', percentOfOil: 1.43 },
       { substance: 'Isoeugenol', percentOfOil: 0.99 },
       { substance: 'Eugenol', percentOfOil: 0.69 },
-      { substance: 'Estragole', percentOfOil: 0.2 },
-      { substance: 'Methyl eugenol', percentOfOil: 0.04 },
-      { substance: 'Citral', percentOfOil: 0.12 },
       { substance: 'Benzyl alcohol', percentOfOil: 0.25 },
+      { substance: 'Estragole', percentOfOil: 0.2 },
+      { substance: 'Citral', percentOfOil: 0.12 },
+      { substance: 'Isoeugenyl acetate', percentOfOil: 0.12 },
+      { substance: 'Benzyl cyanide', percentOfOil: 0.05 },
+      { substance: 'Methyl eugenol', percentOfOil: 0.04 },
+      { substance: 'Benzyl cinnamate', percentOfOil: 0.03 },
+      { substance: 'p-Cresol', percentOfOil: 0.03 },
+      { substance: 'Cinnamic alcohol', percentOfOil: 0.02 },
     ],
   },
   {
     id: 'lemongrass', name: 'Lemongrass', allergens: ['Citral', 'Linalool', 'Geraniol', 'Citronellol', 'Farnesol'],
-    // [IFRA-ANNEX] lemongrass oil, West Indian: citral 73% (East Indian: geranial 41.4 +
-    // neral 30.5 = 72%); cap 1.2% → 1.6% of a bar. Methyl eugenol is the East Indian's
-    // figure, carried so the stricter oil is still covered (EU → 2.0%).
+    // [IFRA-ANNEX] lemongrass oil, West and East Indian, the higher of the two per row:
+    // citral 73% (West; East lists geranial 41.4 + neral 30.5 = 72%); cap 1.2% → 1.6% of a
+    // bar. The East Indian's iso-geranial and iso-neral rows have no standard of their own
+    // and are not in the Citral standard's scope, so they are not counted.
     constituents: [
       { substance: 'Citral', percentOfOil: 73 },
-      { substance: 'Geraniol', percentOfOil: 2.3 },
+      { substance: 'Geraniol', percentOfOil: 5.25 },
+      { substance: 'Citronellal', percentOfOil: 0.51 },
       { substance: 'Isoeugenol', percentOfOil: 0.5 },
-      { substance: 'Citronellal', percentOfOil: 0.3 },
+      { substance: 'Citronellol', percentOfOil: 0.25 },
+      { substance: 'Citronellyl acetate', percentOfOil: 0.23 },
       { substance: 'Eugenol', percentOfOil: 0.2 },
       { substance: 'Methyl eugenol', percentOfOil: 0.05 },
     ],
@@ -218,7 +244,10 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
     // [IFRA-ANNEX] cedarwood oil, Virginian — the soaper's usual one: α-cedrene 24.3% +
     // β-cedrene 5.9%, both in the Cedrene standard's scope; cap 2.9% → 9.6% of a bar. Texas
     // runs 15% cedrene (→ 19%), Atlas 1.5% (→ 193%), so Virginian is the tightest case.
-    constituents: [{ substance: 'Cedrene', percentOfOil: 30.2 }],
+    constituents: [
+      { substance: 'Cedrene', percentOfOil: 30.2 },
+      { substance: 'alpha-Bisabolol', percentOfOil: 0.6 },
+    ],
   },
   // The two the cold-process text singles out.
   {
@@ -236,13 +265,20 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
   {
     id: 'cinnamon', name: 'Cinnamon', material: 'cinnamon bark oil', allergens: ['Cinnamal', 'Eugenol', 'Linalool'], accelerates: true,
     // [IFRA-ANNEX] cinnamon bark oil (C. zeylanicum): cinnamic aldehyde 75% (cap 0.49% →
-    // 0.65% of a bar); the rest sit far above it. Safrole (0.2%) has no table here. Leaf
-    // oil is a different material (eugenol 74%, safrole 1.2%); the entry is the bark.
+    // 0.65% of a bar); the rest sit far above it — safrole, prohibited as such and allowed as
+    // a natural constituent up to 0.01% of the product by IFRA's notebox and by EU Annex
+    // II/360 alike, → 5%. Leaf oil is a different material (eugenol 74%, safrole 1.2%); the
+    // entry is the bark. The text puts cinnamon bark's usual suggested rate at 0.1% and
+    // advises against the oil in soap outright (CP:9596-9600).
     constituents: [
       { substance: 'Cinnamal', percentOfOil: 75 },
       { substance: 'Eugenol', percentOfOil: 2 },
+      { substance: 'Benzyl benzoate', percentOfOil: 0.6 },
       { substance: 'Coumarin', percentOfOil: 0.6 },
+      { substance: 'o-Methoxycinnamaldehyde', percentOfOil: 0.5 },
+      { substance: 'Cinnamic alcohol', percentOfOil: 0.3 },
       { substance: 'Benzaldehyde', percentOfOil: 0.2 },
+      { substance: 'Safrole', percentOfOil: 0.2 },
       { substance: 'Isoeugenol', percentOfOil: 0.02 },
     ],
     note: 'The cold-process text advises against this one in soap: cinnamaldehyde and eugenol both irritate, and it seizes a batch faster than almost anything else.',

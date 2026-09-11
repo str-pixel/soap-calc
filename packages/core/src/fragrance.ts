@@ -27,14 +27,21 @@ export type LabelAllergen = { name: string; percentOfProduct: number };
  *   revision) · Farnesol 2.3% · Isoeugenol 0.21% · Benzyl salicylate 14% · Coumarin 0.52% ·
  *   Cedrene 2.9%, α- and β- both in scope · Methyl eugenol 0.0017% (2023 revision) ·
  *   Estragole 0.0041% (2023 revision) · Carvone 0.18% · Citronellal 1.4% · Benzyl alcohol
- *   2.2% · 2-Hexenal 0.015% (2023 revision) · Benzaldehyde 0.49%.
+ *   2.2% · 2-Hexenal 0.015% (2023 revision) · Benzaldehyde 0.49% · Benzyl benzoate 1.9% ·
+ *   1-Octen-3-yl acetate 2.9% · cis-3-Hexenyl isovalerate 0.84% (2023) · Citronellyl acetate
+ *   5.4% (2023) · Isoeugenyl acetate 0.20% (2023) · Benzyl cinnamate 3.9% · Cinnamic alcohol
+ *   0.76% · o-Methoxycinnamaldehyde 0.84% · alpha-Bisabolol 4.6% · p-Cresol 0.0050% (2023).
+ *   Three more are PROHIBITED as such but allowed as a natural constituent up to a level in
+ *   the finished product that the standard's notebox sets for every category alike:
+ *   7-Methoxycoumarin 0.01%, Benzyl cyanide 0.01%, Safrole 0.01% (with isosafrole and
+ *   dihydrosafrole). They sit in this table at that figure.
  *
  * Note what is NOT here. Limonene and linalool carry no Category 9 concentration limit —
- * IFRA's standards for them are about peroxide value, not how much you may use — and benzyl
- * benzoate has no standard at all, so the app says nothing rather than inventing a ceiling.
- * A figure of 0.05% for cinnamal circulates in soapmaking guides; IFRA's own standard says
- * 0.49% for this category, so the app follows the standard. Pulegone and menthofuran, the
- * peppermint constituents medicines regulators watch, have no IFRA standard either.
+ * IFRA's standards for them are about peroxide value, not how much you may use — so the app
+ * says nothing rather than inventing a ceiling. A figure of 0.05% for cinnamal circulates in
+ * soapmaking guides; IFRA's own standard says 0.49% for this category, so the app follows
+ * the standard. Pulegone and menthofuran, the peppermint constituents medicines regulators
+ * watch, have no IFRA standard either.
  *
  * IFRA is an industry standard rather than EU law, and it is what a cosmetic safety
  * assessment leans on: the EU sets no general essential-oil dose at all. Where EU law DOES
@@ -58,6 +65,19 @@ export const IFRA_CATEGORY_NINE_PERCENT: Readonly<Record<string, number>> = {
   'Benzyl alcohol': 2.2,
   '2-Hexenal': 0.015,
   Benzaldehyde: 0.49,
+  'Benzyl benzoate': 1.9,
+  '1-Octen-3-yl acetate': 2.9,
+  'cis-3-Hexenyl isovalerate': 0.84,
+  'Citronellyl acetate': 5.4,
+  'Isoeugenyl acetate': 0.2,
+  'Benzyl cinnamate': 3.9,
+  'Cinnamic alcohol': 0.76,
+  'o-Methoxycinnamaldehyde': 0.84,
+  'alpha-Bisabolol': 4.6,
+  'p-Cresol': 0.005,
+  '7-Methoxycoumarin': 0.01,
+  'Benzyl cyanide': 0.01,
+  Safrole: 0.01,
 };
 
 /**
@@ -70,22 +90,32 @@ export const IFRA_CATEGORY_NINE_PERCENT: Readonly<Record<string, number>> = {
  * and read in Annex III itself on 2026-09-08 (legislation.gov.uk mirror; EUR-Lex blocks
  * fetching). It is a LIMIT, not a labelling threshold: a clove or tea tree oil carries methyl
  * eugenol as a trace, and the trace binds long before eugenol's IFRA cap would.
+ *
+ * Safrole is Annex II entry 360 — prohibited "except for normal content in the natural
+ * essences used and provided the concentration does not exceed: 100 ppm in the finished
+ * product" (read 2026-09-11 on the legislation.gov.uk mirror of (EC) 1223/2009). 100 ppm is
+ * 0.01%, the same figure IFRA's own notebox sets.
  */
 export const EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT: Readonly<Record<string, number>> = {
   'Methyl eugenol': 0.001,
+  Safrole: 0.01,
 };
 
 /**
- * What a bar or a bottle USUALLY carries, in the basis the maker doses in. Bars: 2–6% of
- * total oil weight (CP:9612-9614, 16777); liquid soap: 0.5–3% of the finished solution, 3%
- * at most (LS:2950-2953, 16991-16998). Not a safety ceiling — an oil's own ceiling
- * (essentialOilCeiling) is that — but past the top of it no book and no standard stands
- * behind the dose, and the app says so. Every sentence that quotes the range is built from
- * this one record, so the number and the words cannot drift apart.
+ * What the books' own recipes run to, in the basis the maker doses in. Bars: the
+ * cold-process text sets no general range — it says rates differ by oil and to follow the
+ * supplier's tested rate (CP:9547-9552, 9565-9600) — and its recipes dose essential oils at
+ * 3% (lavender CP:17556, lemongrass CP:17667, eucalyptus CP:17670), 5% (tea tree CP:16761)
+ * and 6% (lemon CP:17084) of total oil weight, so 3–6% is what the recipes run. Liquid
+ * soap: "fragrance concentration in liquid soap is 0.5-3%, with 3% at a maximum. Most
+ * FO/EOs will only require 0.5-1%" (LS:13214-13215). Not a safety ceiling — an oil's own
+ * ceiling (essentialOilCeiling) is that — but past the top of it no book and no standard
+ * stands behind the dose, and the app says so. Every sentence that quotes the range is built
+ * from this one record, so the number and the words cannot drift apart.
  */
 export const USUAL_DOSE_RANGE_PERCENT: Readonly<Record<AdditiveProcess, { low: number; high: number }>> = {
-  cp: { low: 2, high: 6 },
-  hp: { low: 2, high: 6 },
+  cp: { low: 3, high: 6 },
+  hp: { low: 3, high: 6 },
   ls: { low: 0.5, high: 3 },
 };
 
@@ -93,21 +123,22 @@ export function fragranceOverUsualRange(percent: number | null, process: Additiv
   return finite(percent) && percent > USUAL_DOSE_RANGE_PERCENT[process].high;
 }
 
-/** "bars usually carry 2–6% of oil weight" / "liquid soap usually carries 0.5–3% of the
- * finished solution, 3% at most". */
+/** "the cold-process recipes run 3–6% of oil weight" / "liquid soap takes 0.5–3% of the
+ * finished solution, 3% at most, and most oils need only 0.5–1%". */
 export function usualDoseClause(process: AdditiveProcess): string {
   const { low, high } = USUAL_DOSE_RANGE_PERCENT[process];
   return process === 'ls'
-    ? `liquid soap usually carries ${formatPropertyRangePercent(low, high, 1)} of the finished solution, ${high}% at most`
-    : `bars usually carry ${formatPropertyRangePercent(low, high)} of oil weight`;
+    ? `liquid soap takes ${formatPropertyRangePercent(low, high, 1)} of the finished solution, ${high}% at most, and most oils need only 0.5–1%`
+    : `the cold-process recipes run ${formatPropertyRangePercent(low, high)} of oil weight`;
 }
 
-/** The same range as the thing a dose is past: "the 2–6% of oil weight bars usually carry". */
+/** The same range as the thing a dose is past: "the 3–6% of oil weight the cold-process
+ * recipes run to". */
 export function usualDosePastClause(process: AdditiveProcess): string {
   const { low, high } = USUAL_DOSE_RANGE_PERCENT[process];
   return process === 'ls'
-    ? `the ${high}% of the finished solution liquid soap carries at most`
-    : `the ${formatPropertyRangePercent(low, high)} of oil weight bars usually carry`;
+    ? `the ${high}% of the finished solution liquid soap takes at most`
+    : `the ${formatPropertyRangePercent(low, high)} of oil weight the cold-process recipes run to`;
 }
 
 /**

@@ -1422,7 +1422,7 @@ describe('fragrance & colorant insights', () => {
     // 8% typed with the verdict false stays quiet: the compute step owns the threshold
     expect(codes({ fragranceRows: [row({ percent: 8 })] }, 'cp')).not.toContain('fragrance_over_usual_range');
     const bar = analyzeFormulation(waterInput(330, 1000, { process: 'cp', fragranceRows: [row({ name: 'Lavender', overUsualRange: true })] }));
-    expect(bar.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/^Lavender is dosed past the 2–6% of oil weight/);
+    expect(bar.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/^Lavender is dosed past the 3–6% of oil weight the cold-process recipes run to/);
     const two = analyzeFormulation(waterInput(330, 1000, { process: 'cp', fragranceRows: [row({ name: 'Lavender', overUsualRange: true }), row({ name: 'Rose', overUsualRange: true })] }));
     expect(two.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/^Lavender, Rose are dosed past/);
     const ls = analyzeFormulation(waterInput(330, 1000, { process: 'ls', fragranceRows: [row({ name: 'Lavender', overUsualRange: true })] }));

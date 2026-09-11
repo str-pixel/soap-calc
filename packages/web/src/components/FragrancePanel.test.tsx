@@ -166,7 +166,7 @@ describe('the warning and the safe-use line', () => {
     const safe = screen.getByLabelText('Mine safe use').textContent!;
     expect(safe).toMatch(/No ceiling is known for an oil the app does not list/);
     expect(safe).toMatch(/supplier's IFRA certificate/);
-    expect(safe).toMatch(/bars usually carry 2–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/the cold-process recipes run 3–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
   });
 
   it('a row with nothing on it yet says nothing', () => {
@@ -221,18 +221,18 @@ describe('the warning and the safe-use line', () => {
     renderPanel(picked('lavender'), 'cp');
     const safe = screen.getByLabelText('Lavender safe use').textContent!;
     expect(safe).toMatch(/No ceiling applies: none of this oil's restricted constituents comes near its limit in soap/);
-    expect(safe).toMatch(/bars usually carry 2–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/the cold-process recipes run 3–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
     expect(safe).not.toMatch(/Up to/);
     expect(safe).not.toMatch(/Max in product/);
   });
 
   it('a ceiling above anything a bar carries is not printed as "safe use" — but a dose over it still says so', () => {
-    // Geranium: geraniol 2.8% ÷ 17.7% → 15.8% of the bar, far past the usual 2–6% of oils.
+    // Geranium: geraniol 2.8% ÷ 17.7% → 15.8% of the bar, far past the recipes' 3–6% of oils.
     renderPanel(picked('geranium', '3'), 'cp');
     let safe = screen.getByLabelText('Geranium safe use').textContent!;
     expect(safe).toMatch(/No ceiling bites below the usual range: this oil's works out at 15\.8% of the finished bar/);
     expect(safe).toMatch(/IFRA caps geraniol at 2\.8%/);
-    expect(safe).toMatch(/bars usually carry 2–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/the cold-process recipes run 3–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
     expect(safe).not.toMatch(/Up to/);
     cleanup();
     // 30% of the oils is 23% of the fixture bar — past even that ceiling.
@@ -243,17 +243,17 @@ describe('the warning and the safe-use line', () => {
 
   it('warns past the usual range, in the dose basis, whatever the oil', () => {
     renderPanel(picked('lavender', '8'), 'cp');
-    expect(screen.getByText('8% of oil weight is past the 2–6% of oil weight bars usually carry — no book or standard stands behind more.').className).toBe('additive-list__hazard');
+    expect(screen.getByText('8% of oil weight is past the 3–6% of oil weight the cold-process recipes run to — no book or standard stands behind more.').className).toBe('additive-list__hazard');
     cleanup();
     renderPanel(picked('lavender', '6'), 'cp');
-    expect(screen.queryByText(/is past the 2–6%/)).toBeNull();
+    expect(screen.queryByText(/is past the 3–6%/)).toBeNull();
     cleanup();
     renderPanel(picked('lavender', '4'), 'ls', 'g', 3000);
-    expect(screen.getByText(/4% of solution is past the 3% of the finished solution liquid soap carries at most/)).toBeTruthy();
+    expect(screen.getByText(/4% of solution is past the 3% of the finished solution liquid soap takes at most/)).toBeTruthy();
     cleanup();
     // A dose typed past 100 has no grams, but the warning still quotes the figure typed.
     renderPanel(picked('lavender', '150'), 'cp');
-    expect(screen.getByText(/150% of oil weight is past the 2–6% of oil weight bars usually carry/)).toBeTruthy();
+    expect(screen.getByText(/150% of oil weight is past the 3–6% of oil weight the cold-process recipes run to/)).toBeTruthy();
     expect(screen.queryByText(/of the finished bar\./)).toBeNull();
   });
 });

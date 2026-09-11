@@ -12,6 +12,7 @@ import {
   formatShareAgainstCeiling,
   fragranceDoseAtCeiling,
   fragranceOverUsualRange,
+  USUAL_DOSE_RANGE_PERCENT,
   usualDoseClause,
   usualDosePastClause,
   ifraCategoryNinePercent,
@@ -43,7 +44,9 @@ describe('fragranceShareOfProduct — the IFRA basis is the FINISHED product, no
 });
 
 describe('fragranceOverUsualRange — the top of the books\' range, in the dose basis', () => {
-  it('bars: past 6% of oil weight (CP:9612-9614); liquid soap: past 3% of the solution (LS:2950-2953)', () => {
+  it('bars: past 6% of oil weight, the top of the recipes (CP:17084); liquid soap: past 3% of the solution (LS:13214)', () => {
+    expect(USUAL_DOSE_RANGE_PERCENT.cp).toEqual({ low: 3, high: 6 });
+    expect(USUAL_DOSE_RANGE_PERCENT.ls).toEqual({ low: 0.5, high: 3 });
     expect(fragranceOverUsualRange(6, 'cp')).toBe(false);
     expect(fragranceOverUsualRange(6.1, 'cp')).toBe(true);
     expect(fragranceOverUsualRange(6.1, 'hp')).toBe(true);
@@ -55,11 +58,11 @@ describe('fragranceOverUsualRange — the top of the books\' range, in the dose 
 
 describe('the usual range, in words, from the one record', () => {
   it('reads the same numbers the verdict uses', () => {
-    expect(usualDoseClause('cp')).toBe('bars usually carry 2–6% of oil weight');
-    expect(usualDoseClause('hp')).toBe('bars usually carry 2–6% of oil weight');
-    expect(usualDoseClause('ls')).toBe('liquid soap usually carries 0.5–3% of the finished solution, 3% at most');
-    expect(usualDosePastClause('cp')).toBe('the 2–6% of oil weight bars usually carry');
-    expect(usualDosePastClause('ls')).toBe('the 3% of the finished solution liquid soap carries at most');
+    expect(usualDoseClause('cp')).toBe('the cold-process recipes run 3–6% of oil weight');
+    expect(usualDoseClause('hp')).toBe('the cold-process recipes run 3–6% of oil weight');
+    expect(usualDoseClause('ls')).toBe('liquid soap takes 0.5–3% of the finished solution, 3% at most, and most oils need only 0.5–1%');
+    expect(usualDosePastClause('cp')).toBe('the 3–6% of oil weight the cold-process recipes run to');
+    expect(usualDosePastClause('ls')).toBe('the 3% of the finished solution liquid soap takes at most');
   });
 });
 
@@ -221,12 +224,18 @@ describe('IFRA Category 9, which is the category soap sits in', () => {
     // The 51st Amendment's own figures for the two that bring cedarwood and clove into scope.
     expect(ifraCategoryNinePercent('Cedrene')).toBe(2.9);
     expect(ifraCategoryNinePercent('Methyl eugenol')).toBe(0.0017);
-    // No Category 9 concentration limit exists for these: IFRA restricts the first two by
-    // peroxide value instead, and inventing a number would be worse than saying nothing.
+    // No Category 9 concentration limit exists for these: IFRA restricts them by peroxide
+    // value instead, and inventing a number would be worse than saying nothing.
     expect(ifraCategoryNinePercent('Limonene')).toBeNull();
     expect(ifraCategoryNinePercent('Linalool')).toBeNull();
-    expect(ifraCategoryNinePercent('Benzyl benzoate')).toBeNull();
     expect(ifraCategoryNinePercent('Nonsense')).toBeNull();
+    // Benzyl benzoate DOES carry one (Amendment 49, dermal sensitisation) — an earlier note
+    // here said it had no standard, which the 51st-amendment text does not bear out.
+    expect(ifraCategoryNinePercent('Benzyl benzoate')).toBe(1.9);
+    // The three prohibited-as-such constituents sit at their notebox figure for natural presence.
+    expect(ifraCategoryNinePercent('Safrole')).toBe(0.01);
+    expect(ifraCategoryNinePercent('7-Methoxycoumarin')).toBe(0.01);
+    expect(ifraCategoryNinePercent('Benzyl cyanide')).toBe(0.01);
   });
 
   it('keeps the standard\'s own figure for cinnamal, not the one that circulates', () => {
@@ -243,6 +252,8 @@ describe('EU Annex III — the one constituent limit the law itself sets on a ca
     // Labelling allergens are thresholds, not limits: the law names no rinse-off limit on them.
     expect(EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT.Eugenol).toBeUndefined();
     expect(EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT.Linalool).toBeUndefined();
+    // Safrole: Annex II/360, 100 ppm of the finished product for its natural content.
+    expect(EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT.Safrole).toBe(0.01);
   });
 });
 

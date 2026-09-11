@@ -776,6 +776,6 @@ describe("an oil dosed past its derived safe ceiling", () => {
   it('the usual-range warning reads the compute step\'s verdict too', () => {
     const { result } = renderHook(() => harness([{ ...clove(2.3, false), name: 'Lavender', percent: 8, overUsualRange: true }]));
     expect(result.current.insights.find((i) => i.code === 'fragrance_over_usual_range')?.message)
-      .toMatch(/^Lavender is dosed past the 2–6% of oil weight bars usually carry/);
+      .toMatch(/^Lavender is dosed past the 3–6% of oil weight the cold-process recipes run to/);
   });
 });

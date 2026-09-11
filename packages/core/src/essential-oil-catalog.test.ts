@@ -105,6 +105,50 @@ describe('each oil\'s ceiling in soap, % of the finished product', () => {
     // ceilings, but above anything a bar carries — the panel must not print them as "safe use".
     expect(ceiling('geranium')!.percentOfProduct).toBeCloseTo(15.82, 1);
     expect(ceiling('cedarwood')!.percentOfProduct).toBeCloseTo(9.60, 1);
+    // Lemon (7-methoxycoumarin's 0.01% ÷ 0.05%) and grapefruit (2-hexenal's 0.015% ÷ 0.03%)
+    // resolve to 20% and 50%: real figures, far above the range, never printed as safe use.
+    expect(ceiling('lemon')).toMatchObject({ percentOfProduct: 20, substance: '7-Methoxycoumarin' });
+    expect(ceiling('grapefruit')!.percentOfProduct).toBeCloseTo(50, 6);
+    // and the completed lists moved no winner
+    expect(ceiling('ylang-ylang')!.substance).toBeNull();
+    expect(ceiling('cinnamon')!.substance).toBe('Cinnamal');
+    expect(ceiling('lemongrass')!.substance).toBe('Citral');
+  });
+
+  it('carries every annex row for the oil that has a limit on record, at the annex level', () => {
+    // IFRA's Annex on contributions from other sources (51st Amendment), the rows for these
+    // oils, transcribed 2026-09-11: substance as the app keys it (geranial + neral → Citral,
+    // α- + β-cedrene → Cedrene, the stereo prefixes dropped, "cresol (unspecified)" → the one
+    // isomer with a standard), level as a percent of the oil, the highest across the grades
+    // and varieties the annex lists for the oil. Rows with no standard of their own (the
+    // East Indian lemongrass's iso-geranial and iso-neral) are left out on both sides.
+    const ANNEX_ROWS: Record<string, Record<string, number>> = {
+      lemon: { Citral: 3.5, Citronellal: 0.1, Geraniol: 0.1, '7-Methoxycoumarin': 0.05 },
+      grapefruit: { Citral: 0.1, Citronellal: 0.1, '2-Hexenal': 0.03 },
+      bergamot: { Citral: 0.48, Geraniol: 0.04 },
+      lavender: { '1-Octen-3-yl acetate': 1.04, Geraniol: 0.48, '2-Hexenal': 0.01 },
+      peppermint: { Carvone: 0.1, 'cis-3-Hexenyl isovalerate': 0.1 },
+      'tea-tree': { 'Methyl eugenol': 0.05, Cedrene: 0.03 },
+      geranium: { Citronellol: 21.1, Geraniol: 17.7, Citral: 0.5, 'Citronellyl acetate': 0.5, Citronellal: 0.15, 'cis-3-Hexenyl isovalerate': 0.1 },
+      'ylang-ylang': {
+        'Benzyl benzoate': 7.81, 'Benzyl salicylate': 3.35, Farnesol: 2.35, Geraniol: 1.43, Isoeugenol: 0.99, Eugenol: 0.69,
+        'Benzyl alcohol': 0.25, Estragole: 0.2, Citral: 0.12, 'Isoeugenyl acetate': 0.12, 'Benzyl cyanide': 0.05,
+        'Methyl eugenol': 0.04, 'Benzyl cinnamate': 0.03, 'p-Cresol': 0.03, 'Cinnamic alcohol': 0.02,
+      },
+      lemongrass: { Citral: 73, Geraniol: 5.25, Citronellal: 0.51, Isoeugenol: 0.5, Citronellol: 0.25, 'Citronellyl acetate': 0.23, Eugenol: 0.2, 'Methyl eugenol': 0.05 },
+      cedarwood: { Cedrene: 30.2, 'alpha-Bisabolol': 0.6 },
+      clove: { Eugenol: 82, 'Methyl eugenol': 0.1 },
+      cinnamon: {
+        Cinnamal: 75, Eugenol: 2, 'Benzyl benzoate': 0.6, Coumarin: 0.6, 'o-Methoxycinnamaldehyde': 0.5, 'Cinnamic alcohol': 0.3,
+        Benzaldehyde: 0.2, Safrole: 0.2, Isoeugenol: 0.02,
+      },
+    };
+    for (const e of ESSENTIAL_OIL_CATALOG) {
+      const rows = ANNEX_ROWS[e.id];
+      if (!rows) { expect(e.constituents, e.id).toBeUndefined(); continue; }
+      const carried = Object.fromEntries((e.constituents ?? []).map((c) => [c.substance, c.percentOfOil]));
+      expect(carried, e.id).toEqual(rows);
+    }
   });
 
   it('a figure at or past 100% of the product is no ceiling at all', () => {
@@ -143,7 +187,7 @@ describe('each oil\'s ceiling in soap, % of the finished product', () => {
 
   it('the ceilings that bind sit under the usual range in the basis the maker types in', () => {
     // A representative bar: 1000 g of oils, 1300 g cured. The ceiling solved back into oil
-    // weight must stay under 6% for the row to hold the maker to it as "safe use".
+    // weight must stay under 6%, the top of the recipes, for the row to hold the maker to it.
     for (const id of ['clove', 'cinnamon', 'lemongrass', 'ylang-ylang', 'tea-tree']) {
       const dose = fragranceDoseAtCeiling(ceiling(id)!.percentOfProduct, 1300, 0, 0, 1000)!;
       expect(dose, id).toBeLessThan(USUAL_DOSE_RANGE_PERCENT.cp.high);
