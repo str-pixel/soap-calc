@@ -1,9 +1,13 @@
 import { memo } from 'react';
 import {
   ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT,
+  ceilingDigits,
   ESSENTIAL_OIL_CATALOG,
   essentialOilEntryById,
-  formatCeilingPercent,
+  formatPercentToward,
+  formatShareAgainstCeiling,
+  usualDoseClause,
+  usualDosePastClause,
 } from '@soap-calc/core';
 import { additiveStageLabel } from '../lib/additiveStageLabel';
 import { productNoun, type ComputedFragrance, type ComputedScentColor } from '../lib/computeScentColor';
@@ -25,33 +29,20 @@ type Props = {
   onChange: (next: ScentColor) => void;
 };
 
-/* Process copy. Bars: 2–6% of total oil weight, the recipes at 3–6% (CP:9612-9614, 16777);
-   the text says usage rates differ by oil and to check each (CP:9547-9552), and the app now
-   carries that per oil — each listed oil's ceiling in soap is the catalog's (core
-   essential-oil-catalog.ts: IFRA's standards and annex, EU Annex III, the SCCS) — the
-   flashpoint no soaping limit (CP:9844-9860); HP adds it after the cook at room temperature, and a stabilizer can thicken
-   the paste (HP:11024-11029); LS doses the finished solution at 0.5–3%, 3% at most, and proves
-   a new fragrance in a small solution first — most cloud a little (LS:2950-2953, 16991-16998). */
+/* Process copy. The usual range is core's (USUAL_DOSE_RANGE_PERCENT: bars 2–6% of total
+   oil weight, CP:9612-9614, 16777; LS 0.5–3% of the solution, LS:2950-2953, 16991-16998),
+   spliced in so the number and the words cannot drift. The text says usage rates differ
+   by oil and to check each (CP:9547-9552); the app carries that per oil — each listed
+   oil's ceiling in soap is the catalog's (core essential-oil-catalog.ts: IFRA's standards
+   and annex, EU Annex III, the SCCS) — and the row says when none is on record. The
+   flashpoint is no soaping limit (CP:9844-9860); HP adds the scent after the cook at room
+   temperature, and a stabilizer can thicken the paste (HP:11024-11029); LS proves a new
+   fragrance in a small solution first — most cloud a little (LS:2950-2953, 16991-16998). */
 const PROCESS_COPY: Record<ProcessId, string> = {
-  cp: "Dose against total oil weight — bars usually carry 2–6%. Every oil in the list comes with its own ceiling for soap, IFRA's or EU law's where that binds first, and the row warns when a dose is over it. The flashpoint is a shipping figure, not a soaping limit.",
-  hp: 'Dose against total oil weight — bars usually carry 2–6%, and every oil in the list comes with its own ceiling for soap; the row warns when a dose is over it. Add it after the cook, at room temperature; a vanilla stabilizer goes into the measured fragrance first and can thicken the paste.',
-  ls: 'Dose against the finished solution — usually 0.5–3%, 3% at most. Every oil in the list comes with its own ceiling, and the row warns when a dose is over it; prove a new fragrance in a small test solution first, most cloud a little.',
+  cp: `Dose against total oil weight — ${usualDoseClause('cp')}. Each listed oil's row says what ceiling soap sets for it, IFRA's or EU law's, or that none does, and warns when a dose is over it. The flashpoint is a shipping figure, not a soaping limit.`,
+  hp: `Dose against total oil weight — ${usualDoseClause('hp')}; each listed oil's row says what ceiling soap sets for it, or that none does. Add it after the cook, at room temperature; a vanilla stabilizer goes into the measured fragrance first and can thicken the paste.`,
+  ls: `Dose against the finished solution — ${usualDoseClause('ls')}. Each listed oil's row says what ceiling applies, or that none does; prove a new fragrance in a small test solution first, most cloud a little.`,
 };
-
-/** The books' usual range, in the basis the maker types in — the fallback where an oil has
- * no ceiling, and the line past which the row warns (core USUAL_DOSE_MAX_PERCENT). */
-function usualRangeCopy(process: ProcessId): string {
-  return process === 'ls'
-    ? 'liquid soap usually carries 0.5–3% of the finished solution, 3% at most'
-    : 'bars usually carry 2–6% of oil weight';
-}
-
-/** The same range as the thing a dose is past. */
-function usualRangePast(process: ProcessId): string {
-  return process === 'ls'
-    ? 'the 3% of the finished solution liquid soap carries at most'
-    : 'the 2–6% of oil weight bars usually carry';
-}
 
 /* EU labelling, checked 2026-09-08: Annex III of (EC) 1223/2009 names listed allergens above
    0.01% of a rinse-off product; Regulation (EU) 2023/1545 widens the list for products
@@ -106,6 +97,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
           {scent.fragrances.map((f, i) => {
             const c = computed.fragrances[i];
             const rowName = f.name.trim() || 'Essential oil';
+            const figures = rowFigures(c);
             return (
               <li key={f.key} className="additive-list__row">
                 {/* Same shape as an additive row: the name and its × on one line, then
@@ -197,49 +189,25 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     {c.grams > 0 ? formatWeight(c.grams, weightUnit) : '—'}
                   </div>
                 </div>
-                <FragranceNotes c={c} noun={noun} unit={weightUnit} doseLabel={doseLabel} usualPast={usualRangePast(process)} />
+                <FragranceNotes c={c} noun={noun} unit={weightUnit} doseLabel={doseLabel} process={process} shareText={figures.share} />
                 {/* One warning and one safe-use line, in place of a list to fill in. What
                     the oil carries comes off the catalog; what it may be dosed at is the
                     catalog's ceiling — a standard's own figure, or a constituent's limit
-                    turned into a share of the finished soap — with the sentence behind it.
-                    The ceiling is also turned back into the basis the maker types in, for
-                    this recipe, so nothing is left to convert by hand. */}
+                    turned into a share of the finished soap — with the sentence behind it,
+                    and the same ceiling turned back into the basis the maker types in, for
+                    this recipe. A row with nothing on it yet has nothing to say. */}
                 {c.allergenNames.length > 0 && (
                   <p className="inline-note scent-list__warning" aria-label={`${rowName} allergens`}>
                     <strong>Allergens.</strong> This oil carries {c.allergenNames.join(', ')} — expect to name
                     them on the label, and confirm each against your supplier&apos;s allergen declaration.
                   </p>
                 )}
-                <p className="inline-note" aria-label={`${rowName} safe use`}>
-                  <strong>Safe use.</strong>{' '}
-                  {f.catalogId === '' ? (
-                    <>
-                      No ceiling is known for an oil the app does not list — your supplier&apos;s IFRA certificate
-                      gives one for soap (Category 9). Until then, {usualRangeCopy(process)}.
-                    </>
-                  ) : c.safeMaxPercentOfProduct === null ? (
-                    <>
-                      IFRA sets no ceiling for this oil in soap and EU law names no limit on it — {usualRangeCopy(process)}.
-                      {c.shareOfProduct > 0 && <> This dose is {formatGrams(c.shareOfProduct, 1)}% of the {noun}.</>}
-                    </>
-                  ) : c.ceilingAboveUsualRange ? (
-                    <>
-                      No ceiling bites below the usual range: this oil&apos;s works out at{' '}
-                      {formatCeilingPercent(c.safeMaxPercentOfProduct)}% of the {noun} ({c.ceilingWhy}), and{' '}
-                      {usualRangeCopy(process)}.
-                      {c.shareOfProduct > 0 && <> This dose is {formatGrams(c.shareOfProduct, 1)}%.</>}
-                    </>
-                  ) : (
-                    <>
-                      Up to <strong>{formatCeilingPercent(c.safeMaxPercentOfProduct)}% of the {noun}</strong>
-                      {c.safeMaxPercentOfBasis !== null && <> (about {formatGrams(c.safeMaxPercentOfBasis, 1)}{doseLabel} in this recipe)</>}
-                      {' — '}{c.ceilingWhy}.
-                      {c.shareOfProduct > 0 && (
-                        <> This dose is {formatGrams(c.shareOfProduct, 1)}%{c.overSafeMax ? <strong> — over it.</strong> : '.'}</>
-                      )}
-                    </>
-                  )}
-                </p>
+                {(f.catalogId !== '' || f.name.trim() !== '' || c.typedPercent !== null) && (
+                  <p className="inline-note" aria-label={`${rowName} safe use`}>
+                    <strong>Safe use.</strong>{' '}
+                    <SafeUse f={f} c={c} process={process} noun={noun} doseLabel={doseLabel} figures={figures} />
+                  </p>
+                )}
               </li>
             );
           })}
@@ -261,24 +229,84 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
   );
 });
 
-function FragranceNotes({ c, noun, unit, doseLabel, usualPast }: {
-  c: ComputedFragrance; noun: string; unit: WeightUnit; doseLabel: string; usualPast: string;
+/**
+ * The row's figures, printed once and shared by the share line and the safe-use line so
+ * the two can never disagree: beside a ceiling they are rounded toward the verdict (core
+ * formatShareAgainstCeiling); with none, the share is simply the nearest tenth.
+ */
+function rowFigures(c: ComputedFragrance): { share: string | null; ceiling: string | null; basis: string | null } {
+  if (!c.ceiling) return { share: c.shareOfProduct > 0 ? formatGrams(c.shareOfProduct, 1) : null, ceiling: null, basis: null };
+  const d = ceilingDigits(c.ceiling.percentOfProduct);
+  const printed = c.shareOfProduct > 0 ? formatShareAgainstCeiling(c.shareOfProduct, c.ceiling.percentOfProduct, c.overSafeMax) : null;
+  return {
+    share: printed?.share ?? null,
+    ceiling: printed?.ceiling ?? formatPercentToward(c.ceiling.percentOfProduct, d, 'down'),
+    // Rounded down, so typing the printed figure never lands over the ceiling.
+    basis: c.ceilingPercentOfBasis !== null ? formatPercentToward(c.ceilingPercentOfBasis, d, 'down') : null,
+  };
+}
+
+/** The one dose sentence, with its basis named and the verdict on the end. */
+function DoseSentence({ c, noun, share }: { c: ComputedFragrance; noun: string; share: string | null }) {
+  if (share === null) return null;
+  return <> This dose is {share}% of the {noun}{c.overSafeMax ? <strong> — over it.</strong> : '.'}</>;
+}
+
+function SafeUse({ f, c, process, noun, doseLabel, figures }: {
+  f: FragranceLine; c: ComputedFragrance; process: ProcessId; noun: string; doseLabel: string;
+  figures: ReturnType<typeof rowFigures>;
+}) {
+  const dose = <DoseSentence c={c} noun={noun} share={figures.share} />;
+  if (f.catalogId === '') {
+    return (
+      <>
+        No ceiling is known for an oil the app does not list — your supplier&apos;s IFRA certificate gives one for
+        soap (Category 9). Until then, {usualDoseClause(process)}.{dose}
+      </>
+    );
+  }
+  if (!c.ceiling) {
+    return (
+      <>
+        No ceiling applies: none of this oil&apos;s restricted constituents comes near its limit in soap, and no
+        standard names the oil itself — {usualDoseClause(process)}.{dose}
+      </>
+    );
+  }
+  if (c.ceilingAboveUsualRange) {
+    return (
+      <>
+        No ceiling bites below the usual range: this oil&apos;s works out at {figures.ceiling}% of the {noun}{' '}
+        ({c.ceiling.why}), and {usualDoseClause(process)}.{dose}
+      </>
+    );
+  }
+  return (
+    <>
+      Up to <strong>{figures.ceiling}% of the {noun}</strong>
+      {figures.basis !== null && <> (about {figures.basis}{doseLabel} in this recipe)</>}
+      {' — '}{c.ceiling.why}.{dose}
+    </>
+  );
+}
+
+function FragranceNotes({ c, noun, unit, doseLabel, process, shareText }: {
+  c: ComputedFragrance; noun: string; unit: WeightUnit; doseLabel: string; process: ProcessId; shareText: string | null;
 }) {
   const notes: Array<{ text: string; hazard?: boolean }> = [];
+  const typed = formatGrams(c.typedPercent ?? c.percent ?? 0, 2);
   // The same grams in both bases, each named: the dose is typed against the oils, every
   // ceiling is a share of the finished soap, and the bar is heavier than its oils.
-  if (c.shareOfProduct > 0) {
-    notes.push({ text: `${formatGrams(c.percent ?? 0, 2)}${doseLabel} = ${formatGrams(c.shareOfProduct, 1)}% of the ${noun}.` });
-  }
+  if (shareText !== null) notes.push({ text: `${typed}${doseLabel} = ${shareText}% of the ${noun}.` });
   if (c.overUsualRange) {
-    notes.push({ hazard: true, text: `${formatGrams(c.percent ?? 0, 2)}${doseLabel} is past ${usualPast} — no book or standard stands behind more.` });
+    notes.push({ hazard: true, text: `${typed}${doseLabel} is past ${usualDosePastClause(process)} — no book or standard stands behind more.` });
   }
   if (c.browning !== 'none') {
     notes.push({
       text: `Browning: ${c.browning}.${c.stabilizerGrams > 0 ? ` Mix ${formatWeight(c.stabilizerGrams, unit)} vanilla stabilizer into the fragrance first.` : ''}`,
     });
   }
-  if (c.caution) notes.push({ hazard: true, text: 'Clove and cinnamon essential oils accelerate trace and can irritate — keep under the ceiling in Safe use.' });
+  if (c.caution) notes.push({ hazard: true, text: 'Clove and cinnamon essential oils accelerate trace and can irritate — keep the dose low.' });
   if (c.polysorbateGrams > 0) notes.push({ text: `Mix ${formatWeight(c.polysorbateGrams, unit)} polysorbate 20 into the fragrance so it stays emulsified over the superfat.` });
   if (notes.length === 0) return null;
   return (

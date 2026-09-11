@@ -1265,7 +1265,7 @@ describe('rule registry consistency', () => {
       process: 'cp',
     },
     fragrance_over_safe_max: {
-      fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct: 2.3, safeMaxPercentOfProduct: 1, why: 'EU law caps methyl eugenol' }],
+      fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct: 2.3, ceilingPercentOfProduct: 1, why: 'EU law caps methyl eugenol' }],
     },
     colorant_liquid_double_count: {
       colorantsDoubleAsLiquid: [{ name: 'Carrot puree', liquid: 'Fruit or vegetable puree' }],
@@ -1429,13 +1429,20 @@ describe('fragrance & colorant insights', () => {
     expect(ls.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/3% of the finished solution/);
   });
 
-  it('an oil over its ceiling says how far, what the ceiling is, and why — in the app\'s one format', () => {
-    const over = analyzeFormulation(waterInput(330, 1000, {
+  it('an oil over its ceiling says how far, what the ceiling is, and why — the dose rounded up, the ceiling down', () => {
+    const at = (shareOfProduct: number, ceilingPercentOfProduct: number) => analyzeFormulation(waterInput(330, 1000, {
       process: 'cp',
-      fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct: 2.34, safeMaxPercentOfProduct: 1, why: 'EU law caps methyl eugenol at 0.001% of a rinse-off product' }],
-    }));
-    expect(over.find((i) => i.code === 'fragrance_over_safe_max')?.message)
-      .toBe('Clove is 2.3% of the finished soap; 1% is its ceiling — EU law caps methyl eugenol at 0.001% of a rinse-off product. Lower the dose.');
+      fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct, ceilingPercentOfProduct, why: 'EU law caps methyl eugenol at 0.001% of a rinse-off product' }],
+    })).find((i) => i.code === 'fragrance_over_safe_max')?.message;
+    expect(at(2.34, 1)).toBe('Clove is 2.4% of the finished soap; 1% is its ceiling — EU law caps methyl eugenol at 0.001% of a rinse-off product. Lower the dose.');
+    // a hair over never prints as equal to the ceiling
+    expect(at(1.02, 1)).toMatch(/^Clove is 1\.1% of the finished soap; 1% is its ceiling/);
+  });
+
+  it('names an unnamed row the way the panel does', () => {
+    const msg = analyzeFormulation(waterInput(330, 1000, { process: 'cp', fragranceRows: [row({ name: '  ', overUsualRange: true })] }))
+      .find((i) => i.code === 'fragrance_over_usual_range')?.message;
+    expect(msg).toMatch(/^Essential oil is dosed past/);
   });
 
   it('browning above 0% vanillin in any process; the deep wording above 1%', () => {

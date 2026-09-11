@@ -1,5 +1,10 @@
 # Fragrance & Colorants Section Implementation Plan
 
+> **Superseded in part (2026-09-10/11):** the typed allergen rows and the typed supplier ceiling
+> (`supplierMaxPercent`, `fragranceOverSupplierMax`, two insight codes) this plan builds were later
+> removed; each listed oil's ceiling is now resolved from the catalog (`essentialOilCeiling`). Kept as
+> the record of the 2026-09-08 build.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A first-class *Fragrance & colorants* section (CP/HP/LS) with its own state, core math, EU/IFRA guardrails, and outputs in the Full recipe, steps, batch sheet and pricing — with fragrance migrated out of the additive catalog.

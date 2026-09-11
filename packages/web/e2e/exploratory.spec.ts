@@ -1100,17 +1100,22 @@ test.describe('the essential-oil catalog', () => {
     await expect(panel.getByLabel('Essential oil name')).toHaveCount(0);
     // No list to fill in and no ceiling to type: one warning, one safe-use line off the catalog.
     await expect(panel).toContainText(/This oil carries Eugenol — expect to name them on the label/);
-    await expect(panel).toContainText(/Up to 1% of the finished bar \(about 1\.3% of oil weight in this recipe\)/);
+    // The printed oil-weight figure is rounded DOWN, so typing it never lands over.
+    await expect(panel).toContainText(/Up to 1% of the finished bar \(about 1\.2% of oil weight in this recipe\)/);
     await expect(panel).toContainText(/EU law \(Annex III\) caps methyl eugenol/);
-    await expect(panel).toContainText(/This dose is 0\.8%\./);
+    await expect(panel).toContainText(/This dose is 0\.8% of the finished bar\./);
     await expect(panel.getByLabel('Allergen % of fragrance')).toHaveCount(0);
     await expect(panel.getByLabel(/max in product/i)).toHaveCount(0);
 
     // Past the ceiling, the row and the notes both say so.
     await page.getByLabel(/dose, % of oil weight/).first().fill('3');
-    await expect(panel).toContainText(/This dose is 2\.3% — over it\./);
+    await expect(panel).toContainText(/This dose is 2\.4% of the finished bar — over it\./);
     const notes = page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: 'Formulation notes' }) });
-    await expect(notes).toContainText(/Clove is 2\.3% of the finished soap; 1% is its ceiling — EU law \(Annex III\) caps methyl eugenol/);
+    await expect(notes).toContainText(/Clove is 2\.4% of the finished soap; 1% is its ceiling — EU law \(Annex III\) caps methyl eugenol/);
+    // Typing the figure the row printed as the most that fits lands under the ceiling.
+    await page.getByLabel(/dose, % of oil weight/).first().fill('1.2');
+    await expect(panel).toContainText(/This dose is 1% of the finished bar\./);
+    await expect(panel).not.toContainText(/— over it\./);
 
     // Past the usual range, whatever the oil, the row says so in the basis the maker types in.
     await page.getByLabel(/Essential oil for/).first().selectOption('lavender');

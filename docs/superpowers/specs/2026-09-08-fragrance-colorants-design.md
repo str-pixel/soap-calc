@@ -1,5 +1,12 @@
 # Fragrance & colorants: a section per process — design
 
+> **Superseded in part (2026-09-10/11):** the typed allergen rows and the typed supplier ceiling
+> (`supplierMaxPercent`, `fragranceOverSupplierMax`, the `fragrance_over_supplier_max` and
+> `fragrance_no_supplier_rate` insights) were removed at the user's request. What an oil carries and
+> the most of it a soap may hold now come off the essential-oil catalog (`packages/core/src/
+> essential-oil-catalog.ts`: IFRA's standards and constituent annex, EU Annex III, the SCCS). This
+> document is kept as the design record of what shipped on 2026-09-08.
+
 **Status:** approved in brainstorming 2026-09-08; awaiting spec review.
 **Adds:** a first-class *Fragrance & colorants* section (CP/HP/LS) with its own state,
 core math, manifest/steps/sheet/pricing outputs, and EU dose/allergen guardrails.

@@ -1062,7 +1062,9 @@ export function useRecipeViewModel({
   // colour, and grams move with the oil weight while the typed percent does not. The typed
   // NAME is still left out on purpose — the rules quote the catalog's name, not the maker's.
   const insightScentKey = JSON.stringify({
-    f: scentColorComputed.fragrances.map((f) => [f.name, f.percent, f.overUsualRange, f.overSafeMax, f.browning, f.caution]),
+    // The share rides along because the over-ceiling note PRINTS it: a water or cure edit
+    // moves the share without flipping any verdict, and the note must move with it.
+    f: scentColorComputed.fragrances.map((f) => [f.name, f.percent, f.shareOfProduct, f.overUsualRange, f.overSafeMax, f.browning, f.caution]),
     a: scentColorComputed.labelAllergens,
     o: scentColorComputed.portionsOver100,
     c: scentColorComputed.carrierSuperfatShiftPercent,

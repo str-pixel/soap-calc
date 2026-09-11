@@ -6,11 +6,15 @@ import {
   allergensToLabel,
   essentialOilCaution,
   fragranceGrams,
-  euRinseOffLimitPercent,
-  formatCeilingPercent,
+  ceilingDigits,
+  EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT,
+  formatPercentToward,
+  formatShareAgainstCeiling,
+  fragranceDoseAtCeiling,
   fragranceOverUsualRange,
+  usualDoseClause,
+  usualDosePastClause,
   ifraCategoryNinePercent,
-  ifraCeilingAsPercentOfFragrance,
   fragranceShareOfProduct,
   polysorbate20Grams,
   vanillaStabilizerGrams,
@@ -49,16 +53,73 @@ describe('fragranceOverUsualRange — the top of the books\' range, in the dose 
   });
 });
 
-describe('formatCeilingPercent — one figure, printed the same everywhere', () => {
-  it('one decimal from 1% up, two below, no trailing zeros', () => {
-    expect(formatCeilingPercent(1.0)).toBe('1');
-    expect(formatCeilingPercent(1.4)).toBe('1.4');
-    expect(formatCeilingPercent(1.6438)).toBe('1.6');
-    expect(formatCeilingPercent(0.65333)).toBe('0.65');
-    expect(formatCeilingPercent(0.5)).toBe('0.5');
-    expect(formatCeilingPercent(15.819)).toBe('15.8');
+describe('the usual range, in words, from the one record', () => {
+  it('reads the same numbers the verdict uses', () => {
+    expect(usualDoseClause('cp')).toBe('bars usually carry 2–6% of oil weight');
+    expect(usualDoseClause('hp')).toBe('bars usually carry 2–6% of oil weight');
+    expect(usualDoseClause('ls')).toBe('liquid soap usually carries 0.5–3% of the finished solution, 3% at most');
+    expect(usualDosePastClause('cp')).toBe('the 2–6% of oil weight bars usually carry');
+    expect(usualDosePastClause('ls')).toBe('the 3% of the finished solution liquid soap carries at most');
   });
 });
+
+describe('formatPercentToward — one figure, rounded the way the sentence needs', () => {
+  it('drops trailing zeros and rounds down, up or nearest', () => {
+    expect(formatPercentToward(1.0, 1, 'down')).toBe('1');
+    expect(formatPercentToward(1.6438, 1, 'down')).toBe('1.6');
+    expect(formatPercentToward(1.6438, 1, 'up')).toBe('1.7');
+    expect(formatPercentToward(0.65333, 2, 'down')).toBe('0.65');
+    expect(formatPercentToward(15.819, 1, 'nearest')).toBe('15.8');
+    // float noise must not push a figure over: 1.1 × 10 is 11.000000000000002
+    expect(formatPercentToward(1.1, 1, 'up')).toBe('1.1');
+    expect(formatPercentToward(1.3, 1, 'down')).toBe('1.3');
+  });
+  it('ceilingDigits: one decimal from 1% up, two below', () => {
+    expect(ceilingDigits(1)).toBe(1);
+    expect(ceilingDigits(9.6)).toBe(1);
+    expect(ceilingDigits(0.6533)).toBe(2);
+  });
+});
+
+describe('formatShareAgainstCeiling — the printed figures never contradict the verdict', () => {
+  it('a dose over its ceiling always prints above it', () => {
+    expect(formatShareAgainstCeiling(1.04, 1, true)).toEqual({ share: '1.1', ceiling: '1' });
+    expect(formatShareAgainstCeiling(1.44, 1.4, true)).toEqual({ share: '1.5', ceiling: '1.4' });
+    expect(formatShareAgainstCeiling(0.654, 0.6533, true)).toEqual({ share: '0.66', ceiling: '0.65' });
+    expect(formatShareAgainstCeiling(2.345, 1, true)).toEqual({ share: '2.4', ceiling: '1' });
+  });
+  it('a dose under its ceiling prints to the nearest, and never above the printed ceiling', () => {
+    expect(formatShareAgainstCeiling(0.794, 1, false)).toEqual({ share: '0.8', ceiling: '1' });
+    expect(formatShareAgainstCeiling(0.652, 0.6533, false)).toEqual({ share: '0.65', ceiling: '0.65' });
+    // nearest would say 1.7 above a ceiling printed as 1.6 — rounded down instead
+    expect(formatShareAgainstCeiling(1.65, 1.66, false)).toEqual({ share: '1.6', ceiling: '1.6' });
+  });
+});
+
+describe('fragranceDoseAtCeiling — the ceiling in the basis the maker types in', () => {
+  it('solves for the oil inside the product it is part of', () => {
+    // 1% ceiling; a 1300 g bar holding 10 g of the oil: 0.01 × 1290 ÷ 0.99 = 13.03 g → 1.303% of 1000 g oils
+    expect(fragranceDoseAtCeiling(1, 1300, 10, 0, 1000)).toBeCloseTo(1.303, 3);
+    // and typing that lands exactly on the ceiling
+    const g = 13.0303;
+    expect((100 * g) / (1290 + g)).toBeCloseTo(1, 4);
+  });
+  it('counts what rides with the dose — polysorbate at 1:1 halves the room', () => {
+    // 1% ceiling, 1000 g bottle with 30 g of oil and 30 g of polysorbate: rest 940,
+    // g = 0.01 × 940 ÷ (1 − 0.02) = 9.59 g → 0.959% of a 1000 g solution
+    const d = fragranceDoseAtCeiling(1, 1000, 30, 30, 1000)!;
+    expect(d).toBeCloseTo(0.959, 3);
+    const g = 9.5918;
+    expect((100 * g) / (940 + 2 * g)).toBeCloseTo(1, 4);
+  });
+  it('is null without a product weight, a ceiling, or a basis', () => {
+    expect(fragranceDoseAtCeiling(1, null, 10, 0, 1000)).toBeNull();
+    expect(fragranceDoseAtCeiling(null, 1300, 10, 0, 1000)).toBeNull();
+    expect(fragranceDoseAtCeiling(1, 1300, 10, 0, 0)).toBeNull();
+    expect(fragranceDoseAtCeiling(100, 1300, 10, 0, 1000)).toBeNull();
+  });
+});
+
 
 describe('essentialOilCaution — clove and cinnamon EOs accelerate and irritate (CP:9531-9537, 9589-9592)', () => {
   it('fires for an oil named clove or cinnamon, case-insensitively', () => {
@@ -176,26 +237,12 @@ describe('IFRA Category 9, which is the category soap sits in', () => {
 
 describe('EU Annex III — the one constituent limit the law itself sets on a catalog oil', () => {
   it('methyl eugenol: 0.001% of a rinse-off product (Annex III/102, as quoted in SCCS/1681/25)', () => {
-    expect(euRinseOffLimitPercent('Methyl eugenol')).toBe(0.001);
+    expect(EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT['Methyl eugenol']).toBe(0.001);
     // Lower than IFRA's own 0.0017% — the law is what binds clove.
-    expect(euRinseOffLimitPercent('Methyl eugenol')!).toBeLessThan(ifraCategoryNinePercent('Methyl eugenol')!);
+    expect(EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT['Methyl eugenol']).toBeLessThan(ifraCategoryNinePercent('Methyl eugenol')!);
     // Labelling allergens are thresholds, not limits: the law names no rinse-off limit on them.
-    expect(euRinseOffLimitPercent('Eugenol')).toBeNull();
-    expect(euRinseOffLimitPercent('Linalool')).toBeNull();
+    expect(EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT.Eugenol).toBeUndefined();
+    expect(EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT.Linalool).toBeUndefined();
   });
 });
 
-describe("IFRA's ceiling in the basis the maker types in", () => {
-  it('divides the product ceiling by the fragrance share', () => {
-    // Citral: 1.2% of the soap, on a lemongrass that is 2.3% of the bar → ~52% of the oil.
-    expect(ifraCeilingAsPercentOfFragrance(1.2, 2.3)).toBeCloseTo(52.17, 1);
-    // A heavier dose leaves less room in the oil.
-    expect(ifraCeilingAsPercentOfFragrance(1.2, 4.6)).toBeCloseTo(26.09, 1);
-  });
-
-  it('has no answer with no ceiling or no dose', () => {
-    expect(ifraCeilingAsPercentOfFragrance(null, 2.3)).toBeNull();
-    expect(ifraCeilingAsPercentOfFragrance(1.2, 0)).toBeNull();
-    expect(ifraCeilingAsPercentOfFragrance(1.2, NaN)).toBeNull();
-  });
-});

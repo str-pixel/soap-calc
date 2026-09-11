@@ -744,10 +744,11 @@ describe('the whole batch has a pigment load, not just each colour', () => {
 describe("an oil dosed past its derived safe ceiling", () => {
   const lines = [makeLine('olive-oil', '700'), makeLine('coconut-oil-76', '300')];
   const clove = (shareOfProduct: number, overSafeMax: boolean) => ({
-    key: 'f1', catalogId: 'clove', name: 'Clove', percent: 3, grams: 30, stage: 'trace' as const, caution: true,
-    browning: 'none' as const, stabilizerGrams: 0, polysorbateGrams: 0, doseBasisGrams: 1000, overUsualRange: false,
-    allergenNames: ['Eugenol'], safeMaxPercentOfProduct: 1, ceilingWhy: 'EU law caps methyl eugenol at 0.001% of a rinse-off product',
-    ceilingAboveUsualRange: false, safeMaxPercentOfBasis: 1.3, shareOfProduct, overSafeMax,
+    key: 'f1', catalogId: 'clove', name: 'Clove', percent: 3, typedPercent: 3, grams: 30, stage: 'trace' as const, caution: true,
+    browning: 'none' as const, stabilizerGrams: 0, polysorbateGrams: 0, overUsualRange: false,
+    allergenNames: ['Eugenol'],
+    ceiling: { percentOfProduct: 1, why: 'EU law caps methyl eugenol at 0.001% of a rinse-off product', authority: 'EU law' as const, substance: 'Methyl eugenol' },
+    ceilingAboveUsualRange: false, ceilingPercentOfBasis: 1.3, shareOfProduct, overSafeMax,
   });
   function harness(fragrances: ComputedScentColor['fragrances']) {
     const { properties, fattyAcids } = useRecipeProperties(lines, DEFAULT_SETTINGS);
@@ -761,9 +762,10 @@ describe("an oil dosed past its derived safe ceiling", () => {
     return result.current.insights.find((i) => i.code === 'fragrance_over_safe_max')?.message;
   };
 
-  it('names the oil, the figure, the ceiling and the sentence behind it', () => {
-    const text = msg([clove(2.3, true)]);
-    expect(text).toBe('Clove is 2.3% of the finished soap; 1% is its ceiling — EU law caps methyl eugenol at 0.001% of a rinse-off product. Lower the dose.');
+  it('carries the ceiling and the sentence behind it through to the rule', () => {
+    // The exact wording is the core rule's to pin; this proves the wiring.
+    const text = msg([clove(2.34, true)]);
+    expect(text).toMatch(/^Clove is 2\.4% of the finished soap; 1% is its ceiling — EU law caps methyl eugenol/);
   });
 
   it('is the compute step\'s verdict, not its own', () => {

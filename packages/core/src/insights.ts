@@ -3,7 +3,7 @@ import {
   sumFattyAcids,
   type FattyAcidProfile,
 } from './fatty-acids.js';
-import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT, formatCeilingPercent } from './fragrance.js';
+import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT, formatShareAgainstCeiling, usualDosePastClause } from './fragrance.js';
 import { DEFAULT_KOH_BLEND_PERCENT, effectiveSuperfatPercent, type LyeType, type WaterMode } from './lye.js';
 import { CP_OVERFLOW_RISK_F } from './soaping-temperature.js';
 import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
@@ -142,12 +142,12 @@ export type FormulationAnalysisInput = {
   /** The labelling allergens the picked oils are known to carry — presence, by name. */
   labelAllergens?: Array<{ name: string }>;
   /** An oil dosed past its ceiling: the most of it the finished soap may carry, off the
-   * catalog (core essentialOilSafeMaxPercentOfProduct) with the sentence behind the figure.
-   * Verdict is the compute step's (overSafeMax); this carries the figures for the message. */
+   * catalog (core essentialOilCeiling) with the sentence behind the figure. Verdict is the
+   * compute step's (overSafeMax); this carries the figures for the message. */
   fragrancesOverSafeMax?: Array<{
     fragrance: string;
     shareOfProduct: number;
-    safeMaxPercentOfProduct: number;
+    ceilingPercentOfProduct: number;
     why: string;
   }>;
   /** The batter portions add up past 100%. */
@@ -1254,15 +1254,16 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       const over = (input.fragranceRows ?? []).filter((f) => f.overUsualRange);
       if (over.length === 0) return null;
-      const names = over.map((f) => f.name.trim() || 'A fragrance').join(', ');
+      const names = over.map((f) => f.name.trim() || 'Essential oil').join(', ');
       const verb = over.length > 1 ? 'are' : 'is';
+      const past = `${names} ${verb} dosed past ${usualDosePastClause(input.process)}`;
       return {
         level: 'warning',
         code: 'fragrance_over_usual_range',
         message:
           input.process === 'ls'
-            ? `${names} ${verb} dosed past the 3% of the finished solution that liquid soap carries at most — no book stands behind more, and most fragrances cloud a solution; prove it in a small batch first.`
-            : `${names} ${verb} dosed past the 2–6% of oil weight bars usually carry — no book or standard stands behind more, and any ceiling the row shows is for the finished bar, not a licence to go higher.`,
+            ? `${past} — no book stands behind more, and most fragrances cloud a solution; prove it in a small batch first.`
+            : `${past} — no book or standard stands behind more, and any ceiling the row shows is for the finished bar, not a licence to go higher.`,
       };
     },
   },
@@ -1289,7 +1290,7 @@ export const INSIGHT_RULES: InsightRule[] = [
         ? {
             level: 'info',
             code: 'fragrance_accelerant_eo',
-            message: 'Clove and cinnamon essential oils speed trace and can irritate skin — soap cool, add them last, and keep under the ceiling the row shows.',
+            message: 'Clove and cinnamon essential oils speed trace and can irritate skin — soap cool, add them last, and keep the dose low.',
           }
         : null,
   },
@@ -1421,10 +1422,12 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       const rows = input.fragrancesOverSafeMax ?? [];
       if (rows.length === 0) return null;
-      const parts = rows.map(
-        (r) =>
-          `${r.fragrance} is ${r.shareOfProduct.toFixed(1)}% of the finished soap; ${formatCeilingPercent(r.safeMaxPercentOfProduct)}% is its ceiling — ${r.why}.`,
-      );
+      // Printed the way the row prints them: the dose rounded up and the ceiling down, so
+      // the two figures never read as equal beside a verdict that says over.
+      const parts = rows.map((r) => {
+        const { share, ceiling } = formatShareAgainstCeiling(r.shareOfProduct, r.ceilingPercentOfProduct, true);
+        return `${r.fragrance} is ${share}% of the finished soap; ${ceiling}% is its ceiling — ${r.why}.`;
+      });
       return {
         level: 'warning',
         code: 'fragrance_over_safe_max',

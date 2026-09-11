@@ -9,7 +9,8 @@
  * soap, body washes and shampoo are all Category 9 in its product mapping.
  */
 
-import { gramsFromDose } from './additives.js';
+import { gramsFromDose, type AdditiveProcess } from './additives.js';
+import { formatPropertyRangePercent } from './property-display.js';
 
 export type VanillinBrowning = 'none' | 'light' | 'deep';
 export type AllergenInput = { name: string; percentOfFragrance: number; fragranceGrams: number };
@@ -24,7 +25,9 @@ export type LabelAllergen = { name: string; percentOfProduct: number };
  *   Eugenol 4.9% (2023 revision) · Cinnamal 0.49% ("Cinnamic aldehyde") · Citral 1.2%, whose
  *   standard names geranial and neral in scope · Citronellol 24% · Geraniol 2.8% (2023
  *   revision) · Farnesol 2.3% · Isoeugenol 0.21% · Benzyl salicylate 14% · Coumarin 0.52% ·
- *   Cedrene 2.9%, α- and β- both in scope · Methyl eugenol 0.0017% (2023 revision).
+ *   Cedrene 2.9%, α- and β- both in scope · Methyl eugenol 0.0017% (2023 revision) ·
+ *   Estragole 0.0041% (2023 revision) · Carvone 0.18% · Citronellal 1.4% · Benzyl alcohol
+ *   2.2% · 2-Hexenal 0.015% (2023 revision) · Benzaldehyde 0.49%.
  *
  * Note what is NOT here. Limonene and linalool carry no Category 9 concentration limit —
  * IFRA's standards for them are about peroxide value, not how much you may use — and benzyl
@@ -49,6 +52,12 @@ export const IFRA_CATEGORY_NINE_PERCENT: Readonly<Record<string, number>> = {
   Coumarin: 0.52,
   Cedrene: 2.9,
   'Methyl eugenol': 0.0017,
+  Estragole: 0.0041,
+  Carvone: 0.18,
+  Citronellal: 1.4,
+  'Benzyl alcohol': 2.2,
+  '2-Hexenal': 0.015,
+  Benzaldehyde: 0.49,
 };
 
 /**
@@ -66,46 +75,105 @@ export const EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT: Readonly<Record<string, numbe
   'Methyl eugenol': 0.001,
 };
 
-/** The EU rinse-off limit for a substance, or null where Annex III names none. */
-export function euRinseOffLimitPercent(substance: string): number | null {
-  return EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT[substance.trim()] ?? null;
+/**
+ * What a bar or a bottle USUALLY carries, in the basis the maker doses in. Bars: 2–6% of
+ * total oil weight (CP:9612-9614, 16777); liquid soap: 0.5–3% of the finished solution, 3%
+ * at most (LS:2950-2953, 16991-16998). Not a safety ceiling — an oil's own ceiling
+ * (essentialOilCeiling) is that — but past the top of it no book and no standard stands
+ * behind the dose, and the app says so. Every sentence that quotes the range is built from
+ * this one record, so the number and the words cannot drift apart.
+ */
+export const USUAL_DOSE_RANGE_PERCENT: Readonly<Record<AdditiveProcess, { low: number; high: number }>> = {
+  cp: { low: 2, high: 6 },
+  hp: { low: 2, high: 6 },
+  ls: { low: 0.5, high: 3 },
+};
+
+export function fragranceOverUsualRange(percent: number | null, process: AdditiveProcess): boolean {
+  return finite(percent) && percent > USUAL_DOSE_RANGE_PERCENT[process].high;
+}
+
+/** "bars usually carry 2–6% of oil weight" / "liquid soap usually carries 0.5–3% of the
+ * finished solution, 3% at most". */
+export function usualDoseClause(process: AdditiveProcess): string {
+  const { low, high } = USUAL_DOSE_RANGE_PERCENT[process];
+  return process === 'ls'
+    ? `liquid soap usually carries ${formatPropertyRangePercent(low, high, 1)} of the finished solution, ${high}% at most`
+    : `bars usually carry ${formatPropertyRangePercent(low, high)} of oil weight`;
+}
+
+/** The same range as the thing a dose is past: "the 2–6% of oil weight bars usually carry". */
+export function usualDosePastClause(process: AdditiveProcess): string {
+  const { low, high } = USUAL_DOSE_RANGE_PERCENT[process];
+  return process === 'ls'
+    ? `the ${high}% of the finished solution liquid soap carries at most`
+    : `the ${formatPropertyRangePercent(low, high)} of oil weight bars usually carry`;
 }
 
 /**
- * What a bar or a bottle USUALLY carries — the top of the books' range, in the basis the
- * maker doses in. Bars: 2–6% of total oil weight (CP:9612-9614, 16777); liquid soap: 0.5–3%
- * of the finished solution, 3% at most (LS:2950-2953, 16991-16998). Not a safety ceiling —
- * an oil's own ceiling (essentialOilSafeMaxPercentOfProduct) is that — but past this figure
- * no book and no standard stands behind the dose, and the app says so.
+ * How many decimals a ceiling and everything compared with it are printed at: one from 1%
+ * up (1.4, 9.6), two below (0.65). A ceiling and a dose in one sentence share the figure.
  */
-export const USUAL_DOSE_MAX_PERCENT: Readonly<Record<'cp' | 'hp' | 'ls', number>> = { cp: 6, hp: 6, ls: 3 };
-
-export function fragranceOverUsualRange(percent: number | null, process: 'cp' | 'hp' | 'ls'): boolean {
-  return finite(percent) && percent > USUAL_DOSE_MAX_PERCENT[process];
+export function ceilingDigits(ceilingPercent: number): number {
+  return ceilingPercent >= 1 ? 1 : 2;
 }
 
-/** A ceiling as the app prints it, the same everywhere it appears: one decimal at 1% and
- * above (1.4, 9.6), two below it (0.65), trailing zeros dropped (1, not 1.0). */
-export function formatCeilingPercent(percentOfProduct: number): string {
-  const s = percentOfProduct >= 1 ? percentOfProduct.toFixed(1) : percentOfProduct.toFixed(2);
-  return s.replace(/\.?0+$/, '');
+/** A percent at a fixed number of decimals, rounded the way the caller says, trailing
+ * zeros dropped (1, not 1.0). The epsilon keeps 1.1 × 10 = 11.000000000000002 from
+ * ceiling to 1.2. */
+export function formatPercentToward(value: number, digits: number, direction: 'down' | 'up' | 'nearest'): string {
+  const f = 10 ** digits;
+  const eps = 1e-9;
+  const n =
+    direction === 'down' ? Math.floor(value * f + eps)
+    : direction === 'up' ? Math.ceil(value * f - eps)
+    : Math.round(value * f);
+  return String(n / f);
 }
 
 /**
- * IFRA's ceiling turned into the basis the maker actually types in. The ceiling is a percent
- * of the FINISHED PRODUCT; a supplier's declaration is a percent of the OIL; the fragrance's
- * share of the product joins them. At a share of S percent, a ceiling of C percent of the
- * product is C ÷ S × 100 percent of the oil — so citral's 1.2% is 52% of a lemongrass that
- * is 2.3% of the bar, and a lemongrass that is typically 70–85% citral is over it at that
- * dose. Null with no dose to work from.
+ * A dose and its ceiling, printed so that the figures never contradict the verdict they
+ * sit beside. The ceiling is rounded DOWN, so typing the printed figure never lands over
+ * it. A dose that is over is rounded UP, so it always prints above the ceiling ("Up to 1%
+ * … This dose is 1.1% — over it", never "1% … 1% — over it"). A dose that is under is
+ * printed to the nearest, and rounded down instead only when nearest would put it above
+ * the printed ceiling.
  */
-export function ifraCeilingAsPercentOfFragrance(
+export function formatShareAgainstCeiling(
+  shareOfProduct: number,
+  ceilingPercentOfProduct: number,
+  over: boolean,
+): { share: string; ceiling: string } {
+  const d = ceilingDigits(ceilingPercentOfProduct);
+  const ceiling = formatPercentToward(ceilingPercentOfProduct, d, 'down');
+  let share = formatPercentToward(shareOfProduct, d, over ? 'up' : 'nearest');
+  if (!over && Number(share) > Number(ceiling)) share = formatPercentToward(shareOfProduct, d, 'down');
+  return { share, ceiling };
+}
+
+/**
+ * A product-basis ceiling turned into the basis the maker types in, for one recipe. The
+ * product carries the oil itself and whatever rides with the dose (polysorbate 20 at 1:1
+ * in liquid soap, a vanilla stabilizer), so the most of the oil that fits is solved, not
+ * scaled: with the rest of the product at R grams, a ceiling of c (a fraction) and k grams
+ * of extras per gram of oil, g ÷ (R + g + k·g) = c gives g = c·R ÷ (1 − c·(1 + k)); over
+ * the dose basis that is the percent to type. Null until the product weight is known.
+ */
+export function fragranceDoseAtCeiling(
   ceilingPercentOfProduct: number | null,
-  fragranceShareOfProductPercent: number,
+  productGrams: number | null,
+  fragranceGrams: number,
+  extrasWithDoseGrams: number,
+  doseBasisGrams: number,
 ): number | null {
-  if (!finite(ceilingPercentOfProduct) || ceilingPercentOfProduct <= 0) return null;
-  if (!finite(fragranceShareOfProductPercent) || fragranceShareOfProductPercent <= 0) return null;
-  return (ceilingPercentOfProduct / fragranceShareOfProductPercent) * 100;
+  if (!finite(ceilingPercentOfProduct) || !finite(productGrams) || productGrams <= 0 || doseBasisGrams <= 0) return null;
+  const c = ceilingPercentOfProduct / 100;
+  if (c <= 0 || c >= 1) return null;
+  const k = fragranceGrams > 0 ? Math.max(0, extrasWithDoseGrams) / fragranceGrams : 0;
+  const rest = Math.max(0, productGrams - fragranceGrams * (1 + k));
+  const denominator = 1 - c * (1 + k);
+  if (denominator <= 0) return null;
+  return (100 * ((c * rest) / denominator)) / doseBasisGrams;
 }
 
 /** The Category 9 ceiling for a substance, or null where IFRA sets none. */

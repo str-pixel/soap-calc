@@ -285,12 +285,12 @@ export function useFormulationInsights(
       labelAllergens: options.scentColor?.labelAllergens,
       // The verdict is the compute step's; this only carries the figures for the sentence.
       fragrancesOverSafeMax: (options.scentColor?.fragrances ?? []).flatMap((f) =>
-        f.overSafeMax && f.safeMaxPercentOfProduct !== null
+        f.overSafeMax && f.ceiling
           ? [{
               fragrance: f.name.trim() || 'Essential oil',
               shareOfProduct: f.shareOfProduct,
-              safeMaxPercentOfProduct: f.safeMaxPercentOfProduct,
-              why: f.ceilingWhy ?? '',
+              ceilingPercentOfProduct: f.ceiling.percentOfProduct,
+              why: f.ceiling.why,
             }]
           : [],
       ),
