@@ -42,8 +42,8 @@ type Props = {
    (HP:11024-11029); LS proves a new fragrance in a small solution first — almost all cloud
    (LS:16991-16998). */
 const PROCESS_COPY: Record<ProcessId, string> = {
-  cp: `Dose against total oil weight — ${usualDoseClause('cp')}. Each listed oil's row says what ceiling soap sets for it, IFRA's or EU law's, or that none does, and warns when a dose is over it. The flashpoint is a shipping figure, not a soaping limit.`,
-  hp: `Dose against total oil weight — ${usualDoseClause('hp')}; each listed oil's row says what ceiling soap sets for it, or that none does. Add it after the cook, at room temperature; a vanilla stabilizer goes into the measured fragrance first and can thicken the paste.`,
+  cp: `Dose against total oil weight — ${usualDoseClause('cp')}. Each listed oil's row says what ceiling applies to it in soap, IFRA's or EU law's, or that none does, and warns when a dose is over it. The flashpoint is a shipping figure, not a soaping limit.`,
+  hp: `Dose against total oil weight — ${usualDoseClause('hp')}; each listed oil's row says what ceiling applies to it in soap, or that none does. Add it after the cook, at room temperature; a vanilla stabilizer goes into the measured fragrance first and can thicken the paste.`,
   ls: `Dose against the finished solution — ${usualDoseClause('ls')}. Each listed oil's row says what ceiling applies, or that none does; prove a new fragrance in a small test solution first, most cloud a little.`,
 };
 
@@ -206,8 +206,9 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     this recipe. A row with nothing on it yet has nothing to say. */}
                 {c.allergenNames.length > 0 && (
                   <p className="inline-note scent-list__warning" aria-label={`${rowName} allergens`}>
-                    <strong>Allergens.</strong> This oil carries {c.allergenNames.join(', ')} — expect to name
-                    them on the label, and confirm each against your supplier&apos;s allergen declaration.
+                    <strong>Allergens.</strong> This oil carries {c.allergenNames.join(', ')} — expect to name{' '}
+                    {c.allergenNames.length > 1 ? 'them' : 'it'} on the label, and confirm{' '}
+                    {c.allergenNames.length > 1 ? 'each' : 'it'} against your supplier&apos;s allergen declaration.
                   </p>
                 )}
                 {(f.catalogId !== '' || f.name.trim() !== '' || c.typedPercent !== null) && (
