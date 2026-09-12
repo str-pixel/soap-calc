@@ -12,6 +12,25 @@ export type SoapPropertyName =
 
 export type SoapProperties = Record<SoapPropertyName, number>;
 
+/**
+ * What each quality sums. THE CALCULATORS DO NOT AGREE ON THIS, so the choice matters as
+ * much as the bands do (checked 2026-09-12 against each calculator's own shipped code):
+ *
+ * - SoapCalc, LyeCalc, Modern Soapmaking, Classic Bells: cleansing = lauric + myristic.
+ *   SoapCalc's data model has no caprylic or capric column at all.
+ * - Soapee and Soapmaking Friend: cleansing = lauric + myristic + caprylic + capric, and
+ *   they put C8-C10 into hardness and bubbly too.
+ *
+ * This app follows the Soapee / Soapmaking Friend convention, which is its actual lineage —
+ * the inherited misspelling `docosenoid`, corrected to `docosenoic` here, is Soapee's.
+ * Both conventions display the same "12 - 22" guidance for quantities that are not the same
+ * quantity; a coconut, palm-kernel or babassu recipe scores several points higher under this
+ * one. See {@link SOAP_PROPERTY_GUIDE} for which band that is judged against.
+ *
+ * Three deliberate departures from that lineage, each argued in the comments below:
+ * C8-C10 are excluded from hardness; the long-chain saturates and elaidic are added to
+ * hardness and longevity; palmitoleic is added to conditioning.
+ */
 export const SOAP_PROPERTY_FATTY_ACIDS: Record<SoapPropertyName, readonly string[]> = {
   bubbly: ['lauric', 'myristic', 'ricinoleic', 'caprylic', 'capric'],
   cleansing: ['lauric', 'myristic', 'caprylic', 'capric'],

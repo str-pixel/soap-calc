@@ -30,7 +30,22 @@ export const FORMULATION_PREFERENCE_GUIDE: Partial<
 export const IODINE_GUIDE = { low: 41, high: 70 } as const;
 export const INS_GUIDE = { low: 136, high: 165, ideal: 160 } as const;
 
-/** Fatty-acid % bands for general-purpose bath bars (community formulation practice). */
+/**
+ * Fatty-acid % bands for general-purpose bath bars. SOURCED 2026-09-12, having shipped
+ * since introduction with only "community formulation practice" to stand on: these six are
+ * Kenna Cote's stated targets at Modern Soapmaking, "For a general purpose body soap, I tend
+ * to follow these fatty acid ranges"
+ * (https://www.modernsoapmaking.com/blog/soapcalcs-soap-quality-numbers, read 2026-09-12).
+ * All six match her table exactly.
+ *
+ * Four of them — oleic 32-41, linoleic 7-14, linolenic 0-1, ricinoleic 4-7 — are also the
+ * "most recipes" bands from her survey of 99 soapmakers' body-soap formulas
+ * (https://www.modernsoapmaking.com/blog/the-most-popular-fatty-acid-profiles-in-soapmaking).
+ * The two COMBINED bands are her recommendation, not that survey: the same survey's observed
+ * lauric+myristic and palmitic+stearic both average about 22, below this 20-30 band's middle.
+ * Other practitioners put palmitic+stearic higher still (DeeAnna Weed's "sweet spot" is
+ * 30-40). Treat these as one experienced formulator's targets, which is what they are.
+ */
 export const FORMULATION_FATTY_ACID_GUIDE = {
   lauricMyristic: { low: 20, high: 30, label: 'Lauric + myristic (+C8–C10)' },
   palmiticStearic: { low: 20, high: 30, label: 'Palmitic + stearic' },
