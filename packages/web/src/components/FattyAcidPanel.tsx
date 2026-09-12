@@ -7,6 +7,7 @@ import {
   formatPropertyScoreRange,
   formatSoapPropertyPercent,
   LOW_COVERAGE_PERCENT,
+  rangeVerdict,
   saturatedUnsaturatedRatio,
   sumFattyAcids,
 } from '@soap-calc/core';
@@ -49,10 +50,6 @@ const RADAR_AXES: ReadonlyArray<{ key: GroupKey; label: string }> = [
 // edges without them overprinting, so it prints one ("0–2") instead.
 const NARROW_BAND = 6;
 
-function inGuideBand(value: number, low: number, high: number): boolean {
-  return value >= low && value <= high;
-}
-
 // memo: `result` is a stable view-model memo output, so unrelated keystrokes
 // skip re-rendering this panel.
 export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcidPanelProps) {
@@ -84,11 +81,13 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
   const groups = FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
     const guide = FORMULATION_FATTY_ACID_GUIDE[key];
     const value = sumFattyAcids(result.profile!, acids);
-    const inBand = inGuideBand(value, guide.low, guide.high);
+    // Judge the figure this panel PRINTS — it prints one decimal — so a reading can never
+    // read "Too high" beside a number that is plainly inside the range it names.
+    const verdict = rangeVerdict(value, guide.low, guide.high, 1);
     // Low-coverage values are already flagged as estimates (the "~" prefix); don't also
     // mark them out-of-range — the guide band isn't a meaningful signal on partial data.
-    const outOfRange = !inBand && !lowCoverage;
-    return { key, guide, value, outOfRange };
+    const outOfRange = verdict !== 'in' && !lowCoverage;
+    return { key, guide, value, verdict, outOfRange };
   });
   type Group = (typeof groups)[number];
   const byKey = new Map(groups.map((g) => [g.key, g] as const));
@@ -104,7 +103,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
   const status = (g: Group) =>
     g.outOfRange ? (
       <span className="property-meters__status">
-        {g.value < g.guide.low ? 'Too low' : 'Too high'}
+        {g.verdict === 'low' ? 'Too low' : 'Too high'}
       </span>
     ) : null;
   const value = (g: Group, onTrack = false) => (

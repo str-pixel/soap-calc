@@ -45,7 +45,18 @@ export const SOAP_PROPERTY_LABELS: Record<SoapPropertyName, string> = {
   creamy: 'Creamy lather',
 };
 
-/** Typical useful range for bar-soap property bars (common CP calculator convention). */
+/**
+ * The calculator's recommended range per property — the column a soapmaker compares against
+ * across tools, and what this app judges a recipe by. Transcribed from the "Suggested Range"
+ * column (HP:9914-9941, book p367; reprinted CP:13106-13123, p456).
+ *
+ * NOT the only convention in the sources, and the difference is not an error to be tidied
+ * away: the same books ALSO print a wider "Standard" column — cleansing 8-20 rather than
+ * 12-22, hardness 30-60 rather than 29-54 (CP:11636-11703, p404) — and carry no longevity
+ * row at all. What ships is deliberately the calculator column; see
+ * docs/superpowers/plans/2026-07-17-multiprocess-remaining-roadmap.md:123. `longevity`'s
+ * 25-50 was corrected to match the calculator in commit 7812bc1 (#44).
+ */
 export const SOAP_PROPERTY_GUIDE: Record<SoapPropertyName, { low: number; high: number }> = {
   bubbly: { low: 14, high: 46 },
   cleansing: { low: 12, high: 22 },

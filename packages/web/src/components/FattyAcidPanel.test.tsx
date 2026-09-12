@@ -131,6 +131,26 @@ test('the meters place each marker at its percent and shade the typical band the
   expect(transRow.querySelector('.property-meter__tick--start')).not.toBeNull();
 });
 
+// Same rule as the properties panel, at this panel's precision: it prints one decimal, so
+// a reading is judged on that. 22.04 prints "22%" and must not read "Too high" beside it.
+test('a reading that rounds into its band is not flagged, in either view', () => {
+  // palmiticStearic band is 20–30; 30.04 prints as "30%".
+  const edge = { oleic: 36, palmitic: 30.04, linoleic: 10, lauric: 23.96 };
+  render(
+    <FattyAcidPanel
+      result={{ profile: edge, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+    />,
+  );
+  const meter = screen.getByRole('meter', { name: /Palmitic \+ stearic/i });
+  expect(meter.textContent).toBe('30%');
+  expect(meter.getAttribute('aria-label')).not.toMatch(/outside typical range/i);
+  expect(meter.closest('li')!.querySelector('.property-meters__status')).toBeNull();
+
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  const again = screen.getByRole('meter', { name: /Palmitic \+ stearic/i });
+  expect(again.getAttribute('aria-label')).not.toMatch(/outside typical range/i);
+});
+
 test('a value at the edge of the track anchors its label to the marker instead of clipping', () => {
   render(
     <FattyAcidPanel

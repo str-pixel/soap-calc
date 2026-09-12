@@ -1,6 +1,21 @@
 import type { SoapPropertyName } from './properties.js';
 
-/** Optional inner band for a balanced general-purpose CP bar — formulation hint, not a pass/fail rule. */
+/**
+ * A narrower band inside (mostly) the suggested range, for a balanced general-purpose bar.
+ * A FORMULATION HINT, NEVER A PASS/FAIL RULE — nothing may compute a verdict from it. The
+ * source is one author's stated preference: the books print it beside the Standard column
+ * as "Preference" (CP:11636-11703, p404) and, in the hot-process printing, under the heading
+ * "My Preference" (HP:4637-4664, p133). A personal preference must not decide whether a
+ * maker's recipe reads as wrong; {@link SOAP_PROPERTY_GUIDE} does that.
+ *
+ * `longevity` is absent because the source table has no longevity row.
+ *
+ * It is not strictly an INNER band: for cleansing (10-14 against 12-22), hardness (45-55
+ * against 29-54) and creamy (30-50 against 16-48) it reaches past the suggested range, so a
+ * score can sit inside this band and still be flagged out of range. That is real
+ * disagreement between two sources, not a bug — the properties panel names both bands in its
+ * legend so the maker can see which is which, rather than meeting two unexplained shades.
+ */
 export const FORMULATION_PREFERENCE_GUIDE: Partial<
   Record<SoapPropertyName, { low: number; high: number }>
 > = {

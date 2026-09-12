@@ -1,4 +1,4 @@
-import { formatSoapPropertyPercent } from '@soap-calc/core';
+import { formatSoapPropertyPercent, rangeVerdict } from '@soap-calc/core';
 import { fitRadius, radarAngle, radarPoint, RING_INNER, RING_OUTER } from '../lib/radarGeometry';
 
 export type FattyAcidRadarAxis = {
@@ -37,15 +37,18 @@ export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
     radarPoint(CX, CY, i, n, fitRadius(Math.max(0, a.value), a.low, a.high) * R),
   );
   const polygon = valuePoints.map((p) => `${p.x},${p.y}`).join(' ');
+  // Judged on the figure each axis PRINTS (one decimal), like the Meters rows — see
+  // core's rangeVerdict.
+  const judge = (a: FattyAcidRadarAxis) => rangeVerdict(a.value, a.low, a.high, 1);
   const verdict = (a: FattyAcidRadarAxis) =>
     lowCoverage
       ? 'Low data'
-      : a.value < a.low
+      : judge(a) === 'low'
         ? 'Too low'
-        : a.value > a.high
+        : judge(a) === 'high'
           ? 'Too high'
           : 'In range';
-  const isOut = (a: FattyAcidRadarAxis) => !lowCoverage && (a.value < a.low || a.value > a.high);
+  const isOut = (a: FattyAcidRadarAxis) => !lowCoverage && judge(a) !== 'in';
 
   return (
     <svg

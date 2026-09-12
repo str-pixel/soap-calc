@@ -159,6 +159,43 @@ test('a score at the edge of the track anchors its label to the marker instead o
   );
 });
 
+// A score is judged on the figure the row prints. Judged raw, 22.4 printed "22" against
+// "Suggested 12–22" and read "Too high" in the same row — the verdict contradicting the
+// number beside it. The same reading must be consistent in the radar, which prints the
+// same rounded figure.
+test('a score that rounds into its band is not flagged, in either view', () => {
+  const edge = {
+    ...FULL.properties,
+    properties: { hardness: 41, cleansing: 22.4, condition: 56, creamy: 24, bubbly: 20, longevity: 30 },
+  };
+  const { container } = render(
+    <PropertiesPanel result={edge} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+  );
+  showMeters();
+  const row = screen.getByRole('meter', { name: /Cleansing/i }).closest('li')!;
+  expect(row.querySelector('.property-meters__value')?.textContent).toBe('22');
+  expect(row.querySelector('.property-meters__status')).toBeNull();
+  expect(row.querySelector('.property-meter__marker--outside')).toBeNull();
+  expect(row.querySelector('.property-meters__value--outside')).toBeNull();
+
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  const radar = container.querySelector('.property-radar')!.textContent!;
+  expect(radar.slice(radar.indexOf('Cleansing'), radar.indexOf('Cleansing') + 20)).toContain('22');
+  expect(radar.slice(radar.indexOf('Cleansing'), radar.indexOf('Cleansing') + 24)).toContain('In range');
+});
+
+test('a score that still rounds outside its band is flagged', () => {
+  const edge = {
+    ...FULL.properties,
+    properties: { hardness: 41, cleansing: 22.5, condition: 56, creamy: 24, bubbly: 20, longevity: 30 },
+  };
+  render(<PropertiesPanel result={edge} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
+  showMeters();
+  const row = screen.getByRole('meter', { name: /Cleansing/i }).closest('li')!;
+  expect(row.querySelector('.property-meters__value')?.textContent).toBe('23');
+  expect(row.querySelector('.property-meters__status')?.textContent).toBe('Too high');
+});
+
 test('defaults to the Meters view — rows visible, radar hidden', () => {
   // Meters first: each score against its own suggested band is the reading a maker acts
   // on, so it is on screen without a click. The radar is a step out, behind the switch.
@@ -226,4 +263,41 @@ test('ArrowLeft on the Radar tab moves the roving tabindex back to Meters and sw
   expect(screen.getByRole('tab', { name: 'Meters' }).getAttribute('aria-selected')).toBe('true');
   expect(document.querySelector('.property-meters')).not.toBeNull();
   expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Meters' }));
+});
+
+// Two shades sit on every meter — the suggested range, and the darker target band from the
+// formulation guide — and for cleansing, hardness and creamy the target extends PAST the
+// suggested band's edge. With nothing naming them, a maker saw a dot inside the darkest
+// shading on the track and a red "Too low" beside it, with no way to learn they are two
+// different ranges. The original design carried this key and lost it.
+test('names both bands, so the darker one is not an unexplained second shading', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+  );
+  showMeters();
+  const legend = container.querySelector('.property-legend')!;
+  expect(legend).toBeTruthy();
+  expect(legend.textContent).toMatch(/Suggested range/i);
+  expect(legend.textContent).toMatch(/Target/i);
+  // A swatch per band, so the key is readable without relying on the words alone.
+  expect(legend.querySelector('.property-legend__swatch--suggested')).not.toBeNull();
+  expect(legend.querySelector('.property-legend__swatch--preference')).not.toBeNull();
+  // Each swatch travels with the words it keys, so a line break cannot strand one.
+  const items = Array.from(legend.querySelectorAll('.property-legend__item'));
+  expect(items.length).toBe(2);
+  for (const item of items) {
+    expect(item.querySelector('.property-legend__swatch')).not.toBeNull();
+    expect(item.textContent?.trim().length).toBeGreaterThan(0);
+  }
+});
+
+test('the radar keys only the band it actually draws', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+  );
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  const legend = container.querySelector('.property-legend')!;
+  expect(legend.textContent).toMatch(/Suggested range/i);
+  // The radar draws one zone; claiming a target swatch it never shades would be a lie.
+  expect(legend.querySelector('.property-legend__swatch--preference')).toBeNull();
 });

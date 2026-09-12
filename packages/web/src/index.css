@@ -2636,6 +2636,12 @@ details[open] > .disclosure__summary::before {
   color: var(--label);
 }
 
+.property-legend__item {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
 .property-legend__swatch {
   display: inline-block;
   width: 0.75rem;
@@ -2649,8 +2655,7 @@ details[open] > .disclosure__summary::before {
 }
 
 .property-legend__swatch--preference {
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
+  background: var(--accent-band);
 }
 
 .fatty-ratio {

@@ -8,6 +8,7 @@ import {
   IODINE_GUIDE,
   INS_GUIDE,
   LOW_COVERAGE_PERCENT,
+  rangeVerdict,
   SOAP_PROPERTY_GUIDE,
   SOAP_PROPERTY_LABELS,
 } from '@soap-calc/core';
@@ -246,14 +247,26 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   );
                 })}
               </ul>
+              <p className="property-legend">
+                <span className="property-legend__item">
+                  <span className="property-legend__swatch property-legend__swatch--suggested" />
+                  Suggested range
+                </span>
+              </p>
             </>
           ) : (
+            <>
             <ul className="property-meters" aria-label="Soap bar properties">
               {PROPERTY_ORDER.map((key) => {
                 const value = result.properties![key];
                 const guide = SOAP_PROPERTY_GUIDE[key];
                 const preference = FORMULATION_PREFERENCE_GUIDE[key];
-                const inSuggested = value >= guide.low && value <= guide.high;
+                // Judge the figure this row PRINTS (scores print as integers), so the
+                // verdict can never contradict the number beside it. The marker rides the
+                // same rounded figure, so dot, value and verdict are one reading.
+                const verdict = rangeVerdict(value, guide.low, guide.high, 0);
+                const inSuggested = verdict === 'in';
+                const shown = Math.round(value);
                 // Append, don't mutate PROPERTY_GUIDANCE: cleansing reads as solubility/dilution
                 // in liquid soap, not bar harshness, so LS recipes get an extra clause here.
                 const guidance =
@@ -274,7 +287,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                           isn't a real signal. */}
                       {!inSuggested && !lowCoverage && (
                         <span className="property-meters__status">
-                          {value < guide.low ? 'Too low' : 'Too high'}
+                          {verdict === 'low' ? 'Too low' : 'Too high'}
                         </span>
                       )}
                     </div>
@@ -285,8 +298,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                         role="meter", so hiding it would take the reading with it. */}
                     <div className="property-meters__plot">
                       <span
-                        className={`property-meters__value${inSuggested || lowCoverage ? '' : ' property-meters__value--outside'}${valueAnchorClass(pct(value))}`}
-                        style={{ left: `${pct(value)}%` }}
+                        className={`property-meters__value${inSuggested || lowCoverage ? '' : ' property-meters__value--outside'}${valueAnchorClass(pct(shown))}`}
+                        style={{ left: `${pct(shown)}%` }}
                         role="meter"
                         aria-valuemin={0}
                         aria-valuemax={SCALE_MAX}
@@ -318,7 +331,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       )}
                       <span
                         className={`property-meter__marker${inSuggested || lowCoverage ? '' : ' property-meter__marker--outside'}`}
-                        style={{ left: `${pct(value)}%` }}
+                        style={{ left: `${pct(shown)}%` }}
                       />
                     </div>
                     {/* Scale row: Low / High at the extremes, suggested-range boundary
@@ -355,6 +368,20 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 );
               })}
             </ul>
+            {/* Each swatch travels with the words it keys — as loose flex children the
+                pair split across a line break, stranding a colour chip at the end of one
+                line and its name at the start of the next. */}
+            <p className="property-legend">
+              <span className="property-legend__item">
+                <span className="property-legend__swatch property-legend__swatch--suggested" />
+                Suggested range
+              </span>
+              <span className="property-legend__item">
+                <span className="property-legend__swatch property-legend__swatch--preference" />
+                Target for a balanced bar
+              </span>
+            </p>
+            </>
           )}
           </div>
         </>

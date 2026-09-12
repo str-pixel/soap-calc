@@ -1,5 +1,6 @@
-import { SOAP_PROPERTY_GUIDE } from '@soap-calc/core';
+import { rangeVerdict, SOAP_PROPERTY_GUIDE } from '@soap-calc/core';
 import type { SoapProperties, SoapPropertyName } from '@soap-calc/core';
+import { radarAngle, radarPoint } from '../lib/radarGeometry';
 
 type PropertyRadarProps = {
   properties: SoapProperties;
@@ -8,7 +9,7 @@ type PropertyRadarProps = {
 };
 
 // Compact uppercase axis labels for the radar — short enough to sit around the ring without
-// wrapping (the Bars view carries the longer names + tooltips).
+// wrapping (the Meters view carries the longer names + tooltips).
 const AXIS_LABEL: Record<SoapPropertyName, string> = {
   hardness: 'Hardness',
   cleansing: 'Cleansing',
@@ -23,29 +24,60 @@ const CY = 200;
 const R = 112;
 const RINGS = [0.25, 0.5, 0.75, 1];
 
-const angle = (i: number, n: number): number => (-90 + (i * 360) / n) * (Math.PI / 180);
-const point = (i: number, n: number, radius: number): { x: number; y: number } => ({
-  x: CX + radius * Math.cos(angle(i, n)),
-  y: CY + radius * Math.sin(angle(i, n)),
-});
+const angle = (i: number, n: number): number => radarAngle(i, n);
+const point = (i: number, n: number, radius: number): { x: number; y: number } =>
+  radarPoint(CX, CY, i, n, radius);
 
 /**
- * Radar of the six 0–100 bar-property scores. Concentric hairline rings, a red recipe polygon
- * with accent vertices, and each axis labelled with its rounded value and an In range / Too low
- * / Too high verdict (accent when out of the suggested range). Decorative (aria-hidden) — the
- * panel's sr-only meter list is the accessible source of these readings. A dashed polygon and
- * "Low data" verdicts flag a low-coverage estimate.
+ * Radar of the six 0–100 bar-property scores. Radius IS the score, so the suggested range
+ * cannot be one circle — every axis has its own band (cleansing 12–22 against conditioning
+ * 44–69). It is drawn as a zone instead: the polygon through each axis's band high with the
+ * polygon through each band low punched out of it. Same rule as the fatty-acid radar beside
+ * it on the page — the shaded region is exactly the region the verdict is computed against,
+ * so "in range" reads as "on the shading" in both charts even though they scale differently.
+ *
+ * Concentric hairline rings, a red recipe polygon with accent vertices, and each axis
+ * labelled with its rounded value and an In range / Too low / Too high verdict (accent when
+ * out of the suggested range). Decorative (aria-hidden) — the panel's sr-only meter list is
+ * the accessible source of these readings. A dashed polygon and "Low data" verdicts flag a
+ * low-coverage estimate.
  */
 export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarProps) {
   const n = order.length;
+  // The vertex rides the figure the axis PRINTS (a rounded score), so the dot, the number
+  // under the label and the verdict are one reading — see core's rangeVerdict.
   const valuePoints = order.map((key, i) => {
-    const v = Math.max(0, Math.min(100, properties[key]));
+    const v = Math.max(0, Math.min(100, Math.round(properties[key])));
     return point(i, n, (v / 100) * R);
   });
   const polygon = valuePoints.map((p) => `${p.x},${p.y}`).join(' ');
+  // The suggested-range zone. Outer subpath first, inner second, filled evenodd so the
+  // middle is punched out — a band that follows each axis's own guide rather than a ring.
+  const boundary = (pick: (g: { low: number; high: number }) => number): string =>
+    `M${order
+      .map((key, i) => {
+        const p = point(i, n, (pick(SOAP_PROPERTY_GUIDE[key]) / 100) * R);
+        return `${p.x},${p.y}`;
+      })
+      .join(' ')}Z`;
+  const bandPath = `${boundary((g) => g.high)}${boundary((g) => g.low)}`;
 
   return (
-    <svg className="property-radar" viewBox="0 0 460 380" role="presentation" aria-hidden="true">
+    <svg
+      className="property-radar"
+      viewBox="0 0 460 380"
+      role="presentation"
+      aria-hidden="true"
+      data-cx={CX}
+      data-cy={CY}
+      data-r={R}
+    >
+      <path
+        data-testid="radar-band"
+        d={bandPath}
+        fillRule="evenodd"
+        style={{ fill: 'var(--accent-soft)', stroke: 'none' }}
+      />
       {RINGS.map((f) => (
         <circle
           key={f}
@@ -68,11 +100,14 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
           />
         );
       })}
+      {/* Stroke only: a filled polygon in the band's own tint blended into it where the two
+          overlapped, and this chart's question — is the red line on the shading? — is
+          answered by the line. */}
       <polygon
         data-testid="radar-recipe"
         points={polygon}
         style={{
-          fill: 'var(--accent-soft)',
+          fill: 'none',
           stroke: 'var(--accent)',
           strokeWidth: 2,
           strokeLinejoin: 'round',
@@ -80,9 +115,8 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
         }}
       />
       {order.map((key, i) => {
-        const value = properties[key];
         const guide = SOAP_PROPERTY_GUIDE[key];
-        const out = !lowCoverage && (value < guide.low || value > guide.high);
+        const out = !lowCoverage && rangeVerdict(properties[key], guide.low, guide.high, 0) !== 'in';
         const p = valuePoints[i];
         return (
           <circle key={key} cx={p.x} cy={p.y} r={out ? 3 : 2.5} style={{ fill: 'var(--accent)' }} />
@@ -91,7 +125,8 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
       {order.map((key, i) => {
         const value = properties[key];
         const guide = SOAP_PROPERTY_GUIDE[key];
-        const out = !lowCoverage && (value < guide.low || value > guide.high);
+        const verdict = rangeVerdict(value, guide.low, guide.high, 0);
+        const out = !lowCoverage && verdict !== 'in';
         const lab = point(i, n, R + 30);
         const c = Math.cos(angle(i, n));
         const anchor = c < -0.3 ? 'end' : c > 0.3 ? 'start' : 'middle';
@@ -101,9 +136,9 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
         const labelY = lab.y + (s <= -0.7 ? -40 : s < -0.3 ? -20 : 0);
         const status = lowCoverage
           ? 'Low data'
-          : value < guide.low
+          : verdict === 'low'
             ? 'Too low'
-            : value > guide.high
+            : verdict === 'high'
               ? 'Too high'
               : 'In range';
         return (
