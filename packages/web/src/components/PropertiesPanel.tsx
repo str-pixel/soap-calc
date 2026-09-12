@@ -17,6 +17,7 @@ import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
 import { InfoTip } from './InfoTip';
 import { ModeledOilsNote } from './ModeledOilsNote';
 import { PropertyRadar } from './PropertyRadar';
+import { trackPct as pct, valueAnchorClass } from '../lib/meterGeometry';
 
 const PROPERTY_ORDER: SoapPropertyName[] = [
   'hardness',
@@ -46,10 +47,7 @@ const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
 
 const SCALE_MAX = 100;
 
-const PROPERTY_VIEWS: Array<'radar' | 'bars'> = ['radar', 'bars'];
-
-/** Clamp a 0–100 score to a track position percentage. */
-const pct = (n: number): number => Math.max(0, Math.min(100, n));
+const PROPERTY_VIEWS: Array<'meters' | 'radar'> = ['meters', 'radar'];
 
 type PropertiesPanelProps = {
   result: RecipePropertiesResult;
@@ -70,9 +68,10 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   modeledOilIds,
   process,
 }: PropertiesPanelProps) {
-  // Radar first: it shows the whole blend's shape in one read, which is what this panel is
-  // for. Bars are the same numbers laid out one per row, a step down into detail.
-  const [view, setView] = useState<'bars' | 'radar'>('radar');
+  // Meters first: one property per row, each score sitting on its own 0-100 track against
+  // its suggested band, which is the reading a maker acts on. The radar is the same six
+  // numbers drawn as one shape — the blend's balance at a glance, a step out, not in.
+  const [view, setView] = useState<'meters' | 'radar'>('meters');
   const modeled = modeledOilIds;
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
@@ -175,6 +174,19 @@ export const PropertiesPanel = memo(function PropertiesPanel({
             <button
               type="button"
               role="tab"
+              id="property-tab-meters"
+              aria-controls="property-tabpanel"
+              aria-selected={view === 'meters'}
+              tabIndex={view === 'meters' ? 0 : -1}
+              className={`property-view-toggle__tab${view === 'meters' ? ' property-view-toggle__tab--active' : ''}`}
+              onClick={() => setView('meters')}
+              onKeyDown={handleViewKeyDown}
+            >
+              Meters
+            </button>
+            <button
+              type="button"
+              role="tab"
               id="property-tab-radar"
               aria-controls="property-tabpanel"
               aria-selected={view === 'radar'}
@@ -184,19 +196,6 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               onKeyDown={handleViewKeyDown}
             >
               Radar
-            </button>
-            <button
-              type="button"
-              role="tab"
-              id="property-tab-bars"
-              aria-controls="property-tabpanel"
-              aria-selected={view === 'bars'}
-              tabIndex={view === 'bars' ? 0 : -1}
-              className={`property-view-toggle__tab${view === 'bars' ? ' property-view-toggle__tab--active' : ''}`}
-              onClick={() => setView('bars')}
-              onKeyDown={handleViewKeyDown}
-            >
-              Bars
             </button>
           </div>
 
@@ -234,7 +233,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                         {SOAP_PROPERTY_LABELS[key]}: {lowCoverage ? '~' : ''}
                         {formatPropertyScore(value)}
                       </span>{' '}
-                      {/* Match the Bars rows: keep the suggested/target range in AT reach
+                      {/* Match the Meters rows: keep the suggested/target range in AT reach
                           in Radar mode too, so switching views never drops the context. */}
                       Suggested {formatPropertyScoreRange(guide.low, guide.high)}
                       {preference && (
@@ -249,7 +248,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               </ul>
             </>
           ) : (
-            <ul className="property-bars" aria-label="Soap bar properties">
+            <ul className="property-meters" aria-label="Soap bar properties">
               {PROPERTY_ORDER.map((key) => {
                 const value = result.properties![key];
                 const guide = SOAP_PROPERTY_GUIDE[key];
@@ -262,8 +261,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                     ? `${PROPERTY_GUIDANCE[key]} In liquid soap this tracks solubility/how well it dilutes, not harshness.`
                     : PROPERTY_GUIDANCE[key];
                 return (
-                  <li key={key} className="property-bars__row">
-                    <div className="property-bars__label">
+                  <li key={key} className="property-meters__row">
+                    <div className="property-meters__label">
                       <span>
                         {SOAP_PROPERTY_LABELS[key]}
                         <InfoTip term={SOAP_PROPERTY_LABELS[key]}>{guidance}</InfoTip>
@@ -274,7 +273,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                           reason as the value colour and the dot: a partial-data estimate
                           isn't a real signal. */}
                       {!inSuggested && !lowCoverage && (
-                        <span className="property-bars__status">
+                        <span className="property-meters__status">
                           {value < guide.low ? 'Too low' : 'Too high'}
                         </span>
                       )}
@@ -284,9 +283,9 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                         as the position on the scale, which is what the meter is for.
                         Deliberately OUTSIDE the aria-hidden track below: this span carries
                         role="meter", so hiding it would take the reading with it. */}
-                    <div className="property-bars__plot">
+                    <div className="property-meters__plot">
                       <span
-                        className={`property-bars__value${inSuggested || lowCoverage ? '' : ' property-bars__value--outside'}`}
+                        className={`property-meters__value${inSuggested || lowCoverage ? '' : ' property-meters__value--outside'}${valueAnchorClass(pct(value))}`}
                         style={{ left: `${pct(value)}%` }}
                         role="meter"
                         aria-valuemin={0}

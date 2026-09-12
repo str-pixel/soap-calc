@@ -244,19 +244,20 @@ test.describe('recipe UI regressions', () => {
     // Caption switches from "Based on" to "Estimated from"
     await expect(page.locator('.properties-coverage').first()).toContainText(/Estimated from 74% of recipe oils/i);
     // Values are marked approximate and the red out-of-range flag is suppressed.
-    // SCOPED, and Bars selected first: the panel opens on the radar now, so an unscoped
-    // .property-bars__value resolves against the Fatty acid profile panel — which uses the
-    // same class names and has its own coverage rules. Both assertions passed against that
-    // panel while the behaviour they name had been deleted from this one.
-    // Scoped through the tablist name: the fatty panel now has a "Bars" tab of its own,
-    // so a page-level tab locator matches two controls.
+    // SCOPED, and Meters selected explicitly: an unscoped .property-meters__value resolves
+    // against the Fatty acid profile panel — which uses the same class names and has its
+    // own coverage rules. Both assertions passed against that panel while the behaviour
+    // they name had been deleted from this one. Meters is the default view, but the click
+    // stays so this test never rides on which view happens to open first.
+    // Scoped through the tablist name: the fatty panel has a view switch of its own, so
+    // a page-level tab locator can match two controls.
     await page
       .getByRole('tablist', { name: 'Property display' })
-      .getByRole('tab', { name: 'Bars' })
+      .getByRole('tab', { name: 'Meters' })
       .click();
     const barProps = page.locator('#property-tabpanel');
-    await expect(barProps.locator('.property-bars__value').first()).toContainText('~');
-    await expect(barProps.locator('.property-bars__value--outside')).toHaveCount(0);
+    await expect(barProps.locator('.property-meters__value').first()).toContainText('~');
+    await expect(barProps.locator('.property-meters__value--outside')).toHaveCount(0);
   });
 
   test('autosave persists the committed weight, not a mid-typed value', async ({ page }) => {

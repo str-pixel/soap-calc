@@ -353,7 +353,7 @@ test('the preset strip is four flush cells, and none of them claims to be curren
   expect(problems, 'browser complaints on the preset strip').toEqual([]);
 });
 
-test('the Radar / Bars switch reads as a control, and actually switches', async ({ page }) => {
+test('the Meters / Radar switch reads as a control, and actually switches', async ({ page }) => {
   const problems = watchForErrors(page);
   await page.goto('/');
 
@@ -363,11 +363,11 @@ test('the Radar / Bars switch reads as a control, and actually switches', async 
   // and the radar — reachable only through here — went missing for anyone who could not tell
   // it was a control. It is a segmented pair again. "It is still in the DOM" is not the same
   // as "a maker can find it", which is what these assertions are for.
-  // Scoped through the tablist name: the fatty panel carries its own "Bars" tab now, so a
-  // page-level tab locator is ambiguous.
+  // Scoped through the tablist name: the fatty panel carries a view switch of its own, so
+  // a page-level tab locator can match two controls.
   const propertyTabs = page.getByRole('tablist', { name: 'Property display' });
+  const metersTab = propertyTabs.getByRole('tab', { name: 'Meters' });
   const radarTab = propertyTabs.getByRole('tab', { name: 'Radar' });
-  const barsTab = propertyTabs.getByRole('tab', { name: 'Bars' });
   const read = (l: typeof radarTab) =>
     l.evaluate((el) => {
       const s = getComputedStyle(el);
@@ -378,7 +378,7 @@ test('the Radar / Bars switch reads as a control, and actually switches', async 
     .locator('.micro-label, .results-grid dt')
     .first()
     .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-  const selected = await read(radarTab); // the panel opens on the radar
+  const selected = await read(metersTab); // the panel opens on the meters
   expect(
     selected.size,
     `the switch is set at ${selected.size}px against a ${captionSize}px caption — it must outrank it`,
@@ -386,23 +386,23 @@ test('the Radar / Bars switch reads as a control, and actually switches', async 
 
   // Selected and unselected must be told apart by more than a rule most people will not see:
   // one is filled with ink, the other sits on paper.
-  const unselected = await read(barsTab);
+  const unselected = await read(radarTab);
   expect(selected.bg, 'the chosen view is filled').not.toBe(unselected.bg);
   expect(selected.color, 'and its text inverts with the fill').not.toBe(unselected.color);
 
-  // IT MUST ACTUALLY SWITCH — both ways. Pressing the tab that is already active proves
-  // nothing: this assertion passed with the Radar button's onClick replaced by a no-op,
-  // because the radar was already on screen when it was pressed.
-  await barsTab.click();
-  await expect(page.locator('#property-tabpanel .property-radar')).toHaveCount(0);
-  await expect(page.locator('#property-tabpanel .property-bars')).toHaveCount(1);
-
+  // IT MUST ACTUALLY SWITCH — both ways, and away from the default first. Pressing the
+  // tab that is already active proves nothing: this assertion once passed with a tab's
+  // onClick replaced by a no-op, because its view was already on screen when it was pressed.
   await radarTab.click();
-  await expect(page.locator('#property-tabpanel .property-bars')).toHaveCount(0);
+  await expect(page.locator('#property-tabpanel .property-meters')).toHaveCount(0);
   const radar = await page
     .locator('#property-tabpanel .property-radar')
     .evaluate((el) => el.getBoundingClientRect().width);
   expect(radar, 'the radar renders once its tab is chosen').toBeGreaterThan(100);
+
+  await metersTab.click();
+  await expect(page.locator('#property-tabpanel .property-radar')).toHaveCount(0);
+  await expect(page.locator('#property-tabpanel .property-meters')).toHaveCount(1);
 
   expect(problems, 'browser complaints on the properties switch').toEqual([]);
 });

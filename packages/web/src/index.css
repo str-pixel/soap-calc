@@ -2454,7 +2454,7 @@ details[open] > .disclosure__summary::before {
 }
 
 /* ── Property / fatty-acid bars ───────────────────────────────────────── */
-.property-bars {
+.property-meters {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -2463,13 +2463,13 @@ details[open] > .disclosure__summary::before {
   gap: 1.05rem;
 }
 
-.property-bars__row {
+.property-meters__row {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.property-bars__label {
+.property-meters__label {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -2478,7 +2478,7 @@ details[open] > .disclosure__summary::before {
   font-weight: 600;
 }
 
-.property-bars__value {
+.property-meters__value {
   font-family: var(--font-mono);
   font-size: 1rem;
   font-weight: 500;
@@ -2489,11 +2489,11 @@ details[open] > .disclosure__summary::before {
 /* An out-of-range FIGURE goes accent, matching its dot — the two are one signal, and the
    dot has always been accent. The amber stays on the "Too low" / "Too high" word beside
    it, which is the caution, not the reading. */
-.property-bars__value--outside {
+.property-meters__value--outside {
   color: var(--accent);
 }
 
-.property-bars__status {
+.property-meters__status {
   font-family: var(--font-mono);
   font-size: var(--label-size);
   letter-spacing: var(--label-track);
@@ -2504,20 +2504,30 @@ details[open] > .disclosure__summary::before {
 /* Zoned property meter: plain track = too-low / too-high, shaded = suggested range,
    stronger band = target, dot = current value. */
 /* The plot: the track, its scale row, and the value riding the marker above it. */
-.property-bars__plot {
+.property-meters__plot {
   position: relative;
   padding-top: 1.5rem;
 }
 
 /* Centred over the dot it names. Absolute so it tracks the value's position on the
    scale rather than sitting at a fixed end of the row. */
-.property-bars__plot > .property-bars__value {
+.property-meters__plot > .property-meters__value {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
   font-size: 0.95rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Near either edge the centred label would hang off the row and clip — 0.5% printed as
+   "5%" — so it grows from its marker's side instead (see meterGeometry.valueAnchor). */
+.property-meters__plot > .property-meters__value--start {
+  transform: none;
+}
+
+.property-meters__plot > .property-meters__value--end {
+  transform: translateX(-100%);
 }
 
 .property-meter {
@@ -2608,6 +2618,12 @@ details[open] > .disclosure__summary::before {
   white-space: nowrap;
 }
 
+/* A band too narrow for two numbers prints one ("0–2"), growing rightward from its left
+   edge so a band that starts at 0 is not half off the row. */
+.property-meter__tick--start {
+  transform: none;
+}
+
 .property-legend {
   display: flex;
   flex-wrap: wrap;
@@ -2637,160 +2653,6 @@ details[open] > .disclosure__summary::before {
   border: 1px solid var(--accent);
 }
 
-/* The fatty column chart (the Bars view): ink columns on the paper ground, accent where
-   the group sits outside its band, the reading riding each column's top. Bottom-aligned
-   by the flex row, so no fixed chart height is needed — the tallest column sets it. */
-/* The mock's list view: one hairline row per group, name left, mono value right. The
-   last row keeps its underside bare — the panel's saturated/unsaturated line closes it. */
-.fatty-list {
-  list-style: none;
-  margin: 0.4rem 0 0;
-  padding: 0;
-}
-
-.fatty-list__row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.9rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.fatty-list__row:last-child {
-  border-bottom: none;
-}
-
-.fatty-list__name {
-  font-size: 0.88rem;
-  color: var(--text-strong);
-}
-
-/* The list's verdict rides the accent, like the chart's — an out-of-range fatty acid is
-   the panel's own signal, not the amber caution the property meters use. */
-.fatty-list .property-bars__status {
-  color: var(--accent);
-}
-
-.fatty-list__reading {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.6rem;
-}
-
-.fatty-chart {
-  margin-top: 1.6rem;
-}
-
-/* The columns stand on a FIXED 3px-per-percent scale over an ink baseline, so a column's
-   height IS its reading. position + z-index:0 makes this its own stacking context: the
-   ::after reference rule can sit at z-index:-1 — under the bars, over the paper. */
-.fatty-chart__cols {
-  list-style: none;
-  position: relative;
-  z-index: 0;
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  min-height: 190px;
-  margin: 0;
-  padding: 0;
-  border-bottom: 1.5px solid var(--text);
-}
-
-/* The dashed reference rule at 25% (75px on the 3px/% scale), its label on paper at the
-   right end — one calibration mark, not a grid. */
-.fatty-chart__cols::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 75px;
-  z-index: -1;
-  border-top: 1px dashed var(--hairline);
-}
-
-.fatty-chart__cols::before {
-  content: '25%';
-  position: absolute;
-  right: 0;
-  bottom: 79px;
-  font-family: var(--font-mono);
-  font-size: var(--label-size);
-  letter-spacing: var(--label-track);
-  color: var(--caption);
-  background: var(--bg);
-  padding-left: 4px;
-}
-
-.fatty-chart__col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.fatty-chart__reading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  margin-bottom: 4px;
-  text-align: center;
-}
-
-/* Chart readings are the signal register, not the list's advisory one: a flagged column,
-   its figure, and its verdict all go accent-red, and the verdict drops to the mock's
-   0.56rem so it rides a narrow column without stacking "TOO / LOW". */
-.fatty-chart .property-bars__status {
-  color: var(--accent);
-  font-size: 0.56rem;
-  white-space: nowrap;
-}
-
-.fatty-chart .property-bars__value {
-  font-size: 0.8rem;
-}
-
-.fatty-chart .property-bars__value--outside {
-  color: var(--accent);
-}
-
-.fatty-chart__bar {
-  width: 100%;
-  background: var(--text);
-}
-
-.fatty-chart__bar--outside {
-  background: var(--accent);
-}
-
-/* Abbreviation cells below the baseline, one per column, sharing the columns' rhythm. */
-.fatty-chart__axis {
-  display: flex;
-  gap: 12px;
-  margin-top: 0.45rem;
-}
-
-.fatty-chart__abbr {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: var(--label-size);
-  letter-spacing: var(--label-track);
-  text-transform: uppercase;
-  color: var(--label);
-}
-
-.fatty-chart__legend {
-  margin: 0.8rem 0 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
 .fatty-ratio {
   margin: 0.9rem 0 0;
   font-family: var(--font-mono);
@@ -2798,10 +2660,42 @@ details[open] > .disclosure__summary::before {
   color: var(--text-muted);
 }
 
+/* The radar view's catch-all readout: the three groups that are not axes (other saturated,
+   other unsaturated, trans — typically 0–2%, there to flag an odd oil) printed under the
+   chart so the view hides nothing. One mono line, wrapping on a narrow panel. */
+.fatty-radar__others {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.fatty-radar__other {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.fatty-radar__others .property-meters__value {
+  font-size: 0.85rem;
+}
+
+.fatty-radar__caption {
+  margin: 0.8rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 /* ── Property radar ───────────────────────────────────────────────────── */
 /* Rings, spokes, polygon, and axis-label typography are inline on the SVG (the whole chart
    is decorative — the panel's sr-only meter list carries the readings for AT). */
-.property-radar {
+.property-radar,
+.fatty-radar {
   display: block;
   width: 100%;
   max-width: 420px;
@@ -2809,7 +2703,7 @@ details[open] > .disclosure__summary::before {
   overflow: visible;
 }
 
-/* ── Property view toggle (Radar / Bars) ──────────────────────────────── */
+/* ── Property view toggle (Meters / Radar) ──────────────────────────────── */
 /* A SEGMENTED PAIR: the chosen view filled with ink, the other on paper behind a hairline.
    This has been through three treatments. It began here; the design audit demoted it to an
    underlined micro-label, on the principle that ink fill is how the app says "the mode you
