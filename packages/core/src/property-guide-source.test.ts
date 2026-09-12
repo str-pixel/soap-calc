@@ -37,7 +37,14 @@ describe('SOAP_PROPERTY_GUIDE matches the books Standard column', () => {
 describe('the preference band against the suggested band', () => {
   // Both columns now come from the SAME table, so the preference band finally sits inside
   // the suggested one — except creamy, where the book's own Preference high (50) exceeds its
-  // own Standard high (48). That is a quirk of the source, not a transcription slip.
+  // own Standard high (48).
+  //
+  // That is authorial, not a transcription slip, and it was checked hard before being left
+  // alone: both printings carry it identically, both pages are vector text with no image to
+  // mis-OCR, the two independent extractions of those pages agree word for word, and the
+  // per-word coordinates put "16 to 48" under the Standard heading and "30-50" under
+  // Preference. The table is printed once per book, so there is no third copy to break the
+  // tie, and no body text anywhere proposes a creamy target above 48. Leave it.
   it('sits inside the suggested band for every property except creamy', () => {
     const spills: string[] = [];
     for (const [key, pref] of Object.entries(FORMULATION_PREFERENCE_GUIDE)) {

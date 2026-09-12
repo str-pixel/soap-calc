@@ -13,7 +13,8 @@ import type { SoapPropertyName } from './properties.js';
  * It IS an inner band now that {@link SOAP_PROPERTY_GUIDE} carries the Standard column from
  * the same table — with one exception the source itself creates: creamy's Preference high
  * (50) exceeds its own Standard high (48), so a creamy score of 49 sits inside this band and
- * is still flagged out of range. The properties panel names both bands in its legend, so a
+ * is still flagged out of range. Verified authorial rather than an extraction artifact; the
+ * evidence is recorded in `property-guide-source.test.ts`. The properties panel names both bands in its legend, so a
  * maker meets two labelled ranges rather than two unexplained shades.
  */
 export const FORMULATION_PREFERENCE_GUIDE: Partial<

@@ -52,23 +52,34 @@ export const SOAP_PROPERTY_LABELS: Record<SoapPropertyName, string> = {
  * identical to each other. `property-guide-source.test.ts` is that transcription, so drift
  * fails against the page rather than passing quietly.
  *
- * Adopted 2026-09-12, replacing the soap-calculator "Suggested Range" column
- * (HP:9914-9941 p367; CP:13106-13123 p456), which differed on two properties — cleansing
- * 12-22 and hardness 29-54. The books support their own column over the calculator's: the
- * Preference column sits inside it, and the CP book's worked teaching example reformulates
- * to cleansing 10 and presents that as the right answer (CP:8942-8948), a reading the
- * calculator column calls "too low".
+ * Adopted 2026-09-12, replacing the calculator's "Suggested Range" column, which differed
+ * on two properties — cleansing 12-22 and hardness 29-54. The books support their own
+ * column: the Preference column sits inside it, and the CP book's worked teaching example
+ * reformulates to cleansing 10 and presents that as the right answer (CP:8942-8948), a
+ * reading the calculator column calls "too low".
  *
- * TWO THINGS THE BOOKS DO NOT COVER, both left on the calculator convention:
- * - `longevity` — neither printing has a longevity row, so there is no Standard value to
- *   adopt. It keeps 25-50, corrected from an unsourced 14-43 in commit 7812bc1 (#44).
+ * KNOW THIS BEFORE REVISITING THE CHOICE: the quality-ranges table above is printed ONCE
+ * per book, while every worked recipe in both books displays the calculator's column
+ * instead (e.g. CP:13106-13123 p456; HP:9914-9941 p367). Both conventions are the authors'.
+ *
+ * THE TWO VALUES NOT FROM THAT TABLE:
+ * - `longevity` — the quality-ranges table has no longevity row and no book text anywhere
+ *   defines which acids it sums. Its 25-50 is still the authors' own: they typeset it as
+ *   the recommended range in three worked recipes (CP:13113-13114 p456; HP:9930-9932 p367;
+ *   HP:10116-10118 p370), pages that carry no screenshot. Corrected from an unsourced
+ *   14-43 in commit 7812bc1 (#44). Note the books' own oil cards compute longevity as
+ *   palmitic + stearic exactly, where this app also counts C20/C22/C24 and elaidic; their
+ *   data model has no column for those, so it can neither confirm nor refute the extras.
  * - {@link IODINE_GUIDE} and {@link INS_GUIDE}, which the Standard table does not list.
  *
  * CAVEAT worth knowing before reading a verdict too literally: the books define each
  * quality by the acids it sums, and {@link SOAP_PROPERTY_FATTY_ACIDS} counts MORE than that
  * for four of the five — deliberately, and documented there. Cleansing is the one that
- * moves: the book sums lauric + myristic, this app also counts C8-C10, so a coconut-heavy
- * recipe reads several points above the number the book's 8-20 was written for.
+ * moves. The book sums lauric + myristic and the calculators it screenshots carry no C8-C10
+ * column at all (their oil cards' profiles fall short of 100% by about the missing C8+C10),
+ * so 8-20 was written for a narrower number than this app computes. Measured against the
+ * catalog: this app first reads "too high" at ~26% coconut, where the book's own definition
+ * would first read it at ~31%.
  */
 export const SOAP_PROPERTY_GUIDE: Record<SoapPropertyName, { low: number; high: number }> = {
   bubbly: { low: 14, high: 46 },
