@@ -1581,3 +1581,56 @@ describe('the printed sheet carries the Fragrance and Colorants sections', () =>
     expect(screen.queryByText('Colorants', { selector: 'h2' })).toBeNull();
   });
 });
+
+// The sheet printed five of the six properties the panel shows — longevity was absent from
+// the day it was written, with nothing in the spec explaining the omission.
+test('prints every bar property the panel shows, longevity included', () => {
+  const lines = createStarterLines();
+  const settings = { ...DEFAULT_SETTINGS };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+
+  const data = buildBatchSheetData({
+    recipeName: 'Properties batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
+    dilution: null,
+    neutralization: null,
+    properties: {
+      properties: { hardness: 41, cleansing: 17, condition: 56, creamy: 24, bubbly: 18, longevity: 29 },
+      coveragePercent: 100,
+      missingOilIds: [],
+    },
+    indexes: { iodine: 60, ins: 150, coveragePercent: 100, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oil weight',
+    fattyAcids: { profile: null, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] },
+    insights: [],
+    process: 'cp',
+  });
+
+  const { container } = render(<BatchSheet data={data} />);
+  const terms = Array.from(container.querySelectorAll('.batch-sheet__dl dt')).map(
+    (el) => el.textContent ?? '',
+  );
+  for (const label of ['Hardness', 'Cleansing', 'Conditioning', 'Bubbly', 'Creamy', 'Longevity']) {
+    expect(terms, label).toContain(label);
+  }
+  // And the longevity reading itself reaches the page, not just its label.
+  const longevityRow = Array.from(container.querySelectorAll('.batch-sheet__dl div')).find(
+    (d) => d.querySelector('dt')?.textContent === 'Longevity',
+  );
+  expect(longevityRow?.querySelector('dd')?.textContent).toBe('29');
+});

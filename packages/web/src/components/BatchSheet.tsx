@@ -754,6 +754,12 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               <dt>Creamy</dt>
               <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.creamy)}</dd>
             </div>
+            {/* Longevity was missing from this sheet since it was written, so a maker's
+                printout carried five of the six properties the panel shows. */}
+            <div>
+              <dt>Longevity</dt>
+              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.longevity)}</dd>
+            </div>
             {indexes.iodine !== null && (
               <div>
                 <dt>Iodine</dt>

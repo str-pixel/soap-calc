@@ -254,6 +254,11 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   Suggested range
                 </span>
               </p>
+              <p className="fatty-radar__caption">
+                Shaded ring = each score&apos;s suggested range. Every axis is scaled to its
+                own range, so the shape shows fit, not size: a bar in range everywhere draws
+                a circle on the ring. Longevity is shown but not rated.
+              </p>
             </>
           ) : (
             <>

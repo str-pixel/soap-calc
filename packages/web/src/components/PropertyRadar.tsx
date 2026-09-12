@@ -1,6 +1,6 @@
 import { isJudgedProperty, rangeVerdict, SOAP_PROPERTY_GUIDE } from '@soap-calc/core';
 import type { SoapProperties, SoapPropertyName } from '@soap-calc/core';
-import { radarAngle, radarPoint } from '../lib/radarGeometry';
+import { fitRadius, radarAngle, radarPoint, RING_INNER, RING_OUTER } from '../lib/radarGeometry';
 
 type PropertyRadarProps = {
   properties: SoapProperties;
@@ -22,25 +22,28 @@ const AXIS_LABEL: Record<SoapPropertyName, string> = {
 const CX = 230;
 const CY = 200;
 const R = 112;
-const RINGS = [0.25, 0.5, 0.75, 1];
+const RINGS = [RING_INNER, RING_OUTER, 1];
 
 const angle = (i: number, n: number): number => radarAngle(i, n);
 const point = (i: number, n: number, radius: number): { x: number; y: number } =>
   radarPoint(CX, CY, i, n, radius);
 
 /**
- * Radar of the six 0–100 bar-property scores. Radius IS the score, so the suggested range
- * cannot be one circle — every axis has its own band (cleansing 12–22 against conditioning
- * 44–69). It is drawn as a zone instead: the polygon through each axis's band high with the
- * polygon through each band low punched out of it. Same rule as the fatty-acid radar beside
- * it on the page — the shaded region is exactly the region the verdict is computed against,
- * so "in range" reads as "on the shading" in both charts even though they scale differently.
+ * Radar of the six bar-property scores, FITTED PER AXIS: each axis maps its own suggested
+ * range onto the same shaded ring, so a score in range sits on the ring, too low sits inside
+ * it and too high pokes out. Identical device to the fatty-acid radar beside it on the page.
  *
- * Concentric hairline rings, a red recipe polygon with accent vertices, and each axis
- * labelled with its rounded value and an In range / Too low / Too high verdict (accent when
- * out of the suggested range). Decorative (aria-hidden) — the panel's sr-only meter list is
- * the accessible source of these readings. A dashed polygon and "Low data" verdicts flag a
- * low-coverage estimate.
+ * Radius used to be the raw score, which made the SHAPE lie. The six bands are nothing like
+ * each other — cleansing 8–20 against conditioning 44–69 — so a recipe sitting exactly
+ * mid-band on every axis, the ideal bar, drew radii from 0.14 to 0.56 and looked badly
+ * unbalanced, while a recipe scoring 30 on everything drew a clean hexagon while being too
+ * high on cleansing and too low on conditioning. Regularity did not mean balance and balance
+ * did not look regular. Fitted, the ideal bar draws a circle on the ring.
+ *
+ * Only the geometry is normalised: every axis still prints its true score. Decorative
+ * (aria-hidden) — the panel's sr-only meter list is the accessible source of these readings.
+ * A dashed polygon and "Low data" verdicts flag a low-coverage estimate, and an unjudged
+ * property states its typical range where a verdict would go.
  */
 export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarProps) {
   const n = order.length;
@@ -48,19 +51,10 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
   // under the label and the verdict are one reading — see core's rangeVerdict.
   const valuePoints = order.map((key, i) => {
     const v = Math.max(0, Math.min(100, Math.round(properties[key])));
-    return point(i, n, (v / 100) * R);
+    const guide = SOAP_PROPERTY_GUIDE[key];
+    return point(i, n, fitRadius(v, guide.low, guide.high) * R);
   });
   const polygon = valuePoints.map((p) => `${p.x},${p.y}`).join(' ');
-  // The suggested-range zone. Outer subpath first, inner second, filled evenodd so the
-  // middle is punched out — a band that follows each axis's own guide rather than a ring.
-  const boundary = (pick: (g: { low: number; high: number }) => number): string =>
-    `M${order
-      .map((key, i) => {
-        const p = point(i, n, (pick(SOAP_PROPERTY_GUIDE[key]) / 100) * R);
-        return `${p.x},${p.y}`;
-      })
-      .join(' ')}Z`;
-  const bandPath = `${boundary((g) => g.high)}${boundary((g) => g.low)}`;
 
   return (
     <svg
@@ -72,11 +66,18 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
       data-cy={CY}
       data-r={R}
     >
-      <path
-        data-testid="radar-band"
-        d={bandPath}
-        fillRule="evenodd"
-        style={{ fill: 'var(--accent-soft)', stroke: 'none' }}
+      {/* The suggested range: a thick-stroked circle IS an annulus, in the same soft accent
+          the Meters rows shade their band with, so both views share one colour language. */}
+      <circle
+        data-testid="radar-ring"
+        cx={CX}
+        cy={CY}
+        r={((RING_INNER + RING_OUTER) / 2) * R}
+        style={{
+          fill: 'none',
+          stroke: 'var(--accent-soft)',
+          strokeWidth: (RING_OUTER - RING_INNER) * R,
+        }}
       />
       {RINGS.map((f) => (
         <circle
@@ -100,9 +101,9 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
           />
         );
       })}
-      {/* Stroke only: a filled polygon in the band's own tint blended into it where the two
-          overlapped, and this chart's question — is the red line on the shading? — is
-          answered by the line. */}
+      {/* Stroke only: a filled polygon in the ring's own tint blended into it where the two
+          overlapped, and this chart's question — is the red line on the ring? — is answered
+          by the line. */}
       <polygon
         data-testid="radar-recipe"
         points={polygon}
