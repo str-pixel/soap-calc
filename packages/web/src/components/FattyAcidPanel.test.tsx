@@ -222,3 +222,20 @@ test('both views state the same readings — the toggle changes geometry, not cl
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
   expect(readings()).toEqual(metersReadings);
 });
+
+// Of the four result views on this page, the fatty-acid meters were the only one with
+// nothing naming its shading: 08's meters carry a legend, 08's radar a legend and a
+// caption, 09's radar a caption. A shaded band a reader cannot name is decoration.
+test('names its shading, like the other three result views do', () => {
+  const { container } = render(
+    <FattyAcidPanel
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+    />,
+  );
+  const legend = container.querySelector('.property-legend')!;
+  expect(legend).toBeTruthy();
+  expect(legend.textContent).toMatch(/Typical range/i);
+  expect(legend.querySelector('.property-legend__swatch--suggested')).not.toBeNull();
+  // One band only here — this panel has no target band, so it must not claim one.
+  expect(legend.querySelector('.property-legend__swatch--preference')).toBeNull();
+});

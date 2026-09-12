@@ -197,12 +197,13 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
         tabIndex={0}
       >
       {view === 'meters' ? (
-        /* The properties panel's row idiom: name and verdict on the label row, the value
+        <>
+        {/* The properties panel's row idiom: name and verdict on the label row, the value
            riding its dot on a 0–100% track with the typical band shaded, the band's
            bounds numbered under it. No LOW / HIGH words on this track — it is percent of
            oil weight, and the subtitle says so — which leaves the row's left edge free
            for the many bands here that start at 0. A band too narrow for two numbers
-           prints one, "0–2", growing rightward from its left edge. */
+           prints one, "0–2", growing rightward from its left edge. */}
         <ul className="property-meters" aria-label="Recipe fatty acid groups">
           {groups.map((g) => (
             <li key={g.key} className="property-meters__row">
@@ -249,6 +250,16 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
             </li>
           ))}
         </ul>
+        {/* The shading needs naming here as much as it does in the properties panel; this
+            view was the only one of the four carrying a band nothing explained. One swatch,
+            because this panel has a typical range and no target band to claim. */}
+        <p className="property-legend">
+          <span className="property-legend__item">
+            <span className="property-legend__swatch property-legend__swatch--suggested" />
+            Typical range
+          </span>
+        </p>
+        </>
       ) : (
         <>
           <FattyAcidRadar axes={axes} lowCoverage={lowCoverage} />
