@@ -1012,12 +1012,6 @@ details[open] > .disclosure__summary::before {
   margin-bottom: 1.1rem;
 }
 
-/* The batch sizer's head holds only its mode toggle (its name is the disclosure's
-   summary), so keep the toggle where a titled panel would have put it. */
-.mold-sizer .panel__head {
-  justify-content: flex-end;
-}
-
 .panel__head-actions {
   display: flex;
   align-items: center;
@@ -2942,11 +2936,13 @@ details[open] > .disclosure__summary::before {
 }
 
 /* ── Mold sizer ───────────────────────────────────────────────────────── */
-/* The head keeps title and mode segmented pair on one line where they fit; on a narrow
-   column the unbreakable seg wraps under the title rather than forcing overflow. The
-   subtitle reads under both, full width, so the caption never squeezes the control. */
+/* The head holds only the mode segmented pair — the panel's name is the summary of the
+   disclosure it sits in — so the seg keeps the right-hand place it held when a title sat
+   beside it, and still wraps rather than overflowing a narrow column. The subtitle reads
+   under it, full width, so the caption never squeezes the control. */
 .mold-sizer .panel__head {
   flex-wrap: wrap;
+  justify-content: flex-end;
   margin-bottom: 0.35rem;
 }
 
