@@ -4,6 +4,8 @@ import {
   INSIGHT_RULES,
   type FormulationAnalysisInput,
 } from './insights.js';
+import { SOAP_PROPERTY_GUIDE } from './properties.js';
+import { rangeVerdict } from './range-verdict.js';
 
 const base: FormulationAnalysisInput = {
   properties: null,
@@ -1476,5 +1478,41 @@ describe('fragrance & colorant insights', () => {
     for (const c of ['fragrance_over_usual_range', 'fragrance_over_safe_max', 'fragrance_vanillin_browning', 'fragrance_accelerant_eo', 'fragrance_allergens_to_label', 'colorant_portions_over_100', 'colorant_carrier_superfat', 'ls_fragrance_clouding']) {
       expect(all).not.toContain(c);
     }
+  });
+});
+
+// The two cleansing notes hardcoded 22 and 12 — the band edges as they stood — so a later
+// change to SOAP_PROPERTY_GUIDE silently left them judging a different range from the panel
+// beside them. They read the guide now, and through the same rounding the panel uses. This
+// test is the invariant, not the numbers: it derives the boundary from the shipped guide, so
+// it keeps holding when the guide moves again.
+describe('the cleansing notes agree with the shipped band, by construction', () => {
+  const g = SOAP_PROPERTY_GUIDE.cleansing;
+  const props = (cleansing: number) => ({
+    hardness: 40, cleansing, condition: 55, creamy: 25, bubbly: 20, longevity: 30,
+  });
+
+  it('calls a score "above the usual range" only when the panel also would', () => {
+    // Just inside the ceiling, and a shade over it that still ROUNDS to the ceiling: the
+    // panel prints the ceiling and says in range, so this note must stay silent.
+    for (const v of [g.high, g.high + 0.4]) {
+      expect(rangeVerdict(v, g.low, g.high, 0)).toBe('in');
+      expect(has({ ...base, superfatPercent: 3, properties: props(v) }, 'high_cleansing_low_superfat')).toBe(false);
+    }
+    // A score that rounds above the ceiling is flagged by both.
+    const over = g.high + 1;
+    expect(rangeVerdict(over, g.low, g.high, 0)).toBe('high');
+    expect(has({ ...base, superfatPercent: 3, properties: props(over) }, 'high_cleansing_low_superfat')).toBe(true);
+  });
+
+  it('reassures about a low score only when the panel would call it low', () => {
+    const fattyAcids = { oleic: 72 };
+    // At and just under the floor: on the floor the panel says in range, so no note.
+    expect(has({ ...base, superfatPercent: 5, properties: props(g.low), fattyAcids }, 'low_cleansing_expected')).toBe(false);
+    const under = g.low - 1;
+    expect(rangeVerdict(under, g.low, g.high, 0)).toBe('low');
+    expect(has({ ...base, superfatPercent: 5, properties: props(under), fattyAcids }, 'low_cleansing_expected')).toBe(true);
+    // A castile bar still gets its reassurance — the case the note exists for.
+    expect(has({ ...base, superfatPercent: 5, properties: props(0), fattyAcids }, 'low_cleansing_expected')).toBe(true);
   });
 });
