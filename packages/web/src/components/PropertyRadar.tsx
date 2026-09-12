@@ -1,4 +1,4 @@
-import { rangeVerdict, SOAP_PROPERTY_GUIDE } from '@soap-calc/core';
+import { isJudgedProperty, rangeVerdict, SOAP_PROPERTY_GUIDE } from '@soap-calc/core';
 import type { SoapProperties, SoapPropertyName } from '@soap-calc/core';
 import { radarAngle, radarPoint } from '../lib/radarGeometry';
 
@@ -116,7 +116,10 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
       />
       {order.map((key, i) => {
         const guide = SOAP_PROPERTY_GUIDE[key];
-        const out = !lowCoverage && rangeVerdict(properties[key], guide.low, guide.high, 0) !== 'in';
+        const out =
+          !lowCoverage &&
+          isJudgedProperty(key) &&
+          rangeVerdict(properties[key], guide.low, guide.high, 0) !== 'in';
         const p = valuePoints[i];
         return (
           <circle key={key} cx={p.x} cy={p.y} r={out ? 3 : 2.5} style={{ fill: 'var(--accent)' }} />
@@ -125,8 +128,9 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
       {order.map((key, i) => {
         const value = properties[key];
         const guide = SOAP_PROPERTY_GUIDE[key];
+        const judged = isJudgedProperty(key);
         const verdict = rangeVerdict(value, guide.low, guide.high, 0);
-        const out = !lowCoverage && verdict !== 'in';
+        const out = !lowCoverage && judged && verdict !== 'in';
         const lab = point(i, n, R + 30);
         const c = Math.cos(angle(i, n));
         const anchor = c < -0.3 ? 'end' : c > 0.3 ? 'start' : 'middle';
@@ -134,13 +138,17 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
         // crowd it: upper axes lift their block above the anchor, lower axes hang below.
         const s = Math.sin(angle(i, n));
         const labelY = lab.y + (s <= -0.7 ? -40 : s < -0.3 ? -20 : 0);
+        // An unjudged axis states its typical range in the slot the verdict would fill —
+        // the same thing the panel already prints beside iodine and INS.
         const status = lowCoverage
           ? 'Low data'
-          : verdict === 'low'
-            ? 'Too low'
-            : verdict === 'high'
-              ? 'Too high'
-              : 'In range';
+          : !judged
+            ? `Typical ${guide.low}–${guide.high}`
+            : verdict === 'low'
+              ? 'Too low'
+              : verdict === 'high'
+                ? 'Too high'
+                : 'In range';
         return (
           <g key={key}>
             <text

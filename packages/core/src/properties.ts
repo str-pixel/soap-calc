@@ -65,6 +65,35 @@ export const SOAP_PROPERTY_LABELS: Record<SoapPropertyName, string> = {
 };
 
 /**
+ * Properties shown with a typical range but NEVER given a pass/fail verdict.
+ *
+ * `longevity` is the only one, and it is here because no source publishes a range that
+ * survives contact with real recipes:
+ * - Its 25-50 has no published rationale anywhere. Three calculators carry it identically
+ *   (Soapee, Soapmaking Friend, LyeCalc) and the books reprint it, but that is one figure
+ *   propagated, not four findings.
+ * - The one range with a stated rationale, DeeAnna Weed's 30-40 "sweet spot", flags the
+ *   source books' OWN worked recipes (they score 29 and 26). Measured over twelve ordinary
+ *   recipes it flags ten.
+ * - 25-50 itself flags six of those twelve as "too low", castile among them — and a castile
+ *   bar is famously long-lived. The metric is palmitic + stearic, so it cannot see what
+ *   makes a high-oleic bar last. The band is not the only thing at fault; the sum is.
+ *
+ * So the number and its typical range are shown, and no verdict is drawn from them. This is
+ * exactly how {@link IODINE_GUIDE} and {@link INS_GUIDE} already read in the panel — a value
+ * with "(typical 41-70)" beside it and no judgement. Inventing a wider band to stop the
+ * false alarms would have been the other way out; this app does not invent numbers.
+ */
+export const UNJUDGED_PROPERTIES: ReadonlySet<SoapPropertyName> = new Set<SoapPropertyName>([
+  'longevity',
+]);
+
+/** Whether a verdict (Too low / In range / Too high) may be drawn for this property. */
+export function isJudgedProperty(key: SoapPropertyName): boolean {
+  return !UNJUDGED_PROPERTIES.has(key);
+}
+
+/**
  * The range a recipe is judged against, per property. THE BOOKS' "Standard" COLUMN,
  * transcribed: CP:11636-11703 ("Common Soap Quality Ranges", p404) and HP:4637-4664
  * ("Average Soap Quality Ranges", p133), whose Standard and Preference columns are

@@ -319,3 +319,45 @@ test('the radar keys only the band it actually draws', () => {
   // The radar draws one zone; claiming a target swatch it never shades would be a lie.
   expect(legend.querySelector('.property-legend__swatch--preference')).toBeNull();
 });
+
+// Longevity carries a typical range but no verdict — see core's UNJUDGED_PROPERTIES. Its
+// 25-50 has no published rationale, the one rationale-backed alternative flags the source
+// books' own recipes, and 25-50 itself calls castile "too low" when a castile bar is
+// famously long-lived. The number and the band still show; the judgement does not.
+test('never flags longevity, at any value, in either view', () => {
+  for (const longevity of [0, 17, 24, 26, 51, 100]) {
+    cleanup();
+    const r = {
+      ...FULL.properties,
+      properties: { hardness: 41, cleansing: 17, condition: 56, creamy: 24, bubbly: 20, longevity },
+    };
+    const { container } = render(
+      <PropertiesPanel result={r} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+    );
+    showMeters();
+    const row = screen.getByRole('meter', { name: /Longevity/i }).closest('li')!;
+    expect(row.querySelector('.property-meters__status'), `meters status at ${longevity}`).toBeNull();
+    expect(row.querySelector('.property-meters__value--outside'), `red value at ${longevity}`).toBeNull();
+    expect(row.querySelector('.property-meter__marker--outside'), `red dot at ${longevity}`).toBeNull();
+    // The reading and its typical range are still both present.
+    expect(row.textContent).toContain(String(longevity));
+    expect(row.textContent).toMatch(/25–50/);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+    const radar = container.querySelector('.property-radar')!.textContent!;
+    const block = radar.slice(radar.indexOf('Longevity'), radar.indexOf('Longevity') + 30);
+    expect(block, `radar verdict at ${longevity}`).not.toMatch(/Too low|Too high|In range/);
+    expect(block).toMatch(/Typical/i);
+  }
+});
+
+test('still flags the other properties, so the exemption is longevity only', () => {
+  const r = {
+    ...FULL.properties,
+    properties: { hardness: 41, cleansing: 40, condition: 56, creamy: 24, bubbly: 20, longevity: 0 },
+  };
+  render(<PropertiesPanel result={r} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
+  showMeters();
+  const cleansing = screen.getByRole('meter', { name: /Cleansing/i }).closest('li')!;
+  expect(cleansing.querySelector('.property-meters__status')?.textContent).toBe('Too high');
+});

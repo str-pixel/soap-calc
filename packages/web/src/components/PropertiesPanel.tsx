@@ -8,6 +8,7 @@ import {
   IODINE_GUIDE,
   INS_GUIDE,
   LOW_COVERAGE_PERCENT,
+  isJudgedProperty,
   rangeVerdict,
   SOAP_PROPERTY_GUIDE,
   SOAP_PROPERTY_LABELS,
@@ -43,7 +44,7 @@ const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
   bubbly:
     'Big, airy, fast-forming bubbles from lauric, myristic, the shorter C8–C10 acids, and ricinoleic acid. Higher is fluffier; very high can feel drying or slippery.',
   longevity:
-    'How well the bar keeps its shape in use, from long-chain saturates like palmitic and stearic. Higher resists mushing and lasts longer between uses.',
+    'How well the bar keeps its shape in use, from long-chain saturates like palmitic and stearic. Higher resists mushing and lasts longer between uses. Shown as a typical range rather than a target: no published source gives a tested range for it, and high-oleic bars like castile last well in the dish despite scoring low here.',
 };
 
 const SCALE_MAX = 100;
@@ -264,7 +265,10 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 // Judge the figure this row PRINTS (scores print as integers), so the
                 // verdict can never contradict the number beside it. The marker rides the
                 // same rounded figure, so dot, value and verdict are one reading.
-                const verdict = rangeVerdict(value, guide.low, guide.high, 0);
+                // An unjudged property (longevity) still draws its band and its dot — the
+                // typical range is information — but never earns a verdict from them.
+                const judged = isJudgedProperty(key);
+                const verdict = judged ? rangeVerdict(value, guide.low, guide.high, 0) : 'in';
                 const inSuggested = verdict === 'in';
                 const shown = Math.round(value);
                 // Append, don't mutate PROPERTY_GUIDANCE: cleansing reads as solubility/dilution
