@@ -67,7 +67,7 @@
   --accent-hover: #a30716;
   --accent-soft: rgb(212 11 30 / 13%);
   --accent-tint: rgb(212 11 30 / 8%);
-  --accent-band: rgb(212 11 30 / 28%); /* meter target band — the third accent tint */
+  --accent-band: rgb(212 11 30 / 28%); /* meter target band — the third accent tint; see .property-meter__band--target for why it outweighs the suggested band */
   --border: #d7d7d7; /* row hairlines */
   --hairline: #c6c6c6; /* figure-list hairline */
   --error: #b42318;
@@ -2553,6 +2553,24 @@ details[open] > .disclosure__summary::before {
    the bounds, and on a 7px track a full-height rule read as a second marker competing
    with the dot. */
 
+/* THE TARGET BAND IS DELIBERATELY THE HEAVIER OF THE TWO — 28% against the suggested
+   band's 13%, a 36-point luminance step — even though it is the suggested band that the
+   verdict is computed against and the preference guide is explicitly not a pass/fail rule.
+   That is not an inversion to be corrected. Darker-inside-lighter is the bullseye reading:
+   the dark mark is where to aim, the pale one is what is acceptable. A band asserts
+   nothing, so the rule that visual weight should track evidential authority — which is why
+   longevity lost its verdict — does not reach it. Swapping the weights would bury this
+   app's actual formulation advice to fix a misreading nobody has reported.
+
+   The pair is distinguished by lightness, not hue, so colour vision deficiency is
+   unaffected, and the legend names both. The 28% predates the token that named it, so this
+   note is the argument it never had.
+
+   One place the nesting genuinely breaks: creamy lather's target (30-50) runs two points
+   past its suggested band (16-48), so the dark band continues past the "48" tick and
+   lightens where it loses the layer beneath. That is the source's own inconsistency,
+   verified authorial and pinned in property-guide-source.test.ts. Clipping it would
+   misreport the source. Leave it. */
 .property-meter__band--target {
   background: var(--accent-band);
 }

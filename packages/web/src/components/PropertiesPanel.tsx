@@ -320,6 +320,9 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       </span>
                     {/* Zoned meter (0–100): plain track = too-low / too-high, shaded band =
                         suggested range, stronger band = target, marker = where this recipe lands.
+                        The target band outweighs the suggested one on purpose — it is the
+                        bullseye, not a stricter limit; the reasoning is at
+                        .property-meter__band--target in index.css.
                         Decorative — the value's role="meter" and the sr-only range text carry it for AT. */}
                     <div className="property-meter" aria-hidden="true">
                       <span
