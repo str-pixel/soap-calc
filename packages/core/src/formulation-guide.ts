@@ -10,11 +10,11 @@ import type { SoapPropertyName } from './properties.js';
  *
  * `longevity` is absent because the source table has no longevity row.
  *
- * It is not strictly an INNER band: for cleansing (10-14 against 12-22), hardness (45-55
- * against 29-54) and creamy (30-50 against 16-48) it reaches past the suggested range, so a
- * score can sit inside this band and still be flagged out of range. That is real
- * disagreement between two sources, not a bug — the properties panel names both bands in its
- * legend so the maker can see which is which, rather than meeting two unexplained shades.
+ * It IS an inner band now that {@link SOAP_PROPERTY_GUIDE} carries the Standard column from
+ * the same table — with one exception the source itself creates: creamy's Preference high
+ * (50) exceeds its own Standard high (48), so a creamy score of 49 sits inside this band and
+ * is still flagged out of range. The properties panel names both bands in its legend, so a
+ * maker meets two labelled ranges rather than two unexplained shades.
  */
 export const FORMULATION_PREFERENCE_GUIDE: Partial<
   Record<SoapPropertyName, { low: number; high: number }>

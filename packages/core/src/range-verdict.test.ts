@@ -20,8 +20,9 @@ describe('displayedValue', () => {
 
 describe('rangeVerdict', () => {
   it('judges the number the UI prints, not the raw one', () => {
-    // THE BUG THIS EXISTS FOR: 22.4 prints "22" against a 12–22 band. Judged raw it read
-    // "Too high" beside a figure that is plainly inside the range it names.
+    // THE BUG THIS EXISTS FOR: 22.4 prints "22" against a band ending at 22. Judged raw it
+    // read "Too high" beside a figure that is plainly inside the range it names. The bands
+    // here are the helper's own fixtures, not the shipped guide, which this does not import.
     expect(rangeVerdict(22.4, 12, 22, 0)).toBe('in');
     expect(rangeVerdict(11.6, 12, 22, 0)).toBe('in');
     // A score that still rounds outside the band is still flagged.

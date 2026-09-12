@@ -120,7 +120,7 @@
 - HP HTHP: temp 215 °F (102 °C), ceiling 240 °F; cure 3–4 wk (≤30% water); water loss ~6%.
 - HP fluid: 38% water ~6 wk cure.
 - LS: cook water 25–60% (default 38%); soap concentration coconut ≤40% · castile ~25% · blends 25–35% (marked **Partial** — encode as point targets, not enforced ranges); superfat 1–3%; sequester 1–4 wk.
-- Shared: quality ranges already live in `SOAP_PROPERTY_GUIDE` (`properties.ts:49-56`) — **do not duplicate, and do NOT "reconcile" the shipped guide to the roadmap's quoted numbers.** The roadmap table (H 30–60 · Cl 8–20 · …) is a *different* range convention from what ships (hardness 29–54, cleansing 12–22, longevity 25–50); the shipped values are what the radar and existing insights depend on. Treat any apparent discrepancy as intentional, not a bug to fix. (Longevity was deliberately corrected 14–43 → 25–50 in #44; the "don't reconcile" rule now protects that corrected value.)
+- Shared: quality ranges live in `SOAP_PROPERTY_GUIDE` (`properties.ts`) — **do not duplicate.** **Superseded 2026-09-12:** the shipped guide now IS this table's convention (H 30–60 · Cl 8–20 · Co 44–69 · Bu 14–46 · Cr 16–48), adopted from the books' Standard column (CP:11636-11703 p404 · HP:4637-4664 p133) in place of the soap-calculator column it used to carry (which differed on cleansing 12–22 and hardness 29–54). The earlier rule here said NOT to reconcile the two; that rule is retired, and `packages/core/src/property-guide-source.test.ts` now pins the transcription instead. Two values stay on the calculator convention because the books' table has no row for them: `longevity` 25–50 (deliberately corrected 14–43 → 25–50 in #44) and the iodine/INS guides.
 
 - [ ] **Step 1: Write the failing test for the variant registry**
 

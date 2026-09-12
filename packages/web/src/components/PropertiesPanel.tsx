@@ -334,10 +334,12 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                         style={{ left: `${pct(shown)}%` }}
                       />
                     </div>
-                    {/* Scale row: Low / High at the extremes, suggested-range boundary
-                        numbers positioned under the band edges. Decorative — sr-only range below. */}
+                    {/* Scale row: the suggested band's boundary numbers, positioned under
+                        its edges. No LOW / HIGH wordmarks at the ends — they named a scale
+                        the subtitle already names, and they carried paper backing that hid
+                        any band edge landing near either end (cleansing's 8 disappeared
+                        under "LOW"). Decorative — sr-only range below. */}
                     <div className="property-meter__scale" aria-hidden="true">
-                      <span className="property-meter__extreme">Low</span>
                       <span
                         className="property-meter__tick"
                         style={{ left: `${pct(guide.low)}%` }}
@@ -349,9 +351,6 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                         style={{ left: `${pct(guide.high)}%` }}
                       >
                         {formatPropertyScore(guide.high)}
-                      </span>
-                      <span className="property-meter__extreme property-meter__extreme--high">
-                        High
                       </span>
                     </div>
                     </div>

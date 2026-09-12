@@ -2,8 +2,8 @@
  * Judging a reading against a guide band.
  *
  * The rule: JUDGE THE NUMBER THE UI PRINTS. The panels display a rounded figure but used to
- * compare the raw one, so a cleansing score of 22.4 printed "22" against a suggested band of
- * 12–22 and was flagged "Too high" in the same row — the verdict contradicting the figure
+ * compare the raw one, so a score of 20.4 printed "20" against a band ending at 20 and was
+ * flagged "Too high" in the same row — the verdict contradicting the figure
  * beside it. Rounding first closes that gap by construction.
  *
  * It is also the more honest comparison. These scores are fatty-acid sums over supplier

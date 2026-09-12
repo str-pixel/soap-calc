@@ -2589,28 +2589,6 @@ details[open] > .disclosure__summary::before {
   color: var(--caption);
 }
 
-.property-meter__extreme {
-  position: absolute;
-  top: 0;
-  left: 0;
-  letter-spacing: var(--label-track);
-  text-transform: uppercase;
-  color: var(--label);
-  /* Paper backing + stacking: a suggested range that starts near 0 or ends near 100 puts
-     its boundary number under LOW/HIGH, and the wordmark must win that collision legibly
-     rather than overprint. */
-  background: var(--bg);
-  z-index: 1;
-  padding-right: 3px;
-}
-
-.property-meter__extreme--high {
-  left: auto;
-  right: 0;
-  padding-right: 0;
-  padding-left: 3px;
-}
-
 .property-meter__tick {
   position: absolute;
   top: 0;

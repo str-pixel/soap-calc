@@ -99,7 +99,7 @@ not the prose — when writing code. `Src` cites the process + page where each w
 | KOH purity | 90% default (already in app) | Confirmed | LS 258 |
 | KOH ↔ NaOH weight | × 1.40 (56.1 / 40) | Confirmed | LS 177 |
 | Dual-lye ratios | LS 80/20 KOH/NaOH · bar 95/5 NaOH/KOH · shave 50/50 | Confirmed | LS 86 |
-| Quality ranges (all 3) | H 30–60 · Cl 8–20 · Co 44–69 · Bu 14–46 · Cr 16–48 | Confirmed | CP 404 · HP 133 |
+| Quality ranges (all 3) | H 30–60 · Cl 8–20 · Co 44–69 · Bu 14–46 · Cr 16–48 | Confirmed | CP 404 · HP 133 | **Shipped** since 2026-09-12 as `SOAP_PROPERTY_GUIDE`; longevity has no row in this table and stays 25–50 |
 | Anti-DOS combo | 0.1% BHT + 0.1% sodium citrate (1 ppt each) | Corrected 2026-08-03 | CP 163 prints 1%, but the study it cites tested 1 ppt |
 
 ### Cold process

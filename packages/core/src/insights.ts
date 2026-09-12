@@ -6,7 +6,8 @@ import {
 import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT, formatShareAgainstCeiling, usualDosePastClause } from './fragrance.js';
 import { DEFAULT_KOH_BLEND_PERCENT, effectiveSuperfatPercent, type LyeType, type WaterMode } from './lye.js';
 import { CP_OVERFLOW_RISK_F } from './soaping-temperature.js';
-import { LOW_COVERAGE_PERCENT, type SoapProperties } from './properties.js';
+import { LOW_COVERAGE_PERCENT, SOAP_PROPERTY_GUIDE, type SoapProperties } from './properties.js';
+import { rangeVerdict } from './range-verdict.js';
 import {
   additiveMatches,
   additiveNameMatches,
@@ -485,7 +486,11 @@ export const INSIGHT_RULES: InsightRule[] = [
       ) {
         const cleansing = input.properties.cleansing;
         const superfat = input.superfatPercent;
-        if (cleansing > 22 && superfat < 6) {
+        // Read the shipped band, and read it the way the panel does — judged on the figure
+        // the panel prints. Hardcoded edges here once meant this note could call a score
+        // "above the usual range" while the panel beside it showed the same score in range.
+        const guide = SOAP_PROPERTY_GUIDE.cleansing;
+        if (rangeVerdict(cleansing, guide.low, guide.high, 0) === 'high' && superfat < 6) {
           return {
             level: 'info',
             code: 'high_cleansing_low_superfat',
@@ -511,8 +516,9 @@ export const INSIGHT_RULES: InsightRule[] = [
       ) {
         const cleansing = input.properties.cleansing;
         const oleic = input.fattyAcids?.oleic ?? 0;
+        const guide = SOAP_PROPERTY_GUIDE.cleansing;
         if (
-          cleansing < 12 &&
+          rangeVerdict(cleansing, guide.low, guide.high, 0) === 'low' &&
           oleic >= 50 &&
           (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
         ) {

@@ -46,22 +46,35 @@ export const SOAP_PROPERTY_LABELS: Record<SoapPropertyName, string> = {
 };
 
 /**
- * The calculator's recommended range per property — the column a soapmaker compares against
- * across tools, and what this app judges a recipe by. Transcribed from the "Suggested Range"
- * column (HP:9914-9941, book p367; reprinted CP:13106-13123, p456).
+ * The range a recipe is judged against, per property. THE BOOKS' "Standard" COLUMN,
+ * transcribed: CP:11636-11703 ("Common Soap Quality Ranges", p404) and HP:4637-4664
+ * ("Average Soap Quality Ranges", p133), whose Standard and Preference columns are
+ * identical to each other. `property-guide-source.test.ts` is that transcription, so drift
+ * fails against the page rather than passing quietly.
  *
- * NOT the only convention in the sources, and the difference is not an error to be tidied
- * away: the same books ALSO print a wider "Standard" column — cleansing 8-20 rather than
- * 12-22, hardness 30-60 rather than 29-54 (CP:11636-11703, p404) — and carry no longevity
- * row at all. What ships is deliberately the calculator column; see
- * docs/superpowers/plans/2026-07-17-multiprocess-remaining-roadmap.md:123. `longevity`'s
- * 25-50 was corrected to match the calculator in commit 7812bc1 (#44).
+ * Adopted 2026-09-12, replacing the soap-calculator "Suggested Range" column
+ * (HP:9914-9941 p367; CP:13106-13123 p456), which differed on two properties — cleansing
+ * 12-22 and hardness 29-54. The books support their own column over the calculator's: the
+ * Preference column sits inside it, and the CP book's worked teaching example reformulates
+ * to cleansing 10 and presents that as the right answer (CP:8942-8948), a reading the
+ * calculator column calls "too low".
+ *
+ * TWO THINGS THE BOOKS DO NOT COVER, both left on the calculator convention:
+ * - `longevity` — neither printing has a longevity row, so there is no Standard value to
+ *   adopt. It keeps 25-50, corrected from an unsourced 14-43 in commit 7812bc1 (#44).
+ * - {@link IODINE_GUIDE} and {@link INS_GUIDE}, which the Standard table does not list.
+ *
+ * CAVEAT worth knowing before reading a verdict too literally: the books define each
+ * quality by the acids it sums, and {@link SOAP_PROPERTY_FATTY_ACIDS} counts MORE than that
+ * for four of the five — deliberately, and documented there. Cleansing is the one that
+ * moves: the book sums lauric + myristic, this app also counts C8-C10, so a coconut-heavy
+ * recipe reads several points above the number the book's 8-20 was written for.
  */
 export const SOAP_PROPERTY_GUIDE: Record<SoapPropertyName, { low: number; high: number }> = {
   bubbly: { low: 14, high: 46 },
-  cleansing: { low: 12, high: 22 },
+  cleansing: { low: 8, high: 20 },
   condition: { low: 44, high: 69 },
-  hardness: { low: 29, high: 54 },
+  hardness: { low: 30, high: 60 },
   longevity: { low: 25, high: 50 },
   creamy: { low: 16, high: 48 },
 };

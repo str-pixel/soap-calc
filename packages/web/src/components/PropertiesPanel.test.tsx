@@ -51,7 +51,7 @@ const showMeters = () => fireEvent.click(screen.getByRole('tab', { name: 'Meters
 test('flags an out-of-range score and suppresses it under low coverage', () => {
   const outOfRange = {
     properties: {
-      // cleansing 30 is above the 12–22 suggested band
+      // cleansing 30 is above the 8–20 suggested band
       properties: { hardness: 41, cleansing: 30, condition: 56, creamy: 24, bubbly: 17, longevity: 24 },
       coveragePercent: 100,
       missingOilIds: [],
@@ -164,36 +164,54 @@ test('a score at the edge of the track anchors its label to the marker instead o
 // number beside it. The same reading must be consistent in the radar, which prints the
 // same rounded figure.
 test('a score that rounds into its band is not flagged, in either view', () => {
+  // Cleansing's band ends at 20, so 20.4 is the case: it prints "20", inside the range.
   const edge = {
     ...FULL.properties,
-    properties: { hardness: 41, cleansing: 22.4, condition: 56, creamy: 24, bubbly: 20, longevity: 30 },
+    properties: { hardness: 41, cleansing: 20.4, condition: 56, creamy: 24, bubbly: 20, longevity: 30 },
   };
   const { container } = render(
     <PropertiesPanel result={edge} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
   showMeters();
   const row = screen.getByRole('meter', { name: /Cleansing/i }).closest('li')!;
-  expect(row.querySelector('.property-meters__value')?.textContent).toBe('22');
+  expect(row.querySelector('.property-meters__value')?.textContent).toBe('20');
   expect(row.querySelector('.property-meters__status')).toBeNull();
   expect(row.querySelector('.property-meter__marker--outside')).toBeNull();
   expect(row.querySelector('.property-meters__value--outside')).toBeNull();
 
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
   const radar = container.querySelector('.property-radar')!.textContent!;
-  expect(radar.slice(radar.indexOf('Cleansing'), radar.indexOf('Cleansing') + 20)).toContain('22');
+  expect(radar.slice(radar.indexOf('Cleansing'), radar.indexOf('Cleansing') + 20)).toContain('20');
   expect(radar.slice(radar.indexOf('Cleansing'), radar.indexOf('Cleansing') + 24)).toContain('In range');
 });
 
 test('a score that still rounds outside its band is flagged', () => {
   const edge = {
     ...FULL.properties,
-    properties: { hardness: 41, cleansing: 22.5, condition: 56, creamy: 24, bubbly: 20, longevity: 30 },
+    properties: { hardness: 41, cleansing: 20.5, condition: 56, creamy: 24, bubbly: 20, longevity: 30 },
   };
   render(<PropertiesPanel result={edge} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
   showMeters();
   const row = screen.getByRole('meter', { name: /Cleansing/i }).closest('li')!;
-  expect(row.querySelector('.property-meters__value')?.textContent).toBe('23');
+  expect(row.querySelector('.property-meters__value')?.textContent).toBe('21');
   expect(row.querySelector('.property-meters__status')?.textContent).toBe('Too high');
+});
+
+// A band edge near either end of the track used to disappear: LOW and HIGH carry paper
+// backing and a z-index so they win that collision, which was fine while no band started
+// below 12 — and stopped being fine when cleansing's band moved to 8-20 and the 8 vanished
+// under the word. The words named the ends of a scale the subtitle already names ("0-100
+// scale"); the band edges are the numbers a maker actually reads, so they get the room.
+test('numbers both band edges, with nothing at the ends of the track to hide them', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+  );
+  showMeters();
+  const row = screen.getByRole('meter', { name: /Cleansing/i }).closest('li')!;
+  const ticks = Array.from(row.querySelectorAll('.property-meter__tick')).map((t) => t.textContent);
+  expect(ticks).toEqual(['8', '20']);
+  expect(container.querySelector('.property-meter__extreme')).toBeNull();
+  expect(row.textContent).not.toMatch(/\bLow\b|\bHigh\b/);
 });
 
 test('defaults to the Meters view — rows visible, radar hidden', () => {
