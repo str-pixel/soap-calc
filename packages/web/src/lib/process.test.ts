@@ -228,7 +228,7 @@ it('every import announces which kind of recipe it is', () => {
 
 describe('capability declarations (slice 4 + capability-keys follow-up)', () => {
   it('declares exactly what each process offers', () => {
-    expect(PROCESS_DEFINITIONS.cp.capabilities).toEqual(['cpExtras']);
+    expect(PROCESS_DEFINITIONS.cp.capabilities).toEqual([]);
     expect(PROCESS_DEFINITIONS.hp.capabilities).toEqual(['postCook', 'hpVessel', 'afterCookStage']);
     // 'postCook' also belongs to ls: SuperfatWaterPanel's post-cook-superfat slider is an
     // "HP/LS-only knob" (its own comment) gated by processOffers(process, 'postCook'),

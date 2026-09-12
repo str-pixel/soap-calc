@@ -4,7 +4,6 @@ import { AdditivesPanel } from './components/AdditivesPanel';
 import { FragrancePanel } from './components/FragrancePanel';
 import { ColorantsPanel } from './components/ColorantsPanel';
 import { BatchSheet } from './components/BatchSheet';
-import { CpExtrasPanel } from './components/CpExtrasPanel';
 import { DilutionPanel, type DilutionScope } from './components/DilutionPanel';
 import { FattyAcidPanel } from './components/FattyAcidPanel';
 import { FormulationInsightsPanel } from './components/FormulationInsightsPanel';
@@ -734,10 +733,6 @@ export default function App() {
               batterGrams={vm.batterAtTraceGrams}
               onChange={setScentColor}
             />
-
-            {processOffers(process, 'cpExtras') && (
-              <CpExtrasPanel totalOilGrams={vm.totalOilGrams} />
-            )}
           </div>
 
           {/* Column 2 — The Numbers: the computed outputs, the knobs that drive them, and

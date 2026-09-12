@@ -1012,6 +1012,12 @@ details[open] > .disclosure__summary::before {
   margin-bottom: 1.1rem;
 }
 
+/* The batch sizer's head holds only its mode toggle (its name is the disclosure's
+   summary), so keep the toggle where a titled panel would have put it. */
+.mold-sizer .panel__head {
+  justify-content: flex-end;
+}
+
 .panel__head-actions {
   display: flex;
   align-items: center;

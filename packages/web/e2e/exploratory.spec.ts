@@ -99,7 +99,6 @@ test.describe('smoke & layout', () => {
     }
     await expect(page.getByRole('tab', { name: 'Cold process' })).toHaveAttribute('aria-selected', 'true');
     // CP-only / LS-only visibility
-    await expect(page.getByRole('heading', { name: 'CP extras' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Dilution' })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Preservative' })).toHaveCount(0);
     await shot(page, testInfo, 'cp-default.png');
@@ -163,7 +162,6 @@ test.describe('process/variant sweep', () => {
     // LS-only panels
     await expect(page.getByRole('heading', { name: 'Dilution' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Preservative' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'CP extras' })).toHaveCount(0);
     await shot(page, testInfo, 'ls.png');
   });
 
@@ -468,7 +466,7 @@ test.describe('liquid soap', () => {
       .locator('section')
       .filter({ has: page.getByRole('heading', { name: 'Settings' }) })
       .first();
-    await settings.getByText('Advanced', { exact: true }).click();
+    await settings.getByText('Batch sizer', { exact: true }).click();
     const cell = settings.locator('.seg__option').filter({ hasText: 'Mold volume' });
     const geometry = await cell.evaluate((el) => {
       const input = el.querySelector('input')!;
@@ -904,7 +902,7 @@ test('soaping-temperature slider: CP defaults to 125 °F; 165 raises the overflo
 });
 
 test('split liquid adds a named liquid and total-liquid row', async ({ page }) => {
-  // Split liquid now lives in the always-visible Superfat & water panel — no Advanced click.
+  // Split liquid now lives in the always-visible Superfat & water panel — no disclosure to open.
   const section = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Split liquid' }) }).first();
   await section.getByRole('button', { name: /add liquid/i }).click();
   await section.getByPlaceholder(/goat milk/).fill('goat milk');
@@ -922,9 +920,9 @@ test('split liquid adds a named liquid and total-liquid row', async ({ page }) =
   expect(relClose(totalLiquid, water + 200, 0.02, 2), `total liquid ${totalLiquid} vs water ${water} + 200`).toBe(true);
 });
 
-test.describe('advanced settings', () => {
+test.describe('the batch sizer disclosure', () => {
   test.beforeEach(async ({ page }) => {
-    await page.locator('summary').filter({ hasText: 'Advanced' }).click();
+    await page.locator('summary').filter({ hasText: 'Batch sizer' }).click();
   });
 
   test('batch sizer bar mode suggests and applies oil weight', async ({ page }) => {

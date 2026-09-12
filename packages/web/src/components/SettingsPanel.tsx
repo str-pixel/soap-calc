@@ -208,8 +208,24 @@ export function SettingsPanel({
         )}
       </div>
 
+      {/* The notes travel with the recipe and print on the batch sheet, so they sit in the
+          settings body — not inside a disclosure named after the one tool it holds. */}
+      <label className="field">
+        <span>Process notes</span>
+        <textarea
+          className="input input--textarea"
+          maxLength={MAX_NOTES_LENGTH}
+          rows={3}
+          placeholder="Trace notes, fragrance plan, cure reminders…"
+          value={settings.batchNotes}
+          onChange={(e) => setSettings((s) => ({ ...s, batchNotes: e.target.value }))}
+        />
+      </label>
+
+      {/* The disclosure is named for what it holds. The panel inside no longer repeats the
+          name — the summary IS its heading. */}
       <details className="settings-advanced">
-        <summary className="disclosure__summary settings-advanced__summary">Advanced</summary>
+        <summary className="disclosure__summary settings-advanced__summary">Batch sizer</summary>
 
         <MoldSizerPanel
           input={moldSizerInput}
@@ -219,18 +235,6 @@ export function SettingsPanel({
           onChange={onMoldSizerChange}
           onApply={onApplySuggestedOilGrams}
         />
-
-        <label className="field">
-          <span>Process notes</span>
-          <textarea
-            className="input input--textarea"
-            maxLength={MAX_NOTES_LENGTH}
-            rows={3}
-            placeholder="Trace notes, fragrance plan, cure reminders…"
-            value={settings.batchNotes}
-            onChange={(e) => setSettings((s) => ({ ...s, batchNotes: e.target.value }))}
-          />
-        </label>
       </details>
     </section>
   );

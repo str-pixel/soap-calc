@@ -111,8 +111,9 @@ export function MoldSizerPanel({
 
   return (
     <section className="panel panel--nested mold-sizer">
+      {/* No title of its own: the disclosure that holds this panel is named "Batch sizer",
+          and a second copy of the name directly beneath it reads as a stutter. */}
       <div className="panel__head">
-        <h2 className="panel__title">Batch sizer</h2>
         <SegRadioGroup
           label="Batch sizer mode"
           name="mold-sizer-mode"

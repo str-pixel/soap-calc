@@ -16,7 +16,6 @@ export type CapabilityKey =
   | 'dilution'
   | 'neutralize'
   | 'preserve'
-  | 'cpExtras'
   | 'hpVessel'
   // Not panels: declared process capabilities read by computation and offer gates alike.
   | 'negativeSuperfat'
@@ -142,7 +141,7 @@ export const PROCESS_DEFINITIONS: Record<ProcessId, ProcessDefinition> = {
     lyeChoices: ['naoh', 'dual'],
     kohBlendRange: [0, 50],
     waterModeChoices: ALL_WATER_MODES,
-    capabilities: ['cpExtras'],
+    capabilities: [],
     finishing: 'cure',
     terms: { finishingLabel: 'Cure' },
     procedure: { lyeSolutionFirst: true },

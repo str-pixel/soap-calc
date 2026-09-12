@@ -117,13 +117,6 @@ describe('App process switch', () => {
     expect(sheetDd).toContain(panelDd);
   });
 
-  it('shows CP extras (dose converters + notes) for Cold process but not Liquid Soap', async () => {
-    render(<App />);
-    expect(screen.getByText('CP extras')).toBeTruthy();
-    await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
-    expect(screen.queryByText('CP extras')).toBeNull();
-  });
-
   it('clears the measured paste when the recipe oils change', async () => {
     render(<App />);
     await userEvent.click(screen.getByRole('tab', { name: /liquid soap/i }));
