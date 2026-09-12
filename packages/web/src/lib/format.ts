@@ -18,6 +18,12 @@ export function formatGrams(value: number, digits = 1): string {
   });
 }
 
+/** A volume readout — the one rule for "ml", shared by the dilution panel, the portion
+ * results and the printed sheet so no surface brings its own formatting back. */
+export function formatVolumeMl(ml: number): string {
+  return `${formatGrams(ml, 0)} ml`;
+}
+
 /** Plain numeric string for form inputs (no locale grouping). */
 export function formatInputNumber(value: number, digits = 1): string {
   const factor = 10 ** digits;

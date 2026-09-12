@@ -1,3 +1,4 @@
+import { formatGrams } from './format';
 export type WeightUnit = 'g' | 'kg' | 'oz' | 'lb';
 
 export const WEIGHT_UNITS: Record<
@@ -108,12 +109,8 @@ export function formatWeightParts(
     digits ??
     (value > 0 && value < 10 ? Math.max(config.displayDigits, 1) : config.displayDigits);
   return {
-    // No thousands separator — the app's one number rule (lib/format.ts formatGrams).
-    value: value.toLocaleString('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: d,
-      useGrouping: false,
-    }),
+    // The app's one number rule (lib/format.ts formatGrams), not a second copy of it.
+    value: formatGrams(value, d),
     unit: config.short,
   };
 }

@@ -946,13 +946,22 @@ export type DoseBasis = 'oil' | 'batch' | 'solution';
 
 /** Validate a dose amount for its unit. Percent caps at 100, ppt at 1000 (both = 100% of basis).
  * Returns the numeric amount, or null when empty/negative/non-finite/over the ceiling. */
-export function parseDoseAmount(value: string, unit: DoseUnit): number | null {
+/** A typed dose as a non-negative number, with NO cap — the parse every dose shares. An
+ * essential-oil dose reads this directly: a 150% is absurd, and the row must be able to
+ * SAY so (grams, share, the verdicts), which it cannot if the figure vanishes at the parse. */
+export function parseDose(value: string): number | null {
   if (value === '') return null;
   const n = Number(value);
-  if (!Number.isFinite(n) || n < 0) return null;
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/** The additive rows' parse: the shared one, capped at 100% / 1000 ppt — the ceiling the
+ * additive fields hold their amounts under. */
+export function parseDoseAmount(value: string, unit: DoseUnit): number | null {
+  const n = parseDose(value);
+  if (n === null) return null;
   const ceiling = unit === 'ppt' ? 1000 : 100;
-  if (n > ceiling) return null;
-  return n;
+  return n > ceiling ? null : n;
 }
 
 /** Grams from a dose amount against a basis weight. percent = amount/100, ppt = amount/1000. */

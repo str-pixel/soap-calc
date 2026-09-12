@@ -10,10 +10,13 @@ import {
   essentialOilCaution,
   essentialOilCeiling,
   essentialOilEntryById,
+  essentialOilStartingDose,
   fragranceDoseAtCeiling,
   fragranceGrams,
+  fragranceOverCeiling,
   fragranceOverUsualRange,
   fragranceShareOfProduct,
+  parseDose,
   parsePercentOfOil,
   polysorbate20Grams,
   portionOilGrams,
@@ -33,14 +36,16 @@ import { colorantClaimsPortion, type ScentColor } from './scentColor';
 
 export type ComputedFragrance = {
   key: string; catalogId: string; name: string;
-  /** The dose as the app can use it (core parsePercentOfOil: null past 100). */
+  /** The dose as typed, non-negative and UNCAPPED (core parseDose): a 150% is absurd, and
+   * the row has to be able to say so — its grams, its share, both verdicts. */
   percent: number | null;
-  /** The dose as typed, uncapped — so a 150 is still SEEN by the usual-range check and
-   * the note that quotes it, instead of vanishing with the grams. */
-  typedPercent: number | null;
   grams: number;
   stage: AdditiveStage; caution: boolean; browning: VanillinBrowning;
   stabilizerGrams: number; polysorbateGrams: number;
+  /** Grams that ride with every gram of this oil — polysorbate 20 at 1:1 under a superfat
+   * in liquid soap, a vanilla stabilizer — known from the recipe before any dose is typed,
+   * so the ceiling in the dose basis does not move when one is. */
+  extrasPerGramOfOil: number;
   /** The typed dose is past what a bar or a bottle usually carries (core
    * fragranceOverUsualRange) — the one verdict; the panel and the rule both read it. */
   overUsualRange: boolean;
@@ -50,16 +55,33 @@ export type ComputedFragrance = {
   /** The most of this oil the finished soap may carry, with the sentence behind it (core
    * essentialOilCeiling); null where the catalog has none for it. */
   ceiling: EssentialOilCeiling | null;
+  /** Where a dose of this oil starts and why (core essentialOilStartingDose) — what a pick
+   * fills in; null for an oil the maker named themselves. */
+  startingDose: { percent: number; why: string } | null;
+  /** The ceiling sits above anything a bar or bottle usually carries (geranium, cedarwood):
+   * not "safe use", a figure nobody will reach, and the panel says so. Decided on the
+   * ceiling's share of the product, once, so the sentence never flips as the recipe fills
+   * in; the catalog test keeps every ceiling out of the band where the dose basis could
+   * read otherwise. */
+  ceilingAboveUsualRange: boolean;
   /** The ceiling in the basis the maker types in, for THIS recipe — settled in the
    * compliance pass once the product weight is known; null before that. */
   ceilingPercentOfBasis: number | null;
-  /** The ceiling sits above anything a bar or bottle usually carries (geranium, cedarwood):
-   * not "safe use", a figure nobody will reach — decided in the compliance pass from the
-   * dose-basis figure, the same basis the usual range is stated in. */
-  ceilingAboveUsualRange: boolean;
   shareOfProduct: number;
-  /** The dose puts this oil past its ceiling — settled in the compliance pass. */
+  /** The dose puts this oil past its ceiling (core fragranceOverCeiling) — settled in the
+   * compliance pass. */
   overSafeMax: boolean;
+};
+
+/** What the compliance pass compares against: the finished product's kind and weight, and
+ * how many grams it grows for every gram put into it — 1 for a bar, whose extras sit on top
+ * of the cured base; the pot ÷ its dosing basis for a liquid soap whose preservative is
+ * dosed on the whole pot, fragrance included. One value, so no call site can leave the
+ * factor off. */
+export type ProductBasis = {
+  kind: 'label' | 'solution' | 'batch';
+  grams: number | null;
+  perGramOfContents: number;
 };
 export type ComputedColorant = {
   key: string; catalogId: string; name: string; kind: ColorantKind; percent: number | null; grams: number | null;
@@ -86,11 +108,8 @@ export type ComputedScentColor = {
   portionsOver100: boolean;
   fragranceGrams: number; stabilizerGrams: number; polysorbateGrams: number; colorantGrams: number; carrierOilGrams: number;
   /** What every fragrance dose was taken against — the oils, or the solution for LS —
-   * and the top of the usual range in that basis (core USUAL_DOSE_RANGE_PERCENT), carried
-   * once so pass 2 can turn a product-basis ceiling back into that basis and ask whether
-   * it sits above the range. */
+   * carried once so pass 2 can turn a product-basis ceiling back into that basis. */
   fragranceBasisGrams: number;
-  fragranceUsualHighPercent: number;
   extrasGrams: number;
   carrierSuperfatShiftPercent: number;
   /** Every labelling allergen the picked oils carry between them, by name, deduplicated —
@@ -110,7 +129,7 @@ export function emptyComputedScentColor(): ComputedScentColor {
   return {
     fragrances: [], colorants: [], portions: [], portionsTotalPercent: 0, portionsOver100: false,
     fragranceGrams: 0, stabilizerGrams: 0, polysorbateGrams: 0, colorantGrams: 0, carrierOilGrams: 0,
-    fragranceBasisGrams: 0, fragranceUsualHighPercent: 0, extrasGrams: 0, carrierSuperfatShiftPercent: 0, labelAllergens: [], productBasis: null,
+    fragranceBasisGrams: 0, extrasGrams: 0, carrierSuperfatShiftPercent: 0, labelAllergens: [], productBasis: null,
   };
 }
 
@@ -144,28 +163,30 @@ export function computeScentColorGrams(
   };
   const fragrances: ComputedFragrance[] = scent.fragrances.map((f) => {
     const entry = f.catalogId ? essentialOilEntryById(f.catalogId) : undefined;
-    const percent = parsePercentOfOil(f.percent);
+    const percent = parseDose(f.percent);
     const grams = fragranceGrams(percent, basisGrams);
     const vanillin = parsePercentOfOil(f.vanillinPercent);
-    // The dose as typed is kept beside the usable one: past 100 the grams are gone (core
-    // caps the parse) but the verdict and the note that quotes the figure must not be.
-    const typedPercent = rawPercent(f.percent);
+    const ceiling = entry ? essentialOilCeiling(entry) : null;
     return {
-      key: f.key, name: f.name, percent, typedPercent, grams, stage,
+      key: f.key, name: f.name, percent, grams, stage,
       // The CATALOG decides for an oil that was picked from it, and the name test only for
       // one the maker named themselves — where the name is all there is to go on. Two
       // sources for one claim is how they end up disagreeing.
       caution: entry ? entry.accelerates === true : essentialOilCaution(f.name),
       browning: vanillinBrowning(vanillin),
       stabilizerGrams: vanillaStabilizerGrams(grams, vanillin),
-      catalogId: f.catalogId,
-      overUsualRange: fragranceOverUsualRange(typedPercent, process),
-      allergenNames: entry ? [...entry.allergens] : [],
-      ceiling: entry ? essentialOilCeiling(entry) : null,
-      ceilingPercentOfBasis: null,
-      ceilingAboveUsualRange: false,
-      overSafeMax: false,
       polysorbateGrams: process === 'ls' ? polysorbate20Grams(grams, deliveredSuperfatPercent) : 0,
+      // Both helpers are linear in the grams they are given: one gram in tells the ratio.
+      extrasPerGramOfOil:
+        vanillaStabilizerGrams(1, vanillin) + (process === 'ls' ? polysorbate20Grams(1, deliveredSuperfatPercent) : 0),
+      catalogId: f.catalogId,
+      overUsualRange: fragranceOverUsualRange(percent, process),
+      allergenNames: entry ? [...entry.allergens] : [],
+      ceiling,
+      startingDose: entry ? essentialOilStartingDose(entry, process) : null,
+      ceilingAboveUsualRange: ceiling !== null && ceiling.percentOfProduct > USUAL_DOSE_RANGE_PERCENT[process].high,
+      ceilingPercentOfBasis: null,
+      overSafeMax: false,
       shareOfProduct: 0,
     };
   });
@@ -231,7 +252,7 @@ export function computeScentColorGrams(
     portionsTotalPercent: portionTotal.total,
     portionsOver100: portionTotal.over100,
     fragranceGrams: fragranceTotal, stabilizerGrams, polysorbateGrams, colorantGrams: colorantTotal, carrierOilGrams,
-    fragranceBasisGrams: basisGrams, fragranceUsualHighPercent: USUAL_DOSE_RANGE_PERCENT[process].high,
+    fragranceBasisGrams: basisGrams,
     extrasGrams: fragranceTotal + stabilizerGrams + polysorbateGrams + colorantTotal + carrierOilGrams,
     carrierSuperfatShiftPercent: carrierOilSuperfatShift(carrierOilGrams, totalOilGrams),
     labelAllergens: [],
@@ -240,36 +261,22 @@ export function computeScentColorGrams(
 }
 
 /** Pass 2 — the finished-product comparisons (IFRA basis) and the allergen list. */
-export function applyScentColorCompliance(
-  computed: ComputedScentColor,
-  productGrams: number | null,
-  productBasis: 'label' | 'solution' | 'batch',
-  /** How many grams the product grows for every gram put into it — 1 for a bar, whose
-   * extras sit on top of the cured base; the pot ÷ (pot − preservative) for a liquid soap
-   * whose preservative is dosed on the whole pot, fragrance included. */
-  productPerGramOfContents = 1,
-): ComputedScentColor {
+export function applyScentColorCompliance(computed: ComputedScentColor, basis: ProductBasis): ComputedScentColor {
   // Nothing to compare: keep the pass-1 object (identity matters to the panel's memo).
   if (computed.fragrances.length === 0) return computed;
-  const product = productGrams !== null && Number.isFinite(productGrams) && productGrams > 0 ? productGrams : null;
+  const product = basis.grams !== null && Number.isFinite(basis.grams) && basis.grams > 0 ? basis.grams : null;
   const fragrances = computed.fragrances.map((f) => {
     const shareOfProduct = product === null ? 0 : fragranceShareOfProduct(f.grams, product);
     const ceiling = f.ceiling?.percentOfProduct ?? null;
-    // The one verdict on the ceiling, decided here where the dose is known — the panel and
-    // the rule both read it. The tolerance is the allergen threshold's: a share that lands
-    // on the ceiling arithmetically is not over it.
-    const overSafeMax = ceiling !== null && shareOfProduct > 0 && shareOfProduct > ceiling * (1 + 1e-9);
-    // The ceiling in the basis the maker types in, with what rides along with the dose
-    // (polysorbate, stabilizer) counted; and whether it sits above the usual range — asked
-    // in that same basis, and only approximated by the product-basis figure before the
-    // product weight is known.
+    // The one verdict on the ceiling — core's predicate, decided here where the dose is
+    // known; the panel and the rule both read it.
+    const overSafeMax = fragranceOverCeiling(shareOfProduct, ceiling);
+    // The ceiling in the basis the maker types in: every gram of oil brings its extras
+    // (pass 1) and grows the product by the basis's own factor (a pot-wide preservative).
     const ceilingPercentOfBasis = fragranceDoseAtCeiling(
-      ceiling, product, f.grams, f.polysorbateGrams + f.stabilizerGrams, computed.fragranceBasisGrams, productPerGramOfContents,
+      ceiling, product, f.grams, basis.perGramOfContents * (1 + f.extrasPerGramOfOil), computed.fragranceBasisGrams,
     );
-    const high = computed.fragranceUsualHighPercent;
-    const ceilingAboveUsualRange =
-      ceiling !== null && (ceilingPercentOfBasis !== null ? ceilingPercentOfBasis > high : ceiling > high);
-    return { ...f, shareOfProduct, overSafeMax, ceilingPercentOfBasis, ceilingAboveUsualRange };
+    return { ...f, shareOfProduct, overSafeMax, ceilingPercentOfBasis };
   });
   // Presence across every dosed oil, each name once, in the order first met.
   const seen = new Set<string>();
@@ -281,5 +288,5 @@ export function applyScentColorCompliance(
       if (!seen.has(k)) { seen.add(k); labelAllergens.push({ name }); }
     }
   }
-  return { ...computed, fragrances, productBasis, labelAllergens };
+  return { ...computed, fragrances, productBasis: basis.kind, labelAllergens };
 }

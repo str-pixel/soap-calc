@@ -833,8 +833,7 @@ test('the Full recipe renders the Fragrance section with the allergen line from 
       }),
       { process: 'cp', totalOilGrams: displayTotals?.recipeOilWeightGrams ?? 0, solutionGrams: 0, deliveredSuperfatPercent: 5 },
     ),
-    displayTotals?.batchWeightGrams ?? null,
-    'batch',
+    { kind: 'batch', grams: displayTotals?.batchWeightGrams ?? null, perGramOfContents: 1 },
   );
   render(
     <ResultsPanel

@@ -1098,7 +1098,7 @@ test.describe('the essential-oil catalog', () => {
     await page.getByLabel(/Essential oil for/).first().selectOption('clove');
     // The pick starts the empty dose at the oil's own starting figure, and the row says why.
     await expect(page.getByLabel(/dose, % of oil weight/).first()).toHaveValue('0.5');
-    await expect(panel).toContainText(/Start at 0\.5% of oil weight — four-fifths of its ceiling/);
+    await expect(panel).toContainText(/Start at 0\.5% of oil weight — well under its ceiling/);
     await page.getByLabel(/dose, % of oil weight/).first().fill('1');
     await expect(panel.getByLabel('Essential oil name')).toHaveCount(0);
     // No list to fill in and no ceiling to type: one warning, one safe-use line off the catalog.
@@ -1112,9 +1112,9 @@ test.describe('the essential-oil catalog', () => {
 
     // Past the ceiling, the row and the notes both say so.
     await page.getByLabel(/dose, % of oil weight/).first().fill('3');
-    await expect(panel).toContainText(/This dose is 2\.4% of the finished bar — over it\./);
+    await expect(panel).toContainText(/This dose is 2\.3% of the finished bar — over it\./);
     const notes = page.locator('.panel', { has: page.locator('h2.panel__title', { hasText: 'Formulation notes' }) });
-    await expect(notes).toContainText(/Clove is 2\.4% of the finished soap; 1% is its ceiling — EU law \(Annex III\) caps methyl eugenol/);
+    await expect(notes).toContainText(/Clove is 2\.3% of the finished soap; 1% is its ceiling — EU law \(Annex III\) caps methyl eugenol/);
     // Typing the figure the row printed as the most that fits lands under the ceiling.
     await page.getByLabel(/dose, % of oil weight/).first().fill('1.2');
     await expect(panel).toContainText(/This dose is 1% of the finished bar\./);
@@ -1123,7 +1123,7 @@ test.describe('the essential-oil catalog', () => {
     // Past the usual range, whatever the oil, the row says so in the basis the maker types in.
     await page.getByLabel(/Essential oil for/).first().selectOption('lavender');
     await page.getByLabel(/dose, % of oil weight/).first().fill('8');
-    await expect(panel).toContainText(/8% of oil weight is past the 3–6% of oil weight the cold-process recipes run to/);
-    await expect(notes).toContainText(/Lavender is dosed past the 3–6% of oil weight the cold-process recipes run to/);
+    await expect(panel).toContainText(/8% of oil weight is past the 3–6% of oil weight the cold-process text's bar recipes run to/);
+    await expect(notes).toContainText(/Lavender is dosed past the 3–6% of oil weight the cold-process text's bar recipes run to/);
   });
 });

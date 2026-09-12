@@ -1,5 +1,6 @@
 // packages/core/src/colorants.ts
 import { gramsFromDose, type AdditiveProcess, type AdditiveStage } from './additives.js';
+import { finite } from './numeric.js';
 import { superfatShiftFromLiquidFat } from './alternative-liquids.js';
 import { GRAMS_PER_LB, GRAMS_PER_OZ } from './units.js';
 
@@ -104,7 +105,6 @@ export const COLORANT_GUIDANCE: Record<ColorantKind, ColorantGuidance | null> = 
   other: null,
 };
 
-const finite = (n: number | null | undefined): n is number => typeof n === 'number' && Number.isFinite(n);
 
 /** Teaspoons per pound of oils → percent of oils, through the book's own anchor. */
 export function tspPerLbToPercentOfOils(tspPerLb: number): number {

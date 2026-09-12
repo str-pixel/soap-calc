@@ -1,5 +1,6 @@
 import type { AdditiveProcess } from './additives.js';
-import { EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT, IFRA_CATEGORY_NINE_PERCENT, USUAL_DOSE_RANGE_PERCENT } from './fragrance.js';
+import { EU_LAW_RINSE_OFF_LIMIT_PERCENT, IFRA_CATEGORY_NINE_PERCENT, lsPotentDoseClause, USUAL_DOSE_RANGE_PERCENT } from './fragrance.js';
+import { roundScaled } from './numeric.js';
 
 /**
  * ESSENTIAL OILS the app offers by name, with the labelling allergens each one typically
@@ -40,7 +41,7 @@ import { EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT, IFRA_CATEGORY_NINE_PERCENT, USUAL
  *                drive its use". Each entry lists every constituent IFRA names for the oil that
  *                has a limit on record, and essentialOilCeiling takes the lowest figure across
  *                all of them and the oil's own standard, against both tables — IFRA's and EU
- *                law's (methyl eugenol, fragrance.ts EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT). The
+ *                law's (methyl eugenol, safrole: fragrance.ts EU_LAW_RINSE_OFF_LIMIT_PERCENT). The
  *                winner is computed, not typed, and so is the sentence behind it.
  *   [SCCS-TTO]   the EU Scientific Committee on Consumer Safety's final opinion on tea tree
  *                oil, SCCS/1681/25 (adopted 30 October 2025): "safe ... up to the maximum
@@ -315,9 +316,19 @@ export function essentialOilMaterial(entry: EssentialOilEntry): string {
  * the lowest figure wins, and its sentence is built from the same numbers. Clove's methyl
  * eugenol is limited to 0.001% and clove bud oil is 0.1% methyl eugenol, so clove tops out
  * at 1.0% of the bar. Null where nothing is on record, or where the lowest figure is at or
- * past 100% of the product — which is no ceiling at all.
+ * past 100% of the product — which is no ceiling at all. A pure function of static data,
+ * resolved once per entry and remembered.
  */
 export function essentialOilCeiling(entry: EssentialOilEntry): EssentialOilCeiling | null {
+  const cached = CEILINGS.get(entry);
+  if (cached !== undefined) return cached;
+  const resolved = resolveCeiling(entry);
+  CEILINGS.set(entry, resolved);
+  return resolved;
+}
+const CEILINGS = new WeakMap<EssentialOilEntry, EssentialOilCeiling | null>();
+
+function resolveCeiling(entry: EssentialOilEntry): EssentialOilCeiling | null {
   const candidates: EssentialOilCeiling[] = [];
   if (entry.standard && entry.standard.percentOfProduct > 0) {
     candidates.push({ ...entry.standard, substance: null });
@@ -334,11 +345,15 @@ export function essentialOilCeiling(entry: EssentialOilEntry): EssentialOilCeili
         why: `IFRA caps ${word} at ${ifra}% of a soap and ${material} is typically ${c.percentOfOil}% ${word}`,
       });
     }
-    const eu = EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT[c.substance];
+    const eu = EU_LAW_RINSE_OFF_LIMIT_PERCENT[c.substance];
     if (eu !== undefined) {
       candidates.push({
-        percentOfProduct: eu / share, authority: 'EU law', substance: c.substance,
-        why: `EU law (Annex III) caps ${word} at ${eu}% of a rinse-off product and ${material} typically carries ${c.percentOfOil}% of it`,
+        percentOfProduct: eu.percent / share, authority: 'EU law', substance: c.substance,
+        // Annex III sets a rinse-off limit; Annex II prohibits the substance and allows only
+        // its natural trace, up to a figure in any finished product.
+        why: eu.where === 'Annex III'
+          ? `EU law (Annex III) caps ${word} at ${eu.percent}% of a rinse-off product and ${material} typically carries ${c.percentOfOil}% of it`
+          : `EU law (Annex II) allows ${word} only as a natural trace, up to ${eu.percent}% of the finished product, and ${material} typically carries ${c.percentOfOil}% of it`,
       });
     }
   }
@@ -347,46 +362,48 @@ export function essentialOilCeiling(entry: EssentialOilEntry): EssentialOilCeili
   return best.percentOfProduct < 100 ? best : null;
 }
 
-/** "Most FO/EOs will only require 0.5-1% for a potent fragrance" in a liquid soap
- * (LS:13214-13215): the top of that is where a bottle starts. */
-export const LS_STARTING_DOSE_PERCENT = 1;
-
-/** Four-fifths of a ceiling, rounded down to the half point — the room a starting dose
- * keeps under it. Below half a point the figure is kept at two decimals instead of
- * collapsing to nothing. */
+/** Four-fifths of a ceiling's share of the finished soap, rounded down to the half point —
+ * the room a starting dose keeps under it. The catalog test holds every ceiling on record
+ * high enough for this to be at least half a point, so the sentence that describes it
+ * ("rounded down to the half point") is always true of the figure. */
 function roomUnder(ceilingPercentOfProduct: number): number {
-  const fourFifths = 0.8 * ceilingPercentOfProduct;
-  const half = Math.floor(fourFifths * 2 + 1e-9) / 2;
-  return half >= 0.5 ? half : Math.floor(fourFifths * 100 + 1e-9) / 100;
+  return roundScaled(0.8 * ceilingPercentOfProduct, 2, 'down');
 }
 
 /**
  * Where a dose of this oil starts, in the basis the maker types in (% of oil weight for a
  * bar, % of the finished solution for liquid soap), and why. A bar starts at the dose the
- * cold-process text itself puts on the oil, else at the floor of its recipes (3%); a bottle
- * at 1% (LS:13214-13215). Where that would sit at or over the oil's ceiling, it starts at
- * four-fifths of the ceiling rounded down to the half point instead — a bar's dose basis
- * is lighter than the cured bar and a bottle's is the solution before its extras, so a
- * dose typed at that figure lands under the ceiling in either.
+ * cold-process text itself puts on the oil, else at the start the range record gives (3%,
+ * the floor of its recipes); a bottle at the record's 1% (LS:13214-13215). Where that
+ * would sit at or over the oil's ceiling, it starts at four-fifths of the ceiling's share
+ * of the finished soap, rounded down to the half point, instead. That figure is compared
+ * across bases on purpose: a bar's dose basis is lighter than the cured bar and a bottle's
+ * is the solution before its extras, so the same number typed as a dose lands further
+ * under the ceiling still — and it does not move with the recipe's water, as a figure
+ * solved in the dose basis would.
  */
 export function essentialOilStartingDose(
   entry: EssentialOilEntry,
   process: AdditiveProcess,
 ): { percent: number; why: string } {
+  const range = USUAL_DOSE_RANGE_PERCENT[process];
   const base =
     process === 'ls'
-      ? { percent: LS_STARTING_DOSE_PERCENT, why: 'most oils need only 0.5–1% of a liquid soap for a potent scent' }
+      ? { percent: range.start, why: lsPotentDoseClause() }
       : entry.bookDose
         ? {
             percent: entry.bookDose.percent,
-            why: entry.bookDose.percent < USUAL_DOSE_RANGE_PERCENT[process].low
+            why: entry.bookDose.percent < range.low
               ? `the rate the cold-process text quotes for ${essentialOilMaterial(entry)}`
               : `what the cold-process text doses ${essentialOilMaterial(entry)} at`,
           }
-        : { percent: USUAL_DOSE_RANGE_PERCENT[process].low, why: 'the floor of the cold-process recipes' };
+        : { percent: range.start, why: "the floor of the cold-process text's bar recipes" };
   const ceiling = essentialOilCeiling(entry);
   if (!ceiling) return base;
   const room = roomUnder(ceiling.percentOfProduct);
   if (base.percent <= room) return base;
-  return { percent: room, why: 'four-fifths of its ceiling, rounded down to the half point, so it starts well under' };
+  return {
+    percent: room,
+    why: "well under its ceiling — four-fifths of the share of the finished soap the ceiling allows, rounded down to the half point",
+  };
 }

@@ -1,5 +1,5 @@
 import { lsPartialDilution, type DilutionResult } from '@soap-calc/core';
-import { formatGrams } from '../lib/format';
+import { formatVolumeMl } from '../lib/format';
 import { formatWeight } from '../lib/weightUnits';
 import { measuredPasteRejectionFor, subTenthPrecisionFingerprint } from '../lib/measuredPaste';
 import type { WeightUnit } from '../lib/recipe';
@@ -410,7 +410,7 @@ export function PortionDilutionResults({
             </div>
             <div className="results-grid__item">
               <dt>Makes</dt>
-              <dd>{formatGrams(Math.round(portion.volumeMl), 0)} ml</dd>
+              <dd>{formatVolumeMl(portion.volumeMl)}</dd>
             </div>
             <div className="results-grid__item">
               <dt>Portion</dt>

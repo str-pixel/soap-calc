@@ -45,7 +45,7 @@ describe('computeScentColorGrams (CP, 1000 g oils)', () => {
 describe('applyScentColorCompliance', () => {
   it('settles the share of the FINISHED product, and lists what the picked oil carries', () => {
     const grams = computeScentColorGrams(scent, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
-    const c = applyScentColorCompliance(grams, 1300, 'label');
+    const c = applyScentColorCompliance(grams, { kind: 'label', grams: 1300, perGramOfContents: 1 });
     expect(c.fragrances[0].shareOfProduct).toBeCloseTo(2.31, 2);
     expect(c.fragrances[0].overSafeMax).toBe(false);   // lavender: no ceiling on record
     expect(c.fragrances[0].ceilingPercentOfBasis).toBeNull();
@@ -54,7 +54,7 @@ describe('applyScentColorCompliance', () => {
   });
   it('an unknown product weight yields no shares — but what an oil carries does not need one', () => {
     const grams = computeScentColorGrams(scent, { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
-    const c = applyScentColorCompliance(grams, null, 'batch');
+    const c = applyScentColorCompliance(grams, { kind: 'batch', grams: null, perGramOfContents: 1 });
     expect(c.fragrances[0].shareOfProduct).toBe(0);
     expect(c.labelAllergens.map((a) => a.name)).toEqual(['Linalool']);
   });
@@ -141,11 +141,10 @@ describe('the usual-range verdict is settled in pass 1, per process, on the dose
     expect(at('3.1', 'ls').overUsualRange).toBe(true);
     expect(at('', 'cp').overUsualRange).toBe(false);
   });
-  it('a dose typed past 100 loses its grams (the parse caps) but not its verdict or its figure', () => {
+  it('a dose typed past 100 keeps its figure, its grams and its verdicts — the more absurd, the louder', () => {
     const f = at('150', 'cp');
-    expect(f.percent).toBeNull();
-    expect(f.grams).toBe(0);
-    expect(f.typedPercent).toBe(150);
+    expect(f.percent).toBe(150);
+    expect(f.grams).toBe(1500);
     expect(f.overUsualRange).toBe(true);
   });
 });
@@ -168,7 +167,7 @@ describe('an empty section is one shared object', () => {
     const a = computeScentColorGrams(createEmptyScentColor(), { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 });
     const b = computeScentColorGrams(createEmptyScentColor(), { process: 'ls', totalOilGrams: 500, solutionGrams: 3000, deliveredSuperfatPercent: 0 });
     expect(a).toBe(b);
-    expect(applyScentColorCompliance(a, 1300, 'label')).toBe(a);
+    expect(applyScentColorCompliance(a, { kind: 'label', grams: 1300, perGramOfContents: 1 })).toBe(a);
   });
 });
 
@@ -253,7 +252,7 @@ describe('what a picked oil carries, and what it may be dosed at', () => {
   const at = (id: string, percent: string) => applyScentColorCompliance(
     computeScentColorGrams(normalizeScentColor({ fragrances: [{ catalogId: id, name: '', percent }], colorants: [], portions: [] }),
       { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 }),
-    1300, 'label',
+  { kind: 'label', grams: 1300, perGramOfContents: 1 },
   );
 
   it('reads the allergens off the catalog and lists them for the label, once each', () => {
@@ -274,6 +273,11 @@ describe('what a picked oil carries, and what it may be dosed at', () => {
     const over = at('clove', '3').fragrances[0];
     expect(over.shareOfProduct).toBeGreaterThan(1.0);
     expect(over.overSafeMax).toBe(true);
+    // and a dose past 100% is over too, not silently nothing
+    expect(at('clove', '150').fragrances[0].overSafeMax).toBe(true);
+    // the start rides on the row, so the panel does no catalog work per render
+    expect(under.startingDose).toEqual({ percent: 0.5, why: expect.stringMatching(/^well under its ceiling/) });
+    expect(at('lavender', '1').fragrances[0].startingDose).toMatchObject({ percent: 3 });
     // no ceiling on record → never over, nothing to convert
     const lav = at('lavender', '8').fragrances[0];
     expect(lav.ceiling).toBeNull();
@@ -292,7 +296,7 @@ describe('what a picked oil carries, and what it may be dosed at', () => {
       { process: 'cp', totalOilGrams: 1000, productGrams: null, productBasis: 'batch' });
     expect(c.fragrances[0].ceilingPercentOfBasis).toBeNull();
     // 1.4% of a 1300 g bar that holds 20 g of the oil: 0.014 × 1280 ÷ 0.986 = 18.17 g → 1.817% of oils.
-    const known = applyScentColorCompliance(c, 1300, 'label');
+    const known = applyScentColorCompliance(c, { kind: 'label', grams: 1300, perGramOfContents: 1 });
     expect(known.fragrances[0].ceilingPercentOfBasis).toBeCloseTo(1.817, 3);
     // and the maker typing exactly that lands exactly on the ceiling
     const share = (18.17 / (1280 + 18.17)) * 100;
@@ -305,8 +309,13 @@ describe('what a picked oil carries, and what it may be dosed at', () => {
       { process: 'ls', totalOilGrams: 500, solutionGrams: 1000, deliveredSuperfatPercent: 5, productGrams: 1000 });
     const f = c.fragrances[0];
     expect(f.polysorbateGrams).toBe(30);
+    expect(f.extrasPerGramOfOil).toBe(1);
     // rest 940 g; g = 0.01 × 940 ÷ (1 − 0.02) = 9.59 g → 0.959% of the solution
     expect(f.ceilingPercentOfBasis).toBeCloseTo(0.959, 3);
+    // and the figure is the same with the dose field empty — the ratio is known before a dose is
+    const empty = computedScent({ fragrances: [{ catalogId: 'tea-tree', name: '', percent: '' }], colorants: [], portions: [] },
+      { process: 'ls', totalOilGrams: 500, solutionGrams: 1000, deliveredSuperfatPercent: 5, productGrams: 940 });
+    expect(empty.fragrances[0].ceilingPercentOfBasis).toBeCloseTo(f.ceilingPercentOfBasis!, 6);
     // retyping that figure lands on the ceiling, not over it
     const g = (f.ceilingPercentOfBasis! / 100) * 1000;
     expect((100 * g) / (940 + 2 * g)).toBeCloseTo(1.0, 3);
@@ -328,7 +337,7 @@ describe('what a picked oil carries, and what it may be dosed at', () => {
     const c = applyScentColorCompliance(
       computeScentColorGrams(normalizeScentColor({ fragrances: [{ name: 'Mine', percent: '3' }], colorants: [], portions: [] }),
         { process: 'cp', totalOilGrams: 1000, solutionGrams: 0, deliveredSuperfatPercent: 5 }),
-      1300, 'label',
+    { kind: 'label', grams: 1300, perGramOfContents: 1 },
     );
     expect(c.fragrances[0].allergenNames).toEqual([]);
     expect(c.labelAllergens).toEqual([]);

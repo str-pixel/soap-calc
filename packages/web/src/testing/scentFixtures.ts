@@ -23,7 +23,11 @@ export function computedScent(saved: unknown, ctx: ScentFixtureContext): Compute
     solutionGrams: ctx.solutionGrams ?? 0,
     deliveredSuperfatPercent: ctx.deliveredSuperfatPercent ?? 5,
   });
-  return applyScentColorCompliance(grams, ctx.productGrams, ctx.productBasis ?? (ctx.process === 'ls' ? 'solution' : 'label'), ctx.productPerGramOfContents ?? 1);
+  return applyScentColorCompliance(grams, {
+    kind: ctx.productBasis ?? (ctx.process === 'ls' ? 'solution' : 'label'),
+    grams: ctx.productGrams,
+    perGramOfContents: ctx.productPerGramOfContents ?? 1,
+  });
 }
 
 /** The canonical vanilla row: 3% fragrance oil, 12% vanillin (deep browning, 1:1 stabilizer).

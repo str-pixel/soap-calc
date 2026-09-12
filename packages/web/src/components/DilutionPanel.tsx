@@ -9,7 +9,7 @@ import {
   type LsDilutionTarget,
 } from '@soap-calc/core';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
-import { formatConcentrationPercent, formatGrams, joinNames } from '../lib/format';
+import { formatConcentrationPercent, formatVolumeMl, joinNames } from '../lib/format';
 import { resolveDilution } from '../lib/resolveDilution';
 import { formatWeight } from '../lib/weightUnits';
 import {
@@ -2038,7 +2038,7 @@ export function DilutionPanel({
                 {finishedVolumeMl !== null && (
                   <div className="results-grid__item">
                     <dt>≈ Finished volume</dt>
-                    <dd>{formatGrams(Math.round(finishedVolumeMl), 0)} ml</dd>
+                    <dd>{formatVolumeMl(finishedVolumeMl)}</dd>
                   </div>
                 )}
               </dl>

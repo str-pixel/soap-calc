@@ -1035,21 +1035,21 @@ export function useRecipeViewModel({
     if (process === 'ls') {
       const bottle = finishedProductGrams ?? bottledSolutionGrams;
       // The preservative is dosed on the whole pot, fragrance included, so every gram of
-      // oil put in grows the bottle by pot ÷ (pot − dose) — exact by construction of
-      // finishedProductGramsFor, and 1 when there is no dose.
-      const perGram =
-        finishedProductGrams !== null && finishedProductGrams > preservativeDoseGramsValue && preservativeDoseGramsValue > 0
-          ? finishedProductGrams / (finishedProductGrams - preservativeDoseGramsValue)
+      // oil put in grows the bottle by pot ÷ dosing basis — the two figures the finished
+      // product is built from (finishedProductGramsFor), and 1 when there is no dose.
+      const perGramOfContents =
+        finishedProductGrams !== null && preservativeDosingBasisGrams !== null && preservativeDosingBasisGrams > 0
+          ? finishedProductGrams / preservativeDosingBasisGrams
           : 1;
-      return applyScentColorCompliance(scentGrams, bottle !== null && bottle > 0 ? bottle : null, 'solution', perGram);
+      return applyScentColorCompliance(scentGrams, { kind: 'solution', grams: bottle !== null && bottle > 0 ? bottle : null, perGramOfContents });
     }
-    if (labelWeight !== null) return applyScentColorCompliance(scentGrams, labelWeight, 'label');
-    return applyScentColorCompliance(
-      scentGrams,
-      batchWeightWithExtras > 0 ? batchWeightWithExtras : null,
-      'batch',
-    );
-  }, [scentGrams, process, finishedProductGrams, bottledSolutionGrams, preservativeDoseGramsValue, labelWeight, batchWeightWithExtras]);
+    if (labelWeight !== null) return applyScentColorCompliance(scentGrams, { kind: 'label', grams: labelWeight, perGramOfContents: 1 });
+    return applyScentColorCompliance(scentGrams, {
+      kind: 'batch',
+      grams: batchWeightWithExtras > 0 ? batchWeightWithExtras : null,
+      perGramOfContents: 1,
+    });
+  }, [scentGrams, process, finishedProductGrams, bottledSolutionGrams, preservativeDosingBasisGrams, labelWeight, batchWeightWithExtras]);
   // Stable identity for the insights memo: built inline, this array was fresh every render
   // and defeated the memo (and, through `insights`, the batch-sheet memo) on every keystroke.
   const insightSplitRows = useMemo(
@@ -1069,9 +1069,11 @@ export function useRecipeViewModel({
   // colour, and grams move with the oil weight while the typed percent does not. The typed
   // NAME is still left out on purpose — the rules quote the catalog's name, not the maker's.
   const insightScentKey = JSON.stringify({
-    // The share rides along because the over-ceiling note PRINTS it: a water or cure edit
-    // moves the share without flipping any verdict, and the note must move with it.
-    f: scentColorComputed.fragrances.map((f) => [f.name, f.percent, f.shareOfProduct, f.overUsualRange, f.overSafeMax, f.browning, f.caution]),
+    // The share rides along only for a row over its ceiling, because that is the one note
+    // that PRINTS it: a water or cure edit moves the share without flipping any verdict,
+    // and the note must move with it — while an under-ceiling row's share is nothing the
+    // rules can see, and keying on it would re-run them for every such edit.
+    f: scentColorComputed.fragrances.map((f) => [f.name, f.percent, f.overUsualRange, f.overSafeMax, f.overSafeMax ? f.shareOfProduct : null, f.browning, f.caution]),
     a: scentColorComputed.labelAllergens,
     o: scentColorComputed.portionsOver100,
     c: scentColorComputed.carrierSuperfatShiftPercent,

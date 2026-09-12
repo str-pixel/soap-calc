@@ -6,7 +6,7 @@ import {
   essentialOilStartingDose,
 } from './essential-oil-catalog.js';
 import {
-  EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT,
+  EU_LAW_RINSE_OFF_LIMIT_PERCENT,
   essentialOilCaution,
   fragranceDoseAtCeiling,
   IFRA_CATEGORY_NINE_PERCENT,
@@ -80,10 +80,12 @@ describe('each oil\'s ceiling in soap, % of the finished product', () => {
   it('every constituent named in the catalog has a limit on record — a name without one is a data error', () => {
     for (const e of ESSENTIAL_OIL_CATALOG) {
       for (const c of e.constituents ?? []) {
-        const known = c.substance in IFRA_CATEGORY_NINE_PERCENT || c.substance in EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT;
+        const known = c.substance in IFRA_CATEGORY_NINE_PERCENT || c.substance in EU_LAW_RINSE_OFF_LIMIT_PERCENT;
         expect(known, `${e.id} → ${c.substance}`).toBe(true);
         expect(c.percentOfOil, `${e.id} → ${c.substance}`).toBeGreaterThan(0);
       }
+      // and a standard typed at 0 would be silently dropped by the resolver — never allowed in
+      if (e.standard) expect(e.standard.percentOfProduct, e.id).toBeGreaterThan(0);
     }
   });
 
@@ -176,14 +178,42 @@ describe('each oil\'s ceiling in soap, % of the finished product', () => {
       expect(c.why, e.id).not.toMatch(/\.$/);
       if (c.substance === null) continue;
       const entry = e.constituents!.find((x) => x.substance === c.substance)!;
-      const limit = c.authority === 'EU law' ? EU_ANNEX_III_RINSE_OFF_LIMIT_PERCENT[c.substance] : IFRA_CATEGORY_NINE_PERCENT[c.substance];
+      const limit = c.authority === 'EU law' ? EU_LAW_RINSE_OFF_LIMIT_PERCENT[c.substance].percent : IFRA_CATEGORY_NINE_PERCENT[c.substance];
       expect(c.why, e.id).toContain(`${limit}%`);
       expect(c.why, e.id).toContain(`${entry.percentOfOil}%`);
       expect(c.percentOfProduct, e.id).toBeCloseTo(limit / (entry.percentOfOil / 100), 9);
     }
     expect(ceiling('clove')!.why).toBe('EU law (Annex III) caps methyl eugenol at 0.001% of a rinse-off product and clove bud oil typically carries 0.1% of it');
+    // an Annex II substance is described as what it is: a prohibited one allowed as a natural trace
+    const leaf = { id: 'x', name: 'Cinnamon leaf', allergens: [], constituents: [{ substance: 'Safrole', percentOfOil: 1.2 }] };
+    expect(essentialOilCeiling(leaf)).toMatchObject({ percentOfProduct: 0.01 / 0.012, authority: 'IFRA' }); // the tie goes to IFRA, pushed first
+    const euOnly = { id: 'y', name: 'Test', allergens: [], constituents: [{ substance: 'Methyl eugenol', percentOfOil: 0.1 }] };
+    expect(essentialOilCeiling(euOnly)!.why).toMatch(/^EU law \(Annex III\) caps methyl eugenol/);
     expect(ceiling('cinnamon')!.why).toBe('IFRA caps cinnamaldehyde at 0.49% of a soap and cinnamon bark oil is typically 75% cinnamaldehyde');
     expect(ceiling('cedarwood')!.why).toBe('IFRA caps cedrene at 2.9% of a soap and Virginian cedarwood oil is typically 30.2% cedrene');
+  });
+
+  it('no ceiling sits in the band where the product basis and the dose basis would disagree about "above the usual range"', () => {
+    // The row decides "above the usual range" on the ceiling's share of the product, once,
+    // so the sentence never flips as the recipe fills in; the dose basis is heavier than the
+    // product by up to ~1.4× for a bar and ~1.1× for a bottle, so a ceiling between high ÷
+    // 1.4 and high could read either way. None does; a future entry there fails here.
+    for (const e of ESSENTIAL_OIL_CATALOG) {
+      const c = essentialOilCeiling(e);
+      if (!c) continue;
+      const { high } = USUAL_DOSE_RANGE_PERCENT.cp;
+      expect(c.percentOfProduct < high / 1.4 || c.percentOfProduct > high, e.id).toBe(true);
+      const ls = USUAL_DOSE_RANGE_PERCENT.ls.high;
+      expect(c.percentOfProduct < ls / 1.1 || c.percentOfProduct > ls, e.id).toBe(true);
+    }
+  });
+
+  it('every ceiling on record leaves at least half a point of room, so the start\'s sentence is true of its figure', () => {
+    for (const e of ESSENTIAL_OIL_CATALOG) {
+      const c = essentialOilCeiling(e);
+      if (!c) continue;
+      expect(0.8 * c.percentOfProduct, e.id).toBeGreaterThanOrEqual(0.5);
+    }
   });
 
   it('the ceilings that bind sit under the usual range in the basis the maker types in', () => {
@@ -213,21 +243,21 @@ describe('where a dose starts', () => {
     expect(start('cinnamon', 'cp')).toMatchObject({ percent: 0.1 });
     expect(start('cinnamon', 'cp').why).toMatch(/the rate the cold-process text quotes for cinnamon bark oil/);
     // no book figure: the floor of the recipes
-    expect(start('rosemary', 'cp')).toEqual({ percent: 3, why: 'the floor of the cold-process recipes' });
+    expect(start('rosemary', 'cp')).toEqual({ percent: 3, why: "the floor of the cold-process text's bar recipes" });
     expect(start('geranium', 'cp').percent).toBe(3);
     expect(start('cedarwood', 'cp').percent).toBe(3);
   });
 
   it('a ceiling the base would sit at or over pulls the start down to four-fifths of it, rounded to the half point', () => {
     expect(start('clove', 'cp')).toMatchObject({ percent: 0.5 });        // 0.8 × 1.0 → 0.5
-    expect(start('clove', 'cp').why).toMatch(/four-fifths of its ceiling/);
+    expect(start('clove', 'cp').why).toMatch(/^well under its ceiling — four-fifths of the share of the finished soap/);
     expect(start('lemongrass', 'cp').percent).toBe(1);                  // 0.8 × 1.64 = 1.31 → 1.0
     expect(start('ylang-ylang', 'cp').percent).toBe(1);                 // 0.8 × 1.4 = 1.12 → 1.0
     expect(start('tea-tree', 'cp').percent).toBe(0.5);                  // 0.8 × 1.0 → 0.5, not the book's 5
   });
 
   it('a bottle starts at 1% (LS:13214-13215), under the same ceilings', () => {
-    expect(start('lavender', 'ls')).toEqual({ percent: 1, why: 'most oils need only 0.5–1% of a liquid soap for a potent scent' });
+    expect(start('lavender', 'ls')).toEqual({ percent: USUAL_DOSE_RANGE_PERCENT.ls.start, why: 'most oils need only 0.5–1% of a liquid soap for a potent scent' });
     expect(start('clove', 'ls').percent).toBe(0.5);
     expect(start('cinnamon', 'ls').percent).toBe(0.5);                  // 0.8 × 0.65 = 0.52 → 0.5
     expect(start('tea-tree', 'ls').percent).toBe(0.5);

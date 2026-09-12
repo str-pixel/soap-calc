@@ -1422,10 +1422,11 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       const rows = input.fragrancesOverSafeMax ?? [];
       if (rows.length === 0) return null;
-      // Printed the way the row prints them: the dose rounded up and the ceiling down, so
-      // the two figures never read as equal beside a verdict that says over.
+      // Printed the way the row prints them (core formatShareAgainstCeiling): the ceiling
+      // rounded down, the dose to the nearest — at one more decimal where that is what it
+      // takes to read above the ceiling it is over.
       const parts = rows.map((r) => {
-        const { share, ceiling } = formatShareAgainstCeiling(r.shareOfProduct, r.ceilingPercentOfProduct, true);
+        const { share, ceiling } = formatShareAgainstCeiling(r.shareOfProduct, r.ceilingPercentOfProduct);
         return `${r.fragrance} is ${share}% of the finished soap; ${ceiling}% is its ceiling — ${r.why}.`;
       });
       return {

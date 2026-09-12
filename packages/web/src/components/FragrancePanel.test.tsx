@@ -188,7 +188,7 @@ describe('the warning and the safe-use line', () => {
     const safe = screen.getByLabelText('Mine safe use').textContent!;
     expect(safe).toMatch(/No ceiling is known for an oil the app does not list/);
     expect(safe).toMatch(/supplier's IFRA certificate/);
-    expect(safe).toMatch(/the cold-process recipes run 3–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/the bar recipes in the cold-process text run 3–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
   });
 
   it('a row with nothing on it yet says nothing', () => {
@@ -215,37 +215,37 @@ describe('the warning and the safe-use line', () => {
     expect(safe).toMatch(/This dose is 0\.8% of the finished bar\./);
     expect(safe).not.toMatch(/over it/);
     // and where to start: well under the ceiling
-    expect(safe).toMatch(/Start at 0\.5% of oil weight — four-fifths of its ceiling, rounded down to the half point, so it starts well under\./);
+    expect(safe).toMatch(/Start at 0\.5% of oil weight — well under its ceiling — four-fifths of the share of the finished soap the ceiling allows, rounded down to the half point\./);
     // the share line and the safe-use line print the same figure
     expect(screen.getByText('1% of oil weight = 0.8% of the finished bar.')).toBeTruthy();
     cleanup();
-    // 3% of the oils is 2.31% of the bar — past it; over is rounded UP so it never reads as equal.
+    // 3% of the oils is 2.31% of the bar — past it; the nearest tenth already reads above the ceiling.
     renderPanel(picked('clove', '3'), 'cp');
     safe = screen.getByLabelText('Clove safe use').textContent!;
-    expect(safe).toMatch(/This dose is 2\.4% of the finished bar — over it\./);
-    expect(screen.getByText('3% of oil weight = 2.4% of the finished bar.')).toBeTruthy();
+    expect(safe).toMatch(/This dose is 2\.3% of the finished bar — over it\./);
+    expect(screen.getByText('3% of oil weight = 2.3% of the finished bar.')).toBeTruthy();
     cleanup();
     // Ylang ylang: IFRA's own standard for the oil. 20 g of the fixture's 1300 g bar is 1.54%.
     renderPanel(picked('ylang-ylang', '2'), 'cp');
     safe = screen.getByLabelText('Ylang ylang safe use').textContent!;
     expect(safe).toMatch(/Up to 1\.4% of the finished bar/);
     expect(safe).toMatch(/IFRA's own standard for ylang ylang extracts/);
-    expect(safe).toMatch(/This dose is 1\.6% of the finished bar — over it\./);
+    expect(safe).toMatch(/This dose is 1\.5% of the finished bar — over it\./);
   });
 
-  it('a dose a hair over its ceiling never prints as equal to it', () => {
+  it('a dose a hair over its ceiling never prints as equal to it — nor rounded up a whole digit', () => {
     // 13.1 g of clove in a 1300 g bar is 1.008% — over a 1% ceiling by a hair.
     renderPanel(picked('clove', '1.31'), 'cp');
     const safe = screen.getByLabelText('Clove safe use').textContent!;
     expect(safe).toMatch(/Up to 1% of the finished bar/);
-    expect(safe).toMatch(/This dose is 1\.1% of the finished bar — over it\./);
+    expect(safe).toMatch(/This dose is 1\.01% of the finished bar — over it\./);
   });
 
   it('says plainly when the catalog has no ceiling for the oil, and falls back to the usual range', () => {
     renderPanel(picked('lavender'), 'cp');
     const safe = screen.getByLabelText('Lavender safe use').textContent!;
     expect(safe).toMatch(/No ceiling applies: none of this oil's restricted constituents comes near its limit in soap/);
-    expect(safe).toMatch(/the cold-process recipes run 3–6% of oil weight\. Start at 3% of oil weight — what the cold-process text doses lavender oil at\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/the bar recipes in the cold-process text run 3–6% of oil weight\. Start at 3% of oil weight — what the cold-process text doses lavender oil at\. This dose is 2\.3% of the finished bar\./);
     expect(safe).not.toMatch(/Up to/);
     expect(safe).not.toMatch(/Max in product/);
   });
@@ -256,7 +256,7 @@ describe('the warning and the safe-use line', () => {
     let safe = screen.getByLabelText('Geranium safe use').textContent!;
     expect(safe).toMatch(/No ceiling bites below the usual range: this oil's works out at 15\.8% of the finished bar/);
     expect(safe).toMatch(/IFRA caps geraniol at 2\.8%/);
-    expect(safe).toMatch(/the cold-process recipes run 3–6% of oil weight\. Start at 3% of oil weight — the floor of the cold-process recipes\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/the bar recipes in the cold-process text run 3–6% of oil weight\. Start at 3% of oil weight — the floor of the cold-process text's bar recipes\. This dose is 2\.3% of the finished bar\./);
     expect(safe).not.toMatch(/Up to/);
     cleanup();
     // 30% of the oils is 23% of the fixture bar — past even that ceiling.
@@ -267,7 +267,7 @@ describe('the warning and the safe-use line', () => {
 
   it('warns past the usual range, in the dose basis, whatever the oil', () => {
     renderPanel(picked('lavender', '8'), 'cp');
-    expect(screen.getByText('8% of oil weight is past the 3–6% of oil weight the cold-process recipes run to — no book or standard stands behind more.').className).toBe('additive-list__hazard');
+    expect(screen.getByText("8% of oil weight is past the 3–6% of oil weight the cold-process text's bar recipes run to — no book or standard stands behind more.").className).toBe('additive-list__hazard');
     cleanup();
     renderPanel(picked('lavender', '6'), 'cp');
     expect(screen.queryByText(/is past the 3–6%/)).toBeNull();
@@ -275,9 +275,27 @@ describe('the warning and the safe-use line', () => {
     renderPanel(picked('lavender', '4'), 'ls', 'g', 3000);
     expect(screen.getByText(/4% of solution is past the 3% of the finished solution liquid soap takes at most/)).toBeTruthy();
     cleanup();
-    // A dose typed past 100 has no grams, but the warning still quotes the figure typed.
+    // A dose typed past 100 keeps its grams and its share — the more absurd, the louder.
     renderPanel(picked('lavender', '150'), 'cp');
-    expect(screen.getByText(/150% of oil weight is past the 3–6% of oil weight the cold-process recipes run to/)).toBeTruthy();
-    expect(screen.queryByText(/of the finished bar\./)).toBeNull();
+    expect(screen.getByText(/150% of oil weight is past the 3–6% of oil weight the cold-process text's bar recipes run to/)).toBeTruthy();
+    // 1500 g against the fixture's fixed 1300 g bar — the share is printed, however absurd
+    expect(screen.getByText(/150% of oil weight = 115\.4% of the finished bar\./)).toBeTruthy();
+    cleanup();
+    // and one a hair past the top prints as past it, never as equal to it
+    renderPanel(picked('lavender', '6.004'), 'cp');
+    expect(screen.getByText(/6\.01% of oil weight is past the 3–6%/)).toBeTruthy();
+  });
+
+  it('re-picking an oil re-seeds a dose the app put there, and leaves one the maker typed', () => {
+    // Lavender's seed is 3; switching that row to clove must not carry 3 to an oil capped near 1.
+    const lavender = normalizeScentColor({ fragrances: [{ catalogId: 'lavender', name: '', percent: '3' }], colorants: [], portions: [] });
+    let onChange = renderPanel(lavender, 'cp');
+    fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: 'clove' } });
+    expect(onChange.mock.calls[0][0].fragrances[0]).toMatchObject({ catalogId: 'clove', percent: '0.5' });
+    cleanup();
+    const typed = normalizeScentColor({ fragrances: [{ catalogId: 'lavender', name: '', percent: '2.5' }], colorants: [], portions: [] });
+    onChange = renderPanel(typed, 'cp');
+    fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: 'clove' } });
+    expect(onChange.mock.calls[0][0].fragrances[0]).toMatchObject({ catalogId: 'clove', percent: '2.5' });
   });
 });

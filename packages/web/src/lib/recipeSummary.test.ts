@@ -685,8 +685,7 @@ test('Full recipe (HP/LS): the Fragrance section is last; LS colorants sit in th
   // HP: after the post-cook superfat section, at the very end.
   const hp = applyScentColorCompliance(
     computeScentColorGrams(SCENT_INPUT_HP, { process: 'hp', totalOilGrams: 400, solutionGrams: 0, deliveredSuperfatPercent: 3 }),
-    600,
-    'label',
+    { kind: 'label', grams: 600, perGramOfContents: 1 },
   );
   const hpSections = buildFullRecipe({
     ...FULL_RECIPE_BASE,
@@ -722,8 +721,7 @@ test('Add-in-order steps (CP): base colour with the oils, fragrance at trace, th
 test('HP steps put the fragrance and the portion split after the cook; LS names dyes and fragrance in the dilute step', () => {
   const hp = applyScentColorCompliance(
     computeScentColorGrams(SCENT_INPUT_HP, { process: 'hp', totalOilGrams: 400, solutionGrams: 0, deliveredSuperfatPercent: 3 }),
-    600,
-    'label',
+    { kind: 'label', grams: 600, perGramOfContents: 1 },
   );
   const hpSteps = buildAddOrderSteps({ ...CP_BASE, process: 'hp', scentColor: hp });
   expect(hpSteps.find((s) => s.includes('After the cook'))).toBe(

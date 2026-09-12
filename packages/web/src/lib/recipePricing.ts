@@ -158,7 +158,7 @@ export function buildRecipePricingContext(src: RecipePricingSource): RecipePrici
   if (scent) {
     for (const f of scent.fragrances) {
       if (f.grams <= 0) continue;
-      additives.push({ key: `fragrance-${f.key}`, catalogId: scentPriceKey(FRAGRANCE_PRICE_PREFIX, f.name), name: f.name.trim() || 'Fragrance', grams: f.grams, group: 'fragrance' });
+      additives.push({ key: `fragrance-${f.key}`, catalogId: scentPriceKey(FRAGRANCE_PRICE_PREFIX, f.name), name: f.name.trim() || 'Essential oil', grams: f.grams, group: 'fragrance' });
     }
     if (scent.stabilizerGrams > 0) {
       additives.push({ key: 'vanilla-stabilizer', catalogId: 'vanilla-stabilizer', name: 'Vanilla stabilizer', grams: scent.stabilizerGrams, group: 'fragrance' });

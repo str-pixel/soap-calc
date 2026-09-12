@@ -1,11 +1,10 @@
 import { memo } from 'react';
 import {
   ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT,
-  ceilingDigits,
   ESSENTIAL_OIL_CATALOG,
   essentialOilEntryById,
   essentialOilStartingDose,
-  formatPercentToward,
+  formatDosePastUsualRange,
   formatShareAgainstCeiling,
   usualDoseClause,
   usualDosePastClause,
@@ -56,16 +55,22 @@ const REGULATORY_COPY =
 export const FragrancePanel = memo(function FragrancePanel({ scent, computed, process, weightUnit, onChange }: Props) {
   const setFragrance = (key: string, patch: Partial<FragranceLine>) =>
     onChange({ ...scent, fragrances: scent.fragrances.map((f) => (f.key === key ? { ...f, ...patch } : f)) });
-  /** Picking an oil settles its name and, if the dose is still empty, starts it at the
-   * oil's own starting dose (core essentialOilStartingDose) — a typed dose is the maker's
-   * and is left alone. What the oil carries and what it may be dosed at come off the
-   * catalog at compute time, so nothing else has to be copied into the row. Custom… hands
-   * the name back and leaves the rest alone. */
+  /** Picking an oil settles its name and starts its dose (core essentialOilStartingDose)
+   * — when the field is empty, or still holds the figure the previous pick put there. A dose
+   * the maker typed is theirs and is left alone; a dose the app put there one click earlier
+   * is not, and must not follow the maker to an oil with a lower ceiling. What the oil
+   * carries and what it may be dosed at come off the catalog at compute time, so nothing
+   * else has to be copied into the row. Custom… hands the name back and leaves the rest. */
   const pickCatalog = (key: string, catalogId: string) => {
     const entry = essentialOilEntryById(catalogId);
     if (!entry) { setFragrance(key, { catalogId: '' }); return; }
     const row = scent.fragrances.find((f) => f.key === key);
-    const seed = row && row.percent.trim() === '' ? { percent: String(essentialOilStartingDose(entry, process).percent) } : {};
+    const previous = row?.catalogId ? essentialOilEntryById(row.catalogId) : undefined;
+    const untouched =
+      row !== undefined &&
+      (row.percent.trim() === '' ||
+        (previous !== undefined && row.percent === String(essentialOilStartingDose(previous, process).percent)));
+    const seed = untouched ? { percent: String(essentialOilStartingDose(entry, process).percent) } : {};
     setFragrance(key, { catalogId: entry.id, name: entry.name, ...seed });
   };
   const doseLabel = fragranceDoseLabel(process);
@@ -211,7 +216,7 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
                     {c.allergenNames.length > 1 ? 'each' : 'it'} against your supplier&apos;s allergen declaration.
                   </p>
                 )}
-                {(f.catalogId !== '' || f.name.trim() !== '' || c.typedPercent !== null) && (
+                {(f.catalogId !== '' || f.name.trim() !== '' || c.percent !== null) && (
                   <p className="inline-note" aria-label={`${rowName} safe use`}>
                     <strong>Safe use.</strong>{' '}
                     <SafeUse f={f} c={c} process={process} noun={noun} doseLabel={doseLabel} figures={figures} />
@@ -240,19 +245,14 @@ export const FragrancePanel = memo(function FragrancePanel({ scent, computed, pr
 
 /**
  * The row's figures, printed once and shared by the share line and the safe-use line so
- * the two can never disagree: beside a ceiling they are rounded toward the verdict (core
- * formatShareAgainstCeiling); with none, the share is simply the nearest tenth.
+ * the two can never disagree: beside a ceiling they come from core's one formatter
+ * (formatShareAgainstCeiling — the ceiling and its dose-basis figure rounded down, the
+ * share never printed against the verdict); with none, the share is the nearest tenth.
  */
 function rowFigures(c: ComputedFragrance): { share: string | null; ceiling: string | null; basis: string | null } {
   if (!c.ceiling) return { share: c.shareOfProduct > 0 ? formatGrams(c.shareOfProduct, 1) : null, ceiling: null, basis: null };
-  const d = ceilingDigits(c.ceiling.percentOfProduct);
-  const printed = c.shareOfProduct > 0 ? formatShareAgainstCeiling(c.shareOfProduct, c.ceiling.percentOfProduct, c.overSafeMax) : null;
-  return {
-    share: printed?.share ?? null,
-    ceiling: printed?.ceiling ?? formatPercentToward(c.ceiling.percentOfProduct, d, 'down'),
-    // Rounded down, so typing the printed figure never lands over the ceiling.
-    basis: c.ceilingPercentOfBasis !== null ? formatPercentToward(c.ceilingPercentOfBasis, d, 'down') : null,
-  };
+  const printed = formatShareAgainstCeiling(c.shareOfProduct, c.ceiling.percentOfProduct, c.ceilingPercentOfBasis);
+  return { share: printed.share, ceiling: printed.ceiling, basis: printed.basis };
 }
 
 /** The one dose sentence, with its basis named and the verdict on the end. */
@@ -262,48 +262,45 @@ function DoseSentence({ c, noun, share }: { c: ComputedFragrance; noun: string; 
 }
 
 /** Where the dose starts for a listed oil, and why — the figure the pick fills in. */
-function StartSentence({ f, process, doseLabel }: { f: FragranceLine; process: ProcessId; doseLabel: string }) {
-  const entry = essentialOilEntryById(f.catalogId);
-  if (!entry) return null;
-  const start = essentialOilStartingDose(entry, process);
-  return <> Start at <strong>{formatGrams(start.percent, 2)}{doseLabel}</strong> — {start.why}.</>;
+function StartSentence({ c, doseLabel }: { c: ComputedFragrance; doseLabel: string }) {
+  if (!c.startingDose) return null;
+  return <> Start at <strong>{formatGrams(c.startingDose.percent, 2)}{doseLabel}</strong> — {c.startingDose.why}.</>;
 }
 
 function SafeUse({ f, c, process, noun, doseLabel, figures }: {
   f: FragranceLine; c: ComputedFragrance; process: ProcessId; noun: string; doseLabel: string;
   figures: ReturnType<typeof rowFigures>;
 }) {
-  const dose = <DoseSentence c={c} noun={noun} share={figures.share} />;
-  const start = <StartSentence f={f} process={process} doseLabel={doseLabel} />;
-  if (f.catalogId === '') {
-    return (
+  // The lead sentence is the one thing that differs between the four states; the start and
+  // the dose follow it in every one (StartSentence is empty for an oil the maker named).
+  const lead =
+    f.catalogId === '' ? (
       <>
         No ceiling is known for an oil the app does not list — your supplier&apos;s IFRA certificate gives one for
-        soap (Category 9). Until then, {usualDoseClause(process)}.{dose}
+        soap (Category 9). Until then, {usualDoseClause(process)}.
       </>
-    );
-  }
-  if (!c.ceiling) {
-    return (
+    ) : !c.ceiling ? (
       <>
         No ceiling applies: none of this oil&apos;s restricted constituents comes near its limit in soap, and no
-        standard names the oil itself — {usualDoseClause(process)}.{start}{dose}
+        standard names the oil itself — {usualDoseClause(process)}.
       </>
-    );
-  }
-  if (c.ceilingAboveUsualRange) {
-    return (
+    ) : c.ceilingAboveUsualRange ? (
       <>
         No ceiling bites below the usual range: this oil&apos;s works out at {figures.ceiling}% of the {noun}{' '}
-        ({c.ceiling.why}), and {usualDoseClause(process)}.{start}{dose}
+        ({c.ceiling.why}), and {usualDoseClause(process)}.
+      </>
+    ) : (
+      <>
+        Up to <strong>{figures.ceiling}% of the {noun}</strong>
+        {figures.basis !== null && <> (about {figures.basis}{doseLabel} in this recipe)</>}
+        {' — '}{c.ceiling.why}.
       </>
     );
-  }
   return (
     <>
-      Up to <strong>{figures.ceiling}% of the {noun}</strong>
-      {figures.basis !== null && <> (about {figures.basis}{doseLabel} in this recipe)</>}
-      {' — '}{c.ceiling.why}.{start}{dose}
+      {lead}
+      <StartSentence c={c} doseLabel={doseLabel} />
+      <DoseSentence c={c} noun={noun} share={figures.share} />
     </>
   );
 }
@@ -312,7 +309,9 @@ function FragranceNotes({ c, noun, unit, doseLabel, process, shareText }: {
   c: ComputedFragrance; noun: string; unit: WeightUnit; doseLabel: string; process: ProcessId; shareText: string | null;
 }) {
   const notes: Array<{ text: string; hazard?: boolean }> = [];
-  const typed = formatGrams(c.typedPercent ?? c.percent ?? 0, 2);
+  // The dose as the maker typed it — rounded up once it is past the usual range, so the
+  // note never reads "6% is past 6%".
+  const typed = c.overUsualRange ? formatDosePastUsualRange(c.percent ?? 0) : formatGrams(c.percent ?? 0, 2);
   // The same grams in both bases, each named: the dose is typed against the oils, every
   // ceiling is a share of the finished soap, and the bar is heavier than its oils.
   if (shareText !== null) notes.push({ text: `${typed}${doseLabel} = ${shareText}% of the ${noun}.` });

@@ -20,7 +20,7 @@ import {
   formatBatchWeight,
 } from '../lib/batchSheet';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
-import { formatConcentrationPercent, formatGrams } from '../lib/format';
+import { formatConcentrationPercent, formatGrams, formatVolumeMl } from '../lib/format';
 import {
   colorantLineDetail,
   fragranceLineDetail,
@@ -595,7 +595,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               </div>
             )}
             {finishedVolumeMl !== null && (
-              <div><dt>≈ Finished volume</dt><dd>{formatGrams(Math.round(finishedVolumeMl), 0)} ml</dd></div>
+              <div><dt>≈ Finished volume</dt><dd>{formatVolumeMl(finishedVolumeMl)}</dd></div>
             )}
           </dl>
           {measuredPasteValid && (

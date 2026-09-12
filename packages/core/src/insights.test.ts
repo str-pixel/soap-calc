@@ -1422,7 +1422,7 @@ describe('fragrance & colorant insights', () => {
     // 8% typed with the verdict false stays quiet: the compute step owns the threshold
     expect(codes({ fragranceRows: [row({ percent: 8 })] }, 'cp')).not.toContain('fragrance_over_usual_range');
     const bar = analyzeFormulation(waterInput(330, 1000, { process: 'cp', fragranceRows: [row({ name: 'Lavender', overUsualRange: true })] }));
-    expect(bar.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/^Lavender is dosed past the 3–6% of oil weight the cold-process recipes run to/);
+    expect(bar.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/^Lavender is dosed past the 3–6% of oil weight the cold-process text's bar recipes run to/);
     const two = analyzeFormulation(waterInput(330, 1000, { process: 'cp', fragranceRows: [row({ name: 'Lavender', overUsualRange: true }), row({ name: 'Rose', overUsualRange: true })] }));
     expect(two.find((i) => i.code === 'fragrance_over_usual_range')?.message).toMatch(/^Lavender, Rose are dosed past/);
     const ls = analyzeFormulation(waterInput(330, 1000, { process: 'ls', fragranceRows: [row({ name: 'Lavender', overUsualRange: true })] }));
@@ -1434,9 +1434,9 @@ describe('fragrance & colorant insights', () => {
       process: 'cp',
       fragrancesOverSafeMax: [{ fragrance: 'Clove', shareOfProduct, ceilingPercentOfProduct, why: 'EU law caps methyl eugenol at 0.001% of a rinse-off product' }],
     })).find((i) => i.code === 'fragrance_over_safe_max')?.message;
-    expect(at(2.34, 1)).toBe('Clove is 2.4% of the finished soap; 1% is its ceiling — EU law caps methyl eugenol at 0.001% of a rinse-off product. Lower the dose.');
-    // a hair over never prints as equal to the ceiling
-    expect(at(1.02, 1)).toMatch(/^Clove is 1\.1% of the finished soap; 1% is its ceiling/);
+    expect(at(2.34, 1)).toBe('Clove is 2.3% of the finished soap; 1% is its ceiling — EU law caps methyl eugenol at 0.001% of a rinse-off product. Lower the dose.');
+    // a hair over never prints as equal to the ceiling — nor rounded up a whole digit
+    expect(at(1.02, 1)).toMatch(/^Clove is 1\.02% of the finished soap; 1% is its ceiling/);
   });
 
   it('names an unnamed row the way the panel does', () => {
