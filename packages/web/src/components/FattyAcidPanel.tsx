@@ -6,7 +6,6 @@ import {
   formatPropertyRangePercent,
   formatPropertyScore,
   formatPropertyScoreRange,
-  fattyAcidIsTooHigh,
   formatSoapPropertyPercent,
   isLowCoverage,
   saturatedUnsaturatedRatio,
@@ -41,8 +40,9 @@ type GroupKey = (typeof FATTY_ACID_DISPLAY_GROUPS)[number]['key'];
 // The radar's axes, with short names that sit around the ring without wrapping (the Meters
 // rows carry the full group labels, and the caption under the chart says what the short
 // names fold in). The catch-alls — other saturated, other unsaturated, trans — are not
-// axes: they are ~0% in ordinary oils and exist to flag an odd one, not to describe a
-// blend's shape. They print under the chart instead, so the view hides nothing.
+// axes: they are ~0% in ordinary oils and hold the acids no named group covers, so they
+// say little about a blend's shape. They print under the chart instead, so the view hides
+// nothing.
 const RADAR_AXES: ReadonlyArray<{ key: GroupKey; label: string }> = [
   { key: 'lauricMyristic', label: 'Lauric' },
   { key: 'palmiticStearic', label: 'Palmitic' },
@@ -82,18 +82,14 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
   const { saturated, unsaturated } = saturatedUnsaturatedRatio(result.profile);
 
   // ONE derivation for both views (a review finding): the meters and the radar must state
-  // the same readings, so the values, bands, and verdicts are computed once and each view
-  // only decides how much geometry accompanies them.
+  // the same readings, so the values and bands are computed once and each view only decides
+  // how much geometry accompanies them. No reading is flagged, in either view: the bands are
+  // descriptive (FORMULATION_FATTY_ACID_GUIDE says why), and rancidity is judged by the
+  // formulation insights shown above the chart.
   const groups = FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
     const guide = FORMULATION_FATTY_ACID_GUIDE[key];
     const value = sumFattyAcids(result.profile!, acids);
-    // Flag only a HIGH reading, and only on a group whose reading names its own cause (a
-    // hydrogenated oil, an unusual oil) — core's fatty-acid-verdict holds the policy, the
-    // measurement, and why rancidity is left to the formulation insights. It judges the
-    // figure this panel prints.
-    // Low-coverage values are already marked as estimates ("~"), so they are never flagged.
-    const outOfRange = !lowCoverage && fattyAcidIsTooHigh(key, value);
-    return { key, guide, value, outOfRange };
+    return { key, guide, value };
   });
   type Group = (typeof groups)[number];
   const byKey = new Map(groups.map((g) => [g.key, g] as const));
@@ -107,25 +103,20 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
       value: g.value,
       low: g.guide.low,
       high: g.guide.high,
-      tooHigh: g.outOfRange,
     };
   });
 
-  // The same accessible reading in both views — a status verdict plus a role="meter" value —
+  // The same accessible reading in both views — a role="meter" value plus its typical range —
   // so switching views can never change what is claimed.
-  const status = (g: Group) =>
-    g.outOfRange ? (
-      <span className="property-meters__status">Too high</span>
-    ) : null;
   const value = (g: Group, onTrack = false) => (
     <span
-      className={`property-meters__value${g.outOfRange ? ' property-meters__value--outside' : ''}${onTrack ? valueAnchorClass(pct(g.value)) : ''}`}
+      className={`property-meters__value${onTrack ? valueAnchorClass(pct(g.value)) : ''}`}
       style={onTrack ? { left: `${pct(g.value)}%` } : undefined}
       role="meter"
       aria-valuemin={0}
       aria-valuemax={SCALE_MAX}
       aria-valuenow={Math.round(g.value * 10) / 10}
-      aria-label={`${g.guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(g.value)}${g.outOfRange ? ' — above typical range' : ''}`}
+      aria-label={`${g.guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(g.value)}`}
     >
       {lowCoverage ? '~' : ''}
       {formatSoapPropertyPercent(g.value)}
@@ -224,8 +215,8 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
 
       {/* Neither view holds focusable children, so the tabpanel itself stays reachable
           (tabIndex 0) per the ARIA Tabs pattern. Both views render the SAME readings with
-          the same role="meter" values and out-of-range statuses — the toggle changes how
-          much geometry accompanies them, never what is claimed. */}
+          the same role="meter" values and typical ranges — the toggle changes how much
+          geometry accompanies them, never what is claimed. */}
       <div
         role="tabpanel"
         id="fatty-tabpanel"
@@ -234,7 +225,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
       >
       {view === 'meters' ? (
         <>
-        {/* The properties panel's row idiom: name and verdict on the label row, the value
+        {/* The properties panel's row idiom: the name on the label row, the value
            riding its dot on a 0–100% track with the typical band shaded, the band's
            bounds numbered under it. No LOW / HIGH words on this track — it is percent of
            oil weight, and the subtitle says so — which leaves the row's left edge free
@@ -245,7 +236,6 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
             <li key={g.key} className="property-meters__row">
               <div className="property-meters__label">
                 <span>{g.guide.label}</span>
-                {status(g)}
               </div>
               <div className="property-meters__plot">
                 {value(g, true)}
@@ -258,7 +248,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
                     }}
                   />
                   <span
-                    className={`property-meter__marker${g.outOfRange ? ' property-meter__marker--outside' : ''}`}
+                    className="property-meter__marker"
                     style={{ left: `${pct(g.value)}%` }}
                   />
                 </div>
@@ -304,18 +294,16 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
           <ul className="sr-only" aria-label="Recipe fatty acid groups">
             {drawn.map((g) => (
               <li key={g.key}>
-                {status(g)}
                 {value(g)}
                 {typical(g)}
               </li>
             ))}
           </ul>
-          {/* The catch-alls, in the open: name, verdict and value on one line. */}
+          {/* The catch-alls, in the open: name and value on one line. */}
           <ul className="fatty-radar__others" aria-label="Other fatty acid groups">
             {others.map((g) => (
               <li key={g.key} className="fatty-radar__other">
                 <span className="fatty-radar__other-name">{g.guide.label}</span>
-                {status(g)}
                 {value(g)}
                 {typical(g)}
               </li>
@@ -323,9 +311,9 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
           </ul>
           <p className="fatty-radar__caption">
             Shaded ring = each group&apos;s typical range. Every axis is scaled to its own
-            range, so the shape shows fit, not share. Only trans fat or an unusual oil is
-            flagged on this chart. When a recipe is at risk of going rancid, a rancidity note
-            appears above the chart, since that risk depends on superfat and antioxidants too.
+            range, so the shape shows fit, not share, and a reading off the ring is not
+            flagged. When a recipe is at risk of going rancid, a rancidity note appears above
+            the chart, since that risk depends on superfat and antioxidants too.
             Lauric includes myristic and C8–C10; palmitic includes stearic.
           </p>
         </>

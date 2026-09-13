@@ -6,14 +6,13 @@ import { RING_INNER, RING_OUTER } from '../lib/radarGeometry';
 
 afterEach(cleanup);
 
-// `tooHigh` is decided upstream by core's fattyAcidIsTooHigh; the radar only draws it.
 const AXES: FattyAcidRadarAxis[] = [
-  { key: 'lauricMyristic', label: 'Lauric', value: 25, low: 20, high: 30, tooHigh: false }, // mid-band
-  { key: 'palmiticStearic', label: 'Palmitic', value: 24, low: 20, high: 30, tooHigh: false },
-  { key: 'oleic', label: 'Oleic', value: 47.3, low: 32, high: 41, tooHigh: false }, // above, not a fault
-  { key: 'linoleic', label: 'Linoleic', value: 20, low: 7, high: 14, tooHigh: true }, // synthetic: exercises the renderer; no drawn axis is warned in the app
-  { key: 'linolenic', label: 'Linolenic', value: 0.5, low: 0, high: 1, tooHigh: false },
-  { key: 'ricinoleic', label: 'Ricinoleic', value: 0, low: 4, high: 7, tooHigh: false }, // below: no castor
+  { key: 'lauricMyristic', label: 'Lauric', value: 25, low: 20, high: 30 }, // mid-band
+  { key: 'palmiticStearic', label: 'Palmitic', value: 24, low: 20, high: 30 },
+  { key: 'oleic', label: 'Oleic', value: 47.3, low: 32, high: 41 }, // above its band
+  { key: 'linoleic', label: 'Linoleic', value: 20, low: 7, high: 14 }, // above its band
+  { key: 'linolenic', label: 'Linolenic', value: 0.5, low: 0, high: 1 },
+  { key: 'ricinoleic', label: 'Ricinoleic', value: 0, low: 4, high: 7 }, // below: no castor
 ];
 
 const vertices = (container: HTMLElement) =>
@@ -49,7 +48,7 @@ test('fits every axis to the ring: in band lands on it, above pokes out, below s
   expect(radiusOf(v[4])).toBeLessThanOrEqual(RING_OUTER);
 });
 
-test('labels each axis with its true percentage, and speaks up only for a flagged high', () => {
+test('labels each axis with its true percentage and its typical range, never a verdict', () => {
   const { container } = render(<FattyAcidRadar axes={AXES} lowCoverage={false} />);
   const block = (label: string) => {
     const t = container.textContent ?? '';
@@ -57,24 +56,23 @@ test('labels each axis with its true percentage, and speaks up only for a flagge
     return t.slice(i, i + label.length + 22);
   };
   expect(block('Oleic')).toContain('47.3%'); // the number is never normalised, only the geometry
-  // Linoleic over its band is the one warning here.
-  expect(block('Linoleic')).toContain('Too high');
-  // Oleic above and ricinoleic below are recipe style, not faults: they state their typical
-  // range where a verdict would go, and never say "Too low" or "In range".
+  // Above its band, below it, or on it: every axis states its typical range where a verdict
+  // would go. Where a reading sits is shown by the geometry, and judged nowhere.
   expect(block('Oleic')).toMatch(/Typical 32–41%/);
+  expect(block('Linoleic')).toMatch(/Typical 7–14%/);
   expect(block('Ricinoleic')).toMatch(/Typical 4–7%/);
-  const text = container.textContent ?? '';
-  expect(text).not.toMatch(/Too low|In range/);
-  expect(text.match(/Too high/g)?.length).toBe(1);
+  expect(container.textContent).not.toMatch(/Too low|Too high|In range/);
 });
 
-test('draws only a flagged axis in accent', () => {
+test('draws no axis in accent, however far past its band', () => {
   const { container } = render(<FattyAcidRadar axes={AXES} lowCoverage={false} />);
-  const values = Array.from(container.querySelectorAll('text')).filter((t) =>
-    /%$/.test(t.textContent ?? ''),
+  const texts = Array.from(container.querySelectorAll('text')) as SVGTextElement[];
+  expect(texts.filter((t) => t.style.fill === 'var(--accent)')).toEqual([]);
+  // Every vertex dot is the same size: none is enlarged to single out a reading.
+  const dots = Array.from(container.querySelectorAll('circle')).filter(
+    (c) => (c as SVGCircleElement).style.fill === 'var(--accent)',
   );
-  const accented = values.filter((t) => (t as SVGTextElement).style.fill === 'var(--accent)');
-  expect(accented.map((t) => t.textContent)).toEqual(['20%']);
+  expect(new Set(dots.map((c) => c.getAttribute('r')))).toEqual(new Set(['2.5']));
 });
 
 test('flags low coverage with tilde values, Low data verdicts, and a dashed polygon', () => {

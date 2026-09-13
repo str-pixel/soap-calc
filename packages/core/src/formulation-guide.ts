@@ -45,6 +45,17 @@ export const INS_GUIDE = { low: 136, high: 165, ideal: 160 } as const;
  * lauric+myristic and palmitic+stearic both average about 22, below this 20-30 band's middle.
  * Other practitioners put palmitic+stearic higher still (DeeAnna Weed's "sweet spot" is
  * 30-40). Treat these as one experienced formulator's targets, which is what they are.
+ *
+ * DESCRIPTIVE ONLY: nothing computes a verdict from any band here (since 2026-09-13). The
+ * fatty-acid panel shows each reading against its band and flags none. Rancidity is judged by
+ * the formulation insights instead (dos_risk_no_antioxidant, pufa_cap_superfat,
+ * high_poly_high_superfat), because the risk depends on the superfat and on whether an
+ * antioxidant or chelator is present, which a fatty-acid band cannot see. The books list a
+ * 15-20% polyunsaturate share as one of about ten ways to manage that risk, not as a limit
+ * (CP:5516-5578, p161-163). A per-acid limit on the panel (linoleic 14, linolenic 1) flagged
+ * 4 of 25 everyday bars, and any panel limit contradicted the insights on all 9 heavy
+ * polyunsaturated recipes given BHT, ROE or EDTA at a 5% superfat, where the insights rightly
+ * go quiet (measured on the lite catalog).
  */
 export const FORMULATION_FATTY_ACID_GUIDE = {
   lauricMyristic: { low: 20, high: 30, label: 'Lauric + myristic (+C8–C10)' },
@@ -53,16 +64,26 @@ export const FORMULATION_FATTY_ACID_GUIDE = {
   linoleic: { low: 7, high: 14, label: 'Linoleic' },
   linolenic: { low: 0, high: 1, label: 'Linolenic' },
   ricinoleic: { low: 4, high: 7, label: 'Ricinoleic' },
-  // Catch-all groups for acids without a primary group — long-chain saturates (behenic C22:0,
-  // arachidic C20:0) and the other unsaturates (palmitoleic C16:1 plus the C20–C22 MUFAs/PUFAs
-  // eicosenoic/erucic/docosenoic/docosadienoic). ~0% in ordinary bath oils, so "typical 0–2%" is
-  // honest; specialty oils (macadamia/sea-buckthorn palmitoleic, meadowfoam, high-erucic broccoli)
-  // read as out-of-band (correctly flagged unusual) instead of silently inflating a primary group.
+  // Catch-all groups for acids without a primary group — long-chain saturates (arachidic C20:0,
+  // behenic C22:0, lignoceric C24:0) and the other unsaturates (palmitoleic C16:1 plus the
+  // C20–C22 MUFAs/PUFAs eicosenoic/erucic/docosenoic/docosadienoic). ~0% in ordinary bath oils,
+  // so "typical 0–2%" describes them honestly, and specialty oils (macadamia's palmitoleic,
+  // meadowfoam, high-erucic broccoli seed) show their share here instead of silently inflating a
+  // primary group. These two bands and trans's are this app's own, not Kenna Cote's.
+  // A reading above them is not a fault, and no source calls it one. DeeAnna Weed writes that
+  // behenic and arachidic "aren't so greatly different than stearic"; Modern Soapmaking says
+  // capric, caprylic and palmitoleic acids occur "at such low quantities that they don't
+  // contribute to soap qualities in a noticeable way". Flagging them caught ordinary recipes:
+  // in an olive/coconut/palm base on the lite catalog, meadowfoam reads above 2% at a 3% share,
+  // macadamia at 10%, moringa, karanja and sal at 21-23%, avocado at 26%.
   otherSaturated: { low: 0, high: 2, label: 'Other saturated' },
   otherUnsaturated: { low: 0, high: 2, label: 'Other unsaturated' },
-  // Trans-C18:1 (elaidic) — ~0% in natural oils, so a partially-hydrogenated oil reads as
-  // out-of-band (correctly flagged unusual). Shown as its own group so its weight isn't hidden
-  // inside the saturated total it sums into.
+  // Trans-C18:1 (elaidic) — ~0% in natural oils; a partially hydrogenated oil carries it (on
+  // the lite catalog, 27.5%-hydrogenated soybean reads above 2% at a 10% share). Shown as its
+  // own group so its weight isn't hidden inside the saturated total it sums into. Not a fault
+  // either: each book prints a recipe built on it, "Vegetable Shortening: The Perfect Budget
+  // Recipe" (CP:749, HP:643, LS:619), and a Unilever soap-bar patent credits trans fatty acids with "desirable cleaning
+  // as well as the desired bar integrity and hardness" (WO2008055765A1).
   trans: { low: 0, high: 2, label: 'Trans (elaidic)' },
 } as const;
 

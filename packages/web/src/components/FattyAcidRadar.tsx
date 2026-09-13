@@ -10,11 +10,6 @@ export type FattyAcidRadarAxis = {
   /** The group's typical band, in percent. */
   low: number;
   high: number;
-  /** Whether this reading earns "Too high" — decided upstream by core's fattyAcidIsTooHigh,
-   *  so the chart and the Meters rows share one answer. Under the current policy none of the
-   *  six drawn groups is warned (the flaggable ones are the catch-alls listed under the
-   *  chart), so the panel passes false for every axis; the renderer keeps the path. */
-  tooHigh: boolean;
 };
 
 type FattyAcidRadarProps = {
@@ -28,14 +23,14 @@ const R = 112;
 
 /**
  * Radar of the named fatty-acid groups, FITTED PER AXIS: each axis maps its own typical
- * band onto the same shaded ring, so a group in range sits on the ring, too low sits
- * inside it, too high pokes out. The nine groups' typical ranges differ widely
+ * band onto the same shaded ring, so a group in range sits on the ring, below it sits
+ * inside, above it pokes out. The nine groups' typical ranges differ widely
  * (0–1% linolenic against 32–41% oleic); on a shared percent radius most of them would
  * never leave the hub. Only the geometry is normalised — every axis prints its true
- * percentage, and a verdict only when a high reading is flagged; otherwise it states its
- * typical range in that slot. Decorative (aria-hidden): the panel's sr-only meter list is
- * the accessible source of these readings. A dashed polygon and "Low data" verdicts flag
- * a low-coverage estimate.
+ * percentage and its typical range, and no axis is flagged (FORMULATION_FATTY_ACID_GUIDE
+ * says why). Decorative (aria-hidden): the panel's sr-only meter list is the accessible
+ * source of these readings. A dashed polygon and "Low data" in the range slot mark a
+ * low-coverage estimate.
  */
 export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
   const n = axes.length;
@@ -43,17 +38,11 @@ export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
     radarPoint(CX, CY, i, n, fitRadius(Math.max(0, a.value), a.low, a.high) * R),
   );
   const polygon = valuePoints.map((p) => `${p.x},${p.y}`).join(' ');
-  // Only a flagged HIGH reading earns a verdict — see core's fatty-acid-verdict for why and
-  // for the measurement behind it. Every other axis states its typical range in that slot,
-  // the way the properties panel's longevity axis does. Sitting off the ring is shown by the
-  // geometry either way; it is only called a fault where a source says it is one.
-  const verdict = (a: FattyAcidRadarAxis) =>
-    lowCoverage
-      ? 'Low data'
-      : a.tooHigh
-        ? 'Too high'
-        : `Typical ${formatPropertyRangePercent(a.low, a.high)}`;
-  const isOut = (a: FattyAcidRadarAxis) => !lowCoverage && a.tooHigh;
+  // Every axis states its typical range under its value, the way the properties panel's
+  // longevity axis does. Sitting off the ring is shown by the geometry; no source names it a
+  // fault, so nothing calls it one.
+  const rangeNote = (a: FattyAcidRadarAxis) =>
+    lowCoverage ? 'Low data' : `Typical ${formatPropertyRangePercent(a.low, a.high)}`;
 
   return (
     <svg
@@ -122,17 +111,16 @@ export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
             key={a.key}
             cx={p.x}
             cy={p.y}
-            r={isOut(a) ? 3 : 2.5}
+            r={2.5}
             style={{ fill: 'var(--accent)' }}
           />
         );
       })}
       {axes.map((a, i) => {
-        const out = isOut(a);
         const lab = radarPoint(CX, CY, i, n, R + 30);
         const c = Math.cos(radarAngle(i, n));
         const anchor = c < -0.3 ? 'end' : c > 0.3 ? 'start' : 'middle';
-        // Stack the label / value / status block away from the ring so a high vertex can't
+        // Stack the label / value / range block away from the ring so a high vertex can't
         // crowd it: upper axes lift their block above the anchor, lower axes hang below.
         const s = Math.sin(radarAngle(i, n));
         const labelY = lab.y + (s <= -0.7 ? -40 : s < -0.3 ? -20 : 0);
@@ -161,7 +149,7 @@ export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
                 fontFamily: 'var(--font-ui)',
                 fontSize: 21,
                 fontWeight: 800,
-                fill: out ? 'var(--accent)' : 'var(--text)',
+                fill: 'var(--text)',
                 fontVariantNumeric: 'tabular-nums',
               }}
             >
@@ -178,10 +166,10 @@ export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
                 fontWeight: 500,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                fill: out ? 'var(--accent)' : 'var(--label)',
+                fill: 'var(--label)',
               }}
             >
-              {verdict(a)}
+              {rangeNote(a)}
             </text>
           </g>
         );
