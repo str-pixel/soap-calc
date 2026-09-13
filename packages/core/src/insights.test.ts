@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   analyzeFormulation,
+  FATTY_ACID_RANCIDITY_INSIGHT_CODES,
   INSIGHT_RULES,
   type FormulationAnalysisInput,
 } from './insights.js';
@@ -1514,5 +1515,29 @@ describe('the cleansing notes agree with the shipped band, by construction', () 
     expect(has({ ...base, superfatPercent: 5, properties: props(under), fattyAcids }, 'low_cleansing_expected')).toBe(true);
     // A castile bar still gets its reassurance — the case the note exists for.
     expect(has({ ...base, superfatPercent: 5, properties: props(0), fattyAcids }, 'low_cleansing_expected')).toBe(true);
+  });
+});
+
+// The fatty-acid panel shows these insights inline, so its rancidity note and Formulation
+// notes are one source and cannot disagree. Pinned here: the codes are real, and the note
+// goes quiet with an antioxidant at a moderate superfat, which is the case a panel-side
+// limit got wrong.
+describe('the rancidity notes the fatty-acid panel shows inline', () => {
+  it('are all real insight codes', () => {
+    for (const code of FATTY_ACID_RANCIDITY_INSIGHT_CODES) {
+      expect(INSIGHT_RULES.some((r) => r.code === code), code).toBe(true);
+    }
+  });
+
+  it('fire on a high-polyunsaturate blend, and an antioxidant quiets them only at 5% superfat or less', () => {
+    const fattyAcids = { linoleic: 40, linolenic: 4, oleic: 30 };
+    const bht = [{ catalogId: 'bht', name: 'BHT' }];
+    const codes = (superfatPercent: number, additiveEntries: { catalogId: string; name: string }[]) =>
+      analyzeFormulation({ ...base, superfatPercent, fattyAcids, additiveEntries })
+        .map((i) => i.code)
+        .filter((c) => (FATTY_ACID_RANCIDITY_INSIGHT_CODES as readonly string[]).includes(c));
+    expect(codes(5, [])).toEqual(['dos_risk_no_antioxidant']);
+    expect(codes(5, bht)).toEqual([]);
+    expect(codes(6, bht)).toEqual(['pufa_cap_superfat']);
   });
 });

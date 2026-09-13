@@ -244,9 +244,9 @@ test.describe('recipe UI regressions', () => {
     // Caption switches from "Based on" to "Estimated from"
     await expect(page.locator('.properties-coverage').first()).toContainText(/Estimated from 74% of recipe oils/i);
     // Values are marked approximate and the red out-of-range flag is suppressed.
-    // SCOPED, and Meters selected explicitly: an unscoped .property-meters__value resolves
-    // against the Fatty acid profile panel — which uses the same class names and has its
-    // own coverage rules. Both assertions passed against that panel while the behaviour
+    // SCOPED, and Meters selected explicitly: the Fatty acid profile panel uses the same
+    // class names and has its own coverage rules, so an unscoped count of flagged values
+    // would take in its readings too. Both assertions once passed against that panel while the behaviour
     // they name had been deleted from this one. Meters is the default view, but the click
     // stays so this test never rides on which view happens to open first.
     // Scoped through the tablist name: the fatty panel has a view switch of its own, so

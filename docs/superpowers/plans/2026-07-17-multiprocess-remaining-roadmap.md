@@ -28,7 +28,7 @@
 ## Current-state baseline (already shipped — do not rebuild)
 
 - Lye engine: NaOH / KOH / dual, 90% KOH purity — `packages/core/src/lye.ts`.
-- Quality ranges + radar — `packages/core/src/properties.ts:49-56`, `packages/web/src/components/PropertyRadar.tsx`.
+- Quality ranges + radar — `packages/core/src/properties.ts` (`SOAP_PROPERTY_GUIDE`), `packages/web/src/components/PropertyRadar.tsx`.
 - After-cook additive stage (`after_cook`) — `packages/core/src/additives.ts:1,135-141`.
 - Two-part superfat (cook + post-cook) — `packages/web/src/lib/recipe.ts:48-51`, `hooks/useRecipeViewModel.ts:121-141`.
 - Additive dose units/basis (`percent`|`ppt`, `oil`|`batch`|`solution`) — `packages/core/src/additives.ts:109-133`.

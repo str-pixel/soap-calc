@@ -30,7 +30,8 @@ test('a value above its band pokes outside the ring and is clamped at the rim', 
   expect(fitRadius(35, 20, 30)).toBeCloseTo(RING_OUTER + (1 - RING_OUTER) / 2);
   expect(fitRadius(40, 20, 30)).toBeCloseTo(1);
   expect(fitRadius(70, 20, 30)).toBe(1);
-  // Never a hair over the rim: the sum of the two fractions is not exactly 1 in binary.
+  // Never past the rim. Today's ring fractions sum to exactly 1, so this pins the invariant
+  // against a future change to the ring rather than guarding a live defect.
   for (const [low, high] of [[20, 30], [8, 20], [44, 69], [0, 1]] as const) {
     for (const v of [high + 5, high + 40, 100, 1000]) {
       expect(fitRadius(v, low, high), `${v} against ${low}-${high}`).toBeLessThanOrEqual(1);

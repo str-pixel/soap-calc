@@ -24,7 +24,7 @@ export type SoapProperties = Record<SoapPropertyName, number>;
  * This app follows the Soapee / Soapmaking Friend convention, which is its actual lineage —
  * the inherited misspelling `docosenoid`, corrected to `docosenoic` here, is Soapee's.
  * Both conventions display the same "12 - 22" guidance for quantities that are not the same
- * quantity; a coconut, palm-kernel or babassu recipe scores several points higher under this
+ * quantity; a coconut, palm-kernel or babassu recipe scores higher (13.4 points on a 100% coconut bar) under this
  * one. See {@link SOAP_PROPERTY_GUIDE} for which band that is judged against.
  *
  * Three deliberate departures from that lineage, each argued in the comments below:
@@ -73,8 +73,11 @@ export const SOAP_PROPERTY_LABELS: Record<SoapPropertyName, string> = {
  *   (Soapee, Soapmaking Friend, LyeCalc) and the books reprint it, but that is one figure
  *   propagated, not four findings.
  * - The one range with a stated rationale, DeeAnna Weed's 30-40 "sweet spot", flags the
- *   source books' OWN worked recipes (they score 29 and 26). Measured over twelve ordinary
- *   recipes it flags ten.
+ *   books' own worked recipes. The books print a longevity for three recipes, reading 27
+ *   (CP:13113 p456), 33 (HP:9931 p367) and 26 (HP:10117 p370), and 30-40 flags two of them.
+ *   The books' two template recipes (HP p360), scored by this app, read 29 and 26 and are
+ *   both flagged. Measured over twelve ordinary recipes on the catalog the app loads
+ *   (canonical-oils-lite), it flags ten.
  * - 25-50 itself flags six of those twelve as "too low", castile among them — and a castile
  *   bar is famously long-lived. The metric is palmitic + stearic, so it cannot see what
  *   makes a high-oleic bar last. The band is not the only thing at fault; the sum is.
@@ -95,7 +98,7 @@ export function isJudgedProperty(key: SoapPropertyName): boolean {
 
 /**
  * The range a recipe is judged against, per property. THE BOOKS' "Standard" COLUMN,
- * transcribed: CP:11636-11703 ("Common Soap Quality Ranges", p404) and HP:4637-4664
+ * transcribed: CP:11636-11703 ("Common Soap Quality Ranges", p404) and HP:4637-4704
  * ("Average Soap Quality Ranges", p133), whose Standard and Preference columns are
  * identical to each other. `property-guide-source.test.ts` is that transcription, so drift
  * fails against the page rather than passing quietly.
@@ -103,7 +106,8 @@ export function isJudgedProperty(key: SoapPropertyName): boolean {
  * Adopted 2026-09-12, replacing the calculator's "Suggested Range" column, which differed
  * on two properties — cleansing 12-22 and hardness 29-54. The books support their own
  * column: the Preference column sits inside it, and the CP book's worked teaching example
- * reformulates to cleansing 10 and presents that as the right answer (CP:8942-8948), a
+ * reformulates to cleansing 10 and presents that as the right answer (CP:8942-8948; the
+ * figure itself is in the recipe image on p305, OCR CP_image_ocr_raw.txt:903), a
  * reading the calculator column calls "too low".
  *
  * KNOW THIS BEFORE REVISITING THE CHOICE: the quality-ranges table above is printed ONCE

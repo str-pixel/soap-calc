@@ -26,9 +26,11 @@ describe('SOAP_PROPERTY_GUIDE matches the books Standard column', () => {
     });
   }
 
-  it('keeps longevity on the calculator range, the one property the books do not list', () => {
-    // Neither printing has a longevity row, so there is no Standard value to adopt. 25–50 is
-    // the calculator's, corrected from an unsourced 14–43 in commit 7812bc1 (#44).
+  it('keeps longevity at 25-50, the one property the quality-ranges table does not list', () => {
+    // Neither printing of the table has a longevity row, so there is no Standard value to
+    // adopt. 25–50 is still the authors' own: they typeset it in three worked recipes
+    // (CP:13113 p456; HP:9931 p367; HP:10117 p370). Corrected from an unsourced 14–43 in
+    // commit 7812bc1 (#44).
     expect(SOAP_PROPERTY_GUIDE.longevity).toEqual({ low: 25, high: 50 });
     expect(Object.keys(STANDARD)).not.toContain('longevity');
   });
@@ -64,7 +66,7 @@ describe('what the scores actually sum, against the books definitions', () => {
   // MORE acids than the book for four of the five, deliberately — the extras are documented
   // at SOAP_PROPERTY_FATTY_ACIDS. Pinning it here so the divergence stays a decision on the
   // record: the book's bands are applied to a slightly broader sum, which matters most for
-  // cleansing, where C8–C10 adds several points to a coconut-heavy recipe.
+  // cleansing, where C8–C10 adds 13.4 points to a 100% coconut bar.
   const BOOK = {
     hardness: ['palmitic', 'stearic', 'lauric', 'myristic'],
     cleansing: ['lauric', 'myristic'],

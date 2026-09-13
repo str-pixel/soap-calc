@@ -43,7 +43,9 @@ export function fitRadius(value: number, low: number, high: number): number {
     return width > 0 ? RING_INNER + (RING_OUTER - RING_INNER) * ((value - low) / width) : RING_OUTER;
   }
   const span = Math.max(high - low, OVERSHOOT_MIN);
-  // Clamp the RESULT, not just the input fraction: RING_OUTER + (1 - RING_OUTER) overshoots
-  // 1 in binary floating point, which put a maxed axis a hair outside the rim.
+  // Defensive clamp on the result. RING_OUTER + (1 - RING_OUTER) is exactly 1 for today's
+  // ring, so this never binds; it keeps the rim invariant if the ring fractions change. (An
+  // earlier comment here claimed a floating-point overshoot. There was none: the hair over 1
+  // seen once came from a test reading the radius back through cos, sin and hypot.)
   return Math.min(1, RING_OUTER + (1 - RING_OUTER) * Math.min(1, (value - high) / span));
 }

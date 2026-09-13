@@ -29,7 +29,7 @@ const R = 112;
 /**
  * Radar of the named fatty-acid groups, FITTED PER AXIS: each axis maps its own typical
  * band onto the same shaded ring, so a group in range sits on the ring, too low sits
- * inside it, too high pokes out. The nine groups' typical ranges differ thirty-fold
+ * inside it, too high pokes out. The nine groups' typical ranges differ widely
  * (0–1% linolenic against 32–41% oleic); on a shared percent radius most of them would
  * never leave the hub. Only the geometry is normalised — every axis prints its true
  * percentage, and a verdict only when a high reading is flagged; otherwise it states its

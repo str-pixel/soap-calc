@@ -831,7 +831,7 @@ export default function App() {
               modeledOilIds={vm.fattyAcids.modeledOilIds}
               process={process}
             />
-            <FattyAcidPanel result={vm.fattyAcids} />
+            <FattyAcidPanel result={vm.fattyAcids} insights={vm.insights} />
           </div>
         </main>
       ) : (

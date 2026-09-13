@@ -14,6 +14,7 @@ const PROFILE = { oleic: 41, elaidic: 22, stearic: 15, linoleic: 11, palmitic: 1
 test('marks a recipe built on a modeled (reconstructed) profile', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{
         profile: PROFILE,
         coveragePercent: 100,
@@ -30,6 +31,7 @@ test('marks a recipe built on a modeled (reconstructed) profile', () => {
 test('stays silent for a measured-only recipe', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -42,6 +44,7 @@ test('stays silent for a measured-only recipe', () => {
 test('flags an out-of-range group with a non-color marker and names the status in the meter', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -65,6 +68,7 @@ test('flags an out-of-range group with a non-color marker and names the status i
 test('does not flag an in-range group as outside range', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -79,6 +83,7 @@ test('does not flag an in-range group as outside range', () => {
 test('opens on the meters, and the Radar tab swaps in the chart', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -108,6 +113,7 @@ test('opens on the meters, and the Radar tab swaps in the chart', () => {
 test('the meters place each marker at its percent and shade the typical band there', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -138,6 +144,7 @@ test('a reading that rounds into its band is not flagged, in either view', () =>
   const edge = { oleic: 36, palmitic: 30.04, linoleic: 10, lauric: 23.96 };
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: edge, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -154,6 +161,7 @@ test('a reading that rounds into its band is not flagged, in either view', () =>
 test('a value at the edge of the track anchors its label to the marker instead of clipping', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -169,6 +177,7 @@ test('a value at the edge of the track anchors its label to the marker instead o
 test('the radar draws the six named groups and prints the three catch-alls under it', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -193,9 +202,8 @@ test('the radar draws the six named groups and prints the three catch-alls under
   expect(caption).toMatch(/typical range/i);
   expect(caption).toMatch(/myristic/i);
   expect(caption).toMatch(/stearic/i);
-  // And it says what can be flagged here, and where rancidity is judged instead.
-  expect(caption).toMatch(/rancidity/i);
-  expect(caption).toMatch(/Formulation notes/);
+  // And it says what can be flagged on the chart, and where the rancidity note appears.
+  expect(caption).toMatch(/rancidity note/i);
   // All nine readings stay reachable for AT in this view too.
   expect(screen.getAllByRole('meter').length).toBe(9);
 });
@@ -203,6 +211,7 @@ test('the radar draws the six named groups and prints the three catch-alls under
 test('the fatty view tabs traverse with arrow keys, starting from the meters', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -216,6 +225,7 @@ test('the fatty view tabs traverse with arrow keys, starting from the meters', (
 test('both views state the same readings — the toggle changes geometry, not claims', () => {
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -232,6 +242,7 @@ test('both views state the same readings — the toggle changes geometry, not cl
 test('names its shading, like the other three result views do', () => {
   const { container } = render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -243,9 +254,9 @@ test('names its shading, like the other three result views do', () => {
   expect(legend.querySelector('.property-legend__swatch--preference')).toBeNull();
 });
 
-// A band describing where most recipes sit is not a band of acceptable values. Measured on
-// the catalog the app loads over 25 everyday bars, flagging both directions on all nine
-// groups lit most of them and buried the warnings that mattered. Rancidity is not judged here
+// A band describing where most recipes sit is not a band of acceptable values. Flagging both
+// directions on all nine groups lit every one of ten hand-picked ordinary bars (adcc7f5) and
+// buried the warnings that mattered. Rancidity is not judged here
 // either: it depends on superfat and antioxidants this panel cannot see, and any limit here
 // contradicted the formulation insights on every heavy recipe once an antioxidant was added.
 // See core's fatty-acid-verdict.
@@ -256,6 +267,7 @@ test('flags only a high reading whose cause the reading names', () => {
   const profile = { oleic: 50, linoleic: 30, palmitic: 6, stearic: 3, linolenic: 1, elaidic: 5 };
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -283,6 +295,7 @@ test('no radar axis can be flagged, however far past its band', () => {
   const profile = { lauric: 60, palmitic: 40, oleic: 80, linoleic: 70, linolenic: 50, ricinoleic: 90 };
   render(
     <FattyAcidPanel
+      insights={[]}
       result={{ profile, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
     />,
   );
@@ -290,4 +303,42 @@ test('no radar axis can be flagged, however far past its band', () => {
   const chart = document.querySelector('.fatty-radar')!.textContent!;
   expect(chart).not.toMatch(/Too high/);
   expect(chart.match(/Typical/g)?.length).toBe(6);
+});
+
+// The rancidity note that replaced 09's own flag lived only in Formulation notes, which was
+// never on screen while 09 was, at any of five measured widths. It now also appears here,
+// taken from the very same insights, the way the essential-oils row and Formulation notes both
+// say a dose is over its ceiling. One source, so the two cannot disagree.
+test('shows the rancidity notes from the insights, above the chart, in both views', () => {
+  const dos = { code: 'dos_risk_no_antioxidant', level: 'info' as const, message: 'High linoleic + linolenic with no antioxidant.' };
+  const cap = { code: 'pufa_cap_superfat', level: 'warning' as const, message: 'Keep superfat nearer 3-5%.' };
+  const unrelated = { code: 'trace_speed', level: 'info' as const, message: 'A trace note that belongs elsewhere.' };
+  render(
+    <FattyAcidPanel
+      insights={[dos, unrelated, cap]}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+    />,
+  );
+  const notes = () => screen.getByRole('list', { name: /Rancidity/i });
+  expect(notes().textContent).toContain(dos.message);
+  expect(notes().textContent).toContain(cap.message);
+  expect(notes().textContent).not.toContain(unrelated.message);
+  // Same look as every other insight: a warning reads as a warning.
+  const capItem = Array.from(notes().querySelectorAll('li')).find((li) => li.textContent === cap.message)!;
+  expect(capItem.className).toContain('message-list__item--warn');
+  // Above the view switch's panel, so the default Meters view shows it and so does the radar.
+  const tabpanel = document.getElementById('fatty-tabpanel')!;
+  expect(notes().compareDocumentPosition(tabpanel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  expect(notes().textContent).toContain(dos.message);
+});
+
+test('shows no rancidity note when the insights carry none', () => {
+  render(
+    <FattyAcidPanel
+      insights={[{ code: 'trace_speed', level: 'info', message: 'A trace note.' }]}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+    />,
+  );
+  expect(screen.queryByRole('list', { name: /Rancidity/i })).toBeNull();
 });

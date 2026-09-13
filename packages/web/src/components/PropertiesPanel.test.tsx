@@ -284,8 +284,8 @@ test('ArrowLeft on the Radar tab moves the roving tabindex back to Meters and sw
 });
 
 // Two shades sit on every meter — the suggested range, and the darker target band from the
-// formulation guide — and for cleansing, hardness and creamy the target extends PAST the
-// suggested band's edge. With nothing naming them, a maker saw a dot inside the darkest
+// formulation guide — and under the ranges shipped when this was written the target extended
+// PAST the suggested band on cleansing, hardness and creamy (only creamy since 0212dff). With nothing naming them, a maker saw a dot inside the darkest
 // shading on the track and a red "Too low" beside it, with no way to learn they are two
 // different ranges. The original design carried this key and lost it.
 test('names both bands, so the darker one is not an unexplained second shading', () => {

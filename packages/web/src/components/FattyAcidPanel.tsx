@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import {
   FATTY_ACID_DISPLAY_GROUPS,
+  FATTY_ACID_RANCIDITY_INSIGHT_CODES,
   FORMULATION_FATTY_ACID_GUIDE,
   formatPropertyRangePercent,
   formatPropertyScore,
@@ -10,6 +11,7 @@ import {
   LOW_COVERAGE_PERCENT,
   saturatedUnsaturatedRatio,
   sumFattyAcids,
+  type FormulationInsight,
 } from '@soap-calc/core';
 import type { RecipeFattyAcids } from '../lib/calculateFattyAcids';
 import { trackPct as pct, valueAnchorClass } from '../lib/meterGeometry';
@@ -20,6 +22,10 @@ import { ModeledOilsNote } from './ModeledOilsNote';
 
 type FattyAcidPanelProps = {
   result: RecipeFattyAcids;
+  /** The recipe's formulation insights. Only the rancidity ones are shown here, inline above
+   *  the chart: the same objects Formulation notes renders, so the two cannot disagree.
+   *  Required, because a warning must not be omittable into silence. Pass [] when none. */
+  insights: FormulationInsight[];
 };
 
 const SCALE_MAX = 100;
@@ -52,7 +58,7 @@ const NARROW_BAND = 6;
 
 // memo: `result` is a stable view-model memo output, so unrelated keystrokes
 // skip re-rendering this panel.
-export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcidPanelProps) {
+export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }: FattyAcidPanelProps) {
   const [view, setView] = useState<'meters' | 'radar'>('meters');
   const viewActiveIndex = FATTY_VIEWS.indexOf(view);
   const handleViewKeyDown = makeTabsKeyDownHandler(FATTY_VIEWS, viewActiveIndex, setView);
@@ -129,6 +135,10 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
     <p className="sr-only">Typical {formatPropertyRangePercent(g.guide.low, g.guide.high)}</p>
   );
 
+  const rancidity = insights.filter((insight) =>
+    (FATTY_ACID_RANCIDITY_INSIGHT_CODES as readonly string[]).includes(insight.code),
+  );
+
   return (
     <section className="panel">
       {/* The toggle rides the head, per the mock — a compact cell pair beside the title,
@@ -190,6 +200,27 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
       {/* These readings ARE the reconstruction, so the modeled marker belongs here most of
           all — not only on the properties derived from them. */}
       <ModeledOilsNote oilIds={result.modeledOilIds} />
+
+      {/* The recipe's rancidity notes, here where the fatty acids are and not only in
+          Formulation notes, which was never on screen while this panel was at any of five
+          measured widths. These are the insight objects themselves, so this list and
+          Formulation notes cannot disagree. The risk depends on superfat and antioxidants
+          this panel does not see, which is why it is not judged from the readings below.
+          Outside the tabpanel, so both views show it. */}
+      {rancidity.length > 0 && (
+        <ul className="message-list message-list--insights fatty-rancidity" aria-label="Rancidity notes">
+          {rancidity.map((insight) => (
+            <li
+              key={insight.code}
+              className={
+                insight.level === 'warning' ? 'message-list__item--warn' : 'message-list__item--info'
+              }
+            >
+              {insight.message}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/* Neither view holds focusable children, so the tabpanel itself stays reachable
           (tabIndex 0) per the ARIA Tabs pattern. Both views render the SAME readings with
@@ -293,9 +324,9 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           <p className="fatty-radar__caption">
             Shaded ring = each group&apos;s typical range. Every axis is scaled to its own
             range, so the shape shows fit, not share. Only trans fat or an unusual oil is
-            flagged here. Rancidity is flagged in Formulation notes when a recipe is at risk,
-            since it depends on superfat and antioxidants too. Lauric includes myristic and
-            C8–C10; palmitic includes stearic.
+            flagged on this chart. When a recipe is at risk of going rancid, a rancidity note
+            appears above the chart, since that risk depends on superfat and antioxidants too.
+            Lauric includes myristic and C8–C10; palmitic includes stearic.
           </p>
         </>
       )}

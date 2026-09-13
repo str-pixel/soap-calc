@@ -2453,7 +2453,7 @@ details[open] > .disclosure__summary::before {
   text-transform: uppercase;
 }
 
-/* ── Property / fatty-acid bars ───────────────────────────────────────── */
+/* ── Property / fatty-acid meters ─────────────────────────────────────── */
 .property-meters {
   list-style: none;
   margin: 0;
@@ -2501,8 +2501,8 @@ details[open] > .disclosure__summary::before {
   color: var(--warn);
 }
 
-/* Zoned property meter: plain track = too-low / too-high, shaded = suggested range,
-   stronger band = target, dot = current value. */
+/* Zoned meter: plain track = outside the band, shaded = the suggested or typical range,
+   stronger band = a target where the panel has one, dot = current value. */
 /* The plot: the track, its scale row, and the value riding the marker above it. */
 .property-meters__plot {
   position: relative;
@@ -2554,7 +2554,7 @@ details[open] > .disclosure__summary::before {
    with the dot. */
 
 /* THE TARGET BAND IS DELIBERATELY THE HEAVIER OF THE TWO — 28% against the suggested
-   band's 13%, a 36-point luminance step — even though it is the suggested band that the
+   band's 13%, a clear lightness step — even though it is the suggested band that the
    verdict is computed against and the preference guide is explicitly not a pass/fail rule.
    That is not an inversion to be corrected. Darker-inside-lighter is the bullseye reading:
    the dark mark is where to aim, the pale one is what is acceptable. A band asserts
@@ -2595,8 +2595,7 @@ details[open] > .disclosure__summary::before {
   background: var(--accent);
 }
 
-/* Scale row under the track: LOW / HIGH at the extremes, suggested-range
-   boundary numbers positioned under the band edges. */
+/* Scale row under the track: the band's boundary numbers, positioned under its edges. */
 .property-meter__scale {
   position: relative;
   height: 0.95rem;
@@ -2690,6 +2689,14 @@ details[open] > .disclosure__summary::before {
   margin: 0.8rem 0 0;
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+/* The rancidity notes 09 shows above its chart. Same bottom spacing as the modeled-oils note
+   that sits in that slot, so the notes above the chart share one rhythm; without it the list
+   sat flush against the first meter row. Two classes, so it beats the shared insights list's
+   margin: 0 wherever this rule sits in the file. */
+.message-list--insights.fatty-rancidity {
+  margin: 0 0 0.85rem;
 }
 
 /* ── Property radar ───────────────────────────────────────────────────── */

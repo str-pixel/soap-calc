@@ -11,6 +11,7 @@ export * from './fatty-acid-chemistry.js';
 // Named, not `export *`: INSIGHT_RULES / resolveInsightParams are exported by the module
 // for its consistency test only (see their doc comments) and are not package API.
 export { analyzeFormulation } from './insights.js';
+export { FATTY_ACID_RANCIDITY_INSIGHT_CODES } from './insights.js';
 export type {
   FormulationAnalysisInput,
   FormulationInsight,

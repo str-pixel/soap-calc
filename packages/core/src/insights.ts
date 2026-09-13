@@ -37,6 +37,21 @@ export type FormulationInsight = {
   message: string;
 };
 
+/**
+ * The insights about a batch going rancid, which the fatty-acid panel also shows inline above
+ * its chart. Rancidity is judged here and only here: it depends on the superfat and on whether
+ * an antioxidant or chelator is present, neither of which that panel sees. Showing the insight
+ * objects themselves keeps the panel and Formulation notes from ever disagreeing.
+ *
+ * high_pufa_post_cook_superfat is left out on purpose: it concerns the oil added after the
+ * cook, and the fatty-acid profile the panel shows sums only the recipe's own oil lines.
+ */
+export const FATTY_ACID_RANCIDITY_INSIGHT_CODES = [
+  'dos_risk_no_antioxidant',
+  'pufa_cap_superfat',
+  'high_poly_high_superfat',
+] as const;
+
 export type FormulationAnalysisInput = {
   properties: SoapProperties | null;
   fattyAcids: FattyAcidProfile | null;
