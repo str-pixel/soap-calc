@@ -361,3 +361,49 @@ test('still flags the other properties, so the exemption is longevity only', () 
   const cleansing = screen.getByRole('meter', { name: /Cleansing/i }).closest('li')!;
   expect(cleansing.querySelector('.property-meters__status')?.textContent).toBe('Too high');
 });
+
+// The radar's screen-reader list carried values and ranges but no verdicts, so switching to
+// the radar silently dropped every "Too low" and "Too high" for a screen-reader user. The
+// fatty-acid radar's list has always carried its statuses. Same verdicts as the Meters rows.
+test('the radar screen-reader list carries the same verdicts as the meters', () => {
+  const r = {
+    ...FULL.properties,
+    properties: { hardness: 41, cleansing: 30, condition: 56, creamy: 24, bubbly: 20, longevity: 0 },
+  };
+  const { rerender } = render(
+    <PropertiesPanel result={r} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+  );
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  const item = (label: RegExp) =>
+    Array.from(document.querySelectorAll('ul[aria-label="Soap bar property readings"] li')).find((li) =>
+      label.test(li.textContent ?? ''),
+    )!;
+  expect(item(/Cleansing:/).textContent).toMatch(/Too high/);
+  expect(item(/Hardness:/).textContent).not.toMatch(/Too (low|high)/);
+  // Longevity is unjudged, so its item carries no verdict even at 0.
+  expect(item(/Longevity:/).textContent).not.toMatch(/Too (low|high)/);
+  // Under low coverage the Meters rows suppress verdicts; the list does too.
+  rerender(
+    <PropertiesPanel result={{ ...r, coveragePercent: 60 }} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+  );
+  expect(item(/Cleansing:/).textContent).not.toMatch(/Too (low|high)/);
+});
+
+// Longevity is shown but not judged, so its range is a typical one, the way iodine and INS
+// read. The screen-reader text called it "Suggested" in both views while the radar said
+// "Typical". Every judged property keeps "Suggested".
+test('longevity reads as a typical range to a screen reader, in both views', () => {
+  render(<PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />);
+  showMeters();
+  const longevityRow = screen.getByRole('meter', { name: /Longevity/i }).closest('li')!;
+  expect(longevityRow.textContent).toMatch(/Typical 25–50/);
+  expect(longevityRow.textContent).not.toMatch(/Suggested/);
+  expect(screen.getByRole('meter', { name: /Hardness/i }).closest('li')!.textContent).toMatch(/Suggested 30–60/);
+
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  const longevityItem = Array.from(
+    document.querySelectorAll('ul[aria-label="Soap bar property readings"] li'),
+  ).find((li) => /Longevity:/.test(li.textContent ?? ''))!;
+  expect(longevityItem.textContent).toMatch(/Typical 25–50/);
+  expect(longevityItem.textContent).not.toMatch(/Suggested/);
+});

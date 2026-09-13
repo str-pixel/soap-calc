@@ -1,3 +1,4 @@
+import { PROPERTY_ORDER } from '../lib/propertyOrder';
 import { memo, useState } from 'react';
 import type { RecipePropertiesResult, SoapPropertyName } from '@soap-calc/core';
 import type { ProcessId } from '../lib/process';
@@ -7,7 +8,7 @@ import {
   formatPropertyScoreRange,
   IODINE_GUIDE,
   INS_GUIDE,
-  LOW_COVERAGE_PERCENT,
+  isLowCoverage,
   isJudgedProperty,
   rangeVerdict,
   SOAP_PROPERTY_GUIDE,
@@ -21,14 +22,7 @@ import { ModeledOilsNote } from './ModeledOilsNote';
 import { PropertyRadar } from './PropertyRadar';
 import { trackPct as pct, valueAnchorClass } from '../lib/meterGeometry';
 
-const PROPERTY_ORDER: SoapPropertyName[] = [
-  'hardness',
-  'cleansing',
-  'condition',
-  'creamy',
-  'bubbly',
-  'longevity',
-];
+
 
 // Plain-language guidance for each bar: what it measures and the trade-off at the extremes.
 // Original copy — general soapmaking behavior, phrased for beginners.
@@ -48,6 +42,15 @@ const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
 };
 
 const SCALE_MAX = 100;
+
+/** The verdict a property earns, exactly as its Meters row shows it. Shared with the radar's
+ *  screen-reader list, so the two views can never announce different verdicts. An unjudged
+ *  property (longevity) always reads as in range. */
+function propertyVerdict(key: SoapPropertyName, value: number): ReturnType<typeof rangeVerdict> {
+  if (!isJudgedProperty(key)) return 'in';
+  const guide = SOAP_PROPERTY_GUIDE[key];
+  return rangeVerdict(value, guide.low, guide.high, 0);
+}
 
 const PROPERTY_VIEWS: Array<'meters' | 'radar'> = ['meters', 'radar'];
 
@@ -78,14 +81,14 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   const partial = result.properties ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.properties
-    ? Math.round(result.coveragePercent) < LOW_COVERAGE_PERCENT
+    ? isLowCoverage(result.coveragePercent)
     : false;
   const viewActiveIndex = PROPERTY_VIEWS.indexOf(view);
   const handleViewKeyDown = makeTabsKeyDownHandler(PROPERTY_VIEWS, viewActiveIndex, setView);
   const showIndexes = indexes.iodine !== null && indexes.ins !== null;
   const indexPartial = indexes.coveragePercent < 99.9;
   const indexLowCoverage =
-    showIndexes && Math.round(indexes.coveragePercent) < LOW_COVERAGE_PERCENT;
+    showIndexes && isLowCoverage(indexes.coveragePercent);
 
   return (
     <section className="panel">
@@ -223,8 +226,15 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   const value = result.properties![key];
                   const guide = SOAP_PROPERTY_GUIDE[key];
                   const preference = FORMULATION_PREFERENCE_GUIDE[key];
+                  const verdict = propertyVerdict(key, value);
                   return (
                     <li key={key}>
+                      {/* The same verdict the Meters row shows, read first, as in the
+                          fatty-acid radar's list: this list is the radar's only voice for a
+                          screen reader, so without it switching views dropped every verdict. */}
+                      {verdict !== 'in' && !lowCoverage && (
+                        <>{verdict === 'low' ? 'Too low' : 'Too high'} </>
+                      )}
                       <span
                         role="meter"
                         aria-valuemin={0}
@@ -237,7 +247,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                       </span>{' '}
                       {/* Match the Meters rows: keep the suggested/target range in AT reach
                           in Radar mode too, so switching views never drops the context. */}
-                      Suggested {formatPropertyScoreRange(guide.low, guide.high)}
+                      {isJudgedProperty(key) ? 'Suggested' : 'Typical'} {formatPropertyScoreRange(guide.low, guide.high)}
                       {preference && (
                         <>
                           {' · '}
@@ -272,8 +282,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 // same rounded figure, so dot, value and verdict are one reading.
                 // An unjudged property (longevity) still draws its band and its dot — the
                 // typical range is information — but never earns a verdict from them.
-                const judged = isJudgedProperty(key);
-                const verdict = judged ? rangeVerdict(value, guide.low, guide.high, 0) : 'in';
+                const verdict = propertyVerdict(key, value);
                 const inSuggested = verdict === 'in';
                 const shown = Math.round(value);
                 // Append, don't mutate PROPERTY_GUIDANCE: cleansing reads as solubility/dilution
@@ -367,7 +376,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                     </div>
                     </div>
                     <p className="sr-only">
-                      Suggested {formatPropertyScoreRange(guide.low, guide.high)}
+                      {isJudgedProperty(key) ? 'Suggested' : 'Typical'} {formatPropertyScoreRange(guide.low, guide.high)}
                       {preference && (
                         <>
                           {' · '}

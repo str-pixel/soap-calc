@@ -7,7 +7,7 @@ import {
   
   sumFattyAcids,
   FATTY_ACID_GROUP_KEYS,
-  LOW_COVERAGE_PERCENT,
+  isLowCoverage,
   type LyeCalculationResult,
   type RecipeFattyAcidResult,
   type RecipePropertiesResult,
@@ -219,7 +219,7 @@ export function useFormulationInsights(
     // feeds it) for liquid soap or under low fatty-acid coverage is pure waste, since the
     // result is always discarded in that case (#5).
     const traceSpeedApplicable =
-      options.process !== 'ls' && fattyAcids.coveragePercent >= LOW_COVERAGE_PERCENT;
+      options.process !== 'ls' && !isLowCoverage(fattyAcids.coveragePercent);
     // Sugar-family accelerators speed up trace; keyword-match (not just today's catalog
     // ids) so a later wave adding sorbitol/yogurt as their own catalog entries is caught
     // without touching this hook again.

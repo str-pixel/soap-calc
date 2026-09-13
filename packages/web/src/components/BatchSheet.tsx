@@ -1,3 +1,4 @@
+import { BATCH_SHEET_PROPERTY_LABEL, PROPERTY_ORDER } from '../lib/propertyOrder';
 import { memo, useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
@@ -7,7 +8,7 @@ import {
   lsFinishedVolumeMl,
   lsPreservativeById,
   lsPreservativeDoseTier,
-  LOW_COVERAGE_PERCENT,
+  isLowCoverage,
   preservativeDoseGrams,
   saturatedUnsaturatedRatio,
   formatTempDual,
@@ -115,11 +116,11 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // Compare rounded coverage, matching PropertiesPanel/FattyAcidPanel, so the printed
   // "X%" and the estimate treatment never disagree with the screen.
   const propsLow =
-    !!properties?.properties && Math.round(properties.coveragePercent) < LOW_COVERAGE_PERCENT;
+    !!properties?.properties && isLowCoverage(properties.coveragePercent);
   const indexLow =
     (indexes.iodine !== null || indexes.ins !== null) &&
-    Math.round(indexes.coveragePercent) < LOW_COVERAGE_PERCENT;
-  const fattyAcidsLow = Math.round(fattyAcids.coveragePercent) < LOW_COVERAGE_PERCENT;
+    isLowCoverage(indexes.coveragePercent);
+  const fattyAcidsLow = isLowCoverage(fattyAcids.coveragePercent);
   // The verdict this sheet's own COPY answers to, and DilutionPanel's `measuredPasteValid`
   // exactly: it gates the "Dilution water above uses the measured paste weight" note below
   // and — per Task 5 — OUTRANKS targetExceedsPaste there, since that flag is derived from the
@@ -734,32 +735,14 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
         <section className="batch-sheet__section">
           <h2>Estimated bar properties</h2>
           <dl className="batch-sheet__dl batch-sheet__dl--compact">
-            <div>
-              <dt>Hardness</dt>
-              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.hardness)}</dd>
-            </div>
-            <div>
-              <dt>Cleansing</dt>
-              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.cleansing)}</dd>
-            </div>
-            <div>
-              <dt>Conditioning</dt>
-              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.condition)}</dd>
-            </div>
-            <div>
-              <dt>Bubbly</dt>
-              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.bubbly)}</dd>
-            </div>
-            <div>
-              <dt>Creamy</dt>
-              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.creamy)}</dd>
-            </div>
-            {/* Longevity was missing from this sheet since it was written, so a maker's
-                printout carried five of the six properties the panel shows. */}
-            <div>
-              <dt>Longevity</dt>
-              <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties.longevity)}</dd>
-            </div>
+            {/* All six properties, in the panel's own order. The sheet once carried five of
+                them and listed bubbly before creamy; both came from rows written by hand. */}
+            {PROPERTY_ORDER.map((key) => (
+              <div key={key}>
+                <dt>{BATCH_SHEET_PROPERTY_LABEL[key]}</dt>
+                <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties![key])}</dd>
+              </div>
+            ))}
             {indexes.iodine !== null && (
               <div>
                 <dt>Iodine</dt>

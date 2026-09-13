@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { PROPERTY_ORDER } from '../lib/propertyOrder';
 import { afterEach, describe, expect, it, test } from 'vitest';
 import { computedScent } from '../testing/scentFixtures';
 import { render, screen, cleanup } from '@testing-library/react';
@@ -1625,9 +1626,14 @@ test('prints every bar property the panel shows, longevity included', () => {
   const terms = Array.from(container.querySelectorAll('.batch-sheet__dl dt')).map(
     (el) => el.textContent ?? '',
   );
-  for (const label of ['Hardness', 'Cleansing', 'Conditioning', 'Bubbly', 'Creamy', 'Longevity']) {
-    expect(terms, label).toContain(label);
-  }
+  // In the one property order the panel and radar use (lib/propertyOrder), so the printed
+  // sheet cannot drift from the screen again: it listed bubbly before creamy until 2026-09-13.
+  const SHEET_LABEL = {
+    hardness: 'Hardness', cleansing: 'Cleansing', condition: 'Conditioning',
+    creamy: 'Creamy', bubbly: 'Bubbly', longevity: 'Longevity',
+  } as const;
+  const expected = PROPERTY_ORDER.map((key) => SHEET_LABEL[key]);
+  expect(terms.filter((t) => (Object.values(SHEET_LABEL) as string[]).includes(t))).toEqual(expected);
   // And the longevity reading itself reaches the page, not just its label.
   const longevityRow = Array.from(container.querySelectorAll('.batch-sheet__dl div')).find(
     (d) => d.querySelector('dt')?.textContent === 'Longevity',

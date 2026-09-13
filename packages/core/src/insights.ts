@@ -6,7 +6,7 @@ import {
 import { ALLERGEN_LABEL_THRESHOLD_RINSE_OFF_PERCENT, formatShareAgainstCeiling, usualDosePastClause } from './fragrance.js';
 import { DEFAULT_KOH_BLEND_PERCENT, effectiveSuperfatPercent, type LyeType, type WaterMode } from './lye.js';
 import { CP_OVERFLOW_RISK_F } from './soaping-temperature.js';
-import { LOW_COVERAGE_PERCENT, SOAP_PROPERTY_GUIDE, type SoapProperties } from './properties.js';
+import { isLowCoverage, SOAP_PROPERTY_GUIDE, type SoapProperties } from './properties.js';
 import { rangeVerdict } from './range-verdict.js';
 import {
   additiveMatches,
@@ -256,7 +256,7 @@ function lsEffectiveSuperfatPercent(input: FormulationAnalysisInput): number {
 // the HP vessel-size guard below.
 // Process-invariant: callers gate by their own processes: declaration.
 function isCoconutHeavy(input: FormulationAnalysisInput): boolean {
-  if (!input.fattyAcids || (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT) {
+  if (!input.fattyAcids || isLowCoverage(input.fattyAcidCoveragePercent ?? 100)) {
     return false;
   }
   return (
@@ -425,7 +425,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       if (
         input.fattyAcids &&
-        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+        !isLowCoverage(input.fattyAcidCoveragePercent ?? 100)
       ) {
         const lauricMyristic = sumFattyAcids(
           input.fattyAcids,
@@ -452,7 +452,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       if (
         input.fattyAcids &&
-        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+        !isLowCoverage(input.fattyAcidCoveragePercent ?? 100)
       ) {
         const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
         if (poly > 28 && input.superfatPercent >= 8) {
@@ -475,7 +475,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       if (
         input.fattyAcids &&
-        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+        !isLowCoverage(input.fattyAcidCoveragePercent ?? 100)
       ) {
         const oleic = input.fattyAcids.oleic ?? 0;
         const lauric = input.fattyAcids.lauric ?? 0;
@@ -497,7 +497,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       if (
         input.properties &&
-        (input.propertyCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+        !isLowCoverage(input.propertyCoveragePercent ?? 100)
       ) {
         const cleansing = input.properties.cleansing;
         const superfat = input.superfatPercent;
@@ -527,7 +527,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       if (
         input.properties &&
-        (input.propertyCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+        !isLowCoverage(input.propertyCoveragePercent ?? 100)
       ) {
         const cleansing = input.properties.cleansing;
         const oleic = input.fattyAcids?.oleic ?? 0;
@@ -535,7 +535,7 @@ export const INSIGHT_RULES: InsightRule[] = [
         if (
           rangeVerdict(cleansing, guide.low, guide.high, 0) === 'low' &&
           oleic >= 50 &&
-          (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+          !isLowCoverage(input.fattyAcidCoveragePercent ?? 100)
         ) {
           return {
             level: 'info',
@@ -814,7 +814,7 @@ export const INSIGHT_RULES: InsightRule[] = [
       // carry an independently high-PUFA base (this rule's own pufa > 25 gate below) AND a
       // high-PUFA post-cook addition at once (grapeseed post-cook superfat is realistic),
       // and the base warning must not go quiet just because the addition has its own.
-      if (!input.fattyAcids || (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT) {
+      if (!input.fattyAcids || isLowCoverage(input.fattyAcidCoveragePercent ?? 100)) {
         return null;
       }
       const pufa = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
@@ -863,7 +863,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       if (
         input.fattyAcids &&
-        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT
+        !isLowCoverage(input.fattyAcidCoveragePercent ?? 100)
       ) {
         const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
         if (poly > 18 && input.superfatPercent > 5) {
@@ -1027,7 +1027,7 @@ export const INSIGHT_RULES: InsightRule[] = [
       const ricinoleicForCastor = input.fattyAcids?.ricinoleic ?? 0;
       const hasCastorByFattyAcid =
         ricinoleicForCastor >= 4 &&
-        (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+        !isLowCoverage(input.fattyAcidCoveragePercent ?? 100);
       const hasCastorByIdentity = recipeOilMatches(input.oilEntries, {
         oilIds: ['castor-oil'],
         nameKeyword: 'castor',
@@ -1055,7 +1055,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       if (
         !input.fattyAcids ||
-        (input.fattyAcidCoveragePercent ?? 100) < LOW_COVERAGE_PERCENT
+        isLowCoverage(input.fattyAcidCoveragePercent ?? 100)
       ) {
         return null;
       }
@@ -1212,7 +1212,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       const ricinoleic = input.fattyAcids?.ricinoleic ?? 0;
       const hasElevatedCastor =
-        ricinoleic >= 10 && (input.fattyAcidCoveragePercent ?? 100) >= LOW_COVERAGE_PERCENT;
+        ricinoleic >= 10 && !isLowCoverage(input.fattyAcidCoveragePercent ?? 100);
       const hasShea = recipeOilMatches(input.oilEntries, {
         oilIds: ['shea-butter', 'shea-oil-fractionated'],
         nameKeyword: 'shea',

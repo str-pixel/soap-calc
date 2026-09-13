@@ -149,6 +149,16 @@ export const SOAP_PROPERTY_GUIDE: Record<SoapPropertyName, { low: number; high: 
  */
 export const LOW_COVERAGE_PERCENT = 80;
 
+/**
+ * Whether a coverage percentage is too low to judge on, decided on the WHOLE-NUMBER figure every
+ * panel prints ("based on 80% of recipe oils"). The panels rounded and the insights compared the
+ * raw value, so between 79.5% and 80% a panel judged its readings under an "80%" caption while
+ * the insights treated the same recipe as an estimate. Every caller asks this instead.
+ */
+export function isLowCoverage(coveragePercent: number): boolean {
+  return Math.round(coveragePercent) < LOW_COVERAGE_PERCENT;
+}
+
 export function oilPropertiesFromFattyAcids(
   fattyAcids: FattyAcidProfile,
 ): SoapProperties {

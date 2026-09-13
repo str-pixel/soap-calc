@@ -342,3 +342,30 @@ test('shows no rancidity note when the insights carry none', () => {
   );
   expect(screen.queryByRole('list', { name: /Rancidity/i })).toBeNull();
 });
+
+// Nothing tested 09 below its 80% coverage cutoff: removing the low-coverage guard failed no
+// unit test. Below the cutoff every reading is an estimate: marked "~" and "estimated", the
+// caption says "estimated from", nothing is flagged, and the radar says "Low data".
+test('treats every reading as an estimate below the coverage cutoff, in both views', () => {
+  // Trans at 22 is flagged at full coverage (see the out-of-range test above).
+  render(
+    <FattyAcidPanel
+      insights={[]}
+      result={{ profile: PROFILE, coveragePercent: 60, missingOilIds: [], modeledOilIds: [] }}
+    />,
+  );
+  expect(screen.getByText(/estimated from 60% of recipe oils/i)).toBeTruthy();
+  expect(document.querySelectorAll('.property-meters__status').length).toBe(0);
+  expect(document.querySelector('.property-meters__value--outside')).toBeNull();
+  expect(document.querySelector('.property-meter__marker--outside')).toBeNull();
+  const trans = screen.getByRole('meter', { name: /Trans \(elaidic\)/i });
+  expect(trans.getAttribute('aria-label')).toMatch(/estimated/);
+  expect(trans.getAttribute('aria-label')).not.toMatch(/above typical range/);
+  expect(trans.textContent).toMatch(/^~/);
+
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  const chart = document.querySelector('.fatty-radar')!.textContent!;
+  expect(chart.match(/Low data/g)?.length).toBe(6);
+  expect(chart).not.toMatch(/Too high/);
+  expect(document.querySelectorAll('.fatty-radar__other .property-meters__status').length).toBe(0);
+});

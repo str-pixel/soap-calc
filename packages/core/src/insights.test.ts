@@ -1541,3 +1541,18 @@ describe('the rancidity notes the fatty-acid panel shows inline', () => {
     expect(codes(6, bht)).toEqual(['pufa_cap_superfat']);
   });
 });
+
+// The panels decide low coverage on the printed whole-number percentage, and these insights
+// used to compare the raw one, so at 79.6% coverage the fatty-acid panel judged its readings
+// under an "80%" caption while every rancidity note stayed switched off.
+describe('coverage cutoff shared with the panels', () => {
+  const fattyAcids = { linoleic: 40, linolenic: 4, oleic: 30 };
+  const rancid = (fattyAcidCoveragePercent: number) =>
+    analyzeFormulation({ ...base, superfatPercent: 5, fattyAcids, fattyAcidCoveragePercent }).some(
+      (i) => i.code === 'dos_risk_no_antioxidant',
+    );
+  it('treats coverage that prints as 80% as full, and coverage that prints as 79% as low', () => {
+    expect(rancid(79.6)).toBe(true);
+    expect(rancid(79.4)).toBe(false);
+  });
+});

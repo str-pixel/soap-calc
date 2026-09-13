@@ -8,7 +8,7 @@ import {
   formatPropertyScoreRange,
   fattyAcidIsTooHigh,
   formatSoapPropertyPercent,
-  LOW_COVERAGE_PERCENT,
+  isLowCoverage,
   saturatedUnsaturatedRatio,
   sumFattyAcids,
   type FormulationInsight,
@@ -65,7 +65,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
   const partial = result.profile ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.profile
-    ? Math.round(result.coveragePercent) < LOW_COVERAGE_PERCENT
+    ? isLowCoverage(result.coveragePercent)
     : false;
 
   if (!result.profile) {
