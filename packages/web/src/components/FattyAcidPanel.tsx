@@ -81,9 +81,10 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
   const groups = FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
     const guide = FORMULATION_FATTY_ACID_GUIDE[key];
     const value = sumFattyAcids(result.profile!, acids);
-    // Flag only a HIGH reading, and only on a group where a source states what goes wrong
-    // (rancidity, a hydrogenated oil, an unusual oil) — core's fatty-acid-verdict holds the
-    // policy, the citations and the measurement. It judges the figure this panel prints.
+    // Flag only a HIGH reading, and only on a group whose reading names its own cause (a
+    // hydrogenated oil, an unusual oil) — core's fatty-acid-verdict holds the policy, the
+    // measurement, and why rancidity is left to the formulation insights. It judges the
+    // figure this panel prints.
     // Low-coverage values are already marked as estimates ("~"), so they are never flagged.
     const outOfRange = !lowCoverage && fattyAcidIsTooHigh(key, value);
     return { key, guide, value, outOfRange };
@@ -291,9 +292,10 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           </ul>
           <p className="fatty-radar__caption">
             Shaded ring = each group&apos;s typical range. Every axis is scaled to its own
-            range, so the shape shows fit, not share. Only a high reading of a
-            rancidity-prone acid, trans fat or an unusual oil is flagged. Lauric includes
-            myristic and C8–C10; palmitic includes stearic.
+            range, so the shape shows fit, not share. Only trans fat or an unusual oil is
+            flagged here. Rancidity is flagged in Formulation notes when a recipe is at risk,
+            since it depends on superfat and antioxidants too. Lauric includes myristic and
+            C8–C10; palmitic includes stearic.
           </p>
         </>
       )}

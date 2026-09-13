@@ -7,34 +7,37 @@ import {
 } from './fatty-acid-verdict.js';
 
 describe('which fatty-acid groups may be flagged, and only when high', () => {
-  it('warns high only on the groups with a stated failure mode', () => {
+  it('warns high only on trans and the two catch-alls', () => {
     expect(Object.keys(FATTY_ACID_HIGH_WARNINGS).sort()).toEqual(
-      ['linoleic', 'linolenic', 'otherSaturated', 'otherUnsaturated', 'trans'].sort(),
+      ['otherSaturated', 'otherUnsaturated', 'trans'].sort(),
     );
   });
 
-  it('never flags lauric+myristic, palmitic+stearic, oleic or ricinoleic, at any value', () => {
-    // Being outside these bands is a difference of recipe style, not a fault: the books'
-    // own worked recipe reads low lauric, low oleic and high ricinoleic at once.
-    for (const key of ['lauricMyristic', 'palmiticStearic', 'oleic', 'ricinoleic'] as const) {
+  it('never flags the style groups or the rancidity-prone acids, at any value', () => {
+    // lauric + myristic, palmitic + stearic, oleic, ricinoleic: recipe style.
+    // linoleic, linolenic: rancidity depends on superfat and antioxidants this panel cannot
+    // see, so the formulation insights judge it instead. A panel limit contradicted those
+    // insights on every heavy recipe once an antioxidant was added.
+    const quiet = ['lauricMyristic', 'palmiticStearic', 'oleic', 'ricinoleic', 'linoleic', 'linolenic'] as const;
+    for (const key of quiet) {
       expect(isFattyAcidHighWarned(key), key).toBe(false);
-      for (const v of [0, 50, 100]) expect(fattyAcidIsTooHigh(key, v), `${key} ${v}`).toBe(false);
+      for (const v of [0, 30, 50, 100]) expect(fattyAcidIsTooHigh(key, v), `${key} ${v}`).toBe(false);
     }
   });
 
   it('flags a warned group above its band, judged on the figure the panel prints', () => {
-    // linoleic's band is 7-14 and the panel prints one decimal.
-    expect(fattyAcidIsTooHigh('linoleic', 14)).toBe(false);
-    expect(fattyAcidIsTooHigh('linoleic', 14.04)).toBe(false); // prints 14
-    expect(fattyAcidIsTooHigh('linoleic', 14.06)).toBe(true); // prints 14.1
+    // trans's band is 0-2 and the panel prints one decimal.
+    expect(fattyAcidIsTooHigh('trans', 2)).toBe(false);
+    expect(fattyAcidIsTooHigh('trans', 2.04)).toBe(false); // prints 2
+    expect(fattyAcidIsTooHigh('trans', 2.06)).toBe(true); // prints 2.1
     expect(fattyAcidIsTooHigh('trans', 22)).toBe(true);
     expect(fattyAcidIsTooHigh('otherUnsaturated', 28.5)).toBe(true);
   });
 
-  it('never flags a warned group for being LOW: less of a rancidity-prone acid is no fault', () => {
-    expect(fattyAcidIsTooHigh('linoleic', 0)).toBe(false);
-    expect(fattyAcidIsTooHigh('linolenic', 0)).toBe(false);
+  it('never flags a warned group for being LOW', () => {
     expect(fattyAcidIsTooHigh('trans', 0)).toBe(false);
+    expect(fattyAcidIsTooHigh('otherSaturated', 0)).toBe(false);
+    expect(fattyAcidIsTooHigh('otherUnsaturated', 0)).toBe(false);
   });
 
   it('answers for every display group, so a new group is forced to decide', () => {

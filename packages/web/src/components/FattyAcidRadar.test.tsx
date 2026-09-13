@@ -11,7 +11,7 @@ const AXES: FattyAcidRadarAxis[] = [
   { key: 'lauricMyristic', label: 'Lauric', value: 25, low: 20, high: 30, tooHigh: false }, // mid-band
   { key: 'palmiticStearic', label: 'Palmitic', value: 24, low: 20, high: 30, tooHigh: false },
   { key: 'oleic', label: 'Oleic', value: 47.3, low: 32, high: 41, tooHigh: false }, // above, not a fault
-  { key: 'linoleic', label: 'Linoleic', value: 20, low: 7, high: 14, tooHigh: true }, // above: rancidity
+  { key: 'linoleic', label: 'Linoleic', value: 20, low: 7, high: 14, tooHigh: true }, // synthetic: exercises the renderer; no drawn axis is warned in the app
   { key: 'linolenic', label: 'Linolenic', value: 0.5, low: 0, high: 1, tooHigh: false },
   { key: 'ricinoleic', label: 'Ricinoleic', value: 0, low: 4, high: 7, tooHigh: false }, // below: no castor
 ];

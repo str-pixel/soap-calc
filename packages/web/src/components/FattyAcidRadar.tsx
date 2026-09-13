@@ -11,7 +11,9 @@ export type FattyAcidRadarAxis = {
   low: number;
   high: number;
   /** Whether this reading earns "Too high" — decided upstream by core's fattyAcidIsTooHigh,
-   *  so the chart and the Meters rows share one answer. */
+   *  so the chart and the Meters rows share one answer. Under the current policy none of the
+   *  six drawn groups is warned (the flaggable ones are the catch-alls listed under the
+   *  chart), so the panel passes false for every axis; the renderer keeps the path. */
   tooHigh: boolean;
 };
 
