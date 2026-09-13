@@ -51,7 +51,7 @@ test('flags an out-of-range group with a non-color marker and names the status i
   for (const tab of [null, 'Radar'] as const) {
     if (tab) fireEvent.click(screen.getByRole('tab', { name: tab }));
     const transMeter = screen.getByRole('meter', { name: /Trans \(elaidic\)/i });
-    expect(transMeter.getAttribute('aria-label')).toMatch(/outside typical range/i);
+    expect(transMeter.getAttribute('aria-label')).toMatch(/above typical range/i);
 
     // A non-color, visible verdict accompanies the value — real text, not only a CSS color
     // class. 22% against a 0–2% band reads as "Too high" on the trans row specifically.
@@ -70,7 +70,7 @@ test('does not flag an in-range group as outside range', () => {
   );
   // Oleic = 41, band is 32–41 — in range.
   const oleicMeter = screen.getByRole('meter', { name: /^Oleic:/i });
-  expect(oleicMeter.getAttribute('aria-label')).not.toMatch(/outside typical range/i);
+  expect(oleicMeter.getAttribute('aria-label')).not.toMatch(/above typical range/i);
 });
 
 // The Meters | Radar toggle, the same pair as the properties panel. Meters (default) is
@@ -143,12 +143,12 @@ test('a reading that rounds into its band is not flagged, in either view', () =>
   );
   const meter = screen.getByRole('meter', { name: /Palmitic \+ stearic/i });
   expect(meter.textContent).toBe('30%');
-  expect(meter.getAttribute('aria-label')).not.toMatch(/outside typical range/i);
+  expect(meter.getAttribute('aria-label')).not.toMatch(/above typical range/i);
   expect(meter.closest('li')!.querySelector('.property-meters__status')).toBeNull();
 
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
   const again = screen.getByRole('meter', { name: /Palmitic \+ stearic/i });
-  expect(again.getAttribute('aria-label')).not.toMatch(/outside typical range/i);
+  expect(again.getAttribute('aria-label')).not.toMatch(/above typical range/i);
 });
 
 test('a value at the edge of the track anchors its label to the marker instead of clipping', () => {
@@ -193,6 +193,8 @@ test('the radar draws the six named groups and prints the three catch-alls under
   expect(caption).toMatch(/typical range/i);
   expect(caption).toMatch(/myristic/i);
   expect(caption).toMatch(/stearic/i);
+  // And it says which readings can be flagged, since most of the ring can no longer be.
+  expect(caption).toMatch(/rancidity/i);
   // All nine readings stay reachable for AT in this view too.
   expect(screen.getAllByRole('meter').length).toBe(9);
 });
@@ -238,4 +240,34 @@ test('names its shading, like the other three result views do', () => {
   expect(legend.querySelector('.property-legend__swatch--suggested')).not.toBeNull();
   // One band only here — this panel has no target band, so it must not claim one.
   expect(legend.querySelector('.property-legend__swatch--preference')).toBeNull();
+});
+
+// A band describing where most recipes sit is not a band of acceptable values. Measured
+// over ten ordinary bars, flagging both directions on all nine groups lit every single one
+// (26 amber readings out of 90) and buried the one warning that mattered; flagging only a
+// HIGH reading where a source states a failure mode stayed silent on all ten and still
+// caught every one of six genuinely problematic recipes. See core's fatty-acid-verdict.
+test('flags only a high reading where one means something', () => {
+  // Coconut-free, castor-free and high-oleic, so lauric, palmitic and ricinoleic read low
+  // and oleic reads high: all recipe style. Linoleic at 30 is the real problem.
+  const profile = { oleic: 55, linoleic: 30, palmitic: 6, stearic: 3, linolenic: 1 };
+  render(
+    <FattyAcidPanel
+      result={{ profile, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+    />,
+  );
+  const row = (name: RegExp) => screen.getByRole('meter', { name }).closest('li')!;
+  for (const quiet of [/^Lauric \+ myristic/i, /^Palmitic \+ stearic/i, /^Oleic:/i, /^Ricinoleic:/i]) {
+    expect(row(quiet).querySelector('.property-meters__status'), String(quiet)).toBeNull();
+    expect(row(quiet).querySelector('.property-meters__value--outside'), String(quiet)).toBeNull();
+    expect(row(quiet).querySelector('.property-meter__marker--outside'), String(quiet)).toBeNull();
+  }
+  const linoleic = row(/^Linoleic:/i);
+  expect(linoleic.querySelector('.property-meters__status')?.textContent).toBe('Too high');
+  expect(linoleic.querySelector('.property-meter__marker--outside')).not.toBeNull();
+  expect(screen.getByRole('meter', { name: /^Linoleic:/i }).getAttribute('aria-label')).toMatch(
+    /above typical range/i,
+  );
+  // Exactly one warning on the whole panel.
+  expect(document.querySelectorAll('.property-meters__status').length).toBe(1);
 });

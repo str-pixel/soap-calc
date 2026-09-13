@@ -1,4 +1,4 @@
-import { formatSoapPropertyPercent, rangeVerdict } from '@soap-calc/core';
+import { formatPropertyRangePercent, formatSoapPropertyPercent } from '@soap-calc/core';
 import { fitRadius, radarAngle, radarPoint, RING_INNER, RING_OUTER } from '../lib/radarGeometry';
 
 export type FattyAcidRadarAxis = {
@@ -10,6 +10,9 @@ export type FattyAcidRadarAxis = {
   /** The group's typical band, in percent. */
   low: number;
   high: number;
+  /** Whether this reading earns "Too high" — decided upstream by core's fattyAcidIsTooHigh,
+   *  so the chart and the Meters rows share one answer. */
+  tooHigh: boolean;
 };
 
 type FattyAcidRadarProps = {
@@ -27,7 +30,8 @@ const R = 112;
  * inside it, too high pokes out. The nine groups' typical ranges differ thirty-fold
  * (0–1% linolenic against 32–41% oleic); on a shared percent radius most of them would
  * never leave the hub. Only the geometry is normalised — every axis prints its true
- * percentage and verdict. Decorative (aria-hidden): the panel's sr-only meter list is
+ * percentage, and a verdict only when a high reading is flagged; otherwise it states its
+ * typical range in that slot. Decorative (aria-hidden): the panel's sr-only meter list is
  * the accessible source of these readings. A dashed polygon and "Low data" verdicts flag
  * a low-coverage estimate.
  */
@@ -37,18 +41,17 @@ export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
     radarPoint(CX, CY, i, n, fitRadius(Math.max(0, a.value), a.low, a.high) * R),
   );
   const polygon = valuePoints.map((p) => `${p.x},${p.y}`).join(' ');
-  // Judged on the figure each axis PRINTS (one decimal), like the Meters rows — see
-  // core's rangeVerdict.
-  const judge = (a: FattyAcidRadarAxis) => rangeVerdict(a.value, a.low, a.high, 1);
+  // Only a flagged HIGH reading earns a verdict — see core's fatty-acid-verdict for why and
+  // for the measurement behind it. Every other axis states its typical range in that slot,
+  // the way the properties panel's longevity axis does. Sitting off the ring is shown by the
+  // geometry either way; it is only called a fault where a source says it is one.
   const verdict = (a: FattyAcidRadarAxis) =>
     lowCoverage
       ? 'Low data'
-      : judge(a) === 'low'
-        ? 'Too low'
-        : judge(a) === 'high'
-          ? 'Too high'
-          : 'In range';
-  const isOut = (a: FattyAcidRadarAxis) => !lowCoverage && judge(a) !== 'in';
+      : a.tooHigh
+        ? 'Too high'
+        : `Typical ${formatPropertyRangePercent(a.low, a.high)}`;
+  const isOut = (a: FattyAcidRadarAxis) => !lowCoverage && a.tooHigh;
 
   return (
     <svg

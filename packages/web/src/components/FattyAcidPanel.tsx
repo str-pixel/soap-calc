@@ -5,9 +5,9 @@ import {
   formatPropertyRangePercent,
   formatPropertyScore,
   formatPropertyScoreRange,
+  fattyAcidIsTooHigh,
   formatSoapPropertyPercent,
   LOW_COVERAGE_PERCENT,
-  rangeVerdict,
   saturatedUnsaturatedRatio,
   sumFattyAcids,
 } from '@soap-calc/core';
@@ -81,13 +81,12 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
   const groups = FATTY_ACID_DISPLAY_GROUPS.map(({ key, acids }) => {
     const guide = FORMULATION_FATTY_ACID_GUIDE[key];
     const value = sumFattyAcids(result.profile!, acids);
-    // Judge the figure this panel PRINTS — it prints one decimal — so a reading can never
-    // read "Too high" beside a number that is plainly inside the range it names.
-    const verdict = rangeVerdict(value, guide.low, guide.high, 1);
-    // Low-coverage values are already flagged as estimates (the "~" prefix); don't also
-    // mark them out-of-range — the guide band isn't a meaningful signal on partial data.
-    const outOfRange = verdict !== 'in' && !lowCoverage;
-    return { key, guide, value, verdict, outOfRange };
+    // Flag only a HIGH reading, and only on a group where a source states what goes wrong
+    // (rancidity, a hydrogenated oil, an unusual oil) — core's fatty-acid-verdict holds the
+    // policy, the citations and the measurement. It judges the figure this panel prints.
+    // Low-coverage values are already marked as estimates ("~"), so they are never flagged.
+    const outOfRange = !lowCoverage && fattyAcidIsTooHigh(key, value);
+    return { key, guide, value, outOfRange };
   });
   type Group = (typeof groups)[number];
   const byKey = new Map(groups.map((g) => [g.key, g] as const));
@@ -95,16 +94,21 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
   const others = groups.filter((g) => !RADAR_AXES.some((a) => a.key === g.key));
   const axes: FattyAcidRadarAxis[] = RADAR_AXES.map((a) => {
     const g = byKey.get(a.key)!;
-    return { key: g.key, label: a.label, value: g.value, low: g.guide.low, high: g.guide.high };
+    return {
+      key: g.key,
+      label: a.label,
+      value: g.value,
+      low: g.guide.low,
+      high: g.guide.high,
+      tooHigh: g.outOfRange,
+    };
   });
 
   // The same accessible reading in both views — a status verdict plus a role="meter" value —
   // so switching views can never change what is claimed.
   const status = (g: Group) =>
     g.outOfRange ? (
-      <span className="property-meters__status">
-        {g.verdict === 'low' ? 'Too low' : 'Too high'}
-      </span>
+      <span className="property-meters__status">Too high</span>
     ) : null;
   const value = (g: Group, onTrack = false) => (
     <span
@@ -114,7 +118,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
       aria-valuemin={0}
       aria-valuemax={SCALE_MAX}
       aria-valuenow={Math.round(g.value * 10) / 10}
-      aria-label={`${g.guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(g.value)}${g.outOfRange ? ' — outside typical range' : ''}`}
+      aria-label={`${g.guide.label}: ${lowCoverage ? 'estimated ' : ''}${formatSoapPropertyPercent(g.value)}${g.outOfRange ? ' — above typical range' : ''}`}
     >
       {lowCoverage ? '~' : ''}
       {formatSoapPropertyPercent(g.value)}
@@ -287,8 +291,9 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result }: FattyAcid
           </ul>
           <p className="fatty-radar__caption">
             Shaded ring = each group&apos;s typical range. Every axis is scaled to its own
-            range, so the shape shows fit, not share. Lauric includes myristic and C8–C10;
-            palmitic includes stearic.
+            range, so the shape shows fit, not share. Only a high reading of a
+            rancidity-prone acid, trans fat or an unusual oil is flagged. Lauric includes
+            myristic and C8–C10; palmitic includes stearic.
           </p>
         </>
       )}

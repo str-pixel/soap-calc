@@ -4,6 +4,7 @@ export * from './lye.js';
 export * from './properties.js';
 export * from './property-display.js';
 export * from './range-verdict.js';
+export * from './fatty-acid-verdict.js';
 export * from './formulation-guide.js';
 export * from './fatty-acids.js';
 export * from './fatty-acid-chemistry.js';

@@ -6,13 +6,14 @@ import { RING_INNER, RING_OUTER } from '../lib/radarGeometry';
 
 afterEach(cleanup);
 
+// `tooHigh` is decided upstream by core's fattyAcidIsTooHigh; the radar only draws it.
 const AXES: FattyAcidRadarAxis[] = [
-  { key: 'lauricMyristic', label: 'Lauric', value: 25, low: 20, high: 30 }, // mid-band
-  { key: 'palmiticStearic', label: 'Palmitic', value: 24, low: 20, high: 30 },
-  { key: 'oleic', label: 'Oleic', value: 47.3, low: 32, high: 41 }, // above
-  { key: 'linoleic', label: 'Linoleic', value: 10, low: 7, high: 14 },
-  { key: 'linolenic', label: 'Linolenic', value: 0.5, low: 0, high: 1 },
-  { key: 'ricinoleic', label: 'Ricinoleic', value: 0, low: 4, high: 7 }, // below: no castor
+  { key: 'lauricMyristic', label: 'Lauric', value: 25, low: 20, high: 30, tooHigh: false }, // mid-band
+  { key: 'palmiticStearic', label: 'Palmitic', value: 24, low: 20, high: 30, tooHigh: false },
+  { key: 'oleic', label: 'Oleic', value: 47.3, low: 32, high: 41, tooHigh: false }, // above, not a fault
+  { key: 'linoleic', label: 'Linoleic', value: 20, low: 7, high: 14, tooHigh: true }, // above: rancidity
+  { key: 'linolenic', label: 'Linolenic', value: 0.5, low: 0, high: 1, tooHigh: false },
+  { key: 'ricinoleic', label: 'Ricinoleic', value: 0, low: 4, high: 7, tooHigh: false }, // below: no castor
 ];
 
 const vertices = (container: HTMLElement) =>
@@ -48,14 +49,32 @@ test('fits every axis to the ring: in band lands on it, above pokes out, below s
   expect(radiusOf(v[4])).toBeLessThanOrEqual(RING_OUTER);
 });
 
-test('labels each axis with its true percentage and a range verdict', () => {
+test('labels each axis with its true percentage, and speaks up only for a flagged high', () => {
   const { container } = render(<FattyAcidRadar axes={AXES} lowCoverage={false} />);
+  const block = (label: string) => {
+    const t = container.textContent ?? '';
+    const i = t.indexOf(label);
+    return t.slice(i, i + label.length + 22);
+  };
+  expect(block('Oleic')).toContain('47.3%'); // the number is never normalised, only the geometry
+  // Linoleic over its band is the one warning here.
+  expect(block('Linoleic')).toContain('Too high');
+  // Oleic above and ricinoleic below are recipe style, not faults: they state their typical
+  // range where a verdict would go, and never say "Too low" or "In range".
+  expect(block('Oleic')).toMatch(/Typical 32–41%/);
+  expect(block('Ricinoleic')).toMatch(/Typical 4–7%/);
   const text = container.textContent ?? '';
-  expect(text).toContain('Oleic');
-  expect(text).toContain('47.3%'); // the number is never normalised, only the geometry
-  expect(text).toContain('Too high');
-  expect(text).toContain('Too low'); // ricinoleic
-  expect(text).toContain('In range');
+  expect(text).not.toMatch(/Too low|In range/);
+  expect(text.match(/Too high/g)?.length).toBe(1);
+});
+
+test('draws only a flagged axis in accent', () => {
+  const { container } = render(<FattyAcidRadar axes={AXES} lowCoverage={false} />);
+  const values = Array.from(container.querySelectorAll('text')).filter((t) =>
+    /%$/.test(t.textContent ?? ''),
+  );
+  const accented = values.filter((t) => (t as SVGTextElement).style.fill === 'var(--accent)');
+  expect(accented.map((t) => t.textContent)).toEqual(['20%']);
 });
 
 test('flags low coverage with tilde values, Low data verdicts, and a dashed polygon', () => {
@@ -63,7 +82,7 @@ test('flags low coverage with tilde values, Low data verdicts, and a dashed poly
   const text = container.textContent ?? '';
   expect(text).toContain('~47.3%');
   expect(text).toContain('Low data');
-  expect(text).not.toMatch(/Too low|Too high|In range/);
+  expect(text).not.toMatch(/Too low|Too high|In range|Typical/);
   const recipe = container.querySelector('[data-testid="radar-recipe"]') as SVGPolygonElement;
   expect(recipe.style.strokeDasharray).toBe('4 3');
 });
