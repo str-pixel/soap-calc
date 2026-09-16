@@ -1187,7 +1187,6 @@ export function useRecipeViewModel({
     lyeWaterUnverifiable,
     fattyAcids,
     insights,
-    withheldRancidity,
     neutralization,
     postCookSuperfat,
     previewSettings,
