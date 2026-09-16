@@ -654,4 +654,41 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'palmitic-rich (palmitic 51.8, oleic 36.4, iodine 45; Mabaso et al. 2025, PMC12526083) and was ' +
       'not used, since it is not the commercial product.',
   },
+  'abyssinian-oil': {
+    // Cheng Table 1, field-grown column, mean of the six varieties, normalized to 100% FA.
+    // Raw measured means were oleic 18.81, linoleic 9.39, linolenic 6.24, erucic 59.69 (sum
+    // 94.13) beside an unbroken "Others 5.88" — the saturates and long-chain acids the table did
+    // not itemise. Normalizing folds that 5.88 proportionally into these four, which is the
+    // house convention (see the file header) and is SAP/iodine-neutral: the oracles renormalize
+    // internally, so raw and normalized both derive SAP 169.9 and IV 97.8. What it does cost is
+    // the saturates, which end up unrepresented: hardness and longevity read 0 for this oil
+    // against a true ~3. That understates, never overstates — the safe direction — and it is
+    // 3 points on a 30–60 band.
+    profile: { erucic: 63.41, oleic: 19.98, linoleic: 9.98, linolenic: 6.63 },
+    sourceType: 'literature',
+    source:
+      'J. Cheng, "A mutation breeding program to improve the quality of the oil crop Crambe ' +
+      'abyssinica", PhD thesis, Wageningen University 2013, doi:10.18174/305620, Table 1 — seed-oil ' +
+      'composition of six crambe varieties (Elst2007-03/-04/-15, PRI9104-71, Nebula, Galactica) ' +
+      'grown in the field at Wageningen, 2007; two blocks per variety, each measured in duplicate. ' +
+      'Open access, table read directly from the full text.',
+    url: 'https://edepot.wur.nl/305620',
+    acknowledgedShift: true,
+    note:
+      'Replaces a legacy profile that summed 38%: the ~60% erucic acid that is most of this oil was ' +
+      'never entered, because the legacy 8-acid schema has no erucic column — the same truncation ' +
+      'documented in KNOWN_INCOMPLETE_PROFILES. That 38% is below MIN_MAPPED_PERCENT, so no ' +
+      'chemistry could be derived from it at all, and the oil was excluded from the bar scores ' +
+      'entirely (it had been filed as a wax ester on the strength of that short sum, despite SAP ' +
+      '168 mg KOH/g placing it with meadowfoam at 169, not jojoba at 92). Three independent lines ' +
+      'agree on the shape: this thesis, the USDA Cruciferae survey (Mikolajczak et al., JAOCS 1961, ' +
+      'doi:10.1007/bf02633053 — erucic 59, oleic 18, linoleic 11, linolenic 4), and a supplier ' +
+      'envelope (oleic 10–35%, C22:1 35–65%). The oracles corroborate it independently: this ' +
+      'profile derives SAP 169.9 against the stored 168 (+1.1%) and iodine 97.8 against the stored ' +
+      '98 (−0.2%), and a laboratory measurement of raw Abyssinian oil reports SAP 170.5 (Molecules ' +
+      '2018, PMC6320842). An alternative itemised profile including the saturates (Li, Wageningen ' +
+      'thesis doi:10.18174/311403, Table 1.1) was not used: it is an uncited compilation in that ' +
+      "thesis's introduction rather than a measurement, and its iodine misses by 6.0% against this " +
+      "profile's 0.2%.",
+  },
 };

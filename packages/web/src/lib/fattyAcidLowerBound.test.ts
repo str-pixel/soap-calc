@@ -70,6 +70,10 @@ type Case = {
 const RECLASSIFIED = [
   'japan-wax', 'soybean-fully-hydrogenated', 'stearic-acid',
   'lauric-acid', 'oleic-acid', 'palmitic-acid', 'myristic-acid',
+  // Abyssinian came back too, but by a different route: SAP reclassified it as the triglyceride
+  // it is, and a cited PROFILE_BACKFILL then replaced the 38%-complete legacy row that had kept
+  // it out. It was the single largest source of misses before that.
+  'abyssinian-oil',
 ] as const;
 
 /** The catalog as it was before the category fix: the seven put back out of reach. */
@@ -170,19 +174,23 @@ describe('the rancidity reading, measured over the catalog', () => {
     expect(exact((c) => c.after)).toBeGreaterThan(exact((c) => c.before));
   });
 
-  // The bound's only cost is silence where a warning was warranted. That cost is concentrated,
-  // and knowing WHERE is what makes it actionable: abyssinian dominates it, because it is the one
-  // excluded ingredient whose own analysis shows real polyunsaturates (linoleic 11 + linolenic 4).
-  // Retiring that exclusion — see PROFILE_TOO_INCOMPLETE_TO_USE — removes most of the misses.
-  it('accounts for its misses, and names abyssinian as the largest single source', () => {
+  // The bound's only cost is silence where a warning was warranted, and that cost is now tiny:
+  // every ingredient still lacking a profile is a true wax, wax ester or tar, none of which
+  // carries more than trace polyunsaturates in any published analysis. What remains cannot be
+  // fixed with data — it is the price of refusing to count unmeasured weight as PUFA.
+  it('misses only where an unprofiled ingredient carries trace PUFA, and rarely', () => {
     const misses = CASES.filter((c) => c.after < c.truth);
-    const byIngredient = new Map<string, number>();
-    for (const m of misses) byIngredient.set(m.missingId, (byIngredient.get(m.missingId) ?? 0) + 1);
-    const ranked = [...byIngredient].sort((a, b) => b[1] - a[1]);
-    expect(ranked[0][0]).toBe('abyssinian-oil');
+    const sources = new Set(misses.map((m) => m.missingId));
+    // Nothing with real polyunsaturates is unprofiled any more: what is left are the waxes whose
+    // published high-end figures are 2–3%.
+    for (const id of sources) {
+      const high = PUBLISHED_PUFA[id][2];
+      expect(high, `${id} should not be a miss source unless it carries some PUFA`).toBeGreaterThan(0);
+      expect(high, `${id} carries more than trace PUFA — it deserves a profile, not a miss`).toBeLessThan(5);
+    }
     // A miss is a warning we cannot prove is warranted, so it is the safe failure; it must still
     // stay a small minority of the sweep.
-    expect(misses.length / CASES.length).toBeLessThan(0.05);
+    expect(misses.length / CASES.length).toBeLessThan(0.01);
   });
 });
 

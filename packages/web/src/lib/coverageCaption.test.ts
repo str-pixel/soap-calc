@@ -25,8 +25,8 @@ describe('coverage captions', () => {
     );
     // With an oil missing, the profile is rescaled over the oils that have data, so a reading is
     // a percent of their weight: grapeseed's linoleic reads 68% here, 34% of the whole recipe.
-    expect(fattyAcidBasisCaption(recipe(['grapeseed-oil', '500'], ['abyssinian-oil', '500']))).toBe(
-      'Percent of the weight of oils with data, estimated from fatty-acid data for 50% of recipe oil weight (no data: Abyssinian Oil)',
+    expect(fattyAcidBasisCaption(recipe(['grapeseed-oil', '500'], ['beeswax', '500']))).toBe(
+      'Percent of the weight of oils with data, estimated from fatty-acid data for 50% of recipe oil weight (no data: Beeswax)',
     );
   });
 
@@ -51,7 +51,7 @@ describe('coverage captions', () => {
     let partial = 0;
     for (const oil of OILS) {
       for (const tiny of [null, '4', '0.5', '0.00000000000001']) {
-        const r = tiny ? recipe([oil.id, '1000'], ['abyssinian-oil', tiny]) : recipe([oil.id, '1000']);
+        const r = tiny ? recipe([oil.id, '1000'], ['beeswax', tiny]) : recipe([oil.id, '1000']);
         if (!r.profile) continue;
         const where = `${oil.id} beside ${tiny ?? 'nothing'}`;
         const captions = [
@@ -65,7 +65,7 @@ describe('coverage captions', () => {
           expect(captions[1], where).not.toBe('');
         }
         if (r.missingOilIds.length > 0) {
-          for (const c of captions) expect(c, where).toContain('(no data: Abyssinian Oil)');
+          for (const c of captions) expect(c, where).toContain('(no data: Beeswax)');
         }
       }
     }

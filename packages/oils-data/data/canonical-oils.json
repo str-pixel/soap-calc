@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-16T09:47:31.834Z",
+  "generatedAt": "2026-09-16T16:24:26.653Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -41,19 +41,23 @@
       "iodine": 98,
       "ins": 70,
       "fattyAcids": {
-        "oleic": 18,
-        "stearic": 2,
-        "linoleic": 11,
-        "palmitic": 3,
-        "linolenic": 4
+        "erucic": 63.41,
+        "oleic": 19.98,
+        "linoleic": 9.98,
+        "linolenic": 6.63
       },
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "sources": [
         {
           "source": "legacy_catalog",
           "sapKoh": 0.168,
           "sapNaoh": 0.11978609625668449,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://edepot.wur.nl/305620",
+          "notes": "Fatty-acid profile: J. Cheng, \"A mutation breeding program to improve the quality of the oil crop Crambe abyssinica\", PhD thesis, Wageningen University 2013, doi:10.18174/305620, Table 1 — seed-oil composition of six crambe varieties (Elst2007-03/-04/-15, PRI9104-71, Nebula, Galactica) grown in the field at Wageningen, 2007; two blocks per variety, each measured in duplicate. Open access, table read directly from the full text. Replaces a legacy profile that summed 38%: the ~60% erucic acid that is most of this oil was never entered, because the legacy 8-acid schema has no erucic column — the same truncation documented in KNOWN_INCOMPLETE_PROFILES. That 38% is below MIN_MAPPED_PERCENT, so no chemistry could be derived from it at all, and the oil was excluded from the bar scores entirely (it had been filed as a wax ester on the strength of that short sum, despite SAP 168 mg KOH/g placing it with meadowfoam at 169, not jojoba at 92). Three independent lines agree on the shape: this thesis, the USDA Cruciferae survey (Mikolajczak et al., JAOCS 1961, doi:10.1007/bf02633053 — erucic 59, oleic 18, linoleic 11, linolenic 4), and a supplier envelope (oleic 10–35%, C22:1 35–65%). The oracles corroborate it independently: this profile derives SAP 169.9 against the stored 168 (+1.1%) and iodine 97.8 against the stored 98 (−0.2%), and a laboratory measurement of raw Abyssinian oil reports SAP 170.5 (Molecules 2018, PMC6320842). An alternative itemised profile including the saturates (Li, Wageningen thesis doi:10.18174/311403, Table 1.1) was not used: it is an uncited compilation in that thesis's introduction rather than a measurement, and its iodine misses by 6.0% against this profile's 0.2%."
         },
         {
           "source": "manual",

@@ -112,30 +112,11 @@ export const FATTY_ACID_SAP_FLOOR = 0.13;
  * exclusion cannot masquerade as one of these.
  */
 export const PROFILE_TOO_INCOMPLETE_TO_USE: Record<string, string> = {
-  'abyssinian-oil':
-    'SAP 168 mg KOH/g puts it with meadowfoam (169), not jojoba (92), so it saponifies as a ' +
-    'triglyceride — but its stored profile sums to 38%. WHAT IS MISSING IS KNOWN: the balance is ' +
-    'erucic acid (~55–64%) plus small C20–C22 acids, all of which this model already has keys ' +
-    'for, and the gap is the same 8-acid-schema truncation documented in ' +
-    'KNOWN_INCOMPLETE_PROFILES. The fullest published profile located is the USDA Northern ' +
-    'Regional Research Laboratory Cruciferae survey — Mikolajczak, Miwa, Earle, Wolff & Jones, ' +
-    '"Search for new industrial oils. V. Oils of Cruciferae", JAOCS 1961, doi:10.1007/bf02633053 ' +
-    '— which gives erucic 59.0, oleic 18.0, linoleic 11.0, linolenic 4.0, palmitic 2.0, stearic ' +
-    '0.5, eicosenoic 2.0, arachidic 1.0, behenic 1.0, docosadienoic 1.0, palmitoleic 0.5, ' +
-    'myristic 0.1 (sum 100.1). Our stored oleic/linoleic/linolenic match it exactly at 18/11/4; ' +
-    'palmitic (3 vs 2.0) and stearic (2 vs 0.5) do NOT, so the legacy row is NOT a straight ' +
-    'truncation of it and its lineage is unproven. Independent support for the shape: a measured ' +
-    'analysis of raw Abyssinian oil reports SAP 170.5 mg KOH/g against our 168 (Molecules 2018, ' +
-    'PMC6320842 — that SAP is the paper\'s own measurement; the composition it prints is cited ' +
-    'to other work), and a supplier envelope brackets it (oleic 10–35%, C22:1 35–65%). ' +
-    'WHAT IS MISSING IS A SOURCE SOMEONE HAS READ: the 1961 survey is paywalled and has NOT been ' +
-    'read, and neither has Lalas et al. 2012 JAOCS doi:10.1007/s11746-012-2122-y. Every profile ' +
-    'quoted here came second-hand from the PlantFAdb dump used as a finding aid, which is enough ' +
-    'to name a citation and not enough to enter numbers. Retiring this entry needs one person to ' +
-    'read one table. Until then the 38% profile stays out: using it would wreck the scores (pure ' +
-    'abyssinian would read conditioning ~33 against a true ~92), while excluding it costs only ' +
-    'rancidity MISSES, never false alarms — see fattyAcidLowerBound.test.ts, which measures that ' +
-    'cost rather than asserting it.',
+  // Empty, and worth keeping so: abyssinian was the only entry, retired 2026-09-16 by a cited
+  // PROFILE_BACKFILL from a measured thesis table. An entry here is a debt — an ingredient whose
+  // chemistry says it contributes fatty acids while its stored profile is too incomplete to use —
+  // and validate-canonical requires one before it will allow such an exclusion, so nothing can be
+  // dropped from the bar scores silently the way stearic acid once was.
 };
 
 /**

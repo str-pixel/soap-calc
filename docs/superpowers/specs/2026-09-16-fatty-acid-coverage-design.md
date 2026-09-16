@@ -89,7 +89,11 @@ not by tuning.
 | reading | exact | false alarms | misses |
 | --- | --- | --- | --- |
 | before (renormalised) | 83.2% | 16.3% | 0.5% |
-| **shipped** (bound + category fix) | **97.6%** | **0%** | 2.4% |
+| bound + category fix | 97.6% | **0%** | 2.4% |
+
+Retiring the abyssinian exclusion removes 556 of the 595 remaining misses. On the shipped
+catalog's own population (26,460 cases, seven unprofiled ingredients left — all true waxes, wax
+esters and tars) the reading is now **99.85% exact, 0% false alarms, 0.15% misses**.
 
 Both rows are the real code over the same 53,100 recipes. An earlier simulation projected 98.2%
 for this row by also crediting a completed abyssinian profile, which was not sourced and did not
@@ -139,6 +143,97 @@ Abyssinian needs its erucic entered as a cited `PROFILE_BACKFILL` entry before i
 reclassified; the placeholder used in the measurement (erucic 57, giving a sum of 95 and a
 profile-derived iodine of ~90 against a stored 98, inside the 15% gate) is **not** a source
 and must be replaced with a real one.
+
+## An asymmetry worth deciding deliberately
+
+The lower bound is conservative about **whether** to warn and optimistic about **how long**
+the shelf window is. `shelfKnees` maps higher PUFA to a shorter window, so feeding it a
+lower-bound PUFA produces a *longer* "use within" window than today's reading — the less
+cautious direction. The cautious combination is to let the bound decide whether the flip
+happens, and today's higher reading size the window once it has.
+
+## What this does not do
+
+It does not ingest anything. The PlantFAdb licence question (GPL-3.0, MSU copyright, an
+upstream whose own site no longer resolves, against a repo with no licence file that ships
+its catalog to browsers) stays open and stays blocking for bulk import — but nothing here
+depends on it. The only new datum required is one cited profile for one oil, through the
+backfill mechanism the repo already uses.
+
+It also leaves profile *incompleteness* alone. 12 of 118 oils sum below 95%, 5 below 93%
+(sea buckthorn 69, macadamia butter 79, sheep tallow 82, bear tallow 91, avocado butter 92).
+Incompleteness deflates rather than inflates, so it costs precision, not safety — and
+several of those are butters and blends whose identity is ambiguous in any source.
+
+## Decisions settled
+
+- **A — scope: absolute thresholds only.** Decided on evidence, not size. The scores cannot
+  follow the bars onto a whole-recipe basis (that is the 22% corruption above), so switching
+  the bars alone would leave 08 and 09 on *different bases while showing the same acids*:
+  they would visibly disagree by more than 5 points in 49% of readings, and the
+  Saturated/Unsaturated line would stop reading as a decomposition of the fat (it prints
+  93–100% for 113 of 118 oils today; 69% at 30% unprofiled). What that buys is deleting a
+  caption that already states the basis exactly. Bad trade — the bars stay as they are.
+- **B — the bound applies at every coverage level**, and the 80% rancidity gate retires with
+  it. The gate exists to suppress a number that could over-warn; a bound that cannot
+  over-warn does not need suppressing. Above 80% this trades 642 false alarms for 93 misses.
+- **C — the SAP rule ships for seven ingredients; abyssinian is deferred.** See below.
+- **D — "use within" is sized from the renormalised reading**, not the bound. The bound
+  decides *whether* to flip; the higher figure sizes the window, so partial data never buys
+  a longer shelf-life promise.
+
+### Why the seven are worth reclassifying — and it is not rancidity
+
+Reclassification only improves a rancidity reading if the ingredient's stored profile
+actually carries PUFA. Checked across all fifteen: **only abyssinian does** (linoleic 11 +
+linolenic 4). Japan wax, fully hydrogenated soy and the five free acids all carry zero, so
+counting them changes no rancidity verdict at all.
+
+Their real cost is in the bar properties, and it is much larger. For recipes containing
+them — 4,956 combinations across the ratio ladder — **27.6% of property readings are wrong
+today** (6,845 of 24,780), because the app drops the ingredient from the scores entirely:
+
+| property | median score error today | verdicts corrected |
+| --- | --- | --- |
+| condition | +8.7 overstated | 1,638 |
+| hardness | −8.9 understated | 1,467 |
+| creamy | −4.3 understated | 1,822 |
+| cleansing | — | 1,053 |
+| bubbly | — | 865 |
+
+A bar with 20% stearic acid genuinely is harder than the app says. All seven profiles are
+already stored, complete (sums 92–100) and need no new data.
+
+### Abyssinian: retired, not deferred
+
+This shipped deferred at first, because no source carrying a complete profile could be read:
+Europe PMC held only transgenic lines, the CIR oils report is a 2010 scan with no text layer,
+supplier specs give envelopes rather than profiles, and both the definitive characterisation
+(Lalas et al. 2012) and the USDA Cruciferae survey (Mikolajczak et al., JAOCS 1961,
+doi:10.1007/bf02633053) are paywalled.
+
+The route that worked was theses. Wageningen ran a crambe breeding programme and its theses are
+open access with real text layers. **Cheng (doi:10.18174/305620), Table 1** measures the seed-oil
+composition of six commercial crambe varieties grown in the field at Wageningen in 2007, two
+blocks each, in duplicate — primary data, read directly from the full text. Its mean is oleic
+18.81, linoleic 9.39, linolenic 6.24, erucic 59.69, normalized to 100 for the backfill.
+
+The repo's own oracles confirm it independently, which is what makes this more than a plausible
+table: the profile derives **SAP 169.9 against the stored 168 (+1.1%)** and **iodine 97.8 against
+the stored 98 (−0.2%)**, and a laboratory measurement of raw Abyssinian oil reports SAP 170.5
+(Molecules 2018, PMC6320842). Iodine is a sharp test here — it is sensitive to the
+erucic/oleic/PUFA balance — and 0.2% is not a coincidence. The legacy 38% profile, by contrast,
+maps below `MIN_MAPPED_PERCENT` and derives no chemistry at all.
+
+An alternative itemised profile including the saturates (Li, doi:10.18174/311403, Table 1.1) was
+rejected: it is an uncited compilation in that thesis's introduction rather than a measurement,
+and its iodine misses by 6.0%. The cost of preferring Cheng is that its four named acids leave an
+unbroken "Others 5.9%", so the saturates go unrepresented and hardness reads 0 for this oil
+against a true ~3 — understating, never overstating.
+
+`PROFILE_TOO_INCOMPLETE_TO_USE` is now empty, and kept so: an entry in it is a debt, and
+`validate-canonical` requires one before it will allow an ingredient that contributes fatty acids
+to be dropped from the scores.
 
 ## An asymmetry worth deciding deliberately
 
