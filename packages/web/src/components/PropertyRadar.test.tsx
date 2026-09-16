@@ -215,3 +215,28 @@ test('the target band sits at a different radius on each axis, and creamy overfl
   // and the whole band sits outside the hub.
   for (const r of radii) expect(r).toBeGreaterThan(RING_INNER * 0.9);
 });
+
+// The ribbon's runs are found circularly so the shape survives a reordering of the axes — the
+// comment on targetRibbonPaths says so, which makes it a promise worth holding to. With the
+// shipped order longevity is last and the five axes with a target are contiguous, the easy case;
+// move it into the middle and the run wraps past the end of the list.
+test('finds the run of axes with a target wherever the one without sits', () => {
+  for (const order of [
+    ['hardness', 'cleansing', 'condition', 'creamy', 'bubbly', 'longevity'],
+    ['hardness', 'cleansing', 'longevity', 'condition', 'creamy', 'bubbly'],
+    ['longevity', 'hardness', 'cleansing', 'condition', 'creamy', 'bubbly'],
+    ['hardness', 'longevity', 'cleansing', 'condition', 'creamy', 'bubbly'],
+  ] as SoapPropertyName[][]) {
+    cleanup();
+    const { container } = render(
+      <PropertyRadar properties={BAND_SCORES} order={order} lowCoverage={false} />,
+    );
+    const bands = Array.from(container.querySelectorAll('[data-testid="radar-target-band"]'));
+    const where = order.indexOf('longevity');
+    // One ribbon, always across the same five axes: the run wraps rather than splitting in two.
+    expect(bands.length, `longevity at ${where}`).toBe(1);
+    const d = bands[0].getAttribute('d')!;
+    expect(d.match(/[ML]/g)!.length, `longevity at ${where}`).toBe(10);
+    expect(d.match(/Z/g)!.length, `longevity at ${where}`).toBe(1);
+  }
+});
