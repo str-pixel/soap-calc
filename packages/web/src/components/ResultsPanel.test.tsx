@@ -632,7 +632,7 @@ test('a recipe-derived cure model renders the two milestone rows instead of the 
           second: { kind: 'best', minWeeks: 8, maxWeeks: 12.8 },
           confidence: 'low',
           factors: ['Slow FAs 77%'],
-          caveats: ['Fatty-acid data covers only 60% of these oils — the cure drivers are partly estimated.'],
+          caveats: ['Fatty-acid data covers only 60% of recipe oil weight — the cure drivers are partly estimated.'],
         },
       }}
     />,

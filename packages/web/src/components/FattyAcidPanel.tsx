@@ -15,7 +15,7 @@ import {
 import type { RecipeFattyAcids } from '../lib/calculateFattyAcids';
 import { trackPct as pct, valueAnchorClass } from '../lib/meterGeometry';
 import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
-import { oilDisplayName } from '../lib/oilDisplay';
+import { fattyAcidBasisCaption, missingOilsSuffix } from '../lib/coverageCaption';
 import { FattyAcidRadar, type FattyAcidRadarAxis } from './FattyAcidRadar';
 import { ModeledOilsNote } from './ModeledOilsNote';
 
@@ -62,7 +62,6 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
   const [view, setView] = useState<'meters' | 'radar'>('meters');
   const viewActiveIndex = FATTY_VIEWS.indexOf(view);
   const handleViewKeyDown = makeTabsKeyDownHandler(FATTY_VIEWS, viewActiveIndex, setView);
-  const partial = result.profile ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.profile
     ? isLowCoverage(result.coveragePercent)
@@ -73,7 +72,8 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
       <section className="panel">
         <h2 className="panel__title"><span className="panel__num" aria-hidden="true">09</span>Fatty acid profile</h2>
         <p className="results-hint">
-          Add triglyceride oils with fatty-acid data to see recipe totals.
+          Add triglyceride oils with fatty-acid data to see recipe totals
+          {missingOilsSuffix(result.missingOilIds)}.
         </p>
       </section>
     );
@@ -126,6 +126,20 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
     <p className="sr-only">Typical {formatPropertyRangePercent(g.guide.low, g.guide.high)}</p>
   );
 
+  // The Saturated/Unsaturated line is an estimate exactly when the meters are: "~" on screen,
+  // "estimated" to a screen reader, as each meter's aria-label says.
+  const estimate = lowCoverage ? (
+    <>
+      <span aria-hidden="true">~</span>
+      <span className="sr-only">estimated </span>
+    </>
+  ) : null;
+
+  // Unprofiled oil weight is the one thing that can still hide a rancidity note: the insights
+  // count it as carrying no polyunsaturates (a lower bound, so they never over-warn), which
+  // means a recipe can sit under a threshold only because part of it is uncharacterized. Thin
+  // profiles do NOT hide a note — an incomplete profile understates PUFA, it cannot inflate it.
+  const unprofiledWeight = result.coveredWeightShare < 1 || result.missingOilIds.length > 0;
   const rancidity = insights.filter((insight) =>
     (FATTY_ACID_RANCIDITY_INSIGHT_CODES as readonly string[]).includes(insight.code),
   );
@@ -136,8 +150,10 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
           not a control block between the caption and the readings. Same tablist idiom as
           the properties panel's Meters/Radar switch, with its own ids and an accessible
           name that keeps the two switches on this page apart — every page-level
-          locator must scope through the tablist name, never the bare tab. */}
-      <div className="panel__head">
+          locator must scope through the tablist name, never the bare tab. Where the title
+          and the switch do not fit side by side, the switch wraps under the title instead of
+          squeezing it onto two or three lines (panel__head--wrap). */}
+      <div className="panel__head panel__head--wrap">
         <h2 className="panel__title"><span className="panel__num" aria-hidden="true">09</span>Fatty acid profile</h2>
         <div
           className="property-view-toggle property-view-toggle--compact"
@@ -174,19 +190,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
       </div>
       {/* One sentence, per the mock — the coverage clause joins the caption instead of
           standing as a second line under it. */}
-      <p className="panel__subtitle">
-        Percent of oil weight
-        {partial && (
-          <>
-            , {lowCoverage ? 'estimated from' : 'based on'}{' '}
-            {Math.round(result.coveragePercent)}% of recipe oils
-            {result.missingOilIds.length > 0 && (
-              <> (no data: {result.missingOilIds.map(oilDisplayName).join(', ')})</>
-            )}
-          </>
-        )}
-        .
-      </p>
+      <p className="panel__subtitle">{fattyAcidBasisCaption(result)}.</p>
 
       {/* These readings ARE the reconstruction, so the modeled marker belongs here most of
           all — not only on the properties derived from them. */}
@@ -198,7 +202,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
           Formulation notes cannot disagree. The risk depends on superfat and antioxidants
           this panel does not see, which is why it is not judged from the readings below.
           Outside the tabpanel, so both views show it. */}
-      {rancidity.length > 0 && (
+      {(rancidity.length > 0 || unprofiledWeight) && (
         <ul className="message-list message-list--insights fatty-rancidity" aria-label="Rancidity notes">
           {rancidity.map((insight) => (
             <li
@@ -210,6 +214,16 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
               {insight.message}
             </li>
           ))}
+          {/* An empty slot here would read as "no risk". When part of the recipe has no
+              fatty-acid data, the notes above counted it as carrying none, so silence means
+              "not shown to be at risk" rather than "not at risk". Other parts of the app —
+              the cure estimate, the post-cook superfat warning — can still mention rancidity. */}
+          {unprofiledWeight && (
+            <li className="message-list__item--info">
+              Oils without fatty-acid data count as carrying no polyunsaturates here, so a note
+              can be missing rather than absent.
+            </li>
+          )}
         </ul>
       )}
 
@@ -299,29 +313,34 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
               </li>
             ))}
           </ul>
-          {/* The catch-alls, in the open: name and value on one line. */}
+          {/* The catch-alls, in the open: name, value and typical range, the three things
+              each axis above prints. */}
           <ul className="fatty-radar__others" aria-label="Other fatty acid groups">
             {others.map((g) => (
               <li key={g.key} className="fatty-radar__other">
                 <span className="fatty-radar__other-name">{g.guide.label}</span>
                 {value(g)}
-                {typical(g)}
+                <span className="fatty-radar__other-range">
+                  Typical {formatPropertyRangePercent(g.guide.low, g.guide.high)}
+                </span>
               </li>
             ))}
           </ul>
           <p className="fatty-radar__caption">
             Shaded ring = each group&apos;s typical range. Every axis is scaled to its own
             range, so the shape shows fit, not share, and a reading off the ring is not
-            flagged. When a recipe is at risk of going rancid, a rancidity note appears above
-            the chart, since that risk depends on superfat and antioxidants too.
-            Lauric includes myristic and C8–C10; palmitic includes stearic.
+            flagged. A rancidity note appears above the chart when the oils charted here put
+            the recipe at risk of going rancid, a risk that also depends on superfat and
+            antioxidants. Oils without fatty-acid data count as carrying none. Lauric includes
+            myristic and C8–C10; palmitic includes stearic.
           </p>
         </>
       )}
       </div>
 
       <p className="fatty-ratio">
-        Saturated {formatSoapPropertyPercent(saturated)} · Unsaturated{' '}
+        Saturated {estimate}
+        {formatSoapPropertyPercent(saturated)} · Unsaturated {estimate}
         {formatSoapPropertyPercent(unsaturated)}
       </p>
     </section>

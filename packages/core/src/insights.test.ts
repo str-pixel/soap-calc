@@ -1335,9 +1335,15 @@ describe('dos_risk_no_antioxidant', () => {
     const citrateOnly = [{ catalogId: 'chelator', name: 'Chelator (citrate, gluconate)' }];
     expect(has({ ...softOils, additiveEntries: citrateOnly }, 'dos_risk_no_antioxidant')).toBe(true);
   });
-  it('stays quiet for low-PUFA recipes and at low coverage', () => {
+  it('stays quiet for low-PUFA recipes, and on thin data only when the BOUND is under 25', () => {
     expect(has({ ...softOils, fattyAcids: { oleic: 70 } }, 'dos_risk_no_antioxidant')).toBe(false);
-    expect(has({ ...softOils, fattyAcidCoveragePercent: 40 }, 'dos_risk_no_antioxidant')).toBe(false);
+    // Thin coverage no longer silences it by itself: coverage measures how COMPLETE the
+    // profiles are, and an incomplete profile understates PUFA rather than overstating it.
+    expect(has({ ...softOils, fattyAcidCoveragePercent: 40 }, 'dos_risk_no_antioxidant')).toBe(true);
+    // What silences it is a covered-weight share that puts the recipe's certain PUFA under 25.
+    expect(
+      has({ ...softOils, fattyAcidCoveragePercent: 40, fattyAcidCoveredWeightShare: 0.5 }, 'dos_risk_no_antioxidant'),
+    ).toBe(false);
   });
   it('pins the PUFA > 25 threshold: exactly 25 does not fire, 26 does', () => {
     expect(
@@ -1545,14 +1551,94 @@ describe('the rancidity notes the fatty-acid panel shows inline', () => {
 // The panels decide low coverage on the printed whole-number percentage, and these insights
 // used to compare the raw one, so at 79.6% coverage the fatty-acid panel judged its readings
 // under an "80%" caption while every rancidity note stayed switched off.
-describe('coverage cutoff shared with the panels', () => {
+describe('rancidity no longer turns on the coverage cutoff', () => {
   const fattyAcids = { linoleic: 40, linolenic: 4, oleic: 30 };
-  const rancid = (fattyAcidCoveragePercent: number) =>
-    analyzeFormulation({ ...base, superfatPercent: 5, fattyAcids, fattyAcidCoveragePercent }).some(
-      (i) => i.code === 'dos_risk_no_antioxidant',
-    );
-  it('treats coverage that prints as 80% as full, and coverage that prints as 79% as low', () => {
+  const rancid = (fattyAcidCoveragePercent: number, fattyAcidCoveredWeightShare?: number) =>
+    analyzeFormulation({
+      ...base, superfatPercent: 5, fattyAcids, fattyAcidCoveragePercent, fattyAcidCoveredWeightShare,
+    }).some((i) => i.code === 'dos_risk_no_antioxidant');
+  // The 80% line used to decide whether these rules spoke at all. It no longer does: the
+  // reading they judge cannot overstate, so there is nothing for a cutoff to protect against.
+  it('speaks on either side of the old 80% line when the weight is covered', () => {
     expect(rancid(79.6)).toBe(true);
-    expect(rancid(79.4)).toBe(false);
+    expect(rancid(79.4)).toBe(true);
+  });
+  it('is decided by the covered-weight share instead', () => {
+    expect(rancid(100, 0.5)).toBe(false); // 44 x 0.5 = 22, under the 25 threshold
+    expect(rancid(100, 0.6)).toBe(true); // 26.4, over it
+  });
+});
+
+// These three used to stand down together below 80% coverage, and 09 advertised that. Now they
+// stand down together on the covered-weight share instead, and 09's note follows the same rule —
+// this pins the insights' side, FattyAcidPanel.test.tsx the panel's.
+describe('the rancidity insights stand down together on the covered-weight share', () => {
+  const base = {
+    properties: null, totalOilGrams: 1000, lyeConcentrationPercent: 0,
+    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, process: 'cp' as const,
+    superfatPercent: 10, fattyAcids: { linoleic: 30, linolenic: 5, oleic: 40 },
+  };
+  const rancidity = (fattyAcidCoveredWeightShare: number) =>
+    analyzeFormulation({ ...base, fattyAcidCoveragePercent: 100, fattyAcidCoveredWeightShare })
+      .map((i) => i.code)
+      .filter((code) => (FATTY_ACID_RANCIDITY_INSIGHT_CODES as readonly string[]).includes(code));
+
+  it('all speak when the bound clears the lowest threshold, all silent when it does not', () => {
+    // base PUFA is 35: x 0.9 = 31.5 clears all three (18 / 25 / 28); x 0.5 = 17.5 clears none.
+    expect(rancidity(0.9).length).toBeGreaterThan(0);
+    expect(rancidity(0.5)).toEqual([]);
+  });
+});
+
+// The three rancidity rules used to stand down entirely below 80% coverage, because the
+// renormalized profile they read could overstate PUFA. A lower bound cannot overstate, so the
+// gate is gone: they judge `poly × coveredWeightShare` and speak at every coverage level.
+describe('rancidity insights judge a lower bound at every coverage level', () => {
+  const base = {
+    properties: null, totalOilGrams: 1000, lyeConcentrationPercent: 0,
+    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, process: 'cp' as const,
+    additiveEntries: [], superfatPercent: 10,
+  };
+  // 35% renormalized PUFA clears all three thresholds (18 / 25 / 28).
+  const hot = { linoleic: 30, linolenic: 5, oleic: 20 };
+
+  it('speaks below 80% coverage when the bound still clears the threshold', () => {
+    const codes = analyzeFormulation({
+      ...base, fattyAcids: hot,
+      fattyAcidCoveragePercent: 60, fattyAcidCoveredWeightShare: 0.9,
+    }).map((i) => i.code);
+    // Coverage is 60% (thin profiles), but 90% of the WEIGHT has data: 35 × 0.9 = 31.5.
+    expect(codes).toContain('pufa_cap_superfat');
+    expect(codes).toContain('high_poly_high_superfat');
+    expect(codes).toContain('dos_risk_no_antioxidant');
+  });
+
+  it('stays silent when the bound cannot support the threshold, even at high coverage', () => {
+    const codes = analyzeFormulation({
+      ...base, fattyAcids: hot,
+      fattyAcidCoveragePercent: 95, fattyAcidCoveredWeightShare: 0.4,
+    }).map((i) => i.code);
+    // 35 × 0.4 = 14 — under all three gates. Today's reading would have fired all three.
+    expect(codes).not.toContain('pufa_cap_superfat');
+    expect(codes).not.toContain('high_poly_high_superfat');
+    expect(codes).not.toContain('dos_risk_no_antioxidant');
+  });
+
+  it('separates the three thresholds on the bound, not on coverage', () => {
+    // 35 × 0.6 = 21: over pufa_cap's 18, under dos_risk's 25 and high_poly's 28.
+    const codes = analyzeFormulation({
+      ...base, fattyAcids: hot,
+      fattyAcidCoveragePercent: 70, fattyAcidCoveredWeightShare: 0.6,
+    }).map((i) => i.code);
+    expect(codes).toContain('pufa_cap_superfat');
+    expect(codes).not.toContain('dos_risk_no_antioxidant');
+    expect(codes).not.toContain('high_poly_high_superfat');
+  });
+
+  it('treats a missing share as fully covered', () => {
+    const codes = analyzeFormulation({
+      ...base, fattyAcids: hot, fattyAcidCoveragePercent: 100,
+    }).map((i) => i.code);
+    expect(codes).toContain('pufa_cap_superfat');
   });
 });

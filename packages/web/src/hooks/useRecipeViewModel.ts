@@ -1000,6 +1000,7 @@ export function useRecipeViewModel({
       computeCureModel({
         faProfile: fattyAcids.profile,
         coveragePercent: properties.coveragePercent,
+        coveredWeightShare: fattyAcids.coveredWeightShare,
         lyeConcentrationPercent: result?.lyeConcentrationPercent ?? null,
         process,
       }),

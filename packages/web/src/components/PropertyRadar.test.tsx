@@ -20,6 +20,12 @@ const vertexRadii = (container: HTMLElement): number[] => {
     });
 };
 
+/** Each axis's three lines, in axis order: name, printed value, and what sits under the value. */
+const axisBlocks = (container: HTMLElement): Array<Array<string | null>> =>
+  Array.from(container.querySelectorAll('svg g')).map((g) =>
+    Array.from(g.querySelectorAll('text')).map((t) => t.textContent),
+  );
+
 afterEach(cleanup);
 
 const ORDER: SoapPropertyName[] = [
@@ -54,14 +60,40 @@ test('draws a solid recipe polygon when coverage is not low', () => {
   expect(recipe.style.strokeDasharray === 'none' || recipe.style.strokeDasharray === '').toBe(true);
 });
 
-test('labels each axis with its rounded value and a range verdict', () => {
+// Each axis is checked on its own lines. The check this replaced only asked that some verdict
+// appear somewhere, and passed with every axis forced to "Too low". The radar also spells
+// conditioning out, as the Meters rows and the batch sheet do: the full word fits the chart.
+test('labels each axis with its full name, its rounded value and its own verdict', () => {
+  const mixed = { hardness: 70.4, cleansing: 5, condition: 56, creamy: 24, bubbly: 50, longevity: 10 };
   const { container } = render(
-    <PropertyRadar properties={PROPS} order={ORDER} lowCoverage={false} />,
+    <PropertyRadar properties={mixed} order={ORDER} lowCoverage={false} />,
   );
-  const text = container.textContent ?? '';
-  expect(text).toContain('Hardness');
-  expect(text).toContain('41'); // hardness value
-  expect(text).toMatch(/In range|Too low|Too high/);
+  expect(axisBlocks(container)).toEqual([
+    ['Hardness', '70', 'Too high'],
+    ['Cleansing', '5', 'Too low'],
+    ['Conditioning', '56', 'In range'],
+    ['Creamy', '24', 'In range'],
+    ['Bubbly', '50', 'Too high'],
+    ['Longevity', '10', 'Typical 25–50'],
+  ]);
+});
+
+// The Meters rows' rule, written at .property-meters__value--outside in index.css: an
+// out-of-range figure is accent like its dot, and the "Too low" / "Too high" word is amber,
+// the caution. The radar painted the word accent as well, so one verdict wore two colours.
+test('colours an out-of-range axis the way the meters do: accent figure, amber verdict', () => {
+  const mixed = { hardness: 70, cleansing: 17, condition: 56, creamy: 24, bubbly: 17, longevity: 10 };
+  const { container } = render(
+    <PropertyRadar properties={mixed} order={ORDER} lowCoverage={false} />,
+  );
+  const fills = Array.from(container.querySelectorAll('svg g')).map((g) =>
+    Array.from(g.querySelectorAll('text'))
+      .slice(1)
+      .map((t) => (t as SVGTextElement).style.fill),
+  );
+  expect(fills[0]).toEqual(['var(--accent)', 'var(--warn)']); // hardness 70: too high
+  expect(fills[1]).toEqual(['var(--text)', 'var(--label)']); // cleansing 17: in range
+  expect(fills[5]).toEqual(['var(--text)', 'var(--label)']); // longevity: never judged
 });
 
 test('flags low coverage with tilde values and Low data verdicts, not range verdicts', () => {
@@ -70,8 +102,13 @@ test('flags low coverage with tilde values and Low data verdicts, not range verd
   );
   const text = container.textContent ?? '';
   expect(text).toContain('~41');
-  expect(text).toContain('Low data');
   expect(text).not.toMatch(/Too low|Too high|In range/);
+  // "Low data" stands in for a verdict, so only the five judged axes carry it. Longevity has
+  // no verdict to withhold and keeps its typical range, as its Meters row and the
+  // screen-reader list do.
+  const blocks = axisBlocks(container);
+  expect(blocks.slice(0, 5).map((b) => b[2])).toEqual(Array(5).fill('Low data'));
+  expect(blocks[5]).toEqual(['Longevity', '~24', 'Typical 25–50']);
 });
 
 // THE SHAPE MUST MEAN SOMETHING. With radius = raw score, a recipe sitting exactly mid-band

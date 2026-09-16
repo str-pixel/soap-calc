@@ -9,6 +9,10 @@ import {
   lsPreservativeById,
   lsPreservativeDoseTier,
   isLowCoverage,
+  isPartialCoverage,
+  LS_SOAP_QUALITY_LABELS,
+  LS_SOAP_QUALITY_ORDER,
+  lsSoapQualities,
   preservativeDoseGrams,
   saturatedUnsaturatedRatio,
   formatTempDual,
@@ -17,9 +21,14 @@ import type { BatchSheetData } from '../lib/batchSheet';
 import {
   additiveStageLabel,
   batchSheetOilName,
-  formatBatchSheetProperty,
   formatBatchWeight,
 } from '../lib/batchSheet';
+import {
+  fattyAcidBasisCaption,
+  indexesCoverageCaption,
+  missingOilsSuffix,
+  scoresCoverageCaption,
+} from '../lib/coverageCaption';
 import { finishedProductGramsFor, preservativeDosingBasisGramsFor } from '../lib/calculateAdditives';
 import { formatConcentrationPercent, formatGrams, formatVolumeMl } from '../lib/format';
 import {
@@ -112,7 +121,15 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
 
   const isDualLye = settings.lyeType === 'dual';
   const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
-  const propsPartial = !!properties?.properties && properties.coveragePercent < 99.9;
+  // Liquid soap prints the panel's four liquid-soap qualities instead of the bar scores.
+  const lsQualities = process === 'ls' && fattyAcids.profile ? lsSoapQualities(fattyAcids.profile) : null;
+  const modeledNote =
+    modeled.length > 0 ? (
+      <p className="batch-sheet__notes">
+        Modeled profile (reconstructed, not measured):{' '}
+        {modeled.map(batchSheetOilName).join(', ')}
+      </p>
+    ) : null;
   // Compare rounded coverage, matching PropertiesPanel/FattyAcidPanel, so the printed
   // "X%" and the estimate treatment never disagree with the screen.
   const propsLow =
@@ -731,59 +748,78 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
       )}
 
 
-      {properties?.properties && (
+      {process === 'ls'
+        ? lsQualities && (
+            // Liquid soap: the four qualities and no iodine or INS, printed only when the
+            // fatty-acid profile exists (iodine data alone would print a heading over nothing).
+            <section className="batch-sheet__section">
+              <h2>Estimated soap properties</h2>
+              <dl className="batch-sheet__dl batch-sheet__dl--compact">
+                {LS_SOAP_QUALITY_ORDER.map((key) => (
+                  <div key={key}>
+                    <dt>{LS_SOAP_QUALITY_LABELS[key]}</dt>
+                    <dd>{fattyAcidsLow ? '~' : ''}{formatPropertyScore(lsQualities[key])}</dd>
+                  </div>
+                ))}
+              </dl>
+              {scoresCoverageCaption(fattyAcids) && (
+                <p className="batch-sheet__notes">{scoresCoverageCaption(fattyAcids)}</p>
+              )}
+              {modeledNote}
+            </section>
+          )
+        : (properties?.properties || indexes.iodine !== null || indexes.ins !== null) && (
         <section className="batch-sheet__section">
           <h2>Estimated bar properties</h2>
           <dl className="batch-sheet__dl batch-sheet__dl--compact">
             {/* All six properties, in the panel's own order. The sheet once carried five of
                 them and listed bubbly before creamy; both came from rows written by hand. */}
-            {PROPERTY_ORDER.map((key) => (
-              <div key={key}>
-                <dt>{BATCH_SHEET_PROPERTY_LABEL[key]}</dt>
-                <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties![key])}</dd>
-              </div>
-            ))}
+            {properties?.properties &&
+              PROPERTY_ORDER.map((key) => (
+                <div key={key}>
+                  <dt>{BATCH_SHEET_PROPERTY_LABEL[key]}</dt>
+                  <dd>{propsLow ? '~' : ''}{formatPropertyScore(properties.properties![key])}</dd>
+                </div>
+              ))}
+            {/* For cold and hot process, Iodine and INS print whenever the oils carry them, with
+                or without scores, as the panel shows them, and as the same whole numbers. */}
             {indexes.iodine !== null && (
               <div>
                 <dt>Iodine</dt>
-                <dd>{indexLow ? '~' : ''}{formatBatchSheetProperty(indexes.iodine)}</dd>
+                <dd>{indexLow ? '~' : ''}{formatPropertyScore(indexes.iodine)}</dd>
               </div>
             )}
             {indexes.ins !== null && (
               <div>
                 <dt>INS</dt>
-                <dd>{indexLow ? '~' : ''}{formatBatchSheetProperty(indexes.ins)}</dd>
+                <dd>{indexLow ? '~' : ''}{formatPropertyScore(indexes.ins)}</dd>
               </div>
             )}
           </dl>
-          {propsPartial && (
+          {!properties?.properties && (
             <p className="batch-sheet__notes">
-              {propsLow ? 'Estimated from' : 'Based on'}{' '}
-              {Math.round(properties.coveragePercent)}% of recipe oils
-              {properties.missingOilIds.length > 0
-                ? ` (no data: ${properties.missingOilIds.map(batchSheetOilName).join(', ')})`
-                : ''}
+              {`Scores need fatty-acid data${missingOilsSuffix(properties?.missingOilIds ?? [])}`}
             </p>
           )}
-          {modeled.length > 0 && (
-            <p className="batch-sheet__notes">
-              Modeled profile (reconstructed, not measured):{' '}
-              {modeled.map(batchSheetOilName).join(', ')}
-            </p>
+          {properties?.properties && scoresCoverageCaption(properties) && (
+            <p className="batch-sheet__notes">{scoresCoverageCaption(properties)}</p>
           )}
+          {indexes.iodine !== null && indexesCoverageCaption(indexes) && (
+            <p className="batch-sheet__notes">{indexesCoverageCaption(indexes)}</p>
+          )}
+          {modeledNote}
         </section>
       )}
-
       {satUnsat && (
         <section className="batch-sheet__section">
           <h2>Fatty acids</h2>
           <p className="batch-sheet__notes">
             Saturated {fattyAcidsLow ? '~' : ''}{formatSoapPropertyPercent(satUnsat.saturated)} · Unsaturated{' '}
             {fattyAcidsLow ? '~' : ''}{formatSoapPropertyPercent(satUnsat.unsaturated)}
-            {fattyAcids.coveragePercent < 99.9
-              ? ` (${Math.round(fattyAcids.coveragePercent)}% of oils with data)`
-              : ''}
           </p>
+          {isPartialCoverage(fattyAcids.coveragePercent, fattyAcids.missingOilIds.length) && (
+            <p className="batch-sheet__notes">{fattyAcidBasisCaption(fattyAcids)}</p>
+          )}
         </section>
       )}
 

@@ -11,13 +11,14 @@ import {
 } from '../src/cosing-glossary.js';
 import { loadSupplementalInci } from '../src/resolve-inci.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
-import { incompleteProfileOils } from '../src/profile-completeness.js';
+import { incompleteProfileOils, MAX_PROFILE_SUM_PERCENT, overfullProfileOils } from '../src/profile-completeness.js';
 import { classifyProfileSapDeviations } from '../src/profile-sap-deviations.js';
 import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviations.js';
 import { classifyExternalReferenceDeviations } from '../src/external-reference-deviations.js';
 import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
+import { FATTY_ACID_SAP_FLOOR, PROFILE_TOO_INCOMPLETE_TO_USE } from '../src/normalize.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -114,13 +115,42 @@ function main() {
 
     if (oil.propertiesAvailable && oil.fattyAcids) {
       const sum = Object.values(oil.fattyAcids).reduce((a, b) => a + b, 0);
-      if (sum < 50 || sum > 105) {
+      // Above 100% is an error, gated below with overfullProfileOils; a very short profile is a warning.
+      if (sum < 50) {
         warnings.push(`${oil.id}: fatty acid sum ${sum.toFixed(1)}% (category: ${oil.category})`);
       }
     }
 
-    if (!oil.propertiesAvailable && oil.category === 'triglyceride') {
-      warnings.push(`${oil.id}: triglyceride marked propertiesAvailable=false`);
+    // Category vs chemistry, re-checked against the FINAL resolved SAP (the build decides the
+    // category from the legacy value, which an FNWL match can move afterwards). The catalog
+    // splits with a 56-point gap around FATTY_ACID_SAP_FLOOR and nothing inside it; if an
+    // ingredient ever lands in the gap, or a name pattern files a saponifiable oil as a wax
+    // again, this fails the build rather than quietly dropping it from the bar scores.
+    // Tars and free acids are exempt: SAP identifies neither (see inferCategory).
+    if (oil.category !== 'tar' && oil.category !== 'free_acid' && oil.sapRole !== 'acid_neutralization') {
+      const saponifiable = oil.sapKoh >= FATTY_ACID_SAP_FLOOR;
+      if (saponifiable && oil.category !== 'triglyceride' && oil.category !== 'blend') {
+        errors.push(
+          `${oil.id}: sapKoh ${oil.sapKoh} saponifies as a triglyceride (floor ${FATTY_ACID_SAP_FLOOR}) but category is "${oil.category}"`,
+        );
+      }
+      if (!saponifiable && (oil.category === 'triglyceride' || oil.category === 'blend')) {
+        errors.push(
+          `${oil.id}: category "${oil.category}" but sapKoh ${oil.sapKoh} is below the fatty-acid floor ${FATTY_ACID_SAP_FLOOR}`,
+        );
+      }
+    }
+
+    // An ingredient that contributes fatty acids but is excluded from the scores is a DEBT, and
+    // it has to be a named one: PROFILE_TOO_INCOMPLETE_TO_USE carries the reason and what would
+    // retire it. Silent exclusion is what dropped stearic acid from every recipe's hardness.
+    if (!oil.propertiesAvailable && (oil.category === 'triglyceride' || oil.category === 'blend' || oil.category === 'free_acid')) {
+      const reason = PROFILE_TOO_INCOMPLETE_TO_USE[oil.id];
+      if (!reason) {
+        errors.push(
+          `${oil.id}: category "${oil.category}" contributes fatty acids but propertiesAvailable=false, with no entry in PROFILE_TOO_INCOMPLETE_TO_USE explaining why`,
+        );
+      }
     }
 
     if (oil.sapRole === 'acid_neutralization') {
@@ -218,6 +248,13 @@ function main() {
 
   for (const { id, sum } of incompleteProfileOils(db.oils)) {
     warnings.push(`${id}: fatty-acid profile only ${sum.toFixed(0)}% complete — properties are estimates`);
+  }
+
+  // A profile summing past 100% cannot be one oil's measured composition (rounding aside): its
+  // group totals and Saturated/Unsaturated line would read above 100 in the app. Replace it with a
+  // cited analysis (PROFILE_BACKFILL) rather than raising the tolerance.
+  for (const { id, sum } of overfullProfileOils(db.oils)) {
+    errors.push(`${id}: fatty-acid profile sums to ${sum}% (> ${MAX_PROFILE_SUM_PERCENT}%) — replace it with a cited analysis`);
   }
 
   // Phase 5 backfill drift guard: the built profile must equal the curated table (which build

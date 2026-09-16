@@ -8,12 +8,13 @@ type PropertyRadarProps = {
   lowCoverage: boolean;
 };
 
-// Compact uppercase axis labels for the radar — short enough to sit around the ring without
-// wrapping (the Meters view carries the longer names + tooltips).
+// Uppercase axis labels for the radar, the same words the Meters rows and the batch sheet use.
+// The longest, CONDITIONING on the right-hand side, ends at x≈455 of the 460-wide viewBox
+// (measured in Chromium, 2026-09-13), so none needs shortening.
 const AXIS_LABEL: Record<SoapPropertyName, string> = {
   hardness: 'Hardness',
   cleansing: 'Cleansing',
-  condition: 'Condition',
+  condition: 'Conditioning',
   creamy: 'Creamy',
   bubbly: 'Bubbly',
   longevity: 'Longevity',
@@ -43,7 +44,8 @@ const point = (i: number, n: number, radius: number): { x: number; y: number } =
  * Only the geometry is normalised: every axis still prints its true score. Decorative
  * (aria-hidden) — the panel's sr-only meter list is the accessible source of these readings.
  * A dashed polygon and "Low data" verdicts flag a low-coverage estimate, and an unjudged
- * property states its typical range where a verdict would go.
+ * property states its typical range where a verdict would go, at any coverage: it has no
+ * verdict to withhold.
  */
 export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarProps) {
   const n = order.length;
@@ -140,11 +142,12 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
         const s = Math.sin(angle(i, n));
         const labelY = lab.y + (s <= -0.7 ? -40 : s < -0.3 ? -20 : 0);
         // An unjudged axis states its typical range in the slot the verdict would fill —
-        // the same thing the panel already prints beside iodine and INS.
-        const status = lowCoverage
-          ? 'Low data'
-          : !judged
-            ? `Typical ${guide.low}–${guide.high}`
+        // the same thing the panel already prints beside iodine and INS. "Low data" stands in
+        // for a withheld verdict, so it never replaces that range.
+        const status = !judged
+          ? `Typical ${guide.low}–${guide.high}`
+          : lowCoverage
+            ? 'Low data'
             : verdict === 'low'
               ? 'Too low'
               : verdict === 'high'
@@ -192,7 +195,10 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
                 fontWeight: 500,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
-                fill: out ? 'var(--accent)' : 'var(--label)',
+                // Amber, like the Meters row's verdict word (.property-meters__status): the
+                // figure above is the reading and goes accent with its dot; the word is the
+                // caution.
+                fill: out ? 'var(--warn)' : 'var(--label)',
               }}
             >
               {status}

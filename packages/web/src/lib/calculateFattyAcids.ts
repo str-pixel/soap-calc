@@ -24,7 +24,7 @@ export function calculateFattyAcidsForRecipe(
     .filter((line) => line.weightGrams > 0);
 
   // Contributing oils whose profile is a modeled reconstruction (sourceType 'derived') — the
-  // properties panel, batch sheet, and picker note these so the bars read as estimates.
+  // properties panel, batch sheet, and picker note these so their readings are marked as modeled.
   // Deduped; only weight-bearing oils.
   const modeledOilIds = [
     ...new Set(

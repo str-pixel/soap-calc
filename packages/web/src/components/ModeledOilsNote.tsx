@@ -8,7 +8,7 @@ type ModeledOilsNoteProps = {
 
 /**
  * Data-honesty marker shared by every panel that renders numbers derived from a reconstructed
- * fatty-acid profile — the fatty-acid bars themselves and the bar properties computed from them.
+ * fatty-acid profile — the fatty-acid readings themselves and the bar properties computed from them.
  * Shared rather than duplicated so the two can't drift in wording or in which oils they name.
  */
 export function ModeledOilsNote({ oilIds }: ModeledOilsNoteProps) {

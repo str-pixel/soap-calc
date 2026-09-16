@@ -55,6 +55,9 @@ export function estimateCure(
 export function computeCureModel(args: {
   faProfile: FattyAcidProfile | null;
   coveragePercent: number;
+  /** Covered oil weight ÷ total, from core's FA aggregation — the rancidity thresholds
+   *  judge a lower bound built from it. Omitted means fully covered. */
+  coveredWeightShare?: number;
   lyeConcentrationPercent: number | null | undefined;
   process: ProcessId;
 }): CureModelEstimate | null {
@@ -62,6 +65,7 @@ export function computeCureModel(args: {
   return estimateCureModel({
     fa: args.faProfile,
     faCoverage: args.coveragePercent,
+    faCoveredWeightShare: args.coveredWeightShare,
     lyeConcentrationPercent: args.lyeConcentrationPercent ?? Number.NaN,
     process: args.process,
   });

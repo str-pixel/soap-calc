@@ -75,12 +75,17 @@ test('draws no axis in accent, however far past its band', () => {
   expect(new Set(dots.map((c) => c.getAttribute('r')))).toEqual(new Set(['2.5']));
 });
 
-test('flags low coverage with tilde values, Low data verdicts, and a dashed polygon', () => {
+// "Low data" used to fill the slot under each value at low coverage. On this chart that slot
+// only ever holds the typical range, since nothing is judged, so replacing it hid the range
+// while the Meters view kept printing it. The "~" values and the dashed polygon mark the
+// estimate.
+test('marks low coverage with tilde values and a dashed polygon, and keeps every typical range', () => {
   const { container } = render(<FattyAcidRadar axes={AXES} lowCoverage />);
   const text = container.textContent ?? '';
   expect(text).toContain('~47.3%');
-  expect(text).toContain('Low data');
-  expect(text).not.toMatch(/Too low|Too high|In range|Typical/);
+  expect(text).not.toMatch(/Low data|Too low|Too high|In range/);
+  expect(text.match(/Typical/g)?.length).toBe(6);
+  expect(text).toContain('Typical 32–41%');
   const recipe = container.querySelector('[data-testid="radar-recipe"]') as SVGPolygonElement;
   expect(recipe.style.strokeDasharray).toBe('4 3');
 });

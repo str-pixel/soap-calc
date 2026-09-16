@@ -29,8 +29,8 @@ const R = 112;
  * never leave the hub. Only the geometry is normalised — every axis prints its true
  * percentage and its typical range, and no axis is flagged (FORMULATION_FATTY_ACID_GUIDE
  * says why). Decorative (aria-hidden): the panel's sr-only meter list is the accessible
- * source of these readings. A dashed polygon and "Low data" in the range slot mark a
- * low-coverage estimate.
+ * source of these readings. A dashed polygon and "~" values mark a low-coverage estimate;
+ * the typical ranges stay.
  */
 export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
   const n = axes.length;
@@ -39,10 +39,10 @@ export function FattyAcidRadar({ axes, lowCoverage }: FattyAcidRadarProps) {
   );
   const polygon = valuePoints.map((p) => `${p.x},${p.y}`).join(' ');
   // Every axis states its typical range under its value, the way the properties panel's
-  // longevity axis does. Sitting off the ring is shown by the geometry; no source names it a
-  // fault, so nothing calls it one.
-  const rangeNote = (a: FattyAcidRadarAxis) =>
-    lowCoverage ? 'Low data' : `Typical ${formatPropertyRangePercent(a.low, a.high)}`;
+  // longevity axis does, at any coverage. Sitting off the ring is shown by the geometry; no
+  // source names it a fault, so nothing calls it one, and at low coverage there is no verdict
+  // to withhold: the "~" values and the dashed polygon mark the estimate.
+  const rangeNote = (a: FattyAcidRadarAxis) => `Typical ${formatPropertyRangePercent(a.low, a.high)}`;
 
   return (
     <svg

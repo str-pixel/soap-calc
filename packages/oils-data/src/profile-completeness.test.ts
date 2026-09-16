@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { MIN_MAPPED_PERCENT } from '@soap-calc/core';
-import { incompleteProfileOils } from './profile-completeness.js';
+import { incompleteProfileOils, MAX_PROFILE_SUM_PERCENT, overfullProfileOils } from './profile-completeness.js';
 import type { CanonicalOilDatabase } from './schema.js';
 
 const dataPath = join(dirname(fileURLToPath(import.meta.url)), '../data/canonical-oils.json');
@@ -40,6 +40,12 @@ const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
   'tallow-bear',
   // avocado-oil was here — Phase 5 backfilled it to 100% from USDA FDC (see PROFILE_BACKFILL).
   'avocado-butter',
+  // japan-wax joined this list when SAP reclassified it from "wax" to the triglyceride it is
+  // (215 mg KOH/g). Its 92% is NOT the legacy 8-acid truncation above and no backfill will clear
+  // it: the balance is dibasic acids (japanic C21, eicosanedioic C20) that our model has no key
+  // for, since they are diacids rather than fatty acids. Leaving it short is the honest reading —
+  // it understates rather than inflates, which the lower-bound thresholds are safe against.
+  'japan-wax',
 ]);
 
 describe('fatty-acid profile completeness (catalog guard)', () => {
@@ -111,5 +117,54 @@ describe('incompleteProfileOils', () => {
     expect(ids).not.toContain('complete');
     expect(ids).not.toContain('borderline');
     expect(ids).not.toContain('no-profile');
+  });
+});
+
+// A profile summing well above 100% cannot be a measured composition of one oil: three legacy rows
+// did (loofa 104, pumpkin 102, mafura 102), and every group total and the Saturated/Unsaturated
+// line rode above 100 with them. They were replaced with cited analyses (PROFILE_BACKFILL), and the
+// build now errors on any property-ready profile above the tolerance. The tolerance only has to
+// absorb rounding: the highest remaining sum is 100.1 (one-decimal profiles of 11-13 acids).
+describe('overfull fatty-acid profiles', () => {
+  it('flags a profile above the tolerance and nothing at or below it', () => {
+    const oils: Parameters<typeof overfullProfileOils>[0] = [
+      { id: 'over', propertiesAvailable: true, fattyAcids: { oleic: 60, linoleic: 40.6 } },
+      { id: 'edge', propertiesAvailable: true, fattyAcids: { oleic: 60, linoleic: 40.5 } },
+      { id: 'rounding', propertiesAvailable: true, fattyAcids: { oleic: 50.05, linoleic: 50.05 } },
+      { id: 'not-property-ready', propertiesAvailable: false, fattyAcids: { oleic: 120 } },
+      { id: 'no-profile', propertiesAvailable: true },
+    ];
+    expect(MAX_PROFILE_SUM_PERCENT).toBe(100.5);
+    expect(overfullProfileOils(oils)).toEqual([{ id: 'over', sum: 100.6 }]);
+  });
+
+  it('finds no overfull profile in the built catalog', () => {
+    expect(overfullProfileOils(db.oils)).toEqual([]);
+  });
+
+  it('keeps the three replaced profiles within their published analyses', () => {
+    const profile = (id: string) => db.oils.find((o) => o.id === id)!.fattyAcids!;
+    const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
+    // Loofa: 42 genotypes measured palmitic 10.76-17.75 and stearic 5.93-11.12 (Tyagi 2023,
+    // Front Nutr, PMC10228728). The legacy row had palmitic 9 and stearic 18, in reverse order.
+    const loofa = profile('loofa-seed-oil-luffa-cylinderica');
+    expect(loofa.palmitic).toBeGreaterThanOrEqual(10.76);
+    expect(loofa.palmitic).toBeLessThanOrEqual(17.75);
+    expect(loofa.stearic).toBeGreaterThanOrEqual(5.93);
+    expect(loofa.stearic).toBeLessThanOrEqual(11.12);
+    // Mafura: the commercial butter, kernel fat and seed-coat oil pressed together, inside the supplier
+    // spec for INCI "Trichilia emetica seed butter". The kernel fat alone is palmitic-rich (Mabaso
+    // 2025, PMC12526083) and is not what soapmakers buy.
+    const mafura = profile('mafura-butter-trichilia-emetica');
+    const within = (value: number, low: number, high: number) => value >= low && value <= high;
+    expect(within(mafura.palmitic, 30, 40), `palmitic ${mafura.palmitic}`).toBe(true);
+    expect(within(mafura.stearic, 2, 4), `stearic ${mafura.stearic}`).toBe(true);
+    expect(within(mafura.oleic, 45, 55), `oleic ${mafura.oleic}`).toBe(true);
+    expect(within(mafura.linoleic, 8, 13), `linoleic ${mafura.linoleic}`).toBe(true);
+    expect(within(mafura.linolenic, 1, 2), `linolenic ${mafura.linolenic}`).toBe(true);
+    // Pumpkin: linoleic-dominant (Bardaa 2016, Lipids Health Dis, PMC4827242).
+    const pumpkin = profile('pumpkin-seed-oil');
+    expect(pumpkin.linoleic).toBeGreaterThan(pumpkin.oleic);
+    for (const p of [loofa, mafura, pumpkin]) expect(sum(p)).toBeCloseTo(100, 1);
   });
 });

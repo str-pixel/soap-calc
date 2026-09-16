@@ -39,8 +39,9 @@ export function fitRadius(value: number, low: number, high: number): number {
     return low > 0 ? RING_INNER * (value / low) : RING_INNER;
   }
   if (value <= high) {
-    const width = high - low;
-    return width > 0 ? RING_INNER + (RING_OUTER - RING_INNER) * ((value - low) / width) : RING_OUTER;
+    // Reaching here means low < value <= high, so the band has width: a zero-width band sends
+    // every value to one of the other two branches.
+    return RING_INNER + (RING_OUTER - RING_INNER) * ((value - low) / (high - low));
   }
   const span = Math.max(high - low, OVERSHOOT_MIN);
   // Defensive clamp on the result. RING_OUTER + (1 - RING_OUTER) is exactly 1 for today's

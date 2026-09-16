@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-19T23:51:31.113Z",
+  "generatedAt": "2026-09-16T09:47:31.834Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -34,7 +34,7 @@
         "abyssinian oil"
       ],
       "inciName": "Crambe Abyssinica Seed Oil",
-      "category": "wax_ester",
+      "category": "triglyceride",
       "sapKoh": 0.168,
       "sapNaoh": 0.11978609625668449,
       "sapMgKohPerGram": 168,
@@ -2334,7 +2334,7 @@
         "japan wax"
       ],
       "inciName": "Rhus Succedanea Fruit Wax",
-      "category": "wax",
+      "category": "triglyceride",
       "sapKoh": 0.215,
       "sapNaoh": 0.1532976827094474,
       "sapMgKohPerGram": 215,
@@ -2346,7 +2346,7 @@
         "myristic": 1,
         "palmitic": 80
       },
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "sources": [
         {
           "source": "legacy_catalog",
@@ -2689,7 +2689,7 @@
       "fattyAcids": {
         "myristic": 99
       },
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "sources": [
         {
           "source": "legacy_catalog",
@@ -2811,7 +2811,7 @@
         "lauric": 99,
         "myristic": 1
       },
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "sources": [
         {
           "source": "legacy_catalog",
@@ -2846,10 +2846,18 @@
       "iodine": 108,
       "ins": 79,
       "fattyAcids": {
-        "oleic": 30,
-        "stearic": 18,
-        "linoleic": 47,
-        "palmitic": 9
+        "linoleic": 43.41,
+        "oleic": 34,
+        "palmitic": 14.15,
+        "stearic": 7.25,
+        "arachidic": 0.44,
+        "linolenic": 0.19,
+        "docosadienoic": 0.11,
+        "palmitoleic": 0.1,
+        "behenic": 0.1,
+        "eicosenoic": 0.09,
+        "lignoceric": 0.09,
+        "myristic": 0.07
       },
       "propertiesAvailable": true,
       "sources": [
@@ -2858,6 +2866,11 @@
           "sapKoh": 0.187,
           "sapNaoh": 0.13333333333333333,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://doi.org/10.1007/s11746-003-0813-y",
+          "notes": "Fatty-acid profile: Luffa cylindrica oilseed, GLC area-% — Matthäus, Vosmann, Pham & Aitzetmüller, \"FA and tocopherol composition of Vietnamese oilseeds\", JAOCS 80(10):1013–1020 (2003); PlantFAdb dataset 10415 (SOFA TAB_014722). Normalized to 100% from a 99.05% total; the 18:1 Δ7 isomer (0.61) is folded into oleic (same chain length and unsaturation). Legacy profile summed 104% with stearic 18 above palmitic 9, outside every seed-oil analysis found: 42 Indian genotypes measured palmitic 10.76–17.75% and stearic 5.93–11.12% (Tyagi et al. 2023, Front. Nutr., PMC10228728); only hull oil runs high in stearic. This profile sits inside those ranges. Legacy SAP and iodine kept (profile-derived iodine within 3%)."
         },
         {
           "source": "manual",
@@ -2998,11 +3011,10 @@
       "iodine": 66,
       "ins": 132,
       "fattyAcids": {
-        "oleic": 49,
-        "stearic": 3,
+        "oleic": 51,
+        "palmitic": 34,
         "linoleic": 11,
-        "myristic": 1,
-        "palmitic": 37,
+        "stearic": 3,
         "linolenic": 1
       },
       "propertiesAvailable": true,
@@ -3012,6 +3024,11 @@
           "sapKoh": 0.198,
           "sapNaoh": 0.1411764705882353,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://plantuse.plantnet.org/en/Trichilia_emetica_(PROTA)",
+          "notes": "Fatty-acid profile: Trichilia emetica fat, the first of the two analyses in the PROTA (Plant Resources of Tropical Africa) account of the species: palmitic 34%, stearic 3%, oleic 51%, linoleic 11%, linolenic 1% (sums to 100). PROTA does not say which part of the seed was analysed. Legacy profile summed 102%, including myristic 1, which appears only in PROTA's palmitic-rich second analysis. This entry represents the butter soapmakers buy: kernel fat and seed-coat oil pressed together, per the DLG Naturals technical data sheet for INCI \"Trichilia emetica seed butter\" (palmitic 30–40, stearic 2–4, oleic 45–55, linoleic 8–13, linolenic 1–2, iodine 60–80). The profile and the stored iodine (66) sit inside that spec. The kernel fat alone is palmitic-rich (palmitic 51.8, oleic 36.4, iodine 45; Mabaso et al. 2025, PMC12526083) and was not used, since it is not the commercial product."
         },
         {
           "source": "manual",
@@ -3686,7 +3703,7 @@
       "fattyAcids": {
         "oleic": 99
       },
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "sources": [
         {
           "source": "legacy_catalog",
@@ -4061,7 +4078,7 @@
       "fattyAcids": {
         "palmitic": 98
       },
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "sources": [
         {
           "source": "legacy_catalog",
@@ -4753,10 +4770,17 @@
       "iodine": 128,
       "ins": 67,
       "fattyAcids": {
-        "oleic": 33,
-        "stearic": 8,
-        "linoleic": 50,
-        "palmitic": 11
+        "linoleic": 50.92,
+        "oleic": 26.34,
+        "palmitic": 14.84,
+        "stearic": 6.68,
+        "arachidic": 0.43,
+        "myristic": 0.23,
+        "linolenic": 0.18,
+        "palmitoleic": 0.17,
+        "eicosenoic": 0.09,
+        "behenic": 0.06,
+        "erucic": 0.06
       },
       "propertiesAvailable": true,
       "sources": [
@@ -4765,6 +4789,11 @@
           "sapKoh": 0.195,
           "sapNaoh": 0.13903743315508021,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4827242/",
+          "notes": "Fatty-acid profile: Cold-pressed Cucurbita pepo L. var. Bejaoui seed oil, % of total fatty acids — Bardaa et al., Lipids in Health and Disease 15:73 (2016), Table 2 (PMC4827242). C16:1 n-9 + n-7 summed as palmitoleic, C18:1 n-9 + n-7 as oleic; C17:1 (0.084, no acid key) dropped; normalized to 100%. Legacy profile (linoleic 50, oleic 33, palmitic 11, stearic 8) summed 102%: the right shape with each value at the high side of published ranges. FNWL SAP and stored iodine (128) kept; 128 is 14.8% above the profile-derived ~111.5, just inside the 15% iodine-gate tolerance, and inside the published pumpkin seed oil band of 103–133."
         },
         {
           "source": "fnwl",
@@ -5732,7 +5761,7 @@
         "soybean fully hydrogenated"
       ],
       "inciName": "Hydrogenated Soybean Oil",
-      "category": "wax",
+      "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
       "sapMgKohPerGram": 192,
@@ -5742,7 +5771,7 @@
         "stearic": 87,
         "palmitic": 11
       },
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "sources": [
         {
           "source": "legacy_catalog",
@@ -5779,7 +5808,7 @@
       "fattyAcids": {
         "stearic": 99
       },
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "sources": [
         {
           "source": "legacy_catalog",

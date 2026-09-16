@@ -94,7 +94,7 @@ function makeBatchSheetInput(
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: 1465,
     waterModeLabel: '33% of oils',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 0 },
     insights: [],
     process: 'hp',
     postCookSuperfat: null,
@@ -166,7 +166,7 @@ describe('buildBatchSheetData dilution threading', () => {
       postCookSuperfat: null, extrasGrams: 0, scentColor: emptyComputedScentColor(), dilution, neutralization: null, properties: null,
       indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
       batchWeightWithExtras: displayTotals.batchWeightGrams, waterModeLabel: '2:1',
-      fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] }, insights: [], process: 'ls',
+      fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 0 }, insights: [], process: 'ls',
     });
     expect(data.dilution).toEqual(dilution);
   });

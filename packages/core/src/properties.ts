@@ -151,12 +151,48 @@ export const LOW_COVERAGE_PERCENT = 80;
 
 /**
  * Whether a coverage percentage is too low to judge on, decided on the WHOLE-NUMBER figure every
- * panel prints ("based on 80% of recipe oils"). The panels rounded and the insights compared the
- * raw value, so between 79.5% and 80% a panel judged its readings under an "80%" caption while
- * the insights treated the same recipe as an estimate. Every caller asks this instead.
+ * caption prints ("based on fatty-acid data for 80% of recipe oil weight"). The panels rounded and
+ * the insights compared the raw value, so between 79.5% and 80% a panel judged its readings under
+ * an "80%" caption while the insights treated the same recipe as an estimate. Every caller asks
+ * this instead. A non-finite figure (two imported lines of 1e308 g overflow the total) is no data.
  */
 export function isLowCoverage(coveragePercent: number): boolean {
-  return Math.round(coveragePercent) < LOW_COVERAGE_PERCENT;
+  return !Number.isFinite(coveragePercent) || Math.round(coveragePercent) < LOW_COVERAGE_PERCENT;
+}
+
+/**
+ * Coverage at or above this reads as complete. The cutoff dates from the app's first commit with no
+ * stated reason; it is kept as it was, and only the float error around it is removed.
+ */
+export const COMPLETE_COVERAGE_PERCENT = 99.9;
+
+// A profile summing to 99.9 computes as 99.89999999999999 at some batch weights, which put
+// macadamia oil on either side of the cutoff depending on how much of it a recipe used.
+const COVERAGE_FLOAT_TOLERANCE = 1e-6;
+
+/**
+ * Whether a coverage caption belongs on screen: the data covers less than the recipe's whole oil
+ * weight, or some oil has no data at all, however little of it there is. Captions used to test the
+ * raw figure alone, so a 0.5 g oil with no data went unnamed.
+ */
+export function isPartialCoverage(coveragePercent: number, missingOilCount: number): boolean {
+  if (!Number.isFinite(coveragePercent)) return true;
+  return missingOilCount > 0 || coveragePercent < COMPLETE_COVERAGE_PERCENT - COVERAGE_FLOAT_TOLERANCE;
+}
+
+/**
+ * A partial coverage figure as the captions print it: the whole number isLowCoverage judges, except
+ * from 99.5 up, where a whole number would print "100" for data that is not complete. There it
+ * prints one decimal, rounded down and capped at 99.9. Call it only for a partial caption.
+ */
+export function formatCoveragePercent(coveragePercent: number): string {
+  if (!Number.isFinite(coveragePercent)) return '0';
+  const whole = Math.round(coveragePercent);
+  if (whole < 100) return String(Math.max(0, whole));
+  return Math.min(
+    Math.floor(coveragePercent * 10 + COVERAGE_FLOAT_TOLERANCE) / 10,
+    COMPLETE_COVERAGE_PERCENT,
+  ).toFixed(1);
 }
 
 export function oilPropertiesFromFattyAcids(
@@ -190,7 +226,9 @@ export type RecipeOilForProperties = {
 
 export type RecipePropertiesResult = {
   properties: SoapProperties | null;
-  /** Share of recipe oil weight with fatty-acid data (0–100). */
+  /** How much of the recipe's oil weight the fatty-acid data covers (0–100). Each oil counts by
+   *  its weight times how complete its profile is, so 100% hazelnut oil, whose listed acids sum
+   *  to 93%, reads 93 with no oil missing. */
   coveragePercent: number;
   /** Oils in the recipe that lack property data. */
   missingOilIds: string[];

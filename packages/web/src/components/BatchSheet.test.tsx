@@ -10,7 +10,7 @@ import { emptyComputedScentColor } from '../lib/computeScentColor';
 // same-shaped assertions in two files to stay in step.
 import { DilutionPanel } from './DilutionPanel';
 import { calculateDilution } from '@soap-calc/core';
-import { buildBatchSheetData } from '../lib/batchSheet';
+import { buildBatchSheetData, type BatchSheetData } from '../lib/batchSheet';
 import { computePostCookSuperfat } from '../lib/calculateAdditives';
 import { calculateRecipe } from '../lib/calculateRecipe';
 import { type RecipeSettings, createStarterLines, DEFAULT_SETTINGS } from '../lib/recipe';
@@ -52,7 +52,7 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'hp',
   });
@@ -95,7 +95,7 @@ test('the batch sheet lye solution lists the water before the alkali, like the s
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'cp',
   });
@@ -149,7 +149,7 @@ test('prints a "Modeled profile" note naming derived-profile oils', () => {
       profile: null,
       coveragePercent: 100,
       missingOilIds: [],
-      modeledOilIds: ['soybean-27-5-hydrogenated'],
+      modeledOilIds: ['soybean-27-5-hydrogenated'], coveredWeightShare: 1,
     },
     insights: [],
     process: 'cp',
@@ -195,7 +195,7 @@ test('prints a total superfat (cook + post-cook) row', () => {
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'hp',
   });
@@ -247,7 +247,7 @@ test('subtract + negative main superfat: no from-oils-above note and no Total su
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'ls',
   });
@@ -294,7 +294,7 @@ test('subtract + non-negative main superfat: notes the reserve comes from the oi
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + postCookSuperfat.grams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'ls',
   });
@@ -332,7 +332,7 @@ test('prints no post-cook-superfat line when absent', () => {
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'cp',
   });
@@ -373,7 +373,7 @@ test('prints bar-property scores without a percent sign', () => {
     indexes: { iodine: 58, ins: 147, coveragePercent: 100, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'cp',
   });
@@ -423,7 +423,7 @@ test('prints the split-liquid advisory note and an explicit liquid step', () => 
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams + splitLiquidGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'cp',
   });
@@ -463,7 +463,7 @@ test('prints the soaping temperature in both units', () => {
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'cp',
     soapingTempF: 125,
@@ -541,7 +541,7 @@ function lsSheetData(extra: {
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'ls',
     ...rest,
@@ -578,7 +578,7 @@ function cpSheetData(extra: { lyeWaterUnverifiable?: boolean }) {
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'cp',
     ...extra,
@@ -1445,7 +1445,7 @@ test('LS prints the Post-cook superfat section AFTER Dilution, matching the on-s
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '38% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'ls',
   });
@@ -1490,7 +1490,7 @@ test.each([
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process,
   });
@@ -1531,7 +1531,7 @@ test('the printed oils table lists heaviest first, like the on-screen Full recip
     indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'cp',
   });
@@ -1617,7 +1617,7 @@ test('prints every bar property the panel shows, longevity included', () => {
     indexes: { iodine: 60, ins: 150, coveragePercent: 100, missingOilIds: [] },
     batchWeightWithExtras: displayTotals.batchWeightGrams,
     waterModeLabel: '33% of oil weight',
-    fattyAcids: { profile: null, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] },
+    fattyAcids: { profile: null, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
     insights: [],
     process: 'cp',
   });
@@ -1639,4 +1639,168 @@ test('prints every bar property the panel shows, longevity included', () => {
     (d) => d.querySelector('dt')?.textContent === 'Longevity',
   );
   expect(longevityRow?.querySelector('dd')?.textContent).toBe('29');
+});
+
+/** A starter-recipe sheet with the properties, indexes and fatty-acid results overridden. */
+function sheetWith(overrides: Partial<BatchSheetData>): BatchSheetData {
+  const lines = createStarterLines();
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, DEFAULT_SETTINGS);
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  return buildBatchSheetData({
+    recipeName: 'Coverage batch',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings: DEFAULT_SETTINGS,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: null,
+    extrasGrams: 0,
+    scentColor: emptyComputedScentColor(),
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oil weight',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
+    insights: [],
+    process: 'cp',
+    ...overrides,
+  });
+}
+
+// The sheet is print-only and aria-hidden, so these read it by text and selector, not by role.
+const sheetValue = (term: string) =>
+  screen.getByText(term, { selector: 'dt' }).parentElement!.querySelector('dd')!.textContent;
+
+const SCORES = { hardness: 41, cleansing: 17, condition: 56, creamy: 24, bubbly: 17, longevity: 24 };
+
+/** Liquid-soap fatty acids: the table's qualities read 12 / 63 / 9.5 / 83. */
+const LS_FATTY = {
+  profile: {
+    lauric: 45, myristic: 18, palmitic: 9, stearic: 3, oleic: 7, linoleic: 2, linolenic: 0.5,
+    ricinoleic: 20, caprylic: 8, capric: 7,
+  },
+  coveragePercent: 100,
+  missingOilIds: [] as string[],
+  modeledOilIds: [] as string[], coveredWeightShare: 1,
+};
+
+// For cold and hot process, the panel shows Iodine and INS whenever the oils carry them. The sheet printed them only inside
+// the scores section, so jojoba and beeswax (no fatty-acid data, iodine 32, INS 62) printed
+// neither, and a heading over the two rows alone must say why the scores are absent.
+test('prints iodine and INS without scores, saying why the scores are missing', () => {
+  render(
+    <BatchSheet
+      data={sheetWith({
+        properties: { properties: null, coveragePercent: 0, missingOilIds: ['jojoba-oil', 'beeswax'] },
+        indexes: { iodine: 32.4, ins: 61.6, coveragePercent: 100, missingOilIds: [] },
+      })}
+    />,
+  );
+  expect(screen.getByText('Estimated bar properties', { selector: 'h2' })).toBeTruthy();
+  expect(sheetValue('Iodine')).toBe('32');
+  expect(sheetValue('INS')).toBe('62');
+  expect(screen.queryByText('Hardness', { selector: 'dt' })).toBeNull();
+  expect(screen.getByText('Scores need fatty-acid data (no data: Jojoba Oil (a Liquid Wax Ester), Beeswax)')).toBeTruthy();
+});
+
+// The sheet printed one decimal (58.5 / 146.6) where the panel prints 58 / 147, and a reader
+// rounds 58.5 up to 59.
+test('rounds iodine and INS to the whole numbers the panel prints', () => {
+  render(
+    <BatchSheet
+      data={sheetWith({
+        properties: { properties: SCORES, coveragePercent: 100, missingOilIds: [] },
+        indexes: { iodine: 58.45, ins: 146.55, coveragePercent: 100, missingOilIds: [] },
+      })}
+    />,
+  );
+  expect(sheetValue('Iodine')).toBe('58');
+  expect(sheetValue('INS')).toBe('147');
+});
+
+test('words each coverage note by what it covers, as the panels do', () => {
+  render(
+    <BatchSheet
+      data={sheetWith({
+        properties: { properties: SCORES, coveragePercent: 74.2, missingOilIds: ['beeswax'] },
+        indexes: { iodine: 58, ins: 147, coveragePercent: 95, missingOilIds: ['pine-tar'] },
+        fattyAcids: {
+          profile: { oleic: 50, palmitic: 30, linoleic: 20 },
+          coveragePercent: 74.2,
+          missingOilIds: ['beeswax'],
+          modeledOilIds: [], coveredWeightShare: 1,
+        },
+      })}
+    />,
+  );
+  expect(screen.getByText('Scores estimated from fatty-acid data for 74% of recipe oil weight (no data: Beeswax)')).toBeTruthy();
+  expect(screen.getByText('Iodine/INS based on 95% of recipe oil weight (no data: Pine Tar)')).toBeTruthy();
+  expect(
+    screen.getByText(
+      'Percent of the weight of oils with data, estimated from fatty-acid data for 74% of recipe oil weight (no data: Beeswax)',
+    ),
+  ).toBeTruthy();
+});
+
+// A liquid soap is not a bar; the panel already says "Soap properties" for it.
+test('names the properties section for the process', () => {
+  const data = (process: BatchSheetData['process']) =>
+    sheetWith({
+      process,
+      properties: { properties: SCORES, coveragePercent: 100, missingOilIds: [] },
+      fattyAcids: LS_FATTY,
+    });
+  const { rerender } = render(<BatchSheet data={data('hp')} />);
+  expect(screen.getByText('Estimated bar properties', { selector: 'h2' })).toBeTruthy();
+  rerender(<BatchSheet data={data('ls')} />);
+  expect(screen.getByText('Estimated soap properties', { selector: 'h2' })).toBeTruthy();
+});
+
+// The sheet prints what the panel shows: for liquid soap, the four liquid-soap qualities and
+// nothing of the bar panel, not its six scores, iodine or INS.
+test('prints liquid soap its four qualities, without the bar scores, iodine or INS', () => {
+  render(
+    <BatchSheet
+      data={sheetWith({
+        process: 'ls',
+        properties: { properties: SCORES, coveragePercent: 100, missingOilIds: [] },
+        indexes: { iodine: 58, ins: 147, coveragePercent: 100, missingOilIds: [] },
+        fattyAcids: { ...LS_FATTY, modeledOilIds: ['coconut-oil-92'], coveredWeightShare: 1 },
+      })}
+    />,
+  );
+  const section = screen.getByText('Estimated soap properties', { selector: 'h2' }).closest('section')!;
+  expect(section.textContent).toMatch(/Modeled profile \(reconstructed, not measured\): Coconut Oil, 92°F/);
+  expect(Array.from(section.querySelectorAll('dt')).map((d) => d.textContent)).toEqual([
+    'Body & lather stability',
+    'Cleansing',
+    'Conditioning',
+    'Lather',
+  ]);
+  expect(Array.from(section.querySelectorAll('dd')).map((d) => d.textContent)).toEqual(['12', '63', '10', '83']);
+});
+
+// With iodine hidden for liquid soap, iodine data alone must not decide whether the section prints:
+// a jojoba-only recipe has iodine and INS but no fatty acids.
+test('prints no liquid soap properties section without fatty-acid data, whatever iodine says', () => {
+  render(
+    <BatchSheet
+      data={sheetWith({
+        process: 'ls',
+        properties: { properties: null, coveragePercent: 0, missingOilIds: ['jojoba-oil'] },
+        indexes: { iodine: 83, ins: 11, coveragePercent: 100, missingOilIds: [] },
+        fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: ['jojoba-oil'], modeledOilIds: [], coveredWeightShare: 0 },
+      })}
+    />,
+  );
+  expect(screen.queryByText('Estimated soap properties', { selector: 'h2' })).toBeNull();
+  expect(screen.queryByText('Iodine', { selector: 'dt' })).toBeNull();
 });

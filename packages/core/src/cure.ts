@@ -1,4 +1,4 @@
-import type { FattyAcidProfile } from './properties.js';
+import { formatCoveragePercent, isLowCoverage, type FattyAcidProfile } from './properties.js';
 import { piecewise } from './workability.js';
 
 export type CureMilestoneKind = 'best' | 'useWithin';
@@ -23,6 +23,14 @@ export interface CureModelEstimate {
 export interface CureModelInput {
   fa: FattyAcidProfile;
   faCoverage: number;
+  /**
+   * Covered oil weight ÷ total oil weight (core `calculateRecipeFattyAcids`). `fa` is
+   * renormalized over the oils that HAVE data, so every percentage in it is inflated by
+   * 1 ÷ this when an oil is unprofiled. The 15/25 rancidity thresholds are absolute, so they
+   * judge `pufa × share` — a lower bound, since unprofiled oils contribute at least zero.
+   * Omitted means fully covered (1).
+   */
+  faCoveredWeightShare?: number;
   lyeConcentrationPercent: number;
   process: 'cp' | 'hp' | 'ls';
 }
@@ -51,7 +59,6 @@ export const CURE_TUNING = {
   pufaCaveatPercent: 15,
   pufaFlipPercent: 25,
   shelfKnees: [[25, 52], [40, 26], [70, 13]] as ReadonlyArray<readonly [number, number]>,
-  lowCoveragePercent: 80,
 };
 
 // TOP RETUNE CANDIDATE: ricinoleic at full weight in the slow driver. Directionally right
@@ -78,6 +85,12 @@ export function estimateCureModel(input: CureModelInput): CureModelEstimate | nu
   const fast = fa('lauric') + fa('myristic');
   const pufa = fa('linoleic') + fa('linolenic');
   const slow = fa('oleic') + fa('ricinoleic') + T.linoleicWeight * pufa;
+  // The timeline drivers (slow/fast) stay on the renormalized reading: they are continuous
+  // estimates of how this soap ages, and an unprofiled oil is better approximated by the
+  // average of the oils we do know than by zero. Only the rancidity THRESHOLDS below are
+  // absolute claims about how much PUFA is present, so only they take the bound.
+  const share = input.faCoveredWeightShare ?? 1;
+  const pufaAtLeast = pufa * (Number.isFinite(share) ? Math.max(0, Math.min(1, share)) : 1);
 
   const usableMin = Math.max(
     T.usableFloorWeeks,
@@ -96,16 +109,21 @@ export function estimateCureModel(input: CureModelInput): CureModelEstimate | nu
   };
 
   const caveats: string[] = [];
-  if (pufa > T.pufaFlipPercent) {
+  if (pufaAtLeast > T.pufaFlipPercent) {
+    // The BOUND decides whether to flip; the higher renormalized reading sizes the window.
+    // Sizing from the bound would hand a recipe a LONGER shelf-life promise the thinner its
+    // data got, which is the one place optimism is unsafe.
     const shelf = Math.max(piecewise(pufa, T.shelfKnees), usableMin);
     second = { kind: 'useWithin', minWeeks: shelf, maxWeeks: shelf };
     caveats.push(FLIP_CAVEAT);
-  } else if (pufa > T.pufaCaveatPercent) {
+  } else if (pufaAtLeast > T.pufaCaveatPercent) {
     caveats.push(DOS_CAVEAT);
   }
-  if (input.faCoverage < T.lowCoveragePercent) {
+  // The same low-coverage rule, printed figure and wording as the panels and insights, so this
+  // caveat never says "covers only 80%" beside a panel that calls the same 80% sound.
+  if (isLowCoverage(input.faCoverage)) {
     caveats.push(
-      `Fatty-acid data covers only ${Math.round(input.faCoverage)}% of these oils — the cure drivers are partly estimated.`,
+      `Fatty-acid data covers only ${formatCoveragePercent(input.faCoverage)}% of recipe oil weight — the cure drivers are partly estimated.`,
     );
   }
 

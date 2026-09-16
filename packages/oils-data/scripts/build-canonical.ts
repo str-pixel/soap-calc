@@ -18,6 +18,7 @@ import { loadCosingGlossaryIndex, lookupInciInGlossary, defaultGlossaryPath } fr
 import { resolvePrimarySap, sapDeltaPercent, VERIFIED_DELTA_PCT } from '../src/sap-policy.js';
 import {
   inferCategory,
+  contributesFattyAcids,
   normalizeOilName,
   slugify,
 } from '../src/normalize.js';
@@ -183,8 +184,12 @@ function main() {
     const backfill = PROFILE_BACKFILL[baseSlug];
     const legacyProfile = parseBreakdown(leg.breakdown);
     const fattyAcids = backfill ? { ...backfill.profile } : legacyProfile;
-    const category = inferCategory(leg.name, baseSlug);
-    const propertiesAvailable = category === 'triglyceride' || category === 'blend';
+    // SAP decides the category, so a common name containing "wax" can no longer file a
+    // triglyceride as a non-oil. The legacy value is the right one to ask: it is the only SAP
+    // every legacy row has, and validate-canonical re-checks the category against the FINAL
+    // resolved SAP, so an FNWL match that moved the value cannot leave the category stale.
+    const category = inferCategory(leg.name, baseSlug, leg.sap);
+    const propertiesAvailable = contributesFattyAcids(category, baseSlug);
 
     const legacySapNaoh = sapKohToSapNaoh(leg.sap);
     const sources: CanonicalOil['sources'] = [{

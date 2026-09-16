@@ -543,3 +543,33 @@ test('the additive amount stays a usable figure beside the widest dose basis', a
 
   expect(problems, 'browser complaints on the additive dose row').toEqual([]);
 });
+
+// 09's view switch rides its head beside the title. Where the two did not fit side by side, the
+// title was squeezed onto two or three lines instead (1024–1280px, 700–820px and 360px,
+// measured 2026-09-13). The switch now wraps under the title there, and only there: letting
+// every panel head wrap would have changed six other panels' heads (Split liquid and 03–07).
+test('the fatty-acid title keeps one line, its view switch wrapping below when both do not fit', async ({ page }) => {
+  const problems = watchForErrors(page);
+  for (const width of [1400, 1280, 1100, 1024, 900, 820, 700, 400, 360]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    const tablist = page.getByRole('tablist', { name: 'Fatty acid display' });
+    await tablist.waitFor();
+    const panel = page.locator('section.panel', { has: tablist });
+    const title = panel.locator('.panel__title');
+    const lines = await title.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return new Set(Array.from(range.getClientRects()).map((r) => Math.round(r.top))).size;
+    });
+    expect(lines, `09 title lines at ${width}px`).toBe(1);
+    const t = (await title.boundingBox())!;
+    const sw = (await tablist.boundingBox())!;
+    const overlaps = t.x < sw.x + sw.width && sw.x < t.x + t.width && t.y < sw.y + sw.height && sw.y < t.y + t.height;
+    expect(overlaps, `the view switch overlaps the title at ${width}px`).toBe(false);
+    expect(sw.x + sw.width, `the view switch stays inside the panel at ${width}px`).toBeLessThanOrEqual(
+      (await panel.boundingBox())!.x + (await panel.boundingBox())!.width + 1,
+    );
+  }
+  expect(problems, 'browser complaints').toEqual([]);
+});

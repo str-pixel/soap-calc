@@ -24,3 +24,25 @@ export function incompleteProfileOils(
   }
   return out.sort((a, b) => a.sum - b.sum);
 }
+
+/**
+ * The most a property-ready profile may sum to. A measured composition of one oil cannot run past
+ * 100% of its fatty acids; the tolerance only absorbs rounding. Three legacy rows did run past it
+ * (loofa 104, pumpkin 102, mafura 102) and were replaced with cited analyses; the highest sum left
+ * is 100.1 (one-decimal profiles of 11-13 acids).
+ */
+export const MAX_PROFILE_SUM_PERCENT = 100.5;
+
+/** Property-ready oils whose fatty-acid profile sums above `maxPercent`, highest first. */
+export function overfullProfileOils(
+  oils: OilLike[],
+  maxPercent: number = MAX_PROFILE_SUM_PERCENT,
+): { id: string; sum: number }[] {
+  const out: { id: string; sum: number }[] = [];
+  for (const oil of oils) {
+    if (!oil.propertiesAvailable || !oil.fattyAcids) continue;
+    const sum = Object.values(oil.fattyAcids).reduce((acc, pct) => acc + pct, 0);
+    if (sum > maxPercent) out.push({ id: oil.id, sum: Math.round(sum * 100) / 100 });
+  }
+  return out.sort((a, b) => b.sum - a.sum);
+}

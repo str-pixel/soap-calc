@@ -5,6 +5,13 @@ import { FattyAcidPanel } from './FattyAcidPanel';
 
 afterEach(cleanup);
 
+/** What a sighted reader sees: the element's text without its screen-reader-only parts. */
+const visibleText = (el: Element): string => {
+  const copy = el.cloneNode(true) as Element;
+  copy.querySelectorAll('.sr-only').forEach((n) => n.remove());
+  return copy.textContent ?? '';
+};
+
 const PROFILE = { oleic: 41, elaidic: 22, stearic: 15, linoleic: 11, palmitic: 10, linolenic: 1 };
 
 /**
@@ -19,7 +26,7 @@ test('marks a recipe built on a modeled (reconstructed) profile', () => {
         profile: PROFILE,
         coveragePercent: 100,
         missingOilIds: [],
-        modeledOilIds: ['soybean-27-5-hydrogenated'],
+        modeledOilIds: ['soybean-27-5-hydrogenated'], coveredWeightShare: 1,
       }}
     />,
   );
@@ -32,7 +39,7 @@ test('stays silent for a measured-only recipe', () => {
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   expect(screen.queryByText('Modeled')).toBeNull();
@@ -45,7 +52,7 @@ test('opens on the meters, and the Radar tab swaps in the chart', () => {
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   const metersTab = screen.getByRole('tab', { name: 'Meters' });
@@ -75,7 +82,7 @@ test('the meters place each marker at its percent and shade the typical band the
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   const oleicRow = screen.getByRole('meter', { name: /^Oleic:/i }).closest('li')!;
@@ -85,10 +92,7 @@ test('the meters place each marker at its percent and shade the typical band the
   expect(marker.style.left).toBe('41%');
   expect(band.style.left).toBe('32%');
   expect(band.style.width).toBe('9%');
-  // No marker is ever flagged, in band or far past it: trans reads 22 against 0–2.
-  expect(marker.className).not.toContain('property-meter__marker--outside');
   const transRow = screen.getByRole('meter', { name: /Trans \(elaidic\)/i }).closest('li')!;
-  expect(transRow.querySelector('.property-meter__marker--outside')).toBeNull();
   // A wide band numbers both edges; a narrow one prints a single "low–high" from its left
   // edge, so a 0–2 band's numbers neither overprint each other nor hang off the row.
   const ticks = (row: Element) =>
@@ -102,7 +106,7 @@ test('a value at the edge of the track anchors its label to the marker instead o
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   // Ricinoleic is absent (0%): centred on 0% the label would hang half off the row.
@@ -118,7 +122,7 @@ test('the radar draws the six named groups and prints the three catch-alls under
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
@@ -127,11 +131,15 @@ test('the radar draws the six named groups and prints the three catch-alls under
     .getAttribute('points')!
     .split(' ');
   expect(points.length).toBe(6);
-  // The catch-alls are not axes, but they are not hidden either: name and value, as list
-  // items, each with its typical range for a screen reader.
-  const others = Array.from(document.querySelectorAll('.fatty-radar__other')).map(
-    (li) => li.textContent,
-  );
+  // The catch-alls are not axes, but they are not hidden either: name, value and typical
+  // range, on screen. The range was screen-reader-only, so a sighted reader saw "Trans 22%"
+  // with nothing to compare it to, while every axis above printed its range.
+  const otherItems = Array.from(document.querySelectorAll('.fatty-radar__other'));
+  for (const li of otherItems) {
+    expect(visibleText(li)).toMatch(/Typical 0–2%/);
+    expect(li.textContent!.match(/Typical/g)?.length).toBe(1); // shown once, not read twice
+  }
+  const others = otherItems.map((li) => li.textContent);
   expect(others.length).toBe(3);
   expect(others.join(' ')).toMatch(/Other saturated/);
   expect(others.join(' ')).toMatch(/Other unsaturated/);
@@ -153,7 +161,7 @@ test('the fatty view tabs traverse with arrow keys, starting from the meters', (
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   const metersTab = screen.getByRole('tab', { name: 'Meters' });
@@ -167,7 +175,7 @@ test('both views state the same readings — the toggle changes geometry, not cl
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   const readings = () =>
@@ -184,7 +192,7 @@ test('names its shading, like the other three result views do', () => {
   const { container } = render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   const legend = container.querySelector('.property-legend')!;
@@ -206,7 +214,7 @@ test('shows the rancidity notes from the insights, above the chart, in both view
   render(
     <FattyAcidPanel
       insights={[dos, unrelated, cap]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   const notes = () => screen.getByRole('list', { name: /Rancidity/i });
@@ -227,38 +235,73 @@ test('shows no rancidity note when the insights carry none', () => {
   render(
     <FattyAcidPanel
       insights={[{ code: 'trace_speed', level: 'info', message: 'A trace note.' }]}
-      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   expect(screen.queryByRole('list', { name: /Rancidity/i })).toBeNull();
 });
 
-// Nothing tested 09 below its 80% coverage cutoff: removing the low-coverage guard failed no
-// unit test. Below the cutoff every reading is an estimate: marked "~" and "estimated", the
-// caption says "estimated from", nothing is flagged, and the radar says "Low data".
+// Below the 80% coverage cutoff every reading is an estimate: "~" on screen and "estimated" to a
+// screen reader, for all nine meters in both views and for the Saturated/Unsaturated line,
+// which had been left unmarked. The radar keeps printing each typical range: it judges
+// nothing, so its "Low data" hid a range while the Meters view kept printing it.
 test('treats every reading as an estimate below the coverage cutoff, in both views', () => {
-  // Nothing is flagged at full coverage either; below the cutoff the readings also become
-  // estimates.
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile: PROFILE, coveragePercent: 60, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile: PROFILE, coveragePercent: 60, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
-  expect(screen.getByText(/estimated from 60% of recipe oils/i)).toBeTruthy();
-  expect(document.querySelectorAll('.property-meters__status').length).toBe(0);
-  expect(document.querySelector('.property-meters__value--outside')).toBeNull();
-  expect(document.querySelector('.property-meter__marker--outside')).toBeNull();
-  const trans = screen.getByRole('meter', { name: /Trans \(elaidic\)/i });
-  expect(trans.getAttribute('aria-label')).toMatch(/estimated/);
-  expect(trans.getAttribute('aria-label')).not.toMatch(/above typical range/);
-  expect(trans.textContent).toMatch(/^~/);
+  expect(document.querySelector('.panel__subtitle')!.textContent).toMatch(/estimated from/i);
+  const everyMeterEstimated = (view: string) => {
+    const meters = screen.getAllByRole('meter');
+    expect(meters.length, view).toBe(9);
+    for (const m of meters) {
+      expect(m.getAttribute('aria-label'), view).toMatch(/: estimated \d/);
+      expect(m.textContent, view).toMatch(/^~\d/);
+    }
+  };
+  everyMeterEstimated('meters');
+  const ratio = document.querySelector('.fatty-ratio')!;
+  expect(visibleText(ratio)).toMatch(/^Saturated ~[\d.]+% · Unsaturated ~[\d.]+%$/);
+  expect(ratio.textContent!.match(/estimated/g)?.length).toBe(2);
 
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  everyMeterEstimated('radar');
   const chart = document.querySelector('.fatty-radar')!.textContent!;
-  expect(chart.match(/Low data/g)?.length).toBe(6);
-  expect(chart).not.toMatch(/Too high/);
-  expect(document.querySelectorAll('.fatty-radar__other .property-meters__status').length).toBe(0);
+  expect(chart).not.toMatch(/Low data/);
+  expect(chart.match(/Typical/g)?.length).toBe(6);
+});
+
+test('does not mark the Saturated/Unsaturated line as an estimate at full coverage', () => {
+  render(
+    <FattyAcidPanel
+      insights={[]}
+      result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
+    />,
+  );
+  const ratio = document.querySelector('.fatty-ratio')!;
+  expect(ratio.textContent).not.toMatch(/~|estimated/);
+});
+
+// With no oil carrying fatty-acid data there is nothing to chart, but the maker still needs
+// to know which oils caused it. The subtitle names them whenever there is a profile; the
+// empty state named none.
+test('names the oils without fatty-acid data when there is nothing to show', () => {
+  const { rerender } = render(
+    <FattyAcidPanel
+      insights={[]}
+      result={{ profile: null, coveragePercent: 0, missingOilIds: ['beeswax', 'pine-tar'], modeledOilIds: [], coveredWeightShare: 0 }}
+    />,
+  );
+  expect(document.querySelector('.results-hint')!.textContent).toMatch(/\(no data: Beeswax, Pine Tar\)/);
+  rerender(
+    <FattyAcidPanel
+      insights={[]}
+      result={{ profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
+    />,
+  );
+  expect(document.querySelector('.results-hint')!.textContent).not.toMatch(/no data/);
 });
 
 // 09 judges no reading (since 2026-09-13). Trans fat, other saturated and other unsaturated were
@@ -278,26 +321,89 @@ test('never flags a reading, however far past its band, in either view', () => {
   render(
     <FattyAcidPanel
       insights={[]}
-      result={{ profile, coveragePercent: 100, missingOilIds: [], modeledOilIds: [] }}
+      result={{ profile, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
-  const noFlags = (view: string) => {
-    expect(document.querySelectorAll('.property-meters__status').length, view).toBe(0);
-    expect(document.querySelector('.property-meters__value--outside'), view).toBeNull();
-    expect(document.querySelector('.property-meter__marker--outside'), view).toBeNull();
-    for (const meter of screen.getAllByRole('meter')) {
-      expect(meter.getAttribute('aria-label'), view).not.toMatch(/above|outside|too high|too low/i);
+  const panel = document.querySelector('section.panel')!;
+  // Checked on what the panel says and announces, not on one class name: an earlier version of
+  // this test looked for CSS classes the panel no longer renders, so a "Too high" brought back
+  // under any other markup would have passed.
+  // No word boundaries: the panel's text runs a label straight into the next figure
+  // ("Too high22%"), where \b never matches, and that let a planted "Too high" pass.
+  const VERDICT = /too high|too low|in range|above typical|below typical|out of range/i;
+  const noVerdict = (view: string) => {
+    expect(panel.textContent, view).not.toMatch(VERDICT);
+    for (const el of Array.from(panel.querySelectorAll('[aria-label]'))) {
+      expect(el.getAttribute('aria-label'), view).not.toMatch(VERDICT);
     }
+    // Nor a colour: 08 paints an out-of-range figure and its dot accent through these classes.
+    expect(
+      panel.querySelector('.property-meters__value--outside, .property-meter__marker--outside'),
+      view,
+    ).toBeNull();
   };
-  // Meters: all nine readings, each still stated against its typical range.
   const rows = Array.from(document.querySelectorAll('.property-meters__row'));
   expect(rows.length).toBe(9);
   for (const row of rows) expect(row.textContent).toMatch(/Typical/);
-  noFlags('meters');
+  noVerdict('meters');
 
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
-  noFlags('radar');
-  const chart = document.querySelector('.fatty-radar')!.textContent!;
-  expect(chart).not.toMatch(/Too high|Too low/);
-  expect(chart.match(/Typical/g)?.length).toBe(6);
+  noVerdict('radar');
+  expect(document.querySelector('.fatty-radar')!.textContent!.match(/Typical/g)?.length).toBe(6);
+});
+
+// The subtitle says what the percentages are a percent of. With an oil missing, the profile is
+// rescaled over the oils that have data, so "percent of oil weight" overstated the base; and a
+// coverage figure that rounded to 100 was printed as "100%" on a partial recipe.
+test('names the base of its percentages and how much of the recipe the data covers', () => {
+  const { rerender } = render(
+    <FattyAcidPanel
+      insights={[]}
+      result={{ profile: PROFILE, coveragePercent: 99.89999999999999, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
+    />,
+  );
+  const subtitle = () => document.querySelector('.panel__subtitle')!.textContent;
+  expect(subtitle()).toBe('Percent of oil weight.');
+  rerender(
+    <FattyAcidPanel
+      insights={[]}
+      result={{ profile: PROFILE, coveragePercent: 99.6, missingOilIds: ['abyssinian-oil'], modeledOilIds: [], coveredWeightShare: 0.996 }}
+    />,
+  );
+  expect(subtitle()).toBe(
+    'Percent of the weight of oils with data, based on fatty-acid data for 99.6% of recipe oil weight (no data: Abyssinian Oil).',
+  );
+});
+
+// The rancidity insights no longer stand down on coverage — they judge a lower bound, counting
+// unprofiled oil weight as carrying no polyunsaturates. So an empty slot above the chart reads as
+// "no risk" only when the whole recipe is characterized; where some of it is not, the panel says
+// a note could be hidden. It speaks only for these notes: other parts of the app can still
+// mention rancidity. insights.test.ts pins the insights' side of the same rule.
+test('says a rancidity note can be hidden when part of the recipe has no data, in both views', () => {
+  const { rerender } = render(
+    <FattyAcidPanel
+      insights={[]}
+      result={{ profile: PROFILE, coveragePercent: 88, missingOilIds: ['beeswax'], modeledOilIds: [], coveredWeightShare: 0.88 }}
+    />,
+  );
+  const notes = () => screen.queryByRole('list', { name: /Rancidity/i });
+  expect(notes()!.textContent).toMatch(/count as carrying no polyunsaturates/);
+  const tabpanel = document.getElementById('fatty-tabpanel')!;
+  expect(notes()!.compareDocumentPosition(tabpanel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  expect(notes()!.textContent).toMatch(/count as carrying no polyunsaturates/);
+  expect(document.querySelector('.fatty-radar__caption')!.textContent).toMatch(
+    /without fatty-acid data count as carrying none/i,
+  );
+
+  // Thin PROFILES are not a reason to say anything: an incomplete profile understates PUFA, so
+  // no note can be hidden by it. This is the case the old coverage gate got wrong.
+  rerender(
+    <FattyAcidPanel
+      insights={[]}
+      result={{ profile: PROFILE, coveragePercent: 79.4, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
+    />,
+  );
+  expect(notes()).toBeNull();
 });

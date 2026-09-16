@@ -242,6 +242,7 @@ export function useFormulationInsights(
       properties: properties.properties,
       fattyAcids: fattyAcids.profile,
       fattyAcidCoveragePercent: fattyAcids.coveragePercent,
+      fattyAcidCoveredWeightShare: fattyAcids.coveredWeightShare,
       propertyCoveragePercent: properties.coveragePercent,
       totalOilGrams: lyeResult.totalOilWeightGrams,
       superfatPercent: Number(settings.superfatPercent) || 0,

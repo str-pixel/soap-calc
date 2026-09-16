@@ -17,7 +17,6 @@ import type { RecipeIndexResult } from './calculateRecipeIndexes';
 import type { ProcessId } from './process';
 import type { RecipeLine, RecipeSettings, SplitLiquidRow, WeightUnit } from './recipe';
 import { oilDisplayName } from './oilDisplay';
-import { formatGrams } from './format';
 import { formatWeight } from './weightUnits';
 
 export { additiveStageLabel };
@@ -115,11 +114,6 @@ export function canPrintBatchSheet(
 
 export function buildBatchSheetData(input: BatchSheetData): BatchSheetData {
   return { ...input };
-}
-
-export function formatBatchSheetProperty(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
-  return formatGrams(value, 1);
 }
 
 export function batchSheetOilName(oilId: string): string {

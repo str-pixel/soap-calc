@@ -242,7 +242,7 @@ test.describe('recipe UI regressions', () => {
     await picker2.fill('beeswax');
     await page.locator('.oil-picker__option').first().click();
     // Caption switches from "Based on" to "Estimated from"
-    await expect(page.locator('.properties-coverage').first()).toContainText(/Estimated from 74% of recipe oils/i);
+    await expect(page.locator('.properties-coverage').first()).toContainText(/Scores estimated from fatty-acid data for 74% of recipe oil weight/i);
     // Values are marked approximate and the red out-of-range flag is suppressed.
     // SCOPED, and Meters selected explicitly: the Fatty acid profile panel uses the same
     // class names and has its own coverage rules, so an unscoped count of flagged values

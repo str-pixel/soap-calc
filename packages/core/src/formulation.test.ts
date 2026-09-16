@@ -122,7 +122,7 @@ describe('analyzeFormulation', () => {
     expect(sumFattyAcids(profile, ['linoleic', 'linolenic'])).toBe(30);
   });
 
-  it('suppresses fatty-acid threshold insights below the low-coverage estimate threshold', () => {
+  it('suppresses fatty-acid threshold insights on the covered-weight share, not on coverage', () => {
     const profile = { linoleic: 20, linolenic: 10, oleic: 50 }; // poly = 30 > 28
     const base = {
       properties: null,
@@ -136,10 +136,17 @@ describe('analyzeFormulation', () => {
       process: 'cp' as const,
     };
     const covered = analyzeFormulation({ ...base, fattyAcidCoveragePercent: 100 });
-    const lowCoverage = analyzeFormulation({ ...base, fattyAcidCoveragePercent: 10 });
+    // Thin PROFILES (low coverage) understate PUFA, so they are no reason to stand down: a
+    // recipe whose known acids already reach 30% poly certainly reaches it.
+    const thinProfiles = analyzeFormulation({ ...base, fattyAcidCoveragePercent: 10 });
+    // Missing OIL WEIGHT is the case that used to inflate the reading, and the bound handles
+    // it directly: 30 x 0.5 = 15, which the recipe cannot be shown to exceed.
+    const halfUnprofiled = analyzeFormulation({
+      ...base, fattyAcidCoveragePercent: 50, fattyAcidCoveredWeightShare: 0.5,
+    });
     expect(covered.some((i) => i.code === 'high_poly_high_superfat')).toBe(true);
-    // The panels show these as ~estimates below the threshold; the insight must not assert them.
-    expect(lowCoverage.some((i) => i.code === 'high_poly_high_superfat')).toBe(false);
+    expect(thinProfiles.some((i) => i.code === 'high_poly_high_superfat')).toBe(true);
+    expect(halfUnprofiled.some((i) => i.code === 'high_poly_high_superfat')).toBe(false);
   });
 
   it('warns when split liquid at trace and water is not reduced', () => {

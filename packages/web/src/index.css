@@ -1012,6 +1012,14 @@ details[open] > .disclosure__summary::before {
   margin-bottom: 1.1rem;
 }
 
+/* A head whose title and control may not fit side by side (09's Meters / Radar switch): the
+   control wraps under the title instead of squeezing it onto two or three lines. Opt-in:
+   letting every head wrap changed the heads of six other panels (Split liquid and 03–07)
+   across nine widths from 360 to 1400px (measured 2026-09-13). */
+.panel__head--wrap {
+  flex-wrap: wrap;
+}
+
 .panel__head-actions {
   display: flex;
   align-items: center;
@@ -2661,8 +2669,8 @@ details[open] > .disclosure__summary::before {
 }
 
 /* The radar view's catch-all readout: the three groups that are not axes (other saturated,
-   other unsaturated, trans — typically 0–2%, there to flag an odd oil) printed under the
-   chart so the view hides nothing. One mono line, wrapping on a narrow panel. */
+   other unsaturated, trans — typically 0–2%, holding the acids no named group covers) printed
+   under the chart so the view hides nothing. One mono line, wrapping on a narrow panel. */
 .fatty-radar__others {
   list-style: none;
   margin: 0;
@@ -2677,8 +2685,17 @@ details[open] > .disclosure__summary::before {
 
 .fatty-radar__other {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 0.45rem;
+}
+
+/* A catch-all's typical range, in the small caps the radar prints under each axis value. */
+.fatty-radar__other-range {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label);
 }
 
 .fatty-radar__others .property-meters__value {

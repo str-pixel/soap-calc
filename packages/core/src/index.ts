@@ -2,6 +2,7 @@ export * from './sap.js';
 export * from './molar-masses.js';
 export * from './lye.js';
 export * from './properties.js';
+export * from './ls-qualities.js';
 export * from './property-display.js';
 export * from './range-verdict.js';
 export * from './formulation-guide.js';

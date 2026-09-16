@@ -599,4 +599,59 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'hydrogenated" is a non-standard SoapCalc label, numerically inconsistent with IV 78 (~40% IV drop); ' +
       'the IV 78 / SAP 0.191 are the authoritative anchors. DERIVED reconstruction, not a sourced canonical value.',
   },
+
+  'loofa-seed-oil-luffa-cylinderica': {
+    profile: {
+      linoleic: 43.41, oleic: 34.0, palmitic: 14.15, stearic: 7.25, arachidic: 0.44, linolenic: 0.19,
+      docosadienoic: 0.11, palmitoleic: 0.1, behenic: 0.1, eicosenoic: 0.09, lignoceric: 0.09, myristic: 0.07,
+    },
+    sourceType: 'literature',
+    source:
+      'Luffa cylindrica oilseed, GLC area-% — Matthäus, Vosmann, Pham & Aitzetmüller, "FA and tocopherol ' +
+      'composition of Vietnamese oilseeds", JAOCS 80(10):1013–1020 (2003); PlantFAdb dataset 10415 ' +
+      '(SOFA TAB_014722). Normalized to 100% from a 99.05% total; the 18:1 Δ7 isomer (0.61) is folded ' +
+      'into oleic (same chain length and unsaturation).',
+    url: 'https://doi.org/10.1007/s11746-003-0813-y',
+    note:
+      'Legacy profile summed 104% with stearic 18 above palmitic 9, outside every seed-oil analysis ' +
+      'found: 42 Indian genotypes measured palmitic 10.76–17.75% and stearic 5.93–11.12% (Tyagi et al. ' +
+      '2023, Front. Nutr., PMC10228728); only hull oil runs high in stearic. This profile sits inside ' +
+      'those ranges. Legacy SAP and iodine kept (profile-derived iodine within 3%).',
+  },
+
+  'pumpkin-seed-oil': {
+    profile: {
+      linoleic: 50.92, oleic: 26.34, palmitic: 14.84, stearic: 6.68, arachidic: 0.43, myristic: 0.23,
+      linolenic: 0.18, palmitoleic: 0.17, eicosenoic: 0.09, behenic: 0.06, erucic: 0.06,
+    },
+    sourceType: 'literature',
+    source:
+      'Cold-pressed Cucurbita pepo L. var. Bejaoui seed oil, % of total fatty acids — Bardaa et al., ' +
+      'Lipids in Health and Disease 15:73 (2016), Table 2 (PMC4827242). C16:1 n-9 + n-7 summed as ' +
+      'palmitoleic, C18:1 n-9 + n-7 as oleic; C17:1 (0.084, no acid key) dropped; normalized to 100%.',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4827242/',
+    note:
+      'Legacy profile (linoleic 50, oleic 33, palmitic 11, stearic 8) summed 102%: the right shape with ' +
+      'each value at the high side of published ranges. FNWL SAP and stored iodine (128) kept; 128 is ' +
+      '14.8% above the profile-derived ~111.5, just inside the 15% iodine-gate tolerance, and inside ' +
+      'the published pumpkin seed oil band of 103–133.',
+  },
+
+  'mafura-butter-trichilia-emetica': {
+    profile: { oleic: 51, palmitic: 34, linoleic: 11, stearic: 3, linolenic: 1 },
+    sourceType: 'literature',
+    source:
+      'Trichilia emetica fat, the first of the two analyses in the PROTA (Plant Resources of Tropical ' +
+      'Africa) account of the species: palmitic 34%, stearic 3%, oleic 51%, linoleic 11%, linolenic 1% ' +
+      '(sums to 100). PROTA does not say which part of the seed was analysed.',
+    url: 'https://plantuse.plantnet.org/en/Trichilia_emetica_(PROTA)',
+    note:
+      "Legacy profile summed 102%, including myristic 1, which appears only in PROTA's palmitic-rich " +
+      'second analysis. This entry represents the butter soapmakers buy: kernel fat and seed-coat oil ' +
+      'pressed together, per the DLG Naturals technical data sheet for INCI "Trichilia emetica seed ' +
+      'butter" (palmitic 30–40, stearic 2–4, oleic 45–55, linoleic 8–13, linolenic 1–2, iodine 60–80). ' +
+      'The profile and the stored iodine (66) sit inside that spec. The kernel fat alone is ' +
+      'palmitic-rich (palmitic 51.8, oleic 36.4, iodine 45; Mabaso et al. 2025, PMC12526083) and was ' +
+      'not used, since it is not the commercial product.',
+  },
 };

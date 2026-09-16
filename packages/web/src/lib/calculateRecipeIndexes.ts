@@ -1,5 +1,5 @@
 import type { RecipeLine, RecipeSettings } from './recipe';
-import { oilById } from './oils';
+import { isTarOil, oilById } from './oils';
 import { resolveLineWeights } from './resolveLineWeights';
 
 export type RecipeIndexResult = {
@@ -28,7 +28,10 @@ export function calculateRecipeIndexes(
 
   for (const row of weighted) {
     const oil = oilById(row.line.oilId);
-    if (!oil || oil.iodine === undefined || oil.ins === undefined) {
+    // A tar (pine, birch) neutralizes lye but is no triglyceride: the catalog stores iodine 0 and
+    // INS 0 beside "No fatty acids; soap property predictions N/A", placeholders that averaged
+    // in would pull both indexes down. It has no data here, as it has none for fatty acids.
+    if (!oil || isTarOil(oil) || oil.iodine === undefined || oil.ins === undefined) {
       missingOilIds.add(row.line.oilId);
       continue;
     }

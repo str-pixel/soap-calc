@@ -8,7 +8,7 @@ import {
   SapRole,
   SapSourceRecord,
 } from './schema.js';
-import { inferCategory, canonicalAlias } from './normalize.js';
+import { inferCategory, contributesFattyAcids, canonicalAlias } from './normalize.js';
 
 const TAR_USAGE_NOTES =
   'Lye consumption estimate only — not an ISO 3657 triglyceride SAP. No fatty acids; soap property predictions N/A.';
@@ -37,7 +37,7 @@ export function loadSupplementalOils(path: string): SupplementalOilInput[] {
 }
 
 export function supplementalToCanonical(entry: SupplementalOilInput): CanonicalOil {
-  const category = entry.category ?? inferCategory(entry.displayName, entry.id);
+  const category = entry.category ?? inferCategory(entry.displayName, entry.id, entry.sapKoh);
   const sapRole: SapRole =
     entry.sapRole ?? (category === 'tar' ? 'acid_neutralization' : 'triglyceride');
   const sapNaoh = sapKohToSapNaoh(entry.sapKoh);
@@ -66,7 +66,7 @@ export function supplementalToCanonical(entry: SupplementalOilInput): CanonicalO
     iodine: entry.iodine ?? (category === 'tar' ? 0 : undefined),
     ins: entry.ins ?? (category === 'tar' ? 0 : undefined),
     fattyAcids: category === 'tar' ? {} : undefined,
-    propertiesAvailable: category === 'triglyceride' || category === 'blend',
+    propertiesAvailable: contributesFattyAcids(category, entry.id),
     sources,
     primarySource: entry.primarySource,
     confidence: entry.confidence,

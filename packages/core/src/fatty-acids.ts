@@ -6,6 +6,21 @@ export type RecipeFattyAcidResult = {
   profile: FattyAcidProfile | null;
   coveragePercent: number;
   missingOilIds: string[];
+  /**
+   * Covered oil weight ÷ total oil weight (0–1). Multiply any percentage in `profile` by this
+   * to get a CERTAIN LOWER BOUND on the whole recipe: oils without a profile contribute zero.
+   *
+   * This is NOT `coveragePercent / 100`. Coverage is completeness-weighted (an oil whose acids
+   * sum to 93% counts as 93% characterized), which is the right figure for "how much do we
+   * know"; this is the plain weight share, which is the right factor for converting a
+   * renormalized percentage into an absolute one.
+   *
+   * Only absolute thresholds may use it — cure's PUFA 15/25 and the rancidity insights. The
+   * 0–100 scores are RELATIVE and must keep reading `profile` directly: scaling them by this
+   * share deflates a recipe that is merely partly unprofiled, which flips 22% of property
+   * verdicts (8,460 of them from "in range" to "Too low") for bars that are genuinely fine.
+   */
+  coveredWeightShare: number;
 };
 
 export function calculateRecipeFattyAcids(
@@ -16,7 +31,7 @@ export function calculateRecipeFattyAcids(
   const totalWeight = weighted.reduce((sum, line) => sum + line.weightGrams, 0);
 
   if (totalWeight <= 0) {
-    return { profile: null, coveragePercent: 0, missingOilIds: [] };
+    return { profile: null, coveragePercent: 0, missingOilIds: [], coveredWeightShare: 0 };
   }
 
   const profile: FattyAcidProfile = {};
@@ -42,7 +57,7 @@ export function calculateRecipeFattyAcids(
   }
 
   if (coveredWeight <= 0) {
-    return { profile: null, coveragePercent: 0, missingOilIds: [...missingOilIds] };
+    return { profile: null, coveragePercent: 0, missingOilIds: [...missingOilIds], coveredWeightShare: 0 };
   }
 
   // Scores: renormalize the profile over covered-OIL weight (unchanged) so an oil's scores are
@@ -57,6 +72,7 @@ export function calculateRecipeFattyAcids(
     profile,
     coveragePercent: (characterizedWeight / totalWeight) * 100,
     missingOilIds: [...missingOilIds],
+    coveredWeightShare: coveredWeight / totalWeight,
   };
 }
 

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-07-19T23:51:31.113Z",
+  "generatedAt": "2026-09-16T09:46:35.348Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -18,7 +18,7 @@
         "abyssinian oil"
       ],
       "inciName": "Crambe Abyssinica Seed Oil",
-      "category": "wax_ester",
+      "category": "triglyceride",
       "sapKoh": 0.168,
       "sapNaoh": 0.11978609625668449,
       "confidence": "legacy_only",
@@ -1001,13 +1001,20 @@
         "japan wax"
       ],
       "inciName": "Rhus Succedanea Fruit Wax",
-      "category": "wax",
+      "category": "triglyceride",
       "sapKoh": 0.215,
       "sapNaoh": 0.1532976827094474,
       "confidence": "legacy_only",
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "iodine": 11,
-      "ins": 204
+      "ins": 204,
+      "insufficientData": true,
+      "fattyAcids": {
+        "oleic": 4,
+        "stearic": 7,
+        "myristic": 1,
+        "palmitic": 80
+      }
     },
     {
       "id": "jatropha-oil-soapnut-seed-oil",
@@ -1162,9 +1169,12 @@
       "sapKoh": 0.2457,
       "sapNaoh": 0.17518716577540105,
       "confidence": "legacy_only",
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "iodine": 1,
-      "ins": 245
+      "ins": 245,
+      "fattyAcids": {
+        "myristic": 99
+      }
     },
     {
       "id": "lard-pig-tallow",
@@ -1223,9 +1233,13 @@
       "sapKoh": 0.28,
       "sapNaoh": 0.19964349376114082,
       "confidence": "legacy_only",
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "iodine": 0,
-      "ins": 280
+      "ins": 280,
+      "fattyAcids": {
+        "lauric": 99,
+        "myristic": 1
+      }
     },
     {
       "id": "loofa-seed-oil-luffa-cylinderica",
@@ -1242,10 +1256,18 @@
       "iodine": 108,
       "ins": 79,
       "fattyAcids": {
-        "oleic": 30,
-        "stearic": 18,
-        "linoleic": 47,
-        "palmitic": 9
+        "linoleic": 43.41,
+        "oleic": 34,
+        "palmitic": 14.15,
+        "stearic": 7.25,
+        "arachidic": 0.44,
+        "linolenic": 0.19,
+        "docosadienoic": 0.11,
+        "palmitoleic": 0.1,
+        "behenic": 0.1,
+        "eicosenoic": 0.09,
+        "lignoceric": 0.09,
+        "myristic": 0.07
       }
     },
     {
@@ -1315,11 +1337,10 @@
       "iodine": 66,
       "ins": 132,
       "fattyAcids": {
-        "oleic": 49,
-        "stearic": 3,
+        "oleic": 51,
+        "palmitic": 34,
         "linoleic": 11,
-        "myristic": 1,
-        "palmitic": 37,
+        "stearic": 3,
         "linolenic": 1
       }
     },
@@ -1634,9 +1655,12 @@
       "sapKoh": 0.1986,
       "sapNaoh": 0.1416042780748663,
       "confidence": "legacy_only",
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "iodine": 92,
-      "ins": 107
+      "ins": 107,
+      "fattyAcids": {
+        "oleic": 99
+      }
     },
     {
       "id": "olive-oil",
@@ -1788,9 +1812,12 @@
       "sapKoh": 0.2188,
       "sapNaoh": 0.15600713012477718,
       "confidence": "legacy_only",
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "iodine": 2,
-      "ins": 217
+      "ins": 217,
+      "fattyAcids": {
+        "palmitic": 98
+      }
     },
     {
       "id": "palmolein",
@@ -2111,10 +2138,17 @@
       "iodine": 128,
       "ins": 67,
       "fattyAcids": {
-        "oleic": 33,
-        "stearic": 8,
-        "linoleic": 50,
-        "palmitic": 11
+        "linoleic": 50.92,
+        "oleic": 26.34,
+        "palmitic": 14.84,
+        "stearic": 6.68,
+        "arachidic": 0.43,
+        "myristic": 0.23,
+        "linolenic": 0.18,
+        "palmitoleic": 0.17,
+        "eicosenoic": 0.09,
+        "behenic": 0.06,
+        "erucic": 0.06
       }
     },
     {
@@ -2535,13 +2569,17 @@
         "soybean fully hydrogenated"
       ],
       "inciName": "Hydrogenated Soybean Oil",
-      "category": "wax",
+      "category": "triglyceride",
       "sapKoh": 0.192,
       "sapNaoh": 0.13689839572192514,
       "confidence": "legacy_only",
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "iodine": 1,
-      "ins": 191
+      "ins": 191,
+      "fattyAcids": {
+        "stearic": 87,
+        "palmitic": 11
+      }
     },
     {
       "id": "stearic-acid",
@@ -2554,9 +2592,12 @@
       "sapKoh": 0.1972,
       "sapNaoh": 0.1406060606060606,
       "confidence": "legacy_only",
-      "propertiesAvailable": false,
+      "propertiesAvailable": true,
       "iodine": 2,
-      "ins": 195
+      "ins": 195,
+      "fattyAcids": {
+        "stearic": 99
+      }
     },
     {
       "id": "sunflower-oil",

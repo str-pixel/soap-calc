@@ -1,6 +1,6 @@
 import { PROPERTY_ORDER } from '../lib/propertyOrder';
 import { memo, useState } from 'react';
-import type { RecipePropertiesResult, SoapPropertyName } from '@soap-calc/core';
+import type { LsSoapQualityName, RecipePropertiesResult, SoapPropertyName } from '@soap-calc/core';
 import type { ProcessId } from '../lib/process';
 import {
   FORMULATION_PREFERENCE_GUIDE,
@@ -10,12 +10,16 @@ import {
   INS_GUIDE,
   isLowCoverage,
   isJudgedProperty,
+  LS_SOAP_QUALITY_LABELS,
+  LS_SOAP_QUALITY_ORDER,
+  lsSoapQualities,
   rangeVerdict,
   SOAP_PROPERTY_GUIDE,
   SOAP_PROPERTY_LABELS,
 } from '@soap-calc/core';
+import type { RecipeFattyAcids } from '../lib/calculateFattyAcids';
 import type { RecipeIndexResult } from '../lib/calculateRecipeIndexes';
-import { oilDisplayName } from '../lib/oilDisplay';
+import { indexesCoverageCaption, missingOilsSuffix, scoresCoverageCaption } from '../lib/coverageCaption';
 import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
 import { InfoTip } from './InfoTip';
 import { ModeledOilsNote } from './ModeledOilsNote';
@@ -41,6 +45,19 @@ const PROPERTY_GUIDANCE: Record<SoapPropertyName, string> = {
     'How well the bar keeps its shape in use, from long-chain saturates like palmitic and stearic. Higher resists mushing and lasts longer between uses. Shown as a typical range rather than a target: no published source gives a tested range for it, and high-oleic bars like castile last well in the dish despite scoring low here.',
 };
 
+// Liquid soap's four qualities (core ls-qualities has the definitions and their source). Original,
+// short copy: what each number counts and how it behaves in liquid soap, no source named.
+const LS_QUALITY_GUIDANCE: Record<LsSoapQualityName, string> = {
+  bodyLatherStability:
+    'Palmitic and stearic acids. In moderation they thicken liquid soap and steady its lather; too much can cloud it, weaken the lather or make it separate.',
+  cleansing:
+    'Lauric and myristic acids only; the shorter C8–C10 acids in coconut oil are not counted. In liquid soap this number follows how readily the soap dissolves more than how well it cleans. Too little weakens the lather; a lot can feel drying, and suits dish and laundry soap.',
+  conditioning:
+    'Oleic, linoleic and linolenic acids. Too little can leave the soap drying; too much weakens the lather.',
+  lather:
+    'Ricinoleic, lauric and myristic acids; C8–C10 are not counted. Low means small bubbles that are slow to form and fade fast; high means big, airy bubbles, though a lot can feel drying. Castor oil counts here, but in liquid soap it adds little lather.',
+};
+
 const SCALE_MAX = 100;
 
 /** The verdict a property earns, exactly as its Meters row shows it. Shared with the radar's
@@ -60,10 +77,13 @@ type PropertiesPanelProps = {
   /** Recipe oils whose fatty-acid profile is a modeled reconstruction, not a measured composition.
    *  Required: a data-honesty signal must not be omittable into silence. Pass [] when there are none. */
   modeledOilIds: string[];
-  /** The recipe's process. Appends an LS-specific note to the cleansing row's guidance,
-   *  since "cleansing" reads as solubility/dilution there, not bar harshness. */
-  process: ProcessId;
-};
+} & (
+  /** Cold and hot process: the six bar-soap scores, iodine and INS, Meters and Radar. */
+  | { process: Exclude<ProcessId, 'ls'>; fattyAcids?: RecipeFattyAcids }
+  /** Liquid soap: the four liquid-soap qualities, summed from the recipe's fatty-acid profile, so
+   *  the profile is required: without it the panel would have nothing to show. */
+  | { process: 'ls'; fattyAcids: RecipeFattyAcids }
+);
 
 // memo: props are stable view-model memo outputs, so unrelated keystrokes
 // (recipe name, notes, settings) skip re-rendering this panel.
@@ -72,13 +92,13 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   indexes,
   modeledOilIds,
   process,
+  fattyAcids,
 }: PropertiesPanelProps) {
   // Meters first: one property per row, each score sitting on its own 0-100 track against
   // its suggested band, which is the reading a maker acts on. The radar is the same six
   // numbers drawn as one shape — the blend's balance at a glance, a step out, not in.
   const [view, setView] = useState<'meters' | 'radar'>('meters');
   const modeled = modeledOilIds;
-  const partial = result.properties ? result.coveragePercent < 99.9 : false;
   // Compare the rounded coverage so the shown "X%" and the estimate treatment never disagree.
   const lowCoverage = result.properties
     ? isLowCoverage(result.coveragePercent)
@@ -86,20 +106,89 @@ export const PropertiesPanel = memo(function PropertiesPanel({
   const viewActiveIndex = PROPERTY_VIEWS.indexOf(view);
   const handleViewKeyDown = makeTabsKeyDownHandler(PROPERTY_VIEWS, viewActiveIndex, setView);
   const showIndexes = indexes.iodine !== null && indexes.ins !== null;
-  const indexPartial = indexes.coveragePercent < 99.9;
   const indexLowCoverage =
     showIndexes && isLowCoverage(indexes.coveragePercent);
+  // A liquid soap is not a bar. The lists are announced under the panel's own name, so a
+  // screen reader never calls a liquid soap's readings "bar" properties.
+  const title = process === 'ls' ? 'Soap properties' : 'Bar properties';
+  // Each coverage line names what it covers, so the scores line cannot read as covering the
+  // iodine and INS figures it sits under.
+  const scoresCaption = result.properties ? scoresCoverageCaption(result) : null;
+  const indexesCaption = showIndexes ? indexesCoverageCaption(indexes) : null;
+
+  // LIQUID SOAP: the four liquid-soap qualities as plain meters. No ranges, verdicts, bands, ticks
+  // or legend (there are no ranges to show), no iodine or INS, and no view switch: a Radar choice
+  // saved in `view` under cold process is ignored here, and nothing refers to the tabs.
+  if (process === 'ls') {
+    const qualities = fattyAcids.profile ? lsSoapQualities(fattyAcids.profile) : null;
+    const lsLow = isLowCoverage(fattyAcids.coveragePercent);
+    const lsCaption = qualities ? scoresCoverageCaption(fattyAcids) : null;
+    return (
+      <section className="panel">
+        <h2 className="panel__title">
+          <span className="panel__num" aria-hidden="true">08</span>
+          {title}
+        </h2>
+        <p className="panel__subtitle">Fatty-acid sums on a 0–100 scale, shown without target ranges</p>
+        {!qualities ? (
+          <p className="results-hint">
+            Add triglyceride oils with fatty-acid data to see these qualities
+            {missingOilsSuffix(fattyAcids.missingOilIds)}.
+          </p>
+        ) : (
+          <>
+            {lsCaption && <p className="properties-coverage">{lsCaption}</p>}
+            <ModeledOilsNote oilIds={modeled} />
+            <ul className="property-meters" aria-label={title}>
+              {LS_SOAP_QUALITY_ORDER.map((key) => {
+                const value = qualities[key];
+                const shown = Math.round(value);
+                const label = LS_SOAP_QUALITY_LABELS[key];
+                return (
+                  <li key={key} className="property-meters__row">
+                    <div className="property-meters__label">
+                      <span>
+                        {label}
+                        <InfoTip term={label}>{LS_QUALITY_GUIDANCE[key]}</InfoTip>
+                      </span>
+                    </div>
+                    <div className="property-meters__plot">
+                      <span
+                        className={`property-meters__value${valueAnchorClass(pct(shown))}`}
+                        style={{ left: `${pct(shown)}%` }}
+                        role="meter"
+                        aria-valuemin={0}
+                        aria-valuemax={SCALE_MAX}
+                        aria-valuenow={shown}
+                        aria-label={`${label}: ${lsLow ? 'estimated ' : ''}${formatPropertyScore(value)}`}
+                      >
+                        {lsLow ? '~' : ''}
+                        {formatPropertyScore(value)}
+                      </span>
+                      <div className="property-meter" aria-hidden="true">
+                        <span className="property-meter__marker" style={{ left: `${pct(shown)}%` }} />
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </section>
+    );
+  }
+  // Past the liquid-soap return, the recipe is a bar: cold or hot process.
+  const readingsLabel = 'Bar property readings';
 
   return (
     <section className="panel">
       <h2 className="panel__title">
         <span className="panel__num" aria-hidden="true">08</span>
-        {process === 'ls' ? 'Soap properties' : 'Bar properties'}
+        {title}
       </h2>
       <p className="panel__subtitle">
-        {process === 'ls'
-          ? 'Fatty-acid based scores, 0–100 scale — suggested ranges reflect bar-soap conventions'
-          : 'Fatty-acid based scores, 0–100 scale'}
+        Fatty-acid based scores, 0–100 scale
       </p>
 
       {showIndexes && (
@@ -140,38 +229,16 @@ export const PropertiesPanel = memo(function PropertiesPanel({
         </dl>
       )}
 
-      {showIndexes && indexPartial && (
-        <p className="properties-coverage">
-          Iodine/INS {indexLowCoverage ? 'estimated from' : 'based on'}{' '}
-          {Math.round(indexes.coveragePercent)}% of recipe oils
-          {indexes.missingOilIds.length > 0 && (
-            <>
-              {' '}
-              (no data: {indexes.missingOilIds.map(oilDisplayName).join(', ')})
-            </>
-          )}
-        </p>
-      )}
+      {indexesCaption && <p className="properties-coverage">{indexesCaption}</p>}
 
       {!result.properties ? (
         <p className="results-hint">
           Add triglyceride oils with fatty-acid data to see hardness, cleansing, and
-          conditioning estimates.
+          conditioning estimates{missingOilsSuffix(result.missingOilIds)}.
         </p>
       ) : (
         <>
-          {partial && (
-            <p className="properties-coverage">
-              {lowCoverage ? 'Estimated from' : 'Based on'}{' '}
-              {Math.round(result.coveragePercent)}% of recipe oils
-              {result.missingOilIds.length > 0 && (
-                <>
-                  {' '}
-                  (no data: {result.missingOilIds.map(oilDisplayName).join(', ')})
-                </>
-              )}
-            </p>
-          )}
+          {scoresCaption && <p className="properties-coverage">{scoresCaption}</p>}
 
           <ModeledOilsNote oilIds={modeled} />
 
@@ -221,7 +288,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               />
               {/* The chart is aria-hidden; keep the six readings reachable to AT so the
                   toggle never hides the actual numbers from a screen reader. */}
-              <ul className="sr-only" aria-label="Soap bar property readings">
+              <ul className="sr-only" aria-label={readingsLabel}>
                 {PROPERTY_ORDER.map((key) => {
                   const value = result.properties![key];
                   const guide = SOAP_PROPERTY_GUIDE[key];
@@ -229,9 +296,9 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   const verdict = propertyVerdict(key, value);
                   return (
                     <li key={key}>
-                      {/* The same verdict the Meters row shows, read first, as in the
-                          fatty-acid radar's list: this list is the radar's only voice for a
-                          screen reader, so without it switching views dropped every verdict. */}
+                      {/* The same verdict the Meters row shows, read first: this list is the
+                          radar's only voice for a screen reader, so without it switching views
+                          dropped every verdict. */}
                       {verdict !== 'in' && !lowCoverage && (
                         <>{verdict === 'low' ? 'Too low' : 'Too high'} </>
                       )}
@@ -266,13 +333,13 @@ export const PropertiesPanel = memo(function PropertiesPanel({
               </p>
               <p className="fatty-radar__caption">
                 Shaded ring = each score&apos;s suggested range. Every axis is scaled to its
-                own range, so the shape shows fit, not size: a bar in range everywhere draws
-                a circle on the ring. Longevity is shown but not rated.
+                own range, so the shape shows fit, not size: a score inside its range sits on
+                the ring, below it inside, above it outside. Longevity is shown but not rated.
               </p>
             </>
           ) : (
             <>
-            <ul className="property-meters" aria-label="Soap bar properties">
+            <ul className="property-meters" aria-label={title}>
               {PROPERTY_ORDER.map((key) => {
                 const value = result.properties![key];
                 const guide = SOAP_PROPERTY_GUIDE[key];
@@ -285,12 +352,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 const verdict = propertyVerdict(key, value);
                 const inSuggested = verdict === 'in';
                 const shown = Math.round(value);
-                // Append, don't mutate PROPERTY_GUIDANCE: cleansing reads as solubility/dilution
-                // in liquid soap, not bar harshness, so LS recipes get an extra clause here.
-                const guidance =
-                  key === 'cleansing' && process === 'ls'
-                    ? `${PROPERTY_GUIDANCE[key]} In liquid soap this tracks solubility/how well it dilutes, not harshness.`
-                    : PROPERTY_GUIDANCE[key];
+                const guidance = PROPERTY_GUIDANCE[key];
                 return (
                   <li key={key} className="property-meters__row">
                     <div className="property-meters__label">

@@ -57,6 +57,12 @@ export type FormulationAnalysisInput = {
   fattyAcids: FattyAcidProfile | null;
   /** Coverage of the fatty-acid profile (0–100); threshold insights are gated below LOW_COVERAGE_PERCENT. */
   fattyAcidCoveragePercent?: number;
+  /**
+   * Covered oil weight ÷ total oil weight (core `calculateRecipeFattyAcids`). The three
+   * RANCIDITY rules multiply the renormalized PUFA by this to get a lower bound, so they can
+   * speak at any coverage without ever over-warning. Omitted means fully covered (1).
+   */
+  fattyAcidCoveredWeightShare?: number;
   /** Coverage of the bar-property estimate (0–100); the cleansing insight is gated below LOW_COVERAGE_PERCENT. */
   propertyCoveragePercent?: number;
   totalOilGrams: number;
@@ -255,6 +261,22 @@ function lsEffectiveSuperfatPercent(input: FormulationAnalysisInput): number {
 // Coconut-heavy proxy shared by the dual-lye recommender, the salt-thickening advisory, and
 // the HP vessel-size guard below.
 // Process-invariant: callers gate by their own processes: declaration.
+/**
+ * Polyunsaturated percentage of the WHOLE recipe, as a certain lower bound: the profile is
+ * renormalized over the oils that have data, so an unprofiled oil inflates it by 1 ÷ share;
+ * multiplying it back down assumes the unprofiled weight carries no PUFA, which is the least
+ * it can carry. Used by the three rancidity rules INSTEAD of a coverage gate — a number that
+ * cannot overstate needs no suppressing, and standing down left 3,635 recipes silent whose
+ * PUFA was certainly over the threshold.
+ */
+function polyLowerBound(input: FormulationAnalysisInput): number | null {
+  if (!input.fattyAcids) return null;
+  const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+  const share = input.fattyAcidCoveredWeightShare ?? 1;
+  if (!Number.isFinite(share)) return poly;
+  return poly * Math.max(0, Math.min(1, share));
+}
+
 function isCoconutHeavy(input: FormulationAnalysisInput): boolean {
   if (!input.fattyAcids || isLowCoverage(input.fattyAcidCoveragePercent ?? 100)) {
     return false;
@@ -450,11 +472,8 @@ export const INSIGHT_RULES: InsightRule[] = [
   {
     code: 'high_poly_high_superfat',
     check: (input) => {
-      if (
-        input.fattyAcids &&
-        !isLowCoverage(input.fattyAcidCoveragePercent ?? 100)
-      ) {
-        const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+      const poly = polyLowerBound(input);
+      if (poly !== null) {
         if (poly > 28 && input.superfatPercent >= 8) {
           return {
             level: 'warning',
@@ -814,10 +833,8 @@ export const INSIGHT_RULES: InsightRule[] = [
       // carry an independently high-PUFA base (this rule's own pufa > 25 gate below) AND a
       // high-PUFA post-cook addition at once (grapeseed post-cook superfat is realistic),
       // and the base warning must not go quiet just because the addition has its own.
-      if (!input.fattyAcids || isLowCoverage(input.fattyAcidCoveragePercent ?? 100)) {
-        return null;
-      }
-      const pufa = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+      const pufa = polyLowerBound(input);
+      if (pufa === null) return null;
       // 25% PUFA is an UNSOURCED proxy for "soft enough to spot" — the experiment gives
       // no threshold, only that soft oils shortened the induction period. Same posture as
       // COCONUT_HEAVY_LAURIC_MYRISTIC: a documented estimate, not a cited constant.
@@ -861,11 +878,8 @@ export const INSIGHT_RULES: InsightRule[] = [
     code: 'pufa_cap_superfat',
     processes: ['cp', 'hp'],
     check: (input) => {
-      if (
-        input.fattyAcids &&
-        !isLowCoverage(input.fattyAcidCoveragePercent ?? 100)
-      ) {
-        const poly = sumFattyAcids(input.fattyAcids, FATTY_ACID_GROUP_KEYS.polyunsaturated);
+      const poly = polyLowerBound(input);
+      if (poly !== null) {
         if (poly > 18 && input.superfatPercent > 5) {
           return {
             level: 'warning',
