@@ -335,6 +335,8 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 Shaded ring = each score&apos;s suggested range. Every axis is scaled to its
                 own range, so the shape shows fit, not size: a score inside its range sits on
                 the ring, below it inside, above it outside. Longevity is shown but not rated.
+                The tighter target band is in the Meters view: fitting each axis to its own
+                range puts that band at a different radius on every one, so it cannot be a ring.
               </p>
             </>
           ) : (

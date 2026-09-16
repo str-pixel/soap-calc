@@ -832,7 +832,11 @@ export default function App() {
               process={process}
               fattyAcids={vm.fattyAcids}
             />
-            <FattyAcidPanel result={vm.fattyAcids} insights={vm.insights} />
+            <FattyAcidPanel
+              result={vm.fattyAcids}
+              insights={vm.insights}
+              withheldRancidity={vm.withheldRancidity}
+            />
           </div>
         </main>
       ) : (

@@ -3,6 +3,7 @@ import {
   additiveMatches,
   alternativeLiquidPreset,
   analyzeFormulation,
+  withheldRancidityInsightCodes,
   estimateTraceSpeed,
   
   sumFattyAcids,
@@ -180,7 +181,7 @@ export function useFormulationInsights(
   lyeResult: LyeCalculationResult | null,
   options: FormulationInsightOptions,
 ) {
-  const insights = useMemo(() => {
+  const memo = useMemo(() => {
     // Split-liquid rows that actually resolved to grams (undefined when the caller passes
     // none, so the raw-settings fallback above still applies).
     const sizedSplitRows = options.splitLiquidRows
@@ -189,7 +190,7 @@ export function useFormulationInsights(
     // The same rows, always a list — the colour rules ask "is this liquid in the pot?",
     // which has an answer (no) even when the caller passed no rows at all.
     const sizedLiquidRows = sizedSplitRows ?? [];
-    if (!lyeResult) return [];
+    if (!lyeResult) return { insights: [], withheldRancidity: [] };
     const totalAdditivePercent = totalAdditivePercentForInsights(
       options.additives ?? [],
       lyeResult.totalOilWeightGrams,
@@ -238,7 +239,7 @@ export function useFormulationInsights(
           soapingTempF: options.process === 'cp' ? options.soapingTempF : undefined,
         })
       : null;
-    return analyzeFormulation({
+    const analysisInput = {
       properties: properties.properties,
       fattyAcids: fattyAcids.profile,
       fattyAcidCoveragePercent: fattyAcids.coveragePercent,
@@ -424,7 +425,13 @@ export function useFormulationInsights(
       traceSpeedLabel: traceSpeed?.label,
       traceSpeedDrivers: traceSpeed?.drivers,
       hpVesselMultiple: options.hpVesselMultiple,
-    });
+    } satisfies Parameters<typeof analyzeFormulation>[0];
+    // Both answers come from ONE input object, so the panel's caption can never describe a
+    // different recipe than the notes above it.
+    return {
+      insights: analyzeFormulation(analysisInput),
+      withheldRancidity: withheldRancidityInsightCodes(analysisInput),
+    };
   }, [
     fattyAcids.profile,
     fattyAcids.coveragePercent,
@@ -457,5 +464,5 @@ export function useFormulationInsights(
     options.scentColor,
   ]);
 
-  return { insights };
+  return memo;
 }

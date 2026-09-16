@@ -76,6 +76,11 @@ export const FORMULATION_FATTY_ACID_GUIDE = {
   // contribute to soap qualities in a noticeable way". Flagging them caught ordinary recipes:
   // in an olive/coconut/palm base on the lite catalog, meadowfoam reads above 2% at a 3% share,
   // macadamia at 10%, moringa, karanja and sal at 21-23%, avocado at 26%.
+  // Ten of the 126 property-ready oils carry more than 2% here AS THEMSELVES, which is the point
+  // of the group rather than a problem with the band: meadowfoam 95%, abyssinian 63%, broccoli
+  // seed 59%, high-erucic rapeseed 56%, mustard 51%, macadamia 22%, avocado 8%, borage 6%,
+  // moringa and karanja 3%. Abyssinian joined that list on 2026-09-16 when its erucic was
+  // backfilled; before that its profile summed 38% and it was excluded from the panel entirely.
   otherSaturated: { low: 0, high: 2, label: 'Other saturated' },
   otherUnsaturated: { low: 0, high: 2, label: 'Other unsaturated' },
   // Trans-C18:1 (elaidic) — ~0% in natural oils; a partially hydrogenated oil carries it (on

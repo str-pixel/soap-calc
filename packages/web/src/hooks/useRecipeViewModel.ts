@@ -118,6 +118,8 @@ export type RecipeViewModel = {
   indexes: ReturnType<typeof useRecipeProperties>['indexes'];
   fattyAcids: ReturnType<typeof useRecipeProperties>['fattyAcids'];
   insights: ReturnType<typeof useFormulationInsights>['insights'];
+  /** Rancidity notes the lower bound is holding back — see core withheldRancidityInsightCodes. */
+  withheldRancidity: ReturnType<typeof useFormulationInsights>['withheldRancidity'];
   lyeLabel: string;
   dilution: DilutionResult | null;
   /** Which arm — plan or record — governs, per resolveDilution's spec §1 rule: `'record'`
@@ -1085,7 +1087,7 @@ export function useRecipeViewModel({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by content, see above
     [insightScentKey],
   );
-  const { insights } = useFormulationInsights(
+  const { insights, withheldRancidity } = useFormulationInsights(
     previewState.lines,
     previewSettings,
     properties,
@@ -1185,6 +1187,7 @@ export function useRecipeViewModel({
     lyeWaterUnverifiable,
     fattyAcids,
     insights,
+    withheldRancidity,
     neutralization,
     postCookSuperfat,
     previewSettings,
@@ -1243,6 +1246,7 @@ export function useRecipeViewModel({
     indexes,
     fattyAcids,
     insights,
+    withheldRancidity,
     lyeLabel,
     // resolvedDilution.plan is the identical `dilution` object reference (a bare passthrough
     // — see resolveDilution's own doc comment). This never flips to the resolved arm, by

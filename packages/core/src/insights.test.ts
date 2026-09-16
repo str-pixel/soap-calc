@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   analyzeFormulation,
+  withheldRancidityInsightCodes,
   FATTY_ACID_RANCIDITY_INSIGHT_CODES,
   INSIGHT_RULES,
   type FormulationAnalysisInput,
@@ -1640,5 +1641,65 @@ describe('rancidity insights judge a lower bound at every coverage level', () =>
       ...base, fattyAcids: hot, fattyAcidCoveragePercent: 100,
     }).map((i) => i.code);
     expect(codes).toContain('pufa_cap_superfat');
+  });
+});
+
+// The fatty-acid panel used to caption itself on "is any weight unprofiled?", which holds in all
+// 9,702 swept recipe states while a note is actually withheld in 1,505 (at a 10% superfat) — it
+// told roughly five recipes in six that a note might be hidden when none was. This answers the
+// question that was meant, by running the rules.
+describe('withheldRancidityInsightCodes', () => {
+  const base = {
+    properties: null, totalOilGrams: 1000, lyeConcentrationPercent: 0,
+    waterLyeRatio: 0, waterGrams: 330, lyeGrams: 140, process: 'cp' as const,
+    additiveEntries: [], superfatPercent: 10, fattyAcidCoveragePercent: 90,
+  };
+  const hot = { linoleic: 30, linolenic: 5, oleic: 20 }; // 35 renormalized
+
+  it('is empty when the recipe is fully covered', () => {
+    expect(withheldRancidityInsightCodes({ ...base, fattyAcids: hot })).toEqual([]);
+    expect(withheldRancidityInsightCodes({ ...base, fattyAcids: hot, fattyAcidCoveredWeightShare: 1 })).toEqual([]);
+  });
+
+  it('is empty when the recipe is nowhere near a threshold, however much is unprofiled', () => {
+    // 4% PUFA against the lowest gate of 18: no share can hide a note that was never coming.
+    const mild = { linoleic: 4, oleic: 70 };
+    expect(withheldRancidityInsightCodes({ ...base, fattyAcids: mild, fattyAcidCoveredWeightShare: 0.3 })).toEqual([]);
+  });
+
+  it('is empty when the note fires anyway', () => {
+    // 35 x 0.9 = 31.5 still clears all three gates, so nothing is being held back.
+    expect(withheldRancidityInsightCodes({ ...base, fattyAcids: hot, fattyAcidCoveredWeightShare: 0.9 })).toEqual([]);
+  });
+
+  it('names the codes the bound is holding back', () => {
+    // 35 x 0.4 = 14: under all three gates, so all three are withheld.
+    const held = withheldRancidityInsightCodes({ ...base, fattyAcids: hot, fattyAcidCoveredWeightShare: 0.4 });
+    expect(held.sort()).toEqual(['dos_risk_no_antioxidant', 'high_poly_high_superfat', 'pufa_cap_superfat']);
+  });
+
+  it('holds back only the rules whose own gate the bound crosses', () => {
+    // 35 x 0.6 = 21: over pufa_cap's 18, under dos_risk's 25 and high_poly's 28.
+    const held = withheldRancidityInsightCodes({ ...base, fattyAcids: hot, fattyAcidCoveredWeightShare: 0.6 });
+    expect(held.sort()).toEqual(['dos_risk_no_antioxidant', 'high_poly_high_superfat']);
+  });
+
+  // The rules' own conditions must govern, not a copy of their thresholds — this is the case a
+  // duplicated 18/25/28 would get wrong.
+  it('respects the superfat gate, so a low-superfat recipe hides nothing', () => {
+    const held = withheldRancidityInsightCodes({
+      ...base, superfatPercent: 0, fattyAcids: hot, fattyAcidCoveredWeightShare: 0.4,
+    });
+    // pufa_cap needs superfat > 5 and high_poly needs >= 8, so neither was ever going to fire;
+    // only the antioxidant rule, which does not read superfat, is genuinely held back.
+    expect(held).toEqual(['dos_risk_no_antioxidant']);
+  });
+
+  it('respects the antioxidant exemption too', () => {
+    const held = withheldRancidityInsightCodes({
+      ...base, superfatPercent: 0, fattyAcids: hot, fattyAcidCoveredWeightShare: 0.4,
+      additiveEntries: [{ id: 'bht', name: 'BHT', grams: 1 }],
+    } as never);
+    expect(held).toEqual([]);
   });
 });

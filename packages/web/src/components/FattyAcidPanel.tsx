@@ -16,6 +16,7 @@ import type { RecipeFattyAcids } from '../lib/calculateFattyAcids';
 import { trackPct as pct, valueAnchorClass } from '../lib/meterGeometry';
 import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
 import { fattyAcidBasisCaption, missingOilsSuffix } from '../lib/coverageCaption';
+import { oilDisplayName } from '../lib/oilDisplay';
 import { FattyAcidRadar, type FattyAcidRadarAxis } from './FattyAcidRadar';
 import { ModeledOilsNote } from './ModeledOilsNote';
 
@@ -25,7 +26,21 @@ type FattyAcidPanelProps = {
    *  the chart: the same objects Formulation notes renders, so the two cannot disagree.
    *  Required, because a warning must not be omittable into silence. Pass [] when none. */
   insights: FormulationInsight[];
+  /** Rancidity insight codes the lower bound is holding back — core's
+   *  `withheldRancidityInsightCodes`, which answers this by running the rules rather than by
+   *  inspecting coverage. Required, so a panel that forgot to pass it cannot silently claim
+   *  nothing is hidden. Pass [] when nothing is. */
+  withheldRancidity: readonly string[];
 };
+
+/** "Beeswax", "Beeswax and Pine Tar" — named as the OBJECT of the sentence, with no verb, so the
+ *  wording around it does not have to agree with a number that varies by recipe. */
+function listOils(ids: readonly string[]): string {
+  const names = ids.map(oilDisplayName);
+  if (names.length === 0) return 'the oils without fatty-acid data';
+  if (names.length === 1) return names[0];
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
 
 const SCALE_MAX = 100;
 
@@ -58,7 +73,7 @@ const NARROW_BAND = 6;
 
 // memo: `result` is a stable view-model memo output, so unrelated keystrokes
 // skip re-rendering this panel.
-export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }: FattyAcidPanelProps) {
+export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, withheldRancidity }: FattyAcidPanelProps) {
   const [view, setView] = useState<'meters' | 'radar'>('meters');
   const viewActiveIndex = FATTY_VIEWS.indexOf(view);
   const handleViewKeyDown = makeTabsKeyDownHandler(FATTY_VIEWS, viewActiveIndex, setView);
@@ -135,11 +150,12 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
     </>
   ) : null;
 
-  // Unprofiled oil weight is the one thing that can still hide a rancidity note: the insights
-  // count it as carrying no polyunsaturates (a lower bound, so they never over-warn), which
-  // means a recipe can sit under a threshold only because part of it is uncharacterized. Thin
-  // profiles do NOT hide a note — an incomplete profile understates PUFA, it cannot inflate it.
-  const unprofiledWeight = result.coveredWeightShare < 1 || result.missingOilIds.length > 0;
+  // Whether a note is actually being held back, answered by core running the rules twice rather
+  // than guessed from "is any weight unprofiled?". That guess was wrong roughly five times in six:
+  // swept over the catalog at a 10% superfat it fired on all 9,702 recipe states while a note was
+  // genuinely withheld in 1,505, because most partly-uncharacterized recipes are nowhere near a
+  // rancidity threshold to begin with.
+  const holdingBack = withheldRancidity.length > 0;
   const rancidity = insights.filter((insight) =>
     (FATTY_ACID_RANCIDITY_INSIGHT_CODES as readonly string[]).includes(insight.code),
   );
@@ -202,7 +218,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
           Formulation notes cannot disagree. The risk depends on superfat and antioxidants
           this panel does not see, which is why it is not judged from the readings below.
           Outside the tabpanel, so both views show it. */}
-      {(rancidity.length > 0 || unprofiledWeight) && (
+      {(rancidity.length > 0 || holdingBack) && (
         <ul className="message-list message-list--insights fatty-rancidity" aria-label="Rancidity notes">
           {rancidity.map((insight) => (
             <li
@@ -214,14 +230,15 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights }:
               {insight.message}
             </li>
           ))}
-          {/* An empty slot here would read as "no risk". When part of the recipe has no
-              fatty-acid data, the notes above counted it as carrying none, so silence means
-              "not shown to be at risk" rather than "not at risk". Other parts of the app —
-              the cure estimate, the post-cook superfat warning — can still mention rancidity. */}
-          {unprofiledWeight && (
+          {/* Only when a note genuinely is being held back — so this says what happened, not
+              what might have. Naming the oils makes it actionable: the reader knows which
+              ingredient to look up. The withheld note's own wording stays unsaid, because the
+              risk it asserts is exactly what the data cannot support. */}
+          {holdingBack && (
             <li className="message-list__item--info">
-              Oils without fatty-acid data count as carrying no polyunsaturates here, so a note
-              can be missing rather than absent.
+              A rancidity note is held back here: counting {listOils(result.missingOilIds)} as
+              carrying no polyunsaturates puts this recipe under the level that raises one. The
+              missing fatty acids could put it over.
             </li>
           )}
         </ul>

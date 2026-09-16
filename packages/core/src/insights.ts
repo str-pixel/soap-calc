@@ -1500,3 +1500,44 @@ export function analyzeFormulation(input: FormulationAnalysisInput): Formulation
 
   return insights;
 }
+
+/**
+ * The rancidity insights that a partly-uncharacterized recipe is HIDING: codes that would fire
+ * if every oil's fatty acids were known, and do not fire on the lower bound actually used.
+ *
+ * The fatty-acid panel needs this to caption itself honestly. It cannot work it out alone —
+ * whether these rules fire turns on the superfat and on which additives are present, neither of
+ * which that panel sees, and on three thresholds it would have to duplicate. So the question is
+ * answered by RUNNING THE RULES, twice, against the same input: once with the bound and once as
+ * if the missing weight were fully characterized at the same composition as the rest. Anything in
+ * the second set and not the first is being withheld. Thresholds, superfat gates and antioxidant
+ * exemptions can never drift out of step with the notes themselves, because they are the notes.
+ *
+ * Empty when nothing is hidden — including when the recipe is fully covered, when it is nowhere
+ * near a threshold, and when the note fires anyway. "Some weight is unprofiled" is NOT the same
+ * question and answers it wrongly: swept over the catalog at a 10% superfat, that condition holds
+ * in all 9,702 recipe states while a note is actually withheld in 1,505 of them.
+ */
+export function withheldRancidityInsightCodes(input: FormulationAnalysisInput): string[] {
+  const share = input.fattyAcidCoveredWeightShare ?? 1;
+  if (!input.fattyAcids || !(share < 1)) return [];
+  const rules = INSIGHT_RULES.filter(
+    (rule) =>
+      (FATTY_ACID_RANCIDITY_INSIGHT_CODES as readonly string[]).includes(rule.code) &&
+      (!rule.processes || rule.processes.includes(input.process)),
+  );
+  const firing = (candidate: FormulationAnalysisInput): Set<string> => {
+    const codes = new Set<string>();
+    for (const rule of rules) {
+      const insight = rule.check(candidate, resolveInsightParams(rule, candidate.process));
+      if (insight) codes.add(insight.code);
+    }
+    return codes;
+  };
+  const onTheBound = firing(input);
+  // share = 1 asks "and if the unprofiled weight matched the oils we do know?" — the most a
+  // reading could rise to, against the least it can be. Between those two the answer is unknown,
+  // which is exactly what the caption says.
+  const ifFullyKnown = firing({ ...input, fattyAcidCoveredWeightShare: 1 });
+  return [...ifFullyKnown].filter((code) => !onTheBound.has(code));
+}
