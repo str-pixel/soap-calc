@@ -429,15 +429,37 @@ test('names both bands, so the darker one is not an unexplained second shading',
   }
 });
 
-test('the radar keys only the band it actually draws', () => {
+// The legend may only key zones the radar actually paints. It used to key one, because the
+// target band was not drawn: fitted per axis it lands at a different radius on every one and
+// cannot be a ring. It is now drawn as a ribbon that follows the axes instead, so both views
+// key the same two zones and switching between them loses nothing.
+test('the radar keys both bands, and draws the target band it keys', () => {
   const { container } = render(
     <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
   );
   fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
   const legend = container.querySelector('.property-legend')!;
   expect(legend.textContent).toMatch(/Suggested range/i);
-  // The radar draws one zone; claiming a target swatch it never shades would be a lie.
-  expect(legend.querySelector('.property-legend__swatch--preference')).toBeNull();
+  expect(legend.textContent).toMatch(/Target for a balanced bar/i);
+  expect(legend.querySelector('.property-legend__swatch--preference')).not.toBeNull();
+  expect(container.querySelectorAll('[data-testid="radar-target-band"]').length).toBeGreaterThan(0);
+});
+
+// The band has to STOP at an axis with no target, or it would claim longevity has one. With the
+// six axes in their shipped order that means a ribbon spanning five of them, not a closed donut:
+// an open ribbon's path visits each axis twice (out along the target highs, back along the lows),
+// a donut's would visit all six once per ring.
+test('the target band spans only the axes that have a target, and stops at longevity', () => {
+  const { container } = render(
+    <PropertiesPanel result={FULL.properties} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+  );
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  const bands = Array.from(container.querySelectorAll('[data-testid="radar-target-band"]'));
+  expect(bands.length).toBe(1);
+  const d = bands[0].getAttribute('d')!;
+  // five axes, visited twice = ten points, one subpath.
+  expect(d.match(/[ML]/g)!.length).toBe(10);
+  expect(d.match(/Z/g)!.length).toBe(1);
 });
 
 // Longevity carries a typical range but no verdict — see core's UNJUDGED_PROPERTIES. Its

@@ -330,13 +330,18 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   <span className="property-legend__swatch property-legend__swatch--suggested" />
                   Suggested range
                 </span>
+                <span className="property-legend__item">
+                  <span className="property-legend__swatch property-legend__swatch--preference" />
+                  Target for a balanced bar
+                </span>
               </p>
               <p className="fatty-radar__caption">
                 Shaded ring = each score&apos;s suggested range. Every axis is scaled to its
                 own range, so the shape shows fit, not size: a score inside its range sits on
-                the ring, below it inside, above it outside. Longevity is shown but not rated.
-                The tighter target band is in the Meters view: fitting each axis to its own
-                range puts that band at a different radius on every one, so it cannot be a ring.
+                the ring, below it inside, above it outside. The darker band is the tighter
+                target: fitting each axis to its own range puts that target at a
+                different radius on every one, so it follows the axes rather than circling
+                them, and it stops at longevity, which has a range but no target.
               </p>
             </>
           ) : (

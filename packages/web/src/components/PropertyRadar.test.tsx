@@ -177,3 +177,41 @@ test('shades the suggested range as one ring, the same device the fatty-acid rad
   expect(Number(ring.getAttribute('r'))).toBeCloseTo(((RING_INNER + RING_OUTER) / 2) * R, 5);
   expect(parseFloat(ring.style.strokeWidth)).toBeCloseTo((RING_OUTER - RING_INNER) * R, 5);
 });
+
+/** Every point of the drawn target band, as a fraction of the outer radius, in path order. */
+const targetBandRadii = (container: HTMLElement): number[] => {
+  const svg = container.querySelector('svg')!;
+  const cx = Number(svg.getAttribute('data-cx'));
+  const cy = Number(svg.getAttribute('data-cy'));
+  const R = Number(svg.getAttribute('data-r'));
+  const d = container.querySelector('[data-testid="radar-target-band"]')!.getAttribute('d')!;
+  return [...d.matchAll(/[ML](-?[\d.]+),(-?[\d.]+)/g)].map((m) =>
+    Math.hypot(Number(m[1]) - cx, Number(m[2]) - cy) / R,
+  );
+};
+
+const BAND_SCORES: Record<SoapPropertyName, number> = {
+  hardness: 42, cleansing: 14, condition: 55, creamy: 30, bubbly: 25, longevity: 35,
+};
+
+// The target band cannot be a ring: fitted to each axis's own suggested range it lands somewhere
+// different on every one. These are the two facts that make that true, pinned so a future
+// "tidy it into a circle" cannot pass.
+test('the target band sits at a different radius on each axis, and creamy overflows the ring', () => {
+  const { container } = render(
+    <PropertyRadar properties={BAND_SCORES} order={ORDER} lowCoverage={false} />,
+  );
+  const radii = targetBandRadii(container);
+  // Ten points: five axes, each visited on the way out and on the way back.
+  expect(radii.length).toBe(10);
+  // No two axes share an outer radius — that is exactly why a ring will not do.
+  const outward = radii.slice(0, 5).map((r) => r.toFixed(3));
+  expect(new Set(outward).size).toBe(5);
+  // Creamy is the fourth axis out. Its target high (50) exceeds its own suggested high (48), so
+  // its band genuinely pokes past the ring; clamping it would hide the source's own anomaly.
+  expect(radii[3]).toBeGreaterThan(RING_OUTER);
+  // Every other outward point stays within the ring.
+  for (const i of [0, 1, 2, 4]) expect(radii[i]).toBeLessThanOrEqual(RING_OUTER + 1e-9);
+  // and the whole band sits outside the hub.
+  for (const r of radii) expect(r).toBeGreaterThan(RING_INNER * 0.9);
+});

@@ -1,4 +1,9 @@
-import { isJudgedProperty, rangeVerdict, SOAP_PROPERTY_GUIDE } from '@soap-calc/core';
+import {
+  FORMULATION_PREFERENCE_GUIDE,
+  isJudgedProperty,
+  rangeVerdict,
+  SOAP_PROPERTY_GUIDE,
+} from '@soap-calc/core';
 import type { SoapProperties, SoapPropertyName } from '@soap-calc/core';
 import { fitRadius, radarAngle, radarPoint, RING_INNER, RING_OUTER } from '../lib/radarGeometry';
 
@@ -28,6 +33,72 @@ const RINGS = [RING_INNER, RING_OUTER, 1];
 const angle = (i: number, n: number): number => radarAngle(i, n);
 const point = (i: number, n: number, radius: number): { x: number; y: number } =>
   radarPoint(CX, CY, i, n, radius);
+
+/**
+ * The tighter target band, drawn as a RIBBON rather than a second ring.
+ *
+ * The ring works because every axis maps its own suggested range onto the same annulus. The
+ * target band gets no such luck: fitted to each axis's suggested range it lands somewhere
+ * different on every one — 0.54–0.61 on cleansing against 0.61–0.68 on hardness — and creamy's
+ * outer edge falls at 0.737, OUTSIDE the ring at 0.72, because the source's own creamy target
+ * high (50) exceeds its suggested high (48). Longevity has no target band at all, so the shape
+ * also has to be able to stop.
+ *
+ * So it is an irregular band that follows the axes that have one and leaves a gap across the
+ * axes that do not: outward along the target highs, back along the target lows. Runs are found
+ * circularly, so the shape survives a reordering of the axes, and a run of one axis is skipped
+ * because a two-point ribbon has no area.
+ */
+function targetRibbonPaths(
+  order: SoapPropertyName[],
+  point: (i: number, n: number, radius: number) => { x: number; y: number },
+  fitted: (key: SoapPropertyName, value: number) => number,
+): string[] {
+  const n = order.length;
+  const band = order.map((key) => FORMULATION_PREFERENCE_GUIDE[key]);
+  if (band.every((b) => b)) {
+    // Every axis has one: a closed donut, outer ring then inner ring, evenodd-filled.
+    const ring = (pick: 'low' | 'high') =>
+      order
+        .map((key, i) => {
+          const p = point(i, n, fitted(key, band[i]![pick]));
+          return `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`;
+        })
+        .join(' ') + ' Z';
+    return [`${ring('high')} ${ring('low')}`];
+  }
+  const runs: number[][] = [];
+  let current: number[] = [];
+  // Two laps so a run that wraps past the last axis is found whole.
+  for (let step = 0; step < n * 2; step++) {
+    const i = step % n;
+    if (band[i] && !current.includes(i)) current.push(i);
+    else if (!band[i]) {
+      if (current.length > 1) runs.push(current);
+      current = [];
+    }
+    if (current.length === n) break;
+  }
+  if (current.length > 1) runs.push(current);
+  // A wrapped run and its unwrapped halves can both be collected; keep the longest per member.
+  const seen = new Set<number>();
+  return runs
+    .sort((a, b) => b.length - a.length)
+    .filter((run) => {
+      if (run.some((i) => seen.has(i))) return false;
+      run.forEach((i) => seen.add(i));
+      return true;
+    })
+    .map((run) => {
+      const outer = run.map((i) => point(i, n, fitted(order[i], band[i]!.high)));
+      const inner = [...run].reverse().map((i) => point(i, n, fitted(order[i], band[i]!.low)));
+      return (
+        [...outer, ...inner]
+          .map((p, k) => `${k === 0 ? 'M' : 'L'}${p.x},${p.y}`)
+          .join(' ') + ' Z'
+      );
+    });
+}
 
 /**
  * Radar of the six bar-property scores, FITTED PER AXIS: each axis maps its own suggested
@@ -88,6 +159,21 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
           cy={CY}
           r={R * f}
           style={{ fill: 'none', stroke: 'var(--border)', strokeWidth: 1 }}
+        />
+      ))}
+      {/* The target band. Under the axis lines and the recipe polygon: it is context, and the
+          red line is the reading. */}
+      {targetRibbonPaths(
+        order,
+        point,
+        (key, value) => fitRadius(value, SOAP_PROPERTY_GUIDE[key].low, SOAP_PROPERTY_GUIDE[key].high) * R,
+      ).map((d) => (
+        <path
+          key={d}
+          data-testid="radar-target-band"
+          d={d}
+          fillRule="evenodd"
+          style={{ fill: 'var(--accent-band)', stroke: 'none' }}
         />
       ))}
       {order.map((key, i) => {
