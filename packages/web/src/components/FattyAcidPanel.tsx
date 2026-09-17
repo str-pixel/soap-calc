@@ -13,6 +13,7 @@ import {
   type FormulationInsight,
 } from '@soap-calc/core';
 import type { RecipeFattyAcids } from '../lib/calculateFattyAcids';
+import type { ProcessId } from '../lib/process';
 import { trackPct as pct, valueAnchorClass } from '../lib/meterGeometry';
 import { makeTabsKeyDownHandler } from '../lib/tabsKeyboard';
 import { fattyAcidBasisCaption, missingOilsSuffix } from '../lib/coverageCaption';
@@ -31,6 +32,17 @@ type FattyAcidPanelProps = {
    *  inspecting coverage. Required, so a panel that forgot to pass it cannot silently claim
    *  nothing is hidden. Pass [] when nothing is. */
   withheldRancidity: readonly string[];
+  /**
+   * Which process the recipe is for. Liquid soap gets the SAME readings with no typical ranges:
+   * the bands here describe bar soap, and the source that supplies them puts words rather than
+   * numbers on its liquid-soap qualities — which is why panel 08 shows none for LS either.
+   * Measured against that source's own seven liquid-soap recipes, the bar bands misdescribe it:
+   * palmitic+stearic runs 10–17% against a band of 20–30, and ricinoleic 0–27 against 4–7.
+   * No substitute exists to swap in — industrial potassium-soap patents do publish ranges, but
+   * for a different product class (lauric+myristic 70–95%), further from artisan practice than
+   * the bar bands are.
+   */
+  process: ProcessId;
 };
 
 /** "Beeswax", "Beeswax and Pine Tar" — named as the OBJECT of the sentence, with no verb, so the
@@ -73,7 +85,7 @@ const NARROW_BAND = 6;
 
 // memo: `result` is a stable view-model memo output, so unrelated keystrokes
 // skip re-rendering this panel.
-export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, withheldRancidity }: FattyAcidPanelProps) {
+export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, withheldRancidity, process }: FattyAcidPanelProps) {
   const [view, setView] = useState<'meters' | 'radar'>('meters');
   const viewActiveIndex = FATTY_VIEWS.indexOf(view);
   const handleViewKeyDown = makeTabsKeyDownHandler(FATTY_VIEWS, viewActiveIndex, setView);
@@ -94,6 +106,10 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
     );
   }
 
+  // Liquid soap shows the readings and no bands. Dropping the bands drops the radar with them:
+  // that chart is band-FITTED (each axis maps its own typical range onto the ring), so without
+  // ranges it has no geometry left to draw. Meters only, exactly as 08 does for this process.
+  const showRanges = process !== 'ls';
   const { saturated, unsaturated } = saturatedUnsaturatedRatio(result.profile);
 
   // ONE derivation for both views (a review finding): the meters and the radar must state
@@ -171,6 +187,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
           squeezing it onto two or three lines (panel__head--wrap). */}
       <div className="panel__head panel__head--wrap">
         <h2 className="panel__title"><span className="panel__num" aria-hidden="true">09</span>Fatty acid profile</h2>
+        {showRanges && (
         <div
           className="property-view-toggle property-view-toggle--compact"
           role="tablist"
@@ -203,10 +220,14 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
             Radar
           </button>
         </div>
+        )}
       </div>
       {/* One sentence, per the mock — the coverage clause joins the caption instead of
           standing as a second line under it. */}
-      <p className="panel__subtitle">{fattyAcidBasisCaption(result)}.</p>
+      <p className="panel__subtitle">
+        {fattyAcidBasisCaption(result)}
+        {showRanges ? '.' : ', shown without typical ranges — the usual ranges describe bar soap, and liquid soap is formulated differently.'}
+      </p>
 
       {/* These readings ARE the reconstruction, so the modeled marker belongs here most of
           all — not only on the properties derived from them. */}
@@ -254,7 +275,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
         aria-labelledby={`fatty-tab-${view}`}
         tabIndex={0}
       >
-      {view === 'meters' ? (
+      {view === 'meters' || !showRanges ? (
         <>
         {/* The properties panel's row idiom: the name on the label row, the value
            riding its dot on a 0–100% track with the typical band shaded, the band's
@@ -271,18 +292,21 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
               <div className="property-meters__plot">
                 {value(g, true)}
                 <div className="property-meter" aria-hidden="true">
-                  <span
-                    className="property-meter__band property-meter__band--suggested"
-                    style={{
-                      left: `${pct(g.guide.low)}%`,
-                      width: `${pct(g.guide.high) - pct(g.guide.low)}%`,
-                    }}
-                  />
+                  {showRanges && (
+                    <span
+                      className="property-meter__band property-meter__band--suggested"
+                      style={{
+                        left: `${pct(g.guide.low)}%`,
+                        width: `${pct(g.guide.high) - pct(g.guide.low)}%`,
+                      }}
+                    />
+                  )}
                   <span
                     className="property-meter__marker"
                     style={{ left: `${pct(g.value)}%` }}
                   />
                 </div>
+                {showRanges && (
                 <div className="property-meter__scale" aria-hidden="true">
                   {g.guide.high - g.guide.low < NARROW_BAND ? (
                     <span
@@ -302,20 +326,23 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
                     </>
                   )}
                 </div>
+                )}
               </div>
-              {typical(g)}
+              {showRanges && typical(g)}
             </li>
           ))}
         </ul>
         {/* The shading needs naming here as much as it does in the properties panel; this
             view was the only one of the four carrying a band nothing explained. One swatch,
             because this panel has a typical range and no target band to claim. */}
-        <p className="property-legend">
-          <span className="property-legend__item">
-            <span className="property-legend__swatch property-legend__swatch--suggested" />
-            Typical range
-          </span>
-        </p>
+        {showRanges && (
+          <p className="property-legend">
+            <span className="property-legend__item">
+              <span className="property-legend__swatch property-legend__swatch--suggested" />
+              Typical range
+            </span>
+          </p>
+        )}
         </>
       ) : (
         <>

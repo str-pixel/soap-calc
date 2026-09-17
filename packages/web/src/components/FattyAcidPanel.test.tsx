@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { FattyAcidPanel } from './FattyAcidPanel';
 
@@ -20,7 +20,7 @@ const PROFILE = { oleic: 41, elaidic: 22, stearic: 15, linoleic: 11, palmitic: 1
  */
 test('marks a recipe built on a modeled (reconstructed) profile', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{
         profile: PROFILE,
@@ -37,7 +37,7 @@ test('marks a recipe built on a modeled (reconstructed) profile', () => {
 
 test('stays silent for a measured-only recipe', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -50,7 +50,7 @@ test('stays silent for a measured-only recipe', () => {
 // band-fitted chart — and the tabs carry full ARIA wiring like the properties switch.
 test('opens on the meters, and the Radar tab swaps in the chart', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -80,7 +80,7 @@ test('opens on the meters, and the Radar tab swaps in the chart', () => {
 
 test('the meters place each marker at its percent and shade the typical band there', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -104,7 +104,7 @@ test('the meters place each marker at its percent and shade the typical band the
 
 test('a value at the edge of the track anchors its label to the marker instead of clipping', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -120,7 +120,7 @@ test('a value at the edge of the track anchors its label to the marker instead o
 
 test('the radar draws the six named groups and prints the three catch-alls under it', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -159,7 +159,7 @@ test('the radar draws the six named groups and prints the three catch-alls under
 
 test('the fatty view tabs traverse with arrow keys, starting from the meters', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -173,7 +173,7 @@ test('the fatty view tabs traverse with arrow keys, starting from the meters', (
 
 test('both views state the same readings — the toggle changes geometry, not claims', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -190,7 +190,7 @@ test('both views state the same readings — the toggle changes geometry, not cl
 // caption, 09's radar a caption. A shaded band a reader cannot name is decoration.
 test('names its shading, like the other three result views do', () => {
   const { container } = render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -212,7 +212,7 @@ test('shows the rancidity notes from the insights, above the chart, in both view
   const cap = { code: 'pufa_cap_superfat', level: 'warning' as const, message: 'Keep superfat nearer 3-5%.' };
   const unrelated = { code: 'trace_speed', level: 'info' as const, message: 'A trace note that belongs elsewhere.' };
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[dos, unrelated, cap]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -233,7 +233,7 @@ test('shows the rancidity notes from the insights, above the chart, in both view
 
 test('shows no rancidity note when the insights carry none', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[{ code: 'trace_speed', level: 'info', message: 'A trace note.' }]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -247,7 +247,7 @@ test('shows no rancidity note when the insights carry none', () => {
 // nothing, so its "Low data" hid a range while the Meters view kept printing it.
 test('treats every reading as an estimate below the coverage cutoff, in both views', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 60, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -275,7 +275,7 @@ test('treats every reading as an estimate below the coverage cutoff, in both vie
 
 test('does not mark the Saturated/Unsaturated line as an estimate at full coverage', () => {
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -289,14 +289,14 @@ test('does not mark the Saturated/Unsaturated line as an estimate at full covera
 // empty state named none.
 test('names the oils without fatty-acid data when there is nothing to show', () => {
   const { rerender } = render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: null, coveragePercent: 0, missingOilIds: ['beeswax', 'pine-tar'], modeledOilIds: [], coveredWeightShare: 0 }}
     />,
   );
   expect(document.querySelector('.results-hint')!.textContent).toMatch(/\(no data: Beeswax, Pine Tar\)/);
   rerender(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -319,7 +319,7 @@ test('never flags a reading, however far past its band, in either view', () => {
     ricinoleic: 30, behenic: 15, erucic: 20, elaidic: 22,
   };
   render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -357,7 +357,7 @@ test('never flags a reading, however far past its band, in either view', () => {
 // coverage figure that rounded to 100 was printed as "100%" on a partial recipe.
 test('names the base of its percentages and how much of the recipe the data covers', () => {
   const { rerender } = render(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 99.89999999999999, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
@@ -365,7 +365,7 @@ test('names the base of its percentages and how much of the recipe the data cove
   const subtitle = () => document.querySelector('.panel__subtitle')!.textContent;
   expect(subtitle()).toBe('Percent of oil weight.');
   rerender(
-    <FattyAcidPanel withheldRancidity={[]}
+    <FattyAcidPanel process="cp" withheldRancidity={[]}
       insights={[]}
       result={{ profile: PROFILE, coveragePercent: 99.6, missingOilIds: ['abyssinian-oil'], modeledOilIds: [], coveredWeightShare: 0.996 }}
     />,
@@ -385,19 +385,19 @@ test('names a held-back rancidity note, and stays quiet when none is held back',
   const notes = () => screen.queryByRole('list', { name: /Rancidity/i });
 
   // Nothing withheld — an unprofiled oil on its own is NOT a reason to caveat.
-  const { rerender } = render(<FattyAcidPanel insights={[]} withheldRancidity={[]} result={partial} />);
+  const { rerender } = render(<FattyAcidPanel process="cp" insights={[]} withheldRancidity={[]} result={partial} />);
   expect(notes()).toBeNull();
 
   // A note genuinely held back: say so, and name the oil the reader would have to look up.
   rerender(
-    <FattyAcidPanel insights={[]} withheldRancidity={['dos_risk_no_antioxidant']} result={partial} />,
+    <FattyAcidPanel process="cp" insights={[]} withheldRancidity={['dos_risk_no_antioxidant']} result={partial} />,
   );
   expect(notes()!.textContent).toMatch(/held back/);
   expect(notes()!.textContent).toMatch(/counting Beeswax as carrying no polyunsaturates/);
 
   // Two oils read as a list, not as a repeated clause.
   rerender(
-    <FattyAcidPanel
+    <FattyAcidPanel process="cp"
       insights={[]}
       withheldRancidity={['dos_risk_no_antioxidant']}
       result={{ ...partial, missingOilIds: ['beeswax', 'pine-tar'] }}
@@ -407,11 +407,60 @@ test('names a held-back rancidity note, and stays quiet when none is held back',
 
   // Thin PROFILES hide nothing — an incomplete profile understates PUFA, it cannot inflate it.
   rerender(
-    <FattyAcidPanel
+    <FattyAcidPanel process="cp"
       insights={[]}
       withheldRancidity={[]}
       result={{ profile: PROFILE, coveragePercent: 79.4, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 }}
     />,
   );
   expect(notes()).toBeNull();
+});
+
+// 09 was process-blind: it rendered pixel-identically for liquid soap and cold process, bands and
+// all. Those bands come from a survey of body-soap formulas, and they do not describe liquid soap
+// — across the seven liquid-soap recipes in the same source, palmitic+stearic runs 10–17% against
+// a band of 20–30, and ricinoleic runs 0–27 against 4–7. The source puts WORDS rather than numbers
+// on its liquid-soap qualities, which is why 08 shows none either. So 09 shows none for LS.
+describe('liquid soap: readings without bar-soap ranges', () => {
+  const it = test;
+  const result = { profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 };
+  const ls = () => render(<FattyAcidPanel insights={[]} withheldRancidity={[]} result={result} process="ls" />);
+  const cp = () => render(<FattyAcidPanel insights={[]} withheldRancidity={[]} result={result} process="cp" />);
+
+  it('shows no typical range, band, tick or legend', () => {
+    const { container } = ls();
+    expect(container.querySelector('.property-meter__band')).toBeNull();
+    expect(container.querySelector('.property-meter__scale')).toBeNull();
+    // No "Typical 20–30%" anywhere, on screen or for a screen reader. (The subtitle says the
+    // word "typical" while explaining their absence, so match the range shape, not the word.)
+    expect(container.textContent).not.toMatch(/Typical\s*\d/i);
+    expect(screen.queryByText('Typical range')).toBeNull();
+  });
+
+  it('drops the view switch too, because the radar is built on those bands', () => {
+    const { container } = ls();
+    expect(screen.queryByRole('tablist', { name: 'Fatty acid display' })).toBeNull();
+    expect(container.querySelector('.fatty-radar')).toBeNull();
+  });
+
+  it('still shows every reading, the basis caption and the saturated split', () => {
+    ls();
+    const meters = screen.getAllByRole('meter');
+    expect(meters.length).toBe(9);
+    expect(screen.getByText(/Percent of oil weight/i)).toBeTruthy();
+    // The ratio line, not the "Other saturated" group label that also matches /saturated/i.
+    expect(document.querySelector('.fatty-ratio')!.textContent).toMatch(/Saturated .* Unsaturated/);
+  });
+
+  it('says why no ranges are shown, rather than leaving them silently absent', () => {
+    ls();
+    expect(screen.getByText(/without typical ranges/i)).toBeTruthy();
+  });
+
+  it('leaves cold process exactly as it was', () => {
+    const { container } = cp();
+    expect(container.querySelectorAll('.property-meter__band').length).toBeGreaterThan(0);
+    expect(screen.getByRole('tablist', { name: 'Fatty acid display' })).toBeTruthy();
+    expect(screen.getByText(/Typical range/i)).toBeTruthy();
+  });
 });

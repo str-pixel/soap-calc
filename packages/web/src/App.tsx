@@ -836,6 +836,7 @@ export default function App() {
               result={vm.fattyAcids}
               insights={vm.insights}
               withheldRancidity={vm.withheldRancidity}
+              process={process}
             />
           </div>
         </main>
