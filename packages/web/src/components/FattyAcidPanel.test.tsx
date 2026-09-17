@@ -452,9 +452,15 @@ describe('liquid soap: readings without bar-soap ranges', () => {
     expect(document.querySelector('.fatty-ratio')!.textContent).toMatch(/Saturated .* Unsaturated/);
   });
 
-  it('says why no ranges are shown, rather than leaving them silently absent', () => {
-    ls();
-    expect(screen.getByText(/without typical ranges/i)).toBeTruthy();
+  it('says why no ranges are shown, on its own line rather than as a third clause', () => {
+    const { container } = ls();
+    const note = screen.getByText(/No typical ranges are shown/i);
+    expect(note).toBeTruthy();
+    // The subtitle keeps carrying the basis and the coverage, and only those.
+    const subtitle = container.querySelector('.panel__subtitle')!;
+    expect(subtitle.textContent).toMatch(/Percent of oil weight/);
+    expect(subtitle.textContent).not.toMatch(/typical ranges/i);
+    expect(note).not.toBe(subtitle);
   });
 
   it('leaves cold process exactly as it was', () => {

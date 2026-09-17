@@ -224,10 +224,16 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
       </div>
       {/* One sentence, per the mock — the coverage clause joins the caption instead of
           standing as a second line under it. */}
-      <p className="panel__subtitle">
-        {fattyAcidBasisCaption(result)}
-        {showRanges ? '.' : ', shown without typical ranges — the usual ranges describe bar soap, and liquid soap is formulated differently.'}
-      </p>
+      <p className="panel__subtitle">{fattyAcidBasisCaption(result)}.</p>
+      {/* Its own line, not a third clause on the subtitle: that sentence already carries the
+          basis and the coverage, and appending this buried both in a five-line paragraph. Panel
+          08 splits the same two thoughts the same way for this process. */}
+      {!showRanges && (
+        <p className="properties-coverage">
+          No typical ranges are shown: the usual ones describe bar soap, which is formulated
+          differently.
+        </p>
+      )}
 
       {/* These readings ARE the reconstruction, so the modeled marker belongs here most of
           all — not only on the properties derived from them. */}
