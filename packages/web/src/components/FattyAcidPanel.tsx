@@ -172,6 +172,19 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
   // genuinely withheld in 1,505, because most partly-uncharacterized recipes are nowhere near a
   // rancidity threshold to begin with.
   const holdingBack = withheldRancidity.length > 0;
+
+  // ONE legend for both views. The shading needs naming in the radar exactly as it does in the
+  // meters — it is the same ring, drawn either way — and keeping it in the meters branch alone
+  // made the key vanish on a view switch while the shading stayed. One swatch, because this
+  // panel has a typical range and no target band to claim; none at all when there are no ranges.
+  const legend = showRanges ? (
+    <p className="property-legend">
+      <span className="property-legend__item">
+        <span className="property-legend__swatch property-legend__swatch--suggested" />
+        Typical range
+      </span>
+    </p>
+  ) : null;
   const rancidity = insights.filter((insight) =>
     (FATTY_ACID_RANCIDITY_INSIGHT_CODES as readonly string[]).includes(insight.code),
   );
@@ -338,17 +351,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
             </li>
           ))}
         </ul>
-        {/* The shading needs naming here as much as it does in the properties panel; this
-            view was the only one of the four carrying a band nothing explained. One swatch,
-            because this panel has a typical range and no target band to claim. */}
-        {showRanges && (
-          <p className="property-legend">
-            <span className="property-legend__item">
-              <span className="property-legend__swatch property-legend__swatch--suggested" />
-              Typical range
-            </span>
-          </p>
-        )}
+        {legend}
         </>
       ) : (
         <>
@@ -376,6 +379,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
               </li>
             ))}
           </ul>
+          {legend}
           <p className="fatty-radar__caption">
             Shaded ring = each group&apos;s typical range. Every axis is scaled to its own
             range, so the shape shows fit, not share, and a reading off the ring is not

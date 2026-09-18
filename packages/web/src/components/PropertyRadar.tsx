@@ -162,7 +162,10 @@ export function PropertyRadar({ properties, order, lowCoverage }: PropertyRadarP
         />
       ))}
       {/* The target band. Under the axis lines and the recipe polygon: it is context, and the
-          red line is the reading. */}
+          red line is the reading. Drawn at ANY coverage, including low, where the verdicts are
+          withheld: a verdict judges this recipe and thin data cannot support one, but the band
+          judges nothing — it is where the target sits, which is exactly what a reader needs to
+          place an estimate. The meters keep shading theirs at low coverage for the same reason. */}
       {targetRibbonPaths(
         order,
         point,

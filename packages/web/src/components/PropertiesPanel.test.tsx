@@ -645,3 +645,17 @@ test('the radar caption says where a score sits, and promises no circle', () => 
   expect(caption).toMatch(/a score inside its range sits on the ring, below it inside, above it outside/);
   expect(caption).not.toMatch(/circle/);
 });
+
+// The radar keeps its target band at low coverage on the grounds that the meters keep theirs —
+// the band is where the target sits, not a judgement of the recipe. That grounds needs to be
+// true, so it is checked here rather than assumed: six suggested bands plus five target bands
+// (longevity has no target), at a coverage that withholds every verdict.
+test('meters keep both bands at low coverage, when verdicts are withheld', () => {
+  const low = { ...FULL.properties, coveragePercent: 55, missingOilIds: ['beeswax'] };
+  const { container } = render(
+    <PropertiesPanel result={low} indexes={FULL.indexes} modeledOilIds={[]} process="cp" />,
+  );
+  expect(container.textContent).not.toMatch(/Too (high|low)|In range/);
+  expect(container.querySelectorAll('.property-meter__band--suggested').length).toBe(6);
+  expect(container.querySelectorAll('.property-meter__band--target').length).toBe(5);
+});

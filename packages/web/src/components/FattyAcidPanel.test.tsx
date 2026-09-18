@@ -470,3 +470,18 @@ describe('liquid soap: readings without bar-soap ranges', () => {
     expect(screen.getByText(/Typical range/i)).toBeTruthy();
   });
 });
+
+// The legend may only key zones the view actually paints — and the converse holds too: a zone
+// the view paints must be keyed. 09's radar draws the shaded ring and keyed nothing, so switching
+// from Meters made the key vanish while the shading stayed. 08 keys its ring in both views.
+test('keys the typical-range shading in both views, never in only one', () => {
+  const result = { profile: PROFILE, coveragePercent: 100, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 };
+  const { container } = render(<FattyAcidPanel process="cp" insights={[]} withheldRancidity={[]} result={result} />);
+  const legend = () => container.querySelector('.property-legend');
+  expect(legend()?.textContent).toMatch(/Typical range/);
+  fireEvent.click(screen.getByRole('tab', { name: 'Radar' }));
+  expect(container.querySelector('[data-testid="radar-ring"]'), 'the radar paints the ring').not.toBeNull();
+  expect(legend()?.textContent, 'so it must key it').toMatch(/Typical range/);
+  // One swatch in both views: this panel has a typical range and no target band to claim.
+  expect(container.querySelectorAll('.property-legend__swatch').length).toBe(1);
+});

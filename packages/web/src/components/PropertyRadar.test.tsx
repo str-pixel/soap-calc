@@ -240,3 +240,19 @@ test('finds the run of axes with a target wherever the one without sits', () => 
     expect(d.match(/Z/g)!.length, `longevity at ${where}`).toBe(1);
   }
 });
+
+// Low coverage withholds the VERDICTS — "Low data" replaces "Too high" — because a verdict is a
+// judgement of this recipe and the data cannot support one. The target band is not a judgement
+// of anything: it is where the target sits, the same context the meters keep shading at any
+// coverage. Hiding it would take away the one thing that still helps a reader place an
+// estimate. Pinned, so "withhold everything at low coverage" cannot quietly take it too.
+test('keeps drawing the target band at low coverage, when verdicts are withheld', () => {
+  const { container } = render(
+    <PropertyRadar properties={BAND_SCORES} order={ORDER} lowCoverage={true} />,
+  );
+  expect(axisBlocks(container).map((b) => b[2])).toContain('Low data');
+  const bands = container.querySelectorAll('[data-testid="radar-target-band"]');
+  expect(bands.length).toBe(1);
+  // And it is the same band, not a placeholder: five axes out and back.
+  expect(bands[0].getAttribute('d')!.match(/[ML]/g)!.length).toBe(10);
+});
