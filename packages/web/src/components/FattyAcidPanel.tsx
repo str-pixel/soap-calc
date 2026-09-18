@@ -229,7 +229,7 @@ export const FattyAcidPanel = memo(function FattyAcidPanel({ result, insights, w
           basis and the coverage, and appending this buried both in a five-line paragraph. Panel
           08 splits the same two thoughts the same way for this process. */}
       {!showRanges && (
-        <p className="properties-coverage">
+        <p className="panel__note">
           No typical ranges are shown: the usual ones describe bar soap, which is formulated
           differently.
         </p>

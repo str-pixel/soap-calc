@@ -129,7 +129,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           <span className="panel__num" aria-hidden="true">08</span>
           {title}
         </h2>
-        <p className="panel__subtitle">Fatty-acid sums on a 0–100 scale, shown without target ranges</p>
+        <p className="panel__subtitle">Fatty-acid sums on a 0–100 scale</p>
         {!qualities ? (
           <p className="results-hint">
             Add triglyceride oils with fatty-acid data to see these qualities
@@ -138,6 +138,10 @@ export const PropertiesPanel = memo(function PropertiesPanel({
         ) : (
           <>
             {lsCaption && <p className="properties-coverage">{lsCaption}</p>}
+            {/* Last, in the same voice and the same slot as panel 09's: both panels read
+                "what this is" / "what covers it" / "no ranges". 09 adds why, because it took
+                ranges away that a reader would otherwise look for; these four never had any. */}
+            <p className="panel__note">No target ranges are shown.</p>
             <ModeledOilsNote oilIds={modeled} />
             <ul className="property-meters" aria-label={title}>
               {LS_SOAP_QUALITY_ORDER.map((key) => {

@@ -101,7 +101,10 @@ test('titles the panel per process: bar soap by default, soap for LS', () => {
   expect(screen.getByRole('heading', { name: 'Soap properties' })).toBeTruthy();
   expect(screen.queryByRole('heading', { name: 'Bar properties' })).toBeNull();
   // Liquid soap's qualities carry no ranges, and the subtitle says so.
-  expect(screen.getByText('Fatty-acid sums on a 0–100 scale, shown without target ranges')).toBeTruthy();
+  expect(screen.getByText('Fatty-acid sums on a 0–100 scale')).toBeTruthy();
+  // The no-ranges statement is its own last line, the same slot panel 09 puts its own in, so
+  // the two panels read alike for this process instead of swapping the roles of their two lines.
+  expect(screen.getByText('No target ranges are shown.')).toBeTruthy();
   expect(screen.queryByText(/bar-soap conventions/i)).toBeNull();
 });
 

@@ -2433,7 +2433,11 @@ details[open] > .disclosure__summary::before {
   color: var(--caption);
 }
 
-.properties-coverage {
+.properties-coverage,
+/* Same voice as the coverage line and the same place in the stack, for a note that is NOT
+   about coverage — panel 09's was riding .properties-coverage, a class named for the one
+   thing it does not say. */
+.panel__note {
   margin: 0 0 0.85rem;
   font-size: 0.85rem;
   color: var(--text-muted);
