@@ -272,7 +272,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
     note:
       'Legacy profile summed 89% (missing caprylic/capric). Gap-filled to 100% from the NIST certified ' +
       'reference. SAP 0.22 kept (verified — the medium-chain composition genuinely gives a high SAP; ' +
-      'profile-derived 0.218, +0.8%). Property shift +7 (under threshold). Oleic:lauric ratio is ' +
+      'profile-derived 0.225, −2.3%). Property shift +7 (under threshold). Oleic:lauric ratio is ' +
       'ripeness/ecotype-variable; NIST CO2 extract is the best single anchor. (saw-palmetto-extract ' +
       'shares this NIST source — a separate row.)',
   },
@@ -342,7 +342,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
     url: 'https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=902884',
     note:
       'Legacy profile summed 90% (missing caprylic/capric). Gap-filled to 100% from the NIST ' +
-      'certified reference. SAP 0.23 kept (profile-derived 0.218, +5.4%, within gate). Property ' +
+      'certified reference. SAP 0.23 kept (profile-derived 0.225, +2.2%, within gate). Property ' +
       'shift +4.5 (under the guard threshold).',
   },
 
@@ -361,8 +361,8 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
     url: 'https://www.fao.org/4/y2774e/y2774e04.htm',
     note:
       'Legacy profile summed 75% and omitted caprylic/capric/oleic (the C8/C10 coconut carries). ' +
-      'Filled to the coconut composition. SAP 0.255 kept (verified; profile-derived 0.247, +3.3%, ' +
-      'within gate — coconut FA-derived SAP runs ~4% below the measured, a known lauric-oil effect). ' +
+      'Filled to the coconut composition. SAP 0.255 kept (verified; profile-derived 0.254, +0.5%, ' +
+      'close agreement — the mole-weighted-mean coconut-derived SAP tracks the measured value closely). ' +
       'Property shift is cleansing/bubbly +19 (restoring the C8/C10) — flagged, acknowledged.',
   },
 
@@ -380,7 +380,7 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
     url: 'https://www.fao.org/4/y2774e/y2774e04.htm',
     note:
       'Legacy profile summed 83% and omitted caprylic/capric (coconut’s C8/C10). Filled to the ' +
-      'coconut composition. SAP 0.24 kept (profile-derived 0.247, −2.8%, within gate). Property ' +
+      'coconut composition. SAP 0.24 kept (profile-derived 0.254, −5.4%, within gate). Property ' +
       'shift is cleansing/bubbly +16 (restoring the C8/C10) — flagged, acknowledged. Derived/blend ' +
       'product; the coconut FA is representative, not a measured aloe-butter lot.',
   },
@@ -395,8 +395,8 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
     url: 'https://www.fao.org/4/y2774e/y2774e04.htm',
     note:
       'GOLDEN-SAP oil — stored 0.258 KEPT (verified; the golden-SAP validator still passes). ' +
-      'Profile-derived 0.247 is within the gate (+4.5%, the known lauric-oil FA-vs-measured gap); ' +
-      'derived IV 10 matches stored 10. Legacy profile summed 89%, omitting C8/C10; adding them ' +
+      'Profile-derived 0.254 is within the gate (+1.7%); derived IV 9.4 ≈ stored 10. Legacy ' +
+      'profile summed 89%, omitting C8/C10; adding them ' +
       'raises cleansing/bubbly +12.3 (coconut’s well-known high cleansing partly comes from C8/C10, ' +
       'which our property model counts) — under the guard threshold. NOTE this is a high-visibility ' +
       'change: coconut is in most recipes, so its cleansing/bubbly bars move up. coconut-oil-92 ' +
@@ -417,8 +417,8 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       '93% completeness gate yet OMITS PKO’s real C8/C10, so the completeness test never surfaced ' +
       'it. Clean gap-fill: stored lauric 49 / myristic 16 already match Codex/Ang (~48/~16, NOT ' +
       'inflated), so this only ADDS the dropped C8/C10. SAP resolution unchanged — profile-derived ' +
-      'rises 0.2335→0.2375 but still resolves closest to legacy 0.247 (vs FNWL 0.203), which is ' +
-      'kept; derived IV 19 ≈ stored 20. Cleansing/bubbly +6.1 (C8/C10 entering the cleansing set), ' +
+      'rises 0.2379→0.2436 but still resolves closest to legacy 0.247 (vs FNWL 0.203), which is ' +
+      'kept; derived IV 18 ≈ stored 20. Cleansing/bubbly +6.1 (C8/C10 entering the cleansing set), ' +
       'under the guard threshold. Contrast babassu-oil, whose stored lauric/myristic ARE inflated ' +
       '(needs a full reprofile, not a gap-fill) — held for its own row.',
   },
@@ -510,19 +510,19 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       'independently GC-measured — SINGLE-SOURCE). High confidence on the caprylic 7.5 / capric 6.5 ' +
       'presence and lauric ~46%, but myristic 16 / palmitic 9.5 run higher than measured relatives ' +
       '(babassu/indaiá ~12 / ~4) — a documented asterisk. Codex CXS 210 does NOT cover cohune. ' +
-      'Cross-check: this profile derives SAP 0.246 / IV 11, matching the measured relatives (babassu ' +
+      'Cross-check: this profile derives SAP 0.253 / IV 10, matching the measured relatives (babassu ' +
       '0.237, indaiá 0.241) — a single source that predicts independent measurements',
     url: 'https://en.wikipedia.org/wiki/Cohune_oil',
     note:
       'Restores caprylic + capric (~14% combined) the legacy profile dropped. PAIRED WITH a ' +
       'LEGACY_SAP_CORRECTION: stored SAP 0.205 is impossibly low for a lauric palm-kernel oil (below ' +
-      'the saponification value of any lauric composition; even the truncated profile derived 0.232). ' +
-      'Corrected to the profile-derived 0.246 (no FNWL match → applied via LEGACY_SAP_CORRECTIONS, ' +
+      'the saponification value of any lauric composition; even the truncated profile derived 0.237). ' +
+      'Corrected to the profile-derived 0.253 (no FNWL match → applied via LEGACY_SAP_CORRECTIONS, ' +
       'confidence→estimated); legacy iodine 30 (also inconsistent — cohune is ~96% saturated) corrected ' +
-      'to the derived 11. Profile-derived 0.2457 then agrees with the corrected 0.246 (+0.1%, gate-safe). ' +
-      'Property shift bubbly/cleansing +12.5 (restored C8/C10) / condition −10, under the guard. Removed ' +
-      'from the MCT guard allowlist and the acknowledged-SAP-deviation list. CAVEAT: single-source FA ' +
-      'data — revise the profile if an independent GC analysis of A. cohune appears.',
+      'to the derived 10. Profile-derived 0.2531 then agrees with the corrected 0.253 (within 0.1%, ' +
+      'gate-safe). Property shift bubbly/cleansing +12.5 (restored C8/C10) / condition −10, under ' +
+      'the guard. Removed from the MCT guard allowlist and the acknowledged-SAP-deviation list. ' +
+      'CAVEAT: single-source FA data — revise the profile if an independent GC analysis of A. cohune appears.',
   },
 
   // ── Hydrogenated forms — DERIVED profiles (hydrogenation transform of a Codex-sourced base). No
