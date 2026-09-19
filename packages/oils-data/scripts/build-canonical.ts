@@ -1,7 +1,12 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { deriveChemistryFromProfile, parseSapRangeMgKoh, sapKohToSapNaoh } from '@soap-calc/core';
+import {
+  deriveChemistryFromProfile,
+  OIL_ALLERGEN_ORIGINS,
+  parseSapRangeMgKoh,
+  sapKohToSapNaoh,
+} from '@soap-calc/core';
 import {
   CanonicalOilDatabase,
   type CanonicalOil,
@@ -21,6 +26,7 @@ import {
   contributesFattyAcids,
   normalizeOilName,
   slugify,
+  WAX_ESTER_OIL_IDS,
 } from '../src/normalize.js';
 import { loadSupplementalOils, supplementalToCanonical, tarMetadataForLegacy } from '../src/supplemental.js';
 import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
@@ -465,15 +471,41 @@ function main() {
   }
 
   const oilIds = new Set(oils.map((o) => o.id));
-  const staleCorrectionKeys = [
+  // Every map in the repo that is KEYED BY OIL, checked together. Two were covered here and the
+  // rest were not, so a key left behind by a removed or renamed oil sat inert and silent — six
+  // oils were removed on 2026-09-19 and two such keys had to be found by hand afterwards.
+  //
+  // Three key spaces are legitimate, so all three are accepted: the emitted id, the internal
+  // build slug (OIL_DISPLAY_NAMES and WAX_ESTER_OIL_IDS are consulted before the id override is
+  // applied), and an excluded id — that last one deliberately, per the note above: a correction
+  // aimed at an oil we do not currently ship is inert, not a typo, and stays ready if it returns.
+  // What none of those covers is a key matching nothing at all, which is what this catches.
+  const knownOilKeys = new Set([...oilIds, ...usedSlugs, ...excludedOilIds]);
+  const oilKeyedEntries = [
     ...Object.keys(supplementalInci.inciCorrections),
     ...Object.keys(LEGACY_SAP_CORRECTIONS),
-  ].filter((id) => !oilIds.has(id) && !excludedOilIds.has(id));
+    ...Object.keys(IODINE_CORRECTIONS),
+    ...Object.keys(OIL_DISPLAY_NAMES),
+    ...Object.keys(OIL_ALLERGEN_ORIGINS),
+    ...WAX_ESTER_OIL_IDS,
+  ];
+  const staleCorrectionKeys = oilKeyedEntries.filter((id) => !knownOilKeys.has(id));
   if (staleCorrectionKeys.length) {
     console.error(
-      `Correction keys match no built or excluded oil id (typo or renamed oil?): ${staleCorrectionKeys.join(', ')}`,
+      `Oil-keyed entries match no built, renamed or excluded oil id (typo or removed oil?): ${[...new Set(staleCorrectionKeys)].join(', ')}`,
     );
     process.exit(1);
+  }
+
+  // A key aimed at an EXCLUDED oil is legitimate and stays inert, per the note above — so this
+  // warns rather than failing. It is still worth saying: after six oils were excluded on
+  // 2026-09-19 the keys they left behind were dead weight that nothing surfaced, and had to be
+  // found by hand. Warned, they are at least visible to whoever excludes the next oil.
+  const inertOilKeys = [...new Set(oilKeyedEntries.filter((id) => excludedOilIds.has(id) && !oilIds.has(id)))];
+  if (inertOilKeys.length) {
+    console.warn(
+      `  Oil-keyed entries aimed at excluded oils (inert — drop them, or leave them ready if the oil may return): ${inertOilKeys.join(', ')}`,
+    );
   }
 
   // A SAP correction only applies when the oil has no FNWL match. If a built oil carries a

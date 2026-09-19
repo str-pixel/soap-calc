@@ -94,9 +94,18 @@ export function isTarOil(oil: OilRecord | undefined): boolean {
 /**
  * Oils offered in the picker. Excludes entries flagged `insufficientData` (truncated fatty-acid
  * profile → unreliable property bars) — we'd rather not offer an oil than show misleading data.
- * They remain in OILS / the lookups, so a saved recipe referencing one still resolves and calculates.
+ * A flagged oil stays in OILS and the lookups, so a saved recipe referencing one still resolves.
+ *
+ * DORMANT since 2026-09-19: no oil carries the flag. The six that did were removed from the
+ * catalog outright rather than hidden (sources/excluded-oils.json), because a profile short
+ * enough to distrust for the bars is short enough to distrust everywhere. The filter stays for
+ * the next oil that ships truncated — isSelectableOil is exported so it keeps being tested while
+ * no catalog row exercises it.
  */
-export const SELECTABLE_OILS: OilRecord[] = OILS.filter((oil) => !oil.insufficientData);
+export const isSelectableOil = (oil: Pick<OilRecord, 'insufficientData'>): boolean =>
+  !oil.insufficientData;
+
+export const SELECTABLE_OILS: OilRecord[] = OILS.filter(isSelectableOil);
 
 export function searchOils(query: string, limit?: number): OilRecord[] {
   const q = query.trim().toLowerCase();

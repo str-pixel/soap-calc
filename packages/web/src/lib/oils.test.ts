@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OILS, OIL_LOOKUP, PROPERTIES_LOOKUP, SELECTABLE_OILS, oilById, searchOils } from './oils';
+import { OILS, OIL_LOOKUP, PROPERTIES_LOOKUP, SELECTABLE_OILS, isSelectableOil, oilById, searchOils } from './oils';
 
 describe('searchOils', () => {
   it('includes all ingredients when browsing with an empty query', () => {
@@ -18,6 +18,15 @@ describe('searchOils', () => {
     expect(ids).toContain('canola-oil');
     expect(ids).not.toContain('rapeseed-oil-high-erucic');
     expect(ids).not.toContain('rapeseed-oil-canola');
+  });
+
+  it('still filters, though no shipped oil trips it', () => {
+    // The rule itself, exercised directly: no catalog row carries insufficientData any more, so
+    // without this the mechanism would sit untested until the next truncated oil shipped — and
+    // would be free to break in the meantime.
+    expect(isSelectableOil({ insufficientData: true })).toBe(false);
+    expect(isSelectableOil({ insufficientData: false })).toBe(true);
+    expect(isSelectableOil({})).toBe(true);
   });
 
   it('keeps the insufficient-data filter, which currently hides nothing', () => {

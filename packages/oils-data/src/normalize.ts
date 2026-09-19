@@ -84,12 +84,23 @@ export const WAX_OR_SPECIAL_PATTERNS: Array<{ pattern: RegExp; category: 'wax' |
   { pattern: /lauric acid|stearic acid|oleic acid|myristic acid|palmitic acid/i, category: 'free_acid' },
 ];
 
-/** Explicit low-saponifiable oils — do not infer from incomplete fatty-acid sums. Consulted only
- *  when no SAP is known: a measured SAP outranks this list, which is how abyssinian (168 mg KOH/g,
- *  a triglyceride) ended up here on the strength of a profile summing to 38. */
+/**
+ * Explicit low-saponifiable oils, for the one case chemistry cannot answer: a SUPPLEMENTAL oil
+ * whose `sapKoh` is omitted (the supplemental schema allows it; the canonical one does not), where
+ * no wax/tar/free-acid name pattern matches either. With a SAP present the measured value decides
+ * and this set is never consulted.
+ *
+ * Both original entries were wrong, and the build's oil-key guard caught the second on its first
+ * run. 'abyssinian-oil' was listed on the strength of a profile summing to 38% — the very
+ * inference the old comment here warned against — and SAP 168 mg KOH/g puts it with meadowfoam at
+ * 169, not jojoba at 92; it is a triglyceride with a cited profile since 2026-09-16.
+ * 'jojoba-oil-a-liquid-wax-ester' was never a build slug at all: slugify strips the parenthetical
+ * from "Jojoba Oil (a Liquid Wax Ester)", so the real slug is 'jojoba-oil' and that key matched
+ * nothing from the day it was written. Jojoba reaches wax_ester through the /jojoba/i name pattern
+ * regardless, which is why nothing ever looked broken.
+ */
 export const WAX_ESTER_OIL_IDS = new Set([
-  'abyssinian-oil',
-  'jojoba-oil-a-liquid-wax-ester',
+  'jojoba-oil',
 ]);
 
 /**
