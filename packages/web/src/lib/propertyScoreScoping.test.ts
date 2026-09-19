@@ -17,8 +17,9 @@ import { OILS, PROPERTIES_LOOKUP } from './oils';
  * are pinned here.
  */
 
+// Six since 2026-09-19: japan wax was the seventh until it was removed from the catalog.
 const SEVEN = [
-  'japan-wax', 'soybean-fully-hydrogenated', 'stearic-acid',
+  'soybean-fully-hydrogenated', 'stearic-acid',
   'lauric-acid', 'oleic-acid', 'palmitic-acid', 'myristic-acid',
 ] as const;
 

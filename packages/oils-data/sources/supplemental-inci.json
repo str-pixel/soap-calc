@@ -62,11 +62,6 @@
       "source": "manual",
       "notes": "Andiroba / crabwood seed oil"
     },
-    "avocado-butter": {
-      "inciName": "Persea Gratissima (Avocado) Oil",
-      "source": "cosing",
-      "notes": "Butter base; triglyceride INCI is avocado oil"
-    },
     "beeswax": {
       "inciName": "Cera Alba (Beeswax)",
       "source": "cosing"
@@ -229,11 +224,6 @@
       "inciName": "Stearic Acid",
       "source": "manual"
     },
-    "tallow-bear": {
-      "inciName": "Tallow",
-      "source": "manual",
-      "notes": "CosIng #92469 — no species-specific bear tallow INCI; generic tallow"
-    },
     "tallow-beef": {
       "inciName": "Tallow",
       "source": "manual",
@@ -249,11 +239,6 @@
       "source": "manual",
       "notes": "CosIng #92469 — no goat-specific INCI; generic tallow"
     },
-    "tallow-sheep": {
-      "inciName": "Tallow",
-      "source": "manual",
-      "notes": "CosIng #92469 — sheep fat"
-    },
     "tamanu-oil-kamani": {
       "inciName": "Calophyllum Inophyllum (Tamanu) Seed Oil",
       "source": "cosing",
@@ -266,10 +251,6 @@
     },
     "carnauba-wax": {
       "inciName": "Copernicia Cerifera (Carnauba) Wax",
-      "source": "manual"
-    },
-    "japan-wax": {
-      "inciName": "Rhus Succedanea Fruit Wax",
       "source": "manual"
     },
     "pine-tar-lye-calc-only-no-fa": {
@@ -302,11 +283,6 @@
       "inciName": "Luffa Cylindrica Seed Oil",
       "source": "manual",
       "notes": "Loofah seed oil; no dedicated CosIng glossary row"
-    },
-    "macadamia-nut-butter": {
-      "inciName": "Macadamia Integrifolia (Macadamia) Seed Oil",
-      "source": "cosing",
-      "notes": "Butter base; macadamia kernel oil INCI"
     },
     "mafura-butter-trichilia-emetica": {
       "inciName": "Trichilia Emetica Seed Butter",
@@ -381,10 +357,6 @@
     "sea-buckthorn-oil-seed": {
       "inciName": "Hippophae Rhamnoides (Seabuckthorn) Seed Oil",
       "source": "manual"
-    },
-    "sea-buckthorn-oil-seed-and-berry": {
-      "inciName": "Hippophae rhamnoides (Seabuckthorn) Oil",
-      "source": "cosing"
     },
     "soybean-27-5-hydrogenated": {
       "inciName": "Hydrogenated Soybean Oil",

@@ -165,6 +165,13 @@ It also leaves profile *incompleteness* alone. 12 of 118 oils sum below 95%, 5 b
 Incompleteness deflates rather than inflates, so it costs precision, not safety — and
 several of those are butters and blends whose identity is ambiguous in any source.
 
+> **2026-09-19:** those five, plus japan wax (92%), were removed from the catalog outright
+> rather than left short — see `sources/excluded-oils.json`. Three are blends or butters of
+> unknown formula that no analysis can honestly complete, two are animal fats (sheep tallow's
+> stearic looked wrong, not merely truncated), and japan wax's balance is dibasic acids the
+> model has no key for. The sweep's pre-change population is 47,460 cases as a result; the
+> bound's figures did not move.
+
 ## Decisions settled
 
 - **A — scope: absolute thresholds only.** Decided on evidence, not size. The scores cannot
@@ -255,6 +262,13 @@ It also leaves profile *incompleteness* alone. 12 of 118 oils sum below 95%, 5 b
 (sea buckthorn 69, macadamia butter 79, sheep tallow 82, bear tallow 91, avocado butter 92).
 Incompleteness deflates rather than inflates, so it costs precision, not safety — and
 several of those are butters and blends whose identity is ambiguous in any source.
+
+> **2026-09-19:** those five, plus japan wax (92%), were removed from the catalog outright
+> rather than left short — see `sources/excluded-oils.json`. Three are blends or butters of
+> unknown formula that no analysis can honestly complete, two are animal fats (sheep tallow's
+> stearic looked wrong, not merely truncated), and japan wax's balance is dibasic acids the
+> model has no key for. The sweep's pre-change population is 47,460 cases as a result; the
+> bound's figures did not move.
 
 ## Decisions settled
 

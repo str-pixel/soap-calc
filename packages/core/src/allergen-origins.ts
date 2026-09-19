@@ -95,7 +95,6 @@ export const OIL_ALLERGEN_ORIGINS: Readonly<Record<string, readonly AllergenOrig
   'brazil-nut-oil': ['tree-nut'],
   'hazelnut-oil': ['tree-nut'],
   'macadamia-nut-oil': ['tree-nut'],
-  'macadamia-nut-butter': ['tree-nut'],
   'pecan-oil': ['tree-nut'],
   'pistachio-oil': ['tree-nut'],
   'walnut-oil': ['tree-nut'],

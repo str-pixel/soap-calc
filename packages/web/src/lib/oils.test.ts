@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OIL_LOOKUP, PROPERTIES_LOOKUP, oilById, searchOils } from './oils';
+import { OILS, OIL_LOOKUP, PROPERTIES_LOOKUP, SELECTABLE_OILS, oilById, searchOils } from './oils';
 
 describe('searchOils', () => {
   it('includes all ingredients when browsing with an empty query', () => {
@@ -20,24 +20,28 @@ describe('searchOils', () => {
     expect(ids).not.toContain('rapeseed-oil-canola');
   });
 
-  it('hides insufficient-data oils (truncated FA profile) from the picker', () => {
-    // macadamia-nut-butter's profile sums ~79% — a proprietary hardened blend we can't complete.
-    expect(searchOils('').some((oil) => oil.id === 'macadamia-nut-butter')).toBe(false);
-    expect(searchOils('macadamia').map((o) => o.id)).not.toContain('macadamia-nut-butter');
-    // ...but the fully-profiled macadamia oil is still offered.
+  it('keeps the insufficient-data filter, which currently hides nothing', () => {
+    // The mechanism stays: an oil the build flags insufficientData is kept out of the picker.
+    // Since 2026-09-19 no oil carries the flag — the six that did (79-92% profiles) were removed
+    // from the catalog rather than hidden, so every shipped oil is selectable.
+    expect(SELECTABLE_OILS.length).toBe(OILS.length);
     expect(searchOils('macadamia').map((o) => o.id)).toContain('macadamia-nut-oil');
+    expect(searchOils('macadamia').map((o) => o.id)).not.toContain('macadamia-nut-butter');
   });
 });
 
-describe('insufficient-data oils still resolve for saved recipes', () => {
-  // Hidden from the picker, but a recipe saved before we hid them must still calculate — so the
-  // id must resolve in oilById and the lye/property lookups the core calc reads directly.
-  it.each(['macadamia-nut-butter', 'avocado-butter', 'sea-buckthorn-oil-seed-and-berry'])(
-    'resolves %s by id despite being hidden from search',
+describe('a removed oil no longer resolves, and fails loudly rather than silently', () => {
+  // These three were hidden from the picker but kept resolvable for saved recipes until
+  // 2026-09-19, when they were removed from the catalog outright. A recipe saved with one of
+  // them now hits an oil the app does not know: the core lye calc reports "Unknown oil id" for
+  // that line instead of guessing, and the display name falls back to the raw id so the reader
+  // can see which line it is. That is the same fate as the eighteen oils excluded before them.
+  it.each(['macadamia-nut-butter', 'avocado-butter', 'sea-buckthorn-oil-seed-and-berry', 'tallow-sheep', 'tallow-bear', 'japan-wax'])(
+    '%s is gone from every lookup',
     (id) => {
-      expect(oilById(id)?.id).toBe(id);
-      expect(OIL_LOOKUP[id]?.id).toBe(id);
-      expect(PROPERTIES_LOOKUP[id]?.id).toBe(id);
+      expect(oilById(id)).toBeUndefined();
+      expect(OIL_LOOKUP[id]).toBeUndefined();
+      expect(PROPERTIES_LOOKUP[id]).toBeUndefined();
     },
   );
 });

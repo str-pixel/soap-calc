@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-16T16:24:26.653Z",
+  "generatedAt": "2026-09-19T09:01:07.941Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -164,29 +164,6 @@
         "myristic": 1,
         "palmitic": 14,
         "linolenic": 1
-      }
-    },
-    {
-      "id": "avocado-butter",
-      "displayName": "Avocado Butter",
-      "aliases": [
-        "avocado butter"
-      ],
-      "inciName": "Persea Gratissima (Avocado) Oil",
-      "category": "triglyceride",
-      "sapKoh": 0.187,
-      "sapNaoh": 0.13333333333333333,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 67,
-      "ins": 120,
-      "insufficientData": true,
-      "fattyAcids": {
-        "oleic": 53,
-        "stearic": 10,
-        "linoleic": 6,
-        "palmitic": 21,
-        "linolenic": 2
       }
     },
     {
@@ -1001,28 +978,6 @@
       }
     },
     {
-      "id": "japan-wax",
-      "displayName": "Japan Wax",
-      "aliases": [
-        "japan wax"
-      ],
-      "inciName": "Rhus Succedanea Fruit Wax",
-      "category": "triglyceride",
-      "sapKoh": 0.215,
-      "sapNaoh": 0.1532976827094474,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 11,
-      "ins": 204,
-      "insufficientData": true,
-      "fattyAcids": {
-        "oleic": 4,
-        "stearic": 7,
-        "myristic": 1,
-        "palmitic": 80
-      }
-    },
-    {
       "id": "jatropha-oil-soapnut-seed-oil",
       "displayName": "Jatropha Oil (soapnut seed)",
       "aliases": [
@@ -1274,30 +1229,6 @@
         "eicosenoic": 0.09,
         "lignoceric": 0.09,
         "myristic": 0.07
-      }
-    },
-    {
-      "id": "macadamia-nut-butter",
-      "displayName": "Macadamia Nut Butter",
-      "aliases": [
-        "macadamia nut butter"
-      ],
-      "inciName": "Macadamia Integrifolia (Macadamia) Seed Oil",
-      "category": "triglyceride",
-      "sapKoh": 0.188,
-      "sapNaoh": 0.13404634581105168,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 70,
-      "ins": 118,
-      "insufficientData": true,
-      "fattyAcids": {
-        "oleic": 56,
-        "stearic": 12,
-        "linoleic": 3,
-        "myristic": 1,
-        "palmitic": 6,
-        "linolenic": 1
       }
     },
     {
@@ -2438,28 +2369,6 @@
       }
     },
     {
-      "id": "sea-buckthorn-oil-seed-and-berry",
-      "displayName": "Sea Buckthorn Oil, seed and berry",
-      "aliases": [
-        "sea buckthorn oil seed and berry"
-      ],
-      "inciName": "Hippophae rhamnoides (Seabuckthorn) Oil",
-      "category": "triglyceride",
-      "sapKoh": 0.183,
-      "sapNaoh": 0.13048128342245988,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 86,
-      "ins": 97,
-      "insufficientData": true,
-      "fattyAcids": {
-        "oleic": 28,
-        "stearic": 1,
-        "linoleic": 10,
-        "palmitic": 30
-      }
-    },
-    {
       "id": "sesame-oil",
       "displayName": "Sesame Oil",
       "aliases": [
@@ -2650,29 +2559,6 @@
       }
     },
     {
-      "id": "tallow-bear",
-      "displayName": "Tallow Bear",
-      "aliases": [
-        "tallow bear"
-      ],
-      "inciName": "Tallow",
-      "category": "triglyceride",
-      "sapKoh": 0.1946,
-      "sapNaoh": 0.13875222816399285,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 92,
-      "ins": 100,
-      "insufficientData": true,
-      "fattyAcids": {
-        "oleic": 70,
-        "stearic": 3,
-        "linoleic": 9,
-        "myristic": 2,
-        "palmitic": 7
-      }
-    },
-    {
       "id": "tallow-beef",
       "displayName": "Tallow Beef",
       "aliases": [
@@ -2740,30 +2626,6 @@
         "linoleic": 2,
         "myristic": 11,
         "palmitic": 23
-      }
-    },
-    {
-      "id": "tallow-sheep",
-      "displayName": "Tallow Sheep",
-      "aliases": [
-        "tallow sheep"
-      ],
-      "inciName": "Tallow",
-      "category": "triglyceride",
-      "sapKoh": 0.194,
-      "sapNaoh": 0.13832442067736184,
-      "confidence": "legacy_only",
-      "propertiesAvailable": true,
-      "iodine": 54,
-      "ins": 156,
-      "insufficientData": true,
-      "fattyAcids": {
-        "oleic": 26,
-        "lauric": 4,
-        "stearic": 13,
-        "linoleic": 5,
-        "myristic": 10,
-        "palmitic": 24
       }
     },
     {

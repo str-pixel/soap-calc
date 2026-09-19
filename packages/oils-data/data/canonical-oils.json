@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-16T16:24:26.653Z",
+  "generatedAt": "2026-09-19T09:01:07.941Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -360,47 +360,6 @@
       ],
       "primarySource": "fnwl",
       "confidence": "verified"
-    },
-    {
-      "id": "avocado-butter",
-      "displayName": "Avocado Butter",
-      "aliases": [
-        "avocado butter"
-      ],
-      "inciName": "Persea Gratissima (Avocado) Oil",
-      "category": "triglyceride",
-      "sapKoh": 0.187,
-      "sapNaoh": 0.13333333333333333,
-      "sapMgKohPerGram": 187,
-      "iodine": 67,
-      "ins": 120,
-      "fattyAcids": {
-        "oleic": 53,
-        "stearic": 10,
-        "linoleic": 6,
-        "palmitic": 21,
-        "linolenic": 2
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.187,
-          "sapNaoh": 0.13333333333333333,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        },
-        {
-          "source": "manual",
-          "notes": "INCI via supplemental id — Butter base; triglyceride INCI is avocado oil"
-        },
-        {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Persea Gratissima (Avocado) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
     },
     {
       "id": "avocado-oil",
@@ -2332,46 +2291,6 @@
       "confidence": "legacy_only"
     },
     {
-      "id": "japan-wax",
-      "displayName": "Japan Wax",
-      "aliases": [
-        "japan wax"
-      ],
-      "inciName": "Rhus Succedanea Fruit Wax",
-      "category": "triglyceride",
-      "sapKoh": 0.215,
-      "sapNaoh": 0.1532976827094474,
-      "sapMgKohPerGram": 215,
-      "iodine": 11,
-      "ins": 204,
-      "fattyAcids": {
-        "oleic": 4,
-        "stearic": 7,
-        "myristic": 1,
-        "palmitic": 80
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.215,
-          "sapNaoh": 0.1532976827094474,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        },
-        {
-          "source": "manual",
-          "notes": "INCI via supplemental id"
-        },
-        {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Rhus Succedanea Fruit Wax\" verified against the EU CosIng Ingredients Inventory snapshot"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
       "id": "jatropha-oil-soapnut-seed-oil",
       "displayName": "Jatropha Oil (soapnut seed)",
       "aliases": [
@@ -2884,48 +2803,6 @@
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Luffa Cylindrica Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
-      "id": "macadamia-nut-butter",
-      "displayName": "Macadamia Nut Butter",
-      "aliases": [
-        "macadamia nut butter"
-      ],
-      "inciName": "Macadamia Integrifolia (Macadamia) Seed Oil",
-      "category": "triglyceride",
-      "sapKoh": 0.188,
-      "sapNaoh": 0.13404634581105168,
-      "sapMgKohPerGram": 188,
-      "iodine": 70,
-      "ins": 118,
-      "fattyAcids": {
-        "oleic": 56,
-        "stearic": 12,
-        "linoleic": 3,
-        "myristic": 1,
-        "palmitic": 6,
-        "linolenic": 1
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.188,
-          "sapNaoh": 0.13404634581105168,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        },
-        {
-          "source": "manual",
-          "notes": "INCI via supplemental id — Butter base; macadamia kernel oil INCI"
-        },
-        {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Macadamia Integrifolia (Macadamia) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "legacy_catalog",
@@ -5451,46 +5328,6 @@
       "confidence": "legacy_only"
     },
     {
-      "id": "sea-buckthorn-oil-seed-and-berry",
-      "displayName": "Sea Buckthorn Oil, seed and berry",
-      "aliases": [
-        "sea buckthorn oil seed and berry"
-      ],
-      "inciName": "Hippophae rhamnoides (Seabuckthorn) Oil",
-      "category": "triglyceride",
-      "sapKoh": 0.183,
-      "sapNaoh": 0.13048128342245988,
-      "sapMgKohPerGram": 183,
-      "iodine": 86,
-      "ins": 97,
-      "fattyAcids": {
-        "oleic": 28,
-        "stearic": 1,
-        "linoleic": 10,
-        "palmitic": 30
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.183,
-          "sapNaoh": 0.13048128342245988,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        },
-        {
-          "source": "manual",
-          "notes": "INCI via supplemental id"
-        },
-        {
-          "source": "cosing",
-          "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Hippophae rhamnoides (Seabuckthorn) Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
       "id": "sesame-oil",
       "displayName": "Sesame Oil",
       "aliases": [
@@ -5944,42 +5781,6 @@
       "confidence": "verified"
     },
     {
-      "id": "tallow-bear",
-      "displayName": "Tallow Bear",
-      "aliases": [
-        "tallow bear"
-      ],
-      "inciName": "Tallow",
-      "category": "triglyceride",
-      "sapKoh": 0.1946,
-      "sapNaoh": 0.13875222816399285,
-      "sapMgKohPerGram": 194.6,
-      "iodine": 92,
-      "ins": 100,
-      "fattyAcids": {
-        "oleic": 70,
-        "stearic": 3,
-        "linoleic": 9,
-        "myristic": 2,
-        "palmitic": 7
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.1946,
-          "sapNaoh": 0.13875222816399285,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        },
-        {
-          "source": "manual",
-          "notes": "INCI via supplemental id — CosIng #92469 — no species-specific bear tallow INCI; generic tallow"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
       "id": "tallow-beef",
       "displayName": "Tallow Beef",
       "aliases": [
@@ -6104,43 +5905,6 @@
         {
           "source": "manual",
           "notes": "INCI via supplemental id — CosIng #92469 — no goat-specific INCI; generic tallow"
-        }
-      ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
-    },
-    {
-      "id": "tallow-sheep",
-      "displayName": "Tallow Sheep",
-      "aliases": [
-        "tallow sheep"
-      ],
-      "inciName": "Tallow",
-      "category": "triglyceride",
-      "sapKoh": 0.194,
-      "sapNaoh": 0.13832442067736184,
-      "sapMgKohPerGram": 194,
-      "iodine": 54,
-      "ins": 156,
-      "fattyAcids": {
-        "oleic": 26,
-        "lauric": 4,
-        "stearic": 13,
-        "linoleic": 5,
-        "myristic": 10,
-        "palmitic": 24
-      },
-      "propertiesAvailable": true,
-      "sources": [
-        {
-          "source": "legacy_catalog",
-          "sapKoh": 0.194,
-          "sapNaoh": 0.13832442067736184,
-          "notes": "Imported from soap_oils.json (legacy calculator catalog)"
-        },
-        {
-          "source": "manual",
-          "notes": "INCI via supplemental id — CosIng #92469 — sheep fat"
         }
       ],
       "primarySource": "legacy_catalog",

@@ -23,7 +23,6 @@ import { OILS, PROPERTIES_LOOKUP } from './oils';
 const PUBLISHED_PUFA: Record<string, readonly [number, number, number]> = {
   'abyssinian-oil': [9, 13, 20],
   'oleic-acid': [3.5, 10, 22],
-  'japan-wax': [0, 1, 10],
   'jojoba-oil': [0, 0, 3],
   'lanolin-liquid-wax': [0, 0, 2.1],
   'soybean-fully-hydrogenated': [0, 0.3, 1.2],
@@ -62,13 +61,15 @@ type Case = {
 };
 
 /**
- * The seven ingredients the SAP-led category fix moved from "no data" to "has data". They matter
+ * The ingredients the SAP-led category fix moved from "no data" to "has data". (Japan wax was
+ * among them and was then removed from the catalog on 2026-09-19 — its profile could not be
+ * completed, the balance being dibasic acids the model has no key for — so it is neither.) They matter
  * to this file because they CHANGE THE POPULATION: sweeping the catalog before and after the fix
  * measures two different sets of recipes, and comparing those two numbers is meaningless. Both
  * populations are swept below, each with both readings, so every quoted figure is like-for-like.
  */
 const RECLASSIFIED = [
-  'japan-wax', 'soybean-fully-hydrogenated', 'stearic-acid',
+  'soybean-fully-hydrogenated', 'stearic-acid',
   'lauric-acid', 'oleic-acid', 'palmitic-acid', 'myristic-acid',
   // Abyssinian came back too, but by a different route: SAP reclassified it as the triglyceride
   // it is, and a cited PROFILE_BACKFILL then replaced the 38%-complete legacy row that had kept
@@ -205,12 +206,19 @@ describe('the rancidity reading, measured over the catalog', () => {
  */
 describe('before and after, over one identical case set', () => {
   it('sweeps the pre-change population', () => {
-    expect(PRE_CHANGE_CASES.length).toBe(53_100);
+    // 113 charted oils x 14 unprofiled x 10 ratios x 3 published values. It was 118 x 15 =
+    // 53,100 until 2026-09-19, when six oils with profiles too short to trust were removed
+    // from the catalog outright rather than kept: the population is smaller, the comparison
+    // is still like-for-like.
+    expect(PRE_CHANGE_CASES.length).toBe(47_460);
   });
 
   it('reproduces the figures the design doc quotes', () => {
-    expect(near(rate(PRE_CHANGE_CASES, (c) => c.before, 'eq'), 83.2)).toBe(true);
-    expect(near(rate(PRE_CHANGE_CASES, (c) => c.before, 'over'), 16.3)).toBe(true);
+    // 83.2 / 16.3 / 0.5 on the 118-oil catalog; the six removed on 2026-09-19 were low-PUFA
+    // charted oils, so their loss nudged the old reading's false-alarm share up. The bound's
+    // figures below did not move at all.
+    expect(near(rate(PRE_CHANGE_CASES, (c) => c.before, 'eq'), 82.4)).toBe(true);
+    expect(near(rate(PRE_CHANGE_CASES, (c) => c.before, 'over'), 17.1)).toBe(true);
     expect(near(rate(PRE_CHANGE_CASES, (c) => c.before, 'under'), 0.5)).toBe(true);
 
     expect(near(rate(PRE_CHANGE_CASES, (c) => c.after, 'eq'), 97.6)).toBe(true);

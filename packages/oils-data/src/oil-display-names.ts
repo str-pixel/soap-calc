@@ -10,7 +10,6 @@
 export const OIL_DISPLAY_NAMES: Record<string, string> = {
   'andiroba-oil-karaba-crabwood': 'Andiroba Oil (karaba, crabwood)',
   'apricot-kernal-oil': 'Apricot Kernel Oil', // misspelling "Kernal" → also id-renamed
-  'avocado-butter': 'Avocado Butter', // casing
   'cherry-kern1-oil-p-avium': 'Cherry Kernel Oil (Prunus avium)', // truncated "Kern1" → id-renamed
   'cherry-kern2-oil-p-cerasus': 'Cherry Kernel Oil (Prunus cerasus)', // truncated "Kern2" → id-renamed
   'coconut-oil-76': 'Coconut Oil, 76°F', // "76 deg"

@@ -28,24 +28,13 @@ const COMPLETENESS_THRESHOLD_PCT = MIN_MAPPED_PERCENT;
  * profile and needs backfill/review; a REMOVED id means a backfill succeeded — update this list.
  */
 const KNOWN_INCOMPLETE_PROFILES = new Set<string>([
-  // rapeseed-oil-canola was here — Phase 5 gap-filled it as high-erucic rapeseed (see PROFILE_BACKFILL).
-  // mustard-oil-kachi-ghani — Phase 5 gap-filled to 100% (high-erucic, Codex + literature).
-  // pracaxi-seed-oil — Phase 5 FULL REPLACE (was 54%, legacy dropped ~31% C22:0/C24:0); see PROFILE_BACKFILL.
-  'sea-buckthorn-oil-seed-and-berry',
-  // soybean-27-5-hydrogenated — Phase 5 backfill via the new elaidic (trans-C18:1) key; see PROFILE_BACKFILL.
-  'macadamia-nut-butter',
-  'tallow-sheep',
-  // coconut-oil-92 — Phase 5 backfill (hydrogenation transform of CODEX_COCONUT); restored C8/C10 + fixed the
-  // profile to reflect hydrogenation. See PROFILE_BACKFILL.
-  'tallow-bear',
-  // avocado-oil was here — Phase 5 backfilled it to 100% from USDA FDC (see PROFILE_BACKFILL).
-  'avocado-butter',
-  // japan-wax joined this list when SAP reclassified it from "wax" to the triglyceride it is
-  // (215 mg KOH/g). Its 92% is NOT the legacy 8-acid truncation above and no backfill will clear
-  // it: the balance is dibasic acids (japanic C21, eicosanedioic C20) that our model has no key
-  // for, since they are diacids rather than fatty acids. Leaving it short is the honest reading —
-  // it understates rather than inflates, which the lower-bound thresholds are safe against.
-  'japan-wax',
+  // EMPTY since 2026-09-19, and meant to stay so. The six that remained — sea buckthorn seed-and-
+  // berry (69%), macadamia nut butter (79), sheep tallow (82), bear tallow (91), avocado butter and
+  // japan wax (92) — were removed from the catalog rather than kept short: three were blends or
+  // butters of unknown formula, which no published analysis can honestly complete; two were animal
+  // fats, one with a stearic figure that looked wrong rather than truncated; and japan wax's balance
+  // is dibasic acids the model has no key for. See sources/excluded-oils.json. A NEW id appearing
+  // here means a freshly-added oil shipped a truncated profile: backfill it or exclude it.
 ]);
 
 describe('fatty-acid profile completeness (catalog guard)', () => {

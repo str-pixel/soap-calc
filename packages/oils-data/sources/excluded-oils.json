@@ -1,5 +1,5 @@
 {
-  "notes": "Legacy catalog entries removed from the calculator — commercial blends and niche animal fats without reliable public SAP/INCI data.",
+  "notes": "Legacy catalog entries removed from the calculator — commercial blends and niche animal fats without reliable public SAP/INCI data; and, since 2026-09-19, the six oils whose fatty-acid profiles were too short to trust (69–92% mapped) and could not honestly be completed: three blends/butters of unknown formula, two animal fats (one with a stearic figure that looked wrong, not merely truncated), and japan wax, whose balance is dibasic acids the model has no key for.",
   "oilIds": [
     "linseed-oil-flax",
     "chicken-fat",
@@ -18,6 +18,12 @@
     "salmon-oil",
     "soapquick-conventional",
     "soapquick",
-    "walmart-gv-shortening-tallow-palm"
+    "walmart-gv-shortening-tallow-palm",
+    "japan-wax",
+    "sea-buckthorn-oil-seed-and-berry",
+    "macadamia-nut-butter",
+    "avocado-butter",
+    "tallow-sheep",
+    "tallow-bear"
   ]
 }
