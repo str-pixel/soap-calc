@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-19T09:01:07.941Z",
+  "generatedAt": "2026-09-19T20:39:57.651Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -1691,11 +1691,11 @@
       ],
       "inciName": "Attalea Cohune Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.246,
-      "sapNaoh": 0.17540106951871656,
-      "sapMgKohPerGram": 246,
-      "iodine": 11,
-      "ins": 235,
+      "sapKoh": 0.253,
+      "sapNaoh": 0.1803921568627451,
+      "sapMgKohPerGram": 253,
+      "iodine": 10,
+      "ins": 243,
       "fattyAcids": {
         "lauric": 46.5,
         "myristic": 16,
@@ -1721,9 +1721,9 @@
         },
         {
           "source": "manual",
-          "sapKoh": 0.246,
-          "sapNaoh": 0.17540106951871656,
-          "notes": "Corrected: legacy SAP (0.205) is impossibly low for a lauric palm-kernel oil — below the saponification value of any lauric composition, and inconsistent with cohune’s own fatty-acid profile (which derives ~0.246). Replaced with the Phase-5-backfilled-profile-derived 0.246, which matches measured relatives (babassu 0.237, indaiá 0.241). No FNWL match, so the correction applies here. Legacy iodine (30) is likewise high vs the profile-derived ~11 (cohune is ~96% saturated); corrected to 11 so the recomputed INS is not re-poisoned."
+          "sapKoh": 0.253,
+          "sapNaoh": 0.1803921568627451,
+          "notes": "Corrected: legacy SAP (0.205) is impossibly low for a lauric palm-kernel oil — below the saponification value of any lauric composition, and inconsistent with cohune’s own fatty-acid profile (which derives ~0.253 with the mole-weighted mean; the 0.246 shipped until 2026-09-19 came from the mass-weighted mean). 0.253 sits beside the catalog’s FNWL-verified lauric relatives (babassu 0.251, coconut 0.258). No FNWL match, so the correction applies here. Legacy iodine (30) is likewise high vs the profile-derived ~10 (cohune is ~96% saturated); corrected to 10 so the recomputed INS is not re-poisoned."
         },
         {
           "source": "manual",

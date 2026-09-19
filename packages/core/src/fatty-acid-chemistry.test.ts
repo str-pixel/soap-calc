@@ -99,3 +99,44 @@ describe('iodine renormalization (deep-review)', () => {
     expect(at100!.iodineValue).toBeLessThan(87);
   });
 });
+
+describe('mixture stoichiometry (mole-weighted mean molar mass)', () => {
+  // Sci:2563: an oil's SAP "will depend on the percentages of its tags and their individual
+  // saponification values" — a mass mixture's SAP is the mass-weighted mean of the components'.
+  // Only the mole-weighted (harmonic) mean over a WEIGHT-% fatty-acid profile reproduces that.
+  const backbone = GLYCEROL_MOLAR_MASS - 3 * WATER_MOLAR_MASS;
+  const lauricMw = 200.32;
+  const stearicMw = 284.48;
+  const oleicMw = 282.46;
+  const trilaurinMw = 3 * lauricMw + backbone;
+  const tristearinMw = 3 * stearicMw + backbone;
+  const trioleinMw = 3 * oleicMw + backbone;
+
+  /** Equal MASSES of two pure triglycerides, expressed as the fatty-acid weight-% profile the
+   * catalog stores (each TG contributes 3·MW_fa / MW_tg of its mass as fatty acid). */
+  function equalMassProfile(a: { acid: string; faMw: number; tgMw: number }, b: { acid: string; faMw: number; tgMw: number }) {
+    const faA = (0.5 * 3 * a.faMw) / a.tgMw;
+    const faB = (0.5 * 3 * b.faMw) / b.tgMw;
+    const total = faA + faB;
+    return { [a.acid]: (100 * faA) / total, [b.acid]: (100 * faB) / total };
+  }
+
+  it('derives the mass-weighted mean SAP of equal masses of trilaurin and tristearin', () => {
+    const expected = ((3 * KOH_MOLAR_MASS) / trilaurinMw + (3 * KOH_MOLAR_MASS) / tristearinMw) / 2;
+    const profile = equalMassProfile(
+      { acid: 'lauric', faMw: lauricMw, tgMw: trilaurinMw },
+      { acid: 'stearic', faMw: stearicMw, tgMw: tristearinMw },
+    );
+    expect(deriveChemistryFromProfile(profile)!.sapKoh).toBeCloseTo(expected, 6);
+  });
+
+  it('derives the mass-weighted mean iodine value of equal masses of trilaurin and triolein', () => {
+    // Trilaurin has no double bond; triolein's oil-basis IV is 3·253.809·100 / MW_tg.
+    const expected = (0 + (3 * 253.809 * 100) / trioleinMw) / 2;
+    const profile = equalMassProfile(
+      { acid: 'lauric', faMw: lauricMw, tgMw: trilaurinMw },
+      { acid: 'oleic', faMw: oleicMw, tgMw: trioleinMw },
+    );
+    expect(deriveChemistryFromProfile(profile)!.iodineValue).toBeCloseTo(expected, 6);
+  });
+});

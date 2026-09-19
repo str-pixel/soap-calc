@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-19T09:01:07.941Z",
+  "generatedAt": "2026-09-19T20:39:57.651Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -735,12 +735,12 @@
       ],
       "inciName": "Attalea Cohune Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.246,
-      "sapNaoh": 0.17540106951871656,
+      "sapKoh": 0.253,
+      "sapNaoh": 0.1803921568627451,
       "confidence": "estimated",
       "propertiesAvailable": true,
-      "iodine": 11,
-      "ins": 235,
+      "iodine": 10,
+      "ins": 243,
       "fattyAcids": {
         "lauric": 46.5,
         "myristic": 16,

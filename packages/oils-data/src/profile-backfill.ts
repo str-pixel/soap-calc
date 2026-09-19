@@ -41,8 +41,8 @@ export type ProfileBackfill = {
  * 100% FA (C6 caproic, ~0.3%, has no acid key and is dropped). Single source of truth reused by
  * coconut-oil-76 and the coconut-derived entries (monoi = coconut + tiare fragrance; aloe butter =
  * coconut + aloe extract), so they can't silently diverge. NOT for coconut-oil-92, which is
- * hydrogenated (IV ~3 vs this profile's ~10). FA-derived SAP ≈ 0.247 (runs ~4% below the measured
- * ~0.257 — the known lauric-oil range-midpoint effect), so consuming entries keep their measured SAP.
+ * hydrogenated (IV ~3 vs this profile's ~10). FA-derived SAP ≈ 0.254 (1.3% below the measured
+ * ~0.257 — within the 8% gate), so consuming entries keep their measured SAP.
  */
 /**
  * Coconut C8–C16 medium-chain block. Hydrogenation conserves chain length, so this is IDENTICAL
