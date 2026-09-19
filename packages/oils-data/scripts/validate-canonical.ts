@@ -91,6 +91,16 @@ function main() {
       errors.push(`${oil.id}: sapMgKohPerGram inconsistent with sapKoh`);
     }
 
+    // INS is a derived index — SAP (mg KOH/g) minus iodine value, the repo's one definition
+    // (fatty-acid-chemistry.ts, the SAP and iodine correction paths in build-canonical).
+    // Tars are exempt: no triglyceride, placeholder 0/0, and the web excludes them.
+    if (oil.iodine !== undefined && oil.ins !== undefined && oil.category !== 'tar') {
+      const expectedIns = Math.round(oil.sapMgKohPerGram - oil.iodine);
+      if (oil.ins !== expectedIns) {
+        errors.push(`${oil.id}: ins ${oil.ins} != round(sapMgKohPerGram − iodine) = ${expectedIns}`);
+      }
+    }
+
     const fnwlSource = oil.sources.find((s) => s.source === 'fnwl');
     const ldgSource = oil.sources.find((s) => s.source === 'ldg');
     const cosingSource = oil.sources.find((s) => s.source === 'cosing');

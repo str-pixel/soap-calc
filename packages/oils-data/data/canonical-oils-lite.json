@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-19T20:39:57.651Z",
+  "generatedAt": "2026-09-19T21:06:13.583Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -67,7 +67,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 99,
-      "ins": 97,
+      "ins": 96,
       "fattyAcids": {
         "oleic": 71,
         "linoleic": 18,
@@ -87,7 +87,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": true,
       "iodine": 9,
-      "ins": 241,
+      "ins": 231,
       "sourceType": "derived",
       "fattyAcids": {
         "lauric": 47.6,
@@ -137,7 +137,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 100,
-      "ins": 91,
+      "ins": 90,
       "fattyAcids": {
         "oleic": 66,
         "linoleic": 27,
@@ -179,7 +179,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 86,
-      "ins": 99,
+      "ins": 102,
       "fattyAcids": {
         "oleic": 57,
         "linoleic": 18,
@@ -202,7 +202,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 15,
-      "ins": 230,
+      "ins": 236,
       "fattyAcids": {
         "lauric": 47.4,
         "myristic": 15.6,
@@ -312,7 +312,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 135,
-      "ins": 55,
+      "ins": 51,
       "fattyAcids": {
         "linoleic": 36.6,
         "oleic": 21.7,
@@ -338,7 +338,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 100,
-      "ins": 90,
+      "ins": 91,
       "fattyAcids": {
         "oleic": 39,
         "stearic": 11,
@@ -387,7 +387,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 70,
-      "ins": 153,
+      "ins": 143,
       "fattyAcids": {
         "oleic": 71,
         "stearic": 2,
@@ -452,7 +452,7 @@
       "confidence": "estimated",
       "propertiesAvailable": false,
       "iodine": 32,
-      "ins": 12
+      "ins": 17
     },
     {
       "id": "canola-oil",
@@ -467,7 +467,7 @@
       "confidence": "estimated",
       "propertiesAvailable": true,
       "iodine": 110,
-      "ins": 56,
+      "ins": 76,
       "fattyAcids": {
         "oleic": 61,
         "stearic": 2,
@@ -615,7 +615,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 10,
-      "ins": 258,
+      "ins": 248,
       "fattyAcids": {
         "lauric": 47.6,
         "myristic": 18.3,
@@ -643,7 +643,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 3,
-      "ins": 258,
+      "ins": 255,
       "sourceType": "derived",
       "fattyAcids": {
         "lauric": 47.6,
@@ -765,7 +765,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 117,
-      "ins": 69,
+      "ins": 73,
       "fattyAcids": {
         "oleic": 32,
         "stearic": 2,
@@ -787,7 +787,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 108,
-      "ins": 89,
+      "ins": 84,
       "fattyAcids": {
         "oleic": 18,
         "stearic": 13,
@@ -859,7 +859,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 160,
-      "ins": 30,
+      "ins": 28,
       "fattyAcids": {
         "linoleic": 73.9,
         "linolenic": 9.2,
@@ -884,7 +884,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 180,
-      "ins": -6,
+      "ins": 11,
       "fattyAcids": {
         "oleic": 27,
         "stearic": 3,
@@ -906,7 +906,7 @@
       "confidence": "estimated",
       "propertiesAvailable": true,
       "iodine": 131,
-      "ins": 66,
+      "ins": 62,
       "fattyAcids": {
         "oleic": 20,
         "stearic": 4,
@@ -948,7 +948,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 165,
-      "ins": 39,
+      "ins": 26,
       "fattyAcids": {
         "oleic": 12,
         "stearic": 2,
@@ -1011,7 +1011,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": false,
       "iodine": 83,
-      "ins": 11
+      "ins": 9
     },
     {
       "id": "karanja-oil",
@@ -1026,7 +1026,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 85,
-      "ins": 98,
+      "ins": 105,
       "fattyAcids": {
         "oleic": 56.6,
         "linoleic": 14.1,
@@ -1095,7 +1095,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 168,
-      "ins": 24,
+      "ins": 22,
       "fattyAcids": {
         "oleic": 20,
         "stearic": 2,
@@ -1117,7 +1117,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": false,
       "iodine": 27,
-      "ins": 83
+      "ins": 79
     },
     {
       "id": "myristic-acid",
@@ -1150,7 +1150,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": true,
       "iodine": 57,
-      "ins": 139,
+      "ins": 141,
       "fattyAcids": {
         "oleic": 46,
         "stearic": 13,
@@ -1337,7 +1337,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 73,
-      "ins": 119,
+      "ins": 124,
       "fattyAcids": {
         "oleic": 75,
         "stearic": 7,
@@ -1428,7 +1428,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 68,
-      "ins": 124,
+      "ins": 127,
       "fattyAcids": {
         "oleic": 74.4,
         "behenic": 6.1,
@@ -1503,7 +1503,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 101,
-      "ins": 72,
+      "ins": 71,
       "fattyAcids": {
         "oleic": 18,
         "linoleic": 14,
@@ -1856,7 +1856,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 108,
-      "ins": 87,
+      "ins": 82,
       "fattyAcids": {
         "oleic": 65,
         "stearic": 2,
@@ -1878,7 +1878,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 92,
-      "ins": 99,
+      "ins": 98,
       "fattyAcids": {
         "oleic": 56,
         "stearic": 3,
@@ -1921,7 +1921,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 196,
-      "ins": -6,
+      "ins": -3,
       "fattyAcids": {
         "oleic": 15,
         "stearic": 2,
@@ -1959,7 +1959,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": true,
       "iodine": 95,
-      "ins": 92,
+      "ins": 91,
       "fattyAcids": {
         "oleic": 63,
         "stearic": 1,
@@ -2073,7 +2073,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 128,
-      "ins": 67,
+      "ins": 65,
       "fattyAcids": {
         "linoleic": 50.92,
         "oleic": 26.34,
@@ -2125,7 +2125,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 163,
-      "ins": 24,
+      "ins": 25,
       "fattyAcids": {
         "oleic": 13,
         "linoleic": 55,
@@ -2146,7 +2146,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": true,
       "iodine": 53,
-      "ins": 145,
+      "ins": 146,
       "fattyAcids": {
         "oleic": 39,
         "stearic": 5,
@@ -2168,7 +2168,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 100,
-      "ins": 87,
+      "ins": 90,
       "fattyAcids": {
         "oleic": 38,
         "stearic": 3,
@@ -2191,7 +2191,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 188,
-      "ins": 10,
+      "ins": 1,
       "fattyAcids": {
         "oleic": 12,
         "stearic": 2,
@@ -2235,7 +2235,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 145,
-      "ins": 47,
+      "ins": 43,
       "fattyAcids": {
         "oleic": 15,
         "linoleic": 75,
@@ -2255,7 +2255,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 93,
-      "ins": 97,
+      "ins": 99,
       "fattyAcids": {
         "oleic": 77,
         "stearic": 2,
@@ -2381,7 +2381,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 110,
-      "ins": 81,
+      "ins": 83,
       "fattyAcids": {
         "oleic": 40,
         "stearic": 5,
@@ -2402,7 +2402,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 59,
-      "ins": 116,
+      "ins": 121,
       "fattyAcids": {
         "oleic": 48,
         "stearic": 40,
@@ -2423,7 +2423,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 83,
-      "ins": 102,
+      "ins": 100,
       "fattyAcids": {
         "oleic": 73,
         "stearic": 10,
@@ -2444,7 +2444,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 131,
-      "ins": 61,
+      "ins": 59,
       "fattyAcids": {
         "oleic": 24,
         "stearic": 5,
@@ -2527,7 +2527,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 133,
-      "ins": 63,
+      "ins": 58,
       "fattyAcids": {
         "oleic": 16,
         "stearic": 4,
@@ -2549,7 +2549,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 83,
-      "ins": 106,
+      "ins": 108,
       "fattyAcids": {
         "oleic": 83,
         "stearic": 4,
@@ -2571,7 +2571,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 45,
-      "ins": 147,
+      "ins": 151,
       "fattyAcids": {
         "oleic": 36,
         "lauric": 2,
@@ -2595,7 +2595,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": true,
       "iodine": 31,
-      "ins": 166,
+      "ins": 162,
       "fattyAcids": {
         "oleic": 30,
         "stearic": 24,
@@ -2641,7 +2641,7 @@
       "confidence": "estimated",
       "propertiesAvailable": true,
       "iodine": 111,
-      "ins": 82,
+      "ins": 84,
       "fattyAcids": {
         "oleic": 34,
         "stearic": 13,
@@ -2663,7 +2663,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": true,
       "iodine": 13,
-      "ins": 175,
+      "ins": 225,
       "fattyAcids": {
         "lauric": 47.5,
         "myristic": 26,
@@ -2688,7 +2688,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 145,
-      "ins": 45,
+      "ins": 48,
       "fattyAcids": {
         "linoleic": 60,
         "oleic": 18.5,
@@ -2713,7 +2713,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 119,
-      "ins": 71,
+      "ins": 73,
       "fattyAcids": {
         "oleic": 18,
         "stearic": 10,
@@ -2735,7 +2735,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": true,
       "iodine": 128,
-      "ins": 58,
+      "ins": 55,
       "fattyAcids": {
         "oleic": 17,
         "stearic": 2,
@@ -2756,7 +2756,7 @@
       "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 95,
-      "ins": 97,
+      "ins": 98,
       "fattyAcids": {
         "oleic": 45,
         "stearic": 5,
@@ -2799,7 +2799,7 @@
       "confidence": "legacy_only",
       "propertiesAvailable": false,
       "iodine": 11,
-      "ins": 84
+      "ins": 76
     },
     {
       "id": "ucuuba-butter",

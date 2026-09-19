@@ -409,6 +409,16 @@ function main() {
       report.iodineCorrected.push(leg.name);
     }
 
+    // INS = round(SAP mg KOH/g − iodine): the definition the two correction paths above
+    // already apply. Until 2026-09-19 it was applied ONLY there, and every other oil kept
+    // the legacy catalog's INS — a figure that catalog computed from ITS SAP and iodine.
+    // Once resolution moved the SAP (45 FNWL oils) the shipped INS no longer matched the
+    // shipped SAP and iodine (54 of 127 oils; tucuma read 175 where its own numbers give
+    // 225). Tars keep their placeholder: no triglyceride, and the web excludes them.
+    if (iodine !== undefined && category !== 'tar') {
+      ins = Math.round(sapKoh * 1000 - iodine);
+    }
+
     // The emitted public id may be overridden (e.g. a mislabeled slug); internal lookups above
     // still use baseSlug, and the web oilById migration resolves the old id for saved recipes.
     const id = OIL_ID_OVERRIDES[baseSlug] ?? baseSlug;
