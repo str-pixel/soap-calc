@@ -414,7 +414,7 @@ function main() {
     // already apply. Until 2026-09-19 it was applied ONLY there, and every other oil kept
     // the legacy catalog's INS — a figure that catalog computed from ITS SAP and iodine.
     // Once resolution moved the SAP (45 FNWL oils) the shipped INS no longer matched the
-    // shipped SAP and iodine (54 of 127 oils; tucuma read 175 where its own numbers give
+    // shipped SAP and iodine (52 of 127 oils; tucuma read 175 where its own numbers give
     // 225). Tars keep their placeholder: no triglyceride, and the web excludes them.
     if (iodine !== undefined && category !== 'tar') {
       ins = Math.round(sapKoh * 1000 - iodine);

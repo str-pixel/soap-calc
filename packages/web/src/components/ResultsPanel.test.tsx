@@ -140,7 +140,6 @@ test('subtract: the PCSF row carries the shared provenance phrase + batch weight
   );
   // The grid row and the Full recipe line quote ONE provenance phrase — no third vocabulary.
   expect(screen.getAllByText(/weighed separately; the oils above are already trimmed/).length).toBeGreaterThanOrEqual(2);
-  expect(screen.queryByText(/reserved, lye reduced/)).toBeNull();
   // The panel renders the vm's batch weight, not (full displayTotals batch + PCSF grams).
   expect(figure('1234 g')).toBeTruthy();
 });

@@ -336,11 +336,13 @@ test('subtract + non-negative main superfat: notes the reserve comes from the oi
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
-    // Non-negative superfat: the subtract reserve is actually applied, so the PCSF oil is
-    // reserved from the recipe oils, not an extra.
+    // Non-negative superfat: the subtract reserve is actually applied, so the oils above
+    // are trimmed to make room — the PCSF oil itself is still weighed separately, an extra
+    // in both methods. A reserveApplied fixture must carry a matching (<1) cookFactor and
+    // an extrasGrams that includes the PCSF grams, or it is claiming a trim it never models.
     postCookSuperfat: { ...postCookSuperfat, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: 6.9 },
-    cookFactor: 1,
-    extrasGrams: 0,
+    cookFactor: 0.9,
+    extrasGrams: postCookSuperfat.grams,
     scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
@@ -1496,9 +1498,11 @@ test('LS prints the Post-cook superfat section AFTER Dilution, matching the on-s
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
+    // reserveApplied: true needs a matching (<1) cookFactor and an extrasGrams that
+    // includes the PCSF grams, or the fixture claims a trim it never models.
     postCookSuperfat: { ...postCookSuperfat, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: null },
-    cookFactor: 1,
-    extrasGrams: 0,
+    cookFactor: 0.9,
+    extrasGrams: postCookSuperfat.grams,
     scentColor: emptyComputedScentColor(),
     dilution,
     neutralization: null,

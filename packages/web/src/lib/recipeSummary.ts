@@ -23,7 +23,9 @@ import {
  * results-grid row, the Full recipe line, and the printed sheet. The PCSF oil is weighed on
  * its own; the recipe oils listed above it are already trimmed by the cook factor to make
  * room, so the manifest's oils + this line = the target oil weight. Empty for append and
- * for an unapplied reserve. */
+ * for an unapplied reserve. Fails safe: only `reserveApplied === true` prints the claim —
+ * anything else, including a type-bypassing caller's `undefined`, prints nothing, since a
+ * false claim of trimming is the harmful direction to be wrong in. */
 export function postCookSuperfatProvenance(reserveApplied: boolean): string {
   return reserveApplied ? ' · weighed separately; the oils above are already trimmed to make room' : '';
 }
@@ -127,8 +129,9 @@ type FullRecipeInput = {
   waterGrams: number;
   additives: ComputedAdditive[];
   splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
-  /** The vm's stamped PCSF (see AppliedPostCookSuperfat) — its own applied state decides
-   * whether the line reads as reserved from the oils above or as extra weight. */
+  /** The vm's stamped PCSF (see AppliedPostCookSuperfat) — the line always reads as
+   * separately weighed material; its applied state only adds the "oils above are already
+   * trimmed" clause when the subtract reserve actually fired. */
   postCookSuperfat?: AppliedPostCookSuperfat | null;
   process: ProcessId;
   /** The Fragrance & colorants section as the vm computed it. A whole-batter colour lists

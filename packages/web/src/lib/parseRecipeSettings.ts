@@ -111,7 +111,7 @@ const NUMERIC_SETTING_KEYS = [
  * numeric fields: notes and names keep their whitespace. */
 function trimNumericSettings(settings: RecipeSettings): RecipeSettings {
   const out = { ...settings };
-  for (const key of NUMERIC_SETTING_KEYS) out[key] = settings[key].trim();
+  for (const key of NUMERIC_SETTING_KEYS) out[key] = String(settings[key] ?? '').trim();
   return out;
 }
 

@@ -339,7 +339,9 @@ export const ResultsPanel = memo(function ResultsPanel({
               {excludedOilWeightGrams > 0 && (
                 <span className="results-excluded">
                   {' '}
-                  ({formatWeight(excludedOilWeightGrams, weightUnit)} excluded from lye)
+                  {/* Excluded oils are part of the trimmed formulation too — the row above
+                      already reads at cook weight, so this parenthetical must match. */}
+                  ({formatWeight(excludedOilWeightGrams * cookFactor, weightUnit)} excluded from lye)
                 </span>
               )}
             </dd>

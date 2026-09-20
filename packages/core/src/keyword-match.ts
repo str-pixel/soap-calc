@@ -1,3 +1,5 @@
+import type { AdditiveStage } from './additives.js';
+
 export function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -14,10 +16,10 @@ function isLikelyFragranceName(name: string): boolean {
 export type NamedCatalogEntry = {
   catalogId: string;
   name: string;
-  /** Where the line is added — mirrors additives.ts AdditiveStage (spelled out here so this
-   * module keeps importing nothing). Optional: rules that read it treat an unknown stage as
-   * the catalog's default for that additive. */
-  addAt?: 'lye' | 'oils' | 'trace' | 'top' | 'after_cook';
+  /** Where the line is added — additives.ts AdditiveStage, imported type-only so it is
+   * erased at build time and this module still imports nothing at runtime. Optional: rules
+   * that read it treat an unknown stage as the catalog's default for that additive. */
+  addAt?: AdditiveStage;
 };
 
 /** Name-only keyword match across additive lines, with the same fragrance guard
