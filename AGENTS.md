@@ -40,9 +40,9 @@ The canonical oil database currently combines legacy calculator catalog records 
 
 SAP resolution policy:
 
-- FNWL match within 5% of legacy SAP: use FNWL.
-- FNWL/legacy delta from 5% to 10%: use the higher SAP as a conservative estimate.
-- Delta above 10%: retain legacy unless FNWL is higher.
+- FNWL within 5% of legacy (|legacy − FNWL| ÷ legacy ≤ 5%): use FNWL, confidence `verified`.
+- Otherwise, when the oil's fatty-acid profile derives a SAP (≥93% mapped, triglyceride/blend): use whichever of legacy or FNWL lies closer to the profile-derived SAP, confidence `estimated`. A higher SAP is not "safer" — it means more lye and less superfat.
+- Otherwise: the midpoint of legacy and FNWL, confidence `estimated`.
 - Legacy-only SAP entries are expected data gaps and should stay marked `legacy_only` — except oils whose legacy SAP contradicts their own fatty-acid profile; those get a profile-derived estimate via `LEGACY_SAP_CORRECTIONS` (build-canonical.ts), marked `estimated` with `primarySource: manual` and a recomputed INS.
 
 Birch tar is supplemental (`birch-tar`), estimated from pine-tar proxy SAP, and uses `sapRole: acid_neutralization`. The UI supports `include` vs `additive` tar lye treatment.
