@@ -320,7 +320,9 @@ function capAllocatedSum(oils: PostCookSuperfatOil[]): PostCookSuperfatOil[] {
       return oil;
     }
     runningSum = 100;
-    return { ...oil, percent: String(headroom) };
+    // Percents display at one decimal (PERCENT_ROUNDING_EPSILON); write the cap the same way,
+    // or 100 − 66.6 lands in the input as "33.400000000000006".
+    return { ...oil, percent: String(Math.round(headroom * 10) / 10) };
   });
 }
 

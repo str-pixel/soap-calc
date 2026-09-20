@@ -758,4 +758,15 @@ describe('row-list caps on settings-nested arrays (unbounded-import guard)', () 
     expect(s.postCookSuperfatOils[0].percent).toBe('60');
     expect(s.postCookSuperfatOils[1].percent).toBe('40');
   });
+
+  it('writes the capped row at display precision, not float noise', () => {
+    const s = normalizeSettings({
+      postCookSuperfatOils: [
+        { oilId: 'olive-oil', percent: '33.3' },
+        { oilId: 'coconut-oil-76', percent: '33.3' },
+        { oilId: 'shea-butter', percent: '40' },
+      ],
+    });
+    expect(s.postCookSuperfatOils[2].percent).toBe('33.4');
+  });
 });
