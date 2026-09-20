@@ -275,3 +275,12 @@ describe('syncBatchTotalEdit on a mixed recipe (some percents, some grams-only)'
     expect(out[2]).toMatchObject({ weightGrams: '', weightPercent: '' });
   });
 });
+
+describe('solveOilTotalForBatchTarget degenerate inputs', () => {
+  it('returns the current oil total (no change) when the current batch is 0, instead of looping', { timeout: 2000 }, () => {
+    expect(solveOilTotalForBatchTarget(twoLines, 1500, 1000, 0)).toBe(1000);
+  });
+  it('returns the current oil total for a non-finite target', { timeout: 2000 }, () => {
+    expect(solveOilTotalForBatchTarget(twoLines, Number.NaN, 1000, 1400)).toBe(1000);
+  });
+});

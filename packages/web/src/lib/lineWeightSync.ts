@@ -223,6 +223,12 @@ export function solveOilTotalForBatchTarget(
    * 2000 down to ~1961 (scaled along with the oils). */
   fixedExtrasGrams = 0,
 ): number {
+  // Degenerate inputs have no ratio to solve: a zero or non-finite current batch makes the
+  // linear centre ±Infinity and the candidate loop below never terminates. Return the
+  // current oil total — "no change" — which is what the callers' own guards do today.
+  if (!(targetBatchGrams > 0) || !(currentOilTotalGrams > 0) || !(currentBatchGrams > 0)) {
+    return Math.max(1, Math.round(currentOilTotalGrams > 0 ? currentOilTotalGrams : 1));
+  }
   const fixed =
     Number.isFinite(fixedExtrasGrams) && fixedExtrasGrams > 0 ? fixedExtrasGrams : 0;
   const proportional0 = currentBatchGrams - fixed;
