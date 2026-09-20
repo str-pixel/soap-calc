@@ -203,6 +203,11 @@ test('lists the recipe oils at their cook weight when a subtract reserve is appl
   expect(screen.getAllByText(/weighed separately; the oils above are already trimmed/).length).toBeGreaterThanOrEqual(1);
   // The Total batch slices must sum to the total: trimmed oils, not the formulation's 1000 g.
   expect(screen.getByText(/oils 950 g/)).toBeTruthy();
+  // "Add in this order" must name the same total the oil lines above it add up to.
+  expect(screen.getAllByText(/950 g total/).length).toBeGreaterThanOrEqual(1);
+  // and the grid's Oil weight row is the cook weight too — the sheet's identically
+  // labelled row prints it, and the PCSF row says the oils above are already trimmed.
+  expect(figure('950 g')).toBeTruthy();
 });
 
 test('append + negative main superfat: the Total superfat row still renders — an appended oil is delivered regardless', () => {

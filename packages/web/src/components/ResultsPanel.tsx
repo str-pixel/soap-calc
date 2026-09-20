@@ -244,7 +244,9 @@ export const ResultsPanel = memo(function ResultsPanel({
   const addOrderSteps = buildAddOrderSteps({
     process,
     lyeType,
-    totalOilGrams: recipeOilWeightGrams,
+    // The cook weight, like the Full recipe above: "Weigh each oil — N g total" must name the
+    // same N the oil lines under it add up to, not the untrimmed formulation target.
+    totalOilGrams: recipeOilWeightGrams * cookFactor,
     lyeGrams: result.lyeWeightGrams,
     waterGrams: result.waterWeightGrams,
     weightUnit,
@@ -329,7 +331,11 @@ export const ResultsPanel = memo(function ResultsPanel({
           <div className="results-grid__item">
             <dt>Oil weight</dt>
             <dd>
-              <Weight grams={recipeOilWeightGrams} unit={weightUnit} />
+              {/* The oils that go into the pot — the same cook weight the printed sheet's
+                  identically labelled row quotes, so the PCSF row's "the oils above are
+                  already trimmed" reads true on screen too. The editor's Total oil field
+                  stays on the formulation target. */}
+              <Weight grams={recipeOilWeightGrams * cookFactor} unit={weightUnit} />
               {excludedOilWeightGrams > 0 && (
                 <span className="results-excluded">
                   {' '}
