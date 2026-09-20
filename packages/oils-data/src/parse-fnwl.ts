@@ -6,6 +6,9 @@ export interface FnwlRow {
   sapNaoh: number;
   sapKoh: number;
   productId?: string;
+  /** Every raw chart row that normalized to this name (set on the representative row by
+   * parseFnwlCsv), so a matcher can prefer the row literally named as the catalog oil. */
+  variants?: FnwlRow[];
 }
 
 export function parseCsvLine(line: string): string[] {
@@ -62,9 +65,11 @@ export function parseFnwlCsv(text: string): FnwlRow[] {
   }
 
   // Keep an actual row per name (preserving its range/productId), chosen at the median
-  // sapKoh. For an even count the lower-middle row is used.
+  // sapKoh. For an even count the lower-middle row is used. The whole group rides along as
+  // `variants` so findFnwlMatch can prefer an exact-name row (baobab: 'Baobab Oil' 0.19 vs
+  // 'Baobab Oil, Unrefined' 0.173 shared one key and the median picked the variant).
   return [...byName.values()].map((group) => {
     const sorted = [...group].sort((a, b) => a.sapKoh - b.sapKoh);
-    return sorted[Math.floor((sorted.length - 1) / 2)];
+    return { ...sorted[Math.floor((sorted.length - 1) / 2)], variants: group };
   });
 }

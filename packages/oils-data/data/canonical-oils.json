@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-20T06:52:56.692Z",
+  "generatedAt": "2026-09-20T06:58:57.016Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -282,8 +282,8 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 180,
-          "mgKohPerGramMax": 200,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
           "mgKohPerGram": 190,
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
@@ -293,8 +293,8 @@
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
           "mgKohPerGram": 190,
-          "mgKohPerGramMin": 180,
-          "mgKohPerGramMax": 200,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -496,11 +496,11 @@
       ],
       "inciName": "Adansonia Digitata (Baobab) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.2,
-      "sapNaoh": 0.14260249554367202,
-      "sapMgKohPerGram": 200,
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
       "iodine": 75,
-      "ins": 125,
+      "ins": 115,
       "fattyAcids": {
         "oleic": 37,
         "stearic": 4,
@@ -520,26 +520,20 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 140,
-          "mgKohPerGramMax": 205,
-          "mgKohPerGram": 172.5,
-          "sapKoh": 0.173,
-          "sapNaoh": 0.12335115864527628,
-          "notes": "FNWL chart entry: Baobab Oil, Unrefined"
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Baobab Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 172.5,
-          "mgKohPerGramMin": 140,
-          "mgKohPerGramMax": 205,
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
-        },
-        {
-          "source": "manual",
-          "sapKoh": 0.2,
-          "sapNaoh": 0.14260249554367202,
-          "notes": "legacy/FNWL differ by 13.5% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -547,8 +541,8 @@
           "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "estimated"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "beeswax",
@@ -2090,11 +2084,11 @@
       ],
       "inciName": "Vitis vinifera (Grape) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.193,
-      "sapNaoh": 0.1376114081996435,
-      "sapMgKohPerGram": 193,
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
       "iodine": 131,
-      "ins": 62,
+      "ins": 59,
       "fattyAcids": {
         "oleic": 20,
         "stearic": 4,
@@ -2112,26 +2106,24 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 185,
+          "mgKohPerGramMin": 180,
           "mgKohPerGramMax": 200,
-          "mgKohPerGram": 192.5,
-          "sapKoh": 0.193,
-          "sapNaoh": 0.1376114081996435,
-          "notes": "FNWL chart entry: Grape Seed Oil, Organic"
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Grape Seed Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 192.5,
-          "mgKohPerGramMin": 185,
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 180,
           "mgKohPerGramMax": 200,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
           "source": "manual",
-          "sapKoh": 0.193,
-          "sapNaoh": 0.1376114081996435,
-          "notes": "legacy/FNWL differ by 6.6% (>5%); kept the source closest to the profile-derived SAP"
+          "notes": "INCI via correction — The FNWL 'Grape Seed Oil' product (OILGRAPECPCL64) carries a tocopherol-blend chart INCI (\"…Seed Oil, Tocopherol\"); the oil itself is the plain seed oil (matches VITIS VINIFERA (GRAPE) SEED OIL)."
         },
         {
           "source": "cosing",
@@ -2140,7 +2132,7 @@
         }
       ],
       "primarySource": "fnwl",
-      "confidence": "estimated"
+      "confidence": "verified"
     },
     {
       "id": "hazelnut-oil",
@@ -2204,11 +2196,11 @@
       ],
       "inciName": "Cannabis Sativa (Hemp) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.191,
-      "sapNaoh": 0.13618538324420676,
-      "sapMgKohPerGram": 191,
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
       "iodine": 165,
-      "ins": 26,
+      "ins": 28,
       "fattyAcids": {
         "oleic": 12,
         "stearic": 2,
@@ -2227,19 +2219,19 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 188,
-          "mgKohPerGramMax": 194,
-          "mgKohPerGram": 191,
-          "sapKoh": 0.191,
-          "sapNaoh": 0.13618538324420676,
-          "notes": "FNWL chart entry: Organic Virgin Hemp Seed Oil"
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 192.5,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Hemp Seed Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 191,
-          "mgKohPerGramMin": 188,
-          "mgKohPerGramMax": 194,
+          "mgKohPerGram": 192.5,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 195,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -4831,9 +4823,9 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 188,
-          "mgKohPerGramMax": 188,
-          "mgKohPerGram": 188,
+          "mgKohPerGramMin": 184,
+          "mgKohPerGramMax": 191,
+          "mgKohPerGram": 187.5,
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
           "notes": "FNWL chart entry: Red Raspberry Seed Oil"
@@ -4841,9 +4833,9 @@
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 188,
-          "mgKohPerGramMin": 188,
-          "mgKohPerGramMax": 188,
+          "mgKohPerGram": 187.5,
+          "mgKohPerGramMin": 184,
+          "mgKohPerGramMax": 191,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {

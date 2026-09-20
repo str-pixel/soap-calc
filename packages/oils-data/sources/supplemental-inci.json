@@ -44,6 +44,11 @@
       "inciName": "Pistacia Vera (Pistachio) Seed Oil",
       "source": "cosing",
       "notes": "INCI uses Seed Oil, not \"Nut Oil\" (matches PISTACIA VERA SEED OIL); kept here rather than byOilId so a future FNWL product mapping cannot reintroduce the Nut Oil variant"
+    },
+    "grapeseed-oil": {
+      "inciName": "Vitis vinifera (Grape) Seed Oil",
+      "source": "cosing",
+      "notes": "The FNWL 'Grape Seed Oil' product (OILGRAPECPCL64) carries a tocopherol-blend chart INCI (\"…Seed Oil, Tocopherol\"); the oil itself is the plain seed oil (matches VITIS VINIFERA (GRAPE) SEED OIL)."
     }
   },
   "byOilId": {
