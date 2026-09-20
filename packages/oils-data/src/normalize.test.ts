@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { inferCategory, LEGACY_TO_FNWL_ALIASES, normalizeOilName } from './normalize.js';
 
@@ -24,6 +27,15 @@ describe('LEGACY_TO_FNWL_ALIASES', () => {
     for (const key of Object.keys(LEGACY_TO_FNWL_ALIASES)) {
       expect(key).toBe(normalizeOilName(key));
     }
+  });
+
+  it('every alias key is the normalized name of an oil in the legacy catalog (else the alias is dead)', () => {
+    const legacyPath = join(dirname(fileURLToPath(import.meta.url)), '../../../soap_oils.json');
+    // soap_oils.json is `{ oils: [...] }` (133 rows).
+    const legacy = JSON.parse(readFileSync(legacyPath, 'utf8')) as { oils: Array<{ name: string }> };
+    const legacyKeys = new Set(legacy.oils.map((row) => normalizeOilName(row.name)));
+    const dead = Object.keys(LEGACY_TO_FNWL_ALIASES).filter((key) => !legacyKeys.has(key));
+    expect(dead).toEqual([]);
   });
 });
 

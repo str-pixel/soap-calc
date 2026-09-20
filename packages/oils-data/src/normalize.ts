@@ -54,16 +54,19 @@ export const LEGACY_TO_FNWL_ALIASES: Record<string, string[]> = {
   'raspberry seed oil': ['red raspberry seed oil'],
 
   // Animal fats
-  'lard pig tallow manteca': ['lard'],
+  // "Lard, Pig Tallow (Manteca)": the normalizer strips the parenthetical.
+  'lard pig tallow': ['lard'],
   'tallow beef': ['beef tallow'],
 
   // FNWL name differs from legacy catalog
   'tamanu oil kamani': ['tamanu foraha oil'],
 
   // Waxes / specialty
-  'jojoba oil a liquid wax ester': ['jojoba oil natural', 'jojoba oil golden organic'],
+  // "Jojoba Oil (a Liquid Wax Ester)" normalizes to the bare name.
+  'jojoba oil': ['jojoba oil natural', 'jojoba oil golden organic'],
   'candelilla wax': ['candelilla wax pellets'],
-  'carnauba copernicia cerifera wax': ['carnauba wax flakes'],
+  // "Carnauba (Copernicia cerifera) wax" normalizes to the bare name.
+  'carnauba wax': ['carnauba wax flakes'],
 
   // Butters / palm
   'palm oil': ['palm oil'],

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-19T21:06:13.583Z",
+  "generatedAt": "2026-09-20T06:52:56.692Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -2350,8 +2350,22 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
-          "source": "manual",
-          "notes": "INCI via supplemental id — Duplicate catalog entry; same INCI as wax-ester jojoba line"
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 85,
+          "mgKohPerGramMax": 98,
+          "mgKohPerGram": 91.5,
+          "sapKoh": 0.092,
+          "sapNaoh": 0.06559714795008913,
+          "notes": "FNWL chart entry: Jojoba Oil, Natural"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 91.5,
+          "mgKohPerGramMin": 85,
+          "mgKohPerGramMax": 98,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
           "source": "cosing",
@@ -2359,8 +2373,8 @@
           "notes": "INCI \"Simmondsia Chinensis (Jojoba) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "karanja-oil",
@@ -2641,11 +2655,11 @@
       ],
       "inciName": "Adeps Suillus",
       "category": "triglyceride",
-      "sapKoh": 0.198,
-      "sapNaoh": 0.1411764705882353,
-      "sapMgKohPerGram": 198,
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
       "iodine": 57,
-      "ins": 141,
+      "ins": 136,
       "fattyAcids": {
         "oleic": 46,
         "stearic": 13,
@@ -2662,6 +2676,24 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 193,
+          "mgKohPerGramMax": 193,
+          "mgKohPerGram": 193,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Lard"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 193,
+          "mgKohPerGramMin": 193,
+          "mgKohPerGramMax": 193,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
           "source": "manual",
           "notes": "INCI via supplemental id — CosIng/EU INCI for hog lard (pig tallow)"
         },
@@ -2671,8 +2703,8 @@
           "notes": "INCI \"Adeps Suillus\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "laurel-fruit-oil",
@@ -6286,8 +6318,22 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
-          "source": "manual",
-          "notes": "INCI via supplemental id"
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 78,
+          "mgKohPerGramMax": 95,
+          "mgKohPerGram": 86.5,
+          "sapKoh": 0.087,
+          "sapNaoh": 0.06203208556149732,
+          "notes": "FNWL chart entry: Carnauba Wax Flakes"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 86.5,
+          "mgKohPerGramMin": 78,
+          "mgKohPerGramMax": 95,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
           "source": "cosing",
@@ -6295,8 +6341,8 @@
           "notes": "INCI \"Copernicia Cerifera (Carnauba) Wax\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "ucuuba-butter",

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-19T21:06:13.583Z",
+  "generatedAt": "2026-09-20T06:52:56.692Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -1008,7 +1008,7 @@
       "category": "wax_ester",
       "sapKoh": 0.092,
       "sapNaoh": 0.06559714795008913,
-      "confidence": "legacy_only",
+      "confidence": "verified",
       "propertiesAvailable": false,
       "iodine": 83,
       "ins": 9
@@ -1145,12 +1145,12 @@
       ],
       "inciName": "Adeps Suillus",
       "category": "triglyceride",
-      "sapKoh": 0.198,
-      "sapNaoh": 0.1411764705882353,
-      "confidence": "legacy_only",
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "confidence": "verified",
       "propertiesAvailable": true,
       "iodine": 57,
-      "ins": 141,
+      "ins": 136,
       "fattyAcids": {
         "oleic": 46,
         "stearic": 13,
@@ -2796,7 +2796,7 @@
       "category": "wax",
       "sapKoh": 0.087,
       "sapNaoh": 0.06203208556149732,
-      "confidence": "legacy_only",
+      "confidence": "verified",
       "propertiesAvailable": false,
       "iodine": 11,
       "ins": 76
