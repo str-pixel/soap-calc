@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test, vi } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, renderHook, act } from '@testing-library/react';
+import { useState } from 'react';
 import { useRecipeViewModel } from './useRecipeViewModel';
 import { createEmptyScentColor, normalizeScentColor, type ScentColor } from '../lib/scentColor';
 import {
@@ -8,10 +9,16 @@ import {
   DEFAULT_SETTINGS,
   createEmptyAdditives,
   normalizePostCookSuperfatOils,
+  normalizeSettings,
   type AdditiveLine,
   type RecipeSettings,
 } from '../lib/recipe';
-import { processProfileById, type ProcessId } from '../lib/process';
+import {
+  processProfileById,
+  defaultsForProcess,
+  normalizeSettingsWithinProcess,
+  type ProcessId,
+} from '../lib/process';
 import { correctedDilutionWaterGrams } from '../lib/measuredPaste';
 import { lsFinishedVolumeMl, lsPartialDilution, gradualDilutionFrom } from '@soap-calc/core';
 
@@ -1303,4 +1310,47 @@ test('subtract trims the recipe to its cook weight: cookFactor, LS anhydrous soa
   );
   // Following the sheet literally now lands on the claimed superfat: trimmed oils + PCSF = target.
   expect(0.9 * subtract.totalOilGrams + subtract.postCookSuperfat.grams).toBeCloseTo(subtract.totalOilGrams);
+});
+
+function useKeystrokeHarness({ process }: { process: ProcessId }) {
+  const [settings, setSettings] = useState<RecipeSettings>(() =>
+    normalizeSettingsWithinProcess(
+      normalizeSettings({ ...DEFAULT_SETTINGS, ...defaultsForProcess(process), batchSetByUser: true }),
+      process,
+    ),
+  );
+  const [lines] = useState(() => createStarterLines());
+  const [additives] = useState(() => createEmptyAdditives());
+  const [scent] = useState(() => createEmptyScentColor());
+  const vm = useRecipeViewModel({
+    recipeName: 'r', lines, settings, additives, scentColor: scent, drafts: {}, weightUnit: 'g', process,
+  });
+  return { vm, setSettings };
+}
+
+test('a keystroke in a field the lye calc does not read leaves result, cure and properties untouched', () => {
+  // Third element: whether the INSIGHTS may keep their identity too. The soaping temperature
+  // is read directly by the insight rules (soaping_temp_high, ls_coconut_hot_cook) and is a
+  // dependency of useFormulationInsights' own memo, so that row legitimately recomputes them.
+  for (const [process, patch, insightsStable] of [
+    ['cp', { batchNotes: 'x' }, true],
+    ['cp', { soapingTempF: '126' }, false],
+    ['ls', { preservativeDosePct: '0.9' }, true],
+  ] as const) {
+    const { result } = renderHook(useKeystrokeHarness, { initialProps: { process } });
+    const before = result.current.vm;
+    act(() => result.current.setSettings((s) => ({ ...s, ...patch })));
+    const after = result.current.vm;
+    expect(after.result).toBe(before.result);
+    expect(after.cureEstimate).toBe(before.cureEstimate);
+    expect(after.properties).toBe(before.properties);
+    if (insightsStable) expect(after.insights).toBe(before.insights);
+  }
+});
+
+test('a keystroke in a field the lye calc DOES read recomputes it', () => {
+  const { result } = renderHook(useKeystrokeHarness, { initialProps: { process: 'cp' as ProcessId } });
+  const before = result.current.vm;
+  act(() => result.current.setSettings((s) => ({ ...s, superfatPercent: '8' })));
+  expect(result.current.vm.result).not.toBe(before.result);
 });
