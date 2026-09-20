@@ -105,9 +105,15 @@ export function formatWeightParts(
   // Same shape as gramsStringToLineDisplay above, which already forks a 1-decimal gram
   // variant for exactly this reason. Exact integers still render bare
   // (minimumFractionDigits: 0), so batch-scale output is byte-identical.
-  const d =
+  let d =
     digits ??
     (value > 0 && value < 10 ? Math.max(config.displayDigits, 1) : config.displayDigits);
+  // A positive dose must never print as zero (the promise in this function's own test):
+  // below 0.05 g the one-decimal rule still rounds to "0", so widen until a digit shows.
+  // Capped at 4 places; a caller that asked for explicit digits gets exactly those.
+  if (digits === undefined) {
+    while (value > 0 && d < 4 && Number(value.toFixed(d)) === 0) d += 1;
+  }
   return {
     // The app's one number rule (lib/format.ts formatGrams), not a second copy of it.
     value: formatGrams(value, d),

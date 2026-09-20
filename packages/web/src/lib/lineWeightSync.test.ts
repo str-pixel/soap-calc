@@ -249,3 +249,13 @@ describe('gramsStringToLineDisplay', () => {
     expect(gramsStringToLineDisplay('340.34', 'g')).toBe('340.3');
   });
 });
+
+describe('syncWeightEdit stores a real sub-gram weight', () => {
+  it('keeps 0.3 g as "0.3", never "0" (zero is what EMPTIES a line)', () => {
+    const synced = syncWeightEdit(twoLines, 'a', '0.3', '1000', true);
+    expect(synced.lines[0].weightGrams).toBe('0.3');
+  });
+  it('still stores whole grams otherwise', () => {
+    expect(syncWeightEdit(twoLines, 'a', '453.6', '1000', true).lines[0].weightGrams).toBe('454');
+  });
+});

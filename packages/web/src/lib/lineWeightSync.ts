@@ -8,7 +8,11 @@ function parseNum(value: string): number | null {
 }
 
 function formatGrams(n: number): string {
-  return String(Math.round(n));
+  const whole = Math.round(n);
+  // Whole grams are the stored basis — except where rounding would erase a real weight:
+  // a 0.3 g line stores "0.3", never "0", because 0 is what EMPTIES a line (syncWeightEdit).
+  // parseInputDisplayToGrams already rounds to 0.1 g, so anything under 0.05 g arrives as 0.
+  return whole === 0 && n > 0 ? String(Math.round(n * 10) / 10) : String(whole);
 }
 
 /** Percents are display-rounded to 0.1, so each stored percent can be off by up to

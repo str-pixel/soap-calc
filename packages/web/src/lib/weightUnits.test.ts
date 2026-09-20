@@ -78,4 +78,13 @@ describe('formatWeight keeps sub-gram doses visible', () => {
     expect(formatWeight(2270, 'g')).toBe('2270 g');
     expect(formatWeight(453.59237, 'lb')).toBe('1 lb');
   });
+
+  it('widens the precision below 0.05 g until a digit shows (turmeric’s sourced low end on 100 g oils is 0.028 g)', () => {
+    expect(formatWeight(0.04, 'g')).toBe('0.04 g');
+    expect(formatWeight(0.028, 'g')).toBe('0.03 g');
+    expect(formatWeight(0.004, 'g')).toBe('0.004 g');
+    expect(formatWeight(0.028, 'oz')).toBe('0.001 oz');
+    // An explicit digits request is honoured as typed.
+    expect(formatWeight(0.04, 'g', 0)).toBe('0 g');
+  });
 });
